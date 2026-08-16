@@ -657,6 +657,33 @@ describe('parseMermaid – classDef and class', () => {
     expect(g.classAssignments.get('B')).toBe('highlight')
     expect(g.nodes.has('class')).toBe(false)
   })
+
+  it('tolerates space before trailing semicolon', () => {
+    const g = parseMermaid(`graph TD
+      A --> B
+      class B highlight ;`)
+    expect(g.classAssignments.get('B')).toBe('highlight')
+    expect(g.nodes.has('class')).toBe(false)
+    expect(g.nodes.size).toBe(2)
+  })
+
+  it('tolerates space after trailing semicolon', () => {
+    const g = parseMermaid(`graph TD
+      A --> B
+      class B highlight; `)
+    expect(g.classAssignments.get('B')).toBe('highlight')
+    expect(g.nodes.has('class')).toBe(false)
+    expect(g.nodes.size).toBe(2)
+  })
+
+  it('tolerates multiple spaces around trailing semicolon', () => {
+    const g = parseMermaid(`graph TD
+      A --> B
+      class B highlight  ;  `)
+    expect(g.classAssignments.get('B')).toBe('highlight')
+    expect(g.nodes.has('class')).toBe(false)
+    expect(g.nodes.size).toBe(2)
+  })
 })
 
 // ============================================================================
