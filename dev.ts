@@ -1,7 +1,7 @@
 /**
  * Development server with live reload for mermaid samples.
  *
- * Usage: bun run packages/mermaid/dev.ts
+ * Usage: tsx dev.ts
  *
  * - Runs `index.ts` to generate index.html on startup
  * - Runs `editor.ts` to generate editor.html on startup
@@ -17,18 +17,35 @@
  * just save a file and the page updates automatically.
  */
 
-import { watch } from 'fs'
-import { join } from 'path'
+import { watch, existsSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
+import { createServer, type ServerResponse } from 'node:http'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
 
 const PORT = 3456
-const ROOT = import.meta.dir
+const ROOT = dirname(fileURLToPath(import.meta.url))
+
+// Resolve the local tsx CLI so rebuilds don't depend on PATH/.bin symlinks.
+const tsxCli = fileURLToPath(import.meta.resolve('tsx/cli'))
+
+function runTsx(file: string): Promise<{ exitCode: number | null }> {
+  return new Promise(resolve => {
+    const proc = spawn(process.execPath, [tsxCli, file], {
+      cwd: ROOT,
+      stdio: 'inherit',
+    })
+    proc.on('exit', exitCode => resolve({ exitCode }))
+  })
+}
 
 // ============================================================================
 // Build management
 // ============================================================================
 
 let building = false
-const sseClients = new Set<ReadableStreamDefaultController>()
+const sseClients = new Set<ServerResponse>()
 
 async function rebuild(): Promise<void> {
   if (building) return
@@ -36,32 +53,25 @@ async function rebuild(): Promise<void> {
   console.log('\x1b[36m[dev]\x1b[0m Rebuilding samples...')
   const t0 = performance.now()
 
-  const samplesProc = Bun.spawn(['bun', 'run', join(ROOT, 'index.ts')], {
-    cwd: ROOT,
-    stdout: 'inherit',
-    stderr: 'inherit',
-  })
-  const editorProc = Bun.spawn(['bun', 'run', join(ROOT, 'editor.ts')], {
-    cwd: ROOT,
-    stdout: 'inherit',
-    stderr: 'inherit',
-  })
-  await Promise.all([samplesProc.exited, editorProc.exited])
+  const [samplesResult, editorResult] = await Promise.all([
+    runTsx(join(ROOT, 'index.ts')),
+    runTsx(join(ROOT, 'editor.ts')),
+  ])
 
   const ms = (performance.now() - t0).toFixed(0)
-  if (samplesProc.exitCode === 0 && editorProc.exitCode === 0) {
+  if (samplesResult.exitCode === 0 && editorResult.exitCode === 0) {
     console.log(`\x1b[32m[dev]\x1b[0m Rebuilt in ${ms}ms`)
     // Notify all connected browsers to reload
     for (const client of sseClients) {
       try {
-        client.enqueue('data: reload\n\n')
+        client.write('data: reload\n\n')
       } catch {
         sseClients.delete(client)
       }
     }
   } else {
     console.error(
-      `\x1b[31m[dev]\x1b[0m Build failed (samples exit ${samplesProc.exitCode}, editor exit ${editorProc.exitCode})`,
+      `\x1b[31m[dev]\x1b[0m Build failed (samples exit ${samplesResult.exitCode}, editor exit ${editorResult.exitCode})`,
     )
   }
   building = false
@@ -71,7 +81,7 @@ async function rebuild(): Promise<void> {
 // File watching — debounced to coalesce rapid saves
 // ============================================================================
 
-let debounce: Timer | null = null
+let debounce: NodeJS.Timeout | null = null
 function onFileChange(_event: string, filename: string | null): void {
   // Ignore generated outputs
   if (filename === 'index.html' || filename === 'editor.html') return
@@ -120,48 +130,44 @@ function injectLiveReload(html: string): string {
   return html.replace('</body>', liveReloadScript)
 }
 
-async function serveHtml(filename: string): Promise<Response> {
-  const file = Bun.file(join(ROOT, filename))
-  if (!(await file.exists())) {
-    return new Response(`${filename} not found — build may have failed`, { status: 404 })
+async function serveHtml(filename: string, res: ServerResponse): Promise<void> {
+  const path = join(ROOT, filename)
+  if (!existsSync(path)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain' })
+    res.end(`${filename} not found — build may have failed`)
+    return
   }
-  return new Response(injectLiveReload(await file.text()), {
-    headers: { 'Content-Type': 'text/html' },
-  })
+  const html = await readFile(path, 'utf-8')
+  res.writeHead(200, { 'Content-Type': 'text/html' })
+  res.end(injectLiveReload(html))
 }
 
-Bun.serve({
-  port: PORT,
-  async fetch(req) {
-    const url = new URL(req.url)
+const server = createServer((req, res) => {
+  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`)
 
-    // SSE endpoint — browsers connect here to receive reload signals
-    if (url.pathname === '/__dev_events') {
-      let controller!: ReadableStreamDefaultController
-      const stream = new ReadableStream({
-        start(c) {
-          controller = c
-          sseClients.add(controller)
-        },
-        cancel() {
-          sseClients.delete(controller)
-        },
-      })
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      })
-    }
+  // SSE endpoint — browsers connect here to receive reload signals
+  if (url.pathname === '/__dev_events') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    })
+    res.write('\n')
+    sseClients.add(res)
+    req.on('close', () => {
+      sseClients.delete(res)
+    })
+    return
+  }
 
-    // Live editor
-    if (url.pathname === '/editor' || url.pathname === '/editor.html') {
-      return serveHtml('editor.html')
-    }
+  // Live editor
+  if (url.pathname === '/editor' || url.pathname === '/editor.html') {
+    void serveHtml('editor.html', res)
+    return
+  }
 
-    // Samples showcase (default, as before)
-    return serveHtml('index.html')
-  },
+  // Samples showcase (default, as before)
+  void serveHtml('index.html', res)
 })
+
+server.listen(PORT)

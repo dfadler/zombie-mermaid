@@ -8,7 +8,6 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "bun": "./src/index.ts",
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
@@ -38,16 +37,19 @@
   "author": "Craft Docs",
   "contributors": ["Dustin Fadler (fork maintainer)"],
   "files": ["src/", "dist/", "LICENSE", "README.md"],
+  "packageManager": "pnpm@11.13.0",
   "scripts": {
-    "test": "bun test src/__tests__/",
-    "samples": "bun run index.ts",
-    "editor": "bun run editor.ts",
-    "dev": "bun run dev.ts",
-    "bench": "bun run bench.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "samples": "tsx index.ts",
+    "editor": "tsx editor.ts",
+    "dev": "tsx dev.ts",
+    "bench": "tsx bench.ts",
     "build": "tsup",
-    "build:site": "bun run index.ts && bun run editor.ts && mkdir -p site && mv index.html editor.html site/ && cp -r public/* site/",
-    "deploy": "bun run build:site && wrangler pages deploy site --project-name craft-agents-mermaid",
-    "xychart-test": "bun run xychart-test.ts",
+    "build:site": "tsx index.ts && tsx editor.ts && mkdir -p site && mv index.html editor.html site/ && cp -r public/* site/",
+    "deploy": "pnpm run build:site && wrangler pages deploy site --project-name craft-agents-mermaid",
+    "xychart-test": "tsx xychart-test.ts",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -55,9 +57,13 @@
     "entities": "^7.0.1"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.9",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "esbuild": "^0.28.2",
     "shiki": "^3.19.0",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
   }
 }

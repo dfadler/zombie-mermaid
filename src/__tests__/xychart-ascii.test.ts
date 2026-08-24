@@ -4,7 +4,7 @@
  * Tests bar charts, line charts, mixed charts, horizontal orientation,
  * multi-series support, staircase line routing, and edge cases.
  */
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '../ascii/index.ts'
 
 // ============================================================================

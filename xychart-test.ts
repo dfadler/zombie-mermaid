@@ -1,7 +1,7 @@
 /**
  * Generates xychart-test.html showcasing xychart-beta Mermaid examples.
  *
- * Usage: bun run xychart-test.ts
+ * Usage: tsx xychart-test.ts
  *
  * For each example, renders a 3-column grid:
  *   1. Shiki-highlighted mermaid source
@@ -9,6 +9,8 @@
  *   3. beautiful-mermaid SVG rendering (client-side via bundled renderer)
  */
 
+import { writeFile } from 'node:fs/promises'
+import * as esbuild from 'esbuild'
 import { xychartSamples } from './xychart-samples-data.ts'
 import { THEMES } from './src/theme.ts'
 import { createHighlighter } from 'shiki'
@@ -49,13 +51,15 @@ async function generateHtml(): Promise<string> {
   })
 
   // Bundle the mermaid renderer for client-side SVG rendering
-  const buildResult = await Bun.build({
-    entrypoints: [new URL('./src/browser.ts', import.meta.url).pathname],
-    target: 'browser',
+  const buildResult = await esbuild.build({
+    entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
+    bundle: true,
+    platform: 'browser',
     format: 'esm',
     minify: true,
+    write: false,
   })
-  const bundleJs = await buildResult.outputs[0].text()
+  const bundleJs = buildResult.outputFiles[0]!.text
 
   // Group samples by category for TOC
   const categories = new Map<string, number[]>()
@@ -1051,5 +1055,5 @@ if (window.__renderAllSvgs) window.__renderAllSvgs(window.__initThemeKey);
 
 const html = await generateHtml()
 const outPath = new URL('./xychart-test.html', import.meta.url).pathname
-await Bun.write(outPath, html)
+await writeFile(outPath, html)
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
