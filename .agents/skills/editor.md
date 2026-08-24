@@ -24,14 +24,14 @@ description: >-
 ## Build cycle
 
 ```
-editor.ts  ──Bun.build──►  src/browser.ts bundle (inline JS)
-           ──template──►   editor.html  (self-contained, ~1.7 MB)
+editor.ts  ──esbuild.build──►  src/browser.ts bundle (inline JS)
+           ──template──►       editor.html  (self-contained, ~1.7 MB)
 ```
 
 Run manually:
 ```bash
-bun run editor   # generates editor.html once
-bun run dev      # watches src/ + editor.ts, live-reloads browser
+pnpm run editor   # generates editor.html once
+pnpm run dev      # watches src/ + editor.ts, live-reloads browser
 ```
 
 **Always rebuild after editing `editor.ts`.** The HTML file is the deployed artifact.
@@ -41,7 +41,7 @@ bun run dev      # watches src/ + editor.ts, live-reloads browser
 ## Architecture overview
 
 `editor.ts` is a TypeScript generator that:
-1. Calls `Bun.build()` to bundle `src/browser.ts` → inline JS string
+1. Calls `esbuild.build()` to bundle `src/browser.ts` → inline JS string
 2. Constructs the full HTML page as a template literal
 3. Writes `editor.html`
 

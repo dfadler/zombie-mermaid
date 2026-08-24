@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
 import { renderMermaidSVG } from '../index.ts'
 

@@ -2,7 +2,7 @@
 // ASCII edge style tests — dotted and thick line rendering
 // ============================================================================
 
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { renderMermaidAscii } from '../ascii/index.ts'
 
 describe('ASCII edge styles', () => {

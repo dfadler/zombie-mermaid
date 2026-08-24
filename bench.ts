@@ -1,10 +1,10 @@
 /**
  * Performance benchmark for beautiful-mermaid.
  *
- * Runs all sample definitions through both renderers (SVG + ASCII) in Bun
+ * Runs all sample definitions through both renderers (SVG + ASCII)
  * and prints a table with per-sample timing and aggregate stats.
  *
- * Usage: bun run packages/mermaid/bench.ts
+ * Usage: tsx bench.ts
  */
 
 import { samples } from './samples-data.ts'

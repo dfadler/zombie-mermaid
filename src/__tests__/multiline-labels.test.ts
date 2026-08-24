@@ -8,7 +8,7 @@
  * - Renderer: <tspan> generation for node and edge labels
  * - Integration: full SVG output with multi-line labels
  */
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
 import { parseSequenceDiagram } from '../sequence/parser.ts'
 import { parseClassDiagram } from '../class/parser.ts'

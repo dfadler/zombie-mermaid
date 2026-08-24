@@ -4,7 +4,7 @@
  * Tests data-* attributes (always emitted) and interactive tooltip
  * groups (only when interactive: true).
  */
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { renderMermaid } from '../index.ts'
 
 const BAR_CHART = `xychart-beta
