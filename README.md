@@ -1,23 +1,25 @@
 <div align="center">
 
-# beautiful-mermaid
+# zombie-mermaid
 
 **Render Mermaid diagrams as beautiful SVGs or ASCII art**
 
-Ultra-fast, fully themeable, zero DOM dependencies. Built for the AI era.
+Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid).
 
-![beautiful-mermaid sequence diagram example](hero.png)
+![zombie-mermaid sequence diagram example](hero.png)
 
-[![npm version](https://img.shields.io/npm/v/beautiful-mermaid.svg)](https://www.npmjs.com/package/beautiful-mermaid)
+[![npm version](https://img.shields.io/npm/v/zombie-mermaid.svg)](https://www.npmjs.com/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
-[**Live Demo & Samples**](https://agents.craft.do/mermaid)
-
-**[→ Use it live in Craft Agents](https://agents.craft.do)**
 
 </div>
 
 ---
+
+## Why This Fork Exists
+
+`beautiful-mermaid` is a genuinely good library — see "Why We Built This" below — but upstream development has stalled: as of this writing there are 30 open pull requests, the oldest dating back over half a year, and nothing has merged in months. `zombie-mermaid` is the same codebase, kept moving: upstream fixes get pulled in, PRs stuck in the upstream queue get a home, and releases actually ship.
+
+It's still MIT-licensed, still built on the same foundation, and still credits the original authors below.
 
 ## Why We Built This
 
@@ -50,11 +52,11 @@ The ASCII rendering engine is based on [mermaid-ascii](https://github.com/Alexan
 ## Installation
 
 ```bash
-npm install beautiful-mermaid
+npm install zombie-mermaid
 # or
-bun add beautiful-mermaid
+bun add zombie-mermaid
 # or
-pnpm add beautiful-mermaid
+pnpm add zombie-mermaid
 ```
 
 ## Quick Start
@@ -62,7 +64,7 @@ pnpm add beautiful-mermaid
 ### SVG Output
 
 ```typescript
-import { renderMermaidSVG } from 'beautiful-mermaid'
+import { renderMermaidSVG } from 'zombie-mermaid'
 
 const svg = renderMermaidSVG(`
   graph TD
@@ -79,7 +81,7 @@ Need async? Use `renderMermaidSVGAsync()` — same output, returns a `Promise<st
 ### ASCII Output
 
 ```typescript
-import { renderMermaidASCII } from 'beautiful-mermaid'
+import { renderMermaidASCII } from 'zombie-mermaid'
 
 const ascii = renderMermaidASCII(`graph LR; A --> B --> C`)
 ```
@@ -99,7 +101,7 @@ const ascii = renderMermaidASCII(`graph LR; A --> B --> C`)
 Because rendering is synchronous, you can use `useMemo()` for zero-flash diagram rendering:
 
 ```tsx
-import { renderMermaidSVG } from 'beautiful-mermaid'
+import { renderMermaidSVG } from 'zombie-mermaid'
 
 function MermaidDiagram({ code }: { code: string }) {
   const { svg, error } = React.useMemo(() => {
@@ -131,7 +133,7 @@ function MermaidDiagram({ code }: { code: string }) {
 
 ## Theming
 
-The theming system is the heart of `beautiful-mermaid`. It's designed to be both powerful and dead simple.
+The theming system is the heart of `zombie-mermaid`. It's designed to be both powerful and dead simple.
 
 ### The Two-Color Foundation
 
@@ -224,7 +226,7 @@ const svg = renderMermaidSVG(diagram, {
 | `one-dark` | Dark | `#282c34` | `#c678dd` |
 
 ```typescript
-import { renderMermaidSVG, THEMES } from 'beautiful-mermaid'
+import { renderMermaidSVG, THEMES } from 'zombie-mermaid'
 
 const svg = renderMermaidSVG(diagram, THEMES['tokyo-night'])
 ```
@@ -259,7 +261,7 @@ Use **any VS Code theme** directly via Shiki integration. This gives you access 
 
 ```typescript
 import { getSingletonHighlighter } from 'shiki'
-import { renderMermaidSVG, fromShikiTheme } from 'beautiful-mermaid'
+import { renderMermaidSVG, fromShikiTheme } from 'zombie-mermaid'
 
 // Load any theme from Shiki's registry
 const highlighter = await getSingletonHighlighter({
@@ -437,7 +439,7 @@ The chart renderer follows a clean, minimal design philosophy inspired by Apple 
 For terminal environments, CLI tools, or anywhere you need plain text, render to ASCII or Unicode box-drawing characters:
 
 ```typescript
-import { renderMermaidASCII } from 'beautiful-mermaid'
+import { renderMermaidASCII } from 'zombie-mermaid'
 
 // Unicode mode (default) — prettier box drawing
 const unicode = renderMermaidASCII(`graph LR; A --> B`)

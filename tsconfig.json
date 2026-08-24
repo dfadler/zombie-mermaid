@@ -21,8 +21,8 @@
     "noPropertyAccessFromIndexSignature": false,
     "baseUrl": ".",
     "paths": {
-      "beautiful-mermaid": ["./src/index.ts"],
-      "beautiful-mermaid/*": ["./src/*"]
+      "zombie-mermaid": ["./src/index.ts"],
+      "zombie-mermaid/*": ["./src/*"]
     },
     "rootDir": "src",
     "outDir": "dist",
