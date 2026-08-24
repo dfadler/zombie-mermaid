@@ -1,7 +1,7 @@
 /**
  * Generates editor.html — a live Mermaid editor similar to mermaid.live.
  *
- * Usage: bun run editor.ts
+ * Usage: tsx editor.ts
  *
  * The generated HTML is fully self-contained:
  *   - Bundles the mermaid renderer client-side
@@ -17,6 +17,8 @@
  *   - editor/html/ — HTML partials (topbar, left-panel, right-panel)
  */
 
+import { readFile, writeFile } from 'node:fs/promises'
+import * as esbuild from 'esbuild'
 import { THEMES } from './src/theme.ts'
 
 const THEME_LABELS: Record<string, string> = {
@@ -41,9 +43,8 @@ const THEME_LABELS: Record<string, string> = {
 
 const editorDir = new URL('./editor/', import.meta.url).pathname
 
-async function readFile(relativePath: string): Promise<string> {
-  const file = Bun.file(editorDir + relativePath)
-  return file.text()
+async function readEditorFile(relativePath: string): Promise<string> {
+  return readFile(editorDir + relativePath, 'utf-8')
 }
 
 async function readCssFiles(): Promise<string> {
@@ -59,7 +60,7 @@ async function readCssFiles(): Promise<string> {
     'css/export.css',
     'css/misc.css',
   ]
-  const parts = await Promise.all(order.map(f => readFile(f)))
+  const parts = await Promise.all(order.map(f => readEditorFile(f)))
   return parts.join('\n\n')
 }
 
@@ -84,7 +85,7 @@ async function readJsFiles(): Promise<string> {
     'js/dark-mode.js',
     'js/init.js',
   ]
-  const parts = await Promise.all(order.map(f => readFile(f)))
+  const parts = await Promise.all(order.map(f => readEditorFile(f)))
   return parts.join('\n\n')
 }
 
@@ -94,9 +95,9 @@ async function readHtmlPartials(themeItems: string): Promise<{
   rightPanel: string
 }> {
   const [topbar, leftPanel, rightPanel] = await Promise.all([
-    readFile('html/topbar.html'),
-    readFile('html/left-panel.html'),
-    readFile('html/right-panel.html'),
+    readEditorFile('html/topbar.html'),
+    readEditorFile('html/left-panel.html'),
+    readEditorFile('html/right-panel.html'),
   ])
   return {
     topbar: topbar.replace('{{THEME_ITEMS}}', themeItems),
@@ -107,18 +108,26 @@ async function readHtmlPartials(themeItems: string): Promise<{
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-async function generateEditorHtml(): Promise<string> {
-  const buildResult = await Bun.build({
-    entrypoints: [new URL('./src/browser.ts', import.meta.url).pathname],
-    target: 'browser',
-    format: 'esm',
-    minify: true,
-  })
-  if (!buildResult.success) {
-    console.error('Bundle failed:', buildResult.logs)
+/** Bundle src/browser.ts for the browser via esbuild's JS API. */
+async function bundleBrowserScript(): Promise<string> {
+  try {
+    const buildResult = await esbuild.build({
+      entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
+      bundle: true,
+      platform: 'browser',
+      format: 'esm',
+      minify: true,
+      write: false,
+    })
+    return buildResult.outputFiles[0]!.text
+  } catch (err) {
+    console.error('Bundle failed:', err)
     process.exit(1)
   }
-  const bundleJs = await buildResult.outputs[0]!.text()
+}
+
+async function generateEditorHtml(): Promise<string> {
+  const bundleJs = await bundleBrowserScript()
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
   const themeItems = [
@@ -184,5 +193,5 @@ ${appJs}
 
 const result = await generateEditorHtml()
 const outPath = new URL('./editor.html', import.meta.url).pathname
-await Bun.write(outPath, result)
+await writeFile(outPath, result)
 console.log(`Written to ${outPath} (${(result.length / 1024).toFixed(1)} KB)`)

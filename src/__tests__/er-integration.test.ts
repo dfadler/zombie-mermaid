@@ -1,7 +1,7 @@
 /**
  * Integration tests for ER diagrams — end-to-end parse → layout → render.
  */
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
 
 describe('renderMermaidSVG – ER diagrams', () => {

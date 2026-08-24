@@ -1,7 +1,7 @@
 /**
  * Generates index.html showcasing all beautiful-mermaid rendering capabilities.
  *
- * Usage: bun run index.ts
+ * Usage: tsx index.ts
  *
  * This file doubles as a **visual test suite** — every supported feature,
  * shape, edge type, block construct, and theme variant is exercised by at
@@ -15,6 +15,8 @@
  * Sample definitions live in samples-data.ts (shared with bench.ts).
  */
 
+import { writeFile } from 'node:fs/promises'
+import * as esbuild from 'esbuild'
 import { samples } from './samples-data.ts'
 import { THEMES } from './src/theme.ts'
 import { createHighlighter } from 'shiki'
@@ -23,7 +25,7 @@ import { createHighlighter } from 'shiki'
 // HTML generation — dynamic version
 //
 // Instead of pre-rendering SVGs at build time, we:
-//   1. Bundle the mermaid renderer for the browser via Bun.build()
+//   1. Bundle the mermaid renderer for the browser via esbuild's build() API
 //   2. Embed sample definitions as inline JSON
 //   3. Emit client-side JS that renders each diagram on page load
 // ============================================================================
@@ -69,17 +71,21 @@ async function generateHtml(): Promise<string> {
   })
 
   // Step 1: Bundle the mermaid renderer for the browser
-  const buildResult = await Bun.build({
-    entrypoints: [new URL('./src/browser.ts', import.meta.url).pathname],
-    target: 'browser',
-    format: 'esm',
-    minify: true,
-  })
-  if (!buildResult.success) {
-    console.error('Bundle build failed:', buildResult.logs)
+  let bundleJs: string
+  try {
+    const buildResult = await esbuild.build({
+      entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
+      bundle: true,
+      platform: 'browser',
+      format: 'esm',
+      minify: true,
+      write: false,
+    })
+    bundleJs = buildResult.outputFiles[0]!.text
+  } catch (err) {
+    console.error('Bundle build failed:', err)
     process.exit(1)
   }
-  const bundleJs = await buildResult.outputs[0]!.text()
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
   // Step 2: Build sample JSON (only serializable fields needed by client)
@@ -1866,5 +1872,5 @@ ${bundleJs}
 
 const html = await generateHtml()
 const outPath = new URL('./index.html', import.meta.url).pathname
-await Bun.write(outPath, html)
+await writeFile(outPath, html)
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)

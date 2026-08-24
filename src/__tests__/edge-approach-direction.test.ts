@@ -11,7 +11,7 @@
  * but approaches horizontally, creating an awkward bend at the arrowhead.
  */
 
-import { describe, it, expect } from 'bun:test'
+import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
 import { layoutGraphSync } from '../layout.ts'
 
