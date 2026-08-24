@@ -8,7 +8,11 @@
 
 import type { MermaidGraph, MermaidSubgraph } from '../types.ts'
 import type {
-  AsciiGraph, AsciiNode, AsciiEdge, AsciiSubgraph, AsciiConfig,
+  AsciiGraph,
+  AsciiNode,
+  AsciiEdge,
+  AsciiSubgraph,
+  AsciiConfig,
 } from './types.ts'
 import { EMPTY_STYLE } from './types.ts'
 import { mkCanvas, mkRoleCanvas } from './canvas.ts'
@@ -22,7 +26,10 @@ import { mkCanvas, mkRoleCanvas } from './canvas.ts'
  * - MermaidGraph.subgraphs → AsciiSubgraph[] with parent/child tree
  * - Node labels are used as display names (not raw IDs)
  */
-export function convertToAsciiGraph(parsed: MermaidGraph, config: AsciiConfig): AsciiGraph {
+export function convertToAsciiGraph(
+  parsed: MermaidGraph,
+  config: AsciiConfig,
+): AsciiGraph {
   // Build node list preserving Map insertion order
   const nodeMap = new Map<string, AsciiNode>()
   let index = 0
@@ -124,7 +131,8 @@ function convertSubgraph(
   // Normalize subgraph direction: BT→TD, RL→LR (same as root graph normalization)
   let normalizedDirection: 'LR' | 'TD' | undefined
   if (mSg.direction) {
-    normalizedDirection = (mSg.direction === 'LR' || mSg.direction === 'RL') ? 'LR' : 'TD'
+    normalizedDirection =
+      mSg.direction === 'LR' || mSg.direction === 'RL' ? 'LR' : 'TD'
   }
 
   const sg: AsciiSubgraph = {
@@ -132,7 +140,10 @@ function convertSubgraph(
     nodes: [],
     parent,
     children: [],
-    minX: 0, minY: 0, maxX: 0, maxY: 0,
+    minX: 0,
+    minY: 0,
+    maxX: 0,
+    maxY: 0,
     direction: normalizedDirection,
   }
 
@@ -219,11 +230,14 @@ function deduplicateSubgraphNodes(
   // Now remove nodes from subgraphs that don't own them.
   // A node should remain in: its owner subgraph + all ancestors of the owner.
   for (const asciiSg of asciiSubgraphs) {
-    asciiSg.nodes = asciiSg.nodes.filter(node => {
+    asciiSg.nodes = asciiSg.nodes.filter((node) => {
       // Find this node's ID in the nodeMap
       let nodeId: string | undefined
       for (const [id, n] of nodeMap) {
-        if (n === node) { nodeId = id; break }
+        if (n === node) {
+          nodeId = id
+          break
+        }
       }
       if (!nodeId) return false
 
@@ -237,7 +251,10 @@ function deduplicateSubgraphNodes(
 }
 
 /** Check if `candidate` is the same as or an ancestor of `target`. */
-function isAncestorOrSelf(candidate: AsciiSubgraph, target: AsciiSubgraph): boolean {
+function isAncestorOrSelf(
+  candidate: AsciiSubgraph,
+  target: AsciiSubgraph,
+): boolean {
   let current: AsciiSubgraph | null = target
   while (current !== null) {
     if (current === candidate) return true

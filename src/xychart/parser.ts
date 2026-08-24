@@ -46,23 +46,33 @@ export function parseXYChart(lines: string[]): XYChart {
     const xCatMatch = line.match(/^x-axis\s+(?:"([^"]*)"\s*)?\[([^\]]+)\]/)
     if (xCatMatch) {
       if (xCatMatch[1]) xAxis.title = xCatMatch[1]
-      xAxis.categories = xCatMatch[2]!.split(',').map(s => s.trim())
+      xAxis.categories = xCatMatch[2]!.split(',').map((s) => s.trim())
       continue
     }
 
     // x-axis with range: x-axis "Title" min --> max or x-axis min --> max
-    const xRangeMatch = line.match(/^x-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/)
+    const xRangeMatch = line.match(
+      /^x-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
+    )
     if (xRangeMatch) {
       if (xRangeMatch[1]) xAxis.title = xRangeMatch[1]
-      xAxis.range = { min: parseFloat(xRangeMatch[2]!), max: parseFloat(xRangeMatch[3]!) }
+      xAxis.range = {
+        min: parseFloat(xRangeMatch[2]!),
+        max: parseFloat(xRangeMatch[3]!),
+      }
       continue
     }
 
     // y-axis with range: y-axis "Title" min --> max or y-axis min --> max
-    const yRangeMatch = line.match(/^y-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/)
+    const yRangeMatch = line.match(
+      /^y-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
+    )
     if (yRangeMatch) {
       if (yRangeMatch[1]) yAxis.title = yRangeMatch[1]
-      yAxis.range = { min: parseFloat(yRangeMatch[2]!), max: parseFloat(yRangeMatch[3]!) }
+      yAxis.range = {
+        min: parseFloat(yRangeMatch[2]!),
+        max: parseFloat(yRangeMatch[3]!),
+      }
       continue
     }
 
@@ -90,7 +100,7 @@ export function parseXYChart(lines: string[]): XYChart {
 
   // Auto-derive y-axis range from data if not specified
   if (!yAxis.range && series.length > 0) {
-    const allValues = series.flatMap(s => s.data)
+    const allValues = series.flatMap((s) => s.data)
     let min = Math.min(...allValues)
     let max = Math.max(...allValues)
     const span = max - min || 1
@@ -111,5 +121,5 @@ export function parseXYChart(lines: string[]): XYChart {
 }
 
 function parseNumericArray(str: string): number[] {
-  return str.split(',').map(s => parseFloat(s.trim()))
+  return str.split(',').map((s) => parseFloat(s.trim()))
 }

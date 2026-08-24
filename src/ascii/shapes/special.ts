@@ -8,8 +8,16 @@
 import type { Canvas } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import { splitLines } from '../multiline-utils.ts'
-import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'
-import { getBoxDimensions, renderBox, getBoxAttachmentPoint } from './rectangle.ts'
+import type {
+  ShapeRenderer,
+  ShapeDimensions,
+  ShapeRenderOptions,
+} from './types.ts'
+import {
+  getBoxDimensions,
+  renderBox,
+  getBoxAttachmentPoint,
+} from './rectangle.ts'
 import { getCorners } from './corners.ts'
 
 // ============================================================================
@@ -26,11 +34,11 @@ import { getCorners } from './corners.ts'
 export const subroutineRenderer: ShapeRenderer = {
   getDimensions(label: string, options: ShapeRenderOptions): ShapeDimensions {
     const lines = splitLines(label)
-    const maxLineWidth = Math.max(...lines.map(l => l.length), 0)
+    const maxLineWidth = Math.max(...lines.map((l) => l.length), 0)
     const lineCount = lines.length
 
     const innerWidth = 2 * options.padding + maxLineWidth
-    const width = innerWidth + 4  // Double borders on each side
+    const width = innerWidth + 4 // Double borders on each side
     const innerHeight = lineCount + 2 * options.padding
     const height = innerHeight + 2
 
@@ -48,7 +56,11 @@ export const subroutineRenderer: ShapeRenderer = {
     }
   },
 
-  render(label: string, dimensions: ShapeDimensions, options: ShapeRenderOptions): Canvas {
+  render(
+    label: string,
+    dimensions: ShapeDimensions,
+    options: ShapeRenderOptions,
+  ): Canvas {
     const { width, height } = dimensions
     const canvas = mkCanvas(width - 1, height - 1)
 
@@ -140,12 +152,12 @@ export const doublecircleRenderer: ShapeRenderer = {
 export const cylinderRenderer: ShapeRenderer = {
   getDimensions(label: string, options: ShapeRenderOptions): ShapeDimensions {
     const lines = splitLines(label)
-    const maxLineWidth = Math.max(...lines.map(l => l.length), 0)
+    const maxLineWidth = Math.max(...lines.map((l) => l.length), 0)
     const lineCount = lines.length
 
     const innerWidth = 2 * options.padding + maxLineWidth
     const width = innerWidth + 2
-    const innerHeight = lineCount + 2 * options.padding + 2  // Extra for curved top/bottom
+    const innerHeight = lineCount + 2 * options.padding + 2 // Extra for curved top/bottom
     const height = innerHeight + 2
 
     return {
@@ -162,7 +174,11 @@ export const cylinderRenderer: ShapeRenderer = {
     }
   },
 
-  render(label: string, dimensions: ShapeDimensions, options: ShapeRenderOptions): Canvas {
+  render(
+    label: string,
+    dimensions: ShapeDimensions,
+    options: ShapeRenderOptions,
+  ): Canvas {
     const { width, height } = dimensions
     const canvas = mkCanvas(width - 1, height - 1)
 
@@ -191,9 +207,9 @@ export const cylinderRenderer: ShapeRenderer = {
     canvas[width - 1]![height - 2] = vChar
 
     // Bottom ellipse
-    canvas[0]![height - 1] = options.useAscii ? '\'' : '╰'
+    canvas[0]![height - 1] = options.useAscii ? "'" : '╰'
     for (let x = 1; x < width - 1; x++) canvas[x]![height - 1] = hChar
-    canvas[width - 1]![height - 1] = options.useAscii ? '\'' : '╯'
+    canvas[width - 1]![height - 1] = options.useAscii ? "'" : '╯'
 
     // Center the label
     const lines = splitLines(label)

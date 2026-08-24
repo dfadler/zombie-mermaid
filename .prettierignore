@@ -1,0 +1,17 @@
+# Build output
+dist/
+site/
+node_modules/
+
+# Generated HTML (samples, editor demo, xychart test output)
+*.html
+
+# Lockfile
+pnpm-lock.yaml
+
+# Test coverage
+coverage/
+
+# Images / binary assets
+*.png
+*.ico

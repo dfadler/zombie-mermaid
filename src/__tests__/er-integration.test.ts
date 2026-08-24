@@ -38,7 +38,7 @@ describe('renderMermaidSVG – ER diagrams', () => {
     expect(svg).toContain('<polyline')
   })
 
-  it('renders crow\'s foot cardinality markers', () => {
+  it("renders crow's foot cardinality markers", () => {
     const svg = renderMermaidSVG(`erDiagram
       CUSTOMER ||--o{ ORDER : places`)
     // Crow's foot markers are rendered as lines
@@ -62,8 +62,11 @@ describe('renderMermaidSVG – ER diagrams', () => {
   })
 
   it('renders with dark colors', () => {
-    const svg = renderMermaidSVG(`erDiagram
-      A ||--|| B : links`, { bg: '#18181B', fg: '#FAFAFA' })
+    const svg = renderMermaidSVG(
+      `erDiagram
+      A ||--|| B : links`,
+      { bg: '#18181B', fg: '#FAFAFA' },
+    )
     expect(svg).toContain('--bg:#18181B')
   })
 
@@ -118,18 +121,28 @@ describe('renderMermaidSVG – ER diagrams', () => {
 // ============================================================================
 
 /** Extract entity box rects from SVG: returns Map<label, {x, y, width, height, rightEdge}> */
-function extractEntityBoxes(svg: string): Map<string, { x: number; y: number; width: number; height: number; rightEdge: number }> {
-  const boxes = new Map<string, { x: number; y: number; width: number; height: number; rightEdge: number }>()
+function extractEntityBoxes(
+  svg: string,
+): Map<
+  string,
+  { x: number; y: number; width: number; height: number; rightEdge: number }
+> {
+  const boxes = new Map<
+    string,
+    { x: number; y: number; width: number; height: number; rightEdge: number }
+  >()
 
   // Entity header text: <text x="..." y="..." ... font-weight="700" ...>LABEL</text>
-  const headerPattern = /<text x="([\d.]+)" y="([\d.]+)"[^>]*font-weight="700"[^>]*>([^<]+)<\/text>/g
+  const headerPattern =
+    /<text x="([\d.]+)" y="([\d.]+)"[^>]*font-weight="700"[^>]*>([^<]+)<\/text>/g
   let match
   while ((match = headerPattern.exec(svg)) !== null) {
     const centerX = parseFloat(match[1]!)
     const label = match[3]!
 
     // Find the corresponding outer rect that contains this text.
-    const rectPattern = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="0" ry="0"/g
+    const rectPattern =
+      /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="0" ry="0"/g
     let rectMatch
     while ((rectMatch = rectPattern.exec(svg)) !== null) {
       const rx = parseFloat(rectMatch[1]!)
@@ -137,7 +150,13 @@ function extractEntityBoxes(svg: string): Map<string, { x: number; y: number; wi
       const rw = parseFloat(rectMatch[3]!)
       const rh = parseFloat(rectMatch[4]!)
       if (centerX >= rx && centerX <= rx + rw) {
-        boxes.set(label, { x: rx, y: ry, width: rw, height: rh, rightEdge: rx + rw })
+        boxes.set(label, {
+          x: rx,
+          y: ry,
+          width: rw,
+          height: rh,
+          rightEdge: rx + rw,
+        })
         break
       }
     }
@@ -147,14 +166,20 @@ function extractEntityBoxes(svg: string): Map<string, { x: number; y: number; wi
 }
 
 /** Extract relationship label positions from SVG: returns Map<label, {x, y}> */
-function extractLabelPositions(svg: string): Map<string, { x: number; y: number }> {
+function extractLabelPositions(
+  svg: string,
+): Map<string, { x: number; y: number }> {
   const labels = new Map<string, { x: number; y: number }>()
   // Relationship labels use font-size="11" font-weight="400" — match flexibly
   // regardless of attribute order
-  const labelPattern = /<text x="([\d.]+)" y="([\d.]+)"[^>]*font-size="11"[^>]*font-weight="400"[^>]*>([^<]+)<\/text>/g
+  const labelPattern =
+    /<text x="([\d.]+)" y="([\d.]+)"[^>]*font-size="11"[^>]*font-weight="400"[^>]*>([^<]+)<\/text>/g
   let match
   while ((match = labelPattern.exec(svg)) !== null) {
-    labels.set(match[3]!, { x: parseFloat(match[1]!), y: parseFloat(match[2]!) })
+    labels.set(match[3]!, {
+      x: parseFloat(match[1]!),
+      y: parseFloat(match[2]!),
+    })
   }
   return labels
 }
@@ -166,7 +191,7 @@ function extractPolylines(svg: string): Array<Array<{ x: number; y: number }>> {
   const pattern = /<polyline[^>]*points="([^"]+)"[^>]*>/g
   let match
   while ((match = pattern.exec(svg)) !== null) {
-    const points = match[1]!.split(' ').map(p => {
+    const points = match[1]!.split(' ').map((p) => {
       const [x, y] = p.split(',')
       return { x: parseFloat(x!), y: parseFloat(y!) }
     })
@@ -180,7 +205,10 @@ function extractPolylines(svg: string): Array<Array<{ x: number; y: number }>> {
  * Computes the minimum distance from the point to any segment of the polyline.
  * Returns the minimum distance in pixels.
  */
-function distanceToPolyline(point: { x: number; y: number }, polyline: Array<{ x: number; y: number }>): number {
+function distanceToPolyline(
+  point: { x: number; y: number },
+  polyline: Array<{ x: number; y: number }>,
+): number {
   let minDist = Infinity
   for (let i = 1; i < polyline.length; i++) {
     const a = polyline[i - 1]!
@@ -192,13 +220,20 @@ function distanceToPolyline(point: { x: number; y: number }, polyline: Array<{ x
 }
 
 /** Distance from point P to line segment AB */
-function pointToSegmentDist(p: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }): number {
+function pointToSegmentDist(
+  p: { x: number; y: number },
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): number {
   const dx = b.x - a.x
   const dy = b.y - a.y
   const lenSq = dx * dx + dy * dy
   if (lenSq === 0) return Math.sqrt((p.x - a.x) ** 2 + (p.y - a.y) ** 2)
   // Project P onto AB, clamped to [0,1]
-  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq))
+  const t = Math.max(
+    0,
+    Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq),
+  )
   const projX = a.x + t * dx
   const projY = a.y + t * dy
   return Math.sqrt((p.x - projX) ** 2 + (p.y - projY) ** 2)
@@ -208,7 +243,10 @@ function pointToSegmentDist(p: { x: number; y: number }, a: { x: number; y: numb
  * Find the polyline closest to a label position.
  * Returns the minimum distance from the label to any polyline.
  */
-function closestPolylineDistance(label: { x: number; y: number }, polylines: Array<Array<{ x: number; y: number }>>): number {
+function closestPolylineDistance(
+  label: { x: number; y: number },
+  polylines: Array<Array<{ x: number; y: number }>>,
+): number {
   let minDist = Infinity
   for (const pl of polylines) {
     const dist = distanceToPolyline(label, pl)
@@ -375,8 +413,12 @@ describe('renderMermaidSVG – ER label positioning (multi-segment paths)', () =
     for (const pl of polylines) {
       const start = pl[0]!
       const end = pl[pl.length - 1]!
-      const distToStart = Math.sqrt((label.x - start.x) ** 2 + (label.y - start.y) ** 2)
-      const distToEnd = Math.sqrt((label.x - end.x) ** 2 + (label.y - end.y) ** 2)
+      const distToStart = Math.sqrt(
+        (label.x - start.x) ** 2 + (label.y - start.y) ** 2,
+      )
+      const distToEnd = Math.sqrt(
+        (label.x - end.x) ** 2 + (label.y - end.y) ** 2,
+      )
       // At least one endpoint should be far from the label (>5px)
       expect(Math.min(distToStart, distToEnd)).toBeGreaterThan(5)
     }
@@ -411,7 +453,8 @@ describe('renderMermaidSVG – ER label positioning (multi-segment paths)', () =
     const label = labels.get('test')!
 
     // Find the background pill rect (rx="2" ry="2" near the label position)
-    const pillPattern = /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="2" ry="2"/g
+    const pillPattern =
+      /<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="2" ry="2"/g
     let pillMatch
     let foundPill = false
     while ((pillMatch = pillPattern.exec(svg)) !== null) {

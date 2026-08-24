@@ -10,16 +10,16 @@ description: >-
 
 ## Key files
 
-| File | Role |
-|------|------|
-| `editor.ts` | **Source of truth** — generates `editor.html` at build time |
-| `editor.html` | Generated output — never edit directly |
-| `dev.ts` | Dev server; builds both `editor.html` and `index.html` in parallel, serves `/` → editor, `/samples` → showcase |
-| `src/browser.ts` | Bundles the renderer for the browser as `window.__mermaid` |
-| `src/types.ts` | `RenderOptions` — all supported render options |
-| `src/theme.ts` | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system |
-| `src/styles.ts` | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants |
-| `samples-data.ts` | Sample presets used by the showcase; editor uses its own inline `SAMPLES` array |
+| File              | Role                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `editor.ts`       | **Source of truth** — generates `editor.html` at build time                                                    |
+| `editor.html`     | Generated output — never edit directly                                                                         |
+| `dev.ts`          | Dev server; builds both `editor.html` and `index.html` in parallel, serves `/` → editor, `/samples` → showcase |
+| `src/browser.ts`  | Bundles the renderer for the browser as `window.__mermaid`                                                     |
+| `src/types.ts`    | `RenderOptions` — all supported render options                                                                 |
+| `src/theme.ts`    | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                |
+| `src/styles.ts`   | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                            |
+| `samples-data.ts` | Sample presets used by the showcase; editor uses its own inline `SAMPLES` array                                |
 
 ## Build cycle
 
@@ -29,6 +29,7 @@ editor.ts  ──esbuild.build──►  src/browser.ts bundle (inline JS)
 ```
 
 Run manually:
+
 ```bash
 pnpm run editor   # generates editor.html once
 pnpm run dev      # watches src/ + editor.ts, live-reloads browser
@@ -41,6 +42,7 @@ pnpm run dev      # watches src/ + editor.ts, live-reloads browser
 ## Architecture overview
 
 `editor.ts` is a TypeScript generator that:
+
 1. Calls `esbuild.build()` to bundle `src/browser.ts` → inline JS string
 2. Constructs the full HTML page as a template literal
 3. Writes `editor.html`
@@ -51,16 +53,16 @@ The page has **no runtime build step** — everything (renderer, UI logic, CSS) 
 
 ```js
 state = {
-  theme: '',        // active diagram theme key ('' = Default)
-  zoom: 1,          // current preview zoom level
-  config: {},       // active RenderOptions overrides (from Config panel)
+  theme: '', // active diagram theme key ('' = Default)
+  zoom: 1, // current preview zoom level
+  config: {}, // active RenderOptions overrides (from Config panel)
 }
 
-cfgColors  = { bg, fg, accent, line, muted, surface }  // color overrides
-cfgFont    = ''     // font name (bare, e.g. 'Inter')
-cfgPadding = 24     // padding px
-cfgEdgeStroke = 1   // edge line stroke width
-cfgNodeStroke = 1   // node border stroke width
+cfgColors = { bg, fg, accent, line, muted, surface } // color overrides
+cfgFont = '' // font name (bare, e.g. 'Inter')
+cfgPadding = 24 // padding px
+cfgEdgeStroke = 1 // edge line stroke width
+cfgNodeStroke = 1 // node border stroke width
 ```
 
 ### Render pipeline
@@ -96,15 +98,16 @@ Use CSS injection via `applyStrokeOverrides` pattern — no renderer changes nee
 
 ```js
 // After render:
-var style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-style.id = '__bm-my-override';
-style.textContent = 'rect { opacity: 0.8; }';
-svgEl.insertBefore(style, svgEl.firstChild);
+var style = document.createElementNS('http://www.w3.org/2000/svg', 'style')
+style.id = '__bm-my-override'
+style.textContent = 'rect { opacity: 0.8; }'
+svgEl.insertBefore(style, svgEl.firstChild)
 ```
 
 CSS rules override SVG presentation attributes (lower specificity). No `!important` needed.
 
 Call your override function in:
+
 - `doRender()` — after `previewInner.innerHTML = svg`
 - Any slider/input `change` handler directly (instant, no re-render)
 
@@ -119,6 +122,7 @@ Add to `RenderOptions` in `src/types.ts`, thread through `buildColors`/`svgOpenT
 1. Add to `cfgColors` object: `cfgColors.myColor = ''`
 2. Add `THEME_COLOR_MAP` entry if the theme has a matching property
 3. Add HTML in the Colors section:
+
 ```html
 <div class="color-field">
   <span class="color-field-label">My Color</span>
@@ -128,6 +132,7 @@ Add to `RenderOptions` in `src/types.ts`, thread through `buildColors`/`svgOpenT
   </button>
 </div>
 ```
+
 4. Update `readConfig()`: `if (cfgColors.myColor) cfg.myColor = cfgColors.myColor`
 5. Ensure `refreshAllColorUIs()` covers it (it uses `Object.keys(cfgColors)` so automatic)
 
@@ -139,26 +144,44 @@ Add to `RenderOptions` in `src/types.ts`, thread through `buildColors`/`svgOpenT
 <div class="padding-field">
   <div class="padding-row">
     <label>My Setting</label>
-    <input class="padding-num" id="cfg-my-val" type="number" min="0" max="100" value="10" />
+    <input
+      class="padding-num"
+      id="cfg-my-val"
+      type="number"
+      min="0"
+      max="100"
+      value="10"
+    />
   </div>
-  <input class="padding-slider" id="cfg-my-val-slider" type="range" min="0" max="100" value="10" />
+  <input
+    class="padding-slider"
+    id="cfg-my-val-slider"
+    type="range"
+    min="0"
+    max="100"
+    value="10"
+  />
 </div>
 ```
 
 ```js
-var cfgMyVal = 10;
-var myNum    = document.getElementById('cfg-my-val');
-var mySlider = document.getElementById('cfg-my-val-slider');
+var cfgMyVal = 10
+var myNum = document.getElementById('cfg-my-val')
+var mySlider = document.getElementById('cfg-my-val-slider')
 
 function setMyVal(v) {
-  v = Math.max(0, Math.min(100, parseFloat(v) || 10));
-  cfgMyVal = v;
-  myNum.value    = v;
-  mySlider.value = v;
+  v = Math.max(0, Math.min(100, parseFloat(v) || 10))
+  cfgMyVal = v
+  myNum.value = v
+  mySlider.value = v
   // apply effect...
 }
-myNum.addEventListener('input',    function() { setMyVal(myNum.value); });
-mySlider.addEventListener('input', function() { setMyVal(mySlider.value); });
+myNum.addEventListener('input', function () {
+  setMyVal(myNum.value)
+})
+mySlider.addEventListener('input', function () {
+  setMyVal(mySlider.value)
+})
 ```
 
 ---
@@ -185,10 +208,10 @@ Zoom sets the SVG's **actual `width`/`height`** attributes (not CSS `transform: 
 
 ```js
 function applyZoom(z) {
-  state.zoom = clamp(z, 0.1, 8);
-  var nat = getSvgNaturalSize(svgEl);  // reads viewBox
-  svgEl.style.width  = nat.w * z + 'px';
-  svgEl.style.height = nat.h * z + 'px';
+  state.zoom = clamp(z, 0.1, 8)
+  var nat = getSvgNaturalSize(svgEl) // reads viewBox
+  svgEl.style.width = nat.w * z + 'px'
+  svgEl.style.height = nat.h * z + 'px'
 }
 ```
 
@@ -242,12 +265,12 @@ JSON.parse(decodeURIComponent(escape(atob(hash))))
 
 ## Export formats
 
-| Action | Implementation |
-|--------|----------------|
-| Save PNG | SVG → `<img>` → `<canvas>` → `toBlob('image/png')` → download |
-| Save SVG | `XMLSerializer.serializeToString(svgEl)` → Blob → download |
+| Action     | Implementation                                                        |
+| ---------- | --------------------------------------------------------------------- |
+| Save PNG   | SVG → `<img>` → `<canvas>` → `toBlob('image/png')` → download         |
+| Save SVG   | `XMLSerializer.serializeToString(svgEl)` → Blob → download            |
 | Copy Image | Same as PNG but `navigator.clipboard.write([new ClipboardItem(...)])` |
-| Copy URL | `updateHash()` then `navigator.clipboard.writeText(location.href)` |
+| Copy URL   | `updateHash()` then `navigator.clipboard.writeText(location.href)`    |
 
 Scale (1x/2x/4x) multiplies canvas dimensions for PNG export.
 

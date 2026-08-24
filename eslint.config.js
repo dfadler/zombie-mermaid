@@ -1,5 +1,6 @@
 // @ts-check
-import tseslint from "typescript-eslint";
+import tseslint from 'typescript-eslint'
+import eslintConfigPrettier from 'eslint-config-prettier'
 
 export default tseslint.config(
   {
@@ -9,41 +10,44 @@ export default tseslint.config(
     // data/config files that sit alongside the TS source but aren't part of
     // the library itself.
     ignores: [
-      "dist/**",
-      "node_modules/**",
-      "site/**",
-      "**/*.html",
-      "editor/**",
-      "examples/**",
-      "public/**",
-      "samples-data.ts",
-      "xychart-samples-data.ts",
-      "tsup.config.ts",
+      'dist/**',
+      'node_modules/**',
+      'site/**',
+      '**/*.html',
+      'editor/**',
+      'examples/**',
+      'public/**',
+      'samples-data.ts',
+      'xychart-samples-data.ts',
+      'tsup.config.ts',
     ],
   },
   {
     files: [
-      "src/**/*.ts",
-      "src/**/*.tsx",
-      "editor.ts",
-      "dev.ts",
-      "index.ts",
-      "bench.ts",
-      "xychart-test.ts",
+      'src/**/*.ts',
+      'src/**/*.tsx',
+      'editor.ts',
+      'dev.ts',
+      'index.ts',
+      'bench.ts',
+      'xychart-test.ts',
     ],
     extends: [tseslint.configs.recommended],
     rules: {
       // Allow leading-underscore names to signal an intentionally unused
       // variable/argument (common pattern for destructuring or callback
       // signatures where not every value is needed).
-      "@typescript-eslint/no-unused-vars": [
-        "error",
+      '@typescript-eslint/no-unused-vars': [
+        'error',
         {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
     },
   },
-);
+  // Must be last: disables ESLint rules that conflict with Prettier's
+  // formatting so the two tools never fight over the same concern.
+  eslintConfigPrettier,
+)

@@ -2,8 +2,18 @@
 // Shape registry — pluggable ASCII shape renderers
 // ============================================================================
 
-import type { AsciiNodeShape, Canvas, DrawingCoord, Direction } from '../types.ts'
-import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions, ShapeRegistry } from './types.ts'
+import type {
+  AsciiNodeShape,
+  Canvas,
+  DrawingCoord,
+  Direction,
+} from '../types.ts'
+import type {
+  ShapeRenderer,
+  ShapeDimensions,
+  ShapeRenderOptions,
+  ShapeRegistry,
+} from './types.ts'
 
 // Import all shape renderers
 import { rectangleRenderer } from './rectangle.ts'
@@ -23,13 +33,21 @@ import {
 } from './special.ts'
 
 // Re-export types
-export type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions, ShapeRegistry }
+export type {
+  ShapeRenderer,
+  ShapeDimensions,
+  ShapeRenderOptions,
+  ShapeRegistry,
+}
 
 /**
  * Global shape registry — maps shape types to their renderers.
  * Rectangle is the default fallback for unregistered shapes.
  */
-export const shapeRegistry: ShapeRegistry = new Map<AsciiNodeShape, ShapeRenderer>([
+export const shapeRegistry: ShapeRegistry = new Map<
+  AsciiNodeShape,
+  ShapeRenderer
+>([
   // Core shapes
   ['rectangle', rectangleRenderer],
   ['rounded', roundedRenderer],
@@ -67,7 +85,7 @@ export function getShapeRenderer(shape: AsciiNodeShape): ShapeRenderer {
 export function renderShape(
   shape: AsciiNodeShape,
   label: string,
-  options: ShapeRenderOptions
+  options: ShapeRenderOptions,
 ): Canvas {
   const renderer = getShapeRenderer(shape)
   const dimensions = renderer.getDimensions(label, options)
@@ -81,7 +99,7 @@ export function renderShape(
 export function getShapeDimensions(
   shape: AsciiNodeShape,
   label: string,
-  options: ShapeRenderOptions
+  options: ShapeRenderOptions,
 ): ShapeDimensions {
   const renderer = getShapeRenderer(shape)
   return renderer.getDimensions(label, options)
@@ -94,7 +112,7 @@ export function getShapeAttachmentPoint(
   shape: AsciiNodeShape,
   dir: Direction,
   dimensions: ShapeDimensions,
-  baseCoord: DrawingCoord
+  baseCoord: DrawingCoord,
 ): DrawingCoord {
   const renderer = getShapeRenderer(shape)
   return renderer.getAttachmentPoint(dir, dimensions, baseCoord)

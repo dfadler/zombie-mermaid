@@ -21,11 +21,11 @@ declare const document: unknown
  * Uses the same mixing ratios to maintain visual consistency.
  */
 export const DEFAULT_ASCII_THEME: AsciiTheme = {
-  fg: '#27272a',      // zinc-800 — primary text
-  border: '#a1a1aa',  // zinc-400 — node borders (12% mix)
-  line: '#71717a',    // zinc-500 — edge lines (35% mix)
-  arrow: '#52525b',   // zinc-600 — arrowheads (60% mix)
-  corner: '#71717a',  // same as line
+  fg: '#27272a', // zinc-800 — primary text
+  border: '#a1a1aa', // zinc-400 — node borders (12% mix)
+  line: '#71717a', // zinc-500 — edge lines (35% mix)
+  arrow: '#52525b', // zinc-600 — arrowheads (60% mix)
+  corner: '#71717a', // same as line
   junction: '#a1a1aa', // same as border
 }
 
@@ -39,10 +39,14 @@ export const DEFAULT_ASCII_THEME: AsciiTheme = {
 
 /** Mix fg into bg at a given percentage (replicates CSS color-mix(in srgb)). */
 function mixColors(fg: string, bg: string, pct: number): string {
-  const f = parseHex(fg), b = parseHex(bg)
-  const mix = (a: number, z: number) => Math.round(a * (pct / 100) + z * (1 - pct / 100))
-  const r = mix(f.r, b.r), g = mix(f.g, b.g), bl = mix(f.b, b.b)
-  return '#' + [r, g, bl].map(c => c.toString(16).padStart(2, '0')).join('')
+  const f = parseHex(fg),
+    b = parseHex(bg)
+  const mix = (a: number, z: number) =>
+    Math.round(a * (pct / 100) + z * (1 - pct / 100))
+  const r = mix(f.r, b.r),
+    g = mix(f.g, b.g),
+    bl = mix(f.b, b.b)
+  return '#' + [r, g, bl].map((c) => c.toString(16).padStart(2, '0')).join('')
 }
 
 /**
@@ -52,15 +56,16 @@ function mixColors(fg: string, bg: string, pct: number): string {
  */
 export function diagramColorsToAsciiTheme(colors: DiagramColors): AsciiTheme {
   const line = colors.line ?? mixColors(colors.fg, colors.bg, MIX.line)
-  const border = colors.border ?? mixColors(colors.fg, colors.bg, MIX.nodeStroke)
+  const border =
+    colors.border ?? mixColors(colors.fg, colors.bg, MIX.nodeStroke)
   return {
-    fg:       colors.fg,
+    fg: colors.fg,
     border,
     line,
-    arrow:    colors.accent ?? mixColors(colors.fg, colors.bg, MIX.arrow),
-    accent:   colors.accent,
-    bg:       colors.bg,
-    corner:   line,
+    arrow: colors.accent ?? mixColors(colors.fg, colors.bg, MIX.arrow),
+    accent: colors.accent,
+    bg: colors.bg,
+    corner: line,
     junction: border,
   }
 }
@@ -83,7 +88,14 @@ export function diagramColorsToAsciiTheme(colors: DiagramColors): AsciiTheme {
 export function detectColorMode(): ColorMode {
   // Check if we're in a Node.js-like environment with process object
   // Use globalThis to safely check for process without TypeScript errors
-  const proc = (globalThis as { process?: { stdout?: { isTTY?: boolean }, env?: Record<string, string | undefined> } }).process
+  const proc = (
+    globalThis as {
+      process?: {
+        stdout?: { isTTY?: boolean }
+        env?: Record<string, string | undefined>
+      }
+    }
+  ).process
 
   if (proc) {
     // Check if stdout is a TTY (not piped/redirected)
@@ -172,7 +184,11 @@ function truecolorFg(hex: string): string {
 function rgbTo256(r: number, g: number, b: number): number {
   // Check if it's close to grayscale
   const avg = (r + g + b) / 3
-  const maxDiff = Math.max(Math.abs(r - avg), Math.abs(g - avg), Math.abs(b - avg))
+  const maxDiff = Math.max(
+    Math.abs(r - avg),
+    Math.abs(g - avg),
+    Math.abs(b - avg),
+  )
 
   if (maxDiff < 10) {
     // Use grayscale ramp (232-255)
@@ -193,7 +209,7 @@ function rgbTo256(r: number, g: number, b: number): number {
   const gi = toIndex(g)
   const bi = toIndex(b)
 
-  return 16 + (36 * ri) + (6 * gi) + bi
+  return 16 + 36 * ri + 6 * gi + bi
 }
 
 /**
@@ -223,14 +239,22 @@ function ansi16Fg(hex: string): string {
 
   // Determine base color based on dominant channel
   let code: number
-  if (r > 180 && g < 100 && b < 100) code = 31 // red
-  else if (g > 180 && r < 100 && b < 100) code = 32 // green
-  else if (r > 150 && g > 150 && b < 100) code = 33 // yellow
-  else if (b > 180 && r < 100 && g < 100) code = 34 // blue
-  else if (r > 150 && b > 150 && g < 100) code = 35 // magenta
-  else if (g > 150 && b > 150 && r < 100) code = 36 // cyan
-  else if (luma > 200) code = 37 // white
-  else if (luma < 50) code = 30 // black
+  if (r > 180 && g < 100 && b < 100)
+    code = 31 // red
+  else if (g > 180 && r < 100 && b < 100)
+    code = 32 // green
+  else if (r > 150 && g > 150 && b < 100)
+    code = 33 // yellow
+  else if (b > 180 && r < 100 && g < 100)
+    code = 34 // blue
+  else if (r > 150 && b > 150 && g < 100)
+    code = 35 // magenta
+  else if (g > 150 && b > 150 && r < 100)
+    code = 36 // cyan
+  else if (luma > 200)
+    code = 37 // white
+  else if (luma < 50)
+    code = 30 // black
   else code = 37 // default to white for grays
 
   return `${ESC}${code + bright}m`
@@ -259,29 +283,44 @@ function htmlSpan(hex: string, text: string): string {
  */
 function getRoleColor(role: CharRole, theme: AsciiTheme): string {
   switch (role) {
-    case 'text': return theme.fg
-    case 'border': return theme.border
-    case 'line': return theme.line
-    case 'arrow': return theme.arrow
-    case 'corner': return theme.corner ?? theme.line
-    case 'junction': return theme.junction ?? theme.border
-    default: return theme.fg
+    case 'text':
+      return theme.fg
+    case 'border':
+      return theme.border
+    case 'line':
+      return theme.line
+    case 'arrow':
+      return theme.arrow
+    case 'corner':
+      return theme.corner ?? theme.line
+    case 'junction':
+      return theme.junction ?? theme.border
+    default:
+      return theme.fg
   }
 }
 
 /**
  * Generate the ANSI escape sequence for a role color.
  */
-export function getAnsiColor(role: CharRole, theme: AsciiTheme, mode: ColorMode): string {
+export function getAnsiColor(
+  role: CharRole,
+  theme: AsciiTheme,
+  mode: ColorMode,
+): string {
   if (mode === 'none') return ''
 
   const hex = getRoleColor(role, theme)
 
   switch (mode) {
-    case 'truecolor': return truecolorFg(hex)
-    case 'ansi256': return ansi256Fg(hex)
-    case 'ansi16': return ansi16Fg(hex)
-    default: return ''
+    case 'truecolor':
+      return truecolorFg(hex)
+    case 'ansi256':
+      return ansi256Fg(hex)
+    case 'ansi16':
+      return ansi16Fg(hex)
+    default:
+      return ''
   }
 }
 
@@ -433,15 +472,26 @@ function colorizeLineHtml(
  * Used by renderers that need per-cell color control (e.g. multi-series xychart).
  * Handles all output modes: ANSI (16/256/truecolor) and HTML.
  */
-export function colorizeText(text: string, hex: string, mode: ColorMode): string {
+export function colorizeText(
+  text: string,
+  hex: string,
+  mode: ColorMode,
+): string {
   if (mode === 'none' || text.length === 0) return text
   if (mode === 'html') return htmlSpan(hex, text)
   let code: string
   switch (mode) {
-    case 'truecolor': code = truecolorFg(hex); break
-    case 'ansi256': code = ansi256Fg(hex); break
-    case 'ansi16': code = ansi16Fg(hex); break
-    default: return text
+    case 'truecolor':
+      code = truecolorFg(hex)
+      break
+    case 'ansi256':
+      code = ansi256Fg(hex)
+      break
+    case 'ansi16':
+      code = ansi16Fg(hex)
+      break
+    default:
+      return text
   }
   return `${code}${text}${RESET}`
 }

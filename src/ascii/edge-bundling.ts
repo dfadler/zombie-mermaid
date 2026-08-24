@@ -12,7 +12,11 @@
 // ============================================================================
 
 import type {
-  AsciiGraph, AsciiNode, AsciiEdge, EdgeBundle, GridCoord,
+  AsciiGraph,
+  AsciiNode,
+  AsciiEdge,
+  EdgeBundle,
+  GridCoord,
 } from './types.ts'
 import { Up, Down, Left, Right, Middle } from './types.ts'
 import { getPath, mergePath } from './pathfinder.ts'
@@ -63,13 +67,13 @@ export function analyzeEdgeBundles(graph: AsciiGraph): EdgeBundle[] {
     if (!canBundle(edges, graph)) continue
 
     // Check if all edges are already bundled
-    if (edges.some(e => bundledEdges.has(e))) continue
+    if (edges.some((e) => bundledEdges.has(e))) continue
 
     const bundle: EdgeBundle = {
       type: 'fan-in',
       edges: [...edges],
       sharedNode: target,
-      otherNodes: edges.map(e => e.from),
+      otherNodes: edges.map((e) => e.from),
       junctionPoint: null,
       sharedPath: [],
       junctionDir: Middle,
@@ -106,7 +110,7 @@ export function analyzeEdgeBundles(graph: AsciiGraph): EdgeBundle[] {
       type: 'fan-out',
       edges: [...edges],
       sharedNode: source,
-      otherNodes: edges.map(e => e.to),
+      otherNodes: edges.map((e) => e.to),
       junctionPoint: null,
       sharedPath: [],
       junctionDir: Middle,
@@ -248,22 +252,28 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
 
     // Route junction → target (shared path)
     const targetCoord = bundle.sharedNode.gridCoord!
-    const targetEntry = dir === 'TD'
-      ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
-      : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
+    const targetEntry =
+      dir === 'TD'
+        ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
+        : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
 
     const sharedPath = getPath(graph.grid, junction, targetEntry)
-    bundle.sharedPath = sharedPath ? mergePath(sharedPath) : [junction, targetEntry]
+    bundle.sharedPath = sharedPath
+      ? mergePath(sharedPath)
+      : [junction, targetEntry]
 
     // Route each source → junction
     for (const edge of bundle.edges) {
       const sourceCoord = edge.from.gridCoord!
-      const sourceExit = dir === 'TD'
-        ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
-        : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
+      const sourceExit =
+        dir === 'TD'
+          ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
+          : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
 
       const pathToJunction = getPath(graph.grid, sourceExit, junction)
-      edge.pathToJunction = pathToJunction ? mergePath(pathToJunction) : [sourceExit, junction]
+      edge.pathToJunction = pathToJunction
+        ? mergePath(pathToJunction)
+        : [sourceExit, junction]
 
       // Set edge directions for proper drawing
       edge.startDir = dir === 'TD' ? Down : Right
@@ -279,22 +289,28 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
 
     // Route source → junction (shared path)
     const sourceCoord = bundle.sharedNode.gridCoord!
-    const sourceExit = dir === 'TD'
-      ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
-      : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
+    const sourceExit =
+      dir === 'TD'
+        ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
+        : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
 
     const sharedPath = getPath(graph.grid, sourceExit, junction)
-    bundle.sharedPath = sharedPath ? mergePath(sharedPath) : [sourceExit, junction]
+    bundle.sharedPath = sharedPath
+      ? mergePath(sharedPath)
+      : [sourceExit, junction]
 
     // Route junction → each target
     for (const edge of bundle.edges) {
       const targetCoord = edge.to.gridCoord!
-      const targetEntry = dir === 'TD'
-        ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
-        : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
+      const targetEntry =
+        dir === 'TD'
+          ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
+          : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
 
       const pathToJunction = getPath(graph.grid, junction, targetEntry)
-      edge.pathToJunction = pathToJunction ? mergePath(pathToJunction) : [junction, targetEntry]
+      edge.pathToJunction = pathToJunction
+        ? mergePath(pathToJunction)
+        : [junction, targetEntry]
 
       // Set edge directions
       edge.startDir = dir === 'TD' ? Down : Right

@@ -31,9 +31,12 @@ describe('xychart ASCII – bar charts', () => {
   })
 
   it('renders bars with # in ASCII mode', () => {
-    const result = render(`xychart-beta
+    const result = render(
+      `xychart-beta
       x-axis [A, B, C]
-      bar [10, 20, 30]`, true)
+      bar [10, 20, 30]`,
+      true,
+    )
     expect(result).toContain('#')
     expect(result).not.toContain('█')
   })
@@ -128,9 +131,12 @@ describe('xychart ASCII – line charts', () => {
   })
 
   it('uses + for corners in ASCII mode', () => {
-    const result = render(`xychart-beta
+    const result = render(
+      `xychart-beta
       x-axis [A, B]
-      line [10, 50]`, true)
+      line [10, 50]`,
+      true,
+    )
     expect(result).toContain('+')
     expect(result).not.toContain('╭')
     expect(result).not.toContain('╰')
@@ -192,7 +198,7 @@ describe('xychart ASCII – titles and axes', () => {
       title "My Chart"
       x-axis [A, B]
       bar [10, 20]`)
-    const titleLine = result.split('\n').find(l => l.includes('My Chart'))
+    const titleLine = result.split('\n').find((l) => l.includes('My Chart'))
     expect(titleLine).toBeDefined()
   })
 
@@ -218,7 +224,7 @@ describe('xychart ASCII – titles and axes', () => {
       x-axis [A, B]
       bar [10, 20]`)
     // First non-empty line should be chart content, not a title
-    const lines = result.split('\n').filter(l => l.trim().length > 0)
+    const lines = result.split('\n').filter((l) => l.trim().length > 0)
     expect(lines.length).toBeGreaterThan(0)
   })
 })
@@ -298,10 +304,13 @@ describe('xychart ASCII – axis structure', () => {
   })
 
   it('uses + for axis characters in ASCII mode', () => {
-    const result = render(`xychart-beta
+    const result = render(
+      `xychart-beta
       x-axis [A, B, C]
       y-axis 0 --> 100
-      bar [25, 50, 75]`, true)
+      bar [25, 50, 75]`,
+      true,
+    )
     expect(result).toContain('+')
     expect(result).not.toContain('┤')
     expect(result).not.toContain('┬')

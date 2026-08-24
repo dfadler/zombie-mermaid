@@ -7,10 +7,23 @@
 // shapes to reuse the same rendering logic with different visual markers.
 
 import type { Canvas, DrawingCoord, Direction } from '../types.ts'
-import { Up, Down, Left, Right, UpperLeft, UpperRight, LowerLeft, LowerRight } from '../types.ts'
+import {
+  Up,
+  Down,
+  Left,
+  Right,
+  UpperLeft,
+  UpperRight,
+  LowerLeft,
+  LowerRight,
+} from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import { splitLines } from '../multiline-utils.ts'
-import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'
+import type {
+  ShapeRenderer,
+  ShapeDimensions,
+  ShapeRenderOptions,
+} from './types.ts'
 import { dirEquals } from '../edge-routing.ts'
 import { type CornerChars, getCorners } from './corners.ts'
 
@@ -22,9 +35,12 @@ import { type CornerChars, getCorners } from './corners.ts'
  * Calculate standard box dimensions for any rectangular shape.
  * Used by rectangle, circle, diamond, hexagon, etc.
  */
-export function getBoxDimensions(label: string, options: ShapeRenderOptions): ShapeDimensions {
+export function getBoxDimensions(
+  label: string,
+  options: ShapeRenderOptions,
+): ShapeDimensions {
   const lines = splitLines(label)
-  const maxLineWidth = Math.max(...lines.map(l => l.length), 0)
+  const maxLineWidth = Math.max(...lines.map((l) => l.length), 0)
   const lineCount = lines.length
 
   // Width: 2*padding + maxLineWidth + 2 border chars
@@ -34,7 +50,8 @@ export function getBoxDimensions(label: string, options: ShapeRenderOptions): Sh
   // Height: lineCount + 2*padding + 2 border chars
   // Ensure innerHeight is odd for symmetric vertical centering
   const rawInnerHeight = lineCount + 2 * options.padding
-  const innerHeight = rawInnerHeight % 2 === 0 ? rawInnerHeight + 1 : rawInnerHeight
+  const innerHeight =
+    rawInnerHeight % 2 === 0 ? rawInnerHeight + 1 : rawInnerHeight
   const height = innerHeight + 2
 
   return {
@@ -69,7 +86,7 @@ export function renderBox(
   label: string,
   dimensions: ShapeDimensions,
   corners: CornerChars,
-  useAscii: boolean
+  useAscii: boolean,
 ): Canvas {
   const { width, height } = dimensions
   const canvas = mkCanvas(width - 1, height - 1)
@@ -101,7 +118,7 @@ export function renderBox(
 
   // Center the multi-line label
   const lines = splitLines(label)
-  const w = width - 1  // Match original grid-based width calculation
+  const w = width - 1 // Match original grid-based width calculation
   const h = height - 1
   const centerY = Math.floor(h / 2)
   const startY = centerY - Math.floor((lines.length - 1) / 2)
@@ -132,7 +149,7 @@ export function renderBox(
 export function getBoxAttachmentPoint(
   dir: Direction,
   dimensions: ShapeDimensions,
-  baseCoord: DrawingCoord
+  baseCoord: DrawingCoord,
 ): DrawingCoord {
   const { width, height } = dimensions
   const centerX = baseCoord.x + Math.floor(width / 2)
@@ -143,9 +160,12 @@ export function getBoxAttachmentPoint(
   if (dirEquals(dir, Left)) return { x: baseCoord.x, y: centerY }
   if (dirEquals(dir, Right)) return { x: baseCoord.x + width - 1, y: centerY }
   if (dirEquals(dir, UpperLeft)) return { x: baseCoord.x, y: baseCoord.y }
-  if (dirEquals(dir, UpperRight)) return { x: baseCoord.x + width - 1, y: baseCoord.y }
-  if (dirEquals(dir, LowerLeft)) return { x: baseCoord.x, y: baseCoord.y + height - 1 }
-  if (dirEquals(dir, LowerRight)) return { x: baseCoord.x + width - 1, y: baseCoord.y + height - 1 }
+  if (dirEquals(dir, UpperRight))
+    return { x: baseCoord.x + width - 1, y: baseCoord.y }
+  if (dirEquals(dir, LowerLeft))
+    return { x: baseCoord.x, y: baseCoord.y + height - 1 }
+  if (dirEquals(dir, LowerRight))
+    return { x: baseCoord.x + width - 1, y: baseCoord.y + height - 1 }
   // Middle
   return { x: centerX, y: centerY }
 }
@@ -164,7 +184,11 @@ export function getBoxAttachmentPoint(
 export const rectangleRenderer: ShapeRenderer = {
   getDimensions: getBoxDimensions,
 
-  render(label: string, dimensions: ShapeDimensions, options: ShapeRenderOptions): Canvas {
+  render(
+    label: string,
+    dimensions: ShapeDimensions,
+    options: ShapeRenderOptions,
+  ): Canvas {
     const corners = getCorners('rectangle', options.useAscii)
     return renderBox(label, dimensions, corners, options.useAscii)
   },

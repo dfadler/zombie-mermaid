@@ -27,10 +27,13 @@ describe('parseMermaid – graph header', () => {
     expect(g.direction).toBe('LR')
   })
 
-  it.each(['TD', 'TB', 'LR', 'BT', 'RL'] as const)('accepts direction %s', (dir) => {
-    const g = parseMermaid(`graph ${dir}\n  A --> B`)
-    expect(g.direction).toBe(dir)
-  })
+  it.each(['TD', 'TB', 'LR', 'BT', 'RL'] as const)(
+    'accepts direction %s',
+    (dir) => {
+      const g = parseMermaid(`graph ${dir}\n  A --> B`)
+      expect(g.direction).toBe(dir)
+    },
+  )
 
   it('is case-insensitive for the keyword', () => {
     const g = parseMermaid('graph td\n  A --> B')
@@ -42,11 +45,15 @@ describe('parseMermaid – graph header', () => {
   })
 
   it('throws on invalid header', () => {
-    expect(() => parseMermaid('sequenceDiagram\n  A ->> B')).toThrow('Invalid mermaid header')
+    expect(() => parseMermaid('sequenceDiagram\n  A ->> B')).toThrow(
+      'Invalid mermaid header',
+    )
   })
 
   it('throws on header without direction', () => {
-    expect(() => parseMermaid('graph\n  A --> B')).toThrow('Invalid mermaid header')
+    expect(() => parseMermaid('graph\n  A --> B')).toThrow(
+      'Invalid mermaid header',
+    )
   })
 })
 
@@ -306,7 +313,7 @@ describe('parseMermaid – bidirectional arrows', () => {
     expect(g.edges[0]!.hasArrowEnd).toBe(true)
   })
 
-  it('parses dotted bidirectional: <-.->',  () => {
+  it('parses dotted bidirectional: <-.->', () => {
     const g = parseMermaid('graph TD\n  A <-.-> B')
     expect(g.edges[0]!.style).toBe('dotted')
     expect(g.edges[0]!.hasArrowStart).toBe(true)
@@ -426,7 +433,7 @@ describe('parseMermaid – parallel links (&)', () => {
   it('expands A & B --> C & D to four edges (Cartesian product)', () => {
     const g = parseMermaid('graph TD\n  A & B --> C & D')
     expect(g.edges).toHaveLength(4)
-    const edgePairs = g.edges.map(e => `${e.source}->${e.target}`)
+    const edgePairs = g.edges.map((e) => `${e.source}->${e.target}`)
     expect(edgePairs).toContain('A->C')
     expect(edgePairs).toContain('A->D')
     expect(edgePairs).toContain('B->C')
@@ -463,7 +470,9 @@ describe('parseMermaid – ::: class shorthand', () => {
 
 describe('parseMermaid – style statements', () => {
   it('parses style for a single node', () => {
-    const g = parseMermaid('graph TD\n  A --> B\n  style A fill:#ff0000,stroke:#333')
+    const g = parseMermaid(
+      'graph TD\n  A --> B\n  style A fill:#ff0000,stroke:#333',
+    )
     expect(g.nodeStyles.get('A')).toEqual({ fill: '#ff0000', stroke: '#333' })
   })
 
@@ -474,7 +483,9 @@ describe('parseMermaid – style statements', () => {
   })
 
   it('merges multiple style statements for same node', () => {
-    const g = parseMermaid('graph TD\n  A --> B\n  style A fill:#f00\n  style A stroke:#333')
+    const g = parseMermaid(
+      'graph TD\n  A --> B\n  style A fill:#f00\n  style A stroke:#333',
+    )
     expect(g.nodeStyles.get('A')).toEqual({ fill: '#f00', stroke: '#333' })
   })
 })
@@ -584,9 +595,9 @@ describe('parseMermaid – subgraphs', () => {
         F --> J([Message Queue])
       end`)
 
-    const clients = g.subgraphs.find(sg => sg.id === 'clients')!
-    const services = g.subgraphs.find(sg => sg.id === 'services')!
-    const data = g.subgraphs.find(sg => sg.id === 'data')!
+    const clients = g.subgraphs.find((sg) => sg.id === 'clients')!
+    const services = g.subgraphs.find((sg) => sg.id === 'services')!
+    const data = g.subgraphs.find((sg) => sg.id === 'data')!
 
     // B should ONLY be in clients (where it's defined), NOT in services
     expect(clients.nodeIds).toContain('B')

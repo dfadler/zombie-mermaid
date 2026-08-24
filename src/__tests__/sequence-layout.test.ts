@@ -13,8 +13,8 @@ import { layoutSequenceDiagram } from '../sequence/layout.ts'
 function layout(source: string) {
   const lines = source
     .split('\n')
-    .map(l => l.trim())
-    .filter(l => l.length > 0 && !l.startsWith('%%'))
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
   return layoutSequenceDiagram(parseSequenceDiagram(lines))
 }
 
@@ -462,7 +462,7 @@ describe('sequence layout – render clearance', () => {
     const msgAfter = result.messages[2]!
 
     // Default offset 28: baseline clearance = (msg.y - 6) - (msg.y - 28 + 14) = 8
-    const baselineClearance = (msgAfter.y - 6) - (divider.y + 14)
+    const baselineClearance = msgAfter.y - 6 - (divider.y + 14)
     expect(baselineClearance).toBe(8)
   })
 })

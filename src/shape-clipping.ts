@@ -22,12 +22,16 @@ import type { Point, PositionedNode } from './types.ts'
 export function clipEdgeToShape(
   points: Point[],
   node: PositionedNode,
-  isStart: boolean
+  isStart: boolean,
 ): Point[] {
   if (points.length < 2) return points
 
   // Only clip non-rectangular shapes
-  if (node.shape === 'rectangle' || node.shape === 'rounded' || node.shape === 'stadium') {
+  if (
+    node.shape === 'rectangle' ||
+    node.shape === 'rounded' ||
+    node.shape === 'stadium'
+  ) {
     return points
   }
 
@@ -38,7 +42,11 @@ export function clipEdgeToShape(
       result[0] = clipToDiamond(points[0]!, points[1]!, node)
     } else {
       const lastIdx = points.length - 1
-      result[lastIdx] = clipToDiamond(points[lastIdx]!, points[lastIdx - 1]!, node)
+      result[lastIdx] = clipToDiamond(
+        points[lastIdx]!,
+        points[lastIdx - 1]!,
+        node,
+      )
     }
   }
   // Future: add clipping for hexagon, circle, etc.
@@ -64,7 +72,11 @@ export function clipEdgeToShape(
  * @param node - The diamond node
  * @returns Clipped point on the diamond boundary
  */
-function clipToDiamond(endpoint: Point, adjacent: Point, node: PositionedNode): Point {
+function clipToDiamond(
+  endpoint: Point,
+  adjacent: Point,
+  node: PositionedNode,
+): Point {
   const cx = node.x + node.width / 2
   const cy = node.y + node.height / 2
 
@@ -138,7 +150,11 @@ function clipToDiamond(endpoint: Point, adjacent: Point, node: PositionedNode): 
  * Find intersection of a horizontal ray (y = rayY) with a line segment.
  * Returns the intersection point or null if no intersection.
  */
-function intersectHorizontalRayWithEdge(rayY: number, p1: Point, p2: Point): Point | null {
+function intersectHorizontalRayWithEdge(
+  rayY: number,
+  p1: Point,
+  p2: Point,
+): Point | null {
   const dy = p2.y - p1.y
   if (Math.abs(dy) < 0.001) {
     // Edge is horizontal, no single intersection
@@ -159,7 +175,11 @@ function intersectHorizontalRayWithEdge(rayY: number, p1: Point, p2: Point): Poi
  * Find intersection of a vertical ray (x = rayX) with a line segment.
  * Returns the intersection point or null if no intersection.
  */
-function intersectVerticalRayWithEdge(rayX: number, p1: Point, p2: Point): Point | null {
+function intersectVerticalRayWithEdge(
+  rayX: number,
+  p1: Point,
+  p2: Point,
+): Point | null {
   const dx = p2.x - p1.x
   if (Math.abs(dx) < 0.001) {
     // Edge is vertical, no single intersection

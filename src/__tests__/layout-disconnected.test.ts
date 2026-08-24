@@ -18,16 +18,15 @@ import { layoutGraphSync } from '../layout.ts'
 /** Check if two rectangles overlap */
 function rectanglesOverlap(
   r1: { x: number; y: number; width: number; height: number },
-  r2: { x: number; y: number; width: number; height: number }
+  r2: { x: number; y: number; width: number; height: number },
 ): boolean {
   return !(
-    r1.x + r1.width <= r2.x ||   // r1 is left of r2
-    r2.x + r2.width <= r1.x ||   // r2 is left of r1
-    r1.y + r1.height <= r2.y ||  // r1 is above r2
-    r2.y + r2.height <= r1.y     // r2 is above r1
+    r1.x + r1.width <= r2.x || // r1 is left of r2
+    r2.x + r2.width <= r1.x || // r2 is left of r1
+    r1.y + r1.height <= r2.y || // r1 is above r2
+    r2.y + r2.height <= r1.y // r2 is above r1
   )
 }
-
 
 // ============================================================================
 // Two disconnected subgraphs (the original bug)
@@ -51,8 +50,8 @@ describe('layoutGraph – two disconnected subgraphs', () => {
     const result = layoutGraphSync(parsed)
 
     // Find the two top-level groups
-    const today = result.groups.find(g => g.label === 'Today')
-    const tomorrow = result.groups.find(g => g.label === 'Next Wave')
+    const today = result.groups.find((g) => g.label === 'Today')
+    const tomorrow = result.groups.find((g) => g.label === 'Next Wave')
 
     expect(today).toBeDefined()
     expect(tomorrow).toBeDefined()
@@ -74,8 +73,8 @@ describe('layoutGraph – two disconnected subgraphs', () => {
     const parsed = parseMermaid(source)
     const result = layoutGraphSync(parsed)
 
-    const today = result.groups.find(g => g.label === 'Today')
-    const tomorrow = result.groups.find(g => g.label === 'Tomorrow')
+    const today = result.groups.find((g) => g.label === 'Today')
+    const tomorrow = result.groups.find((g) => g.label === 'Tomorrow')
 
     expect(today).toBeDefined()
     expect(tomorrow).toBeDefined()
@@ -95,13 +94,13 @@ describe('layoutGraph – two disconnected subgraphs', () => {
     const parsed = parseMermaid(source)
     const result = layoutGraphSync(parsed)
 
-    const s1 = result.groups.find(g => g.label === 'First')!
-    const s2 = result.groups.find(g => g.label === 'Second')!
+    const s1 = result.groups.find((g) => g.label === 'First')!
+    const s2 = result.groups.find((g) => g.label === 'Second')!
 
     // In LR mode, subgraphs should be stacked vertically (perpendicular to flow)
     // One should be above the other
     const isVerticallyArranged =
-      (s1.y + s1.height <= s2.y) || (s2.y + s2.height <= s1.y)
+      s1.y + s1.height <= s2.y || s2.y + s2.height <= s1.y
 
     expect(isVerticallyArranged).toBe(true)
   })
@@ -119,14 +118,16 @@ describe('layoutGraph – two disconnected subgraphs', () => {
     const parsed = parseMermaid(source)
     const result = layoutGraphSync(parsed)
 
-    const s1 = result.groups.find(g => g.label === 'First')!
-    const s2 = result.groups.find(g => g.label === 'Second')!
+    const s1 = result.groups.find((g) => g.label === 'First')!
+    const s2 = result.groups.find((g) => g.label === 'Second')!
 
     // ELK may arrange disconnected components in various ways
     // The key requirement is that they don't overlap
     const noOverlap =
-      (s1.x + s1.width <= s2.x) || (s2.x + s2.width <= s1.x) ||
-      (s1.y + s1.height <= s2.y) || (s2.y + s2.height <= s1.y)
+      s1.x + s1.width <= s2.x ||
+      s2.x + s2.width <= s1.x ||
+      s1.y + s1.height <= s2.y ||
+      s2.y + s2.height <= s1.y
 
     expect(noOverlap).toBe(true)
   })
@@ -152,9 +153,9 @@ describe('layoutGraph – multiple disconnected components', () => {
     const parsed = parseMermaid(source)
     const result = layoutGraphSync(parsed)
 
-    const alpha = result.groups.find(g => g.label === 'Alpha')!
-    const beta = result.groups.find(g => g.label === 'Beta')!
-    const gamma = result.groups.find(g => g.label === 'Gamma')!
+    const alpha = result.groups.find((g) => g.label === 'Alpha')!
+    const beta = result.groups.find((g) => g.label === 'Beta')!
+    const gamma = result.groups.find((g) => g.label === 'Gamma')!
 
     // No pair should overlap
     expect(rectanglesOverlap(alpha, beta)).toBe(false)
@@ -183,7 +184,7 @@ describe('layoutGraph – multiple disconnected components', () => {
         const overlap = rectanglesOverlap(result.nodes[i]!, result.nodes[j]!)
         expect(
           overlap,
-          `Nodes ${result.nodes[i]!.id} and ${result.nodes[j]!.id} overlap`
+          `Nodes ${result.nodes[i]!.id} and ${result.nodes[j]!.id} overlap`,
         ).toBe(false)
       }
     }
@@ -211,9 +212,9 @@ describe('layoutGraph – mixed connected and disconnected', () => {
     const parsed = parseMermaid(source)
     const result = layoutGraphSync(parsed)
 
-    const frontend = result.groups.find(g => g.label === 'Frontend')!
-    const backend = result.groups.find(g => g.label === 'Backend')!
-    const isolated = result.groups.find(g => g.label === 'Isolated')!
+    const frontend = result.groups.find((g) => g.label === 'Frontend')!
+    const backend = result.groups.find((g) => g.label === 'Backend')!
+    const isolated = result.groups.find((g) => g.label === 'Isolated')!
 
     // None should overlap
     expect(rectanglesOverlap(frontend, backend)).toBe(false)
@@ -229,14 +230,14 @@ describe('layoutGraph – mixed connected and disconnected', () => {
     const parsed = parseMermaid(source)
     const result = layoutGraphSync(parsed)
 
-    const nodeD = result.nodes.find(n => n.id === 'D')!
-    const connectedNodes = result.nodes.filter(n => n.id !== 'D')
+    const nodeD = result.nodes.find((n) => n.id === 'D')!
+    const connectedNodes = result.nodes.filter((n) => n.id !== 'D')
 
     // Isolated node should not overlap with any connected node
     for (const node of connectedNodes) {
       expect(
         rectanglesOverlap(nodeD, node),
-        `Node D overlaps with node ${node.id}`
+        `Node D overlaps with node ${node.id}`,
       ).toBe(false)
     }
   })
@@ -270,8 +271,12 @@ describe('layoutGraph – quality preservation', () => {
     const combinedResult = layoutGraphSync(combinedParsed)
 
     // The "Section" group should have the same dimensions
-    const standaloneGroup = standaloneResult.groups.find(g => g.label === 'Section')!
-    const combinedGroup = combinedResult.groups.find(g => g.label === 'Section')!
+    const standaloneGroup = standaloneResult.groups.find(
+      (g) => g.label === 'Section',
+    )!
+    const combinedGroup = combinedResult.groups.find(
+      (g) => g.label === 'Section',
+    )!
 
     expect(combinedGroup.width).toBe(standaloneGroup.width)
     expect(combinedGroup.height).toBe(standaloneGroup.height)
@@ -296,7 +301,9 @@ describe('layoutGraph – disconnected edge cases', () => {
     // All nodes positioned without overlap
     for (let i = 0; i < result.nodes.length; i++) {
       for (let j = i + 1; j < result.nodes.length; j++) {
-        expect(rectanglesOverlap(result.nodes[i]!, result.nodes[j]!)).toBe(false)
+        expect(rectanglesOverlap(result.nodes[i]!, result.nodes[j]!)).toBe(
+          false,
+        )
       }
     }
   })
@@ -324,9 +331,9 @@ describe('layoutGraph – disconnected edge cases', () => {
     const parsed = parseMermaid(source)
     const result = layoutGraphSync(parsed)
 
-    const group = result.groups.find(g => g.label === 'Component1')!
-    const nodeD = result.nodes.find(n => n.id === 'D')!
-    const nodeE = result.nodes.find(n => n.id === 'E')!
+    const group = result.groups.find((g) => g.label === 'Component1')!
+    const nodeD = result.nodes.find((n) => n.id === 'D')!
+    const nodeE = result.nodes.find((n) => n.id === 'E')!
 
     // Group and D/E nodes should not overlap
     expect(rectanglesOverlap(group, nodeD)).toBe(false)

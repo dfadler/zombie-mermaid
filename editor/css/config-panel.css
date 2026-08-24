@@ -5,7 +5,9 @@
   overflow-y: auto;
   flex: 1;
 }
-.config-panel.visible { display: flex; }
+.config-panel.visible {
+  display: flex;
+}
 
 .config-section {
   padding: 0.75rem 1rem;
@@ -42,29 +44,40 @@
   font-size: 0.75rem;
   font-family: 'JetBrains Mono', monospace;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   min-width: 100px;
   justify-content: flex-end;
 }
-.color-edit-btn:hover { border-color: rgba(255,255,255,0.2); }
-:root.light .color-edit-btn:hover { border-color: rgba(0,0,0,0.2); }
+.color-edit-btn:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+:root.light .color-edit-btn:hover {
+  border-color: rgba(0, 0, 0, 0.2);
+}
 .color-swatch {
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  border: 1px solid rgba(0,0,0,0.15);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
   background: transparent;
 }
 
-.padding-field { padding: 0.3rem 0; }
+.padding-field {
+  padding: 0.3rem 0;
+}
 .padding-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.5rem;
 }
-.padding-row label { font-size: 0.8rem; color: var(--fg); }
+.padding-row label {
+  font-size: 0.8rem;
+  color: var(--fg);
+}
 .padding-num {
   width: 56px;
   height: 28px;
@@ -78,7 +91,9 @@
   text-align: right;
   outline: none;
 }
-.padding-num:focus { border-color: var(--blue); }
+.padding-num:focus {
+  border-color: var(--blue);
+}
 .padding-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -91,15 +106,17 @@
 }
 .padding-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px; height: 16px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--blue);
   cursor: pointer;
   border: 2px solid var(--bg2);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 .padding-slider::-moz-range-thumb {
-  width: 16px; height: 16px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--blue);
   cursor: pointer;

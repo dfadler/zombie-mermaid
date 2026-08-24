@@ -143,7 +143,10 @@ describe('measureTextWidth', () => {
 
   it('returns minPadding for empty text', () => {
     // Empty text still gets minimum padding to prevent edge truncation
-    expect(measureTextWidth('', fontSize, fontWeight)).toBeCloseTo(minPadding, 1)
+    expect(measureTextWidth('', fontSize, fontWeight)).toBeCloseTo(
+      minPadding,
+      1,
+    )
   })
 
   it('handles lowercase text with narrow letters', () => {

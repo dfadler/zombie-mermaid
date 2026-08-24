@@ -49,7 +49,10 @@ class MinHeap {
     while (i > 0) {
       const parent = (i - 1) >> 1
       if (this.items[i]!.priority < this.items[parent]!.priority) {
-        ;[this.items[i], this.items[parent]] = [this.items[parent]!, this.items[i]!]
+        ;[this.items[i], this.items[parent]] = [
+          this.items[parent]!,
+          this.items[i]!,
+        ]
         i = parent
       } else {
         break
@@ -63,14 +66,23 @@ class MinHeap {
       let smallest = i
       const left = 2 * i + 1
       const right = 2 * i + 2
-      if (left < n && this.items[left]!.priority < this.items[smallest]!.priority) {
+      if (
+        left < n &&
+        this.items[left]!.priority < this.items[smallest]!.priority
+      ) {
         smallest = left
       }
-      if (right < n && this.items[right]!.priority < this.items[smallest]!.priority) {
+      if (
+        right < n &&
+        this.items[right]!.priority < this.items[smallest]!.priority
+      ) {
         smallest = right
       }
       if (smallest !== i) {
-        ;[this.items[i], this.items[smallest]] = [this.items[smallest]!, this.items[i]!]
+        ;[this.items[i], this.items[smallest]] = [
+          this.items[smallest]!,
+          this.items[i]!,
+        ]
         i = smallest
       } else {
         break

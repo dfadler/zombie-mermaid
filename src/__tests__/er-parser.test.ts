@@ -9,7 +9,10 @@ import { parseErDiagram } from '../er/parser.ts'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('%%'))
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
   return parseErDiagram(lines)
 }
 
@@ -83,8 +86,8 @@ describe('parseErDiagram – entity definitions', () => {
     const d = parse(`erDiagram
       CUSTOMER ||--o{ ORDER : places`)
     expect(d.entities).toHaveLength(2)
-    expect(d.entities.find(e => e.id === 'CUSTOMER')).toBeDefined()
-    expect(d.entities.find(e => e.id === 'ORDER')).toBeDefined()
+    expect(d.entities.find((e) => e.id === 'CUSTOMER')).toBeDefined()
+    expect(d.entities.find((e) => e.id === 'ORDER')).toBeDefined()
   })
 })
 
@@ -176,12 +179,14 @@ describe('parseErDiagram – full diagram', () => {
     expect(d.entities).toHaveLength(4)
     expect(d.relationships).toHaveLength(3)
 
-    const customer = d.entities.find(e => e.id === 'CUSTOMER')!
+    const customer = d.entities.find((e) => e.id === 'CUSTOMER')!
     expect(customer.attributes).toHaveLength(3)
     expect(customer.attributes[0]!.keys).toContain('PK')
     expect(customer.attributes[2]!.keys).toContain('UK')
 
-    const lineItem = d.entities.find(e => e.id === 'LINE_ITEM')!
-    expect(lineItem.attributes.filter(a => a.keys.includes('FK'))).toHaveLength(2)
+    const lineItem = d.entities.find((e) => e.id === 'LINE_ITEM')!
+    expect(
+      lineItem.attributes.filter((a) => a.keys.includes('FK')),
+    ).toHaveLength(2)
   })
 })

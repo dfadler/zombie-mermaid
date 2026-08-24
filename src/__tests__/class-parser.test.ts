@@ -9,7 +9,10 @@ import { parseClassDiagram } from '../class/parser.ts'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('%%'))
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
   return parseClassDiagram(lines)
 }
 
@@ -82,8 +85,8 @@ describe('parseClassDiagram – class definitions', () => {
     const d = parse(`classDiagram
       Animal <|-- Dog`)
     expect(d.classes).toHaveLength(2)
-    expect(d.classes.find(c => c.id === 'Animal')).toBeDefined()
-    expect(d.classes.find(c => c.id === 'Dog')).toBeDefined()
+    expect(d.classes.find((c) => c.id === 'Animal')).toBeDefined()
+    expect(d.classes.find((c) => c.id === 'Dog')).toBeDefined()
   })
 })
 
@@ -97,7 +100,7 @@ describe('parseClassDiagram – inline attributes', () => {
       class Animal
       Animal : +String name
       Animal : +int age`)
-    const cls = d.classes.find(c => c.id === 'Animal')!
+    const cls = d.classes.find((c) => c.id === 'Animal')!
     expect(cls.attributes).toHaveLength(2)
     expect(cls.attributes[0]!.name).toBe('name')
   })
@@ -230,7 +233,7 @@ describe('parseClassDiagram – full diagram', () => {
 
     expect(d.classes).toHaveLength(3)
     expect(d.relationships).toHaveLength(2)
-    const animal = d.classes.find(c => c.id === 'Animal')!
+    const animal = d.classes.find((c) => c.id === 'Animal')!
     expect(animal.annotation).toBe('abstract')
     expect(animal.attributes).toHaveLength(1)
     expect(animal.methods).toHaveLength(2)

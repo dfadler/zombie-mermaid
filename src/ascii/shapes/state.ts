@@ -5,7 +5,11 @@
 import type { Canvas, DrawingCoord, Direction } from '../types.ts'
 import { Up, Down, Left, Right } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
-import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'
+import type {
+  ShapeRenderer,
+  ShapeDimensions,
+  ShapeRenderOptions,
+} from './types.ts'
 import { dirEquals } from '../edge-routing.ts'
 
 /**
@@ -36,11 +40,15 @@ export const stateStartRenderer: ShapeRenderer = {
     }
   },
 
-  render(_label: string, dimensions: ShapeDimensions, options: ShapeRenderOptions): Canvas {
+  render(
+    _label: string,
+    dimensions: ShapeDimensions,
+    options: ShapeRenderOptions,
+  ): Canvas {
     const { width, height } = dimensions
     const canvas = mkCanvas(width - 1, height - 1)
 
-    const centerX = Math.floor(width / 2)  // = 2
+    const centerX = Math.floor(width / 2) // = 2
 
     if (!options.useAscii) {
       // Unicode rounded box with filled circle: ╭───╮ │ ● │ ╰───╯
@@ -71,11 +79,11 @@ export const stateStartRenderer: ShapeRenderer = {
       canvas[centerX]![1] = '*'
       canvas[4]![1] = '|'
 
-      canvas[0]![2] = '\''
+      canvas[0]![2] = "'"
       canvas[1]![2] = '-'
       canvas[2]![2] = '-'
       canvas[3]![2] = '-'
-      canvas[4]![2] = '\''
+      canvas[4]![2] = "'"
     }
 
     return canvas
@@ -84,7 +92,7 @@ export const stateStartRenderer: ShapeRenderer = {
   getAttachmentPoint(
     dir: Direction,
     dimensions: ShapeDimensions,
-    baseCoord: DrawingCoord
+    baseCoord: DrawingCoord,
   ): DrawingCoord {
     const { width, height } = dimensions
     const centerX = baseCoord.x + Math.floor(width / 2)
@@ -128,11 +136,15 @@ export const stateEndRenderer: ShapeRenderer = {
     }
   },
 
-  render(_label: string, dimensions: ShapeDimensions, options: ShapeRenderOptions): Canvas {
+  render(
+    _label: string,
+    dimensions: ShapeDimensions,
+    options: ShapeRenderOptions,
+  ): Canvas {
     const { width, height } = dimensions
     const canvas = mkCanvas(width - 1, height - 1)
 
-    const centerX = Math.floor(width / 2)  // = 2
+    const centerX = Math.floor(width / 2) // = 2
 
     if (!options.useAscii) {
       // Unicode double-bordered box with bullseye: ╔═══╗ ║ ◎ ║ ╚═══╝
@@ -176,7 +188,7 @@ export const stateEndRenderer: ShapeRenderer = {
   getAttachmentPoint(
     dir: Direction,
     dimensions: ShapeDimensions,
-    baseCoord: DrawingCoord
+    baseCoord: DrawingCoord,
   ): DrawingCoord {
     const { width, height } = dimensions
     const centerX = baseCoord.x + Math.floor(width / 2)

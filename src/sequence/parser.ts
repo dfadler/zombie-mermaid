@@ -39,7 +39,12 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
   // Track actor IDs to auto-create actors referenced in messages
   const actorIds = new Set<string>()
   // Track block nesting with a stack
-  const blockStack: Array<{ type: Block['type']; label: string; startIndex: number; dividers: Block['dividers'] }> = []
+  const blockStack: Array<{
+    type: Block['type']
+    label: string
+    startIndex: number
+    dividers: Block['dividers']
+  }> = []
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!
@@ -47,7 +52,9 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     // --- Participant / Actor declaration ---
     // "participant A as Alice" or "participant Alice"
     // "actor B as Bob" or "actor Bob"
-    const actorMatch = line.match(/^(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/)
+    const actorMatch = line.match(
+      /^(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/,
+    )
     if (actorMatch) {
       const type = actorMatch[1] as 'participant' | 'actor'
       const id = actorMatch[2]!
@@ -62,12 +69,14 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
 
     // --- Note ---
     // "Note left of A: text" / "Note right of A: text" / "Note over A,B: text"
-    const noteMatch = line.match(/^Note\s+(left of|right of|over)\s+([^:]+):\s*(.+)$/i)
+    const noteMatch = line.match(
+      /^Note\s+(left of|right of|over)\s+([^:]+):\s*(.+)$/i,
+    )
     if (noteMatch) {
       const posStr = noteMatch[1]!.toLowerCase()
       const actorsStr = noteMatch[2]!.trim()
       const text = normalizeBrTags(noteMatch[3]!.trim())
-      const noteActorIds = actorsStr.split(',').map(s => s.trim())
+      const noteActorIds = actorsStr.split(',').map((s) => s.trim())
 
       // Ensure actors exist
       for (const aid of noteActorIds) {
@@ -88,7 +97,9 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     }
 
     // --- Block start: loop, alt, opt, par, critical, break, rect ---
-    const blockMatch = line.match(/^(loop|alt|opt|par|critical|break|rect)\s*(.*)$/)
+    const blockMatch = line.match(
+      /^(loop|alt|opt|par|critical|break|rect)\s*(.*)$/,
+    )
     if (blockMatch) {
       const blockType = blockMatch[1] as Block['type']
       const rawBlockLabel = blockMatch[2]?.trim() ?? ''
@@ -131,7 +142,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     // Patterns: A->>B, A-->>B, A-)B, A--)B, with optional +/- activation
     // Format: FROM ARROW TO: LABEL
     const msgMatch = line.match(
-      /^(\S+?)\s*(--?>?>|--?[)x]|--?>>|--?>)\s*([+-]?)(\S+?)\s*:\s*(.+)$/
+      /^(\S+?)\s*(--?>?>|--?[)x]|--?>>|--?>)\s*([+-]?)(\S+?)\s*:\s*(.+)$/,
     )
     if (msgMatch) {
       const from = msgMatch[1]!
@@ -147,7 +158,8 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       // Determine line style and arrow head from the arrow operator
       const lineStyle = arrow.startsWith('--') ? 'dashed' : 'solid'
       // ">>" = filled arrow, ")" or ">" alone = open arrow, "x" = cross (treat as filled)
-      const arrowHead = arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
+      const arrowHead =
+        arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
 
       const msg: Message = {
         from,
@@ -167,7 +179,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
 
     // --- Simplified message format: A->>B: Label (fallback with more relaxed regex) ---
     const simpleMsgMatch = line.match(
-      /^(\S+?)\s*(->>|-->>|-\)|--\)|-x|--x|->|-->)\s*([+-]?)(\S+?)\s*:\s*(.+)$/
+      /^(\S+?)\s*(->>|-->>|-\)|--\)|-x|--x|->|-->)\s*([+-]?)(\S+?)\s*:\s*(.+)$/,
     )
     if (simpleMsgMatch) {
       const from = simpleMsgMatch[1]!
@@ -180,7 +192,8 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       ensureActor(diagram, actorIds, to)
 
       const lineStyle = arrow.startsWith('--') ? 'dashed' : 'solid'
-      const arrowHead = arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
+      const arrowHead =
+        arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
 
       const msg: Message = { from, to, label, lineStyle, arrowHead }
       if (activationMark === '+') msg.activate = true
@@ -199,7 +212,11 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
 }
 
 /** Ensure an actor exists, creating a default participant if not */
-function ensureActor(diagram: SequenceDiagram, actorIds: Set<string>, id: string): void {
+function ensureActor(
+  diagram: SequenceDiagram,
+  actorIds: Set<string>,
+  id: string,
+): void {
   if (!actorIds.has(id)) {
     actorIds.add(id)
     diagram.actors.push({ id, label: id, type: 'participant' })

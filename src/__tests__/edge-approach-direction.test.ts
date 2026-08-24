@@ -68,7 +68,7 @@ function getApproachSide(
   nodeX: number,
   nodeY: number,
   nodeWidth: number,
-  nodeHeight: number
+  nodeHeight: number,
 ): 'top' | 'bottom' | 'left' | 'right' {
   // Check which edge the point is closest to
   const distTop = Math.abs(point.y - nodeY)
@@ -96,7 +96,7 @@ describe('Edge Approach Direction', () => {
       const positioned = layoutGraphSync(parsed, {})
 
       const edge = positioned.edges.find(
-        (e) => e.source === 'A' && e.target === 'B'
+        (e) => e.source === 'A' && e.target === 'B',
       )
       expect(edge).toBeDefined()
 
@@ -153,7 +153,7 @@ describe('Edge Approach Direction', () => {
           targetNode!.x,
           targetNode!.y,
           targetNode!.width,
-          targetNode!.height
+          targetNode!.height,
         )
 
         // For top/bottom approach, final segment must be vertical
@@ -174,7 +174,7 @@ describe('Edge Approach Direction', () => {
       const positioned = layoutGraphSync(parsed, {})
 
       const edge = positioned.edges.find(
-        (e) => e.source === 'A' && e.target === 'B'
+        (e) => e.source === 'A' && e.target === 'B',
       )
       expect(edge).toBeDefined()
 
@@ -247,7 +247,7 @@ describe('Edge Approach Direction', () => {
 
       // Edge A → B should approach B's top vertically
       const edgeAB = positioned.edges.find(
-        (e) => e.source === 'A' && e.target === 'B'
+        (e) => e.source === 'A' && e.target === 'B',
       )
       expect(edgeAB).toBeDefined()
 
@@ -264,7 +264,7 @@ describe('Edge Approach Direction', () => {
         B --> C[End]`)
       const positioned = layoutGraphSync(parsed, {})
 
-      const diamond = positioned.nodes.find(n => n.id === 'B')
+      const diamond = positioned.nodes.find((n) => n.id === 'B')
       expect(diamond).toBeDefined()
       expect(diamond!.shape).toBe('diamond')
 
@@ -274,14 +274,18 @@ describe('Edge Approach Direction', () => {
       const bottomY = diamond!.y + diamond!.height
 
       // Edge A → B should end at the diamond's top vertex
-      const edgeAB = positioned.edges.find(e => e.source === 'A' && e.target === 'B')
+      const edgeAB = positioned.edges.find(
+        (e) => e.source === 'A' && e.target === 'B',
+      )
       expect(edgeAB).toBeDefined()
       const endPointAB = edgeAB!.points[edgeAB!.points.length - 1]!
       expect(endPointAB.x).toBeCloseTo(cx, 0)
       expect(endPointAB.y).toBeCloseTo(topY, 0)
 
       // Edge B → C should start from the diamond's bottom vertex
-      const edgeBC = positioned.edges.find(e => e.source === 'B' && e.target === 'C')
+      const edgeBC = positioned.edges.find(
+        (e) => e.source === 'B' && e.target === 'C',
+      )
       expect(edgeBC).toBeDefined()
       const startPointBC = edgeBC!.points[0]!
       expect(startPointBC.x).toBeCloseTo(cx, 0)

@@ -8,7 +8,15 @@
 
 import type { GridCoord, Direction, AsciiEdge, AsciiGraph } from './types.ts'
 import {
-  Up, Down, Left, Right, UpperRight, UpperLeft, LowerRight, LowerLeft, Middle,
+  Up,
+  Down,
+  Left,
+  Right,
+  UpperRight,
+  UpperLeft,
+  LowerRight,
+  LowerLeft,
+  Middle,
   gridCoordDirection,
 } from './types.ts'
 import { getPath, mergePath } from './pathfinder.ts'
@@ -39,7 +47,10 @@ export function dirEquals(a: Direction, b: Direction): boolean {
  * Determine 8-way direction from one coordinate to another.
  * Uses the coordinate difference to pick one of 8 cardinal/ordinal directions.
  */
-export function determineDirection(from: { x: number; y: number }, to: { x: number; y: number }): Direction {
+export function determineDirection(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+): Direction {
   if (from.x === to.x) {
     return from.y < to.y ? Down : Up
   } else if (from.y === to.y) {
@@ -56,7 +67,9 @@ export function determineDirection(from: { x: number; y: number }, to: { x: numb
 // ============================================================================
 
 /** Self-reference routing (node points to itself). */
-function selfReferenceDirection(graphDirection: string): [Direction, Direction, Direction, Direction] {
+function selfReferenceDirection(
+  graphDirection: string,
+): [Direction, Direction, Direction, Direction] {
   if (graphDirection === 'LR') return [Right, Down, Down, Right]
   return [Down, Right, Right, Down]
 }
@@ -81,60 +94,90 @@ export function determineStartAndEndDir(
   let alternativeDir: Direction
   let alternativeOppositeDir: Direction
 
-  const isBackwards = graphDirection === 'LR'
-    ? (dirEquals(d, Left) || dirEquals(d, UpperLeft) || dirEquals(d, LowerLeft))
-    : (dirEquals(d, Up) || dirEquals(d, UpperLeft) || dirEquals(d, UpperRight))
+  const isBackwards =
+    graphDirection === 'LR'
+      ? dirEquals(d, Left) || dirEquals(d, UpperLeft) || dirEquals(d, LowerLeft)
+      : dirEquals(d, Up) || dirEquals(d, UpperLeft) || dirEquals(d, UpperRight)
 
   if (dirEquals(d, LowerRight)) {
     if (graphDirection === 'LR') {
-      preferredDir = Down; preferredOppositeDir = Left
-      alternativeDir = Right; alternativeOppositeDir = Up
+      preferredDir = Down
+      preferredOppositeDir = Left
+      alternativeDir = Right
+      alternativeOppositeDir = Up
     } else {
-      preferredDir = Right; preferredOppositeDir = Up
-      alternativeDir = Down; alternativeOppositeDir = Left
+      preferredDir = Right
+      preferredOppositeDir = Up
+      alternativeDir = Down
+      alternativeOppositeDir = Left
     }
   } else if (dirEquals(d, UpperRight)) {
     if (graphDirection === 'LR') {
-      preferredDir = Up; preferredOppositeDir = Left
-      alternativeDir = Right; alternativeOppositeDir = Down
+      preferredDir = Up
+      preferredOppositeDir = Left
+      alternativeDir = Right
+      alternativeOppositeDir = Down
     } else {
-      preferredDir = Right; preferredOppositeDir = Down
-      alternativeDir = Up; alternativeOppositeDir = Left
+      preferredDir = Right
+      preferredOppositeDir = Down
+      alternativeDir = Up
+      alternativeOppositeDir = Left
     }
   } else if (dirEquals(d, LowerLeft)) {
     if (graphDirection === 'LR') {
-      preferredDir = Down; preferredOppositeDir = Down
-      alternativeDir = Left; alternativeOppositeDir = Up
+      preferredDir = Down
+      preferredOppositeDir = Down
+      alternativeDir = Left
+      alternativeOppositeDir = Up
     } else {
-      preferredDir = Left; preferredOppositeDir = Up
-      alternativeDir = Down; alternativeOppositeDir = Right
+      preferredDir = Left
+      preferredOppositeDir = Up
+      alternativeDir = Down
+      alternativeOppositeDir = Right
     }
   } else if (dirEquals(d, UpperLeft)) {
     if (graphDirection === 'LR') {
-      preferredDir = Down; preferredOppositeDir = Down
-      alternativeDir = Left; alternativeOppositeDir = Down
+      preferredDir = Down
+      preferredOppositeDir = Down
+      alternativeDir = Left
+      alternativeOppositeDir = Down
     } else {
-      preferredDir = Right; preferredOppositeDir = Right
-      alternativeDir = Up; alternativeOppositeDir = Right
+      preferredDir = Right
+      preferredOppositeDir = Right
+      alternativeDir = Up
+      alternativeOppositeDir = Right
     }
   } else if (isBackwards) {
     if (graphDirection === 'LR' && dirEquals(d, Left)) {
-      preferredDir = Down; preferredOppositeDir = Down
-      alternativeDir = Left; alternativeOppositeDir = Right
+      preferredDir = Down
+      preferredOppositeDir = Down
+      alternativeDir = Left
+      alternativeOppositeDir = Right
     } else if (graphDirection === 'TD' && dirEquals(d, Up)) {
-      preferredDir = Right; preferredOppositeDir = Right
-      alternativeDir = Up; alternativeOppositeDir = Down
+      preferredDir = Right
+      preferredOppositeDir = Right
+      alternativeDir = Up
+      alternativeOppositeDir = Down
     } else {
-      preferredDir = d; preferredOppositeDir = getOpposite(d)
-      alternativeDir = d; alternativeOppositeDir = getOpposite(d)
+      preferredDir = d
+      preferredOppositeDir = getOpposite(d)
+      alternativeDir = d
+      alternativeOppositeDir = getOpposite(d)
     }
   } else {
     // Default: go in the natural direction
-    preferredDir = d; preferredOppositeDir = getOpposite(d)
-    alternativeDir = d; alternativeOppositeDir = getOpposite(d)
+    preferredDir = d
+    preferredOppositeDir = getOpposite(d)
+    alternativeDir = d
+    alternativeOppositeDir = getOpposite(d)
   }
 
-  return [preferredDir, preferredOppositeDir, alternativeDir, alternativeOppositeDir]
+  return [
+    preferredDir,
+    preferredOppositeDir,
+    alternativeDir,
+    alternativeOppositeDir,
+  ]
 }
 
 // ============================================================================
@@ -158,12 +201,17 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // Otherwise, use the graph's direction (not source's effective direction)
   const sourceSg = getNodeSubgraph(graph, edge.from)
   const targetSg = getNodeSubgraph(graph, edge.to)
-  const effectiveDir = (sourceSg && sourceSg === targetSg && sourceSg.direction)
-    ? sourceSg.direction
-    : graph.config.graphDirection
+  const effectiveDir =
+    sourceSg && sourceSg === targetSg && sourceSg.direction
+      ? sourceSg.direction
+      : graph.config.graphDirection
 
-  const [preferredDir, preferredOppositeDir, alternativeDir, alternativeOppositeDir] =
-    determineStartAndEndDir(edge, effectiveDir)
+  const [
+    preferredDir,
+    preferredOppositeDir,
+    alternativeDir,
+    alternativeOppositeDir,
+  ] = determineStartAndEndDir(edge, effectiveDir)
 
   // Try preferred path
   const prefFrom = gridCoordDirection(edge.from.gridCoord!, preferredDir)
@@ -250,7 +298,9 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
 
   // Find segments wide enough for the label, excluding the first segment
   // The first segment is often shared between edges from the same source node
-  const suitableSegments = segments.filter(s => s.width >= lenLabel && s.index > 1)
+  const suitableSegments = segments.filter(
+    (s) => s.width >= lenLabel && s.index > 1,
+  )
 
   let largestLine: [GridCoord, GridCoord]
 
@@ -261,7 +311,7 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     largestLine = suitableSegments[0]!.line
   } else {
     // Fall back to any suitable segment including the first
-    const fallbackSegments = segments.filter(s => s.width >= lenLabel)
+    const fallbackSegments = segments.filter((s) => s.width >= lenLabel)
     if (fallbackSegments.length > 0) {
       fallbackSegments.sort((a, b) => b.index - a.index)
       largestLine = fallbackSegments[0]!.line
@@ -284,7 +334,10 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
 }
 
 /** Calculate the total character width of a line segment by summing column widths. */
-function calculateLineWidth(graph: AsciiGraph, line: [GridCoord, GridCoord]): number {
+function calculateLineWidth(
+  graph: AsciiGraph,
+  line: [GridCoord, GridCoord],
+): number {
   let total = 0
   const startX = Math.min(line[0].x, line[1].x)
   const endX = Math.max(line[0].x, line[1].x)

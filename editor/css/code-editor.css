@@ -7,7 +7,7 @@
 
 .line-numbers {
   padding: 2.75rem 0.5rem 1rem 0.75rem;
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   line-height: 1.6;
   color: var(--fg4);
@@ -28,7 +28,7 @@
   outline: none;
   resize: none;
   color: var(--fg);
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   line-height: 1.6;
   tab-size: 2;
@@ -45,7 +45,7 @@
   justify-content: space-between;
   padding: 0 0.75rem;
   height: 28px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--fg3);
   flex-shrink: 0;

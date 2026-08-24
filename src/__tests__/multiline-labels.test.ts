@@ -13,7 +13,11 @@ import { parseMermaid } from '../parser.ts'
 import { parseSequenceDiagram } from '../sequence/parser.ts'
 import { parseClassDiagram } from '../class/parser.ts'
 import { parseErDiagram } from '../er/parser.ts'
-import { measureMultilineText, LINE_HEIGHT_RATIO, measureTextWidth } from '../text-metrics.ts'
+import {
+  measureMultilineText,
+  LINE_HEIGHT_RATIO,
+  measureTextWidth,
+} from '../text-metrics.ts'
 import { renderMermaid } from '../index.ts'
 import { normalizeBrTags, stripFormattingTags } from '../multiline-utils.ts'
 
@@ -126,7 +130,11 @@ describe('parseMermaid – <br> tag normalization', () => {
 
   describe('sequence diagram labels', () => {
     it('normalizes <br> in participant alias labels', () => {
-      const lines = ['sequenceDiagram', 'participant A as First<br>Line', 'A->>A: test']
+      const lines = [
+        'sequenceDiagram',
+        'participant A as First<br>Line',
+        'A->>A: test',
+      ]
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.actors[0]!.label).toBe('First\nLine')
     })
@@ -138,19 +146,37 @@ describe('parseMermaid – <br> tag normalization', () => {
     })
 
     it('normalizes <br> in note text', () => {
-      const lines = ['sequenceDiagram', 'A->>B: Hello', 'Note over A,B: First<br>Second']
+      const lines = [
+        'sequenceDiagram',
+        'A->>B: Hello',
+        'Note over A,B: First<br>Second',
+      ]
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.notes[0]!.text).toBe('First\nSecond')
     })
 
     it('normalizes <br> in block labels', () => {
-      const lines = ['sequenceDiagram', 'A->>B: Hello', 'loop Every<br>30s', 'A->>B: Ping', 'end']
+      const lines = [
+        'sequenceDiagram',
+        'A->>B: Hello',
+        'loop Every<br>30s',
+        'A->>B: Ping',
+        'end',
+      ]
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.blocks[0]!.label).toBe('Every\n30s')
     })
 
     it('normalizes <br> in divider labels', () => {
-      const lines = ['sequenceDiagram', 'A->>B: Hello', 'alt First<br>case', 'A->>B: a', 'else Second<br>case', 'A->>B: b', 'end']
+      const lines = [
+        'sequenceDiagram',
+        'A->>B: Hello',
+        'alt First<br>case',
+        'A->>B: a',
+        'else Second<br>case',
+        'A->>B: b',
+        'end',
+      ]
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.blocks[0]!.dividers[0]!.label).toBe('Second\ncase')
     })
@@ -184,7 +210,12 @@ describe('parseMermaid – <br> tag normalization', () => {
     })
 
     it('normalizes <br> in attribute comments', () => {
-      const lines = ['erDiagram', 'CUSTOMER {', 'int id PK "primary<br>key"', '}']
+      const lines = [
+        'erDiagram',
+        'CUSTOMER {',
+        'int id PK "primary<br>key"',
+        '}',
+      ]
       const diagram = parseErDiagram(lines)
       expect(diagram.entities[0]!.attributes[0]!.comment).toBe('primary\nkey')
     })
@@ -209,7 +240,11 @@ describe('measureMultilineText', () => {
   })
 
   it('splits text on newlines', () => {
-    const metrics = measureMultilineText('Line1\nLine2\nLine3', fontSize, fontWeight)
+    const metrics = measureMultilineText(
+      'Line1\nLine2\nLine3',
+      fontSize,
+      fontWeight,
+    )
     expect(metrics.lines).toEqual(['Line1', 'Line2', 'Line3'])
   })
 
@@ -226,7 +261,11 @@ describe('measureMultilineText', () => {
   })
 
   it('uses maximum line width for overall width', () => {
-    const metrics = measureMultilineText('Short\nMuch Longer Line\nMedium', fontSize, fontWeight)
+    const metrics = measureMultilineText(
+      'Short\nMuch Longer Line\nMedium',
+      fontSize,
+      fontWeight,
+    )
 
     const shortWidth = measureTextWidth('Short', fontSize, fontWeight)
     const longWidth = measureTextWidth('Much Longer Line', fontSize, fontWeight)
@@ -337,7 +376,9 @@ describe('renderMermaid – multi-line layout sizing', () => {
 
   it('3-line node is taller than 2-line node', async () => {
     const twoLineSvg = await renderMermaid('graph TD\n  A[One<br>Two]')
-    const threeLineSvg = await renderMermaid('graph TD\n  A[One<br>Two<br>Three]')
+    const threeLineSvg = await renderMermaid(
+      'graph TD\n  A[One<br>Two<br>Three]',
+    )
 
     const twoLineHeight = extractFirstRectHeight(twoLineSvg)
     const threeLineHeight = extractFirstRectHeight(threeLineSvg)
@@ -545,7 +586,9 @@ describe('renderMermaid – inline formatting', () => {
   })
 
   it('renders <strong> as font-weight="bold"', async () => {
-    const svg = await renderMermaid('graph TD\n  A[Hello <strong>bold</strong>]')
+    const svg = await renderMermaid(
+      'graph TD\n  A[Hello <strong>bold</strong>]',
+    )
     expect(svg).toContain('font-weight="bold"')
   })
 
@@ -561,7 +604,9 @@ describe('renderMermaid – inline formatting', () => {
   })
 
   it('renders <u> as text-decoration="underline"', async () => {
-    const svg = await renderMermaid('graph TD\n  A[Hello <u>underline</u> text]')
+    const svg = await renderMermaid(
+      'graph TD\n  A[Hello <u>underline</u> text]',
+    )
     expect(svg).toContain('text-decoration="underline"')
     expect(svg).toContain('>underline</tspan>')
   })
@@ -624,7 +669,9 @@ describe('normalizeBrTags – tag handling', () => {
   })
 
   it('strips <mark> tags', () => {
-    expect(normalizeBrTags('some <mark>highlighted</mark> text')).toBe('some highlighted text')
+    expect(normalizeBrTags('some <mark>highlighted</mark> text')).toBe(
+      'some highlighted text',
+    )
   })
 
   it('preserves <b> tags for rendering', () => {
@@ -646,15 +693,21 @@ describe('normalizeBrTags – tag handling', () => {
 
 describe('stripFormattingTags', () => {
   it('strips all formatting tags', () => {
-    expect(stripFormattingTags('<b>bold</b> and <i>italic</i>')).toBe('bold and italic')
+    expect(stripFormattingTags('<b>bold</b> and <i>italic</i>')).toBe(
+      'bold and italic',
+    )
   })
 
   it('strips <strong> and <em>', () => {
-    expect(stripFormattingTags('<strong>bold</strong> <em>italic</em>')).toBe('bold italic')
+    expect(stripFormattingTags('<strong>bold</strong> <em>italic</em>')).toBe(
+      'bold italic',
+    )
   })
 
   it('strips <u>, <s>, <del>', () => {
-    expect(stripFormattingTags('<u>under</u> <s>strike</s> <del>del</del>')).toBe('under strike del')
+    expect(
+      stripFormattingTags('<u>under</u> <s>strike</s> <del>del</del>'),
+    ).toBe('under strike del')
   })
 
   it('handles nested tags', () => {
@@ -681,7 +734,11 @@ describe('measureMultilineText – formatting tag exclusion', () => {
   })
 
   it('excludes nested tags from width', () => {
-    const withTags = measureMultilineText('<b><i>text</i></b>', fontSize, fontWeight)
+    const withTags = measureMultilineText(
+      '<b><i>text</i></b>',
+      fontSize,
+      fontWeight,
+    )
     const plain = measureMultilineText('text', fontSize, fontWeight)
     expect(withTags.width).toBe(plain.width)
   })
@@ -694,7 +751,9 @@ describe('measureMultilineText – formatting tag exclusion', () => {
 describe('renderMermaid – HTML entity decoding', () => {
   it('decodes &lt; and &gt; in node labels (prevents double-escaping)', async () => {
     // Input has pre-encoded entities (as delivered by react-markdown + rehype-raw)
-    const svg = await renderMermaid('graph LR\n  A[AsyncGenerator&lt;AgentEvent&gt;]')
+    const svg = await renderMermaid(
+      'graph LR\n  A[AsyncGenerator&lt;AgentEvent&gt;]',
+    )
 
     // SVG should contain single-encoded &lt; (correct XML), NOT double-encoded &amp;lt;
     expect(svg).toContain('AsyncGenerator&lt;AgentEvent&gt;')
@@ -773,7 +832,9 @@ describe('normalizeBrTags – markdown formatting', () => {
   })
 
   it('handles bold and italic together', () => {
-    expect(normalizeBrTags('**bold** and *italic*')).toBe('<b>bold</b> and <i>italic</i>')
+    expect(normalizeBrTags('**bold** and *italic*')).toBe(
+      '<b>bold</b> and <i>italic</i>',
+    )
   })
 
   it('does not match single * surrounded by spaces (multiplication)', () => {
@@ -788,15 +849,21 @@ describe('normalizeBrTags – markdown formatting', () => {
   })
 
   it('handles multiple bold segments', () => {
-    expect(normalizeBrTags('**one** and **two**')).toBe('<b>one</b> and <b>two</b>')
+    expect(normalizeBrTags('**one** and **two**')).toBe(
+      '<b>one</b> and <b>two</b>',
+    )
   })
 
   it('handles bold with <br> multiline', () => {
-    expect(normalizeBrTags('Line1<br>**Bold Line2**')).toBe('Line1\n<b>Bold Line2</b>')
+    expect(normalizeBrTags('Line1<br>**Bold Line2**')).toBe(
+      'Line1\n<b>Bold Line2</b>',
+    )
   })
 
   it('preserves existing HTML <b> tags alongside markdown', () => {
-    expect(normalizeBrTags('<b>html</b> and **md**')).toBe('<b>html</b> and <b>md</b>')
+    expect(normalizeBrTags('<b>html</b> and **md**')).toBe(
+      '<b>html</b> and <b>md</b>',
+    )
   })
 
   it('does not affect text without markdown formatting', () => {

@@ -7,9 +7,20 @@
  */
 
 import type { ElkNode, ElkExtendedEdge } from 'elkjs'
-import type { ErDiagram, ErEntity, PositionedErDiagram, PositionedErEntity, PositionedErRelationship } from './types.ts'
+import type {
+  ErDiagram,
+  ErEntity,
+  PositionedErDiagram,
+  PositionedErEntity,
+  PositionedErRelationship,
+} from './types.ts'
 import type { RenderOptions, Point } from '../types.ts'
-import { estimateTextWidth, estimateMonoTextWidth, FONT_SIZES, FONT_WEIGHTS } from '../styles.ts'
+import {
+  estimateTextWidth,
+  estimateMonoTextWidth,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+} from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
 
@@ -31,20 +42,29 @@ type EntitySizeMap = Map<string, { width: number; height: number }>
 /** Build ELK graph and size map from an ER diagram. */
 function buildErElkGraph(
   diagram: ErDiagram,
-  _options: RenderOptions
+  _options: RenderOptions,
 ): { elkGraph: ElkNode; entitySizes: EntitySizeMap } {
   const entitySizes: EntitySizeMap = new Map()
 
   for (const entity of diagram.entities) {
-    const headerTextW = estimateTextWidth(entity.label, FONT_SIZES.nodeLabel, FONT_WEIGHTS.nodeLabel)
+    const headerTextW = estimateTextWidth(
+      entity.label,
+      FONT_SIZES.nodeLabel,
+      FONT_WEIGHTS.nodeLabel,
+    )
     let maxAttrW = 0
     for (const attr of entity.attributes) {
       const attrText = `${attr.type}  ${attr.name}${attr.keys.length > 0 ? '  ' + attr.keys.join(',') : ''}`
       const w = estimateMonoTextWidth(attrText, ER.attrFontSize)
       if (w > maxAttrW) maxAttrW = w
     }
-    const width = Math.max(ER.minWidth, headerTextW + ER.boxPadX * 2, maxAttrW + ER.boxPadX * 2)
-    const height = ER.headerHeight + Math.max(entity.attributes.length, 1) * ER.rowHeight
+    const width = Math.max(
+      ER.minWidth,
+      headerTextW + ER.boxPadX * 2,
+      maxAttrW + ER.boxPadX * 2,
+    )
+    const height =
+      ER.headerHeight + Math.max(entity.attributes.length, 1) * ER.rowHeight
     entitySizes.set(entity.id, { width, height })
   }
 
@@ -65,15 +85,33 @@ function buildErElkGraph(
 
   for (const entity of diagram.entities) {
     const size = entitySizes.get(entity.id)!
-    elkGraph.children!.push({ id: entity.id, width: size.width, height: size.height })
+    elkGraph.children!.push({
+      id: entity.id,
+      width: size.width,
+      height: size.height,
+    })
   }
 
   for (let i = 0; i < diagram.relationships.length; i++) {
     const rel = diagram.relationships[i]!
-    const metrics = measureMultilineText(rel.label, FONT_SIZES.edgeLabel, FONT_WEIGHTS.edgeLabel)
-    const edge: ElkExtendedEdge = { id: `e${i}`, sources: [rel.entity1], targets: [rel.entity2] }
+    const metrics = measureMultilineText(
+      rel.label,
+      FONT_SIZES.edgeLabel,
+      FONT_WEIGHTS.edgeLabel,
+    )
+    const edge: ElkExtendedEdge = {
+      id: `e${i}`,
+      sources: [rel.entity1],
+      targets: [rel.entity2],
+    }
     if (rel.label) {
-      edge.labels = [{ text: rel.label, width: metrics.width + 8, height: metrics.height + 6 }]
+      edge.labels = [
+        {
+          text: rel.label,
+          width: metrics.width + 8,
+          height: metrics.height + 6,
+        },
+      ]
     }
     elkGraph.edges!.push(edge)
   }
@@ -85,7 +123,7 @@ function buildErElkGraph(
 function extractErLayout(
   result: ElkNode,
   diagram: ErDiagram,
-  entitySizes: EntitySizeMap
+  entitySizes: EntitySizeMap,
 ): PositionedErDiagram {
   const entityLookup = new Map<string, ErEntity>()
   for (const entity of diagram.entities) entityLookup.set(entity.id, entity)
@@ -149,7 +187,7 @@ function extractErLayout(
  */
 export function layoutErDiagramSync(
   diagram: ErDiagram,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ): PositionedErDiagram {
   if (diagram.entities.length === 0) {
     return { width: 0, height: 0, entities: [], relationships: [] }

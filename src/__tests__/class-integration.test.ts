@@ -83,10 +83,13 @@ describe('renderMermaidSVG – class diagrams', () => {
   })
 
   it('renders with dark colors', () => {
-    const svg = renderMermaidSVG(`classDiagram
+    const svg = renderMermaidSVG(
+      `classDiagram
       class A {
         +x int
-      }`, { bg: '#18181B', fg: '#FAFAFA' })
+      }`,
+      { bg: '#18181B', fg: '#FAFAFA' },
+    )
     expect(svg).toContain('--bg:#18181B')
   })
 

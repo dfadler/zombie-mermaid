@@ -1,4 +1,10 @@
-import type { ErDiagram, ErEntity, ErAttribute, ErRelationship, Cardinality } from './types.ts'
+import type {
+  ErDiagram,
+  ErEntity,
+  ErAttribute,
+  ErRelationship,
+  Cardinality,
+} from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
 
 // ============================================================================
@@ -136,7 +142,9 @@ function parseAttribute(line: string): ErAttribute | null {
  */
 function parseRelationshipLine(line: string): ErRelationship | null {
   // Match: ENTITY1 <cardinality_and_line> ENTITY2 : label
-  const match = line.match(/^(\S+)\s+([|o}{]+(?:--|\.\.)[|o}{]+)\s+(\S+)\s*:\s*(.+)$/)
+  const match = line.match(
+    /^(\S+)\s+([|o}{]+(?:--|\.\.)[|o}{]+)\s+(\S+)\s*:\s*(.+)$/,
+  )
   if (!match) return null
 
   const entity1 = match[1]!
