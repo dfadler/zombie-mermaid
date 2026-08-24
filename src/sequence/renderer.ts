@@ -1,8 +1,8 @@
 import type { PositionedSequenceDiagram, PositionedActor, Lifeline, PositionedMessage, Activation, PositionedBlock, PositionedNote } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
-import { FONT_SIZES, FONT_WEIGHTS, STROKE_WIDTHS, ARROW_HEAD, estimateTextWidth, TEXT_BASELINE_SHIFT } from '../styles.ts'
-import { renderMultilineText, escapeXml as escapeXmlUtil } from '../multiline-utils.ts'
+import { FONT_SIZES, FONT_WEIGHTS, STROKE_WIDTHS, ARROW_HEAD, estimateTextWidth } from '../styles.ts'
+import { renderMultilineText } from '../multiline-utils.ts'
 
 // ============================================================================
 // Sequence diagram SVG renderer
@@ -330,9 +330,6 @@ function renderNote(note: PositionedNote): string {
 // ============================================================================
 // Utilities
 // ============================================================================
-
-// Use shared escapeXml from multiline-utils
-const escapeXml = escapeXmlUtil
 
 /**
  * Escape a string for use as an XML/HTML attribute value.

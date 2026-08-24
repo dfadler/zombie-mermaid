@@ -67,8 +67,6 @@ export function clipEdgeToShape(
 function clipToDiamond(endpoint: Point, adjacent: Point, node: PositionedNode): Point {
   const cx = node.x + node.width / 2
   const cy = node.y + node.height / 2
-  const halfW = node.width / 2
-  const halfH = node.height / 2
 
   // Diamond vertices
   const top: Point = { x: cx, y: node.y }

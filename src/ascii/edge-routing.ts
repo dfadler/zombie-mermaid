@@ -12,7 +12,7 @@ import {
   gridCoordDirection,
 } from './types.ts'
 import { getPath, mergePath } from './pathfinder.ts'
-import { getEffectiveDirection, getNodeSubgraph } from './grid.ts'
+import { getNodeSubgraph } from './grid.ts'
 
 // ============================================================================
 // Direction utilities
@@ -229,7 +229,6 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
 
   const lenLabel = edge.text.length
   const pathLen = edge.path.length
-  const isVerticalFlow = graph.config.graphDirection === 'TD'
 
   // Collect all segments with their widths and orientation
   const segments: {

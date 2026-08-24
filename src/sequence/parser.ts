@@ -1,4 +1,4 @@
-import type { SequenceDiagram, Actor, Message, Block, Note } from './types.ts'
+import type { SequenceDiagram, Message, Block } from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
 
 // ============================================================================

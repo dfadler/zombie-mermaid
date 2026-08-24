@@ -97,7 +97,7 @@ function parseTestCase(content: string): TestCase {
  */
 function normalizeWhitespace(s: string): string {
   const lines = s.split('\n')
-  let normalized = lines.map(l => l.trimEnd())
+  const normalized = lines.map(l => l.trimEnd())
 
   // Remove leading blank lines
   while (normalized.length > 0 && normalized[0] === '') {

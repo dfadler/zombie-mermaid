@@ -1,9 +1,9 @@
 import type { PositionedGraph, PositionedNode, PositionedEdge, PositionedGroup, Point } from './types.ts'
 import type { DiagramColors } from './theme.ts'
 import { svgOpenTag, buildStyleBlock } from './theme.ts'
-import { FONT_SIZES, FONT_WEIGHTS, STROKE_WIDTHS, ARROW_HEAD, estimateTextWidth, TEXT_BASELINE_SHIFT } from './styles.ts'
+import { FONT_SIZES, FONT_WEIGHTS, STROKE_WIDTHS, ARROW_HEAD } from './styles.ts'
 import { measureMultilineText } from './text-metrics.ts'
-import { renderMultilineText, renderMultilineTextWithBackground, escapeXml } from './multiline-utils.ts'
+import { renderMultilineText, renderMultilineTextWithBackground } from './multiline-utils.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -239,7 +239,9 @@ function pointsToPolylinePath(points: Point[]): string {
   return points.map(p => `${p.x},${p.y}`).join(' ')
 }
 
-function renderEdgeLabel(edge: PositionedEdge, font: string): string {
+// `_font` isn't read here but is kept to match the `(entity, font)` signature
+// threaded through the rest of the render* functions in this file.
+function renderEdgeLabel(edge: PositionedEdge, _font: string): string {
   // Use layout-computed label position when available (layout-aware, avoids collisions).
   // Fall back to geometric midpoint of the edge polyline.
   const mid = edge.labelPosition ?? edgeMidpoint(edge.points)
@@ -565,7 +567,9 @@ function renderStateEnd(x: number, y: number, w: number, h: number): string {
 // Node label rendering
 // ============================================================================
 
-function renderNodeLabel(node: PositionedNode, font: string): string {
+// `_font` isn't read here but is kept to match the `(entity, font)` signature
+// threaded through the rest of the render* functions in this file.
+function renderNodeLabel(node: PositionedNode, _font: string): string {
   // State pseudostates have no label
   if (node.shape === 'state-start' || node.shape === 'state-end') {
     if (!node.label) return ''

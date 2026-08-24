@@ -70,11 +70,6 @@ function getApproachSide(
   nodeWidth: number,
   nodeHeight: number
 ): 'top' | 'bottom' | 'left' | 'right' {
-  const cx = nodeX + nodeWidth / 2
-  const cy = nodeY + nodeHeight / 2
-  const dx = point.x - cx
-  const dy = point.y - cy
-
   // Check which edge the point is closest to
   const distTop = Math.abs(point.y - nodeY)
   const distBottom = Math.abs(point.y - (nodeY + nodeHeight))

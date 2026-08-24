@@ -14,7 +14,6 @@
  */
 
 import type { ElkNode } from 'elkjs'
-// @ts-ignore — static import of bundled ELK
 import ELKBundled from 'elkjs/lib/elk.bundled.js'
 
 interface RawFakeWorker {
@@ -42,7 +41,8 @@ function ensureElk(): void {
   // Capture setTimeout(0) callbacks queued during ELK construction
   const pending: (() => void)[] = []
   const origSetTimeout = globalThis.setTimeout
-  // @ts-ignore — simplified signature for our interception
+  // @ts-expect-error — simplified signature for our interception, not
+  // assignment-compatible with the full `typeof setTimeout` overload set
   globalThis.setTimeout = (fn: () => void, delay?: number) => {
     if (delay === 0) { pending.push(fn); return 0 }
     return origSetTimeout(fn, delay)

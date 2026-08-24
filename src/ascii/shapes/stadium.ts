@@ -6,7 +6,7 @@
 // uses parentheses or rounded corners. This differs from other shapes that
 // use corner decorators with box lines.
 
-import type { Canvas, DrawingCoord, Direction } from '../types.ts'
+import type { Canvas } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import { splitLines } from '../multiline-utils.ts'
 import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'

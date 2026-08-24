@@ -11,8 +11,8 @@
 // ============================================================================
 
 import { parseClassDiagram } from '../class/parser.ts'
-import type { ClassDiagram, ClassNode, ClassMember, ClassRelationship, RelationshipType } from '../class/types.ts'
-import type { Canvas, AsciiConfig, RoleCanvas, CharRole, AsciiTheme, ColorMode } from './types.ts'
+import type { ClassNode, ClassMember, RelationshipType } from '../class/types.ts'
+import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
 import { mkCanvas, mkRoleCanvas, canvasToString, increaseSize, increaseRoleCanvasSize, setRole } from './canvas.ts'
 import { drawMultiBox } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'

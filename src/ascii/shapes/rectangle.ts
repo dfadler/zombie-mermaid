@@ -7,7 +7,7 @@
 // shapes to reuse the same rendering logic with different visual markers.
 
 import type { Canvas, DrawingCoord, Direction } from '../types.ts'
-import { Up, Down, Left, Right, UpperLeft, UpperRight, LowerLeft, LowerRight, Middle } from '../types.ts'
+import { Up, Down, Left, Right, UpperLeft, UpperRight, LowerLeft, LowerRight } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import { splitLines } from '../multiline-utils.ts'
 import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'

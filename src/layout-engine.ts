@@ -118,18 +118,6 @@ interface ElkGraphNode extends ElkNode {
 }
 
 /**
- * Tracks port-to-edge mappings for hierarchical port edges.
- * Used to combine external and internal edge sections during extraction.
- */
-interface HierarchicalEdgeInfo {
-  originalIndex: number
-  externalEdgeId: string
-  internalEdgeId: string
-  subgraphId: string
-  direction: 'incoming' | 'outgoing'
-}
-
-/**
  * Convert a MermaidGraph to ELK's nested JSON input format.
  *
  * Uses SEPARATE hierarchy handling for proper subgraph direction override support.
@@ -1108,9 +1096,6 @@ function alignLayerNodes(
   }
 
   if (deltas.size === 0) return
-
-  // Build node lookup for edge adjustment
-  const nodeMap = new Map(nodes.map(n => [n.id, n]))
 
   // Adjust edge endpoints to match shifted node positions
   for (const edge of edges) {
