@@ -10,7 +10,11 @@
 import { measureTextWidth } from './text-metrics'
 
 /** Average character width in px at the given font size and weight (proportional font) */
-export function estimateTextWidth(text: string, fontSize: number, fontWeight: number): number {
+export function estimateTextWidth(
+  text: string,
+  fontSize: number,
+  fontWeight: number,
+): number {
   // Delegate to variable-width character measurement for better accuracy
   // with mixed character sets (Latin narrow/wide, CJK, emoji, etc.)
   return measureTextWidth(text, fontSize, fontWeight)
@@ -29,7 +33,8 @@ export function estimateMonoTextWidth(text: string, fontSize: number): number {
 export const MONO_FONT = "'JetBrains Mono'" as const
 
 /** Full CSS fallback chain for monospace text */
-export const MONO_FONT_STACK = `${MONO_FONT}, 'SF Mono', 'Fira Code', ui-monospace, monospace` as const
+export const MONO_FONT_STACK =
+  `${MONO_FONT}, 'SF Mono', 'Fira Code', ui-monospace, monospace` as const
 
 /** Fixed font sizes used in the renderer (in px) */
 export const FONT_SIZES = {
@@ -93,4 +98,3 @@ export const ARROW_HEAD = {
   width: 8,
   height: 5,
 } as const
-

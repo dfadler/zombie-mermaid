@@ -35,8 +35,15 @@
     "theming"
   ],
   "author": "Craft Docs",
-  "contributors": ["Dustin Fadler (fork maintainer)"],
-  "files": ["src/", "dist/", "LICENSE", "README.md"],
+  "contributors": [
+    "Dustin Fadler (fork maintainer)"
+  ],
+  "files": [
+    "src/",
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
   "packageManager": "pnpm@11.13.0",
   "scripts": {
     "test": "vitest run",
@@ -51,6 +58,8 @@
     "deploy": "pnpm run build:site && wrangler pages deploy site --project-name craft-agents-mermaid",
     "xychart-test": "tsx xychart-test.ts",
     "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -62,6 +71,8 @@
     "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
     "shiki": "^3.19.0",
     "tsup": "^8.5.1",
     "tsx": "^4.23.12",

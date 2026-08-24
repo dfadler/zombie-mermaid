@@ -34,9 +34,9 @@ const THEME_LABELS: Record<string, string> = {
   'tokyo-night-light': 'Tokyo Light',
   'catppuccin-mocha': 'Catppuccin',
   'catppuccin-latte': 'Latte',
-  'nord': 'Nord',
+  nord: 'Nord',
   'nord-light': 'Nord Light',
-  'dracula': 'Dracula',
+  dracula: 'Dracula',
   'github-light': 'GitHub',
   'github-dark': 'GitHub Dark',
   'solarized-light': 'Solarized',
@@ -69,24 +69,32 @@ async function generateHtml(): Promise<string> {
     categories.get(cat)!.push(i)
   })
 
-  const tocSections = [...categories.entries()].map(([cat, indices]) => {
-    const items = indices.map(i => {
-      const title = xychartSamples[i]!.title
-      return `<li><a href="#sample-${i}"><span class="toc-num">${i + 1}.</span> ${escapeHtml(title)}</a></li>`
-    }).join('\n            ')
-    return `
+  const tocSections = [...categories.entries()]
+    .map(([cat, indices]) => {
+      const items = indices
+        .map((i) => {
+          const title = xychartSamples[i]!.title
+          return `<li><a href="#sample-${i}"><span class="toc-num">${i + 1}.</span> ${escapeHtml(title)}</a></li>`
+        })
+        .join('\n            ')
+      return `
         <div class="toc-category">
           <h3>${escapeHtml(cat)} (${indices.length})</h3>
           <ol start="${indices[0]! + 1}">
             ${items}
           </ol>
         </div>`
-  }).join('\n')
+    })
+    .join('\n')
 
   // Theme pills
   const VISIBLE_THEMES = new Set(['dracula', 'solarized-light'])
 
-  function buildThemePill(key: string, colors: { bg: string; fg: string }, active = false): string {
+  function buildThemePill(
+    key: string,
+    colors: { bg: string; fg: string },
+    active = false,
+  ): string {
     const isDark = parseInt(colors.bg.replace('#', '').slice(0, 2), 16) < 0x80
     const shadow = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
     const label = key === '' ? 'Default' : (THEME_LABELS[key] ?? key)
@@ -119,32 +127,29 @@ async function generateHtml(): Promise<string> {
     </div>`
 
   // Pre-highlight sources with Shiki
-  const highlightedSources = xychartSamples.map(sample => {
+  const highlightedSources = xychartSamples.map((sample) => {
     const fenced = '```mermaid\n' + sample.source.trim() + '\n```'
     const html = highlighter.codeToHtml(fenced, {
       lang: 'mermaid',
       theme: 'github-light',
     })
-    return html.replace(
-      /(<code>)<span class="line">.*?<\/span>\n/,
-      '$1'
-    ).replace(
-      /\n<span class="line">.*?<\/span>(<\/code>)/,
-      '$1'
-    )
+    return html
+      .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1')
+      .replace(/\n<span class="line">.*?<\/span>(<\/code>)/, '$1')
   })
 
   // Build sample cards grouped by category
   let currentCategory = ''
-  const sampleCards = xychartSamples.map((sample, i) => {
-    const cat = sample.category ?? 'Other'
-    let sectionHeader = ''
-    if (cat !== currentCategory) {
-      currentCategory = cat
-      sectionHeader = `\n  <h2 class="section-title" id="cat-${cat.toLowerCase().replace(/[^a-z0-9]+/g, '-')}">${escapeHtml(cat)}</h2>\n`
-    }
+  const sampleCards = xychartSamples
+    .map((sample, i) => {
+      const cat = sample.category ?? 'Other'
+      let sectionHeader = ''
+      if (cat !== currentCategory) {
+        currentCategory = cat
+        sectionHeader = `\n  <h2 class="section-title" id="cat-${cat.toLowerCase().replace(/[^a-z0-9]+/g, '-')}">${escapeHtml(cat)}</h2>\n`
+      }
 
-    return `${sectionHeader}
+      return `${sectionHeader}
     <section class="sample" id="sample-${i}">
       <div class="sample-header">
         <h2>${escapeHtml(sample.title)}</h2>
@@ -162,13 +167,14 @@ async function generateHtml(): Promise<string> {
         </div>
       </div>
     </section>`
-  }).join('\n')
+    })
+    .join('\n')
 
   // Build THEMES JSON for client-side use
   const themesJson = JSON.stringify(THEMES)
 
   // Build sources JSON for the parser
-  const sourcesJson = JSON.stringify(xychartSamples.map(s => s.source))
+  const sourcesJson = JSON.stringify(xychartSamples.map((s) => s.source))
 
   return `<!DOCTYPE html>
 <html lang="en">

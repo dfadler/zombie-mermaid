@@ -71,7 +71,7 @@
   color: var(--fg3);
   min-width: 40px;
   text-align: center;
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .preview-body {
@@ -116,7 +116,7 @@
 
 .preview-error {
   color: var(--red);
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   padding: 1.5rem;
   background: color-mix(in srgb, var(--red) 6%, var(--bg2));
@@ -139,7 +139,7 @@
   padding: 0 0.75rem;
   height: 28px;
   background: var(--bg2);
-  font-family: "JetBrains Mono", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--fg3);
   flex-shrink: 0;

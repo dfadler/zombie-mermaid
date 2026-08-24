@@ -51,7 +51,9 @@ import { renderXYChartSvg } from './xychart/renderer.ts'
  * Detect the diagram type from the mermaid source text.
  * Returns the type keyword used for routing to the correct pipeline.
  */
-function detectDiagramType(text: string): 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart' {
+function detectDiagramType(
+  text: string,
+): 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart' {
   const firstLine = text.trim().split(/[\n;]/)[0]?.trim().toLowerCase() ?? ''
 
   if (/^xychart(-beta)?\b/.test(firstLine)) return 'xychart'
@@ -110,7 +112,7 @@ function buildColors(options: RenderOptions): DiagramColors {
  */
 export function renderMermaidSVG(
   text: string,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ): string {
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
@@ -121,7 +123,10 @@ export function renderMermaidSVG(
   const transparent = options.transparent ?? false
   const diagramType = detectDiagramType(text)
 
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('%%'))
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
 
   switch (diagramType) {
     case 'sequence': {
@@ -142,7 +147,13 @@ export function renderMermaidSVG(
     case 'xychart': {
       const chart = parseXYChart(lines)
       const positioned = layoutXYChart(chart, options)
-      return renderXYChartSvg(positioned, colors, font, transparent, options.interactive ?? false)
+      return renderXYChartSvg(
+        positioned,
+        colors,
+        font,
+        transparent,
+        options.interactive ?? false,
+      )
     }
     case 'flowchart':
     default: {
@@ -161,7 +172,7 @@ export function renderMermaidSVG(
  */
 export async function renderMermaidSVGAsync(
   text: string,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ): Promise<string> {
   return renderMermaidSVG(text, options)
 }

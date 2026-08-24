@@ -1,9 +1,23 @@
-import type { PositionedGraph, PositionedNode, PositionedEdge, PositionedGroup, Point } from './types.ts'
+import type {
+  PositionedGraph,
+  PositionedNode,
+  PositionedEdge,
+  PositionedGroup,
+  Point,
+} from './types.ts'
 import type { DiagramColors } from './theme.ts'
 import { svgOpenTag, buildStyleBlock } from './theme.ts'
-import { FONT_SIZES, FONT_WEIGHTS, STROKE_WIDTHS, ARROW_HEAD } from './styles.ts'
+import {
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  STROKE_WIDTHS,
+  ARROW_HEAD,
+} from './styles.ts'
 import { measureMultilineText } from './text-metrics.ts'
-import { renderMultilineText, renderMultilineTextWithBackground } from './multiline-utils.ts'
+import {
+  renderMultilineText,
+  renderMultilineTextWithBackground,
+} from './multiline-utils.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -36,7 +50,7 @@ export function renderSvg(
   graph: PositionedGraph,
   colors: DiagramColors,
   font: string = 'Inter',
-  transparent: boolean = false
+  transparent: boolean = false,
 ): string {
   const parts: string[] = []
 
@@ -99,7 +113,8 @@ function arrowMarkerDefs(): string {
   const w = ARROW_HEAD.width
   const h = ARROW_HEAD.height
   // Arrow polygons have both fill and a thin stroke for better definition at small sizes
-  const arrowStyle = 'fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round"'
+  const arrowStyle =
+    'fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round"'
   // Pull arrowhead back slightly (refX = w - 1) to prevent clipping at node boundaries
   const refX = w - 1
   return (
@@ -154,30 +169,31 @@ function renderGroup(group: PositionedGroup, font: string): string {
   // data-id: original Mermaid subgraph ID
   // data-label: display label (may differ from ID)
   parts.push(
-    `<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`
+    `<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
   )
 
   // Outer rectangle
   parts.push(
     `  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
-    `rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`
+      `rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
   // Header band
   parts.push(
     `  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
-    `rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`
+      `rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
   // Header label (supports multi-line via <br> tags)
   parts.push(
-    '  ' + renderMultilineText(
-      group.label,
-      group.x + 12,
-      group.y + headerHeight / 2,
-      FONT_SIZES.groupHeader,
-      `font-size="${FONT_SIZES.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`
-    )
+    '  ' +
+      renderMultilineText(
+        group.label,
+        group.x + 12,
+        group.y + headerHeight / 2,
+        FONT_SIZES.groupHeader,
+        `font-size="${FONT_SIZES.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+      ),
   )
 
   // Render nested groups recursively (inside this group)
@@ -199,16 +215,24 @@ function renderEdge(edge: PositionedEdge): string {
 
   const pathData = pointsToPolylinePath(edge.points)
   const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="4 4"' : ''
-  const baseStrokeWidth = edge.style === 'thick' ? STROKE_WIDTHS.connector * 2 : STROKE_WIDTHS.connector
+  const baseStrokeWidth =
+    edge.style === 'thick'
+      ? STROKE_WIDTHS.connector * 2
+      : STROKE_WIDTHS.connector
   const strokeColor = escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
-  const strokeWidth = escapeAttr(edge.inlineStyle?.['stroke-width'] ?? String(baseStrokeWidth))
+  const strokeWidth = escapeAttr(
+    edge.inlineStyle?.['stroke-width'] ?? String(baseStrokeWidth),
+  )
 
   // Build marker attributes based on arrow direction flags
   // Use color-specific markers when edge has a custom stroke from linkStyle
-  const suffix = edge.inlineStyle?.stroke ? `-${markerSuffix(edge.inlineStyle.stroke)}` : ''
+  const suffix = edge.inlineStyle?.stroke
+    ? `-${markerSuffix(edge.inlineStyle.stroke)}`
+    : ''
   let markers = ''
   if (edge.hasArrowEnd) markers += ` marker-end="url(#arrowhead${suffix})"`
-  if (edge.hasArrowStart) markers += ` marker-start="url(#arrowhead-start${suffix})"`
+  if (edge.hasArrowStart)
+    markers += ` marker-start="url(#arrowhead-start${suffix})"`
 
   // Semantic data attributes for edge identification and inspection:
   // - class="edge": CSS targeting and type identification
@@ -236,7 +260,7 @@ function renderEdge(edge: PositionedEdge): string {
 
 /** Convert points to SVG polyline points attribute: "x1,y1 x2,y2 ..." */
 function pointsToPolylinePath(points: Point[]): string {
-  return points.map(p => `${p.x},${p.y}`).join(' ')
+  return points.map((p) => `${p.x},${p.y}`).join(' ')
 }
 
 // `_font` isn't read here but is kept to match the `(entity, font)` signature
@@ -249,7 +273,11 @@ function renderEdgeLabel(edge: PositionedEdge, _font: string): string {
   const padding = 8
 
   // Measure text (works for both single and multi-line)
-  const metrics = measureMultilineText(label, FONT_SIZES.edgeLabel, FONT_WEIGHTS.edgeLabel)
+  const metrics = measureMultilineText(
+    label,
+    FONT_SIZES.edgeLabel,
+    FONT_WEIGHTS.edgeLabel,
+  )
 
   // Wrap in <g class="edge-label"> with reference to the edge it belongs to
   const content = renderMultilineTextWithBackground(
@@ -263,7 +291,7 @@ function renderEdgeLabel(edge: PositionedEdge, _font: string): string {
     // Use --_text-sec for better contrast (was --_text-muted)
     `text-anchor="middle" font-size="${FONT_SIZES.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
     // Increased stroke width from 0.5 to 1 for better label separation from edges
-    `rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1"`
+    `rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1"`,
   )
 
   // Semantic wrapper: links label to its edge via data-from/data-to
@@ -326,7 +354,7 @@ function renderNode(node: PositionedNode, font: string): string {
   // This enables reliable node identification without heuristics
   const parts: string[] = []
   parts.push(
-    `<g class="node" data-id="${escapeAttr(node.id)}" data-label="${escapeAttr(node.label)}" data-shape="${node.shape}">`
+    `<g class="node" data-id="${escapeAttr(node.id)}" data-label="${escapeAttr(node.label)}" data-shape="${node.shape}">`,
   )
   parts.push(`  ${shape.replace(/\n/g, '\n  ')}`)
   if (label) {
@@ -345,7 +373,9 @@ function renderNodeShape(node: PositionedNode): string {
   // CSS variable handles theming automatically via color-mix() derivation.
   const fill = escapeAttr(inlineStyle?.fill ?? 'var(--_node-fill)')
   const stroke = escapeAttr(inlineStyle?.stroke ?? 'var(--_node-stroke)')
-  const sw = escapeAttr(inlineStyle?.['stroke-width'] ?? String(STROKE_WIDTHS.innerBox))
+  const sw = escapeAttr(
+    inlineStyle?.['stroke-width'] ?? String(STROKE_WIDTHS.innerBox),
+  )
 
   switch (shape) {
     case 'diamond':
@@ -382,21 +412,45 @@ function renderNodeShape(node: PositionedNode): string {
 
 // --- Basic shapes ---
 
-function renderRect(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderRect(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   return (
     `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
     `rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
-function renderRoundedRect(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderRoundedRect(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   return (
     `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
     `rx="6" ry="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
-function renderStadium(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderStadium(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const r = h / 2
   return (
     `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
@@ -404,7 +458,15 @@ function renderStadium(x: number, y: number, w: number, h: number, fill: string,
   )
 }
 
-function renderCircle(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderCircle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const cx = x + w / 2
   const cy = y + h / 2
   const r = Math.min(w, h) / 2
@@ -414,27 +476,41 @@ function renderCircle(x: number, y: number, w: number, h: number, fill: string, 
   )
 }
 
-function renderDiamond(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderDiamond(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const cx = x + w / 2
   const cy = y + h / 2
   const hw = w / 2
   const hh = h / 2
   const points = [
-    `${cx},${cy - hh}`,   // top
-    `${cx + hw},${cy}`,   // right
-    `${cx},${cy + hh}`,   // bottom
-    `${cx - hw},${cy}`,   // left
+    `${cx},${cy - hh}`, // top
+    `${cx + hw},${cy}`, // right
+    `${cx},${cy + hh}`, // bottom
+    `${cx - hw},${cy}`, // left
   ].join(' ')
 
-  return (
-    `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
-  )
+  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 // --- Batch 1 shapes ---
 
 /** Subroutine: rectangle with double vertical borders on left and right */
-function renderSubroutine(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderSubroutine(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const inset = 8 // distance from edge to inner vertical line
   return (
     `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
@@ -447,7 +523,15 @@ function renderSubroutine(x: number, y: number, w: number, h: number, fill: stri
 }
 
 /** Double circle: two concentric circles with a gap between them */
-function renderDoubleCircle(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderDoubleCircle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const cx = x + w / 2
   const cy = y + h / 2
   const outerR = Math.min(w, h) / 2
@@ -461,15 +545,23 @@ function renderDoubleCircle(x: number, y: number, w: number, h: number, fill: st
 }
 
 /** Hexagon: 6-point polygon with flat top/bottom and angled sides */
-function renderHexagon(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderHexagon(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const inset = h / 4 // horizontal inset for the angled sides
   const points = [
-    `${x + inset},${y}`,           // top-left
-    `${x + w - inset},${y}`,       // top-right
-    `${x + w},${y + h / 2}`,       // mid-right
-    `${x + w - inset},${y + h}`,   // bottom-right
-    `${x + inset},${y + h}`,       // bottom-left
-    `${x},${y + h / 2}`,           // mid-left
+    `${x + inset},${y}`, // top-left
+    `${x + w - inset},${y}`, // top-right
+    `${x + w},${y + h / 2}`, // mid-right
+    `${x + w - inset},${y + h}`, // bottom-right
+    `${x + inset},${y + h}`, // bottom-left
+    `${x},${y + h / 2}`, // mid-left
   ].join(' ')
 
   return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
@@ -478,7 +570,15 @@ function renderHexagon(x: number, y: number, w: number, h: number, fill: string,
 // --- Batch 2 shapes ---
 
 /** Cylinder / database: top ellipse cap + body rect + bottom ellipse */
-function renderCylinder(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderCylinder(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const ry = 7 // ellipse vertical radius for the cap
   const cx = x + w / 2
   const bodyTop = y + ry
@@ -501,40 +601,64 @@ function renderCylinder(x: number, y: number, w: number, h: number, fill: string
 }
 
 /** Asymmetric / flag: rectangle with a pointed left edge */
-function renderAsymmetric(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderAsymmetric(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const indent = 12 // how far the point indents
   const points = [
-    `${x + indent},${y}`,       // top-left (indented)
-    `${x + w},${y}`,            // top-right
-    `${x + w},${y + h}`,        // bottom-right
-    `${x + indent},${y + h}`,   // bottom-left (indented)
-    `${x},${y + h / 2}`,        // left point
+    `${x + indent},${y}`, // top-left (indented)
+    `${x + w},${y}`, // top-right
+    `${x + w},${y + h}`, // bottom-right
+    `${x + indent},${y + h}`, // bottom-left (indented)
+    `${x},${y + h / 2}`, // left point
   ].join(' ')
 
   return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 /** Trapezoid [/text\]: wider bottom, narrower top */
-function renderTrapezoid(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderTrapezoid(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const inset = w * 0.15 // top edge is narrower by this amount on each side
   const points = [
-    `${x + inset},${y}`,         // top-left (indented)
-    `${x + w - inset},${y}`,     // top-right (indented)
-    `${x + w},${y + h}`,         // bottom-right (full width)
-    `${x},${y + h}`,             // bottom-left (full width)
+    `${x + inset},${y}`, // top-left (indented)
+    `${x + w - inset},${y}`, // top-right (indented)
+    `${x + w},${y + h}`, // bottom-right (full width)
+    `${x},${y + h}`, // bottom-left (full width)
   ].join(' ')
 
   return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 /** Trapezoid-alt [\text/]: wider top, narrower bottom */
-function renderTrapezoidAlt(x: number, y: number, w: number, h: number, fill: string, stroke: string, sw: string): string {
+function renderTrapezoidAlt(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
   const inset = w * 0.15 // bottom edge is narrower
   const points = [
-    `${x},${y}`,                     // top-left (full width)
-    `${x + w},${y}`,                 // top-right (full width)
-    `${x + w - inset},${y + h}`,     // bottom-right (indented)
-    `${x + inset},${y + h}`,         // bottom-left (indented)
+    `${x},${y}`, // top-left (full width)
+    `${x + w},${y}`, // top-right (full width)
+    `${x + w - inset},${y + h}`, // bottom-right (indented)
+    `${x + inset},${y + h}`, // bottom-left (indented)
   ].join(' ')
 
   return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
@@ -586,7 +710,7 @@ function renderNodeLabel(node: PositionedNode, _font: string): string {
     cx,
     cy,
     FONT_SIZES.nodeLabel,
-    `text-anchor="middle" font-size="${FONT_SIZES.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
+    `text-anchor="middle" font-size="${FONT_SIZES.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`,
   )
 }
 

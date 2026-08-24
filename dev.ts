@@ -31,12 +31,12 @@ const ROOT = dirname(fileURLToPath(import.meta.url))
 const tsxCli = fileURLToPath(import.meta.resolve('tsx/cli'))
 
 function runTsx(file: string): Promise<{ exitCode: number | null }> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const proc = spawn(process.execPath, [tsxCli, file], {
       cwd: ROOT,
       stdio: 'inherit',
     })
-    proc.on('exit', exitCode => resolve({ exitCode }))
+    proc.on('exit', (exitCode) => resolve({ exitCode }))
   })
 }
 
@@ -87,7 +87,9 @@ function onFileChange(_event: string, filename: string | null): void {
   if (filename === 'index.html' || filename === 'editor.html') return
   if (debounce) clearTimeout(debounce)
   debounce = setTimeout(() => {
-    console.log(`\x1b[90m[dev]\x1b[0m Change detected${filename ? `: ${filename}` : ''}`)
+    console.log(
+      `\x1b[90m[dev]\x1b[0m Change detected${filename ? `: ${filename}` : ''}`,
+    )
     rebuild()
   }, 150)
 }
@@ -102,7 +104,9 @@ watch(ROOT, { recursive: true }, onFileChange)
 // Initial build before starting the server
 await rebuild()
 
-console.log(`\x1b[36m[dev]\x1b[0m Server running at \x1b[1mhttp://localhost:${PORT}\x1b[0m`)
+console.log(
+  `\x1b[36m[dev]\x1b[0m Server running at \x1b[1mhttp://localhost:${PORT}\x1b[0m`,
+)
 console.log(`\x1b[36m[dev]\x1b[0m   /         → samples showcase`)
 console.log(`\x1b[36m[dev]\x1b[0m   /editor   → live diagram editor\n`)
 

@@ -1,4 +1,13 @@
-import type { SequenceDiagram, PositionedSequenceDiagram, PositionedActor, Lifeline, PositionedMessage, Activation, PositionedBlock, PositionedNote } from './types.ts'
+import type {
+  SequenceDiagram,
+  PositionedSequenceDiagram,
+  PositionedActor,
+  Lifeline,
+  PositionedMessage,
+  Activation,
+  PositionedBlock,
+  PositionedNote,
+} from './types.ts'
 import type { RenderOptions } from '../types.ts'
 import { estimateTextWidth, FONT_SIZES, FONT_WEIGHTS } from '../styles.ts'
 
@@ -54,15 +63,28 @@ const SEQ = {
  */
 export function layoutSequenceDiagram(
   diagram: SequenceDiagram,
-  _options: RenderOptions = {}
+  _options: RenderOptions = {},
 ): PositionedSequenceDiagram {
   if (diagram.actors.length === 0) {
-    return { width: 0, height: 0, actors: [], lifelines: [], messages: [], activations: [], blocks: [], notes: [] }
+    return {
+      width: 0,
+      height: 0,
+      actors: [],
+      lifelines: [],
+      messages: [],
+      activations: [],
+      blocks: [],
+      notes: [],
+    }
   }
 
   // 1. Calculate actor widths and assign horizontal positions (center X)
-  const actorWidths = diagram.actors.map(a => {
-    const textW = estimateTextWidth(a.label, FONT_SIZES.nodeLabel, FONT_WEIGHTS.nodeLabel)
+  const actorWidths = diagram.actors.map((a) => {
+    const textW = estimateTextWidth(
+      a.label,
+      FONT_SIZES.nodeLabel,
+      FONT_WEIGHTS.nodeLabel,
+    )
     return Math.max(textW + SEQ.actorPadX * 2, 80)
   })
 
@@ -71,7 +93,10 @@ export function layoutSequenceDiagram(
   let currentX = SEQ.padding + actorWidths[0]! / 2
   for (let i = 0; i < diagram.actors.length; i++) {
     if (i > 0) {
-      const minGap = Math.max(SEQ.actorGap, (actorWidths[i - 1]! + actorWidths[i]!) / 2 + 40)
+      const minGap = Math.max(
+        SEQ.actorGap,
+        (actorWidths[i - 1]! + actorWidths[i]!) / 2 + 40,
+      )
       currentX += minGap
     }
     actorCenterX.push(currentX)
@@ -128,7 +153,10 @@ export function layoutSequenceDiagram(
 
   // Track activation stack per actor: array of { startY, depth } objects
   // Depth is used to offset nested activations horizontally for visual clarity
-  const activationStacks = new Map<string, { startY: number; depth: number }[]>()
+  const activationStacks = new Map<
+    string,
+    { startY: number; depth: number }[]
+  >()
   const activations: Activation[] = []
   const nestingOffset = 4 // Horizontal offset per nesting level
 
@@ -151,7 +179,8 @@ export function layoutSequenceDiagram(
       label: msg.label,
       lineStyle: msg.lineStyle,
       arrowHead: msg.arrowHead,
-      x1, x2,
+      x1,
+      x2,
       y: messageY,
       isSelf,
     })
@@ -184,7 +213,9 @@ export function layoutSequenceDiagram(
     }
 
     // Advance messageY past the message itself
-    messageY += isSelf ? SEQ.selfMessageHeight + SEQ.messageRowHeight : SEQ.messageRowHeight
+    messageY += isSelf
+      ? SEQ.selfMessageHeight + SEQ.messageRowHeight
+      : SEQ.messageRowHeight
 
     // Position notes that appear after this message.
     // Notes start below the self-message loop (if self) or below the arrow,
@@ -201,7 +232,12 @@ export function layoutSequenceDiagram(
       for (const note of notesForMsg) {
         const noteW = Math.max(
           SEQ.noteWidth,
-          estimateTextWidth(note.text, FONT_SIZES.edgeLabel, FONT_WEIGHTS.edgeLabel) + SEQ.notePadX * 2
+          estimateTextWidth(
+            note.text,
+            FONT_SIZES.edgeLabel,
+            FONT_WEIGHTS.edgeLabel,
+          ) +
+            SEQ.notePadX * 2,
         )
         const noteH = FONT_SIZES.edgeLabel + SEQ.notePadY * 2
 
@@ -209,14 +245,25 @@ export function layoutSequenceDiagram(
         const firstActorIdx = actorIndex.get(note.actorIds[0] ?? '') ?? 0
         let noteX: number
         if (note.position === 'left') {
-          noteX = actorCenterX[firstActorIdx]! - actorWidths[firstActorIdx]! / 2 - noteW - SEQ.noteGap
+          noteX =
+            actorCenterX[firstActorIdx]! -
+            actorWidths[firstActorIdx]! / 2 -
+            noteW -
+            SEQ.noteGap
         } else if (note.position === 'right') {
-          noteX = actorCenterX[firstActorIdx]! + actorWidths[firstActorIdx]! / 2 + SEQ.noteGap
+          noteX =
+            actorCenterX[firstActorIdx]! +
+            actorWidths[firstActorIdx]! / 2 +
+            SEQ.noteGap
         } else {
           // over — center between first and last actor
           if (note.actorIds.length > 1) {
-            const lastActorIdx = actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ?? firstActorIdx
-            noteX = (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 - noteW / 2
+            const lastActorIdx =
+              actorIndex.get(note.actorIds[note.actorIds.length - 1] ?? '') ??
+              firstActorIdx
+            noteX =
+              (actorCenterX[firstActorIdx]! + actorCenterX[lastActorIdx]!) / 2 -
+              noteW / 2
           } else {
             noteX = actorCenterX[firstActorIdx]! - noteW / 2
           }
@@ -258,7 +305,7 @@ export function layoutSequenceDiagram(
   }
 
   // 4. Position blocks (loop/alt/opt)
-  const blocks: PositionedBlock[] = diagram.blocks.map(block => {
+  const blocks: PositionedBlock[] = diagram.blocks.map((block) => {
     // Block spans from the Y of startIndex to endIndex messages
     const startMsg = messages[block.startIndex]
     const endMsg = messages[block.endIndex]
@@ -280,8 +327,10 @@ export function layoutSequenceDiagram(
     }
     const minIdx = Math.min(...involvedActors)
     const maxIdx = Math.max(...involvedActors)
-    const blockLeft = actorCenterX[minIdx]! - actorWidths[minIdx]! / 2 - SEQ.blockPadX
-    const blockRight = actorCenterX[maxIdx]! + actorWidths[maxIdx]! / 2 + SEQ.blockPadX
+    const blockLeft =
+      actorCenterX[minIdx]! - actorWidths[minIdx]! / 2 - SEQ.blockPadX
+    const blockRight =
+      actorCenterX[maxIdx]! + actorWidths[maxIdx]! / 2 + SEQ.blockPadX
 
     // Position dividers — offset from message Y so the divider label text
     // (rendered at divider.y + 14 in the renderer) clears the message label
@@ -293,7 +342,7 @@ export function layoutSequenceDiagram(
     // overlap horizontally (e.g. long divider labels like "[Account locked]"
     // next to centered message labels like "403 Forbidden"), we increase the
     // offset to 36 so text bounding boxes have ~5px visual clearance.
-    const dividers = block.dividers.map(d => {
+    const dividers = block.dividers.map((d) => {
       const msg = messages[d.index]
       const msgY = msg?.y ?? messageY
       let offset = 28
@@ -303,11 +352,19 @@ export function layoutSequenceDiagram(
       // cause vertical text overlap at the default 8px baseline gap.
       if (d.label && msg?.label) {
         const divLabelText = `[${d.label}]`
-        const divLabelW = estimateTextWidth(divLabelText, FONT_SIZES.edgeLabel, FONT_WEIGHTS.edgeLabel)
+        const divLabelW = estimateTextWidth(
+          divLabelText,
+          FONT_SIZES.edgeLabel,
+          FONT_WEIGHTS.edgeLabel,
+        )
         const divLabelLeft = blockLeft + 8
         const divLabelRight = divLabelLeft + divLabelW
 
-        const msgLabelW = estimateTextWidth(msg.label, FONT_SIZES.edgeLabel, FONT_WEIGHTS.edgeLabel)
+        const msgLabelW = estimateTextWidth(
+          msg.label,
+          FONT_SIZES.edgeLabel,
+          FONT_WEIGHTS.edgeLabel,
+        )
         // Self-messages render labels at x1 + 36 (left-aligned); normal
         // messages center the label between the two actor lifelines.
         const msgLabelLeft = msg.isSelf
@@ -368,7 +425,11 @@ export function layoutSequenceDiagram(
       const loopW = 30 // matches renderer loopW
       const labelPadding = 8
       const labelLeft = m.x1 + loopW + labelPadding
-      const labelWidth = estimateTextWidth(m.label, FONT_SIZES.edgeLabel, FONT_WEIGHTS.edgeLabel)
+      const labelWidth = estimateTextWidth(
+        m.label,
+        FONT_SIZES.edgeLabel,
+        FONT_WEIGHTS.edgeLabel,
+      )
       globalMaxX = Math.max(globalMaxX, labelLeft + labelWidth + 8) // +8 for safety margin
     }
   }
@@ -377,9 +438,14 @@ export function layoutSequenceDiagram(
   const shiftX = globalMinX < SEQ.padding ? SEQ.padding - globalMinX : 0
   if (shiftX > 0) {
     for (const a of actors) a.x += shiftX
-    for (const m of messages) { m.x1 += shiftX; m.x2 += shiftX }
+    for (const m of messages) {
+      m.x1 += shiftX
+      m.x2 += shiftX
+    }
     for (const act of activations) act.x += shiftX
-    for (const b of blocks) { b.x += shiftX; }
+    for (const b of blocks) {
+      b.x += shiftX
+    }
     for (const n of notes) n.x += shiftX
     // Also shift actor center X array (used for lifelines below)
     for (let i = 0; i < actorCenterX.length; i++) actorCenterX[i]! += shiftX

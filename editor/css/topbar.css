@@ -44,7 +44,7 @@
   margin-left: 0.125rem;
 }
 .logo-sub::before {
-  content: "·";
+  content: '·';
   margin-right: 0.25rem;
 }
 
@@ -174,7 +174,7 @@
   background: color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
 }
 .theme-dropdown-item.active::after {
-  content: "";
+  content: '';
   position: absolute;
   right: 8px;
   top: 50%;
@@ -214,7 +214,9 @@
   white-space: nowrap;
   user-select: none;
   text-decoration: none;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .btn:hover {
   color: var(--t-fg);

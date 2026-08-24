@@ -3,7 +3,11 @@
 // ============================================================================
 
 import type { ShapeRenderer } from './types.ts'
-import { getBoxDimensions, renderBox, getBoxAttachmentPoint } from './rectangle.ts'
+import {
+  getBoxDimensions,
+  renderBox,
+  getBoxAttachmentPoint,
+} from './rectangle.ts'
 import { getCorners } from './corners.ts'
 
 /**

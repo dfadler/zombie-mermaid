@@ -20,6 +20,7 @@ xychart-beta
 ```
 
 Horizontal variant:
+
 ```
 xychart-beta horizontal
     title "Sales Revenue"
@@ -29,6 +30,7 @@ xychart-beta horizontal
 ```
 
 Numeric x-axis variant:
+
 ```
 xychart-beta
     x-axis 0 --> 100
@@ -207,6 +209,7 @@ export function parseXYChart(lines: string[]): XYChart
 3. If no y-axis range is specified, auto-derive from min/max of all series data (with padding)
 
 **Internal helpers:**
+
 - `parseNumericArray(str: string): number[]` — parse `[1, 2, 3]` to `[1, 2, 3]`
 - `parseCategoryArray(str: string): string[]` — parse `[jan, feb, "mar apr"]` with optional quoting
 - `parseRange(str: string): { min: number; max: number } | null`
@@ -225,7 +228,7 @@ import type { RenderOptions } from '../types.ts'
  */
 export async function layoutXYChart(
   chart: XYChart,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ): Promise<PositionedXYChart>
 ```
 
@@ -271,6 +274,7 @@ export async function layoutXYChart(
    - Line polylines have swapped coordinates
 
 **Layout constants:**
+
 ```typescript
 const XY = {
   padding: 40,
@@ -284,7 +288,7 @@ const XY = {
   yLabelWidth: 60,
   axisTitlePad: 20,
   tickLength: 5,
-  barPadRatio: 0.2,     // gap between bars as fraction of band
+  barPadRatio: 0.2, // gap between bars as fraction of band
   barGroupPadRatio: 0.1, // gap between bars within a group
   gridDash: '3 3',
 } as const
@@ -292,6 +296,7 @@ const XY = {
 
 **Text width estimation:**
 Uses `estimateTextWidth()` from `../styles.ts` for:
+
 - Chart title width (to center it)
 - Y-axis label widths (to determine left margin)
 - X-axis label widths (to check for overlap / rotation)
@@ -309,7 +314,7 @@ export function renderXYChartSvg(
   chart: PositionedXYChart,
   colors: DiagramColors,
   font?: string,
-  transparent?: boolean
+  transparent?: boolean,
 ): string
 ```
 
@@ -335,25 +340,32 @@ export function renderXYChartSvg(
 
 The chart uses the same CSS custom property system as all other diagram types. Mapping to chart elements:
 
-| CSS Variable | Chart Element |
-|---|---|
-| `var(--_text)` | Chart title |
-| `var(--_text-sec)` | Axis titles |
-| `var(--_text-muted)` | Axis tick labels |
-| `var(--_line)` | Axis lines, tick marks |
-| `var(--_inner-stroke)` | Grid lines |
-| `var(--_accent)` | Bars (primary), line strokes |
-| `var(--_node-fill)` | Bar fill (alternative — lighter) |
-| `var(--_node-stroke)` | Bar stroke |
-| `var(--bg)` | Background / label backgrounds |
+| CSS Variable           | Chart Element                    |
+| ---------------------- | -------------------------------- |
+| `var(--_text)`         | Chart title                      |
+| `var(--_text-sec)`     | Axis titles                      |
+| `var(--_text-muted)`   | Axis tick labels                 |
+| `var(--_line)`         | Axis lines, tick marks           |
+| `var(--_inner-stroke)` | Grid lines                       |
+| `var(--_accent)`       | Bars (primary), line strokes     |
+| `var(--_node-fill)`    | Bar fill (alternative — lighter) |
+| `var(--_node-stroke)`  | Bar stroke                       |
+| `var(--bg)`            | Background / label backgrounds   |
 
 **Multi-series coloring:**
 
 For charts with multiple series, generate palette colors using `color-mix()`:
+
 ```css
-.xychart-series-0 { --_series: var(--_accent); }
-.xychart-series-1 { --_series: color-mix(in srgb, var(--_accent) 60%, var(--fg)); }
-.xychart-series-2 { --_series: color-mix(in srgb, var(--_accent) 40%, var(--fg)); }
+.xychart-series-0 {
+  --_series: var(--_accent);
+}
+.xychart-series-1 {
+  --_series: color-mix(in srgb, var(--_accent) 60%, var(--fg));
+}
+.xychart-series-2 {
+  --_series: color-mix(in srgb, var(--_accent) 40%, var(--fg));
+}
 ```
 
 ---
@@ -396,6 +408,7 @@ Note: `xychart-beta` detection must use `\b` (word boundary) rather than `\s*$` 
 ### 2. `samples-data.ts`
 
 Add xychart samples in a new `'XY Chart'` category section. Examples should cover:
+
 - Basic bar chart (categorical x-axis)
 - Basic line chart
 - Combined bar + line
@@ -473,13 +486,17 @@ All SVG is generated as string concatenation (no DOM). Parts are pushed to an ar
 ## Design Decisions
 
 ### No dagre dependency
+
 XY charts use a fixed coordinate-space layout. Unlike ER/class/flowchart diagrams that need graph layout algorithms, charts have a predetermined structure: axes form a fixed frame, data maps linearly to pixel coordinates. Direct computation is simpler, faster, and avoids the dagre dependency.
 
 ### Categorical vs numeric x-axis
+
 The parser detects which variant is used: `[label1, label2, ...]` → categorical, `min --> max` → numeric range. The layout handles both via a unified scale function that maps data indices or numeric values to pixel positions.
 
 ### Series palette via color-mix
+
 Rather than hardcoding a palette, multi-series charts derive colors from the theme's `--accent` using `color-mix()`. This ensures the chart looks correct in any theme without maintaining separate palettes.
 
 ### Horizontal mode as coordinate swap
+
 Horizontal orientation is handled by swapping x/y coordinates during layout rather than having a separate rendering path. The renderer draws the same SVG elements regardless of orientation — only the positions differ.

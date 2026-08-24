@@ -51,9 +51,9 @@ const THEME_LABELS: Record<string, string> = {
   'tokyo-night-light': 'Tokyo Light',
   'catppuccin-mocha': 'Catppuccin',
   'catppuccin-latte': 'Latte',
-  'nord': 'Nord',
+  nord: 'Nord',
   'nord-light': 'Nord Light',
-  'dracula': 'Dracula',
+  dracula: 'Dracula',
   'github-light': 'GitHub',
   'github-dark': 'GitHub Dark',
   'solarized-light': 'Solarized',
@@ -89,13 +89,15 @@ async function generateHtml(): Promise<string> {
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
   // Step 2: Build sample JSON (only serializable fields needed by client)
-  const samplesJson = JSON.stringify(samples.map(s => ({
-    title: s.title,
-    description: s.description,
-    source: s.source,
-    category: s.category ?? 'Other',
-    options: s.options ?? {},
-  })))
+  const samplesJson = JSON.stringify(
+    samples.map((s) => ({
+      title: s.title,
+      description: s.description,
+      source: s.source,
+      category: s.category ?? 'Other',
+      options: s.options ?? {},
+    })),
+  )
 
   // Step 3: Group samples by category for TOC (done at build time since it's static)
   const categories = new Map<string, number[]>()
@@ -107,42 +109,50 @@ async function generateHtml(): Promise<string> {
 
   // Map category names to the title prefixes they use, so we can strip duplicates in the ToC
   const categoryPrefixes: Record<string, string> = {
-    'State': 'State: ',
-    'Sequence': 'Sequence: ',
-    'Class': 'Class: ',
-    'ER': 'ER: ',
+    State: 'State: ',
+    Sequence: 'Sequence: ',
+    Class: 'Class: ',
+    ER: 'ER: ',
     'XY Chart': 'XY: ',
     'Theme Showcase': 'Theme: ',
   }
 
   // Build mapping from original index to display number (excluding Hero samples)
-  const heroCount = samples.filter(s => s.category === 'Hero').length
+  const heroCount = samples.filter((s) => s.category === 'Hero').length
   const displayNum = (i: number) => i + 1 - heroCount
 
   const tocSections = [...categories.entries()]
     .filter(([cat]) => cat !== 'Hero') // Skip Hero from TOC
     .map(([cat, indices]) => {
-    const prefix = categoryPrefixes[cat]
-    const items = indices.map(i => {
-      let title = samples[i]!.title
-      // Strip the category prefix from the title since it's already under the category heading
-      if (prefix && title.startsWith(prefix)) title = title.slice(prefix.length)
-      return `<li><a href="#sample-${i}"><span class="toc-num">${displayNum(i)}.</span> ${escapeHtml(title)}</a></li>`
-    }).join('\n            ')
-    return `
+      const prefix = categoryPrefixes[cat]
+      const items = indices
+        .map((i) => {
+          let title = samples[i]!.title
+          // Strip the category prefix from the title since it's already under the category heading
+          if (prefix && title.startsWith(prefix))
+            title = title.slice(prefix.length)
+          return `<li><a href="#sample-${i}"><span class="toc-num">${displayNum(i)}.</span> ${escapeHtml(title)}</a></li>`
+        })
+        .join('\n            ')
+      return `
         <div class="toc-category">
           <h3>${escapeHtml(cat)} (${indices.length} samples)</h3>
           <ol start="${displayNum(indices[0]!)}">
             ${items}
           </ol>
         </div>`
-  }).join('\n')
+    })
+    .join('\n')
 
   // Step 3b: Build theme selector pills (build-time so we include swatches)
   // Only show Default, Dracula, and Solarized inline; rest go in "More" dropdown
   const VISIBLE_THEMES = new Set(['dracula', 'solarized-light'])
 
-  function buildThemePill(key: string, colors: { bg: string; fg: string }, active = false): string {
+  function buildThemePill(
+    key: string,
+    colors: { bg: string; fg: string },
+    active = false,
+  ): string {
     const isDark = parseInt(colors.bg.replace('#', '').slice(0, 2), 16) < 0x80
     const shadow = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
     const label = key === '' ? 'Default' : (THEME_LABELS[key] ?? key)
@@ -181,20 +191,22 @@ async function generateHtml(): Promise<string> {
   // (see https://github.com/shikijs/shiki/issues/973), so we wrap each source with
   // ```mermaid ... ``` and then strip those fence lines from the output HTML.
   // Source panels always use github-dark — Shiki's inline colors are used directly.
-  const highlightedSources = samples.map(sample => {
+  const highlightedSources = samples.map((sample) => {
     const fenced = '```mermaid\n' + sample.source.trim() + '\n```'
     const html = highlighter.codeToHtml(fenced, {
       lang: 'mermaid',
       theme: 'github-light',
     })
     // Strip the first line (```mermaid) and last line (```) from the output
-    return html.replace(
-      /(<code>)<span class="line">.*?<\/span>\n/,  // first line
-      '$1'
-    ).replace(
-      /\n<span class="line">.*?<\/span>(<\/code>)/, // last line
-      '$1'
-    )
+    return html
+      .replace(
+        /(<code>)<span class="line">.*?<\/span>\n/, // first line
+        '$1',
+      )
+      .replace(
+        /\n<span class="line">.*?<\/span>(<\/code>)/, // last line
+        '$1',
+      )
   })
 
   // Step 5: Build sample card HTML shells (SVG + ASCII are empty, filled client-side)

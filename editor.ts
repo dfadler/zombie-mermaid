@@ -28,16 +28,15 @@ const THEME_LABELS: Record<string, string> = {
   'tokyo-night-light': 'Tokyo Light',
   'catppuccin-mocha': 'Catppuccin',
   'catppuccin-latte': 'Latte',
-  'nord': 'Nord',
+  nord: 'Nord',
   'nord-light': 'Nord Light',
-  'dracula': 'Dracula',
+  dracula: 'Dracula',
   'github-light': 'GitHub',
   'github-dark': 'GitHub Dark',
   'solarized-light': 'Solarized',
   'solarized-dark': 'Solar Dark',
   'one-dark': 'One Dark',
 }
-
 
 // ── File helpers ──────────────────────────────────────────────────────────────
 
@@ -60,7 +59,7 @@ async function readCssFiles(): Promise<string> {
     'css/export.css',
     'css/misc.css',
   ]
-  const parts = await Promise.all(order.map(f => readEditorFile(f)))
+  const parts = await Promise.all(order.map((f) => readEditorFile(f)))
   return parts.join('\n\n')
 }
 
@@ -85,7 +84,7 @@ async function readJsFiles(): Promise<string> {
     'js/dark-mode.js',
     'js/init.js',
   ]
-  const parts = await Promise.all(order.map(f => readEditorFile(f)))
+  const parts = await Promise.all(order.map((f) => readEditorFile(f)))
   return parts.join('\n\n')
 }
 
@@ -133,7 +132,8 @@ async function generateEditorHtml(): Promise<string> {
   const themeItems = [
     `<button class="theme-dropdown-item active" data-theme="">Default</button>`,
     ...Object.keys(THEMES).map(
-      key => `<button class="theme-dropdown-item" data-theme="${key}"><span class="theme-swatch" style="background:${THEMES[key].bg}"></span>${THEME_LABELS[key] ?? key}</button>`
+      (key) =>
+        `<button class="theme-dropdown-item" data-theme="${key}"><span class="theme-swatch" style="background:${THEMES[key].bg}"></span>${THEME_LABELS[key] ?? key}</button>`,
     ),
   ].join('\n      ')
 

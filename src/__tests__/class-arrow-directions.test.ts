@@ -11,7 +11,6 @@ import { describe, test, expect } from 'vitest'
 import { renderMermaidAscii } from '../ascii/index.ts'
 
 describe('Class Diagram Arrow Directions', () => {
-
   // ============================================================================
   // INHERITANCE (<|--)
   // ============================================================================
@@ -28,8 +27,8 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Parent should be above child
       const lines = result.split('\n')
-      const animalLine = lines.findIndex(l => l.includes('Animal'))
-      const dogLine = lines.findIndex(l => l.includes('Dog'))
+      const animalLine = lines.findIndex((l) => l.includes('Animal'))
+      const dogLine = lines.findIndex((l) => l.includes('Dog'))
       expect(animalLine).toBeLessThan(dogLine)
     })
 
@@ -42,10 +41,10 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Animal should be at top, then Dog/Cat, then Puppy
       const lines = result.split('\n')
-      const animalLine = lines.findIndex(l => l.includes('Animal'))
-      const dogLine = lines.findIndex(l => l.includes('Dog'))
-      const catLine = lines.findIndex(l => l.includes('Cat'))
-      const puppyLine = lines.findIndex(l => l.includes('Puppy'))
+      const animalLine = lines.findIndex((l) => l.includes('Animal'))
+      const dogLine = lines.findIndex((l) => l.includes('Dog'))
+      const catLine = lines.findIndex((l) => l.includes('Cat'))
+      const puppyLine = lines.findIndex((l) => l.includes('Puppy'))
 
       expect(animalLine).toBeLessThan(dogLine)
       expect(animalLine).toBeLessThan(catLine)
@@ -60,9 +59,9 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Verify ordering: Animal > Mammal > Dog (top to bottom)
       const lines = result.split('\n')
-      const animalLine = lines.findIndex(l => l.includes('Animal'))
-      const mammalLine = lines.findIndex(l => l.includes('Mammal'))
-      const dogLine = lines.findIndex(l => l.includes('Dog'))
+      const animalLine = lines.findIndex((l) => l.includes('Animal'))
+      const mammalLine = lines.findIndex((l) => l.includes('Mammal'))
+      const dogLine = lines.findIndex((l) => l.includes('Dog'))
 
       expect(animalLine).toBeLessThan(mammalLine)
       expect(mammalLine).toBeLessThan(dogLine)
@@ -79,9 +78,9 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Animal should be above both children
       const lines = result.split('\n')
-      const animalLine = lines.findIndex(l => l.includes('Animal'))
-      const dogLine = lines.findIndex(l => l.includes('Dog'))
-      const catLine = lines.findIndex(l => l.includes('Cat'))
+      const animalLine = lines.findIndex((l) => l.includes('Animal'))
+      const dogLine = lines.findIndex((l) => l.includes('Dog'))
+      const catLine = lines.findIndex((l) => l.includes('Cat'))
 
       expect(animalLine).toBeLessThan(dogLine)
       expect(animalLine).toBeLessThan(catLine)
@@ -116,8 +115,8 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Person should be above Address
       const lines = result.split('\n')
-      const personLine = lines.findIndex(l => l.includes('Person'))
-      const addressLine = lines.findIndex(l => l.includes('Address'))
+      const personLine = lines.findIndex((l) => l.includes('Person'))
+      const addressLine = lines.findIndex((l) => l.includes('Address'))
       expect(personLine).toBeLessThan(addressLine)
     })
 
@@ -129,9 +128,9 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Person should be above both targets
       const lines = result.split('\n')
-      const personLine = lines.findIndex(l => l.includes('Person'))
-      const addressLine = lines.findIndex(l => l.includes('Address'))
-      const phoneLine = lines.findIndex(l => l.includes('Phone'))
+      const personLine = lines.findIndex((l) => l.includes('Person'))
+      const addressLine = lines.findIndex((l) => l.includes('Address'))
+      const phoneLine = lines.findIndex((l) => l.includes('Phone'))
 
       expect(personLine).toBeLessThan(addressLine)
       expect(personLine).toBeLessThan(phoneLine)
@@ -145,9 +144,9 @@ describe('Class Diagram Arrow Directions', () => {
 
       // A > B > C ordering
       const lines = result.split('\n')
-      const aLine = lines.findIndex(l => l.includes('│ A │'))
-      const bLine = lines.findIndex(l => l.includes('│ B │'))
-      const cLine = lines.findIndex(l => l.includes('│ C │'))
+      const aLine = lines.findIndex((l) => l.includes('│ A │'))
+      const bLine = lines.findIndex((l) => l.includes('│ B │'))
+      const cLine = lines.findIndex((l) => l.includes('│ C │'))
 
       expect(aLine).toBeLessThan(bLine)
       expect(bLine).toBeLessThan(cLine)
@@ -180,8 +179,8 @@ describe('Class Diagram Arrow Directions', () => {
       expect(result).not.toContain('▲')
 
       const lines = result.split('\n')
-      const clientLine = lines.findIndex(l => l.includes('Client'))
-      const serverLine = lines.findIndex(l => l.includes('Server'))
+      const clientLine = lines.findIndex((l) => l.includes('Client'))
+      const serverLine = lines.findIndex((l) => l.includes('Server'))
       expect(clientLine).toBeLessThan(serverLine)
     })
 
@@ -192,9 +191,9 @@ describe('Class Diagram Arrow Directions', () => {
       const result = renderMermaidAscii(diagram)
 
       const lines = result.split('\n')
-      const clientLine = lines.findIndex(l => l.includes('Client'))
-      const serverLine = lines.findIndex(l => l.includes('Server'))
-      const dbLine = lines.findIndex(l => l.includes('Database'))
+      const clientLine = lines.findIndex((l) => l.includes('Client'))
+      const serverLine = lines.findIndex((l) => l.includes('Server'))
+      const dbLine = lines.findIndex((l) => l.includes('Database'))
 
       expect(clientLine).toBeLessThan(serverLine)
       expect(clientLine).toBeLessThan(dbLine)
@@ -223,8 +222,8 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Shape (interface) should be above Circle (implementation)
       const lines = result.split('\n')
-      const shapeLine = lines.findIndex(l => l.includes('Shape'))
-      const circleLine = lines.findIndex(l => l.includes('Circle'))
+      const shapeLine = lines.findIndex((l) => l.includes('Shape'))
+      const circleLine = lines.findIndex((l) => l.includes('Circle'))
       expect(shapeLine).toBeLessThan(circleLine)
       expect(result).toContain('△')
     })
@@ -237,8 +236,8 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Shape (interface) should be above Circle (implementation)
       const lines = result.split('\n')
-      const shapeLine = lines.findIndex(l => l.includes('Shape'))
-      const circleLine = lines.findIndex(l => l.includes('Circle'))
+      const shapeLine = lines.findIndex((l) => l.includes('Shape'))
+      const circleLine = lines.findIndex((l) => l.includes('Circle'))
       expect(shapeLine).toBeLessThan(circleLine)
       expect(result).toContain('△')
     })
@@ -252,9 +251,9 @@ describe('Class Diagram Arrow Directions', () => {
 
       // Shape (interface) above both implementations
       const lines = result.split('\n')
-      const shapeLine = lines.findIndex(l => l.includes('Shape'))
-      const circleLine = lines.findIndex(l => l.includes('Circle'))
-      const squareLine = lines.findIndex(l => l.includes('Square'))
+      const shapeLine = lines.findIndex((l) => l.includes('Shape'))
+      const circleLine = lines.findIndex((l) => l.includes('Circle'))
+      const squareLine = lines.findIndex((l) => l.includes('Square'))
 
       expect(shapeLine).toBeLessThan(circleLine)
       expect(shapeLine).toBeLessThan(squareLine)
@@ -359,10 +358,10 @@ describe('Class Diagram Arrow Directions', () => {
       const unicodeLines = unicode.split('\n')
       const asciiLines = ascii.split('\n')
 
-      const uAnimal = unicodeLines.findIndex(l => l.includes('Animal'))
-      const uDog = unicodeLines.findIndex(l => l.includes('Dog'))
-      const aPerson = asciiLines.findIndex(l => l.includes('Person'))
-      const aAddress = asciiLines.findIndex(l => l.includes('Address'))
+      const uAnimal = unicodeLines.findIndex((l) => l.includes('Animal'))
+      const uDog = unicodeLines.findIndex((l) => l.includes('Dog'))
+      const aPerson = asciiLines.findIndex((l) => l.includes('Person'))
+      const aAddress = asciiLines.findIndex((l) => l.includes('Address'))
 
       expect(uAnimal).toBeLessThan(uDog)
       expect(aPerson).toBeLessThan(aAddress)
@@ -387,8 +386,8 @@ describe('Class Diagram Arrow Directions', () => {
 
       expect(result).toContain('△')
       const lines = result.split('\n')
-      const aLine = lines.findIndex(l => l.includes('│ A │'))
-      const bLine = lines.findIndex(l => l.includes('│ B │'))
+      const aLine = lines.findIndex((l) => l.includes('│ A │'))
+      const bLine = lines.findIndex((l) => l.includes('│ B │'))
       expect(aLine).toBeLessThan(bLine)
     })
 
@@ -406,8 +405,8 @@ describe('Class Diagram Arrow Directions', () => {
 
       expect(result).toContain('△')
       const lines = result.split('\n')
-      const animalLine = lines.findIndex(l => l.includes('Animal'))
-      const dogLine = lines.findIndex(l => l.includes('Dog'))
+      const animalLine = lines.findIndex((l) => l.includes('Animal'))
+      const dogLine = lines.findIndex((l) => l.includes('Dog'))
       expect(animalLine).toBeLessThan(dogLine)
     })
   })

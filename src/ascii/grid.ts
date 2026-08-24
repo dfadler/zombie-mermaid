@@ -8,7 +8,12 @@
 // ============================================================================
 
 import type {
-  GridCoord, DrawingCoord, Direction, AsciiGraph, AsciiNode, AsciiSubgraph,
+  GridCoord,
+  DrawingCoord,
+  Direction,
+  AsciiGraph,
+  AsciiNode,
+  AsciiSubgraph,
 } from './types.ts'
 import { gridKey } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
@@ -31,9 +36,7 @@ export function gridToDrawingCoord(
   c: GridCoord,
   dir?: Direction,
 ): DrawingCoord {
-  const target: GridCoord = dir
-    ? { x: c.x + dir.x, y: c.y + dir.y }
-    : c
+  const target: GridCoord = dir ? { x: c.x + dir.x, y: c.y + dir.y } : c
 
   let x = 0
   for (let col = 0; col < target.x; col++) {
@@ -54,8 +57,11 @@ export function gridToDrawingCoord(
 }
 
 /** Convert a path of grid coords to drawing coords. */
-export function lineToDrawing(graph: AsciiGraph, line: GridCoord[]): DrawingCoord[] {
-  return line.map(c => gridToDrawingCoord(graph, c))
+export function lineToDrawing(
+  graph: AsciiGraph,
+  line: GridCoord[],
+): DrawingCoord[] {
+  return line.map((c) => gridToDrawingCoord(graph, c))
 }
 
 // ============================================================================
@@ -83,9 +89,19 @@ export function reserveSpotInGrid(
   if (graph.grid.has(gridKey(requested))) {
     // Collision — shift perpendicular to main flow direction
     if (dir === 'LR') {
-      return reserveSpotInGrid(graph, node, { x: requested.x, y: requested.y + 4 }, dir)
+      return reserveSpotInGrid(
+        graph,
+        node,
+        { x: requested.x, y: requested.y + 4 },
+        dir,
+      )
     } else {
-      return reserveSpotInGrid(graph, node, { x: requested.x + 4, y: requested.y }, dir)
+      return reserveSpotInGrid(
+        graph,
+        node,
+        { x: requested.x + 4, y: requested.y },
+        dir,
+      )
     }
   }
 
@@ -155,7 +171,10 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
 }
 
 /** Ensure grid has width/height entries for all cells along an edge path. */
-export function increaseGridSizeForPath(graph: AsciiGraph, path: GridCoord[]): void {
+export function increaseGridSizeForPath(
+  graph: AsciiGraph,
+  path: GridCoord[],
+): void {
   for (const c of path) {
     if (!graph.columnWidth.has(c.x)) {
       graph.columnWidth.set(c.x, Math.floor(graph.config.paddingX / 2))
@@ -171,14 +190,17 @@ export function increaseGridSizeForPath(graph: AsciiGraph, path: GridCoord[]): v
 // ============================================================================
 
 function isNodeInAnySubgraph(graph: AsciiGraph, node: AsciiNode): boolean {
-  return graph.subgraphs.some(sg => sg.nodes.includes(node))
+  return graph.subgraphs.some((sg) => sg.nodes.includes(node))
 }
 
 /**
  * Get the innermost subgraph that directly contains this node.
  * Returns null if node is not in any subgraph.
  */
-export function getNodeSubgraph(graph: AsciiGraph, node: AsciiNode): AsciiSubgraph | null {
+export function getNodeSubgraph(
+  graph: AsciiGraph,
+  node: AsciiNode,
+): AsciiSubgraph | null {
   // Find the innermost (most deeply nested) subgraph containing the node
   let innermost: AsciiSubgraph | null = null
   for (const sg of graph.subgraphs) {
@@ -193,7 +215,10 @@ export function getNodeSubgraph(graph: AsciiGraph, node: AsciiNode): AsciiSubgra
 }
 
 /** Check if `candidate` is the same as or an ancestor of `target`. */
-function isAncestorOrSelf(candidate: AsciiSubgraph, target: AsciiSubgraph): boolean {
+function isAncestorOrSelf(
+  candidate: AsciiSubgraph,
+  target: AsciiSubgraph,
+): boolean {
   let current: AsciiSubgraph | null = target
   while (current !== null) {
     if (current === candidate) return true
@@ -207,7 +232,10 @@ function isAncestorOrSelf(candidate: AsciiSubgraph, target: AsciiSubgraph): bool
  * Returns the subgraph's direction override if the node is in a subgraph with one,
  * otherwise returns the graph-level direction.
  */
-export function getEffectiveDirection(graph: AsciiGraph, node: AsciiNode): 'LR' | 'TD' {
+export function getEffectiveDirection(
+  graph: AsciiGraph,
+  node: AsciiNode,
+): 'LR' | 'TD' {
   const sg = getNodeSubgraph(graph, node)
   if (sg?.direction) {
     return sg.direction
@@ -220,7 +248,10 @@ export function getEffectiveDirection(graph: AsciiGraph, node: AsciiNode): 'LR' 
  * AND is the topmost such node in its subgraph.
  * Used to add extra vertical padding for subgraph borders.
  */
-function hasIncomingEdgeFromOutsideSubgraph(graph: AsciiGraph, node: AsciiNode): boolean {
+function hasIncomingEdgeFromOutsideSubgraph(
+  graph: AsciiGraph,
+  node: AsciiNode,
+): boolean {
   const nodeSg = getNodeSubgraph(graph, node)
   if (!nodeSg) return false
 
@@ -262,7 +293,10 @@ function hasIncomingEdgeFromOutsideSubgraph(graph: AsciiGraph, node: AsciiNode):
 // Subgraph bounding boxes
 // ============================================================================
 
-function calculateSubgraphBoundingBox(graph: AsciiGraph, sg: AsciiSubgraph): void {
+function calculateSubgraphBoundingBox(
+  graph: AsciiGraph,
+  sg: AsciiSubgraph,
+): void {
   if (sg.nodes.length === 0) return
 
   let minX = 1_000_000
@@ -305,7 +339,9 @@ function calculateSubgraphBoundingBox(graph: AsciiGraph, sg: AsciiSubgraph): voi
 /** Ensure non-overlapping root subgraphs have minimum spacing. */
 function ensureSubgraphSpacing(graph: AsciiGraph): void {
   const minSpacing = 1
-  const rootSubgraphs = graph.subgraphs.filter(sg => sg.parent === null && sg.nodes.length > 0)
+  const rootSubgraphs = graph.subgraphs.filter(
+    (sg) => sg.parent === null && sg.nodes.length > 0,
+  )
 
   for (let i = 0; i < rootSubgraphs.length; i++) {
     for (let j = i + 1; j < rootSubgraphs.length; j++) {
@@ -411,16 +447,16 @@ export function createMapping(graph: AsciiGraph): void {
   // Filter out subgraph nodes that have incoming edges from external sources.
   // This handles the case where subgraph is declared before external nodes
   // (e.g., `subgraph s; A-->B; end; X-->A` - A shouldn't be a root, X should).
-  const rootNodes = initialRoots.filter(node => {
+  const rootNodes = initialRoots.filter((node) => {
     const nodeSg = getNodeSubgraph(graph, node)
-    if (!nodeSg) return true  // external nodes: keep as roots
+    if (!nodeSg) return true // external nodes: keep as roots
 
     // Check if this subgraph node has incoming edges from outside its subgraph
     for (const edge of graph.edges) {
       if (edge.to === node) {
         const sourceSg = getNodeSubgraph(graph, edge.from)
         if (sourceSg !== nodeSg) {
-          return false  // has external incoming edge → not a root
+          return false // has external incoming edge → not a root
         }
       }
     }
@@ -438,23 +474,25 @@ export function createMapping(graph: AsciiGraph): void {
       hasExternalRoots = true
     }
   }
-  const shouldSeparate = dir === 'LR' && hasExternalRoots && hasSubgraphRootsWithEdges
+  const shouldSeparate =
+    dir === 'LR' && hasExternalRoots && hasSubgraphRootsWithEdges
 
   let externalRootNodes: AsciiNode[]
   let subgraphRootNodes: AsciiNode[] = []
 
   if (shouldSeparate) {
-    externalRootNodes = rootNodes.filter(n => !isNodeInAnySubgraph(graph, n))
-    subgraphRootNodes = rootNodes.filter(n => isNodeInAnySubgraph(graph, n))
+    externalRootNodes = rootNodes.filter((n) => !isNodeInAnySubgraph(graph, n))
+    subgraphRootNodes = rootNodes.filter((n) => isNodeInAnySubgraph(graph, n))
   } else {
     externalRootNodes = rootNodes
   }
 
   // Place external root nodes
   for (const node of externalRootNodes) {
-    const requested: GridCoord = dir === 'LR'
-      ? { x: 0, y: highestPositionPerLevel[0]! }
-      : { x: highestPositionPerLevel[0]!, y: 0 }
+    const requested: GridCoord =
+      dir === 'LR'
+        ? { x: 0, y: highestPositionPerLevel[0]! }
+        : { x: highestPositionPerLevel[0]!, y: 0 }
     reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
     highestPositionPerLevel[0] = highestPositionPerLevel[0]! + 4
   }
@@ -463,11 +501,13 @@ export function createMapping(graph: AsciiGraph): void {
   if (shouldSeparate && subgraphRootNodes.length > 0) {
     const subgraphLevel = 4
     for (const node of subgraphRootNodes) {
-      const requested: GridCoord = dir === 'LR'
-        ? { x: subgraphLevel, y: highestPositionPerLevel[subgraphLevel]! }
-        : { x: highestPositionPerLevel[subgraphLevel]!, y: subgraphLevel }
+      const requested: GridCoord =
+        dir === 'LR'
+          ? { x: subgraphLevel, y: highestPositionPerLevel[subgraphLevel]! }
+          : { x: highestPositionPerLevel[subgraphLevel]!, y: subgraphLevel }
       reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
-      highestPositionPerLevel[subgraphLevel] = highestPositionPerLevel[subgraphLevel]! + 4
+      highestPositionPerLevel[subgraphLevel] =
+        highestPositionPerLevel[subgraphLevel]! + 4
     }
   }
 
@@ -480,7 +520,7 @@ export function createMapping(graph: AsciiGraph): void {
   while (placedCount < graph.nodes.length) {
     const prevCount = placedCount
     for (const node of graph.nodes) {
-      if (node.gridCoord === null) continue  // skip unplaced nodes
+      if (node.gridCoord === null) continue // skip unplaced nodes
       const gc = node.gridCoord
 
       for (const child of getChildren(graph, node)) {
@@ -490,9 +530,10 @@ export function createMapping(graph: AsciiGraph): void {
         // Use subgraph direction only if both are in the same subgraph with override
         const parentSg = getNodeSubgraph(graph, node)
         const childSg = getNodeSubgraph(graph, child)
-        const edgeDir = (parentSg && parentSg === childSg && parentSg.direction)
-          ? parentSg.direction
-          : graph.config.graphDirection
+        const edgeDir =
+          parentSg && parentSg === childSg && parentSg.direction
+            ? parentSg.direction
+            : graph.config.graphDirection
 
         const childLevel = edgeDir === 'LR' ? gc.x + 4 : gc.y + 4
 
@@ -507,9 +548,10 @@ export function createMapping(graph: AsciiGraph): void {
           highestPosition = highestPositionPerLevel[childLevel]!
         }
 
-        const requested: GridCoord = edgeDir === 'LR'
-          ? { x: childLevel, y: highestPosition }
-          : { x: highestPosition, y: childLevel }
+        const requested: GridCoord =
+          edgeDir === 'LR'
+            ? { x: childLevel, y: highestPosition }
+            : { x: highestPosition, y: childLevel }
         reserveSpotInGrid(graph, graph.nodes[child.index]!, requested, edgeDir)
 
         // Only update level tracker for same-direction placements
@@ -567,11 +609,14 @@ export function createMapping(graph: AsciiGraph): void {
 // ============================================================================
 
 /** Get all edges originating from a node. */
-function getEdgesFromNode(graph: AsciiGraph, node: AsciiNode): AsciiGraph['edges'] {
-  return graph.edges.filter(e => e.from.name === node.name)
+function getEdgesFromNode(
+  graph: AsciiGraph,
+  node: AsciiNode,
+): AsciiGraph['edges'] {
+  return graph.edges.filter((e) => e.from.name === node.name)
 }
 
 /** Get all direct children of a node (targets of outgoing edges). */
 function getChildren(graph: AsciiGraph, node: AsciiNode): AsciiNode[] {
-  return getEdgesFromNode(graph, node).map(e => e.to)
+  return getEdgesFromNode(graph, node).map((e) => e.to)
 }

@@ -98,7 +98,7 @@ function parseTestCase(content: string): TestCase {
  */
 function normalizeWhitespace(s: string): string {
   const lines = s.split('\n')
-  const normalized = lines.map(l => l.trimEnd())
+  const normalized = lines.map((l) => l.trimEnd())
 
   // Remove leading blank lines
   while (normalized.length > 0 && normalized[0] === '') {
@@ -122,7 +122,9 @@ function visualizeWhitespace(s: string): string {
 // ============================================================================
 
 function runGoldenTests(dir: string, useAscii: boolean): void {
-  const files = readdirSync(dir).filter(f => f.endsWith('.txt')).sort()
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.txt'))
+    .sort()
 
   for (const file of files) {
     const testName = file.replace('.txt', '')
@@ -185,7 +187,8 @@ describe('Config behavior', () => {
 
   it('Unicode output should contain Unicode box-drawing characters', () => {
     const output = renderMermaidAscii(mermaidInput, { useAscii: false })
-    const hasUnicode = output.includes('┌') || output.includes('─') || output.includes('│')
+    const hasUnicode =
+      output.includes('┌') || output.includes('─') || output.includes('│')
     expect(hasUnicode).toBe(true)
   })
 })

@@ -11,9 +11,20 @@
 // ============================================================================
 
 import { parseClassDiagram } from '../class/parser.ts'
-import type { ClassNode, ClassMember, RelationshipType } from '../class/types.ts'
+import type {
+  ClassNode,
+  ClassMember,
+  RelationshipType,
+} from '../class/types.ts'
 import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
-import { mkCanvas, mkRoleCanvas, canvasToString, increaseSize, increaseRoleCanvasSize, setRole } from './canvas.ts'
+import {
+  mkCanvas,
+  mkRoleCanvas,
+  canvasToString,
+  increaseSize,
+  increaseRoleCanvasSize,
+  setRole,
+} from './canvas.ts'
 import { drawMultiBox } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'
 
@@ -74,7 +85,10 @@ interface RelMarker {
  * Build the marker metadata for a relationship.
  * The actual marker character will be determined at placement time based on line direction.
  */
-function getRelMarker(type: RelationshipType, markerAt: 'from' | 'to'): RelMarker {
+function getRelMarker(
+  type: RelationshipType,
+  markerAt: 'from' | 'to',
+): RelMarker {
   const dashed = type === 'dependency' || type === 'realization'
   return { type, markerAt, dashed }
 }
@@ -87,7 +101,7 @@ function getRelMarker(type: RelationshipType, markerAt: 'from' | 'to'): RelMarke
 function getMarkerShape(
   type: RelationshipType,
   useAscii: boolean,
-  direction?: 'up' | 'down' | 'left' | 'right'
+  direction?: 'up' | 'down' | 'left' | 'right',
 ): string {
   switch (type) {
     case 'inheritance':
@@ -148,15 +162,23 @@ interface PlacedClass {
  *
  * Pipeline: parse → build boxes → level-based layout → draw boxes → draw relationships → string.
  */
-export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: ColorMode, theme?: AsciiTheme): string {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('%%'))
+export function renderClassAscii(
+  text: string,
+  config: AsciiConfig,
+  colorMode?: ColorMode,
+  theme?: AsciiTheme,
+): string {
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
   const diagram = parseClassDiagram(lines)
 
   if (diagram.classes.length === 0) return ''
 
   const useAscii = config.useAscii
-  const hGap = 4  // horizontal gap between class boxes
-  const vGap = 3  // vertical gap between levels (enough for relationship lines)
+  const hGap = 4 // horizontal gap between class boxes
+  const vGap = 3 // vertical gap between levels (enough for relationship lines)
 
   // --- Build box dimensions for each class ---
   const classSections = new Map<string, string[][]>()
@@ -194,7 +216,7 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
   const classById = new Map<string, ClassNode>()
   for (const cls of diagram.classes) classById.set(cls.id, cls)
 
-  const parents = new Map<string, Set<string>>()  // child → set of parent IDs
+  const parents = new Map<string, Set<string>>() // child → set of parent IDs
   const children = new Map<string, Set<string>>() // parent → set of child IDs
 
   for (const rel of diagram.relationships) {
@@ -202,7 +224,8 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
     // - `Animal <|-- Dog` (markerAt='from'): Animal is parent, Dog is child
     // - `Bird ..|> Flyable` (markerAt='to'): Flyable is parent, Bird is child
     // For other relationships, use the default from→to direction.
-    const isHierarchical = rel.type === 'inheritance' || rel.type === 'realization'
+    const isHierarchical =
+      rel.type === 'inheritance' || rel.type === 'realization'
     const parentId = isHierarchical && rel.markerAt === 'to' ? rel.to : rel.from
     const childId = isHierarchical && rel.markerAt === 'to' ? rel.from : rel.to
 
@@ -217,8 +240,10 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
   // (e.g. View --> Model and Model ..> View would otherwise push levels
   // upward forever). In a DAG the longest path has at most N-1 edges.
   const level = new Map<string, number>()
-  const roots = diagram.classes.filter(c => !parents.has(c.id) || parents.get(c.id)!.size === 0)
-  const queue: string[] = roots.map(c => c.id)
+  const roots = diagram.classes.filter(
+    (c) => !parents.has(c.id) || parents.get(c.id)!.size === 0,
+  )
+  const queue: string[] = roots.map((c) => c.id)
   for (const id of queue) level.set(id, 0)
 
   const levelCap = diagram.classes.length - 1
@@ -334,10 +359,19 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
   }
 
   /** Check if a point (x, y) is inside any class box */
-  function isInsideBox(x: number, y: number, excludeIds?: Set<string>): boolean {
+  function isInsideBox(
+    x: number,
+    y: number,
+    excludeIds?: Set<string>,
+  ): boolean {
     for (const [id, p] of placed.entries()) {
       if (excludeIds?.has(id)) continue
-      if (x >= p.x && x <= p.x + p.width - 1 && y >= p.y && y <= p.y + p.height - 1) {
+      if (
+        x >= p.x &&
+        x <= p.x + p.width - 1 &&
+        y >= p.y &&
+        y <= p.y + p.height - 1
+      ) {
         return true
       }
     }
@@ -345,7 +379,12 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
   }
 
   /** Find a clear vertical column for routing that doesn't pass through any boxes */
-  function findClearColumn(startX: number, y1: number, y2: number, excludeIds: Set<string>): number {
+  function findClearColumn(
+    startX: number,
+    y1: number,
+    y2: number,
+    excludeIds: Set<string>,
+  ): number {
     // Try the original column first
     let clear = true
     for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
@@ -511,10 +550,20 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
 
         // Markers for no-collision case
         if (marker.markerAt === 'to') {
-          setC(toCX, toTY - 1, getMarkerShape(marker.type, useAscii, 'down'), 'arrow')
+          setC(
+            toCX,
+            toTY - 1,
+            getMarkerShape(marker.type, useAscii, 'down'),
+            'arrow',
+          )
         }
         if (marker.markerAt === 'from') {
-          setC(fromCX, fromBY + 1, getMarkerShape(marker.type, useAscii, 'down'), 'arrow')
+          setC(
+            fromCX,
+            fromBY + 1,
+            getMarkerShape(marker.type, useAscii, 'down'),
+            'arrow',
+          )
         }
       }
     } else if (toP.y + toP.height - 1 < fromP.y) {
@@ -548,16 +597,27 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
         const markerChar = getMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(fromCX - Math.floor(markerChar.length / 2) + i, my, markerChar[i]!, 'arrow')
+          setC(
+            fromCX - Math.floor(markerChar.length / 2) + i,
+            my,
+            markerChar[i]!,
+            'arrow',
+          )
         }
       }
       if (marker.markerAt === 'to') {
-        const isHierarchical = marker.type === 'inheritance' || marker.type === 'realization'
+        const isHierarchical =
+          marker.type === 'inheritance' || marker.type === 'realization'
         const markerDir = isHierarchical ? 'down' : 'up'
         const markerChar = getMarkerShape(marker.type, useAscii, markerDir)
         const my = toBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(toCX - Math.floor(markerChar.length / 2) + i, my, markerChar[i]!, 'arrow')
+          setC(
+            toCX - Math.floor(markerChar.length / 2) + i,
+            my,
+            markerChar[i]!,
+            'arrow',
+          )
         }
       }
     } else {
@@ -586,14 +646,24 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
         const markerChar = getMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(fromCX - Math.floor(markerChar.length / 2) + i, my, markerChar[i]!, 'arrow')
+          setC(
+            fromCX - Math.floor(markerChar.length / 2) + i,
+            my,
+            markerChar[i]!,
+            'arrow',
+          )
         }
       }
       if (marker.markerAt === 'to') {
         const markerChar = getMarkerShape(marker.type, useAscii, 'up')
         const my = toP.y + toP.height
         for (let i = 0; i < markerChar.length; i++) {
-          setC(toCX - Math.floor(markerChar.length / 2) + i, my, markerChar[i]!, 'arrow')
+          setC(
+            toCX - Math.floor(markerChar.length / 2) + i,
+            my,
+            markerChar[i]!,
+            'arrow',
+          )
         }
       }
     }
@@ -602,7 +672,7 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
     // Add padding around the label for readability
     if (rel.label) {
       const lines = splitLines(rel.label)
-      const maxLabelWidth = Math.max(...lines.map(l => l.length)) + 2 // +2 for padding
+      const maxLabelWidth = Math.max(...lines.map((l) => l.length)) + 2 // +2 for padding
 
       // Calculate ideal label position based on routing direction
       let baseMidY: number
@@ -671,7 +741,7 @@ export function renderClassAscii(text: string, config: AsciiConfig, colorMode?: 
       const startY = labelY - halfHeight
 
       for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-        const paddedLine = ` ${lines[lineIdx]!} `  // Add space padding on both sides
+        const paddedLine = ` ${lines[lineIdx]!} ` // Add space padding on both sides
         // Calculate label start, but ensure it doesn't go negative
         const idealLabelStart = idealMidX - Math.floor(paddedLine.length / 2)
         const labelStart = Math.max(0, idealLabelStart)

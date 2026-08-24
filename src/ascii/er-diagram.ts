@@ -10,9 +10,21 @@
 // ============================================================================
 
 import { parseErDiagram } from '../er/parser.ts'
-import type { ErDiagram, ErEntity, ErAttribute, Cardinality } from '../er/types.ts'
+import type {
+  ErDiagram,
+  ErEntity,
+  ErAttribute,
+  Cardinality,
+} from '../er/types.ts'
 import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
-import { mkCanvas, mkRoleCanvas, canvasToString, increaseSize, increaseRoleCanvasSize, setRole } from './canvas.ts'
+import {
+  mkCanvas,
+  mkRoleCanvas,
+  canvasToString,
+  increaseSize,
+  increaseRoleCanvasSize,
+  setRole,
+} from './canvas.ts'
 import { drawMultiBox } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'
 
@@ -59,21 +71,33 @@ function buildEntitySections(entity: ErEntity): string[][] {
  * @param useAscii - Use ASCII-only characters
  * @param isRight - True if this marker is on the right side of the relationship
  */
-function getCrowsFootChars(card: Cardinality, useAscii: boolean, isRight = false): string {
+function getCrowsFootChars(
+  card: Cardinality,
+  useAscii: boolean,
+  isRight = false,
+): string {
   if (useAscii) {
     switch (card) {
-      case 'one':       return '|'
-      case 'zero-one':  return 'o|'
-      case 'many':      return isRight ? '<' : '>'
-      case 'zero-many': return isRight ? 'o<' : '>o'
+      case 'one':
+        return '|'
+      case 'zero-one':
+        return 'o|'
+      case 'many':
+        return isRight ? '<' : '>'
+      case 'zero-many':
+        return isRight ? 'o<' : '>o'
     }
   } else {
     // Use cleaner Unicode characters
     switch (card) {
-      case 'one':       return '│'
-      case 'zero-one':  return '○│'
-      case 'many':      return isRight ? '╟' : '╢'
-      case 'zero-many': return isRight ? '○╟' : '╢○'
+      case 'one':
+        return '│'
+      case 'zero-one':
+        return '○│'
+      case 'many':
+        return isRight ? '╟' : '╢'
+      case 'zero-many':
+        return isRight ? '○╟' : '╢○'
     }
   }
 }
@@ -156,16 +180,24 @@ function findConnectedComponents(diagram: ErDiagram): Set<string>[] {
  *
  * Pipeline: parse → build boxes → component-aware layout → draw boxes → draw relationships → string.
  */
-export function renderErAscii(text: string, config: AsciiConfig, colorMode?: ColorMode, theme?: AsciiTheme): string {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('%%'))
+export function renderErAscii(
+  text: string,
+  config: AsciiConfig,
+  colorMode?: ColorMode,
+  theme?: AsciiTheme,
+): string {
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
   const diagram = parseErDiagram(lines)
 
   if (diagram.entities.length === 0) return ''
 
   const useAscii = config.useAscii
-  const hGap = 6  // horizontal gap between entity boxes
-  const vGap = 4  // vertical gap between rows (for relationship lines)
-  const componentGap = 6  // vertical gap between disconnected components
+  const hGap = 6 // horizontal gap between entity boxes
+  const vGap = 4 // vertical gap between rows (for relationship lines)
+  const componentGap = 6 // vertical gap between disconnected components
 
   // --- Build entity box dimensions ---
   const entitySections = new Map<string, string[][]>()
@@ -201,11 +233,16 @@ export function renderErAscii(text: string, config: AsciiConfig, colorMode?: Col
 
   for (const component of components) {
     // Get entities in this component (preserve original order for consistency)
-    const componentEntities = diagram.entities.filter(e => component.has(e.id))
+    const componentEntities = diagram.entities.filter((e) =>
+      component.has(e.id),
+    )
 
     // Layout entities within this component horizontally
     // Use sqrt-based row limit for larger components
-    const maxPerRow = Math.max(2, Math.ceil(Math.sqrt(componentEntities.length)))
+    const maxPerRow = Math.max(
+      2,
+      Math.ceil(Math.sqrt(componentEntities.length)),
+    )
 
     let currentX = 0
     let maxRowH = 0
@@ -307,9 +344,10 @@ export function renderErAscii(text: string, config: AsciiConfig, colorMode?: Col
     if (sameRow) {
       // Horizontal connection: right side of left entity → left side of right entity
       const [left, right] = e1CX < e2CX ? [e1, e2] : [e2, e1]
-      const [leftCard, rightCard] = e1CX < e2CX
-        ? [rel.cardinality1, rel.cardinality2]
-        : [rel.cardinality2, rel.cardinality1]
+      const [leftCard, rightCard] =
+        e1CX < e2CX
+          ? [rel.cardinality1, rel.cardinality2]
+          : [rel.cardinality2, rel.cardinality1]
 
       const startX = left.x + left.width
       const endX = right.x - 1
@@ -343,11 +381,22 @@ export function renderErAscii(text: string, config: AsciiConfig, colorMode?: Col
         // Place lines below the relationship line (lineY + 1, lineY + 2, ...)
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
           const line = lines[lineIdx]!
-          const labelStart = Math.max(startX, gapMid - Math.floor(line.length / 2))
+          const labelStart = Math.max(
+            startX,
+            gapMid - Math.floor(line.length / 2),
+          )
           const labelY = lineY + 1 + lineIdx
           // Ensure canvas is tall enough
-          increaseSize(canvas, Math.max(labelStart + line.length, 1), Math.max(labelY + 1, 1))
-          increaseRoleCanvasSize(rc, Math.max(labelStart + line.length, 1), Math.max(labelY + 1, 1))
+          increaseSize(
+            canvas,
+            Math.max(labelStart + line.length, 1),
+            Math.max(labelY + 1, 1),
+          )
+          increaseRoleCanvasSize(
+            rc,
+            Math.max(labelStart + line.length, 1),
+            Math.max(labelY + 1, 1),
+          )
           for (let i = 0; i < line.length; i++) {
             const lx = labelStart + i
             if (lx >= startX && lx <= endX) {
@@ -359,9 +408,10 @@ export function renderErAscii(text: string, config: AsciiConfig, colorMode?: Col
     } else {
       // Vertical connection: bottom of upper entity → top of lower entity
       const [upper, lower] = e1CY < e2CY ? [e1, e2] : [e2, e1]
-      const [upperCard, lowerCard] = e1CY < e2CY
-        ? [rel.cardinality1, rel.cardinality2]
-        : [rel.cardinality2, rel.cardinality1]
+      const [upperCard, lowerCard] =
+        e1CY < e2CY
+          ? [rel.cardinality1, rel.cardinality2]
+          : [rel.cardinality2, rel.cardinality1]
 
       const startY = upper.y + upper.height
       const endY = lower.y - 1
@@ -392,14 +442,24 @@ export function renderErAscii(text: string, config: AsciiConfig, colorMode?: Col
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
       const upperChars = getCrowsFootChars(upperCard, useAscii, false)
       for (let i = 0; i < upperChars.length; i++) {
-        setC(lineX - Math.floor(upperChars.length / 2) + i, startY, upperChars[i]!, 'arrow')
+        setC(
+          lineX - Math.floor(upperChars.length / 2) + i,
+          startY,
+          upperChars[i]!,
+          'arrow',
+        )
       }
 
       // Lower marker (at lower entity's top edge) - treat as target side (isRight=true)
       const targetX = lineX !== lowerCX ? lowerCX : lineX
       const lowerChars = getCrowsFootChars(lowerCard, useAscii, true)
       for (let i = 0; i < lowerChars.length; i++) {
-        setC(targetX - Math.floor(lowerChars.length / 2) + i, endY, lowerChars[i]!, 'arrow')
+        setC(
+          targetX - Math.floor(lowerChars.length / 2) + i,
+          endY,
+          lowerChars[i]!,
+          'arrow',
+        )
       }
 
       // Relationship label — placed to the right of the vertical line at the midpoint.

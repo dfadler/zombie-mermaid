@@ -15,7 +15,6 @@ export interface Sample {
 }
 
 export const xychartSamples: Sample[] = [
-
   // ══════════════════════════════════════════════════════════════════════════
   //  BASIC BAR CHARTS
   // ══════════════════════════════════════════════════════════════════════════
@@ -119,7 +118,8 @@ export const xychartSamples: Sample[] = [
   {
     title: 'Simple Line Chart',
     category: 'Basic Line Charts',
-    description: 'A line chart showing a gentle upward trend with natural variation.',
+    description:
+      'A line chart showing a gentle upward trend with natural variation.',
     source: `xychart-beta
     title "Simple Trend"
     x-axis [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug]
@@ -227,7 +227,8 @@ export const xychartSamples: Sample[] = [
   {
     title: 'Bar with Trend Line',
     category: 'Combined Bar + Line',
-    description: 'Bars showing actual values with a line showing the moving average trend.',
+    description:
+      'Bars showing actual values with a line showing the moving average trend.',
     source: `xychart-beta
     title "Sales with Trend"
     x-axis [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
@@ -876,7 +877,8 @@ export const xychartSamples: Sample[] = [
   {
     title: 'Cumulative Registered Users',
     category: 'Real-World Scenarios',
-    description: 'Cumulative user growth over months showing accelerating adoption.',
+    description:
+      'Cumulative user growth over months showing accelerating adoption.',
     source: `xychart-beta
     title "Cumulative Registered Users"
     x-axis [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]

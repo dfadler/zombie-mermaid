@@ -3,8 +3,21 @@
  * Theme resolution tests are in theme.test.ts (CSS custom property system).
  */
 import { describe, it, expect } from 'vitest'
-import { estimateTextWidth, FONT_SIZES, FONT_WEIGHTS, NODE_PADDING, STROKE_WIDTHS, ARROW_HEAD } from '../styles.ts'
-import { THEMES, DEFAULTS, fromShikiTheme, buildStyleBlock, svgOpenTag } from '../theme.ts'
+import {
+  estimateTextWidth,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  NODE_PADDING,
+  STROKE_WIDTHS,
+  ARROW_HEAD,
+} from '../styles.ts'
+import {
+  THEMES,
+  DEFAULTS,
+  fromShikiTheme,
+  buildStyleBlock,
+  svgOpenTag,
+} from '../theme.ts'
 import type { DiagramColors } from '../theme.ts'
 
 // ============================================================================
@@ -45,8 +58,10 @@ describe('svgOpenTag', () => {
 
   it('includes optional enrichment variables when provided', () => {
     const colors: DiagramColors = {
-      bg: '#1a1b26', fg: '#a9b1d6',
-      line: '#3d59a1', accent: '#7aa2f7',
+      bg: '#1a1b26',
+      fg: '#a9b1d6',
+      line: '#3d59a1',
+      accent: '#7aa2f7',
     }
     const tag = svgOpenTag(400, 300, colors)
     expect(tag).toContain('--line:#3d59a1')
@@ -140,7 +155,11 @@ describe('estimateTextWidth', () => {
 
   it('produces reasonable widths for typical node labels', () => {
     // A 5-character label at 13px/500w should be roughly 35px (5 * 13 * 0.55)
-    const width = estimateTextWidth('Hello', FONT_SIZES.nodeLabel, FONT_WEIGHTS.nodeLabel)
+    const width = estimateTextWidth(
+      'Hello',
+      FONT_SIZES.nodeLabel,
+      FONT_WEIGHTS.nodeLabel,
+    )
     expect(width).toBeGreaterThan(25)
     expect(width).toBeLessThan(60)
   })

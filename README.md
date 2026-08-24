@@ -34,7 +34,6 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 
 We built `beautiful-mermaid` at [Craft](https://craft.do) to power diagrams in [Craft Agents](https://agents.craft.do). It's fast, beautiful, and works everywhere—from rich UIs to plain terminals.
 
-
 The ASCII rendering engine is based on [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) by Alexander Grooff. We ported it from Go to TypeScript and extended it. Thank you Alexander for the excellent foundation! (And inspiration that this was possible.)
 
 ## Features
@@ -115,7 +114,10 @@ function MermaidDiagram({ code }: { code: string }) {
         error: null,
       }
     } catch (err) {
-      return { svg: null, error: err instanceof Error ? err : new Error(String(err)) }
+      return {
+        svg: null,
+        error: err instanceof Error ? err : new Error(String(err)),
+      }
     }
   }, [code])
 
@@ -125,6 +127,7 @@ function MermaidDiagram({ code }: { code: string }) {
 ```
 
 **Why this works well:**
+
 - **No flash** — SVG is computed synchronously during render, not in a useEffect
 - **CSS variables** — Pass `var(--background)` etc. instead of hex colors. The SVG inherits from your app's CSS, so theme switches apply instantly without re-rendering
 - **Memoized** — Only re-renders when `code` changes
@@ -141,25 +144,25 @@ Every diagram needs just two colors: **background** (`bg`) and **foreground** (`
 
 ```typescript
 const svg = renderMermaidSVG(diagram, {
-  bg: '#1a1b26',  // Background
-  fg: '#a9b1d6',  // Foreground
+  bg: '#1a1b26', // Background
+  fg: '#a9b1d6', // Foreground
 })
 ```
 
 This is **Mono Mode**—a coherent, beautiful diagram from just two colors. The system automatically derives:
 
-| Element | Derivation |
-|---------|------------|
-| Text | `--fg` at 100% |
+| Element        | Derivation                |
+| -------------- | ------------------------- |
+| Text           | `--fg` at 100%            |
 | Secondary text | `--fg` at 60% into `--bg` |
-| Edge labels | `--fg` at 40% into `--bg` |
-| Faint text | `--fg` at 25% into `--bg` |
-| Connectors | `--fg` at 50% into `--bg` |
-| Arrow heads | `--fg` at 85% into `--bg` |
-| Node fill | `--fg` at 3% into `--bg` |
-| Group header | `--fg` at 5% into `--bg` |
-| Inner strokes | `--fg` at 12% into `--bg` |
-| Node stroke | `--fg` at 20% into `--bg` |
+| Edge labels    | `--fg` at 40% into `--bg` |
+| Faint text     | `--fg` at 25% into `--bg` |
+| Connectors     | `--fg` at 50% into `--bg` |
+| Arrow heads    | `--fg` at 85% into `--bg` |
+| Node fill      | `--fg` at 3% into `--bg`  |
+| Group header   | `--fg` at 5% into `--bg`  |
+| Inner strokes  | `--fg` at 12% into `--bg` |
+| Node stroke    | `--fg` at 20% into `--bg` |
 
 ### Enriched Mode
 
@@ -170,11 +173,11 @@ const svg = renderMermaidSVG(diagram, {
   bg: '#1a1b26',
   fg: '#a9b1d6',
   // Optional enrichment:
-  line: '#3d59a1',    // Edge/connector color
-  accent: '#7aa2f7',  // Arrow heads, highlights
-  muted: '#565f89',   // Secondary text, labels
+  line: '#3d59a1', // Edge/connector color
+  accent: '#7aa2f7', // Arrow heads, highlights
+  muted: '#565f89', // Secondary text, labels
   surface: '#292e42', // Node fill tint
-  border: '#3d59a1',  // Node stroke
+  border: '#3d59a1', // Node stroke
 })
 ```
 
@@ -207,23 +210,23 @@ const svg = renderMermaidSVG(diagram, {
 
 15 carefully curated themes ship out of the box:
 
-| Theme | Type | Background | Accent |
-|-------|------|------------|--------|
-| `zinc-light` | Light | `#FFFFFF` | Derived |
-| `zinc-dark` | Dark | `#18181B` | Derived |
-| `tokyo-night` | Dark | `#1a1b26` | `#7aa2f7` |
-| `tokyo-night-storm` | Dark | `#24283b` | `#7aa2f7` |
-| `tokyo-night-light` | Light | `#d5d6db` | `#34548a` |
-| `catppuccin-mocha` | Dark | `#1e1e2e` | `#cba6f7` |
-| `catppuccin-latte` | Light | `#eff1f5` | `#8839ef` |
-| `nord` | Dark | `#2e3440` | `#88c0d0` |
-| `nord-light` | Light | `#eceff4` | `#5e81ac` |
-| `dracula` | Dark | `#282a36` | `#bd93f9` |
-| `github-light` | Light | `#ffffff` | `#0969da` |
-| `github-dark` | Dark | `#0d1117` | `#4493f8` |
-| `solarized-light` | Light | `#fdf6e3` | `#268bd2` |
-| `solarized-dark` | Dark | `#002b36` | `#268bd2` |
-| `one-dark` | Dark | `#282c34` | `#c678dd` |
+| Theme               | Type  | Background | Accent    |
+| ------------------- | ----- | ---------- | --------- |
+| `zinc-light`        | Light | `#FFFFFF`  | Derived   |
+| `zinc-dark`         | Dark  | `#18181B`  | Derived   |
+| `tokyo-night`       | Dark  | `#1a1b26`  | `#7aa2f7` |
+| `tokyo-night-storm` | Dark  | `#24283b`  | `#7aa2f7` |
+| `tokyo-night-light` | Light | `#d5d6db`  | `#34548a` |
+| `catppuccin-mocha`  | Dark  | `#1e1e2e`  | `#cba6f7` |
+| `catppuccin-latte`  | Light | `#eff1f5`  | `#8839ef` |
+| `nord`              | Dark  | `#2e3440`  | `#88c0d0` |
+| `nord-light`        | Light | `#eceff4`  | `#5e81ac` |
+| `dracula`           | Dark  | `#282a36`  | `#bd93f9` |
+| `github-light`      | Light | `#ffffff`  | `#0969da` |
+| `github-dark`       | Dark  | `#0d1117`  | `#4493f8` |
+| `solarized-light`   | Light | `#fdf6e3`  | `#268bd2` |
+| `solarized-dark`    | Dark  | `#002b36`  | `#268bd2` |
+| `one-dark`          | Dark  | `#282c34`  | `#c678dd` |
 
 ```typescript
 import { renderMermaidSVG, THEMES } from 'zombie-mermaid'
@@ -250,8 +253,8 @@ Want richer colors? Add any of the optional enrichments:
 const myRichTheme = {
   bg: '#0f0f0f',
   fg: '#e0e0e0',
-  accent: '#ff6b6b',  // Pop of color for arrows
-  muted: '#666666',   // Subdued labels
+  accent: '#ff6b6b', // Pop of color for arrows
+  muted: '#666666', // Subdued labels
 }
 ```
 
@@ -265,7 +268,7 @@ import { renderMermaidSVG, fromShikiTheme } from 'zombie-mermaid'
 
 // Load any theme from Shiki's registry
 const highlighter = await getSingletonHighlighter({
-  themes: ['vitesse-dark', 'rose-pine', 'material-theme-darker']
+  themes: ['vitesse-dark', 'rose-pine', 'material-theme-darker'],
 })
 
 // Extract diagram colors from the theme
@@ -276,15 +279,15 @@ const svg = renderMermaidSVG(diagram, colors)
 
 The `fromShikiTheme()` function intelligently maps VS Code editor colors to diagram roles:
 
-| Editor Color | Diagram Role |
-|--------------|--------------|
-| `editor.background` | `bg` |
-| `editor.foreground` | `fg` |
-| `editorLineNumber.foreground` | `line` |
-| `focusBorder` / keyword token | `accent` |
-| comment token | `muted` |
-| `editor.selectionBackground` | `surface` |
-| `editorWidget.border` | `border` |
+| Editor Color                  | Diagram Role |
+| ----------------------------- | ------------ |
+| `editor.background`           | `bg`         |
+| `editor.foreground`           | `fg`         |
+| `editorLineNumber.foreground` | `line`       |
+| `focusBorder` / keyword token | `accent`     |
+| comment token                 | `muted`      |
+| `editor.selectionBackground`  | `surface`    |
+| `editorWidget.border`         | `border`     |
 
 ---
 
@@ -356,7 +359,7 @@ graph TD
   linkStyle default stroke:#888888
 ```
 
-|             Syntax              |                 Effect                 |
+| Syntax                          | Effect                                 |
 | ------------------------------- | -------------------------------------- |
 | `linkStyle 0 stroke:#f00`       | Style a single edge by index (0-based) |
 | `linkStyle 0,2 stroke:#f00`     | Style multiple edges at once           |
@@ -449,6 +452,7 @@ const ascii = renderMermaidASCII(`graph LR; A --> B`, { useAscii: true })
 ```
 
 **Unicode output:**
+
 ```
 ┌───┐     ┌───┐
 │   │     │   │
@@ -458,6 +462,7 @@ const ascii = renderMermaidASCII(`graph LR; A --> B`, { useAscii: true })
 ```
 
 **ASCII output:**
+
 ```
 +---+     +---+
 |   |     |   |
@@ -498,28 +503,29 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 
 **Parameters:**
+
 - `text` — Mermaid source code
 - `options` — Optional `RenderOptions` object
 
 **RenderOptions:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `bg` | `string` | `#FFFFFF` | Background color (or CSS variable) |
-| `fg` | `string` | `#27272A` | Foreground color (or CSS variable) |
-| `line` | `string?` | — | Edge/connector color |
-| `accent` | `string?` | — | Arrow heads, highlights |
-| `muted` | `string?` | — | Secondary text, labels |
-| `surface` | `string?` | — | Node fill tint |
-| `border` | `string?` | — | Node stroke color |
-| `font` | `string` | `Inter` | Font family |
-| `transparent` | `boolean` | `false` | Render with transparent background |
-| `padding` | `number` | `40` | Canvas padding in px |
-| `nodeSpacing` | `number` | `24` | Horizontal spacing between sibling nodes |
-| `layerSpacing` | `number` | `40` | Vertical spacing between layers |
-| `componentSpacing` | `number` | `24` | Spacing between disconnected components |
-| `thoroughness` | `number` | `3` | Crossing minimization trials (1-7, higher = better but slower) |
-| `interactive` | `boolean` | `false` | Enable hover tooltips on XY chart bars and data points |
+| Option             | Type      | Default   | Description                                                    |
+| ------------------ | --------- | --------- | -------------------------------------------------------------- |
+| `bg`               | `string`  | `#FFFFFF` | Background color (or CSS variable)                             |
+| `fg`               | `string`  | `#27272A` | Foreground color (or CSS variable)                             |
+| `line`             | `string?` | —         | Edge/connector color                                           |
+| `accent`           | `string?` | —         | Arrow heads, highlights                                        |
+| `muted`            | `string?` | —         | Secondary text, labels                                         |
+| `surface`          | `string?` | —         | Node fill tint                                                 |
+| `border`           | `string?` | —         | Node stroke color                                              |
+| `font`             | `string`  | `Inter`   | Font family                                                    |
+| `transparent`      | `boolean` | `false`   | Render with transparent background                             |
+| `padding`          | `number`  | `40`      | Canvas padding in px                                           |
+| `nodeSpacing`      | `number`  | `24`      | Horizontal spacing between sibling nodes                       |
+| `layerSpacing`     | `number`  | `40`      | Vertical spacing between layers                                |
+| `componentSpacing` | `number`  | `24`      | Spacing between disconnected components                        |
+| `thoroughness`     | `number`  | `3`       | Crossing minimization trials (1-7, higher = better but slower) |
+| `interactive`      | `boolean` | `false`   | Enable hover tooltips on XY chart bars and data points         |
 
 **XY Charts:** Diagrams starting with `xychart-beta` are auto-detected — no separate function needed. The `accent` color option drives the chart series color palette.
 
@@ -533,14 +539,14 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 
 **AsciiRenderOptions:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `useAscii` | `boolean` | `false` | Use ASCII instead of Unicode |
-| `paddingX` | `number` | `5` | Horizontal node spacing |
-| `paddingY` | `number` | `5` | Vertical node spacing |
-| `boxBorderPadding` | `number` | `1` | Inner box padding |
-| `colorMode` | `string` | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'` |
-| `theme` | `Partial<AsciiTheme>` | — | Override default colors for ASCII output |
+| Option             | Type                  | Default  | Description                                                             |
+| ------------------ | --------------------- | -------- | ----------------------------------------------------------------------- |
+| `useAscii`         | `boolean`             | `false`  | Use ASCII instead of Unicode                                            |
+| `paddingX`         | `number`              | `5`      | Horizontal node spacing                                                 |
+| `paddingY`         | `number`              | `5`      | Vertical node spacing                                                   |
+| `boxBorderPadding` | `number`              | `1`      | Inner box padding                                                       |
+| `colorMode`        | `string`              | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'` |
+| `theme`            | `Partial<AsciiTheme>` | —        | Override default colors for ASCII output                                |
 
 ### `parseMermaid(text): MermaidGraph`
 

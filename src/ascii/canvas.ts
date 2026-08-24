@@ -6,7 +6,14 @@
 // canvas[x][y] gives the character at column x, row y.
 // ============================================================================
 
-import type { Canvas, DrawingCoord, RoleCanvas, CharRole, AsciiTheme, ColorMode } from './types.ts'
+import type {
+  Canvas,
+  DrawingCoord,
+  RoleCanvas,
+  CharRole,
+  AsciiTheme,
+  ColorMode,
+} from './types.ts'
 import { colorizeLine, DEFAULT_ASCII_THEME } from './ansi.ts'
 
 /**
@@ -62,7 +69,11 @@ export function copyRoleCanvas(source: RoleCanvas): RoleCanvas {
  * Grow the role canvas to fit at least (newX, newY), preserving existing roles.
  * Mutates the role canvas in place and returns it.
  */
-export function increaseRoleCanvasSize(roleCanvas: RoleCanvas, newX: number, newY: number): RoleCanvas {
+export function increaseRoleCanvasSize(
+  roleCanvas: RoleCanvas,
+  newX: number,
+  newY: number,
+): RoleCanvas {
   const currX = roleCanvas.length - 1
   const currY = (roleCanvas[0]?.length ?? 1) - 1
   const targetX = Math.max(newX, currX)
@@ -84,7 +95,12 @@ export function increaseRoleCanvasSize(roleCanvas: RoleCanvas, newX: number, new
  * Set a role at a specific coordinate.
  * Expands the role canvas if necessary.
  */
-export function setRole(roleCanvas: RoleCanvas, x: number, y: number, role: CharRole): void {
+export function setRole(
+  roleCanvas: RoleCanvas,
+  x: number,
+  y: number,
+  role: CharRole,
+): void {
   if (x >= roleCanvas.length || y >= (roleCanvas[0]?.length ?? 0)) {
     increaseRoleCanvasSize(roleCanvas, x, y)
   }
@@ -147,7 +163,11 @@ export function getCanvasSize(canvas: Canvas): [number, number] {
  * Grow the canvas to fit at least (newX, newY), preserving existing content.
  * Mutates the canvas in place and returns it.
  */
-export function increaseSize(canvas: Canvas, newX: number, newY: number): Canvas {
+export function increaseSize(
+  canvas: Canvas,
+  newX: number,
+  newY: number,
+): Canvas {
   const [currX, currY] = getCanvasSize(canvas)
   const targetX = Math.max(newX, currX)
   const targetY = Math.max(newY, currY)
@@ -171,7 +191,21 @@ export function increaseSize(canvas: Canvas, newX: number, newY: number): Canvas
 
 /** All Unicode box-drawing characters that participate in junction merging. */
 const JUNCTION_CHARS = new Set([
-  '─', '│', '┌', '┐', '└', '┘', '├', '┤', '┬', '┴', '┼', '╴', '╵', '╶', '╷',
+  '─',
+  '│',
+  '┌',
+  '┐',
+  '└',
+  '┘',
+  '├',
+  '┤',
+  '┬',
+  '┴',
+  '┼',
+  '╴',
+  '╵',
+  '╶',
+  '╷',
 ])
 
 export function isJunctionChar(c: string): boolean {
@@ -189,16 +223,116 @@ function isAlphanumeric(c: string): boolean {
  * E.g., '─' overlapping '│' becomes '┼'.
  */
 const JUNCTION_MAP: Record<string, Record<string, string>> = {
-  '─': { '│': '┼', '┌': '┬', '┐': '┬', '└': '┴', '┘': '┴', '├': '┼', '┤': '┼', '┬': '┬', '┴': '┴' },
-  '│': { '─': '┼', '┌': '├', '┐': '┤', '└': '├', '┘': '┤', '├': '├', '┤': '┤', '┬': '┼', '┴': '┼' },
-  '┌': { '─': '┬', '│': '├', '┐': '┬', '└': '├', '┘': '┼', '├': '├', '┤': '┼', '┬': '┬', '┴': '┼' },
-  '┐': { '─': '┬', '│': '┤', '┌': '┬', '└': '┼', '┘': '┤', '├': '┼', '┤': '┤', '┬': '┬', '┴': '┼' },
-  '└': { '─': '┴', '│': '├', '┌': '├', '┐': '┼', '┘': '┴', '├': '├', '┤': '┼', '┬': '┼', '┴': '┴' },
-  '┘': { '─': '┴', '│': '┤', '┌': '┼', '┐': '┤', '└': '┴', '├': '┼', '┤': '┤', '┬': '┼', '┴': '┴' },
-  '├': { '─': '┼', '│': '├', '┌': '├', '┐': '┼', '└': '├', '┘': '┼', '┤': '┼', '┬': '┼', '┴': '┼' },
-  '┤': { '─': '┼', '│': '┤', '┌': '┼', '┐': '┤', '└': '┼', '┘': '┤', '├': '┼', '┬': '┼', '┴': '┼' },
-  '┬': { '─': '┬', '│': '┼', '┌': '┬', '┐': '┬', '└': '┼', '┘': '┼', '├': '┼', '┤': '┼', '┴': '┼' },
-  '┴': { '─': '┴', '│': '┼', '┌': '┼', '┐': '┼', '└': '┴', '┘': '┴', '├': '┼', '┤': '┼', '┬': '┼' },
+  '─': {
+    '│': '┼',
+    '┌': '┬',
+    '┐': '┬',
+    '└': '┴',
+    '┘': '┴',
+    '├': '┼',
+    '┤': '┼',
+    '┬': '┬',
+    '┴': '┴',
+  },
+  '│': {
+    '─': '┼',
+    '┌': '├',
+    '┐': '┤',
+    '└': '├',
+    '┘': '┤',
+    '├': '├',
+    '┤': '┤',
+    '┬': '┼',
+    '┴': '┼',
+  },
+  '┌': {
+    '─': '┬',
+    '│': '├',
+    '┐': '┬',
+    '└': '├',
+    '┘': '┼',
+    '├': '├',
+    '┤': '┼',
+    '┬': '┬',
+    '┴': '┼',
+  },
+  '┐': {
+    '─': '┬',
+    '│': '┤',
+    '┌': '┬',
+    '└': '┼',
+    '┘': '┤',
+    '├': '┼',
+    '┤': '┤',
+    '┬': '┬',
+    '┴': '┼',
+  },
+  '└': {
+    '─': '┴',
+    '│': '├',
+    '┌': '├',
+    '┐': '┼',
+    '┘': '┴',
+    '├': '├',
+    '┤': '┼',
+    '┬': '┼',
+    '┴': '┴',
+  },
+  '┘': {
+    '─': '┴',
+    '│': '┤',
+    '┌': '┼',
+    '┐': '┤',
+    '└': '┴',
+    '├': '┼',
+    '┤': '┤',
+    '┬': '┼',
+    '┴': '┴',
+  },
+  '├': {
+    '─': '┼',
+    '│': '├',
+    '┌': '├',
+    '┐': '┼',
+    '└': '├',
+    '┘': '┼',
+    '┤': '┼',
+    '┬': '┼',
+    '┴': '┼',
+  },
+  '┤': {
+    '─': '┼',
+    '│': '┤',
+    '┌': '┼',
+    '┐': '┤',
+    '└': '┼',
+    '┘': '┤',
+    '├': '┼',
+    '┬': '┼',
+    '┴': '┼',
+  },
+  '┬': {
+    '─': '┬',
+    '│': '┼',
+    '┌': '┬',
+    '┐': '┬',
+    '└': '┼',
+    '┘': '┼',
+    '├': '┼',
+    '┤': '┼',
+    '┴': '┼',
+  },
+  '┴': {
+    '─': '┴',
+    '│': '┼',
+    '┌': '┼',
+    '┐': '┼',
+    '└': '┴',
+    '┘': '┴',
+    '├': '┼',
+    '┤': '┼',
+    '┬': '┼',
+  },
 }
 
 export function mergeJunctions(c1: string, c2: string): string {
@@ -281,7 +415,10 @@ export interface CanvasToStringOptions {
  * Convert the canvas to a multi-line string (row by row, left to right).
  * Optionally applies ANSI color codes based on character roles.
  */
-export function canvasToString(canvas: Canvas, options?: CanvasToStringOptions): string {
+export function canvasToString(
+  canvas: Canvas,
+  options?: CanvasToStringOptions,
+): string {
   const [maxX, maxY] = getCanvasSize(canvas)
   const lines: string[] = []
 
@@ -326,18 +463,26 @@ export function canvasToString(canvas: Canvas, options?: CanvasToStringOptions):
  */
 const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Unicode arrows
-  '▲': '▼', '▼': '▲',
-  '◤': '◣', '◣': '◤',
-  '◥': '◢', '◢': '◥',
+  '▲': '▼',
+  '▼': '▲',
+  '◤': '◣',
+  '◣': '◤',
+  '◥': '◢',
+  '◢': '◥',
   // ASCII arrows
-  '^': 'v', 'v': '^',
+  '^': 'v',
+  v: '^',
   // Unicode corners
-  '┌': '└', '└': '┌',
-  '┐': '┘', '┘': '┐',
+  '┌': '└',
+  '└': '┌',
+  '┐': '┘',
+  '┘': '┐',
   // Unicode junctions (T-pieces flip vertically)
-  '┬': '┴', '┴': '┬',
+  '┬': '┴',
+  '┴': '┬',
   // Box-start junctions (exit points from node boxes)
-  '╵': '╷', '╷': '╵',
+  '╵': '╷',
+  '╷': '╵',
 }
 
 /**
@@ -385,7 +530,7 @@ export function drawText(
   canvas: Canvas,
   start: DrawingCoord,
   text: string,
-  forceOverwrite = false
+  forceOverwrite = false,
 ): void {
   increaseSize(canvas, start.x + text.length, start.y)
   for (let i = 0; i < text.length; i++) {

@@ -30,8 +30,13 @@ interface Result {
 // ============================================================================
 
 /** Pad/truncate a string to exactly `width` characters, right-aligned if numeric. */
-function col(value: string, width: number, align: 'left' | 'right' = 'left'): string {
-  const truncated = value.length > width ? value.slice(0, width - 1) + '\u2026' : value
+function col(
+  value: string,
+  width: number,
+  align: 'left' | 'right' = 'left',
+): string {
+  const truncated =
+    value.length > width ? value.slice(0, width - 1) + '\u2026' : value
   return align === 'right' ? truncated.padStart(width) : truncated.padEnd(width)
 }
 
@@ -83,7 +88,15 @@ for (let i = 0; i < samples.length; i++) {
 
   const totalMs = (svgMs >= 0 ? svgMs : 0) + (asciiMs >= 0 ? asciiMs : 0)
 
-  results.push({ index: i, title: sample.title, category, svgMs, asciiMs, svgError, asciiError })
+  results.push({
+    index: i,
+    title: sample.title,
+    category,
+    svgMs,
+    asciiMs,
+    svgError,
+    asciiError,
+  })
 
   // Print row
   const svgStr = svgMs >= 0 ? fmtMs(svgMs) : 'ERR'
@@ -101,27 +114,39 @@ const totalElapsed = performance.now() - totalStart
 
 console.log('═'.repeat(90))
 
-const svgTimes = results.filter(r => r.svgMs >= 0).map(r => r.svgMs)
-const asciiTimes = results.filter(r => r.asciiMs >= 0).map(r => r.asciiMs)
+const svgTimes = results.filter((r) => r.svgMs >= 0).map((r) => r.svgMs)
+const asciiTimes = results.filter((r) => r.asciiMs >= 0).map((r) => r.asciiMs)
 const svgTotal = svgTimes.reduce((a, b) => a + b, 0)
 const asciiTotal = asciiTimes.reduce((a, b) => a + b, 0)
 
-console.log(`Total: ${fmtMs(totalElapsed)}ms (SVG: ${fmtMs(svgTotal)}ms, ASCII: ${fmtMs(asciiTotal)}ms)`)
-console.log(`Average: ${fmtMs((svgTotal + asciiTotal) / results.length)}ms per sample`)
+console.log(
+  `Total: ${fmtMs(totalElapsed)}ms (SVG: ${fmtMs(svgTotal)}ms, ASCII: ${fmtMs(asciiTotal)}ms)`,
+)
+console.log(
+  `Average: ${fmtMs((svgTotal + asciiTotal) / results.length)}ms per sample`,
+)
 
 // Find slowest SVG and ASCII
 if (svgTimes.length > 0) {
-  const slowestSvg = results.filter(r => r.svgMs >= 0).sort((a, b) => b.svgMs - a.svgMs)[0]!
-  console.log(`Slowest SVG:   #${slowestSvg.index + 1} ${slowestSvg.title} (${fmtMs(slowestSvg.svgMs)}ms)`)
+  const slowestSvg = results
+    .filter((r) => r.svgMs >= 0)
+    .sort((a, b) => b.svgMs - a.svgMs)[0]!
+  console.log(
+    `Slowest SVG:   #${slowestSvg.index + 1} ${slowestSvg.title} (${fmtMs(slowestSvg.svgMs)}ms)`,
+  )
 }
 if (asciiTimes.length > 0) {
-  const slowestAscii = results.filter(r => r.asciiMs >= 0).sort((a, b) => b.asciiMs - a.asciiMs)[0]!
-  console.log(`Slowest ASCII: #${slowestAscii.index + 1} ${slowestAscii.title} (${fmtMs(slowestAscii.asciiMs)}ms)`)
+  const slowestAscii = results
+    .filter((r) => r.asciiMs >= 0)
+    .sort((a, b) => b.asciiMs - a.asciiMs)[0]!
+  console.log(
+    `Slowest ASCII: #${slowestAscii.index + 1} ${slowestAscii.title} (${fmtMs(slowestAscii.asciiMs)}ms)`,
+  )
 }
 
 // Report errors
-const svgErrors = results.filter(r => r.svgError)
-const asciiErrors = results.filter(r => r.asciiError)
+const svgErrors = results.filter((r) => r.svgError)
+const asciiErrors = results.filter((r) => r.asciiError)
 if (svgErrors.length > 0) {
   console.log(`\nSVG errors (${svgErrors.length}):`)
   for (const r of svgErrors) {
@@ -143,9 +168,15 @@ for (const r of results) {
   catMap.get(r.category)!.push(r)
 }
 for (const [cat, catResults] of catMap) {
-  const catSvg = catResults.filter(r => r.svgMs >= 0).reduce((a, r) => a + r.svgMs, 0)
-  const catAscii = catResults.filter(r => r.asciiMs >= 0).reduce((a, r) => a + r.asciiMs, 0)
-  console.log(`  ${col(cat, 16)} ${col(String(catResults.length), 3, 'right')} samples  SVG: ${col(fmtMs(catSvg), 8, 'right')}ms  ASCII: ${col(fmtMs(catAscii), 8, 'right')}ms  Total: ${col(fmtMs(catSvg + catAscii), 8, 'right')}ms`)
+  const catSvg = catResults
+    .filter((r) => r.svgMs >= 0)
+    .reduce((a, r) => a + r.svgMs, 0)
+  const catAscii = catResults
+    .filter((r) => r.asciiMs >= 0)
+    .reduce((a, r) => a + r.asciiMs, 0)
+  console.log(
+    `  ${col(cat, 16)} ${col(String(catResults.length), 3, 'right')} samples  SVG: ${col(fmtMs(catSvg), 8, 'right')}ms  ASCII: ${col(fmtMs(catAscii), 8, 'right')}ms  Total: ${col(fmtMs(catSvg + catAscii), 8, 'right')}ms`,
+  )
 }
 
 console.log()

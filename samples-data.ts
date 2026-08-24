@@ -16,11 +16,22 @@ export interface Sample {
   source: string
   /** Optional category tag for grouping in the Table of Contents */
   category?: string
-  options?: { bg?: string; fg?: string; line?: string; accent?: string; muted?: string; surface?: string; border?: string; font?: string; padding?: number; transparent?: boolean; interactive?: boolean }
+  options?: {
+    bg?: string
+    fg?: string
+    line?: string
+    accent?: string
+    muted?: string
+    surface?: string
+    border?: string
+    font?: string
+    padding?: number
+    transparent?: boolean
+    interactive?: boolean
+  }
 }
 
 export const samples: Sample[] = [
-
   // ══════════════════════════════════════════════════════════════════════════
   //  HERO — Showcase diagram
   // ══════════════════════════════════════════════════════════════════════════
@@ -50,7 +61,8 @@ export const samples: Sample[] = [
   {
     title: 'Simple Flow',
     category: 'Flowchart',
-    description: 'Basic linear flow with three nodes connected by solid arrows.',
+    description:
+      'Basic linear flow with three nodes connected by solid arrows.',
     source: `graph TD
   A[Start] --> B[Process] --> C[End]`,
   },
@@ -67,7 +79,8 @@ export const samples: Sample[] = [
   {
     title: 'Batch 1 Shapes',
     category: 'Flowchart',
-    description: 'Subroutine `[[text]]`, double circle `(((text)))`, and hexagon `{{text}}`.',
+    description:
+      'Subroutine `[[text]]`, double circle `(((text)))`, and hexagon `{{text}}`.',
     source: `graph LR
   A[[Subroutine]] --> B(((Double Circle)))
   B --> C{{Hexagon}}`,
@@ -75,7 +88,8 @@ export const samples: Sample[] = [
   {
     title: 'Batch 2 Shapes',
     category: 'Flowchart',
-    description: 'Cylinder `[(text)]`, asymmetric `>text]`, trapezoid `[/text\\]`, and inverse trapezoid `[\\text/]`.',
+    description:
+      'Cylinder `[(text)]`, asymmetric `>text]`, trapezoid `[/text\\]`, and inverse trapezoid `[\\text/]`.',
     source: `graph LR
   A[(Database)] --> B>Flag Shape]
   B --> C[/Wider Bottom\\]
@@ -115,7 +129,8 @@ export const samples: Sample[] = [
   {
     title: 'No-Arrow Edges',
     category: 'Flowchart',
-    description: 'Lines without arrowheads: solid `---`, dotted `-.-`, thick `===`.',
+    description:
+      'Lines without arrowheads: solid `---`, dotted `-.-`, thick `===`.',
     source: `graph TD
   A[Node 1] ---|related| B[Node 2]
   B -.- C[Node 3]
@@ -124,7 +139,8 @@ export const samples: Sample[] = [
   {
     title: 'Text-Embedded Labels',
     category: 'Flowchart',
-    description: 'Using `-- label -->` syntax instead of `-->|label|` for edge labels.',
+    description:
+      'Using `-- label -->` syntax instead of `-->|label|` for edge labels.',
     source: `flowchart TD
   A(Start) --> B{Is it sunny?}
   B -- Yes --> C[Go to the park]
@@ -164,7 +180,8 @@ export const samples: Sample[] = [
   {
     title: 'linkStyle: Color-Coded Edges',
     category: 'Flowchart',
-    description: 'Using `linkStyle` to color specific edges by index (0-based).',
+    description:
+      'Using `linkStyle` to color specific edges by index (0-based).',
     source: `graph TD
   A[Start] --> B{Decision}
   B -->|Yes| C[Accept]
@@ -179,7 +196,8 @@ export const samples: Sample[] = [
   {
     title: 'linkStyle: Default + Override',
     category: 'Flowchart',
-    description: 'Default edge style with index-specific overrides for critical paths.',
+    description:
+      'Default edge style with index-specific overrides for critical paths.',
     source: `graph LR
   A[Request] --> B[Auth]
   B --> C[Process]
@@ -245,7 +263,8 @@ export const samples: Sample[] = [
   {
     title: 'Subgraph Direction Override',
     category: 'Flowchart',
-    description: 'Using `direction LR` inside a subgraph while the outer graph flows TD.',
+    description:
+      'Using `direction LR` inside a subgraph while the outer graph flows TD.',
     source: `graph TD
   subgraph pipeline [Processing Pipeline]
     direction LR
@@ -262,7 +281,8 @@ export const samples: Sample[] = [
   {
     title: '::: Class Shorthand',
     category: 'Flowchart',
-    description: 'Assigning classes with `:::` syntax directly on node definitions.',
+    description:
+      'Assigning classes with `:::` syntax directly on node definitions.',
     source: `graph TD
   A[Normal]:::default --> B[Highlighted]:::highlight --> C[Error]:::error
   classDef default fill:#f4f4f5,stroke:#a1a1aa
@@ -272,7 +292,8 @@ export const samples: Sample[] = [
   {
     title: 'Inline Style Overrides',
     category: 'Flowchart',
-    description: 'Using `style` statements to override node fill and stroke colors.',
+    description:
+      'Using `style` statements to override node fill and stroke colors.',
     source: `graph TD
   A[Default] --> B[Custom Colors] --> C[Another Custom]
   style B fill:#3b82f6,stroke:#1d4ed8,color:#ffffff
@@ -286,7 +307,8 @@ export const samples: Sample[] = [
   {
     title: 'CI/CD Pipeline',
     category: 'Flowchart',
-    description: 'A realistic CI/CD pipeline with decision points, feedback loops, and deployment stages.',
+    description:
+      'A realistic CI/CD pipeline with decision points, feedback loops, and deployment stages.',
     source: `graph TD
   subgraph ci [CI Pipeline]
     A[Push Code] --> B{Tests Pass?}
@@ -302,7 +324,8 @@ export const samples: Sample[] = [
   {
     title: 'System Architecture',
     category: 'Flowchart',
-    description: 'A microservices architecture with multiple services and data stores.',
+    description:
+      'A microservices architecture with multiple services and data stores.',
     source: `graph LR
   subgraph clients [Client Layer]
     A([Web App]) --> B[API Gateway]
@@ -356,7 +379,8 @@ export const samples: Sample[] = [
   {
     title: 'Basic State Diagram',
     category: 'State',
-    description: 'A simple `stateDiagram-v2` with start/end pseudostates and transitions.',
+    description:
+      'A simple `stateDiagram-v2` with start/end pseudostates and transitions.',
     source: `stateDiagram-v2
   [*] --> Idle
   Idle --> Active : start
@@ -425,7 +449,8 @@ export const samples: Sample[] = [
   {
     title: 'Sequence: Participant Aliases',
     category: 'Sequence',
-    description: 'Using `participant ... as ...` for compact diagram IDs with readable labels.',
+    description:
+      'Using `participant ... as ...` for compact diagram IDs with readable labels.',
     source: `sequenceDiagram
   participant A as Alice
   participant B as Bob
@@ -437,7 +462,8 @@ export const samples: Sample[] = [
   {
     title: 'Sequence: Actor Stick Figures',
     category: 'Sequence',
-    description: 'Using `actor` instead of `participant` renders stick figures instead of boxes.',
+    description:
+      'Using `actor` instead of `participant` renders stick figures instead of boxes.',
     source: `sequenceDiagram
   actor U as User
   participant S as System
@@ -450,7 +476,8 @@ export const samples: Sample[] = [
   {
     title: 'Sequence: Arrow Types',
     category: 'Sequence',
-    description: 'All arrow types: solid `->>` and dashed `-->>` with filled arrowheads, open arrows `-)` .',
+    description:
+      'All arrow types: solid `->>` and dashed `-->>` with filled arrowheads, open arrows `-)` .',
     source: `sequenceDiagram
   A->>B: Solid arrow (sync)
   B-->>A: Dashed arrow (return)
@@ -472,7 +499,8 @@ export const samples: Sample[] = [
   {
     title: 'Sequence: Self-Messages',
     category: 'Sequence',
-    description: 'A participant sending a message to itself (displayed as a loop arrow).',
+    description:
+      'A participant sending a message to itself (displayed as a loop arrow).',
     source: `sequenceDiagram
   participant S as Server
   S->>S: Internal process
@@ -628,7 +656,8 @@ export const samples: Sample[] = [
   {
     title: 'Sequence: Microservice Orchestration',
     category: 'Sequence',
-    description: 'Complex multi-service flow with parallel calls and error handling.',
+    description:
+      'Complex multi-service flow with parallel calls and error handling.',
     source: `sequenceDiagram
   participant G as Gateway
   participant A as Auth
@@ -651,7 +680,8 @@ export const samples: Sample[] = [
   {
     title: 'Sequence: Self-Messages with Notes',
     category: 'Sequence',
-    description: 'Self-referencing messages inside alt blocks with notes — tests that notes clear self-message loops and stack without overlapping.',
+    description:
+      'Self-referencing messages inside alt blocks with notes — tests that notes clear self-message loops and stack without overlapping.',
     source: `sequenceDiagram
   participant User
   participant Main as Main Process
@@ -682,7 +712,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: Basic Class',
     category: 'Class',
-    description: 'A single class with attributes and methods, rendered as a 3-compartment box.',
+    description:
+      'A single class with attributes and methods, rendered as a 3-compartment box.',
     source: `classDiagram
   class Animal {
     +String name
@@ -694,7 +725,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: Visibility Markers',
     category: 'Class',
-    description: 'All four visibility levels: `+` (public), `-` (private), `#` (protected), `~` (package).',
+    description:
+      'All four visibility levels: `+` (public), `-` (private), `#` (protected), `~` (package).',
     source: `classDiagram
   class User {
     +String name
@@ -751,7 +783,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: Inheritance (<|--)',
     category: 'Class',
-    description: 'Inheritance relationship rendered with a hollow triangle marker.',
+    description:
+      'Inheritance relationship rendered with a hollow triangle marker.',
     source: `classDiagram
   class Animal {
     +String name
@@ -771,7 +804,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: Composition (*--)',
     category: 'Class',
-    description: 'Composition — "owns" relationship with filled diamond marker.',
+    description:
+      'Composition — "owns" relationship with filled diamond marker.',
     source: `classDiagram
   class Car {
     +String model
@@ -825,7 +859,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: Realization (..|>)',
     category: 'Class',
-    description: 'Realization — dashed line with hollow triangle (implements interface).',
+    description:
+      'Realization — dashed line with hollow triangle (implements interface).',
     source: `classDiagram
   class Flyable {
     <<interface>>
@@ -874,7 +909,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: Design Pattern — Observer',
     category: 'Class',
-    description: 'The Observer (publish-subscribe) design pattern with interface + concrete implementations.',
+    description:
+      'The Observer (publish-subscribe) design pattern with interface + concrete implementations.',
     source: `classDiagram
   class Subject {
     <<interface>>
@@ -906,7 +942,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: MVC Architecture',
     category: 'Class',
-    description: 'Model-View-Controller pattern showing relationships between layers.',
+    description:
+      'Model-View-Controller pattern showing relationships between layers.',
     source: `classDiagram
   class Model {
     -data Map
@@ -933,7 +970,8 @@ export const samples: Sample[] = [
   {
     title: 'Class: Full Hierarchy',
     category: 'Class',
-    description: 'A complete class hierarchy with abstract base, interfaces, and concrete classes.',
+    description:
+      'A complete class hierarchy with abstract base, interfaces, and concrete classes.',
     source: `classDiagram
   class Animal {
     <<abstract>>
@@ -983,7 +1021,8 @@ export const samples: Sample[] = [
   {
     title: 'ER: Entity with Attributes',
     category: 'ER',
-    description: 'An entity with typed attributes and `PK`/`FK`/`UK` key badges.',
+    description:
+      'An entity with typed attributes and `PK`/`FK`/`UK` key badges.',
     source: `erDiagram
   CUSTOMER {
     int id PK
@@ -1021,7 +1060,7 @@ export const samples: Sample[] = [
   {
     title: 'ER: Exactly One to Zero-or-Many (||--o{)',
     category: 'ER',
-    description: 'Classic one-to-many optional relationship (crow\'s foot).',
+    description: "Classic one-to-many optional relationship (crow's foot).",
     source: `erDiagram
   CUSTOMER ||--o{ ORDER : places`,
   },
@@ -1057,7 +1096,8 @@ export const samples: Sample[] = [
   {
     title: 'ER: Identifying (Solid) Relationship',
     category: 'ER',
-    description: 'Solid line indicating an identifying relationship (child depends on parent for identity).',
+    description:
+      'Solid line indicating an identifying relationship (child depends on parent for identity).',
     source: `erDiagram
   ORDER ||--|{ LINE_ITEM : contains`,
   },
@@ -1087,7 +1127,8 @@ export const samples: Sample[] = [
   {
     title: 'ER: E-Commerce Schema',
     category: 'ER',
-    description: 'Full e-commerce database schema with customers, orders, products, and line items.',
+    description:
+      'Full e-commerce database schema with customers, orders, products, and line items.',
     source: `erDiagram
   CUSTOMER {
     int id PK
@@ -1151,7 +1192,8 @@ export const samples: Sample[] = [
   {
     title: 'ER: School Management Schema',
     category: 'ER',
-    description: 'School system with students, teachers, courses, and enrollments.',
+    description:
+      'School system with students, teachers, courses, and enrollments.',
     source: `erDiagram
   STUDENT {
     int id PK

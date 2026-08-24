@@ -1,4 +1,11 @@
-import type { MermaidGraph, MermaidNode, MermaidSubgraph, Direction, NodeShape, EdgeStyle } from './types.ts'
+import type {
+  MermaidGraph,
+  MermaidNode,
+  MermaidSubgraph,
+  Direction,
+  NodeShape,
+  EdgeStyle,
+} from './types.ts'
 import { normalizeBrTags } from './multiline-utils.ts'
 
 // ============================================================================
@@ -18,7 +25,10 @@ import { normalizeBrTags } from './multiline-utils.ts'
  * Throws on invalid/unsupported input.
  */
 export function parseMermaid(text: string): MermaidGraph {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('%%'))
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')
@@ -41,9 +51,13 @@ export function parseMermaid(text: string): MermaidGraph {
 // ============================================================================
 
 function parseFlowchart(lines: string[]): MermaidGraph {
-  const headerMatch = lines[0]!.match(/^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i)
+  const headerMatch = lines[0]!.match(
+    /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
+  )
   if (!headerMatch) {
-    throw new Error(`Invalid mermaid header: "${lines[0]}". Expected "graph TD", "flowchart LR", "stateDiagram-v2", etc.`)
+    throw new Error(
+      `Invalid mermaid header: "${lines[0]}". Expected "graph TD", "flowchart LR", "stateDiagram-v2", etc.`,
+    )
   }
 
   const direction = headerMatch[1]!.toUpperCase() as Direction
@@ -78,7 +92,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     // --- class assignment: `class A,B className` ---
     const classAssignMatch = line.match(/^class\s+([\w,-]+)\s+(\w+)$/)
     if (classAssignMatch) {
-      const nodeIds = classAssignMatch[1]!.split(',').map(s => s.trim())
+      const nodeIds = classAssignMatch[1]!.split(',').map((s) => s.trim())
       const className = classAssignMatch[2]!
       for (const id of nodeIds) {
         graph.classAssignments.set(id, className)
@@ -89,7 +103,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     // --- style statement: `style A,B fill:#f00,stroke:#333` ---
     const styleMatch = line.match(/^style\s+([\w,-]+)\s+(.+)$/)
     if (styleMatch) {
-      const nodeIds = styleMatch[1]!.split(',').map(s => s.trim())
+      const nodeIds = styleMatch[1]!.split(',').map((s) => s.trim())
       const props = parseStyleProps(styleMatch[2]!)
       for (const id of nodeIds) {
         graph.nodeStyles.set(id, { ...graph.nodeStyles.get(id), ...props })
@@ -103,12 +117,18 @@ function parseFlowchart(lines: string[]): MermaidGraph {
       const target = linkStyleMatch[1]!.trim()
       const props = parseStyleProps(linkStyleMatch[2]!)
       if (target === 'default') {
-        graph.linkStyles.set('default', { ...graph.linkStyles.get('default'), ...props })
+        graph.linkStyles.set('default', {
+          ...graph.linkStyles.get('default'),
+          ...props,
+        })
       } else {
-        const indices = target.split(',').map(s => parseInt(s.trim(), 10))
+        const indices = target.split(',').map((s) => parseInt(s.trim(), 10))
         for (const idx of indices) {
           if (!isNaN(idx)) {
-            graph.linkStyles.set(idx, { ...graph.linkStyles.get(idx), ...props })
+            graph.linkStyles.set(idx, {
+              ...graph.linkStyles.get(idx),
+              ...props,
+            })
           }
         }
       }
@@ -118,7 +138,8 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     // --- direction override inside subgraph: `direction LR` ---
     const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
     if (dirMatch && subgraphStack.length > 0) {
-      subgraphStack[subgraphStack.length - 1]!.direction = dirMatch[1]!.toUpperCase() as Direction
+      subgraphStack[subgraphStack.length - 1]!.direction =
+        dirMatch[1]!.toUpperCase() as Direction
       continue
     }
 
@@ -206,7 +227,8 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
     const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
     if (dirMatch) {
       if (compositeStack.length > 0) {
-        compositeStack[compositeStack.length - 1]!.direction = dirMatch[1]!.toUpperCase() as Direction
+        compositeStack[compositeStack.length - 1]!.direction =
+          dirMatch[1]!.toUpperCase() as Direction
       } else {
         graph.direction = dirMatch[1]!.toUpperCase() as Direction
       }
@@ -219,12 +241,18 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
       const target = linkStyleMatch[1]!.trim()
       const props = parseStyleProps(linkStyleMatch[2]!)
       if (target === 'default') {
-        graph.linkStyles.set('default', { ...graph.linkStyles.get('default'), ...props })
+        graph.linkStyles.set('default', {
+          ...graph.linkStyles.get('default'),
+          ...props,
+        })
       } else {
-        const indices = target.split(',').map(s => parseInt(s.trim(), 10))
+        const indices = target.split(',').map((s) => parseInt(s.trim(), 10))
         for (const idx of indices) {
           if (!isNaN(idx)) {
-            graph.linkStyles.set(idx, { ...graph.linkStyles.get(idx), ...props })
+            graph.linkStyles.set(idx, {
+              ...graph.linkStyles.get(idx),
+              ...props,
+            })
           }
         }
       }
@@ -232,7 +260,9 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
     }
 
     // --- composite state start: `state CompositeState {` ---
-    const compositeMatch = line.match(/^state\s+(?:"([^"]+)"\s+as\s+)?([\w\p{L}]+)\s*\{$/u)
+    const compositeMatch = line.match(
+      /^state\s+(?:"([^"]+)"\s+as\s+)?([\w\p{L}]+)\s*\{$/u,
+    )
     if (compositeMatch) {
       const label = compositeMatch[1] ?? compositeMatch[2]!
       const id = compositeMatch[2]!
@@ -260,7 +290,9 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
     }
 
     // --- state alias: `state "Description" as s1` (without brace) ---
-    const stateAliasMatch = line.match(/^state\s+"([^"]+)"\s+as\s+([\w\p{L}]+)\s*$/u)
+    const stateAliasMatch = line.match(
+      /^state\s+"([^"]+)"\s+as\s+([\w\p{L}]+)\s*$/u,
+    )
     if (stateAliasMatch) {
       const label = normalizeBrTags(stateAliasMatch[1]!)
       const id = stateAliasMatch[2]!
@@ -269,18 +301,26 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
     }
 
     // --- transition: `s1 --> s2` or `s1 --> s2 : label` or `[*] --> s1` ---
-    const transitionMatch = line.match(/^(\[\*\]|[\w\p{L}-]+)\s*(-->)\s*(\[\*\]|[\w\p{L}-]+)(?:\s*:\s*(.+))?$/u)
+    const transitionMatch = line.match(
+      /^(\[\*\]|[\w\p{L}-]+)\s*(-->)\s*(\[\*\]|[\w\p{L}-]+)(?:\s*:\s*(.+))?$/u,
+    )
     if (transitionMatch) {
       let sourceId = transitionMatch[1]!
       let targetId = transitionMatch[3]!
       const rawTransitionLabel = transitionMatch[4]?.trim()
-      const edgeLabel = rawTransitionLabel ? normalizeBrTags(rawTransitionLabel) : undefined
+      const edgeLabel = rawTransitionLabel
+        ? normalizeBrTags(rawTransitionLabel)
+        : undefined
 
       // Handle [*] pseudostates — each occurrence gets a unique ID
       if (sourceId === '[*]') {
         startCount++
         sourceId = `_start${startCount > 1 ? startCount : ''}`
-        registerStateNode(graph, compositeStack, { id: sourceId, label: '', shape: 'state-start' })
+        registerStateNode(graph, compositeStack, {
+          id: sourceId,
+          label: '',
+          shape: 'state-start',
+        })
       } else if (!compositeStateIds.has(sourceId)) {
         // Only create a node if this isn't a composite state
         ensureStateNode(graph, compositeStack, sourceId)
@@ -289,7 +329,11 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
       if (targetId === '[*]') {
         endCount++
         targetId = `_end${endCount > 1 ? endCount : ''}`
-        registerStateNode(graph, compositeStack, { id: targetId, label: '', shape: 'state-end' })
+        registerStateNode(graph, compositeStack, {
+          id: targetId,
+          label: '',
+          shape: 'state-end',
+        })
       } else if (!compositeStateIds.has(targetId)) {
         // Only create a node if this isn't a composite state
         ensureStateNode(graph, compositeStack, targetId)
@@ -323,7 +367,7 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
 function registerStateNode(
   graph: MermaidGraph,
   compositeStack: MermaidSubgraph[],
-  node: MermaidNode
+  node: MermaidNode,
 ): void {
   const isNew = !graph.nodes.has(node.id)
   if (isNew) {
@@ -341,10 +385,14 @@ function registerStateNode(
 function ensureStateNode(
   graph: MermaidGraph,
   compositeStack: MermaidSubgraph[],
-  id: string
+  id: string,
 ): void {
   if (!graph.nodes.has(id)) {
-    registerStateNode(graph, compositeStack, { id, label: id, shape: 'rounded' })
+    registerStateNode(graph, compositeStack, {
+      id,
+      label: id,
+      shape: 'rounded',
+    })
   } else {
     // Track in composite if applicable
     if (compositeStack.length > 0) {
@@ -404,7 +452,8 @@ const ARROW_REGEX = /^(<)?(-->|-.->|==>|---|-\.-|===)(?:\|([^|]*)\|)?/
  *
  * Based on PR #36 by @liuxiaopai-ai (https://github.com/lukilabs/beautiful-mermaid/pull/36)
  */
-const TEXT_ARROW_REGEX = /^(<)?(--|-\.|==)\s+(.+?)\s+(-->|---|\.\->|-\.\-|==>|===)/
+const TEXT_ARROW_REGEX =
+  /^(<)?(--|-\.|==)\s+(.+?)\s+(-->|---|\.\->|-\.\-|==>|===)/
 
 /**
  * Node shape patterns — ordered from most specific delimiters to least.
@@ -412,28 +461,28 @@ const TEXT_ARROW_REGEX = /^(<)?(--|-\.|==)\s+(.+?)\s+(-->|---|\.\->|-\.\-|==>|==
  */
 const NODE_PATTERNS: Array<{ regex: RegExp; shape: NodeShape }> = [
   // Triple delimiters (must be first)
-  { regex: /^([\w-]+)\(\(\((.+?)\)\)\)/, shape: 'doublecircle' },  // A(((text)))
+  { regex: /^([\w-]+)\(\(\((.+?)\)\)\)/, shape: 'doublecircle' }, // A(((text)))
 
   // Double delimiters with mixed brackets
-  { regex: /^([\w-]+)\(\[(.+?)\]\)/,     shape: 'stadium' },       // A([text])
-  { regex: /^([\w-]+)\(\((.+?)\)\)/,     shape: 'circle' },        // A((text))
-  { regex: /^([\w-]+)\[\[(.+?)\]\]/,     shape: 'subroutine' },    // A[[text]]
-  { regex: /^([\w-]+)\[\((.+?)\)\]/,     shape: 'cylinder' },      // A[(text)]
+  { regex: /^([\w-]+)\(\[(.+?)\]\)/, shape: 'stadium' }, // A([text])
+  { regex: /^([\w-]+)\(\((.+?)\)\)/, shape: 'circle' }, // A((text))
+  { regex: /^([\w-]+)\[\[(.+?)\]\]/, shape: 'subroutine' }, // A[[text]]
+  { regex: /^([\w-]+)\[\((.+?)\)\]/, shape: 'cylinder' }, // A[(text)]
 
   // Trapezoid variants — must come before plain [text]
-  { regex: /^([\w-]+)\[\/(.+?)\\\]/,     shape: 'trapezoid' },     // A[/text\]
-  { regex: /^([\w-]+)\[\\(.+?)\/\]/,     shape: 'trapezoid-alt' }, // A[\text/]
+  { regex: /^([\w-]+)\[\/(.+?)\\\]/, shape: 'trapezoid' }, // A[/text\]
+  { regex: /^([\w-]+)\[\\(.+?)\/\]/, shape: 'trapezoid-alt' }, // A[\text/]
 
   // Asymmetric flag shape
-  { regex: /^([\w-]+)>(.+?)\]/,          shape: 'asymmetric' },    // A>text]
+  { regex: /^([\w-]+)>(.+?)\]/, shape: 'asymmetric' }, // A>text]
 
   // Double curly braces (hexagon) — must come before single {text}
-  { regex: /^([\w-]+)\{\{(.+?)\}\}/,     shape: 'hexagon' },       // A{{text}}
+  { regex: /^([\w-]+)\{\{(.+?)\}\}/, shape: 'hexagon' }, // A{{text}}
 
   // Single-char delimiters (last — most common, least specific)
-  { regex: /^([\w-]+)\[(.+?)\]/,         shape: 'rectangle' },     // A[text]
-  { regex: /^([\w-]+)\((.+?)\)/,         shape: 'rounded' },       // A(text)
-  { regex: /^([\w-]+)\{(.+?)\}/,         shape: 'diamond' },       // A{text}
+  { regex: /^([\w-]+)\[(.+?)\]/, shape: 'rectangle' }, // A[text]
+  { regex: /^([\w-]+)\((.+?)\)/, shape: 'rounded' }, // A(text)
+  { regex: /^([\w-]+)\{(.+?)\}/, shape: 'diamond' }, // A{text}
 ]
 
 /** Regex for a bare node reference (just an ID, no shape brackets) */
@@ -450,7 +499,7 @@ const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/
 function parseEdgeLine(
   line: string,
   graph: MermaidGraph,
-  subgraphStack: MermaidSubgraph[]
+  subgraphStack: MermaidSubgraph[],
 ): void {
   let remaining = line.trim()
 
@@ -527,7 +576,7 @@ interface ConsumedNodeGroup {
 function consumeNodeGroup(
   text: string,
   graph: MermaidGraph,
-  subgraphStack: MermaidSubgraph[]
+  subgraphStack: MermaidSubgraph[],
 ): ConsumedNodeGroup | null {
   const first = consumeNode(text, graph, subgraphStack)
   if (!first) return null
@@ -561,7 +610,7 @@ interface ConsumedNode {
 function consumeNode(
   text: string,
   graph: MermaidGraph,
-  subgraphStack: MermaidSubgraph[]
+  subgraphStack: MermaidSubgraph[],
 ): ConsumedNode | null {
   let id: string | null = null
   let remaining: string = text
@@ -586,7 +635,11 @@ function consumeNode(
     if (bareMatch) {
       id = bareMatch[1]!
       if (!graph.nodes.has(id)) {
-        registerNode(graph, subgraphStack, { id, label: id, shape: 'rectangle' })
+        registerNode(graph, subgraphStack, {
+          id,
+          label: id,
+          shape: 'rectangle',
+        })
       }
       remaining = text.slice(bareMatch[0].length)
     }
@@ -608,7 +661,7 @@ function consumeNode(
 function registerNode(
   graph: MermaidGraph,
   subgraphStack: MermaidSubgraph[],
-  node: MermaidNode
+  node: MermaidNode,
 ): void {
   const isNew = !graph.nodes.has(node.id)
   if (isNew) {
@@ -618,7 +671,10 @@ function registerNode(
 }
 
 /** Add node ID to the innermost subgraph if we're inside one */
-function trackInSubgraph(subgraphStack: MermaidSubgraph[], nodeId: string): void {
+function trackInSubgraph(
+  subgraphStack: MermaidSubgraph[],
+  nodeId: string,
+): void {
   if (subgraphStack.length > 0) {
     const current = subgraphStack[subgraphStack.length - 1]!
     if (!current.nodeIds.includes(nodeId)) {

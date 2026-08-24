@@ -14,7 +14,22 @@
  * Note: '1' is included because in proportional fonts (like Inter), it's
  * significantly narrower than other digits which use tabular/uniform width.
  */
-const NARROW_CHARS = new Set(['i', 'l', 't', 'f', 'j', 'I', '1', '!', '|', '.', ',', ':', ';', "'"])
+const NARROW_CHARS = new Set([
+  'i',
+  'l',
+  't',
+  'f',
+  'j',
+  'I',
+  '1',
+  '!',
+  '|',
+  '.',
+  ',',
+  ':',
+  ';',
+  "'",
+])
 
 /**
  * Wide characters - visually wide glyphs
@@ -30,7 +45,19 @@ const VERY_WIDE_CHARS = new Set(['W', 'M'])
  * Semi-narrow punctuation - brackets and slashes are narrower than letters
  * but wider than narrow chars like dots/commas
  */
-const SEMI_NARROW_PUNCT = new Set(['(', ')', '[', ']', '{', '}', '/', '\\', '-', '"', '`'])
+const SEMI_NARROW_PUNCT = new Set([
+  '(',
+  ')',
+  '[',
+  ']',
+  '{',
+  '}',
+  '/',
+  '\\',
+  '-',
+  '"',
+  '`',
+])
 
 /**
  * Check if a code point is a combining diacritical mark (zero-width overlay)
@@ -172,11 +199,15 @@ export function getCharWidth(char: string): number {
  * @param fontWeight - Font weight (affects width slightly)
  * @returns Estimated width in pixels
  */
-export function measureTextWidth(text: string, fontSize: number, fontWeight: number): number {
+export function measureTextWidth(
+  text: string,
+  fontSize: number,
+  fontWeight: number,
+): number {
   // Base ratio calibrated for Inter font family
   // Heavier weights are slightly wider
   // Added +0.02 buffer to prevent edge truncation of characters like 's' at line ends
-  const baseRatio = fontWeight >= 600 ? 0.60 : fontWeight >= 500 ? 0.57 : 0.54
+  const baseRatio = fontWeight >= 600 ? 0.6 : fontWeight >= 500 ? 0.57 : 0.54
 
   let totalWidth = 0
 
@@ -224,7 +255,7 @@ export interface MultilineMetrics {
 export function measureMultilineText(
   text: string,
   fontSize: number,
-  fontWeight: number
+  fontWeight: number,
 ): MultilineMetrics {
   const lines = text.split('\n')
   const lineHeight = fontSize * LINE_HEIGHT_RATIO

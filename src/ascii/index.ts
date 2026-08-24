@@ -20,12 +20,20 @@ import { parseMermaid } from '../parser.ts'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
 import { drawGraph } from './draw.ts'
-import { canvasToString, flipCanvasVertically, flipRoleCanvasVertically } from './canvas.ts'
+import {
+  canvasToString,
+  flipCanvasVertically,
+  flipRoleCanvasVertically,
+} from './canvas.ts'
 import { renderSequenceAscii } from './sequence.ts'
 import { renderClassAscii } from './class-diagram.ts'
 import { renderErAscii } from './er-diagram.ts'
 import { renderXYChartAscii } from './xychart.ts'
-import { detectColorMode, DEFAULT_ASCII_THEME, diagramColorsToAsciiTheme } from './ansi.ts'
+import {
+  detectColorMode,
+  DEFAULT_ASCII_THEME,
+  diagramColorsToAsciiTheme,
+} from './ansi.ts'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 
 // Re-export types for external use
@@ -60,7 +68,9 @@ export interface AsciiRenderOptions {
  * Detect the diagram type from the mermaid source text.
  * Mirrors the detection logic in src/index.ts for the SVG renderer.
  */
-function detectDiagramType(text: string): 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart' {
+function detectDiagramType(
+  text: string,
+): 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart' {
   const firstLine = text.trim().split('\n')[0]?.trim().toLowerCase() ?? ''
 
   if (/^xychart(-beta)?\b/.test(firstLine)) return 'xychart'
@@ -111,9 +121,10 @@ export function renderMermaidASCII(
   }
 
   // Resolve color mode ('auto' or unset → detect environment, otherwise use specified mode)
-  const colorMode: ColorMode = options.colorMode === 'auto' || options.colorMode === undefined
-    ? detectColorMode()
-    : options.colorMode
+  const colorMode: ColorMode =
+    options.colorMode === 'auto' || options.colorMode === undefined
+      ? detectColorMode()
+      : options.colorMode
 
   // Merge user theme with defaults
   const theme: AsciiTheme = { ...DEFAULT_ASCII_THEME, ...options.theme }

@@ -13,7 +13,14 @@
 
 import { parseXYChart } from '../xychart/parser.ts'
 import type { XYChart } from '../xychart/types.ts'
-import type { AsciiConfig, AsciiTheme, ColorMode, CharRole, Canvas, RoleCanvas } from './types.ts'
+import type {
+  AsciiConfig,
+  AsciiTheme,
+  ColorMode,
+  CharRole,
+  Canvas,
+  RoleCanvas,
+} from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from '../xychart/colors.ts'
 
@@ -33,10 +40,10 @@ const UNI = {
   xTick: '┬',
   bar: '█',
   grid: '·',
-  cornerTL: '╭',  // top-left: down+right
-  cornerTR: '╮',  // top-right: down+left
-  cornerBL: '╰',  // bottom-left: up+right
-  cornerBR: '╯',  // bottom-right: up+left
+  cornerTL: '╭', // top-left: down+right
+  cornerTR: '╮', // top-right: down+left
+  cornerBL: '╰', // bottom-left: up+right
+  cornerBR: '╯', // bottom-right: up+left
 } as const
 
 // ASCII fallback characters
@@ -65,19 +72,28 @@ type HexCanvas = (string | null)[][]
 function getSeriesColors(total: number, theme: AsciiTheme): string[] {
   const accent = theme.accent ?? CHART_ACCENT_FALLBACK
   if (total <= 1) return [accent]
-  return Array.from({ length: total }, (_, i) => getSeriesColor(i, accent, theme.bg))
+  return Array.from({ length: total }, (_, i) =>
+    getSeriesColor(i, accent, theme.bg),
+  )
 }
 
 /** Map a CharRole to its hex color from the theme (for canvasToString fallback). */
 function roleToHex(role: CharRole, theme: AsciiTheme): string {
   switch (role) {
-    case 'text': return theme.fg
-    case 'border': return theme.border
-    case 'line': return theme.line
-    case 'arrow': return theme.arrow
-    case 'corner': return theme.corner ?? theme.line
-    case 'junction': return theme.junction ?? theme.border
-    default: return theme.fg
+    case 'text':
+      return theme.fg
+    case 'border':
+      return theme.border
+    case 'line':
+      return theme.line
+    case 'arrow':
+      return theme.arrow
+    case 'corner':
+      return theme.corner ?? theme.line
+    case 'junction':
+      return theme.junction ?? theme.border
+    default:
+      return theme.fg
   }
 }
 
@@ -91,7 +107,10 @@ export function renderXYChartAscii(
   colorMode: ColorMode,
   theme: AsciiTheme,
 ): string {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('%%'))
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('%%'))
   const chart = parseXYChart(lines)
   const ch = config.useAscii ? ASC : UNI
 
@@ -116,8 +135,8 @@ function renderVertical(
 
   const yRange = chart.yAxis.range!
   const yTicks = niceTickValues(yRange.min, yRange.max)
-  const yLabels = yTicks.map(v => formatTickValue(v))
-  const yGutter = Math.max(...yLabels.map(l => l.length)) + 1
+  const yLabels = yTicks.map((v) => formatTickValue(v))
+  const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
 
   const plotW = Math.max(PLOT_WIDTH, dataCount * 6)
   const plotH = PLOT_HEIGHT
@@ -135,7 +154,8 @@ function renderVertical(
   const xAxisRow = plotTop + plotH
   const xLabelRow = xAxisRow + 1
   const xTitleRow = hasXTitle ? xLabelRow + 1 : -1
-  const totalH = xLabelRow + 1 + (hasXTitle ? 1 : 0) + (hasLegend && !hasTitle ? 0 : 0)
+  const totalH =
+    xLabelRow + 1 + (hasXTitle ? 1 : 0) + (hasLegend && !hasTitle ? 0 : 0)
 
   // Create canvas
   const canvas = createCanvas(totalW, totalH)
@@ -150,17 +170,34 @@ function renderVertical(
     const t = (v - yRange.min) / (yRange.max - yRange.min || 1)
     return Math.round(t * (plotH - 1))
   }
-  const bandCenter = (i: number): number => plotLeft + Math.floor(bandW * (i + 0.5))
+  const bandCenter = (i: number): number =>
+    plotLeft + Math.floor(bandW * (i + 0.5))
 
   // 1. Title
   if (hasTitle && titleRow >= 0) {
-    writeText(canvas, roles, titleRow, Math.floor(totalW / 2 - chart.title!.length / 2), chart.title!, 'text')
+    writeText(
+      canvas,
+      roles,
+      titleRow,
+      Math.floor(totalW / 2 - chart.title!.length / 2),
+      chart.title!,
+      'text',
+    )
   }
 
   // 2. Legend
   if (hasLegend) {
     const legendRow = hasTitle ? 1 : 0
-    drawLegend(canvas, roles, hexColors, chart, legendRow, totalW, ch, seriesColors)
+    drawLegend(
+      canvas,
+      roles,
+      hexColors,
+      chart,
+      legendRow,
+      totalW,
+      ch,
+      seriesColors,
+    )
   }
 
   // 3. Y-axis line + ticks + labels
@@ -177,7 +214,14 @@ function renderVertical(
     const displayRow = plotTop + (plotH - 1 - row)
     const label = formatTickValue(tick)
     // Tick mark on axis
-    set(canvas, roles, displayRow, plotLeft - 1, row === 0 ? ch.origin : ch.yTick, 'border')
+    set(
+      canvas,
+      roles,
+      displayRow,
+      plotLeft - 1,
+      row === 0 ? ch.origin : ch.yTick,
+      'border',
+    )
     // Label
     const labelStart = yGutter - label.length
     writeText(canvas, roles, displayRow, Math.max(0, labelStart), label, 'text')
@@ -199,7 +243,14 @@ function renderVertical(
   // 5. X-axis title
   if (hasXTitle && xTitleRow >= 0) {
     const title = chart.xAxis.title!
-    writeText(canvas, roles, xTitleRow, Math.floor(totalW / 2 - title.length / 2), title, 'text')
+    writeText(
+      canvas,
+      roles,
+      xTitleRow,
+      Math.floor(totalW / 2 - title.length / 2),
+      title,
+      'text',
+    )
   }
 
   // 6. Grid lines (subtle horizontal dots at y-tick positions)
@@ -217,7 +268,8 @@ function renderVertical(
   // 7. Bars — track global series index for per-series colors
   const barEntries: { data: number[]; globalIdx: number }[] = []
   for (let si = 0; si < chart.series.length; si++) {
-    if (chart.series[si]!.type === 'bar') barEntries.push({ data: chart.series[si]!.data, globalIdx: si })
+    if (chart.series[si]!.type === 'bar')
+      barEntries.push({ data: chart.series[si]!.data, globalIdx: si })
   }
 
   if (barEntries.length > 0) {
@@ -241,7 +293,16 @@ function renderVertical(
         for (let row = fromRow; row <= toRow; row++) {
           const displayRow = plotTop + (plotH - 1 - row)
           for (let c = bx; c < bx + singleBarW; c++) {
-            set(canvas, roles, displayRow, c, ch.bar, 'arrow', hexColors, hexColor)
+            set(
+              canvas,
+              roles,
+              displayRow,
+              c,
+              ch.bar,
+              'arrow',
+              hexColors,
+              hexColor,
+            )
           }
         }
       }
@@ -251,13 +312,27 @@ function renderVertical(
   // 8. Lines (staircase routing with rounded corners)
   const lineEntries: { data: number[]; globalIdx: number }[] = []
   for (let si = 0; si < chart.series.length; si++) {
-    if (chart.series[si]!.type === 'line') lineEntries.push({ data: chart.series[si]!.data, globalIdx: si })
+    if (chart.series[si]!.type === 'line')
+      lineEntries.push({ data: chart.series[si]!.data, globalIdx: si })
   }
 
   for (const entry of lineEntries) {
     if (entry.data.length === 0) continue
     const hexColor = seriesColors[entry.globalIdx]!
-    drawStaircaseLine(canvas, roles, entry.data, bandCenter, valueToRow, plotTop, plotH, plotLeft, bandW * dataCount, ch, hexColors, hexColor)
+    drawStaircaseLine(
+      canvas,
+      roles,
+      entry.data,
+      bandCenter,
+      valueToRow,
+      plotTop,
+      plotH,
+      plotLeft,
+      bandW * dataCount,
+      ch,
+      hexColors,
+      hexColor,
+    )
   }
 
   return canvasToString(canvas, roles, hexColors, colorMode, theme)
@@ -279,7 +354,7 @@ function renderHorizontal(
   const yRange = chart.yAxis.range!
   const valueTicks = niceTickValues(yRange.min, yRange.max)
   const catLabels = getCategoryLabels(chart, dataCount)
-  const catGutter = Math.max(...catLabels.map(l => l.length)) + 1
+  const catGutter = Math.max(...catLabels.map((l) => l.length)) + 1
 
   const plotW = Math.max(PLOT_WIDTH, 40)
   const bandH = Math.max(2, Math.floor(PLOT_HEIGHT / dataCount))
@@ -310,13 +385,29 @@ function renderHorizontal(
 
   // Title
   if (hasTitle) {
-    writeText(canvas, roles, 0, Math.floor(totalW / 2 - chart.title!.length / 2), chart.title!, 'text')
+    writeText(
+      canvas,
+      roles,
+      0,
+      Math.floor(totalW / 2 - chart.title!.length / 2),
+      chart.title!,
+      'text',
+    )
   }
 
   // Legend
   if (hasLegend) {
     const legendRow = hasTitle ? 1 : 0
-    drawLegend(canvas, roles, hexColors, chart, legendRow, totalW, ch, seriesColors)
+    drawLegend(
+      canvas,
+      roles,
+      hexColors,
+      chart,
+      legendRow,
+      totalW,
+      ch,
+      seriesColors,
+    )
   }
 
   // Y-axis (category axis on left)
@@ -341,13 +432,27 @@ function renderHorizontal(
     if (cx < plotLeft || cx >= plotLeft + plotW) continue
     set(canvas, roles, xAxisRow, cx, ch.xTick, 'border')
     const label = formatTickValue(tick)
-    writeText(canvas, roles, xAxisRow + 1, cx - Math.floor(label.length / 2), label, 'text')
+    writeText(
+      canvas,
+      roles,
+      xAxisRow + 1,
+      cx - Math.floor(label.length / 2),
+      label,
+      'text',
+    )
   }
 
   // Y-axis title
   if (hasYTitle) {
     const title = chart.yAxis.title!
-    writeText(canvas, roles, totalH - 1, Math.floor(totalW / 2 - title.length / 2), title, 'text')
+    writeText(
+      canvas,
+      roles,
+      totalH - 1,
+      Math.floor(totalW / 2 - title.length / 2),
+      title,
+      'text',
+    )
   }
 
   // Grid lines (vertical at value tick positions)
@@ -364,7 +469,8 @@ function renderHorizontal(
   // Bars (horizontal) — with per-series colors
   const barEntries: { data: number[]; globalIdx: number }[] = []
   for (let si = 0; si < chart.series.length; si++) {
-    if (chart.series[si]!.type === 'bar') barEntries.push({ data: chart.series[si]!.data, globalIdx: si })
+    if (chart.series[si]!.type === 'bar')
+      barEntries.push({ data: chart.series[si]!.data, globalIdx: si })
   }
 
   if (barEntries.length > 0) {
@@ -396,13 +502,27 @@ function renderHorizontal(
   // Lines (horizontal staircase: value on x, category on y) — with per-series colors
   const lineEntries: { data: number[]; globalIdx: number }[] = []
   for (let si = 0; si < chart.series.length; si++) {
-    if (chart.series[si]!.type === 'line') lineEntries.push({ data: chart.series[si]!.data, globalIdx: si })
+    if (chart.series[si]!.type === 'line')
+      lineEntries.push({ data: chart.series[si]!.data, globalIdx: si })
   }
 
   for (const entry of lineEntries) {
     if (entry.data.length === 0) continue
     const hexColor = seriesColors[entry.globalIdx]!
-    drawHorizontalStaircaseLine(canvas, roles, entry.data, bandMid, valueToCol, plotTop, plotH, plotLeft, plotW, ch, hexColors, hexColor)
+    drawHorizontalStaircaseLine(
+      canvas,
+      roles,
+      entry.data,
+      bandMid,
+      valueToCol,
+      plotTop,
+      plotH,
+      plotLeft,
+      plotW,
+      ch,
+      hexColors,
+      hexColor,
+    )
   }
 
   return canvasToString(canvas, roles, hexColors, colorMode, theme)
@@ -504,7 +624,10 @@ function drawStaircaseLine(
 
     // Leading flat for first segment (before p1.col)
     if (i === 0) {
-      const leadStart = Math.max(plotLeft, p1.col - Math.floor((p2.col - p1.col) / 4))
+      const leadStart = Math.max(
+        plotLeft,
+        p1.col - Math.floor((p2.col - p1.col) / 4),
+      )
       for (let c = leadStart; c < p1.col; c++) {
         drawAt(c, p1.row, ch.hLine)
       }
@@ -512,7 +635,10 @@ function drawStaircaseLine(
 
     // Trailing flat for last segment (after p2.col)
     if (i === points.length - 2) {
-      const trailEnd = Math.min(plotLeft + plotTotalW - 1, p2.col + Math.floor((p2.col - p1.col) / 4))
+      const trailEnd = Math.min(
+        plotLeft + plotTotalW - 1,
+        p2.col + Math.floor((p2.col - p1.col) / 4),
+      )
       for (let c = p2.col + 1; c <= trailEnd; c++) {
         drawAt(c, p2.row, ch.hLine)
       }
@@ -551,7 +677,12 @@ function drawHorizontalStaircaseLine(
   }))
 
   const drawAt = (row: number, col: number, char: string) => {
-    if (row >= plotTop && row < plotTop + plotH && col >= plotLeft && col < plotLeft + plotW) {
+    if (
+      row >= plotTop &&
+      row < plotTop + plotH &&
+      col >= plotLeft &&
+      col < plotLeft + plotW
+    ) {
       set(canvas, roles, row, col, char, 'arrow', hexCanvas, hexColor)
     }
   }
@@ -630,14 +761,19 @@ function drawLegend(
   // Build legend items with global series indices
   type LegendItem = { symbol: string; label: string; globalIdx: number }
   const items: LegendItem[] = []
-  let barIdx = 0, lineIdx = 0
+  let barIdx = 0,
+    lineIdx = 0
   for (let si = 0; si < chart.series.length; si++) {
     const s = chart.series[si]!
     if (s.type === 'bar') {
       items.push({ symbol: ch.bar, label: `Bar ${barIdx + 1}`, globalIdx: si })
       barIdx++
     } else {
-      items.push({ symbol: ch.hLine, label: `Line ${lineIdx + 1}`, globalIdx: si })
+      items.push({
+        symbol: ch.hLine,
+        label: `Line ${lineIdx + 1}`,
+        globalIdx: si,
+      })
       lineIdx++
     }
   }
@@ -656,7 +792,16 @@ function drawLegend(
     if (i > 0) col += 2 // gap
     const item = items[i]!
     // Symbol with series-specific color
-    set(canvas, roles, row, col, item.symbol, 'arrow', hexCanvas, seriesColors[item.globalIdx])
+    set(
+      canvas,
+      roles,
+      row,
+      col,
+      item.symbol,
+      'arrow',
+      hexCanvas,
+      seriesColors[item.globalIdx],
+    )
     col += 1
     // Space (already ' ' from canvas init)
     col += 1
@@ -671,21 +816,32 @@ function drawLegend(
 // ============================================================================
 
 function createCanvas(width: number, height: number): Canvas {
-  return Array.from({ length: width }, () => Array.from({ length: height }, () => ' '))
+  return Array.from({ length: width }, () =>
+    Array.from({ length: height }, () => ' '),
+  )
 }
 
 function createRoleCanvas(width: number, height: number): RoleCanvas {
-  return Array.from({ length: width }, () => Array.from<CharRole | null>({ length: height }).fill(null))
+  return Array.from({ length: width }, () =>
+    Array.from<CharRole | null>({ length: height }).fill(null),
+  )
 }
 
 function createHexCanvas(width: number, height: number): HexCanvas {
-  return Array.from({ length: width }, () => Array.from<string | null>({ length: height }).fill(null))
+  return Array.from({ length: width }, () =>
+    Array.from<string | null>({ length: height }).fill(null),
+  )
 }
 
 function set(
-  canvas: Canvas, roles: RoleCanvas, row: number, col: number,
-  char: string, role: CharRole,
-  hexCanvas?: HexCanvas, hex?: string | null,
+  canvas: Canvas,
+  roles: RoleCanvas,
+  row: number,
+  col: number,
+  char: string,
+  role: CharRole,
+  hexCanvas?: HexCanvas,
+  hex?: string | null,
 ): void {
   if (col >= 0 && col < canvas.length && row >= 0 && row < canvas[0]!.length) {
     canvas[col]![row] = char
@@ -701,7 +857,14 @@ function get(canvas: Canvas, row: number, col: number): string {
   return ' '
 }
 
-function writeText(canvas: Canvas, roles: RoleCanvas, row: number, startCol: number, text: string, role: CharRole): void {
+function writeText(
+  canvas: Canvas,
+  roles: RoleCanvas,
+  row: number,
+  startCol: number,
+  text: string,
+  role: CharRole,
+): void {
   for (let i = 0; i < text.length; i++) {
     set(canvas, roles, row, startCol + i, text[i]!, role)
   }
@@ -738,13 +901,15 @@ function canvasToString(
     if (end < 0) {
       lines.push('')
     } else {
-      lines.push(colorizeRow(
-        chars.slice(0, end + 1),
-        rowRoles.slice(0, end + 1),
-        rowHex.slice(0, end + 1),
-        theme,
-        colorMode,
-      ))
+      lines.push(
+        colorizeRow(
+          chars.slice(0, end + 1),
+          rowRoles.slice(0, end + 1),
+          rowHex.slice(0, end + 1),
+          theme,
+          colorMode,
+        ),
+      )
     }
   }
 
@@ -780,7 +945,9 @@ function colorizeRow(
     if (char === ' ') {
       // Flush buffer before whitespace
       if (buffer.length > 0) {
-        result += currentColor ? colorizeText(buffer, currentColor, mode) : buffer
+        result += currentColor
+          ? colorizeText(buffer, currentColor, mode)
+          : buffer
         buffer = ''
         currentColor = null
       }
@@ -798,7 +965,9 @@ function colorizeRow(
     } else {
       // Flush previous group
       if (buffer.length > 0) {
-        result += currentColor ? colorizeText(buffer, currentColor, mode) : buffer
+        result += currentColor
+          ? colorizeText(buffer, currentColor, mode)
+          : buffer
       }
       buffer = char
       currentColor = color
@@ -830,7 +999,9 @@ function getCategoryLabels(chart: XYChart, count: number): string[] {
   if (chart.xAxis.range) {
     const { min, max } = chart.xAxis.range
     const step = count > 1 ? (max - min) / (count - 1) : 0
-    return Array.from({ length: count }, (_, i) => formatTickValue(min + step * i))
+    return Array.from({ length: count }, (_, i) =>
+      formatTickValue(min + step * i),
+    )
   }
   return Array.from({ length: count }, (_, i) => String(i + 1))
 }

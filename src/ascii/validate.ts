@@ -115,6 +115,6 @@ export function assertNoDiagonals(asciiOutput: string, context?: string): void {
   throw new Error(
     `Diagonal lines detected${contextStr}. ` +
       `Edges must use orthogonal Manhattan routing (90° bends only).\n` +
-      `Found ${positions.length} diagonal character(s):\n${positionStr}`
+      `Found ${positions.length} diagonal character(s):\n${positionStr}`,
   )
 }

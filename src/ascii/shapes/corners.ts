@@ -121,7 +121,10 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
 /**
  * Get corner characters for a shape type.
  */
-export function getCorners(shape: AsciiNodeShape, useAscii: boolean): CornerChars {
+export function getCorners(
+  shape: AsciiNodeShape,
+  useAscii: boolean,
+): CornerChars {
   const corners = SHAPE_CORNERS[shape] ?? SHAPE_CORNERS.rectangle
   return useAscii ? corners.ascii : corners.unicode
 }

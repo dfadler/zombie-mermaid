@@ -9,7 +9,11 @@
 import type { Canvas } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import { splitLines } from '../multiline-utils.ts'
-import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'
+import type {
+  ShapeRenderer,
+  ShapeDimensions,
+  ShapeRenderOptions,
+} from './types.ts'
 import { getBoxAttachmentPoint } from './rectangle.ts'
 
 /**
@@ -30,11 +34,11 @@ import { getBoxAttachmentPoint } from './rectangle.ts'
 export const stadiumRenderer: ShapeRenderer = {
   getDimensions(label: string, options: ShapeRenderOptions): ShapeDimensions {
     const lines = splitLines(label)
-    const maxLineWidth = Math.max(...lines.map(l => l.length), 0)
+    const maxLineWidth = Math.max(...lines.map((l) => l.length), 0)
     const lineCount = lines.length
 
     const innerWidth = 2 * options.padding + maxLineWidth
-    const width = innerWidth + 4  // Extra for rounded ends
+    const width = innerWidth + 4 // Extra for rounded ends
     const innerHeight = lineCount + 2 * options.padding
     const height = Math.max(innerHeight + 2, 3)
 
@@ -52,7 +56,11 @@ export const stadiumRenderer: ShapeRenderer = {
     }
   },
 
-  render(label: string, dimensions: ShapeDimensions, options: ShapeRenderOptions): Canvas {
+  render(
+    label: string,
+    dimensions: ShapeDimensions,
+    options: ShapeRenderOptions,
+  ): Canvas {
     const { width, height } = dimensions
     const canvas = mkCanvas(width - 1, height - 1)
 

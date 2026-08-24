@@ -63,7 +63,10 @@
   letter-spacing: 0.08em;
   color: var(--fg2);
 }
-.panel-actions { display: flex; gap: 0.25rem; }
+.panel-actions {
+  display: flex;
+  gap: 0.25rem;
+}
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -75,11 +78,22 @@
   background: transparent;
   color: var(--fg2);
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
-.icon-btn:hover { color: var(--fg); background: rgba(255,255,255,0.07); }
-.icon-btn svg { width: 14px; height: 14px; }
-.icon-btn.active { background: var(--accent); color: #fff; }
+.icon-btn:hover {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.07);
+}
+.icon-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.icon-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
 
 .panel-right {
   flex: 1;
@@ -100,6 +114,7 @@
   z-index: 10;
   margin-left: -4px;
 }
-.resize-handle:hover, .resize-handle.dragging {
+.resize-handle:hover,
+.resize-handle.dragging {
   background: var(--blue);
 }

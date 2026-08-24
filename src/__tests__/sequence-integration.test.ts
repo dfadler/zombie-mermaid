@@ -81,8 +81,11 @@ describe('renderMermaidSVG – sequence diagrams', () => {
   })
 
   it('renders with dark colors', () => {
-    const svg = renderMermaidSVG(`sequenceDiagram
-      A->>B: Hello`, { bg: '#18181B', fg: '#FAFAFA' })
+    const svg = renderMermaidSVG(
+      `sequenceDiagram
+      A->>B: Hello`,
+      { bg: '#18181B', fg: '#FAFAFA' },
+    )
     expect(svg).toContain('--bg:#18181B')
   })
 
