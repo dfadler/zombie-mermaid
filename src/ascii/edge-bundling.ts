@@ -12,9 +12,9 @@
 // ============================================================================
 
 import type {
-  AsciiGraph, AsciiNode, AsciiEdge, EdgeBundle, GridCoord, Direction,
+  AsciiGraph, AsciiNode, AsciiEdge, EdgeBundle, GridCoord,
 } from './types.ts'
-import { Up, Down, Left, Right, Middle, gridKey, gridCoordEquals } from './types.ts'
+import { Up, Down, Left, Right, Middle } from './types.ts'
 import { getPath, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph } from './grid.ts'
 
@@ -181,22 +181,15 @@ export function calculateJunctionPoint(
 ): GridCoord {
   const dir = graph.config.graphDirection
   const sharedCoord = bundle.sharedNode.gridCoord!
-  const otherCoords = bundle.otherNodes.map(n => n.gridCoord!)
 
   if (bundle.type === 'fan-in') {
     // Junction is BEFORE the shared target
     // Calculate center of sources
-    const minX = Math.min(...otherCoords.map(c => c.x))
-    const maxX = Math.max(...otherCoords.map(c => c.x))
-    const minY = Math.min(...otherCoords.map(c => c.y))
-    const maxY = Math.max(...otherCoords.map(c => c.y))
-
     if (dir === 'TD') {
       // Junction above target, centered between sources
       // Place it one row above the target's entry point
       const junctionY = sharedCoord.y - 1
       // X is centered between sources, but clamped to shared node's X for alignment
-      const centerX = Math.floor((minX + maxX) / 2) + 1 // +1 for center of 3x3 block
       const junctionX = sharedCoord.x + 1 // Align with target's center
 
       return { x: junctionX, y: junctionY }
@@ -209,11 +202,6 @@ export function calculateJunctionPoint(
     }
   } else {
     // fan-out: Junction is AFTER the shared source
-    const minX = Math.min(...otherCoords.map(c => c.x))
-    const maxX = Math.max(...otherCoords.map(c => c.x))
-    const minY = Math.min(...otherCoords.map(c => c.y))
-    const maxY = Math.max(...otherCoords.map(c => c.y))
-
     if (dir === 'TD') {
       // Junction below source, will then split to targets
       const junctionY = sharedCoord.y + 3 // Just below source's 3x3 block

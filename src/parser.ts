@@ -1,4 +1,4 @@
-import type { MermaidGraph, MermaidNode, MermaidEdge, MermaidSubgraph, Direction, NodeShape, EdgeStyle } from './types.ts'
+import type { MermaidGraph, MermaidNode, MermaidSubgraph, Direction, NodeShape, EdgeStyle } from './types.ts'
 import { normalizeBrTags } from './multiline-utils.ts'
 
 // ============================================================================

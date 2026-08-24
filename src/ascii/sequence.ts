@@ -10,16 +10,9 @@
 // ============================================================================
 
 import { parseSequenceDiagram } from '../sequence/parser.ts'
-import type { SequenceDiagram, Block } from '../sequence/types.ts'
-import type { Canvas, AsciiConfig, RoleCanvas, CharRole, AsciiTheme, ColorMode } from './types.ts'
+import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
 import { mkCanvas, mkRoleCanvas, canvasToString, increaseSize, increaseRoleCanvasSize, setRole } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
-
-/** Classify a box-drawing character as 'border' or 'text'. */
-function classifyBoxChar(ch: string): CharRole {
-  if (/^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|]$/.test(ch)) return 'border'
-  return 'text'
-}
 
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.

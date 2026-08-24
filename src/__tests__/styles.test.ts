@@ -21,7 +21,7 @@ describe('THEMES', () => {
   })
 
   it('each theme has valid bg and fg colors', () => {
-    for (const [name, colors] of Object.entries(THEMES)) {
+    for (const colors of Object.values(THEMES)) {
       expect(colors.bg).toMatch(/^#[0-9a-fA-F]{6}$/)
       expect(colors.fg).toMatch(/^#[0-9a-fA-F]{6}$/)
     }

@@ -1,7 +1,7 @@
 import type { PositionedClassDiagram, PositionedClassNode, PositionedClassRelationship, ClassMember, RelationshipType } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
-import { FONT_SIZES, FONT_WEIGHTS, STROKE_WIDTHS, estimateTextWidth, TEXT_BASELINE_SHIFT } from '../styles.ts'
+import { FONT_SIZES, FONT_WEIGHTS, STROKE_WIDTHS, TEXT_BASELINE_SHIFT } from '../styles.ts'
 import { CLS } from './layout.ts'
 import { renderMultilineText, escapeXml as escapeXmlUtil } from '../multiline-utils.ts'
 
@@ -112,7 +112,7 @@ function relationshipMarkerDefs(): string {
  * Wrapped in <g class="class-node"> with semantic data attributes.
  */
 function renderClassBox(cls: PositionedClassNode): string {
-  const { x, y, width, height, headerHeight, attrHeight, methodHeight } = cls
+  const { x, y, width, height, headerHeight, attrHeight } = cls
   const parts: string[] = []
 
   // Semantic wrapper with class metadata

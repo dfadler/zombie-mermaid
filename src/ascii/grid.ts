@@ -11,11 +11,10 @@ import type {
   GridCoord, DrawingCoord, Direction, AsciiGraph, AsciiNode, AsciiSubgraph,
 } from './types.ts'
 import { gridKey } from './types.ts'
-import { mkCanvas, setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
+import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import { determinePath, determineLabelLine } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { drawBox } from './draw.ts'
-import { maxLineWidth, lineCount } from './multiline-utils.ts'
 import { getShapeDimensions } from './shapes/index.ts'
 
 // ============================================================================

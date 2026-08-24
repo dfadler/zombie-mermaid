@@ -5,12 +5,10 @@
 // Some shapes have unique internal structure (subroutine, cylinder) and keep
 // custom rendering. Others use the corner decorator pattern for simplicity.
 
-import type { Canvas, DrawingCoord, Direction } from '../types.ts'
-import { Up, Down, Left, Right } from '../types.ts'
+import type { Canvas } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import { splitLines } from '../multiline-utils.ts'
 import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'
-import { dirEquals } from '../edge-routing.ts'
 import { getBoxDimensions, renderBox, getBoxAttachmentPoint } from './rectangle.ts'
 import { getCorners } from './corners.ts'
 

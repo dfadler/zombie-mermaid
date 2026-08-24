@@ -105,16 +105,6 @@ async function generateHtml(): Promise<string> {
     categories.get(cat)!.push(i)
   })
 
-  const categoryBadgeColors: Record<string, string> = {
-    Flowchart: '#3b82f6',
-    State: '#8b5cf6',
-    Sequence: '#10b981',
-    Class: '#f59e0b',
-    ER: '#ef4444',
-    'XY Chart': '#f97316',
-    'Theme Showcase': '#06b6d4',
-  }
-
   // Map category names to the title prefixes they use, so we can strip duplicates in the ToC
   const categoryPrefixes: Record<string, string> = {
     'State': 'State: ',
@@ -132,7 +122,6 @@ async function generateHtml(): Promise<string> {
   const tocSections = [...categories.entries()]
     .filter(([cat]) => cat !== 'Hero') // Skip Hero from TOC
     .map(([cat, indices]) => {
-    const badgeColor = categoryBadgeColors[cat] ?? '#71717a'
     const prefix = categoryPrefixes[cat]
     const items = indices.map(i => {
       let title = samples[i]!.title

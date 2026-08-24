@@ -3,7 +3,7 @@
 // ============================================================================
 
 import type { Canvas, DrawingCoord, Direction } from '../types.ts'
-import { Up, Down, Left, Right, UpperLeft, UpperRight, LowerLeft, LowerRight } from '../types.ts'
+import { Up, Down, Left, Right } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import type { ShapeRenderer, ShapeDimensions, ShapeRenderOptions } from './types.ts'
 import { dirEquals } from '../edge-routing.ts'

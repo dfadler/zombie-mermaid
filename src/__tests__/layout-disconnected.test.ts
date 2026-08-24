@@ -28,20 +28,6 @@ function rectanglesOverlap(
   )
 }
 
-/** Get bounding box from positioned elements */
-function getBoundingBox(items: Array<{ x: number; y: number; width: number; height: number }>) {
-  if (items.length === 0) return { x: 0, y: 0, width: 0, height: 0 }
-
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-  for (const item of items) {
-    minX = Math.min(minX, item.x)
-    minY = Math.min(minY, item.y)
-    maxX = Math.max(maxX, item.x + item.width)
-    maxY = Math.max(maxY, item.y + item.height)
-  }
-
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
-}
 
 // ============================================================================
 // Two disconnected subgraphs (the original bug)

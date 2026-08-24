@@ -14,7 +14,7 @@ import {
   Up, Down, Left, Right, UpperLeft, UpperRight, LowerLeft, LowerRight, Middle,
   drawingCoordEquals,
 } from './types.ts'
-import { mkCanvas, copyCanvas, getCanvasSize, mergeCanvases, drawText, mkRoleCanvas, setRole, mergeRoleCanvases } from './canvas.ts'
+import { mkCanvas, copyCanvas, mergeCanvases, drawText, setRole } from './canvas.ts'
 import type { RoleCanvas, CharRole } from './types.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
@@ -1128,7 +1128,9 @@ export function drawSubgraphBox(sg: AsciiSubgraph, graph: AsciiGraph): Canvas {
 }
 
 /** Draw a subgraph label centered in its header area. Supports multi-line labels. */
-export function drawSubgraphLabel(sg: AsciiSubgraph, graph: AsciiGraph): [Canvas, DrawingCoord] {
+// `_graph` isn't read here but is kept to match the `(sg, graph)` signature
+// shared by the other `draw*` subgraph helpers in this file.
+export function drawSubgraphLabel(sg: AsciiSubgraph, _graph: AsciiGraph): [Canvas, DrawingCoord] {
   const width = sg.maxX - sg.minX
   const height = sg.maxY - sg.minY
   if (width <= 0 || height <= 0) return [mkCanvas(0, 0), { x: 0, y: 0 }]

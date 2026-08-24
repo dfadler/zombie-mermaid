@@ -11,7 +11,7 @@
 
 import { parseErDiagram } from '../er/parser.ts'
 import type { ErDiagram, ErEntity, ErAttribute, Cardinality } from '../er/types.ts'
-import type { Canvas, AsciiConfig, RoleCanvas, CharRole, AsciiTheme, ColorMode } from './types.ts'
+import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
 import { mkCanvas, mkRoleCanvas, canvasToString, increaseSize, increaseRoleCanvasSize, setRole } from './canvas.ts'
 import { drawMultiBox } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'
@@ -210,7 +210,6 @@ export function renderErAscii(text: string, config: AsciiConfig, colorMode?: Col
     let currentX = 0
     let maxRowH = 0
     let colCount = 0
-    const componentStartY = currentY
 
     for (const ent of componentEntities) {
       const w = entityBoxW.get(ent.id)!

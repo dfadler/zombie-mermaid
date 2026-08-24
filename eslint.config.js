@@ -1,0 +1,49 @@
+// @ts-check
+import tseslint from "typescript-eslint";
+
+export default tseslint.config(
+  {
+    // Files that aren't part of the linted source surface for this repo:
+    // build output, the generated static site, generated HTML demos, the
+    // plain (non-TS) browser JS bundled into the editor UI, and standalone
+    // data/config files that sit alongside the TS source but aren't part of
+    // the library itself.
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "site/**",
+      "**/*.html",
+      "editor/**",
+      "examples/**",
+      "public/**",
+      "samples-data.ts",
+      "xychart-samples-data.ts",
+      "tsup.config.ts",
+    ],
+  },
+  {
+    files: [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "editor.ts",
+      "dev.ts",
+      "index.ts",
+      "bench.ts",
+      "xychart-test.ts",
+    ],
+    extends: [tseslint.configs.recommended],
+    rules: {
+      // Allow leading-underscore names to signal an intentionally unused
+      // variable/argument (common pattern for destructuring or callback
+      // signatures where not every value is needed).
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+);

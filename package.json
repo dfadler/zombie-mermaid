@@ -50,6 +50,7 @@
     "build:site": "tsx index.ts && tsx editor.ts && mkdir -p site && mv index.html editor.html site/ && cp -r public/* site/",
     "deploy": "pnpm run build:site && wrangler pages deploy site --project-name craft-agents-mermaid",
     "xychart-test": "tsx xychart-test.ts",
+    "lint": "eslint .",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -60,10 +61,12 @@
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.28.2",
+    "eslint": "^10.9.1",
     "shiki": "^3.19.0",
     "tsup": "^8.5.1",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.68.0",
     "vitest": "^4.1.11"
   }
 }
