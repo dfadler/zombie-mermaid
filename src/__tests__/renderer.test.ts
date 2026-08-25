@@ -87,16 +87,28 @@ describe('renderSvg – SVG structure', () => {
     // out of the start node, so the polygon must match the forward (end)
     // marker. Reversing BOTH is a double reversal: the head points into the
     // line and disappears in librsvg/Inkscape/browsers.
+    //
+    // Extracted with plain string search (not a dynamically-built RegExp)
+    // since `id` here is always one of two hardcoded marker ids below, not
+    // attacker-controlled input.
     const svg = renderSvg(makeGraph(), lightColors)
-    const polygonOf = (id: string) =>
-      svg.match(
-        new RegExp(`<marker id="${id}"[^>]*>\\s*<polygon points="([^"]+)"`),
-      )?.[1]
-    const orientOf = (id: string) =>
-      svg.match(new RegExp(`<marker id="${id}"[^>]*orient="([^"]+)"`))?.[1]
+    const markerBlock = (id: string): string => {
+      const openTag = `<marker id="${id}"`
+      const start = svg.indexOf(openTag)
+      expect(start).toBeGreaterThanOrEqual(0)
+      const end = svg.indexOf('</marker>', start)
+      return svg.slice(start, end)
+    }
+    const attr = (block: string, name: string): string | undefined =>
+      block.split(`${name}="`)[1]?.split('"')[0]
+    const polygonPoints = (block: string): string | undefined =>
+      block.split('<polygon points="')[1]?.split('"')[0]
 
-    expect(orientOf('arrowhead-start')).toBe('auto-start-reverse')
-    expect(polygonOf('arrowhead-start')).toBe(polygonOf('arrowhead'))
+    const startBlock = markerBlock('arrowhead-start')
+    const endBlock = markerBlock('arrowhead')
+
+    expect(attr(startBlock, 'orient')).toBe('auto-start-reverse')
+    expect(polygonPoints(startBlock)).toBe(polygonPoints(endBlock))
   })
 
   it('includes embedded Google Fonts import', () => {
