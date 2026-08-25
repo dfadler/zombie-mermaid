@@ -12,6 +12,13 @@ backfilled from `git tag` history (`vX.Y.Z` tags going back to `v0.1.3`). Commit
 
 ## [Unreleased]
 
+> **Note:** starting with the Changesets-based release flow (see
+> [RELEASING.md](./RELEASING.md)), new entries are generated automatically
+> by `changeset version` as dated version sections, not hand-written under
+> `[Unreleased]`. The items below predate that change and accumulated
+> before any changesets existed for them; they'll be folded into whatever
+> version ships next rather than regenerated from a changeset.
+
 Work merged to `main` since the `v1.1.3` tag, not yet released to npm.
 
 ### Added
