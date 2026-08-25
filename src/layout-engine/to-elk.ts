@@ -398,8 +398,7 @@ function subgraphToElk(
   // Add hierarchical ports for cross-hierarchy edges (when using SEPARATE)
   const ports = subgraphPorts.get(sg.id) ?? []
   if (ports.length > 0) {
-    // ELK supports ports but types don't include it
-    ;(elkNode as unknown as Record<string, unknown>).ports = ports.map((p) => ({
+    elkNode.ports = ports.map((p) => ({
       id: p.portId,
       // Port side is determined by ELK based on edge direction
     }))

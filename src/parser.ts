@@ -19,6 +19,31 @@ import { normalizeBrTags } from './multiline-utils.ts'
 // that we don't need a grammar generator or full parser combinator.
 // ============================================================================
 
+function isDirection(value: string): value is Direction {
+  return (
+    value === 'TD' ||
+    value === 'TB' ||
+    value === 'LR' ||
+    value === 'BT' ||
+    value === 'RL'
+  )
+}
+
+/**
+ * Normalize a regex-captured direction token to a `Direction`.
+ * Every call site guards the capture with the same
+ * `(TD|TB|LR|BT|RL)` alternation (case-insensitively), so the input is
+ * always one of these five values in practice — but the regex match itself
+ * is typed as `string`, so we narrow it explicitly rather than asserting.
+ */
+function toDirection(raw: string): Direction {
+  const upper = raw.toUpperCase()
+  if (!isDirection(upper)) {
+    throw new Error(`Invalid direction: "${raw}"`)
+  }
+  return upper
+}
+
 /**
  * Parse Mermaid text into a logical graph structure.
  * Auto-detects diagram type (flowchart or state diagram).
@@ -60,7 +85,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     )
   }
 
-  const direction = headerMatch[1]!.toUpperCase() as Direction
+  const direction = toDirection(headerMatch[1]!)
 
   const graph: MermaidGraph = {
     direction,
@@ -138,8 +163,9 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     // --- direction override inside subgraph: `direction LR` ---
     const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
     if (dirMatch && subgraphStack.length > 0) {
-      subgraphStack[subgraphStack.length - 1]!.direction =
-        dirMatch[1]!.toUpperCase() as Direction
+      subgraphStack[subgraphStack.length - 1]!.direction = toDirection(
+        dirMatch[1]!,
+      )
       continue
     }
 
@@ -227,10 +253,11 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
     const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
     if (dirMatch) {
       if (compositeStack.length > 0) {
-        compositeStack[compositeStack.length - 1]!.direction =
-          dirMatch[1]!.toUpperCase() as Direction
+        compositeStack[compositeStack.length - 1]!.direction = toDirection(
+          dirMatch[1]!,
+        )
       } else {
-        graph.direction = dirMatch[1]!.toUpperCase() as Direction
+        graph.direction = toDirection(dirMatch[1]!)
       }
       continue
     }

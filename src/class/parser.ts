@@ -191,8 +191,14 @@ function parseMember(
   // Extract visibility prefix
   let visibility: ClassMember['visibility'] = ''
   let rest = trimmed
-  if (/^[+\-#~]/.test(rest)) {
-    visibility = rest[0] as ClassMember['visibility']
+  const visibilityChar = rest[0]
+  if (
+    visibilityChar === '+' ||
+    visibilityChar === '-' ||
+    visibilityChar === '#' ||
+    visibilityChar === '~'
+  ) {
+    visibility = visibilityChar
     rest = rest.slice(1).trim()
   }
 
