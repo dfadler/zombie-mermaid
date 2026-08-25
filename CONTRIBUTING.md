@@ -44,6 +44,10 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 
 Run those locally first, along with `pnpm run lint` and `pnpm run format:check`, since lint and formatting aren't currently wired into CI but are still expected to be clean. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
 
+### Test coverage
+
+CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-24 the baseline is **75.28% statements / 62.53% branches / 81.62% functions / 77.19% lines**. There's no enforced threshold yet — that's tracked separately in [issue #9](https://github.com/dfadler/zombie-mermaid/issues/9); this is just visibility for now.
+
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
 ## Porting fixes from upstream
