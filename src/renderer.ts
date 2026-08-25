@@ -713,13 +713,23 @@ function renderNodeLabel(node: PositionedNode, _font: string): string {
       getReadableTextColor(node.inlineStyle?.fill, 'var(--_text)'),
   )
 
-  return renderMultilineText(
-    node.label,
-    cx,
-    cy,
-    FONT_SIZES.nodeLabel,
-    `text-anchor="middle" font-size="${FONT_SIZES.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`,
-  )
+  let attrs = `text-anchor="middle" font-size="${FONT_SIZES.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
+
+  // Per-node font-family override (from `style A font-family:...` or
+  // classDef/class). Emitted as an inline `style` attribute rather than a
+  // `font-family` presentation attribute: the global font is applied via a
+  // `text { font-family: ... }` rule in the embedded <style> block (see
+  // theme.ts buildStyleBlock), and a presentation attribute always loses to
+  // any stylesheet rule regardless of selector specificity. An inline `style`
+  // attribute has the highest priority in the cascade, so it reliably
+  // overrides the global rule for just this node while every other node
+  // keeps falling back to the global font stack. See issue #57.
+  const fontFamily = node.inlineStyle?.['font-family']
+  if (fontFamily) {
+    attrs += ` style="font-family: ${escapeAttr(fontFamily)};"`
+  }
+
+  return renderMultilineText(node.label, cx, cy, FONT_SIZES.nodeLabel, attrs)
 }
 
 // ============================================================================
