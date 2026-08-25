@@ -34,6 +34,8 @@ pnpm exec tsc --noEmit
 
 ## Before opening a PR
 
+Double-check the base repository in GitHub's compare view: it should be `dfadler/zombie-mermaid`, not the upstream `lukilabs/beautiful-mermaid`. GitHub's "Contribute" button on a fork often defaults to the upstream repo, which is almost never what you want here — CI and publishing are wired up on this fork, not upstream, and only run when `github.repository == 'dfadler/zombie-mermaid'` (see `.github/workflows/ci.yml` and `publish.yml`).
+
 CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and must pass:
 
 1. `pnpm install --frozen-lockfile`
