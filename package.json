@@ -70,11 +70,13 @@
     "entities": "^7.0.1"
   },
   "devDependencies": {
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
+    "jsdom": "^30.0.1",
     "prettier": "^3.9.6",
     "shiki": "^3.19.0",
     "tsup": "^8.5.1",
