@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(gh pr create --repo lukilabs/beautiful-mermaid*)",
+      "Bash(gh pr create --repo=lukilabs/beautiful-mermaid*)",
+      "Bash(git push upstream*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // empty' | { read -r c; if echo \"$c\" | grep -qi 'lukilabs' && echo \"$c\" | grep -qi 'beautiful-mermaid'; then if echo \"$c\" | grep -Eiq '(gh[[:space:]]+pr[[:space:]]+(create|ready|merge)|/pulls([^a-zA-Z]|$)|api[[:space:]].*pulls)'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Blocked: this command submits or modifies a PR on the upstream fork-parent repo (lukilabs/beautiful-mermaid). PRs must target the fork (origin, dfadler/zombie-mermaid) only.\"}}'; exit 0; fi; fi; if echo \"$c\" | grep -Eiq '^git[[:space:]]+push([[:space:]]+--[a-zA-Z-]+)*[[:space:]]+upstream\\b'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Blocked: pushing to the upstream remote (lukilabs/beautiful-mermaid) is not allowed. Push to origin (your fork) instead.\"}}'; exit 0; fi; exit 0; }",
+            "statusMessage": "Checking PR/push target isn't the upstream fork-parent repo..."
+          }
+        ]
+      }
+    ]
+  }
+}
