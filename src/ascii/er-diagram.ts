@@ -81,7 +81,7 @@ function getCrowsFootChars(
       case 'one':
         return '|'
       case 'zero-one':
-        return 'o|'
+        return isRight ? 'o|' : '|o'
       case 'many':
         return isRight ? '<' : '>'
       case 'zero-many':
@@ -93,7 +93,7 @@ function getCrowsFootChars(
       case 'one':
         return '│'
       case 'zero-one':
-        return '○│'
+        return isRight ? '○│' : '│○'
       case 'many':
         return isRight ? '╟' : '╢'
       case 'zero-many':

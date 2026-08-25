@@ -135,6 +135,23 @@ describe('parseErDiagram – relationships', () => {
     expect(d.relationships[0]!.cardinality2).toBe('zero-many')
   })
 
+  it('parses zero-or-many (left) to exactly-one: }o--||', () => {
+    // Regression: the left-side "zero or more" marker is `}o`, mirroring the
+    // right-side `o{`. Naively normalizing by sorting characters conflated
+    // `}o` with the unrelated pair `{o`/`o{`, so `}o` failed to parse.
+    const d = parse(`erDiagram
+      TAG }o--|| PRODUCT : labels`)
+    expect(d.relationships[0]!.cardinality1).toBe('zero-many')
+    expect(d.relationships[0]!.cardinality2).toBe('one')
+  })
+
+  it('parses zero-or-many on both sides: }o--o{', () => {
+    const d = parse(`erDiagram
+      A }o--o{ B : relates`)
+    expect(d.relationships[0]!.cardinality1).toBe('zero-many')
+    expect(d.relationships[0]!.cardinality2).toBe('zero-many')
+  })
+
   it('handles multiple relationships', () => {
     const d = parse(`erDiagram
       CUSTOMER ||--o{ ORDER : places
