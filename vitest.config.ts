@@ -2,7 +2,8 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    include: ['src/__tests__/**/*.test.ts'],
+    include: ['src/__tests__/**/*.test.ts', 'editor/__tests__/**/*.test.ts'],
+    environmentMatchGlobs: [['editor/__tests__/**', 'jsdom']],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
