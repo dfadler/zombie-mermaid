@@ -45,6 +45,9 @@
     "README.md"
   ],
   "packageManager": "pnpm@11.13.0",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
