@@ -1,0 +1,163 @@
+# Advisory-only automation for issue #17: this fork does not track upstream
+# compatibility as a requirement (see CONTRIBUTING.md, "Porting fixes from
+# upstream"). This workflow just keeps the maintainer *aware* of commits that
+# have landed on lukilabs/beautiful-mermaid's `main` since the last check, so
+# anything useful can be manually reviewed and cherry-picked.
+#
+# How it works:
+#   1. Adds `https://github.com/lukilabs/beautiful-mermaid.git` as a second
+#      remote in the job's throwaway checkout (the runner has no local
+#      `upstream` remote configured) and fetches its `main`.
+#   2. Computes commits reachable from `upstream/main` but not from this
+#      fork's `main` (`git log main..upstream/main`) — a one-sided range,
+#      not a symmetric diff, since this fork's own commits shouldn't show up
+#      as "new upstream work".
+#   3. Finds an existing OPEN issue labeled `upstream-tracking` (creating the
+#      label on first run if needed). Its body carries an HTML-comment
+#      marker (`<!-- last-checked-upstream-sha: <sha> -->`) recording the
+#      upstream SHA that was already reported. That marker *is* the state —
+#      no external storage, cache, or artifact is used.
+#   4. If the marker is present and still part of upstream's history, only
+#      commits *after* that marker are reported (avoids re-listing commits
+#      already surfaced on a prior run). Otherwise (first run, or the marker
+#      SHA fell off history) the full `main..upstream/main` list is used.
+#   5. If that list is empty, the workflow does nothing — no issue is
+#      created or touched, so there's no noise when upstream hasn't moved.
+#   6. If it's non-empty, it finds-or-creates the tracking issue, posts a
+#      comment listing the new commits (short SHA, subject line, link to the
+#      commit on lukilabs/beautiful-mermaid), and rewrites the marker to the
+#      current upstream HEAD so the next run's delta starts from here.
+#
+# The tracking issue is purely advisory: opening/updating it is not a merge
+# gate, doesn't block CI, and doesn't imply the fork must stay compatible
+# with upstream. It's just a standing "here's what changed upstream" note
+# for someone to skim and decide what (if anything) is worth porting.
+name: Upstream check
+
+on:
+  schedule:
+    # Every Monday at 13:00 UTC. Weekly and low-urgency on purpose — this is
+    # an awareness check, not a CI gate, so there's no need to run it daily.
+    - cron: '0 13 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    # Guard so a fork-of-this-fork doesn't spam issues against itself, same
+    # pattern used in ci.yml / publish.yml.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote and fetch
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/lukilabs/beautiful-mermaid.git
+          git fetch upstream main
+
+      - name: Find or update upstream tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          UPSTREAM_HEAD="$(git rev-parse upstream/main)"
+          echo "upstream/main HEAD: ${UPSTREAM_HEAD}"
+
+          # Make sure the tracking label exists (idempotent; ignore if it's
+          # already there so re-runs don't fail).
+          gh label create "upstream-tracking" \
+            --repo "$REPO" \
+            --color "0E8A16" \
+            --description "Advisory: new commits found on lukilabs/beautiful-mermaid" \
+            2>/dev/null || true
+
+          ISSUE_NUMBER="$(gh issue list \
+            --repo "$REPO" \
+            --label upstream-tracking \
+            --state open \
+            --limit 1 \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          LAST_SHA=""
+          EXISTING_BODY=""
+          if [ -n "$ISSUE_NUMBER" ]; then
+            EXISTING_BODY="$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json body --jq '.body')"
+            LAST_SHA="$(printf '%s' "$EXISTING_BODY" | grep -oE '<!-- last-checked-upstream-sha: [0-9a-f]{40} -->' | grep -oE '[0-9a-f]{40}' || true)"
+          fi
+
+          # Prefer the delta since the last reported SHA (if it's still part
+          # of upstream/main's history); otherwise fall back to the full
+          # range of upstream commits not present in this fork's main.
+          if [ -n "$LAST_SHA" ] && git merge-base --is-ancestor "$LAST_SHA" upstream/main 2>/dev/null; then
+            RANGE="${LAST_SHA}..upstream/main"
+          else
+            RANGE="main..upstream/main"
+          fi
+
+          NEW_COMMITS="$(git log "$RANGE" --pretty=format:'%h|%s' --reverse)"
+
+          if [ -z "$NEW_COMMITS" ]; then
+            echo "No new upstream commits since last check ($RANGE). Nothing to do."
+            exit 0
+          fi
+
+          LIST_FILE="$(mktemp)"
+          while IFS='|' read -r sha subject; do
+            full_sha="$(git rev-parse "$sha")"
+            printf -- '- [`%s`](https://github.com/lukilabs/beautiful-mermaid/commit/%s) %s\n' \
+              "$sha" "$full_sha" "$subject" >> "$LIST_FILE"
+          done <<< "$NEW_COMMITS"
+
+          CHECKED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          MARKER="<!-- last-checked-upstream-sha: ${UPSTREAM_HEAD} -->"
+
+          COMMENT_FILE="$(mktemp)"
+          {
+            printf 'New commits found on lukilabs/beautiful-mermaid `main` as of %s:\n\n' "$CHECKED_AT"
+            cat "$LIST_FILE"
+            printf '\nThis is advisory only — not a merge gate or a compatibility requirement. Review and cherry-pick anything useful (see "Porting fixes from upstream" in CONTRIBUTING.md).\n'
+          } > "$COMMENT_FILE"
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            BODY_FILE="$(mktemp)"
+            {
+              printf 'Tracks commits on lukilabs/beautiful-mermaid'"'"'s `main` branch that are not yet in this fork, for awareness only.\n\n'
+              printf 'This is **not** a merge gate and does not imply this fork must stay compatible with upstream — see CONTRIBUTING.md. New commits are posted as comments below as they'"'"'re found; the marker below records how far this issue has checked so re-runs only report what'"'"'s new.\n\n'
+              printf '%s\n' "$MARKER"
+            } > "$BODY_FILE"
+
+            ISSUE_URL="$(gh issue create \
+              --repo "$REPO" \
+              --title "Upstream tracking: new commits on lukilabs/beautiful-mermaid" \
+              --label upstream-tracking \
+              --body-file "$BODY_FILE")"
+            ISSUE_NUMBER="${ISSUE_URL##*/}"
+            echo "Created tracking issue #${ISSUE_NUMBER}: ${ISSUE_URL}"
+
+            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body-file "$COMMENT_FILE"
+          else
+            echo "Updating existing tracking issue #${ISSUE_NUMBER}"
+            gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body-file "$COMMENT_FILE"
+
+            NEW_BODY_FILE="$(mktemp)"
+            if printf '%s' "$EXISTING_BODY" | grep -qE '<!-- last-checked-upstream-sha: [0-9a-f]{40} -->'; then
+              printf '%s' "$EXISTING_BODY" | sed -E "s#<!-- last-checked-upstream-sha: [0-9a-f]{40} -->#${MARKER}#" > "$NEW_BODY_FILE"
+            else
+              printf '%s\n\n%s\n' "$EXISTING_BODY" "$MARKER" > "$NEW_BODY_FILE"
+            fi
+            gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --body-file "$NEW_BODY_FILE"
+          fi
+
+          echo "Reported $(printf '%s\n' "$NEW_COMMITS" | wc -l) new upstream commit(s) on issue #${ISSUE_NUMBER}."

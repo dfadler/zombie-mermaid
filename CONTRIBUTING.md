@@ -83,6 +83,10 @@ This is the part that makes this fork different from a typical project. Two situ
 
 Either way, add an entry under `[Unreleased]` in `CHANGELOG.md` describing what changed and, where relevant, that it originated upstream.
 
+### Staying aware of upstream changes
+
+`.github/workflows/upstream-check.yml` runs weekly (Monday mornings UTC, plus `workflow_dispatch` for a manual run) and diffs this fork's `main` against `lukilabs/beautiful-mermaid`'s `main`. If there are commits on upstream that aren't in this fork's history, it finds-or-creates a single open issue labeled [`upstream-tracking`](https://github.com/dfadler/zombie-mermaid/issues?q=is%3Aissue+label%3Aupstream-tracking) and comments the new commits (short SHA, subject, link) onto it; a marker in the issue body records the last upstream SHA it reported, so later runs only report what's new and stay silent when there's nothing to report. This is purely advisory — it's not a merge gate and doesn't imply this fork needs to track upstream compatibility; it just surfaces commits worth a look so someone can decide whether to port them using the process above.
+
 ## Releasing
 
 Releases are tagged (`vX.Y.Z`) and publishing to npm is automated via `.github/workflows/publish.yml`, which runs on a published GitHub Release. Only the maintainer cuts releases; as a contributor you don't need to do anything beyond keeping `CHANGELOG.md`'s `[Unreleased]` section up to date.
