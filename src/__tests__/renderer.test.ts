@@ -498,6 +498,69 @@ describe('renderSvg – inline styles', () => {
 })
 
 // ============================================================================
+// Fill → text color contrast (issue #55)
+// ============================================================================
+
+describe('renderSvg – readable text color for custom fills', () => {
+  it('picks dark text for a light pastel fill in dark mode', () => {
+    // Matches the issue #55 repro: classDef external fill:#FF6B6B in dark mode.
+    const node = makeNode({ inlineStyle: { fill: '#FF6B6B' } })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, darkColors)
+    expect(svg).toContain('fill="#000000"')
+    expect(svg).not.toContain('fill="var(--_text)"')
+  })
+
+  it('picks dark text for a light green fill in dark mode', () => {
+    const node = makeNode({ inlineStyle: { fill: '#90EE90' } })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, darkColors)
+    expect(svg).toContain('fill="#000000"')
+  })
+
+  it('picks light text for a dark fill in light mode', () => {
+    const node = makeNode({ inlineStyle: { fill: '#111111' } })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, lightColors)
+    expect(svg).toContain('fill="#FFFFFF"')
+    expect(svg).not.toContain('fill="var(--_text)"')
+  })
+
+  it('keeps using the theme foreground when there is no custom fill', () => {
+    const node = makeNode()
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, darkColors)
+    expect(svg).toContain('fill="var(--_text)"')
+  })
+
+  it('keeps using the theme foreground when the fill is unresolvable (CSS variable reference)', () => {
+    const node = makeNode({
+      inlineStyle: { fill: 'var(--some-other-var)' },
+    })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, darkColors)
+    expect(svg).toContain('fill="var(--_text)"')
+  })
+
+  it('keeps using the theme foreground when the fill is a named CSS color, not a hex literal', () => {
+    const node = makeNode({ inlineStyle: { fill: 'lightpink' } })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, darkColors)
+    expect(svg).toContain('fill="var(--_text)"')
+  })
+
+  it('still respects an explicit inline color override even with a custom fill', () => {
+    const node = makeNode({
+      inlineStyle: { fill: '#FF6B6B', color: '#0000ff' },
+    })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, darkColors)
+    expect(svg).toContain('fill="#0000ff"')
+    expect(svg).not.toContain('fill="#000000"')
+  })
+})
+
+// ============================================================================
 // className (from :::className shorthand or `class A className`)
 // ============================================================================
 

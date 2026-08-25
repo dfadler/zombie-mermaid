@@ -6,7 +6,7 @@ import type {
   Point,
 } from './types.ts'
 import type { DiagramColors } from './theme.ts'
-import { svgOpenTag, buildStyleBlock } from './theme.ts'
+import { svgOpenTag, buildStyleBlock, getReadableTextColor } from './theme.ts'
 import {
   FONT_SIZES,
   FONT_WEIGHTS,
@@ -702,8 +702,16 @@ function renderNodeLabel(node: PositionedNode, _font: string): string {
   const cx = node.x + node.width / 2
   const cy = node.y + node.height / 2
 
-  // Resolve text color — inline styles can override the CSS variable default
-  const textColor = escapeAttr(node.inlineStyle?.color ?? 'var(--_text)')
+  // Resolve text color — inline styles can override the CSS variable default.
+  // When there's no explicit `color` but there IS a concrete, resolvable
+  // `fill` (e.g. from classDef/style), compute a readable black/white text
+  // color from the fill's luminance instead of defaulting to the ambient
+  // theme foreground, which can be unreadable against a custom fill (e.g.
+  // white theme text on a light pastel fill in dark mode). See issue #55.
+  const textColor = escapeAttr(
+    node.inlineStyle?.color ??
+      getReadableTextColor(node.inlineStyle?.fill, 'var(--_text)'),
+  )
 
   return renderMultilineText(
     node.label,

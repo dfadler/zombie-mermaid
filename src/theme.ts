@@ -319,6 +319,84 @@ export function buildStyleBlock(font: string, hasMonoFont: boolean): string {
   ].join('\n')
 }
 
+// ============================================================================
+// Fill → text color contrast
+//
+// When a node has a custom `fill` (from classDef/style) but no explicit
+// `color`, defaulting text to the ambient theme foreground can be unreadable
+// (e.g. white text on a light pastel fill in dark mode). If the fill is a
+// concrete, resolvable color (hex), compute a readable black/white text
+// color from its perceptual luminance. Anything else (CSS variable
+// references, named colors, malformed values) is left alone — the caller
+// falls back to the theme foreground.
+// ============================================================================
+
+/** Matches #rgb, #rgba, #rrggbb, #rrggbbaa hex color literals. */
+const HEX_COLOR_RE =
+  /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+
+/**
+ * Parse a hex color string into 0-255 RGB components.
+ * Returns null for anything that isn't a well-formed hex literal (e.g.
+ * `var(--foo)`, named CSS colors, or attribute-injection payloads) — the
+ * caller should treat those as unresolvable and fall back.
+ */
+function parseHexColor(value: string): [number, number, number] | null {
+  const match = HEX_COLOR_RE.exec(value.trim())
+  if (!match) return null
+  let hex = match[1]!
+  if (hex.length === 3 || hex.length === 4) {
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('')
+  }
+  return [
+    parseInt(hex.slice(0, 2), 16),
+    parseInt(hex.slice(2, 4), 16),
+    parseInt(hex.slice(4, 6), 16),
+  ]
+}
+
+/**
+ * Perceptual luminance of an sRGB color on a 0-1 scale (0 = black, 1 =
+ * white), using the ITU-R BT.601 luma weights (0.299/0.587/0.114).
+ *
+ * This is the simple, non-gamma-corrected "perceived brightness" formula
+ * (as opposed to the gamma-corrected WCAG relative-luminance formula used
+ * for contrast-ratio math). It's the right tool here: we just need a
+ * black-vs-white pick, and BT.601 luma crosses black/white legibility at
+ * ~0.5 on its own 0-1 scale, so the threshold in getReadableTextColor()
+ * lines up directly with the formula instead of needing a separately
+ * derived crossover constant. (True WCAG relative luminance would need a
+ * ~0.18 threshold, not 0.5, to give the same black/white picks — see
+ * https://www.w3.org/TR/WCAG20/#relativeluminancedef.)
+ */
+function perceptualLuminance(r: number, g: number, b: number): number {
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+}
+
+/**
+ * Pick a readable text color for a given fill color.
+ *
+ * If `fill` is a concrete, resolvable hex color, returns pure black or
+ * white depending on the fill's perceptual luminance (threshold 0.5: light
+ * fills get dark text, dark fills get light text). If `fill` is undefined
+ * or isn't a resolvable color (a `var(...)` reference, a named CSS color,
+ * or malformed input), returns `fallback` unchanged so callers don't guess
+ * at colors they can't actually evaluate.
+ */
+export function getReadableTextColor(
+  fill: string | undefined,
+  fallback: string,
+): string {
+  if (!fill) return fallback
+  const rgb = parseHexColor(fill)
+  if (!rgb) return fallback
+  const luminance = perceptualLuminance(...rgb)
+  return luminance > 0.5 ? '#000000' : '#FFFFFF'
+}
+
 /**
  * Build the SVG opening tag with CSS variables set as inline styles.
  * Only includes optional variables that are actually provided — unset ones
