@@ -235,7 +235,9 @@ function renderMember(member: ClassMember, x: number, y: number): string {
   const displayName = member.isMethod
     ? `${member.name}(${member.params || ''})`
     : member.name
-  spans.push(`<tspan fill="var(--_text-sec)">${escapeXml(displayName)}</tspan>`)
+  // False positive: displayName is passed through escapeXml() (see src/multiline-utils.ts),
+  // which escapes &, <, >, ", ' before interpolation, so this is not raw/unescaped HTML.
+  spans.push(`<tspan fill="var(--_text-sec)">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 
   if (member.type) {
     spans.push(`<tspan fill="var(--_text-faint)">: </tspan>`)

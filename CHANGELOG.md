@@ -19,6 +19,9 @@ Work merged to `main` since the `v1.1.3` tag, not yet released to npm.
 - Live Mermaid editor page (`editor.ts` / `editor/`), deployed alongside the sample gallery
 - Editor button on the site hero, matching the Craft Agents design system
 - ESLint (TypeScript-aware flat config) for the codebase
+- Semgrep SAST scanning in CI (`semgrep scan --config auto --error`, free public rulesets,
+  no account/token), and documented Aikido Safe Chain as the recommended local install-time
+  malware/supply-chain protection (closes #12)
 
 ### Changed
 
@@ -33,6 +36,10 @@ Work merged to `main` since the `v1.1.3` tag, not yet released to npm.
   follow-up fix for a regex/template-literal bug in that same patch (ported from
   upstream `lukilabs/beautiful-mermaid` PRs [#105](https://github.com/lukilabs/beautiful-mermaid/pull/105)
   and [#106](https://github.com/lukilabs/beautiful-mermaid/pull/106))
+- Pinned all GitHub Actions in `ci.yml`/`publish.yml` to full commit SHAs instead of mutable
+  version tags (Semgrep finding: `github-actions-mutable-action-tag`)
+- Added a subresource-integrity hash to the CDN-loaded Chart.js `<script>` tag in
+  `xychart-test.html`/`xychart-test.ts` (Semgrep finding: `missing-integrity`)
 
 ## [1.1.3] - 2026-02-26
 
