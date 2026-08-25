@@ -462,6 +462,18 @@ describe('parseMermaid – ::: class shorthand', () => {
     expect(g.classAssignments.get('B')).toBe('mid')
     expect(g.classAssignments.get('C')).toBe('end')
   })
+
+  it('preserves the bracket label when ::: follows the brackets', () => {
+    const g = parseMermaid('graph TD\n  A[External User]:::external --> B')
+    expect(g.nodes.get('A')?.label).toBe('External User')
+    expect(g.classAssignments.get('A')).toBe('external')
+  })
+
+  it('preserves the bracket label when ::: precedes the brackets', () => {
+    const g = parseMermaid('graph TD\n  A:::external[External User] --> B')
+    expect(g.nodes.get('A')?.label).toBe('External User')
+    expect(g.classAssignments.get('A')).toBe('external')
+  })
 })
 
 // ============================================================================
