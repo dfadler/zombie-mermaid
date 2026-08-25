@@ -12,6 +12,23 @@ pnpm install
 
 Requires Node 22+ and pnpm (the repo pins `packageManager` in `package.json`; `corepack enable` will pick that up automatically).
 
+### Malware protection for installs (Aikido Safe Chain)
+
+[Aikido Safe Chain](https://github.com/AikidoSec/safe-chain) is a free, tokenless CLI that wraps `npm`/`npx`/`pnpm`/`pnpm dlx`/`yarn`/etc. and blocks installs of packages flagged as malware or published in the last 48 hours (a common window for supply-chain attacks). It's optional but recommended for local development — it isn't (and can't be) enforced in CI, since it works by intercepting package-manager commands run in your own shell.
+
+Install it once, machine-wide, via the official installer (not as a project dependency — it needs to hook your shell, so a per-project `devDependency` wouldn't work):
+
+```bash
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.15/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
+  && echo "de0565e3d6346407a604e84e639e95fea8758748063da2216bbfdca5feda5dd2  /tmp/install-safe-chain.sh" | sha256sum -c - \
+  && sh /tmp/install-safe-chain.sh \
+  && rm /tmp/install-safe-chain.sh
+```
+
+Restart your terminal afterward, then verify it's active with `pnpm safe-chain-verify` (or `npm safe-chain-verify`). Once installed, it transparently wraps your normal `pnpm install` — no change to your workflow. See the [Safe Chain README](https://github.com/AikidoSec/safe-chain#readme) for Windows instructions, uninstalling, and configuration (logging, minimum package age, etc.).
+
+Full Aikido SCA/secrets scanning as a CI/dashboard product is a separate, paid-account feature and is intentionally not wired into this repo's CI — see the note in `.github/workflows/ci.yml` next to the Semgrep job.
+
 Useful scripts while developing (see `package.json` for the full list):
 
 - `pnpm test` — run the test suite once (Vitest)
@@ -43,6 +60,8 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 3. `pnpm exec tsc --noEmit`
 
 Run those locally first, along with `pnpm run lint` and `pnpm run format:check`, since lint and formatting aren't currently wired into CI but are still expected to be clean. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
+
+CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account/token involved) that fails the build on findings. If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why — don't disable the rule repo-wide.
 
 ### Test coverage
 
