@@ -259,6 +259,39 @@ describe('renderMermaidSVG – Batch 2 edge features', () => {
 })
 
 // ============================================================================
+// Issue #56: :::className / `class A className` should emit the class name
+// onto the rendered element's `class` attribute, not just resolve inline
+// fill/stroke styling from the matching classDef.
+// ============================================================================
+
+describe('renderMermaidSVG – custom class names on rendered elements', () => {
+  it('emits the class name from :::className shorthand onto the node', () => {
+    const svg = renderMermaidSVG(`graph LR
+    A[Start]:::highlight --> B[End]
+    classDef highlight fill:#f00`)
+    expect(svg).toContain('<g class="node highlight" data-id="A"')
+    // Unaffected sibling node still gets only the base class.
+    expect(svg).toContain('<g class="node" data-id="B"')
+  })
+
+  it('emits the class name from the `class A,B className` form onto every listed node', () => {
+    const svg = renderMermaidSVG(`graph LR
+    A[Start] --> B[End]
+    class A,B highlight
+    classDef highlight fill:#f00`)
+    expect(svg).toContain('<g class="node highlight" data-id="A"')
+    expect(svg).toContain('<g class="node highlight" data-id="B"')
+  })
+
+  it('renders only the base class when no custom class is assigned (no regression)', () => {
+    const svg = renderMermaidSVG('graph LR\n  A[Start] --> B[End]')
+    expect(svg).toContain('<g class="node" data-id="A"')
+    expect(svg).toContain('<g class="node" data-id="B"')
+    expect(svg).not.toMatch(/<g class="node [^"]/)
+  })
+})
+
+// ============================================================================
 // Batch 3: State diagrams (end-to-end)
 // ============================================================================
 

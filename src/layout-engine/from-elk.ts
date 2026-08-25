@@ -181,6 +181,10 @@ function extractNodesAndGroups(
       if (mNode) {
         // Resolve inline styles from nodeStyles map and classDefs
         const inlineStyle = resolveNodeStyle(child.id, graph)
+        // Custom class name from `class A className` or `:::className` —
+        // tracked separately from inlineStyle so it's still emitted onto the
+        // rendered element even when the class has no matching classDef.
+        const className = graph.classAssignments.get(child.id)
 
         nodes.push({
           id: child.id,
@@ -191,6 +195,7 @@ function extractNodesAndGroups(
           width,
           height,
           inlineStyle,
+          className,
         })
       }
 
