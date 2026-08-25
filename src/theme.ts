@@ -271,15 +271,73 @@ export function fromShikiTheme(theme: ShikiThemeLike): DiagramColors {
 // ============================================================================
 
 /**
+ * Characters that must never appear in a `font` value once it's embedded in
+ * the generated `<style>` block — whether it's treated as a CSS `var()`
+ * reference or as a literal font name. Angle brackets would let the value
+ * break out of the `<style>...</style>` element (e.g. a literal `</style>`
+ * or an injected `<script>`); semicolons/braces would let it terminate the
+ * current CSS declaration/rule and inject new ones.
+ */
+const UNSAFE_FONT_CHARS_RE = /[<>{};]/
+
+/**
+ * Detect a syntactically well-formed CSS `var()` reference, e.g.
+ * `var(--font-family-body)` or `var(--font, 'Fallback Font')` (a `var()`
+ * with a quoted fallback argument). Requires balanced parens and rejects
+ * any of `UNSAFE_FONT_CHARS_RE`.
+ *
+ * `font.startsWith('var(')` alone isn't enough: a caller could pass
+ * something that merely starts with `var(` but isn't actually one (e.g.
+ * `var(--x); } .evil{...}`). Anything that fails this stricter check is
+ * treated as an untrusted/malformed value and falls back to being quoted
+ * as a literal font name below — which neutralizes it, since a quoted
+ * string isn't parsed as a `var()` call by CSS.
+ */
+function isSafeCssVarReference(font: string): boolean {
+  const trimmed = font.trim()
+  if (!trimmed.startsWith('var(') || !trimmed.endsWith(')')) return false
+  if (UNSAFE_FONT_CHARS_RE.test(trimmed)) return false
+  let depth = 0
+  for (const ch of trimmed) {
+    if (ch === '(') depth++
+    else if (ch === ')') {
+      depth--
+      if (depth < 0) return false
+    }
+  }
+  return depth === 0
+}
+
+/**
  * Build the CSS variable derivation rules for the SVG <style> block.
  *
  * When an optional variable (--line, --accent, etc.) is set on the SVG or
  * a parent element, it's used directly. When unset, the fallback computes
  * a blended value from --fg and --bg using color-mix().
+ *
+ * `font` is user-supplied input. When it's a CSS `var(...)` reference (e.g.
+ * `var(--font-family-body)`, letting the SVG inherit a host page's
+ * design-system font), the Google Fonts `@import` is skipped — it would
+ * otherwise URL-encode the literal `var(...)` string into a `family=` query
+ * param and produce a guaranteed no-op request — and the value is emitted
+ * unquoted, since a quoted string isn't parsed as a `var()` call by CSS.
+ * Any other value is treated as a literal font name: sanitized and quoted
+ * exactly as before.
  */
 export function buildStyleBlock(font: string, hasMonoFont: boolean): string {
+  const isVarReference = isSafeCssVarReference(font)
+  // Literal font names are sanitized before quoting (strip characters that
+  // could break out of the CSS string or the <style> block). A validated
+  // var() reference is passed through as-is so `var(--x, 'Fallback')` keeps
+  // its own internal quotes intact.
+  const safeFont = isVarReference ? font.trim() : font.replace(/[<>{};'"]/g, '')
+
   const fontImports = [
-    `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@400;500;600;700&amp;display=swap');`,
+    ...(isVarReference
+      ? []
+      : [
+          `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(safeFont)}:wght@400;500;600;700&amp;display=swap');`,
+        ]),
     ...(hasMonoFont
       ? [
           `@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap');`,
@@ -306,8 +364,8 @@ export function buildStyleBlock(font: string, hasMonoFont: boolean): string {
 
   return [
     '<style>',
-    `  ${fontImports.join('\n  ')}`,
-    `  text { font-family: '${font}', system-ui, sans-serif; }`,
+    ...(fontImports.length > 0 ? [`  ${fontImports.join('\n  ')}`] : []),
+    `  text { font-family: ${isVarReference ? safeFont : `'${safeFont}'`}, system-ui, sans-serif; }`,
     ...(hasMonoFont
       ? [
           `  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }`,
