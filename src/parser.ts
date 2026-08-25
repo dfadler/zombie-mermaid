@@ -19,7 +19,9 @@ import { normalizeBrTags } from './multiline-utils.ts'
 // that we don't need a grammar generator or full parser combinator.
 // ============================================================================
 
-function isDirection(value: string): value is Direction {
+// Exported for direct unit testing (see src/__tests__/parser.test.ts) —
+// not otherwise part of this module's public parsing API.
+export function isDirection(value: string): value is Direction {
   return (
     value === 'TD' ||
     value === 'TB' ||
@@ -36,7 +38,7 @@ function isDirection(value: string): value is Direction {
  * always one of these five values in practice — but the regex match itself
  * is typed as `string`, so we narrow it explicitly rather than asserting.
  */
-function toDirection(raw: string): Direction {
+export function toDirection(raw: string): Direction {
   const upper = raw.toUpperCase()
   if (!isDirection(upper)) {
     throw new Error(`Invalid direction: "${raw}"`)

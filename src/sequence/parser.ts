@@ -6,8 +6,12 @@ import { normalizeBrTags } from '../multiline-utils.ts'
  * regex at the call site uses the same `(loop|alt|opt|par|critical|break|
  * rect)` alternation, so the input is always one of these seven values in
  * practice — but the match itself is typed as `string`.
+ *
+ * Exported for direct unit testing (see
+ * src/__tests__/sequence-parser.test.ts) — not otherwise part of this
+ * module's public parsing API.
  */
-function isBlockType(value: string): value is Block['type'] {
+export function isBlockType(value: string): value is Block['type'] {
   return (
     value === 'loop' ||
     value === 'alt' ||
@@ -17,6 +21,25 @@ function isBlockType(value: string): value is Block['type'] {
     value === 'break' ||
     value === 'rect'
   )
+}
+
+/**
+ * Narrow a regex-captured block keyword to `Block['type']`, throwing if it
+ * somehow isn't one of the seven recognized keywords (see `isBlockType`
+ * above — unreachable via the guarding regex in practice, but this keeps
+ * the failure explicit rather than silently mistyping the value).
+ *
+ * Exported for direct unit testing (see
+ * src/__tests__/sequence-parser.test.ts) — the throw branch is unreachable
+ * through the public `parseSequenceDiagram` API (the regex that captures
+ * the value already restricts it to the seven valid keywords), so it can
+ * only be exercised by calling this function directly.
+ */
+export function toBlockType(value: string): Block['type'] {
+  if (!isBlockType(value)) {
+    throw new Error(`Invalid block type: "${value}"`)
+  }
+  return value
 }
 
 // ============================================================================
@@ -119,11 +142,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       /^(loop|alt|opt|par|critical|break|rect)\s*(.*)$/,
     )
     if (blockMatch) {
-      const rawBlockType = blockMatch[1]!
-      if (!isBlockType(rawBlockType)) {
-        throw new Error(`Invalid block type: "${rawBlockType}"`)
-      }
-      const blockType = rawBlockType
+      const blockType = toBlockType(blockMatch[1]!)
       const rawBlockLabel = blockMatch[2]?.trim() ?? ''
       const label = normalizeBrTags(rawBlockLabel)
       blockStack.push({

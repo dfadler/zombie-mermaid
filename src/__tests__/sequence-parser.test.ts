@@ -5,7 +5,11 @@
  * activation/deactivation, blocks (loop/alt/opt/par), notes, auto-created actors.
  */
 import { describe, it, expect } from 'vitest'
-import { parseSequenceDiagram } from '../sequence/parser.ts'
+import {
+  parseSequenceDiagram,
+  isBlockType,
+  toBlockType,
+} from '../sequence/parser.ts'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {
@@ -232,5 +236,39 @@ describe('parseSequenceDiagram – full diagram', () => {
     expect(d.blocks).toHaveLength(1)
     expect(d.blocks[0]!.type).toBe('alt')
     expect(d.blocks[0]!.dividers).toHaveLength(1)
+  })
+})
+
+// ============================================================================
+// isBlockType — block-keyword guard used to replace the former
+// `as Block['type']` cast on the regex-captured block keyword
+// ============================================================================
+
+describe('isBlockType', () => {
+  it('accepts all seven valid block keywords', () => {
+    expect(isBlockType('loop')).toBe(true)
+    expect(isBlockType('alt')).toBe(true)
+    expect(isBlockType('opt')).toBe(true)
+    expect(isBlockType('par')).toBe(true)
+    expect(isBlockType('critical')).toBe(true)
+    expect(isBlockType('break')).toBe(true)
+    expect(isBlockType('rect')).toBe(true)
+  })
+
+  it('rejects invalid or uppercase keywords', () => {
+    expect(isBlockType('LOOP')).toBe(false)
+    expect(isBlockType('foo')).toBe(false)
+    expect(isBlockType('')).toBe(false)
+  })
+})
+
+describe('toBlockType', () => {
+  it('passes through a valid keyword unchanged', () => {
+    expect(toBlockType('loop')).toBe('loop')
+    expect(toBlockType('critical')).toBe('critical')
+  })
+
+  it('throws on an invalid keyword', () => {
+    expect(() => toBlockType('foo')).toThrow('Invalid block type: "foo"')
   })
 })
