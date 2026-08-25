@@ -23,8 +23,8 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run dev` — local dev script (`dev.ts`)
 - `pnpm run bench` — render benchmarks
-
-If a `pnpm run format` / `pnpm run format:check` script exists in `package.json` by the time you read this, run it too — Prettier formatting is being wired up as a companion to this doc. If it isn't there yet, don't worry about it.
+- `pnpm run format` — format the codebase with Prettier
+- `pnpm run format:check` — check formatting without writing changes
 
 Type-check with:
 
@@ -40,7 +40,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 2. `pnpm test`
 3. `pnpm exec tsc --noEmit`
 
-Run those locally first, along with `pnpm run lint`, since lint isn't currently wired into CI but is still expected to be clean. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
+Run those locally first, along with `pnpm run lint` and `pnpm run format:check`, since lint and formatting aren't currently wired into CI but are still expected to be clean. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
 
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
