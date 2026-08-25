@@ -6,9 +6,48 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel superseded runs on the same ref (e.g. repeated pushes to a PR
+# branch) instead of letting them pile up. Unlike publish.yml, CI runs have
+# no side effects worth protecting mid-flight, so cancel-in-progress is safe
+# here (see publish.yml's concurrency block for why it deliberately isn't).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # only checks out code and runs tests/lint; no writes back to the repo
+    # Guards against this workflow's jobs running (and burning Actions
+    # minutes) with unintended side effects in a downstream fork — e.g. if
+    # someone forks dfadler/zombie-mermaid a second time, GitHub copies this
+    # workflow file into their fork, and push/PR events there DO trigger it
+    # (once the fork owner does the one-time manual "enable Actions" step),
+    # using their own Actions budget. `github.repository` there evaluates to
+    # *their* repo (e.g. `their-name/zombie-mermaid`), so this condition is
+    # false and the job is skipped.
+    #
+    # This is NOT what protects PRs opened *against* this repo from
+    # untrusted forks, and it does not skip CI for them. For pull_request-
+    # triggered runs, `github.repository` always resolves to the base repo
+    # (dfadler/zombie-mermaid) regardless of which fork the PR's head branch
+    # lives on — GitHub's docs describe `pull_request` as running "in the
+    # context of the merge commit" (of the base repo), the same base-repo
+    # framing used to contrast it with `pull_request_target`, which runs "in
+    # the context of the default branch of the base repository." So this
+    # guard is always true for PRs into this repo, fork or not, and CI still
+    # runs for them — which is what we want.
+    #
+    # The actual protection against untrusted fork PRs (leaking secrets to
+    # attacker-controlled code) already comes for free from using plain
+    # `pull_request:` here rather than `pull_request_target:`: per GitHub's
+    # docs, for pull_request runs triggered from a forked repository,
+    # "secrets are not passed to the runner" (aside from GITHUB_TOKEN) and
+    # "the GITHUB_TOKEN has read-only permissions." That protection is
+    # independent of this if: guard — this guard is solving a different,
+    # real problem (downstream-fork budget/behavior), not a redundant one.
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:
@@ -49,6 +88,12 @@ jobs:
   build-site:
     name: Build site generator check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # only checks out code and runs the generator scripts; no writes back to the repo
+    # Same fork-of-this-fork guard as the `test` job above — see its comment
+    # for the full reasoning on what github.repository resolves to and what
+    # this does/doesn't protect against.
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:
@@ -76,6 +121,12 @@ jobs:
   semgrep:
     name: Semgrep SAST scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # only checks out code and runs a local scan; no SARIF upload, no writes back to the repo
+    # Same fork-of-this-fork guard as the `test` job above — see its comment
+    # for the full reasoning on what github.repository resolves to and what
+    # this does/doesn't protect against.
     if: github.repository == 'dfadler/zombie-mermaid'
 
     container:
@@ -102,6 +153,15 @@ jobs:
   changeset:
     name: Changeset present
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # only checks out code and runs `pnpm changeset status`; no writes back to the repo
+    # Same fork-of-this-fork guard as the `test` job above — see its comment
+    # for the full reasoning on what github.repository resolves to and what
+    # this does/doesn't protect against. (The additional event_name check
+    # here is unrelated to that guard — it just skips this check on push
+    # events, since a changeset is only relevant for a PR that hasn't
+    # merged yet.)
     if: github.repository == 'dfadler/zombie-mermaid' && github.event_name == 'pull_request'
 
     steps:

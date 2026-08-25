@@ -44,8 +44,17 @@ permissions:
 jobs:
   check-upstream:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # Guard so a fork-of-this-fork doesn't spam issues against itself, same
-    # pattern used in ci.yml / publish.yml.
+    # pattern used in ci.yml / publish.yml (see ci.yml's `test` job for the
+    # full reasoning on what github.repository resolves to and what this
+    # class of guard does/doesn't protect against). This workflow only
+    # triggers on a weekly cron and manual workflow_dispatch, neither of
+    # which fires cross-repo, but the guard still matters for
+    # workflow_dispatch: without it, a downstream fork owner manually
+    # running this workflow in their own fork would open/update an issue
+    # there duplicating this fork's own upstream-tracking issue, based on
+    # whatever state their `main` happens to be in relative to this fork's.
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:

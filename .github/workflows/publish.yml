@@ -21,6 +21,29 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Same fork-of-this-fork guard pattern as ci.yml (see the `test` job's
+    # comment there for the full reasoning on what github.repository
+    # resolves to and what this class of guard does/doesn't protect
+    # against). Specific to this workflow: the trigger is
+    # `push: branches: [main]`, not a pull_request event, so the "does this
+    # skip CI on PRs from forks" question doesn't apply here at all — that
+    # concern is about pull_request runs, and this job never runs on one.
+    #
+    # What this guard actually prevents: GitHub copies workflow files into
+    # forks, and `push` events do fire in a fork's own Actions runs once its
+    # owner does the one-time manual "enable Actions" step and pushes to
+    # their own `main`. Without this guard, a downstream fork's own pushes
+    # would also run changesets/action there, attempting to open a
+    # "Version Packages" PR against their fork (which would actually
+    # succeed, using their own GITHUB_TOKEN and the permissions block
+    # below) and, once a Version PR is merged, attempting an npm
+    # trusted-publish — which would fail, since npm's trusted-publisher
+    # trust relationship is scoped to this exact repo/workflow and would
+    # reject an OIDC token asserting a different repo as the subject. So
+    # this guard isn't redundant with the trigger: it stops surprising,
+    # partially-successful release automation from running unasked-for in
+    # someone else's fork.
     if: github.repository == 'dfadler/zombie-mermaid'
     permissions:
       contents: write # changesets/action commits/pushes the Version PR and tags
