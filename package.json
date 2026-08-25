@@ -49,6 +49,9 @@
     "README.md"
   ],
   "packageManager": "pnpm@11.13.0",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -73,11 +76,13 @@
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.1",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.11",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
+    "jsdom": "^30.0.1",
     "prettier": "^3.9.6",
     "shiki": "^3.19.0",
     "tsup": "^8.5.1",

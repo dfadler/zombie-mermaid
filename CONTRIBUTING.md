@@ -12,6 +12,23 @@ pnpm install
 
 Requires Node 22+ and pnpm (the repo pins `packageManager` in `package.json`; `corepack enable` will pick that up automatically).
 
+### Malware protection for installs (Aikido Safe Chain)
+
+[Aikido Safe Chain](https://github.com/AikidoSec/safe-chain) is a free, tokenless CLI that wraps `npm`/`npx`/`pnpm`/`pnpm dlx`/`yarn`/etc. and blocks installs of packages flagged as malware or published in the last 48 hours (a common window for supply-chain attacks). It's optional but recommended for local development — it isn't (and can't be) enforced in CI, since it works by intercepting package-manager commands run in your own shell.
+
+Install it once, machine-wide, via the official installer (not as a project dependency — it needs to hook your shell, so a per-project `devDependency` wouldn't work):
+
+```bash
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.15/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
+  && echo "de0565e3d6346407a604e84e639e95fea8758748063da2216bbfdca5feda5dd2  /tmp/install-safe-chain.sh" | sha256sum -c - \
+  && sh /tmp/install-safe-chain.sh \
+  && rm /tmp/install-safe-chain.sh
+```
+
+Restart your terminal afterward, then verify it's active with `pnpm safe-chain-verify` (or `npm safe-chain-verify`). Once installed, it transparently wraps your normal `pnpm install` — no change to your workflow. See the [Safe Chain README](https://github.com/AikidoSec/safe-chain#readme) for Windows instructions, uninstalling, and configuration (logging, minimum package age, etc.).
+
+Full Aikido SCA/secrets scanning as a CI/dashboard product is a separate, paid-account feature and is intentionally not wired into this repo's CI — see the note in `.github/workflows/ci.yml` next to the Semgrep job.
+
 Useful scripts while developing (see `package.json` for the full list):
 
 - `pnpm test` — run the test suite once (Vitest)
@@ -23,8 +40,8 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run dev` — local dev script (`dev.ts`)
 - `pnpm run bench` — render benchmarks
-
-If a `pnpm run format` / `pnpm run format:check` script exists in `package.json` by the time you read this, run it too — Prettier formatting is being wired up as a companion to this doc. If it isn't there yet, don't worry about it.
+- `pnpm run format` — format the codebase with Prettier
+- `pnpm run format:check` — check formatting without writing changes
 
 Type-check with:
 
@@ -34,13 +51,21 @@ pnpm exec tsc --noEmit
 
 ## Before opening a PR
 
+Double-check the base repository in GitHub's compare view: it should be `dfadler/zombie-mermaid`, not the upstream `lukilabs/beautiful-mermaid`. GitHub's "Contribute" button on a fork often defaults to the upstream repo, which is almost never what you want here — CI and publishing are wired up on this fork, not upstream, and only run when `github.repository == 'dfadler/zombie-mermaid'` (see `.github/workflows/ci.yml` and `publish.yml`).
+
 CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and must pass:
 
 1. `pnpm install --frozen-lockfile`
 2. `pnpm test`
 3. `pnpm exec tsc --noEmit`
 
-Run those locally first, along with `pnpm run lint`, since lint isn't currently wired into CI but is still expected to be clean. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
+Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
+
+CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account/token involved) that fails the build on findings. If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why — don't disable the rule repo-wide.
+
+### Test coverage
+
+CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-24 the baseline is **75.28% statements / 62.53% branches / 81.62% functions / 77.19% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, just under the measured baseline) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
 
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
