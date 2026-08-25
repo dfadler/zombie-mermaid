@@ -96,6 +96,12 @@ function ensureElk(): void {
   }
 
   elk = new ELKBundled()
+  if (!elk) {
+    // Unreachable — `new ELKBundled()` always returns an instance — but
+    // makes the invariant explicit rather than letting the cast below
+    // silently paper over a null `elk` if that ever stopped being true.
+    throw new Error('ELKBundled construction unexpectedly produced no instance')
+  }
 
   // Restore self
   if (hadSelf) g.self = origSelf
