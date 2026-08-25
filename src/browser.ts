@@ -12,9 +12,21 @@ import { renderMermaidASCII, diagramColorsToAsciiTheme } from './ascii/index.ts'
 import { THEMES } from './theme.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './xychart/colors.ts'
 
-declare const window: unknown
+interface MermaidBrowserGlobal {
+  renderMermaidSVGAsync: typeof renderMermaidSVGAsync
+  renderMermaidASCII: typeof renderMermaidASCII
+  diagramColorsToAsciiTheme: typeof diagramColorsToAsciiTheme
+  THEMES: typeof THEMES
+  getSeriesColor: typeof getSeriesColor
+  CHART_ACCENT_FALLBACK: typeof CHART_ACCENT_FALLBACK
+}
 
-;(window as Record<string, unknown>).__mermaid = {
+// `lib` in tsconfig.json is `["ESNext"]` (no `dom`), so `window` isn't
+// ambiently declared — this bundle only ever runs in a browser though
+// (see file header), so we declare just the shape we attach to it.
+declare const window: { __mermaid: MermaidBrowserGlobal }
+
+window.__mermaid = {
   renderMermaidSVGAsync,
   renderMermaidASCII,
   diagramColorsToAsciiTheme,

@@ -10,7 +10,7 @@
  * - Comments and error cases
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid, isDirection, toDirection } from '../parser.ts'
 
 // ============================================================================
 // Graph header parsing
@@ -868,5 +868,38 @@ describe('parseMermaid – state diagrams', () => {
     // Should have transitions for: [*]→Idle, Idle→Processing, parse→validate,
     // validate→execute, Processing→Complete, Complete→[*]
     expect(g.edges).toHaveLength(6)
+  })
+})
+
+// ============================================================================
+// isDirection / toDirection — direction-token guard used to replace the
+// former `as Direction` casts on regex-captured direction tokens
+// ============================================================================
+
+describe('isDirection', () => {
+  it('accepts all five valid direction tokens', () => {
+    expect(isDirection('TD')).toBe(true)
+    expect(isDirection('TB')).toBe(true)
+    expect(isDirection('LR')).toBe(true)
+    expect(isDirection('BT')).toBe(true)
+    expect(isDirection('RL')).toBe(true)
+  })
+
+  it('rejects invalid or lowercase tokens', () => {
+    expect(isDirection('td')).toBe(false)
+    expect(isDirection('XY')).toBe(false)
+    expect(isDirection('')).toBe(false)
+  })
+})
+
+describe('toDirection', () => {
+  it('normalizes a valid token to uppercase', () => {
+    expect(toDirection('TD')).toBe('TD')
+    expect(toDirection('lr')).toBe('LR')
+    expect(toDirection('Bt')).toBe('BT')
+  })
+
+  it('throws on an invalid token', () => {
+    expect(() => toDirection('XY')).toThrow('Invalid direction: "XY"')
   })
 })
