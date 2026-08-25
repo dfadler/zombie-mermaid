@@ -46,7 +46,7 @@ Run those locally first, along with `pnpm run lint` and `pnpm run format:check`,
 
 ### Test coverage
 
-CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-24 the baseline is **75.28% statements / 62.53% branches / 81.62% functions / 77.19% lines**. There's no enforced threshold yet — that's tracked separately in [issue #9](https://github.com/dfadler/zombie-mermaid/issues/9); this is just visibility for now.
+CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-24 the baseline is **75.28% statements / 62.53% branches / 81.62% functions / 77.19% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, just under the measured baseline) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
 
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
