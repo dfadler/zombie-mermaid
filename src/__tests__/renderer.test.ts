@@ -561,6 +561,35 @@ describe('renderSvg – readable text color for custom fills', () => {
 })
 
 // ============================================================================
+// className (from :::className shorthand or `class A className`)
+// ============================================================================
+
+describe('renderSvg – custom class names', () => {
+  it('emits the class name onto the rendered node alongside the base class', () => {
+    const node = makeNode({ className: 'highlight' })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, lightColors)
+    expect(svg).toContain('<g class="node highlight" data-id="A"')
+  })
+
+  it('renders only the base class when the node has no custom class', () => {
+    const node = makeNode()
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, lightColors)
+    expect(svg).toContain('<g class="node" data-id="A"')
+    expect(svg).not.toMatch(/<g class="node [^"]/)
+  })
+
+  it('drops a class name that is not a valid CSS identifier rather than emitting it raw', () => {
+    const node = makeNode({ className: 'evil" onmouseover="alert(1)' })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, lightColors)
+    expect(svg).toContain('<g class="node" data-id="A"')
+    expect(svg).not.toContain('onmouseover')
+  })
+})
+
+// ============================================================================
 // XML escaping
 // ============================================================================
 
