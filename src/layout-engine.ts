@@ -46,7 +46,7 @@ export function layoutGraphSync(
   const opts = { ...DEFAULTS, ...options }
   const elkGraph = mermaidToElk(graph, opts)
   const result = elkLayoutSync(elkGraph)
-  return elkToPositioned(result, graph, DEFAULTS.mergeEdges)
+  return elkToPositioned(result, graph, opts.mergeEdges)
 }
 
 /**
