@@ -59,7 +59,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 2. `pnpm test`
 3. `pnpm exec tsc --noEmit`
 
-Run those locally first, along with `pnpm run lint` and `pnpm run format:check`, since lint and formatting aren't currently wired into CI but are still expected to be clean. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
+Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
 
 CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account/token involved) that fails the build on findings. If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why — don't disable the rule repo-wide.
 
