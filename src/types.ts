@@ -87,6 +87,8 @@ export interface PositionedNode {
   height: number
   /** Inline styles resolved from classDef + explicit `style` statements — override theme defaults */
   inlineStyle?: Record<string, string>
+  /** Custom class name assigned via `class A className` or `:::className` shorthand — emitted onto the rendered element's `class` attribute so external CSS can target it */
+  className?: string
 }
 
 export interface PositionedEdge {
