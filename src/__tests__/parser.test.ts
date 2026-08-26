@@ -321,6 +321,63 @@ describe('parseMermaid – edges (original)', () => {
 })
 
 // ============================================================================
+// Circle-end / cross-end edges: --o, --x (issue #65)
+//
+// Previously ARROW_REGEX didn't recognize these tokens at all, so neither
+// ARROW_REGEX nor the TEXT_ARROW_REGEX fallback matched, parseEdgeLine broke
+// out of its loop early, and the target node + edge were silently dropped.
+// ============================================================================
+
+describe('parseMermaid – circle/cross edges (issue #65)', () => {
+  it('parses A --o B without dropping node B or the edge', () => {
+    const g = parseMermaid('graph LR\n  A --o B')
+    expect(g.nodes.size).toBe(2)
+    expect(g.nodes.get('B')).toBeDefined()
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
+    expect(g.edges[0]!.hasArrowStart).toBe(false)
+    expect(g.edges[0]!.style).toBe('solid')
+  })
+
+  it('parses A --x B without dropping node B or the edge', () => {
+    const g = parseMermaid('graph LR\n  A --x B')
+    expect(g.nodes.size).toBe(2)
+    expect(g.nodes.get('B')).toBeDefined()
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
+    expect(g.edges[0]!.hasArrowStart).toBe(false)
+  })
+
+  it('parses a circle-start edge: o--o', () => {
+    const g = parseMermaid('graph LR\n  A o--o B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.hasArrowStart).toBe(true)
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
+  })
+
+  it('parses a cross-start edge: x--x', () => {
+    const g = parseMermaid('graph LR\n  A x--x B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.hasArrowStart).toBe(true)
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
+  })
+
+  it('chains circle/cross edges: A --o B --x C', () => {
+    const g = parseMermaid('graph LR\n  A --o B --x C')
+    expect(g.nodes.size).toBe(3)
+    expect(g.edges).toHaveLength(2)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+    expect(g.edges[1]!.source).toBe('B')
+    expect(g.edges[1]!.target).toBe('C')
+  })
+})
+
+// ============================================================================
 // No-space arrows (issue #61) — the node-id lexer must not greedily
 // swallow the leading dashes of an immediately-following arrow.
 // ============================================================================
