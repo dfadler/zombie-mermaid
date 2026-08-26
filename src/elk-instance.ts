@@ -66,8 +66,8 @@ let rawWorker: RawFakeWorker | null = null
  * Without this, layout calls fail with "algorithm not found" until the
  * next macrotask.
  */
-function ensureElk(): void {
-  if (elk) return
+function ensureElk(): RawFakeWorker {
+  if (elk && rawWorker) return rawWorker
 
   // Capture setTimeout(0) callbacks queued during ELK construction
   const pending: (() => void)[] = []
@@ -114,6 +114,7 @@ function ensureElk(): void {
 
   // Cache the raw FakeWorker for elkLayoutSync()
   rawWorker = (elk as ElkBundledInternal).worker.worker
+  return rawWorker
 }
 
 /**
@@ -126,15 +127,15 @@ function ensureElk(): void {
  *     replacing rawWorker.onmessage with a direct interceptor
  */
 export function elkLayoutSync(graph: ElkNode): ElkNode {
-  ensureElk()
+  const worker = ensureElk()
 
   let result: ElkNode | undefined
   let error: unknown
 
   // Replace onmessage to intercept the result synchronously
   // (the dispatcher calls this directly, without setTimeout)
-  const origOnmessage = rawWorker!.onmessage
-  rawWorker!.onmessage = (answer: { data: ElkWorkerResponse }) => {
+  const origOnmessage = worker.onmessage
+  worker.onmessage = (answer: { data: ElkWorkerResponse }) => {
     if (answer.data.error) {
       error = answer.data.error
     } else {
@@ -145,12 +146,12 @@ export function elkLayoutSync(graph: ElkNode): ElkNode {
   // Call dispatcher.saveDispatch directly — bypasses FakeWorker.postMessage's
   // setTimeout(0) wrapper. The dispatcher processes the layout synchronously
   // and calls rawWorker.onmessage with the result.
-  rawWorker!.dispatcher.saveDispatch({
+  worker.dispatcher.saveDispatch({
     data: { id: 0, cmd: 'layout', graph },
   })
 
   // Restore original handler
-  rawWorker!.onmessage = origOnmessage
+  worker.onmessage = origOnmessage
 
   if (error) throw error
   if (!result) throw new Error('ELK layout did not return synchronously')

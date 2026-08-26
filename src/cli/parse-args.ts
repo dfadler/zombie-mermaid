@@ -29,12 +29,12 @@ export type CliArgs = RenderArgs | SimpleCommand
 // ============================================================================
 
 export function parseArgs(argv: string[]): CliArgs {
+  const [first, ...rest] = argv
+
   // Empty args → help
-  if (argv.length === 0) {
+  if (first === undefined) {
     return { command: 'help' }
   }
-
-  const first = argv[0]!
 
   // Top-level flags (before any command)
   if (first === '--help' || first === '-h') {
@@ -51,7 +51,7 @@ export function parseArgs(argv: string[]): CliArgs {
 
   // Render command
   if (first === 'render') {
-    return parseRender(argv.slice(1))
+    return parseRender(rest)
   }
 
   throw new Error(`Unknown command: ${first}`)
