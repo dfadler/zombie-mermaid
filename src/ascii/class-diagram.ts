@@ -60,12 +60,12 @@ function buildClassSections(cls: ClassNode): string[][] {
   // Methods section
   const methods = cls.methods.map(formatMember)
 
-  // If no attrs and no methods, just return header (1-section box)
-  if (attrs.length === 0 && methods.length === 0) return [header]
-  // If no methods, return header + attrs (2-section box)
-  if (methods.length === 0) return [header, attrs]
-  // Full 3-section box
-  return [header, attrs, methods]
+  // Build sections from only the non-empty parts. Only attrs (2-section),
+  // only methods (2-section), both (3-section), or neither (1-section, header only).
+  const sections: string[][] = [header]
+  if (attrs.length > 0) sections.push(attrs)
+  if (methods.length > 0) sections.push(methods)
+  return sections
 }
 
 // ============================================================================
