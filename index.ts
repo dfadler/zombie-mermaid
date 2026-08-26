@@ -1312,7 +1312,7 @@ ${bundleJs}
   var samples = ${samplesJson};
   var THEMES = window.__mermaid.THEMES;
   var renderMermaid = window.__mermaid.renderMermaidSVGAsync;
-  var renderMermaidAscii = window.__mermaid.renderMermaidASCII;
+  var renderMermaidASCII = window.__mermaid.renderMermaidASCII;
   var diagramColorsToAsciiTheme = window.__mermaid.diagramColorsToAsciiTheme;
   var getSeriesColor = window.__mermaid.getSeriesColor;
   var CHART_ACCENT_FALLBACK = window.__mermaid.CHART_ACCENT_FALLBACK;
@@ -1459,7 +1459,7 @@ ${bundleJs}
       var asciiEl = document.getElementById('ascii-' + j);
       if (!asciiEl) continue;
       try {
-        asciiEl.innerHTML = renderMermaidAscii(
+        asciiEl.innerHTML = renderMermaidASCII(
           samples[j].source,
           asciiTheme ? { theme: asciiTheme } : {}
         );
@@ -1716,7 +1716,7 @@ ${bundleJs}
         var asciiOpts = savedTheme && THEMES[savedTheme]
           ? { theme: diagramColorsToAsciiTheme(THEMES[savedTheme]) }
           : {};
-        asciiContainer.innerHTML = renderMermaidAscii(sample.source, asciiOpts);
+        asciiContainer.innerHTML = renderMermaidASCII(sample.source, asciiOpts);
       } catch (e) {
         asciiContainer.textContent = '(ASCII not supported for this diagram type)';
       }
@@ -1814,7 +1814,7 @@ ${bundleJs}
         var editAsciiOpts = activeThemeKey && THEMES[activeThemeKey]
           ? { theme: diagramColorsToAsciiTheme(THEMES[activeThemeKey]) }
           : {};
-        asciiContainer.innerHTML = renderMermaidAscii(source, editAsciiOpts);
+        asciiContainer.innerHTML = renderMermaidASCII(source, editAsciiOpts);
       } catch (e) {
         asciiContainer.textContent = '(ASCII error: ' + e.message + ')';
       }

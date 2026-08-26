@@ -5,13 +5,13 @@
  * drift. Repro diagrams are taken directly from the issue.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 describe('issue #64: edge-routing crashes and layout bugs', () => {
   describe('bug 1: dense fan-in pathfinding blowup', () => {
     it('renders the dense fan-in repro without hanging or crashing', () => {
       const start = Date.now()
-      const out = renderMermaidAscii(`graph TD
+      const out = renderMermaidASCII(`graph TD
     A["AAA<br>(keita)"] --> C["CCC"]
     B["BBB<br>(yuriko)"] --> C
     C --> D["DDDD"]
@@ -49,7 +49,7 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
       for (let i = 0; i < 60; i++) src += `  B${i}["Root B${i}"] --> B\n`
 
       const start = Date.now()
-      const out = renderMermaidAscii(src)
+      const out = renderMermaidASCII(src)
       // Loose bound (not a tight performance assertion) — the goal is only
       // to catch a regression back to the unbounded blowup this fix
       // addresses (which would hang far longer than this, not just run
@@ -70,7 +70,7 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
       // A --> C is declared *before* A1 --> A, so a single-pass,
       // insertion-order root scan would wrongly treat A as a root (it
       // "looks" untargeted at the point the scan reaches it).
-      const out = renderMermaidAscii(`graph TD
+      const out = renderMermaidASCII(`graph TD
     A["Parent A"] --> C["Child C"]
     B["Parent B"] --> C
     C --> D["Grandchild D"]
@@ -99,9 +99,9 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
       // unplaced (which used to crash with "Map maximum size exceeded" /
       // a null gridCoord dereference).
       expect(() =>
-        renderMermaidAscii('graph LR\nA --> B --> C --> A'),
+        renderMermaidASCII('graph LR\nA --> B --> C --> A'),
       ).not.toThrow()
-      const out = renderMermaidAscii('graph LR\nA --> B --> C --> A')
+      const out = renderMermaidASCII('graph LR\nA --> B --> C --> A')
       expect(out).toContain('A')
       expect(out).toContain('B')
       expect(out).toContain('C')
@@ -113,7 +113,7 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
       // A1 and B1 are declared before A2 and B2, interleaving the two
       // fan-in clusters in source order — the roots feeding A must still
       // end up placed together, separately from the roots feeding B.
-      const out = renderMermaidAscii(`graph TD
+      const out = renderMermaidASCII(`graph TD
     A1 --> A
     B1 --> B
     A2 --> A
@@ -140,7 +140,7 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
 
   describe('bug 4: sibling edges from the same source share a trunk', () => {
     it('routes a labeled 3-way fan-out along a shared straight trunk instead of a detour', () => {
-      const out = renderMermaidAscii(`flowchart TB
+      const out = renderMermaidASCII(`flowchart TB
     Src["Source"]
     Left["Left Target"]
     Center["Center Target"]
@@ -160,7 +160,7 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
 
   describe('bug 5: box-start connector stays on the source border', () => {
     it('keeps the ├ connector attached to the box border when a sibling label widens a shared column', () => {
-      const out = renderMermaidAscii(`flowchart LR
+      const out = renderMermaidASCII(`flowchart LR
   Src["Source"]
   Top["Top Target"]
   Mid["Middle Target"]

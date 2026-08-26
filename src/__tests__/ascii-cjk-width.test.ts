@@ -14,7 +14,7 @@
  * just that the fix's own helper agrees with itself.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 /**
  * Independently re-implemented terminal display-width calculation (mirrors
@@ -61,7 +61,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
   for (const useAscii of [false, true]) {
     describe(useAscii ? 'ASCII charset' : 'Unicode charset', () => {
       it('renders the issue repro with all rows sharing one terminal display width', () => {
-        const ascii = renderMermaidAscii(mermaid, {
+        const ascii = renderMermaidASCII(mermaid, {
           useAscii,
           colorMode: 'none',
         })
@@ -69,7 +69,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
       })
 
       it('sizes the label box wide enough for the CJK label content', () => {
-        const ascii = renderMermaidAscii(mermaid, {
+        const ascii = renderMermaidASCII(mermaid, {
           useAscii,
           colorMode: 'none',
         })
@@ -101,7 +101,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
       })
 
       it('keeps the box vertical borders in the same column on every row', () => {
-        const ascii = renderMermaidAscii(mermaid, {
+        const ascii = renderMermaidASCII(mermaid, {
           useAscii,
           colorMode: 'none',
         })
@@ -128,7 +128,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
       })
 
       it('does not introduce diagonal or otherwise-broken box characters', () => {
-        const ascii = renderMermaidAscii(mermaid, {
+        const ascii = renderMermaidASCII(mermaid, {
           useAscii,
           colorMode: 'none',
         })
@@ -139,7 +139,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
   }
 
   it('handles mixed ASCII + CJK content in the same label', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       'flowchart TD\n    A[Hello 世界] --> B[OK]',
       { colorMode: 'none' },
     )
@@ -148,7 +148,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
   })
 
   it('handles emoji labels', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       'flowchart TD\n    A[🎉 Party] --> B[Done]',
       {
         colorMode: 'none',
@@ -158,7 +158,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
   })
 
   it('handles CJK edge labels without breaking column alignment', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       'flowchart TD\n    A[Start] -->|日本語ラベル| B[End]',
       { colorMode: 'none' },
     )
@@ -167,7 +167,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
   })
 
   it('handles CJK labels on non-rectangle shapes (diamond, stadium)', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       'flowchart TD\n    A{決定} --> B(("結果"))\n    A --> C([スタジアム])',
       { colorMode: 'none' },
     )
@@ -175,7 +175,7 @@ describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)',
   })
 
   it('handles a CJK subgraph title', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       'flowchart TD\n    subgraph サブグラフ\n      A[Node] --> B[Node2]\n    end',
       { colorMode: 'none' },
     )

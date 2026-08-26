@@ -8,7 +8,7 @@ import {
 } from '../ascii/pathfinder.ts'
 import { gridKey } from '../ascii/types.ts'
 import type { GridCoord, AsciiNode, PathBudget } from '../ascii/types.ts'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 /** Helper to build an occupied grid from a list of coordinates. */
 function buildGrid(occupied: GridCoord[]): Map<string, AsciiNode> {
@@ -212,7 +212,7 @@ describe('pathfinder', () => {
     F -->|No| H["Dumb Tr<br>S"]`
 
       // Should not throw (previously threw RangeError: Map maximum size exceeded)
-      const result = renderMermaidAscii(code, { useAscii: false })
+      const result = renderMermaidASCII(code, { useAscii: false })
       expect(result).toBeDefined()
       expect(result.length).toBeGreaterThan(0)
       // Verify most node labels appear (some may be visually clipped by edge routing)

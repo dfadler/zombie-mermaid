@@ -4,11 +4,11 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 describe('ASCII arrow drawing: no-arrow edges', () => {
   it('renders a solid no-arrow edge without an arrowhead in unicode mode', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A --- B
     `)
@@ -17,7 +17,7 @@ describe('ASCII arrow drawing: no-arrow edges', () => {
   })
 
   it('renders a solid no-arrow edge without an arrowhead in ascii mode', () => {
-    const result = renderMermaidAscii(
+    const result = renderMermaidASCII(
       `
       graph LR
         A --- B
@@ -28,7 +28,7 @@ describe('ASCII arrow drawing: no-arrow edges', () => {
   })
 
   it('renders a dotted no-arrow edge without an arrowhead', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A -.- B
     `)
@@ -37,7 +37,7 @@ describe('ASCII arrow drawing: no-arrow edges', () => {
   })
 
   it('renders a thick no-arrow edge without an arrowhead', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A === B
     `)
@@ -46,7 +46,7 @@ describe('ASCII arrow drawing: no-arrow edges', () => {
   })
 
   it('renders a vertical no-arrow edge without an arrowhead', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph TD
         A --- B
     `)
@@ -54,7 +54,7 @@ describe('ASCII arrow drawing: no-arrow edges', () => {
   })
 
   it('renders a labeled no-arrow edge', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A ---|connects| B
     `)
@@ -65,7 +65,7 @@ describe('ASCII arrow drawing: no-arrow edges', () => {
 
 describe('ASCII arrow drawing: bidirectional edges', () => {
   it('draws arrowheads at both ends of a solid bidirectional edge (LR, unicode)', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A <--> B
     `)
@@ -74,7 +74,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws arrowheads at both ends of a solid bidirectional edge (LR, ascii)', () => {
-    const result = renderMermaidAscii(
+    const result = renderMermaidASCII(
       `
       graph LR
         A <--> B
@@ -86,7 +86,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws arrowheads at both ends of a vertical bidirectional edge (TD, unicode)', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph TD
         A <--> B
     `)
@@ -95,7 +95,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws arrowheads at both ends of a vertical bidirectional edge (TD, ascii)', () => {
-    const result = renderMermaidAscii(
+    const result = renderMermaidASCII(
       `
       graph TD
         A <--> B
@@ -107,7 +107,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws arrowheads at both ends of a bidirectional edge reversed by layout (BT)', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph BT
         A <--> B
     `)
@@ -116,7 +116,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws arrowheads on a dotted bidirectional edge', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A <-.-> B
     `)
@@ -126,7 +126,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws arrowheads on a thick bidirectional edge', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A <==> B
     `)
@@ -136,7 +136,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws both arrowheads on a bidirectional back-edge routed around other nodes', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A --> B
         B --> C
@@ -147,7 +147,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
   })
 
   it('draws a labeled bidirectional edge', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph LR
         A <-->|sync| B
     `)
@@ -159,7 +159,7 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
 
 describe('ASCII arrow drawing: upward edge labels', () => {
   it('offsets the label on an edge that routes upward', () => {
-    const result = renderMermaidAscii(`
+    const result = renderMermaidASCII(`
       graph TD
         A --> B
         B -->|back| A

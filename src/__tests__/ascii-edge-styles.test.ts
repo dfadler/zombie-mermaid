@@ -3,12 +3,12 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 describe('ASCII edge styles', () => {
   describe('solid edges (default)', () => {
     it('renders solid edges with ─ in unicode mode', () => {
-      const result = renderMermaidAscii(`
+      const result = renderMermaidASCII(`
         graph LR
           A --> B
       `)
@@ -18,7 +18,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders solid edges with - in ascii mode', () => {
-      const result = renderMermaidAscii(
+      const result = renderMermaidASCII(
         `
         graph LR
           A --> B
@@ -31,7 +31,7 @@ describe('ASCII edge styles', () => {
 
   describe('dotted edges (-.->)', () => {
     it('renders dotted edges with ┄ in unicode mode', () => {
-      const result = renderMermaidAscii(`
+      const result = renderMermaidASCII(`
         graph LR
           A -.-> B
       `)
@@ -40,7 +40,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders dotted edges with . in ascii mode', () => {
-      const result = renderMermaidAscii(
+      const result = renderMermaidASCII(
         `
         graph LR
           A -.-> B
@@ -52,7 +52,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders dotted vertical edges with ┆ in unicode mode', () => {
-      const result = renderMermaidAscii(`
+      const result = renderMermaidASCII(`
         graph TD
           A -.-> B
       `)
@@ -61,7 +61,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders dotted vertical edges with : in ascii mode', () => {
-      const result = renderMermaidAscii(
+      const result = renderMermaidASCII(
         `
         graph TD
           A -.-> B
@@ -73,7 +73,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders dotted edges with labels', () => {
-      const result = renderMermaidAscii(`
+      const result = renderMermaidASCII(`
         graph LR
           A -.->|optional| B
       `)
@@ -84,7 +84,7 @@ describe('ASCII edge styles', () => {
 
   describe('thick edges (==>)', () => {
     it('renders thick edges with ━ in unicode mode', () => {
-      const result = renderMermaidAscii(`
+      const result = renderMermaidASCII(`
         graph LR
           A ==> B
       `)
@@ -93,7 +93,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders thick edges with = in ascii mode', () => {
-      const result = renderMermaidAscii(
+      const result = renderMermaidASCII(
         `
         graph LR
           A ==> B
@@ -105,7 +105,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders thick vertical edges with ┃ in unicode mode', () => {
-      const result = renderMermaidAscii(`
+      const result = renderMermaidASCII(`
         graph TD
           A ==> B
       `)
@@ -116,7 +116,7 @@ describe('ASCII edge styles', () => {
 
   describe('mixed edge styles', () => {
     it('renders different styles in the same diagram', () => {
-      const result = renderMermaidAscii(`
+      const result = renderMermaidASCII(`
         graph LR
           A --> B
           B -.-> C
@@ -129,7 +129,7 @@ describe('ASCII edge styles', () => {
     })
 
     it('renders mixed styles in ascii mode', () => {
-      const result = renderMermaidAscii(
+      const result = renderMermaidASCII(
         `
         graph LR
           A --> B

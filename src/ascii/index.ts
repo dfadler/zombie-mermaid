@@ -95,7 +95,7 @@ function detectDiagramType(
  *
  * @example
  * ```ts
- * const result = renderMermaidAscii(`
+ * const result = renderMermaidASCII(`
  *   graph LR
  *     A --> B --> C
  * `, { useAscii: true })

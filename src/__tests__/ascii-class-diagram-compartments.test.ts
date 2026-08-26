@@ -3,14 +3,14 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 describe('ASCII class diagram box compartments', () => {
   it('omits the attrs compartment for a class with methods but no attributes (regression)', () => {
     // Before the fix, buildClassSections() always returned a 3-section box
     // once methods were non-empty, even with zero attrs — drawMultiBox then
     // rendered that empty section as a visible blank compartment.
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       `classDiagram
         class Animal {
           +makeSound()
@@ -27,7 +27,7 @@ describe('ASCII class diagram box compartments', () => {
   })
 
   it('omits the methods compartment for a class with attrs but no methods (no regression)', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       `classDiagram
         class Point {
           +int x
@@ -41,7 +41,7 @@ describe('ASCII class diagram box compartments', () => {
   })
 
   it('renders both compartments for a class with attrs and methods', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       `classDiagram
         class Circle {
           +radius int
@@ -57,7 +57,7 @@ describe('ASCII class diagram box compartments', () => {
   })
 
   it('renders header only for a class with neither attrs nor methods', () => {
-    const ascii = renderMermaidAscii(
+    const ascii = renderMermaidASCII(
       `classDiagram
         class Empty`,
       { useAscii: true },

@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
 import { convertToAsciiGraph } from '../ascii/converter.ts'
 import { createMapping } from '../ascii/grid.ts'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 import type { AsciiConfig } from '../ascii/types.ts'
 
 function longChainSource(depth: number): string {
@@ -56,7 +56,7 @@ describe('ASCII grid layout handles chains deeper than the old fixed-size level 
   })
 
   it('renders a 40-node chain to ASCII without throwing or producing NaN in output', () => {
-    const output = renderMermaidAscii(longChainSource(40))
+    const output = renderMermaidASCII(longChainSource(40))
     expect(output).not.toContain('NaN')
     expect(output).toContain('n1')
     expect(output).toContain('n40')
