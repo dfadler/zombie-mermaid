@@ -433,7 +433,18 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     } else {
       // No segment wide enough — use the widest one
       segments.sort((a, b) => b.width - a.width)
-      largestLine = segments[0]?.line ?? [edge.path[0]!, edge.path[1]!]
+      if (segments.length > 0) {
+        largestLine = segments[0]!.line
+      } else {
+        // No segments at all: edge.path has fewer than 2 points. This
+        // happens when a routed edge's preferred from/to grid coordinates
+        // coincide (e.g. closely-spaced/adjacent nodes), so getPath (see
+        // pathfinder.ts) returns a single-point path. Treat it as a
+        // degenerate zero-length line at that point instead of indexing
+        // past the end of a 1-element (or empty) array.
+        const only = edge.path[0] ?? { x: 0, y: 0 }
+        largestLine = [only, only]
+      }
     }
   }
 

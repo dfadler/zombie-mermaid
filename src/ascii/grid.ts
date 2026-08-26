@@ -582,7 +582,7 @@ function placeReachableChildren(
           highestPosition = edgeDir === 'LR' ? gc.y : gc.x
         } else {
           // Same direction: use level tracker
-          highestPosition = highestPositionPerLevel[childLevel]!
+          highestPosition = highestPositionPerLevel[childLevel] ?? 0
         }
 
         const requested: GridCoord =
@@ -618,7 +618,11 @@ function placeReachableChildren(
  */
 export function createMapping(graph: AsciiGraph): void {
   const dir = graph.config.graphDirection
-  const highestPositionPerLevel: number[] = new Array(100).fill(0)
+  // A sparse array, not a fixed-size preallocation: level indices grow with
+  // chain depth (each level adds 4 to the coordinate), and a long enough
+  // chain would silently read past a fixed bound. Reads default missing
+  // levels to 0 via `?? 0` below instead.
+  const highestPositionPerLevel: number[] = []
 
   // Identify root nodes — nodes that are never the target of any edge.
   //
@@ -752,10 +756,10 @@ export function createMapping(graph: AsciiGraph): void {
   for (const node of externalRootNodes) {
     const requested: GridCoord =
       dir === 'LR'
-        ? { x: 0, y: highestPositionPerLevel[0]! }
-        : { x: highestPositionPerLevel[0]!, y: 0 }
+        ? { x: 0, y: highestPositionPerLevel[0] ?? 0 }
+        : { x: highestPositionPerLevel[0] ?? 0, y: 0 }
     reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
-    highestPositionPerLevel[0] = highestPositionPerLevel[0]! + 4
+    highestPositionPerLevel[0] = (highestPositionPerLevel[0] ?? 0) + 4
   }
 
   // Place subgraph root nodes at level 4 (one level in from the edge)
@@ -764,11 +768,11 @@ export function createMapping(graph: AsciiGraph): void {
     for (const node of subgraphRootNodes) {
       const requested: GridCoord =
         dir === 'LR'
-          ? { x: subgraphLevel, y: highestPositionPerLevel[subgraphLevel]! }
-          : { x: highestPositionPerLevel[subgraphLevel]!, y: subgraphLevel }
+          ? { x: subgraphLevel, y: highestPositionPerLevel[subgraphLevel] ?? 0 }
+          : { x: highestPositionPerLevel[subgraphLevel] ?? 0, y: subgraphLevel }
       reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
       highestPositionPerLevel[subgraphLevel] =
-        highestPositionPerLevel[subgraphLevel]! + 4
+        (highestPositionPerLevel[subgraphLevel] ?? 0) + 4
     }
   }
 
@@ -809,9 +813,9 @@ export function createMapping(graph: AsciiGraph): void {
       // traversal above. Fall back to ordinary root-level placement.
       requested =
         nodeDir === 'LR'
-          ? { x: 0, y: highestPositionPerLevel[0]! }
-          : { x: highestPositionPerLevel[0]!, y: 0 }
-      highestPositionPerLevel[0] = highestPositionPerLevel[0]! + 4
+          ? { x: 0, y: highestPositionPerLevel[0] ?? 0 }
+          : { x: highestPositionPerLevel[0] ?? 0, y: 0 }
+      highestPositionPerLevel[0] = (highestPositionPerLevel[0] ?? 0) + 4
     }
 
     reserveSpotInGrid(graph, graph.nodes[node.index]!, requested, nodeDir)
