@@ -46,14 +46,20 @@ export function isDirection(value: string): value is Direction {
 
 /**
  * Normalize a regex-captured direction token to a `Direction`.
- * Every call site guards the capture with the same
- * `(TD|TB|LR|BT|RL)` alternation (case-insensitively), so the input is
- * always one of these five values in practice — but the regex match itself
- * is typed as `string`, so we narrow it explicitly rather than asserting.
+ *
+ * Accepts `string | undefined` because every call site passes a regex
+ * capture group value (`match[1]`, typed as possibly-`undefined` under
+ * `noUncheckedIndexedAccess`) straight through. Each call site's regex
+ * guards the capture with the same `(TD|TB|LR|BT|RL)` alternation
+ * (case-insensitively), so the group always participates in the match in
+ * practice — but that's a regex-structure guarantee the type checker can't
+ * see across the call site. Validating `undefined` here, instead of
+ * asserting non-null at each call site, turns a hypothetical violation into
+ * a clear, descriptive error rather than a raw `undefined` crash.
  */
-export function toDirection(raw: string): Direction {
-  const upper = raw.toUpperCase()
-  if (!isDirection(upper)) {
+export function toDirection(raw: string | undefined): Direction {
+  const upper = raw?.toUpperCase()
+  if (upper === undefined || !isDirection(upper)) {
     throw new Error(`Invalid direction: "${raw}"`)
   }
   return upper
@@ -91,16 +97,26 @@ export function parseMermaid(text: string): MermaidGraph {
 // ============================================================================
 
 function parseFlowchart(lines: string[]): MermaidGraph {
-  const headerMatch = lines[0]!.match(
+  // parseFlowchart is only ever invoked by parseMermaid, which has already
+  // verified `lines` is non-empty — but that invariant isn't visible to the
+  // type checker across the function boundary, so validate it here instead
+  // of asserting past it.
+  const header = lines[0]
+  if (header === undefined) {
+    /* v8 ignore next */
+    throw new Error('parseFlowchart called with no lines')
+  }
+
+  const headerMatch = header.match(
     /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
   )
   if (!headerMatch) {
     throw new Error(
-      `Invalid mermaid header: "${lines[0]}". Expected "graph TD", "flowchart LR", "stateDiagram-v2", etc.`,
+      `Invalid mermaid header: "${header}". Expected "graph TD", "flowchart LR", "stateDiagram-v2", etc.`,
     )
   }
 
-  const direction = toDirection(headerMatch[1]!)
+  const direction = toDirection(headerMatch[1])
 
   const graph: MermaidGraph = {
     direction,
@@ -183,7 +199,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
     if (dirMatch && subgraphStack.length > 0) {
       subgraphStack[subgraphStack.length - 1]!.direction = toDirection(
-        dirMatch[1]!,
+        dirMatch[1],
       )
       continue
     }
@@ -277,10 +293,10 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
     if (dirMatch) {
       if (compositeStack.length > 0) {
         compositeStack[compositeStack.length - 1]!.direction = toDirection(
-          dirMatch[1]!,
+          dirMatch[1],
         )
       } else {
-        graph.direction = toDirection(dirMatch[1]!)
+        graph.direction = toDirection(dirMatch[1])
       }
       continue
     }
