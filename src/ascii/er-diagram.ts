@@ -176,6 +176,29 @@ function findConnectedComponents(diagram: ErDiagram): Set<string>[] {
 // ============================================================================
 
 /**
+ * Look up a per-entity value computed by renderErAscii's box-sizing pass.
+ * Every entity in `diagram.entities` gets an entry in `entityBoxW`,
+ * `entityBoxH`, and `entitySections` before layout runs, so this always
+ * succeeds for a real diagram entity — but that guarantee is established by
+ * a separate imperative loop the compiler can't connect back to this
+ * lookup, so it's checked explicitly rather than trusted via `!`.
+ */
+function mustGetEntityValue<T>(
+  map: Map<string, T>,
+  entityId: string,
+  what: string,
+): T {
+  const value = map.get(entityId)
+  if (value === undefined) {
+    /* v8 ignore next */
+    throw new Error(
+      `ER diagram layout: missing ${what} for entity "${entityId}"`,
+    )
+  }
+  return value
+}
+
+/**
  * Render a Mermaid ER diagram to ASCII/Unicode text.
  *
  * Pipeline: parse → build boxes → component-aware layout → draw boxes → draw relationships → string.
@@ -263,8 +286,8 @@ export function renderErAscii(
 
     for (let idx = 0; idx < componentEntities.length; idx++) {
       const ent = componentEntities[idx]!
-      const w = entityBoxW.get(ent.id)!
-      const h = entityBoxH.get(ent.id)!
+      const w = mustGetEntityValue(entityBoxW, ent.id, 'box width')
+      const h = mustGetEntityValue(entityBoxH, ent.id, 'box height')
 
       if (colCount >= maxPerRow) {
         // Wrap to next row within this component
@@ -276,7 +299,7 @@ export function renderErAscii(
 
       placed.set(ent.id, {
         entity: ent,
-        sections: entitySections.get(ent.id)!,
+        sections: mustGetEntityValue(entitySections, ent.id, 'sections'),
         x: currentX,
         y: currentY,
         width: w,
