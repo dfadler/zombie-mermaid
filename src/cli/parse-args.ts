@@ -75,7 +75,9 @@ function parseRender(args: string[]): RenderArgs {
     // but that's bounds-vs-loop-variable reasoning the type checker can't
     // verify, so guard explicitly rather than asserting past it.
     if (arg === undefined) {
-      throw new Error(`parseArgs: index ${i} out of range while parsing arguments`)
+      throw new Error(
+        `parseArgs: index ${i} out of range while parsing arguments`,
+      )
     }
 
     if (arg === '--ascii') {
