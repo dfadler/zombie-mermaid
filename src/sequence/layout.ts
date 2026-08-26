@@ -273,10 +273,8 @@ export function layoutSequenceDiagram(
 
     // Handle activation - track nesting depth for visual offset
     if (msg.activate) {
-      if (!activationStacks.has(msg.to)) {
-        activationStacks.set(msg.to, [])
-      }
-      const stack = activationStacks.get(msg.to)!
+      const stack = activationStacks.get(msg.to) ?? []
+      activationStacks.set(msg.to, stack)
       const depth = stack.length // Current depth before pushing
       stack.push({ startY: messageY, depth })
     }
