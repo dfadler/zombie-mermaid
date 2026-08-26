@@ -56,16 +56,24 @@ export function drawArrow(
     edge.path,
     edge.style,
   )
-  const boxStartCanvas = drawBoxStart(
-    graph,
-    edge.path,
-    linesDrawn[0]!,
-    edge.from,
-  )
+
+  // A routed path can collapse to zero drawn line segments when every grid
+  // point maps to the same drawing coordinate — e.g. a routed edge whose
+  // preferred from/to grid coordinates coincide for closely-spaced/adjacent
+  // nodes (pathfinder.ts's getPath can legitimately return a single-point
+  // path in that case; see #153). With no segment to anchor to, there's
+  // nothing for a box-start connector or an end arrowhead to attach to, so
+  // both are skipped instead of indexing into the empty linesDrawn/lineDirs
+  // arrays.
+  const hasSegments = linesDrawn.length > 0
+
+  const boxStartCanvas = hasSegments
+    ? drawBoxStart(graph, edge.path, linesDrawn[0]!, edge.from)
+    : copyCanvas(graph.canvas)
 
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
   let arrowHeadEndCanvas: Canvas
-  if (edge.hasArrowEnd) {
+  if (edge.hasArrowEnd && hasSegments) {
     arrowHeadEndCanvas = drawArrowHead(
       graph,
       linesDrawn[linesDrawn.length - 1]!,
@@ -79,7 +87,7 @@ export function drawArrow(
   // The start arrowhead needs to be at the box connector position (one step back
   // from the first line point), pointing into the source node.
   let arrowHeadStartCanvas: Canvas
-  if (edge.hasArrowStart && linesDrawn.length > 0) {
+  if (edge.hasArrowStart && hasSegments) {
     const firstLine = linesDrawn[0]!
     const firstPoint = firstLine[0]!
     const startDir = reverseDirection(lineDirs[0]!)
@@ -135,6 +143,8 @@ function drawPath(
   style: AsciiEdgeStyle = 'solid',
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
+  // path is non-empty: drawArrow (drawPath's sole caller) already returns
+  // early when edge.path.length === 0.
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []
   const lineDirs: Direction[] = []
@@ -201,6 +211,10 @@ function drawBoxStart(
     return canvas
   }
 
+  // firstLine is guaranteed non-empty and path has >= 2 points: the sole
+  // caller (drawArrow) only invokes drawBoxStart when drawPath produced at
+  // least one line segment (see the `hasSegments` guard there), and
+  // drawPath never pushes an empty segment into linesDrawn.
   const from = firstLine[0]!
   const dir = determineDirection(path[0]!, path[1]!)
   const junction = useAscii ? '+' : null
@@ -238,11 +252,20 @@ function drawBoxStart(
     // itself needs. Centering on the inflated width then drags the
     // connector away from the box's actual border character, which stays
     // put at a position that only depends on the box's own dimensions.
+    //
     // Node dimensions are set before edge routing/drawing (see
-    // createMapping in grid.ts), so drawingCoord/drawing are always
-    // present here.
-    const dc = sourceNode.drawingCoord!
-    const boxWidth = sourceNode.drawing!.length
+    // createMapping in grid.ts), so drawingCoord/drawing should always be
+    // present here — but that's a cross-module invariant the type checker
+    // can't see, so it's validated explicitly rather than trusted silently.
+    const dc = sourceNode.drawingCoord
+    const drawing = sourceNode.drawing
+    if (dc === null || drawing === null) {
+      /* v8 ignore next */
+      throw new Error(
+        `drawBoxStart: node "${sourceNode.name}" has no drawingCoord/drawing assigned`,
+      )
+    }
+    const boxWidth = drawing.length
     const x = dirEquals(dir, Left) ? dc.x : dc.x + boxWidth - 1
     const y = from.y
     const existing = existingOnBox(x, y)

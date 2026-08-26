@@ -43,7 +43,17 @@ export function drawNode(node: AsciiNode, graph: AsciiGraph): Canvas {
  * (defined in corners.ts) to indicate shape type.
  */
 function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
-  const gc = node.gridCoord!
+  const gc = node.gridCoord
+  if (gc === null) {
+    // Every node is guaranteed a gridCoord before drawing starts —
+    // createMapping (grid.ts) seeds even nodes in otherwise-unreachable
+    // cycles with a pseudo-root (see addPseudoRootsForUnreachableCycles)
+    // specifically so every node gets placed. A null here means that
+    // invariant was violated upstream, which is validated explicitly
+    // rather than trusted silently since the type checker can't see it.
+    /* v8 ignore next */
+    throw new Error(`drawNode: node "${node.name}" has no gridCoord assigned`)
+  }
   const useAscii = graph.config.useAscii
 
   // Width spans 2 columns (border + content) - matching original behavior
