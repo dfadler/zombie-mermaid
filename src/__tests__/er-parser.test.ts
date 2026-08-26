@@ -162,6 +162,94 @@ describe('parseErDiagram – relationships', () => {
 })
 
 // ============================================================================
+// Entity aliases: `id[Alias]` / `id["Quoted Alias"]`
+// ============================================================================
+
+describe('parseErDiagram – entity aliases', () => {
+  it('parses a bracketed alias, using the alias as the label but the raw id as the key', () => {
+    const d = parse(`erDiagram
+      p[Person] {
+        string firstName
+      }`)
+    expect(d.entities).toHaveLength(1)
+    expect(d.entities[0]!.id).toBe('p')
+    expect(d.entities[0]!.label).toBe('Person')
+    expect(d.entities[0]!.attributes[0]!.name).toBe('firstName')
+  })
+
+  it('parses a quoted multi-word alias', () => {
+    const d = parse(`erDiagram
+      a["Customer Account"] {
+        string email
+      }`)
+    expect(d.entities[0]!.id).toBe('a')
+    expect(d.entities[0]!.label).toBe('Customer Account')
+  })
+
+  it('parses an aliased single-line entity block (header, body, and closing brace on one line)', () => {
+    const d = parse(`erDiagram
+      p[Person] { string firstName }
+      a["Customer Account"] { string email }`)
+    expect(d.entities).toHaveLength(2)
+    const p = d.entities.find((e) => e.id === 'p')!
+    expect(p.label).toBe('Person')
+    expect(p.attributes[0]!.name).toBe('firstName')
+    const a = d.entities.find((e) => e.id === 'a')!
+    expect(a.label).toBe('Customer Account')
+    expect(a.attributes[0]!.name).toBe('email')
+  })
+
+  it('relationships referencing an aliased entity still resolve by the raw id', () => {
+    const d = parse(`erDiagram
+      p[Person] { string firstName }
+      a["Customer Account"] { string email }
+      p ||--o| a : has`)
+    expect(d.relationships).toHaveLength(1)
+    expect(d.relationships[0]!.entity1).toBe('p')
+    expect(d.relationships[0]!.entity2).toBe('a')
+    // No duplicate/extra entities were created from the relationship line
+    expect(d.entities).toHaveLength(2)
+    expect(d.entities.find((e) => e.id === 'p')!.label).toBe('Person')
+    expect(d.entities.find((e) => e.id === 'a')!.label).toBe('Customer Account')
+  })
+
+  it('un-aliased entities still use the raw id as the label', () => {
+    const d = parse(`erDiagram
+      CUSTOMER {
+        int id PK
+      }`)
+    expect(d.entities[0]!.id).toBe('CUSTOMER')
+    expect(d.entities[0]!.label).toBe('CUSTOMER')
+  })
+})
+
+// ============================================================================
+// `direction` directive
+// ============================================================================
+
+describe('parseErDiagram – direction directive', () => {
+  it('parses `direction TB`', () => {
+    const d = parse(`erDiagram
+      direction TB
+      CUSTOMER ||--o{ ORDER : places`)
+    expect(d.direction).toBe('TB')
+  })
+
+  it('parses `direction LR`', () => {
+    const d = parse(`erDiagram
+      direction LR
+      CUSTOMER ||--o{ ORDER : places`)
+    expect(d.direction).toBe('LR')
+  })
+
+  it('leaves direction undefined when no directive is present', () => {
+    const d = parse(`erDiagram
+      CUSTOMER ||--o{ ORDER : places`)
+    expect(d.direction).toBeUndefined()
+  })
+})
+
+// ============================================================================
 // Full diagram
 // ============================================================================
 

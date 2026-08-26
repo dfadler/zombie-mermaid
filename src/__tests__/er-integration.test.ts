@@ -82,6 +82,51 @@ describe('renderMermaidSVG – ER diagrams', () => {
     expect(rectCount).toBeGreaterThanOrEqual(2) // outer box + header
   })
 
+  it('renders an aliased entity using the alias as its label, not the raw `id[Alias]` text', () => {
+    const svg = renderMermaidSVG(`erDiagram
+      p[Person] { string firstName }
+      a["Customer Account"] { string email }
+      p ||--o| a : has`)
+    expect(svg).toContain('Person')
+    expect(svg).toContain('Customer Account')
+    expect(svg).not.toContain('p[Person]')
+    expect(svg).not.toContain('a["Customer Account"]')
+  })
+
+  it('renders a `direction TB` diagram with different node coordinates than `direction LR`', () => {
+    const rest = `CUSTOMER ||--o{ ORDER : places
+      ORDER ||--|{ LINE_ITEM : contains
+      PRODUCT ||--o{ LINE_ITEM : includes`
+
+    const svgTB = renderMermaidSVG(`erDiagram
+      direction TB
+      ${rest}`)
+    const svgLR = renderMermaidSVG(`erDiagram
+      direction LR
+      ${rest}`)
+
+    expect(svgTB).not.toBe(svgLR)
+
+    const extractCoords = (svg: string) =>
+      [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)"/g)].map((m) => ({
+        x: parseFloat(m[1]!),
+        y: parseFloat(m[2]!),
+      }))
+
+    const coordsTB = extractCoords(svgTB)
+    const coordsLR = extractCoords(svgLR)
+    expect(coordsTB).not.toEqual(coordsLR)
+  })
+
+  it('an explicit `direction LR` matches the pre-existing default layout (byte-for-byte)', () => {
+    const rest = `A ||--o{ B : links`
+    const svgDefault = renderMermaidSVG(`erDiagram\n      ${rest}`)
+    const svgLR = renderMermaidSVG(
+      `erDiagram\n      direction LR\n      ${rest}`,
+    )
+    expect(svgDefault).toBe(svgLR)
+  })
+
   it('renders a complete e-commerce schema', () => {
     const svg = renderMermaidSVG(`erDiagram
       CUSTOMER {
