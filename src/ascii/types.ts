@@ -23,6 +23,16 @@ export interface GridCoord {
   y: number
 }
 
+/**
+ * A mutable, render-wide A* iteration budget shared across every getPath
+ * call made while routing one graph's edges (see pathfinder.ts's getPath
+ * and grid.ts's createMapping). Bounds total pathfinding work for the whole
+ * render, independent of any single call's own per-call iteration cap.
+ */
+export interface PathBudget {
+  remaining: number
+}
+
 /** Character-level coordinate on the 2D text canvas. */
 export interface DrawingCoord {
   x: number
@@ -169,6 +179,15 @@ export interface AsciiGraph {
   offsetY: number
   /** Edge bundles for parallel link visualization. Set during bundling analysis. */
   bundles: EdgeBundle[]
+  /**
+   * Render-wide A* iteration budget shared across every getPath call made
+   * while routing this graph's edges. Bounds total pathfinding work (and
+   * therefore memory) for graphs with many edges, independent of any
+   * single call's own iteration cap. Set at the start of createMapping's
+   * edge-routing phase; undefined before then. See pathfinder.ts's
+   * PathBudget for details.
+   */
+  pathBudget?: PathBudget
 }
 
 // ============================================================================

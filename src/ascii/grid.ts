@@ -19,6 +19,7 @@ import { gridKey } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import { determinePath, determineLabelLine } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
+import { createPathBudget } from './pathfinder.ts'
 import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
 
@@ -411,6 +412,85 @@ export function offsetDrawingForSubgraphs(graph: AsciiGraph): void {
   }
 }
 
+/**
+ * Group root nodes by which downstream target they feed into, preserving a
+ * stable order: groups appear in the order their shared target was first
+ * seen among `roots`, and a root with no children (or whose target no other
+ * root shares) keeps its original relative position.
+ *
+ * Fixes fan-in root placement: without this, `createMapping` places roots
+ * sequentially in whatever order they were discovered, so e.g. `A1, B1, A2,
+ * B2` (all roots, A1/A2 feeding A and B1/B2 feeding B) land interleaved on
+ * the grid instead of grouped as `A1, A2, B1, B2` — causing the two fan-in
+ * bundles' trunk edges to share a row and visually cross.
+ */
+function groupRootsByDownstreamTarget(
+  graph: AsciiGraph,
+  roots: AsciiNode[],
+): AsciiNode[] {
+  const primaryTargetKey = (node: AsciiNode): string | null => {
+    const children = getChildren(graph, node)
+    return children.length > 0 ? children[0]!.name : null
+  }
+
+  // For each root, find the index (within `roots`) of the first root that
+  // shares its primary target — that's this root's sort anchor.
+  const firstIndexForTarget = new Map<string, number>()
+  const anchorIndex: number[] = roots.map((node, i) => {
+    const key = primaryTargetKey(node)
+    if (key === null) return i // no downstream target: anchor to self
+    const existing = firstIndexForTarget.get(key)
+    if (existing !== undefined) return existing
+    firstIndexForTarget.set(key, i)
+    return i
+  })
+
+  return roots
+    .map((node, i) => ({ node, i }))
+    .sort((a, b) => anchorIndex[a.i]! - anchorIndex[b.i]! || a.i - b.i)
+    .map(({ node }) => node)
+}
+
+/**
+ * A node whose every incoming path loops back through itself (e.g. `A -->
+ * B --> C --> A`, or a lone self-loop `A --> A`) is, correctly, never a
+ * "root" — every node in the cycle has a real incoming edge. But the grid
+ * layout still needs at least one seed node per such component to place
+ * anything at all; with zero roots feeding it, that component would never
+ * get a gridCoord and later crash (setColumnWidth reads `.gridCoord!.x`).
+ *
+ * The old order-dependent detection accidentally provided this seed — the
+ * first node the scan reached "looked like" a root simply because it
+ * hadn't been visited as a target *yet* — which is the exact bug fixed
+ * above. This restores just the useful part of that behavior for genuine
+ * cycles: for each weakly-connected component not reachable from any real
+ * root, seed it with its first-declared (graph.nodes order) node.
+ */
+function addPseudoRootsForUnreachableCycles(
+  graph: AsciiGraph,
+  roots: AsciiNode[],
+): AsciiNode[] {
+  const reachable = new Set<string>()
+  const floodFrom = (start: AsciiNode): void => {
+    const queue: AsciiNode[] = [start]
+    while (queue.length > 0) {
+      const n = queue.shift()!
+      if (reachable.has(n.name)) continue
+      reachable.add(n.name)
+      for (const child of getChildren(graph, n)) queue.push(child)
+    }
+  }
+  for (const root of roots) floodFrom(root)
+
+  const result = [...roots]
+  for (const node of graph.nodes) {
+    if (reachable.has(node.name)) continue
+    result.push(node)
+    floodFrom(node)
+  }
+  return result
+}
+
 // ============================================================================
 // Main layout orchestrator
 // ============================================================================
@@ -430,19 +510,38 @@ export function createMapping(graph: AsciiGraph): void {
   const dir = graph.config.graphDirection
   const highestPositionPerLevel: number[] = new Array(100).fill(0)
 
-  // Identify root nodes — nodes that aren't the target of any edge
-  const nodesFound = new Set<string>()
-  const initialRoots: AsciiNode[] = []
-
-  for (const node of graph.nodes) {
-    if (!nodesFound.has(node.name)) {
-      initialRoots.push(node)
-    }
-    nodesFound.add(node.name)
-    for (const child of getChildren(graph, node)) {
-      nodesFound.add(child.name)
-    }
+  // Identify root nodes — nodes that are never the target of any edge.
+  //
+  // This must be order-independent: a single forward pass over graph.nodes
+  // (in Map-insertion / first-mention order) incorrectly treats a node as a
+  // root whenever it hasn't been seen as an edge target *yet* at the point
+  // it's visited. That misclassifies nodes when a `child -> parent` edge
+  // appears in the source *after* a `parent -> grandchild` edge (e.g. `A -->
+  // C` is declared before `A1 --> A`), since `A` looks unvisited-as-target
+  // when the loop reaches it.
+  //
+  // Two-pass fix: first collect every node that appears as the target of a
+  // non-self-loop edge (a self-loop shouldn't disqualify a node from being a
+  // root — see edge-bundling.ts's identical self-loop skip), then anything
+  // never targeted is a genuine root, independent of source order.
+  const targetedNames = new Set<string>()
+  for (const edge of graph.edges) {
+    if (edge.from === edge.to) continue // self-loop: doesn't count as "targeted"
+    targetedNames.add(edge.to.name)
   }
+  const targetBasedRoots: AsciiNode[] = graph.nodes.filter(
+    (node) => !targetedNames.has(node.name),
+  )
+
+  // A weakly-connected component that's entirely a cycle (e.g. `A --> B -->
+  // C --> A`) correctly has zero target-based roots — every node in it has
+  // a real incoming edge — but the grid layout still needs one seed node
+  // per component to place anything at all. See
+  // addPseudoRootsForUnreachableCycles for why and how.
+  const initialRoots = addPseudoRootsForUnreachableCycles(
+    graph,
+    targetBasedRoots,
+  )
 
   // Filter out subgraph nodes that have incoming edges from external sources.
   // This handles the case where subgraph is declared before external nodes
@@ -463,11 +562,23 @@ export function createMapping(graph: AsciiGraph): void {
     return true
   })
 
+  // Group root nodes by which downstream target they feed into, so a
+  // fan-in cluster (e.g. A1, A2 -> A) is placed contiguously instead of
+  // interleaving with roots that feed a *different* target (e.g. B1 -> B
+  // landing between A1 and A2). Without this, unrelated fan-in bundles can
+  // end up on the same grid row and their trunk edges visually cross.
+  //
+  // Stable: each root's sort key is the position of the *first* root that
+  // shares its primary (first) downstream target, so groups appear in the
+  // order their target was first seen, and a root with no children (or a
+  // target no other root shares) keeps its original relative position.
+  const groupedRootNodes = groupRootsByDownstreamTarget(graph, rootNodes)
+
   // In LR mode with both external and subgraph roots, separate them
   // so subgraph roots are placed one level deeper
   let hasExternalRoots = false
   let hasSubgraphRootsWithEdges = false
-  for (const node of rootNodes) {
+  for (const node of groupedRootNodes) {
     if (isNodeInAnySubgraph(graph, node)) {
       if (getChildren(graph, node).length > 0) hasSubgraphRootsWithEdges = true
     } else {
@@ -481,10 +592,14 @@ export function createMapping(graph: AsciiGraph): void {
   let subgraphRootNodes: AsciiNode[] = []
 
   if (shouldSeparate) {
-    externalRootNodes = rootNodes.filter((n) => !isNodeInAnySubgraph(graph, n))
-    subgraphRootNodes = rootNodes.filter((n) => isNodeInAnySubgraph(graph, n))
+    externalRootNodes = groupedRootNodes.filter(
+      (n) => !isNodeInAnySubgraph(graph, n),
+    )
+    subgraphRootNodes = groupedRootNodes.filter((n) =>
+      isNodeInAnySubgraph(graph, n),
+    )
   } else {
-    externalRootNodes = rootNodes
+    externalRootNodes = groupedRootNodes
   }
 
   // Place external root nodes
@@ -569,6 +684,15 @@ export function createMapping(graph: AsciiGraph): void {
   for (const node of graph.nodes) {
     setColumnWidth(graph, node)
   }
+
+  // Fresh render-wide A* iteration budget for this layout pass. Shared by
+  // every getPath call below (both bundled-edge routing and per-edge
+  // determinePath), so total pathfinding work for the whole render is
+  // hard-bounded regardless of edge count — a per-call iteration cap alone
+  // isn't enough for dense fan-in/out graphs with hundreds of edges, since
+  // each call is independently allowed to spend up to its own cap. See
+  // pathfinder.ts's PathBudget for details.
+  graph.pathBudget = createPathBudget()
 
   // Analyze edges for bundling (parallel links like A & B --> C)
   // This groups edges that share sources or targets for cleaner visualization

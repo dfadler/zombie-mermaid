@@ -13,6 +13,7 @@ import type {
   AsciiGraph,
   AsciiEdge,
   AsciiEdgeStyle,
+  AsciiNode,
 } from './types.ts'
 import {
   Up,
@@ -58,7 +59,7 @@ export function drawArrow(
     graph,
     edge.path,
     linesDrawn[0]!,
-    edge.from.shape,
+    edge.from,
   )
 
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
@@ -175,13 +176,13 @@ function drawBoxStart(
   graph: AsciiGraph,
   path: GridCoord[],
   firstLine: DrawingCoord[],
-  sourceShape: string,
+  sourceNode: AsciiNode,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   if (graph.config.useAscii) return canvas
 
   // Skip box start connectors for state pseudo-states (they have their own bordered design)
-  if (sourceShape === 'state-start' || sourceShape === 'state-end') {
+  if (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end') {
     return canvas
   }
 
@@ -190,8 +191,25 @@ function drawBoxStart(
 
   if (dirEquals(dir, Up)) canvas[from.x]![from.y + 1] = '┴'
   else if (dirEquals(dir, Down)) canvas[from.x]![from.y - 1] = '┬'
-  else if (dirEquals(dir, Left)) canvas[from.x + 1]![from.y] = '┤'
-  else if (dirEquals(dir, Right)) canvas[from.x - 1]![from.y] = '├'
+  else if (dirEquals(dir, Left) || dirEquals(dir, Right)) {
+    // Anchor horizontal connectors to the source node's *own* rendered
+    // border column, not to gridToDrawingCoord's grid-column-centered
+    // position. That position is centered within the node's border grid
+    // column using that column's *allocated* width — but a sibling edge's
+    // label can land on that same column (its labelLine's chosen segment
+    // just happens to pass through the node's border column on its way
+    // elsewhere) and widen it well past the 1-character width the border
+    // itself needs. Centering on the inflated width then drags the
+    // connector away from the box's actual border character, which stays
+    // put at a position that only depends on the box's own dimensions.
+    // Node dimensions are set before edge routing/drawing (see
+    // createMapping in grid.ts), so drawingCoord/drawing are always
+    // present here.
+    const dc = sourceNode.drawingCoord!
+    const boxWidth = sourceNode.drawing!.length
+    if (dirEquals(dir, Left)) canvas[dc.x]![from.y] = '┤'
+    else canvas[dc.x + boxWidth - 1]![from.y] = '├'
+  }
 
   return canvas
 }
