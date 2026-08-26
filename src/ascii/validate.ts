@@ -61,9 +61,7 @@ export function findDiagonalLines(asciiOutput: string): DiagonalPosition[] {
   // Box-drawing characters that indicate node boundaries
   const boxBorders = new Set(['│', '┤', '├', '║', '┃', '|'])
 
-  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
-    const line = lines[lineNum]!
-
+  for (const [lineNum, line] of lines.entries()) {
     // Find all box border positions in this line
     const borderPositions: number[] = []
     for (let col = 0; col < line.length; col++) {
@@ -158,8 +156,7 @@ export function findOrphanedJunctions(
   const lines = asciiOutput.split('\n')
   const positions: OrphanedJunctionPosition[] = []
 
-  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
-    const line = lines[lineNum]!
+  for (const [lineNum, line] of lines.entries()) {
     for (let col = 0; col < line.length; col++) {
       const char = line[col]!
       if (char === '├' || char === '┤') {

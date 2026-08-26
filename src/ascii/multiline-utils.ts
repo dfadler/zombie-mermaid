@@ -56,8 +56,7 @@ export function drawMultilineTextCentered(
   // Center vertically: start y positions lines evenly around cy
   const startY = cy - Math.floor((totalHeight - 1) / 2)
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!
+  for (const [i, line] of lines.entries()) {
     // Center each line horizontally (in display columns, not code units)
     const startX = cx - Math.floor(displayWidth(line) / 2)
     // Force overwrite for node labels (they take priority)
@@ -76,8 +75,8 @@ export function drawMultilineTextLeft(
   y: number,
 ): void {
   const lines = splitLines(label)
-  for (let i = 0; i < lines.length; i++) {
+  for (const [i, line] of lines.entries()) {
     // Force overwrite for node labels (they take priority)
-    drawText(canvas, { x, y: y + i }, lines[i]!, true)
+    drawText(canvas, { x, y: y + i }, line, true)
   }
 }

@@ -143,10 +143,15 @@ export function detectColorMode(): ColorMode {
 function parseHex(hex: string): { r: number; g: number; b: number } {
   const h = hex.replace('#', '')
   if (h.length === 3) {
+    // .charAt() always returns a string (never undefined) — unlike bracket
+    // indexing, it isn't subject to noUncheckedIndexedAccess.
+    const c0 = h.charAt(0)
+    const c1 = h.charAt(1)
+    const c2 = h.charAt(2)
     return {
-      r: parseInt(h[0]! + h[0]!, 16),
-      g: parseInt(h[1]! + h[1]!, 16),
-      b: parseInt(h[2]! + h[2]!, 16),
+      r: parseInt(c0 + c0, 16),
+      g: parseInt(c1 + c1, 16),
+      b: parseInt(c2 + c2, 16),
     }
   }
   return {
@@ -370,8 +375,7 @@ export function colorizeLine(
   let currentRole: CharRole | null = null
   let buffer = ''
 
-  for (let i = 0; i < chars.length; i++) {
-    const char = chars[i]!
+  for (const [i, char] of chars.entries()) {
     const role = roles[i] ?? null
 
     // Whitespace doesn't need coloring
@@ -443,8 +447,7 @@ function colorizeLineHtml(
     currentRole = null
   }
 
-  for (let i = 0; i < chars.length; i++) {
-    const char = chars[i]!
+  for (const [i, char] of chars.entries()) {
     const role = roles[i] ?? null
 
     if (char === ' ') {

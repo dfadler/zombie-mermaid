@@ -384,6 +384,9 @@ function buildSgMap(
   flatten(mSgs)
 
   for (let i = 0; i < flatMermaid.length && i < aSgs.length; i++) {
-    result.set(flatMermaid[i]!, aSgs[i]!)
+    const mSg = flatMermaid[i]
+    const aSg = aSgs[i]
+    if (!mSg || !aSg) continue
+    result.set(mSg, aSg)
   }
 }

@@ -81,8 +81,8 @@ export function increaseRoleCanvasSize(
   const targetY = Math.max(newY, currY)
   const grown = mkRoleCanvas(targetX, targetY)
   for (let x = 0; x < grown.length; x++) {
-    for (let y = 0; y < grown[0]!.length; y++) {
-      if (x < roleCanvas.length && y < roleCanvas[0]!.length) {
+    for (let y = 0; y < (grown[0]?.length ?? 0); y++) {
+      if (x < roleCanvas.length && y < (roleCanvas[0]?.length ?? 0)) {
         grown[x]![y] = roleCanvas[x]![y]!
       }
     }
@@ -132,7 +132,7 @@ export function mergeRoleCanvases(
   // Copy base
   for (let x = 0; x <= maxX; x++) {
     for (let y = 0; y <= maxY; y++) {
-      if (x < base.length && y < base[0]!.length) {
+      if (x < base.length && y < (base[0]?.length ?? 0)) {
         merged[x]![y] = base[x]![y]!
       }
     }
@@ -141,7 +141,7 @@ export function mergeRoleCanvases(
   // Apply overlays
   for (const overlay of overlays) {
     for (let x = 0; x < overlay.length; x++) {
-      for (let y = 0; y < overlay[0]!.length; y++) {
+      for (let y = 0; y < (overlay[0]?.length ?? 0); y++) {
         const role = overlay[x]?.[y]
         if (role !== null && role !== undefined) {
           const mx = x + offset.x
@@ -174,8 +174,8 @@ export function increaseSize(
   const targetY = Math.max(newY, currY)
   const grown = mkCanvas(targetX, targetY)
   for (let x = 0; x < grown.length; x++) {
-    for (let y = 0; y < grown[0]!.length; y++) {
-      if (x < canvas.length && y < canvas[0]!.length) {
+    for (let y = 0; y < (grown[0]?.length ?? 0); y++) {
+      if (x < canvas.length && y < (canvas[0]?.length ?? 0)) {
         grown[x]![y] = canvas[x]![y]!
       }
     }
@@ -367,7 +367,7 @@ export function mergeCanvases(
   // Copy base
   for (let x = 0; x <= maxX; x++) {
     for (let y = 0; y <= maxY; y++) {
-      if (x < base.length && y < base[0]!.length) {
+      if (x < base.length && y < (base[0]?.length ?? 0)) {
         merged[x]![y] = base[x]![y]!
       }
     }
@@ -376,7 +376,7 @@ export function mergeCanvases(
   // Apply overlays
   for (const overlay of overlays) {
     for (let x = 0; x < overlay.length; x++) {
-      for (let y = 0; y < overlay[0]!.length; y++) {
+      for (let y = 0; y < (overlay[0]?.length ?? 0); y++) {
         const c = overlay[x]![y]!
         if (c !== ' ') {
           const mx = x + offset.x
@@ -502,8 +502,8 @@ export function flipCanvasVertically(canvas: Canvas): Canvas {
 
   // Remap directional characters that change meaning after vertical flip
   for (const col of canvas) {
-    for (let y = 0; y < col.length; y++) {
-      const flipped = VERTICAL_FLIP_MAP[col[y]!]
+    for (const [y, ch] of col.entries()) {
+      const flipped = VERTICAL_FLIP_MAP[ch]
       if (flipped) col[y] = flipped
     }
   }
@@ -541,12 +541,12 @@ export function drawText(
 ): void {
   const cells = toDisplayCells(text)
   increaseSize(canvas, start.x + cells.length, start.y)
-  for (let i = 0; i < cells.length; i++) {
+  for (const [i, cell] of cells.entries()) {
     const x = start.x + i
     const current = canvas[x]![start.y]!
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
-      canvas[x]![start.y] = cells[i]!
+      canvas[x]![start.y] = cell
     }
   }
 }
