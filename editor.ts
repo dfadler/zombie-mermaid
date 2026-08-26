@@ -8,7 +8,6 @@
  *   - Live rendering on every keystroke (debounced)
  *   - URL hash sharing (base64-encoded source)
  *   - Theme switcher with all built-in themes
- *   - Sample presets by diagram category
  *   - Download SVG / Copy link
  *
  * Source files are organized in editor/:

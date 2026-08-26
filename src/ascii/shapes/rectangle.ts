@@ -19,6 +19,7 @@ import {
 } from '../types.ts'
 import { mkCanvas } from '../canvas.ts'
 import { splitLines } from '../multiline-utils.ts'
+import { displayWidth, toDisplayCells } from '../display-width.ts'
 import type {
   ShapeRenderer,
   ShapeDimensions,
@@ -40,7 +41,7 @@ export function getBoxDimensions(
   options: ShapeRenderOptions,
 ): ShapeDimensions {
   const lines = splitLines(label)
-  const maxLineWidth = Math.max(...lines.map((l) => l.length), 0)
+  const maxLineWidth = Math.max(...lines.map((l) => displayWidth(l)), 0)
   const lineCount = lines.length
 
   // Width: 2*padding + maxLineWidth + 2 border chars
@@ -125,12 +126,13 @@ export function renderBox(
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    const textX = Math.floor(w / 2) - Math.ceil(line.length / 2) + 1
-    for (let j = 0; j < line.length; j++) {
+    const textX = Math.floor(w / 2) - Math.ceil(displayWidth(line) / 2) + 1
+    const cells = toDisplayCells(line)
+    for (let j = 0; j < cells.length; j++) {
       const x = textX + j
       const y = startY + i
       if (x >= 0 && x < canvas.length && y >= 0 && y < canvas[0]!.length) {
-        canvas[x]![y] = line[j]!
+        canvas[x]![y] = cells[j]!
       }
     }
   }

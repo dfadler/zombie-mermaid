@@ -138,6 +138,20 @@ function isEmoji(char: string): boolean {
 }
 
 /**
+ * Check if a single character (code point) is "wide" — i.e. renders as two
+ * columns in a monospace terminal / two grid cells wide instead of one.
+ * Covers CJK/kana/hangul/fullwidth-form characters (via `isFullwidth`) as
+ * well as emoji. Shared by the SVG text-measurement path (`getCharWidth`
+ * above) and the ASCII grid's display-width helpers
+ * (`src/ascii/display-width.ts`), so both agree on what counts as wide.
+ */
+export function isWideChar(char: string): boolean {
+  const code = char.codePointAt(0)
+  if (code === undefined) return false
+  return isFullwidth(code) || isEmoji(char)
+}
+
+/**
  * Get the relative width of a single character.
  *
  * Returns a normalized width ratio where:

@@ -10,32 +10,43 @@ description: >-
 
 ## Key files
 
-| File              | Role                                                                                                           |
-| ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| `editor.ts`       | **Source of truth** — generates `editor.html` at build time                                                    |
-| `editor.html`     | Generated output — never edit directly                                                                         |
-| `dev.ts`          | Dev server; builds both `editor.html` and `index.html` in parallel, serves `/` → editor, `/samples` → showcase |
-| `src/browser.ts`  | Bundles the renderer for the browser as `window.__mermaid`                                                     |
-| `src/types.ts`    | `RenderOptions` — all supported render options                                                                 |
-| `src/theme.ts`    | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                |
-| `src/styles.ts`   | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                            |
-| `samples-data.ts` | Sample presets used by the showcase; editor uses its own inline `SAMPLES` array                                |
+The editor's actual UI/CSS/JS source lives under `editor/` as modular partials; `editor.ts` just concatenates them (in a fixed order) into one self-contained HTML file. Edit the partials, not `editor.ts`, for UI/CSS/JS changes.
+
+| File                 | Role                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `editor.ts`          | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`              |
+| `editor/css/*.css`   | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (editor.ts)                          |
+| `editor/js/*.js`     | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (editor.ts)                        |
+| `editor/html/*.html` | HTML partials: `topbar.html`, `left-panel.html` (source editor + Config panel), `right-panel.html` (preview)   |
+| `editor/__tests__/`  | Vitest tests for the editor JS modules (jsdom environment) — see `state.ts`/`config.test.ts` etc.              |
+| `editor.html`        | Generated output — never edit directly                                                                         |
+| `dev.ts`             | Dev server; builds both `editor.html` and `index.html` in parallel, serves `/` → editor, `/samples` → showcase |
+| `src/browser.ts`     | Bundles the renderer for the browser as `window.__mermaid`                                                     |
+| `src/types.ts`       | `RenderOptions` — all supported render options                                                                 |
+| `src/theme.ts`       | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                |
+| `src/styles.ts`      | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                            |
+
+Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples-data.ts` only feeds the separate showcase page (`index.ts` → `index.html`, served at `/samples` in `dev.ts`).
 
 ## Build cycle
 
 ```
-editor.ts  ──esbuild.build──►  src/browser.ts bundle (inline JS)
-           ──template──►       editor.html  (self-contained, ~1.7 MB)
+editor.ts
+  ──esbuild.build──►         src/browser.ts bundle (inline JS)
+  ──readCssFiles──►          editor/css/*.css concatenated
+  ──readJsFiles──►           editor/js/*.js concatenated
+  ──readHtmlPartials──►      editor/html/*.html
+  ──template──►              editor.html  (self-contained, ~1.7 MB)
 ```
 
 Run manually:
 
 ```bash
 pnpm run editor   # generates editor.html once
-pnpm run dev      # watches src/ + editor.ts, live-reloads browser
+pnpm run dev      # watches src/ + editor/ + editor.ts, live-reloads browser
 ```
 
-**Always rebuild after editing `editor.ts`.** The HTML file is the deployed artifact.
+**Always rebuild after editing anything under `editor/` or `editor.ts`.** The HTML file is the deployed artifact.
 
 ---
 
@@ -44,10 +55,11 @@ pnpm run dev      # watches src/ + editor.ts, live-reloads browser
 `editor.ts` is a TypeScript generator that:
 
 1. Calls `esbuild.build()` to bundle `src/browser.ts` → inline JS string
-2. Constructs the full HTML page as a template literal
-3. Writes `editor.html`
+2. Reads and concatenates the CSS/JS/HTML partials under `editor/`
+3. Constructs the full HTML page as a template literal
+4. Writes `editor.html`
 
-The page has **no runtime build step** — everything (renderer, UI logic, CSS) is inlined.
+The generated page has **no runtime build step** — everything (renderer, UI logic, CSS) is inlined into one file — but the _source_ is modular; don't edit `editor.ts`'s template literal to change UI/logic, edit the relevant file under `editor/`.
 
 ### State model (in the client JS)
 
@@ -86,11 +98,11 @@ editor input
 
 ### Case A: RenderOptions already supports it (colors, font, padding)
 
-1. Add UI in the relevant `config-section` in the HTML template inside `editor.ts`
-2. Add a JS state variable (e.g. `var cfgFoo = defaultVal`)
-3. Update `readConfig()` to include it in `state.config`
-4. Wire input events
-5. Rebuild
+1. Add UI in the relevant `config-section` in `editor/html/left-panel.html`
+2. Add a JS state variable in `editor/js/config-panel.js` (e.g. `var cfgFoo = defaultVal`)
+3. Update `readConfig()` (also in `config-panel.js`) to include it in `state.config`
+4. Wire input events in `config-panel.js`
+5. Rebuild with `pnpm run editor`
 
 ### Case B: Post-process SVG (stroke widths, opacity, etc.)
 
@@ -119,9 +131,9 @@ Add to `RenderOptions` in `src/types.ts`, thread through `buildColors`/`svgOpenT
 
 ## Adding a color field
 
-1. Add to `cfgColors` object: `cfgColors.myColor = ''`
-2. Add `THEME_COLOR_MAP` entry if the theme has a matching property
-3. Add HTML in the Colors section:
+1. Add to the `cfgColors` object in `editor/js/config-panel.js`: `cfgColors.myColor = ''`
+2. Add a `THEME_COLOR_MAP` entry (same file) if the theme has a matching property
+3. Add HTML in the Colors section of `editor/html/left-panel.html`:
 
 ```html
 <div class="color-field">
@@ -139,6 +151,8 @@ Add to `RenderOptions` in `src/types.ts`, thread through `buildColors`/`svgOpenT
 ---
 
 ## Adding a slider (Layout section)
+
+HTML goes in `editor/html/left-panel.html`, JS in `editor/js/config-panel.js`.
 
 ```html
 <div class="padding-field">
@@ -186,19 +200,9 @@ mySlider.addEventListener('input', function () {
 
 ---
 
-## Adding a sample preset
+## Sample presets
 
-Edit the `SAMPLES` array near the top of `editor.ts`:
-
-```ts
-{
-  category: 'Flowchart',   // must match an existing cat or add a new button
-  title: 'My Sample',
-  source: `graph TD\n  A --> B`,
-},
-```
-
-If adding a new category, the category button is generated automatically from unique categories in `SAMPLES`.
+The live editor currently has **no** built-in sample-preset picker (no `SAMPLES` array to edit). Presets by diagram category only exist on the separate showcase page — add/edit entries in `samples-data.ts`, which feeds `index.ts` → `index.html` (served at `/samples` by `dev.ts`), not the editor.
 
 ---
 

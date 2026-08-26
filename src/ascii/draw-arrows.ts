@@ -29,6 +29,7 @@ import {
 } from './types.ts'
 import { copyCanvas, drawText } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
+import { displayWidth } from './display-width.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import { splitLines } from './multiline-utils.ts'
 import { drawLine } from './draw-lines.ts'
@@ -433,7 +434,7 @@ function drawTextOnLine(
 
   for (let i = 0; i < lines.length; i++) {
     const lineText = lines[i]!
-    const startX = middleX - Math.floor(lineText.length / 2)
+    const startX = middleX - Math.floor(displayWidth(lineText) / 2)
     drawText(canvas, { x: startX, y: startY + i }, lineText)
   }
 }
