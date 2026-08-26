@@ -3,6 +3,6 @@ LongerName1 --> LongerName2
 ---
 +-------------+     +-------------+
 |             |     |             |
-| LongerName1 |---->| LongerName2 |
+| LongerName1 +---->| LongerName2 |
 |             |     |             |
 +-------------+     +-------------+

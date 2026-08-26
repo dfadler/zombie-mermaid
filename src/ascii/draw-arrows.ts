@@ -169,7 +169,8 @@ function drawPath(
 
 /**
  * Draw the junction character where an edge exits the source node's box.
- * Only applies to Unicode mode (ASCII mode just uses the line characters).
+ * Unicode mode uses shape-specific T-junction glyphs; ASCII mode uses the
+ * same universal '+' already used for corners in draw-boxes.ts.
  * Skips drawing for state pseudo-states which have their own visual borders.
  */
 function drawBoxStart(
@@ -179,7 +180,7 @@ function drawBoxStart(
   sourceNode: AsciiNode,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
-  if (graph.config.useAscii) return canvas
+  const useAscii = graph.config.useAscii
 
   // Skip box start connectors for state pseudo-states (they have their own bordered design)
   if (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end') {
@@ -188,9 +189,10 @@ function drawBoxStart(
 
   const from = firstLine[0]!
   const dir = determineDirection(path[0]!, path[1]!)
+  const junction = useAscii ? '+' : null
 
-  if (dirEquals(dir, Up)) canvas[from.x]![from.y + 1] = '┴'
-  else if (dirEquals(dir, Down)) canvas[from.x]![from.y - 1] = '┬'
+  if (dirEquals(dir, Up)) canvas[from.x]![from.y + 1] = junction ?? '┴'
+  else if (dirEquals(dir, Down)) canvas[from.x]![from.y - 1] = junction ?? '┬'
   else if (dirEquals(dir, Left) || dirEquals(dir, Right)) {
     // Anchor horizontal connectors to the source node's *own* rendered
     // border column, not to gridToDrawingCoord's grid-column-centered
@@ -207,8 +209,8 @@ function drawBoxStart(
     // present here.
     const dc = sourceNode.drawingCoord!
     const boxWidth = sourceNode.drawing!.length
-    if (dirEquals(dir, Left)) canvas[dc.x]![from.y] = '┤'
-    else canvas[dc.x + boxWidth - 1]![from.y] = '├'
+    if (dirEquals(dir, Left)) canvas[dc.x]![from.y] = junction ?? '┤'
+    else canvas[dc.x + boxWidth - 1]![from.y] = junction ?? '├'
   }
 
   return canvas

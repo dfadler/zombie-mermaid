@@ -161,15 +161,15 @@ export function drawBundledEdgeSegment(
       edge.pathToJunction[1]!,
     )
 
-    if (!useAscii) {
-      if (dirEquals(dir, Up)) boxStartCanvas[firstPoint.x]![firstPoint.y] = '┴'
-      else if (dirEquals(dir, Down))
-        boxStartCanvas[firstPoint.x]![firstPoint.y] = '┬'
-      else if (dirEquals(dir, Left))
-        boxStartCanvas[firstPoint.x]![firstPoint.y] = '┤'
-      else if (dirEquals(dir, Right))
-        boxStartCanvas[firstPoint.x]![firstPoint.y] = '├'
-    }
+    const junction = useAscii ? '+' : null
+    if (dirEquals(dir, Up))
+      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '┴'
+    else if (dirEquals(dir, Down))
+      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '┬'
+    else if (dirEquals(dir, Left))
+      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '┤'
+    else if (dirEquals(dir, Right))
+      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '├'
   }
 
   // Label canvas (bundled edges typically don't have labels, but handle it)
