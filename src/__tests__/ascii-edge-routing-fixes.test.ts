@@ -48,10 +48,16 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
 
       const start = Date.now()
       const out = renderMermaidAscii(src)
-      expect(Date.now() - start).toBeLessThan(10000)
+      // Loose bound (not a tight performance assertion) — the goal is only
+      // to catch a regression back to the unbounded blowup this fix
+      // addresses (which would hang far longer than this, not just run
+      // slightly over). 10s was too tight and flaked on a slower/shared CI
+      // runner (observed ~10.5s) even though the actual render is normally
+      // near-instant locally.
+      expect(Date.now() - start).toBeLessThan(20000)
       expect(out).toContain('Root A0')
       expect(out).toContain('Root B59')
-    }, 20000)
+    }, 30000)
   })
 
   describe('bug 2: order-dependent root misdetection', () => {
