@@ -21,6 +21,7 @@ import {
 } from './types.ts'
 import { getPath, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph } from './grid.ts'
+import { displayWidth } from './display-width.ts'
 
 // ============================================================================
 // Direction utilities
@@ -275,7 +276,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
 export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   if (edge.text.length === 0) return
 
-  const lenLabel = edge.text.length
+  const lenLabel = displayWidth(edge.text)
   const pathLen = edge.path.length
 
   // Collect all segments with their widths and orientation

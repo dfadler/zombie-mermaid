@@ -9,6 +9,7 @@ import type { Canvas, DrawingCoord, AsciiGraph, AsciiNode } from './types.ts'
 import { mkCanvas } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
 import { getCorners } from './shapes/corners.ts'
+import { displayWidth, toDisplayCells } from './display-width.ts'
 
 // ============================================================================
 // Node drawing — renders a node using shape-aware rendering
@@ -92,15 +93,17 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    const textX = from.x + Math.floor(w / 2) - Math.ceil(line.length / 2) + 1
-    for (let j = 0; j < line.length; j++) {
+    const lineWidth = displayWidth(line)
+    const textX = from.x + Math.floor(w / 2) - Math.ceil(lineWidth / 2) + 1
+    const cells = toDisplayCells(line)
+    for (let j = 0; j < cells.length; j++) {
       if (
         textX + j >= 0 &&
         textX + j < box.length &&
         startY + i >= 0 &&
         startY + i < box[0]!.length
       ) {
-        box[textX + j]![startY + i] = line[j]!
+        box[textX + j]![startY + i] = cells[j]!
       }
     }
   }

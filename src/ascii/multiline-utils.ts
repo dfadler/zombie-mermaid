@@ -8,6 +8,7 @@
 
 import type { Canvas } from './types.ts'
 import { drawText } from './canvas.ts'
+import { displayWidth } from './display-width.ts'
 
 /**
  * Split a label into lines.
@@ -18,12 +19,17 @@ export function splitLines(label: string): string[] {
 }
 
 /**
- * Get the maximum line width for sizing calculations.
- * Used to determine column widths for multi-line labels.
+ * Get the maximum line width (in terminal display columns) for sizing
+ * calculations. Used to determine column widths for multi-line labels.
+ *
+ * Uses `displayWidth` rather than `.length` so CJK/kana/hangul/fullwidth-form
+ * and emoji characters — which render as two terminal columns each — are
+ * accounted for correctly. Using code-unit `.length` here would produce
+ * boxes too narrow for wide-character labels.
  */
 export function maxLineWidth(label: string): number {
   const lines = splitLines(label)
-  return Math.max(...lines.map((l) => l.length), 0)
+  return Math.max(...lines.map((l) => displayWidth(l)), 0)
 }
 
 /**
@@ -52,8 +58,8 @@ export function drawMultilineTextCentered(
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    // Center each line horizontally
-    const startX = cx - Math.floor(line.length / 2)
+    // Center each line horizontally (in display columns, not code units)
+    const startX = cx - Math.floor(displayWidth(line) / 2)
     // Force overwrite for node labels (they take priority)
     drawText(canvas, { x: startX, y: startY + i }, line, true)
   }

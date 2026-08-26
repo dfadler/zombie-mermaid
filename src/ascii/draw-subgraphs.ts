@@ -12,6 +12,7 @@ import type {
 } from './types.ts'
 import { mkCanvas } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
+import { displayWidth, toDisplayCells } from './display-width.ts'
 
 /** Draw a subgraph border rectangle. */
 export function drawSubgraphBox(sg: AsciiSubgraph, graph: AsciiGraph): Canvas {
@@ -66,12 +67,13 @@ export function drawSubgraphLabel(
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
     const labelY = 1 + i
-    let labelX = Math.floor(width / 2) - Math.floor(line.length / 2)
+    let labelX = Math.floor(width / 2) - Math.floor(displayWidth(line) / 2)
     if (labelX < 1) labelX = 1
 
-    for (let j = 0; j < line.length; j++) {
+    const cells = toDisplayCells(line)
+    for (let j = 0; j < cells.length; j++) {
       if (labelX + j < width && labelY < height) {
-        canvas[labelX + j]![labelY] = line[j]!
+        canvas[labelX + j]![labelY] = cells[j]!
       }
     }
   }

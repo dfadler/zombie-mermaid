@@ -15,6 +15,7 @@ import type {
   ColorMode,
 } from './types.ts'
 import { colorizeLine, DEFAULT_ASCII_THEME } from './ansi.ts'
+import { toDisplayCells } from './display-width.ts'
 
 /**
  * Create a blank canvas filled with spaces.
@@ -525,6 +526,12 @@ export function flipRoleCanvasVertically(roleCanvas: RoleCanvas): RoleCanvas {
  * Draw text string onto the canvas starting at the given coordinate.
  * By default, preserves existing non-space characters (labels don't overwrite each other).
  * Set forceOverwrite=true to always overwrite (for box content).
+ *
+ * Wide characters (CJK/kana/hangul/fullwidth-form/emoji — see
+ * `isWideChar`/`toDisplayCells` in `display-width.ts`) occupy two grid cells:
+ * the glyph itself followed by a placeholder cell. This keeps grid-cell
+ * count in sync with the two terminal columns the glyph actually renders as,
+ * so text drawn here lines up with widths computed via `displayWidth`.
  */
 export function drawText(
   canvas: Canvas,
@@ -532,13 +539,14 @@ export function drawText(
   text: string,
   forceOverwrite = false,
 ): void {
-  increaseSize(canvas, start.x + text.length, start.y)
-  for (let i = 0; i < text.length; i++) {
+  const cells = toDisplayCells(text)
+  increaseSize(canvas, start.x + cells.length, start.y)
+  for (let i = 0; i < cells.length; i++) {
     const x = start.x + i
     const current = canvas[x]![start.y]!
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
-      canvas[x]![start.y] = text[i]!
+      canvas[x]![start.y] = cells[i]!
     }
   }
 }
