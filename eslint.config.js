@@ -32,6 +32,7 @@ export default tseslint.config(
       'index.ts',
       'bench.ts',
       'xychart-test.ts',
+      'check-diff-coverage.ts',
     ],
     extends: [tseslint.configs.recommended],
     rules: {

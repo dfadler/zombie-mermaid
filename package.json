@@ -66,6 +66,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "coverage:diff": "tsx check-diff-coverage.ts",
     "samples": "tsx index.ts",
     "editor": "tsx editor.ts",
     "dev": "tsx dev.ts",
