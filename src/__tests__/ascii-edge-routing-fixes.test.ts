@@ -30,11 +30,13 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
       // reporter's environment. A correct, bounded render should be
       // effectively instant; this just guards against a real regression
       // back to unbounded behavior without being a flaky wall-clock test.
-      expect(Date.now() - start).toBeLessThan(5000)
+      // Kept well above the near-instant normal case so contention from
+      // other tests/processes running in parallel doesn't trip it.
+      expect(Date.now() - start).toBeLessThan(15000)
       for (const label of ['AAA', 'BBB', 'CCC', 'DDDD', 'EEEE', 'F?']) {
         expect(out).toContain(label)
       }
-    }, 10000)
+    }, 20000)
 
     it('renders a much larger dense fan-in graph without hanging or crashing', () => {
       // Amplified stress case (2x60 root nodes feeding two hubs) — confirms
@@ -51,13 +53,16 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
       // Loose bound (not a tight performance assertion) — the goal is only
       // to catch a regression back to the unbounded blowup this fix
       // addresses (which would hang far longer than this, not just run
-      // slightly over). 10s was too tight and flaked on a slower/shared CI
-      // runner (observed ~10.5s) even though the actual render is normally
-      // near-instant locally.
-      expect(Date.now() - start).toBeLessThan(20000)
+      // slightly over). Both 10s and 20s bounds flaked under CPU
+      // contention (many test processes/agents competing for cores),
+      // despite the actual render being near-instant in isolation, so this
+      // is deliberately generous: real unbounded-blowup regressions took
+      // 60s+ to not even finish (see the repro comment above), so a 60s
+      // ceiling still catches those while tolerating a heavily loaded box.
+      expect(Date.now() - start).toBeLessThan(60000)
       expect(out).toContain('Root A0')
       expect(out).toContain('Root B59')
-    }, 30000)
+    }, 90000)
   })
 
   describe('bug 2: order-dependent root misdetection', () => {
