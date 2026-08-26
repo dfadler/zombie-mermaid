@@ -151,13 +151,13 @@ export interface RenderOptions {
 
   /** Font family for all text. Default: 'Inter' */
   font?: string
-  /** Canvas padding in px. Default: 40 */
+  /** Canvas padding in px. Default: 40. Flowchart/state diagrams only — class/ER diagrams use fixed internal padding. */
   padding?: number
-  /** Horizontal spacing between sibling nodes. Default: 24 */
+  /** Horizontal spacing between sibling nodes. Default: 28. Flowchart/state diagrams only — class/ER diagrams use fixed internal spacing. */
   nodeSpacing?: number
-  /** Vertical spacing between layers. Default: 40 */
+  /** Vertical spacing between layers. Default: 48. Flowchart/state diagrams only — class/ER diagrams use fixed internal spacing. */
   layerSpacing?: number
-  /** Spacing between disconnected components. Default: nodeSpacing (24) */
+  /** Currently unused — accepted for forward compatibility but not read anywhere. */
   componentSpacing?: number
   /** Whether to bundle overlapping fan-out/fan-in edge paths into shared trunks to reduce visual clutter. Default: true */
   mergeEdges?: boolean

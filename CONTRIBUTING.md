@@ -56,7 +56,7 @@ Double-check the base repository in GitHub's compare view: it should be `dfadler
 CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and must pass:
 
 1. `pnpm install --frozen-lockfile`
-2. `pnpm test`
+2. `pnpm run test:coverage`
 3. `pnpm exec tsc --noEmit`
 
 Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
@@ -65,7 +65,7 @@ CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` aga
 
 ### Test coverage
 
-CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-24 the baseline is **75.28% statements / 62.53% branches / 81.62% functions / 77.19% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, just under the measured baseline) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
+CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-26 the baseline is **78.74% statements / 67.91% branches / 83.22% functions / 80.58% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, kept a bit under the measured baseline as headroom) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
 
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
