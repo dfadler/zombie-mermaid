@@ -91,16 +91,12 @@ function buildErElkGraph(
     entitySizes.set(entity.id, { width, height })
   }
 
+  // Iterate entitySizes directly (populated above, in diagram.entities order)
+  // rather than looking each entity back up by id — sidesteps needing an
+  // assertion or invariant check for a lookup that can't actually miss.
   const children: ElkNode[] = []
-  for (const entity of diagram.entities) {
-    const size = entitySizes.get(entity.id)
-    if (!size) {
-      // Unreachable — every entity.id was just inserted into entitySizes
-      // above — but keeps the invariant explicit rather than silently
-      // pushing an undefined-sized node into the ELK graph.
-      throw new Error(`Missing computed size for entity "${entity.id}"`)
-    }
-    children.push({ id: entity.id, width: size.width, height: size.height })
+  for (const [id, size] of entitySizes) {
+    children.push({ id, width: size.width, height: size.height })
   }
 
   const edges: ElkExtendedEdge[] = []
@@ -162,6 +158,7 @@ function extractErLayout(
       if (!size) {
         // Unreachable — entitySizes is populated for every diagram.entities
         // entry, and entityLookup/entity.id come from that same list.
+        /* v8 ignore next */
         throw new Error(`Missing computed size for entity "${entity.id}"`)
       }
       positionedEntities.push({

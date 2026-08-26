@@ -31,6 +31,14 @@ describe('renderMermaidSVG – ER diagrams', () => {
     expect(svg).toContain('UK')
   })
 
+  it('renders an attribute comment as an SVG tooltip', () => {
+    const svg = renderMermaidSVG(`erDiagram
+      CUSTOMER {
+        string email UK "primary contact email"
+      }`)
+    expect(svg).toContain('<title>primary contact email</title>')
+  })
+
   it('renders relationship lines between entities', () => {
     const svg = renderMermaidSVG(`erDiagram
       A ||--o{ B : has`)
