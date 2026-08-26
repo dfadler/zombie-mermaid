@@ -291,6 +291,11 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   // Type label tab (top-left corner)
   // For multi-line block labels, we use the first line for the tab but show full label
   const labelText = `${block.type}${block.label ? ` [${block.label}]` : ''}`
+  // Audited for issue #100: `String.prototype.split` always returns an
+  // array with at least one element (even splitting `''` yields `['']`),
+  // so index 0 is guaranteed to exist regardless of whether `labelText`
+  // contains a newline. `noUncheckedIndexedAccess` can't see that
+  // language-level guarantee; left as-is, no behavior change.
   const firstLine = labelText.split('\n')[0]!
   const tabWidth =
     estimateTextWidth(

@@ -24,6 +24,21 @@ import { DEFAULTS } from './constants.ts'
  * Intermediate bend points are left unchanged — edge bundling or clipping
  * will recalculate them afterwards.
  */
+// Audited for issue #100 (non-null assertions): every `!` in this file is
+// a bounds-checked array access, each backed by an explicit check earlier
+// in the same scope — `sorted[0]!` and the `sorted[i]!`/`sorted[i - 1]!`
+// loop-index accesses below are guaranteed by the `nodes.length === 0`
+// early return plus the `for (let i = 1; i < sorted.length; ...)` loop
+// bound; `edge.points[0]!`, `edge.points[1]!`, and the
+// `edge.points[edge.points.length - 1]!` / `[edge.points.length - 2]!`
+// pairs are guaranteed by the `edge.points.length < 2` early `continue`
+// (and, redundantly, the `edge.points.length > 1` checks right above each
+// access). This is the same idiom already accepted as justified elsewhere
+// in this codebase (see src/parser.ts, PR #158, and this directory's
+// edge-bundling.ts/from-elk.ts audit, PR #150, which didn't reach this
+// file). `noUncheckedIndexedAccess` can't see any of these guarantees,
+// but removing the `!` would only replace a proven-safe assertion with an
+// unreachable guard. Left as-is; no behavior change.
 export function alignLayerNodes(
   nodes: PositionedNode[],
   edges: PositionedEdge[],
