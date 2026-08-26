@@ -98,8 +98,9 @@ export function bundleEdgePaths(
   const fanOutGroups = new Map<string, PositionedEdge[]>()
   for (const edge of edges) {
     if (edge.source === edge.target) continue
-    if (!fanOutGroups.has(edge.source)) fanOutGroups.set(edge.source, [])
-    fanOutGroups.get(edge.source)!.push(edge)
+    const group = fanOutGroups.get(edge.source) ?? []
+    fanOutGroups.set(edge.source, group)
+    group.push(edge)
   }
 
   for (const [sourceId, group] of fanOutGroups) {
@@ -111,21 +112,25 @@ export function bundleEdgePaths(
     const source = nodeMap.get(sourceId)
     if (!source) continue
 
-    // Only bundle edges going in the forward direction
-    const forward = group.filter((e) => {
+    // Only bundle edges going in the forward direction. Collects the
+    // resolved target node alongside each edge as it filters, rather than
+    // re-querying nodeMap afterward — the two lookups can't be proven to
+    // agree from a map() over a separately-filtered array.
+    const targets: { edge: PositionedEdge; node: PositionedNode }[] = []
+    for (const e of group) {
       const t = nodeMap.get(e.target)
-      if (!t) return false
-      if (isLR) return t.x > source.x + source.width
-      if (isRL) return t.x + t.width < source.x
-      if (isBT) return t.y + t.height < source.y
-      return t.y > source.y + source.height // TD/TB
-    })
-    if (forward.length < 2) continue
+      if (!t) continue
+      const isForward = isLR
+        ? t.x > source.x + source.width
+        : isRL
+          ? t.x + t.width < source.x
+          : isBT
+            ? t.y + t.height < source.y
+            : t.y > source.y + source.height // TD/TB
+      if (isForward) targets.push({ edge: e, node: t })
+    }
+    if (targets.length < 2) continue
 
-    const targets = forward.map((e) => ({
-      edge: e,
-      node: nodeMap.get(e.target)!,
-    }))
     const srcCX = source.x + source.width / 2
     const srcCY = source.y + source.height / 2
 
@@ -190,8 +195,9 @@ export function bundleEdgePaths(
   const fanInGroups = new Map<string, PositionedEdge[]>()
   for (const edge of edges) {
     if (processed.has(edge) || edge.source === edge.target) continue
-    if (!fanInGroups.has(edge.target)) fanInGroups.set(edge.target, [])
-    fanInGroups.get(edge.target)!.push(edge)
+    const group = fanInGroups.get(edge.target) ?? []
+    fanInGroups.set(edge.target, group)
+    group.push(edge)
   }
 
   for (const [targetId, group] of fanInGroups) {
@@ -203,20 +209,24 @@ export function bundleEdgePaths(
     const target = nodeMap.get(targetId)
     if (!target) continue
 
-    const forward = group.filter((e) => {
+    // Collects the resolved source node alongside each edge as it filters,
+    // rather than re-querying nodeMap afterward (see the fan-out loop above
+    // for why: a map() over a separately-filtered array can't be proven to
+    // agree with the filter's own lookup).
+    const sources: { edge: PositionedEdge; node: PositionedNode }[] = []
+    for (const e of group) {
       const s = nodeMap.get(e.source)
-      if (!s) return false
-      if (isLR) return s.x + s.width < target.x
-      if (isRL) return s.x > target.x + target.width
-      if (isBT) return s.y > target.y + target.height
-      return s.y + s.height < target.y // TD/TB
-    })
-    if (forward.length < 2) continue
-
-    const sources = forward.map((e) => ({
-      edge: e,
-      node: nodeMap.get(e.source)!,
-    }))
+      if (!s) continue
+      const isForward = isLR
+        ? s.x + s.width < target.x
+        : isRL
+          ? s.x > target.x + target.width
+          : isBT
+            ? s.y > target.y + target.height
+            : s.y + s.height < target.y // TD/TB
+      if (isForward) sources.push({ edge: e, node: s })
+    }
+    if (sources.length < 2) continue
     const tgtCX = target.x + target.width / 2
     const tgtCY = target.y + target.height / 2
 
