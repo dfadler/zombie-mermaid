@@ -15,7 +15,7 @@
  * space of left padding whenever the box has any slack at all.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 /** Find the line containing a subgraph's rendered title text. */
 function findTitleLine(output: string, title: string): string {
@@ -37,7 +37,7 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
   ONE --> TWO`
 
   it('never glues a subgraph title to its left border, even when a connector column runs through the title row', () => {
-    const output = renderMermaidAscii(mermaid)
+    const output = renderMermaidASCII(mermaid)
 
     const firstLine = findTitleLine(output, 'First')
     const secondLine = findTitleLine(output, 'Second')
@@ -56,7 +56,7 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
   it('still centers a title symmetrically when the label/width parity allows it', () => {
     // "First" (5 chars) fits its box's interior (7 cols) with one space of
     // padding on both sides — this must remain unaffected by the fix.
-    const output = renderMermaidAscii(mermaid)
+    const output = renderMermaidASCII(mermaid)
     const firstLine = findTitleLine(output, 'First')
     expect(firstLine).toBe('│ First │')
   })
@@ -70,7 +70,7 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
     B1["c"] --> B2["d"]
   end`
 
-    const output = renderMermaidAscii(mermaidNoEdge)
+    const output = renderMermaidASCII(mermaidNoEdge)
     const secondLine = findTitleLine(output, 'Second')
     expect(secondLine).toMatch(/│ Second/)
   })

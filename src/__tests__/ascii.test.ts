@@ -8,7 +8,7 @@
  * Test data: 44 ASCII files + 22 Unicode files = 66 total.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 import { hasDiagonalLines, DIAGONAL_CHARS } from '../ascii/validate.ts'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -133,7 +133,7 @@ function runGoldenTests(dir: string, useAscii: boolean): void {
       const content = readFileSync(join(dir, file), 'utf-8')
       const tc = parseTestCase(content)
 
-      const actual = renderMermaidAscii(tc.mermaid, {
+      const actual = renderMermaidASCII(tc.mermaid, {
         useAscii,
         paddingX: tc.paddingX,
         paddingY: tc.paddingY,
@@ -173,20 +173,20 @@ describe('Config behavior', () => {
   const mermaidInput = 'graph LR\nA --> B'
 
   it('ASCII and Unicode outputs should differ', () => {
-    const asciiOutput = renderMermaidAscii(mermaidInput, { useAscii: true })
-    const unicodeOutput = renderMermaidAscii(mermaidInput, { useAscii: false })
+    const asciiOutput = renderMermaidASCII(mermaidInput, { useAscii: true })
+    const unicodeOutput = renderMermaidASCII(mermaidInput, { useAscii: false })
     expect(asciiOutput).not.toBe(unicodeOutput)
   })
 
   it('ASCII output should not contain Unicode box-drawing characters', () => {
-    const output = renderMermaidAscii(mermaidInput, { useAscii: true })
+    const output = renderMermaidASCII(mermaidInput, { useAscii: true })
     expect(output).not.toContain('┌')
     expect(output).not.toContain('─')
     expect(output).not.toContain('│')
   })
 
   it('Unicode output should contain Unicode box-drawing characters', () => {
-    const output = renderMermaidAscii(mermaidInput, { useAscii: false })
+    const output = renderMermaidASCII(mermaidInput, { useAscii: false })
     const hasUnicode =
       output.includes('┌') || output.includes('─') || output.includes('│')
     expect(hasUnicode).toBe(true)
@@ -207,7 +207,7 @@ describe('Diagonal validation', () => {
     for (const file of files) {
       const content = readFileSync(join(asciiDir, file), 'utf-8')
       const { mermaid, paddingX, paddingY } = parseTestCase(content)
-      const output = renderMermaidAscii(mermaid, {
+      const output = renderMermaidASCII(mermaid, {
         useAscii: true,
         boxBorderPadding: paddingX,
         paddingY: paddingY,
@@ -226,7 +226,7 @@ describe('Diagonal validation', () => {
     for (const file of files) {
       const content = readFileSync(join(unicodeDir, file), 'utf-8')
       const { mermaid, paddingX, paddingY } = parseTestCase(content)
-      const output = renderMermaidAscii(mermaid, {
+      const output = renderMermaidASCII(mermaid, {
         useAscii: false,
         boxBorderPadding: paddingX,
         paddingY: paddingY,
@@ -260,7 +260,7 @@ describe('Diagonal validation', () => {
 
 describe('Issue #65 – --o/--x edges no longer drop the target node', () => {
   it('renders both nodes and a connector for A --o B', () => {
-    const output = renderMermaidAscii('graph LR\n  A --o B')
+    const output = renderMermaidASCII('graph LR\n  A --o B')
     expect(output).toContain('A')
     expect(output).toContain('B')
     // The connecting line/arrow should be present, not just two bare boxes.
@@ -268,7 +268,7 @@ describe('Issue #65 – --o/--x edges no longer drop the target node', () => {
   })
 
   it('renders both nodes and a connector for A --x B', () => {
-    const output = renderMermaidAscii('graph LR\n  A --x B')
+    const output = renderMermaidASCII('graph LR\n  A --x B')
     expect(output).toContain('A')
     expect(output).toContain('B')
     expect(output).toMatch(/[─▼►]/)
@@ -286,7 +286,7 @@ describe('Issue #65 – edges to a subgraph id no longer create phantom nodes', 
   ONE --> TWO`
 
   it('does not render a standalone "ONE" or "TWO" box disconnected from the subgraphs', () => {
-    const output = renderMermaidAscii(mermaid)
+    const output = renderMermaidASCII(mermaid)
     // The subgraph titles ("First"/"Second") should render; the raw
     // subgraph ids should not appear as their own node labels.
     expect(output).toContain('First')
@@ -296,7 +296,7 @@ describe('Issue #65 – edges to a subgraph id no longer create phantom nodes', 
   })
 
   it('draws a real connector between the two subgraph frames', () => {
-    const output = renderMermaidAscii(mermaid)
+    const output = renderMermaidASCII(mermaid)
     // A vertical connector should cross between the two subgraph boxes.
     expect(output).toMatch(/[│▼]/)
   })
@@ -304,7 +304,7 @@ describe('Issue #65 – edges to a subgraph id no longer create phantom nodes', 
 
 describe('Issue #65 – inline <i>/<b>/<em>/<strong> tags are stripped', () => {
   it('strips inline formatting tags from a node label', () => {
-    const output = renderMermaidAscii(
+    const output = renderMermaidASCII(
       'flowchart TD\n  A["italic <i>word</i> and bold <b>x</b>"]',
     )
     expect(output).toContain('italic word and bold x')
@@ -315,7 +315,7 @@ describe('Issue #65 – inline <i>/<b>/<em>/<strong> tags are stripped', () => {
   })
 
   it('strips <em>/<strong> as well', () => {
-    const output = renderMermaidAscii(
+    const output = renderMermaidASCII(
       'flowchart TD\n  A["<em>emphasis</em> and <strong>strong</strong>"]',
     )
     expect(output).toContain('emphasis and strong')

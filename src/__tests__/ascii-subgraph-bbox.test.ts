@@ -21,7 +21,7 @@ import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
 import { convertToAsciiGraph } from '../ascii/converter.ts'
 import { createMapping } from '../ascii/grid.ts'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 import type { AsciiConfig, AsciiGraph, AsciiSubgraph } from '../ascii/types.ts'
 
 function layoutFlowchart(
@@ -75,7 +75,7 @@ describe('ASCII subgraph bounding boxes stay disjoint (#90)', () => {
     const application = findSubgraph(graph, 'Application tier')
     expect(boxesOverlap(frontend, application)).toBe(false)
 
-    const output = renderMermaidAscii(issueRepro)
+    const output = renderMermaidASCII(issueRepro)
     expect(output).toContain('Frontend tier')
     expect(output).toContain('Application tier')
     // Guard against the exact corrupted-title symptom from the issue, where
@@ -92,7 +92,7 @@ describe('ASCII subgraph bounding boxes stay disjoint (#90)', () => {
     const application = findSubgraph(graph, 'Application tier')
     expect(boxesOverlap(frontend, application)).toBe(false)
 
-    const output = renderMermaidAscii(lrSource)
+    const output = renderMermaidASCII(lrSource)
     expect(output).toContain('Frontend tier')
     expect(output).toContain('Application tier')
   })
@@ -127,7 +127,7 @@ describe('ASCII subgraph bounding boxes stay disjoint (#90)', () => {
       }
     }
 
-    const output = renderMermaidAscii(source)
+    const output = renderMermaidASCII(source)
     expect(output).toContain('Alpha')
     expect(output).toContain('Beta')
     expect(output).toContain('Gamma')

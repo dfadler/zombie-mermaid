@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 import { stadiumRenderer } from '../ascii/shapes/stadium.ts'
 import type { Canvas } from '../ascii/types.ts'
 
@@ -16,7 +16,7 @@ function canvasToLines(canvas: Canvas): string[] {
 
 describe('stadium shape (flowchart integration)', () => {
   it('renders a short single-line stadium label in unicode mode', () => {
-    const ascii = renderMermaidAscii('graph TD\n  A([Start])', {
+    const ascii = renderMermaidASCII('graph TD\n  A([Start])', {
       useAscii: false,
     })
     expect(ascii).toContain('Start')
@@ -25,7 +25,7 @@ describe('stadium shape (flowchart integration)', () => {
   })
 
   it('renders a short single-line stadium label in ascii mode', () => {
-    const ascii = renderMermaidAscii('graph TD\n  A([Start])', {
+    const ascii = renderMermaidASCII('graph TD\n  A([Start])', {
       useAscii: true,
     })
     expect(ascii).toContain('Start')
@@ -35,10 +35,10 @@ describe('stadium shape (flowchart integration)', () => {
   })
 
   it('sizes the stadium wider for a longer label', () => {
-    const shortAscii = renderMermaidAscii('graph TD\n  A([Hi])', {
+    const shortAscii = renderMermaidASCII('graph TD\n  A([Hi])', {
       useAscii: false,
     })
-    const longAscii = renderMermaidAscii(
+    const longAscii = renderMermaidASCII(
       'graph TD\n  A([This is a fairly long stadium label])',
       { useAscii: false },
     )
@@ -49,7 +49,7 @@ describe('stadium shape (flowchart integration)', () => {
   })
 
   it('renders a two-line stadium label with lines stacked in order', () => {
-    const ascii = renderMermaidAscii('graph TD\n  A([Line1<br>Line2])', {
+    const ascii = renderMermaidASCII('graph TD\n  A([Line1<br>Line2])', {
       useAscii: false,
     })
     expect(ascii).toContain('Line1')
@@ -61,7 +61,7 @@ describe('stadium shape (flowchart integration)', () => {
   })
 
   it('renders a three-line stadium label in ascii mode', () => {
-    const ascii = renderMermaidAscii('graph TD\n  A([One<br>Two<br>Three])', {
+    const ascii = renderMermaidASCII('graph TD\n  A([One<br>Two<br>Three])', {
       useAscii: true,
     })
     expect(ascii).toContain('One')
@@ -70,7 +70,7 @@ describe('stadium shape (flowchart integration)', () => {
   })
 
   it('connects an edge between two stadium nodes', () => {
-    const ascii = renderMermaidAscii('graph TD\n  A([Begin]) --> B([End])', {
+    const ascii = renderMermaidASCII('graph TD\n  A([Begin]) --> B([End])', {
       useAscii: false,
     })
     expect(ascii).toContain('Begin')

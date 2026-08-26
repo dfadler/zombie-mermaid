@@ -13,11 +13,11 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidAscii } from '../ascii/index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 describe('ASCII sequence diagrams – self-arrow labels (issue #68)', () => {
   it('splits <br/> in a self-arrow label across rows without corrupting the canvas', () => {
-    const result = renderMermaidAscii(
+    const result = renderMermaidASCII(
       `
 sequenceDiagram
   participant A
@@ -55,7 +55,7 @@ sequenceDiagram
   })
 
   it('handles 3+ line self-arrow labels', () => {
-    const result = renderMermaidAscii(
+    const result = renderMermaidASCII(
       `
 sequenceDiagram
   participant A
@@ -72,7 +72,7 @@ sequenceDiagram
   })
 
   it("extends an alt block's wall past a self-arrow's loop and label", () => {
-    const result = renderMermaidAscii(
+    const result = renderMermaidASCII(
       `
 sequenceDiagram
   participant A
@@ -102,7 +102,7 @@ sequenceDiagram
   })
 
   it("extends a loop block's wall past a self-arrow's loop and label", () => {
-    const result = renderMermaidAscii(
+    const result = renderMermaidASCII(
       `
 sequenceDiagram
   participant A

@@ -1,7 +1,7 @@
 // ============================================================================
 // Browser entry point for zombie-mermaid
 //
-// Exposes renderMermaid and renderMermaidAscii on window.__mermaid so they
+// Exposes renderMermaid and renderMermaidASCII on window.__mermaid so they
 // can be called from inline <script> tags in samples.html.
 //
 // Bundled via esbuild's `build({ platform: 'browser' })` in index.ts.
