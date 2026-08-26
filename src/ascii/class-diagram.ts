@@ -229,10 +229,12 @@ export function renderClassAscii(
     const parentId = isHierarchical && rel.markerAt === 'to' ? rel.to : rel.from
     const childId = isHierarchical && rel.markerAt === 'to' ? rel.from : rel.to
 
-    if (!parents.has(childId)) parents.set(childId, new Set())
-    parents.get(childId)!.add(parentId)
-    if (!children.has(parentId)) children.set(parentId, new Set())
-    children.get(parentId)!.add(childId)
+    const parentSet = parents.get(childId) ?? new Set<string>()
+    parents.set(childId, parentSet)
+    parentSet.add(parentId)
+    const childSet = children.get(parentId) ?? new Set<string>()
+    children.set(parentId, childSet)
+    childSet.add(childId)
   }
 
   // BFS from roots (classes that have no parents) to assign levels.

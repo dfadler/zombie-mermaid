@@ -64,6 +64,23 @@ export function renderSequenceAscii(
   const actorIdx = new Map<string, number>()
   diagram.actors.forEach((a, i) => actorIdx.set(a.id, i))
 
+  /**
+   * Look up an actor's column index. The parser's `ensureActor` (see
+   * sequence/parser.ts) guarantees every message endpoint has a
+   * corresponding actor entry, so this is always found for real parsed
+   * input — but that guarantee lives in a different module/function, so
+   * narrow it here explicitly rather than trusting it silently across the
+   * boundary.
+   */
+  function actorIndexOf(id: string): number {
+    const idx = actorIdx.get(id)
+    if (idx === undefined) {
+      /* v8 ignore next */
+      throw new Error(`Sequence diagram: unknown actor "${id}"`)
+    }
+    return idx
+  }
+
   const boxPad = 1
   // Use max line width for multi-line actor labels
   const actorBoxWidths = diagram.actors.map(
@@ -81,8 +98,8 @@ export function renderSequenceAscii(
   ).fill(0)
 
   for (const msg of diagram.messages) {
-    const fi = actorIdx.get(msg.from)!
-    const ti = actorIdx.get(msg.to)!
+    const fi = actorIndexOf(msg.from)
+    const ti = actorIndexOf(msg.to)
     if (fi === ti) continue // self-messages don't affect spacing
     const lo = Math.min(fi, ti)
     const hi = Math.max(fi, ti)
@@ -263,7 +280,7 @@ export function renderSequenceAscii(
   for (let m = 0; m < diagram.messages.length; m++) {
     const msg = diagram.messages[m]!
     if (msg.from === msg.to) {
-      const fi = actorIdx.get(msg.from)!
+      const fi = actorIndexOf(msg.from)
       const selfRight =
         llX[fi]! + SELF_LOOP_WIDTH + 2 + 2 + maxLineWidth(msg.label)
       totalW = Math.max(totalW, selfRight + 1)
@@ -345,8 +362,8 @@ export function renderSequenceAscii(
 
   for (let m = 0; m < diagram.messages.length; m++) {
     const msg = diagram.messages[m]!
-    const fi = actorIdx.get(msg.from)!
-    const ti = actorIdx.get(msg.to)!
+    const fi = actorIndexOf(msg.from)
+    const ti = actorIndexOf(msg.to)
     const fromX = llX[fi]!
     const toX = llX[ti]!
     const isSelf = fi === ti

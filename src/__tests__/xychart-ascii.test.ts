@@ -186,6 +186,14 @@ describe('xychart ASCII – horizontal', () => {
     expect(result).toContain('─')
     expect(result).toContain('│')
   })
+
+  it('renders a y-axis title in horizontal orientation', () => {
+    const result = render(`xychart-beta horizontal
+      x-axis [A, B, C]
+      y-axis "Score" 0 --> 100
+      bar [10, 30, 20]`)
+    expect(result).toContain('Score')
+  })
 })
 
 // ============================================================================

@@ -780,8 +780,12 @@ export function createMapping(graph: AsciiGraph): void {
   for (const node of deferredRoots) {
     const topSg = getTopLevelSubgraph(graph, node)!
     const nodeDir = getEffectiveDirection(graph, node)
+    // Type predicate narrows `gridCoord` to non-null on every element, so the
+    // loop below can read `.gridCoord.x`/`.y` directly instead of trusting
+    // that this filter and the access stay in sync via a bare `!`.
     const placedSiblings = collectSubgraphMembers(topSg).filter(
-      (m) => m !== node && m.gridCoord !== null,
+      (m): m is AsciiNode & { gridCoord: GridCoord } =>
+        m !== node && m.gridCoord !== null,
     )
 
     let requested: GridCoord
@@ -794,11 +798,11 @@ export function createMapping(graph: AsciiGraph): void {
       for (const sibling of placedSiblings) {
         const isShallower =
           nodeDir === 'LR'
-            ? sibling.gridCoord!.x < anchor.gridCoord!.x
-            : sibling.gridCoord!.y < anchor.gridCoord!.y
+            ? sibling.gridCoord.x < anchor.gridCoord.x
+            : sibling.gridCoord.y < anchor.gridCoord.y
         if (isShallower) anchor = sibling
       }
-      requested = { x: anchor.gridCoord!.x, y: anchor.gridCoord!.y }
+      requested = { x: anchor.gridCoord.x, y: anchor.gridCoord.y }
     } else {
       // Defensive fallback — shouldn't normally happen, since we only defer
       // a node when it has a sibling that's guaranteed to be placed by the

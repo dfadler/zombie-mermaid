@@ -133,7 +133,16 @@ function renderVertical(
   const dataCount = getDataCount(chart)
   if (dataCount === 0) return ''
 
-  const yRange = chart.yAxis.range!
+  // parseXYChart always derives a y-axis range (from data or a 0-100
+  // fallback — see xychart/parser.ts) before returning, so this is never
+  // actually undefined for parsed input. That guarantee lives in a
+  // different module, so narrow it here explicitly instead of trusting it
+  // silently across the boundary.
+  const yRange = chart.yAxis.range
+  if (!yRange) {
+    /* v8 ignore next */
+    throw new Error('XY chart: y-axis range was not set by the parser')
+  }
   const yTicks = niceTickValues(yRange.min, yRange.max)
   const yLabels = yTicks.map((v) => formatTickValue(v))
   const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
@@ -174,13 +183,13 @@ function renderVertical(
     plotLeft + Math.floor(bandW * (i + 0.5))
 
   // 1. Title
-  if (hasTitle && titleRow >= 0) {
+  if (chart.title && titleRow >= 0) {
     writeText(
       canvas,
       roles,
       titleRow,
-      Math.floor(totalW / 2 - chart.title!.length / 2),
-      chart.title!,
+      Math.floor(totalW / 2 - chart.title.length / 2),
+      chart.title,
       'text',
     )
   }
@@ -241,8 +250,8 @@ function renderVertical(
   }
 
   // 5. X-axis title
-  if (hasXTitle && xTitleRow >= 0) {
-    const title = chart.xAxis.title!
+  if (chart.xAxis.title && xTitleRow >= 0) {
+    const title = chart.xAxis.title
     writeText(
       canvas,
       roles,
@@ -351,7 +360,14 @@ function renderHorizontal(
   const dataCount = getDataCount(chart)
   if (dataCount === 0) return ''
 
-  const yRange = chart.yAxis.range!
+  // See the matching comment in renderVertical: the parser always derives a
+  // y-axis range before returning, but that guarantee lives in a different
+  // module, so it's narrowed here explicitly rather than trusted silently.
+  const yRange = chart.yAxis.range
+  if (!yRange) {
+    /* v8 ignore next */
+    throw new Error('XY chart: y-axis range was not set by the parser')
+  }
   const valueTicks = niceTickValues(yRange.min, yRange.max)
   const catLabels = getCategoryLabels(chart, dataCount)
   const catGutter = Math.max(...catLabels.map((l) => l.length)) + 1
@@ -384,13 +400,13 @@ function renderHorizontal(
   const bandMid = (i: number): number => plotTop + Math.floor(bandH * (i + 0.5))
 
   // Title
-  if (hasTitle) {
+  if (chart.title) {
     writeText(
       canvas,
       roles,
       0,
-      Math.floor(totalW / 2 - chart.title!.length / 2),
-      chart.title!,
+      Math.floor(totalW / 2 - chart.title.length / 2),
+      chart.title,
       'text',
     )
   }
@@ -443,8 +459,8 @@ function renderHorizontal(
   }
 
   // Y-axis title
-  if (hasYTitle) {
-    const title = chart.yAxis.title!
+  if (chart.yAxis.title) {
+    const title = chart.yAxis.title
     writeText(
       canvas,
       roles,
