@@ -491,10 +491,19 @@ function parseStyleProps(propsStr: string): Record<string, string> {
  *   -.-> -.-       dotted arrow / dotted line
  *   ==>  ===       thick arrow / thick line
  *   <--> <-.-> <==>  bidirectional variants
+ *   --o  --x       circle-end / cross-end arrow (see issue #65)
+ *   o--  x--       circle-start / cross-start arrow
+ *   o--o x--x      circle/cross at both ends
+ *
+ * The doubled `o--o`/`x--x` forms must be tried before the single-sided
+ * `o--`/`x--` forms — regex alternation picks the first alternative that
+ * matches, not the longest, so `o--` listed first would consume just the
+ * start marker and strand the trailing `o` as a bogus token.
  *
  * Optional label: -->|label text|
  */
-const ARROW_REGEX = /^(<)?(-->|-.->|==>|---|-\.-|===)(?:\|([^|]*)\|)?/
+const ARROW_REGEX =
+  /^(<)?(-->|-.->|==>|---|-\.-|===|o--o|x--x|--o|--x|o--|x--)(?:\|([^|]*)\|)?/
 
 /**
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
@@ -602,13 +611,23 @@ function parseEdgeLine(
 
     const arrowMatch = remaining.match(ARROW_REGEX)
     if (arrowMatch) {
-      hasArrowStart = Boolean(arrowMatch[1])
       const arrowOp = arrowMatch[2]!
+      // `o--`/`x--` mark a circle/cross terminator at the start of the
+      // edge (in addition to the `<` reversed-arrow marker); `--o`/`--x`
+      // mark one at the end. Neither renderer models a distinct
+      // circle/cross marker shape yet, so these terminators are treated
+      // like a regular arrowhead (see issue #65) — the goal here is to
+      // stop the edge and its target node from being silently dropped.
+      hasArrowStart =
+        Boolean(arrowMatch[1]) ||
+        arrowOp.startsWith('o') ||
+        arrowOp.startsWith('x')
       const rawEdgeLabel = arrowMatch[3]?.trim()
       edgeLabel = rawEdgeLabel ? normalizeBrTags(rawEdgeLabel) : undefined
       remaining = remaining.slice(arrowMatch[0].length).trim()
       style = arrowStyleFromOp(arrowOp)
-      hasArrowEnd = arrowOp.endsWith('>')
+      hasArrowEnd =
+        arrowOp.endsWith('>') || arrowOp.endsWith('o') || arrowOp.endsWith('x')
     } else {
       // Fallback: text-embedded label syntax (-- Yes -->, -. Maybe .->, == Sure ==>)
       const textMatch = remaining.match(TEXT_ARROW_REGEX)
