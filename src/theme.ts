@@ -402,7 +402,15 @@ const HEX_COLOR_RE =
 function parseHexColor(value: string): [number, number, number] | null {
   const match = HEX_COLOR_RE.exec(value.trim())
   if (!match) return null
-  let hex = match[1]!
+  // HEX_COLOR_RE has exactly one, non-optional capture group, so it's always
+  // populated when `match` is non-null — but that's a fact about the regex's
+  // construction, not something the type checker can see. Guard explicitly
+  // (falling back to "unresolvable", same as a non-match) rather than
+  // asserting past it, so a future edit to the pattern can't silently turn
+  // this into a runtime `undefined`.
+  const captured = match[1]
+  if (captured === undefined) return null
+  let hex = captured
   if (hex.length === 3 || hex.length === 4) {
     hex = hex
       .split('')

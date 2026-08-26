@@ -29,12 +29,12 @@ export type CliArgs = RenderArgs | SimpleCommand
 // ============================================================================
 
 export function parseArgs(argv: string[]): CliArgs {
+  const [first, ...rest] = argv
+
   // Empty args → help
-  if (argv.length === 0) {
+  if (first === undefined) {
     return { command: 'help' }
   }
-
-  const first = argv[0]!
 
   // Top-level flags (before any command)
   if (first === '--help' || first === '-h') {
@@ -51,7 +51,7 @@ export function parseArgs(argv: string[]): CliArgs {
 
   // Render command
   if (first === 'render') {
-    return parseRender(argv.slice(1))
+    return parseRender(rest)
   }
 
   throw new Error(`Unknown command: ${first}`)
@@ -70,7 +70,15 @@ function parseRender(args: string[]): RenderArgs {
 
   let i = 0
   while (i < args.length) {
-    const arg = args[i]!
+    const arg = args[i]
+    // `i < args.length` (the loop condition) guarantees this is defined —
+    // but that's bounds-vs-loop-variable reasoning the type checker can't
+    // verify, so guard explicitly rather than asserting past it.
+    if (arg === undefined) {
+      throw new Error(
+        `parseArgs: index ${i} out of range while parsing arguments`,
+      )
+    }
 
     if (arg === '--ascii') {
       ascii = true
