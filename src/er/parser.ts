@@ -167,7 +167,7 @@ function parseAttribute(line: string): ErAttribute | null {
   for (const part of restWithoutComment.split(/\s+/)) {
     const upper = part.toUpperCase()
     if (upper === 'PK' || upper === 'FK' || upper === 'UK') {
-      keys.push(upper as 'PK' | 'FK' | 'UK')
+      keys.push(upper)
     }
   }
 

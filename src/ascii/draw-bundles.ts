@@ -19,6 +19,7 @@ import { copyCanvas } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { getShapeAttachmentPoint } from './shapes/index.ts'
+import type { ShapeDimensions } from './shapes/index.ts'
 import { drawLine } from './draw-lines.ts'
 
 // ============================================================================
@@ -49,12 +50,12 @@ function getNodeAttachmentPoint(
   }
 
   // Build dimensions matching the actual drawn box size
-  const gridDimensions = {
+  const gridDimensions: ShapeDimensions = {
     width: w + 1,
     height: h + 1,
     labelArea: { x: 0, y: 0, width: 0, height: 0 },
-    gridColumns: [0, 0, 0] as [number, number, number],
-    gridRows: [0, 0, 0] as [number, number, number],
+    gridColumns: [0, 0, 0],
+    gridRows: [0, 0, 0],
   }
 
   const baseCoord = node.drawingCoord!

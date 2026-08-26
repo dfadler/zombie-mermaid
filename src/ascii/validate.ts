@@ -25,6 +25,15 @@ export interface DiagonalPosition {
 }
 
 /**
+ * Type guard narrowing a single character to one of `DIAGONAL_CHARS.all`.
+ */
+function isDiagonalChar(
+  char: string,
+): char is (typeof DIAGONAL_CHARS.all)[number] {
+  return (DIAGONAL_CHARS.all as readonly string[]).includes(char)
+}
+
+/**
  * Check if ASCII output contains any diagonal line characters.
  * Returns true if diagonals are found (which is an error condition).
  *
@@ -65,7 +74,7 @@ export function findDiagonalLines(asciiOutput: string): DiagonalPosition[] {
 
     for (let col = 0; col < line.length; col++) {
       const char = line[col]!
-      if (DIAGONAL_CHARS.all.includes(char as '/' | '\\' | '╱' | '╲')) {
+      if (isDiagonalChar(char)) {
         // Check if this position is inside a node (between two box borders)
         // Find the nearest borders before and after this position
         let insideNode = false
