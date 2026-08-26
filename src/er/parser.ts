@@ -36,6 +36,19 @@ import { toDirection } from '../parser.ts'
  * Parse a Mermaid ER diagram.
  * Expects the first line to be "erDiagram".
  */
+// Audited for issue #100 (non-null assertions): every `!` in this file is
+// either a bounds-checked loop-index array access (`lines[i]!` inside a
+// `for (let i = 1; i < lines.length; ...)` loop) or a regex-mandatory-
+// capture-group access after `.match()` (a group that isn't wrapped in an
+// optional `(?:...)?`, so it always participates when the overall match
+// succeeds). Both are the same idioms already accepted as justified
+// elsewhere in this codebase (see src/parser.ts, PR #158, and this
+// subsystem's layout.ts/renderer.ts audit, PR #148, which fixed the
+// genuinely risky assertions there but didn't reach this file — PR #146
+// separately reviewed this file's `as` casts, which are a different
+// concern from these `!`s) — `noUncheckedIndexedAccess` can't see either
+// guarantee, but removing the `!` would only replace a proven-safe
+// assertion with an unreachable guard. Left as-is; no behavior change.
 export function parseErDiagram(lines: string[]): ErDiagram {
   const diagram: ErDiagram = {
     entities: [],

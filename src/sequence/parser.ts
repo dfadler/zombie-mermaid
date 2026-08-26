@@ -69,6 +69,22 @@ export function toBlockType(value: string): Block['type'] {
  * Parse a Mermaid sequence diagram.
  * Expects the first line to be "sequenceDiagram".
  */
+// Audited for issue #100 (non-null assertions): every `!` in this file is
+// one of three idioms already accepted as justified elsewhere in this
+// codebase — (1) a bounds-checked loop-index array access (`lines[i]!`
+// inside a `for (let i = 1; i < lines.length; ...)` loop), (2) a
+// regex-mandatory-capture-group access after `.match()` (a group not
+// wrapped in an optional `(?:...)?`, so it always participates when the
+// overall match succeeds), or (3) `blockStack[blockStack.length - 1]!` /
+// `blockStack.pop()!`, both guarded immediately above by an explicit
+// `blockStack.length > 0` check. See src/parser.ts (PR #158) and this
+// subsystem's layout.ts audit (PR #149), which fixed the one genuinely
+// risky assertion in the subsystem (a Map get/set race) but didn't reach
+// this file — PR #146 separately reviewed this file's `as` casts, a
+// different concern from these `!`s. `noUncheckedIndexedAccess` can't see
+// any of these guarantees, but removing the `!` would only replace a
+// proven-safe assertion with an unreachable guard. Left as-is; no
+// behavior change.
 export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
   const diagram: SequenceDiagram = {
     actors: [],
