@@ -5,7 +5,14 @@ import { runRender } from './cli/render.ts'
 import { THEMES } from './theme.ts'
 
 const require = createRequire(import.meta.url)
-const pkg = require('../package.json') as { version: string }
+const pkg: unknown = require('../package.json')
+const pkgVersion =
+  typeof pkg === 'object' &&
+  pkg !== null &&
+  'version' in pkg &&
+  typeof pkg.version === 'string'
+    ? pkg.version
+    : 'unknown'
 
 export async function main() {
   const argv = process.argv.slice(2)
@@ -14,7 +21,7 @@ export async function main() {
   try {
     args = parseArgs(argv)
   } catch (err) {
-    console.error(`Error: ${(err as Error).message}`)
+    console.error(`Error: ${err instanceof Error ? err.message : String(err)}`)
     process.exit(1)
   }
 
@@ -24,7 +31,7 @@ export async function main() {
       break
 
     case 'version':
-      console.log(`zombie-mermaid ${pkg.version}`)
+      console.log(`zombie-mermaid ${pkgVersion}`)
       break
 
     case 'themes':
@@ -38,7 +45,9 @@ export async function main() {
       try {
         await runRender(args)
       } catch (err) {
-        console.error(`Error: ${(err as Error).message}`)
+        console.error(
+          `Error: ${err instanceof Error ? err.message : String(err)}`,
+        )
         process.exit(1)
       }
       break

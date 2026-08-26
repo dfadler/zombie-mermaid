@@ -97,7 +97,9 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       /^(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/,
     )
     if (actorMatch) {
-      const type = actorMatch[1] as 'participant' | 'actor'
+      // Group 1 is constrained by the regex alternation to 'participant' | 'actor'
+      const type: 'participant' | 'actor' =
+        actorMatch[1] === 'actor' ? 'actor' : 'participant'
       const id = actorMatch[2]!
       const rawLabel = actorMatch[3]?.trim() ?? id
       const label = normalizeBrTags(rawLabel)
