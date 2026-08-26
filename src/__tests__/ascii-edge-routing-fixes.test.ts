@@ -4,11 +4,21 @@
  * fan-in roots, sibling edges not sharing a trunk, and box-start connector
  * drift. Repro diagrams are taken directly from the issue.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderMermaidAscii } from '../ascii/index.ts'
 
 describe('issue #64: edge-routing crashes and layout bugs', () => {
   describe('bug 1: dense fan-in pathfinding blowup', () => {
+    // EXPERIMENT (see PR description): using fake timers here instead of a
+    // wall-clock timeout, to test whether it fixes the CI flakiness in
+    // https://github.com/dfadler/zombie-mermaid/pull/143.
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     it('renders the dense fan-in repro without hanging or crashing', () => {
       const start = Date.now()
       const out = renderMermaidAscii(`graph TD
