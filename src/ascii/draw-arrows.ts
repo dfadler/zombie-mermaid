@@ -218,22 +218,14 @@ function drawBoxStart(
     const existing = existingOnBox(x, y)
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
-    canvas[x]![y] = hasBorder
-      ? (junction ?? '┴')
-      : useAscii
-        ? '|'
-        : '│'
+    canvas[x]![y] = hasBorder ? (junction ?? '┴') : useAscii ? '|' : '│'
   } else if (dirEquals(dir, Down)) {
     const x = from.x
     const y = from.y - 1
     const existing = existingOnBox(x, y)
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
-    canvas[x]![y] = hasBorder
-      ? (junction ?? '┬')
-      : useAscii
-        ? '|'
-        : '│'
+    canvas[x]![y] = hasBorder ? (junction ?? '┬') : useAscii ? '|' : '│'
   } else if (dirEquals(dir, Left) || dirEquals(dir, Right)) {
     // Anchor horizontal connectors to the source node's *own* rendered
     // border column, not to gridToDrawingCoord's grid-column-centered
