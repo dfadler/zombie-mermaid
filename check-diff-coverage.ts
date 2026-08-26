@@ -21,7 +21,12 @@ function git(args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8' })
 }
 
-function resolveBaseRef(): string | null {
+/**
+ * Picks the ref to diff against: the PR's actual base branch in CI (via
+ * `GITHUB_BASE_REF`), falling back to `origin/main`/`main` for local runs.
+ * Exported so tests can verify the fallback order against a mocked `git`.
+ */
+export function resolveBaseRef(): string | null {
   const candidates = [
     process.env.GITHUB_BASE_REF
       ? `origin/${process.env.GITHUB_BASE_REF}`
@@ -41,7 +46,7 @@ function resolveBaseRef(): string | null {
   return null
 }
 
-function isTrackedTsFile(path: string): boolean {
+export function isTrackedTsFile(path: string): boolean {
   return (
     path.startsWith(INCLUDE_DIR) &&
     path.endsWith('.ts') &&
@@ -49,14 +54,15 @@ function isTrackedTsFile(path: string): boolean {
   )
 }
 
-/** Maps each changed file to the set of line numbers added/modified in the diff (new-file line numbers). */
-function getChangedLines(baseRef: string): Map<string, Set<number>> {
-  // Widened to the whole src/ tree and filtered in JS via isTrackedTsFile()
-  // below — git's default pathspec matching treats `**` as two directory-
-  // bound `*`s (not a true globstar) without `:(glob)` magic, so
-  // `src/**/*.ts` silently misses files directly under src/ with no
-  // subdirectory.
-  const diff = git(['diff', '--unified=0', `${baseRef}...HEAD`, '--', 'src/'])
+/**
+ * Parses `git diff --unified=0` output into a map of changed file → the set
+ * of new-file line numbers that were added/modified. Pure function of the
+ * diff text, split out of `getChangedLines()` so it's testable without a
+ * real git repo.
+ */
+export function parseChangedLinesFromDiff(
+  diff: string,
+): Map<string, Set<number>> {
   const changed = new Map<string, Set<number>>()
 
   let currentFile: string | null = null
@@ -87,12 +93,29 @@ function getChangedLines(baseRef: string): Map<string, Set<number>> {
   return changed
 }
 
-/** Maps each file to its per-line hit counts, as reported by the v8/istanbul lcov output. */
-function parseLcov(path: string): Map<string, Map<number, number>> {
+/** Maps each changed file to the set of line numbers added/modified in the diff (new-file line numbers). */
+function getChangedLines(baseRef: string): Map<string, Set<number>> {
+  // Widened to the whole src/ tree and filtered in JS via isTrackedTsFile()
+  // below — git's default pathspec matching treats `**` as two directory-
+  // bound `*`s (not a true globstar) without `:(glob)` magic, so
+  // `src/**/*.ts` silently misses files directly under src/ with no
+  // subdirectory.
+  const diff = git(['diff', '--unified=0', `${baseRef}...HEAD`, '--', 'src/'])
+  return parseChangedLinesFromDiff(diff)
+}
+
+/**
+ * Parses lcov content into a map of file → per-line hit counts. Pure
+ * function of the file content, split out of `parseLcov()` so it's testable
+ * without a real lcov.info on disk.
+ */
+export function parseLcovContent(
+  content: string,
+): Map<string, Map<number, number>> {
   const perFile = new Map<string, Map<number, number>>()
   let currentFile: string | null = null
 
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
+  for (const line of content.split('\n')) {
     if (line.startsWith('SF:')) {
       currentFile = line.slice(3).trim()
       perFile.set(currentFile, new Map())
@@ -105,28 +128,36 @@ function parseLcov(path: string): Map<string, Map<number, number>> {
   return perFile
 }
 
-function main() {
-  if (!existsSync(LCOV_PATH)) {
-    console.error(
-      `${LCOV_PATH} not found — run \`pnpm run test:coverage\` first.`,
-    )
-    process.exit(1)
-  }
+/** Maps each file to its per-line hit counts, as reported by the v8/istanbul lcov output. */
+function parseLcov(path: string): Map<string, Map<number, number>> {
+  return parseLcovContent(readFileSync(path, 'utf8'))
+}
 
-  const baseRef = resolveBaseRef()
-  if (!baseRef) {
-    console.warn(
-      'Could not resolve a base ref (origin/main) to diff against — skipping diff coverage check.',
-    )
-    return
-  }
+export interface FileCoverageReport {
+  file: string
+  covered: number
+  total: number
+}
 
-  const changedLines = getChangedLines(baseRef)
-  const lcov = parseLcov(LCOV_PATH)
+export interface DiffCoverageResult {
+  totalCovered: number
+  totalInstrumented: number
+  fileReports: FileCoverageReport[]
+}
 
+/**
+ * Cross-references changed lines against lcov hit counts to compute diff
+ * coverage. Pure function of its inputs, split out of `main()` so the
+ * coverage math (and its edge cases — files/lines absent from lcov) is
+ * testable without real git/lcov I/O.
+ */
+export function computeDiffCoverage(
+  changedLines: Map<string, Set<number>>,
+  lcov: Map<string, Map<number, number>>,
+): DiffCoverageResult {
   let totalCovered = 0
   let totalInstrumented = 0
-  const fileReports: { file: string; covered: number; total: number }[] = []
+  const fileReports: FileCoverageReport[] = []
 
   for (const [file, lines] of changedLines) {
     const fileCoverage = lcov.get(file)
@@ -147,6 +178,32 @@ function main() {
       totalInstrumented += total
     }
   }
+
+  return { totalCovered, totalInstrumented, fileReports }
+}
+
+function main() {
+  if (!existsSync(LCOV_PATH)) {
+    console.error(
+      `${LCOV_PATH} not found — run \`pnpm run test:coverage\` first.`,
+    )
+    process.exit(1)
+  }
+
+  const baseRef = resolveBaseRef()
+  if (!baseRef) {
+    console.warn(
+      'Could not resolve a base ref (origin/main) to diff against — skipping diff coverage check.',
+    )
+    return
+  }
+
+  const changedLines = getChangedLines(baseRef)
+  const lcov = parseLcov(LCOV_PATH)
+  const { totalCovered, totalInstrumented, fileReports } = computeDiffCoverage(
+    changedLines,
+    lcov,
+  )
 
   if (totalInstrumented === 0) {
     console.log(
@@ -178,4 +235,12 @@ function main() {
   console.log(`\nDiff coverage meets the ${DIFF_THRESHOLD}% threshold.`)
 }
 
-main()
+// Only run when executed directly (`tsx check-diff-coverage.ts`), not when
+// imported — e.g. by tests importing the exported pure functions above.
+const isMainModule =
+  process.argv[1] !== undefined &&
+  import.meta.url === new URL(process.argv[1], 'file://').href
+
+if (isMainModule) {
+  main()
+}
