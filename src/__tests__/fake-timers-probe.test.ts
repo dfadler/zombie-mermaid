@@ -8,7 +8,7 @@
  *
  *   pnpm exec vitest run src/__tests__/fake-timers-probe.test.ts --reporter=verbose --silent=false
  */
-import { describe, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderMermaidAscii } from '../ascii/index.ts'
 
 function denseFanInSource(): string {
@@ -66,5 +66,43 @@ describe('fake timers probe', () => {
     // real wall-clock time regardless of what the fake clock says inside
     // the test. Fake timers didn't remove the real time cost; they just
     // hid it from the assertions.
+  }, 10000)
+
+  it('EXPECTED TO FAIL: the fake-timer-reported elapsed time should track the render real duration', () => {
+    // The hypothesis a fake-timers rewrite is implicitly making: if
+    // advanceTimersByTime(N) is meaningfully standing in for "N ms of real
+    // time passed while the render ran," then the value it reports back
+    // should be at least in the same ballpark as how long the render
+    // actually took. That's the expectation this test writes down and
+    // checks — and it fails, which is the point.
+    //
+    // realStart/realElapsed are sampled with performance.now() *outside*
+    // the vi.useFakeTimers()/vi.useRealTimers() bracket, so they observe
+    // the actual wall-clock machine clock across the whole block,
+    // unaffected by anything faked inside it.
+    const realStart = performance.now()
+
+    vi.useFakeTimers()
+    const fakeStart = Date.now()
+    renderMermaidAscii(denseFanInSource()) // the real, timed work
+    // 50ms — matching the smaller of the two advances already added to
+    // ascii-edge-routing-fixes.test.ts's rewritten tests.
+    vi.advanceTimersByTime(50)
+    const fakeElapsed = Date.now() - fakeStart
+    vi.useRealTimers()
+
+    const realElapsed = performance.now() - realStart
+
+    console.log(
+      `fake-timer elapsed: ${fakeElapsed}ms vs real elapsed: ${realElapsed}ms`,
+    )
+
+    // Expected (if fake timers correctly reflected real duration): close.
+    // Actual: fakeElapsed is pinned to the literal argument passed to
+    // advanceTimersByTime (50ms) regardless of how long the render took,
+    // while realElapsed reflects what the render actually cost — normally
+    // >1000ms for this stress case. This assertion is left failing on
+    // purpose so the gap is visible in test output, not just a log line.
+    expect(fakeElapsed).toBeGreaterThanOrEqual(realElapsed)
   }, 10000)
 })
