@@ -103,6 +103,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
   // of asserting past it.
   const header = lines[0]
   if (header === undefined) {
+    /* v8 ignore next */
     throw new Error('parseFlowchart called with no lines')
   }
 
