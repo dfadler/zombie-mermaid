@@ -37,4 +37,34 @@ describe('fake timers probe', () => {
       `[fake timers] Date.now() elapsed: ${dateElapsed}ms, performance.now() elapsed: ${perfElapsed}ms`,
     )
   })
+
+  it('shows vi.advanceTimersByTime() reports back whatever value is passed to it, not real duration', () => {
+    // renderMermaidAscii never calls setTimeout/setInterval (see
+    // src/ascii/index.ts's renderMermaidASCII doc comment: "Synchronous —
+    // no async layout engine needed"), so there is nothing scheduled for
+    // advanceTimersByTime to fast-forward past. All it does here is bump
+    // the frozen fake clock by the literal number passed in.
+    vi.useFakeTimers()
+    const startA = Date.now()
+    renderMermaidAscii(denseFanInSource()) // identical real work both times
+    vi.advanceTimersByTime(3000)
+    const elapsedA = Date.now() - startA
+
+    const startB = Date.now()
+    renderMermaidAscii(denseFanInSource()) // identical real work both times
+    vi.advanceTimersByTime(50)
+    const elapsedB = Date.now() - startB
+    vi.useRealTimers()
+
+    console.log(
+      `[advanceTimersByTime(3000)] elapsed: ${elapsedA}ms; [advanceTimersByTime(50)] elapsed: ${elapsedB}ms — same render, different reported "duration" purely because of the argument chosen`,
+    )
+    // Note: this test needs a longer-than-default timeout even though the
+    // fake clock reports 3000ms/50ms above — because two real dense-fan-in
+    // renders (~1.1-1.2s of actual CPU time each, unaffected by fake
+    // timers) still ran, and vitest's *own* test-level timeout is driven by
+    // real wall-clock time regardless of what the fake clock says inside
+    // the test. Fake timers didn't remove the real time cost; they just
+    // hid it from the assertions.
+  }, 10000)
 })

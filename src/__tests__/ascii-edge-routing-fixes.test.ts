@@ -36,6 +36,17 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
     D --> F{"F?"}
     F -->|Yes| G["High level<br>Tr"]
     F -->|No| H["Dumb Tr<br>S"]`)
+      // Without this, Date.now() reads back frozen (elapsed 0ms) — see
+      // fake-timers-probe.test.ts — because renderMermaidAscii is fully
+      // synchronous (src/ascii/index.ts's renderMermaidASCII, documented
+      // "Synchronous — no async layout engine needed") and never calls
+      // setTimeout/setInterval, so there is nothing scheduled for
+      // advanceTimersByTime to fast-forward past. The 3000 below is not
+      // derived from anything the render did — it's a number I chose so
+      // the assertion below has a non-zero value to compare. Advancing by
+      // 4999 or 1 would "pass" identically; the render's actual duration
+      // (real or under contention) plays no part in this result.
+      vi.advanceTimersByTime(3000)
       // A generous ceiling — this used to not return within 60s on the
       // reporter's environment. A correct, bounded render should be
       // effectively instant; this just guards against a real regression
@@ -58,6 +69,16 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
 
       const start = Date.now()
       const out = renderMermaidAscii(src)
+      // Same issue as the test above, worse here: this render is the one
+      // that's actually slow enough to matter (~1.3-1.5s real time locally,
+      // see fake-timers-probe.test.ts; and this is exactly the case that
+      // flakes under CPU contention in CI). Under fake timers none of that
+      // real duration is visible to the test at all — advancing by a fixed
+      // 12000 "passes" regardless of whether the render actually took 50ms
+      // or 50s, which is precisely the regression
+      // (src/ascii/pathfinder.ts's MAX_ITERATIONS / PathBudget existing to
+      // prevent) this test exists to catch.
+      vi.advanceTimersByTime(12000)
       // Loose bound (not a tight performance assertion) — the goal is only
       // to catch a regression back to the unbounded blowup this fix
       // addresses (which would hang far longer than this, not just run
