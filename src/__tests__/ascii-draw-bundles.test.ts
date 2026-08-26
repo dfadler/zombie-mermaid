@@ -20,7 +20,6 @@ import { convertToAsciiGraph } from '../ascii/converter.ts'
 import { createMapping } from '../ascii/grid.ts'
 import type {
   AsciiConfig,
-  AsciiEdge,
   AsciiGraph,
   EdgeBundle,
   GridCoord,
@@ -101,7 +100,7 @@ describe('drawBundledEdgeSegment', () => {
   const edgeTemplate = bundle.edges[0]!
 
   it('returns unmodified canvases when pathToJunction is empty', () => {
-    const edge = { ...edgeTemplate, pathToJunction: [] } as AsciiEdge
+    const edge = { ...edgeTemplate, pathToJunction: [] }
     const result = drawBundledEdgeSegment(graph, edge, bundle)
     for (const canvas of result) {
       expect(nonSpaceChars(canvas)).toBe('')
@@ -109,7 +108,7 @@ describe('drawBundledEdgeSegment', () => {
   })
 
   it('returns unmodified canvases when pathToJunction is undefined', () => {
-    const edge = { ...edgeTemplate, pathToJunction: undefined } as AsciiEdge
+    const edge = { ...edgeTemplate, pathToJunction: undefined }
     const result = drawBundledEdgeSegment(graph, edge, bundle)
     for (const canvas of result) {
       expect(nonSpaceChars(canvas)).toBe('')
@@ -199,7 +198,7 @@ describe('drawBundledEdgeSegment', () => {
       '+',
     ],
   ])('draws the %s corner', (_label, path, expectedChar) => {
-    const edge = { ...edgeTemplate, pathToJunction: path } as AsciiEdge
+    const edge = { ...edgeTemplate, pathToJunction: path }
     const [, , , , cornersCanvas] = drawBundledEdgeSegment(graph, edge, bundle)
     expect(nonSpaceChars(cornersCanvas)).toBe(expectedChar)
   })
@@ -232,7 +231,7 @@ describe('drawBundledEdgeSegment', () => {
   ])(
     'draws a %s-direction box-start connector',
     (_label, path, expectedChar) => {
-      const edge = { ...edgeTemplate, pathToJunction: path } as AsciiEdge
+      const edge = { ...edgeTemplate, pathToJunction: path }
       const [, boxStartCanvas] = drawBundledEdgeSegment(graph, edge, bundle)
       expect(nonSpaceChars(boxStartCanvas)).toBe(expectedChar)
     },
@@ -246,7 +245,7 @@ describe('drawBundleSharedPath', () => {
     const shortBundle = {
       ...bundle,
       sharedPath: [bundle.junctionPoint!],
-    } as EdgeBundle
+    }
     const [pathCanvas, cornersCanvas] = drawBundleSharedPath(graph, shortBundle)
     expect(nonSpaceChars(pathCanvas)).toBe('')
     expect(nonSpaceChars(cornersCanvas)).toBe('')
@@ -294,7 +293,7 @@ describe('drawBundleSharedPath', () => {
       const bent = {
         ...bundle,
         sharedPath: makePath(bundle.junctionPoint!),
-      } as EdgeBundle
+      }
       const [, cornersCanvas] = drawBundleSharedPath(graph, bent)
       expect(nonSpaceChars(cornersCanvas)).toBe(expectedChar)
     },
@@ -311,7 +310,7 @@ describe('drawBundleSharedPath', () => {
         { x: junction.x + 4, y: junction.y },
         { x: junction.x + 4, y: junction.y + 1 },
       ],
-    } as EdgeBundle
+    }
     const [, cornersCanvas] = drawBundleSharedPath(graph, bent)
     expect(nonSpaceChars(cornersCanvas)).toBe('+')
   })
@@ -346,7 +345,7 @@ describe('drawBundleArrowhead', () => {
     const shortBundle = {
       ...bundle,
       sharedPath: [bundle.junctionPoint!],
-    } as EdgeBundle
+    }
     const canvas = drawBundleArrowhead(graph, shortBundle)
     expect(nonSpaceChars(canvas)).toBe('')
   })
@@ -358,7 +357,7 @@ describe('drawBundleArrowhead', () => {
   ])(
     'draws a %s-arriving trunk as the %s arrowhead (unicode)',
     (dir, expectedChar) => {
-      const b = { ...bundle, sharedPath: arrivalSharedPath(dir) } as EdgeBundle
+      const b = { ...bundle, sharedPath: arrivalSharedPath(dir) }
       const canvas = drawBundleArrowhead(graph, b)
       expect(nonSpaceChars(canvas)).toBe(expectedChar)
     },
@@ -376,7 +375,7 @@ describe('drawBundleArrowhead', () => {
       const b = {
         ...asciiBundle,
         sharedPath: arrivalSharedPath(dir),
-      } as EdgeBundle
+      }
       const canvas = drawBundleArrowhead(asciiGraph, b)
       expect(nonSpaceChars(canvas)).toBe(expectedChar)
     },
@@ -389,7 +388,7 @@ describe('drawBundleArrowhead', () => {
         { x: 1, y: 2 },
         { x: 5, y: 4 },
       ],
-    } as EdgeBundle
+    }
     const canvas = drawBundleArrowhead(graph, b)
     expect(nonSpaceChars(canvas)).toBe('▼')
   })
@@ -403,7 +402,7 @@ describe('drawBundleArrowhead', () => {
         { x: 1, y: 2 },
         { x: 5, y: 4 },
       ],
-    } as EdgeBundle
+    }
     const canvas = drawBundleArrowhead(asciiGraph, b)
     expect(nonSpaceChars(canvas)).toBe('v')
   })
@@ -432,7 +431,7 @@ describe('drawBundleArrowhead', () => {
         { x: 1, y: 2 },
         { x: 1, y: 4 },
       ],
-    } as EdgeBundle
+    }
     const canvas = drawBundleArrowhead(lrGraph, b)
     expect(nonSpaceChars(canvas)).toBe('▼')
   })
@@ -444,7 +443,7 @@ describe('drawBundledEdgeArrowhead', () => {
   const edgeTemplate = bundle.edges[0]!
 
   it('returns an unmodified canvas when pathToJunction is undefined', () => {
-    const edge = { ...edgeTemplate, pathToJunction: undefined } as AsciiEdge
+    const edge = { ...edgeTemplate, pathToJunction: undefined }
     const canvas = drawBundledEdgeArrowhead(graph, edge)
     expect(nonSpaceChars(canvas)).toBe('')
   })
@@ -459,7 +458,7 @@ describe('drawBundledEdgeArrowhead', () => {
       const edge = {
         ...edgeTemplate,
         pathToJunction: arrivalSharedPath(dir),
-      } as AsciiEdge
+      }
       const canvas = drawBundledEdgeArrowhead(graph, edge)
       expect(nonSpaceChars(canvas)).toBe(expectedChar)
     },
@@ -478,7 +477,7 @@ describe('drawBundledEdgeArrowhead', () => {
       const edge = {
         ...asciiEdgeTemplate,
         pathToJunction: arrivalSharedPath(dir),
-      } as AsciiEdge
+      }
       const canvas = drawBundledEdgeArrowhead(asciiGraph, edge)
       expect(nonSpaceChars(canvas)).toBe(expectedChar)
     },
@@ -491,7 +490,7 @@ describe('drawBundledEdgeArrowhead', () => {
         { x: 1, y: 2 },
         { x: 5, y: 4 },
       ],
-    } as AsciiEdge
+    }
     const canvas = drawBundledEdgeArrowhead(graph, edge)
     expect(nonSpaceChars(canvas)).toBe('▼')
   })
@@ -506,7 +505,7 @@ describe('drawBundledEdgeArrowhead', () => {
         { x: 1, y: 2 },
         { x: 5, y: 4 },
       ],
-    } as AsciiEdge
+    }
     const canvas = drawBundledEdgeArrowhead(asciiGraph, edge)
     expect(nonSpaceChars(canvas)).toBe('v')
   })
@@ -532,7 +531,7 @@ describe('drawBundledEdgeArrowhead', () => {
         { x: 1, y: 2 },
         { x: 1, y: 4 },
       ],
-    } as AsciiEdge
+    }
     const canvas = drawBundledEdgeArrowhead(lrGraph, edge)
     expect(nonSpaceChars(canvas)).toBe('▼')
   })
@@ -575,10 +574,11 @@ describe('drawJunctionCharacter', () => {
 
   function makeBundle(sharedDir: Dir | null, arrivalDirs: Dir[]): EdgeBundle {
     const sharedPath = sharedDir ? [junction, sharedNextPoint(sharedDir)] : []
-    const edges = arrivalDirs.map(
-      (d) => ({ pathToJunction: [arrivalPoint(d), junction] }) as AsciiEdge,
-    )
-    return { ...bundle, sharedPath, edges } as EdgeBundle
+    const edges = arrivalDirs.map((d) => ({
+      ...bundle.edges[0]!,
+      pathToJunction: [arrivalPoint(d), junction],
+    }))
+    return { ...bundle, sharedPath, edges }
   }
 
   it.each<[string, Dir | null, Dir[], string]>([
@@ -618,19 +618,20 @@ describe('drawJunctionCharacter', () => {
       ],
       edges: [
         {
+          ...asciiBundle.edges[0]!,
           pathToJunction: [
             { x: asciiJunction.x - 1, y: asciiJunction.y },
             asciiJunction,
           ],
-        } as AsciiEdge,
+        },
       ],
-    } as EdgeBundle
+    }
     const canvas = drawJunctionCharacter(asciiGraph, b)
     expect(nonSpaceChars(canvas)).toBe('+')
   })
 
   it('returns an unmodified canvas when junctionPoint is null', () => {
-    const b = { ...bundle, junctionPoint: null } as EdgeBundle
+    const b = { ...bundle, junctionPoint: null }
     const canvas = drawJunctionCharacter(graph, b)
     expect(nonSpaceChars(canvas)).toBe('')
   })
