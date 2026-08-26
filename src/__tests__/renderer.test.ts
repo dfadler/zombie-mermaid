@@ -495,6 +495,23 @@ describe('renderSvg – inline styles', () => {
     const svg = renderSvg(graph, lightColors)
     expect(svg).toContain('fill="var(--_node-fill)"')
   })
+
+  it('applies inline font-family override to the node text element (issue #57)', () => {
+    const node = makeNode({ inlineStyle: { 'font-family': 'monospace' } })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, lightColors)
+    expect(svg).toContain('style="font-family: monospace;"')
+  })
+
+  it('renders no per-node font-family override when no inline style is set', () => {
+    const node = makeNode()
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, lightColors)
+    // The global `text { font-family: ... }` rule from the theme is still
+    // present; only the per-node inline `style="font-family: ...` override
+    // should be absent.
+    expect(svg).not.toContain('style="font-family:')
+  })
 })
 
 // ============================================================================
@@ -680,6 +697,16 @@ describe('renderSvg – inline style XSS prevention', () => {
     const svg = renderSvg(graph, lightColors)
     expect(svg).not.toContain('onfocus="alert')
     expect(svg).toContain('green&quot; onfocus=&quot;alert(1)')
+  })
+
+  it('escapes injection in inline style font-family', () => {
+    const node = makeNode({
+      inlineStyle: { 'font-family': 'monospace" onmouseover="alert(1)' },
+    })
+    const graph = makeGraph({ nodes: [node] })
+    const svg = renderSvg(graph, lightColors)
+    expect(svg).not.toContain('onmouseover="alert')
+    expect(svg).toContain('monospace&quot; onmouseover=&quot;alert(1)')
   })
 })
 
