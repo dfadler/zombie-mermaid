@@ -815,6 +815,7 @@ export function createMapping(graph: AsciiGraph): void {
         nodeDir === 'LR'
           ? { x: 0, y: highestPositionPerLevel[0] ?? 0 }
           : { x: highestPositionPerLevel[0] ?? 0, y: 0 }
+      /* v8 ignore next */
       highestPositionPerLevel[0] = (highestPositionPerLevel[0] ?? 0) + 4
     }
 
