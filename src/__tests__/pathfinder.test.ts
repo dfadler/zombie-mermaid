@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { getPath, heuristic, mergePath } from '../ascii/pathfinder.ts'
+import {
+  getPath,
+  heuristic,
+  mergePath,
+  createPathBudget,
+  DEFAULT_PATH_BUDGET,
+} from '../ascii/pathfinder.ts'
 import { gridKey } from '../ascii/types.ts'
-import type { GridCoord, AsciiNode } from '../ascii/types.ts'
+import type { GridCoord, AsciiNode, PathBudget } from '../ascii/types.ts'
 import { renderMermaidAscii } from '../ascii/index.ts'
 
 /** Helper to build an occupied grid from a list of coordinates. */
@@ -107,6 +113,78 @@ describe('pathfinder', () => {
         { x: 0, y: 0 },
         { x: 1, y: 0 },
       ])
+    })
+  })
+
+  describe('PathBudget (render-wide iteration budget)', () => {
+    // These test the deterministic mechanism that actually bounds total
+    // pathfinding work for a render — not wall-clock time. See the
+    // ascii-edge-routing-fixes.test.ts "much larger dense fan-in" test
+    // (PR #143) for the wall-clock version of this same regression guard,
+    // which flaked under CPU contention because it measures how long the
+    // work took rather than how much work happened. Asserting on
+    // budget.remaining instead is immune to machine speed/load entirely.
+
+    it('createPathBudget defaults to DEFAULT_PATH_BUDGET', () => {
+      expect(createPathBudget()).toEqual({ remaining: DEFAULT_PATH_BUDGET })
+    })
+
+    it('createPathBudget accepts a custom total', () => {
+      expect(createPathBudget(500)).toEqual({ remaining: 500 })
+    })
+
+    it('decrements a shared budget cumulatively across multiple getPath calls', () => {
+      const grid = buildGrid([])
+      const budget = createPathBudget(1000)
+      const initial = budget.remaining
+
+      getPath(grid, { x: 0, y: 0 }, { x: 0, y: 20 }, budget)
+      const afterFirst = budget.remaining
+      expect(afterFirst).toBeLessThan(initial)
+
+      getPath(grid, { x: 0, y: 0 }, { x: 0, y: 20 }, budget)
+      const afterSecond = budget.remaining
+      // Same search run twice costs the same iterations each time, and the
+      // budget is cumulative across calls, not reset per call — so the
+      // second call must spend down further from where the first left off.
+      expect(afterSecond).toBeLessThan(afterFirst)
+    })
+
+    it('returns null immediately once the budget is exhausted, without spending further iterations', () => {
+      const grid = buildGrid([])
+      const budget: PathBudget = { remaining: 0 }
+      const result = getPath(grid, { x: 0, y: 0 }, { x: 0, y: 5 }, budget)
+      expect(result).toBeNull()
+      // The exhausted-budget check is the first thing getPath does, before
+      // the search loop runs at all, so remaining stays unchanged.
+      expect(budget.remaining).toBe(0)
+    })
+
+    it('never lets budget.remaining go negative', () => {
+      const grid = buildGrid([])
+      const budget = createPathBudget(3) // deliberately smaller than this search needs
+      getPath(grid, { x: 0, y: 0 }, { x: 0, y: 50 }, budget)
+      expect(budget.remaining).toBeGreaterThanOrEqual(0)
+    })
+
+    it('bounds total pathfinding work across many edges to the budget, regardless of edge count', () => {
+      // Structural equivalent of the "much larger dense fan-in" wall-clock
+      // test: 120 fan-in edges, each independently getting its own
+      // unbounded allowance, is what caused the real OOM crashes this
+      // budget exists to prevent (see pathfinder.ts's PathBudget doc
+      // comment). Here, a deliberately small shared budget stands in for
+      // "more total demand than the budget allows" — the same shape of
+      // problem as 120 real edges against the production default.
+      const grid = buildGrid([])
+      const budget = createPathBudget(500)
+      for (let i = 0; i < 120; i++) {
+        getPath(grid, { x: i, y: 0 }, { x: i, y: 40 }, budget)
+      }
+      // Total demand (120 searches x ~40+ iterations each) far exceeds the
+      // 500-iteration budget, so it must land at exactly 0 — proving later
+      // calls were actually cut off partway through, not merely that none
+      // of them individually happened to exceed it.
+      expect(budget.remaining).toBe(0)
     })
   })
 
