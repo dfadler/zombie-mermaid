@@ -314,6 +314,25 @@ function renderEdgeLabel(
   )
 }
 
+/**
+ * Get the point at `index`, throwing instead of silently producing
+ * `undefined` (and downstream `NaN`s). The loops in `edgeMidpoint` only ever
+ * pass indices derived from `points.length`, so this should never actually
+ * throw — it exists because `noUncheckedIndexedAccess` can't prove that from
+ * the loop bounds alone, and a loud failure here is far easier to diagnose
+ * than silently corrupted coordinates.
+ */
+function requirePoint(points: Point[], index: number): Point {
+  const point = points[index]
+  if (!point) {
+    // Unreachable — both call sites in edgeMidpoint only ever pass indices
+    // in [0, points.length - 1].
+    /* v8 ignore next */
+    throw new Error(`edgeMidpoint: missing point at index ${index}`)
+  }
+  return point
+}
+
 /** Get the midpoint of a polyline (by walking segments) */
 function edgeMidpoint(points: Point[]): Point {
   if (points.length === 0) return { x: 0, y: 0 }
@@ -322,18 +341,20 @@ function edgeMidpoint(points: Point[]): Point {
   // Calculate total length
   let totalLength = 0
   for (let i = 1; i < points.length; i++) {
-    totalLength += dist(points[i - 1]!, points[i]!)
+    totalLength += dist(requirePoint(points, i - 1), requirePoint(points, i))
   }
 
   // Walk to the halfway point
   let remaining = totalLength / 2
   for (let i = 1; i < points.length; i++) {
-    const segLen = dist(points[i - 1]!, points[i]!)
+    const prev = requirePoint(points, i - 1)
+    const curr = requirePoint(points, i)
+    const segLen = dist(prev, curr)
     if (remaining <= segLen) {
       const t = remaining / segLen
       return {
-        x: points[i - 1]!.x + t * (points[i]!.x - points[i - 1]!.x),
-        y: points[i - 1]!.y + t * (points[i]!.y - points[i - 1]!.y),
+        x: prev.x + t * (curr.x - prev.x),
+        y: prev.y + t * (curr.y - prev.y),
       }
     }
     remaining -= segLen
