@@ -112,8 +112,9 @@ describe('assertNoDiagonals', () => {
       assertNoDiagonals('a / b')
       throw new Error('expected assertNoDiagonals to throw')
     } catch (err) {
-      expect((err as Error).message).toContain('Diagonal lines detected. ')
-      expect((err as Error).message).not.toContain(' in "')
+      const message = err instanceof Error ? err.message : String(err)
+      expect(message).toContain('Diagonal lines detected. ')
+      expect(message).not.toContain(' in "')
     }
   })
 })

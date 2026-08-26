@@ -12,7 +12,7 @@ import {
   colorizeLine,
   colorizeText,
 } from '../ascii/ansi.ts'
-import type { CharRole, AsciiTheme } from '../ascii/types.ts'
+import type { CharRole, AsciiTheme, ColorMode } from '../ascii/types.ts'
 import type { DiagramColors } from '../theme.ts'
 
 const RESET = '\x1b[0m'
@@ -317,6 +317,8 @@ describe('getAnsiColor', () => {
   })
 
   it('falls back to fg for an unrecognized role', () => {
+    // Deliberately out-of-domain: CharRole is a closed union, so this cast
+    // is the only way to exercise the runtime fallback for a bad value.
     expect(getAnsiColor('bogus' as CharRole, theme, 'truecolor')).toBe(
       getAnsiColor('text', theme, 'truecolor'),
     )
@@ -489,6 +491,8 @@ describe('colorizeText', () => {
   })
 
   it('returns text unchanged for an unhandled mode', () => {
-    expect(colorizeText('hi', '#ff0000', 'bogus' as never)).toBe('hi')
+    // Deliberately out-of-domain: ColorMode is a closed union, so this cast
+    // is the only way to exercise the runtime fallback for a bad value.
+    expect(colorizeText('hi', '#ff0000', 'bogus' as ColorMode)).toBe('hi')
   })
 })

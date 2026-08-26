@@ -7,6 +7,7 @@
  * top-level assignment actually re-runs.
  */
 import { describe, it, expect, afterEach, vi } from 'vitest'
+import type { MermaidBrowserGlobal } from '../browser.ts'
 
 describe('browser entry point', () => {
   afterEach(() => {
@@ -15,13 +16,14 @@ describe('browser entry point', () => {
   })
 
   it('attaches the mermaid API surface to window.__mermaid', async () => {
-    const fakeWindow = {} as { __mermaid?: unknown }
+    const fakeWindow: { __mermaid?: MermaidBrowserGlobal } = {}
     vi.stubGlobal('window', fakeWindow)
 
     await import('../browser.ts')
 
-    expect(fakeWindow.__mermaid).toBeDefined()
-    const api = fakeWindow.__mermaid as Record<string, unknown>
+    const api = fakeWindow.__mermaid
+    expect(api).toBeDefined()
+    if (!api) throw new Error('window.__mermaid was not set')
     expect(api.renderMermaidSVGAsync).toBeTypeOf('function')
     expect(api.renderMermaidASCII).toBeTypeOf('function')
     expect(api.diagramColorsToAsciiTheme).toBeTypeOf('function')

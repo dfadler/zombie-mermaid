@@ -12,7 +12,7 @@ import { renderMermaidASCII, diagramColorsToAsciiTheme } from './ascii/index.ts'
 import { THEMES } from './theme.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './xychart/colors.ts'
 
-interface MermaidBrowserGlobal {
+export interface MermaidBrowserGlobal {
   renderMermaidSVGAsync: typeof renderMermaidSVGAsync
   renderMermaidASCII: typeof renderMermaidASCII
   diagramColorsToAsciiTheme: typeof diagramColorsToAsciiTheme

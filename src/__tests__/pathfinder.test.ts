@@ -10,10 +10,26 @@ import { gridKey } from '../ascii/types.ts'
 import type { GridCoord, AsciiNode, PathBudget } from '../ascii/types.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'
 
-/** Helper to build an occupied grid from a list of coordinates. */
+/**
+ * Helper to build an occupied grid from a list of coordinates. getPath only
+ * ever checks occupancy via `grid.has(key)` — it never reads node fields —
+ * so this stub's field values don't matter, but it's still a fully-valid
+ * AsciiNode so no cast is needed to stand in for the map's value type.
+ */
 function buildGrid(occupied: GridCoord[]): Map<string, AsciiNode> {
   const grid = new Map<string, AsciiNode>()
-  const stub = {} as AsciiNode
+  const stub: AsciiNode = {
+    name: '',
+    displayLabel: '',
+    shape: 'rectangle',
+    index: 0,
+    gridCoord: null,
+    drawingCoord: null,
+    drawing: null,
+    drawn: false,
+    styleClassName: '',
+    styleClass: { name: '', styles: {} },
+  }
   for (const c of occupied) {
     grid.set(gridKey(c), stub)
   }
