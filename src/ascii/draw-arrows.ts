@@ -167,10 +167,23 @@ function drawPath(
   return [canvas, linesDrawn, lineDirs]
 }
 
+/** Vertical box-border characters a horizontal connector can genuinely merge with. */
+const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊'])
+/** Horizontal box-border characters a vertical connector can genuinely merge with. */
+const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄'])
+
 /**
  * Draw the junction character where an edge exits the source node's box.
  * Only applies to Unicode mode (ASCII mode just uses the line characters).
  * Skips drawing for state pseudo-states which have their own visual borders.
+ *
+ * A tee/junction character (┬┴├┤) is only correct when it's actually merging
+ * with a real perpendicular border line at that exact cell — e.g. a grid
+ * column widened by a sibling edge's label can push the computed box-start
+ * position away from the node's actual border, landing on a blank cell with
+ * no vertical (or horizontal) line to justify a junction. In that case fall
+ * back to a plain line character matching the edge's own direction, instead
+ * of fabricating a stray tee (see issue #86).
  */
 function drawBoxStart(
   graph: AsciiGraph,
@@ -189,9 +202,31 @@ function drawBoxStart(
   const from = firstLine[0]!
   const dir = determineDirection(path[0]!, path[1]!)
 
-  if (dirEquals(dir, Up)) canvas[from.x]![from.y + 1] = '┴'
-  else if (dirEquals(dir, Down)) canvas[from.x]![from.y - 1] = '┬'
-  else if (dirEquals(dir, Left) || dirEquals(dir, Right)) {
+  // `canvas` (from copyCanvas) is a blank overlay layer — it never has
+  // content of its own to check. Whether a genuine perpendicular border
+  // line already occupies the target cell has to be read from
+  // `graph.canvas`, which at this point in drawGraph already has node
+  // boxes (and subgraph borders) merged onto it, before any edge layers.
+  const existingOnBox = (x: number, y: number): string | undefined =>
+    graph.canvas[x]?.[y]
+
+  if (dirEquals(dir, Up)) {
+    const x = from.x
+    const y = from.y + 1
+    const existing = existingOnBox(x, y)
+    canvas[x]![y] =
+      existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
+        ? '┴'
+        : '│'
+  } else if (dirEquals(dir, Down)) {
+    const x = from.x
+    const y = from.y - 1
+    const existing = existingOnBox(x, y)
+    canvas[x]![y] =
+      existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
+        ? '┬'
+        : '│'
+  } else if (dirEquals(dir, Left) || dirEquals(dir, Right)) {
     // Anchor horizontal connectors to the source node's *own* rendered
     // border column, not to gridToDrawingCoord's grid-column-centered
     // position. That position is centered within the node's border grid
@@ -207,8 +242,15 @@ function drawBoxStart(
     // present here.
     const dc = sourceNode.drawingCoord!
     const boxWidth = sourceNode.drawing!.length
-    if (dirEquals(dir, Left)) canvas[dc.x]![from.y] = '┤'
-    else canvas[dc.x + boxWidth - 1]![from.y] = '├'
+    const x = dirEquals(dir, Left) ? dc.x : dc.x + boxWidth - 1
+    const y = from.y
+    const existing = existingOnBox(x, y)
+    canvas[x]![y] =
+      existing !== undefined && VERTICAL_BORDER_CHARS.has(existing)
+        ? dirEquals(dir, Left)
+          ? '┤'
+          : '├'
+        : '─'
   }
 
   return canvas
