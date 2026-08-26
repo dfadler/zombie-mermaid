@@ -140,6 +140,7 @@ function renderVertical(
   // silently across the boundary.
   const yRange = chart.yAxis.range
   if (!yRange) {
+    /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const yTicks = niceTickValues(yRange.min, yRange.max)
@@ -364,6 +365,7 @@ function renderHorizontal(
   // module, so it's narrowed here explicitly rather than trusted silently.
   const yRange = chart.yAxis.range
   if (!yRange) {
+    /* v8 ignore next */
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const valueTicks = niceTickValues(yRange.min, yRange.max)

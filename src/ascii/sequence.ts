@@ -75,6 +75,7 @@ export function renderSequenceAscii(
   function actorIndexOf(id: string): number {
     const idx = actorIdx.get(id)
     if (idx === undefined) {
+      /* v8 ignore next */
       throw new Error(`Sequence diagram: unknown actor "${id}"`)
     }
     return idx
