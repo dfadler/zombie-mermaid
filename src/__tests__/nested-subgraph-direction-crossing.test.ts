@@ -27,32 +27,59 @@ import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, parseMermaid } from '../index.ts'
 import { layoutGraphSync } from '../layout.ts'
 
+/**
+ * Extract an attribute value from the first `<tag ...>` in `xml` whose
+ * opening tag contains `marker` verbatim (e.g. `data-id="X"`).
+ *
+ * Plain string search rather than a dynamically-built RegExp — `marker`/
+ * `attr` here are always hardcoded test ids, not attacker-controlled input,
+ * but Semgrep's non-literal-regexp rule flags `new RegExp(...\${x}...)`
+ * regardless (same pattern already addressed this way elsewhere in this
+ * repo, see `renderer.test.ts`'s marker tests).
+ */
+function attrAfter(xml: string, marker: string, attr: string): string {
+  const tagStart = xml.indexOf(marker)
+  if (tagStart < 0)
+    throw new Error(`marker ${JSON.stringify(marker)} not found in SVG`)
+  const tagEnd = xml.indexOf('>', tagStart)
+  const tag = xml.slice(tagStart, tagEnd + 1)
+  const needle = `${attr}="`
+  const valueStart = tag.indexOf(needle)
+  if (valueStart < 0) {
+    throw new Error(
+      `attribute ${attr} not found on tag containing ${JSON.stringify(marker)}`,
+    )
+  }
+  const start = valueStart + needle.length
+  const end = tag.indexOf('"', start)
+  return tag.slice(start, end)
+}
+
 /** Extract the {x, y, width, height} of a top-level node's rect from rendered SVG. */
 function nodeRect(
   svg: string,
   id: string,
 ): { x: number; y: number; width: number; height: number } {
-  const re = new RegExp(
-    `<g class="node" data-id="${id}"[^>]*>\\s*<rect x="([\\d.-]+)" y="([\\d.-]+)" width="([\\d.-]+)" height="([\\d.-]+)"`,
-  )
-  const match = re.exec(svg)
-  if (!match) throw new Error(`node ${id} not found in SVG`)
+  const marker = `<g class="node" data-id="${id}"`
+  const groupStart = svg.indexOf(marker)
+  if (groupStart < 0) throw new Error(`node ${id} not found in SVG`)
+  const rectStart = svg.indexOf('<rect', groupStart)
+  const rectEnd = svg.indexOf('>', rectStart)
+  const rectTag = svg.slice(rectStart, rectEnd + 1)
+  const num = (attr: string): number =>
+    Number(attrAfter(rectTag, '<rect', attr))
   return {
-    x: Number(match[1]),
-    y: Number(match[2]),
-    width: Number(match[3]),
-    height: Number(match[4]),
+    x: num('x'),
+    y: num('y'),
+    width: num('width'),
+    height: num('height'),
   }
 }
 
 /** Extract the polyline `points` attribute for a given edge. */
 function edgePoints(svg: string, from: string, to: string): string {
-  const re = new RegExp(
-    `data-from="${from}" data-to="${to}"[^>]*points="([^"]+)"`,
-  )
-  const match = re.exec(svg)
-  if (!match) throw new Error(`edge ${from}->${to} not found in SVG`)
-  return match[1]!
+  const marker = `data-from="${from}" data-to="${to}"`
+  return attrAfter(svg, marker, 'points')
 }
 
 function parsePoints(pointsAttr: string): Array<{ x: number; y: number }> {
