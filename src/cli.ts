@@ -7,7 +7,7 @@ import { THEMES } from './theme.ts'
 const require = createRequire(import.meta.url)
 const pkg = require('../package.json') as { version: string }
 
-async function main() {
+export async function main() {
   const argv = process.argv.slice(2)
 
   let args: CliArgs
