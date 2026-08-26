@@ -36,7 +36,7 @@ export const MONO_FONT = "'JetBrains Mono'" as const
 export const MONO_FONT_STACK =
   `${MONO_FONT}, 'SF Mono', 'Fira Code', ui-monospace, monospace` as const
 
-/** Fixed font sizes used in the renderer (in px) */
+/** Default font sizes used in the renderer (in px). Overridable via `RenderOptions.fontSizes`. */
 export const FONT_SIZES = {
   /** Node label text */
   nodeLabel: 13,
@@ -45,6 +45,24 @@ export const FONT_SIZES = {
   /** Subgraph header text */
   groupHeader: 12,
 } as const
+
+/** Resolved font-size set — same shape as {@link FONT_SIZES} but mutable numbers. */
+export type FontSizes = { [K in keyof typeof FONT_SIZES]: number }
+
+/** Partial font-size overrides, as accepted by `RenderOptions.fontSizes`. */
+export type FontSizeOptions = Partial<FontSizes>
+
+/**
+ * Merge user-provided font-size overrides over the {@link FONT_SIZES} defaults.
+ * Any field left unspecified (or `undefined`) falls back to its default.
+ */
+export function resolveFontSizes(overrides?: FontSizeOptions): FontSizes {
+  return {
+    nodeLabel: overrides?.nodeLabel ?? FONT_SIZES.nodeLabel,
+    edgeLabel: overrides?.edgeLabel ?? FONT_SIZES.edgeLabel,
+    groupHeader: overrides?.groupHeader ?? FONT_SIZES.groupHeader,
+  }
+}
 
 /** Font weights used per element type */
 export const FONT_WEIGHTS = {

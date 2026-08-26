@@ -165,4 +165,34 @@ export interface RenderOptions {
   transparent?: boolean
   /** Enable hover tooltips on chart data points (xychart only). Default: false */
   interactive?: boolean
+
+  /**
+   * Font size overrides (px). Fields left unspecified fall back to their
+   * default. Applies to all diagram types (flowchart, sequence, class, ER).
+   */
+  fontSizes?: {
+    /** Node label text. Default: 13 */
+    nodeLabel?: number
+    /** Edge label text. Default: 11 */
+    edgeLabel?: number
+    /** Subgraph header text. Default: 12 */
+    groupHeader?: number
+  }
+
+  /**
+   * Sequence-diagram layout overrides (px). Fields left unspecified fall
+   * back to their default. Sequence diagrams only.
+   */
+  sequence?: {
+    /** Vertical space per message row. Default: 40 */
+    messageRowHeight?: number
+    /** Vertical space between actor boxes and the first message. Default: 20 */
+    headerGap?: number
+    /** Actor box height. Default: 40 */
+    actorHeight?: number
+    /** Gap between a message arrow and a note positioned directly after it. Default: 8 */
+    noteOffsetAfterMessage?: number
+    /** Gap between consecutively stacked notes. Default: 4 */
+    noteStackGap?: number
+  }
 }

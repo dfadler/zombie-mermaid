@@ -27,6 +27,7 @@
 import type { ElkNode } from 'elkjs'
 import type { MermaidGraph, PositionedGraph, RenderOptions } from './types.ts'
 import { elkLayoutSync } from './elk-instance.ts'
+import { resolveFontSizes } from './styles.ts'
 import { DEFAULTS } from './layout-engine/constants.ts'
 import { mermaidToElk } from './layout-engine/to-elk.ts'
 import { elkToPositioned } from './layout-engine/from-elk.ts'
@@ -43,7 +44,11 @@ export function layoutGraphSync(
   graph: MermaidGraph,
   options: RenderOptions = {},
 ): PositionedGraph {
-  const opts = { ...DEFAULTS, ...options }
+  const opts = {
+    ...DEFAULTS,
+    ...options,
+    fontSizes: resolveFontSizes(options.fontSizes),
+  }
   const elkGraph = mermaidToElk(graph, opts)
   const result = elkLayoutSync(elkGraph)
   return elkToPositioned(result, graph, opts.mergeEdges)
@@ -56,6 +61,10 @@ export function convertToElkFormat(
   graph: MermaidGraph,
   options: RenderOptions = {},
 ): ElkNode {
-  const opts = { ...DEFAULTS, ...options }
+  const opts = {
+    ...DEFAULTS,
+    ...options,
+    fontSizes: resolveFontSizes(options.fontSizes),
+  }
   return mermaidToElk(graph, opts)
 }

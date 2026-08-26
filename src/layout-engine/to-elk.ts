@@ -13,7 +13,8 @@ import type {
   MermaidEdge,
   RenderOptions,
 } from '../types.ts'
-import { FONT_SIZES, FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
+import type { FontSizes } from '../styles.ts'
+import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { DEFAULTS } from './constants.ts'
 
@@ -41,10 +42,11 @@ function estimateNodeSize(
   id: string,
   label: string,
   shape: string,
+  nodeLabelFontSize: number,
 ): { width: number; height: number } {
   const metrics = measureMultilineText(
     label,
-    FONT_SIZES.nodeLabel,
+    nodeLabelFontSize,
     FONT_WEIGHTS.nodeLabel,
   )
 
@@ -108,7 +110,7 @@ export function mermaidToElk(
   graph: MermaidGraph,
   opts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
-  >,
+  > & { fontSizes: FontSizes },
 ): ElkGraphNode {
   // Collect all node IDs that belong to subgraphs
   const subgraphNodeIds = new Set<string>()
@@ -254,7 +256,12 @@ export function mermaidToElk(
   // Add top-level nodes (those not in any subgraph)
   for (const [id, node] of graph.nodes) {
     if (!subgraphNodeIds.has(id) && !subgraphIds.has(id)) {
-      const size = estimateNodeSize(id, node.label, node.shape)
+      const size = estimateNodeSize(
+        id,
+        node.label,
+        node.shape,
+        opts.fontSizes.nodeLabel,
+      )
       elkGraph.children!.push({
         id,
         width: size.width,
@@ -281,7 +288,7 @@ export function mermaidToElk(
     if (edge.label) {
       const metrics = measureMultilineText(
         edge.label,
-        FONT_SIZES.edgeLabel,
+        opts.fontSizes.edgeLabel,
         FONT_WEIGHTS.edgeLabel,
       )
       elkEdge.labels = [
@@ -320,7 +327,7 @@ export function mermaidToElk(
     if (edge.label) {
       const metrics = measureMultilineText(
         edge.label,
-        FONT_SIZES.edgeLabel,
+        opts.fontSizes.edgeLabel,
         FONT_WEIGHTS.edgeLabel,
       )
       elkEdge.labels = [
@@ -354,7 +361,7 @@ function subgraphToElk(
   graph: MermaidGraph,
   opts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
-  >,
+  > & { fontSizes: FontSizes },
   edgesBySubgraph: Map<
     string | null,
     Array<{ index: number; edge: MermaidEdge }>
@@ -408,7 +415,12 @@ function subgraphToElk(
   for (const nodeId of sg.nodeIds) {
     const node = graph.nodes.get(nodeId)
     if (node) {
-      const size = estimateNodeSize(nodeId, node.label, node.shape)
+      const size = estimateNodeSize(
+        nodeId,
+        node.label,
+        node.shape,
+        opts.fontSizes.nodeLabel,
+      )
       elkNode.children!.push({
         id: nodeId,
         width: size.width,
@@ -436,7 +448,7 @@ function subgraphToElk(
     if (edge.label) {
       const metrics = measureMultilineText(
         edge.label,
-        FONT_SIZES.edgeLabel,
+        opts.fontSizes.edgeLabel,
         FONT_WEIGHTS.edgeLabel,
       )
       elkEdge.labels = [

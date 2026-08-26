@@ -33,6 +33,7 @@ import { renderSvg } from './renderer.ts'
 import type { RenderOptions } from './types.ts'
 import type { DiagramColors } from './theme.ts'
 import { DEFAULTS } from './theme.ts'
+import { resolveFontSizes } from './styles.ts'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
 import { layoutSequenceDiagram } from './sequence/layout.ts'
@@ -121,6 +122,7 @@ export function renderMermaidSVG(
   const colors = buildColors(options)
   const font = options.font ?? 'Inter'
   const transparent = options.transparent ?? false
+  const fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType = detectDiagramType(text)
 
   const lines = text
@@ -132,17 +134,17 @@ export function renderMermaidSVG(
     case 'sequence': {
       const diagram = parseSequenceDiagram(lines)
       const positioned = layoutSequenceDiagram(diagram, options)
-      return renderSequenceSvg(positioned, colors, font, transparent)
+      return renderSequenceSvg(positioned, colors, font, transparent, fontSizes)
     }
     case 'class': {
       const diagram = parseClassDiagram(lines)
       const positioned = layoutClassDiagramSync(diagram, options)
-      return renderClassSvg(positioned, colors, font, transparent)
+      return renderClassSvg(positioned, colors, font, transparent, fontSizes)
     }
     case 'er': {
       const diagram = parseErDiagram(lines)
       const positioned = layoutErDiagramSync(diagram, options)
-      return renderErSvg(positioned, colors, font, transparent)
+      return renderErSvg(positioned, colors, font, transparent, fontSizes)
     }
     case 'xychart': {
       const chart = parseXYChart(lines)
@@ -159,7 +161,7 @@ export function renderMermaidSVG(
     default: {
       const graph = parseMermaid(text)
       const positioned = layoutGraphSync(graph, options)
-      return renderSvg(positioned, colors, font, transparent)
+      return renderSvg(positioned, colors, font, transparent, fontSizes)
     }
   }
 }
