@@ -227,7 +227,20 @@ export function getPath(
       return path
     }
 
-    const currentCost = costSoFar.get(gridKey(current))!
+    // Every coord ever pushed onto `pq` has its costSoFar entry set
+    // immediately beforehand — either the initial `from` push above, or in
+    // the neighbor-expansion loop below (`costSoFar.set` precedes
+    // `pq.push`) — so a coord just popped from `pq` always has a recorded
+    // cost. That invariant lives in this function's control flow, not in
+    // the Map's type, so it's checked explicitly rather than trusted via
+    // `!`.
+    const currentCost = costSoFar.get(gridKey(current))
+    if (currentCost === undefined) {
+      /* v8 ignore next */
+      throw new Error(
+        `A* pathfinding: missing cost for visited cell ${gridKey(current)}`,
+      )
+    }
 
     for (const dir of MOVE_DIRS) {
       const next: GridCoord = { x: current.x + dir.x, y: current.y + dir.y }
