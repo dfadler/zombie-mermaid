@@ -51,6 +51,24 @@ export function dirEquals(a: Direction, b: Direction): boolean {
 }
 
 /**
+ * Get a node's grid coordinate. Edge routing only runs after grid.ts's
+ * createMapping has placed every node, so this is always defined for a real
+ * graph — but that guarantee lives in a different module/function, so it's
+ * narrowed here explicitly rather than trusted silently across the
+ * boundary.
+ */
+function requireGridCoord(node: AsciiNode): GridCoord {
+  const gc = node.gridCoord
+  if (gc === null) {
+    /* v8 ignore next */
+    throw new Error(
+      `Node "${node.name}" has no gridCoord; grid layout must run before edge routing`,
+    )
+  }
+  return gc
+}
+
+/**
  * Determine 8-way direction from one coordinate to another.
  * Uses the coordinate difference to pick one of 8 cardinal/ordinal directions.
  */
@@ -94,7 +112,10 @@ export function determineStartAndEndDir(
 ): [Direction, Direction, Direction, Direction] {
   if (edge.from === edge.to) return selfReferenceDirection(graphDirection)
 
-  const d = determineDirection(edge.from.gridCoord!, edge.to.gridCoord!)
+  const d = determineDirection(
+    requireGridCoord(edge.from),
+    requireGridCoord(edge.to),
+  )
 
   let preferredDir: Direction
   let preferredOppositeDir: Direction
@@ -294,15 +315,24 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // Try preferred path — an unobstructed direct L-shape beats A* outright
   // (see tryDirectPath); only fall back to A* when the direct route is
   // blocked (or unavailable because from/to are already axis-aligned).
-  const prefFrom = gridCoordDirection(edge.from.gridCoord!, preferredDir)
-  const prefTo = gridCoordDirection(edge.to.gridCoord!, preferredOppositeDir)
+  const prefFrom = gridCoordDirection(requireGridCoord(edge.from), preferredDir)
+  const prefTo = gridCoordDirection(
+    requireGridCoord(edge.to),
+    preferredOppositeDir,
+  )
   let preferredPath =
     tryDirectPath(graph, prefFrom, prefTo, preferredDir) ??
     getPath(graph.grid, prefFrom, prefTo, graph.pathBudget)
 
   // Try alternative path
-  const altFrom = gridCoordDirection(edge.from.gridCoord!, alternativeDir)
-  const altTo = gridCoordDirection(edge.to.gridCoord!, alternativeOppositeDir)
+  const altFrom = gridCoordDirection(
+    requireGridCoord(edge.from),
+    alternativeDir,
+  )
+  const altTo = gridCoordDirection(
+    requireGridCoord(edge.to),
+    alternativeOppositeDir,
+  )
   let alternativePath =
     tryDirectPath(graph, altFrom, altTo, alternativeDir) ??
     getPath(graph.grid, altFrom, altTo, graph.pathBudget)

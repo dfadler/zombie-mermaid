@@ -22,6 +22,24 @@ import { Up, Down, Left, Right, Middle } from './types.ts'
 import { getPath, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph } from './grid.ts'
 
+/**
+ * Get a node's grid coordinate. Bundling only runs after grid.ts's
+ * createMapping has placed every node, so this is always defined for a real
+ * graph — but that guarantee lives in a different module/function, so it's
+ * narrowed here explicitly rather than trusted silently across the
+ * boundary.
+ */
+function requireGridCoord(node: AsciiNode): GridCoord {
+  const gc = node.gridCoord
+  if (gc === null) {
+    /* v8 ignore next */
+    throw new Error(
+      `Node "${node.name}" has no gridCoord; grid layout must run before edge bundling`,
+    )
+  }
+  return gc
+}
+
 // ============================================================================
 // Bundle analysis
 // ============================================================================
@@ -184,7 +202,7 @@ export function calculateJunctionPoint(
   bundle: EdgeBundle,
 ): GridCoord {
   const dir = graph.config.graphDirection
-  const sharedCoord = bundle.sharedNode.gridCoord!
+  const sharedCoord = requireGridCoord(bundle.sharedNode)
 
   if (bundle.type === 'fan-in') {
     // Junction is BEFORE the shared target
@@ -251,7 +269,7 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
     bundle.sharedNodeDir = dir === 'TD' ? Down : Right
 
     // Route junction → target (shared path)
-    const targetCoord = bundle.sharedNode.gridCoord!
+    const targetCoord = requireGridCoord(bundle.sharedNode)
     const targetEntry =
       dir === 'TD'
         ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
@@ -269,7 +287,7 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
 
     // Route each source → junction
     for (const edge of bundle.edges) {
-      const sourceCoord = edge.from.gridCoord!
+      const sourceCoord = requireGridCoord(edge.from)
       const sourceExit =
         dir === 'TD'
           ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
@@ -298,7 +316,7 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
     bundle.sharedNodeDir = dir === 'TD' ? Up : Left
 
     // Route source → junction (shared path)
-    const sourceCoord = bundle.sharedNode.gridCoord!
+    const sourceCoord = requireGridCoord(bundle.sharedNode)
     const sourceExit =
       dir === 'TD'
         ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
@@ -316,7 +334,7 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
 
     // Route junction → each target
     for (const edge of bundle.edges) {
-      const targetCoord = edge.to.gridCoord!
+      const targetCoord = requireGridCoord(edge.to)
       const targetEntry =
         dir === 'TD'
           ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
