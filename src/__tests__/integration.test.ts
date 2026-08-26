@@ -61,6 +61,16 @@ describe('renderMermaidSVG – options', () => {
     expect(svg).toContain("'JetBrains Mono'")
   })
 
+  it('supports a CSS var() font, skipping the Google Fonts import and emitting it unquoted', () => {
+    const svg = renderMermaidSVG('graph TD\n  A --> B', {
+      font: 'var(--font-family-body)',
+    })
+    expect(svg).not.toContain('fonts.googleapis.com')
+    expect(svg).toContain(
+      'text { font-family: var(--font-family-body), system-ui, sans-serif; }',
+    )
+  })
+
   it('respects padding option', () => {
     const small = renderMermaidSVG('graph TD\n  A --> B', { padding: 10 })
     const large = renderMermaidSVG('graph TD\n  A --> B', { padding: 80 })
