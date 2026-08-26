@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawn } from 'node:child_process'
+import { spawn, execFileSync } from 'node:child_process'
 
 // ============================================================================
 // Constants
@@ -12,7 +13,21 @@ import { spawn } from 'node:child_process'
 // bun:test exposed `import.meta.dir` for this; Node's ESM equivalent is
 // deriving the directory from `import.meta.url`.
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const CLI = join(__dirname, '../../dist/cli.js')
+const REPO_ROOT = join(__dirname, '../..')
+const CLI = join(REPO_ROOT, 'dist/cli.js')
+
+// This suite spawns the actual built CLI binary rather than the TS source,
+// so `dist/cli.js` has to exist first. It's gitignored build output, not
+// something the repo ships checked in, so CI's fresh checkout (which never
+// runs a full `pnpm run build` before the test job) won't have it — only a
+// locally-built dev environment happens to. Rebuild here so this suite is
+// self-contained regardless of what already ran before it.
+beforeAll(() => {
+  execFileSync('pnpm', ['run', 'build'], { cwd: REPO_ROOT, stdio: 'inherit' })
+  if (!existsSync(CLI)) {
+    throw new Error(`Expected ${CLI} to exist after 'pnpm run build'`)
+  }
+}, 60_000)
 
 const SIMPLE_FLOWCHART = `graph LR
   A[Start] --> B[Middle] --> C[End]`
