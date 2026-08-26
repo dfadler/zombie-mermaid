@@ -585,6 +585,12 @@ Default colors (`#FFFFFF` / `#27272A`).
 
 ---
 
+## Docs
+
+Design write-ups and reference material beyond this README live in [docs/](docs/).
+
+---
+
 ## Attribution
 
 The ASCII rendering engine is based on [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) by Alexander Grooff. We ported it from Go to TypeScript and extended it with:
