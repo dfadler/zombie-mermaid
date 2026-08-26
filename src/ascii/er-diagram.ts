@@ -26,7 +26,7 @@ import {
   setRole,
 } from './canvas.ts'
 import { drawMultiBox } from './draw.ts'
-import { splitLines } from './multiline-utils.ts'
+import { splitLines, maxLineWidth } from './multiline-utils.ts'
 
 /** Classify a character from a box drawing as 'border' or 'text'. */
 function classifyBoxChar(ch: string): CharRole {
@@ -224,6 +224,19 @@ export function renderErAscii(
     entityBoxH.set(ent.id, boxH)
   }
 
+  // Widest relationship label between each unordered pair of entities.
+  // Used to widen the horizontal gap between entities so labels aren't
+  // truncated and keep at least 1 char of padding from both entity boxes
+  // (see issue #67 — labels like "ordered in" were clamped to the fixed
+  // 6-char gap and truncated to "ordere").
+  const pairLabelWidth = new Map<string, number>()
+  for (const rel of diagram.relationships) {
+    if (!rel.label) continue
+    const key = [rel.entity1, rel.entity2].sort().join('|')
+    const w = maxLineWidth(rel.label)
+    pairLabelWidth.set(key, Math.max(pairLabelWidth.get(key) ?? 0, w))
+  }
+
   // --- Find connected components ---
   const components = findConnectedComponents(diagram)
 
@@ -248,7 +261,8 @@ export function renderErAscii(
     let maxRowH = 0
     let colCount = 0
 
-    for (const ent of componentEntities) {
+    for (let idx = 0; idx < componentEntities.length; idx++) {
+      const ent = componentEntities[idx]!
       const w = entityBoxW.get(ent.id)!
       const h = entityBoxH.get(ent.id)!
 
@@ -269,7 +283,19 @@ export function renderErAscii(
         height: h,
       })
 
-      currentX += w + hGap
+      // Widen the gap to the next entity in this row so a connecting
+      // relationship's label fits with 1 char of padding on each side
+      // instead of being truncated or crammed against a box border.
+      let gap = hGap
+      const willWrapNext = colCount + 1 >= maxPerRow
+      const nextEnt = componentEntities[idx + 1]
+      if (!willWrapNext && nextEnt) {
+        const key = [ent.id, nextEnt.id].sort().join('|')
+        const labelW = pairLabelWidth.get(key) ?? 0
+        if (labelW > 0) gap = Math.max(gap, labelW + 2)
+      }
+
+      currentX += w + gap
       maxRowH = Math.max(maxRowH, h)
       colCount++
     }
@@ -358,31 +384,48 @@ export function renderErAscii(
         setC(x, lineY, lineH, 'line')
       }
 
+      // Inset the crow's foot markers and the label by 1 cell from each
+      // entity box so nothing sits flush against a border (issue #67). The
+      // line character still fills the inset cell, so the connection stays
+      // visually continuous.
+      const gapWidth = endX - startX + 1
+      const inset = gapWidth >= 3 ? 1 : 0
+      const markerStartX = startX + inset
+      const markerEndX = endX - inset
+
       // Draw crow's foot markers at endpoints
       // Left marker (at left entity's right edge) - isRight=false
       const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       for (let i = 0; i < leftChars.length; i++) {
-        setC(startX + i, lineY, leftChars[i]!, 'arrow')
+        setC(markerStartX + i, lineY, leftChars[i]!, 'arrow')
       }
 
       // Right marker (at right entity's left edge) - isRight=true
       const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       for (let i = 0; i < rightChars.length; i++) {
-        setC(endX - rightChars.length + 1 + i, lineY, rightChars[i]!, 'arrow')
+        setC(
+          markerEndX - rightChars.length + 1 + i,
+          lineY,
+          rightChars[i]!,
+          'arrow',
+        )
       }
 
       // Relationship label centered in the gap between the two entities, below the line.
-      // Clamp label to the gap region [startX, endX] to avoid overwriting box borders.
-      // Supports multi-line labels.
+      // Clamp label to the padded gap region [startX + inset, endX - inset] so it
+      // never touches a box border. Supports multi-line labels. The gap itself is
+      // widened during layout (see pairLabelWidth) so the full label always fits.
       if (rel.label) {
         const lines = splitLines(rel.label)
         const gapMid = Math.floor((startX + endX) / 2)
+        const labelMinX = startX + inset
+        const labelMaxX = endX - inset
 
         // Place lines below the relationship line (lineY + 1, lineY + 2, ...)
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
           const line = lines[lineIdx]!
           const labelStart = Math.max(
-            startX,
+            labelMinX,
             gapMid - Math.floor(line.length / 2),
           )
           const labelY = lineY + 1 + lineIdx
@@ -399,7 +442,7 @@ export function renderErAscii(
           )
           for (let i = 0; i < line.length; i++) {
             const lx = labelStart + i
-            if (lx >= startX && lx <= endX) {
+            if (lx >= labelMinX && lx <= labelMaxX) {
               setC(lx, labelY, line[i]!, 'text')
             }
           }
@@ -438,13 +481,22 @@ export function renderErAscii(
         }
       }
 
+      // Inset the crow's foot markers by 1 row from each entity box so the
+      // glyph cluster isn't flush against the border (issue #67). The line
+      // character still fills the inset row, keeping the connection visually
+      // continuous.
+      const vGapHeight = endY - startY + 1
+      const vInset = vGapHeight >= 3 ? 1 : 0
+      const markerStartY = startY + vInset
+      const markerEndY = endY - vInset
+
       // Crow's foot markers (vertical direction)
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
       const upperChars = getCrowsFootChars(upperCard, useAscii, false)
       for (let i = 0; i < upperChars.length; i++) {
         setC(
           lineX - Math.floor(upperChars.length / 2) + i,
-          startY,
+          markerStartY,
           upperChars[i]!,
           'arrow',
         )
@@ -456,7 +508,7 @@ export function renderErAscii(
       for (let i = 0; i < lowerChars.length; i++) {
         setC(
           targetX - Math.floor(lowerChars.length / 2) + i,
-          endY,
+          markerEndY,
           lowerChars[i]!,
           'arrow',
         )
