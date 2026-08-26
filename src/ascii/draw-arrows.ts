@@ -168,13 +168,14 @@ function drawPath(
 }
 
 /** Vertical box-border characters a horizontal connector can genuinely merge with. */
-const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊'])
+const VERTICAL_BORDER_CHARS = new Set(['│', '┃', '║', '┆', '┊', '|', '‖'])
 /** Horizontal box-border characters a vertical connector can genuinely merge with. */
-const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄'])
+const HORIZONTAL_BORDER_CHARS = new Set(['─', '━', '═', '╌', '┄', '-', '='])
 
 /**
  * Draw the junction character where an edge exits the source node's box.
- * Only applies to Unicode mode (ASCII mode just uses the line characters).
+ * Unicode mode uses shape-specific T-junction glyphs; ASCII mode uses the
+ * same universal '+' already used for corners in draw-boxes.ts.
  * Skips drawing for state pseudo-states which have their own visual borders.
  *
  * A tee/junction character (┬┴├┤) is only correct when it's actually merging
@@ -192,7 +193,7 @@ function drawBoxStart(
   sourceNode: AsciiNode,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
-  if (graph.config.useAscii) return canvas
+  const useAscii = graph.config.useAscii
 
   // Skip box start connectors for state pseudo-states (they have their own bordered design)
   if (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end') {
@@ -201,6 +202,7 @@ function drawBoxStart(
 
   const from = firstLine[0]!
   const dir = determineDirection(path[0]!, path[1]!)
+  const junction = useAscii ? '+' : null
 
   // `canvas` (from copyCanvas) is a blank overlay layer — it never has
   // content of its own to check. Whether a genuine perpendicular border
@@ -214,18 +216,16 @@ function drawBoxStart(
     const x = from.x
     const y = from.y + 1
     const existing = existingOnBox(x, y)
-    canvas[x]![y] =
+    const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
-        ? '┴'
-        : '│'
+    canvas[x]![y] = hasBorder ? (junction ?? '┴') : useAscii ? '|' : '│'
   } else if (dirEquals(dir, Down)) {
     const x = from.x
     const y = from.y - 1
     const existing = existingOnBox(x, y)
-    canvas[x]![y] =
+    const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
-        ? '┬'
-        : '│'
+    canvas[x]![y] = hasBorder ? (junction ?? '┬') : useAscii ? '|' : '│'
   } else if (dirEquals(dir, Left) || dirEquals(dir, Right)) {
     // Anchor horizontal connectors to the source node's *own* rendered
     // border column, not to gridToDrawingCoord's grid-column-centered
@@ -245,11 +245,12 @@ function drawBoxStart(
     const x = dirEquals(dir, Left) ? dc.x : dc.x + boxWidth - 1
     const y = from.y
     const existing = existingOnBox(x, y)
-    canvas[x]![y] =
+    const hasBorder =
       existing !== undefined && VERTICAL_BORDER_CHARS.has(existing)
-        ? dirEquals(dir, Left)
-          ? '┤'
-          : '├'
+    canvas[x]![y] = hasBorder
+      ? (junction ?? (dirEquals(dir, Left) ? '┤' : '├'))
+      : useAscii
+        ? '-'
         : '─'
   }
 
