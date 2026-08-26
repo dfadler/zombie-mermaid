@@ -6,7 +6,13 @@
 // and dual-path comparison for optimal edge routing.
 // ============================================================================
 
-import type { GridCoord, Direction, AsciiEdge, AsciiGraph } from './types.ts'
+import type {
+  GridCoord,
+  Direction,
+  AsciiEdge,
+  AsciiGraph,
+  AsciiNode,
+} from './types.ts'
 import {
   Up,
   Down,
@@ -19,7 +25,7 @@ import {
   Middle,
   gridCoordDirection,
 } from './types.ts'
-import { getPath, mergePath } from './pathfinder.ts'
+import { getPath, isFreeInGrid, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph } from './grid.ts'
 
 // ============================================================================
@@ -185,6 +191,77 @@ export function determineStartAndEndDir(
 // ============================================================================
 
 /**
+ * Check every cell strictly after `from` up to (and optionally including)
+ * `to` along a single axis-aligned run. `from` and `to` must share an x or
+ * a y coordinate. `includeTo` should be false when `to` is the edge's
+ * final destination point (which is expected to sit on/adjacent to the
+ * target node's own border and so may legitimately be "occupied" in
+ * graph.grid — mirroring the same allowance A*'s getPath makes for its
+ * destination cell).
+ */
+function isAxisRunFree(
+  grid: Map<string, AsciiNode>,
+  from: GridCoord,
+  to: GridCoord,
+  includeTo: boolean,
+): boolean {
+  if (from.x === to.x && from.y === to.y) return true
+  const alongY = from.x === to.x
+  if (!alongY && from.y !== to.y) return false // not axis-aligned
+
+  const step = alongY ? (to.y > from.y ? 1 : -1) : to.x > from.x ? 1 : -1
+  let pos = alongY ? from.y : from.x
+  const end = alongY ? to.y : to.x
+
+  for (pos += step; ; pos += step) {
+    const isLast = pos === end
+    const cell: GridCoord = alongY
+      ? { x: from.x, y: pos }
+      : { x: pos, y: from.y }
+    if (!(isLast && !includeTo) && !isFreeInGrid(grid, cell)) return false
+    if (isLast) break
+  }
+  return true
+}
+
+/**
+ * Try a direct two-segment (L-shaped) route between `from` and `to`,
+ * axis-ordered to match `dir` (horizontal-first for Left/Right,
+ * vertical-first for Up/Down — `determineStartAndEndDir` only ever
+ * produces one of these four pure directions). Returns null when `from`
+ * and `to` are already axis-aligned (no corner needed — A*'s result is
+ * already optimal there) or when a cell along the route is occupied.
+ *
+ * A* always finds a *shortest* path, but when several equally-short routes
+ * exist — e.g. a straight line and a zigzag with the same total step count
+ * — which one it returns depends on priority-queue tie-breaking order, not
+ * on which "looks" straighter. That's why sibling edges from the same
+ * source can end up with visually inconsistent routing (one goes straight,
+ * another zigzags) even though nothing actually blocks a straight route
+ * for either. A direct L-shaped route is, by construction, exactly as
+ * short as any route between two points can be, so whenever it's
+ * unobstructed we prefer it outright over whatever A* found — this also
+ * skips the A* search entirely for the common unobstructed case.
+ */
+function tryDirectPath(
+  graph: AsciiGraph,
+  from: GridCoord,
+  to: GridCoord,
+  dir: Direction,
+): GridCoord[] | null {
+  if (from.x === to.x || from.y === to.y) return null
+
+  const horizontalFirst = dirEquals(dir, Left) || dirEquals(dir, Right)
+  const corner: GridCoord = horizontalFirst
+    ? { x: to.x, y: from.y }
+    : { x: from.x, y: to.y }
+
+  if (!isAxisRunFree(graph.grid, from, corner, true)) return null
+  if (!isAxisRunFree(graph.grid, corner, to, false)) return null
+  return [from, corner, to]
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -213,15 +290,21 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
 
-  // Try preferred path
+  // Try preferred path — an unobstructed direct L-shape beats A* outright
+  // (see tryDirectPath); only fall back to A* when the direct route is
+  // blocked (or unavailable because from/to are already axis-aligned).
   const prefFrom = gridCoordDirection(edge.from.gridCoord!, preferredDir)
   const prefTo = gridCoordDirection(edge.to.gridCoord!, preferredOppositeDir)
-  let preferredPath = getPath(graph.grid, prefFrom, prefTo)
+  let preferredPath =
+    tryDirectPath(graph, prefFrom, prefTo, preferredDir) ??
+    getPath(graph.grid, prefFrom, prefTo, graph.pathBudget)
 
   // Try alternative path
   const altFrom = gridCoordDirection(edge.from.gridCoord!, alternativeDir)
   const altTo = gridCoordDirection(edge.to.gridCoord!, alternativeOppositeDir)
-  let alternativePath = getPath(graph.grid, altFrom, altTo)
+  let alternativePath =
+    tryDirectPath(graph, altFrom, altTo, alternativeDir) ??
+    getPath(graph.grid, altFrom, altTo, graph.pathBudget)
 
   // Case 1: Both paths found — pick the shorter one
   if (preferredPath !== null && alternativePath !== null) {
@@ -263,6 +346,37 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   edge.startDir = preferredDir
   edge.endDir = preferredOppositeDir
   edge.path = [prefFrom, prefTo]
+}
+
+/** Check whether grid column `x` falls inside any node's reserved 3-column block. */
+function isNodeOccupiedColumn(graph: AsciiGraph, x: number): boolean {
+  for (const node of graph.nodes) {
+    const gc = node.gridCoord
+    if (gc && x >= gc.x && x <= gc.x + 2) return true
+  }
+  return false
+}
+
+/**
+ * Find the column closest to `ideal` (within [minX, maxX]) that isn't part
+ * of any node's reserved block, searching outward in both directions. Falls
+ * back to `ideal` itself if every column in range is node-occupied (e.g. a
+ * very short segment squeezed between two nodes) — there's no better option.
+ */
+function findNonNodeColumn(
+  graph: AsciiGraph,
+  minX: number,
+  maxX: number,
+  ideal: number,
+): number {
+  if (!isNodeOccupiedColumn(graph, ideal)) return ideal
+  for (let d = 1; d <= maxX - minX; d++) {
+    const right = ideal + d
+    if (right <= maxX && !isNodeOccupiedColumn(graph, right)) return right
+    const left = ideal - d
+    if (left >= minX && !isNodeOccupiedColumn(graph, left)) return left
+  }
+  return ideal
 }
 
 /**
@@ -322,10 +436,22 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     }
   }
 
-  // Ensure column at midpoint is wide enough for the label
+  // Ensure column at midpoint is wide enough for the label.
+  //
+  // The chosen column must not be one a node itself occupies (its 3-column
+  // border/content/border block, reserved in reserveSpotInGrid): a shared
+  // trunk segment often passes directly over/adjacent to another node's
+  // reserved columns on its way elsewhere, and if the label's midpoint
+  // happens to land there, widening it to fit the label inflates that
+  // node's own border-column width — which then drags things anchored to
+  // that column's *center* (like the box-start ├/┤/┬/┴ connector in
+  // draw-arrows.ts, computed via gridToDrawingCoord) away from the node's
+  // actual, fixed-width rendered border. Search outward from the ideal
+  // midpoint for the nearest column in the segment that isn't node-owned.
   const minX = Math.min(largestLine[0].x, largestLine[1].x)
   const maxX = Math.max(largestLine[0].x, largestLine[1].x)
-  const middleX = minX + Math.floor((maxX - minX) / 2)
+  const idealX = minX + Math.floor((maxX - minX) / 2)
+  const middleX = findNonNodeColumn(graph, minX, maxX, idealX)
 
   const current = graph.columnWidth.get(middleX) ?? 0
   graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2))

@@ -6,7 +6,7 @@
 // paths between nodes on the grid. Prefers straight lines over zigzags.
 // ============================================================================
 
-import type { GridCoord, AsciiNode } from './types.ts'
+import type { GridCoord, AsciiNode, PathBudget } from './types.ts'
 import { gridKey, gridCoordEquals } from './types.ts'
 
 // ============================================================================
@@ -121,27 +121,80 @@ const MOVE_DIRS: GridCoord[] = [
 ]
 
 /** Check if a grid cell is unoccupied and has non-negative coordinates. */
-function isFreeInGrid(grid: Map<string, AsciiNode>, c: GridCoord): boolean {
+export function isFreeInGrid(
+  grid: Map<string, AsciiNode>,
+  c: GridCoord,
+): boolean {
   if (c.x < 0 || c.y < 0) return false
   return !grid.has(gridKey(c))
 }
 
 /**
- * Maximum number of A* iterations before giving up.
- * Prevents unbounded memory growth when the destination is unreachable
- * through free cells (the grid has no positive upper-bound check).
+ * Maximum number of A* iterations before giving up on a *single* getPath
+ * call. Prevents unbounded memory growth when the destination is
+ * unreachable through free cells (the grid has no positive upper-bound
+ * check).
+ *
+ * This alone is not sufficient to bound a whole render: a dense fan-in/out
+ * graph can call getPath hundreds of times (once per edge, sometimes twice
+ * — see determinePath's preferred + alternative attempts), and each call is
+ * independently allowed to spend up to MAX_ITERATIONS work searching a grid
+ * that's mostly occupied by other nodes on the same row. That per-call cap
+ * bounds each search but not their sum, so total time/memory across a
+ * render still scales with (edge count × MAX_ITERATIONS) and can exhaust
+ * the heap well before any single call hits its own limit. See PathBudget
+ * below for the render-wide bound that fixes this.
  */
 const MAX_ITERATIONS = 50_000
 
 /**
+ * A mutable, render-wide budget shared across every getPath call made while
+ * laying out one graph (see grid.ts's createMapping, which creates one
+ * fresh budget per render and threads it through edge-routing.ts and
+ * edge-bundling.ts). Each A* iteration — in any call — decrements
+ * `remaining`; once it hits zero, all subsequent getPath calls return null
+ * immediately (falling back to the direct-path logic already used when A*
+ * can't find a route at all), which hard-bounds total pathfinding work for
+ * the whole render regardless of how many edges it has.
+ *
+ * (Type defined in types.ts alongside the other shared ASCII-renderer
+ * types, to avoid a circular import between this module and types.ts.)
+ */
+
+/**
+ * Default render-wide iteration budget. Generous enough to fully route
+ * ordinary diagrams (tens to low hundreds of edges) without ever being
+ * hit, while still keeping total pathfinding work — and thus memory use —
+ * bounded for pathological dense fan-in/out graphs with hundreds of edges.
+ */
+export const DEFAULT_PATH_BUDGET = 200_000
+
+/** Create a fresh render-wide path budget. */
+export function createPathBudget(
+  total: number = DEFAULT_PATH_BUDGET,
+): PathBudget {
+  return { remaining: total }
+}
+
+/**
  * Find a path from `from` to `to` on the grid using A*.
  * Returns the path as an array of GridCoords, or null if no path exists.
+ *
+ * `budget`, if provided, is a render-wide iteration budget shared across
+ * all getPath calls for the current layout — see PathBudget above. Once
+ * exhausted, this (and every subsequent call sharing it) returns null
+ * right away instead of searching.
  */
 export function getPath(
   grid: Map<string, AsciiNode>,
   from: GridCoord,
   to: GridCoord,
+  budget?: PathBudget,
 ): GridCoord[] | null {
+  if (budget && budget.remaining <= 0) {
+    return null
+  }
+
   const pq = new MinHeap()
   pq.push({ coord: from, priority: 0 })
 
@@ -155,6 +208,10 @@ export function getPath(
   while (pq.length > 0) {
     if (++iterations > MAX_ITERATIONS) {
       return null
+    }
+    if (budget) {
+      if (budget.remaining <= 0) return null
+      budget.remaining--
     }
 
     const current = pq.pop()!.coord

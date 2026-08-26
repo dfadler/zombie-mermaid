@@ -21,6 +21,11 @@ import {
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
 
+// Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
+// Shared between the drawing pass and the block-wall extent calculation so
+// self-arrows inside alt/loop/opt blocks don't get clipped by the wall.
+const SELF_LOOP_WIDTH = 4
+
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.
  *
@@ -259,7 +264,8 @@ export function renderSequenceAscii(
     const msg = diagram.messages[m]!
     if (msg.from === msg.to) {
       const fi = actorIdx.get(msg.from)!
-      const selfRight = llX[fi]! + 6 + 2 + msg.label.length
+      const selfRight =
+        llX[fi]! + SELF_LOOP_WIDTH + 2 + 2 + maxLineWidth(msg.label)
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -356,7 +362,10 @@ export function renderSequenceAscii(
       //   │  │ Label     (row 1)
       //   │◄─┘           (row 2)
       const y0 = msgArrowY[m]!
-      const loopW = Math.max(4, 4)
+      const loopW = SELF_LOOP_WIDTH
+      // Split the label on <br/>-normalized newlines so multi-line self-arrow
+      // labels get one row each instead of dumping a literal \n mid-row.
+      const msgLines = splitLines(msg.label)
 
       // Row 0: start junction + horizontal + top-right corner
       setC(fromX, y0, JL, 'junction')
@@ -364,19 +373,24 @@ export function renderSequenceAscii(
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
-      // Row 1: vertical on right side + label
-      setC(fromX + loopW, y0 + 1, V, 'line')
+      // Label rows: vertical on right side + one line of label text each
       const labelX = fromX + loopW + 2
-      for (let i = 0; i < msg.label.length; i++) {
-        if (labelX + i < totalW) setC(labelX + i, y0 + 1, msg.label[i]!, 'text')
+      for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
+        const rowY = y0 + 1 + lineIdx
+        setC(fromX + loopW, rowY, V, 'line')
+        const line = msgLines[lineIdx]!
+        for (let i = 0; i < line.length; i++) {
+          if (labelX + i < totalW) setC(labelX + i, rowY, line[i]!, 'text')
+        }
       }
 
-      // Row 2: arrow-back + horizontal + bottom-right corner
+      // Bottom row: arrow-back + horizontal + bottom-right corner
+      const bottomY = y0 + 1 + msgLines.length
       const arrowChar = isFilled ? (useAscii ? '<' : '◀') : useAscii ? '<' : '◁'
-      setC(fromX, y0 + 2, arrowChar, 'arrow')
+      setC(fromX, bottomY, arrowChar, 'arrow')
       for (let x = fromX + 1; x < fromX + loopW; x++)
-        setC(x, y0 + 2, lineChar, 'line')
-      setC(fromX + loopW, y0 + 2, useAscii ? '+' : '┘', 'corner')
+        setC(x, bottomY, lineChar, 'line')
+      setC(fromX + loopW, bottomY, useAscii ? '+' : '┘', 'corner')
     } else {
       // Normal message: label on row above, arrow on row below
       const labelY = msgLabelY[m]!
@@ -429,6 +443,14 @@ export function renderSequenceAscii(
       const t = actorIdx.get(msg.to) ?? 0
       minLX = Math.min(minLX, llX[Math.min(f, t)]!)
       maxLX = Math.max(maxLX, llX[Math.max(f, t)]!)
+      // Self-arrows draw their loop glyphs (├──┐ … ◀──┘) and label further
+      // right than the lifeline itself — account for that extent too, or a
+      // long self-arrow label gets clipped by / drawn outside the wall.
+      if (f === t) {
+        const selfRight =
+          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+        maxLX = Math.max(maxLX, selfRight)
+      }
     }
 
     const bLeft = Math.max(0, minLX - 4)

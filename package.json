@@ -49,6 +49,9 @@
   "contributors": [
     "Dustin Fadler (fork maintainer)"
   ],
+  "bin": {
+    "zombie-mermaid": "dist/cli.js"
+  },
   "files": [
     "src/",
     "dist/",

@@ -257,7 +257,12 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
         ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
         : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
 
-    const sharedPath = getPath(graph.grid, junction, targetEntry)
+    const sharedPath = getPath(
+      graph.grid,
+      junction,
+      targetEntry,
+      graph.pathBudget,
+    )
     bundle.sharedPath = sharedPath
       ? mergePath(sharedPath)
       : [junction, targetEntry]
@@ -270,7 +275,12 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
           ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
           : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
 
-      const pathToJunction = getPath(graph.grid, sourceExit, junction)
+      const pathToJunction = getPath(
+        graph.grid,
+        sourceExit,
+        junction,
+        graph.pathBudget,
+      )
       edge.pathToJunction = pathToJunction
         ? mergePath(pathToJunction)
         : [sourceExit, junction]
@@ -294,7 +304,12 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
         ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
         : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
 
-    const sharedPath = getPath(graph.grid, sourceExit, junction)
+    const sharedPath = getPath(
+      graph.grid,
+      sourceExit,
+      junction,
+      graph.pathBudget,
+    )
     bundle.sharedPath = sharedPath
       ? mergePath(sharedPath)
       : [sourceExit, junction]
@@ -307,7 +322,12 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
           ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
           : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
 
-      const pathToJunction = getPath(graph.grid, junction, targetEntry)
+      const pathToJunction = getPath(
+        graph.grid,
+        junction,
+        targetEntry,
+        graph.pathBudget,
+      )
       edge.pathToJunction = pathToJunction
         ? mergePath(pathToJunction)
         : [junction, targetEntry]
