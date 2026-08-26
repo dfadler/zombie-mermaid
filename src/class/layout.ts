@@ -100,16 +100,12 @@ function buildClassElkGraph(
     })
   }
 
+  // Iterate classSizes directly (populated above, in diagram.classes order)
+  // rather than looking each class back up by id — sidesteps needing an
+  // assertion or invariant check for a lookup that can't actually miss.
   const children: ElkNode[] = []
-  for (const cls of diagram.classes) {
-    const size = classSizes.get(cls.id)
-    if (!size) {
-      // Unreachable — every cls.id was just inserted into classSizes above —
-      // but keeps the invariant explicit rather than silently pushing an
-      // undefined-sized node into the ELK graph.
-      throw new Error(`Missing computed size for class "${cls.id}"`)
-    }
-    children.push({ id: cls.id, width: size.width, height: size.height })
+  for (const [id, size] of classSizes) {
+    children.push({ id, width: size.width, height: size.height })
   }
 
   const edges: ElkExtendedEdge[] = []
@@ -171,6 +167,7 @@ function extractClassLayout(
       if (!size) {
         // Unreachable — classSizes is populated for every diagram.classes
         // entry, and classLookup/cls.id come from that same list.
+        /* v8 ignore next */
         throw new Error(`Missing computed size for class "${cls.id}"`)
       }
       positionedClasses.push({
