@@ -7,6 +7,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import type { FontSizes } from '../styles.ts'
 import {
   FONT_SIZES,
   FONT_WEIGHTS,
@@ -52,6 +53,7 @@ export function renderErSvg(
   colors: DiagramColors,
   font: string = 'Inter',
   transparent: boolean = false,
+  fontSizes: FontSizes = FONT_SIZES,
 ): string {
   const parts: string[] = []
 
@@ -68,7 +70,7 @@ export function renderErSvg(
 
   // 2. Entity boxes
   for (const entity of diagram.entities) {
-    parts.push(renderEntityBox(entity))
+    parts.push(renderEntityBox(entity, fontSizes))
   }
 
   // 3. Cardinality markers at relationship endpoints
@@ -78,7 +80,7 @@ export function renderErSvg(
 
   // 4. Relationship labels
   for (const rel of diagram.relationships) {
-    parts.push(renderRelationshipLabel(rel))
+    parts.push(renderRelationshipLabel(rel, fontSizes))
   }
 
   parts.push('</svg>')
@@ -93,7 +95,10 @@ export function renderErSvg(
  * Render an entity box with header and attribute rows.
  * Wrapped in <g class="entity"> with semantic data attributes.
  */
-function renderEntityBox(entity: PositionedErEntity): string {
+function renderEntityBox(
+  entity: PositionedErEntity,
+  fontSizes: FontSizes,
+): string {
   const {
     id,
     x,
@@ -131,8 +136,8 @@ function renderEntityBox(entity: PositionedErEntity): string {
         label,
         x + width / 2,
         y + headerHeight / 2,
-        FONT_SIZES.nodeLabel,
-        `text-anchor="middle" font-size="${FONT_SIZES.nodeLabel}" font-weight="700" fill="var(--_text)"`,
+        fontSizes.nodeLabel,
+        `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="var(--_text)"`,
       ),
   )
 
@@ -259,13 +264,16 @@ function renderRelationshipLine(rel: PositionedErRelationship): string {
 }
 
 /** Render a relationship label at the midpoint (supports multi-line) */
-function renderRelationshipLabel(rel: PositionedErRelationship): string {
+function renderRelationshipLabel(
+  rel: PositionedErRelationship,
+  fontSizes: FontSizes,
+): string {
   if (!rel.label || rel.points.length < 2) return ''
 
   const mid = midpoint(rel.points)
   const metrics = measureMultilineText(
     rel.label,
-    FONT_SIZES.edgeLabel,
+    fontSizes.edgeLabel,
     FONT_WEIGHTS.edgeLabel,
   )
 
@@ -280,8 +288,8 @@ function renderRelationshipLabel(rel: PositionedErRelationship): string {
       rel.label,
       mid.x,
       mid.y,
-      FONT_SIZES.edgeLabel,
-      `text-anchor="middle" font-size="${FONT_SIZES.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      fontSizes.edgeLabel,
+      `text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
     )}`
   )
 }

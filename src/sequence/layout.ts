@@ -9,7 +9,7 @@ import type {
   PositionedNote,
 } from './types.ts'
 import type { RenderOptions } from '../types.ts'
-import { estimateTextWidth, FONT_SIZES, FONT_WEIGHTS } from '../styles.ts'
+import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 
 // ============================================================================
 // Sequence diagram layout engine
@@ -55,7 +55,30 @@ const SEQ = {
   notePadX: 12,
   notePadY: 6,
   noteGap: 10,
+  /** Gap between a message arrow and a note positioned directly after it */
+  noteOffsetAfterMessage: 8,
+  /** Gap between consecutively stacked notes */
+  noteStackGap: 4,
 } as const
+
+/** Resolved sequence-layout config — same shape as {@link SEQ} but mutable numbers. */
+type SeqConfig = { [K in keyof typeof SEQ]: number }
+
+/**
+ * Merge user-provided sequence-layout overrides over the {@link SEQ} defaults.
+ * Any field left unspecified (or `undefined`) falls back to its default.
+ */
+function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
+  return {
+    ...SEQ,
+    actorHeight: overrides?.actorHeight ?? SEQ.actorHeight,
+    headerGap: overrides?.headerGap ?? SEQ.headerGap,
+    messageRowHeight: overrides?.messageRowHeight ?? SEQ.messageRowHeight,
+    noteOffsetAfterMessage:
+      overrides?.noteOffsetAfterMessage ?? SEQ.noteOffsetAfterMessage,
+    noteStackGap: overrides?.noteStackGap ?? SEQ.noteStackGap,
+  }
+}
 
 /**
  * Lay out a parsed sequence diagram.
@@ -63,7 +86,7 @@ const SEQ = {
  */
 export function layoutSequenceDiagram(
   diagram: SequenceDiagram,
-  _options: RenderOptions = {},
+  options: RenderOptions = {},
 ): PositionedSequenceDiagram {
   if (diagram.actors.length === 0) {
     return {
@@ -78,23 +101,26 @@ export function layoutSequenceDiagram(
     }
   }
 
+  const seq = resolveSeqOptions(options.sequence)
+  const fontSizes = resolveFontSizes(options.fontSizes)
+
   // 1. Calculate actor widths and assign horizontal positions (center X)
   const actorWidths = diagram.actors.map((a) => {
     const textW = estimateTextWidth(
       a.label,
-      FONT_SIZES.nodeLabel,
+      fontSizes.nodeLabel,
       FONT_WEIGHTS.nodeLabel,
     )
-    return Math.max(textW + SEQ.actorPadX * 2, 80)
+    return Math.max(textW + seq.actorPadX * 2, 80)
   })
 
   // Build actor center X positions with minimum gap
   const actorCenterX: number[] = []
-  let currentX = SEQ.padding + actorWidths[0]! / 2
+  let currentX = seq.padding + actorWidths[0]! / 2
   for (let i = 0; i < diagram.actors.length; i++) {
     if (i > 0) {
       const minGap = Math.max(
-        SEQ.actorGap,
+        seq.actorGap,
         (actorWidths[i - 1]! + actorWidths[i]!) / 2 + 40,
       )
       currentX += minGap
@@ -109,7 +135,7 @@ export function layoutSequenceDiagram(
   }
 
   // 2. Position actors at the top
-  const actorY = SEQ.padding
+  const actorY = seq.padding
   const actors: PositionedActor[] = diagram.actors.map((a, i) => ({
     id: a.id,
     label: a.label,
@@ -117,11 +143,11 @@ export function layoutSequenceDiagram(
     x: actorCenterX[i]!,
     y: actorY,
     width: actorWidths[i]!,
-    height: SEQ.actorHeight,
+    height: seq.actorHeight,
   }))
 
   // 3. Stack messages vertically
-  let messageY = actorY + SEQ.actorHeight + SEQ.headerGap
+  let messageY = actorY + seq.actorHeight + seq.headerGap
   const messages: PositionedMessage[] = []
 
   // Pre-scan blocks to determine which message indices need extra vertical
@@ -132,12 +158,12 @@ export function layoutSequenceDiagram(
   for (const block of diagram.blocks) {
     // First message in the block needs room for the block header label
     const prev = extraSpaceBefore.get(block.startIndex) ?? 0
-    extraSpaceBefore.set(block.startIndex, Math.max(prev, SEQ.blockHeaderExtra))
+    extraSpaceBefore.set(block.startIndex, Math.max(prev, seq.blockHeaderExtra))
 
     // Each divider (else/and) needs room for the divider label
     for (const div of block.dividers) {
       const prevDiv = extraSpaceBefore.get(div.index) ?? 0
-      extraSpaceBefore.set(div.index, Math.max(prevDiv, SEQ.dividerExtra))
+      extraSpaceBefore.set(div.index, Math.max(prevDiv, seq.dividerExtra))
     }
   }
 
@@ -157,15 +183,15 @@ export function layoutSequenceDiagram(
     let noteY = messageY
     for (const note of notesBeforeFirstMsg) {
       const noteW = Math.max(
-        SEQ.noteWidth,
+        seq.noteWidth,
         estimateTextWidth(
           note.text,
-          FONT_SIZES.edgeLabel,
+          fontSizes.edgeLabel,
           FONT_WEIGHTS.edgeLabel,
         ) +
-          SEQ.notePadX * 2,
+          seq.notePadX * 2,
       )
-      const noteH = FONT_SIZES.edgeLabel + SEQ.notePadY * 2
+      const noteH = fontSizes.edgeLabel + seq.notePadY * 2
 
       // X positioning based on actor position and note type
       const firstActorIdx = actorIndex.get(note.actorIds[0] ?? '') ?? 0
@@ -175,12 +201,12 @@ export function layoutSequenceDiagram(
           actorCenterX[firstActorIdx]! -
           actorWidths[firstActorIdx]! / 2 -
           noteW -
-          SEQ.noteGap
+          seq.noteGap
       } else if (note.position === 'right') {
         noteX =
           actorCenterX[firstActorIdx]! +
           actorWidths[firstActorIdx]! / 2 +
-          SEQ.noteGap
+          seq.noteGap
       } else {
         // over — center between first and last actor
         if (note.actorIds.length > 1) {
@@ -205,10 +231,10 @@ export function layoutSequenceDiagram(
         actors: note.actorIds,
       })
 
-      noteY += noteH + 4
+      noteY += noteH + seq.noteStackGap
     }
 
-    messageY = Math.max(messageY, noteY + SEQ.messageRowHeight / 2)
+    messageY = Math.max(messageY, noteY + seq.messageRowHeight / 2)
   }
 
   // Track activation stack per actor: array of { startY, depth } objects
@@ -264,18 +290,18 @@ export function layoutSequenceDiagram(
         const xOffset = depth * nestingOffset
         activations.push({
           actorId: msg.from,
-          x: actorCenterX[idx]! - SEQ.activationWidth / 2 + xOffset,
+          x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
           topY: startY,
           bottomY: messageY,
-          width: SEQ.activationWidth,
+          width: seq.activationWidth,
         })
       }
     }
 
     // Advance messageY past the message itself
     messageY += isSelf
-      ? SEQ.selfMessageHeight + SEQ.messageRowHeight
-      : SEQ.messageRowHeight
+      ? seq.selfMessageHeight + seq.messageRowHeight
+      : seq.messageRowHeight
 
     // Position notes that appear after this message.
     // Notes start below the self-message loop (if self) or below the arrow,
@@ -286,20 +312,21 @@ export function layoutSequenceDiagram(
     if (notesForMsg && notesForMsg.length > 0) {
       // Self-message loops extend selfMessageHeight below msg.y;
       // normal arrows sit at msg.y with no extension below.
-      const selfLoopExtra = isSelf ? SEQ.selfMessageHeight : 0
-      let noteY = messages[msgIdx]!.y + selfLoopExtra + 8
+      const selfLoopExtra = isSelf ? seq.selfMessageHeight : 0
+      let noteY =
+        messages[msgIdx]!.y + selfLoopExtra + seq.noteOffsetAfterMessage
 
       for (const note of notesForMsg) {
         const noteW = Math.max(
-          SEQ.noteWidth,
+          seq.noteWidth,
           estimateTextWidth(
             note.text,
-            FONT_SIZES.edgeLabel,
+            fontSizes.edgeLabel,
             FONT_WEIGHTS.edgeLabel,
           ) +
-            SEQ.notePadX * 2,
+            seq.notePadX * 2,
         )
-        const noteH = FONT_SIZES.edgeLabel + SEQ.notePadY * 2
+        const noteH = fontSizes.edgeLabel + seq.notePadY * 2
 
         // X positioning based on actor position and note type
         const firstActorIdx = actorIndex.get(note.actorIds[0] ?? '') ?? 0
@@ -309,12 +336,12 @@ export function layoutSequenceDiagram(
             actorCenterX[firstActorIdx]! -
             actorWidths[firstActorIdx]! / 2 -
             noteW -
-            SEQ.noteGap
+            seq.noteGap
         } else if (note.position === 'right') {
           noteX =
             actorCenterX[firstActorIdx]! +
             actorWidths[firstActorIdx]! / 2 +
-            SEQ.noteGap
+            seq.noteGap
         } else {
           // over — center between first and last actor
           if (note.actorIds.length > 1) {
@@ -339,13 +366,13 @@ export function layoutSequenceDiagram(
           actors: note.actorIds,
         })
 
-        noteY += noteH + 4 // Stack next note below with gap
+        noteY += noteH + seq.noteStackGap // Stack next note below with gap
       }
 
       // Push messageY forward if notes extended beyond the normal advance.
       // Add half a row height so the next message's label (rendered at msg.y - 6)
       // has clearance from the last note's bottom edge.
-      messageY = Math.max(messageY, noteY + SEQ.messageRowHeight / 2)
+      messageY = Math.max(messageY, noteY + seq.messageRowHeight / 2)
     }
   }
 
@@ -356,10 +383,10 @@ export function layoutSequenceDiagram(
       const xOffset = depth * nestingOffset
       activations.push({
         actorId,
-        x: actorCenterX[idx]! - SEQ.activationWidth / 2 + xOffset,
+        x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
         topY: startY,
-        bottomY: messageY - SEQ.messageRowHeight / 2,
-        width: SEQ.activationWidth,
+        bottomY: messageY - seq.messageRowHeight / 2,
+        width: seq.activationWidth,
       })
     }
   }
@@ -369,8 +396,8 @@ export function layoutSequenceDiagram(
     // Block spans from the Y of startIndex to endIndex messages
     const startMsg = messages[block.startIndex]
     const endMsg = messages[block.endIndex]
-    const blockTop = (startMsg?.y ?? messageY) - SEQ.blockPadTop
-    const blockBottom = (endMsg?.y ?? messageY) + SEQ.blockPadBottom + 12
+    const blockTop = (startMsg?.y ?? messageY) - seq.blockPadTop
+    const blockBottom = (endMsg?.y ?? messageY) + seq.blockPadBottom + 12
 
     // Block width spans all actors involved in its messages
     const involvedActors = new Set<number>()
@@ -388,9 +415,9 @@ export function layoutSequenceDiagram(
     const minIdx = Math.min(...involvedActors)
     const maxIdx = Math.max(...involvedActors)
     const blockLeft =
-      actorCenterX[minIdx]! - actorWidths[minIdx]! / 2 - SEQ.blockPadX
+      actorCenterX[minIdx]! - actorWidths[minIdx]! / 2 - seq.blockPadX
     const blockRight =
-      actorCenterX[maxIdx]! + actorWidths[maxIdx]! / 2 + SEQ.blockPadX
+      actorCenterX[maxIdx]! + actorWidths[maxIdx]! / 2 + seq.blockPadX
 
     // Position dividers — offset from message Y so the divider label text
     // (rendered at divider.y + 14 in the renderer) clears the message label
@@ -414,7 +441,7 @@ export function layoutSequenceDiagram(
         const divLabelText = `[${d.label}]`
         const divLabelW = estimateTextWidth(
           divLabelText,
-          FONT_SIZES.edgeLabel,
+          fontSizes.edgeLabel,
           FONT_WEIGHTS.edgeLabel,
         )
         const divLabelLeft = blockLeft + 8
@@ -422,7 +449,7 @@ export function layoutSequenceDiagram(
 
         const msgLabelW = estimateTextWidth(
           msg.label,
-          FONT_SIZES.edgeLabel,
+          fontSizes.edgeLabel,
           FONT_WEIGHTS.edgeLabel,
         )
         // Self-messages render labels at x1 + 36 (left-aligned); normal
@@ -461,10 +488,10 @@ export function layoutSequenceDiagram(
   // can extend beyond the actor-based viewport. Compute the true bounding box
   // across all positioned elements, then shift everything right if anything
   // extends left of the desired padding margin and expand the width to fit.
-  const diagramBottom = messageY + SEQ.padding
+  const diagramBottom = messageY + seq.padding
 
   // Find global X extents across actors, blocks, notes, and message labels
-  let globalMinX: number = SEQ.padding // actors already start at SEQ.padding
+  let globalMinX: number = seq.padding // actors already start at seq.padding
   let globalMaxX = 0
   for (const a of actors) {
     globalMinX = Math.min(globalMinX, a.x - a.width / 2)
@@ -487,7 +514,7 @@ export function layoutSequenceDiagram(
       const labelLeft = m.x1 + loopW + labelPadding
       const labelWidth = estimateTextWidth(
         m.label,
-        FONT_SIZES.edgeLabel,
+        fontSizes.edgeLabel,
         FONT_WEIGHTS.edgeLabel,
       )
       globalMaxX = Math.max(globalMaxX, labelLeft + labelWidth + 8) // +8 for safety margin
@@ -495,7 +522,7 @@ export function layoutSequenceDiagram(
   }
 
   // If elements extend left of the desired padding, shift everything right
-  const shiftX = globalMinX < SEQ.padding ? SEQ.padding - globalMinX : 0
+  const shiftX = globalMinX < seq.padding ? seq.padding - globalMinX : 0
   if (shiftX > 0) {
     for (const a of actors) a.x += shiftX
     for (const m of messages) {
@@ -515,12 +542,12 @@ export function layoutSequenceDiagram(
   const lifelines: Lifeline[] = diagram.actors.map((a, i) => ({
     actorId: a.id,
     x: actorCenterX[i]!,
-    topY: actorY + SEQ.actorHeight,
-    bottomY: diagramBottom - SEQ.padding,
+    topY: actorY + seq.actorHeight,
+    bottomY: diagramBottom - seq.padding,
   }))
 
   // 8. Calculate diagram dimensions from the bounding box
-  const diagramWidth = globalMaxX + shiftX + SEQ.padding
+  const diagramWidth = globalMaxX + shiftX + seq.padding
   const diagramHeight = diagramBottom
 
   return {

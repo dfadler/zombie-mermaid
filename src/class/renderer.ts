@@ -7,6 +7,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import type { FontSizes } from '../styles.ts'
 import {
   FONT_SIZES,
   FONT_WEIGHTS,
@@ -51,6 +52,7 @@ export function renderClassSvg(
   colors: DiagramColors,
   font: string = 'Inter',
   transparent: boolean = false,
+  fontSizes: FontSizes = FONT_SIZES,
 ): string {
   const parts: string[] = []
 
@@ -68,12 +70,12 @@ export function renderClassSvg(
 
   // 2. Class boxes
   for (const cls of diagram.classes) {
-    parts.push(renderClassBox(cls))
+    parts.push(renderClassBox(cls, fontSizes))
   }
 
   // 3. Relationship labels and cardinality
   for (const rel of diagram.relationships) {
-    parts.push(renderRelationshipLabels(rel))
+    parts.push(renderRelationshipLabels(rel, fontSizes))
   }
 
   parts.push('</svg>')
@@ -125,7 +127,10 @@ function relationshipMarkerDefs(): string {
  * Render a class box with 3 compartments: header, attributes, methods.
  * Wrapped in <g class="class-node"> with semantic data attributes.
  */
-function renderClassBox(cls: PositionedClassNode): string {
+function renderClassBox(
+  cls: PositionedClassNode,
+  fontSizes: FontSizes,
+): string {
   const { x, y, width, height, headerHeight, attrHeight } = cls
   const parts: string[] = []
 
@@ -171,8 +176,8 @@ function renderClassBox(cls: PositionedClassNode): string {
         cls.label,
         x + width / 2,
         nameY,
-        FONT_SIZES.nodeLabel,
-        `text-anchor="middle" font-size="${FONT_SIZES.nodeLabel}" font-weight="700" fill="var(--_text)"`,
+        fontSizes.nodeLabel,
+        `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="var(--_text)"`,
       ),
   )
 
@@ -340,7 +345,10 @@ function getMarkerDefId(type: RelationshipType): string | null {
 }
 
 /** Render relationship labels and cardinality text (supports multi-line) */
-function renderRelationshipLabels(rel: PositionedClassRelationship): string {
+function renderRelationshipLabels(
+  rel: PositionedClassRelationship,
+  fontSizes: FontSizes,
+): string {
   if (!rel.label && !rel.fromCardinality && !rel.toCardinality) return ''
   if (rel.points.length < 2) return ''
 
@@ -354,8 +362,8 @@ function renderRelationshipLabels(rel: PositionedClassRelationship): string {
         rel.label,
         pos.x,
         pos.y - 8,
-        FONT_SIZES.edgeLabel,
-        `font-size="${FONT_SIZES.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        fontSizes.edgeLabel,
+        `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -370,8 +378,8 @@ function renderRelationshipLabels(rel: PositionedClassRelationship): string {
         rel.fromCardinality,
         p.x + offset.x,
         p.y + offset.y,
-        FONT_SIZES.edgeLabel,
-        `font-size="${FONT_SIZES.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        fontSizes.edgeLabel,
+        `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -386,8 +394,8 @@ function renderRelationshipLabels(rel: PositionedClassRelationship): string {
         rel.toCardinality,
         p.x + offset.x,
         p.y + offset.y,
-        FONT_SIZES.edgeLabel,
-        `font-size="${FONT_SIZES.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        fontSizes.edgeLabel,
+        `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }

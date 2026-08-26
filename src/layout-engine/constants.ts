@@ -5,6 +5,8 @@
  * reference the same values without importing the top-level module.
  */
 
+import { FONT_SIZES } from '../styles.ts'
+
 /** Default render options (layout-only) */
 export const DEFAULTS = {
   font: 'Inter',
@@ -13,4 +15,5 @@ export const DEFAULTS = {
   layerSpacing: 48,
   mergeEdges: true,
   thoroughness: 3,
+  fontSizes: FONT_SIZES,
 } as const

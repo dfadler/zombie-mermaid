@@ -7,6 +7,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from './theme.ts'
 import { svgOpenTag, buildStyleBlock, getReadableTextColor } from './theme.ts'
+import type { FontSizes } from './styles.ts'
 import {
   FONT_SIZES,
   FONT_WEIGHTS,
@@ -51,6 +52,7 @@ export function renderSvg(
   colors: DiagramColors,
   font: string = 'Inter',
   transparent: boolean = false,
+  fontSizes: FontSizes = FONT_SIZES,
 ): string {
   const parts: string[] = []
 
@@ -73,7 +75,7 @@ export function renderSvg(
 
   // 1. Subgraph backgrounds (group rectangles with header bands)
   for (const group of graph.groups) {
-    parts.push(renderGroup(group, font))
+    parts.push(renderGroup(group, font, fontSizes))
   }
 
   // 2. Edges (polylines — rendered behind nodes)
@@ -86,13 +88,13 @@ export function renderSvg(
   // Each label is wrapped in <g class="edge-label">
   for (const edge of graph.edges) {
     if (edge.label) {
-      parts.push(renderEdgeLabel(edge, font))
+      parts.push(renderEdgeLabel(edge, font, fontSizes))
     }
   }
 
   // 4. Nodes (shape + label wrapped in <g class="node">)
   for (const node of graph.nodes) {
-    parts.push(renderNode(node, font))
+    parts.push(renderNode(node, font, fontSizes))
   }
 
   parts.push('</svg>')
@@ -159,8 +161,12 @@ function markerSuffix(color: string): string {
 // Group rendering (subgraph backgrounds)
 // ============================================================================
 
-function renderGroup(group: PositionedGroup, font: string): string {
-  const headerHeight = FONT_SIZES.groupHeader + 16
+function renderGroup(
+  group: PositionedGroup,
+  font: string,
+  fontSizes: FontSizes,
+): string {
+  const headerHeight = fontSizes.groupHeader + 16
   const parts: string[] = []
 
   // Opening <g> with semantic attributes for subgraph identification
@@ -189,14 +195,14 @@ function renderGroup(group: PositionedGroup, font: string): string {
         group.label,
         group.x + 12,
         group.y + headerHeight / 2,
-        FONT_SIZES.groupHeader,
-        `font-size="${FONT_SIZES.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+        fontSizes.groupHeader,
+        `font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
       ),
   )
 
   // Render nested groups recursively (inside this group)
   for (const child of group.children) {
-    parts.push(renderGroup(child, font))
+    parts.push(renderGroup(child, font, fontSizes))
   }
 
   parts.push('</g>')
@@ -263,7 +269,11 @@ function pointsToPolylinePath(points: Point[]): string {
 
 // `_font` isn't read here but is kept to match the `(entity, font)` signature
 // threaded through the rest of the render* functions in this file.
-function renderEdgeLabel(edge: PositionedEdge, _font: string): string {
+function renderEdgeLabel(
+  edge: PositionedEdge,
+  _font: string,
+  fontSizes: FontSizes,
+): string {
   // Use layout-computed label position when available (layout-aware, avoids collisions).
   // Fall back to geometric midpoint of the edge polyline.
   const mid = edge.labelPosition ?? edgeMidpoint(edge.points)
@@ -273,7 +283,7 @@ function renderEdgeLabel(edge: PositionedEdge, _font: string): string {
   // Measure text (works for both single and multi-line)
   const metrics = measureMultilineText(
     label,
-    FONT_SIZES.edgeLabel,
+    fontSizes.edgeLabel,
     FONT_WEIGHTS.edgeLabel,
   )
 
@@ -284,10 +294,10 @@ function renderEdgeLabel(edge: PositionedEdge, _font: string): string {
     mid.y,
     metrics.width,
     metrics.height,
-    FONT_SIZES.edgeLabel,
+    fontSizes.edgeLabel,
     padding,
     // Use --_text-sec for better contrast (was --_text-muted)
-    `text-anchor="middle" font-size="${FONT_SIZES.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
+    `text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
     // Increased stroke width from 0.5 to 1 for better label separation from edges
     `rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1"`,
   )
@@ -344,9 +354,13 @@ function dist(a: Point, b: Point): number {
  * - data-label: display label text
  * - data-shape: shape type (rectangle, diamond, circle, etc.)
  */
-function renderNode(node: PositionedNode, font: string): string {
+function renderNode(
+  node: PositionedNode,
+  font: string,
+  fontSizes: FontSizes,
+): string {
   const shape = renderNodeShape(node)
-  const label = renderNodeLabel(node, font)
+  const label = renderNodeLabel(node, font, fontSizes)
 
   // Combine shape and label inside a semantic group
   // This enables reliable node identification without heuristics
@@ -693,7 +707,11 @@ function renderStateEnd(x: number, y: number, w: number, h: number): string {
 
 // `_font` isn't read here but is kept to match the `(entity, font)` signature
 // threaded through the rest of the render* functions in this file.
-function renderNodeLabel(node: PositionedNode, _font: string): string {
+function renderNodeLabel(
+  node: PositionedNode,
+  _font: string,
+  fontSizes: FontSizes,
+): string {
   // State pseudostates have no label
   if (node.shape === 'state-start' || node.shape === 'state-end') {
     if (!node.label) return ''
@@ -713,7 +731,7 @@ function renderNodeLabel(node: PositionedNode, _font: string): string {
       getReadableTextColor(node.inlineStyle?.fill, 'var(--_text)'),
   )
 
-  let attrs = `text-anchor="middle" font-size="${FONT_SIZES.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
+  let attrs = `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
 
   // Per-node font-family override (from `style A font-family:...` or
   // classDef/class). Emitted as an inline `style` attribute rather than a
@@ -729,7 +747,7 @@ function renderNodeLabel(node: PositionedNode, _font: string): string {
     attrs += ` style="font-family: ${escapeAttr(fontFamily)};"`
   }
 
-  return renderMultilineText(node.label, cx, cy, FONT_SIZES.nodeLabel, attrs)
+  return renderMultilineText(node.label, cx, cy, fontSizes.nodeLabel, attrs)
 }
 
 // ============================================================================

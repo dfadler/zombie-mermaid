@@ -18,8 +18,8 @@ import type { RenderOptions, Point } from '../types.ts'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
-  FONT_SIZES,
   FONT_WEIGHTS,
+  resolveFontSizes,
 } from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
@@ -64,14 +64,15 @@ function directionToElk(dir: Direction | undefined): string {
 /** Build ELK graph and size map from an ER diagram. */
 function buildErElkGraph(
   diagram: ErDiagram,
-  _options: RenderOptions,
+  options: RenderOptions,
 ): { elkGraph: ElkNode; entitySizes: EntitySizeMap } {
   const entitySizes: EntitySizeMap = new Map()
+  const fontSizes = resolveFontSizes(options.fontSizes)
 
   for (const entity of diagram.entities) {
     const headerTextW = estimateTextWidth(
       entity.label,
-      FONT_SIZES.nodeLabel,
+      fontSizes.nodeLabel,
       FONT_WEIGHTS.nodeLabel,
     )
     let maxAttrW = 0
@@ -118,7 +119,7 @@ function buildErElkGraph(
     const rel = diagram.relationships[i]!
     const metrics = measureMultilineText(
       rel.label,
-      FONT_SIZES.edgeLabel,
+      fontSizes.edgeLabel,
       FONT_WEIGHTS.edgeLabel,
     )
     const edge: ElkExtendedEdge = {

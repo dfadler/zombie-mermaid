@@ -20,8 +20,8 @@ import type { RenderOptions, Point } from '../types.ts'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
-  FONT_SIZES,
   FONT_WEIGHTS,
+  resolveFontSizes,
 } from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
@@ -56,9 +56,10 @@ type ClassSizeMap = Map<
 /** Build ELK graph and size map from a class diagram. */
 function buildClassElkGraph(
   diagram: ClassDiagram,
-  _options: RenderOptions,
+  options: RenderOptions,
 ): { elkGraph: ElkNode; classSizes: ClassSizeMap } {
   const classSizes: ClassSizeMap = new Map()
+  const fontSizes = resolveFontSizes(options.fontSizes)
 
   for (const cls of diagram.classes) {
     const headerHeight = cls.annotation
@@ -77,7 +78,7 @@ function buildClassElkGraph(
 
     const headerTextW = estimateTextWidth(
       cls.label,
-      FONT_SIZES.nodeLabel,
+      fontSizes.nodeLabel,
       FONT_WEIGHTS.nodeLabel,
     )
     const maxAttrW = maxMemberWidth(cls.attributes)
@@ -133,7 +134,7 @@ function buildClassElkGraph(
     if (rel.label) {
       const metrics = measureMultilineText(
         rel.label,
-        FONT_SIZES.edgeLabel,
+        fontSizes.edgeLabel,
         FONT_WEIGHTS.edgeLabel,
       )
       edge.labels = [

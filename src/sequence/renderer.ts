@@ -9,6 +9,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import type { FontSizes } from '../styles.ts'
 import {
   FONT_SIZES,
   FONT_WEIGHTS,
@@ -44,6 +45,7 @@ export function renderSequenceSvg(
   colors: DiagramColors,
   font: string = 'Inter',
   transparent: boolean = false,
+  fontSizes: FontSizes = FONT_SIZES,
 ): string {
   const parts: string[] = []
 
@@ -58,7 +60,7 @@ export function renderSequenceSvg(
 
   // 1. Block backgrounds (loop/alt/opt rectangles)
   for (const block of diagram.blocks) {
-    parts.push(renderBlock(block))
+    parts.push(renderBlock(block, fontSizes))
   }
 
   // 2. Lifelines (dashed vertical lines from actor to bottom)
@@ -73,17 +75,17 @@ export function renderSequenceSvg(
 
   // 4. Messages (horizontal arrows with labels)
   for (const message of diagram.messages) {
-    parts.push(renderMessage(message))
+    parts.push(renderMessage(message, fontSizes))
   }
 
   // 5. Notes
   for (const note of diagram.notes) {
-    parts.push(renderNote(note))
+    parts.push(renderNote(note, fontSizes))
   }
 
   // 6. Actor boxes at top (rendered last so they're on top)
   for (const actor of diagram.actors) {
-    parts.push(renderActor(actor))
+    parts.push(renderActor(actor, fontSizes))
   }
 
   parts.push('</svg>')
@@ -116,7 +118,7 @@ function arrowMarkerDefs(): string {
  * Render an actor box (participant = rectangle, actor = stick figure).
  * Wrapped in <g class="actor"> with semantic data attributes.
  */
-function renderActor(actor: PositionedActor): string {
+function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
   const { id, x, y, width, height, label, type } = actor
   const parts: string[] = []
 
@@ -153,8 +155,8 @@ function renderActor(actor: PositionedActor): string {
           label,
           x,
           y + height + 14,
-          FONT_SIZES.nodeLabel,
-          `font-size="${FONT_SIZES.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
+          fontSizes.nodeLabel,
+          `font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
         ),
     )
   } else {
@@ -170,8 +172,8 @@ function renderActor(actor: PositionedActor): string {
           label,
           x,
           y + height / 2,
-          FONT_SIZES.nodeLabel,
-          `font-size="${FONT_SIZES.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
+          fontSizes.nodeLabel,
+          `font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
         ),
     )
   }
@@ -208,7 +210,7 @@ function renderActivation(activation: Activation): string {
  * Render a message arrow with label.
  * Wrapped in <g class="message"> with semantic data attributes.
  */
-function renderMessage(msg: PositionedMessage): string {
+function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
   const parts: string[] = []
   const dashArray = msg.lineStyle === 'dashed' ? ' stroke-dasharray="6 4"' : ''
   const markerId = msg.arrowHead === 'filled' ? 'seq-arrow' : 'seq-arrow-open'
@@ -237,8 +239,8 @@ function renderMessage(msg: PositionedMessage): string {
           msg.label,
           msg.x1 + loopW + labelPadding,
           msg.y + loopH / 2,
-          FONT_SIZES.edgeLabel,
-          `font-size="${FONT_SIZES.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+          fontSizes.edgeLabel,
+          `font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
         ),
     )
   } else {
@@ -255,8 +257,8 @@ function renderMessage(msg: PositionedMessage): string {
           msg.label,
           midX,
           msg.y - 10,
-          FONT_SIZES.edgeLabel,
-          `font-size="${FONT_SIZES.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+          fontSizes.edgeLabel,
+          `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
         ),
     )
   }
@@ -269,7 +271,7 @@ function renderMessage(msg: PositionedMessage): string {
  * Render a block background (loop/alt/opt).
  * Wrapped in <g class="block"> with semantic data attributes.
  */
-function renderBlock(block: PositionedBlock): string {
+function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
   const parts: string[] = []
 
   // Semantic wrapper with block metadata
@@ -293,7 +295,7 @@ function renderBlock(block: PositionedBlock): string {
   const tabWidth =
     estimateTextWidth(
       firstLine,
-      FONT_SIZES.edgeLabel,
+      fontSizes.edgeLabel,
       FONT_WEIGHTS.groupHeader,
     ) + 16
   const tabHeight = 18
@@ -309,8 +311,8 @@ function renderBlock(block: PositionedBlock): string {
         labelText,
         block.x + 6,
         block.y + tabHeight / 2,
-        FONT_SIZES.edgeLabel,
-        `font-size="${FONT_SIZES.edgeLabel}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+        fontSizes.edgeLabel,
+        `font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
       ),
   )
 
@@ -328,8 +330,8 @@ function renderBlock(block: PositionedBlock): string {
             `[${divider.label}]`,
             block.x + 8,
             divider.y + 14,
-            FONT_SIZES.edgeLabel,
-            `font-size="${FONT_SIZES.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+            fontSizes.edgeLabel,
+            `font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
           ),
       )
     }
@@ -343,7 +345,7 @@ function renderBlock(block: PositionedBlock): string {
  * Render a note box.
  * Wrapped in <g class="note"> with semantic data attributes.
  */
-function renderNote(note: PositionedNote): string {
+function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
   // Dog-ear note: polygon with clipped top-right corner + fold triangle
   const foldSize = 6
   const { x, y, width: w, height: h } = note
@@ -380,8 +382,8 @@ function renderNote(note: PositionedNote): string {
       note.text,
       x + w / 2,
       y + h / 2,
-      FONT_SIZES.edgeLabel,
-      `font-size="${FONT_SIZES.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      fontSizes.edgeLabel,
+      `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
     )}` +
     `\n</g>`
   )
