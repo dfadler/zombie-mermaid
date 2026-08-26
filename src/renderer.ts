@@ -325,6 +325,9 @@ function renderEdgeLabel(
 function requirePoint(points: Point[], index: number): Point {
   const point = points[index]
   if (!point) {
+    // Unreachable — both call sites in edgeMidpoint only ever pass indices
+    // in [0, points.length - 1].
+    /* v8 ignore next */
     throw new Error(`edgeMidpoint: missing point at index ${index}`)
   }
   return point
