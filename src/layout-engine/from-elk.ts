@@ -513,13 +513,11 @@ function collectEdgeSegments(
       }
 
       // Store segment
-      if (!segments.has(edgeIndex)) {
-        segments.set(edgeIndex, {
-          sourceHops: new Map(),
-          targetHops: new Map(),
-        })
+      const seg: EdgeSegmentGroup = segments.get(edgeIndex) ?? {
+        sourceHops: new Map(),
+        targetHops: new Map(),
       }
-      const seg = segments.get(edgeIndex)!
+      segments.set(edgeIndex, seg)
       const segment: EdgeSegment = { edgeIndex, points, labelPosition }
 
       if (parsed.role === 'bridge') {
