@@ -369,7 +369,7 @@ function renderRelationshipLabels(
   }
 
   // From cardinality (near start)
-  if (rel.fromCardinality) {
+  if (rel.fromCardinality && rel.points.length >= 2) {
     const p = rel.points[0]!
     const next = rel.points[1]!
     const offset = cardinalityOffset(p, next)
@@ -385,7 +385,7 @@ function renderRelationshipLabels(
   }
 
   // To cardinality (near end)
-  if (rel.toCardinality) {
+  if (rel.toCardinality && rel.points.length >= 2) {
     const p = rel.points[rel.points.length - 1]!
     const prev = rel.points[rel.points.length - 2]!
     const offset = cardinalityOffset(p, prev)
