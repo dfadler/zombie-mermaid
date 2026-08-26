@@ -542,6 +542,13 @@ const BARE_NODE_REGEX = /^([\w-]+)/
 const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/
 
 /**
+ * Regex for ::: class shorthand appearing BEFORE the shape brackets,
+ * e.g. A:::external[Label]. Captures the bare id and the class name so
+ * the shorthand can be stripped out before shape-pattern matching runs.
+ */
+const PRE_CLASS_SHORTHAND_REGEX = /^([\w-]+):::([\w][\w-]*)/
+
+/**
  * Parse a line that contains node definitions and edges.
  * Handles chaining: A --> B --> C produces edges A→B and B→C.
  * Handles parallel links: A & B --> C & D produces 4 edges.
@@ -665,14 +672,24 @@ function consumeNode(
   let id: string | null = null
   let remaining: string = text
 
+  // Check for ::: class shorthand appearing BEFORE the shape brackets
+  // (e.g. A:::external[Label]). Strip it out so shape-pattern matching
+  // below still sees the id directly adjacent to its brackets.
+  let preClassName: string | undefined
+  const preClassMatch = remaining.match(PRE_CLASS_SHORTHAND_REGEX)
+  if (preClassMatch) {
+    preClassName = preClassMatch[2]!
+    remaining = preClassMatch[1]! + remaining.slice(preClassMatch[0].length)
+  }
+
   // Try each node pattern (shape-qualified)
   for (const { regex, shape } of NODE_PATTERNS) {
-    const match = text.match(regex)
+    const match = remaining.match(regex)
     if (match) {
       id = match[1]!
       const label = normalizeBrTags(match[2]!)
       registerNode(graph, subgraphStack, { id, label, shape })
-      remaining = text.slice(match[0].length)
+      remaining = remaining.slice(match[0].length)
       break
     }
   }
@@ -681,7 +698,7 @@ function consumeNode(
   // If it already exists, do NOT track it in the current subgraph;
   // nodes belong to the subgraph where they're first defined.
   if (id === null) {
-    const bareMatch = text.match(BARE_NODE_REGEX)
+    const bareMatch = remaining.match(BARE_NODE_REGEX)
     if (bareMatch) {
       id = bareMatch[1]!
       if (!graph.nodes.has(id)) {
@@ -691,11 +708,15 @@ function consumeNode(
           shape: 'rectangle',
         })
       }
-      remaining = text.slice(bareMatch[0].length)
+      remaining = remaining.slice(bareMatch[0].length)
     }
   }
 
   if (id === null) return null
+
+  if (preClassName) {
+    graph.classAssignments.set(id, preClassName)
+  }
 
   // Check for ::: class shorthand suffix immediately after the node
   const classMatch = remaining.match(CLASS_SHORTHAND_REGEX)
