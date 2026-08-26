@@ -2,7 +2,7 @@
  * Tests for text-metrics module — variable-width character measurement.
  */
 import { describe, it, expect } from 'vitest'
-import { getCharWidth, measureTextWidth } from '../text-metrics'
+import { getCharWidth, measureTextWidth, isWideChar } from '../text-metrics'
 
 // ============================================================================
 // Character width classification
@@ -255,5 +255,44 @@ describe('real-world text examples', () => {
     const unaccented = measureTextWidth('Udvozoljuk', fontSize, fontWeight)
     const percentDiff = Math.abs(width - unaccented) / unaccented
     expect(percentDiff).toBeLessThan(0.05)
+  })
+})
+
+// ============================================================================
+// isWideChar — shared wide-character detection (used by the ASCII grid's
+// display-width helpers in src/ascii/display-width.ts)
+// ============================================================================
+
+describe('isWideChar', () => {
+  it('returns true for CJK ideographs, kana, and hangul', () => {
+    expect(isWideChar('日')).toBe(true)
+    expect(isWideChar('本')).toBe(true)
+    expect(isWideChar('語')).toBe(true)
+    expect(isWideChar('テ')).toBe(true) // katakana
+    expect(isWideChar('あ')).toBe(true) // hiragana
+    expect(isWideChar('한')).toBe(true) // hangul syllable
+  })
+
+  it('returns true for fullwidth-form characters', () => {
+    expect(isWideChar('Ａ')).toBe(true) // fullwidth Latin A (U+FF21)
+    expect(isWideChar('１')).toBe(true) // fullwidth digit 1 (U+FF11)
+  })
+
+  it('returns true for emoji', () => {
+    expect(isWideChar('😀')).toBe(true)
+    expect(isWideChar('🎉')).toBe(true)
+  })
+
+  it('returns false for ASCII letters, digits, and punctuation', () => {
+    expect(isWideChar('A')).toBe(false)
+    expect(isWideChar('a')).toBe(false)
+    expect(isWideChar('1')).toBe(false)
+    expect(isWideChar(' ')).toBe(false)
+    expect(isWideChar('.')).toBe(false)
+  })
+
+  it('returns false for accented Latin characters', () => {
+    expect(isWideChar('Ü')).toBe(false)
+    expect(isWideChar('é')).toBe(false)
   })
 })
