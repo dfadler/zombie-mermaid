@@ -37,7 +37,17 @@ function getNodeAttachmentPoint(
   node: AsciiNode,
   dir: Direction,
 ): DrawingCoord {
-  const gc = node.gridCoord!
+  const gc = node.gridCoord
+  if (gc === null) {
+    // Every node reaching bundled-edge drawing has already been placed by
+    // the grid layout pass (see grid.ts's createMapping) — a null here
+    // means drawing ran before layout, an upstream invariant violation
+    // rather than a value this function can recover from.
+    /* v8 ignore next */
+    throw new Error(
+      `Node "${node.name}" has no gridCoord; grid layout must run before bundled-edge drawing`,
+    )
+  }
 
   // Calculate actual drawn dimensions from grid (matching drawBoxWithGridDimensions)
   let w = 0
@@ -58,7 +68,15 @@ function getNodeAttachmentPoint(
     gridRows: [0, 0, 0],
   }
 
-  const baseCoord = node.drawingCoord!
+  const baseCoord = node.drawingCoord
+  if (baseCoord === null) {
+    // Same invariant as gridCoord above: drawingCoord is derived from
+    // gridCoord during layout, so it's set for every placed node.
+    /* v8 ignore next */
+    throw new Error(
+      `Node "${node.name}" has no drawingCoord; grid layout must run before bundled-edge drawing`,
+    )
+  }
   return getShapeAttachmentPoint(node.shape, dir, gridDimensions, baseCoord)
 }
 
@@ -75,7 +93,13 @@ export function drawBundledEdgeSegment(
 ): [Canvas, Canvas, Canvas, Canvas, Canvas, Canvas] {
   const empty = copyCanvas(graph.canvas)
 
-  if (!edge.pathToJunction || edge.pathToJunction.length === 0) {
+  // Captured as a local so its non-null, non-empty narrowing survives into
+  // the closures below — narrowing a property access like
+  // `edge.pathToJunction` does not persist inside a callback (the compiler
+  // can't rule out the callback mutating it), but narrowing a local const
+  // does.
+  const pathToJunction = edge.pathToJunction
+  if (!pathToJunction || pathToJunction.length === 0) {
     return [empty, empty, empty, empty, empty, empty]
   }
 
@@ -86,12 +110,12 @@ export function drawBundledEdgeSegment(
   // Convert grid coords to drawing coords
   // For fan-in: first point is at source node border (use attachment point)
   // For fan-out: last point is at target node border (use attachment point)
-  const drawingPath = edge.pathToJunction.map((gc, idx) => {
+  const drawingPath = pathToJunction.map((gc, idx) => {
     if (bundle.type === 'fan-in' && idx === 0) {
       // First point: use source node's actual border position
       return getNodeAttachmentPoint(graph, edge.from, edge.startDir)
     }
-    if (bundle.type === 'fan-out' && idx === edge.pathToJunction!.length - 1) {
+    if (bundle.type === 'fan-out' && idx === pathToJunction.length - 1) {
       // Last point: use target node's actual border position
       return getNodeAttachmentPoint(graph, edge.to, edge.endDir)
     }
@@ -113,11 +137,11 @@ export function drawBundledEdgeSegment(
 
   // Draw corners at path bends
   const cornersCanvas = copyCanvas(graph.canvas)
-  for (let idx = 1; idx < edge.pathToJunction.length - 1; idx++) {
-    const coord = edge.pathToJunction[idx]!
+  for (let idx = 1; idx < pathToJunction.length - 1; idx++) {
+    const coord = pathToJunction[idx]!
     const dc = gridToDrawingCoord(graph, coord)
-    const prevDir = determineDirection(edge.pathToJunction[idx - 1]!, coord)
-    const nextDir = determineDirection(coord, edge.pathToJunction[idx + 1]!)
+    const prevDir = determineDirection(pathToJunction[idx - 1]!, coord)
+    const nextDir = determineDirection(coord, pathToJunction[idx + 1]!)
 
     let corner: string
     if (!useAscii) {
@@ -155,12 +179,9 @@ export function drawBundledEdgeSegment(
   // The connector is placed at the first point coordinate (box border position)
   // since we use offsets 1,-1 for drawLine, the line starts one step past this point
   const boxStartCanvas = copyCanvas(graph.canvas)
-  if (bundle.type === 'fan-in' && edge.pathToJunction.length >= 2) {
+  if (bundle.type === 'fan-in' && pathToJunction.length >= 2) {
     const firstPoint = drawingPath[0]!
-    const dir = determineDirection(
-      edge.pathToJunction[0]!,
-      edge.pathToJunction[1]!,
-    )
+    const dir = determineDirection(pathToJunction[0]!, pathToJunction[1]!)
 
     const junction = useAscii ? '+' : null
     if (dirEquals(dir, Up))
