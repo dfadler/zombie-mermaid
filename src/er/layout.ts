@@ -23,6 +23,7 @@ import {
 } from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
+import type { Direction } from '../types.ts'
 
 /** Layout constants for ER diagrams */
 const ER = {
@@ -38,6 +39,27 @@ const ER = {
 } as const
 
 type EntitySizeMap = Map<string, { width: number; height: number }>
+
+/**
+ * Convert a Mermaid direction to an ELK layout direction.
+ * ER diagrams default to left-to-right (`RIGHT`) when no `direction`
+ * statement is present, matching this renderer's historical default —
+ * unlike flowcharts, which default to top-down.
+ */
+function directionToElk(dir: Direction | undefined): string {
+  switch (dir) {
+    case 'TD':
+    case 'TB':
+      return 'DOWN'
+    case 'BT':
+      return 'UP'
+    case 'RL':
+      return 'LEFT'
+    case 'LR':
+    default:
+      return 'RIGHT'
+  }
+}
 
 /** Build ELK graph and size map from an ER diagram. */
 function buildErElkGraph(
@@ -72,7 +94,7 @@ function buildErElkGraph(
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
-      'elk.direction': 'RIGHT',
+      'elk.direction': directionToElk(diagram.direction),
       'elk.spacing.nodeNode': String(ER.nodeSpacing),
       'elk.layered.spacing.nodeNodeBetweenLayers': String(ER.layerSpacing),
       'elk.padding': `[top=${ER.padding},left=${ER.padding},bottom=${ER.padding},right=${ER.padding}]`,

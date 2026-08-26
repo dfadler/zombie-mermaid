@@ -5,12 +5,20 @@
 // ER diagrams show database entities, their attributes, and relationships.
 // ============================================================================
 
+import type { Direction } from '../types.ts'
+
 /** Parsed ER diagram — logical structure from mermaid text */
 export interface ErDiagram {
   /** All entity definitions */
   entities: ErEntity[]
   /** Relationships between entities */
   relationships: ErRelationship[]
+  /**
+   * Overall layout direction, from a top-level `direction TB` / `direction LR`
+   * / `direction BT` / `direction RL` statement. `undefined` when the diagram
+   * doesn't specify one, in which case the layout falls back to its default.
+   */
+  direction?: Direction
 }
 
 export interface ErEntity {

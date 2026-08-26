@@ -6,6 +6,7 @@ import type {
   Cardinality,
 } from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
+import { toDirection } from '../parser.ts'
 
 // ============================================================================
 // ER diagram parser
@@ -64,12 +65,45 @@ export function parseErDiagram(lines: string[]): ErDiagram {
       continue
     }
 
-    // --- Entity block start: `ENTITY_NAME {` ---
-    const entityBlockMatch = line.match(/^(\S+)\s*\{$/)
+    // --- direction directive: `direction TB` / `direction LR` / etc. ---
+    // ER diagrams have no subgraph nesting, so a single top-level direction
+    // applies to the whole diagram (unlike flowcharts, where `direction` can
+    // also appear per-subgraph).
+    const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
+    if (dirMatch) {
+      diagram.direction = toDirection(dirMatch[1]!)
+      continue
+    }
+
+    // --- Entity block start: `ENTITY_NAME {`, `id[Alias Label] {`, or
+    // `id["Quoted Alias"] {` — optionally with the body (and even the
+    // closing `}`) inline on the same line, e.g. `p[Person] { string name }`.
+    const entityBlockMatch = line.match(/^(\S+?)(?:\[(.+)\])?\s*\{(.*)$/)
     if (entityBlockMatch) {
       const id = entityBlockMatch[1]!
-      const entity = ensureEntity(entityMap, id)
-      currentEntity = entity
+      const aliasRaw = entityBlockMatch[2]
+      const alias =
+        aliasRaw !== undefined
+          ? normalizeBrTags(aliasRaw.trim().replace(/^["']|["']$/g, ''))
+          : undefined
+      const entity = ensureEntity(entityMap, id, alias)
+
+      const trailing = entityBlockMatch[3]!.trim()
+      const closesInline = trailing.endsWith('}')
+      const body = closesInline ? trailing.slice(0, -1).trim() : trailing
+      for (const part of body
+        .split(';')
+        .map((s) => s.trim())
+        .filter(Boolean)) {
+        const attr = parseAttribute(part)
+        if (attr) entity.attributes.push(attr)
+      }
+
+      // Only keep the block open for subsequent attribute lines when this
+      // line didn't already close it.
+      if (!closesInline) {
+        currentEntity = entity
+      }
       continue
     }
 
@@ -88,12 +122,22 @@ export function parseErDiagram(lines: string[]): ErDiagram {
   return diagram
 }
 
-/** Ensure an entity exists in the map */
-function ensureEntity(entityMap: Map<string, ErEntity>, id: string): ErEntity {
+/**
+ * Ensure an entity exists in the map. When `alias` is provided (from an
+ * `id[Alias]` entity-block header), it becomes the display label while the
+ * map key — and every relationship reference — stays keyed off the raw `id`.
+ */
+function ensureEntity(
+  entityMap: Map<string, ErEntity>,
+  id: string,
+  alias?: string,
+): ErEntity {
   let entity = entityMap.get(id)
   if (!entity) {
-    entity = { id, label: id, attributes: [] }
+    entity = { id, label: alias ?? id, attributes: [] }
     entityMap.set(id, entity)
+  } else if (alias !== undefined) {
+    entity.label = alias
   }
   return entity
 }
