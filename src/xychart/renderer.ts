@@ -191,8 +191,9 @@ export function renderXYChartSvg(
     for (const line of chart.lines) {
       for (const p of line.points) {
         const key = r(p.x)
-        if (!columns.has(key)) columns.set(key, [])
-        columns.get(key)!.push({
+        const column = columns.get(key) ?? []
+        columns.set(key, column)
+        column.push({
           x: p.x,
           y: p.y,
           value: p.value,
@@ -203,6 +204,9 @@ export function renderXYChartSvg(
       }
     }
 
+    // Every array stored in `columns` was created and immediately pushed to
+    // above, so `entries` is never empty here — safe to index entries[0]
+    // below without an extra length check.
     for (const entries of columns.values()) {
       const cx = entries[0]!.x
       const label = entries[0]!.label || ''
@@ -493,6 +497,14 @@ function smoothCurvePath(points: Array<{ x: number; y: number }>): string {
   }
 
   const n = points.length
+
+  // From here on, n >= 3 (the n <= 2 cases returned above). Every index used
+  // below — including offsets like i-1/i+1 and n-2 — is bound by a `< n - 1`
+  // or `< n` loop condition, or is a fixed offset from n itself, into arrays
+  // sized exactly `n` or `n - 1`. Non-null assertions on those accesses are
+  // the same bounds-checked idiom as loop-index array access elsewhere in
+  // this codebase and are left as-is (justified, not asserting past a real
+  // gap in type info).
 
   // 1. Interval widths and secant slopes
   const h: number[] = []
