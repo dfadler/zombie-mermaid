@@ -144,7 +144,7 @@ const svg = renderMermaidSVG(diagram, colors)
 The `fromShikiTheme()` function intelligently maps VS Code editor colors to diagram roles:
 
 | Editor Color                  | Diagram Role |
-| ------------------------------ | ------------ |
+| ----------------------------- | ------------ |
 | `editor.background`           | `bg`         |
 | `editor.foreground`           | `fg`         |
 | `editorLineNumber.foreground` | `line`       |

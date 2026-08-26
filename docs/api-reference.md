@@ -12,7 +12,7 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 **RenderOptions:**
 
 | Option         | Type      | Default   | Description                                                                       |
-| -------------- | --------- | --------- | ---------------------------------------------------------------------------------- |
+| -------------- | --------- | --------- | --------------------------------------------------------------------------------- |
 | `bg`           | `string`  | `#FFFFFF` | Background color (or CSS variable)                                                |
 | `fg`           | `string`  | `#27272A` | Foreground color (or CSS variable)                                                |
 | `line`         | `string?` | —         | Edge/connector color                                                              |
@@ -45,7 +45,7 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 **AsciiRenderOptions:**
 
 | Option             | Type                  | Default  | Description                                                             |
-| ------------------- | ---------------------- | -------- | -------------------------------------------------------------------------- |
+| ------------------ | --------------------- | -------- | ----------------------------------------------------------------------- |
 | `useAscii`         | `boolean`             | `false`  | Use ASCII instead of Unicode                                            |
 | `paddingX`         | `number`              | `5`      | Horizontal node spacing                                                 |
 | `paddingY`         | `number`              | `5`      | Vertical node spacing                                                   |

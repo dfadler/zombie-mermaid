@@ -67,7 +67,7 @@ graph TD
 ```
 
 | Syntax                          | Effect                                 |
-| -------------------------------- | --------------------------------------- |
+| ------------------------------- | -------------------------------------- |
 | `linkStyle 0 stroke:#f00`       | Style a single edge by index (0-based) |
 | `linkStyle 0,2 stroke:#f00`     | Style multiple edges at once           |
 | `linkStyle default stroke:#888` | Default style applied to all edges     |
