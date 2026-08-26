@@ -508,35 +508,61 @@ const TEXT_ARROW_REGEX =
 /**
  * Node shape patterns — ordered from most specific delimiters to least.
  * Multi-char delimiters must be tried before single-char to avoid false matches.
+ *
+ * The label-content group for each shape is quote-aware: it matches either a
+ * complete `"..."` quoted span (any character, including this shape's own
+ * closing delimiter chars, is fine inside quotes) or a single character that
+ * isn't the start of the closing delimiter. This stops the scanner from
+ * treating a `]`/`)`/`}` etc. *inside* a quoted label as the node's real
+ * closing bracket (see issue #61) — without this, `A["test [] brackets"]`
+ * would stop at the first `]`, which lives inside the quoted string.
  */
 const NODE_PATTERNS: Array<{ regex: RegExp; shape: NodeShape }> = [
   // Triple delimiters (must be first)
-  { regex: /^([\w-]+)\(\(\((.+?)\)\)\)/, shape: 'doublecircle' }, // A(((text)))
+  {
+    regex: /^([\w-]+)\(\(\(((?:"[^"]*"|(?!\)\)\)).)+)\)\)\)/,
+    shape: 'doublecircle',
+  }, // A(((text)))
 
   // Double delimiters with mixed brackets
-  { regex: /^([\w-]+)\(\[(.+?)\]\)/, shape: 'stadium' }, // A([text])
-  { regex: /^([\w-]+)\(\((.+?)\)\)/, shape: 'circle' }, // A((text))
-  { regex: /^([\w-]+)\[\[(.+?)\]\]/, shape: 'subroutine' }, // A[[text]]
-  { regex: /^([\w-]+)\[\((.+?)\)\]/, shape: 'cylinder' }, // A[(text)]
+  { regex: /^([\w-]+)\(\[((?:"[^"]*"|(?!\]\)).)+)\]\)/, shape: 'stadium' }, // A([text])
+  { regex: /^([\w-]+)\(\(((?:"[^"]*"|(?!\)\)).)+)\)\)/, shape: 'circle' }, // A((text))
+  { regex: /^([\w-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/, shape: 'subroutine' }, // A[[text]]
+  { regex: /^([\w-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/, shape: 'cylinder' }, // A[(text)]
 
   // Trapezoid variants — must come before plain [text]
-  { regex: /^([\w-]+)\[\/(.+?)\\\]/, shape: 'trapezoid' }, // A[/text\]
-  { regex: /^([\w-]+)\[\\(.+?)\/\]/, shape: 'trapezoid-alt' }, // A[\text/]
+  { regex: /^([\w-]+)\[\/((?:"[^"]*"|(?!\\\]).)+)\\\]/, shape: 'trapezoid' }, // A[/text\]
+  {
+    regex: /^([\w-]+)\[\\((?:"[^"]*"|(?!\/\]).)+)\/\]/,
+    shape: 'trapezoid-alt',
+  }, // A[\text/]
 
   // Asymmetric flag shape
-  { regex: /^([\w-]+)>(.+?)\]/, shape: 'asymmetric' }, // A>text]
+  { regex: /^([\w-]+)>((?:"[^"]*"|(?!\]).)+)\]/, shape: 'asymmetric' }, // A>text]
 
   // Double curly braces (hexagon) — must come before single {text}
-  { regex: /^([\w-]+)\{\{(.+?)\}\}/, shape: 'hexagon' }, // A{{text}}
+  { regex: /^([\w-]+)\{\{((?:"[^"]*"|(?!\}\}).)+)\}\}/, shape: 'hexagon' }, // A{{text}}
 
   // Single-char delimiters (last — most common, least specific)
-  { regex: /^([\w-]+)\[(.+?)\]/, shape: 'rectangle' }, // A[text]
-  { regex: /^([\w-]+)\((.+?)\)/, shape: 'rounded' }, // A(text)
-  { regex: /^([\w-]+)\{(.+?)\}/, shape: 'diamond' }, // A{text}
+  { regex: /^([\w-]+)\[((?:"[^"]*"|(?!\]).)+)\]/, shape: 'rectangle' }, // A[text]
+  { regex: /^([\w-]+)\(((?:"[^"]*"|(?!\)).)+)\)/, shape: 'rounded' }, // A(text)
+  { regex: /^([\w-]+)\{((?:"[^"]*"|(?!\}).)+)\}/, shape: 'diamond' }, // A{text}
 ]
 
-/** Regex for a bare node reference (just an ID, no shape brackets) */
-const BARE_NODE_REGEX = /^([\w-]+)/
+/**
+ * Regex for a bare node reference (just an ID, no shape brackets).
+ *
+ * Only allows a hyphen when it's sandwiched between word characters
+ * (`foo-bar`, `step-1-b`), never a bare/trailing/doubled hyphen. This keeps
+ * legitimately hyphenated ids intact while stopping the id from swallowing
+ * the leading dashes of an immediately-following arrow when there's no
+ * whitespace before it — e.g. `A-->B` (see issue #61): the naive `[\w-]+`
+ * greedily consumed `A--`, leaving a bogus node and no edge. Arrow tokens
+ * always start with `-`/`=`/`<` followed by another non-word character
+ * (`-`, `.`, `=`, `>`), which this pattern never matches into, so it now
+ * stops cleanly at `A` and lets the arrow regex take over.
+ */
+const BARE_NODE_REGEX = /^([\w]+(?:-[\w]+)*)/
 
 /** Regex for ::: class shorthand suffix — matches :::className immediately after a node */
 const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/

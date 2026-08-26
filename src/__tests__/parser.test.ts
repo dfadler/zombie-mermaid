@@ -205,6 +205,58 @@ describe('parseMermaid – all shapes combined', () => {
 })
 
 // ============================================================================
+// Brackets inside quoted labels (issue #61) — the shape-delimiter scanner
+// must be quote-aware so a `]`/`)`/`}` etc. *inside* a quoted label isn't
+// mistaken for the node's actual closing delimiter.
+// ============================================================================
+
+describe('parseMermaid – brackets inside quoted labels (issue #61)', () => {
+  it('preserves brackets in a quoted rectangle label: A["test [] brackets"]', () => {
+    const g = parseMermaid('graph LR\n  A["test [] brackets"]')
+    expect(g.nodes.get('A')!.label).toBe('test [] brackets')
+    expect(g.nodes.get('A')!.shape).toBe('rectangle')
+  })
+
+  it('preserves adjacent brackets in a quoted rectangle label: B["xx[]yy"]', () => {
+    const g = parseMermaid('graph LR\n  B["xx[]yy"]')
+    expect(g.nodes.get('B')!.label).toBe('xx[]yy')
+  })
+
+  it('does not drop the edge that follows a bracketed quoted label', () => {
+    const g = parseMermaid(
+      'graph LR\n  A["test [] brackets"]\n  B["xx[]yy"]\n  A --> B',
+    )
+    expect(g.nodes.get('A')!.label).toBe('test [] brackets')
+    expect(g.nodes.get('B')!.label).toBe('xx[]yy')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+  })
+
+  it('preserves parens in a quoted rounded label: A("text (with) parens")', () => {
+    const g = parseMermaid('graph LR\n  A("text (with) parens")')
+    expect(g.nodes.get('A')!.label).toBe('text (with) parens')
+    expect(g.nodes.get('A')!.shape).toBe('rounded')
+  })
+
+  it('preserves braces in a quoted diamond label: A{"text {with} braces"}', () => {
+    const g = parseMermaid('graph LR\n  A{"text {with} braces"}')
+    expect(g.nodes.get('A')!.label).toBe('text {with} braces')
+    expect(g.nodes.get('A')!.shape).toBe('diamond')
+  })
+
+  it('still stops at the first unquoted closing bracket (no regression)', () => {
+    const g = parseMermaid('graph LR\n  A[simple]')
+    expect(g.nodes.get('A')!.label).toBe('simple')
+  })
+
+  it('still strips a plain quoted label with no embedded brackets', () => {
+    const g = parseMermaid('graph LR\n  A["simple"]')
+    expect(g.nodes.get('A')!.label).toBe('simple')
+  })
+})
+
+// ============================================================================
 // Edge parsing — original arrows
 // ============================================================================
 
@@ -265,6 +317,85 @@ describe('parseMermaid – edges (original)', () => {
     const g = parseMermaid('graph TD\n  A --> B')
     expect(g.edges[0]!.hasArrowEnd).toBe(true)
     expect(g.edges[0]!.hasArrowStart).toBe(false)
+  })
+})
+
+// ============================================================================
+// No-space arrows (issue #61) — the node-id lexer must not greedily
+// swallow the leading dashes of an immediately-following arrow.
+// ============================================================================
+
+describe('parseMermaid – no-space arrows (issue #61)', () => {
+  it('parses A-->B (no space at all) as two nodes and one edge', () => {
+    const g = parseMermaid('flowchart LR\n  A-->B')
+    expect(g.nodes.size).toBe(2)
+    expect(g.nodes.get('A')).toBeDefined()
+    expect(g.nodes.get('B')).toBeDefined()
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+  })
+
+  it('parses A -->B (space before, none after) as two nodes and one edge', () => {
+    const g = parseMermaid('flowchart LR\n  A -->B')
+    expect(g.nodes.size).toBe(2)
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+  })
+
+  it('parses A--> B (space after, none before) as two nodes and one edge', () => {
+    const g = parseMermaid('flowchart LR\n  A--> B')
+    expect(g.nodes.size).toBe(2)
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+  })
+
+  it('parses A --> B (both spaces) as two nodes and one edge', () => {
+    const g = parseMermaid('flowchart LR\n  A --> B')
+    expect(g.nodes.size).toBe(2)
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('A')
+    expect(g.edges[0]!.target).toBe('B')
+  })
+
+  it('does not regress hyphenated bare ids butted directly against an arrow', () => {
+    const g = parseMermaid('flowchart LR\n  step-1-->step-2')
+    expect(g.nodes.get('step-1')).toBeDefined()
+    expect(g.nodes.get('step-2')).toBeDefined()
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('step-1')
+    expect(g.edges[0]!.target).toBe('step-2')
+  })
+
+  it('still supports hyphenated ids on shaped nodes', () => {
+    const g = parseMermaid('graph TD\n  my-node[My Node]')
+    expect(g.nodes.get('my-node')).toBeDefined()
+    expect(g.nodes.get('my-node')!.label).toBe('My Node')
+  })
+
+  it('handles other no-space arrow styles: ---, -.->, ==>, -.-, ===', () => {
+    expect(parseMermaid('graph TD\n  A---B').edges[0]).toMatchObject({
+      style: 'solid',
+      hasArrowEnd: false,
+    })
+    expect(parseMermaid('graph TD\n  A-.->B').edges[0]).toMatchObject({
+      style: 'dotted',
+      hasArrowEnd: true,
+    })
+    expect(parseMermaid('graph TD\n  A==>B').edges[0]).toMatchObject({
+      style: 'thick',
+      hasArrowEnd: true,
+    })
+    expect(parseMermaid('graph TD\n  A-.-B').edges[0]).toMatchObject({
+      style: 'dotted',
+      hasArrowEnd: false,
+    })
+    expect(parseMermaid('graph TD\n  A===B').edges[0]).toMatchObject({
+      style: 'thick',
+      hasArrowEnd: false,
+    })
   })
 })
 

@@ -1,0 +1,5 @@
+---
+'zombie-mermaid': patch
+---
+
+Fix two flowchart parser tokenization bugs (#61). First, `A-->B` (no space before the arrow) dropped the edge entirely: the bare-node-id scanner greedily consumed the leading dashes of the arrow, producing a bogus node `A--` and zero edges. The id pattern now only allows a hyphen between word characters (`step-1`), never a bare/trailing/doubled one, so it stops cleanly before `-->`, `---`, `-.->`, `==>`, `-.-`, and `===` even with no surrounding whitespace, while still supporting legitimately hyphenated ids like `my-node`. Second, brackets inside a double-quoted label corrupted the label: `A["test [] brackets"]` produced `"test [` because the shape-delimiter scanner treated the first `]` _inside_ the quoted string as the node's closing bracket. The scanner is now quote-aware for all shape delimiters (`]`, `)`, `}`, and their double/triple variants), so a complete `"..."` span is skipped over intact and brackets inside quoted labels are preserved as literal text.
