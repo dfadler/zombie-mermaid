@@ -8,6 +8,7 @@ import {
   afterEach,
 } from 'vitest'
 import { THEMES } from '../theme.ts'
+import type { runRender as RunRender } from '../cli/render.ts'
 
 // ============================================================================
 // Mocks
@@ -34,7 +35,7 @@ const ORIGINAL_ARGV = process.argv
 
 describe('cli entrypoint – main()', () => {
   let main: () => Promise<void>
-  let runRender: ReturnType<typeof vi.fn>
+  let runRender: ReturnType<typeof vi.mocked<typeof RunRender>>
   let logSpy: ReturnType<typeof vi.spyOn>
   let errorSpy: ReturnType<typeof vi.spyOn>
   let exitSpy: ReturnType<typeof vi.spyOn>
@@ -44,7 +45,7 @@ describe('cli entrypoint – main()', () => {
     const cli = await import('../cli.ts')
     main = cli.main
     const renderModule = await import('../cli/render.ts')
-    runRender = renderModule.runRender as unknown as ReturnType<typeof vi.fn>
+    runRender = vi.mocked(renderModule.runRender)
   })
 
   beforeEach(() => {
