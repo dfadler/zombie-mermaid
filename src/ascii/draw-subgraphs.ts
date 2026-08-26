@@ -67,7 +67,14 @@ export function drawSubgraphLabel(
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
     const labelY = 1 + i
-    let labelX = Math.floor(width / 2) - Math.floor(displayWidth(line) / 2)
+    // Center the label within the interior columns (1..width-1, i.e.
+    // excluding both border columns). When the interior width minus the
+    // label width is odd, the leftover column can't be split evenly — bias
+    // it to the right (keep >=1 space on the left) so the title never hugs
+    // the left border. Using floor(width/2) - floor(label/2) here instead
+    // biases the leftover to the left, which can zero out the left padding
+    // entirely for even-length labels in an odd-width interior.
+    let labelX = 1 + Math.ceil((width - 1 - displayWidth(line)) / 2)
     if (labelX < 1) labelX = 1
 
     const cells = toDisplayCells(line)
