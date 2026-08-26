@@ -1,5 +1,7 @@
 # XY Chart (xychart-beta) — Phase 2 Design Document
 
+> **Historical note:** this is the original design proposal, written before implementation. `xychart-beta` support has since shipped in `src/xychart/` (see the README's "XY Charts" section for current, user-facing behavior). Code snippets below describe the original plan and may not match the shipped implementation exactly — treat this as background on the design rationale, not as API documentation.
+
 ## Overview
 
 This document specifies the architecture for adding `xychart-beta` / `xychart` support to beautiful-mermaid. The implementation follows the same parse → layout → render pipeline used by all other diagram types (ER, sequence, class, flowchart).
