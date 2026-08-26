@@ -165,6 +165,40 @@ describe('sequence layout – block spacing', () => {
   })
 })
 
+describe('sequence layout – activation boxes', () => {
+  it('a single +/- activation produces one activation box spanning both messages', () => {
+    const result = layout(`sequenceDiagram
+      A->>+B: Request
+      B-->>-A: Response`)
+
+    expect(result.activations).toHaveLength(1)
+    const [activation] = result.activations
+    expect(activation!.actorId).toBe('B')
+    expect(activation!.topY).toBe(result.messages[0]!.y)
+    expect(activation!.bottomY).toBe(result.messages[1]!.y)
+  })
+
+  it('nested activations on the same actor produce stacked boxes at increasing depth', () => {
+    const result = layout(`sequenceDiagram
+      A->>+B: Outer
+      B->>+B: Inner
+      B-->>-B: Inner done
+      B-->>-A: Outer done`)
+
+    expect(result.activations).toHaveLength(2)
+    const depths = result.activations.map((a) => a.x)
+    // Nested activation is offset horizontally from the outer one
+    expect(new Set(depths).size).toBe(2)
+  })
+
+  it('an unmatched deactivate (no prior activate) produces no activation box', () => {
+    const result = layout(`sequenceDiagram
+      A-->>-B: Stray deactivate`)
+
+    expect(result.activations).toHaveLength(0)
+  })
+})
+
 describe('sequence layout – block positioning', () => {
   it('block top is above the first message with room for the header', () => {
     const result = layout(`sequenceDiagram
