@@ -253,3 +253,73 @@ describe('Diagonal validation', () => {
     expect(hasDiagonalLines('+---+\n| A |\n+---+')).toBe(false)
   })
 })
+
+// ============================================================================
+// Issue #65 regressions
+// ============================================================================
+
+describe('Issue #65 – --o/--x edges no longer drop the target node', () => {
+  it('renders both nodes and a connector for A --o B', () => {
+    const output = renderMermaidAscii('graph LR\n  A --o B')
+    expect(output).toContain('A')
+    expect(output).toContain('B')
+    // The connecting line/arrow should be present, not just two bare boxes.
+    expect(output).toMatch(/[─▼►]/)
+  })
+
+  it('renders both nodes and a connector for A --x B', () => {
+    const output = renderMermaidAscii('graph LR\n  A --x B')
+    expect(output).toContain('A')
+    expect(output).toContain('B')
+    expect(output).toMatch(/[─▼►]/)
+  })
+})
+
+describe('Issue #65 – edges to a subgraph id no longer create phantom nodes', () => {
+  const mermaid = `flowchart TD
+  subgraph ONE["First"]
+    A1["a"] --> A2["b"]
+  end
+  subgraph TWO["Second"]
+    B1["c"] --> B2["d"]
+  end
+  ONE --> TWO`
+
+  it('does not render a standalone "ONE" or "TWO" box disconnected from the subgraphs', () => {
+    const output = renderMermaidAscii(mermaid)
+    // The subgraph titles ("First"/"Second") should render; the raw
+    // subgraph ids should not appear as their own node labels.
+    expect(output).toContain('First')
+    expect(output).toContain('Second')
+    expect(output).not.toMatch(/│\s*ONE\s*│/)
+    expect(output).not.toMatch(/│\s*TWO\s*│/)
+  })
+
+  it('draws a real connector between the two subgraph frames', () => {
+    const output = renderMermaidAscii(mermaid)
+    // A vertical connector should cross between the two subgraph boxes.
+    expect(output).toMatch(/[│▼]/)
+  })
+})
+
+describe('Issue #65 – inline <i>/<b>/<em>/<strong> tags are stripped', () => {
+  it('strips inline formatting tags from a node label', () => {
+    const output = renderMermaidAscii(
+      'flowchart TD\n  A["italic <i>word</i> and bold <b>x</b>"]',
+    )
+    expect(output).toContain('italic word and bold x')
+    expect(output).not.toContain('<i>')
+    expect(output).not.toContain('</i>')
+    expect(output).not.toContain('<b>')
+    expect(output).not.toContain('</b>')
+  })
+
+  it('strips <em>/<strong> as well', () => {
+    const output = renderMermaidAscii(
+      'flowchart TD\n  A["<em>emphasis</em> and <strong>strong</strong>"]',
+    )
+    expect(output).toContain('emphasis and strong')
+    expect(output).not.toContain('<em>')
+    expect(output).not.toContain('<strong>')
+  })
+})

@@ -118,3 +118,66 @@ export function assertNoDiagonals(asciiOutput: string, context?: string): void {
       `Found ${positions.length} diagonal character(s):\n${positionStr}`,
   )
 }
+
+/**
+ * Position of an orphaned tee/junction character in ASCII output.
+ */
+export interface OrphanedJunctionPosition {
+  line: number
+  col: number
+  char: string
+}
+
+/**
+ * Find "orphaned" tee/junction characters — a ├/┤/┬/┴ whose perpendicular
+ * arm (the part of the glyph that's supposed to come from a pre-existing
+ * border or line, not from the edge that merged into it) has nothing on
+ * either side. A genuine junction always has *something* immediately on
+ * both sides of that arm (a border character, another line, an arrowhead,
+ * etc.); a blank cell on both sides means the character was written as a
+ * junction without a real line to justify it (see issue #86).
+ *
+ * - ├ / ┤ carry a vertical arm, so both sides means the row above and below.
+ * - ┬ / ┴ carry a horizontal arm, so both sides means the column left and right.
+ *
+ * @param asciiOutput - The rendered ASCII diagram string
+ * @returns Array of positions where an orphaned junction was found
+ */
+export function findOrphanedJunctions(
+  asciiOutput: string,
+): OrphanedJunctionPosition[] {
+  const lines = asciiOutput.split('\n')
+  const positions: OrphanedJunctionPosition[] = []
+
+  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+    const line = lines[lineNum]!
+    for (let col = 0; col < line.length; col++) {
+      const char = line[col]!
+      if (char === '├' || char === '┤') {
+        const above = lines[lineNum - 1]?.[col] ?? ' '
+        const below = lines[lineNum + 1]?.[col] ?? ' '
+        if (above === ' ' && below === ' ') {
+          positions.push({ line: lineNum + 1, col: col + 1, char })
+        }
+      } else if (char === '┬' || char === '┴') {
+        const left = line[col - 1] ?? ' '
+        const right = line[col + 1] ?? ' '
+        if (left === ' ' && right === ' ') {
+          positions.push({ line: lineNum + 1, col: col + 1, char })
+        }
+      }
+    }
+  }
+
+  return positions
+}
+
+/**
+ * Check if ASCII output contains any orphaned tee/junction characters.
+ * Returns true if any are found (which is an error condition).
+ *
+ * @param asciiOutput - The rendered ASCII diagram string
+ */
+export function hasOrphanedJunctions(asciiOutput: string): boolean {
+  return findOrphanedJunctions(asciiOutput).length > 0
+}

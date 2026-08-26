@@ -16,6 +16,7 @@ import type {
 } from './types.ts'
 import { EMPTY_STYLE } from './types.ts'
 import { mkCanvas, mkRoleCanvas } from './canvas.ts'
+import { stripFormattingTags } from '../multiline-utils.ts'
 
 /**
  * Convert a parsed MermaidGraph into an AsciiGraph ready for grid layout.
@@ -30,17 +31,42 @@ export function convertToAsciiGraph(
   parsed: MermaidGraph,
   config: AsciiConfig,
 ): AsciiGraph {
+  // Collect subgraph ids (including nested) up front. When a flowchart edge
+  // references a subgraph id directly (e.g. `ONE --> TWO` where ONE/TWO are
+  // subgraph ids, not nodes — see issue #65), the parser has no way to know
+  // that at parse time and registers a phantom node with that id instead.
+  // The ELK/SVG path resolves this by never materializing a top-level node
+  // for a subgraph id and letting the edge reference the compound subgraph
+  // node directly (see `mermaidToElk` in to-elk.ts). The ASCII grid has no
+  // equivalent "compound node as edge endpoint" concept, so instead we
+  // suppress the phantom node here and, below, redirect any edge that
+  // targets a subgraph id to a real member node at that subgraph's
+  // boundary — see `resolveSubgraphEndpoint`.
+  const subgraphIds = new Set<string>()
+  const subgraphById = new Map<string, MermaidSubgraph>()
+  for (const mSg of parsed.subgraphs) {
+    indexSubgraph(mSg, subgraphIds, subgraphById)
+  }
+
   // Build node list preserving Map insertion order
   const nodeMap = new Map<string, AsciiNode>()
   let index = 0
 
   for (const [id, mNode] of parsed.nodes) {
+    // Skip phantom nodes that only exist because a subgraph id was
+    // referenced as an edge endpoint — see comment above.
+    if (subgraphIds.has(id)) continue
+
     const asciiNode: AsciiNode = {
       // Use the parser ID as the unique identity key to avoid collisions
       // when multiple nodes share the same label (e.g. A[Web Server], C[Web Server]).
       name: id,
-      // The label is used for rendering inside the box.
-      displayLabel: mNode.label,
+      // The label is used for rendering inside the box. Inline formatting
+      // tags (<b>, <i>, <em>, <strong>, ...) are meaningful to the SVG
+      // renderer (rendered as styled tspans) but the ASCII renderer has no
+      // equivalent concept, so they're stripped here rather than shown
+      // literally — see issue #65.
+      displayLabel: stripFormattingTags(mNode.label),
       // Preserve shape from parser for shape-aware rendering
       shape: mNode.shape,
       index,
@@ -60,14 +86,32 @@ export function convertToAsciiGraph(
   // Build edges with resolved node references
   const edges: AsciiEdge[] = []
   for (const mEdge of parsed.edges) {
-    const from = nodeMap.get(mEdge.source)
-    const to = nodeMap.get(mEdge.target)
+    let sourceId = mEdge.source
+    let targetId = mEdge.target
+
+    if (subgraphIds.has(sourceId)) {
+      const mSg = subgraphById.get(sourceId)
+      const resolved = mSg
+        ? resolveSubgraphEndpoint(mSg, parsed, 'exit')
+        : undefined
+      if (resolved) sourceId = resolved
+    }
+    if (subgraphIds.has(targetId)) {
+      const mSg = subgraphById.get(targetId)
+      const resolved = mSg
+        ? resolveSubgraphEndpoint(mSg, parsed, 'entry')
+        : undefined
+      if (resolved) targetId = resolved
+    }
+
+    const from = nodeMap.get(sourceId)
+    const to = nodeMap.get(targetId)
     if (!from || !to) continue
 
     edges.push({
       from,
       to,
-      text: mEdge.label ?? '',
+      text: mEdge.label ? stripFormattingTags(mEdge.label) : '',
       path: [],
       labelLine: [],
       startDir: { x: 0, y: 0 },
@@ -114,6 +158,64 @@ export function convertToAsciiGraph(
     offsetY: 0,
     bundles: [], // Populated by analyzeEdgeBundles() during layout
   }
+}
+
+/**
+ * Recursively index a subgraph (and its nested children) by id, for
+ * resolving subgraph-id edge endpoints — see issue #65 and the comment in
+ * `convertToAsciiGraph`.
+ */
+function indexSubgraph(
+  mSg: MermaidSubgraph,
+  subgraphIds: Set<string>,
+  subgraphById: Map<string, MermaidSubgraph>,
+): void {
+  subgraphIds.add(mSg.id)
+  subgraphById.set(mSg.id, mSg)
+  for (const child of mSg.children) {
+    indexSubgraph(child, subgraphIds, subgraphById)
+  }
+}
+
+/** Recursively collect every node id that's a member of `mSg` or its nested children. */
+function collectAllMemberNodeIds(mSg: MermaidSubgraph, out: Set<string>): void {
+  for (const id of mSg.nodeIds) out.add(id)
+  for (const child of mSg.children) collectAllMemberNodeIds(child, out)
+}
+
+/**
+ * Pick a real member node to stand in for a subgraph when it's used as an
+ * edge endpoint (e.g. `ONE --> TWO` where ONE/TWO are subgraph ids — issue
+ * #65). The ASCII grid can only route edges between real nodes, so an edge
+ * "into" the subgraph is anchored to the subgraph's entry (root) node — a
+ * member with no incoming edge from another member of the same subgraph —
+ * and an edge "out of" the subgraph is anchored to its exit (leaf) node —
+ * a member with no outgoing edge to another member. That mirrors how the
+ * edge would visually enter/exit the subgraph's frame, reusing the
+ * existing (already-working) cross-subgraph edge-routing path instead of
+ * inventing a new "compound node" concept in the grid layout.
+ */
+function resolveSubgraphEndpoint(
+  mSg: MermaidSubgraph,
+  parsed: MermaidGraph,
+  end: 'entry' | 'exit',
+): string | undefined {
+  const memberIds = new Set<string>()
+  collectAllMemberNodeIds(mSg, memberIds)
+  if (memberIds.size === 0) return undefined
+
+  // Preserve overall node declaration order for deterministic selection.
+  const orderedIds = [...parsed.nodes.keys()].filter((id) => memberIds.has(id))
+  if (orderedIds.length === 0) return undefined
+
+  const candidates = orderedIds.filter((id) =>
+    end === 'entry'
+      ? !parsed.edges.some((e) => e.target === id && memberIds.has(e.source))
+      : !parsed.edges.some((e) => e.source === id && memberIds.has(e.target)),
+  )
+
+  const pool = candidates.length > 0 ? candidates : orderedIds
+  return end === 'entry' ? pool[0] : pool[pool.length - 1]
 }
 
 /**

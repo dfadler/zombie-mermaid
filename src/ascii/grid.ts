@@ -229,6 +229,57 @@ function isAncestorOrSelf(
 }
 
 /**
+ * Get the outermost (top-level, unnested) subgraph ancestor for a node.
+ * Returns null if the node isn't in any subgraph.
+ *
+ * Used to group nodes for bounding-box-disjointness purposes: sibling
+ * subgraphs nested under different top-level subgraphs are unrelated and
+ * must never be allowed to overlap (#90), while a subgraph's own nested
+ * children are already folded into its box via calculateSubgraphBoundingBox.
+ */
+function getTopLevelSubgraph(
+  graph: AsciiGraph,
+  node: AsciiNode,
+): AsciiSubgraph | null {
+  const sg = getNodeSubgraph(graph, node)
+  if (!sg) return null
+  let top = sg
+  while (top.parent) top = top.parent
+  return top
+}
+
+/** Recursively collect every node belonging to a subgraph, including nodes in nested subgraphs. */
+function collectSubgraphMembers(sg: AsciiSubgraph): AsciiNode[] {
+  const members = [...sg.nodes]
+  for (const child of sg.children) {
+    members.push(...collectSubgraphMembers(child))
+  }
+  return members
+}
+
+/** Whether `to` is reachable from `from` by following outgoing edges (BFS). */
+function isReachableViaEdges(
+  graph: AsciiGraph,
+  from: AsciiNode,
+  to: AsciiNode,
+): boolean {
+  if (from === to) return true
+  const visited = new Set<AsciiNode>([from])
+  const queue: AsciiNode[] = [from]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    for (const child of getChildren(graph, current)) {
+      if (child === to) return true
+      if (!visited.has(child)) {
+        visited.add(child)
+        queue.push(child)
+      }
+    }
+  }
+  return false
+}
+
+/**
  * Get the effective direction for a node's layout.
  * Returns the subgraph's direction override if the node is in a subgraph with one,
  * otherwise returns the graph-level direction.
@@ -491,6 +542,65 @@ function addPseudoRootsForUnreachableCycles(
   return result
 }
 
+/**
+ * Place all currently-reachable, still-unplaced children of already-placed
+ * nodes, level by level, mutating `highestPositionPerLevel` as it goes.
+ * Multi-pass: iterates until no more progress can be made in a full pass
+ * (handles non-topological node order, and simply leaves anything
+ * unreachable from an already-placed node untouched).
+ */
+function placeReachableChildren(
+  graph: AsciiGraph,
+  highestPositionPerLevel: number[],
+): void {
+  let progressed = true
+  while (progressed) {
+    progressed = false
+    for (const node of graph.nodes) {
+      if (node.gridCoord === null) continue // skip unplaced nodes
+      const gc = node.gridCoord
+
+      for (const child of getChildren(graph, node)) {
+        if (child.gridCoord !== null) continue // already placed
+
+        // Determine direction for this edge (parent -> child)
+        // Use subgraph direction only if both are in the same subgraph with override
+        const parentSg = getNodeSubgraph(graph, node)
+        const childSg = getNodeSubgraph(graph, child)
+        const edgeDir =
+          parentSg && parentSg === childSg && parentSg.direction
+            ? parentSg.direction
+            : graph.config.graphDirection
+
+        const childLevel = edgeDir === 'LR' ? gc.x + 4 : gc.y + 4
+
+        // Determine position based on direction context
+        let highestPosition: number
+        if (edgeDir !== graph.config.graphDirection) {
+          // Cross-direction: use parent's perpendicular coordinate
+          // This keeps children aligned with parent when direction changes
+          highestPosition = edgeDir === 'LR' ? gc.y : gc.x
+        } else {
+          // Same direction: use level tracker
+          highestPosition = highestPositionPerLevel[childLevel]!
+        }
+
+        const requested: GridCoord =
+          edgeDir === 'LR'
+            ? { x: childLevel, y: highestPosition }
+            : { x: highestPosition, y: childLevel }
+        reserveSpotInGrid(graph, graph.nodes[child.index]!, requested, edgeDir)
+
+        // Only update level tracker for same-direction placements
+        if (edgeDir === graph.config.graphDirection) {
+          highestPositionPerLevel[childLevel] = highestPosition + 4
+        }
+        progressed = true
+      }
+    }
+  }
+}
+
 // ============================================================================
 // Main layout orchestrator
 // ============================================================================
@@ -562,17 +672,53 @@ export function createMapping(graph: AsciiGraph): void {
     return true
   })
 
-  // Group root nodes by which downstream target they feed into, so a
-  // fan-in cluster (e.g. A1, A2 -> A) is placed contiguously instead of
-  // interleaving with roots that feed a *different* target (e.g. B1 -> B
-  // landing between A1 and A2). Without this, unrelated fan-in bundles can
-  // end up on the same grid row and their trunk edges visually cross.
+  // Defer root nodes that belong to a subgraph which has OTHER members that
+  // are (a) not roots themselves and (b) not even reachable from this root
+  // via its own edges — i.e. members whose placement is driven by some
+  // completely unrelated part of the graph. Placing such a node at the
+  // generic root level — shared with roots of unrelated sibling subgraphs —
+  // can scatter its own subgraph's members across disjoint regions of the
+  // grid, making that subgraph's bounding box balloon out to enclose
+  // unrelated sibling content (#90). Instead, anchor these nodes next to
+  // their already-placed subgraph siblings once the normal placement pass
+  // below has run.
+  //
+  // A sibling that *is* reachable from this root (e.g. a subgraph root with
+  // its own intra-subgraph child) is left alone: the normal traversal below
+  // already positions it correctly relative to this root, so deferring would
+  // be both unnecessary and wrong.
+  const rootNodeSet = new Set(rootNodes)
+  const deferredRoots: AsciiNode[] = []
+  const placementRoots: AsciiNode[] = []
+  for (const node of rootNodes) {
+    const topSg = getTopLevelSubgraph(graph, node)
+    const hasUnrelatedNonRootSibling =
+      topSg !== null &&
+      collectSubgraphMembers(topSg).some(
+        (m) =>
+          m !== node &&
+          !rootNodeSet.has(m) &&
+          !isReachableViaEdges(graph, node, m),
+      )
+    if (hasUnrelatedNonRootSibling) {
+      deferredRoots.push(node)
+    } else {
+      placementRoots.push(node)
+    }
+  }
+
+  // Group the non-deferred root nodes by which downstream target they feed
+  // into, so a fan-in cluster (e.g. A1, A2 -> A) is placed contiguously
+  // instead of interleaving with roots that feed a *different* target (e.g.
+  // B1 -> B landing between A1 and A2). Without this, unrelated fan-in
+  // bundles can end up on the same grid row and their trunk edges visually
+  // cross.
   //
   // Stable: each root's sort key is the position of the *first* root that
   // shares its primary (first) downstream target, so groups appear in the
   // order their target was first seen, and a root with no children (or a
   // target no other root shares) keeps its original relative position.
-  const groupedRootNodes = groupRootsByDownstreamTarget(graph, rootNodes)
+  const groupedRootNodes = groupRootsByDownstreamTarget(graph, placementRoots)
 
   // In LR mode with both external and subgraph roots, separate them
   // so subgraph roots are placed one level deeper
@@ -626,59 +772,50 @@ export function createMapping(graph: AsciiGraph): void {
     }
   }
 
-  // Place child nodes level by level
-  // Use subgraph direction only when both parent and child are in the same subgraph
-  // Multi-pass: iterate until all nodes are placed (handles non-topological node order)
-  // Note: when shouldSeparate, externalRootNodes + subgraphRootNodes = rootNodes
-  //       otherwise, externalRootNodes = rootNodes and subgraphRootNodes is empty
-  let placedCount = externalRootNodes.length + subgraphRootNodes.length
-  while (placedCount < graph.nodes.length) {
-    const prevCount = placedCount
-    for (const node of graph.nodes) {
-      if (node.gridCoord === null) continue // skip unplaced nodes
-      const gc = node.gridCoord
+  // Place child nodes level by level (reachable from the roots placed so far).
+  placeReachableChildren(graph, highestPositionPerLevel)
 
-      for (const child of getChildren(graph, node)) {
-        if (child.gridCoord !== null) continue // already placed
+  // Now place the deferred subgraph-orphan roots, anchored next to their
+  // already-placed subgraph siblings rather than at the shared root level.
+  for (const node of deferredRoots) {
+    const topSg = getTopLevelSubgraph(graph, node)!
+    const nodeDir = getEffectiveDirection(graph, node)
+    const placedSiblings = collectSubgraphMembers(topSg).filter(
+      (m) => m !== node && m.gridCoord !== null,
+    )
 
-        // Determine direction for this edge (parent -> child)
-        // Use subgraph direction only if both are in the same subgraph with override
-        const parentSg = getNodeSubgraph(graph, node)
-        const childSg = getNodeSubgraph(graph, child)
-        const edgeDir =
-          parentSg && parentSg === childSg && parentSg.direction
-            ? parentSg.direction
-            : graph.config.graphDirection
-
-        const childLevel = edgeDir === 'LR' ? gc.x + 4 : gc.y + 4
-
-        // Determine position based on direction context
-        let highestPosition: number
-        if (edgeDir !== graph.config.graphDirection) {
-          // Cross-direction: use parent's perpendicular coordinate
-          // This keeps children aligned with parent when direction changes
-          highestPosition = edgeDir === 'LR' ? gc.y : gc.x
-        } else {
-          // Same direction: use level tracker
-          highestPosition = highestPositionPerLevel[childLevel]!
-        }
-
-        const requested: GridCoord =
-          edgeDir === 'LR'
-            ? { x: childLevel, y: highestPosition }
-            : { x: highestPosition, y: childLevel }
-        reserveSpotInGrid(graph, graph.nodes[child.index]!, requested, edgeDir)
-
-        // Only update level tracker for same-direction placements
-        if (edgeDir === graph.config.graphDirection) {
-          highestPositionPerLevel[childLevel] = highestPosition + 4
-        }
-        placedCount++
+    let requested: GridCoord
+    if (placedSiblings.length > 0) {
+      // Anchor to whichever placed sibling sits at the shallowest level
+      // (topmost row for TD, leftmost column for LR) — reserveSpotInGrid's
+      // built-in collision handling then slides this node along the same
+      // level until it finds a free spot immediately adjacent.
+      let anchor = placedSiblings[0]!
+      for (const sibling of placedSiblings) {
+        const isShallower =
+          nodeDir === 'LR'
+            ? sibling.gridCoord!.x < anchor.gridCoord!.x
+            : sibling.gridCoord!.y < anchor.gridCoord!.y
+        if (isShallower) anchor = sibling
       }
+      requested = { x: anchor.gridCoord!.x, y: anchor.gridCoord!.y }
+    } else {
+      // Defensive fallback — shouldn't normally happen, since we only defer
+      // a node when it has a sibling that's guaranteed to be placed by the
+      // traversal above. Fall back to ordinary root-level placement.
+      requested =
+        nodeDir === 'LR'
+          ? { x: 0, y: highestPositionPerLevel[0]! }
+          : { x: highestPositionPerLevel[0]!, y: 0 }
+      highestPositionPerLevel[0] = highestPositionPerLevel[0]! + 4
     }
-    // Safety: break if no progress made (handles disconnected nodes)
-    if (placedCount === prevCount) break
+
+    reserveSpotInGrid(graph, graph.nodes[node.index]!, requested, nodeDir)
   }
+
+  // A deferred root may itself have children (edges) that couldn't be placed
+  // above since it wasn't on the grid yet — give the traversal another pass.
+  placeReachableChildren(graph, highestPositionPerLevel)
 
   // Compute column widths and row heights
   for (const node of graph.nodes) {
