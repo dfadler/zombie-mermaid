@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidAscii } from '../ascii/index.ts'
+import { mkCanvas, canvasToString } from '../ascii/canvas.ts'
+import {
+  drawMultilineTextCentered,
+  drawMultilineTextLeft,
+} from '../ascii/multiline-utils.ts'
 
 describe('ASCII multi-line labels', () => {
   describe('flowchart nodes', () => {
@@ -218,6 +223,66 @@ describe('ASCII multi-line labels', () => {
       })
       // The box should contain LongLine without truncation
       expect(ascii).toContain('LongLine')
+    })
+  })
+
+  describe('drawMultilineTextCentered', () => {
+    it('draws a single line centered at the given point', () => {
+      const canvas = mkCanvas(10, 4)
+      drawMultilineTextCentered(canvas, 'Hi', 5, 2)
+      const lines = canvasToString(canvas).split('\n')
+      expect(lines[2]).toContain('Hi')
+    })
+
+    it('centers multiple lines vertically around the point', () => {
+      const canvas = mkCanvas(12, 6)
+      drawMultilineTextCentered(canvas, 'One\nTwo\nThree', 6, 3)
+      const lines = canvasToString(canvas).split('\n')
+      const oneRow = lines.findIndex((l) => l.includes('One'))
+      const twoRow = lines.findIndex((l) => l.includes('Two'))
+      const threeRow = lines.findIndex((l) => l.includes('Three'))
+      expect(oneRow).toBeGreaterThanOrEqual(0)
+      expect(twoRow).toBe(oneRow + 1)
+      expect(threeRow).toBe(twoRow + 1)
+    })
+
+    it('centers each line horizontally around the given x', () => {
+      const canvas = mkCanvas(20, 2)
+      drawMultilineTextCentered(canvas, 'Wide\nX', 10, 1)
+      const lines = canvasToString(canvas).split('\n')
+      const wideRow = lines.findIndex((l) => l.includes('Wide'))
+      const xRow = lines.findIndex((l) => l.includes('X'))
+      // 'Wide' (4 chars) centered on x=10 starts 2 columns left of center
+      expect(lines[wideRow]!.indexOf('Wide')).toBe(8)
+      // 'X' (1 char) centered on x=10 starts exactly at center
+      expect(lines[xRow]!.indexOf('X')).toBe(10)
+    })
+
+    it('handles an empty label without throwing', () => {
+      const canvas = mkCanvas(6, 3)
+      expect(() => drawMultilineTextCentered(canvas, '', 3, 1)).not.toThrow()
+    })
+  })
+
+  describe('drawMultilineTextLeft', () => {
+    it('draws a single line starting at the given coordinate', () => {
+      const canvas = mkCanvas(10, 4)
+      drawMultilineTextLeft(canvas, 'Hello', 1, 1)
+      const lines = canvasToString(canvas).split('\n')
+      expect(lines[1]!.indexOf('Hello')).toBe(1)
+    })
+
+    it('places each subsequent line one row below the previous', () => {
+      const canvas = mkCanvas(10, 5)
+      drawMultilineTextLeft(canvas, 'Alpha\nBeta', 0, 0)
+      const lines = canvasToString(canvas).split('\n')
+      expect(lines[0]!.indexOf('Alpha')).toBe(0)
+      expect(lines[1]!.indexOf('Beta')).toBe(0)
+    })
+
+    it('handles an empty label without throwing', () => {
+      const canvas = mkCanvas(6, 3)
+      expect(() => drawMultilineTextLeft(canvas, '', 0, 0)).not.toThrow()
     })
   })
 })
