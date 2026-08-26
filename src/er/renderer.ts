@@ -187,9 +187,9 @@ function renderAttribute(
 
   // Wrap in a group if there's a comment (for tooltip support)
   const hasComment = attr.comment && attr.comment.length > 0
-  if (hasComment) {
+  if (attr.comment && attr.comment.length > 0) {
     // Replace <br> with newlines for tooltip display
-    const tooltipText = attr.comment!.replace(/<br\s*\/?>/gi, '\n')
+    const tooltipText = attr.comment.replace(/<br\s*\/?>/gi, '\n')
     parts.push(`<g><title>${escapeXml(tooltipText)}</title>`)
   }
 

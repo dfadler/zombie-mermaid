@@ -91,32 +91,16 @@ function buildErElkGraph(
     entitySizes.set(entity.id, { width, height })
   }
 
-  const elkGraph: ElkNode = {
-    id: 'root',
-    layoutOptions: {
-      'elk.algorithm': 'layered',
-      'elk.direction': directionToElk(diagram.direction),
-      'elk.spacing.nodeNode': String(ER.nodeSpacing),
-      'elk.layered.spacing.nodeNodeBetweenLayers': String(ER.layerSpacing),
-      'elk.padding': `[top=${ER.padding},left=${ER.padding},bottom=${ER.padding},right=${ER.padding}]`,
-      'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.edgeLabels.placement': 'CENTER',
-    },
-    children: [],
-    edges: [],
+  // Iterate entitySizes directly (populated above, in diagram.entities order)
+  // rather than looking each entity back up by id — sidesteps needing an
+  // assertion or invariant check for a lookup that can't actually miss.
+  const children: ElkNode[] = []
+  for (const [id, size] of entitySizes) {
+    children.push({ id, width: size.width, height: size.height })
   }
 
-  for (const entity of diagram.entities) {
-    const size = entitySizes.get(entity.id)!
-    elkGraph.children!.push({
-      id: entity.id,
-      width: size.width,
-      height: size.height,
-    })
-  }
-
-  for (let i = 0; i < diagram.relationships.length; i++) {
-    const rel = diagram.relationships[i]!
+  const edges: ElkExtendedEdge[] = []
+  for (const [i, rel] of diagram.relationships.entries()) {
     const metrics = measureMultilineText(
       rel.label,
       fontSizes.edgeLabel,
@@ -136,7 +120,22 @@ function buildErElkGraph(
         },
       ]
     }
-    elkGraph.edges!.push(edge)
+    edges.push(edge)
+  }
+
+  const elkGraph: ElkNode = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': directionToElk(diagram.direction),
+      'elk.spacing.nodeNode': String(ER.nodeSpacing),
+      'elk.layered.spacing.nodeNodeBetweenLayers': String(ER.layerSpacing),
+      'elk.padding': `[top=${ER.padding},left=${ER.padding},bottom=${ER.padding},right=${ER.padding}]`,
+      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.edgeLabels.placement': 'CENTER',
+    },
+    children,
+    edges,
   }
 
   return { elkGraph, entitySizes }
@@ -155,14 +154,21 @@ function extractErLayout(
   for (const child of result.children ?? []) {
     const entity = entityLookup.get(child.id)
     if (entity) {
+      const size = entitySizes.get(entity.id)
+      if (!size) {
+        // Unreachable — entitySizes is populated for every diagram.entities
+        // entry, and entityLookup/entity.id come from that same list.
+        /* v8 ignore next */
+        throw new Error(`Missing computed size for entity "${entity.id}"`)
+      }
       positionedEntities.push({
         id: entity.id,
         label: entity.label,
         attributes: entity.attributes,
         x: child.x ?? 0,
         y: child.y ?? 0,
-        width: child.width ?? entitySizes.get(entity.id)!.width,
-        height: child.height ?? entitySizes.get(entity.id)!.height,
+        width: child.width ?? size.width,
+        height: child.height ?? size.height,
         headerHeight: ER.headerHeight,
         rowHeight: ER.rowHeight,
       })
@@ -170,8 +176,9 @@ function extractErLayout(
   }
 
   const relationships: PositionedErRelationship[] = []
-  for (let i = 0; i < (result.edges?.length ?? 0); i++) {
-    const elkEdge = result.edges![i]!
+  for (const [i, elkEdge] of (result.edges ?? []).entries()) {
+    // diagram.relationships[i] is guaranteed by construction: buildErElkGraph
+    // creates exactly one ELK edge per relationship, in the same order.
     const rel = diagram.relationships[i]!
 
     const points: Point[] = []
