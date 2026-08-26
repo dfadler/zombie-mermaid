@@ -70,7 +70,16 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   const hasLegend = chart.series.length > 1
 
   // Compute y-axis label width from tick labels
-  const yRange = chart.yAxis.range!
+  //
+  // parseXYChart always derives a y-axis range (from data or a 0-100
+  // fallback — see xychart/parser.ts) before returning, so this is never
+  // actually undefined for parsed input. That guarantee lives in a
+  // different module, so narrow it here explicitly instead of trusting it
+  // silently across the boundary.
+  const yRange = chart.yAxis.range
+  if (!yRange) {
+    throw new Error('XY chart: y-axis range was not set by the parser')
+  }
   const yTicks = niceTickValues(yRange.min, yRange.max)
   const maxYLabelWidth = Math.max(
     ...yTicks.map((v) =>
@@ -176,10 +185,10 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   const xAxisObj: PositionedAxis = {
     ticks: xTicks,
     line: xAxisLine,
-    ...(hasXTitle
+    ...(chart.xAxis.title
       ? {
           title: {
-            text: chart.xAxis.title!,
+            text: chart.xAxis.title,
             x: left + plotW / 2,
             y: totalH - XY.padding,
           },
@@ -189,10 +198,10 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   const yAxisObj: PositionedAxis = {
     ticks: yAxisTicks,
     line: yAxisLine,
-    ...(hasYTitle
+    ...(chart.yAxis.title
       ? {
           title: {
-            text: chart.yAxis.title!,
+            text: chart.yAxis.title,
             x: XY.padding + 4,
             y: top + plotH / 2,
             rotate: -90,
@@ -202,8 +211,8 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   }
 
   // Title
-  const titleObj = hasTitle
-    ? { text: chart.title!, x: totalW / 2, y: XY.padding + XY.titleFontSize }
+  const titleObj = chart.title
+    ? { text: chart.title, x: totalW / 2, y: XY.padding + XY.titleFontSize }
     : undefined
 
   return {
@@ -231,7 +240,14 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const hasLegend = chart.series.length > 1
 
   // In horizontal mode: categories go on y-axis (left side), values go on x-axis (bottom)
-  const yRange = chart.yAxis.range!
+  //
+  // See the matching comment in layoutVertical: the parser always derives a
+  // y-axis range before returning, but that guarantee lives in a different
+  // module, so it's narrowed here explicitly rather than trusted silently.
+  const yRange = chart.yAxis.range
+  if (!yRange) {
+    throw new Error('XY chart: y-axis range was not set by the parser')
+  }
   const valueTicks = niceTickValues(yRange.min, yRange.max)
 
   // Compute category label widths for left margin
@@ -343,7 +359,13 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
           width: Math.abs(valX - baseX),
           height: singleBarH,
           value: s.data[i]!,
-          label: catLabels[i]!,
+          // A series can carry more data points than the chart has category
+          // labels for (e.g. a bar/line series longer than x-axis.categories
+          // or the series that determined dataCount), so catLabels[i] is not
+          // guaranteed to exist just because s.data[i] does. `label` is
+          // already optional on PositionedBar, so let a missing entry flow
+          // through as undefined instead of asserting past a real gap.
+          label: catLabels[i],
           seriesIndex: bIdx,
           colorIndex: colorMap[seriesArrayIdx]!,
         })
@@ -366,7 +388,9 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
       x: valueScale(v),
       y: catScale(i),
       value: v,
-      label: catLabels[i]!,
+      // See the matching comment in the bars loop above: a line series can
+      // outrun catLabels, and the point's `label` is already optional.
+      label: catLabels[i],
     }))
     lines.push({
       points,
@@ -389,10 +413,10 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const xAxisObj: PositionedAxis = {
     ticks: xTicks,
     line: xAxisLine,
-    ...(hasYTitle
+    ...(chart.yAxis.title
       ? {
           title: {
-            text: chart.yAxis.title!,
+            text: chart.yAxis.title,
             x: left + plotW / 2,
             y: totalH - XY.padding,
           },
@@ -402,10 +426,10 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const yAxisObj: PositionedAxis = {
     ticks: yTicks,
     line: yAxisLine,
-    ...(hasXTitle
+    ...(chart.xAxis.title
       ? {
           title: {
-            text: chart.xAxis.title!,
+            text: chart.xAxis.title,
             x: XY.padding + 4,
             y: top + plotH / 2,
             rotate: -90,
@@ -414,8 +438,8 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
       : {}),
   }
 
-  const titleObj = hasTitle
-    ? { text: chart.title!, x: totalW / 2, y: XY.padding + XY.titleFontSize }
+  const titleObj = chart.title
+    ? { text: chart.title, x: totalW / 2, y: XY.padding + XY.titleFontSize }
     : undefined
 
   // Legend
@@ -529,7 +553,12 @@ function layoutBars(
         width: singleBarW,
         height: Math.abs(baseY - valY),
         value: s.data[i]!,
-        label: catLabels[i]!,
+        // catLabels has one entry per dataCount, which is not necessarily
+        // s.data.length for every series. `label` is already optional on
+        // PositionedBar, so let a missing entry flow through as undefined
+        // instead of asserting past a real (if unusual) length mismatch.
+        // See layoutHorizontal's matching comment.
+        label: catLabels[i],
         seriesIndex: bIdx,
         colorIndex: colorMap[seriesArrayIdx]!,
       })
@@ -559,7 +588,9 @@ function layoutLines(
       x: xScale(i),
       y: yScale(v),
       value: v,
-      label: catLabels[i]!,
+      // See layoutBars' matching comment: a line series can outrun
+      // catLabels, and the point's `label` is already optional.
+      label: catLabels[i],
     }))
     lines.push({
       points,
