@@ -100,32 +100,20 @@ function buildClassElkGraph(
     })
   }
 
-  const elkGraph: ElkNode = {
-    id: 'root',
-    layoutOptions: {
-      'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
-      'elk.spacing.nodeNode': String(CLS.nodeSpacing),
-      'elk.layered.spacing.nodeNodeBetweenLayers': String(CLS.layerSpacing),
-      'elk.padding': `[top=${CLS.padding},left=${CLS.padding},bottom=${CLS.padding},right=${CLS.padding}]`,
-      'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.edgeLabels.placement': 'CENTER',
-    },
-    children: [],
-    edges: [],
-  }
-
+  const children: ElkNode[] = []
   for (const cls of diagram.classes) {
-    const size = classSizes.get(cls.id)!
-    elkGraph.children!.push({
-      id: cls.id,
-      width: size.width,
-      height: size.height,
-    })
+    const size = classSizes.get(cls.id)
+    if (!size) {
+      // Unreachable — every cls.id was just inserted into classSizes above —
+      // but keeps the invariant explicit rather than silently pushing an
+      // undefined-sized node into the ELK graph.
+      throw new Error(`Missing computed size for class "${cls.id}"`)
+    }
+    children.push({ id: cls.id, width: size.width, height: size.height })
   }
 
-  for (let i = 0; i < diagram.relationships.length; i++) {
-    const rel = diagram.relationships[i]!
+  const edges: ElkExtendedEdge[] = []
+  for (const [i, rel] of diagram.relationships.entries()) {
     const edge: ElkExtendedEdge = {
       id: `e${i}`,
       sources: [rel.from],
@@ -145,7 +133,22 @@ function buildClassElkGraph(
         },
       ]
     }
-    elkGraph.edges!.push(edge)
+    edges.push(edge)
+  }
+
+  const elkGraph: ElkNode = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': 'DOWN',
+      'elk.spacing.nodeNode': String(CLS.nodeSpacing),
+      'elk.layered.spacing.nodeNodeBetweenLayers': String(CLS.layerSpacing),
+      'elk.padding': `[top=${CLS.padding},left=${CLS.padding},bottom=${CLS.padding},right=${CLS.padding}]`,
+      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.edgeLabels.placement': 'CENTER',
+    },
+    children,
+    edges,
   }
 
   return { elkGraph, classSizes }
@@ -164,7 +167,12 @@ function extractClassLayout(
   for (const child of result.children ?? []) {
     const cls = classLookup.get(child.id)
     if (cls) {
-      const size = classSizes.get(cls.id)!
+      const size = classSizes.get(cls.id)
+      if (!size) {
+        // Unreachable — classSizes is populated for every diagram.classes
+        // entry, and classLookup/cls.id come from that same list.
+        throw new Error(`Missing computed size for class "${cls.id}"`)
+      }
       positionedClasses.push({
         id: cls.id,
         label: cls.label,
@@ -183,8 +191,9 @@ function extractClassLayout(
   }
 
   const relationships: PositionedClassRelationship[] = []
-  for (let i = 0; i < (result.edges?.length ?? 0); i++) {
-    const elkEdge = result.edges![i]!
+  for (const [i, elkEdge] of (result.edges ?? []).entries()) {
+    // diagram.relationships[i] is guaranteed by construction: buildClassElkGraph
+    // creates exactly one ELK edge per relationship, in the same order.
     const rel = diagram.relationships[i]!
 
     const points: Point[] = []
