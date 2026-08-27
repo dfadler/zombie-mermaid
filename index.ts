@@ -650,7 +650,10 @@ async function generateHtml(): Promise<string> {
       .sidebar-backdrop {
         display: none;
         position: fixed;
-        inset: 0;
+        /* Stop below the theme bar, not inset: 0 — otherwise this sits above
+           the toggle (z-index 1010 vs. the theme bar's 1001) and intercepts
+           taps meant for it, even though the drawer itself no longer does. */
+        inset: var(--nav-height) 0 0;
         background: rgba(0, 0, 0, 0.3);
         z-index: 1010;
       }
