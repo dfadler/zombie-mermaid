@@ -34,6 +34,8 @@ import type { RenderOptions } from './types.ts'
 import type { DiagramColors } from './theme.ts'
 import { DEFAULTS } from './theme.ts'
 import { resolveFontSizes } from './styles.ts'
+import { detectDiagramType } from './diagram-type.ts'
+import type { DiagramType } from './diagram-type.ts'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
 import { layoutSequenceDiagram } from './sequence/layout.ts'
@@ -47,24 +49,6 @@ import { renderErSvg } from './er/renderer.ts'
 import { parseXYChart } from './xychart/parser.ts'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
-
-/**
- * Detect the diagram type from the mermaid source text.
- * Returns the type keyword used for routing to the correct pipeline.
- */
-function detectDiagramType(
-  text: string,
-): 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart' {
-  const firstLine = text.trim().split(/[\n;]/)[0]?.trim().toLowerCase() ?? ''
-
-  if (/^xychart(-beta)?\b/.test(firstLine)) return 'xychart'
-  if (/^sequencediagram\s*$/.test(firstLine)) return 'sequence'
-  if (/^classdiagram\s*$/.test(firstLine)) return 'class'
-  if (/^erdiagram\s*$/.test(firstLine)) return 'er'
-
-  // Default: flowchart/state (handled by parseMermaid internally)
-  return 'flowchart'
-}
 
 /**
  * Build a DiagramColors object from render options.
@@ -123,7 +107,7 @@ export function renderMermaidSVG(
   const font = options.font ?? 'Inter'
   const transparent = options.transparent ?? false
   const fontSizes = resolveFontSizes(options.fontSizes)
-  const diagramType = detectDiagramType(text)
+  const diagramType: DiagramType = detectDiagramType(text)
 
   const lines = text
     .split('\n')
