@@ -15,11 +15,61 @@
  * Sample definitions live in samples-data.ts (shared with bench.ts).
  */
 
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import * as esbuild from 'esbuild'
 import { samples } from './samples-data.ts'
 import { THEMES } from './src/theme.ts'
 import { createHighlighter } from 'shiki'
+
+/**
+ * Load the demo stylesheet and re-indent it for inlining inside `<style>`.
+ *
+ * The stylesheet lives in `demo/styles.css` as a normal file so stylelint,
+ * prettier, and editor tooling can see it — it used to be an ~1000-line
+ * template literal, which none of them could. Re-indenting on the way in
+ * keeps the emitted HTML byte-identical to the template-literal version.
+ */
+async function loadStyles(): Promise<string> {
+  const css = await readFile(
+    new URL('./demo/styles.css', import.meta.url),
+    'utf8',
+  )
+  return css
+    .replace(/\n+$/, '')
+    .split('\n')
+    .map((line) => (line === '' ? '' : `    ${line}`))
+    .join('\n')
+}
+
+/**
+ * Bundle `demo/client.ts` for the browser.
+ *
+ * Mirrors how `src/browser.ts` is bundled, except unminified: the emitted
+ * page should stay readable in devtools, which the hand-written version was.
+ */
+async function bundleClientScript(): Promise<string> {
+  const result = await esbuild.build({
+    entryPoints: [new URL('./demo/client.ts', import.meta.url).pathname],
+    bundle: true,
+    platform: 'browser',
+    format: 'esm',
+    minify: false,
+    write: false,
+  })
+  return result.outputFiles[0]!.text
+}
+
+/**
+ * Make a JSON payload safe to embed in a `<script>` element.
+ *
+ * An HTML parser ends a script element at the first `</script`, wherever it
+ * appears — including inside a JSON string. A sample whose Mermaid source
+ * contained that sequence would truncate the page. JSON.stringify does not
+ * escape `<`, so the sequence is broken up here.
+ */
+function escapeJsonForScriptTag(json: string): string {
+  return json.replace(/<\/(script)/gi, '<\\/$1')
+}
 
 // ============================================================================
 // HTML generation — dynamic version
@@ -69,10 +119,117 @@ const THEME_LABELS: Record<string, string> = {
   'one-dark': 'One Dark',
 }
 
+/**
+ * Category-name prefixes stripped from sidebar entries.
+ *
+ * Sample titles carry their category ("Sequence: Basic Flow") so they read
+ * standalone elsewhere; under a category heading that prefix is noise.
+ */
+const CATEGORY_PREFIXES: Record<string, string> = {
+  State: 'State: ',
+  Sequence: 'Sequence: ',
+  Class: 'Class: ',
+  ER: 'ER: ',
+  'XY Chart': 'XY: ',
+  'Theme Showcase': 'Theme: ',
+}
+
+/**
+ * Build the sidebar: one collapsible group per category, each listing its
+ * samples.
+ *
+ * @param displayNum maps a sample's array index to the number shown to the
+ *   reader, which skips the Hero samples.
+ */
+function renderSidebar(
+  categoriesInOrder: Array<[string, number[]]>,
+  displayNum: (index: number) => number,
+): string {
+  return categoriesInOrder
+    .map(([cat, indices], categoryIndex) => {
+      const prefix = CATEGORY_PREFIXES[cat]
+      const slug = slugifyCategory(cat)
+      const items = indices
+        .map((i) => {
+          let title = samples[i]!.title
+          if (prefix && title.startsWith(prefix)) {
+            title = title.slice(prefix.length)
+          }
+          return `<li><a href="#sample-${i}"><span class="sidebar-num">${displayNum(i)}.</span> ${escapeHtml(title)}</a></li>`
+        })
+        .join('\n            ')
+      // The first category is the default active/expanded one (matches the
+      // category-view shown on initial load, before JS reads location.hash).
+      const openAttr = categoryIndex === 0 ? ' open' : ''
+      return `
+        <details class="sidebar-group" data-category-slug="${slug}" data-category-label="${escapeHtml(cat)}"${openAttr}>
+          <summary>${escapeHtml(cat)} <span class="sidebar-group-count">(${indices.length})</span></summary>
+          <ol class="sidebar-list" start="${displayNum(indices[0]!)}">
+            ${items}
+          </ol>
+        </details>`
+    })
+    .join('\n')
+}
+
+/** Themes shown as inline pills; the rest live in the "More" dropdown. */
+const INLINE_THEMES = new Set(['dracula', 'solarized-light'])
+
+/** The Default (no theme) pill's swatch colors. */
+const DEFAULT_SWATCH = { bg: '#FFFFFF', fg: '#27272A' }
+
+/** One theme pill, with a color swatch rendered at build time. */
+function renderThemePill(
+  key: string,
+  colors: { bg: string; fg: string },
+  active = false,
+): string {
+  const isDark = parseInt(colors.bg.replace('#', '').slice(0, 2), 16) < 0x80
+  const shadow = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
+  const label = key === '' ? 'Default' : (THEME_LABELS[key] ?? key)
+  const activeClass = active ? ' active' : ''
+  return `<button class="theme-pill shadow-minimal${activeClass}" data-theme="${key}"><span class="theme-swatch" style="background:${colors.bg};box-shadow:inset 0 0 0 1px ${shadow}"></span>${escapeHtml(label)}</button>`
+}
+
+/**
+ * Build the theme picker: a few pills inline, every theme in a dropdown.
+ *
+ * Both lists include Default, so the dropdown is a complete picker on its own
+ * and the inline pills are a shortcut rather than a separate set.
+ */
+function renderThemePicker(): string {
+  const themeEntries = Object.entries(THEMES)
+
+  const visiblePills = [
+    renderThemePill('', DEFAULT_SWATCH, true),
+    ...themeEntries
+      .filter(([key]) => INLINE_THEMES.has(key))
+      .map(([key, colors]) => renderThemePill(key, colors)),
+  ]
+
+  const allDropdownPills = [
+    renderThemePill('', DEFAULT_SWATCH, true),
+    ...themeEntries.map(([key, colors]) => renderThemePill(key, colors)),
+  ]
+
+  return `
+    <div class="theme-pills-inline">
+      ${visiblePills.join('\n      ')}
+    </div>
+    <div class="theme-more-wrapper">
+      <button class="theme-pill shadow-minimal" id="theme-more-btn">${allDropdownPills.length} Themes</button>
+      <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
+        ${allDropdownPills.join('\n        ')}
+      </div>
+    </div>`
+}
+
 async function generateHtml(): Promise<string> {
   // Step 0: Create Shiki highlighter for mermaid syntax highlighting in source panels.
   // We use 'github-light' as the base theme — its hex colors get overridden by CSS
   // color-mix() rules derived from --t-fg / --t-bg so tokens adapt to any theme.
+  const styles = await loadStyles()
+
   const highlighter = await createHighlighter({
     langs: ['mermaid'],
     themes: ['github-light'],
@@ -96,15 +253,25 @@ async function generateHtml(): Promise<string> {
   }
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
+  // Step 1b: Bundle the page's own client-side script the same way. It used
+  // to be a ~680-line template literal in this file, which meant no type
+  // checking, no linting, and no editor support for the largest piece of
+  // behavior on the page. Left unminified so the emitted page stays
+  // debuggable in devtools, as the hand-written version was.
+  const clientJs = await bundleClientScript()
+  console.log(`Client script: ${(clientJs.length / 1024).toFixed(1)} KB`)
+
   // Step 2: Build sample JSON (only serializable fields needed by client)
-  const samplesJson = JSON.stringify(
-    samples.map((s) => ({
-      title: s.title,
-      description: s.description,
-      source: s.source,
-      category: s.category ?? 'Other',
-      options: s.options ?? {},
-    })),
+  const samplesJson = escapeJsonForScriptTag(
+    JSON.stringify(
+      samples.map((s) => ({
+        title: s.title,
+        description: s.description,
+        source: s.source,
+        category: s.category ?? 'Other',
+        options: s.options ?? {},
+      })),
+    ),
   )
 
   // Step 3: Group samples by category for TOC (done at build time since it's static)
@@ -115,16 +282,6 @@ async function generateHtml(): Promise<string> {
     categories.get(cat)!.push(i)
   })
 
-  // Map category names to the title prefixes they use, so we can strip duplicates in the ToC
-  const categoryPrefixes: Record<string, string> = {
-    State: 'State: ',
-    Sequence: 'Sequence: ',
-    Class: 'Class: ',
-    ER: 'ER: ',
-    'XY Chart': 'XY: ',
-    'Theme Showcase': 'Theme: ',
-  }
-
   // Build mapping from original index to display number (excluding Hero samples)
   const heroCount = samples.filter((s) => s.category === 'Hero').length
   const displayNum = (i: number) => i + 1 - heroCount
@@ -133,73 +290,10 @@ async function generateHtml(): Promise<string> {
     ([cat]) => cat !== 'Hero',
   )
 
-  const tocSections = nonHeroCategories
-    .map(([cat, indices], categoryIndex) => {
-      const prefix = categoryPrefixes[cat]
-      const slug = slugifyCategory(cat)
-      const items = indices
-        .map((i) => {
-          let title = samples[i]!.title
-          // Strip the category prefix from the title since it's already under the category heading
-          if (prefix && title.startsWith(prefix))
-            title = title.slice(prefix.length)
-          return `<li><a href="#sample-${i}"><span class="sidebar-num">${displayNum(i)}.</span> ${escapeHtml(title)}</a></li>`
-        })
-        .join('\n            ')
-      // The first category is the default active/expanded one (matches the
-      // category-view shown on initial load, before JS reads location.hash).
-      const openAttr = categoryIndex === 0 ? ' open' : ''
-      return `
-        <details class="sidebar-group" data-category-slug="${slug}" data-category-label="${escapeHtml(cat)}"${openAttr}>
-          <summary>${escapeHtml(cat)} <span class="sidebar-group-count">(${indices.length})</span></summary>
-          <ol class="sidebar-list" start="${displayNum(indices[0]!)}">
-            ${items}
-          </ol>
-        </details>`
-    })
-    .join('\n')
+  const tocSections = renderSidebar(nonHeroCategories, displayNum)
 
   // Step 3b: Build theme selector pills (build-time so we include swatches)
-  // Only show Default, Dracula, and Solarized inline; rest go in "More" dropdown
-  const VISIBLE_THEMES = new Set(['dracula', 'solarized-light'])
-
-  function buildThemePill(
-    key: string,
-    colors: { bg: string; fg: string },
-    active = false,
-  ): string {
-    const isDark = parseInt(colors.bg.replace('#', '').slice(0, 2), 16) < 0x80
-    const shadow = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
-    const label = key === '' ? 'Default' : (THEME_LABELS[key] ?? key)
-    const activeClass = active ? ' active' : ''
-    return `<button class="theme-pill shadow-minimal${activeClass}" data-theme="${key}"><span class="theme-swatch" style="background:${colors.bg};box-shadow:inset 0 0 0 1px ${shadow}"></span>${escapeHtml(label)}</button>`
-  }
-
-  const themeEntries = Object.entries(THEMES)
-  // Visible inline pills: Default + Dracula + Solarized
-  const visiblePills = [
-    '<button class="theme-pill shadow-minimal active" data-theme=""><span class="theme-swatch" style="background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.1)"></span>Default</button>',
-    ...themeEntries
-      .filter(([key]) => VISIBLE_THEMES.has(key))
-      .map(([key, colors]) => buildThemePill(key, colors)),
-  ]
-  // All themes go in the dropdown (including Default, Dracula, Solarized)
-  const allDropdownPills = [
-    buildThemePill('', { bg: '#FFFFFF', fg: '#27272A' }, true),
-    ...themeEntries.map(([key, colors]) => buildThemePill(key, colors)),
-  ]
-  const totalThemes = allDropdownPills.length
-
-  const themePillsHtml = `
-    <div class="theme-pills-inline">
-      ${visiblePills.join('\n      ')}
-    </div>
-    <div class="theme-more-wrapper">
-      <button class="theme-pill shadow-minimal" id="theme-more-btn">${totalThemes} Themes</button>
-      <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
-        ${allDropdownPills.join('\n        ')}
-      </div>
-    </div>`
+  const themePillsHtml = renderThemePicker()
 
   // Step 4: Pre-highlight all sample sources with Shiki (build-time only, zero runtime cost).
   // The mermaid TextMate grammar requires a fenced code block prefix to tokenize properly
@@ -324,1021 +418,7 @@ async function generateHtml(): Promise<string> {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    /* -- Reset & base -- */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* -----------------------------------------------------------------
-     * CSS custom property theming
-     *
-     * --t-bg and --t-fg drive the entire page color scheme.
-     * All other colors are derived via color-mix(). When a theme is
-     * selected from the pill bar, JS updates these two variables on
-     * <body> — and the whole page adapts instantly.
-     * ----------------------------------------------------------------- */
-    body {
-      --t-bg: #FFFFFF;
-      --t-fg: #27272A;
-      --t-accent: #3b82f6;
-      --foreground-rgb: 39, 39, 42;
-      --accent-rgb: 59, 130, 246;
-      --shadow-border-opacity: 0.08;
-      --shadow-blur-opacity: 0.06;
-      --theme-bar-bg: #f9f9fa;  /* Mixed bg for theme bar and top gradient — updated by JS on theme change */
-
-      font-family: 'Geist', system-ui, -apple-system, sans-serif;
-      background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
-      color: var(--t-fg);
-      line-height: 1.6;
-      margin: 0;
-      transition: background 0.2s, color 0.2s;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    .content-wrapper {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 2rem;
-      padding-top: 0;
-    }
-    @media (max-width: 768px) {
-      .content-wrapper {
-        padding: 1rem;
-        padding-top: 0;
-      }
-    }
-    @media (min-width: 1000px) {
-      .content-wrapper {
-        padding: 3rem;
-        padding-top: 0;
-      }
-    }
-
-    /* -----------------------------------------------------------------
-     * Page shell: persistent left sidebar (desktop) + main column.
-     * On narrow screens the sidebar becomes an off-canvas drawer,
-     * toggled by .sidebar-toggle in the theme bar.
-     * ----------------------------------------------------------------- */
-    :root {
-      --nav-height: 62px;
-    }
-    .page-shell {
-      display: flex;
-      align-items: flex-start;
-    }
-    .page-main {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    /* -- Scroll fade gradients (GPU accelerated) -- */
-    body::before,
-    body::after {
-      content: '';
-      position: fixed;
-      left: 0;
-      right: 0;
-      height: 64px;
-      pointer-events: none;
-      z-index: 1000;
-      will-change: transform;
-    }
-    body::before {
-      top: 0;
-      background: linear-gradient(to bottom, var(--theme-bar-bg) 0%, transparent 100%);
-    }
-    body::after {
-      bottom: 0;
-      background: linear-gradient(to top, var(--theme-bar-bg) 0%, transparent 100%);
-    }
-
-    /* -- Theme selector bar (full-width, sits outside .content-wrapper) -- */
-    .theme-bar {
-      position: sticky;
-      top: 0;
-      z-index: 1001;
-      background: transparent;
-      padding: 0.5rem 2rem;
-      min-height: var(--nav-height);
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      overflow: visible;
-    }
-    @media (max-width: 768px) {
-      .theme-bar {
-        padding: 0.5rem 1rem;
-      }
-    }
-    .theme-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-      white-space: nowrap;
-    }
-    .theme-pills {
-      display: flex;
-      gap: 0.3rem;
-      overflow: visible;
-      padding: 4px;
-      margin: -4px;
-      margin-left: auto;
-      position: relative;
-      z-index: 2;
-    }
-    .theme-pills-inline {
-      display: flex;
-      gap: 0.3rem;
-    }
-    /* Hide inline theme pills on smaller screens, show only "15 Themes" dropdown */
-    @media (max-width: 1024px) {
-      .theme-pills-inline {
-        display: none;
-      }
-    }
-    .theme-pill {
-      display: flex;
-      align-items: center;
-      height: 30px;
-      gap: 8px;
-      padding: 0 14px 0 12px;
-      border: none;
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
-      color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
-      font-size: 12px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: color 0.15s, background 0.15s, box-shadow 0.2s, transform 0.1s;
-    }
-    .theme-pill:hover {
-      color: var(--t-fg);
-      background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
-    }
-    .theme-pill.active {
-      color: var(--t-fg);
-      background: var(--t-bg);
-      font-weight: 600;
-    }
-    .theme-pill:active {
-      transform: translateY(0.5px);
-    }
-    .theme-swatch {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    /* -- "More" dropdown for overflow themes -- */
-    .theme-more-wrapper {
-      position: relative;
-    }
-    .theme-more-dropdown {
-      display: none;
-      position: absolute;
-      top: calc(100% + 6px);
-      right: 0;
-      background: var(--t-bg);
-      border-radius: 12px;
-      padding: 6px;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 160px;
-      z-index: 1002;
-    }
-    .theme-more-dropdown.open {
-      display: flex;
-    }
-    .theme-more-dropdown .theme-pill {
-      width: 100%;
-      justify-content: flex-start;
-      background: transparent;
-      box-shadow: none;
-    }
-    .theme-more-dropdown .theme-pill:hover {
-      background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
-    }
-    /* Active pill in dropdown gets bg + shadow-minimal (same as inline pills) */
-    .theme-more-dropdown .theme-pill.active,
-    .theme-more-dropdown .theme-pill.shadow-tinted {
-      background: var(--t-bg);
-      box-shadow:
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
-        rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 1px 1px -0.5px,
-        rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 3px 3px -1.5px;
-    }
-
-    /* -- Brand badge (left-aligned in theme bar) -- */
-    .brand-badge {
-      display: flex;
-      align-items: center;
-      height: 30px;
-      gap: 6px;
-      padding: 0 12px;
-      border: none;
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
-      color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
-      font-size: 12px;
-      font-weight: 400;
-      font-family: inherit;
-      white-space: nowrap;
-      text-decoration: none;
-      cursor: pointer;
-      transition: color 0.15s, background 0.15s, box-shadow 0.2s, transform 0.1s;
-    }
-    .brand-badge:hover {
-      color: var(--t-fg);
-      background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
-    }
-    .brand-badge:active {
-      transform: translateY(0.5px);
-    }
-
-    /* -- Sidebar toggle (hamburger, mobile/tablet only — sidebar is always visible ≥1024px) -- */
-    .sidebar-toggle {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      height: 30px;
-      width: 30px;
-      border: none;
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
-      color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
-      cursor: pointer;
-      transition: color 0.15s, background 0.15s, transform 0.1s;
-    }
-    .sidebar-toggle:hover {
-      color: var(--t-fg);
-      background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
-    }
-    .sidebar-toggle:active {
-      transform: translateY(0.5px);
-    }
-    .sidebar-toggle svg {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-    }
-    @media (max-width: 1023px) {
-      .sidebar-toggle {
-        display: flex;
-      }
-    }
-    /* -- Shadow + radius utilities -- */
-    .rounded-6px { border-radius: 6px; }
-    .shadow-minimal {
-      box-shadow:
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
-        rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 1px 1px -0.5px,
-        rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 3px 3px -1.5px;
-    }
-    .shadow-modal-small {
-      box-shadow:
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
-        rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.67)) 0px 1px 1px -0.5px,
-        rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.67)) 0px 3px 3px 0px,
-        rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.33)) 0px 6px 6px 0px,
-        rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.33)) 0px 12px 12px 0px,
-        rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.33)) 0px 24px 24px 0px;
-    }
-    .shadow-tinted {
-      --shadow-color: 0, 0, 0;
-      box-shadow:
-        rgba(var(--shadow-color), 0) 0px 0px 0px 0px,
-        rgba(var(--shadow-color), 0) 0px 0px 0px 0px,
-        rgba(var(--shadow-color), calc(var(--shadow-border-opacity) * 1.5)) 0px 0px 0px 1px,
-        rgba(var(--shadow-color), var(--shadow-border-opacity)) 0px 1px 1px -0.5px,
-        rgba(var(--shadow-color), var(--shadow-blur-opacity)) 0px 3px 3px -1.5px,
-        rgba(var(--shadow-color), calc(var(--shadow-blur-opacity) * 0.67)) 0px 6px 6px -3px;
-    }
-
-    /* -----------------------------------------------------------------
-     * Sidebar navigation — persistent on desktop, off-canvas drawer
-     * below 1024px (toggled by .sidebar-toggle in the theme bar).
-     * ----------------------------------------------------------------- */
-    .sidebar {
-      flex: 0 0 240px;
-      width: 240px;
-      position: sticky;
-      top: var(--nav-height);
-      align-self: flex-start;
-      height: calc(100vh - var(--nav-height));
-      overflow-y: auto;
-      padding: 1.5rem 1rem 2rem 2rem;
-      box-sizing: border-box;
-    }
-    @media (min-width: 1000px) {
-      .sidebar {
-        padding-left: 3rem;
-      }
-    }
-    @media (max-width: 1023px) {
-      .sidebar-backdrop {
-        display: none;
-        position: fixed;
-        /* Stop below the theme bar, not inset: 0 — otherwise this sits above
-           the toggle (z-index 1010 vs. the theme bar's 1001) and intercepts
-           taps meant for it, even though the drawer itself no longer does. */
-        inset: var(--nav-height) 0 0;
-        background: rgba(0, 0, 0, 0.3);
-        z-index: 1010;
-      }
-      .sidebar-backdrop.open {
-        display: block;
-      }
-      .sidebar {
-        display: none;
-        position: fixed;
-        /* Below the theme bar (not top: 0) so the drawer never covers the
-           toggle that opened it — tapping it again still closes the drawer,
-           same control either way. */
-        top: var(--nav-height);
-        left: 0;
-        bottom: 0;
-        height: calc(100vh - var(--nav-height));
-        width: min(300px, 85vw);
-        background: var(--t-bg);
-        z-index: 1011;
-        padding: 1.5rem 1.5rem 2rem;
-        box-shadow: rgba(0, 0, 0, 0.15) 4px 0 24px 0;
-      }
-      .sidebar.open {
-        display: block;
-      }
-    }
-    .sidebar-group {
-      border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
-      padding: 0.6rem 0;
-    }
-    .sidebar-group:first-of-type {
-      padding-top: 0;
-    }
-    .sidebar-group > summary {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--t-fg);
-      cursor: pointer;
-      list-style: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .sidebar-group > summary::-webkit-details-marker {
-      display: none;
-    }
-    .sidebar-group > summary::before {
-      content: '';
-      width: 0;
-      height: 0;
-      border-style: solid;
-      border-width: 4px 0 4px 5px;
-      border-color: transparent transparent transparent color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-      transition: transform 0.15s;
-      flex-shrink: 0;
-    }
-    .sidebar-group[open] > summary::before {
-      transform: rotate(90deg);
-    }
-    .sidebar-group-count {
-      font-weight: 400;
-      color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
-    }
-    .sidebar-list {
-      padding: 0;
-      margin: 0.5rem 0 0;
-      list-style: none;
-      font-size: 0.8rem;
-    }
-    .sidebar-list li {
-      margin-bottom: 0.3rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .sidebar-list a {
-      color: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));
-      text-decoration: none;
-    }
-    .sidebar-list a:hover {
-      color: var(--t-fg);
-      text-decoration: underline;
-    }
-    .sidebar-num {
-      color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg));
-    }
-
-    /* -- Sample card -- */
-    .sample {
-      background: var(--t-bg);
-      margin-bottom: 2rem;
-      overflow: hidden;
-      scroll-margin-top: calc(var(--nav-height) + 1rem);
-    }
-
-    /* -- Hero sample (full-width SVG showcase, above Samples heading) -- */
-    .sample-hero {
-      margin-bottom: 0;
-      background: transparent;
-    }
-    .hero-diagram-panel {
-      padding: 1rem 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: transparent;
-    }
-    .hero-diagram-panel .svg-container {
-      width: 100%;
-      max-width: 100%;
-    }
-    .hero-diagram-panel .svg-container svg {
-      width: 100%;
-      height: auto;
-    }
-
-    .sample-header {
-      padding: 1.25rem 1.5rem;
-      max-width: 48rem;
-      border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
-    }
-    .sample-header h2 {
-      font-size: 1.5rem;
-      font-weight: 500;
-      color: var(--t-fg);
-    }
-    .description {
-      color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-      font-size: 1rem;
-      font-weight: 400;
-      margin-top: 0.1rem;
-    }
-    .description code {
-      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-      font-size: 0.875em;
-      color: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));
-      background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
-      padding: 0.15rem 0.4rem;
-      border-radius: 3px;
-    }
-
-    .sample-content {
-      display: grid;
-      grid-template-columns:
-        minmax(200px, 1fr)
-        minmax(250px, 2fr)
-        minmax(250px, 2fr);
-      min-height: 420px;
-    }
-    @media (max-width: 900px) {
-      .sample-content { grid-template-columns: 1fr; }
-      .ascii-panel { border-left: none !important; border-top: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg)) !important; }
-    }
-
-    /* -- Source panel -- */
-    .source-panel {
-      position: relative;
-      padding: 0.75rem 1.5rem;
-      border-right: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
-      min-width: 0;      /* grid child: allow shrinking below content width */
-      overflow-y: auto;
-    }
-    .source-panel h3 {
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-      margin-bottom: 0.75rem;
-    }
-    .source-panel pre {
-      padding: 1rem;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .source-panel code {
-      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    }
-
-    /* -- Shiki syntax highlighting overrides --
-     * Shiki outputs inline style="color:#hex" per token. We override these with
-     * color-mix() rules derived from --t-fg / --t-bg so tokens adapt to any theme.
-     * The hex values below are from the github-light Shiki theme used at build time. */
-    .source-panel {
-      background: color-mix(in srgb, var(--t-fg) 1.5%, var(--t-bg));
-    }
-    .source-panel .shiki {
-      background: transparent !important;
-      padding: 0.5rem 0;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin: 0;
-    }
-    .source-panel .shiki code {
-      background: transparent;
-      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    }
-    /* Default text */
-    .source-panel .shiki,
-    .source-panel .shiki span[style*="#24292e"],
-    .source-panel .shiki span[style*="#24292E"] {
-      color: color-mix(in srgb, var(--t-fg) 70%, var(--t-bg)) !important;
-    }
-    /* Keywords: graph, subgraph, end, participant, -->, classDef, brackets */
-    .source-panel .shiki span[style*="#D73A49"],
-    .source-panel .shiki span[style*="#d73a49"] {
-      color: color-mix(in srgb, var(--t-fg) 90%, var(--t-bg)) !important;
-      font-weight: 500;
-    }
-    /* Direction labels, subgraph names */
-    .source-panel .shiki span[style*="#6F42C1"],
-    .source-panel .shiki span[style*="#6f42c1"] {
-      color: color-mix(in srgb, var(--t-fg) 65%, var(--t-bg)) !important;
-    }
-    /* Node IDs */
-    .source-panel .shiki span[style*="#E36209"],
-    .source-panel .shiki span[style*="#e36209"] {
-      color: color-mix(in srgb, var(--t-fg) 75%, var(--t-bg)) !important;
-    }
-    /* Strings, labels, message text */
-    .source-panel .shiki span[style*="#032F62"],
-    .source-panel .shiki span[style*="#032f62"] {
-      color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg)) !important;
-    }
-    .options {
-      margin-top: 0.75rem;
-      font-size: 0.8rem;
-      color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-    }
-    .options code {
-      background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
-      padding: 0.15rem 0.4rem;
-      border-radius: 3px;
-      font-size: 0.75rem;
-    }
-
-    /* -- Edit button (subtle text link, bottom-left of source panel) -- */
-    .edit-btn {
-      position: absolute;
-      bottom: 0.75rem;
-      left: 1.5rem;
-      background: none;
-      border: none;
-      padding: 0;
-      font-size: 0.75rem;
-      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-      color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-      cursor: pointer;
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .edit-btn:hover {
-      color: var(--t-fg);
-      text-decoration: underline;
-    }
-
-    /* -- Edit dialog overlay -- */
-    .edit-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 2000;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(4px);
-      align-items: center;
-      justify-content: center;
-    }
-    .edit-overlay.open { display: flex; }
-    .edit-dialog {
-      background: var(--t-bg);
-      border-radius: 16px;
-      width: min(680px, calc(100vw - 3rem));
-      max-height: calc(100vh - 4rem);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .edit-dialog-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
-    }
-    .edit-dialog-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--t-fg);
-    }
-    .edit-dialog-close {
-      background: none;
-      border: none;
-      font-size: 1.25rem;
-      color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
-      cursor: pointer;
-      padding: 0 0.25rem;
-      line-height: 1;
-    }
-    .edit-dialog-close:hover { color: var(--t-fg); }
-    .edit-dialog-textarea {
-      flex: 1;
-      min-height: 300px;
-      max-height: 60vh;
-      margin: 0;
-      padding: 1rem 1.25rem;
-      border: none;
-      outline: none;
-      resize: none;
-      background: color-mix(in srgb, var(--t-fg) 2%, var(--t-bg));
-      color: var(--t-fg);
-      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      white-space: pre;
-      tab-size: 2;
-    }
-    .edit-dialog-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      border-top: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
-    }
-    .edit-dialog-btn {
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      border: none;
-      font-size: 0.8rem;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .edit-dialog-btn:hover { opacity: 0.85; }
-    .edit-dialog-cancel {
-      background: color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
-      color: var(--t-fg);
-    }
-    .edit-dialog-save {
-      background: var(--t-fg);
-      color: var(--t-bg);
-    }
-
-    /* -- SVG panel -- */
-    .svg-panel {
-      padding: 1.25rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;      /* grid child: allow shrinking below content width */
-      /* Background set dynamically: matches the SVG --bg in default mode,
-         or the global theme bg when a theme is active. */
-    }
-    .svg-panel h3 {
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-      margin-bottom: 0.75rem;
-    }
-    .svg-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 0;     /* flex child: allow shrinking to fit */
-    }
-    .svg-container svg {
-      max-width: 100%;
-      max-height: 100%;  /* scale down to fit both axes */
-      height: auto;
-    }
-
-    /* -- ASCII panel -- */
-    .ascii-panel {
-      padding: 1.25rem 1.5rem;
-      border-left: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-width: 0;      /* grid child: allow shrinking below content width */
-    }
-    .ascii-panel h3 {
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-      margin-bottom: 0.75rem;
-    }
-    .ascii-output {
-      padding: 1rem;
-      font-size: 0.7rem;
-      line-height: 1.3;
-      overflow-x: auto;   /* horizontal scroll only */
-      overflow-y: hidden;  /* scale to height, no vertical scroll */
-      white-space: pre;
-      flex: 1;
-      max-width: 100%;
-      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    }
-
-    /* -- Loading spinner -- */
-    .loading-spinner {
-      width: 24px;
-      height: 24px;
-      border: 2px solid color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
-      border-top-color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* -- Timing badge -- */
-    .timing {
-      font-size: 0.7rem;
-      font-weight: 400;
-      color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg));
-      margin-left: 0.5rem;
-      text-transform: none;
-      letter-spacing: normal;
-    }
-
-    /* -- Error state -- */
-    .render-error {
-      color: #ef4444;
-      font-size: 0.85rem;
-      font-family: 'JetBrains Mono', monospace;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    /* -- Hero header section -- */
-    .hero-header {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 6rem 2rem 2rem;
-      text-align: left;
-    }
-    @media (min-width: 1000px) {
-      .hero-header {
-        padding: 6rem 3rem 2rem;
-      }
-    }
-    .hero-title {
-      font-size: 2.25rem;
-      font-weight: 800;
-      line-height: 1.2;
-      margin: 0 0 0.25rem;
-      color: var(--t-fg);
-    }
-    .hero-tagline {
-      font-size: 1rem;
-      font-weight: 500;
-      color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-      margin: 0 0 1rem;
-    }
-    .hero-description {
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: color-mix(in srgb, var(--t-fg) 70%, var(--t-bg));
-      margin: 0 0 1.5rem;
-      max-width: 680px;
-    }
-    .hero-description a {
-      color: var(--t-fg);
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    .hero-description a:hover {
-      color: var(--t-accent);
-    }
-    .hero-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    @media (max-width: 768px) {
-      .hero-buttons {
-        flex-direction: column;
-      }
-    }
-    .hero-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      line-height: 1.25;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: opacity 0.15s, transform 0.1s;
-      cursor: pointer;
-      border: none;
-      margin: 0;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-    .hero-btn:hover {
-      opacity: 0.9;
-    }
-    .hero-btn:active {
-      transform: translateY(0.5px);
-    }
-    .hero-btn-primary {
-      background: var(--t-fg);
-      color: var(--t-bg);
-      box-shadow:
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
-        rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
-    }
-    .hero-btn-secondary {
-      background: var(--t-bg);
-      color: var(--t-fg);
-      box-shadow:
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(0, 0, 0, 0) 0px 0px 0px 0px,
-        rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
-        rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
-        rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
-    }
-    .hero-btn svg {
-      width: 16px;
-      height: 16px;
-    }
-    .hero-description code {
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 0.85em;
-      background: color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
-      padding: 0.15em 0.4em;
-      border-radius: 4px;
-    }
-
-    /* -- Hero meta (below buttons) -- */
-    .hero-meta {
-      margin-top: 1.25rem;
-    }
-    .hero-meta .meta {
-      font-size: 0.85rem;
-      color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
-      margin: 0.15rem 0;
-    }
-
-    .hero-meta .meta a {
-      color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-    .hero-meta .meta a:hover {
-      color: var(--t-fg);
-    }
-
-    /* -- Section title -- */
-    .section-title {
-      font-size: 1.875rem;
-      font-weight: 800;
-      line-height: 1.2;
-      margin: 0;
-      padding: 2.5rem 0 1.5rem;
-      color: var(--t-fg);
-    }
-
-    /* -----------------------------------------------------------------
-     * Category banner — tells the visitor the sample list below is
-     * filtered to one diagram type, and gives an explicit way to reach
-     * the sidebar's other categories (important on mobile, where the
-     * sidebar itself is hidden behind the hamburger toggle).
-     * ----------------------------------------------------------------- */
-    .samples-heading {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.5rem 1.5rem;
-      padding-top: 2.5rem;
-    }
-    .samples-heading .section-title {
-      padding: 0;
-    }
-    .category-banner {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.5rem 0.75rem;
-      font-size: 0.85rem;
-      color: color-mix(in srgb, var(--t-fg) 65%, var(--t-bg));
-    }
-    .category-banner strong {
-      color: var(--t-fg);
-    }
-    .category-banner-btn {
-      display: flex;
-      align-items: center;
-      height: 28px;
-      padding: 0 12px;
-      border: none;
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
-      color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
-      font-size: 0.78rem;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: color 0.15s, background 0.15s;
-    }
-    .category-banner-btn:hover {
-      color: var(--t-fg);
-      background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
-    }
-    .category-view {
-      display: block;
-    }
-    .category-view[hidden] {
-      display: none;
-    }
-
-    /* Highlight the sidebar category currently shown in the main column —
-       distinct from a plain expanded/collapsed <details> state. */
-    .sidebar-group[open] > summary {
-      color: var(--t-accent);
-    }
-    .sidebar-group[open] > summary::before {
-      border-left-color: var(--t-accent);
-    }
-    /* Brief attention pulse when "Browse diagram types" points at the
-       (already-visible, desktop) sidebar. */
-    @keyframes sidebar-attention-pulse {
-      0%, 100% { box-shadow: none; }
-      50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-accent) 40%, transparent); }
-    }
-    .sidebar.attention {
-      animation: sidebar-attention-pulse 0.6s ease-in-out 2;
-      border-radius: 12px;
-    }
-
-    /* -- Footer -- */
-    .site-footer {
-      position: relative;
-      z-index: 10;
-      padding: 1.5rem 2rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      max-width: 1440px;
-      width: 100%;
-      margin: 0 auto;
-      font-size: 12px;
-      color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-    }
-    @media (min-width: 1000px) {
-      .site-footer {
-        padding: 1.5rem 3rem 2rem;
-      }
-    }
-    .footer-links {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    .footer-links a {
-      color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .footer-links a:hover {
-      color: var(--t-fg);
-    }
-    .footer-links svg {
-      width: 1.25rem;
-      height: 1.25rem;
-      display: block;
-    }
+${styles}
   </style>
 </head>
 <body>
@@ -1406,685 +486,15 @@ ${heroCardsHtml}
 
 ${categoryViewsHtml}
 
+  <!-- Sample definitions, read by the client script. Passed through the DOM
+       rather than interpolated into demo/client.ts so that file stays plain,
+       type-checkable code with no build-time substitution. -->
+  <script type="application/json" id="demo-samples">${samplesJson}</script>
+
   <!-- Bundled mermaid renderer — exposes window.__mermaid -->
   <script type="module">
 ${bundleJs}
-
-  // ============================================================================
-  // Client-side rendering + theme switching
-  // ============================================================================
-
-  var samples = ${samplesJson};
-  var THEMES = window.__mermaid.THEMES;
-  var renderMermaid = window.__mermaid.renderMermaidSVGAsync;
-  var renderMermaidASCII = window.__mermaid.renderMermaidASCII;
-  var diagramColorsToAsciiTheme = window.__mermaid.diagramColorsToAsciiTheme;
-  var getSeriesColor = window.__mermaid.getSeriesColor;
-  var CHART_ACCENT_FALLBACK = window.__mermaid.CHART_ACCENT_FALLBACK;
-
-  var totalTimingEl = document.getElementById('total-timing');
-
-  // -- Theme state --
-  // Stores each SVG element's original inline style attribute (from initial render)
-  // so we can restore per-sample colors when switching back to "Default".
-  var originalSvgStyles = [];
-
-  function hexToRgb(hex) {
-    if (!hex || typeof hex !== 'string') return null;
-    var value = hex.trim();
-    if (value[0] === '#') value = value.slice(1);
-    if (value.length === 3) {
-      value = value[0] + value[0] + value[1] + value[1] + value[2] + value[2];
-    }
-    if (value.length !== 6) return null;
-    var intValue = parseInt(value, 16);
-    if (Number.isNaN(intValue)) return null;
-    return {
-      r: (intValue >> 16) & 255,
-      g: (intValue >> 8) & 255,
-      b: intValue & 255,
-    };
-  }
-
-  function setShadowVars(theme) {
-    var body = document.body;
-    var fg = theme ? theme.fg : '#27272A';
-    var bg = theme ? theme.bg : '#FFFFFF';
-    var accent = theme ? (theme.accent || '#3b82f6') : '#3b82f6';
-    var fgRgb = hexToRgb(fg) || { r: 39, g: 39, b: 42 };
-    var bgRgb = hexToRgb(bg) || { r: 255, g: 255, b: 255 };
-    var accentRgb = hexToRgb(accent) || { r: 59, g: 130, b: 246 };
-    var brightness = (bgRgb.r * 299 + bgRgb.g * 587 + bgRgb.b * 114) / 1000;
-    var darkMode = brightness < 140;
-
-    body.style.setProperty('--foreground-rgb', fgRgb.r + ', ' + fgRgb.g + ', ' + fgRgb.b);
-    body.style.setProperty('--accent-rgb', accentRgb.r + ', ' + accentRgb.g + ', ' + accentRgb.b);
-    body.style.setProperty('--shadow-border-opacity', darkMode ? '0.15' : '0.08');
-    body.style.setProperty('--shadow-blur-opacity', darkMode ? '0.12' : '0.06');
-  }
-
-  // Update <meta name="theme-color"> so Safari 26+ title bar matches the page.
-  // Computes color-mix(in srgb, fg 4%, bg) in JS since browsers may not
-  // reliably re-evaluate CSS color-mix() for the meta tag.
-  function updateThemeColor(fg, bg) {
-    var fgRgb = hexToRgb(fg) || { r: 39, g: 39, b: 42 };
-    var bgRgb = hexToRgb(bg) || { r: 255, g: 255, b: 255 };
-    // Mix: 4% foreground, 96% background (matches body CSS)
-    var r = Math.round(bgRgb.r * 0.96 + fgRgb.r * 0.04);
-    var g = Math.round(bgRgb.g * 0.96 + fgRgb.g * 0.04);
-    var b = Math.round(bgRgb.b * 0.96 + fgRgb.b * 0.04);
-    var hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-    document.getElementById('theme-color-meta').setAttribute('content', hex);
-    // Update --theme-bar-bg on body so gradients update instantly
-    document.body.style.setProperty('--theme-bar-bg', hex);
-    // Force Safari 26+ to re-read title bar color by updating the invisible fixed div
-    // and triggering a reflow (display toggle + offsetHeight read)
-    var safariDiv = document.getElementById('safari-theme-color');
-    safariDiv.style.background = hex;
-    safariDiv.style.display = 'none';
-    void safariDiv.offsetHeight;
-    safariDiv.style.display = '';
-  }
-
-  // ----------------------------------------------------------------
-  // Apply a named theme (or '' for Default) to the entire page.
-  //
-  // This is instant — no re-rendering needed. SVGs use CSS custom
-  // properties internally, so updating --bg/--fg on the <svg> tag
-  // re-paints all nodes, edges, text, and backgrounds via color-mix().
-  // ----------------------------------------------------------------
-  function applyTheme(themeKey) {
-    var theme = themeKey ? THEMES[themeKey] : null;
-    var body = document.body;
-
-    // 1. Update body CSS variables — the entire page derives from these
-    if (theme) {
-      body.style.setProperty('--t-bg', theme.bg);
-      body.style.setProperty('--t-fg', theme.fg);
-      body.style.setProperty('--t-accent', theme.accent || '#3b82f6');
-    } else {
-      body.style.setProperty('--t-bg', '#FFFFFF');
-      body.style.setProperty('--t-fg', '#27272A');
-      body.style.setProperty('--t-accent', '#3b82f6');
-    }
-    setShadowVars(theme);
-    updateThemeColor(theme ? theme.fg : '#27272A', theme ? theme.bg : '#FFFFFF');
-
-    // 2. Update all rendered SVG elements' CSS variables. Indexed by sample
-    // (not NodeList position) since not-yet-rendered categories mean this
-    // list is sparse — a lazily-rendered sample picks up the live theme
-    // itself (see renderSample), so skipping it here is correct, not stale.
-    for (var j = 0; j < samples.length; j++) {
-      var svgContainerEl = document.getElementById('svg-' + j);
-      var svgEl = svgContainerEl && svgContainerEl.querySelector('svg');
-      if (!svgEl) continue;
-      if (theme) {
-        // Override with the global theme colors
-        svgEl.style.setProperty('--bg', theme.bg);
-        svgEl.style.setProperty('--fg', theme.fg);
-        // Set enrichment variables if provided, else remove so SVG
-        // internal color-mix() fallbacks activate
-        var enrichment = ['line', 'accent', 'muted', 'surface', 'border'];
-        for (var k = 0; k < enrichment.length; k++) {
-          var prop = enrichment[k];
-          if (theme[prop]) svgEl.style.setProperty('--' + prop, theme[prop]);
-          else svgEl.style.removeProperty('--' + prop);
-        }
-        // Recompute xychart series color vars from the new accent
-        var maxColor = parseInt(svgEl.getAttribute('data-xychart-colors') || '-1', 10);
-        if (maxColor >= 0) {
-          var accent = theme.accent || CHART_ACCENT_FALLBACK;
-          svgEl.style.setProperty('--xychart-color-0', accent);
-          for (var ci = 1; ci <= maxColor; ci++) {
-            svgEl.style.setProperty('--xychart-color-' + ci, getSeriesColor(ci, accent, theme.bg));
-          }
-        }
-      } else {
-        // Restore original inline style from initial render
-        if (originalSvgStyles[j] !== undefined) {
-          svgEl.setAttribute('style', originalSvgStyles[j]);
-        }
-      }
-    }
-
-    // 3. Update SVG panel backgrounds to match (skip hero panels - keep transparent)
-    for (var j = 0; j < samples.length; j++) {
-      var panel = document.getElementById('svg-panel-' + j);
-      if (!panel) continue;
-      // Skip hero panels - they stay transparent
-      if (panel.classList.contains('hero-diagram-panel')) continue;
-      if (theme) {
-        panel.style.background = theme.bg;
-      } else {
-        // Default mode: use the per-sample bg (or clear for page default)
-        var sampleBg = panel.getAttribute('data-sample-bg');
-        panel.style.background = sampleBg || '';
-      }
-    }
-
-    // 4. Re-render ASCII panels with new theme colors — only for samples
-    // already rendered. An unrendered (category not yet opened) sample picks
-    // up the live theme itself when renderSample eventually runs for it, so
-    // skipping it here isn't stale, and avoids rendering ASCII for the whole
-    // sample set on every theme switch regardless of what's actually visible.
-    var asciiTheme = theme ? diagramColorsToAsciiTheme(theme) : null;
-    for (var j = 0; j < samples.length; j++) {
-      if (originalSvgStyles[j] === undefined) continue;
-      var asciiEl = document.getElementById('ascii-' + j);
-      if (!asciiEl) continue;
-      try {
-        asciiEl.innerHTML = renderMermaidASCII(
-          samples[j].source,
-          asciiTheme ? { theme: asciiTheme } : {}
-        );
-      } catch (e) { /* keep existing content */ }
-    }
-
-    // 5. Update active pill
-    var pills = document.querySelectorAll('.theme-pill');
-    for (var j = 0; j < pills.length; j++) {
-      var isActive = pills[j].getAttribute('data-theme') === themeKey;
-      pills[j].classList.toggle('active', isActive);
-      pills[j].classList.toggle('shadow-tinted', isActive);
-    }
-
-    // 6. Persist selection
-    if (themeKey) {
-      localStorage.setItem('mermaid-theme', themeKey);
-    } else {
-      localStorage.removeItem('mermaid-theme');
-    }
-  }
-
-  // -- Set up theme pill click handlers --
-  document.getElementById('theme-pills').addEventListener('click', function(e) {
-    var pill = e.target.closest('.theme-pill');
-    if (!pill || pill.id === 'theme-more-btn') return;
-    applyTheme(pill.getAttribute('data-theme') || '');
-    // Close "More" dropdown if a theme was picked from it
-    var dd = document.getElementById('theme-more-dropdown');
-    if (dd && dd.classList.contains('open')) dd.classList.remove('open');
-  });
-
-  // -- "More" themes dropdown (direct listener, same pattern as Contents) --
-  var moreBtn = document.getElementById('theme-more-btn');
-  var moreDropdown = document.getElementById('theme-more-dropdown');
-
-  if (moreBtn && moreDropdown) {
-    moreBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      moreDropdown.classList.toggle('open');
-    });
-
-    // Close on outside click
-    document.addEventListener('click', function(e) {
-      if (!moreDropdown.classList.contains('open')) return;
-      if (!e.target.closest('.theme-more-wrapper')) {
-        moreDropdown.classList.remove('open');
-      }
-    });
-
-    // Close on Escape
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && moreDropdown.classList.contains('open')) {
-        moreDropdown.classList.remove('open');
-      }
-    });
-  }
-
-  // -- Random theme button --
-  // Resolve the Editor link against the current path so it works under both
-  // / (direct Pages URL) and /mermaid (Worker proxy, with or without trailing slash).
-  // Note: this script is embedded inside a TypeScript template literal, so regex
-  // backslashes get consumed during string interpolation. We use endsWith/slice
-  // here instead of a regex literal to avoid escaping pitfalls.
-  var editorLink = document.getElementById('editor-link');
-  if (editorLink) {
-    var basePath = location.pathname;
-    if (basePath.indexOf('/index.html', basePath.length - 11) !== -1) {
-      basePath = basePath.slice(0, basePath.length - 11);
-    }
-    if (basePath.charAt(basePath.length - 1) === '/') {
-      basePath = basePath.slice(0, basePath.length - 1);
-    }
-    editorLink.href = basePath + '/editor';
-  }
-
-  var randomThemeBtn = document.getElementById('random-theme-btn');
-  var themeKeys = Object.keys(THEMES);
-  var currentThemeKey = localStorage.getItem('mermaid-theme') || '';
-
-  if (randomThemeBtn) {
-    randomThemeBtn.addEventListener('click', function() {
-      // Filter out the current theme so we never pick the same one
-      var availableKeys = themeKeys.filter(function(k) { return k !== currentThemeKey; });
-      // Also include default ('') if not currently selected
-      if (currentThemeKey !== '') availableKeys.push('');
-      // Pick a random theme
-      var randomIndex = Math.floor(Math.random() * availableKeys.length);
-      var newThemeKey = availableKeys[randomIndex];
-      currentThemeKey = newThemeKey;
-      applyTheme(newThemeKey);
-    });
-  }
-
-  // -- Sidebar navigation (persistent on desktop; off-canvas drawer below 1024px) --
-  var sidebar = document.getElementById('sidebar');
-  var sidebarToggle = document.getElementById('sidebar-toggle');
-  var sidebarBackdrop = document.getElementById('sidebar-backdrop');
-
-  // Body scroll lock while the drawer is open — otherwise the page behind
-  // the backdrop keeps scrolling with touch, which is disorienting.
-  function openSidebarDrawer() {
-    sidebar.classList.add('open');
-    sidebarBackdrop.classList.add('open');
-    sidebarToggle.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeSidebarDrawer() {
-    sidebar.classList.remove('open');
-    sidebarBackdrop.classList.remove('open');
-    sidebarToggle.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-  }
-
-  /*
-   * The drawer only exists below 1024px. Resizing or rotating up to desktop
-   * width hides its controls in CSS but leaves the JS state untouched, so an
-   * open drawer would strand document.body.style.overflow = 'hidden' with no
-   * visible control left to release it. Reset everything together when the
-   * query stops matching.
-   */
-  var drawerQuery = window.matchMedia('(max-width: 1023px)');
-
-  drawerQuery.addEventListener('change', function(e) {
-    if (!e.matches) closeSidebarDrawer();
-  });
-
-  sidebarToggle.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (sidebar.classList.contains('open')) closeSidebarDrawer();
-    else openSidebarDrawer();
-  });
-
-  sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
-
-  // A <summary> click switches the active category (see "Category switching"
-  // below); a sample <a> click smooth-scrolls to it. Either way, close the
-  // drawer so mobile visitors see the content they just picked.
-  sidebar.addEventListener('click', function(e) {
-    var summary = e.target.closest('summary');
-    if (summary) {
-      e.preventDefault();
-      closeSidebarDrawer();
-      showCategory(summary.closest('.sidebar-group').getAttribute('data-category-slug'), {
-        updateHash: true,
-        scrollToTop: true,
-      });
-      return;
-    }
-    var link = e.target.closest('a');
-    if (!link) return;
-    var href = link.getAttribute('href');
-    if (!href) return;
-    // Let a modified click (open in new tab, etc.) through untouched.
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    e.preventDefault();
-    closeSidebarDrawer();
-    history.pushState(null, '', href);
-    var target = document.querySelector(href);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  // Keyboard-only preview: tabbing to a sidebar CTA scrolls its section into
-  // view, same as clicking it would — without waiting for activation (Enter).
-  // Unlike the click handler, this never calls showCategory: switching the
-  // active category on mere focus (no click/Enter) would be an unexpected
-  // context change, so a not-yet-active category's <summary> just no-ops
-  // here (its section is hidden, so scrollIntoView has nothing to do).
-  sidebar.addEventListener('focusin', function(e) {
-    var link = e.target.closest('a');
-    if (link) {
-      var linkTarget = document.querySelector(link.getAttribute('href'));
-      if (linkTarget) linkTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      return;
-    }
-    var summary = e.target.closest('summary');
-    if (summary) {
-      var slug = summary.closest('.sidebar-group').getAttribute('data-category-slug');
-      var summaryTarget = document.getElementById('category-' + slug);
-      if (summaryTarget) summaryTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebarDrawer();
-  });
-
-  // "Browse diagram types" — the category banner's explicit nudge toward the
-  // sidebar, since only one category renders by default (see below).
-  document.getElementById('browse-categories-btn').addEventListener('click', function() {
-    if (drawerQuery.matches) {
-      openSidebarDrawer();
-    } else {
-      sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      sidebar.classList.add('attention');
-      setTimeout(function() { sidebar.classList.remove('attention'); }, 1300);
-    }
-  });
-
-  // -- Restore saved theme immediately (before rendering begins) --
-  var savedTheme = localStorage.getItem('mermaid-theme');
-  if (savedTheme && THEMES[savedTheme]) {
-    // Apply page-level CSS variables right away to avoid flash
-    document.body.style.setProperty('--t-bg', THEMES[savedTheme].bg);
-    document.body.style.setProperty('--t-fg', THEMES[savedTheme].fg);
-    document.body.style.setProperty('--t-accent', THEMES[savedTheme].accent || '#3b82f6');
-    setShadowVars(THEMES[savedTheme]);
-    updateThemeColor(THEMES[savedTheme].fg, THEMES[savedTheme].bg);
-    // Mark the correct pill as active
-    var pills = document.querySelectorAll('.theme-pill');
-    for (var j = 0; j < pills.length; j++) {
-      var isActive = pills[j].getAttribute('data-theme') === savedTheme;
-      pills[j].classList.toggle('active', isActive);
-      pills[j].classList.toggle('shadow-tinted', isActive);
-    }
-  } else {
-    setShadowVars(null);
-  }
-
-  function escapeHtml(text) {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  // ============================================================================
-  // Per-sample rendering — extracted into its own function (rather than one
-  // eager loop over every sample) so it can run lazily: only the active
-  // category renders on load, and the rest render on demand when a visitor
-  // opens that category from the sidebar.
-  // ============================================================================
-
-  // Always read live, not captured once ahead of an await — a category can
-  // render long after page load, and a theme switch can land mid-render
-  // (applyTheme's own pass runs once and skips elements that don't exist in
-  // the DOM yet, so a stale snapshot here would leave this sample stuck with
-  // the wrong colors with nothing left to correct it).
-  function currentTheme() {
-    var themeKey = localStorage.getItem('mermaid-theme');
-    return themeKey && THEMES[themeKey] ? THEMES[themeKey] : null;
-  }
-
-  async function renderSample(i) {
-    var sample = samples[i];
-    var svgContainer = document.getElementById('svg-' + i);
-    var asciiContainer = document.getElementById('ascii-' + i);
-    var svgPanel = document.getElementById('svg-panel-' + i);
-
-    try {
-      var svg = await renderMermaid(sample.source, sample.options);
-      var theme = currentTheme();
-      svgContainer.innerHTML = svg;
-
-      // Store the SVG's original inline style for Default mode restoration
-      var svgEl = svgContainer.querySelector('svg');
-      if (svgEl) {
-        originalSvgStyles[i] = svgEl.getAttribute('style') || '';
-
-        // If a global theme is active, immediately override the SVG's variables
-        if (theme) {
-          svgEl.style.setProperty('--bg', theme.bg);
-          svgEl.style.setProperty('--fg', theme.fg);
-          var enrichment = ['line', 'accent', 'muted', 'surface', 'border'];
-          for (var k = 0; k < enrichment.length; k++) {
-            if (theme[enrichment[k]]) svgEl.style.setProperty('--' + enrichment[k], theme[enrichment[k]]);
-            else svgEl.style.removeProperty('--' + enrichment[k]);
-          }
-          // Recompute xychart series color vars from the saved theme's accent
-          var maxColor = parseInt(svgEl.getAttribute('data-xychart-colors') || '-1', 10);
-          if (maxColor >= 0) {
-            var accent = theme.accent || CHART_ACCENT_FALLBACK;
-            svgEl.style.setProperty('--xychart-color-0', accent);
-            for (var ci = 1; ci <= maxColor; ci++) {
-              svgEl.style.setProperty('--xychart-color-' + ci, getSeriesColor(ci, accent, theme.bg));
-            }
-          }
-        }
-      } else {
-        originalSvgStyles[i] = '';
-      }
-
-      // Set panel background to match the SVG (skip for hero panels - keep transparent)
-      var isHeroPanel = svgPanel.classList.contains('hero-diagram-panel');
-      if (!isHeroPanel) {
-        if (theme) {
-          svgPanel.style.background = theme.bg;
-        } else {
-          var sampleBg = svgPanel.getAttribute('data-sample-bg');
-          if (sampleBg) svgPanel.style.background = sampleBg;
-        }
-      }
-    } catch (err) {
-      svgContainer.innerHTML = '<div class="render-error">SVG Error: ' + escapeHtml(String(err)) + '</div>';
-      originalSvgStyles[i] = '';
-    }
-
-    // Hero samples don't have ASCII panels
-    if (asciiContainer) {
-      try {
-        var asciiTheme = currentTheme();
-        var asciiOpts = asciiTheme ? { theme: diagramColorsToAsciiTheme(asciiTheme) } : {};
-        asciiContainer.innerHTML = renderMermaidASCII(sample.source, asciiOpts);
-      } catch (e) {
-        asciiContainer.textContent = '(ASCII not supported for this diagram type)';
-      }
-    }
-  }
-
-  // ============================================================================
-  // Category switching — renders a category's samples the first time it's
-  // shown, then just toggles visibility on repeat visits (no re-render).
-  // ============================================================================
-
-  var renderedCategories = {};
-  var renderedCount = 0;
-  var renderedMs = 0;
-  var totalRenderable = samples.filter(function(s) { return s.category !== 'Hero'; }).length;
-
-  function updateRenderStats() {
-    totalTimingEl.textContent = (renderedCount * 2) + ' of ' + (totalRenderable * 2) +
-      ' samples (SVG+ASCII) rendered in ' + renderedMs.toFixed(0) + ' ms so far';
-  }
-
-  async function renderCategory(slug) {
-    if (renderedCategories[slug]) return;
-    renderedCategories[slug] = true;
-    var view = document.getElementById('category-' + slug);
-    if (!view) return;
-    var sections = view.querySelectorAll('.sample');
-    var indices = [];
-    for (var n = 0; n < sections.length; n++) {
-      indices.push(parseInt(sections[n].id.slice('sample-'.length), 10));
-    }
-    // Accumulate each sample's own duration (not one span for the whole
-    // category) — a category render isn't awaited by its caller, so two
-    // could overlap in wall-clock time and double-count a shared span.
-    for (var m = 0; m < indices.length; m++) {
-      var sampleStart = performance.now();
-      await renderSample(indices[m]);
-      renderedMs += performance.now() - sampleStart;
-      renderedCount++;
-      updateRenderStats();
-    }
-  }
-
-  function showCategory(slug, opts) {
-    opts = opts || {};
-
-    var views = document.querySelectorAll('.category-view');
-    for (var v = 0; v < views.length; v++) {
-      views[v].hidden = views[v].getAttribute('data-category') !== slug;
-    }
-
-    var label = '';
-    var groups = document.querySelectorAll('.sidebar-group');
-    for (var g = 0; g < groups.length; g++) {
-      var isActive = groups[g].getAttribute('data-category-slug') === slug;
-      groups[g].open = isActive;
-      if (isActive) label = groups[g].getAttribute('data-category-label') || '';
-    }
-
-    var activeView = document.getElementById('category-' + slug);
-    var nameEl = document.getElementById('active-category-name');
-    var countEl = document.getElementById('active-category-count');
-    if (nameEl) nameEl.textContent = label;
-    if (countEl) countEl.textContent = String(activeView ? activeView.querySelectorAll('.sample').length : 0);
-
-    if (opts.updateHash) history.replaceState(null, '', '#category-' + slug);
-    if (opts.scrollToTop) {
-      var banner = document.getElementById('category-banner');
-      if (banner) banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    return renderCategory(slug);
-  }
-
-  // -- Initial render: hero samples (always visible) + whichever category
-  // the URL hash points at, defaulting to the first one. --
-  (async function initSamples() {
-    for (var hi = 0; hi < samples.length; hi++) {
-      if (samples[hi].category === 'Hero') await renderSample(hi);
-    }
-
-    var hash = location.hash.slice(1);
-    var initialSlug = null;
-    if (hash.indexOf('category-') === 0) {
-      initialSlug = hash.slice('category-'.length);
-    } else if (hash.indexOf('sample-') === 0) {
-      var hashTarget = document.getElementById(hash);
-      var hashView = hashTarget && hashTarget.closest('.category-view');
-      if (hashView) initialSlug = hashView.getAttribute('data-category');
-    }
-    if (!initialSlug || !document.getElementById('category-' + initialSlug)) {
-      var firstView = document.querySelector('.category-view');
-      initialSlug = firstView ? firstView.getAttribute('data-category') : null;
-    }
-    if (!initialSlug) return;
-
-    await showCategory(initialSlug, { updateHash: false });
-
-    if (hash.indexOf('sample-') === 0) {
-      var jumpTarget = document.getElementById(hash);
-      if (jumpTarget) jumpTarget.scrollIntoView({ block: 'start' });
-    }
-  })();
-
-  // ============================================================================
-  // Edit dialog — open, close, save & re-render
-  // ============================================================================
-
-  var editOverlay = document.getElementById('edit-overlay');
-  var editTextarea = document.getElementById('edit-dialog-textarea');
-  var editSaveBtn = document.getElementById('edit-dialog-save');
-  var editCancelBtn = document.getElementById('edit-dialog-cancel');
-  var editCloseBtn = document.getElementById('edit-dialog-close');
-  var editingSampleIndex = -1;
-
-  function openEditDialog(index) {
-    editingSampleIndex = index;
-    editTextarea.value = samples[index].source;
-    editOverlay.classList.add('open');
-    editTextarea.focus();
-  }
-
-  function closeEditDialog() {
-    editOverlay.classList.remove('open');
-    editingSampleIndex = -1;
-  }
-
-  async function saveAndRender() {
-    var index = editingSampleIndex;
-    if (index < 0) return;
-    var source = editTextarea.value;
-    samples[index].source = source;
-
-    // Close dialog immediately so user sees results rendering
-    closeEditDialog();
-
-    // Update source panel with plain text (Shiki not available at runtime)
-    var sourcePanel = document.getElementById('source-panel-' + index);
-    if (sourcePanel) {
-      var shikiEl = sourcePanel.querySelector('.shiki');
-      if (shikiEl) {
-        shikiEl.innerHTML = '<code>' + escapeHtml(source) + '</code>';
-      }
-    }
-
-    // Re-render SVG (async — renderMermaid returns a Promise)
-    var svgContainer = document.getElementById('svg-' + index);
-    try {
-      var svg = await renderMermaid(source, samples[index].options);
-      svgContainer.innerHTML = svg;
-      var svgEl = svgContainer.querySelector('svg');
-      if (svgEl) {
-        originalSvgStyles[index] = svgEl.getAttribute('style') || '';
-        var activeTheme = localStorage.getItem('mermaid-theme');
-        if (activeTheme && THEMES[activeTheme]) {
-          var th = THEMES[activeTheme];
-          svgEl.style.setProperty('--bg', th.bg);
-          svgEl.style.setProperty('--fg', th.fg);
-          var enrichment = ['line', 'accent', 'muted', 'surface', 'border'];
-          for (var k = 0; k < enrichment.length; k++) {
-            if (th[enrichment[k]]) svgEl.style.setProperty('--' + enrichment[k], th[enrichment[k]]);
-            else svgEl.style.removeProperty('--' + enrichment[k]);
-          }
-          // Recompute xychart series color vars
-          var maxColor = parseInt(svgEl.getAttribute('data-xychart-colors') || '-1', 10);
-          if (maxColor >= 0) {
-            var accent = th.accent || CHART_ACCENT_FALLBACK;
-            svgEl.style.setProperty('--xychart-color-0', accent);
-            for (var ci = 1; ci <= maxColor; ci++) {
-              svgEl.style.setProperty('--xychart-color-' + ci, getSeriesColor(ci, accent, th.bg));
-            }
-          }
-        }
-      }
-    } catch (err) {
-      svgContainer.innerHTML = '<div class="render-error">' + escapeHtml(String(err)) + '</div>';
-    }
-
-    // Re-render ASCII
-    var asciiContainer = document.getElementById('ascii-' + index);
-    if (asciiContainer) {
-      try {
-        var activeThemeKey = localStorage.getItem('mermaid-theme');
-        var editAsciiOpts = activeThemeKey && THEMES[activeThemeKey]
-          ? { theme: diagramColorsToAsciiTheme(THEMES[activeThemeKey]) }
-          : {};
-        asciiContainer.innerHTML = renderMermaidASCII(source, editAsciiOpts);
-      } catch (e) {
-        asciiContainer.textContent = '(ASCII error: ' + e.message + ')';
-      }
-    }
-  }
-
-  // Event listeners
-  document.addEventListener('click', function(e) {
-    var btn = e.target.closest('.edit-btn');
-    if (btn) openEditDialog(parseInt(btn.dataset.sample, 10));
-  });
-  editSaveBtn.addEventListener('click', saveAndRender);
-  editCancelBtn.addEventListener('click', closeEditDialog);
-  editCloseBtn.addEventListener('click', closeEditDialog);
-  editOverlay.addEventListener('click', function(e) {
-    if (e.target === editOverlay) closeEditDialog();
-  });
-  document.addEventListener('keydown', function(e) {
-    if (!editOverlay.classList.contains('open')) return;
-    if (e.key === 'Escape') closeEditDialog();
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') saveAndRender();
-  });
-
+${clientJs}
   </script>
 
   <!-- Edit dialog (shared single instance) -->
