@@ -143,6 +143,43 @@ export function classifyBoxChar(ch: string): CharRole {
 }
 
 /**
+ * Outer dimensions, in grid cells, of the box `drawMultiBox` would draw for
+ * `sections`.
+ *
+ * Class and ER diagrams both need these dimensions *before* drawing, to
+ * reserve grid space for the box during layout. Deriving them here — rather
+ * than each caller re-implementing the same arithmetic — keeps the reserved
+ * space and the drawn box in lockstep. When the two disagree (as they did
+ * while the callers measured `line.length` and this module measured display
+ * width), wide-character boxes overlap their neighbours.
+ */
+export function measureMultiBox(
+  sections: string[][],
+  padding: number = 1,
+): { width: number; height: number } {
+  // Width: widest line across all sections + 2*padding + 2 border chars.
+  // displayWidth (not line.length) because CJK/fullwidth glyphs occupy two
+  // terminal columns each, so a code-unit count under-measures them.
+  let maxTextWidth = 0
+  for (const section of sections) {
+    for (const line of section) {
+      maxTextWidth = Math.max(maxTextWidth, displayWidth(line))
+    }
+  }
+
+  // Height: sum of all section line counts + dividers + 2 border rows
+  let totalLines = 0
+  for (const section of sections) {
+    totalLines += Math.max(section.length, 1) // at least 1 row per section
+  }
+
+  return {
+    width: maxTextWidth + 2 * padding + 2,
+    height: totalLines + (sections.length - 1) + 2,
+  }
+}
+
+/**
  * Draw a multi-section box with horizontal dividers between sections.
  * Used by class diagrams (header | attributes | methods) and ER diagrams (header | attributes).
  * Each section is an array of text lines to render left-aligned with padding.
@@ -157,23 +194,10 @@ export function drawMultiBox(
   useAscii: boolean,
   padding: number = 1,
 ): Canvas {
-  // Compute width: widest line across all sections + 2*padding + 2 border chars
-  let maxTextWidth = 0
-  for (const section of sections) {
-    for (const line of section) {
-      maxTextWidth = Math.max(maxTextWidth, line.length)
-    }
-  }
-  const innerWidth = maxTextWidth + 2 * padding
-  const boxWidth = innerWidth + 2 // +2 for left/right border
-
-  // Compute height: sum of all section line counts + dividers + 2 border rows
-  let totalLines = 0
-  for (const section of sections) {
-    totalLines += Math.max(section.length, 1) // at least 1 row per section
-  }
-  const numDividers = sections.length - 1
-  const boxHeight = totalLines + numDividers + 2 // +2 for top/bottom border
+  const { width: boxWidth, height: boxHeight } = measureMultiBox(
+    sections,
+    padding,
+  )
 
   // Box-drawing characters
   const hLine = useAscii ? '-' : '─'
@@ -209,11 +233,14 @@ export function drawMultiBox(
     const section = sections[s]!
     const lines = section.length > 0 ? section : ['']
 
-    // Draw section text lines
+    // Draw section text lines. toDisplayCells (not line[i]) so a wide glyph
+    // claims the two grid cells it renders across, and a surrogate pair is
+    // never split across two cells.
     for (const line of lines) {
       const startX = 1 + padding
-      for (let i = 0; i < line.length; i++) {
-        write(canvas, startX + i, row, line[i]!)
+      const cells = toDisplayCells(line)
+      for (let i = 0; i < cells.length; i++) {
+        write(canvas, startX + i, row, cells[i]!)
       }
       row++
     }
