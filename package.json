@@ -45,9 +45,9 @@
     "visualization",
     "theming"
   ],
-  "author": "Craft Docs",
+  "author": "Dustin Fadler",
   "contributors": [
-    "Dustin Fadler (fork maintainer)"
+    "Craft Docs (original author)"
   ],
   "bin": {
     "zombie-mermaid": "dist/cli.js"
