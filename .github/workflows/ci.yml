@@ -172,8 +172,14 @@ jobs:
     # this does/doesn't protect against. (The additional event_name check
     # here is unrelated to that guard — it just skips this check on push
     # events, since a changeset is only relevant for a PR that hasn't
-    # merged yet.)
-    if: github.repository == 'dfadler/zombie-mermaid' && github.event_name == 'pull_request'
+    # merged yet.) The final clause exempts the changesets/action Version
+    # PR: it always modifies package.json/CHANGELOG.md while consuming (and
+    # thus never adding) a changeset, so this check would otherwise fail on
+    # every release. It's scoped to same-repo PRs (not just the branch name)
+    # so a fork can't spoof the branch name to skip its own changeset check.
+    if: >-
+      github.repository == 'dfadler/zombie-mermaid' && github.event_name == 'pull_request' &&
+      !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
