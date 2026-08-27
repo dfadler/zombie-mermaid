@@ -67,25 +67,31 @@ async function loadRendererBefore(commit: string): Promise<RendererModule> {
 }
 
 /**
- * Check that `commit^` is present before trying to archive it.
+ * Check that the archived object — `commit`'s first parent — is present.
  *
  * This page can only be built from a repository with full history. A shallow
- * clone — which is what `actions/checkout` produces by default — has none of
- * these commits, and `git archive` then fails with a bare
- * "not a valid object name" that gives no hint why. Both workflows that build
- * the site therefore set `fetch-depth: 0`; this turns the failure into an
- * instruction for anyone who hits it elsewhere.
+ * clone (what `actions/checkout` produces by default) has none of these
+ * commits, and `git archive` then fails with a bare "not a valid object name"
+ * that gives no hint why. Both workflows that build the site therefore set
+ * `fetch-depth: 0`; this turns the failure into an instruction for anyone who
+ * hits it elsewhere.
+ *
+ * Verifies `commit^1`, NOT `commit`. `^{commit}` is a peel operator returning
+ * the object itself, so checking `commit^{commit}` proves nothing about the
+ * parent — and the parent is what gets archived. A shallow clone whose
+ * boundary is exactly a fix commit would pass that check and still fail in
+ * `git archive`, defeating the point of the guard.
  */
 async function requireCommit(commit: string): Promise<void> {
   try {
-    await exec('git', ['rev-parse', '--verify', `${commit}^{commit}`])
+    await exec('git', ['rev-parse', '--verify', `${commit}^1^{commit}`])
   } catch {
     const shallow = await exec('git', ['rev-parse', '--is-shallow-repository'])
       .then((r) => r.stdout.trim() === 'true')
       .catch(() => false)
 
     throw new Error(
-      `Commit ${commit} is not in this repository.\n` +
+      `Commit ${commit} or its parent is not in this repository.\n` +
         (shallow
           ? 'This is a shallow clone. fork-fixes.ts renders each "before" from a ' +
             'historical commit, so it needs full history — run ' +
