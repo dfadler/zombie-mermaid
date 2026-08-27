@@ -8,6 +8,12 @@ import type {
 } from './types.ts'
 import { normalizeBrTags } from './multiline-utils.ts'
 
+import {
+  matchExpandedBlock,
+  parseExpandedMeta,
+  resolveShapeName,
+} from './expanded-shapes.ts'
+import type { ExpandedNodeMeta } from './expanded-shapes.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()
@@ -649,6 +655,59 @@ const NODE_PATTERNS: NodePattern[] = [
  */
 const BARE_NODE_REGEX = /^([\w]+(?:-[\w]+)*)/
 
+/**
+ * Node id immediately followed by the expanded-syntax opener: `A@{`.
+ *
+ * Only the id is captured — the block itself needs depth- and quote-aware
+ * scanning (a label may contain `}`), which a regex would do badly, so
+ * `matchExpandedBlock` takes over from here.
+ */
+const EXPANDED_NODE_ID_REGEX = /^([\w-]+)(?=@\{)/
+
+/**
+ * Resolve the geometry for an `A@{ ... }` node.
+ *
+ * An `icon:` or `img:` node has no `shape:` of its own — its outline comes
+ * from `form:` instead (Mermaid defaults to a square). An unrecognized shape
+ * name falls back to a rectangle rather than throwing: Mermaid adds shape
+ * names regularly, and rendering a plain box beats failing the whole diagram
+ * over one unknown name.
+ */
+function expandedNodeShape(meta: ExpandedNodeMeta): NodeShape {
+  if (meta.shape) {
+    return resolveShapeName(meta.shape) ?? 'rectangle'
+  }
+
+  if (meta.icon !== undefined || meta.img !== undefined) {
+    switch (meta.form?.toLowerCase()) {
+      case 'circle':
+        return 'circle'
+      case 'rounded':
+        return 'rounded'
+      default:
+        return 'rectangle'
+    }
+  }
+
+  return 'rectangle'
+}
+
+/**
+ * Resolve the display label for an `A@{ ... }` node.
+ *
+ * Falls back to the node id when no `label:` is given, matching how the
+ * bracket syntax treats a bare `A`. For an icon or image node with no label,
+ * the icon/image reference itself is shown: this renderer draws neither
+ * FontAwesome glyphs nor remote images, so showing the reference is more
+ * useful than an empty box, and it keeps the node identifiable.
+ */
+function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
+  if (meta.label !== undefined && meta.label.length > 0) return meta.label
+  if (meta.icon) return meta.icon
+  if (meta.img) return meta.img
+  return id
+}
+
 /** Regex for ::: class shorthand suffix — matches :::className immediately after a node */
 const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/
 
@@ -810,20 +869,46 @@ function consumeNode(
     remaining = preClassMatch[1]! + remaining.slice(preClassMatch[0].length)
   }
 
+  /*
+   * Expanded syntax: `A@{ shape: doc, label: "Report" }` (Mermaid v11.3.0+).
+   *
+   * Tried before the bracket patterns because the id is followed by `@{`,
+   * which none of them match — without this the id would fall through to
+   * BARE_NODE_REGEX and the whole metadata block would be stranded as
+   * unparsed text.
+   */
+  const expandedIdMatch = remaining.match(EXPANDED_NODE_ID_REGEX)
+  if (expandedIdMatch) {
+    const expandedId = expandedIdMatch[1]!
+    const block = matchExpandedBlock(remaining.slice(expandedId.length))
+    if (block) {
+      const meta = parseExpandedMeta(block.body)
+      registerNode(graph, subgraphStack, {
+        id: expandedId,
+        label: normalizeBrTags(expandedNodeLabel(expandedId, meta)),
+        shape: expandedNodeShape(meta),
+      })
+      id = expandedId
+      remaining = remaining.slice(expandedId.length + block.length)
+    }
+  }
+
   // Try each node pattern (shape-qualified)
-  for (const { regex, shape } of NODE_PATTERNS) {
-    const match = remaining.match(regex)
-    if (match) {
-      id = match[1]!
-      const label = normalizeBrTags(match[2]!)
-      // The slash-bracket family resolves its shape from the closing
-      // delimiter it captured in group 3; every other pattern has a fixed
-      // shape. See the SLASH_BRACKET note in NODE_PATTERNS.
-      const resolvedShape =
-        typeof shape === 'function' ? shape(match[3] ?? '') : shape
-      registerNode(graph, subgraphStack, { id, label, shape: resolvedShape })
-      remaining = remaining.slice(match[0].length)
-      break
+  if (id === null) {
+    for (const { regex, shape } of NODE_PATTERNS) {
+      const match = remaining.match(regex)
+      if (match) {
+        id = match[1]!
+        const label = normalizeBrTags(match[2]!)
+        // The slash-bracket family resolves its shape from the closing
+        // delimiter it captured in group 3; every other pattern has a fixed
+        // shape. See the SLASH_BRACKET note in NODE_PATTERNS.
+        const resolvedShape =
+          typeof shape === 'function' ? shape(match[3] ?? '') : shape
+        registerNode(graph, subgraphStack, { id, label, shape: resolvedShape })
+        remaining = remaining.slice(match[0].length)
+        break
+      }
     }
   }
 
