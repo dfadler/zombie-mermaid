@@ -129,7 +129,9 @@ async function generateHtml(): Promise<string> {
   const heroCount = samples.filter((s) => s.category === 'Hero').length
   const displayNum = (i: number) => i + 1 - heroCount
 
-  const nonHeroCategories = [...categories.entries()].filter(([cat]) => cat !== 'Hero')
+  const nonHeroCategories = [...categories.entries()].filter(
+    ([cat]) => cat !== 'Hero',
+  )
 
   const tocSections = nonHeroCategories
     .map(([cat, indices], categoryIndex) => {
