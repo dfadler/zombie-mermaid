@@ -1710,9 +1710,14 @@ ${bundleJs}
     }
     var link = e.target.closest('a');
     if (!link) return;
+    var href = link.getAttribute('href');
+    if (!href) return;
+    // Let a modified click (open in new tab, etc.) through untouched.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     closeSidebarDrawer();
-    var target = document.querySelector(link.getAttribute('href'));
+    history.pushState(null, '', href);
+    var target = document.querySelector(href);
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
