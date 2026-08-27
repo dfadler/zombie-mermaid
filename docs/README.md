@@ -1,7 +1,10 @@
 # Docs
 
-Reference material that doesn't fit in the main [README](../README.md). Flat, single-topic files — no nested subcategories.
+Reference material that doesn't fit in the main [README](../README.md).
+Single-topic files, plus two grouped directories: task-oriented walkthroughs in
+[guides/](guides/), and settled-decision records in [decisions/](decisions/).
 
+- [guides/](guides/) — task-oriented walkthroughs: browsing the samples, choosing a theme
 - [theming.md](theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
 - [diagrams.md](diagrams.md) — syntax for each supported diagram type, XY chart styling, and ASCII rendering
 - [react-integration.md](react-integration.md) — using `renderMermaidSVG` with `useMemo()` for zero-flash rendering
