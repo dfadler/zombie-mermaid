@@ -227,15 +227,34 @@ describe('classDef default auto-apply (#198 row 8)', () => {
     '  class B special',
   ].join('\n')
 
+  /**
+   * The shape element for one node.
+   *
+   * Whole-document `toContain` checks are useless for this cascade: with two
+   * styled nodes on the page, an assertion that the SVG contains the default
+   * stroke passes on node A's copy of it, proving nothing about whether node
+   * B kept it while overriding fill. Every assertion below is per-node.
+   */
+  const nodeShape = (svg: string, id: string): string => {
+    const group = svg.match(
+      new RegExp(`<g[^>]*data-id="${id}"[\\s\\S]*?</g>`),
+    )?.[0]
+    expect(group, `no rendered node with data-id="${id}"`).toBeDefined()
+    const shape = group!.match(/<(rect|polygon|path|circle)[^>]*>/)?.[0]
+    expect(shape, `no shape element inside node ${id}`).toBeDefined()
+    return shape!
+  }
+
   it('applies classDef default to a node with no class assignment', () => {
     // Previously `default` was inert unless a node named it explicitly, so a
     // diagram styled entirely through it rendered unstyled with no error.
-    expect(renderMermaidSVG(source)).toContain('#f9f')
+    const a = nodeShape(renderMermaidSVG(source), 'A')
+    expect(a).toContain('fill="#f9f"')
+    expect(a).toContain('stroke="#333"')
   })
 
   it("lets a node's own class override the default", () => {
-    const svg = renderMermaidSVG(source)
-    expect(svg).toContain('#bbf')
+    expect(nodeShape(renderMermaidSVG(source), 'B')).toContain('fill="#bbf"')
   })
 
   it('merges rather than replaces — default properties survive', () => {
@@ -244,9 +263,14 @@ describe('classDef default auto-apply (#198 row 8)', () => {
       fill: '#f9f',
       stroke: '#333',
     })
-    // `special` sets only fill, so the default's stroke must still apply to B.
-    const svg = renderMermaidSVG(source)
-    expect(svg).toContain('#333')
+
+    // The point of the cascade: `special` sets only fill, so B must take that
+    // fill AND keep the default's stroke. Asserted on B's own element, since
+    // A carries both default values and would satisfy a document-wide check.
+    const b = nodeShape(renderMermaidSVG(source), 'B')
+    expect(b).toContain('fill="#bbf"')
+    expect(b).toContain('stroke="#333"')
+    expect(b).not.toContain('fill="#f9f"')
   })
 
   it('is a no-op when no classDef default is declared', () => {
