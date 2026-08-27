@@ -7,6 +7,7 @@ import type {
   EdgeStyle,
 } from './types.ts'
 import { normalizeBrTags } from './multiline-utils.ts'
+import { splitStatements } from './statements.ts'
 
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
@@ -71,10 +72,7 @@ export function toDirection(raw: string | undefined): Direction {
  * Throws on invalid/unsupported input.
  */
 export function parseMermaid(text: string): MermaidGraph {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')

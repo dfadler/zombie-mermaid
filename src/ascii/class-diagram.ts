@@ -27,6 +27,7 @@ import {
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'
+import { splitStatements } from '../statements.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 
 // ============================================================================
@@ -163,10 +164,7 @@ export function renderClassAscii(
   colorMode?: ColorMode,
   theme?: AsciiTheme,
 ): string {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
   const diagram = parseClassDiagram(lines)
 
   if (diagram.classes.length === 0) return ''

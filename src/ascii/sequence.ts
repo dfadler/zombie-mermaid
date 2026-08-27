@@ -20,6 +20,7 @@ import {
   write,
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
+import { splitStatements } from '../statements.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
 // Shared between the drawing pass and the block-wall extent calculation so
@@ -37,10 +38,7 @@ export function renderSequenceAscii(
   colorMode?: ColorMode,
   theme?: AsciiTheme,
 ): string {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
   const diagram = parseSequenceDiagram(lines)
 
   if (diagram.actors.length === 0) return ''
