@@ -227,15 +227,46 @@ describe('classDef default auto-apply (#198 row 8)', () => {
     '  class B special',
   ].join('\n')
 
+  /**
+   * The shape element for one node.
+   *
+   * Whole-document `toContain` checks are useless for this cascade: with two
+   * styled nodes on the page, an assertion that the SVG contains the default
+   * stroke passes on node A's copy of it, proving nothing about whether node
+   * B kept it while overriding fill. Every assertion below is per-node.
+   *
+   * Located by string search rather than a constructed regex. The id is a
+   * literal here, so there is no real ReDoS exposure, but a `new RegExp` built
+   * from a variable trips Semgrep's non-literal-regexp rule — and the pattern
+   * bought nothing over indexOf.
+   */
+  const nodeShape = (svg: string, id: string): string => {
+    const marker = `data-id="${id}"`
+    const at = svg.indexOf(marker)
+    expect(at, `no rendered node with ${marker}`).toBeGreaterThan(-1)
+
+    // Back up to the opening <g, then take everything to its closing tag.
+    const open = svg.lastIndexOf('<g', at)
+    const close = svg.indexOf('</g>', at)
+    expect(open, `no opening <g> for ${marker}`).toBeGreaterThan(-1)
+    expect(close, `no closing </g> for ${marker}`).toBeGreaterThan(-1)
+
+    const group = svg.slice(open, close)
+    const shape = group.match(/<(rect|polygon|path|circle)[^>]*>/)?.[0]
+    expect(shape, `no shape element inside node ${id}`).toBeDefined()
+    return shape!
+  }
+
   it('applies classDef default to a node with no class assignment', () => {
     // Previously `default` was inert unless a node named it explicitly, so a
     // diagram styled entirely through it rendered unstyled with no error.
-    expect(renderMermaidSVG(source)).toContain('#f9f')
+    const a = nodeShape(renderMermaidSVG(source), 'A')
+    expect(a).toContain('fill="#f9f"')
+    expect(a).toContain('stroke="#333"')
   })
 
   it("lets a node's own class override the default", () => {
-    const svg = renderMermaidSVG(source)
-    expect(svg).toContain('#bbf')
+    expect(nodeShape(renderMermaidSVG(source), 'B')).toContain('fill="#bbf"')
   })
 
   it('merges rather than replaces — default properties survive', () => {
@@ -244,9 +275,14 @@ describe('classDef default auto-apply (#198 row 8)', () => {
       fill: '#f9f',
       stroke: '#333',
     })
-    // `special` sets only fill, so the default's stroke must still apply to B.
-    const svg = renderMermaidSVG(source)
-    expect(svg).toContain('#333')
+
+    // The point of the cascade: `special` sets only fill, so B must take that
+    // fill AND keep the default's stroke. Asserted on B's own element, since
+    // A carries both default values and would satisfy a document-wide check.
+    const b = nodeShape(renderMermaidSVG(source), 'B')
+    expect(b).toContain('fill="#bbf"')
+    expect(b).toContain('stroke="#333"')
+    expect(b).not.toContain('fill="#f9f"')
   })
 
   it('is a no-op when no classDef default is declared', () => {
@@ -290,6 +326,36 @@ describe('no regression in existing edge forms', () => {
     expect(graph.edges).toHaveLength(1)
     expect(graph.edges[0]!.hasArrowStart).toBe(start)
     expect(graph.edges[0]!.hasArrowEnd).toBe(end)
+  })
+
+  /**
+   * Labelled edges must accept the same run lengths as bare ones.
+   *
+   * Generalising ARROW_REGEX without generalising TEXT_ARROW_REGEX left
+   * `A -- label ----> B` consuming only `---`, stranding `-> B`, which forms
+   * no node group — so the edge AND its target node vanished silently. That
+   * is the exact failure this row of the audit exists to remove, reintroduced
+   * one regex over.
+   */
+  it.each([
+    ['A -- label --> B', 'solid'],
+    ['A -- label ---> B', 'solid'],
+    ['A -- label ----> B', 'solid'],
+    ['A -- label --- B', 'solid'],
+    ['A -- label ---- B', 'solid'],
+    ['A == label ==> B', 'thick'],
+    ['A == label ===> B', 'thick'],
+    ['A == label ====> B', 'thick'],
+    ['A == label === B', 'thick'],
+    ['A -. label .-> B', 'dotted'],
+    ['A -. label ..-> B', 'dotted'],
+    ['A -. label -.- B', 'dotted'],
+  ])('keeps the edge and target for %s', (statement, style) => {
+    const graph = parse(statement)
+    expect([...graph.nodes.keys()].sort()).toEqual(['A', 'B'])
+    expect(graph.edges).toHaveLength(1)
+    expect(graph.edges[0]!.style).toBe(style)
+    expect(graph.edges[0]!.label).toBe('label')
   })
 
   it('still parses a no-space arrow', () => {

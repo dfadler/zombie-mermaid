@@ -7,6 +7,7 @@ import type {
   EdgeStyle,
 } from './types.ts'
 import { normalizeBrTags } from './multiline-utils.ts'
+import { splitStatements } from './statements.ts'
 
 import {
   matchExpandedBlock,
@@ -79,16 +80,15 @@ export function toDirection(raw: string | undefined): Direction {
  * Throws on invalid/unsupported input.
  */
 export function parseMermaid(text: string): MermaidGraph {
-  const rawLines = text.split('\n').map((l) => l.trim())
-
   /*
-   * Init directives must be read before comments are stripped: `%%{init:
-   * ...}%%` begins with `%%`, so the comment filter below would otherwise
-   * discard it along with real comments.
+   * Init directives must be read from the raw lines: `%%{init: ...}%%` begins
+   * with `%%`, so splitStatements — which treats `%%` as a comment and
+   * truncates the line there — would otherwise discard it along with real
+   * comments before it could be seen.
    */
-  const initConfig = extractInitConfig(rawLines)
+  const initConfig = extractInitConfig(text.split('\n').map((l) => l.trim()))
 
-  const lines = rawLines.filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')
@@ -586,10 +586,16 @@ const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
  * Tried as fallback when ARROW_REGEX doesn't match.
  *
+ * The closing operator is a variable-length run, matching ARROW_REGEX. While
+ * it was a fixed alternation, `A -- label ----> B` consumed only `---` from
+ * `---->`, leaving `-> B`, which forms no node group — so the edge and its
+ * target node were both dropped silently. Exactly the failure mode the
+ * variable-length work exists to remove.
+ *
  * Based on PR #36 by @liuxiaopai-ai (https://github.com/lukilabs/beautiful-mermaid/pull/36)
  */
 const TEXT_ARROW_REGEX =
-  /^(<)?(--|-\.|==)\s+(.+?)\s+(-->|---|\.\->|-\.\-|==>|===)/
+  /^(<|o|x)?(--|-\.|==)\s+(.+?)\s+(-{2,}[>ox]|={2,}[>ox]|\.+-[>ox]|-{3,}|={3,}|-\.+-)/
 
 /**
  * Node shape patterns — ordered from most specific delimiters to least.
@@ -1112,7 +1118,10 @@ function arrowStyleFromBody(body: string): EdgeStyle {
 
 /** Map text-embedded arrow open/close operators to edge style */
 function textArrowStyleFromOps(openOp: string, closeOp: string): EdgeStyle {
-  if (openOp === '-.' || closeOp === '.->' || closeOp === '-.-') return 'dotted'
-  if (openOp === '==' || closeOp === '==>' || closeOp === '===') return 'thick'
+  // Classify by the characters used, not by exact token, so every run length
+  // of a given style resolves identically — the same rule arrowStyleFromBody
+  // applies to the plain arrow forms.
+  if (openOp.includes('.') || closeOp.includes('.')) return 'dotted'
+  if (openOp.startsWith('=') || closeOp.startsWith('=')) return 'thick'
   return 'solid'
 }

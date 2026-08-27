@@ -24,6 +24,7 @@ import type {
 import { colorizeText } from './ansi.ts'
 import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from '../xychart/colors.ts'
+import { splitStatements } from '../statements.ts'
 
 // ============================================================================
 // Constants
@@ -108,10 +109,7 @@ export function renderXYChartAscii(
   colorMode: ColorMode,
   theme: AsciiTheme,
 ): string {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
   const chart = parseXYChart(lines)
   const ch = config.useAscii ? ASC : UNI
 

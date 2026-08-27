@@ -1,5 +1,26 @@
 # Supported Diagrams
 
+## Statement separators
+
+Newlines and semicolons both separate statements, for every diagram type:
+
+```
+flowchart TD;A-->B;B-->C
+```
+
+renders identically to
+
+```
+flowchart TD
+  A-->B
+  B-->C
+```
+
+A semicolon inside a quoted label (`A["a; b"]`) or ending a character
+reference (`A[&amp;]`) is part of the text, not a separator.
+
+Lines beginning with `%%` are comments and are ignored.
+
 ## Flowcharts
 
 ```

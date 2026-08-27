@@ -25,8 +25,10 @@ import {
   increaseRoleCanvasSize,
   write,
 } from './canvas.ts'
-import { drawMultiBox, classifyBoxChar } from './draw.ts'
+import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'
+import { splitStatements } from '../statements.ts'
+import { displayWidth, toDisplayCells } from './display-width.ts'
 
 // ============================================================================
 // Class member formatting
@@ -162,10 +164,7 @@ export function renderClassAscii(
   colorMode?: ColorMode,
   theme?: AsciiTheme,
 ): string {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
   const diagram = parseClassDiagram(lines)
 
   if (diagram.classes.length === 0) return ''
@@ -183,16 +182,10 @@ export function renderClassAscii(
     const sections = buildClassSections(cls)
     classSections.set(cls.id, sections)
 
-    // Compute box dimensions from drawMultiBox logic
-    let maxTextW = 0
-    for (const section of sections) {
-      for (const line of section) maxTextW = Math.max(maxTextW, line.length)
-    }
-    const boxW = maxTextW + 4 // 2 border + 2 padding
-
-    let totalLines = 0
-    for (const section of sections) totalLines += Math.max(section.length, 1)
-    const boxH = totalLines + (sections.length - 1) + 2 // section lines + dividers + top/bottom border
+    // Reserve exactly what drawMultiBox will draw — measuring it here rather
+    // than re-deriving the arithmetic keeps layout and drawing in lockstep for
+    // wide-character (CJK/fullwidth) content.
+    const { width: boxW, height: boxH } = measureMultiBox(sections)
 
     classBoxW.set(cls.id, boxW)
     classBoxH.set(cls.id, boxH)
@@ -670,7 +663,7 @@ export function renderClassAscii(
     // Add padding around the label for readability
     if (rel.label) {
       const lines = splitLines(rel.label)
-      const maxLabelWidth = Math.max(...lines.map((l) => l.length)) + 2 // +2 for padding
+      const maxLabelWidth = Math.max(...lines.map((l) => displayWidth(l))) + 2 // +2 for padding
 
       // Calculate ideal label position based on routing direction
       let baseMidY: number
@@ -740,21 +733,25 @@ export function renderClassAscii(
 
       for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
         const paddedLine = ` ${lines[lineIdx]!} ` // Add space padding on both sides
+        // Grid cells, not code units: a wide glyph occupies two columns, so
+        // measuring/writing by code unit would centre the label wrong and
+        // overrun the space cleared for it.
+        const cells = toDisplayCells(paddedLine)
         // Calculate label start, but ensure it doesn't go negative
-        const idealLabelStart = idealMidX - Math.floor(paddedLine.length / 2)
+        const idealLabelStart = idealMidX - Math.floor(cells.length / 2)
         const labelStart = Math.max(0, idealLabelStart)
         const y = startY + lineIdx
         // Ensure canvas is wide enough for the label
-        const labelEnd = labelStart + paddedLine.length
+        const labelEnd = labelStart + cells.length
         if (labelEnd > 0 && y >= 0) {
           increaseSize(canvas, Math.max(labelEnd, 1), Math.max(y + 1, 1))
           increaseRoleCanvasSize(rc, Math.max(labelEnd, 1), Math.max(y + 1, 1))
         }
         // Clear the area first (overwrite line characters) then draw the padded label
-        for (let i = 0; i < paddedLine.length; i++) {
+        for (let i = 0; i < cells.length; i++) {
           const lx = labelStart + i
           if (lx >= 0 && y >= 0) {
-            setC(lx, y, paddedLine[i]!, 'text')
+            setC(lx, y, cells[i]!, 'text')
           }
         }
       }

@@ -960,9 +960,12 @@ function renderDocument(
 ): string {
   const waveH = Math.min(10, h * 0.16)
   const base = y + h - waveH
+  // Both ends land on `base`, so the left and right sides are the same
+  // height. Ending the curve anywhere else makes every document node
+  // visibly lopsided.
   const d =
     `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${base} ` +
-    `C ${x + w * 0.75} ${base + waveH * 2} ${x + w * 0.25} ${base - waveH} ${x} ${base + waveH * 0.6} Z`
+    `C ${x + w * 0.75} ${base + waveH * 1.8} ${x + w * 0.25} ${base - waveH * 0.8} ${x} ${base} Z`
   return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
@@ -1247,14 +1250,17 @@ function renderBraces(
   y: number,
   w: number,
   h: number,
-  fill: string,
+  _fill: string,
   stroke: string,
   sw: string,
   side: 'left' | 'right' | 'both',
 ): string {
   const armW = Math.min(10, w * 0.12)
+  // Unfilled: a filled body reads as a container, which is the opposite of
+  // what a brace annotation means. The rect stays only to reserve the
+  // label area; `_fill` is deliberately unused.
   const parts = [
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="none" />`,
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none" />`,
   ]
 
   const leftBrace =
