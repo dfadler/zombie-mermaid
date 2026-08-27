@@ -218,12 +218,23 @@ function renderEdge(edge: PositionedEdge): string {
   if (edge.points.length < 2) return ''
 
   const pathData = pointsToPolylinePath(edge.points)
+
+  /*
+   * An invisible link (`A ~~~ B`) still occupies its layout slot — that is
+   * the whole point of the syntax — so the element is emitted with its data
+   * attributes intact and only its paint suppressed. Omitting the element
+   * entirely would lose it from DOM inspection and from `data-style` queries.
+   */
+  const invisible = edge.style === 'invisible'
+
   const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="4 4"' : ''
   const baseStrokeWidth =
     edge.style === 'thick'
       ? STROKE_WIDTHS.connector * 2
       : STROKE_WIDTHS.connector
-  const strokeColor = escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
+  const strokeColor = invisible
+    ? 'none'
+    : escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
   const strokeWidth = escapeAttr(
     edge.inlineStyle?.['stroke-width'] ?? String(baseStrokeWidth),
   )
@@ -234,9 +245,11 @@ function renderEdge(edge: PositionedEdge): string {
     ? `-${markerSuffix(edge.inlineStyle.stroke)}`
     : ''
   let markers = ''
-  if (edge.hasArrowEnd) markers += ` marker-end="url(#arrowhead${suffix})"`
-  if (edge.hasArrowStart)
-    markers += ` marker-start="url(#arrowhead-start${suffix})"`
+  if (!invisible) {
+    if (edge.hasArrowEnd) markers += ` marker-end="url(#arrowhead${suffix})"`
+    if (edge.hasArrowStart)
+      markers += ` marker-start="url(#arrowhead-start${suffix})"`
+  }
 
   // Semantic data attributes for edge identification and inspection:
   // - class="edge": CSS targeting and type identification
@@ -439,10 +452,63 @@ function renderNodeShape(node: PositionedNode): string {
       return renderTrapezoid(x, y, width, height, fill, stroke, sw)
     case 'trapezoid-alt':
       return renderTrapezoidAlt(x, y, width, height, fill, stroke, sw)
+    case 'parallelogram':
+      return renderParallelogram(x, y, width, height, fill, stroke, sw)
+    case 'parallelogram-alt':
+      return renderParallelogramAlt(x, y, width, height, fill, stroke, sw)
     case 'state-start':
       return renderStateStart(x, y, width, height)
     case 'state-end':
       return renderStateEnd(x, y, width, height)
+
+    // --- Expanded-syntax shapes (`A@{ shape: ... }`) ---
+    case 'document':
+      return renderDocument(x, y, width, height, fill, stroke, sw)
+    case 'stacked-document':
+      return renderStacked(x, y, width, height, fill, stroke, sw, true)
+    case 'stacked-process':
+      return renderStacked(x, y, width, height, fill, stroke, sw, false)
+    case 'card':
+      return renderCard(x, y, width, height, fill, stroke, sw)
+    case 'lined-process':
+      return renderLinedProcess(x, y, width, height, fill, stroke, sw)
+    case 'divided-process':
+      return renderDividedProcess(x, y, width, height, fill, stroke, sw)
+    case 'window-pane':
+      return renderWindowPane(x, y, width, height, fill, stroke, sw)
+    case 'triangle':
+      return renderTriangle(x, y, width, height, fill, stroke, sw, false)
+    case 'flipped-triangle':
+      return renderTriangle(x, y, width, height, fill, stroke, sw, true)
+    case 'filled-circle':
+      return renderFilledCircle(x, y, width, height, stroke)
+    case 'crossed-circle':
+      return renderCrossedCircle(x, y, width, height, fill, stroke, sw)
+    case 'fork-join':
+      return renderForkJoin(x, y, width, height, stroke)
+    case 'notched-pentagon':
+      return renderNotchedPentagon(x, y, width, height, fill, stroke, sw)
+    case 'sloped-rectangle':
+      return renderSlopedRectangle(x, y, width, height, fill, stroke, sw)
+    case 'flag':
+      return renderFlag(x, y, width, height, fill, stroke, sw)
+    case 'bow-tie-rectangle':
+      return renderBowTie(x, y, width, height, fill, stroke, sw)
+    case 'half-rounded-rectangle':
+      return renderHalfRounded(x, y, width, height, fill, stroke, sw)
+    case 'brace':
+      return renderBraces(x, y, width, height, fill, stroke, sw, 'left')
+    case 'brace-right':
+      return renderBraces(x, y, width, height, fill, stroke, sw, 'right')
+    case 'braces':
+      return renderBraces(x, y, width, height, fill, stroke, sw, 'both')
+    case 'bolt':
+      return renderBolt(x, y, width, height, fill, stroke, sw)
+    case 'text':
+    case 'anchor':
+      // No outline — the label (rendered separately) is the whole node.
+      return ''
+
     case 'rectangle':
     default:
       return renderRect(x, y, width, height, fill, stroke, sw)
@@ -701,6 +767,433 @@ function renderTrapezoidAlt(
   ].join(' ')
 
   return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+/**
+ * Parallelogram [/text/]: leans right.
+ *
+ * Unlike the trapezoids, both sloped sides run the same direction — the top
+ * edge shifts right by `inset` and the bottom edge shifts left by the same
+ * amount, so opposite sides stay parallel.
+ */
+function renderParallelogram(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const inset = w * 0.15
+  const points = [
+    `${x + inset},${y}`, // top-left (shifted right)
+    `${x + w},${y}`, // top-right
+    `${x + w - inset},${y + h}`, // bottom-right (shifted left)
+    `${x},${y + h}`, // bottom-left
+  ].join(' ')
+
+  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+/** Parallelogram-alt [\text\]: leans left — the mirror of renderParallelogram. */
+function renderParallelogramAlt(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const inset = w * 0.15
+  const points = [
+    `${x},${y}`, // top-left
+    `${x + w - inset},${y}`, // top-right (shifted left)
+    `${x + w},${y + h}`, // bottom-right
+    `${x + inset},${y + h}`, // bottom-left (shifted right)
+  ].join(' ')
+
+  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+// --- Expanded-syntax shapes (`A@{ shape: ... }`) ---
+//
+// Each of these is reachable only through the expanded metadata syntax; the
+// classic bracket forms have no spelling for them. See src/expanded-shapes.ts
+// for the semantic-name → geometry alias table.
+
+/** Shared attribute string for a filled, stroked path. */
+function shapeAttrs(fill: string, stroke: string, sw: string): string {
+  return `fill="${fill}" stroke="${stroke}" stroke-width="${sw}"`
+}
+
+/**
+ * Document: rectangle with a wavy bottom edge.
+ *
+ * The wave is two cubic segments — down then up — so the edge returns to its
+ * starting height at the right corner and the shape tiles cleanly when
+ * stacked (see renderStacked).
+ */
+function renderDocument(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const waveH = Math.min(10, h * 0.16)
+  const base = y + h - waveH
+  // Both ends land on `base`, so the left and right sides are the same
+  // height. Ending the curve anywhere else makes every document node
+  // visibly lopsided.
+  const d =
+    `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${base} ` +
+    `C ${x + w * 0.75} ${base + waveH * 1.8} ${x + w * 0.25} ${base - waveH * 0.8} ${x} ${base} Z`
+  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/** Stacked document / process: offset copies behind the front shape. */
+function renderStacked(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+  isDocument: boolean,
+): string {
+  const offset = 5
+  const frontW = w - offset * 2
+  const frontH = h - offset * 2
+  const parts: string[] = []
+
+  // Two offset copies behind, back to front.
+  for (let i = 2; i >= 1; i--) {
+    parts.push(
+      `<rect x="${x + offset * i}" y="${y + offset * (2 - i)}" width="${frontW}" height="${frontH}" ` +
+        `${shapeAttrs(fill, stroke, sw)} />`,
+    )
+  }
+
+  parts.push(
+    isDocument
+      ? renderDocument(x, y + offset * 2, frontW, frontH, fill, stroke, sw)
+      : `<rect x="${x}" y="${y + offset * 2}" width="${frontW}" height="${frontH}" ${shapeAttrs(fill, stroke, sw)} />`,
+  )
+
+  return parts.join('\n')
+}
+
+/** Card / notched rectangle: top-left corner clipped. */
+function renderCard(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const notch = Math.min(14, w * 0.12, h * 0.3)
+  const points = [
+    `${x + notch},${y}`,
+    `${x + w},${y}`,
+    `${x + w},${y + h}`,
+    `${x},${y + h}`,
+    `${x},${y + notch}`,
+  ].join(' ')
+  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/** Lined process: rectangle with a vertical rule inset from the left edge. */
+function renderLinedProcess(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const inset = Math.min(12, w * 0.12)
+  return (
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    `<line x1="${x + inset}" y1="${y}" x2="${x + inset}" y2="${y + h}" stroke="${stroke}" stroke-width="${sw}" />`
+  )
+}
+
+/** Divided process: rectangle split by a horizontal rule near the top. */
+function renderDividedProcess(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const split = y + Math.min(16, h * 0.3)
+  return (
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    `<line x1="${x}" y1="${split}" x2="${x + w}" y2="${split}" stroke="${stroke}" stroke-width="${sw}" />`
+  )
+}
+
+/** Window pane / internal storage: rectangle quartered by a cross. */
+function renderWindowPane(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const vx = x + Math.min(16, w * 0.16)
+  const hy = y + Math.min(14, h * 0.28)
+  return (
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    `<line x1="${vx}" y1="${y}" x2="${vx}" y2="${y + h}" stroke="${stroke}" stroke-width="${sw}" />\n` +
+    `<line x1="${x}" y1="${hy}" x2="${x + w}" y2="${hy}" stroke="${stroke}" stroke-width="${sw}" />`
+  )
+}
+
+/** Triangle, apex up (extract) or apex down (manual file). */
+function renderTriangle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+  flipped: boolean,
+): string {
+  const points = flipped
+    ? [`${x},${y}`, `${x + w},${y}`, `${x + w / 2},${y + h}`]
+    : [`${x + w / 2},${y}`, `${x + w},${y + h}`, `${x},${y + h}`]
+  return `<polygon points="${points.join(' ')}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/** Filled circle (junction): a solid dot, so it takes the stroke color as fill. */
+function renderFilledCircle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  stroke: string,
+): string {
+  const r = Math.min(w, h) / 2 - 2
+  return `<circle cx="${x + w / 2}" cy="${y + h / 2}" r="${r}" fill="${stroke}" stroke="${stroke}" />`
+}
+
+/** Crossed circle (summary): circle with an X through it. */
+function renderCrossedCircle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const cx = x + w / 2
+  const cy = y + h / 2
+  const r = Math.min(w, h) / 2 - 2
+  // Cross arms meet the circumference at 45°, so offset by r/√2.
+  const d = r / Math.SQRT2
+  return (
+    `<circle cx="${cx}" cy="${cy}" r="${r}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    `<line x1="${cx - d}" y1="${cy - d}" x2="${cx + d}" y2="${cy + d}" stroke="${stroke}" stroke-width="${sw}" />\n` +
+    `<line x1="${cx + d}" y1="${cy - d}" x2="${cx - d}" y2="${cy + d}" stroke="${stroke}" stroke-width="${sw}" />`
+  )
+}
+
+/** Fork/join: a solid bar, drawn in the stroke color. */
+function renderForkJoin(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  stroke: string,
+): string {
+  const barH = Math.min(8, h)
+  return `<rect x="${x}" y="${y + (h - barH) / 2}" width="${w}" height="${barH}" fill="${stroke}" stroke="${stroke}" />`
+}
+
+/** Notched pentagon (loop limit): both top corners clipped. */
+function renderNotchedPentagon(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const notch = Math.min(14, w * 0.12, h * 0.3)
+  const points = [
+    `${x + notch},${y}`,
+    `${x + w - notch},${y}`,
+    `${x + w},${y + notch}`,
+    `${x + w},${y + h}`,
+    `${x},${y + h}`,
+    `${x},${y + notch}`,
+  ].join(' ')
+  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/** Sloped rectangle (manual input): top edge slopes up to the right. */
+function renderSlopedRectangle(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const slope = Math.min(12, h * 0.3)
+  const points = [
+    `${x},${y + slope}`,
+    `${x + w},${y}`,
+    `${x + w},${y + h}`,
+    `${x},${y + h}`,
+  ].join(' ')
+  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/** Flag / paper tape: wavy top and bottom edges. */
+function renderFlag(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const waveH = Math.min(8, h * 0.14)
+  const d =
+    `M ${x} ${y + waveH} ` +
+    `C ${x + w * 0.25} ${y - waveH} ${x + w * 0.75} ${y + waveH * 2} ${x + w} ${y + waveH} ` +
+    `L ${x + w} ${y + h - waveH} ` +
+    `C ${x + w * 0.75} ${y + h + waveH} ${x + w * 0.25} ${y + h - waveH * 2} ${x} ${y + h - waveH} Z`
+  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/** Bow-tie rectangle (stored data): left and right edges curve inward. */
+function renderBowTie(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const bow = Math.min(14, w * 0.12)
+  const d =
+    `M ${x + bow} ${y} L ${x + w} ${y} ` +
+    `Q ${x + w - bow * 1.4} ${y + h / 2} ${x + w} ${y + h} ` +
+    `L ${x + bow} ${y + h} ` +
+    `Q ${x + bow * 1.4} ${y + h / 2} ${x + bow} ${y} Z`
+  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/** Delay / half-rounded rectangle: the right end is a semicircle. */
+function renderHalfRounded(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const r = h / 2
+  const straight = Math.max(0, w - r)
+  const d =
+    `M ${x} ${y} L ${x + straight} ${y} ` +
+    `A ${r} ${r} 0 0 1 ${x + straight} ${y + h} ` +
+    `L ${x} ${y + h} Z`
+  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+}
+
+/**
+ * Brace shapes: a rectangle body flanked by curly braces.
+ *
+ * Mermaid's `brace`/`comment` is a left brace, `brace-r` a right brace, and
+ * `braces` both. The body itself is unfilled so the braces read as annotation
+ * marks rather than as a container.
+ */
+function renderBraces(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  _fill: string,
+  stroke: string,
+  sw: string,
+  side: 'left' | 'right' | 'both',
+): string {
+  const armW = Math.min(10, w * 0.12)
+  // Unfilled: a filled body reads as a container, which is the opposite of
+  // what a brace annotation means. The rect stays only to reserve the
+  // label area; `_fill` is deliberately unused.
+  const parts = [
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none" />`,
+  ]
+
+  const leftBrace =
+    `M ${x + armW} ${y} Q ${x} ${y} ${x} ${y + h * 0.25} ` +
+    `Q ${x} ${y + h / 2} ${x - armW * 0.4} ${y + h / 2} ` +
+    `Q ${x} ${y + h / 2} ${x} ${y + h * 0.75} ` +
+    `Q ${x} ${y + h} ${x + armW} ${y + h}`
+  const rightBrace =
+    `M ${x + w - armW} ${y} Q ${x + w} ${y} ${x + w} ${y + h * 0.25} ` +
+    `Q ${x + w} ${y + h / 2} ${x + w + armW * 0.4} ${y + h / 2} ` +
+    `Q ${x + w} ${y + h / 2} ${x + w} ${y + h * 0.75} ` +
+    `Q ${x + w} ${y + h} ${x + w - armW} ${y + h}`
+
+  if (side === 'left' || side === 'both') {
+    parts.push(
+      `<path d="${leftBrace}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`,
+    )
+  }
+  if (side === 'right' || side === 'both') {
+    parts.push(
+      `<path d="${rightBrace}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`,
+    )
+  }
+
+  return parts.join('\n')
+}
+
+/** Lightning bolt (communication link). */
+function renderBolt(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const points = [
+    `${x + w * 0.42},${y}`,
+    `${x + w},${y}`,
+    `${x + w * 0.62},${y + h * 0.42}`,
+    `${x + w},${y + h * 0.42}`,
+    `${x + w * 0.3},${y + h}`,
+    `${x + w * 0.5},${y + h * 0.55}`,
+    `${x},${y + h * 0.55}`,
+  ].join(' ')
+  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 // --- Batch 3: State diagram pseudostates ---
