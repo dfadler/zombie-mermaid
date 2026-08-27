@@ -15,7 +15,7 @@ import type {
   EdgeBundle,
 } from './types.ts'
 import { Up, Down, Left, Right, drawingCoordEquals } from './types.ts'
-import { copyCanvas } from './canvas.ts'
+import { copyCanvas, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { getShapeAttachmentPoint } from './shapes/index.ts'
@@ -172,7 +172,7 @@ export function drawBundledEdgeSegment(
       corner = '+'
     }
 
-    cornersCanvas[dc.x]![dc.y] = corner
+    write(cornersCanvas, dc.x, dc.y, corner)
   }
 
   // Draw box start connector (for fan-in, from source node)
@@ -185,13 +185,13 @@ export function drawBundledEdgeSegment(
 
     const junction = useAscii ? '+' : null
     if (dirEquals(dir, Up))
-      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '┴'
+      write(boxStartCanvas, firstPoint.x, firstPoint.y, junction ?? '┴')
     else if (dirEquals(dir, Down))
-      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '┬'
+      write(boxStartCanvas, firstPoint.x, firstPoint.y, junction ?? '┬')
     else if (dirEquals(dir, Left))
-      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '┤'
+      write(boxStartCanvas, firstPoint.x, firstPoint.y, junction ?? '┤')
     else if (dirEquals(dir, Right))
-      boxStartCanvas[firstPoint.x]![firstPoint.y] = junction ?? '├'
+      write(boxStartCanvas, firstPoint.x, firstPoint.y, junction ?? '├')
   }
 
   // Label canvas (bundled edges typically don't have labels, but handle it)
@@ -282,7 +282,7 @@ export function drawBundleSharedPath(
       corner = '+'
     }
 
-    cornersCanvas[dc.x]![dc.y] = corner
+    write(cornersCanvas, dc.x, dc.y, corner)
   }
 
   return [pathCanvas, cornersCanvas]
@@ -331,7 +331,7 @@ export function drawBundleArrowhead(
     else char = 'v' // default
   }
 
-  canvas[dc.x]![dc.y] = char
+  write(canvas, dc.x, dc.y, char)
   return canvas
 }
 
@@ -376,7 +376,7 @@ export function drawBundledEdgeArrowhead(
     else char = 'v' // default
   }
 
-  canvas[dc.x]![dc.y] = char
+  write(canvas, dc.x, dc.y, char)
   return canvas
 }
 
@@ -482,6 +482,6 @@ export function drawJunctionCharacter(
     char = '+'
   }
 
-  canvas[dc.x]![dc.y] = char
+  write(canvas, dc.x, dc.y, char)
   return canvas
 }

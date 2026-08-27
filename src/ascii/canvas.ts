@@ -186,6 +186,55 @@ export function increaseSize(
   return canvas
 }
 
+/**
+ * Bounds-checked write to a single canvas cell.
+ *
+ * Sets the character at (x, y) if the coordinate falls within the canvas;
+ * out-of-range coordinates are silently clipped (a no-op) instead of
+ * mutating the canvas. This is the single write path drawing modules should
+ * use instead of indexing `canvas[x]![y] = ch` directly, which had three
+ * different out-of-range behaviors depending on axis — none of them a clean
+ * bounds check:
+ *   - x out of range: threw, via the `canvas[x]!` non-null assertion.
+ *   - y too large (but x in range): did *not* throw — JS silently
+ *     ragged-extends that column's array. This was observable downstream:
+ *     `mergeCanvases`/`canvasToString` would read the extended slot back as
+ *     `undefined`, which `canvasToString` then concatenates into the output
+ *     as the literal string `"undefined"`.
+ *   - y negative (but x in range): silently set an own property keyed by
+ *     the negative index (e.g. `arr[-1]`) rather than a real array element;
+ *     rendering code never reads it back, so this was a silent no-op.
+ * `write()` normalizes all three cases to the same silent no-op. That is a
+ * behavior *change*, not a preservation of the prior status quo — callers
+ * migrating to `write()` need their own bounds check if they relied on the
+ * old per-axis behavior (see `drawSubgraphLabel` in `draw-subgraphs.ts`,
+ * which needs a tighter, exclusive bound than `write()`'s own clip to avoid
+ * overwriting a subgraph's border with an oversized title).
+ *
+ * When `roleTracking` is provided, the role is recorded via `setRole`
+ * alongside the character write (used by callers, like the sequence-diagram
+ * and xychart renderers, that track character roles inline rather than
+ * deriving them from the finished canvas afterward). `role` and
+ * `roleCanvas` are bundled into one parameter so a call can't pass one
+ * without the other — passing just a role with nowhere to record it would
+ * otherwise type-check while silently dropping the role, an error only
+ * visible in colorized/ANSI output.
+ */
+export function write(
+  canvas: Canvas,
+  x: number,
+  y: number,
+  ch: string,
+  roleTracking?: { role: CharRole; roleCanvas: RoleCanvas },
+): void {
+  const [maxX, maxY] = getCanvasSize(canvas)
+  if (x < 0 || x > maxX || y < 0 || y > maxY) return
+  canvas[x]![y] = ch
+  if (roleTracking) {
+    setRole(roleTracking.roleCanvas, x, y, roleTracking.role)
+  }
+}
+
 // ============================================================================
 // Junction merging — Unicode box-drawing character compositing
 // ============================================================================

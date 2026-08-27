@@ -12,7 +12,7 @@ import type {
   AsciiNode,
   CharRole,
 } from './types.ts'
-import { mkCanvas } from './canvas.ts'
+import { mkCanvas, write } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
 import { getCorners } from './shapes/corners.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
@@ -92,14 +92,14 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   const effectiveCorners = isDoubleBox ? doubleCorners : corners
 
   // Draw box border with shape-specific corners
-  for (let x = from.x + 1; x < to.x; x++) box[x]![from.y] = hChar
-  for (let x = from.x + 1; x < to.x; x++) box[x]![to.y] = hChar
-  for (let y = from.y + 1; y < to.y; y++) box[from.x]![y] = vChar
-  for (let y = from.y + 1; y < to.y; y++) box[to.x]![y] = vChar
-  box[from.x]![from.y] = effectiveCorners.tl
-  box[to.x]![from.y] = effectiveCorners.tr
-  box[from.x]![to.y] = effectiveCorners.bl
-  box[to.x]![to.y] = effectiveCorners.br
+  for (let x = from.x + 1; x < to.x; x++) write(box, x, from.y, hChar)
+  for (let x = from.x + 1; x < to.x; x++) write(box, x, to.y, hChar)
+  for (let y = from.y + 1; y < to.y; y++) write(box, from.x, y, vChar)
+  for (let y = from.y + 1; y < to.y; y++) write(box, to.x, y, vChar)
+  write(box, from.x, from.y, effectiveCorners.tl)
+  write(box, to.x, from.y, effectiveCorners.tr)
+  write(box, from.x, to.y, effectiveCorners.bl)
+  write(box, to.x, to.y, effectiveCorners.br)
 
   // Center the multi-line display label inside the box
   const label = node.displayLabel
@@ -113,14 +113,7 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
     const textX = from.x + Math.floor(w / 2) - Math.ceil(lineWidth / 2) + 1
     const cells = toDisplayCells(line)
     for (let j = 0; j < cells.length; j++) {
-      if (
-        textX + j >= 0 &&
-        textX + j < box.length &&
-        startY + i >= 0 &&
-        startY + i < box[0]!.length
-      ) {
-        box[textX + j]![startY + i] = cells[j]!
-      }
+      write(box, textX + j, startY + i, cells[j]!)
     }
   }
 
@@ -197,19 +190,19 @@ export function drawMultiBox(
   const canvas = mkCanvas(boxWidth - 1, boxHeight - 1)
 
   // Top border
-  canvas[0]![0] = tl
-  for (let x = 1; x < boxWidth - 1; x++) canvas[x]![0] = hLine
-  canvas[boxWidth - 1]![0] = tr
+  write(canvas, 0, 0, tl)
+  for (let x = 1; x < boxWidth - 1; x++) write(canvas, x, 0, hLine)
+  write(canvas, boxWidth - 1, 0, tr)
 
   // Bottom border
-  canvas[0]![boxHeight - 1] = bl
-  for (let x = 1; x < boxWidth - 1; x++) canvas[x]![boxHeight - 1] = hLine
-  canvas[boxWidth - 1]![boxHeight - 1] = br
+  write(canvas, 0, boxHeight - 1, bl)
+  for (let x = 1; x < boxWidth - 1; x++) write(canvas, x, boxHeight - 1, hLine)
+  write(canvas, boxWidth - 1, boxHeight - 1, br)
 
   // Left and right borders (full height)
   for (let y = 1; y < boxHeight - 1; y++) {
-    canvas[0]![y] = vLine
-    canvas[boxWidth - 1]![y] = vLine
+    write(canvas, 0, y, vLine)
+    write(canvas, boxWidth - 1, y, vLine)
   }
 
   // Render sections with dividers
@@ -222,16 +215,16 @@ export function drawMultiBox(
     for (const line of lines) {
       const startX = 1 + padding
       for (let i = 0; i < line.length; i++) {
-        canvas[startX + i]![row] = line[i]!
+        write(canvas, startX + i, row, line[i]!)
       }
       row++
     }
 
     // Draw divider after each section except the last
     if (s < sections.length - 1) {
-      canvas[0]![row] = divL
-      for (let x = 1; x < boxWidth - 1; x++) canvas[x]![row] = hLine
-      canvas[boxWidth - 1]![row] = divR
+      write(canvas, 0, row, divL)
+      for (let x = 1; x < boxWidth - 1; x++) write(canvas, x, row, hLine)
+      write(canvas, boxWidth - 1, row, divR)
       row++
     }
   }
