@@ -79,6 +79,35 @@ describe('parallelogram shapes (#198 row 2)', () => {
     expect(svg).toContain('<polygon')
   })
 
+  /**
+   * Points of the node-shape polygon.
+   *
+   * Not simply the first `<polygon>` in the document: the arrowhead markers
+   * in `<defs>` are polygons too, and they come first. Node shapes are
+   * rendered last, so take the final match.
+   */
+  const nodePolygonPoints = (svg: string): string | undefined => {
+    const all = [...svg.matchAll(/<polygon points="([^"]+)"/g)]
+    return all[all.length - 1]?.[1]
+  }
+
+  it('renders both leans as distinct SVG polygons', () => {
+    // The two differ only in which corners are inset, so rendering just one
+    // would leave the other's geometry unexercised.
+    const right = renderMermaidSVG('flowchart TD\n  A[/step/] --> B')
+    const left = renderMermaidSVG('flowchart TD\n  A[\\step\\] --> B')
+
+    expect(nodePolygonPoints(right)).toBeDefined()
+    expect(nodePolygonPoints(left)).toBeDefined()
+    expect(nodePolygonPoints(right)).not.toBe(nodePolygonPoints(left))
+  })
+
+  it('gives a parallelogram four points, like the trapezoids', () => {
+    const svg = renderMermaidSVG('flowchart TD\n  A[/step/] --> B')
+    const points = nodePolygonPoints(svg) ?? ''
+    expect(points.trim().split(/\s+/)).toHaveLength(4)
+  })
+
   it('renders sloped corners in ASCII', () => {
     const ascii = renderMermaidASCII('flowchart TD\n  A[/step/] --> B', {
       colorMode: 'none',
