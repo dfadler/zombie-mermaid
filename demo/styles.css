@@ -1,0 +1,1069 @@
+/* -- Reset & base -- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* -----------------------------------------------------------------
+ * CSS custom property theming
+ *
+ * --t-bg and --t-fg drive the entire page color scheme.
+ * All other colors are derived via color-mix(). When a theme is
+ * selected from the pill bar, JS updates these two variables on
+ * <body> — and the whole page adapts instantly.
+ * ----------------------------------------------------------------- */
+body {
+  --t-bg: #ffffff;
+  --t-fg: #27272a;
+  --t-accent: #3b82f6;
+  --foreground-rgb: 39, 39, 42;
+  --accent-rgb: 59, 130, 246;
+  --shadow-border-opacity: 0.08;
+  --shadow-blur-opacity: 0.06;
+  --theme-bar-bg: #f9f9fa; /* Mixed bg for theme bar and top gradient — updated by JS on theme change */
+
+  font-family:
+    'Geist',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
+  color: var(--t-fg);
+  line-height: 1.6;
+  margin: 0;
+  transition:
+    background 0.2s,
+    color 0.2s;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.content-wrapper {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-top: 0;
+}
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 1rem;
+    padding-top: 0;
+  }
+}
+@media (min-width: 1000px) {
+  .content-wrapper {
+    padding: 3rem;
+    padding-top: 0;
+  }
+}
+
+/* -----------------------------------------------------------------
+ * Page shell: persistent left sidebar (desktop) + main column.
+ * On narrow screens the sidebar becomes an off-canvas drawer,
+ * toggled by .sidebar-toggle in the theme bar.
+ * ----------------------------------------------------------------- */
+:root {
+  --nav-height: 62px;
+}
+.page-shell {
+  display: flex;
+  align-items: flex-start;
+}
+.page-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* -- Scroll fade gradients (GPU accelerated) -- */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 64px;
+  pointer-events: none;
+  z-index: 1000;
+  will-change: transform;
+}
+body::before {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--theme-bar-bg) 0%,
+    transparent 100%
+  );
+}
+body::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--theme-bar-bg) 0%, transparent 100%);
+}
+
+/* -- Theme selector bar (full-width, sits outside .content-wrapper) -- */
+.theme-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1001;
+  background: transparent;
+  padding: 0.5rem 2rem;
+  min-height: var(--nav-height);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: visible;
+}
+@media (max-width: 768px) {
+  .theme-bar {
+    padding: 0.5rem 1rem;
+  }
+}
+.theme-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  white-space: nowrap;
+}
+.theme-pills {
+  display: flex;
+  gap: 0.3rem;
+  overflow: visible;
+  padding: 4px;
+  margin: -4px;
+  margin-left: auto;
+  position: relative;
+  z-index: 2;
+}
+.theme-pills-inline {
+  display: flex;
+  gap: 0.3rem;
+}
+/* Hide inline theme pills on smaller screens, show only "15 Themes" dropdown */
+@media (max-width: 1024px) {
+  .theme-pills-inline {
+    display: none;
+  }
+}
+.theme-pill {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
+  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    box-shadow 0.2s,
+    transform 0.1s;
+}
+.theme-pill:hover {
+  color: var(--t-fg);
+  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+}
+.theme-pill.active {
+  color: var(--t-fg);
+  background: var(--t-bg);
+  font-weight: 600;
+}
+.theme-pill:active {
+  transform: translateY(0.5px);
+}
+.theme-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* -- "More" dropdown for overflow themes -- */
+.theme-more-wrapper {
+  position: relative;
+}
+.theme-more-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--t-bg);
+  border-radius: 12px;
+  padding: 6px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  z-index: 1002;
+}
+.theme-more-dropdown.open {
+  display: flex;
+}
+.theme-more-dropdown .theme-pill {
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+  box-shadow: none;
+}
+.theme-more-dropdown .theme-pill:hover {
+  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+}
+/* Active pill in dropdown gets bg + shadow-minimal (same as inline pills) */
+.theme-more-dropdown .theme-pill.active,
+.theme-more-dropdown .theme-pill.shadow-tinted {
+  background: var(--t-bg);
+  box-shadow:
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
+    rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 1px 1px -0.5px,
+    rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 3px 3px -1.5px;
+}
+
+/* -- Brand badge (left-aligned in theme bar) -- */
+.brand-badge {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  gap: 6px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
+  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
+  font-size: 12px;
+  font-weight: 400;
+  font-family: inherit;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    box-shadow 0.2s,
+    transform 0.1s;
+}
+.brand-badge:hover {
+  color: var(--t-fg);
+  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+}
+.brand-badge:active {
+  transform: translateY(0.5px);
+}
+
+/* -- Sidebar toggle (hamburger, mobile/tablet only — sidebar is always visible ≥1024px) -- */
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  width: 30px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
+  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    transform 0.1s;
+}
+.sidebar-toggle:hover {
+  color: var(--t-fg);
+  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+}
+.sidebar-toggle:active {
+  transform: translateY(0.5px);
+}
+.sidebar-toggle svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+@media (max-width: 1023px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+}
+/* -- Shadow + radius utilities -- */
+.rounded-6px {
+  border-radius: 6px;
+}
+.shadow-minimal {
+  box-shadow:
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
+    rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 1px 1px -0.5px,
+    rgba(0, 0, 0, var(--shadow-blur-opacity)) 0px 3px 3px -1.5px;
+}
+.shadow-modal-small {
+  box-shadow:
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
+    rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.67)) 0px 1px 1px -0.5px,
+    rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.67)) 0px 3px 3px 0px,
+    rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.33)) 0px 6px 6px 0px,
+    rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.33)) 0px 12px 12px 0px,
+    rgba(0, 0, 0, calc(var(--shadow-blur-opacity) * 0.33)) 0px 24px 24px 0px;
+}
+.shadow-tinted {
+  --shadow-color: 0, 0, 0;
+  box-shadow:
+    rgba(var(--shadow-color), 0) 0px 0px 0px 0px,
+    rgba(var(--shadow-color), 0) 0px 0px 0px 0px,
+    rgba(var(--shadow-color), calc(var(--shadow-border-opacity) * 1.5)) 0px 0px
+      0px 1px,
+    rgba(var(--shadow-color), var(--shadow-border-opacity)) 0px 1px 1px -0.5px,
+    rgba(var(--shadow-color), var(--shadow-blur-opacity)) 0px 3px 3px -1.5px,
+    rgba(var(--shadow-color), calc(var(--shadow-blur-opacity) * 0.67)) 0px 6px
+      6px -3px;
+}
+
+/* -----------------------------------------------------------------
+ * Sidebar navigation — persistent on desktop, off-canvas drawer
+ * below 1024px (toggled by .sidebar-toggle in the theme bar).
+ * ----------------------------------------------------------------- */
+.sidebar {
+  flex: 0 0 240px;
+  width: 240px;
+  position: sticky;
+  top: var(--nav-height);
+  align-self: flex-start;
+  height: calc(100vh - var(--nav-height));
+  overflow-y: auto;
+  padding: 1.5rem 1rem 2rem 2rem;
+  box-sizing: border-box;
+}
+@media (min-width: 1000px) {
+  .sidebar {
+    padding-left: 3rem;
+  }
+}
+@media (max-width: 1023px) {
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    /* Stop below the theme bar, not inset: 0 — otherwise this sits above
+       the toggle (z-index 1010 vs. the theme bar's 1001) and intercepts
+       taps meant for it, even though the drawer itself no longer does. */
+    inset: var(--nav-height) 0 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1010;
+  }
+  .sidebar-backdrop.open {
+    display: block;
+  }
+  .sidebar {
+    display: none;
+    position: fixed;
+    /* Below the theme bar (not top: 0) so the drawer never covers the
+       toggle that opened it — tapping it again still closes the drawer,
+       same control either way. */
+    top: var(--nav-height);
+    left: 0;
+    bottom: 0;
+    height: calc(100vh - var(--nav-height));
+    width: min(300px, 85vw);
+    background: var(--t-bg);
+    z-index: 1011;
+    padding: 1.5rem 1.5rem 2rem;
+    box-shadow: rgba(0, 0, 0, 0.15) 4px 0 24px 0;
+  }
+  .sidebar.open {
+    display: block;
+  }
+}
+.sidebar-group {
+  border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+  padding: 0.6rem 0;
+}
+.sidebar-group:first-of-type {
+  padding-top: 0;
+}
+.sidebar-group > summary {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--t-fg);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sidebar-group > summary::-webkit-details-marker {
+  display: none;
+}
+.sidebar-group > summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 5px;
+  border-color: transparent transparent transparent
+    color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.sidebar-group[open] > summary::before {
+  transform: rotate(90deg);
+}
+.sidebar-group-count {
+  font-weight: 400;
+  color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
+}
+.sidebar-list {
+  padding: 0;
+  margin: 0.5rem 0 0;
+  list-style: none;
+  font-size: 0.8rem;
+}
+.sidebar-list li {
+  margin-bottom: 0.3rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-list a {
+  color: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));
+  text-decoration: none;
+}
+.sidebar-list a:hover {
+  color: var(--t-fg);
+  text-decoration: underline;
+}
+.sidebar-num {
+  color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg));
+}
+
+/* -- Sample card -- */
+.sample {
+  background: var(--t-bg);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  scroll-margin-top: calc(var(--nav-height) + 1rem);
+}
+
+/* -- Hero sample (full-width SVG showcase, above Samples heading) -- */
+.sample-hero {
+  margin-bottom: 0;
+  background: transparent;
+}
+.hero-diagram-panel {
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+}
+.hero-diagram-panel .svg-container {
+  width: 100%;
+  max-width: 100%;
+}
+.hero-diagram-panel .svg-container svg {
+  width: 100%;
+  height: auto;
+}
+
+.sample-header {
+  padding: 1.25rem 1.5rem;
+  max-width: 48rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
+}
+.sample-header h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--t-fg);
+}
+.description {
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  font-size: 1rem;
+  font-weight: 400;
+  margin-top: 0.1rem;
+}
+.description code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.875em;
+  color: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));
+  background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+
+.sample-content {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 1fr)
+    minmax(250px, 2fr)
+    minmax(250px, 2fr);
+  min-height: 420px;
+}
+@media (max-width: 900px) {
+  .sample-content {
+    grid-template-columns: 1fr;
+  }
+  .ascii-panel {
+    border-left: none !important;
+    border-top: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg)) !important;
+  }
+}
+
+/* -- Source panel -- */
+.source-panel {
+  position: relative;
+  padding: 0.75rem 1.5rem;
+  border-right: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
+  min-width: 0; /* grid child: allow shrinking below content width */
+  overflow-y: auto;
+}
+.source-panel h3 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  margin-bottom: 0.75rem;
+}
+.source-panel pre {
+  padding: 1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.source-panel code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* -- Shiki syntax highlighting overrides --
+ * Shiki outputs inline style="color:#hex" per token. We override these with
+ * color-mix() rules derived from --t-fg / --t-bg so tokens adapt to any theme.
+ * The hex values below are from the github-light Shiki theme used at build time. */
+.source-panel {
+  background: color-mix(in srgb, var(--t-fg) 1.5%, var(--t-bg));
+}
+.source-panel .shiki {
+  background: transparent !important;
+  padding: 0.5rem 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+.source-panel .shiki code {
+  background: transparent;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+/* Default text */
+.source-panel .shiki,
+.source-panel .shiki span[style*='#24292e'],
+.source-panel .shiki span[style*='#24292E'] {
+  color: color-mix(in srgb, var(--t-fg) 70%, var(--t-bg)) !important;
+}
+/* Keywords: graph, subgraph, end, participant, -->, classDef, brackets */
+.source-panel .shiki span[style*='#D73A49'],
+.source-panel .shiki span[style*='#d73a49'] {
+  color: color-mix(in srgb, var(--t-fg) 90%, var(--t-bg)) !important;
+  font-weight: 500;
+}
+/* Direction labels, subgraph names */
+.source-panel .shiki span[style*='#6F42C1'],
+.source-panel .shiki span[style*='#6f42c1'] {
+  color: color-mix(in srgb, var(--t-fg) 65%, var(--t-bg)) !important;
+}
+/* Node IDs */
+.source-panel .shiki span[style*='#E36209'],
+.source-panel .shiki span[style*='#e36209'] {
+  color: color-mix(in srgb, var(--t-fg) 75%, var(--t-bg)) !important;
+}
+/* Strings, labels, message text */
+.source-panel .shiki span[style*='#032F62'],
+.source-panel .shiki span[style*='#032f62'] {
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg)) !important;
+}
+.options {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+}
+.options code {
+  background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+/* -- Edit button (subtle text link, bottom-left of source panel) -- */
+.edit-btn {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 1.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.edit-btn:hover {
+  color: var(--t-fg);
+  text-decoration: underline;
+}
+
+/* -- Edit dialog overlay -- */
+.edit-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+}
+.edit-overlay.open {
+  display: flex;
+}
+.edit-dialog {
+  background: var(--t-bg);
+  border-radius: 16px;
+  width: min(680px, calc(100vw - 3rem));
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.edit-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+}
+.edit-dialog-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--t-fg);
+}
+.edit-dialog-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+.edit-dialog-close:hover {
+  color: var(--t-fg);
+}
+.edit-dialog-textarea {
+  flex: 1;
+  min-height: 300px;
+  max-height: 60vh;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: none;
+  outline: none;
+  resize: none;
+  background: color-mix(in srgb, var(--t-fg) 2%, var(--t-bg));
+  color: var(--t-fg);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 2;
+}
+.edit-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+}
+.edit-dialog-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.edit-dialog-btn:hover {
+  opacity: 0.85;
+}
+.edit-dialog-cancel {
+  background: color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+  color: var(--t-fg);
+}
+.edit-dialog-save {
+  background: var(--t-fg);
+  color: var(--t-bg);
+}
+
+/* -- SVG panel -- */
+.svg-panel {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* grid child: allow shrinking below content width */
+  /* Background set dynamically: matches the SVG --bg in default mode,
+     or the global theme bg when a theme is active. */
+}
+.svg-panel h3 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  margin-bottom: 0.75rem;
+}
+.svg-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0; /* flex child: allow shrinking to fit */
+}
+.svg-container svg {
+  max-width: 100%;
+  max-height: 100%; /* scale down to fit both axes */
+  height: auto;
+}
+
+/* -- ASCII panel -- */
+.ascii-panel {
+  padding: 1.25rem 1.5rem;
+  border-left: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0; /* grid child: allow shrinking below content width */
+}
+.ascii-panel h3 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  margin-bottom: 0.75rem;
+}
+.ascii-output {
+  padding: 1rem;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  overflow-x: auto; /* horizontal scroll only */
+  overflow-y: hidden; /* scale to height, no vertical scroll */
+  white-space: pre;
+  flex: 1;
+  max-width: 100%;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* -- Loading spinner -- */
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
+  border-top-color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* -- Timing badge -- */
+.timing {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg));
+  margin-left: 0.5rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* -- Error state -- */
+.render-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* -- Hero header section -- */
+.hero-header {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 6rem 2rem 2rem;
+  text-align: left;
+}
+@media (min-width: 1000px) {
+  .hero-header {
+    padding: 6rem 3rem 2rem;
+  }
+}
+.hero-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 0.25rem;
+  color: var(--t-fg);
+}
+.hero-tagline {
+  font-size: 1rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  margin: 0 0 1rem;
+}
+.hero-description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--t-fg) 70%, var(--t-bg));
+  margin: 0 0 1.5rem;
+  max-width: 680px;
+}
+.hero-description a {
+  color: var(--t-fg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.hero-description a:hover {
+  color: var(--t-accent);
+}
+.hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+@media (max-width: 768px) {
+  .hero-buttons {
+    flex-direction: column;
+  }
+}
+.hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  border-radius: 12px;
+  text-decoration: none;
+  transition:
+    opacity 0.15s,
+    transform 0.1s;
+  cursor: pointer;
+  border: none;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.hero-btn:hover {
+  opacity: 0.9;
+}
+.hero-btn:active {
+  transform: translateY(0.5px);
+}
+.hero-btn-primary {
+  background: var(--t-fg);
+  color: var(--t-bg);
+  box-shadow:
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
+    rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
+}
+.hero-btn-secondary {
+  background: var(--t-bg);
+  color: var(--t-fg);
+  box-shadow:
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(0, 0, 0, 0) 0px 0px 0px 0px,
+    rgba(var(--foreground-rgb), 0.06) 0px 0px 0px 1px,
+    rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
+    rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
+}
+.hero-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.hero-description code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  background: color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+/* -- Hero meta (below buttons) -- */
+.hero-meta {
+  margin-top: 1.25rem;
+}
+.hero-meta .meta {
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
+  margin: 0.15rem 0;
+}
+
+.hero-meta .meta a {
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.hero-meta .meta a:hover {
+  color: var(--t-fg);
+}
+
+/* -- Section title -- */
+.section-title {
+  font-size: 1.875rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+  padding: 2.5rem 0 1.5rem;
+  color: var(--t-fg);
+}
+
+/* -----------------------------------------------------------------
+ * Category banner — tells the visitor the sample list below is
+ * filtered to one diagram type, and gives an explicit way to reach
+ * the sidebar's other categories (important on mobile, where the
+ * sidebar itself is hidden behind the hamburger toggle).
+ * ----------------------------------------------------------------- */
+.samples-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding-top: 2.5rem;
+}
+.samples-heading .section-title {
+  padding: 0;
+}
+.category-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--t-fg) 65%, var(--t-bg));
+}
+.category-banner strong {
+  color: var(--t-fg);
+}
+.category-banner-btn {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
+  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
+  font-size: 0.78rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.category-banner-btn:hover {
+  color: var(--t-fg);
+  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+}
+.category-view {
+  display: block;
+}
+.category-view[hidden] {
+  display: none;
+}
+
+/* Highlight the sidebar category currently shown in the main column —
+   distinct from a plain expanded/collapsed <details> state. */
+.sidebar-group[open] > summary {
+  color: var(--t-accent);
+}
+.sidebar-group[open] > summary::before {
+  border-left-color: var(--t-accent);
+}
+/* Brief attention pulse when "Browse diagram types" points at the
+   (already-visible, desktop) sidebar. */
+@keyframes sidebar-attention-pulse {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-accent) 40%, transparent);
+  }
+}
+.sidebar.attention {
+  animation: sidebar-attention-pulse 0.6s ease-in-out 2;
+  border-radius: 12px;
+}
+
+/* -- Footer -- */
+.site-footer {
+  position: relative;
+  z-index: 10;
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+}
+@media (min-width: 1000px) {
+  .site-footer {
+    padding: 1.5rem 3rem 2rem;
+  }
+}
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.footer-links a {
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-links a:hover {
+  color: var(--t-fg);
+}
+.footer-links svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
