@@ -660,14 +660,17 @@ async function generateHtml(): Promise<string> {
       .sidebar {
         display: none;
         position: fixed;
-        top: 0;
+        /* Below the theme bar (not top: 0) so the drawer never covers the
+           toggle that opened it — tapping it again still closes the drawer,
+           same control either way. */
+        top: var(--nav-height);
         left: 0;
         bottom: 0;
-        height: 100vh;
+        height: calc(100vh - var(--nav-height));
         width: min(300px, 85vw);
         background: var(--t-bg);
         z-index: 1011;
-        padding: calc(var(--nav-height) + 0.5rem) 1.5rem 2rem;
+        padding: 1.5rem 1.5rem 2rem;
         box-shadow: rgba(0, 0, 0, 0.15) 4px 0 24px 0;
       }
       .sidebar.open {
@@ -1667,17 +1670,26 @@ ${bundleJs}
   var sidebarToggle = document.getElementById('sidebar-toggle');
   var sidebarBackdrop = document.getElementById('sidebar-backdrop');
 
+  // Body scroll lock while the drawer is open — otherwise the page behind
+  // the backdrop keeps scrolling with touch, which is disorienting.
+  function openSidebarDrawer() {
+    sidebar.classList.add('open');
+    sidebarBackdrop.classList.add('open');
+    sidebarToggle.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
   function closeSidebarDrawer() {
     sidebar.classList.remove('open');
     sidebarBackdrop.classList.remove('open');
     sidebarToggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
   }
 
   sidebarToggle.addEventListener('click', function(e) {
     e.stopPropagation();
-    var isOpen = sidebar.classList.toggle('open');
-    sidebarBackdrop.classList.toggle('open', isOpen);
-    sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    if (sidebar.classList.contains('open')) closeSidebarDrawer();
+    else openSidebarDrawer();
   });
 
   sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
@@ -1733,9 +1745,7 @@ ${bundleJs}
   // sidebar, since only one category renders by default (see below).
   document.getElementById('browse-categories-btn').addEventListener('click', function() {
     if (window.matchMedia('(max-width: 1023px)').matches) {
-      sidebar.classList.add('open');
-      sidebarBackdrop.classList.add('open');
-      sidebarToggle.setAttribute('aria-expanded', 'true');
+      openSidebarDrawer();
     } else {
       sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
       sidebar.classList.add('attention');
@@ -1867,13 +1877,16 @@ ${bundleJs}
     for (var n = 0; n < sections.length; n++) {
       indices.push(parseInt(sections[n].id.slice('sample-'.length), 10));
     }
-    var start = performance.now();
+    // Accumulate each sample's own duration (not one span for the whole
+    // category) — a category render isn't awaited by its caller, so two
+    // could overlap in wall-clock time and double-count a shared span.
     for (var m = 0; m < indices.length; m++) {
+      var sampleStart = performance.now();
       await renderSample(indices[m]);
+      renderedMs += performance.now() - sampleStart;
+      renderedCount++;
+      updateRenderStats();
     }
-    renderedCount += indices.length;
-    renderedMs += performance.now() - start;
-    updateRenderStats();
   }
 
   function showCategory(slug, opts) {
