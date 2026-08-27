@@ -128,6 +128,137 @@ export const SHAPE_CORNERS: Record<AsciiNodeShape, ShapeCorners> = {
     unicode: { tl: '◉', tr: '◉', bl: '◉', br: '◉' },
     ascii: { tl: '@', tr: '@', bl: '@', br: '@' },
   },
+
+  // --------------------------------------------------------------------
+  // Expanded-syntax shapes (`A@{ shape: ... }`).
+  //
+  // The ASCII grid has no diagonals and one glyph per corner, so these are
+  // distinguished by corner character alone. Shapes whose defining feature
+  // is interior (a rule, a cross, a notch) or whose outline the grid cannot
+  // express keep box corners and rely on their label — the alternative is a
+  // misleading outline, and docs/diagrams.md records which shapes render
+  // distinctly in ASCII.
+  // --------------------------------------------------------------------
+
+  // Document family — wavy bottom edge suggested by curve glyphs
+  document: {
+    unicode: { tl: '┌', tr: '┐', bl: '╰', br: '╮' },
+    ascii: { tl: '+', tr: '+', bl: "'", br: '~' },
+  },
+  'stacked-document': {
+    unicode: { tl: '┌', tr: '╗', bl: '╰', br: '╮' },
+    ascii: { tl: '+', tr: '#', bl: "'", br: '~' },
+  },
+  'stacked-process': {
+    unicode: { tl: '┌', tr: '╗', bl: '└', br: '╝' },
+    ascii: { tl: '+', tr: '#', bl: '+', br: '#' },
+  },
+
+  // Card — notched top-left corner
+  card: {
+    unicode: { tl: '╱', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '/', tr: '+', bl: '+', br: '+' },
+  },
+
+  // Interior-feature rectangles — box corners, feature not expressible
+  'lined-process': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'divided-process': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+  'window-pane': {
+    unicode: { tl: '┌', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '+', tr: '+', bl: '+', br: '+' },
+  },
+
+  // Triangles
+  triangle: {
+    unicode: { tl: '╱', tr: '╲', bl: '└', br: '┘' },
+    ascii: { tl: '/', tr: '\\', bl: '+', br: '+' },
+  },
+  'flipped-triangle': {
+    unicode: { tl: '┌', tr: '┐', bl: '╲', br: '╱' },
+    ascii: { tl: '+', tr: '+', bl: '\\', br: '/' },
+  },
+
+  // Circles
+  'filled-circle': {
+    unicode: { tl: '●', tr: '●', bl: '●', br: '●' },
+    ascii: { tl: '*', tr: '*', bl: '*', br: '*' },
+  },
+  'crossed-circle': {
+    unicode: { tl: '╳', tr: '╳', bl: '╳', br: '╳' },
+    ascii: { tl: 'X', tr: 'X', bl: 'X', br: 'X' },
+  },
+
+  // Fork/join bar
+  'fork-join': {
+    unicode: { tl: '━', tr: '━', bl: '━', br: '━' },
+    ascii: { tl: '=', tr: '=', bl: '=', br: '=' },
+  },
+
+  // Notched pentagon — clipped top corners
+  'notched-pentagon': {
+    unicode: { tl: '╱', tr: '╲', bl: '└', br: '┘' },
+    ascii: { tl: '/', tr: '\\', bl: '+', br: '+' },
+  },
+
+  // Sloped rectangle (manual input) — sloped top edge
+  'sloped-rectangle': {
+    unicode: { tl: '╱', tr: '┐', bl: '└', br: '┘' },
+    ascii: { tl: '/', tr: '+', bl: '+', br: '+' },
+  },
+
+  // Flag / paper tape — wavy top and bottom
+  flag: {
+    unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
+    ascii: { tl: '~', tr: '~', bl: '~', br: '~' },
+  },
+
+  // Bow-tie rectangle (stored data) — concave sides
+  'bow-tie-rectangle': {
+    unicode: { tl: '╲', tr: '╱', bl: '╱', br: '╲' },
+    ascii: { tl: '\\', tr: '/', bl: '/', br: '\\' },
+  },
+
+  // Delay — one rounded end
+  'half-rounded-rectangle': {
+    unicode: { tl: '┌', tr: '╮', bl: '└', br: '╯' },
+    ascii: { tl: '+', tr: '.', bl: '+', br: "'" },
+  },
+
+  // Braces
+  brace: {
+    unicode: { tl: '╭', tr: '┐', bl: '╰', br: '┘' },
+    ascii: { tl: '{', tr: '+', bl: '{', br: '+' },
+  },
+  'brace-right': {
+    unicode: { tl: '┌', tr: '╮', bl: '└', br: '╯' },
+    ascii: { tl: '+', tr: '}', bl: '+', br: '}' },
+  },
+  braces: {
+    unicode: { tl: '╭', tr: '╮', bl: '╰', br: '╯' },
+    ascii: { tl: '{', tr: '}', bl: '{', br: '}' },
+  },
+
+  // Lightning bolt (communication link)
+  bolt: {
+    unicode: { tl: '╱', tr: '╲', bl: '╲', br: '╱' },
+    ascii: { tl: '/', tr: '\\', bl: '\\', br: '/' },
+  },
+
+  // Bare text and anchor — no visible outline
+  text: {
+    unicode: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+    ascii: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+  },
+  anchor: {
+    unicode: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+    ascii: { tl: ' ', tr: ' ', bl: ' ', br: ' ' },
+  },
 }
 
 /**

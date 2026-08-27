@@ -56,6 +56,74 @@ same as its shortest form.
 An invisible link (`A ~~~ B`) is laid out like any other edge but draws
 nothing — useful for forcing rank or alignment without a visible connector.
 
+### Expanded node syntax
+
+Mermaid v11.3.0's metadata form is supported, which reaches shapes the bracket
+syntax cannot spell:
+
+```
+flowchart TD
+  A@{ shape: doc, label: "Report" }
+  B@{ shape: cyl, label: "Database" }
+  A --> B
+```
+
+Recognized keys: `shape`, `label`, `icon`, `img`, `form`, `w`, `h`,
+`constraint`. A bare value is shorthand for the shape (`A@{ rounded }`).
+Quoted values may contain commas, colons, and braces.
+
+An unrecognized `shape:` name renders as a rectangle rather than failing the
+diagram — Mermaid adds names regularly.
+
+#### Shapes reached only through this syntax
+
+| Names                                     | Rendered as                      |
+| ----------------------------------------- | -------------------------------- |
+| `doc`, `document`, `lin-doc`, `tag-doc`   | page with a wavy bottom edge     |
+| `docs`, `documents`, `st-doc`             | stacked documents                |
+| `procs`, `processes`, `st-rect`           | stacked rectangles               |
+| `notch-rect`, `card`                      | rectangle, notched top-left      |
+| `lin-rect`, `lin-proc`, `shaded-process`  | rectangle with a left rule       |
+| `div-rect`, `div-proc`                    | rectangle split by a rule        |
+| `win-pane`, `internal-storage`            | rectangle quartered by a cross   |
+| `tri`, `triangle`, `extract`              | triangle, apex up                |
+| `flip-tri`, `manual-file`                 | triangle, apex down              |
+| `f-circ`, `junction`                      | filled circle                    |
+| `cross-circ`, `summary`                   | circle with an X                 |
+| `fork`, `join`                            | solid bar                        |
+| `notch-pent`, `loop-limit`                | pentagon, clipped top corners    |
+| `sl-rect`, `manual-input`                 | sloped top edge                  |
+| `flag`, `paper-tape`                      | wavy top and bottom              |
+| `bow-rect`, `stored-data`                 | concave left and right edges     |
+| `delay`, `half-rounded-rectangle`         | one rounded end                  |
+| `brace`, `comment` / `brace-r` / `braces` | left / right / both curly braces |
+| `bolt`, `com-link`, `lightning-bolt`      | lightning bolt                   |
+| `text`                                    | label with no outline            |
+| `anchor`                                  | invisible point                  |
+
+Mermaid's remaining names are aliases onto shapes the bracket syntax already
+draws — `rect`/`process`, `cyl`/`database`, `diam`/`decision`, `hex`/`prepare`,
+`lean-r`/`in-out`, `trap-b`/`priority`, and so on.
+
+Because Mermaid's list is semantic while a renderer has a finite set of
+outlines, some distinct names share one outline here — for example
+`lin-doc` and `tag-doc` both draw a plain document. That is a rendering
+choice, not a parse failure.
+
+#### Icons and images
+
+`icon:` and `img:` are parsed, and `form:` (`square`, `circle`, `rounded`)
+selects the node's outline. This renderer draws neither FontAwesome glyphs
+nor remote images, so a node with no `label:` shows its icon or image
+reference as text instead of rendering blank.
+
+#### ASCII rendering of these shapes
+
+The ASCII grid has no diagonals and one glyph per corner, so these shapes are
+distinguished by corner character alone. Shapes whose defining feature is
+interior — a rule, a cross, a notch — keep plain box corners and rely on their
+label; drawing a misleading outline would be worse.
+
 ### Styling
 
 `classDef default` sets the base style for every node, as in Mermaid. A node's

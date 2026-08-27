@@ -46,6 +46,34 @@ export type NodeShape =
   // Batch 3 state diagram pseudostates
   | 'state-start' // filled circle (start pseudostate)
   | 'state-end' // bullseye circle (end pseudostate)
+  // ---------------------------------------------------------------------
+  // Expanded-syntax shapes — reachable via `A@{ shape: ... }` only; the
+  // classic bracket syntax has no spelling for them. See
+  // src/expanded-shapes.ts for the full name→shape alias table.
+  // ---------------------------------------------------------------------
+  | 'document' // wavy-bottomed page
+  | 'stacked-document' // document with offset copies behind it
+  | 'stacked-process' // rectangle with offset copies behind it
+  | 'card' // rectangle with a notched top-left corner
+  | 'lined-process' // rectangle with a vertical rule inset from the left
+  | 'divided-process' // rectangle split by a horizontal rule
+  | 'window-pane' // rectangle quartered by a cross
+  | 'triangle' // apex up
+  | 'flipped-triangle' // apex down
+  | 'filled-circle' // solid dot — junction
+  | 'crossed-circle' // circle with an X through it — summary
+  | 'fork-join' // solid bar
+  | 'notched-pentagon' // rectangle with clipped top corners — loop limit
+  | 'sloped-rectangle' // sloped top edge — manual input
+  | 'flag' // wavy top and bottom — paper tape
+  | 'bow-tie-rectangle' // concave left and right edges — stored data
+  | 'half-rounded-rectangle' // one rounded end — delay
+  | 'brace' // left brace only
+  | 'brace-right' // right brace only
+  | 'braces' // braces on both sides
+  | 'bolt' // lightning bolt — communication link
+  | 'text' // label with no outline
+  | 'anchor' // invisible point
 
 export interface MermaidEdge {
   source: string
