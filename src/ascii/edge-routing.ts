@@ -6,13 +6,7 @@
 // and dual-path comparison for optimal edge routing.
 // ============================================================================
 
-import type {
-  GridCoord,
-  Direction,
-  AsciiEdge,
-  AsciiGraph,
-  AsciiNode,
-} from './types.ts'
+import type { GridCoord, Direction, AsciiEdge, AsciiGraph } from './types.ts'
 import {
   Up,
   Down,
@@ -28,7 +22,7 @@ import {
   requireCardinalDirection,
 } from './types.ts'
 import { routeEdge } from './pathfinder.ts'
-import { getNodeSubgraph } from './grid.ts'
+import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 import { displayWidth } from './display-width.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
@@ -51,24 +45,6 @@ export function getOpposite(d: Direction): Direction {
   if (d === LowerRight) return UpperLeft
   if (d === LowerLeft) return UpperRight
   return Middle
-}
-
-/**
- * Get a node's grid coordinate. Edge routing only runs after grid.ts's
- * createMapping has placed every node, so this is always defined for a real
- * graph — but that guarantee lives in a different module/function, so it's
- * narrowed here explicitly rather than trusted silently across the
- * boundary.
- */
-function requireGridCoord(node: AsciiNode): GridCoord {
-  const gc = node.gridCoord
-  if (gc === null) {
-    /* v8 ignore next */
-    throw new Error(
-      `Node "${node.name}" has no gridCoord; grid layout must run before edge routing`,
-    )
-  }
-  return gc
 }
 
 /**

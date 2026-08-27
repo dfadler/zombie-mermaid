@@ -16,6 +16,7 @@ import type {
 } from './types.ts'
 import { EMPTY_STYLE } from './types.ts'
 import { mkCanvas, mkRoleCanvas } from './canvas.ts'
+import { createGrid } from './grid-occupancy.ts'
 import { stripFormattingTags } from '../multiline-utils.ts'
 
 /**
@@ -149,7 +150,7 @@ export function convertToAsciiGraph(
     edges,
     canvas: mkCanvas(0, 0),
     roleCanvas: mkRoleCanvas(0, 0),
-    grid: new Map(),
+    grid: createGrid(),
     columnWidth: new Map(),
     rowHeight: new Map(),
     subgraphs,

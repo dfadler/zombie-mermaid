@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest'
 import { determineLabelLine } from '../ascii/edge-routing.ts'
 import { Down } from '../ascii/types.ts'
 import type { AsciiEdge, AsciiGraph, AsciiNode } from '../ascii/types.ts'
+import { createGrid } from '../ascii/grid-occupancy.ts'
 
 function makeNode(name: string, x: number, y: number): AsciiNode {
   return {
@@ -40,7 +41,7 @@ function makeGraph(nodes: AsciiNode[]): AsciiGraph {
     edges: [],
     canvas: [],
     roleCanvas: [],
-    grid: new Map(),
+    grid: createGrid(),
     columnWidth: new Map(),
     rowHeight: new Map(),
     subgraphs: [],

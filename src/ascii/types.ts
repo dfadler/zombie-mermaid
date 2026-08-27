@@ -7,6 +7,7 @@
 // ============================================================================
 
 import type { NodeShape } from '../types.ts'
+import type { Grid } from './grid-occupancy.ts'
 
 // Re-export NodeShape for convenience
 export type { NodeShape }
@@ -216,8 +217,8 @@ export interface AsciiGraph {
   canvas: Canvas
   /** Role canvas — tracks the role of each character for colored output. */
   roleCanvas: RoleCanvas
-  /** Grid occupancy map — maps "x,y" keys to node references. */
-  grid: Map<string, AsciiNode>
+  /** Grid occupancy map — tracks which "x,y" cells are reserved. */
+  grid: Grid
   columnWidth: Map<number, number>
   rowHeight: Map<number, number>
   subgraphs: AsciiSubgraph[]
@@ -258,6 +259,30 @@ export function gridCoordDirection(c: GridCoord, dir: Direction): GridCoord {
 /** Key for storing GridCoord in a Map. */
 export function gridKey(c: GridCoord): string {
   return `${c.x},${c.y}`
+}
+
+/**
+ * Get a node's grid coordinate. Every consumer of a node's `gridCoord` after
+ * layout (edge routing, edge bundling, drawing) runs strictly after
+ * `createMapping` (grid.ts) has placed every node, so this is always defined
+ * for a real graph — but that guarantee lives in layout's control flow, not
+ * in `AsciiNode`'s type (`gridCoord: GridCoord | null`), so it's narrowed
+ * here explicitly rather than trusted silently across the module boundary.
+ *
+ * Lives here (not in grid.ts, where it originated) because it's a pure
+ * predicate over `AsciiNode` with zero dependency on grid/layout state —
+ * keeping it here lets `draw-boxes.ts` and `draw-bundles.ts` reuse it
+ * without pulling in all of grid.ts's transitive imports.
+ */
+export function requireGridCoord(node: AsciiNode): GridCoord {
+  const gc = node.gridCoord
+  if (gc === null) {
+    /* v8 ignore next */
+    throw new Error(
+      `Node "${node.name}" has no gridCoord; grid layout must run before it is read`,
+    )
+  }
+  return gc
 }
 
 /** Default empty style class. */

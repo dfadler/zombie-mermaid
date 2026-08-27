@@ -24,27 +24,10 @@ import {
   UpperRight,
   requireCardinalDirection,
 } from '../ascii/types.ts'
-import type { AsciiGraph, AsciiNode, PathBudget } from '../ascii/types.ts'
+import type { AsciiGraph, PathBudget } from '../ascii/types.ts'
+import { createGrid, placeBlock, type Grid } from '../ascii/grid-occupancy.ts'
 
-function makeNode(name: string, x: number, y: number): AsciiNode {
-  return {
-    name,
-    displayLabel: name,
-    shape: 'rectangle',
-    index: 0,
-    gridCoord: { x, y },
-    drawingCoord: null,
-    drawing: null,
-    drawn: false,
-    styleClassName: '',
-    styleClass: { name: '', styles: {} },
-  }
-}
-
-function makeGraph(
-  grid: Map<string, AsciiNode>,
-  pathBudget: PathBudget | undefined,
-): AsciiGraph {
+function makeGraph(grid: Grid, pathBudget: PathBudget | undefined): AsciiGraph {
   return {
     nodes: [],
     edges: [],
@@ -70,7 +53,7 @@ function makeGraph(
 
 describe('routeEdge', () => {
   it('takes the horizontal-first direct L when dir is Right', () => {
-    const graph = makeGraph(new Map(), createPathBudget())
+    const graph = makeGraph(createGrid(), createPathBudget())
     const path = routeEdge(
       graph,
       { x: 0, y: 0 },
@@ -85,7 +68,7 @@ describe('routeEdge', () => {
   })
 
   it('takes the vertical-first direct L when dir is Down', () => {
-    const graph = makeGraph(new Map(), createPathBudget())
+    const graph = makeGraph(createGrid(), createPathBudget())
     const path = routeEdge(
       graph,
       { x: 0, y: 0 },
@@ -105,8 +88,8 @@ describe('routeEdge', () => {
     // arrival-vs-departure bug hit: a caller passes a `dir` that doesn't
     // match the true departure axis, but the direct path is still found
     // because both orientations are tried.
-    const grid = new Map<string, AsciiNode>()
-    grid.set('4,0', makeNode('X', 4, 0))
+    const grid = createGrid()
+    placeBlock(grid, { x: 4, y: 0 }, 1)
     const graph = makeGraph(grid, createPathBudget())
     const path = routeEdge(
       graph,
@@ -122,9 +105,9 @@ describe('routeEdge', () => {
   })
 
   it('falls back to A* when both direct L orientations are blocked', () => {
-    const grid = new Map<string, AsciiNode>()
-    grid.set('4,0', makeNode('X', 4, 0))
-    grid.set('0,4', makeNode('Y', 0, 4))
+    const grid = createGrid()
+    placeBlock(grid, { x: 4, y: 0 }, 1)
+    placeBlock(grid, { x: 0, y: 4 }, 1)
     const graph = makeGraph(grid, createPathBudget())
     const path = routeEdge(
       graph,
@@ -140,7 +123,7 @@ describe('routeEdge', () => {
   })
 
   it('falls back to A* (trivial straight line) when from/to are already axis-aligned', () => {
-    const graph = makeGraph(new Map(), createPathBudget())
+    const graph = makeGraph(createGrid(), createPathBudget())
     const path = routeEdge(
       graph,
       { x: 0, y: 0 },
@@ -156,11 +139,11 @@ describe('routeEdge', () => {
   it('returns null when the destination is unreachable through free cells', () => {
     // Occupy all 4 neighbors of the destination — no legal final hop exists
     // from any direction, so neither the direct path nor A* can reach it.
-    const grid = new Map<string, AsciiNode>()
-    grid.set('9,10', makeNode('a', 9, 10))
-    grid.set('11,10', makeNode('b', 11, 10))
-    grid.set('10,9', makeNode('c', 10, 9))
-    grid.set('10,11', makeNode('d', 10, 11))
+    const grid = createGrid()
+    placeBlock(grid, { x: 9, y: 10 }, 1)
+    placeBlock(grid, { x: 11, y: 10 }, 1)
+    placeBlock(grid, { x: 10, y: 9 }, 1)
+    placeBlock(grid, { x: 10, y: 11 }, 1)
     const graph = makeGraph(grid, createPathBudget())
     const path = routeEdge(
       graph,
@@ -172,7 +155,7 @@ describe('routeEdge', () => {
   })
 
   it('throws when graph.pathBudget is not set, instead of silently searching unbudgeted', () => {
-    const graph = makeGraph(new Map(), undefined)
+    const graph = makeGraph(createGrid(), undefined)
     expect(() =>
       routeEdge(
         graph,

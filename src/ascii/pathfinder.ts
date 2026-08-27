@@ -8,12 +8,12 @@
 
 import type {
   GridCoord,
-  AsciiNode,
   PathBudget,
   AsciiGraph,
   CardinalDirection,
 } from './types.ts'
 import { gridKey, gridCoordEquals, dirEquals, Left, Right } from './types.ts'
+import { isFree, type Grid } from './grid-occupancy.ts'
 
 // ============================================================================
 // Priority queue (min-heap) for A* open set
@@ -126,15 +126,6 @@ const MOVE_DIRS: GridCoord[] = [
   { x: 0, y: -1 },
 ]
 
-/** Check if a grid cell is unoccupied and has non-negative coordinates. */
-export function isFreeInGrid(
-  grid: Map<string, AsciiNode>,
-  c: GridCoord,
-): boolean {
-  if (c.x < 0 || c.y < 0) return false
-  return !grid.has(gridKey(c))
-}
-
 /**
  * Maximum number of A* iterations before giving up on a *single* getPath
  * call. Prevents unbounded memory growth when the destination is
@@ -192,7 +183,7 @@ export function createPathBudget(
  * right away instead of searching.
  */
 export function getPath(
-  grid: Map<string, AsciiNode>,
+  grid: Grid,
   from: GridCoord,
   to: GridCoord,
   budget?: PathBudget,
@@ -252,7 +243,7 @@ export function getPath(
       const next: GridCoord = { x: current.x + dir.x, y: current.y + dir.y }
 
       // Allow moving to the destination even if it's occupied (it's a node boundary)
-      if (!isFreeInGrid(grid, next) && !gridCoordEquals(next, to)) {
+      if (!isFree(grid, next) && !gridCoordEquals(next, to)) {
         continue
       }
 
@@ -329,7 +320,7 @@ export function mergePath(path: GridCoord[]): GridCoord[] {
  * destination cell).
  */
 function isAxisRunFree(
-  grid: Map<string, AsciiNode>,
+  grid: Grid,
   from: GridCoord,
   to: GridCoord,
   includeTo: boolean,
@@ -347,7 +338,7 @@ function isAxisRunFree(
     const cell: GridCoord = alongY
       ? { x: from.x, y: pos }
       : { x: pos, y: from.y }
-    if (!(isLast && !includeTo) && !isFreeInGrid(grid, cell)) return false
+    if (!(isLast && !includeTo) && !isFree(grid, cell)) return false
     if (isLast) break
   }
   return true
@@ -355,7 +346,7 @@ function isAxisRunFree(
 
 /** Try one L-shaped corner order; null if any leg is obstructed. */
 function tryCornerPath(
-  grid: Map<string, AsciiNode>,
+  grid: Grid,
   from: GridCoord,
   to: GridCoord,
   horizontalFirst: boolean,
