@@ -186,6 +186,37 @@ export function increaseSize(
   return canvas
 }
 
+/**
+ * Bounds-checked write to a single canvas cell.
+ *
+ * Sets the character at (x, y) if the coordinate falls within the canvas;
+ * out-of-range coordinates are silently clipped (a no-op) instead of
+ * throwing. This is the single write path drawing modules should use
+ * instead of indexing `canvas[x]![y] = ch` directly — direct indexing
+ * bypasses bounds checking and throws (via the non-null assertion) when x or
+ * y falls outside the canvas.
+ *
+ * When both `role` and `roleCanvas` are provided, the role is recorded via
+ * `setRole` alongside the character write (used by callers, like the
+ * sequence-diagram renderer, that track character roles inline rather than
+ * deriving them from the finished canvas afterward).
+ */
+export function write(
+  canvas: Canvas,
+  x: number,
+  y: number,
+  ch: string,
+  role?: CharRole,
+  roleCanvas?: RoleCanvas,
+): void {
+  const [maxX, maxY] = getCanvasSize(canvas)
+  if (x < 0 || x > maxX || y < 0 || y > maxY) return
+  canvas[x]![y] = ch
+  if (role !== undefined && roleCanvas) {
+    setRole(roleCanvas, x, y, role)
+  }
+}
+
 // ============================================================================
 // Junction merging — Unicode box-drawing character compositing
 // ============================================================================

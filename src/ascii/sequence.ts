@@ -17,7 +17,7 @@ import {
   canvasToString,
   increaseSize,
   increaseRoleCanvasSize,
-  setRole,
+  write,
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
 
@@ -295,10 +295,7 @@ export function renderSequenceAscii(
 
   /** Set a character on the canvas and track its role. */
   function setC(x: number, y: number, ch: string, role: CharRole): void {
-    if (x >= 0 && x < canvas.length && y >= 0 && y < (canvas[0]?.length ?? 0)) {
-      canvas[x]![y] = ch
-      setRole(rc, x, y, role)
-    }
+    write(canvas, x, y, ch, role, rc)
   }
 
   // ---- DRAW: helper to place a bordered actor box (supports multi-line labels) ----

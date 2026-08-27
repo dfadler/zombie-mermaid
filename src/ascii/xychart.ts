@@ -22,6 +22,7 @@ import type {
   RoleCanvas,
 } from './types.ts'
 import { colorizeText } from './ansi.ts'
+import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from '../xychart/colors.ts'
 
 // ============================================================================
@@ -831,16 +832,18 @@ function drawLegend(
 // Canvas utilities
 // ============================================================================
 
+// createCanvas/createRoleCanvas delegate to the shared canvas.ts primitives
+// (mkCanvas/mkRoleCanvas), which take inclusive max-index arguments rather
+// than width/height — hence the `- 1`. createHexCanvas has no shared
+// equivalent: the per-cell hex color overlay is specific to xychart's
+// multi-series coloring and isn't part of the general Canvas/RoleCanvas
+// model in canvas.ts, so it keeps its own small implementation.
 function createCanvas(width: number, height: number): Canvas {
-  return Array.from({ length: width }, () =>
-    Array.from({ length: height }, () => ' '),
-  )
+  return mkCanvas(width - 1, height - 1)
 }
 
 function createRoleCanvas(width: number, height: number): RoleCanvas {
-  return Array.from({ length: width }, () =>
-    Array.from<CharRole | null>({ length: height }).fill(null),
-  )
+  return mkRoleCanvas(width - 1, height - 1)
 }
 
 function createHexCanvas(width: number, height: number): HexCanvas {
@@ -859,11 +862,18 @@ function set(
   hexCanvas?: HexCanvas,
   hex?: string | null,
 ): void {
-  if (col >= 0 && col < canvas.length && row >= 0 && row < canvas[0]!.length) {
-    canvas[col]![row] = char
-    roles[col]![row] = role
-    if (hexCanvas && hex) hexCanvas[col]![row] = hex
-  }
+  // Delegate the character+role write to the shared bounds-checked
+  // primitive (same clipping semantics as before: out-of-range coordinates
+  // are silently ignored). The hex-color overlay isn't known to canvas.ts,
+  // so it's still set here directly, guarded by the same bounds check.
+  const inBounds =
+    col >= 0 &&
+    col < canvas.length &&
+    row >= 0 &&
+    row < (canvas[0]?.length ?? 0)
+  if (!inBounds) return
+  write(canvas, col, row, char, role, roles)
+  if (hexCanvas && hex) hexCanvas[col]![row] = hex
 }
 
 function get(canvas: Canvas, row: number, col: number): string {
