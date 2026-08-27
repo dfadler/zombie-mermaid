@@ -554,10 +554,16 @@ const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
  * Tried as fallback when ARROW_REGEX doesn't match.
  *
+ * The closing operator is a variable-length run, matching ARROW_REGEX. While
+ * it was a fixed alternation, `A -- label ----> B` consumed only `---` from
+ * `---->`, leaving `-> B`, which forms no node group — so the edge and its
+ * target node were both dropped silently. Exactly the failure mode the
+ * variable-length work exists to remove.
+ *
  * Based on PR #36 by @liuxiaopai-ai (https://github.com/lukilabs/beautiful-mermaid/pull/36)
  */
 const TEXT_ARROW_REGEX =
-  /^(<)?(--|-\.|==)\s+(.+?)\s+(-->|---|\.\->|-\.\-|==>|===)/
+  /^(<|o|x)?(--|-\.|==)\s+(.+?)\s+(-{2,}[>ox]|={2,}[>ox]|\.+-[>ox]|-{3,}|={3,}|-\.+-)/
 
 /**
  * Node shape patterns — ordered from most specific delimiters to least.
@@ -988,7 +994,10 @@ function arrowStyleFromBody(body: string): EdgeStyle {
 
 /** Map text-embedded arrow open/close operators to edge style */
 function textArrowStyleFromOps(openOp: string, closeOp: string): EdgeStyle {
-  if (openOp === '-.' || closeOp === '.->' || closeOp === '-.-') return 'dotted'
-  if (openOp === '==' || closeOp === '==>' || closeOp === '===') return 'thick'
+  // Classify by the characters used, not by exact token, so every run length
+  // of a given style resolves identically — the same rule arrowStyleFromBody
+  // applies to the plain arrow forms.
+  if (openOp.includes('.') || closeOp.includes('.')) return 'dotted'
+  if (openOp.startsWith('=') || closeOp.startsWith('=')) return 'thick'
   return 'solid'
 }

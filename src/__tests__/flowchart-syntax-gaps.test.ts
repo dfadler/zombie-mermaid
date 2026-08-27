@@ -292,6 +292,36 @@ describe('no regression in existing edge forms', () => {
     expect(graph.edges[0]!.hasArrowEnd).toBe(end)
   })
 
+  /**
+   * Labelled edges must accept the same run lengths as bare ones.
+   *
+   * Generalising ARROW_REGEX without generalising TEXT_ARROW_REGEX left
+   * `A -- label ----> B` consuming only `---`, stranding `-> B`, which forms
+   * no node group — so the edge AND its target node vanished silently. That
+   * is the exact failure this row of the audit exists to remove, reintroduced
+   * one regex over.
+   */
+  it.each([
+    ['A -- label --> B', 'solid'],
+    ['A -- label ---> B', 'solid'],
+    ['A -- label ----> B', 'solid'],
+    ['A -- label --- B', 'solid'],
+    ['A -- label ---- B', 'solid'],
+    ['A == label ==> B', 'thick'],
+    ['A == label ===> B', 'thick'],
+    ['A == label ====> B', 'thick'],
+    ['A == label === B', 'thick'],
+    ['A -. label .-> B', 'dotted'],
+    ['A -. label ..-> B', 'dotted'],
+    ['A -. label -.- B', 'dotted'],
+  ])('keeps the edge and target for %s', (statement, style) => {
+    const graph = parse(statement)
+    expect([...graph.nodes.keys()].sort()).toEqual(['A', 'B'])
+    expect(graph.edges).toHaveLength(1)
+    expect(graph.edges[0]!.style).toBe(style)
+    expect(graph.edges[0]!.label).toBe('label')
+  })
+
   it('still parses a no-space arrow', () => {
     const graph = parse('A-->B')
     expect([...graph.nodes.keys()].sort()).toEqual(['A', 'B'])
