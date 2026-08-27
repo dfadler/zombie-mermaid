@@ -8,6 +8,8 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 ![zombie-mermaid sequence diagram example](hero.png)
 
+[**Live demo →**](https://dfadler.github.io/zombie-mermaid/)
+
 [![npm version](https://img.shields.io/npm/v/zombie-mermaid.svg)](https://www.npmjs.com/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
