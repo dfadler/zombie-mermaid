@@ -112,6 +112,59 @@ describe('splitStatements (issue #181)', () => {
         'A-->B',
       ])
     })
+
+    it('lets the comment swallow the rest of the line', () => {
+      /*
+       * A Mermaid comment runs to end of line, so a `;` inside it must not
+       * resurrect what follows. Splitting first and then discarding fragments
+       * that merely begin with `%%` left `C-->D` parsing as code.
+       */
+      expect(splitStatements('graph TD\nA-->B; %% note; C-->D')).toEqual([
+        'graph TD',
+        'A-->B',
+      ])
+    })
+
+    it('treats %% inside a quoted label as text, not a comment', () => {
+      expect(splitStatements('graph TD\nA["100%% done"]-->B')).toEqual([
+        'graph TD',
+        'A["100%% done"]-->B',
+      ])
+    })
+  })
+
+  describe("Mermaid's own #-prefixed character references", () => {
+    /*
+     * Mermaid spells character references with `#` where HTML uses `&` —
+     * `#59;` is the documented way to put a literal semicolon in a label.
+     * Treating that `;` as a separator both corrupts the label and invents a
+     * statement from the remainder.
+     */
+    it.each([
+      ['A[semi #59; here]-->B', 'a numeric reference'],
+      ['A[heart #9829; x]-->B', 'a symbol reference'],
+      ['A[say #quot;hi#quot;]-->B', 'a named reference'],
+    ])('keeps %s intact (%s)', (statement) => {
+      expect(splitStatements(`graph TD\n  ${statement}`)).toEqual([
+        'graph TD',
+        statement,
+      ])
+    })
+
+    it('still splits a real separator on the same line as one', () => {
+      expect(splitStatements('graph TD;A[#59;]-->B;B-->C')).toEqual([
+        'graph TD',
+        'A[#59;]-->B',
+        'B-->C',
+      ])
+    })
+
+    it('leaves a bare # that is not a reference alone', () => {
+      expect(splitStatements('graph TD;A[C# lang]-->B')).toEqual([
+        'graph TD',
+        'A[C# lang]-->B',
+      ])
+    })
   })
 })
 
