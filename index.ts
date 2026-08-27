@@ -43,6 +43,14 @@ function formatDescription(text: string): string {
   return text.replace(/`([^`]+)`/g, '<code>$1</code>')
 }
 
+/** URL/id-safe slug for a category name, e.g. "XY Chart" -> "xy-chart". */
+function slugifyCategory(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
 /** Human-readable labels for theme keys */
 const THEME_LABELS: Record<string, string> = {
   'zinc-dark': 'Zinc Dark',
@@ -121,26 +129,33 @@ async function generateHtml(): Promise<string> {
   const heroCount = samples.filter((s) => s.category === 'Hero').length
   const displayNum = (i: number) => i + 1 - heroCount
 
-  const tocSections = [...categories.entries()]
-    .filter(([cat]) => cat !== 'Hero') // Skip Hero from TOC
-    .map(([cat, indices]) => {
+  const nonHeroCategories = [...categories.entries()].filter(
+    ([cat]) => cat !== 'Hero',
+  )
+
+  const tocSections = nonHeroCategories
+    .map(([cat, indices], categoryIndex) => {
       const prefix = categoryPrefixes[cat]
+      const slug = slugifyCategory(cat)
       const items = indices
         .map((i) => {
           let title = samples[i]!.title
           // Strip the category prefix from the title since it's already under the category heading
           if (prefix && title.startsWith(prefix))
             title = title.slice(prefix.length)
-          return `<li><a href="#sample-${i}"><span class="toc-num">${displayNum(i)}.</span> ${escapeHtml(title)}</a></li>`
+          return `<li><a href="#sample-${i}"><span class="sidebar-num">${displayNum(i)}.</span> ${escapeHtml(title)}</a></li>`
         })
         .join('\n            ')
+      // The first category is the default active/expanded one (matches the
+      // category-view shown on initial load, before JS reads location.hash).
+      const openAttr = categoryIndex === 0 ? ' open' : ''
       return `
-        <div class="toc-category">
-          <h3>${escapeHtml(cat)} (${indices.length} samples)</h3>
-          <ol start="${displayNum(indices[0]!)}">
+        <details class="sidebar-group" data-category-slug="${slug}" data-category-label="${escapeHtml(cat)}"${openAttr}>
+          <summary>${escapeHtml(cat)} <span class="sidebar-group-count">(${indices.length})</span></summary>
+          <ol class="sidebar-list" start="${displayNum(indices[0]!)}">
             ${items}
           </ol>
-        </div>`
+        </details>`
     })
     .join('\n')
 
@@ -213,7 +228,7 @@ async function generateHtml(): Promise<string> {
   // data-sample-bg stores the per-sample background for "Default" mode restoration.
   // Hero samples get special full-width SVG-only treatment and are placed before "Samples" heading.
   const heroCards: string[] = []
-  const regularCards: string[] = []
+  const regularCardHtmlByIndex = new Map<number, string>()
 
   samples.forEach((sample, i) => {
     const bg = sample.options?.bg ?? ''
@@ -230,7 +245,9 @@ async function generateHtml(): Promise<string> {
       </div>
     </section>`)
     } else {
-      regularCards.push(`
+      regularCardHtmlByIndex.set(
+        i,
+        `
     <section class="sample" id="sample-${i}">
       <div class="sample-header">
         <h2>${escapeHtml(sample.title)}</h2>
@@ -251,12 +268,31 @@ async function generateHtml(): Promise<string> {
           <pre class="ascii-output"><code id="ascii-${i}">Rendering\u2026</code></pre>
         </div>
       </div>
-    </section>`)
+    </section>`,
+      )
     }
   })
 
   const heroCardsHtml = heroCards.join('\n')
-  const regularCardsHtml = regularCards.join('\n')
+
+  // Group regular sample cards into one <section> per category. Only the
+  // first category ships visible \u2014 the rest carry `hidden` so a first-time
+  // visitor's initial payload isn't "render everything at once": the other
+  // categories' diagrams are rendered client-side on demand, when a sidebar
+  // category is opened (see the "Category switching" client script below).
+  const categoryViewsHtml = nonHeroCategories
+    .map(([cat, indices], categoryIndex) => {
+      const slug = slugifyCategory(cat)
+      const cardsHtml = indices
+        .map((i) => regularCardHtmlByIndex.get(i))
+        .join('\n')
+      const hiddenAttr = categoryIndex === 0 ? '' : ' hidden'
+      return `
+    <section class="category-view" id="category-${slug}" data-category="${slug}"${hiddenAttr}>
+      ${cardsHtml}
+    </section>`
+    })
+    .join('\n')
 
   // ============================================================================
   // Step 5: Assemble full HTML
@@ -337,6 +373,23 @@ async function generateHtml(): Promise<string> {
       }
     }
 
+    /* -----------------------------------------------------------------
+     * Page shell: persistent left sidebar (desktop) + main column.
+     * On narrow screens the sidebar becomes an off-canvas drawer,
+     * toggled by .sidebar-toggle in the theme bar.
+     * ----------------------------------------------------------------- */
+    :root {
+      --nav-height: 62px;
+    }
+    .page-shell {
+      display: flex;
+      align-items: flex-start;
+    }
+    .page-main {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
     /* -- Scroll fade gradients (GPU accelerated) -- */
     body::before,
     body::after {
@@ -365,6 +418,8 @@ async function generateHtml(): Promise<string> {
       z-index: 1001;
       background: transparent;
       padding: 0.5rem 2rem;
+      min-height: var(--nav-height);
+      box-sizing: border-box;
       display: flex;
       align-items: center;
       gap: 0.75rem;
@@ -508,48 +563,35 @@ async function generateHtml(): Promise<string> {
       transform: translateY(0.5px);
     }
 
-    /* -- Contents button (screen-centered via absolute positioning) -- */
-    .contents-btn {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
+    /* -- Sidebar toggle (hamburger, mobile/tablet only — sidebar is always visible ≥1024px) -- */
+    .sidebar-toggle {
+      display: none;
       align-items: center;
+      justify-content: center;
       height: 30px;
-      gap: 6px;
-      padding: 0 12px;
+      width: 30px;
       border: none;
       border-radius: 8px;
       background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
       color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
-      font-size: 12px;
-      font-weight: 500;
-      font-family: inherit;
       cursor: pointer;
-      white-space: nowrap;
-      transition: color 0.15s, background 0.15s, box-shadow 0.2s, transform 0.1s;
+      transition: color 0.15s, background 0.15s, transform 0.1s;
     }
-    .contents-btn:hover {
+    .sidebar-toggle:hover {
       color: var(--t-fg);
       background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
     }
-    .contents-btn.active {
-      color: var(--t-fg);
-      background: var(--t-bg);
+    .sidebar-toggle:active {
+      transform: translateY(0.5px);
     }
-    .contents-btn:active {
-      transform: translateX(-50%) translateY(0.5px);
-    }
-    .contents-btn svg {
-      width: 14px;
-      height: 14px;
+    .sidebar-toggle svg {
+      width: 16px;
+      height: 16px;
       flex-shrink: 0;
     }
-    /* Hide contents button on smaller screens */
-    @media (max-width: 1024px) {
-      .contents-btn,
-      .mega-menu {
-        display: none !important;
+    @media (max-width: 1023px) {
+      .sidebar-toggle {
+        display: flex;
       }
     }
     /* -- Shadow + radius utilities -- */
@@ -584,71 +626,126 @@ async function generateHtml(): Promise<string> {
         rgba(var(--shadow-color), calc(var(--shadow-blur-opacity) * 0.67)) 0px 6px 6px -3px;
     }
 
-    /* -- Mega menu dropdown (x-centered with Contents button) -- */
-    .mega-menu {
-      display: none;
-      position: absolute;
-      top: calc(100% + 6px);
-      left: 50%;
-      transform: translateX(-50%);
-      max-width: min(1180px, calc(100vw - 2rem));
-      width: max-content;
-      background: var(--t-bg);
-      border-radius: 12px;
-      padding: 1.5rem 2rem;
-      max-height: 70vh;
+    /* -----------------------------------------------------------------
+     * Sidebar navigation — persistent on desktop, off-canvas drawer
+     * below 1024px (toggled by .sidebar-toggle in the theme bar).
+     * ----------------------------------------------------------------- */
+    .sidebar {
+      flex: 0 0 240px;
+      width: 240px;
+      position: sticky;
+      top: var(--nav-height);
+      align-self: flex-start;
+      height: calc(100vh - var(--nav-height));
       overflow-y: auto;
-      overflow-x: hidden;
-      z-index: 998;
+      padding: 1.5rem 1rem 2rem 2rem;
+      box-sizing: border-box;
     }
-    .mega-menu.open {
-      display: block;
-    }
-    .toc-grid {
-      columns: 4;
-      column-gap: 2rem;
-    }
-    @media (max-width: 1200px) {
-      .toc-grid {
-        columns: 3;
+    @media (min-width: 1000px) {
+      .sidebar {
+        padding-left: 3rem;
       }
     }
-    .toc-category {
-      display: inline-block;
-      width: 100%;
-      margin: 0;
-      padding-bottom: 1rem;
+    @media (max-width: 1023px) {
+      .sidebar-backdrop {
+        display: none;
+        position: fixed;
+        /* Stop below the theme bar, not inset: 0 — otherwise this sits above
+           the toggle (z-index 1010 vs. the theme bar's 1001) and intercepts
+           taps meant for it, even though the drawer itself no longer does. */
+        inset: var(--nav-height) 0 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 1010;
+      }
+      .sidebar-backdrop.open {
+        display: block;
+      }
+      .sidebar {
+        display: none;
+        position: fixed;
+        /* Below the theme bar (not top: 0) so the drawer never covers the
+           toggle that opened it — tapping it again still closes the drawer,
+           same control either way. */
+        top: var(--nav-height);
+        left: 0;
+        bottom: 0;
+        height: calc(100vh - var(--nav-height));
+        width: min(300px, 85vw);
+        background: var(--t-bg);
+        z-index: 1011;
+        padding: 1.5rem 1.5rem 2rem;
+        box-shadow: rgba(0, 0, 0, 0.15) 4px 0 24px 0;
+      }
+      .sidebar.open {
+        display: block;
+      }
     }
-    .toc-category h3 {
+    .sidebar-group {
+      border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+      padding: 0.6rem 0;
+    }
+    .sidebar-group:first-of-type {
+      padding-top: 0;
+    }
+    .sidebar-group > summary {
       font-size: 0.85rem;
       font-weight: 600;
-      margin: 0 0 0.5rem 0;
       color: var(--t-fg);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .toc-category ol {
+    .sidebar-group > summary::-webkit-details-marker {
+      display: none;
+    }
+    .sidebar-group > summary::before {
+      content: '';
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 4px 0 4px 5px;
+      border-color: transparent transparent transparent color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+    .sidebar-group[open] > summary::before {
+      transform: rotate(90deg);
+    }
+    .sidebar-group-count {
+      font-weight: 400;
+      color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
+    }
+    .sidebar-list {
       padding: 0;
-      margin: 0;
+      margin: 0.5rem 0 0;
       list-style: none;
       font-size: 0.8rem;
     }
-    .toc-category li {
-      margin-bottom: 0.15rem;
-      white-space: nowrap;
+    .sidebar-list li {
+      margin-bottom: 0.3rem;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .toc-category a { color: var(--t-fg); text-decoration: none; }
-    .toc-category a:hover { text-decoration: underline; }
-    .toc-num { color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg)); }
+    .sidebar-list a {
+      color: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));
+      text-decoration: none;
+    }
+    .sidebar-list a:hover {
+      color: var(--t-fg);
+      text-decoration: underline;
+    }
+    .sidebar-num {
+      color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg));
+    }
 
     /* -- Sample card -- */
     .sample {
       background: var(--t-bg);
       margin-bottom: 2rem;
       overflow: hidden;
+      scroll-margin-top: calc(var(--nav-height) + 1rem);
     }
 
     /* -- Hero sample (full-width SVG showcase, above Samples heading) -- */
@@ -1131,6 +1228,80 @@ async function generateHtml(): Promise<string> {
       color: var(--t-fg);
     }
 
+    /* -----------------------------------------------------------------
+     * Category banner — tells the visitor the sample list below is
+     * filtered to one diagram type, and gives an explicit way to reach
+     * the sidebar's other categories (important on mobile, where the
+     * sidebar itself is hidden behind the hamburger toggle).
+     * ----------------------------------------------------------------- */
+    .samples-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.5rem;
+      padding-top: 2.5rem;
+    }
+    .samples-heading .section-title {
+      padding: 0;
+    }
+    .category-banner {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      color: color-mix(in srgb, var(--t-fg) 65%, var(--t-bg));
+    }
+    .category-banner strong {
+      color: var(--t-fg);
+    }
+    .category-banner-btn {
+      display: flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 12px;
+      border: none;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
+      color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
+      font-size: 0.78rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, background 0.15s;
+    }
+    .category-banner-btn:hover {
+      color: var(--t-fg);
+      background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+    }
+    .category-view {
+      display: block;
+    }
+    .category-view[hidden] {
+      display: none;
+    }
+
+    /* Highlight the sidebar category currently shown in the main column —
+       distinct from a plain expanded/collapsed <details> state. */
+    .sidebar-group[open] > summary {
+      color: var(--t-accent);
+    }
+    .sidebar-group[open] > summary::before {
+      border-left-color: var(--t-accent);
+    }
+    /* Brief attention pulse when "Browse diagram types" points at the
+       (already-visible, desktop) sidebar. */
+    @keyframes sidebar-attention-pulse {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-accent) 40%, transparent); }
+    }
+    .sidebar.attention {
+      animation: sidebar-attention-pulse 0.6s ease-in-out 2;
+      border-radius: 12px;
+    }
+
     /* -- Footer -- */
     .site-footer {
       position: relative;
@@ -1177,17 +1348,20 @@ async function generateHtml(): Promise<string> {
 
   <!-- Navigation + theme bar -->
   <div class="theme-bar" id="theme-bar">
+    <button class="sidebar-toggle shadow-minimal" id="sidebar-toggle" aria-label="Toggle sample navigation" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg></button>
     <a class="brand-badge shadow-minimal" href="https://github.com/dfadler/zombie-mermaid" target="_blank" rel="noopener"><span><strong>Zombie Mermaid</strong></span></a>
-    <button class="contents-btn shadow-minimal" id="contents-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3" y1="4" x2="13" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="12" x2="10" y2="12"/></svg>Contents</button>
     <div class="theme-pills" id="theme-pills">
       ${themePillsHtml}
     </div>
-    <div class="mega-menu shadow-modal-small" id="mega-menu">
-      <div class="toc-grid">
-        ${tocSections}
-      </div>
-    </div>
   </div>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <div class="page-shell">
+  <nav class="sidebar" id="sidebar" aria-label="Sample navigation">
+    ${tocSections}
+  </nav>
+  <div class="page-main">
 
   <!-- Hero header section -->
   <header class="hero-header">
@@ -1222,9 +1396,15 @@ async function generateHtml(): Promise<string> {
 
 ${heroCardsHtml}
 
-  <h2 class="section-title">Samples</h2>
+  <div class="samples-heading">
+    <h2 class="section-title">Samples</h2>
+    <div class="category-banner" id="category-banner">
+      <span>Showing <strong id="active-category-name"></strong> — <span id="active-category-count"></span> of ${samples.length - heroCount} samples</span>
+      <button type="button" class="category-banner-btn" id="browse-categories-btn">Browse diagram types</button>
+    </div>
+  </div>
 
-${regularCardsHtml}
+${categoryViewsHtml}
 
   <!-- Bundled mermaid renderer — exposes window.__mermaid -->
   <script type="module">
@@ -1330,10 +1510,14 @@ ${bundleJs}
     setShadowVars(theme);
     updateThemeColor(theme ? theme.fg : '#27272A', theme ? theme.bg : '#FFFFFF');
 
-    // 2. Update all rendered SVG elements' CSS variables
-    var svgs = document.querySelectorAll('.svg-container svg');
-    for (var j = 0; j < svgs.length; j++) {
-      var svgEl = svgs[j];
+    // 2. Update all rendered SVG elements' CSS variables. Indexed by sample
+    // (not NodeList position) since not-yet-rendered categories mean this
+    // list is sparse — a lazily-rendered sample picks up the live theme
+    // itself (see renderSample), so skipping it here is correct, not stale.
+    for (var j = 0; j < samples.length; j++) {
+      var svgContainerEl = document.getElementById('svg-' + j);
+      var svgEl = svgContainerEl && svgContainerEl.querySelector('svg');
+      if (!svgEl) continue;
       if (theme) {
         // Override with the global theme colors
         svgEl.style.setProperty('--bg', theme.bg);
@@ -1378,9 +1562,14 @@ ${bundleJs}
       }
     }
 
-    // 4. Re-render ASCII panels with new theme colors
+    // 4. Re-render ASCII panels with new theme colors — only for samples
+    // already rendered. An unrendered (category not yet opened) sample picks
+    // up the live theme itself when renderSample eventually runs for it, so
+    // skipping it here isn't stale, and avoids rendering ASCII for the whole
+    // sample set on every theme switch regardless of what's actually visible.
     var asciiTheme = theme ? diagramColorsToAsciiTheme(theme) : null;
     for (var j = 0; j < samples.length; j++) {
+      if (originalSvgStyles[j] === undefined) continue;
       var asciiEl = document.getElementById('ascii-' + j);
       if (!asciiEl) continue;
       try {
@@ -1479,45 +1668,96 @@ ${bundleJs}
     });
   }
 
-  // -- Mega menu (Contents dropdown) --
-  var contentsBtn = document.getElementById('contents-btn');
-  var megaMenu = document.getElementById('mega-menu');
+  // -- Sidebar navigation (persistent on desktop; off-canvas drawer below 1024px) --
+  var sidebar = document.getElementById('sidebar');
+  var sidebarToggle = document.getElementById('sidebar-toggle');
+  var sidebarBackdrop = document.getElementById('sidebar-backdrop');
 
-  contentsBtn.addEventListener('click', function(e) {
+  // Body scroll lock while the drawer is open — otherwise the page behind
+  // the backdrop keeps scrolling with touch, which is disorienting.
+  function openSidebarDrawer() {
+    sidebar.classList.add('open');
+    sidebarBackdrop.classList.add('open');
+    sidebarToggle.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebarDrawer() {
+    sidebar.classList.remove('open');
+    sidebarBackdrop.classList.remove('open');
+    sidebarToggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  sidebarToggle.addEventListener('click', function(e) {
     e.stopPropagation();
-    var isOpen = megaMenu.classList.toggle('open');
-    contentsBtn.classList.toggle('active', isOpen);
-    contentsBtn.classList.toggle('shadow-tinted', isOpen);
+    if (sidebar.classList.contains('open')) closeSidebarDrawer();
+    else openSidebarDrawer();
   });
 
-  // Close on clicking a ToC link (smooth scroll to target)
-  megaMenu.addEventListener('click', function(e) {
+  sidebarBackdrop.addEventListener('click', closeSidebarDrawer);
+
+  // A <summary> click switches the active category (see "Category switching"
+  // below); a sample <a> click smooth-scrolls to it. Either way, close the
+  // drawer so mobile visitors see the content they just picked.
+  sidebar.addEventListener('click', function(e) {
+    var summary = e.target.closest('summary');
+    if (summary) {
+      e.preventDefault();
+      closeSidebarDrawer();
+      showCategory(summary.closest('.sidebar-group').getAttribute('data-category-slug'), {
+        updateHash: true,
+        scrollToTop: true,
+      });
+      return;
+    }
     var link = e.target.closest('a');
     if (!link) return;
+    var href = link.getAttribute('href');
+    if (!href) return;
+    // Let a modified click (open in new tab, etc.) through untouched.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    megaMenu.classList.remove('open');
-    contentsBtn.classList.remove('active');
-    contentsBtn.classList.remove('shadow-tinted');
-    var target = document.querySelector(link.getAttribute('href'));
+    closeSidebarDrawer();
+    history.pushState(null, '', href);
+    var target = document.querySelector(href);
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // Close on outside click
-  document.addEventListener('click', function(e) {
-    if (!megaMenu.classList.contains('open')) return;
-    if (!e.target.closest('.mega-menu') && !e.target.closest('.contents-btn')) {
-      megaMenu.classList.remove('open');
-      contentsBtn.classList.remove('active');
-      contentsBtn.classList.remove('shadow-tinted');
+  // Keyboard-only preview: tabbing to a sidebar CTA scrolls its section into
+  // view, same as clicking it would — without waiting for activation (Enter).
+  // Unlike the click handler, this never calls showCategory: switching the
+  // active category on mere focus (no click/Enter) would be an unexpected
+  // context change, so a not-yet-active category's <summary> just no-ops
+  // here (its section is hidden, so scrollIntoView has nothing to do).
+  sidebar.addEventListener('focusin', function(e) {
+    var link = e.target.closest('a');
+    if (link) {
+      var linkTarget = document.querySelector(link.getAttribute('href'));
+      if (linkTarget) linkTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+    var summary = e.target.closest('summary');
+    if (summary) {
+      var slug = summary.closest('.sidebar-group').getAttribute('data-category-slug');
+      var summaryTarget = document.getElementById('category-' + slug);
+      if (summaryTarget) summaryTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   });
 
-  // Close on Escape
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && megaMenu.classList.contains('open')) {
-      megaMenu.classList.remove('open');
-      contentsBtn.classList.remove('active');
-      contentsBtn.classList.remove('shadow-tinted');
+    if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebarDrawer();
+  });
+
+  // "Browse diagram types" — the category banner's explicit nudge toward the
+  // sidebar, since only one category renders by default (see below).
+  document.getElementById('browse-categories-btn').addEventListener('click', function() {
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      openSidebarDrawer();
+    } else {
+      sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      sidebar.classList.add('attention');
+      setTimeout(function() { sidebar.classList.remove('attention'); }, 1300);
     }
   });
 
@@ -1541,58 +1781,71 @@ ${bundleJs}
     setShadowVars(null);
   }
 
+  function escapeHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   // ============================================================================
-  // Progressive rendering — render each diagram sequentially
+  // Per-sample rendering — extracted into its own function (rather than one
+  // eager loop over every sample) so it can run lazily: only the active
+  // category renders on load, and the rest render on demand when a visitor
+  // opens that category from the sidebar.
   // ============================================================================
 
-  var totalStart = performance.now();
+  // Always read live, not captured once ahead of an await — a category can
+  // render long after page load, and a theme switch can land mid-render
+  // (applyTheme's own pass runs once and skips elements that don't exist in
+  // the DOM yet, so a stale snapshot here would leave this sample stuck with
+  // the wrong colors with nothing left to correct it).
+  function currentTheme() {
+    var themeKey = localStorage.getItem('mermaid-theme');
+    return themeKey && THEMES[themeKey] ? THEMES[themeKey] : null;
+  }
 
-  for (var i = 0; i < samples.length; i++) {
+  async function renderSample(i) {
     var sample = samples[i];
     var svgContainer = document.getElementById('svg-' + i);
     var asciiContainer = document.getElementById('ascii-' + i);
     var svgPanel = document.getElementById('svg-panel-' + i);
 
-    // Render SVG — wrapped in a timeout guard so a stalled layout
-    // doesn't block all remaining diagrams from rendering.
     try {
       var svg = await renderMermaid(sample.source, sample.options);
+      var theme = currentTheme();
       svgContainer.innerHTML = svg;
 
       // Store the SVG's original inline style for Default mode restoration
       var svgEl = svgContainer.querySelector('svg');
       if (svgEl) {
-        originalSvgStyles.push(svgEl.getAttribute('style') || '');
+        originalSvgStyles[i] = svgEl.getAttribute('style') || '';
 
         // If a global theme is active, immediately override the SVG's variables
-        if (savedTheme && THEMES[savedTheme]) {
-          var th = THEMES[savedTheme];
-          svgEl.style.setProperty('--bg', th.bg);
-          svgEl.style.setProperty('--fg', th.fg);
+        if (theme) {
+          svgEl.style.setProperty('--bg', theme.bg);
+          svgEl.style.setProperty('--fg', theme.fg);
           var enrichment = ['line', 'accent', 'muted', 'surface', 'border'];
           for (var k = 0; k < enrichment.length; k++) {
-            if (th[enrichment[k]]) svgEl.style.setProperty('--' + enrichment[k], th[enrichment[k]]);
+            if (theme[enrichment[k]]) svgEl.style.setProperty('--' + enrichment[k], theme[enrichment[k]]);
             else svgEl.style.removeProperty('--' + enrichment[k]);
           }
           // Recompute xychart series color vars from the saved theme's accent
           var maxColor = parseInt(svgEl.getAttribute('data-xychart-colors') || '-1', 10);
           if (maxColor >= 0) {
-            var accent = th.accent || CHART_ACCENT_FALLBACK;
+            var accent = theme.accent || CHART_ACCENT_FALLBACK;
             svgEl.style.setProperty('--xychart-color-0', accent);
             for (var ci = 1; ci <= maxColor; ci++) {
-              svgEl.style.setProperty('--xychart-color-' + ci, getSeriesColor(ci, accent, th.bg));
+              svgEl.style.setProperty('--xychart-color-' + ci, getSeriesColor(ci, accent, theme.bg));
             }
           }
         }
       } else {
-        originalSvgStyles.push('');
+        originalSvgStyles[i] = '';
       }
 
       // Set panel background to match the SVG (skip for hero panels - keep transparent)
       var isHeroPanel = svgPanel.classList.contains('hero-diagram-panel');
       if (!isHeroPanel) {
-        if (savedTheme && THEMES[savedTheme]) {
-          svgPanel.style.background = THEMES[savedTheme].bg;
+        if (theme) {
+          svgPanel.style.background = theme.bg;
         } else {
           var sampleBg = svgPanel.getAttribute('data-sample-bg');
           if (sampleBg) svgPanel.style.background = sampleBg;
@@ -1600,30 +1853,118 @@ ${bundleJs}
       }
     } catch (err) {
       svgContainer.innerHTML = '<div class="render-error">SVG Error: ' + escapeHtml(String(err)) + '</div>';
-      originalSvgStyles.push('');
+      originalSvgStyles[i] = '';
     }
 
     // Hero samples don't have ASCII panels
     if (asciiContainer) {
       try {
-        var asciiOpts = savedTheme && THEMES[savedTheme]
-          ? { theme: diagramColorsToAsciiTheme(THEMES[savedTheme]) }
-          : {};
+        var asciiTheme = currentTheme();
+        var asciiOpts = asciiTheme ? { theme: diagramColorsToAsciiTheme(asciiTheme) } : {};
         asciiContainer.innerHTML = renderMermaidASCII(sample.source, asciiOpts);
       } catch (e) {
         asciiContainer.textContent = '(ASCII not supported for this diagram type)';
       }
     }
-
   }
 
-  // Done — show total time
-  var totalMs = (performance.now() - totalStart).toFixed(0);
-  totalTimingEl.textContent = (samples.length * 2) + ' samples (SVG+ASCII) rendered in ' + totalMs + ' ms';
+  // ============================================================================
+  // Category switching — renders a category's samples the first time it's
+  // shown, then just toggles visibility on repeat visits (no re-render).
+  // ============================================================================
 
-  function escapeHtml(text) {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  var renderedCategories = {};
+  var renderedCount = 0;
+  var renderedMs = 0;
+  var totalRenderable = samples.filter(function(s) { return s.category !== 'Hero'; }).length;
+
+  function updateRenderStats() {
+    totalTimingEl.textContent = (renderedCount * 2) + ' of ' + (totalRenderable * 2) +
+      ' samples (SVG+ASCII) rendered in ' + renderedMs.toFixed(0) + ' ms so far';
   }
+
+  async function renderCategory(slug) {
+    if (renderedCategories[slug]) return;
+    renderedCategories[slug] = true;
+    var view = document.getElementById('category-' + slug);
+    if (!view) return;
+    var sections = view.querySelectorAll('.sample');
+    var indices = [];
+    for (var n = 0; n < sections.length; n++) {
+      indices.push(parseInt(sections[n].id.slice('sample-'.length), 10));
+    }
+    // Accumulate each sample's own duration (not one span for the whole
+    // category) — a category render isn't awaited by its caller, so two
+    // could overlap in wall-clock time and double-count a shared span.
+    for (var m = 0; m < indices.length; m++) {
+      var sampleStart = performance.now();
+      await renderSample(indices[m]);
+      renderedMs += performance.now() - sampleStart;
+      renderedCount++;
+      updateRenderStats();
+    }
+  }
+
+  function showCategory(slug, opts) {
+    opts = opts || {};
+
+    var views = document.querySelectorAll('.category-view');
+    for (var v = 0; v < views.length; v++) {
+      views[v].hidden = views[v].getAttribute('data-category') !== slug;
+    }
+
+    var label = '';
+    var groups = document.querySelectorAll('.sidebar-group');
+    for (var g = 0; g < groups.length; g++) {
+      var isActive = groups[g].getAttribute('data-category-slug') === slug;
+      groups[g].open = isActive;
+      if (isActive) label = groups[g].getAttribute('data-category-label') || '';
+    }
+
+    var activeView = document.getElementById('category-' + slug);
+    var nameEl = document.getElementById('active-category-name');
+    var countEl = document.getElementById('active-category-count');
+    if (nameEl) nameEl.textContent = label;
+    if (countEl) countEl.textContent = String(activeView ? activeView.querySelectorAll('.sample').length : 0);
+
+    if (opts.updateHash) history.replaceState(null, '', '#category-' + slug);
+    if (opts.scrollToTop) {
+      var banner = document.getElementById('category-banner');
+      if (banner) banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    return renderCategory(slug);
+  }
+
+  // -- Initial render: hero samples (always visible) + whichever category
+  // the URL hash points at, defaulting to the first one. --
+  (async function initSamples() {
+    for (var hi = 0; hi < samples.length; hi++) {
+      if (samples[hi].category === 'Hero') await renderSample(hi);
+    }
+
+    var hash = location.hash.slice(1);
+    var initialSlug = null;
+    if (hash.indexOf('category-') === 0) {
+      initialSlug = hash.slice('category-'.length);
+    } else if (hash.indexOf('sample-') === 0) {
+      var hashTarget = document.getElementById(hash);
+      var hashView = hashTarget && hashTarget.closest('.category-view');
+      if (hashView) initialSlug = hashView.getAttribute('data-category');
+    }
+    if (!initialSlug || !document.getElementById('category-' + initialSlug)) {
+      var firstView = document.querySelector('.category-view');
+      initialSlug = firstView ? firstView.getAttribute('data-category') : null;
+    }
+    if (!initialSlug) return;
+
+    await showCategory(initialSlug, { updateHash: false });
+
+    if (hash.indexOf('sample-') === 0) {
+      var jumpTarget = document.getElementById(hash);
+      if (jumpTarget) jumpTarget.scrollIntoView({ block: 'start' });
+    }
+  })();
 
   // ============================================================================
   // Edit dialog — open, close, save & re-render
@@ -1750,6 +2091,9 @@ ${bundleJs}
   </div>
 
   </div><!-- .content-wrapper -->
+
+  </div><!-- .page-main -->
+  </div><!-- .page-shell -->
 
   <footer class="site-footer">
     <span>&copy; 2026 zombie-mermaid</span>
