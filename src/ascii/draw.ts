@@ -37,7 +37,12 @@ import {
 } from './draw-bundles.ts'
 import { drawSubgraphBox, drawSubgraphLabel } from './draw-subgraphs.ts'
 
-export { drawNode, drawBox, drawMultiBox } from './draw-boxes.ts'
+export {
+  drawNode,
+  drawBox,
+  drawMultiBox,
+  classifyBoxChar,
+} from './draw-boxes.ts'
 export { drawLine } from './draw-lines.ts'
 export { drawArrow, drawSubgraphBox, drawSubgraphLabel }
 
