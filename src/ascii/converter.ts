@@ -135,13 +135,29 @@ export function convertToAsciiGraph(
   // which causes incorrect bounding boxes when nodes span subgraph boundaries.
   deduplicateSubgraphNodes(parsed.subgraphs, subgraphs, nodeMap)
 
+  /*
+   * `classDef default` is Mermaid's implicit base style for every node, not
+   * just for nodes that name it. Apply it to all nodes first so an explicit
+   * assignment below can override it property by property.
+   */
+  const defaultDef = parsed.classDefs.get('default')
+  if (defaultDef) {
+    for (const node of nodeMap.values()) {
+      node.styleClassName = 'default'
+      node.styleClass = { name: 'default', styles: defaultDef }
+    }
+  }
+
   // Apply class definitions
   for (const [nodeId, className] of parsed.classAssignments) {
     const node = nodeMap.get(nodeId)
     const classDef = parsed.classDefs.get(className)
     if (node && classDef) {
       node.styleClassName = className
-      node.styleClass = { name: className, styles: classDef }
+      node.styleClass = {
+        name: className,
+        styles: defaultDef ? { ...defaultDef, ...classDef } : classDef,
+      }
     }
   }
 

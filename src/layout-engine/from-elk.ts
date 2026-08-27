@@ -566,7 +566,11 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
 
 /**
  * Resolve inline styles for a node from classDefs and nodeStyles.
- * Class styles are applied first, then explicit style directives override.
+ *
+ * Cascade, weakest to strongest:
+ *   1. `classDef default` — Mermaid's implicit base for every node
+ *   2. the node's own assigned class (`class A foo` / `A:::foo`)
+ *   3. an explicit `style A ...` directive
  */
 function resolveNodeStyle(
   nodeId: string,
@@ -574,12 +578,23 @@ function resolveNodeStyle(
 ): Record<string, string> | undefined {
   let result: Record<string, string> | undefined
 
-  // First, apply class styles (if node has a class assignment)
+  /*
+   * `classDef default` applies to every node without being assigned. It was
+   * previously honored only when a node named it explicitly (`class X
+   * default`), which silently diverges from Mermaid: a diagram styling all
+   * its nodes via `classDef default` rendered unstyled with no error.
+   */
+  const defaultDef = graph.classDefs.get('default')
+  if (defaultDef) {
+    result = { ...defaultDef }
+  }
+
+  // Then the node's own class, overriding the default property by property.
   const className = graph.classAssignments.get(nodeId)
   if (className) {
     const classDef = graph.classDefs.get(className)
     if (classDef) {
-      result = { ...classDef }
+      result = result ? { ...result, ...classDef } : { ...classDef }
     }
   }
 

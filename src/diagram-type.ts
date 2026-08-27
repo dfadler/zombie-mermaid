@@ -8,6 +8,8 @@
 // never drift out of sync with each other again.
 // ============================================================================
 
+import { splitStatements } from './statements.ts'
+
 /** The diagram types this library can detect and route to a renderer. */
 export type DiagramType = 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart'
 
@@ -15,12 +17,13 @@ export type DiagramType = 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart'
  * Detect the diagram type from the mermaid source text.
  * Returns the type keyword used for routing to the correct pipeline.
  *
- * The header keyword is isolated by splitting on newline OR semicolon,
- * since Mermaid allows `;` as a statement separator (e.g. a single-line
- * `flowchart TD;A-->B`).
+ * The header keyword is the first *statement*, not the first line: Mermaid
+ * allows `;` as a statement separator, so `flowchart TD;A-->B` has its header
+ * and first edge on one line. Uses the same splitter every parser uses, so
+ * routing and parsing can never disagree about where the header ends.
  */
 export function detectDiagramType(text: string): DiagramType {
-  const firstLine = text.trim().split(/[\n;]/)[0]?.trim().toLowerCase() ?? ''
+  const firstLine = splitStatements(text)[0]?.toLowerCase() ?? ''
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^sequencediagram\s*$/.test(firstLine)) return 'sequence'

@@ -7,7 +7,14 @@ import type {
   EdgeStyle,
 } from './types.ts'
 import { normalizeBrTags } from './multiline-utils.ts'
+import { splitStatements } from './statements.ts'
 
+import {
+  matchExpandedBlock,
+  parseExpandedMeta,
+  resolveShapeName,
+} from './expanded-shapes.ts'
+import type { ExpandedNodeMeta } from './expanded-shapes.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()
@@ -71,10 +78,7 @@ export function toDirection(raw: string | undefined): Direction {
  * Throws on invalid/unsupported input.
  */
 export function parseMermaid(text: string): MermaidGraph {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')
@@ -514,21 +518,50 @@ function parseStyleProps(propsStr: string): Record<string, string> {
  * The doubled `o--o`/`x--x` forms must be tried before the single-sided
  * `o--`/`x--` forms — regex alternation picks the first alternative that
  * matches, not the longest, so `o--` listed first would consume just the
- * start marker and strand the trailing `o` as a bogus token.
+ * start marker and strand the trailing `o` as a bogus token. Capturing the
+ * markers as their own groups (rather than baking them into an alternation
+ * of whole tokens) sidesteps that ordering problem entirely.
+ *
+ * The body is a variable-length run: Mermaid uses extra characters as a
+ * layout-rank hint (`A ---- B` pushes B one rank further than `A --> B`).
+ * A fixed alternation of `-->|---|==>` mis-tokenized anything longer,
+ * stranding the surplus characters and corrupting the following token.
+ * The run length is parsed so the edge survives; the rank hint it encodes
+ * is not yet modelled by the layout engine.
+ *
+ * `~~~` is Mermaid's invisible link: it participates in layout but draws
+ * nothing.
  *
  * Optional label: -->|label text|
  */
-const ARROW_REGEX =
-  /^(<)?(-->|-.->|==>|---|-\.-|===|o--o|x--x|--o|--x|o--|x--)(?:\|([^|]*)\|)?/
+const ARROW_REGEX = /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\|([^|]*)\|)?/
+
+/**
+ * Link bodies that are only a link when a start or end marker accompanies
+ * them.
+ *
+ * A bare `--` (or `==`) opens Mermaid's text-embedded label syntax —
+ * `A -- Yes --> B` — which TEXT_ARROW_REGEX handles. Treating it as an
+ * unmarked open link here would consume the opener and strand the label.
+ * Mermaid itself requires three characters for an unmarked open link
+ * (`A --- B`), so this only rejects what Mermaid also rejects.
+ */
+const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
 
 /**
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
  * Tried as fallback when ARROW_REGEX doesn't match.
  *
+ * The closing operator is a variable-length run, matching ARROW_REGEX. While
+ * it was a fixed alternation, `A -- label ----> B` consumed only `---` from
+ * `---->`, leaving `-> B`, which forms no node group — so the edge and its
+ * target node were both dropped silently. Exactly the failure mode the
+ * variable-length work exists to remove.
+ *
  * Based on PR #36 by @liuxiaopai-ai (https://github.com/lukilabs/beautiful-mermaid/pull/36)
  */
 const TEXT_ARROW_REGEX =
-  /^(<)?(--|-\.|==)\s+(.+?)\s+(-->|---|\.\->|-\.\-|==>|===)/
+  /^(<|o|x)?(--|-\.|==)\s+(.+?)\s+(-{2,}[>ox]|={2,}[>ox]|\.+-[>ox]|-{3,}|={3,}|-\.+-)/
 
 /**
  * Node shape patterns — ordered from most specific delimiters to least.
@@ -542,7 +575,20 @@ const TEXT_ARROW_REGEX =
  * closing bracket (see issue #61) — without this, `A["test [] brackets"]`
  * would stop at the first `]`, which lives inside the quoted string.
  */
-const NODE_PATTERNS: Array<{ regex: RegExp; shape: NodeShape }> = [
+/**
+ * A node shape pattern.
+ *
+ * `shape` is usually a fixed `NodeShape`. For the slash-bracket family it is
+ * a function instead, because those four shapes are distinguished by which
+ * delimiter *closes* them — which the regex has to capture rather than
+ * hard-code. See SLASH_BRACKET note below.
+ */
+interface NodePattern {
+  regex: RegExp
+  shape: NodeShape | ((closingDelimiter: string) => NodeShape)
+}
+
+const NODE_PATTERNS: NodePattern[] = [
   // Triple delimiters (must be first)
   {
     regex: /^([\w-]+)\(\(\(((?:"[^"]*"|(?!\)\)\)).)+)\)\)\)/,
@@ -555,12 +601,36 @@ const NODE_PATTERNS: Array<{ regex: RegExp; shape: NodeShape }> = [
   { regex: /^([\w-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/, shape: 'subroutine' }, // A[[text]]
   { regex: /^([\w-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/, shape: 'cylinder' }, // A[(text)]
 
-  // Trapezoid variants — must come before plain [text]
-  { regex: /^([\w-]+)\[\/((?:"[^"]*"|(?!\\\]).)+)\\\]/, shape: 'trapezoid' }, // A[/text\]
+  /*
+   * SLASH_BRACKET family — must come before plain [text].
+   *
+   * Four shapes share a `[` + slash opener and differ only in which
+   * delimiter closes them:
+   *
+   *   A[/text\]  trapezoid          A[/text/]  parallelogram
+   *   A[\text/]  trapezoid-alt      A[\text\]  parallelogram-alt
+   *
+   * They CANNOT be four separate patterns each negated against its own
+   * closing pair. A pattern for `[/…\]` whose content merely excludes `\]`
+   * will happily run past a `/]` to reach a `\]` later on the same line, so
+   *
+   *     A[/parallelogram/] --> B[\alt\]
+   *
+   * matched as a single trapezoid whose label was the entire statement —
+   * silently swallowing the edge and the second node. Ordering the patterns
+   * differently only moves which input breaks.
+   *
+   * Instead, one pattern per opener stops at whichever slash-close comes
+   * first and captures it, and the captured delimiter selects the shape.
+   */
   {
-    regex: /^([\w-]+)\[\\((?:"[^"]*"|(?!\/\]).)+)\/\]/,
-    shape: 'trapezoid-alt',
-  }, // A[\text/]
+    regex: /^([\w-]+)\[\/((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/,
+    shape: (close) => (close === '\\' ? 'trapezoid' : 'parallelogram'),
+  }, // A[/text\] or A[/text/]
+  {
+    regex: /^([\w-]+)\[\\((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/,
+    shape: (close) => (close === '/' ? 'trapezoid-alt' : 'parallelogram-alt'),
+  }, // A[\text/] or A[\text\]
 
   // Asymmetric flag shape
   { regex: /^([\w-]+)>((?:"[^"]*"|(?!\]).)+)\]/, shape: 'asymmetric' }, // A>text]
@@ -588,6 +658,59 @@ const NODE_PATTERNS: Array<{ regex: RegExp; shape: NodeShape }> = [
  * stops cleanly at `A` and lets the arrow regex take over.
  */
 const BARE_NODE_REGEX = /^([\w]+(?:-[\w]+)*)/
+
+/**
+ * Node id immediately followed by the expanded-syntax opener: `A@{`.
+ *
+ * Only the id is captured — the block itself needs depth- and quote-aware
+ * scanning (a label may contain `}`), which a regex would do badly, so
+ * `matchExpandedBlock` takes over from here.
+ */
+const EXPANDED_NODE_ID_REGEX = /^([\w-]+)(?=@\{)/
+
+/**
+ * Resolve the geometry for an `A@{ ... }` node.
+ *
+ * An `icon:` or `img:` node has no `shape:` of its own — its outline comes
+ * from `form:` instead (Mermaid defaults to a square). An unrecognized shape
+ * name falls back to a rectangle rather than throwing: Mermaid adds shape
+ * names regularly, and rendering a plain box beats failing the whole diagram
+ * over one unknown name.
+ */
+function expandedNodeShape(meta: ExpandedNodeMeta): NodeShape {
+  if (meta.shape) {
+    return resolveShapeName(meta.shape) ?? 'rectangle'
+  }
+
+  if (meta.icon !== undefined || meta.img !== undefined) {
+    switch (meta.form?.toLowerCase()) {
+      case 'circle':
+        return 'circle'
+      case 'rounded':
+        return 'rounded'
+      default:
+        return 'rectangle'
+    }
+  }
+
+  return 'rectangle'
+}
+
+/**
+ * Resolve the display label for an `A@{ ... }` node.
+ *
+ * Falls back to the node id when no `label:` is given, matching how the
+ * bracket syntax treats a bare `A`. For an icon or image node with no label,
+ * the icon/image reference itself is shown: this renderer draws neither
+ * FontAwesome glyphs nor remote images, so showing the reference is more
+ * useful than an empty box, and it keeps the node identifiable.
+ */
+function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
+  if (meta.label !== undefined && meta.label.length > 0) return meta.label
+  if (meta.icon) return meta.icon
+  if (meta.img) return meta.img
+  return id
+}
 
 /** Regex for ::: class shorthand suffix — matches :::className immediately after a node */
 const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/
@@ -626,24 +749,31 @@ function parseEdgeLine(
     let edgeLabel: string | undefined
 
     const arrowMatch = remaining.match(ARROW_REGEX)
-    if (arrowMatch) {
-      const arrowOp = arrowMatch[2]!
-      // `o--`/`x--` mark a circle/cross terminator at the start of the
-      // edge (in addition to the `<` reversed-arrow marker); `--o`/`--x`
-      // mark one at the end. Neither renderer models a distinct
-      // circle/cross marker shape yet, so these terminators are treated
-      // like a regular arrowhead (see issue #65) — the goal here is to
-      // stop the edge and its target node from being silently dropped.
-      hasArrowStart =
-        Boolean(arrowMatch[1]) ||
-        arrowOp.startsWith('o') ||
-        arrowOp.startsWith('x')
-      const rawEdgeLabel = arrowMatch[3]?.trim()
+    const arrowBody = arrowMatch?.[2]
+    const startMarker = arrowMatch?.[1]
+    const endMarker = arrowMatch?.[3]
+
+    if (
+      arrowMatch &&
+      arrowBody !== undefined &&
+      // An unmarked `--`/`==` is the text-label opener, not a link.
+      !(
+        startMarker === undefined &&
+        endMarker === undefined &&
+        AMBIGUOUS_UNMARKED_BODIES.has(arrowBody)
+      )
+    ) {
+      // `o`/`x` mark a circle/cross terminator (alongside `<` for a reversed
+      // arrow). Neither renderer models a distinct circle/cross marker shape
+      // yet, so these terminators are treated like a regular arrowhead (see
+      // issue #65) — the goal here is to stop the edge and its target node
+      // from being silently dropped.
+      hasArrowStart = startMarker !== undefined
+      const rawEdgeLabel = arrowMatch[4]?.trim()
       edgeLabel = rawEdgeLabel ? normalizeBrTags(rawEdgeLabel) : undefined
       remaining = remaining.slice(arrowMatch[0].length).trim()
-      style = arrowStyleFromOp(arrowOp)
-      hasArrowEnd =
-        arrowOp.endsWith('>') || arrowOp.endsWith('o') || arrowOp.endsWith('x')
+      style = arrowStyleFromBody(arrowBody)
+      hasArrowEnd = endMarker !== undefined
     } else {
       // Fallback: text-embedded label syntax (-- Yes -->, -. Maybe .->, == Sure ==>)
       const textMatch = remaining.match(TEXT_ARROW_REGEX)
@@ -743,15 +873,46 @@ function consumeNode(
     remaining = preClassMatch[1]! + remaining.slice(preClassMatch[0].length)
   }
 
+  /*
+   * Expanded syntax: `A@{ shape: doc, label: "Report" }` (Mermaid v11.3.0+).
+   *
+   * Tried before the bracket patterns because the id is followed by `@{`,
+   * which none of them match — without this the id would fall through to
+   * BARE_NODE_REGEX and the whole metadata block would be stranded as
+   * unparsed text.
+   */
+  const expandedIdMatch = remaining.match(EXPANDED_NODE_ID_REGEX)
+  if (expandedIdMatch) {
+    const expandedId = expandedIdMatch[1]!
+    const block = matchExpandedBlock(remaining.slice(expandedId.length))
+    if (block) {
+      const meta = parseExpandedMeta(block.body)
+      registerNode(graph, subgraphStack, {
+        id: expandedId,
+        label: normalizeBrTags(expandedNodeLabel(expandedId, meta)),
+        shape: expandedNodeShape(meta),
+      })
+      id = expandedId
+      remaining = remaining.slice(expandedId.length + block.length)
+    }
+  }
+
   // Try each node pattern (shape-qualified)
-  for (const { regex, shape } of NODE_PATTERNS) {
-    const match = remaining.match(regex)
-    if (match) {
-      id = match[1]!
-      const label = normalizeBrTags(match[2]!)
-      registerNode(graph, subgraphStack, { id, label, shape })
-      remaining = remaining.slice(match[0].length)
-      break
+  if (id === null) {
+    for (const { regex, shape } of NODE_PATTERNS) {
+      const match = remaining.match(regex)
+      if (match) {
+        id = match[1]!
+        const label = normalizeBrTags(match[2]!)
+        // The slash-bracket family resolves its shape from the closing
+        // delimiter it captured in group 3; every other pattern has a fixed
+        // shape. See the SLASH_BRACKET note in NODE_PATTERNS.
+        const resolvedShape =
+          typeof shape === 'function' ? shape(match[3] ?? '') : shape
+        registerNode(graph, subgraphStack, { id, label, shape: resolvedShape })
+        remaining = remaining.slice(match[0].length)
+        break
+      }
     }
   }
 
@@ -815,19 +976,26 @@ function trackInSubgraph(
   }
 }
 
-/** Map arrow operator string to edge style (ignoring direction) */
-function arrowStyleFromOp(op: string): EdgeStyle {
-  if (op === '-.->') return 'dotted'
-  if (op === '-.-') return 'dotted'
-  if (op === '==>') return 'thick'
-  if (op === '===') return 'thick'
-  // '-->'' and '---' are both solid
+/**
+ * Map a link body to its edge style, ignoring direction and run length.
+ *
+ * The body is the run between the optional start/end markers: `--`, `----`,
+ * `==`, `-.-`, `-..-`, `~~~`, etc. Classification is by the characters used,
+ * not the length, so every run length of a given style behaves identically.
+ */
+function arrowStyleFromBody(body: string): EdgeStyle {
+  if (body.startsWith('~')) return 'invisible'
+  if (body.includes('.')) return 'dotted'
+  if (body.startsWith('=')) return 'thick'
   return 'solid'
 }
 
 /** Map text-embedded arrow open/close operators to edge style */
 function textArrowStyleFromOps(openOp: string, closeOp: string): EdgeStyle {
-  if (openOp === '-.' || closeOp === '.->' || closeOp === '-.-') return 'dotted'
-  if (openOp === '==' || closeOp === '==>' || closeOp === '===') return 'thick'
+  // Classify by the characters used, not by exact token, so every run length
+  // of a given style resolves identically — the same rule arrowStyleFromBody
+  // applies to the plain arrow forms.
+  if (openOp.includes('.') || closeOp.includes('.')) return 'dotted'
+  if (openOp.startsWith('=') || closeOp.startsWith('=')) return 'thick'
   return 'solid'
 }

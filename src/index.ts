@@ -36,6 +36,7 @@ import { DEFAULTS } from './theme.ts'
 import { resolveFontSizes } from './styles.ts'
 import { detectDiagramType } from './diagram-type.ts'
 import type { DiagramType } from './diagram-type.ts'
+import { splitStatements } from './statements.ts'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
 import { layoutSequenceDiagram } from './sequence/layout.ts'
@@ -109,10 +110,7 @@ export function renderMermaidSVG(
   const fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(text)
 
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const lines = splitStatements(text)
 
   switch (diagramType) {
     case 'sequence': {

@@ -7,53 +7,18 @@
  * rendering as TWO columns in a real monospace terminal. Left unhandled,
  * this makes box borders too narrow for wide-character labels.
  *
- * `terminalDisplayWidth` below re-implements the "how many terminal columns
- * does this string occupy" calculation independently of
+ * `terminalDisplayWidth` re-implements the "how many terminal columns does
+ * this string occupy" calculation independently of
  * `src/ascii/display-width.ts`, so these tests verify the *rendered output*
  * against an authority separate from the implementation under test — not
  * just that the fix's own helper agrees with itself.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '../ascii/index.ts'
-
-/**
- * Independently re-implemented terminal display-width calculation (mirrors
- * the East Asian Width ranges a real monospace terminal uses to decide
- * whether a code point renders as 1 or 2 columns). Deliberately does not
- * import from `src/ascii/display-width.ts` or `src/text-metrics.ts`.
- */
-const EMOJI_PATTERN = /\p{Extended_Pictographic}|\p{Emoji_Presentation}/u
-
-function terminalDisplayWidth(text: string): number {
-  let width = 0
-  for (const ch of text) {
-    const code = ch.codePointAt(0)!
-    const isWide =
-      (code >= 0x1100 && code <= 0x115f) || // Hangul Jamo
-      (code >= 0x2e80 && code <= 0xa4cf) || // CJK radicals .. Yi
-      (code >= 0xac00 && code <= 0xd7a3) || // Hangul syllables
-      (code >= 0xf900 && code <= 0xfaff) || // CJK compatibility ideographs
-      (code >= 0xff00 && code <= 0xff60) || // Fullwidth forms
-      (code >= 0xffe0 && code <= 0xffe6) || // Fullwidth signs
-      code >= 0x20000 || // CJK extension B+
-      EMOJI_PATTERN.test(ch)
-    width += isWide ? 2 : 1
-  }
-  return width
-}
-
-/** All rendered lines should occupy the same number of terminal columns. */
-function assertUniformDisplayWidth(ascii: string): void {
-  const lines = ascii.split('\n')
-  const widths = lines.map(terminalDisplayWidth)
-  const expected = widths[0]
-  for (let i = 0; i < lines.length; i++) {
-    expect(
-      widths[i],
-      `line ${i} (${JSON.stringify(lines[i])}) has display width ${widths[i]}, expected ${expected}`,
-    ).toBe(expected)
-  }
-}
+import {
+  terminalDisplayWidth,
+  assertUniformDisplayWidth,
+} from './helpers/terminal-display-width.ts'
 
 describe('ASCII renderer — CJK/fullwidth character box alignment (issue #66)', () => {
   const mermaid = 'flowchart TD\n    A[日本語テスト] --> B[終了]'

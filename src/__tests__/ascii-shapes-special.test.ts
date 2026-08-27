@@ -14,6 +14,8 @@ import {
   cylinderRenderer,
   asymmetricRenderer,
   trapezoidRenderer,
+  parallelogramRenderer,
+  parallelogramAltRenderer,
   trapezoidAltRenderer,
 } from '../ascii/shapes/special.ts'
 import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
@@ -292,5 +294,51 @@ describe('special shapes connected in a diagram', () => {
     expect(out).toContain('Flag')
     expect(out).toContain('Trap')
     expect(out).toContain('TrapAlt')
+  })
+})
+
+describe('parallelogram shapes [/text/] and [\\text\\]', () => {
+  it('renders a lean-right parallelogram in a flowchart', () => {
+    const out = renderMermaidASCII('flowchart TD\n  A[/Lean Right/]', {
+      useAscii: false,
+    })
+    expect(out).toContain('Lean Right')
+  })
+
+  it('renders a lean-left parallelogram in a flowchart', () => {
+    const out = renderMermaidASCII('flowchart TD\n  A[\\Lean Left\\]', {
+      useAscii: false,
+    })
+    expect(out).toContain('Lean Left')
+  })
+
+  it('delegates to the shared box renderer with parallelogram corners', () => {
+    const dims = parallelogramRenderer.getDimensions('X', unicodeOpts)
+    const canvas = parallelogramRenderer.render('X', dims, unicodeOpts)
+    const lines = canvasToString(canvas).split('\n')
+    // Both sides slope the same way — that is what separates a parallelogram
+    // from a trapezoid, whose corners oppose.
+    expect(lines[0]!.startsWith('/')).toBe(true)
+    expect(lines[0]!.endsWith('/')).toBe(true)
+    expect(lines[lines.length - 1]!.startsWith('/')).toBe(true)
+    expect(lines[lines.length - 1]!.endsWith('/')).toBe(true)
+  })
+
+  it('delegates to the shared box renderer with parallelogram-alt corners', () => {
+    const dims = parallelogramAltRenderer.getDimensions('X', unicodeOpts)
+    const canvas = parallelogramAltRenderer.render('X', dims, unicodeOpts)
+    const lines = canvasToString(canvas).split('\n')
+    expect(lines[0]!.startsWith('\\')).toBe(true)
+    expect(lines[0]!.endsWith('\\')).toBe(true)
+    expect(lines[lines.length - 1]!.startsWith('\\')).toBe(true)
+    expect(lines[lines.length - 1]!.endsWith('\\')).toBe(true)
+  })
+
+  it('reports the same dimensions as the other box-based shapes', () => {
+    // Parallelograms reuse getBoxDimensions, so their sizing must match
+    // trapezoid's for the same label — a divergence would misalign the grid.
+    expect(parallelogramRenderer.getDimensions('Label', unicodeOpts)).toEqual(
+      trapezoidRenderer.getDimensions('Label', unicodeOpts),
+    )
   })
 })
