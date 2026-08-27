@@ -1789,18 +1789,25 @@ ${bundleJs}
   // opens that category from the sidebar.
   // ============================================================================
 
+  // Always read live, not captured once ahead of an await — a category can
+  // render long after page load, and a theme switch can land mid-render
+  // (applyTheme's own pass runs once and skips elements that don't exist in
+  // the DOM yet, so a stale snapshot here would leave this sample stuck with
+  // the wrong colors with nothing left to correct it).
+  function currentTheme() {
+    var themeKey = localStorage.getItem('mermaid-theme');
+    return themeKey && THEMES[themeKey] ? THEMES[themeKey] : null;
+  }
+
   async function renderSample(i) {
     var sample = samples[i];
     var svgContainer = document.getElementById('svg-' + i);
     var asciiContainer = document.getElementById('ascii-' + i);
     var svgPanel = document.getElementById('svg-panel-' + i);
-    // Read the *current* theme fresh — a category can render long after the
-    // page loaded, e.g. after the visitor already switched themes.
-    var themeKey = localStorage.getItem('mermaid-theme');
-    var theme = themeKey && THEMES[themeKey] ? THEMES[themeKey] : null;
 
     try {
       var svg = await renderMermaid(sample.source, sample.options);
+      var theme = currentTheme();
       svgContainer.innerHTML = svg;
 
       // Store the SVG's original inline style for Default mode restoration
@@ -1849,7 +1856,8 @@ ${bundleJs}
     // Hero samples don't have ASCII panels
     if (asciiContainer) {
       try {
-        var asciiOpts = theme ? { theme: diagramColorsToAsciiTheme(theme) } : {};
+        var asciiTheme = currentTheme();
+        var asciiOpts = asciiTheme ? { theme: diagramColorsToAsciiTheme(asciiTheme) } : {};
         asciiContainer.innerHTML = renderMermaidASCII(sample.source, asciiOpts);
       } catch (e) {
         asciiContainer.textContent = '(ASCII not supported for this diagram type)';
