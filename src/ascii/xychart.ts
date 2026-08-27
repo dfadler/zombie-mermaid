@@ -872,7 +872,7 @@ function set(
     row >= 0 &&
     row < (canvas[0]?.length ?? 0)
   if (!inBounds) return
-  write(canvas, col, row, char, role, roles)
+  write(canvas, col, row, char, { role, roleCanvas: roles })
   if (hexCanvas && hex) hexCanvas[col]![row] = hex
 }
 

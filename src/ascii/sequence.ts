@@ -295,7 +295,7 @@ export function renderSequenceAscii(
 
   /** Set a character on the canvas and track its role. */
   function setC(x: number, y: number, ch: string, role: CharRole): void {
-    write(canvas, x, y, ch, role, rc)
+    write(canvas, x, y, ch, { role, roleCanvas: rc })
   }
 
   // ---- DRAW: helper to place a bordered actor box (supports multi-line labels) ----

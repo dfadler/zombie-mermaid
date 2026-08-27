@@ -77,8 +77,14 @@ export function drawSubgraphLabel(
     let labelX = 1 + Math.ceil((width - 1 - displayWidth(line)) / 2)
     if (labelX < 1) labelX = 1
 
+    // Unlike `write()`'s own bounds (inclusive of the canvas edge — correct
+    // for the border-drawing calls in `drawSubgraphBox` above, which write
+    // the border itself at x == width / y == height), the label must stay
+    // strictly inside the border, so this loop enforces the tighter,
+    // exclusive bound itself rather than relying on `write()`'s clip.
     const cells = toDisplayCells(line)
     for (let j = 0; j < cells.length; j++) {
+      if (labelX + j >= width || labelY >= height) continue
       write(canvas, labelX + j, labelY, cells[j]!)
     }
   }
