@@ -11,6 +11,7 @@ import { renderMermaidSVGAsync } from './index.ts'
 import { renderMermaidASCII, diagramColorsToAsciiTheme } from './ascii/index.ts'
 import { THEMES } from './theme.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './xychart/colors.ts'
+import { isWideChar } from './text-metrics.ts'
 
 export interface MermaidBrowserGlobal {
   renderMermaidSVGAsync: typeof renderMermaidSVGAsync
@@ -19,6 +20,15 @@ export interface MermaidBrowserGlobal {
   THEMES: typeof THEMES
   getSeriesColor: typeof getSeriesColor
   CHART_ACCENT_FALLBACK: typeof CHART_ACCENT_FALLBACK
+  /**
+   * The renderer's own wide-character predicate.
+   *
+   * The demo needs it to give CJK/fullwidth glyphs their two terminal
+   * columns in the DOM (a browser font gives them whatever advance it
+   * likes). Exposing the renderer's own predicate keeps the page and the
+   * ASCII box math from disagreeing about which characters are wide.
+   */
+  isWideChar: typeof isWideChar
 }
 
 // `lib` in tsconfig.json is `["ESNext"]` (no `dom`), so `window` isn't
@@ -33,4 +43,5 @@ window.__mermaid = {
   THEMES,
   getSeriesColor,
   CHART_ACCENT_FALLBACK,
+  isWideChar,
 }

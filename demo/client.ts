@@ -27,6 +27,7 @@ interface MermaidBundle {
   diagramColorsToAsciiTheme: (colors: DiagramColors) => unknown
   getSeriesColor: (index: number, accent: string, bg: string) => string
   CHART_ACCENT_FALLBACK: string
+  isWideChar: (char: string) => boolean
 }
 
 interface DiagramColors {
@@ -51,6 +52,44 @@ interface DemoSample {
 declare global {
   interface Window {
     __mermaid: MermaidBundle
+  }
+}
+
+/**
+ * Give wide glyphs their terminal width inside a rendered ASCII panel.
+ *
+ * The ASCII renderer's box math assumes the terminal rule: a CJK, fullwidth,
+ * or emoji glyph occupies exactly two columns. A browser instead gives it the
+ * advance of whichever font supplies it — JetBrains Mono has no CJK coverage,
+ * so the substitute face renders those glyphs at roughly 1.66x the Latin
+ * advance here. The borders then fail to line up, on a page whose whole point
+ * is that they do.
+ *
+ * Each wide glyph is wrapped in a span pinned to 2ch, restoring the terminal's
+ * geometry. This runs over the DOM rather than the string because the browser
+ * colour mode emits HTML, so the glyphs arrive already wrapped in colour spans.
+ */
+function applyWideCharWidths(container: HTMLElement): void {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  const texts: Text[] = []
+  let node: Node | null
+  while ((node = walker.nextNode()) !== null) texts.push(node as Text)
+
+  for (const text of texts) {
+    if (![...text.data].some(isWideChar)) continue
+
+    const fragment = document.createDocumentFragment()
+    for (const ch of text.data) {
+      if (isWideChar(ch)) {
+        const span = document.createElement('span')
+        span.className = 'ascii-wide'
+        span.textContent = ch
+        fragment.appendChild(span)
+      } else {
+        fragment.appendChild(document.createTextNode(ch))
+      }
+    }
+    text.replaceWith(fragment)
   }
 }
 
@@ -115,6 +154,7 @@ const renderMermaidASCII = window.__mermaid.renderMermaidASCII
 const diagramColorsToAsciiTheme = window.__mermaid.diagramColorsToAsciiTheme
 const getSeriesColor = window.__mermaid.getSeriesColor
 const CHART_ACCENT_FALLBACK = window.__mermaid.CHART_ACCENT_FALLBACK
+const isWideChar = window.__mermaid.isWideChar
 
 const totalTimingEl = mustGet('total-timing')
 
@@ -304,6 +344,7 @@ function applyTheme(themeKey: string) {
         samples[j]!.source,
         asciiTheme ? { theme: asciiTheme } : {},
       )
+      applyWideCharWidths(asciiEl)
     } catch {
       // Leave the previous ASCII rendering in place — a theme switch
       // should not blank a panel that rendered fine a moment ago.
@@ -635,6 +676,7 @@ async function renderSample(i: number) {
         ? { theme: diagramColorsToAsciiTheme(asciiTheme) }
         : {}
       asciiContainer.innerHTML = renderMermaidASCII(sample.source, asciiOpts)
+      applyWideCharWidths(asciiContainer)
     } catch {
       asciiContainer.textContent = '(ASCII not supported for this diagram type)'
     }
@@ -849,6 +891,7 @@ async function saveAndRender() {
         ? { theme: diagramColorsToAsciiTheme(activeColors) }
         : {}
       asciiContainer.innerHTML = renderMermaidASCII(source, editAsciiOpts)
+      applyWideCharWidths(asciiContainer)
     } catch (e) {
       asciiContainer.textContent =
         '(ASCII error: ' + (e instanceof Error ? e.message : String(e)) + ')'

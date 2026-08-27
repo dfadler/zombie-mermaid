@@ -1067,3 +1067,21 @@ body::after {
   height: 1.25rem;
   display: block;
 }
+
+/*
+ * Terminal column semantics for ASCII panels.
+ *
+ * A wide (CJK/fullwidth/emoji) glyph is exactly two columns in a terminal,
+ * which is the rule the ASCII renderer's box math is built on. A browser gives
+ * it the substitute font's advance instead — about 1.66x the Latin advance
+ * here, since JetBrains Mono has no CJK coverage — so box borders drift out of
+ * alignment. demo/client.ts wraps each wide glyph in this class; pinning it to
+ * 2ch restores the geometry the diagram was laid out for.
+ */
+.ascii-wide {
+  display: inline-block;
+  width: 2ch;
+  /* The substitute glyph is narrower than 2ch; centring it keeps the text
+     from bunching against the left of its cell pair. */
+  text-align: center;
+}

@@ -142,6 +142,22 @@
   height: auto;
 }
 
+/*
+ * A wide (CJK/fullwidth/emoji) glyph occupies exactly two terminal columns,
+ * which is the rule the ASCII renderer's box math is built on. A browser
+ * gives it whatever the fallback font's advance happens to be — measured at
+ * 1.66x the Latin advance here, since JetBrains Mono has no CJK coverage.
+ * Boxing each one to 2ch restores the terminal's geometry so the borders in
+ * these panels line up as they do in a real terminal.
+ */
+.fix-ascii .fix-wide {
+  display: inline-block;
+  width: 2ch;
+  /* Centre the glyph across its two cells; the substitute face is narrower
+     than 2ch, and left-aligning it would bunch the text toward the border. */
+  text-align: center;
+}
+
 .fix-empty {
   padding: 1rem;
   font-size: 0.875rem;

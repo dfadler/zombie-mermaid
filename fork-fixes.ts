@@ -19,6 +19,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { forkFixes, type ForkFix } from './demo/fork-fixes-data.ts'
+import { isWideChar } from './src/text-metrics.ts'
 
 const exec = promisify(execFile)
 
@@ -162,6 +163,33 @@ function formatProse(text: string): string {
 }
 
 /**
+ * Render ASCII art as HTML with terminal column semantics preserved.
+ *
+ * A terminal gives every wide (CJK/fullwidth/emoji) glyph exactly two columns
+ * — that rule is what the ASCII renderer's box math is built on. A browser
+ * gives it whatever the fallback font's advance happens to be: measured at
+ * **1.66×** the Latin advance here, because JetBrains Mono has no CJK
+ * coverage and the glyph comes from a substitute face.
+ *
+ * Left alone, the CJK entry on this page displayed five different row widths
+ * directly beneath a caption asserting that every row is the same width —
+ * the page disproving its own claim. Each wide glyph is therefore boxed to
+ * exactly `2ch`, reproducing the terminal's geometry.
+ *
+ * `isWideChar` is the renderer's own predicate, so the page and the box math
+ * cannot disagree about which characters are wide.
+ */
+function asciiToHtml(text: string): string {
+  let out = ''
+  for (const ch of text) {
+    out += isWideChar(ch)
+      ? `<span class="fix-wide">${escapeHtml(ch)}</span>`
+      : escapeHtml(ch)
+  }
+  return out
+}
+
+/**
  * Render one side of a pair: the diagram, an excerpt of its markup, the error
  * it threw, or an explicit note that it produced nothing.
  */
@@ -204,7 +232,7 @@ function renderPanel(
   }
 
   if (mode === 'ascii') {
-    return `<pre class="fix-ascii">${escapeHtml(output.replace(/[ \t]+$/gm, ''))}</pre>`
+    return `<pre class="fix-ascii">${asciiToHtml(output.replace(/[ \t]+$/gm, ''))}</pre>`
   }
   return `<div class="fix-svg">${output}</div>`
 }
