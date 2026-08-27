@@ -47,6 +47,21 @@ describe('%%{init: ...}%% directives (#198 row 17)', () => {
     )
   })
 
+  it.each([
+    ['escaped double quote', String.raw`{"theme": "a\"b"}`, 'a"b'],
+    ['escaped backslash', String.raw`{"theme": "a\\b"}`, 'a\\b'],
+    ['escaped newline', String.raw`{"theme": "a\nb"}`, 'a\nb'],
+    ["single-quoted \\'", String.raw`{'theme': 'a\'b'}`, "a'b"],
+  ])('preserves an %s inside a string', (_name, payload, expected) => {
+    /*
+     * The relaxed-JSON scanner re-emits strings with double quotes. Treating
+     * a backslash as an ordinary character lets the quote it protects read as
+     * the string's end, so the re-emitted payload is unbalanced and the whole
+     * directive is silently dropped — including strictly valid JSON.
+     */
+    expect(parseInitDirective(`%%{init: ${payload}}%%`)?.theme).toBe(expected)
+  })
+
   it('ignores a malformed directive rather than throwing', () => {
     // Config is advisory; failing a whole diagram over a stray brace would be
     // a poor trade.
@@ -121,6 +136,46 @@ describe('edge curve styles (#198 row 9)', () => {
 
   it('produces cubic segments for basis', () => {
     expect(pointsToPath(points, 'basis')).toContain(' C ')
+  })
+
+  /*
+   * Exact geometry, not just "contains a C". The point of `basis` is that a
+   * diagram traces the path Mermaid would draw, so an approximation that
+   * merely looks smooth is still wrong. These values were taken from
+   * d3-shape 3.2.0's own `curveBasis` output for the same points — d3
+   * serializes at 3 decimals, hence the rounding.
+   *
+   * An earlier implementation led in at the midpoint `(p0 + p1) / 2` and
+   * emitted a single cubic ending at `(p1 + p2) / 2`; it satisfied every
+   * other test in this file while drawing a different curve.
+   */
+  it('matches d3 curveBasis geometry exactly', () => {
+    const round = (d: string) =>
+      (d.match(/[MLC]|-?\d+(?:\.\d+)?/g) ?? []).map((t) =>
+        /[MLC]/.test(t) ? t : +(+t).toFixed(3),
+      )
+
+    // prettier-ignore
+    expect(round(pointsToPath(points, 'basis'))).toEqual([
+      'M', 0, 0,
+      'L', 1.667, 1.667,
+      'C', 3.333, 3.333, 6.667, 6.667, 10, 6.667,
+      'C', 13.333, 6.667, 16.667, 3.333, 18.333, 1.667,
+      'L', 20, 0,
+    ])
+  })
+
+  it('emits one basis segment per point beyond the first two', () => {
+    // d3 draws a cubic per point from the third onward, plus a closing cubic
+    // against a repeated last point. Four points therefore give three.
+    const four = [
+      { x: 0, y: 0 },
+      { x: 0, y: 50 },
+      { x: 60, y: 50 },
+      { x: 60, y: 90 },
+    ]
+    const cubics = (pointsToPath(four, 'basis').match(/ C /g) ?? []).length
+    expect(cubics).toBe(3)
   })
 
   it('produces rounded corners for natural', () => {
@@ -198,6 +253,45 @@ describe('edge curve styles (#198 row 9)', () => {
     expect(pointsToPath([], 'basis')).toBe('')
     expect(pointsToPath([{ x: 1, y: 2 }], 'basis')).toBe('M 1 2')
     expect(pointsToPath(points.slice(0, 2), 'basis')).toBe('M 0 0 L 10 10')
+  })
+
+  /*
+   * State diagrams reach the flowchart branch of renderMermaidSVG's dispatch
+   * via parseMermaid, so they pick up both the curve option and the init
+   * directive. RenderOptions.curve documents that; these pin it, since the
+   * plumbing is a fall-through rather than an explicit case.
+   */
+  describe('state diagrams honour curve as documented', () => {
+    // Branching so ELK routes with bends — a two-point edge has no curve to
+    // draw and would fall back to a straight line whatever the setting.
+    const branching = [
+      'stateDiagram-v2',
+      '  [*] --> Idle',
+      '  Idle --> Running',
+      '  Idle --> Paused',
+      '  Running --> Done',
+      '  Paused --> Done',
+    ].join('\n')
+
+    it('draws straight polylines by default', () => {
+      const svg = renderMermaidSVG(branching)
+      expect(svg).toContain('<polyline class="edge"')
+      expect(svg).not.toContain('<path class="edge"')
+    })
+
+    it('applies an explicit curve option', () => {
+      const svg = renderMermaidSVG(branching, { curve: 'basis' })
+      expect(svg).toContain('<path class="edge"')
+      expect(svg).toContain(' C ')
+    })
+
+    it('applies a curve from the diagram’s own init directive', () => {
+      const svg = renderMermaidSVG(
+        `%%{init: {"flowchart": {"curve": "basis"}}}%%\n${branching}`,
+      )
+      expect(svg).toContain('<path class="edge"')
+      expect(svg).toContain(' C ')
+    })
   })
 
   it('keeps emitting <polyline> for the default linear curve', () => {
@@ -284,6 +378,41 @@ describe('click interactions (#198 row 10)', () => {
       expect(svg).not.toContain('<a href=')
       expect(svg.toLowerCase()).not.toContain('javascript:')
       expect(svg.toLowerCase()).not.toContain('vbscript:')
+    })
+
+    /*
+     * The URL parser strips tab and newline from anywhere in a URL, so a
+     * blocked scheme split by one reaches the browser reassembled:
+     * `java\tscript:` parses with protocol `javascript:`. The scheme match
+     * meanwhile sees `java\t...`, finds no scheme, and treats the whole thing
+     * as a harmless relative reference — which is the bypass.
+     */
+    it.each([
+      ['tab', '\t'],
+      ['vertical tab', '\v'],
+      ['form feed', '\f'],
+      ['NUL', '\x00'],
+      ['unit separator', '\x1F'],
+    ])('drops a scheme split by a literal %s', (_name, control) => {
+      const href = `java${control}script:alert(1)`
+      const svg = renderMermaidSVG(
+        `flowchart TD\n  A --> B\n  click A "${href}"`,
+      )
+      expect(svg).not.toContain('<a href=')
+    })
+
+    it('drops the tab payload a browser would reassemble into javascript:', () => {
+      const href = 'java\tscript:alert(1)'
+      // Guard the premise: if the URL parser ever stops stripping tabs, this
+      // payload is no longer dangerous and the test above is measuring nothing.
+      expect(new URL(href, 'https://example.test/').protocol).toBe(
+        'javascript:',
+      )
+
+      const svg = renderMermaidSVG(
+        `flowchart TD\n  A --> B\n  click A "${href}"`,
+      )
+      expect(svg).not.toContain('<a href=')
     })
 
     it.each([

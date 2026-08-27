@@ -36,33 +36,38 @@ function linearPath(points: Point[]): string {
  * the interior points nor, without the endpoint handling below, the ends. The
  * first and last points are therefore emitted explicitly so an edge still
  * touches the nodes it connects — otherwise it would visibly detach.
+ *
+ * This is a direct port of d3's `Basis` curve rather than a lookalike, so a
+ * diagram rendered here traces the same path Mermaid would draw. For each
+ * point d3 emits one cubic whose controls are the thirds between the two
+ * preceding points and whose end is the B-spline knot `(p0 + 4p1 + p2) / 6`;
+ * it leads in at `(5p0 + p1) / 6` and closes with a final cubic against a
+ * repeated last point, then a line to it.
  */
 function basisPath(points: Point[]): string {
   if (points.length < 3) return linearPath(points)
 
+  const last = points[points.length - 1]!
   const parts: string[] = [moveTo(points[0]!)]
 
-  // Lead-in: straight to the first spline anchor.
-  const p1 = points[1]!
-  parts.push(` L ${(points[0]!.x + p1.x) / 2} ${(points[0]!.y + p1.y) / 2}`)
+  /** One B-spline segment across three successive control points. */
+  const segment = (p0: Point, p1: Point, p2: Point): string =>
+    ` C ${(2 * p0.x + p1.x) / 3} ${(2 * p0.y + p1.y) / 3},` +
+    ` ${(p0.x + 2 * p1.x) / 3} ${(p0.y + 2 * p1.y) / 3},` +
+    ` ${(p0.x + 4 * p1.x + p2.x) / 6} ${(p0.y + 4 * p1.y + p2.y) / 6}`
 
-  for (let i = 1; i < points.length - 1; i++) {
-    const prev = points[i - 1]!
-    const curr = points[i]!
-    const next = points[i + 1]!
+  // Lead-in to the first knot, one sixth of the way along the opening leg.
+  parts.push(
+    ` L ${(5 * points[0]!.x + points[1]!.x) / 6}` +
+      ` ${(5 * points[0]!.y + points[1]!.y) / 6}`,
+  )
 
-    // Standard uniform B-spline control points for segment i.
-    const c1x = (prev.x + 2 * curr.x) / 3
-    const c1y = (prev.y + 2 * curr.y) / 3
-    const c2x = (2 * curr.x + next.x) / 3
-    const c2y = (2 * curr.y + next.y) / 3
-    const endX = (curr.x + next.x) / 2
-    const endY = (curr.y + next.y) / 2
-
-    parts.push(` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${endX} ${endY}`)
+  for (let i = 2; i < points.length; i++) {
+    parts.push(segment(points[i - 2]!, points[i - 1]!, points[i]!))
   }
 
-  const last = points[points.length - 1]!
+  // d3 closes by feeding the last point twice, then drawing to it.
+  parts.push(segment(points[points.length - 2]!, last, last))
   parts.push(` L ${last.x} ${last.y}`)
 
   return parts.join('')

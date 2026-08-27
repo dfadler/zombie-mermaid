@@ -85,7 +85,20 @@ function normalizeRelaxedJson(text: string): string {
     const ch = text[i]!
 
     if (quote !== null) {
-      if (ch === quote) {
+      if (ch === '\\' && i + 1 < text.length) {
+        /*
+         * Consume the escape and its target together. Without this, the
+         * backslash is emitted bare and the quote it protects reads as the
+         * end of the string — so strict, valid JSON like {"theme": "a\"b"}
+         * re-emits unbalanced and the whole directive is dropped.
+         *
+         * JSON has no \' escape, so a single-quoted string's \' becomes a
+         * bare apostrophe. Every other escape passes through untouched.
+         */
+        const next = text[i + 1]!
+        out += next === "'" ? "'" : `\\${next}`
+        i++
+      } else if (ch === quote) {
         quote = null
         out += '"'
       } else if (ch === '"') {

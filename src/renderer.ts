@@ -517,9 +517,18 @@ function renderNode(
  * a rendered diagram into an XSS vector for any page that inlines the SVG, so
  * anything but http/https/mailto and same-document or relative references is
  * dropped rather than emitted.
+ *
+ * C0 controls are rejected outright, before any other check. The URL parser
+ * strips tab and newline from *anywhere* in a URL, so `java\tscript:` reaches
+ * a browser as `javascript:` — while the scheme match below sees `java\t…`,
+ * finds no scheme, and waves it through as a relative reference. Splitting a
+ * blocked scheme with a control character is the whole bypass; there is no
+ * legitimate URL with a raw control in it, so the entire range goes.
  */
 function safeHref(href: string | undefined): string | undefined {
   if (!href) return undefined
+
+  if (/[\x00-\x1F\x7F]/.test(href)) return undefined
 
   const trimmed = href.trim()
   // Relative, absolute-path, and fragment references carry no scheme.
