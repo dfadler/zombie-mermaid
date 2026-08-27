@@ -8,9 +8,10 @@
 // scheme had no single owner. Centralizing it here means the keying scheme
 // only needs to be gotten right once, call sites read as grid operations
 // (`isFree`, `placeBlock`) rather than raw Map/Set calls, and — because
-// `Grid` is a distinct wrapper type rather than a bare alias — nothing
-// outside this module can bypass `gridKey` by poking at the underlying
-// collection directly.
+// `Grid` stores its cells behind a real (`#`-private, not just
+// TypeScript-`private`) field — nothing outside this module can bypass
+// `gridKey` and the collision checks by reaching into the underlying
+// collection directly, not even via an `any` cast or plain-JS caller.
 // ============================================================================
 
 import type { GridCoord } from './types.ts'
@@ -22,14 +23,32 @@ import { gridKey } from './types.ts'
  * up which node owns a given cell (layout code identifies a node's cells via
  * `node.gridCoord`, not via the grid), so there is no per-cell node value to
  * keep honest.
+ *
+ * `#cells` is a JavaScript private field, not merely a TypeScript `private`
+ * annotation: the latter is erased at compile time and still reachable at
+ * runtime via `(grid as any).cells` or plain bracket access, which would
+ * let a caller add/delete/clear cells directly and bypass `gridKey` and the
+ * collision checks in `placeBlock`. A `#`-private field has no such escape
+ * hatch — it's enforced by the JS engine itself, so only the methods below
+ * can ever touch the underlying `Set`.
  */
-export interface Grid {
-  readonly cells: Set<string>
+export class Grid {
+  #cells = new Set<string>()
+
+  /** Whether a single cell is already reserved. */
+  has(key: string): boolean {
+    return this.#cells.has(key)
+  }
+
+  /** Reserve a single cell. Internal — callers go through `placeBlock`. */
+  add(key: string): void {
+    this.#cells.add(key)
+  }
 }
 
 /** Create a fresh, empty grid occupancy map. */
 export function createGrid(): Grid {
-  return { cells: new Set() }
+  return new Grid()
 }
 
 /** The N x N block of cells a node reserves: border, content, border. */
@@ -37,7 +56,7 @@ export const NODE_BLOCK_SIZE = 3
 
 /** Whether a single cell is already reserved. */
 export function isOccupied(grid: Grid, coord: GridCoord): boolean {
-  return grid.cells.has(gridKey(coord))
+  return grid.has(gridKey(coord))
 }
 
 /**
@@ -88,22 +107,30 @@ export function isBlockFree(
  * any cell in the block is already occupied rather than silently
  * transferring ownership — callers that want to handle a collision (e.g. by
  * shifting to a different origin) must check `isBlockFree` first.
+ *
+ * Validates every cell in the block *before* reserving any of them: an
+ * earlier version interleaved the occupancy check with the `add` inside a
+ * single loop, so a collision on a later cell threw after earlier cells in
+ * the same block had already been reserved — leaving a partial, corrupt
+ * reservation behind even though the call as a whole failed. Checking the
+ * whole block first means this function either reserves all of it or none
+ * of it.
  */
 export function placeBlock(
   grid: Grid,
   origin: GridCoord,
   size: number = NODE_BLOCK_SIZE,
 ): void {
+  if (!isBlockFree(grid, origin, size)) {
+    throw new Error(
+      `Grid block at (${origin.x},${origin.y}) is already occupied`,
+    )
+  }
+
   for (let dx = 0; dx < size; dx++) {
     for (let dy = 0; dy < size; dy++) {
       const coord: GridCoord = { x: origin.x + dx, y: origin.y + dy }
-      const key = gridKey(coord)
-      if (grid.cells.has(key)) {
-        throw new Error(
-          `Grid cell (${coord.x},${coord.y}) is already occupied; cannot place block at (${origin.x},${origin.y})`,
-        )
-      }
-      grid.cells.add(key)
+      grid.add(gridKey(coord))
     }
   }
 }
