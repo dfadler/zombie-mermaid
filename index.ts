@@ -268,18 +268,18 @@ async function generateHtml(): Promise<string> {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" id="theme-color-meta" content="#f9f9fa" />
-  <title>zombie-mermaid — Mermaid Rendering, Made Beautiful</title>
+  <title>Zombie Mermaid — Mermaid Rendering, Made Beautiful</title>
   <meta name="description" content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, and ER diagrams." />
   <link rel="icon" type="image/svg+xml" href="/mermaid/favicon.svg" />
   <link rel="icon" type="image/x-icon" href="/mermaid/favicon.ico" />
   <link rel="apple-touch-icon" href="/mermaid/apple-touch-icon.png" />
-  <meta property="og:title" content="zombie-mermaid" />
+  <meta property="og:title" content="Zombie Mermaid" />
   <meta property="og:description" content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII." />
   <meta property="og:image" content="https://agents.craft.do/mermaid/og-image.png" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://agents.craft.do/mermaid" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="zombie-mermaid" />
+  <meta name="twitter:title" content="Zombie Mermaid" />
   <meta name="twitter:description" content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII." />
   <meta name="twitter:image" content="https://agents.craft.do/mermaid/og-image.png" />
   <!-- Plausible Analytics -->
@@ -1177,7 +1177,7 @@ async function generateHtml(): Promise<string> {
 
   <!-- Navigation + theme bar -->
   <div class="theme-bar" id="theme-bar">
-    <a class="brand-badge shadow-minimal" href="https://github.com/dfadler/zombie-mermaid" target="_blank" rel="noopener"><span><strong>zombie-mermaid</strong></span></a>
+    <a class="brand-badge shadow-minimal" href="https://github.com/dfadler/zombie-mermaid" target="_blank" rel="noopener"><span><strong>Zombie Mermaid</strong></span></a>
     <button class="contents-btn shadow-minimal" id="contents-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3" y1="4" x2="13" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="12" x2="10" y2="12"/></svg>Contents</button>
     <div class="theme-pills" id="theme-pills">
       ${themePillsHtml}
@@ -1191,7 +1191,7 @@ async function generateHtml(): Promise<string> {
 
   <!-- Hero header section -->
   <header class="hero-header">
-    <h1 class="hero-title">zombie-mermaid</h1>
+    <h1 class="hero-title">Zombie Mermaid</h1>
     <p class="hero-tagline">Mermaid Rendering, made beautiful.</p>
     <p class="hero-description">
       An open source library for rendering diagrams, designed for the age of AI: <a href="https://www.npmjs.com/package/zombie-mermaid" target="_blank" rel="noopener"><code>zombie-mermaid</code></a>.
