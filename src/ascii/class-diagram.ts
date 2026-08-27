@@ -25,14 +25,8 @@ import {
   increaseRoleCanvasSize,
   setRole,
 } from './canvas.ts'
-import { drawMultiBox } from './draw.ts'
+import { drawMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'
-
-/** Classify a character from a box drawing as 'border' or 'text'. */
-function classifyBoxChar(ch: string): CharRole {
-  if (/^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|]$/.test(ch)) return 'border'
-  return 'text'
-}
 
 // ============================================================================
 // Class member formatting

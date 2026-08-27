@@ -5,7 +5,13 @@
 // multi-section boxes used by class/ER diagram nodes.
 // ============================================================================
 
-import type { Canvas, DrawingCoord, AsciiGraph, AsciiNode } from './types.ts'
+import type {
+  Canvas,
+  DrawingCoord,
+  AsciiGraph,
+  AsciiNode,
+  CharRole,
+} from './types.ts'
 import { mkCanvas } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
 import { getCorners } from './shapes/corners.ts'
@@ -133,6 +139,17 @@ export function drawBox(node: AsciiNode, graph: AsciiGraph): Canvas {
 // ============================================================================
 // Multi-section box drawing — for class and ER diagram nodes
 // ============================================================================
+
+/**
+ * Classify a character from a multi-section box drawing as 'border' or 'text'.
+ * Shared by the class and ER diagram ASCII renderers, which both copy a
+ * `drawMultiBox` canvas onto their main canvas and need to tag each
+ * non-blank cell with its role for colored output.
+ */
+export function classifyBoxChar(ch: string): CharRole {
+  if (/^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|]$/.test(ch)) return 'border'
+  return 'text'
+}
 
 /**
  * Draw a multi-section box with horizontal dividers between sections.
