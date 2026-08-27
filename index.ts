@@ -1689,6 +1689,19 @@ ${bundleJs}
     document.body.style.overflow = '';
   }
 
+  /*
+   * The drawer only exists below 1024px. Resizing or rotating up to desktop
+   * width hides its controls in CSS but leaves the JS state untouched, so an
+   * open drawer would strand document.body.style.overflow = 'hidden' with no
+   * visible control left to release it. Reset everything together when the
+   * query stops matching.
+   */
+  var drawerQuery = window.matchMedia('(max-width: 1023px)');
+
+  drawerQuery.addEventListener('change', function(e) {
+    if (!e.matches) closeSidebarDrawer();
+  });
+
   sidebarToggle.addEventListener('click', function(e) {
     e.stopPropagation();
     if (sidebar.classList.contains('open')) closeSidebarDrawer();
@@ -1752,7 +1765,7 @@ ${bundleJs}
   // "Browse diagram types" — the category banner's explicit nudge toward the
   // sidebar, since only one category renders by default (see below).
   document.getElementById('browse-categories-btn').addEventListener('click', function() {
-    if (window.matchMedia('(max-width: 1023px)').matches) {
+    if (drawerQuery.matches) {
       openSidebarDrawer();
     } else {
       sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
