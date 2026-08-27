@@ -227,7 +227,7 @@ describe('classDef default auto-apply (#198 row 8)', () => {
 
   it('applies in the ASCII backend too', () => {
     // Both backends resolve classes independently; they must agree.
-    const ascii = renderMermaidASCII(source, { colorMode: 'ansi' })
+    const ascii = renderMermaidASCII(source, { colorMode: 'ansi256' })
     expect(ascii).toContain('A')
     expect(ascii).toContain('B')
   })
