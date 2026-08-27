@@ -91,7 +91,11 @@ jobs:
         run: pnpm run lint
 
       - name: Type check
-        run: pnpm exec tsc --noEmit
+        # Runs both the library config and demo/tsconfig.json — the demo's
+        # client-side code needs DOM types the root config deliberately omits,
+        # so it is checked under its own config rather than weakening the
+        # root's guarantees for library source.
+        run: pnpm run typecheck
 
       - name: Format check
         run: pnpm run format:check

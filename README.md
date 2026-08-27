@@ -117,6 +117,7 @@ zombie-mermaid --help                                   # Show all options
 
 ## Docs
 
+- [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md)
 - [Theming](docs/theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
 - [Supported Diagrams](docs/diagrams.md) — syntax for every diagram type, XY chart styling, and ASCII rendering options
 - [React Integration](docs/react-integration.md) — zero-flash rendering with `useMemo()`

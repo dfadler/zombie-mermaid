@@ -27,6 +27,9 @@ export default tseslint.config(
     files: [
       'src/**/*.ts',
       'src/**/*.tsx',
+      // The demo page's own client-side code. It used to be a template
+      // literal inside index.ts, which no linter could see.
+      'demo/**/*.ts',
       'editor.ts',
       'dev.ts',
       'index.ts',

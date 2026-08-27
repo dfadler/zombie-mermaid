@@ -1,0 +1,17 @@
+{
+  // The demo's client-side code needs DOM types, which the root tsconfig
+  // deliberately omits — `lib` there is ESNext only, so that library source
+  // cannot accidentally reach for a browser API it will not have at runtime
+  // (see the note in src/browser.ts). Rather than weaken that guarantee for
+  // the whole repo, browser-only code is checked under its own config.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": [],
+    "noEmit": true,
+    "rootDir": ".",
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["**/*.ts"]
+}

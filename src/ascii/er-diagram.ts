@@ -25,9 +25,10 @@ import {
   increaseRoleCanvasSize,
   write,
 } from './canvas.ts'
-import { drawMultiBox, classifyBoxChar } from './draw.ts'
+import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines, maxLineWidth } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
+import { toDisplayCells } from './display-width.ts'
 
 // ============================================================================
 // Entity box content
@@ -225,15 +226,10 @@ export function renderErAscii(
     const sections = buildEntitySections(ent)
     entitySections.set(ent.id, sections)
 
-    let maxTextW = 0
-    for (const section of sections) {
-      for (const line of section) maxTextW = Math.max(maxTextW, line.length)
-    }
-    const boxW = maxTextW + 4 // 2 border + 2 padding
-
-    let totalLines = 0
-    for (const section of sections) totalLines += Math.max(section.length, 1)
-    const boxH = totalLines + (sections.length - 1) + 2
+    // Reserve exactly what drawMultiBox will draw — measuring it here rather
+    // than re-deriving the arithmetic keeps layout and drawing in lockstep for
+    // wide-character (CJK/fullwidth) content.
+    const { width: boxW, height: boxH } = measureMultiBox(sections)
 
     entityBoxW.set(ent.id, boxW)
     entityBoxH.set(ent.id, boxH)
@@ -441,26 +437,28 @@ export function renderErAscii(
         // Place lines below the relationship line (lineY + 1, lineY + 2, ...)
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
           const line = lines[lineIdx]!
+          // Grid cells, not code units — see toDisplayCells.
+          const cells = toDisplayCells(line)
           const labelStart = Math.max(
             labelMinX,
-            gapMid - Math.floor(line.length / 2),
+            gapMid - Math.floor(cells.length / 2),
           )
           const labelY = lineY + 1 + lineIdx
           // Ensure canvas is tall enough
           increaseSize(
             canvas,
-            Math.max(labelStart + line.length, 1),
+            Math.max(labelStart + cells.length, 1),
             Math.max(labelY + 1, 1),
           )
           increaseRoleCanvasSize(
             rc,
-            Math.max(labelStart + line.length, 1),
+            Math.max(labelStart + cells.length, 1),
             Math.max(labelY + 1, 1),
           )
-          for (let i = 0; i < line.length; i++) {
+          for (let i = 0; i < cells.length; i++) {
             const lx = labelStart + i
             if (lx >= labelMinX && lx <= labelMaxX) {
-              setC(lx, labelY, line[i]!, 'text')
+              setC(lx, labelY, cells[i]!, 'text')
             }
           }
         }
@@ -545,12 +543,14 @@ export function renderErAscii(
           const labelX = lineX + 2
           const y = startLabelY + lineIdx
           if (y >= 0) {
-            for (let i = 0; i < line.length; i++) {
+            // Grid cells, not code units — see toDisplayCells.
+            const cells = toDisplayCells(line)
+            for (let i = 0; i < cells.length; i++) {
               const lx = labelX + i
               if (lx >= 0) {
                 increaseSize(canvas, lx + 1, y + 1)
                 increaseRoleCanvasSize(rc, lx + 1, y + 1)
-                setC(lx, y, line[i]!, 'text')
+                setC(lx, y, cells[i]!, 'text')
               }
             }
           }
