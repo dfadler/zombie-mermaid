@@ -173,18 +173,28 @@ function formatProse(text: string): string {
  *
  * Left alone, the CJK entry on this page displayed five different row widths
  * directly beneath a caption asserting that every row is the same width —
- * the page disproving its own claim. Each wide glyph is therefore boxed to
- * exactly `2ch`, reproducing the terminal's geometry.
+ * the page disproving its own claim. Each wide cluster is therefore boxed to
+ * the column count the renderer allocated for it, reproducing the terminal's
+ * geometry.
  *
- * `isWideChar` is the renderer's own predicate, so the page and the box math
- * cannot disagree about which characters are wide.
+ * Boxing works on grapheme clusters, not code points: a ZWJ family emoji, a
+ * flag, or a skin-tone modifier is several code points that must stay in one
+ * element, since a ligature cannot form across an element boundary.
+ *
+ * `isWideChar` is the renderer's own predicate and the per-code-point sum
+ * mirrors `displayWidth`, so the page and the box math cannot disagree about
+ * how many columns anything occupies.
  */
 function asciiToHtml(text: string): string {
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
   let out = ''
-  for (const ch of text) {
-    out += isWideChar(ch)
-      ? `<span class="fix-wide">${escapeHtml(ch)}</span>`
-      : escapeHtml(ch)
+  for (const { segment } of segmenter.segment(text)) {
+    let width = 0
+    for (const ch of segment) width += isWideChar(ch) ? 2 : 1
+    out +=
+      width > 1
+        ? `<span class="fix-wide" style="width:${width}ch">${escapeHtml(segment)}</span>`
+        : escapeHtml(segment)
   }
   return out
 }

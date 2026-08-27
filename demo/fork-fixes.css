@@ -147,14 +147,17 @@
  * which is the rule the ASCII renderer's box math is built on. A browser
  * gives it whatever the fallback font's advance happens to be — measured at
  * 1.66x the Latin advance here, since JetBrains Mono has no CJK coverage.
- * Boxing each one to 2ch restores the terminal's geometry so the borders in
- * these panels line up as they do in a real terminal.
+ * fork-fixes.ts boxes each wide grapheme cluster to the column count the
+ * renderer allocated for it, via an inline width, restoring the terminal's
+ * geometry so the borders in these panels line up as they do in a real
+ * terminal. The 2ch here is the single-glyph default, and a floor if that
+ * inline width ever fails to apply.
  */
 .fix-ascii .fix-wide {
   display: inline-block;
   width: 2ch;
-  /* Centre the glyph across its two cells; the substitute face is narrower
-     than 2ch, and left-aligning it would bunch the text toward the border. */
+  /* Centre the glyph across its cells; the substitute face is narrower than
+     the box, and left-aligning it would bunch the text toward the border. */
   text-align: center;
 }
 

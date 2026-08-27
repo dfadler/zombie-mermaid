@@ -79,18 +79,54 @@ function applyWideCharWidths(container: HTMLElement): void {
     if (![...text.data].some(isWideChar)) continue
 
     const fragment = document.createDocumentFragment()
-    for (const ch of text.data) {
-      if (isWideChar(ch)) {
+    for (const cluster of graphemes(text.data)) {
+      const width = columnsOf(cluster)
+      if (width > 1) {
         const span = document.createElement('span')
         span.className = 'ascii-wide'
-        span.textContent = ch
+        span.style.width = `${width}ch`
+        span.textContent = cluster
         fragment.appendChild(span)
       } else {
-        fragment.appendChild(document.createTextNode(ch))
+        fragment.appendChild(document.createTextNode(cluster))
       }
     }
     text.replaceWith(fragment)
   }
+}
+
+/**
+ * Split text into grapheme clusters — user-perceived characters.
+ *
+ * Iterating code points instead tears apart every multi-code-point sequence:
+ * a ZWJ family emoji becomes three unrelated people, a flag becomes two
+ * letters, a skin-tone modifier becomes a colour swatch. Splitting them across
+ * separate elements is what breaks them, since a ligature cannot form across
+ * an element boundary.
+ *
+ * `Intl.Segmenter` reached Firefox last, in 2024. Where it is missing, the
+ * code-point split is the graceful degradation: alignment still holds, and
+ * only the rare composed sequence renders split.
+ */
+function graphemes(text: string): string[] {
+  if (typeof Intl.Segmenter !== 'function') return [...text]
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+  return [...segmenter.segment(text)].map((s) => s.segment)
+}
+
+/**
+ * Terminal columns the ASCII renderer allocated for one grapheme cluster.
+ *
+ * Deliberately mirrors `displayWidth`'s per-code-point sum rather than asking
+ * how wide the cluster *ought* to be: the box borders were drawn against that
+ * number, so reproducing it is what keeps them lined up. A cluster the
+ * renderer over-counts is over-counted here too — consistently, which is the
+ * point.
+ */
+function columnsOf(cluster: string): number {
+  let width = 0
+  for (const ch of cluster) width += isWideChar(ch) ? 2 : 1
+  return width
 }
 
 /**

@@ -1075,13 +1075,16 @@ body::after {
  * which is the rule the ASCII renderer's box math is built on. A browser gives
  * it the substitute font's advance instead — about 1.66x the Latin advance
  * here, since JetBrains Mono has no CJK coverage — so box borders drift out of
- * alignment. demo/client.ts wraps each wide glyph in this class; pinning it to
- * 2ch restores the geometry the diagram was laid out for.
+ * alignment. demo/client.ts wraps each wide grapheme cluster in this class,
+ * setting an inline width to the column count the renderer allocated for it;
+ * that restores the geometry the diagram was laid out for. The 2ch here is the
+ * single-glyph default for the common case, and a floor if the inline style
+ * ever fails to apply.
  */
 .ascii-wide {
   display: inline-block;
   width: 2ch;
-  /* The substitute glyph is narrower than 2ch; centring it keeps the text
-     from bunching against the left of its cell pair. */
+  /* The substitute glyph is narrower than its cell; centring it keeps the text
+     from bunching against the left of the span. */
   text-align: center;
 }
