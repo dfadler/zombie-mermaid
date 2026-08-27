@@ -234,13 +234,25 @@ describe('classDef default auto-apply (#198 row 8)', () => {
    * styled nodes on the page, an assertion that the SVG contains the default
    * stroke passes on node A's copy of it, proving nothing about whether node
    * B kept it while overriding fill. Every assertion below is per-node.
+   *
+   * Located by string search rather than a constructed regex. The id is a
+   * literal here, so there is no real ReDoS exposure, but a `new RegExp` built
+   * from a variable trips Semgrep's non-literal-regexp rule — and the pattern
+   * bought nothing over indexOf.
    */
   const nodeShape = (svg: string, id: string): string => {
-    const group = svg.match(
-      new RegExp(`<g[^>]*data-id="${id}"[\\s\\S]*?</g>`),
-    )?.[0]
-    expect(group, `no rendered node with data-id="${id}"`).toBeDefined()
-    const shape = group!.match(/<(rect|polygon|path|circle)[^>]*>/)?.[0]
+    const marker = `data-id="${id}"`
+    const at = svg.indexOf(marker)
+    expect(at, `no rendered node with ${marker}`).toBeGreaterThan(-1)
+
+    // Back up to the opening <g, then take everything to its closing tag.
+    const open = svg.lastIndexOf('<g', at)
+    const close = svg.indexOf('</g>', at)
+    expect(open, `no opening <g> for ${marker}`).toBeGreaterThan(-1)
+    expect(close, `no closing </g> for ${marker}`).toBeGreaterThan(-1)
+
+    const group = svg.slice(open, close)
+    const shape = group.match(/<(rect|polygon|path|circle)[^>]*>/)?.[0]
     expect(shape, `no shape element inside node ${id}`).toBeDefined()
     return shape!
   }
