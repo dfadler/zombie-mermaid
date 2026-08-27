@@ -17,10 +17,11 @@ import type {
   AsciiEdge,
   EdgeBundle,
   GridCoord,
+  Direction,
 } from './types.ts'
-import { Up, Down, Left, Right, Middle } from './types.ts'
-import { getPath, mergePath } from './pathfinder.ts'
+import { Up, Down, Left, Right, Middle, gridCoordDirection } from './types.ts'
 import { getNodeSubgraph } from './grid.ts'
+import { routeEdge } from './edge-routing.ts'
 
 /**
  * Get a node's grid coordinate. Bundling only runs after grid.ts's
@@ -268,44 +269,31 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
     bundle.junctionDir = dir === 'TD' ? Up : Left
     bundle.sharedNodeDir = dir === 'TD' ? Down : Right
 
-    // Route junction → target (shared path)
+    // Route junction → target (shared path). Anchor offsets (top/left
+    // center of target, bottom/right center of source below) are computed
+    // via gridCoordDirection — the same per-direction offset edge-routing.ts
+    // uses — instead of each bundling call reimplementing its own
+    // arithmetic. routeEdge (also shared with edge-routing.ts) tries an
+    // unobstructed direct path before falling back to A*.
     const targetCoord = requireGridCoord(bundle.sharedNode)
-    const targetEntry =
-      dir === 'TD'
-        ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
-        : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
+    const targetDir: Direction = dir === 'TD' ? Up : Left
+    const targetEntry = gridCoordDirection(targetCoord, targetDir)
 
-    const sharedPath = getPath(
-      graph.grid,
-      junction,
-      targetEntry,
-      graph.pathBudget,
-    )
-    bundle.sharedPath = sharedPath
-      ? mergePath(sharedPath)
-      : [junction, targetEntry]
+    const sharedPath = routeEdge(graph, junction, targetEntry, targetDir)
+    bundle.sharedPath = sharedPath ?? [junction, targetEntry]
 
     // Route each source → junction
     for (const edge of bundle.edges) {
       const sourceCoord = requireGridCoord(edge.from)
-      const sourceExit =
-        dir === 'TD'
-          ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
-          : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
+      const sourceDir: Direction = dir === 'TD' ? Down : Right
+      const sourceExit = gridCoordDirection(sourceCoord, sourceDir)
 
-      const pathToJunction = getPath(
-        graph.grid,
-        sourceExit,
-        junction,
-        graph.pathBudget,
-      )
-      edge.pathToJunction = pathToJunction
-        ? mergePath(pathToJunction)
-        : [sourceExit, junction]
+      const pathToJunction = routeEdge(graph, sourceExit, junction, sourceDir)
+      edge.pathToJunction = pathToJunction ?? [sourceExit, junction]
 
       // Set edge directions for proper drawing
-      edge.startDir = dir === 'TD' ? Down : Right
-      edge.endDir = dir === 'TD' ? Up : Left
+      edge.startDir = sourceDir
+      edge.endDir = targetDir
 
       // Build full path for grid size calculation: source → junction → target
       edge.path = [...edge.pathToJunction, ...bundle.sharedPath.slice(1)]
@@ -317,42 +305,24 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
 
     // Route source → junction (shared path)
     const sourceCoord = requireGridCoord(bundle.sharedNode)
-    const sourceExit =
-      dir === 'TD'
-        ? { x: sourceCoord.x + 1, y: sourceCoord.y + 2 } // Bottom center of source
-        : { x: sourceCoord.x + 2, y: sourceCoord.y + 1 } // Right center of source
+    const sourceDir: Direction = dir === 'TD' ? Down : Right
+    const sourceExit = gridCoordDirection(sourceCoord, sourceDir)
 
-    const sharedPath = getPath(
-      graph.grid,
-      sourceExit,
-      junction,
-      graph.pathBudget,
-    )
-    bundle.sharedPath = sharedPath
-      ? mergePath(sharedPath)
-      : [sourceExit, junction]
+    const sharedPath = routeEdge(graph, sourceExit, junction, sourceDir)
+    bundle.sharedPath = sharedPath ?? [sourceExit, junction]
 
     // Route junction → each target
     for (const edge of bundle.edges) {
       const targetCoord = requireGridCoord(edge.to)
-      const targetEntry =
-        dir === 'TD'
-          ? { x: targetCoord.x + 1, y: targetCoord.y } // Top center of target
-          : { x: targetCoord.x, y: targetCoord.y + 1 } // Left center of target
+      const targetDir: Direction = dir === 'TD' ? Up : Left
+      const targetEntry = gridCoordDirection(targetCoord, targetDir)
 
-      const pathToJunction = getPath(
-        graph.grid,
-        junction,
-        targetEntry,
-        graph.pathBudget,
-      )
-      edge.pathToJunction = pathToJunction
-        ? mergePath(pathToJunction)
-        : [junction, targetEntry]
+      const pathToJunction = routeEdge(graph, junction, targetEntry, targetDir)
+      edge.pathToJunction = pathToJunction ?? [junction, targetEntry]
 
       // Set edge directions
-      edge.startDir = dir === 'TD' ? Down : Right
-      edge.endDir = dir === 'TD' ? Up : Left
+      edge.startDir = sourceDir
+      edge.endDir = targetDir
 
       // Build full path for grid size calculation: source → junction → target
       edge.path = [...bundle.sharedPath, ...edge.pathToJunction.slice(1)]

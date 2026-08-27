@@ -284,6 +284,32 @@ function tryDirectPath(
 }
 
 /**
+ * Route a single directed edge segment from `from` to `to`: try an
+ * unobstructed direct L-shaped route first (tryDirectPath, above), falling
+ * back to A* search (pathfinder.getPath) when the direct route is blocked
+ * or unavailable (from/to already axis-aligned). Returns the merged path,
+ * or null when neither strategy finds a route at all (e.g. the destination
+ * is unreachable through free cells).
+ *
+ * This is the single seam both edge-routing.ts (determinePath's
+ * preferred/alternative candidates below) and edge-bundling.ts
+ * (routeBundledEdges' junction-based segments) route through, so regular
+ * and bundled edges share the same fast-path-then-A* behavior instead of
+ * each independently calling getPath.
+ */
+export function routeEdge(
+  graph: AsciiGraph,
+  from: GridCoord,
+  to: GridCoord,
+  dir: Direction,
+): GridCoord[] | null {
+  const path =
+    tryDirectPath(graph, from, to, dir) ??
+    getPath(graph.grid, from, to, graph.pathBudget)
+  return path ? mergePath(path) : null
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -312,17 +338,14 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
 
-  // Try preferred path — an unobstructed direct L-shape beats A* outright
-  // (see tryDirectPath); only fall back to A* when the direct route is
-  // blocked (or unavailable because from/to are already axis-aligned).
+  // Try preferred path — routeEdge tries an unobstructed direct L-shape
+  // before falling back to A* (see routeEdge / tryDirectPath above).
   const prefFrom = gridCoordDirection(requireGridCoord(edge.from), preferredDir)
   const prefTo = gridCoordDirection(
     requireGridCoord(edge.to),
     preferredOppositeDir,
   )
-  let preferredPath =
-    tryDirectPath(graph, prefFrom, prefTo, preferredDir) ??
-    getPath(graph.grid, prefFrom, prefTo, graph.pathBudget)
+  const preferredPath = routeEdge(graph, prefFrom, prefTo, preferredDir)
 
   // Try alternative path
   const altFrom = gridCoordDirection(
@@ -333,15 +356,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     requireGridCoord(edge.to),
     alternativeOppositeDir,
   )
-  let alternativePath =
-    tryDirectPath(graph, altFrom, altTo, alternativeDir) ??
-    getPath(graph.grid, altFrom, altTo, graph.pathBudget)
+  const alternativePath = routeEdge(graph, altFrom, altTo, alternativeDir)
 
-  // Case 1: Both paths found — pick the shorter one
+  // Case 1: Both paths found — pick the shorter one (routeEdge already merged each)
   if (preferredPath !== null && alternativePath !== null) {
-    preferredPath = mergePath(preferredPath)
-    alternativePath = mergePath(alternativePath)
-
     if (preferredPath.length <= alternativePath.length) {
       edge.startDir = preferredDir
       edge.endDir = preferredOppositeDir
@@ -358,7 +376,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (preferredPath !== null) {
     edge.startDir = preferredDir
     edge.endDir = preferredOppositeDir
-    edge.path = mergePath(preferredPath)
+    edge.path = preferredPath
     return
   }
 
@@ -366,7 +384,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (alternativePath !== null) {
     edge.startDir = alternativeDir
     edge.endDir = alternativeOppositeDir
-    edge.path = mergePath(alternativePath)
+    edge.path = alternativePath
     return
   }
 
