@@ -303,6 +303,30 @@ export function renderSequenceAscii(
 
   // ---- DRAW: helper to place a bordered actor box (supports multi-line labels) ----
 
+  /**
+   * Draws a bordered, centered actor box directly onto the shared sequence
+   * canvas. This intentionally does NOT go through the shared `drawMultiBox`
+   * primitive (src/ascii/draw-boxes.ts), for two concrete reasons:
+   *
+   * 1. Coordinate system: `drawMultiBox` returns a standalone canvas rooted
+   *    at (0, 0), meant to be measured and then copied onto a caller's
+   *    canvas (as class-diagram.ts and er-diagram.ts do). Actor boxes are
+   *    positioned by a lifeline's center x-coordinate (`cx`), and are drawn
+   *    twice per actor (header at y=0, footer at y=footerY) directly via the
+   *    closure-captured `setC`, alongside unrelated lifeline/junction
+   *    drawing that shares the same canvas and role-tracking.
+   * 2. Sizing/alignment semantics differ, not just coordinates: `drawMultiBox`
+   *    sizes each section by raw `.length` and left-aligns its content with
+   *    fixed padding. Actor labels are centered and sized via
+   *    `maxLineWidth` (multiline-utils.ts), which is deliberately
+   *    display-width-aware (not `.length`) so wide CJK/emoji labels get a
+   *    correctly-sized box. Routing actor boxes through `drawMultiBox` as it
+   *    stands would silently narrow boxes for wide-character actor labels —
+   *    reintroducing the exact bug `maxLineWidth` exists to avoid — and
+   *    changing `drawMultiBox` itself to be display-width-aware and
+   *    center-aligned would alter class/ER diagram box sizing, which must
+   *    stay untouched.
+   */
   function drawActorBox(cx: number, topY: number, label: string): void {
     const lines = splitLines(label)
     const maxW = maxLineWidth(label)

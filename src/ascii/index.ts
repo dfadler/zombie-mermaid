@@ -17,6 +17,8 @@
 // ============================================================================
 
 import { parseMermaid } from '../parser.ts'
+import { detectDiagramType } from '../diagram-type.ts'
+import type { DiagramType } from '../diagram-type.ts'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
 import { drawGraph } from './draw.ts'
@@ -62,24 +64,6 @@ export interface AsciiRenderOptions {
   colorMode?: ColorMode | 'auto'
   /** Theme colors for ASCII output. Uses default theme if not provided. */
   theme?: Partial<AsciiTheme>
-}
-
-/**
- * Detect the diagram type from the mermaid source text.
- * Mirrors the detection logic in src/index.ts for the SVG renderer.
- */
-function detectDiagramType(
-  text: string,
-): 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart' {
-  const firstLine = text.trim().split('\n')[0]?.trim().toLowerCase() ?? ''
-
-  if (/^xychart(-beta)?\b/.test(firstLine)) return 'xychart'
-  if (/^sequencediagram\s*$/.test(firstLine)) return 'sequence'
-  if (/^classdiagram\s*$/.test(firstLine)) return 'class'
-  if (/^erdiagram\s*$/.test(firstLine)) return 'er'
-
-  // Default: flowchart/state (handled by parseMermaid internally)
-  return 'flowchart'
 }
 
 /**
@@ -129,7 +113,7 @@ export function renderMermaidASCII(
   // Merge user theme with defaults
   const theme: AsciiTheme = { ...DEFAULT_ASCII_THEME, ...options.theme }
 
-  const diagramType = detectDiagramType(text)
+  const diagramType: DiagramType = detectDiagramType(text)
 
   switch (diagramType) {
     case 'xychart':
