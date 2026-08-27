@@ -17,11 +17,19 @@ import type {
   AsciiEdge,
   EdgeBundle,
   GridCoord,
-  Direction,
+  CardinalDirection,
 } from './types.ts'
-import { Up, Down, Left, Right, Middle, gridCoordDirection } from './types.ts'
+import {
+  Up,
+  Down,
+  Left,
+  Right,
+  Middle,
+  gridCoordDirection,
+  requireCardinalDirection,
+} from './types.ts'
 import { getNodeSubgraph } from './grid.ts'
-import { routeEdge } from './edge-routing.ts'
+import { routeEdge } from './pathfinder.ts'
 
 /**
  * Get a node's grid coordinate. Bundling only runs after grid.ts's
@@ -273,10 +281,17 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
     // center of target, bottom/right center of source below) are computed
     // via gridCoordDirection — the same per-direction offset edge-routing.ts
     // uses — instead of each bundling call reimplementing its own
-    // arithmetic. routeEdge (also shared with edge-routing.ts) tries an
-    // unobstructed direct path before falling back to A*.
+    // arithmetic. routeEdge (pathfinder.ts, also used by edge-routing.ts)
+    // tries an unobstructed direct path before falling back to A*. Note
+    // that `targetDir` here is the *arrival* anchor at the target, not
+    // necessarily the true departure direction from `junction` — routeEdge
+    // handles that by trying both L-corner orientations internally (see
+    // tryDirectPath in pathfinder.ts) rather than trusting this value as a
+    // routing axis.
     const targetCoord = requireGridCoord(bundle.sharedNode)
-    const targetDir: Direction = dir === 'TD' ? Up : Left
+    const targetDir: CardinalDirection = requireCardinalDirection(
+      dir === 'TD' ? Up : Left,
+    )
     const targetEntry = gridCoordDirection(targetCoord, targetDir)
 
     const sharedPath = routeEdge(graph, junction, targetEntry, targetDir)
@@ -285,7 +300,9 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
     // Route each source → junction
     for (const edge of bundle.edges) {
       const sourceCoord = requireGridCoord(edge.from)
-      const sourceDir: Direction = dir === 'TD' ? Down : Right
+      const sourceDir: CardinalDirection = requireCardinalDirection(
+        dir === 'TD' ? Down : Right,
+      )
       const sourceExit = gridCoordDirection(sourceCoord, sourceDir)
 
       const pathToJunction = routeEdge(graph, sourceExit, junction, sourceDir)
@@ -305,7 +322,9 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
 
     // Route source → junction (shared path)
     const sourceCoord = requireGridCoord(bundle.sharedNode)
-    const sourceDir: Direction = dir === 'TD' ? Down : Right
+    const sourceDir: CardinalDirection = requireCardinalDirection(
+      dir === 'TD' ? Down : Right,
+    )
     const sourceExit = gridCoordDirection(sourceCoord, sourceDir)
 
     const sharedPath = routeEdge(graph, sourceExit, junction, sourceDir)
@@ -314,7 +333,9 @@ export function routeBundledEdges(graph: AsciiGraph, bundle: EdgeBundle): void {
     // Route junction → each target
     for (const edge of bundle.edges) {
       const targetCoord = requireGridCoord(edge.to)
-      const targetDir: Direction = dir === 'TD' ? Up : Left
+      const targetDir: CardinalDirection = requireCardinalDirection(
+        dir === 'TD' ? Up : Left,
+      )
       const targetEntry = gridCoordDirection(targetCoord, targetDir)
 
       const pathToJunction = routeEdge(graph, junction, targetEntry, targetDir)

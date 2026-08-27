@@ -6,8 +6,14 @@
 // paths between nodes on the grid. Prefers straight lines over zigzags.
 // ============================================================================
 
-import type { GridCoord, AsciiNode, PathBudget } from './types.ts'
-import { gridKey, gridCoordEquals } from './types.ts'
+import type {
+  GridCoord,
+  AsciiNode,
+  PathBudget,
+  AsciiGraph,
+  CardinalDirection,
+} from './types.ts'
+import { gridKey, gridCoordEquals, dirEquals, Left, Right } from './types.ts'
 
 // ============================================================================
 // Priority queue (min-heap) for A* open set
@@ -306,4 +312,144 @@ export function mergePath(path: GridCoord[]): GridCoord[] {
   }
 
   return path.filter((_, i) => !toRemove.has(i))
+}
+
+// ============================================================================
+// Direct (unobstructed L-shape) path — shared fast path for edge-routing.ts
+// and edge-bundling.ts
+// ============================================================================
+
+/**
+ * Check every cell strictly after `from` up to (and optionally including)
+ * `to` along a single axis-aligned run. `from` and `to` must share an x or
+ * a y coordinate. `includeTo` should be false when `to` is the edge's
+ * final destination point (which is expected to sit on/adjacent to the
+ * target node's own border and so may legitimately be "occupied" in
+ * graph.grid — mirroring the same allowance A*'s getPath makes for its
+ * destination cell).
+ */
+function isAxisRunFree(
+  grid: Map<string, AsciiNode>,
+  from: GridCoord,
+  to: GridCoord,
+  includeTo: boolean,
+): boolean {
+  if (from.x === to.x && from.y === to.y) return true
+  const alongY = from.x === to.x
+  if (!alongY && from.y !== to.y) return false // not axis-aligned
+
+  const step = alongY ? (to.y > from.y ? 1 : -1) : to.x > from.x ? 1 : -1
+  let pos = alongY ? from.y : from.x
+  const end = alongY ? to.y : to.x
+
+  for (pos += step; ; pos += step) {
+    const isLast = pos === end
+    const cell: GridCoord = alongY
+      ? { x: from.x, y: pos }
+      : { x: pos, y: from.y }
+    if (!(isLast && !includeTo) && !isFreeInGrid(grid, cell)) return false
+    if (isLast) break
+  }
+  return true
+}
+
+/** Try one L-shaped corner order; null if any leg is obstructed. */
+function tryCornerPath(
+  grid: Map<string, AsciiNode>,
+  from: GridCoord,
+  to: GridCoord,
+  horizontalFirst: boolean,
+): GridCoord[] | null {
+  const corner: GridCoord = horizontalFirst
+    ? { x: to.x, y: from.y }
+    : { x: from.x, y: to.y }
+
+  if (!isAxisRunFree(grid, from, corner, true)) return null
+  if (!isAxisRunFree(grid, corner, to, false)) return null
+  return [from, corner, to]
+}
+
+/**
+ * Try a direct two-segment (L-shaped) route between `from` and `to`. `dir`
+ * indicates the preferred corner order (horizontal-first for Left/Right,
+ * vertical-first for Up/Down), but when that orientation is blocked the
+ * *other* orientation is tried too before giving up.
+ *
+ * Trying both orientations (rather than trusting `dir` alone) matters
+ * because `dir` is not always the true geometric departure direction from
+ * `from`: edge-routing.ts's determinePath always passes it correctly, but
+ * edge-bundling.ts's junction segments sometimes pass the *arrival* anchor
+ * at `to` instead (the two only coincide when `from`/`to` happen to already
+ * be axis-aligned, which is common but not guaranteed — see the PR #178
+ * review that found the fast path dead at 3 of 4 bundled call sites because
+ * of exactly this mix-up). Trying both orientations makes the result
+ * correct regardless of which direction a caller actually knows, instead of
+ * requiring every caller to recompute true geometric departure.
+ *
+ * Returns null when `from` and `to` are already axis-aligned (no corner
+ * needed — A*'s result is already optimal there) or when both orientations
+ * are blocked.
+ *
+ * A* always finds a *shortest* path, but when several equally-short routes
+ * exist — e.g. a straight line and a zigzag with the same total step count
+ * — which one it returns depends on priority-queue tie-breaking order, not
+ * on which "looks" straighter. That's why sibling edges from the same
+ * source can end up with visually inconsistent routing (one goes straight,
+ * another zigzags) even though nothing actually blocks a straight route
+ * for either. A direct L-shaped route is, by construction, exactly as
+ * short as any route between two points can be, so whenever it's
+ * unobstructed we prefer it outright over whatever A* found — this also
+ * skips the A* search entirely for the common unobstructed case.
+ */
+function tryDirectPath(
+  graph: AsciiGraph,
+  from: GridCoord,
+  to: GridCoord,
+  dir: CardinalDirection,
+): GridCoord[] | null {
+  if (from.x === to.x || from.y === to.y) return null
+
+  const preferHorizontalFirst = dirEquals(dir, Left) || dirEquals(dir, Right)
+  return (
+    tryCornerPath(graph.grid, from, to, preferHorizontalFirst) ??
+    tryCornerPath(graph.grid, from, to, !preferHorizontalFirst)
+  )
+}
+
+/**
+ * Route a single directed edge segment from `from` to `to`: try an
+ * unobstructed direct L-shaped route first (tryDirectPath, above), falling
+ * back to A* search (getPath) when every direct orientation is blocked or
+ * unavailable (from/to already axis-aligned). Returns the merged path, or
+ * null when neither strategy finds a route at all (e.g. the destination
+ * is unreachable through free cells).
+ *
+ * This is the single seam both edge-routing.ts (determinePath's
+ * preferred/alternative candidates) and edge-bundling.ts
+ * (routeBundledEdges' junction-based segments) route through, so regular
+ * and bundled edges share the same fast-path-then-A* behavior instead of
+ * each independently calling getPath.
+ *
+ * `graph.pathBudget` is required, not silently optional: it's the
+ * render-wide bound against pathological/hostile diagrams (see PathBudget
+ * above), and routeEdge is the shared entry point for two modules now — an
+ * absent budget here would silently disable that bound for both instead of
+ * failing loudly, the way requireGridCoord fails loudly for a missing grid
+ * coordinate rather than treating it as some default.
+ */
+export function routeEdge(
+  graph: AsciiGraph,
+  from: GridCoord,
+  to: GridCoord,
+  dir: CardinalDirection,
+): GridCoord[] | null {
+  if (!graph.pathBudget) {
+    throw new Error(
+      'routeEdge requires graph.pathBudget to be set; call createPathBudget() (see grid.ts createMapping) before routing edges',
+    )
+  }
+  const path =
+    tryDirectPath(graph, from, to, dir) ??
+    getPath(graph.grid, from, to, graph.pathBudget)
+  return path ? mergePath(path) : null
 }
