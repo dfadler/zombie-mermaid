@@ -2,6 +2,8 @@
 // Parsed graph — logical structure extracted from Mermaid text
 // ============================================================================
 
+import type { InitConfig, CurveStyle } from './init-directive.ts'
+
 export interface MermaidGraph {
   direction: Direction
   nodes: Map<string, MermaidNode>
@@ -14,6 +16,10 @@ export interface MermaidGraph {
   nodeStyles: Map<string, Record<string, string>>
   /** Maps edge indices (or 'default') to inline styles from `linkStyle` directives */
   linkStyles: Map<number | 'default', Record<string, string>>
+  /** Maps node IDs to interactions declared by `click` statements */
+  interactions: Map<string, NodeInteraction>
+  /** Configuration the diagram set for itself via `%%{init: ...}%%` */
+  initConfig?: InitConfig
 }
 
 export type Direction = 'TD' | 'TB' | 'LR' | 'BT' | 'RL'
@@ -84,6 +90,28 @@ export interface MermaidEdge {
   hasArrowStart: boolean
   /** Whether to render an arrowhead at the end (target end) of the edge */
   hasArrowEnd: boolean
+  /** Edge id from `A e1@--> B` (Mermaid v11.10.0+), for `e1@{ ... }` and CSS targeting */
+  id?: string
+  /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
+  animate?: boolean
+}
+
+/**
+ * An interaction attached to a node by a `click` statement.
+ *
+ * This renderer emits static SVG and never executes diagram-supplied script,
+ * so a `call`/callback binding is recorded but not invoked — see
+ * docs/diagrams.md. An `href` becomes a real SVG link.
+ */
+export interface NodeInteraction {
+  /** `click A "https://..."` — rendered as an <a> wrapper */
+  href?: string
+  /** Link target, e.g. `_blank` */
+  target?: string
+  /** Tooltip text — rendered as a <title> child */
+  tooltip?: string
+  /** `click A call fn()` — recorded as a data attribute, never executed */
+  callback?: string
 }
 
 export type EdgeStyle =
@@ -126,6 +154,8 @@ export interface PositionedNode {
   inlineStyle?: Record<string, string>
   /** Custom class name assigned via `class A className` or `:::className` shorthand — emitted onto the rendered element's `class` attribute so external CSS can target it */
   className?: string
+  /** Interaction from a `click` statement — an href wraps the node in an <a> */
+  interaction?: NodeInteraction
 }
 
 export interface PositionedEdge {
@@ -141,6 +171,10 @@ export interface PositionedEdge {
   labelPosition?: Point
   /** Inline styles resolved from `linkStyle` directives — override theme defaults */
   inlineStyle?: Record<string, string>
+  /** Edge id from `A e1@--> B`, emitted as data-id for CSS targeting */
+  id?: string
+  /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
+  animate?: boolean
 }
 
 export interface Point {
@@ -202,6 +236,14 @@ export interface RenderOptions {
   transparent?: boolean
   /** Enable hover tooltips on chart data points (xychart only). Default: false */
   interactive?: boolean
+
+  /**
+   * Edge path interpolation for flowcharts and state diagrams.
+   * Default: 'linear'. A diagram's own
+   * `%%{init: {"flowchart": {"curve": ...}}}%%` supplies this when the caller
+   * does not; an explicit value here always wins.
+   */
+  curve?: CurveStyle
 
   /**
    * Font size overrides (px). Fields left unspecified fall back to their

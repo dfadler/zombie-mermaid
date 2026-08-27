@@ -18,7 +18,10 @@ import { measureMultilineText } from './text-metrics.ts'
 import {
   renderMultilineText,
   renderMultilineTextWithBackground,
+  escapeXml,
 } from './multiline-utils.ts'
+import { pointsToPath } from './edge-curves.ts'
+import type { CurveStyle } from './init-directive.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -53,12 +56,18 @@ export function renderSvg(
   font: string = 'Inter',
   transparent: boolean = false,
   fontSizes: FontSizes = FONT_SIZES,
+  curve: CurveStyle = 'linear',
 ): string {
   const parts: string[] = []
 
   // SVG root with CSS variables + style block + defs
   parts.push(svgOpenTag(graph.width, graph.height, colors, transparent))
   parts.push(buildStyleBlock(font, false))
+  // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
+  // an animated edge exists, so an ordinary diagram gains no extra markup.
+  if (graph.edges.some((e) => e.animate)) {
+    parts.push(edgeAnimationStyle())
+  }
   parts.push('<defs>')
   parts.push(arrowMarkerDefs())
   // Per-color arrow markers for edges with custom stroke via linkStyle
@@ -78,10 +87,10 @@ export function renderSvg(
     parts.push(renderGroup(group, font, fontSizes))
   }
 
-  // 2. Edges (polylines — rendered behind nodes)
-  // Each edge is a <polyline> with semantic data-* attributes
+  // 2. Edges (paths — rendered behind nodes)
+  // Each edge is a <path> with semantic data-* attributes
   for (const edge of graph.edges) {
-    parts.push(renderEdge(edge))
+    parts.push(renderEdge(edge, curve))
   }
 
   // 3. Edge labels (positioned at midpoint of edge)
@@ -105,6 +114,27 @@ export function renderSvg(
 // ============================================================================
 // Arrow marker definitions
 // ============================================================================
+
+/**
+ * Keyframes for `e1@{ animate: true }` edges — a marching-ants dash.
+ *
+ * CSS animation rather than SMIL: SMIL is deprecated in browsers, while a
+ * CSS `@keyframes` block inside the SVG animates in browsers and is simply
+ * ignored by static rasterizers, which render the first frame. The
+ * `prefers-reduced-motion` guard stops the animation for users who have asked
+ * the system for less movement — the edge still renders, just still.
+ */
+function edgeAnimationStyle(): string {
+  return [
+    '<style>',
+    '  @keyframes zm-edge-dash { to { stroke-dashoffset: -28; } }',
+    '  .edge-animated { animation: zm-edge-dash 1s linear infinite; }',
+    '  @media (prefers-reduced-motion: reduce) {',
+    '    .edge-animated { animation: none; }',
+    '  }',
+    '</style>',
+  ].join('\n')
+}
 
 /**
  * Reusable arrow head markers — both forward (end) and reverse (start) variants.
@@ -214,10 +244,20 @@ function renderGroup(
 // Edge rendering
 // ============================================================================
 
-function renderEdge(edge: PositionedEdge): string {
+function renderEdge(edge: PositionedEdge, curve: CurveStyle): string {
   if (edge.points.length < 2) return ''
 
-  const pathData = pointsToPolylinePath(edge.points)
+  /*
+   * A curved edge must be a <path>; only a path can express the
+   * interpolations Mermaid's `flowchart.curve` selects.
+   *
+   * The default (`linear`) deliberately keeps emitting <polyline>. A path of
+   * straight `L` segments would be geometrically identical, but changing the
+   * element for every diagram would break any consumer selecting
+   * `polyline.edge` — for no benefit to a diagram that asked for no curve.
+   * So the element changes only when the author opts into a curve.
+   */
+  const curved = curve !== 'linear'
 
   /*
    * An invisible link (`A ~~~ B`) still occupies its layout slot — that is
@@ -258,7 +298,9 @@ function renderEdge(edge: PositionedEdge): string {
   // - data-arrow-start/end: arrow presence flags
   // - data-label: edge label if present (for quick lookup without traversing DOM)
   const dataAttrs = [
-    'class="edge"',
+    // An animated edge (`e1@{ animate: true }`) carries an extra class; its
+    // keyframes live in the shared style block.
+    `class="edge${edge.animate ? ' edge-animated' : ''}"`,
     `data-from="${escapeAttr(edge.source)}"`,
     `data-to="${escapeAttr(edge.target)}"`,
     `data-style="${edge.style}"`,
@@ -268,10 +310,25 @@ function renderEdge(edge: PositionedEdge): string {
   if (edge.label) {
     dataAttrs.push(`data-label="${escapeAttr(edge.label)}"`)
   }
+  if (edge.id) {
+    // Mermaid edge id (`A e1@--> B`), used to target the edge from CSS and
+    // to attach the animation below.
+    dataAttrs.push(`data-id="${escapeAttr(edge.id)}"`)
+  }
+
+  // Marching ants need a dash pattern to march; supply one only when the
+  // edge's own style hasn't already set stroke-dasharray.
+  const animatedDash =
+    edge.animate && !dashArray ? ' stroke-dasharray="8 6"' : ''
+
+  const geometry = curved
+    ? `d="${pointsToPath(edge.points, curve)}"`
+    : `points="${pointsToPolylinePath(edge.points)}"`
 
   return (
-    `<polyline ${dataAttrs.join(' ')} points="${pathData}" fill="none" stroke="${strokeColor}" ` +
-    `stroke-width="${strokeWidth}"${dashArray}${markers} />`
+    `<${curved ? 'path' : 'polyline'} ${dataAttrs.join(' ')} ${geometry} ` +
+    `fill="none" stroke="${strokeColor}" ` +
+    `stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers} />`
   )
 }
 
@@ -405,16 +462,73 @@ function renderNode(
   const parts: string[] = []
   const safeClassName = sanitizeClassName(node.className)
   const classAttr = safeClassName ? `node ${safeClassName}` : 'node'
-  parts.push(
-    `<g class="${classAttr}" data-id="${escapeAttr(node.id)}" data-label="${escapeAttr(node.label)}" data-shape="${node.shape}">`,
-  )
-  parts.push(`  ${shape.replace(/\n/g, '\n  ')}`)
-  if (label) {
-    parts.push(`  ${label.replace(/\n/g, '\n  ')}`)
+
+  const interaction = node.interaction
+  const groupAttrs = [
+    `class="${classAttr}"`,
+    `data-id="${escapeAttr(node.id)}"`,
+    `data-label="${escapeAttr(node.label)}"`,
+    `data-shape="${node.shape}"`,
+  ]
+  if (interaction?.callback) {
+    /*
+     * `click A call fn()` is recorded, never invoked. This renderer produces
+     * a static SVG string and executes nothing a diagram supplies — running
+     * diagram-authored script would make every rendered diagram an execution
+     * vector. The binding is exposed as data so a host application can wire
+     * it up itself if it chooses to trust the source.
+     */
+    groupAttrs.push(`data-click-callback="${escapeAttr(interaction.callback)}"`)
   }
+
+  parts.push(`<g ${groupAttrs.join(' ')}>`)
+
+  // An href becomes a real SVG link, which needs no script to work.
+  const href = safeHref(interaction?.href)
+  const indent = href ? '    ' : '  '
+  if (href) {
+    const targetAttr = interaction?.target
+      ? ` target="${escapeAttr(interaction.target)}"`
+      : ''
+    parts.push(`  <a href="${escapeAttr(href)}"${targetAttr}>`)
+  }
+
+  if (interaction?.tooltip) {
+    // <title> is SVG's native tooltip — no script, no CSS.
+    parts.push(`${indent}<title>${escapeXml(interaction.tooltip)}</title>`)
+  }
+
+  parts.push(`${indent}${shape.replace(/\n/g, `\n${indent}`)}`)
+  if (label) {
+    parts.push(`${indent}${label.replace(/\n/g, `\n${indent}`)}`)
+  }
+
+  if (href) parts.push('  </a>')
   parts.push('</g>')
 
   return parts.join('\n')
+}
+
+/**
+ * Accept only link schemes that cannot execute script.
+ *
+ * A `click` target comes from diagram text, which may be untrusted. An
+ * `href` of `javascript:...` (or a `data:` URL containing markup) would turn
+ * a rendered diagram into an XSS vector for any page that inlines the SVG, so
+ * anything but http/https/mailto and same-document or relative references is
+ * dropped rather than emitted.
+ */
+function safeHref(href: string | undefined): string | undefined {
+  if (!href) return undefined
+
+  const trimmed = href.trim()
+  // Relative, absolute-path, and fragment references carry no scheme.
+  if (/^[./#?]/.test(trimmed)) return trimmed
+
+  const scheme = trimmed.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/)?.[1]
+  if (scheme === undefined) return trimmed
+
+  return /^(https?|mailto)$/i.test(scheme) ? trimmed : undefined
 }
 
 function renderNodeShape(node: PositionedNode): string {

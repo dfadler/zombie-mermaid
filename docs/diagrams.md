@@ -124,6 +124,98 @@ distinguished by corner character alone. Shapes whose defining feature is
 interior — a rule, a cross, a notch — keep plain box corners and rely on their
 label; drawing a misleading outline would be worse.
 
+### Configuration directives
+
+A diagram can configure itself inline:
+
+```
+%%{init: {"flowchart": {"curve": "basis"}}}%%
+flowchart TD
+  A --> B --> C
+```
+
+Mermaid's relaxed JSON is accepted — unquoted keys and single quotes both
+parse. A malformed directive is ignored rather than fatal.
+
+**A directive supplies a default; it never overrides an explicit render
+option.** The caller is closer to the user's intent than text embedded in a
+diagram, and a diagram from an untrusted source should not be able to
+override a host application's rendering choices.
+
+Keys parsed but deliberately not acted on, and why:
+
+| Key               | Why                                                                          |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `securityLevel`   | nothing from a diagram is ever executed, so there is no sandbox to configure |
+| `defaultRenderer` | ELK is the only layout engine                                                |
+| `fontFamily`      | use the `font` render option                                                 |
+| `htmlLabels`      | labels are always SVG text                                                   |
+| `maxTextSize`     | no text-size limit is enforced                                               |
+
+### Edge curves
+
+`flowchart.curve` selects how a routed edge is drawn. It changes only the
+drawn line — never where the edge goes.
+
+| Value                             | Result                             |
+| --------------------------------- | ---------------------------------- |
+| `linear` (default)                | straight segments                  |
+| `basis`                           | B-spline; cuts corners smoothly    |
+| `natural`                         | straight runs with rounded corners |
+| `step`, `stepBefore`, `stepAfter` | right-angle staircase              |
+
+Two deliberate deviations, both visible in output:
+
+- **`natural` rounds corners rather than interpolating through them.** ELK
+  routes orthogonally, so every bend is a right angle, and at a right angle
+  any C1-smooth _interpolating_ spline (d3's `curveNatural` included) must
+  overshoot the corner — which rendered as a visible loop below a decision
+  node. Rounding is smooth, never overshoots, and stays distinct from `basis`.
+- **The step family leaves its final segment straight**, along the original
+  approach direction. An SVG arrow marker takes its angle from the last path
+  segment, so a staircase ending on a horizontal leg would point the arrowhead
+  sideways into the node.
+
+The default (`linear`) still emits `<polyline class="edge">`; only a
+non-linear curve switches the element to `<path class="edge">`, so existing
+CSS and DOM selectors keep working unless a curve is requested.
+
+### Interactions
+
+```
+flowchart TD
+  A --> B
+  click A "https://example.com" "Tooltip" _blank
+  click B call myHandler()
+```
+
+An `href` becomes a real SVG `<a>` link, which works in any browser with no
+script. A tooltip becomes a `<title>` child.
+
+**Only `http`, `https`, and `mailto` links, plus relative and fragment
+references, are emitted.** A `javascript:` or `data:` href is dropped —
+diagram text may be untrusted, and an executable href would make any page
+that inlines the SVG vulnerable.
+
+**A `call`/callback binding is recorded, never invoked.** This renderer emits
+a static SVG string and executes nothing a diagram supplies. The binding is
+exposed as `data-click-callback` so a host application can wire it up itself
+if it chooses to trust the source.
+
+### Edge IDs and animation
+
+```
+flowchart TD
+  A e1@--> B
+  e1@{ animate: true }
+```
+
+The id is emitted as `data-id` for CSS targeting. An animated edge gets a
+marching-ants dash driven by CSS `@keyframes` — not SMIL, which browsers have
+deprecated — and is guarded by `prefers-reduced-motion`, so a viewer who asked
+the system for less movement gets a still edge. The keyframes are emitted only
+when a diagram actually animates an edge.
+
 ### Styling
 
 `classDef default` sets the base style for every node, as in Mermaid. A node's

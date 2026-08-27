@@ -14,6 +14,8 @@ import {
   resolveShapeName,
 } from './expanded-shapes.ts'
 import type { ExpandedNodeMeta } from './expanded-shapes.ts'
+import { extractInitConfig } from './init-directive.ts'
+import type { NodeInteraction } from './types.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()
@@ -77,10 +79,16 @@ export function toDirection(raw: string | undefined): Direction {
  * Throws on invalid/unsupported input.
  */
 export function parseMermaid(text: string): MermaidGraph {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
+  const rawLines = text.split('\n').map((l) => l.trim())
+
+  /*
+   * Init directives must be read before comments are stripped: `%%{init:
+   * ...}%%` begins with `%%`, so the comment filter below would otherwise
+   * discard it along with real comments.
+   */
+  const initConfig = extractInitConfig(rawLines)
+
+  const lines = rawLines.filter((l) => l.length > 0 && !l.startsWith('%%'))
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')
@@ -90,12 +98,12 @@ export function parseMermaid(text: string): MermaidGraph {
   const header = lines[0]!
 
   // State diagram: "stateDiagram-v2" or "stateDiagram"
-  if (/^stateDiagram(-v2)?\s*$/i.test(header)) {
-    return parseStateDiagram(lines)
-  }
+  const graph = /^stateDiagram(-v2)?\s*$/i.test(header)
+    ? parseStateDiagram(lines)
+    : parseFlowchart(lines)
 
-  // Flowchart: "graph TD" or "flowchart LR"
-  return parseFlowchart(lines)
+  graph.initConfig = initConfig
+  return graph
 }
 
 // ============================================================================
@@ -133,6 +141,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     classAssignments: new Map(),
     nodeStyles: new Map(),
     linkStyles: new Map(),
+    interactions: new Map(),
   }
 
   // Subgraph stack for nested subgraphs.
@@ -175,6 +184,28 @@ function parseFlowchart(lines: string[]): MermaidGraph {
         graph.nodeStyles.set(id, { ...graph.nodeStyles.get(id), ...props })
       }
       continue
+    }
+
+    // --- click interaction: `click A "url" "tooltip" _blank` / `click A call fn()` ---
+    if (/^click\s+/i.test(line)) {
+      applyClickStatement(line, graph)
+      continue
+    }
+
+    /*
+     * --- edge metadata: `e1@{ animate: true }` ---
+     *
+     * Told apart from a node's `A@{ shape: ... }` by whether the id was
+     * already declared as an edge id (`A e1@--> B`). Checked before node
+     * parsing so an edge id is never registered as a stray node.
+     */
+    const edgeMetaMatch = line.match(/^([\w-]+)(?=@\{)/)
+    if (edgeMetaMatch && graph.edges.some((e) => e.id === edgeMetaMatch[1])) {
+      const block = matchExpandedBlock(line.slice(edgeMetaMatch[1]!.length))
+      if (block) {
+        applyEdgeMeta(graph, edgeMetaMatch[1]!, parseExpandedMeta(block.body))
+        continue
+      }
     }
 
     // --- linkStyle: `linkStyle 0 stroke:#f00` or `linkStyle default stroke:#f00` ---
@@ -281,6 +312,7 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
     classAssignments: new Map(),
     nodeStyles: new Map(),
     linkStyles: new Map(),
+    interactions: new Map(),
   }
 
   // Track composite state nesting (like subgraphs)
@@ -708,6 +740,84 @@ function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
   return id
 }
 
+/**
+ * Apply a `click` statement to the graph.
+ *
+ * Mermaid's forms:
+ *   click A "https://example.com"
+ *   click A "https://example.com" "Tooltip"
+ *   click A "https://example.com" _blank
+ *   click A href "https://example.com" "Tooltip" _blank
+ *   click A call myCallback()
+ *   click A callback "Tooltip"
+ *
+ * A callback is recorded but never invoked — this renderer emits static SVG
+ * and does not execute script supplied by a diagram. An href, by contrast, is
+ * genuinely actionable: the node is wrapped in an SVG <a>, which works in any
+ * browser without script.
+ */
+function applyClickStatement(line: string, graph: MermaidGraph): void {
+  const match = line.match(/^click\s+([\w-]+)\s+(.*)$/i)
+  if (!match) return
+
+  const nodeId = match[1]!
+  let rest = match[2]!.trim()
+
+  const interaction: NodeInteraction = { ...graph.interactions.get(nodeId) }
+
+  // `call fn()` / `callback fn()` — a script binding.
+  const callMatch = rest.match(/^(?:call|callback)\s+(.+?)\s*$/i)
+  if (callMatch) {
+    // A trailing quoted tooltip may follow the callback expression.
+    const withTooltip = callMatch[1]!.match(/^(.*?\))\s+"([^"]*)"\s*$/)
+    if (withTooltip) {
+      interaction.callback = withTooltip[1]!.trim()
+      interaction.tooltip = withTooltip[2]
+    } else {
+      interaction.callback = callMatch[1]!.trim()
+    }
+    graph.interactions.set(nodeId, interaction)
+    return
+  }
+
+  // Optional explicit `href` keyword.
+  rest = rest.replace(/^href\s+/i, '')
+
+  // Remaining tokens: "url" ["tooltip"] [_target]
+  const quoted = [...rest.matchAll(/"([^"]*)"/g)].map((m) => m[1]!)
+  if (quoted.length > 0) interaction.href = quoted[0]
+  if (quoted.length > 1) interaction.tooltip = quoted[1]
+
+  const targetMatch = rest.match(/(_blank|_self|_parent|_top)\s*$/i)
+  if (targetMatch) interaction.target = targetMatch[1]!.toLowerCase()
+
+  if (interaction.href !== undefined || interaction.tooltip !== undefined) {
+    graph.interactions.set(nodeId, interaction)
+  }
+}
+
+/**
+ * Apply an `e1@{ ... }` metadata block to the edge with that id.
+ *
+ * Only `animate` is acted on; Mermaid's other edge keys (`animation`,
+ * `curve`) are recorded as no-ops rather than errors, matching how an
+ * unknown node shape degrades.
+ */
+function applyEdgeMeta(
+  graph: MermaidGraph,
+  edgeId: string,
+  meta: Record<string, string | undefined>,
+): void {
+  for (const edge of graph.edges) {
+    if (edge.id !== edgeId) continue
+    if (meta.animate !== undefined) {
+      edge.animate = meta.animate.toLowerCase() !== 'false'
+    }
+    // Mermaid's `animation: fast|slow` is a speed hint on top of animate.
+    if (meta.animation !== undefined) edge.animate = true
+  }
+}
+
 /** Regex for ::: class shorthand suffix — matches :::className immediately after a node */
 const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/
 
@@ -743,6 +853,19 @@ function parseEdgeLine(
     let style: EdgeStyle
     let hasArrowEnd: boolean
     let edgeLabel: string | undefined
+
+    /*
+     * Optional edge id prefix: `A e1@--> B` (Mermaid v11.10.0+). Consumed
+     * before the arrow so ARROW_REGEX still sees the link token at position
+     * zero. `@` is not otherwise valid ahead of a link, so this cannot
+     * shadow existing syntax.
+     */
+    let edgeId: string | undefined
+    const edgeIdMatch = remaining.match(/^([\w-]+)@(?=[-=<~ox])/)
+    if (edgeIdMatch) {
+      edgeId = edgeIdMatch[1]
+      remaining = remaining.slice(edgeIdMatch[0].length)
+    }
 
     const arrowMatch = remaining.match(ARROW_REGEX)
     const arrowBody = arrowMatch?.[2]
@@ -800,6 +923,7 @@ function parseEdgeLine(
           style,
           hasArrowStart,
           hasArrowEnd,
+          ...(edgeId !== undefined ? { id: edgeId } : {}),
         })
       }
     }

@@ -36,6 +36,7 @@ import { DEFAULTS } from './theme.ts'
 import { resolveFontSizes } from './styles.ts'
 import { detectDiagramType } from './diagram-type.ts'
 import type { DiagramType } from './diagram-type.ts'
+import { applyInitConfig } from './init-directive.ts'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
 import { layoutSequenceDiagram } from './sequence/layout.ts'
@@ -144,8 +145,20 @@ export function renderMermaidSVG(
     case 'flowchart':
     default: {
       const graph = parseMermaid(text)
-      const positioned = layoutGraphSync(graph, options)
-      return renderSvg(positioned, colors, font, transparent, fontSizes)
+      // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
+      // render option always wins. See src/init-directive.ts.
+      const effective = graph.initConfig
+        ? applyInitConfig(options, graph.initConfig)
+        : options
+      const positioned = layoutGraphSync(graph, effective)
+      return renderSvg(
+        positioned,
+        colors,
+        font,
+        transparent,
+        fontSizes,
+        effective.curve ?? 'linear',
+      )
     }
   }
 }
