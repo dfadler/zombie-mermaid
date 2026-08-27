@@ -270,9 +270,9 @@ async function generateHtml(): Promise<string> {
   <meta name="theme-color" id="theme-color-meta" content="#f9f9fa" />
   <title>Zombie Mermaid — Mermaid Rendering, Made Beautiful</title>
   <meta name="description" content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, and ER diagrams." />
-  <link rel="icon" type="image/svg+xml" href="/mermaid/favicon.svg" />
-  <link rel="icon" type="image/x-icon" href="/mermaid/favicon.ico" />
-  <link rel="apple-touch-icon" href="/mermaid/apple-touch-icon.png" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <meta property="og:title" content="Zombie Mermaid" />
   <meta property="og:description" content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII." />
   <meta property="og:image" content="https://agents.craft.do/mermaid/og-image.png" />

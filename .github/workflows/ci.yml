@@ -123,7 +123,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Runs the same generator scripts (index.ts/editor.ts via esbuild) that
-      # `pnpm run deploy` uses, without the `wrangler pages deploy` step —
+      # pages.yml deploys to GitHub Pages, without the actual deploy step —
       # this only proves the site builds, it never publishes anything and
       # needs no deploy credentials. Output isn't committed or uploaded.
       - name: Build site (generator check only, not deployed)
