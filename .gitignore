@@ -9,6 +9,10 @@ site/
 # Generated files
 index.html
 editor.html
+fork-fixes.html
+
+# Pre-fix source trees extracted by fork-fixes.ts; rebuilt on demand.
+.fork-fixes-cache/
 
 # IDE
 .idea/
