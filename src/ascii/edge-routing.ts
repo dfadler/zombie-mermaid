@@ -24,10 +24,18 @@ import {
   LowerLeft,
   Middle,
   gridCoordDirection,
+  dirEquals,
+  requireCardinalDirection,
 } from './types.ts'
-import { getPath, isFreeInGrid, mergePath } from './pathfinder.ts'
+import { routeEdge } from './pathfinder.ts'
 import { getNodeSubgraph } from './grid.ts'
 import { displayWidth } from './display-width.ts'
+
+// Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
+// draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
+// the implementation itself lives in types.ts now, alongside the other
+// coordinate-equality helpers (gridCoordEquals, drawingCoordEquals).
+export { dirEquals }
 
 // ============================================================================
 // Direction utilities
@@ -43,11 +51,6 @@ export function getOpposite(d: Direction): Direction {
   if (d === LowerRight) return UpperLeft
   if (d === LowerLeft) return UpperRight
   return Middle
-}
-
-/** Compare directions by value (not reference). */
-export function dirEquals(a: Direction, b: Direction): boolean {
-  return a.x === b.x && a.y === b.y
 }
 
 /**
@@ -213,77 +216,6 @@ export function determineStartAndEndDir(
 // ============================================================================
 
 /**
- * Check every cell strictly after `from` up to (and optionally including)
- * `to` along a single axis-aligned run. `from` and `to` must share an x or
- * a y coordinate. `includeTo` should be false when `to` is the edge's
- * final destination point (which is expected to sit on/adjacent to the
- * target node's own border and so may legitimately be "occupied" in
- * graph.grid — mirroring the same allowance A*'s getPath makes for its
- * destination cell).
- */
-function isAxisRunFree(
-  grid: Map<string, AsciiNode>,
-  from: GridCoord,
-  to: GridCoord,
-  includeTo: boolean,
-): boolean {
-  if (from.x === to.x && from.y === to.y) return true
-  const alongY = from.x === to.x
-  if (!alongY && from.y !== to.y) return false // not axis-aligned
-
-  const step = alongY ? (to.y > from.y ? 1 : -1) : to.x > from.x ? 1 : -1
-  let pos = alongY ? from.y : from.x
-  const end = alongY ? to.y : to.x
-
-  for (pos += step; ; pos += step) {
-    const isLast = pos === end
-    const cell: GridCoord = alongY
-      ? { x: from.x, y: pos }
-      : { x: pos, y: from.y }
-    if (!(isLast && !includeTo) && !isFreeInGrid(grid, cell)) return false
-    if (isLast) break
-  }
-  return true
-}
-
-/**
- * Try a direct two-segment (L-shaped) route between `from` and `to`,
- * axis-ordered to match `dir` (horizontal-first for Left/Right,
- * vertical-first for Up/Down — `determineStartAndEndDir` only ever
- * produces one of these four pure directions). Returns null when `from`
- * and `to` are already axis-aligned (no corner needed — A*'s result is
- * already optimal there) or when a cell along the route is occupied.
- *
- * A* always finds a *shortest* path, but when several equally-short routes
- * exist — e.g. a straight line and a zigzag with the same total step count
- * — which one it returns depends on priority-queue tie-breaking order, not
- * on which "looks" straighter. That's why sibling edges from the same
- * source can end up with visually inconsistent routing (one goes straight,
- * another zigzags) even though nothing actually blocks a straight route
- * for either. A direct L-shaped route is, by construction, exactly as
- * short as any route between two points can be, so whenever it's
- * unobstructed we prefer it outright over whatever A* found — this also
- * skips the A* search entirely for the common unobstructed case.
- */
-function tryDirectPath(
-  graph: AsciiGraph,
-  from: GridCoord,
-  to: GridCoord,
-  dir: Direction,
-): GridCoord[] | null {
-  if (from.x === to.x || from.y === to.y) return null
-
-  const horizontalFirst = dirEquals(dir, Left) || dirEquals(dir, Right)
-  const corner: GridCoord = horizontalFirst
-    ? { x: to.x, y: from.y }
-    : { x: from.x, y: to.y }
-
-  if (!isAxisRunFree(graph.grid, from, corner, true)) return null
-  if (!isAxisRunFree(graph.grid, corner, to, false)) return null
-  return [from, corner, to]
-}
-
-/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -312,17 +244,24 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
 
-  // Try preferred path — an unobstructed direct L-shape beats A* outright
-  // (see tryDirectPath); only fall back to A* when the direct route is
-  // blocked (or unavailable because from/to are already axis-aligned).
+  // Try preferred path — routeEdge tries an unobstructed direct L-shape
+  // before falling back to A* (see routeEdge / tryDirectPath in
+  // pathfinder.ts). determineStartAndEndDir only ever produces one of the
+  // four pure cardinal directions (see its implementation above), but that
+  // invariant lives in this function's control flow, not in Direction's
+  // type, so it's narrowed explicitly at the routeEdge boundary rather than
+  // trusted silently across the module.
   const prefFrom = gridCoordDirection(requireGridCoord(edge.from), preferredDir)
   const prefTo = gridCoordDirection(
     requireGridCoord(edge.to),
     preferredOppositeDir,
   )
-  let preferredPath =
-    tryDirectPath(graph, prefFrom, prefTo, preferredDir) ??
-    getPath(graph.grid, prefFrom, prefTo, graph.pathBudget)
+  const preferredPath = routeEdge(
+    graph,
+    prefFrom,
+    prefTo,
+    requireCardinalDirection(preferredDir),
+  )
 
   // Try alternative path
   const altFrom = gridCoordDirection(
@@ -333,15 +272,15 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     requireGridCoord(edge.to),
     alternativeOppositeDir,
   )
-  let alternativePath =
-    tryDirectPath(graph, altFrom, altTo, alternativeDir) ??
-    getPath(graph.grid, altFrom, altTo, graph.pathBudget)
+  const alternativePath = routeEdge(
+    graph,
+    altFrom,
+    altTo,
+    requireCardinalDirection(alternativeDir),
+  )
 
-  // Case 1: Both paths found — pick the shorter one
+  // Case 1: Both paths found — pick the shorter one (routeEdge already merged each)
   if (preferredPath !== null && alternativePath !== null) {
-    preferredPath = mergePath(preferredPath)
-    alternativePath = mergePath(alternativePath)
-
     if (preferredPath.length <= alternativePath.length) {
       edge.startDir = preferredDir
       edge.endDir = preferredOppositeDir
@@ -358,7 +297,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (preferredPath !== null) {
     edge.startDir = preferredDir
     edge.endDir = preferredOppositeDir
-    edge.path = mergePath(preferredPath)
+    edge.path = preferredPath
     return
   }
 
@@ -366,7 +305,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   if (alternativePath !== null) {
     edge.startDir = alternativeDir
     edge.endDir = alternativeOppositeDir
-    edge.path = mergePath(alternativePath)
+    edge.path = alternativePath
     return
   }
 
