@@ -29,7 +29,7 @@ export interface ForkFix {
   /** What a reader should look at in the pair. */
   lookFor: string
   /**
-   * Show a matched excerpt of the output markup instead of the render.
+   * Show a slice of the output markup instead of the render.
    *
    * A few fixes are invisible in a browser because the browser is forgiving
    * of the bug — the start-arrow marker below renders fine in Chrome and
@@ -37,9 +37,11 @@ export interface ForkFix {
    * "Before / After" would be a false negative, so those entries show the
    * markup where the difference actually is.
    *
-   * The value is a regular-expression source matched against the output.
+   * Both bounds are literal strings, not a pattern: the slice is found with
+   * indexOf. A regex built from data would be both overkill and a standing
+   * ReDoS smell for no benefit, since every excerpt here is a fixed tag.
    */
-  excerpt?: string
+  excerpt?: { from: string; to: string }
 }
 
 export const forkFixes: ForkFix[] = [
@@ -125,7 +127,7 @@ export const forkFixes: ForkFix[] = [
     fixCommit: 'e1a222c',
     pr: 50,
     render: 'svg',
-    excerpt: '<marker id="arrowhead-start"[\\s\\S]*?</marker>',
+    excerpt: { from: '<marker id="arrowhead-start"', to: '</marker>' },
     lookFor:
       'Chrome tolerates the double reversal, so both sides *look* the same in a browser — which is why this pair shows the marker definition instead of the picture. Compare the `points`: before they run `8 0, 0 2.5, 8 5` (already reversed), after `0 0, 8 2.5, 0 5` (shared with the forward marker, letting `auto-start-reverse` do the rotation once).',
   },

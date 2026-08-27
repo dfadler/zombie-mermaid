@@ -53,6 +53,7 @@ interface RendererModule {
 async function loadRendererBefore(commit: string): Promise<RendererModule> {
   const dir = `${CACHE_DIR}${commit}`
   if (!existsSync(dir)) {
+    await requireCommit(commit)
     await mkdir(dir, { recursive: true })
     // `git archive` writes a clean tree with no working-copy interference.
     const { stdout } = await exec(
@@ -63,6 +64,35 @@ async function loadRendererBefore(commit: string): Promise<RendererModule> {
     if (stdout.trim()) console.log(stdout.trim())
   }
   return (await import(`${dir}/src/index.ts`)) as RendererModule
+}
+
+/**
+ * Check that `commit^` is present before trying to archive it.
+ *
+ * This page can only be built from a repository with full history. A shallow
+ * clone — which is what `actions/checkout` produces by default — has none of
+ * these commits, and `git archive` then fails with a bare
+ * "not a valid object name" that gives no hint why. Both workflows that build
+ * the site therefore set `fetch-depth: 0`; this turns the failure into an
+ * instruction for anyone who hits it elsewhere.
+ */
+async function requireCommit(commit: string): Promise<void> {
+  try {
+    await exec('git', ['rev-parse', '--verify', `${commit}^{commit}`])
+  } catch {
+    const shallow = await exec('git', ['rev-parse', '--is-shallow-repository'])
+      .then((r) => r.stdout.trim() === 'true')
+      .catch(() => false)
+
+    throw new Error(
+      `Commit ${commit} is not in this repository.\n` +
+        (shallow
+          ? 'This is a shallow clone. fork-fixes.ts renders each "before" from a ' +
+            'historical commit, so it needs full history — run ' +
+            '`git fetch --unshallow`, or set `fetch-depth: 0` on the checkout step.'
+          : 'Check the fixCommit value in demo/fork-fixes-data.ts.'),
+    )
+  }
 }
 
 /** Render `source` with whichever export the module provides for `mode`. */
@@ -133,7 +163,7 @@ function renderPanel(
   output: string,
   error: string | undefined,
   mode: 'svg' | 'ascii',
-  excerpt?: string,
+  excerpt?: { from: string; to: string },
 ): string {
   if (error) {
     return `<div class="fix-error"><strong>Threw:</strong> ${escapeHtml(error)}</div>`
@@ -149,13 +179,22 @@ function renderPanel(
   }
 
   if (excerpt) {
-    const match = new RegExp(excerpt).exec(output)
-    if (!match) {
-      // The excerpt no longer matches, so the entry would show nothing at
-      // all. Fail rather than publish an empty panel.
-      throw new Error(`excerpt /${excerpt}/ matched nothing in the output`)
+    // Literal indexOf bounds rather than a constructed regex: every excerpt
+    // is a fixed tag, so a pattern would add nothing but a ReDoS smell.
+    const start = output.indexOf(excerpt.from)
+    const end =
+      start === -1
+        ? -1
+        : output.indexOf(excerpt.to, start + excerpt.from.length)
+    if (start === -1 || end === -1) {
+      // Without the slice the entry would render an empty panel, silently
+      // claiming a fix it no longer shows. Fail instead.
+      throw new Error(
+        `excerpt "${excerpt.from}" … "${excerpt.to}" was not found in the output`,
+      )
     }
-    return `<pre class="fix-ascii">${escapeHtml(match[0].trim())}</pre>`
+    const slice = output.slice(start, end + excerpt.to.length)
+    return `<pre class="fix-ascii">${escapeHtml(slice.trim())}</pre>`
   }
 
   if (mode === 'ascii') {
