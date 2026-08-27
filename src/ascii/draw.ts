@@ -41,6 +41,7 @@ export {
   drawNode,
   drawBox,
   drawMultiBox,
+  measureMultiBox,
   classifyBoxChar,
 } from './draw-boxes.ts'
 export { drawLine } from './draw-lines.ts'
