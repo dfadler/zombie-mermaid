@@ -6,13 +6,7 @@
 // and dual-path comparison for optimal edge routing.
 // ============================================================================
 
-import type {
-  GridCoord,
-  Direction,
-  AsciiEdge,
-  AsciiGraph,
-  AsciiNode,
-} from './types.ts'
+import type { GridCoord, Direction, AsciiEdge, AsciiGraph } from './types.ts'
 import {
   Up,
   Down,
@@ -25,8 +19,9 @@ import {
   Middle,
   gridCoordDirection,
 } from './types.ts'
-import { getPath, isFreeInGrid, mergePath } from './pathfinder.ts'
-import { getNodeSubgraph } from './grid.ts'
+import { getPath, mergePath } from './pathfinder.ts'
+import { getNodeSubgraph, requireGridCoord } from './grid.ts'
+import { isFree, type Grid } from './grid-occupancy.ts'
 import { displayWidth } from './display-width.ts'
 
 // ============================================================================
@@ -48,24 +43,6 @@ export function getOpposite(d: Direction): Direction {
 /** Compare directions by value (not reference). */
 export function dirEquals(a: Direction, b: Direction): boolean {
   return a.x === b.x && a.y === b.y
-}
-
-/**
- * Get a node's grid coordinate. Edge routing only runs after grid.ts's
- * createMapping has placed every node, so this is always defined for a real
- * graph — but that guarantee lives in a different module/function, so it's
- * narrowed here explicitly rather than trusted silently across the
- * boundary.
- */
-function requireGridCoord(node: AsciiNode): GridCoord {
-  const gc = node.gridCoord
-  if (gc === null) {
-    /* v8 ignore next */
-    throw new Error(
-      `Node "${node.name}" has no gridCoord; grid layout must run before edge routing`,
-    )
-  }
-  return gc
 }
 
 /**
@@ -222,7 +199,7 @@ export function determineStartAndEndDir(
  * destination cell).
  */
 function isAxisRunFree(
-  grid: Map<string, AsciiNode>,
+  grid: Grid,
   from: GridCoord,
   to: GridCoord,
   includeTo: boolean,
@@ -240,7 +217,7 @@ function isAxisRunFree(
     const cell: GridCoord = alongY
       ? { x: from.x, y: pos }
       : { x: pos, y: from.y }
-    if (!(isLast && !includeTo) && !isFreeInGrid(grid, cell)) return false
+    if (!(isLast && !includeTo) && !isFree(grid, cell)) return false
     if (isLast) break
   }
   return true

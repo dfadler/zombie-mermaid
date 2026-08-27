@@ -20,25 +20,7 @@ import type {
 } from './types.ts'
 import { Up, Down, Left, Right, Middle } from './types.ts'
 import { getPath, mergePath } from './pathfinder.ts'
-import { getNodeSubgraph } from './grid.ts'
-
-/**
- * Get a node's grid coordinate. Bundling only runs after grid.ts's
- * createMapping has placed every node, so this is always defined for a real
- * graph — but that guarantee lives in a different module/function, so it's
- * narrowed here explicitly rather than trusted silently across the
- * boundary.
- */
-function requireGridCoord(node: AsciiNode): GridCoord {
-  const gc = node.gridCoord
-  if (gc === null) {
-    /* v8 ignore next */
-    throw new Error(
-      `Node "${node.name}" has no gridCoord; grid layout must run before edge bundling`,
-    )
-  }
-  return gc
-}
+import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 
 // ============================================================================
 // Bundle analysis

@@ -6,8 +6,9 @@
 // paths between nodes on the grid. Prefers straight lines over zigzags.
 // ============================================================================
 
-import type { GridCoord, AsciiNode, PathBudget } from './types.ts'
+import type { GridCoord, PathBudget } from './types.ts'
 import { gridKey, gridCoordEquals } from './types.ts'
+import { isFree, type Grid } from './grid-occupancy.ts'
 
 // ============================================================================
 // Priority queue (min-heap) for A* open set
@@ -120,15 +121,6 @@ const MOVE_DIRS: GridCoord[] = [
   { x: 0, y: -1 },
 ]
 
-/** Check if a grid cell is unoccupied and has non-negative coordinates. */
-export function isFreeInGrid(
-  grid: Map<string, AsciiNode>,
-  c: GridCoord,
-): boolean {
-  if (c.x < 0 || c.y < 0) return false
-  return !grid.has(gridKey(c))
-}
-
 /**
  * Maximum number of A* iterations before giving up on a *single* getPath
  * call. Prevents unbounded memory growth when the destination is
@@ -186,7 +178,7 @@ export function createPathBudget(
  * right away instead of searching.
  */
 export function getPath(
-  grid: Map<string, AsciiNode>,
+  grid: Grid,
   from: GridCoord,
   to: GridCoord,
   budget?: PathBudget,
@@ -246,7 +238,7 @@ export function getPath(
       const next: GridCoord = { x: current.x + dir.x, y: current.y + dir.y }
 
       // Allow moving to the destination even if it's occupied (it's a node boundary)
-      if (!isFreeInGrid(grid, next) && !gridCoordEquals(next, to)) {
+      if (!isFree(grid, next) && !gridCoordEquals(next, to)) {
         continue
       }
 

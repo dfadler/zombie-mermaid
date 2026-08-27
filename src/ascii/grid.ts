@@ -15,13 +15,32 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { gridKey } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import { determinePath, determineLabelLine } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
+import { isOccupied, place } from './grid-occupancy.ts'
 import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
+
+/**
+ * Get a node's grid coordinate. Every consumer of a node's `gridCoord` after
+ * layout (edge routing, edge bundling, drawing) runs strictly after
+ * `createMapping` has placed every node, so this is always defined for a
+ * real graph — but that guarantee lives in this module's control flow, not
+ * in `AsciiNode`'s type (`gridCoord: GridCoord | null`), so it's narrowed
+ * here explicitly rather than trusted silently across the module boundary.
+ */
+export function requireGridCoord(node: AsciiNode): GridCoord {
+  const gc = node.gridCoord
+  if (gc === null) {
+    /* v8 ignore next */
+    throw new Error(
+      `Node "${node.name}" has no gridCoord; grid layout must run before it is read`,
+    )
+  }
+  return gc
+}
 
 // ============================================================================
 // Grid coordinate → drawing coordinate conversion
@@ -87,7 +106,7 @@ export function reserveSpotInGrid(
   // Determine direction for collision handling
   const dir = effectiveDir ?? getEffectiveDirection(graph, node)
 
-  if (graph.grid.has(gridKey(requested))) {
+  if (isOccupied(graph.grid, requested)) {
     // Collision — shift perpendicular to main flow direction
     if (dir === 'LR') {
       return reserveSpotInGrid(
@@ -110,7 +129,7 @@ export function reserveSpotInGrid(
   for (let dx = 0; dx < 3; dx++) {
     for (let dy = 0; dy < 3; dy++) {
       const reserved: GridCoord = { x: requested.x + dx, y: requested.y + dy }
-      graph.grid.set(gridKey(reserved), node)
+      place(graph.grid, node, reserved)
     }
   }
 
