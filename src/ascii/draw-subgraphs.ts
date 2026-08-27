@@ -10,7 +10,7 @@ import type {
   AsciiGraph,
   AsciiSubgraph,
 } from './types.ts'
-import { mkCanvas } from './canvas.ts'
+import { mkCanvas, write } from './canvas.ts'
 import { splitLines } from './multiline-utils.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 
@@ -25,23 +25,23 @@ export function drawSubgraphBox(sg: AsciiSubgraph, graph: AsciiGraph): Canvas {
   const canvas = mkCanvas(width, height)
 
   if (!graph.config.useAscii) {
-    for (let x = from.x + 1; x < to.x; x++) canvas[x]![from.y] = '─'
-    for (let x = from.x + 1; x < to.x; x++) canvas[x]![to.y] = '─'
-    for (let y = from.y + 1; y < to.y; y++) canvas[from.x]![y] = '│'
-    for (let y = from.y + 1; y < to.y; y++) canvas[to.x]![y] = '│'
-    canvas[from.x]![from.y] = '┌'
-    canvas[to.x]![from.y] = '┐'
-    canvas[from.x]![to.y] = '└'
-    canvas[to.x]![to.y] = '┘'
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, from.y, '─')
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, to.y, '─')
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, from.x, y, '│')
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, to.x, y, '│')
+    write(canvas, from.x, from.y, '┌')
+    write(canvas, to.x, from.y, '┐')
+    write(canvas, from.x, to.y, '└')
+    write(canvas, to.x, to.y, '┘')
   } else {
-    for (let x = from.x + 1; x < to.x; x++) canvas[x]![from.y] = '-'
-    for (let x = from.x + 1; x < to.x; x++) canvas[x]![to.y] = '-'
-    for (let y = from.y + 1; y < to.y; y++) canvas[from.x]![y] = '|'
-    for (let y = from.y + 1; y < to.y; y++) canvas[to.x]![y] = '|'
-    canvas[from.x]![from.y] = '+'
-    canvas[to.x]![from.y] = '+'
-    canvas[from.x]![to.y] = '+'
-    canvas[to.x]![to.y] = '+'
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, from.y, '-')
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, to.y, '-')
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, from.x, y, '|')
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, to.x, y, '|')
+    write(canvas, from.x, from.y, '+')
+    write(canvas, to.x, from.y, '+')
+    write(canvas, from.x, to.y, '+')
+    write(canvas, to.x, to.y, '+')
   }
 
   return canvas
@@ -77,11 +77,15 @@ export function drawSubgraphLabel(
     let labelX = 1 + Math.ceil((width - 1 - displayWidth(line)) / 2)
     if (labelX < 1) labelX = 1
 
+    // Unlike `write()`'s own bounds (inclusive of the canvas edge — correct
+    // for the border-drawing calls in `drawSubgraphBox` above, which write
+    // the border itself at x == width / y == height), the label must stay
+    // strictly inside the border, so this loop enforces the tighter,
+    // exclusive bound itself rather than relying on `write()`'s clip.
     const cells = toDisplayCells(line)
     for (let j = 0; j < cells.length; j++) {
-      if (labelX + j < width && labelY < height) {
-        canvas[labelX + j]![labelY] = cells[j]!
-      }
+      if (labelX + j >= width || labelY >= height) continue
+      write(canvas, labelX + j, labelY, cells[j]!)
     }
   }
 

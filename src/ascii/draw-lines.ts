@@ -16,6 +16,7 @@ import {
   LowerRight,
 } from './types.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
+import { write } from './canvas.ts'
 
 /**
  * Line character sets for different edge styles.
@@ -75,24 +76,24 @@ export function drawLine(
   if (dirEquals(dir, Up)) {
     for (let y = from.y - offsetFrom; y >= to.y - offsetTo; y--) {
       drawnCoords.push({ x: from.x, y })
-      canvas[from.x]![y] = vChar
+      write(canvas, from.x, y, vChar)
     }
   } else if (dirEquals(dir, Down)) {
     for (let y = from.y + offsetFrom; y <= to.y + offsetTo; y++) {
       drawnCoords.push({ x: from.x, y })
-      canvas[from.x]![y] = vChar
+      write(canvas, from.x, y, vChar)
     }
   }
   // Pure horizontal directions
   else if (dirEquals(dir, Left)) {
     for (let x = from.x - offsetFrom; x >= to.x - offsetTo; x--) {
       drawnCoords.push({ x, y: from.y })
-      canvas[x]![from.y] = hChar
+      write(canvas, x, from.y, hChar)
     }
   } else if (dirEquals(dir, Right)) {
     for (let x = from.x + offsetFrom; x <= to.x + offsetTo; x++) {
       drawnCoords.push({ x, y: from.y })
-      canvas[x]![from.y] = hChar
+      write(canvas, x, from.y, hChar)
     }
   }
   // Diagonal directions: use Manhattan routing (horizontal-first, then vertical)
@@ -101,12 +102,12 @@ export function drawLine(
     // Horizontal segment: from.x -> to.x (going left)
     for (let x = from.x - offsetFrom; x >= to.x; x--) {
       drawnCoords.push({ x, y: from.y })
-      canvas[x]![from.y] = hChar
+      write(canvas, x, from.y, hChar)
     }
     // Vertical segment: from.y -> to.y (going up)
     for (let y = from.y - 1; y >= to.y - offsetTo; y--) {
       drawnCoords.push({ x: to.x, y })
-      canvas[to.x]![y] = vChar
+      write(canvas, to.x, y, vChar)
     }
   }
   // UpperRight: go right first, then up
@@ -114,12 +115,12 @@ export function drawLine(
     // Horizontal segment: from.x -> to.x (going right)
     for (let x = from.x + offsetFrom; x <= to.x; x++) {
       drawnCoords.push({ x, y: from.y })
-      canvas[x]![from.y] = hChar
+      write(canvas, x, from.y, hChar)
     }
     // Vertical segment: from.y -> to.y (going up)
     for (let y = from.y - 1; y >= to.y - offsetTo; y--) {
       drawnCoords.push({ x: to.x, y })
-      canvas[to.x]![y] = vChar
+      write(canvas, to.x, y, vChar)
     }
   }
   // LowerLeft: go left first, then down
@@ -127,12 +128,12 @@ export function drawLine(
     // Horizontal segment: from.x -> to.x (going left)
     for (let x = from.x - offsetFrom; x >= to.x; x--) {
       drawnCoords.push({ x, y: from.y })
-      canvas[x]![from.y] = hChar
+      write(canvas, x, from.y, hChar)
     }
     // Vertical segment: from.y -> to.y (going down)
     for (let y = from.y + 1; y <= to.y + offsetTo; y++) {
       drawnCoords.push({ x: to.x, y })
-      canvas[to.x]![y] = vChar
+      write(canvas, to.x, y, vChar)
     }
   }
   // LowerRight: go right first, then down
@@ -144,18 +145,18 @@ export function drawLine(
       // Draw vertical line at from.x (source's x-coordinate)
       for (let y = from.y + offsetFrom; y <= to.y + offsetTo; y++) {
         drawnCoords.push({ x: from.x, y })
-        canvas[from.x]![y] = vChar
+        write(canvas, from.x, y, vChar)
       }
     } else {
       // Horizontal segment: from.x -> to.x (going right)
       for (let x = from.x + offsetFrom; x <= to.x; x++) {
         drawnCoords.push({ x, y: from.y })
-        canvas[x]![from.y] = hChar
+        write(canvas, x, from.y, hChar)
       }
       // Vertical segment: from.y -> to.y (going down)
       for (let y = from.y + 1; y <= to.y + offsetTo; y++) {
         drawnCoords.push({ x: to.x, y })
-        canvas[to.x]![y] = vChar
+        write(canvas, to.x, y, vChar)
       }
     }
   }

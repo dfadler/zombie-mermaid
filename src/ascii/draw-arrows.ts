@@ -27,7 +27,7 @@ import {
   Middle,
   drawingCoordEquals,
 } from './types.ts'
-import { copyCanvas, drawText } from './canvas.ts'
+import { copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { displayWidth } from './display-width.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
@@ -233,14 +233,14 @@ function drawBoxStart(
     const existing = existingOnBox(x, y)
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
-    canvas[x]![y] = hasBorder ? (junction ?? '┴') : useAscii ? '|' : '│'
+    write(canvas, x, y, hasBorder ? (junction ?? '┴') : useAscii ? '|' : '│')
   } else if (dirEquals(dir, Down)) {
     const x = from.x
     const y = from.y - 1
     const existing = existingOnBox(x, y)
     const hasBorder =
       existing !== undefined && HORIZONTAL_BORDER_CHARS.has(existing)
-    canvas[x]![y] = hasBorder ? (junction ?? '┬') : useAscii ? '|' : '│'
+    write(canvas, x, y, hasBorder ? (junction ?? '┬') : useAscii ? '|' : '│')
   } else if (dirEquals(dir, Left) || dirEquals(dir, Right)) {
     // Anchor horizontal connectors to the source node's *own* rendered
     // border column, not to gridToDrawingCoord's grid-column-centered
@@ -271,11 +271,16 @@ function drawBoxStart(
     const existing = existingOnBox(x, y)
     const hasBorder =
       existing !== undefined && VERTICAL_BORDER_CHARS.has(existing)
-    canvas[x]![y] = hasBorder
-      ? (junction ?? (dirEquals(dir, Left) ? '┤' : '├'))
-      : useAscii
-        ? '-'
-        : '─'
+    write(
+      canvas,
+      x,
+      y,
+      hasBorder
+        ? (junction ?? (dirEquals(dir, Left) ? '┤' : '├'))
+        : useAscii
+          ? '-'
+          : '─',
+    )
   }
 
   return canvas
@@ -335,7 +340,7 @@ function drawArrowHead(
     }
   }
 
-  canvas[lastPos.x]![lastPos.y] = char
+  write(canvas, lastPos.x, lastPos.y, char)
   return canvas
 }
 
@@ -381,7 +386,7 @@ function drawCorners(graph: AsciiGraph, path: GridCoord[]): Canvas {
       corner = '+'
     }
 
-    canvas[dc.x]![dc.y] = corner
+    write(canvas, dc.x, dc.y, corner)
   }
 
   return canvas

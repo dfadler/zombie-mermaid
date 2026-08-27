@@ -77,6 +77,54 @@ export const ALL_DIRECTIONS: readonly Direction[] = [
   Middle,
 ]
 
+/** Compare directions by value (not reference). */
+export function dirEquals(a: Direction, b: Direction): boolean {
+  return a.x === b.x && a.y === b.y
+}
+
+declare const cardinalDirectionBrand: unique symbol
+
+/**
+ * The 4 pure cardinal directions — Up/Down/Left/Right — the only Direction
+ * values pathfinder.ts's routeEdge/tryDirectPath know how to turn into a
+ * single L-shaped route (horizontal-first for Left/Right, vertical-first
+ * for Up/Down). The other 5 Direction values (the four diagonals, plus
+ * Middle) don't correspond to one routing axis. Direction can't
+ * structurally distinguish these on its own — all 9 constants share the
+ * same {x, y} shape — so this is a nominal brand: requireCardinalDirection
+ * below is the only way to produce one, and it checks the actual value
+ * rather than trusting a caller's claim.
+ */
+export type CardinalDirection = Direction & {
+  readonly [cardinalDirectionBrand]: true
+}
+
+function isCardinalDirection(d: Direction): d is CardinalDirection {
+  return (
+    dirEquals(d, Up) ||
+    dirEquals(d, Down) ||
+    dirEquals(d, Left) ||
+    dirEquals(d, Right)
+  )
+}
+
+/**
+ * Narrow a Direction into a CardinalDirection, throwing if it isn't one of
+ * Up/Down/Left/Right. Mirrors requireGridCoord/requirePathBudget elsewhere
+ * in this module family: the invariant that routeEdge only ever receives a
+ * cardinal direction lives in caller logic spread across edge-routing.ts
+ * and edge-bundling.ts, not in Direction's type, so it's checked explicitly
+ * at the boundary rather than trusted silently across modules.
+ */
+export function requireCardinalDirection(d: Direction): CardinalDirection {
+  if (!isCardinalDirection(d)) {
+    throw new Error(
+      `Expected a cardinal direction (Up/Down/Left/Right); got {x:${d.x}, y:${d.y}}`,
+    )
+  }
+  return d
+}
+
 /**
  * 2D text canvas — column-major (canvas[x][y]).
  * Each cell holds a single character (or space).

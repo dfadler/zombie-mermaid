@@ -23,7 +23,7 @@ import {
   canvasToString,
   increaseSize,
   increaseRoleCanvasSize,
-  setRole,
+  write,
 } from './canvas.ts'
 import { drawMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines, maxLineWidth } from './multiline-utils.ts'
@@ -334,12 +334,14 @@ export function renderErAscii(
   const canvas = mkCanvas(totalW - 1, totalH - 1)
   const rc = mkRoleCanvas(totalW - 1, totalH - 1)
 
-  /** Set a character on the canvas and track its role. */
+  /**
+   * Set a character on the canvas and track its role.
+   * Delegates bounds-checking to the shared `write()` primitive
+   * (src/ascii/canvas.ts) instead of duplicating the guard here — see
+   * issue #171.
+   */
   function setC(x: number, y: number, ch: string, role: CharRole): void {
-    if (x >= 0 && x < canvas.length && y >= 0 && y < (canvas[0]?.length ?? 0)) {
-      canvas[x]![y] = ch
-      setRole(rc, x, y, role)
-    }
+    write(canvas, x, y, ch, { role, roleCanvas: rc })
   }
 
   // --- Draw entity boxes ---
