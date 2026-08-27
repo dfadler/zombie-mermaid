@@ -7,7 +7,7 @@ adapting it.
 ## Where the samples live
 
 The [live demo](https://dfadler.github.io/zombie-mermaid/) renders every
-sample in the library — 85 of them, each shown three ways at once:
+sample in the library — 84 of them, each shown three ways at once:
 
 - the **Mermaid source** you can copy,
 - the **rendered SVG**, and
@@ -28,10 +28,14 @@ The samples are grouped by diagram type:
 | XY Chart  | 10      | bar and line charts                                |
 | State     | 4       | state machines, lifecycles                         |
 
+(The banner diagram at the top of the demo is a further sample, but it is
+not part of the browsable gallery — hence 84 here rather than the 85 the
+page renders in total.)
+
 ## Finding one
 
 Open the sidebar (the ☰ button on narrow screens) and pick a category. Only
-one category renders at a time — with 85 samples each rendered twice, showing
+one category renders at a time — with 84 samples each rendered twice, showing
 all of them at once would make the page slow to load and slower to scan.
 
 Inside a category, sample titles say what the diagram _is for_ rather than

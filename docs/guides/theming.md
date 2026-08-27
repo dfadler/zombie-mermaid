@@ -117,6 +117,8 @@ falling back to sensible defaults for anything the theme does not define.
 ASCII rendering has its own color modes, since a terminal is not a browser:
 
 ```typescript
+import { renderMermaidASCII } from 'zombie-mermaid'
+
 renderMermaidASCII(source, { colorMode: 'none' }) // plain text
 renderMermaidASCII(source, { colorMode: 'ansi256' }) // 256-color terminal
 renderMermaidASCII(source, { colorMode: 'truecolor' }) // 24-bit terminal
@@ -130,4 +132,4 @@ README help nobody.
 
 - [Theming reference](../theming.md) — every derivation, custom theme objects
 - [Browsing and using the samples](samples.md) — see themes applied across all
-  85 samples at once
+  84 samples at once
