@@ -69,7 +69,14 @@ function estimateNodeSize(
     width += NODE_PADDING.horizontal
   }
 
-  if (shape === 'trapezoid' || shape === 'trapezoid-alt') {
+  if (
+    shape === 'trapezoid' ||
+    shape === 'trapezoid-alt' ||
+    shape === 'parallelogram' ||
+    shape === 'parallelogram-alt'
+  ) {
+    // Sloped sides eat horizontal room at the label's baseline, so widen to
+    // keep the label inside the polygon.
     width += NODE_PADDING.horizontal
   }
 

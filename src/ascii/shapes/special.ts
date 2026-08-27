@@ -308,3 +308,45 @@ export const trapezoidAltRenderer: ShapeRenderer = {
 
   getAttachmentPoint: getBoxAttachmentPoint,
 }
+
+// ============================================================================
+// Parallelogram — both sides slope the same way
+// ============================================================================
+
+/**
+ * Parallelogram shape renderer — leans right.
+ *
+ * Renders as:
+ *   /─────────/
+ *   │  Label  │
+ *   /─────────/
+ */
+export const parallelogramRenderer: ShapeRenderer = {
+  getDimensions: getBoxDimensions,
+
+  render(label, dimensions, options) {
+    const corners = getCorners('parallelogram', options.useAscii)
+    return renderBox(label, dimensions, corners, options.useAscii)
+  },
+
+  getAttachmentPoint: getBoxAttachmentPoint,
+}
+
+/**
+ * Parallelogram-alt shape renderer — leans left.
+ *
+ * Renders as:
+ *   \─────────\
+ *   │  Label  │
+ *   \─────────\
+ */
+export const parallelogramAltRenderer: ShapeRenderer = {
+  getDimensions: getBoxDimensions,
+
+  render(label, dimensions, options) {
+    const corners = getCorners('parallelogram-alt', options.useAscii)
+    return renderBox(label, dimensions, corners, options.useAscii)
+  },
+
+  getAttachmentPoint: getBoxAttachmentPoint,
+}

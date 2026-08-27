@@ -67,9 +67,20 @@ export function drawArrow(
   // arrays.
   const hasSegments = linesDrawn.length > 0
 
-  const boxStartCanvas = hasSegments
-    ? drawBoxStart(graph, edge.path, linesDrawn[0]!, edge.from)
-    : copyCanvas(graph.canvas)
+  /*
+   * An invisible link (`A ~~~ B`) routes and reserves space like any other
+   * edge, but must leave no mark. drawPath already writes spaces for its
+   * segments; the box connector and corner glyphs are drawn by separate
+   * passes that don't consult the line character set, so they're suppressed
+   * explicitly here. Arrowheads need no guard — `~~~` carries no `>`/`o`/`x`
+   * marker, so hasArrowStart/hasArrowEnd are already false.
+   */
+  const invisible = edge.style === 'invisible'
+
+  const boxStartCanvas =
+    hasSegments && !invisible
+      ? drawBoxStart(graph, edge.path, linesDrawn[0]!, edge.from)
+      : copyCanvas(graph.canvas)
 
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
   let arrowHeadEndCanvas: Canvas
@@ -106,7 +117,9 @@ export function drawArrow(
     arrowHeadStartCanvas = copyCanvas(graph.canvas)
   }
 
-  const cornersCanvas = drawCorners(graph, edge.path)
+  const cornersCanvas = invisible
+    ? copyCanvas(graph.canvas)
+    : drawCorners(graph, edge.path)
 
   return [
     pathCanvas,

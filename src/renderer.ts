@@ -218,12 +218,23 @@ function renderEdge(edge: PositionedEdge): string {
   if (edge.points.length < 2) return ''
 
   const pathData = pointsToPolylinePath(edge.points)
+
+  /*
+   * An invisible link (`A ~~~ B`) still occupies its layout slot — that is
+   * the whole point of the syntax — so the element is emitted with its data
+   * attributes intact and only its paint suppressed. Omitting the element
+   * entirely would lose it from DOM inspection and from `data-style` queries.
+   */
+  const invisible = edge.style === 'invisible'
+
   const dashArray = edge.style === 'dotted' ? ' stroke-dasharray="4 4"' : ''
   const baseStrokeWidth =
     edge.style === 'thick'
       ? STROKE_WIDTHS.connector * 2
       : STROKE_WIDTHS.connector
-  const strokeColor = escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
+  const strokeColor = invisible
+    ? 'none'
+    : escapeAttr(edge.inlineStyle?.stroke ?? 'var(--_line)')
   const strokeWidth = escapeAttr(
     edge.inlineStyle?.['stroke-width'] ?? String(baseStrokeWidth),
   )
@@ -234,9 +245,11 @@ function renderEdge(edge: PositionedEdge): string {
     ? `-${markerSuffix(edge.inlineStyle.stroke)}`
     : ''
   let markers = ''
-  if (edge.hasArrowEnd) markers += ` marker-end="url(#arrowhead${suffix})"`
-  if (edge.hasArrowStart)
-    markers += ` marker-start="url(#arrowhead-start${suffix})"`
+  if (!invisible) {
+    if (edge.hasArrowEnd) markers += ` marker-end="url(#arrowhead${suffix})"`
+    if (edge.hasArrowStart)
+      markers += ` marker-start="url(#arrowhead-start${suffix})"`
+  }
 
   // Semantic data attributes for edge identification and inspection:
   // - class="edge": CSS targeting and type identification
@@ -439,6 +452,10 @@ function renderNodeShape(node: PositionedNode): string {
       return renderTrapezoid(x, y, width, height, fill, stroke, sw)
     case 'trapezoid-alt':
       return renderTrapezoidAlt(x, y, width, height, fill, stroke, sw)
+    case 'parallelogram':
+      return renderParallelogram(x, y, width, height, fill, stroke, sw)
+    case 'parallelogram-alt':
+      return renderParallelogramAlt(x, y, width, height, fill, stroke, sw)
     case 'state-start':
       return renderStateStart(x, y, width, height)
     case 'state-end':
@@ -698,6 +715,54 @@ function renderTrapezoidAlt(
     `${x + w},${y}`, // top-right (full width)
     `${x + w - inset},${y + h}`, // bottom-right (indented)
     `${x + inset},${y + h}`, // bottom-left (indented)
+  ].join(' ')
+
+  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+/**
+ * Parallelogram [/text/]: leans right.
+ *
+ * Unlike the trapezoids, both sloped sides run the same direction — the top
+ * edge shifts right by `inset` and the bottom edge shifts left by the same
+ * amount, so opposite sides stay parallel.
+ */
+function renderParallelogram(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const inset = w * 0.15
+  const points = [
+    `${x + inset},${y}`, // top-left (shifted right)
+    `${x + w},${y}`, // top-right
+    `${x + w - inset},${y + h}`, // bottom-right (shifted left)
+    `${x},${y + h}`, // bottom-left
+  ].join(' ')
+
+  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+/** Parallelogram-alt [\text\]: leans left — the mirror of renderParallelogram. */
+function renderParallelogramAlt(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string,
+  stroke: string,
+  sw: string,
+): string {
+  const inset = w * 0.15
+  const points = [
+    `${x},${y}`, // top-left
+    `${x + w - inset},${y}`, // top-right (shifted left)
+    `${x + w},${y + h}`, // bottom-right
+    `${x + inset},${y + h}`, // bottom-left (shifted right)
   ].join(' ')
 
   return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`

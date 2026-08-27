@@ -44,6 +44,15 @@ const LINE_CHARS = {
     h: { unicode: '━', ascii: '=' },
     v: { unicode: '┃', ascii: '‖' },
   },
+  /*
+   * `A ~~~ B` — an invisible link. It routes and reserves grid cells like any
+   * other edge (so the nodes it connects stay ranked apart), but every cell it
+   * would occupy is written as a space, leaving no visible line.
+   */
+  invisible: {
+    h: { unicode: ' ', ascii: ' ' },
+    v: { unicode: ' ', ascii: ' ' },
+  },
 } as const
 
 /**

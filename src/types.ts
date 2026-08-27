@@ -39,6 +39,10 @@ export type NodeShape =
   | 'asymmetric' // >text]    — flag/banner shape
   | 'trapezoid' // [/text\]  — wider bottom
   | 'trapezoid-alt' // [\text/]  — wider top
+  // Parallelogram — note the delimiters mirror rather than oppose, which is
+  // what distinguishes these from the trapezoids above: [/…/] not [/…\].
+  | 'parallelogram' // [/text/]  — leans right
+  | 'parallelogram-alt' // [\text\]  — leans left
   // Batch 3 state diagram pseudostates
   | 'state-start' // filled circle (start pseudostate)
   | 'state-end' // bullseye circle (end pseudostate)
@@ -54,7 +58,12 @@ export interface MermaidEdge {
   hasArrowEnd: boolean
 }
 
-export type EdgeStyle = 'solid' | 'dotted' | 'thick'
+export type EdgeStyle =
+  | 'solid'
+  | 'dotted'
+  | 'thick'
+  /** `A ~~~ B` — participates in layout but draws no line or arrowhead. */
+  | 'invisible'
 
 export interface MermaidSubgraph {
   id: string

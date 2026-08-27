@@ -514,12 +514,35 @@ function parseStyleProps(propsStr: string): Record<string, string> {
  * The doubled `o--o`/`x--x` forms must be tried before the single-sided
  * `o--`/`x--` forms — regex alternation picks the first alternative that
  * matches, not the longest, so `o--` listed first would consume just the
- * start marker and strand the trailing `o` as a bogus token.
+ * start marker and strand the trailing `o` as a bogus token. Capturing the
+ * markers as their own groups (rather than baking them into an alternation
+ * of whole tokens) sidesteps that ordering problem entirely.
+ *
+ * The body is a variable-length run: Mermaid uses extra characters as a
+ * layout-rank hint (`A ---- B` pushes B one rank further than `A --> B`).
+ * A fixed alternation of `-->|---|==>` mis-tokenized anything longer,
+ * stranding the surplus characters and corrupting the following token.
+ * The run length is parsed so the edge survives; the rank hint it encodes
+ * is not yet modelled by the layout engine.
+ *
+ * `~~~` is Mermaid's invisible link: it participates in layout but draws
+ * nothing.
  *
  * Optional label: -->|label text|
  */
-const ARROW_REGEX =
-  /^(<)?(-->|-.->|==>|---|-\.-|===|o--o|x--x|--o|--x|o--|x--)(?:\|([^|]*)\|)?/
+const ARROW_REGEX = /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\|([^|]*)\|)?/
+
+/**
+ * Link bodies that are only a link when a start or end marker accompanies
+ * them.
+ *
+ * A bare `--` (or `==`) opens Mermaid's text-embedded label syntax —
+ * `A -- Yes --> B` — which TEXT_ARROW_REGEX handles. Treating it as an
+ * unmarked open link here would consume the opener and strand the label.
+ * Mermaid itself requires three characters for an unmarked open link
+ * (`A --- B`), so this only rejects what Mermaid also rejects.
+ */
+const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
 
 /**
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
@@ -542,7 +565,20 @@ const TEXT_ARROW_REGEX =
  * closing bracket (see issue #61) — without this, `A["test [] brackets"]`
  * would stop at the first `]`, which lives inside the quoted string.
  */
-const NODE_PATTERNS: Array<{ regex: RegExp; shape: NodeShape }> = [
+/**
+ * A node shape pattern.
+ *
+ * `shape` is usually a fixed `NodeShape`. For the slash-bracket family it is
+ * a function instead, because those four shapes are distinguished by which
+ * delimiter *closes* them — which the regex has to capture rather than
+ * hard-code. See SLASH_BRACKET note below.
+ */
+interface NodePattern {
+  regex: RegExp
+  shape: NodeShape | ((closingDelimiter: string) => NodeShape)
+}
+
+const NODE_PATTERNS: NodePattern[] = [
   // Triple delimiters (must be first)
   {
     regex: /^([\w-]+)\(\(\(((?:"[^"]*"|(?!\)\)\)).)+)\)\)\)/,
@@ -555,12 +591,36 @@ const NODE_PATTERNS: Array<{ regex: RegExp; shape: NodeShape }> = [
   { regex: /^([\w-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/, shape: 'subroutine' }, // A[[text]]
   { regex: /^([\w-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/, shape: 'cylinder' }, // A[(text)]
 
-  // Trapezoid variants — must come before plain [text]
-  { regex: /^([\w-]+)\[\/((?:"[^"]*"|(?!\\\]).)+)\\\]/, shape: 'trapezoid' }, // A[/text\]
+  /*
+   * SLASH_BRACKET family — must come before plain [text].
+   *
+   * Four shapes share a `[` + slash opener and differ only in which
+   * delimiter closes them:
+   *
+   *   A[/text\]  trapezoid          A[/text/]  parallelogram
+   *   A[\text/]  trapezoid-alt      A[\text\]  parallelogram-alt
+   *
+   * They CANNOT be four separate patterns each negated against its own
+   * closing pair. A pattern for `[/…\]` whose content merely excludes `\]`
+   * will happily run past a `/]` to reach a `\]` later on the same line, so
+   *
+   *     A[/parallelogram/] --> B[\alt\]
+   *
+   * matched as a single trapezoid whose label was the entire statement —
+   * silently swallowing the edge and the second node. Ordering the patterns
+   * differently only moves which input breaks.
+   *
+   * Instead, one pattern per opener stops at whichever slash-close comes
+   * first and captures it, and the captured delimiter selects the shape.
+   */
   {
-    regex: /^([\w-]+)\[\\((?:"[^"]*"|(?!\/\]).)+)\/\]/,
-    shape: 'trapezoid-alt',
-  }, // A[\text/]
+    regex: /^([\w-]+)\[\/((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/,
+    shape: (close) => (close === '\\' ? 'trapezoid' : 'parallelogram'),
+  }, // A[/text\] or A[/text/]
+  {
+    regex: /^([\w-]+)\[\\((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/,
+    shape: (close) => (close === '/' ? 'trapezoid-alt' : 'parallelogram-alt'),
+  }, // A[\text/] or A[\text\]
 
   // Asymmetric flag shape
   { regex: /^([\w-]+)>((?:"[^"]*"|(?!\]).)+)\]/, shape: 'asymmetric' }, // A>text]
@@ -626,24 +686,31 @@ function parseEdgeLine(
     let edgeLabel: string | undefined
 
     const arrowMatch = remaining.match(ARROW_REGEX)
-    if (arrowMatch) {
-      const arrowOp = arrowMatch[2]!
-      // `o--`/`x--` mark a circle/cross terminator at the start of the
-      // edge (in addition to the `<` reversed-arrow marker); `--o`/`--x`
-      // mark one at the end. Neither renderer models a distinct
-      // circle/cross marker shape yet, so these terminators are treated
-      // like a regular arrowhead (see issue #65) — the goal here is to
-      // stop the edge and its target node from being silently dropped.
-      hasArrowStart =
-        Boolean(arrowMatch[1]) ||
-        arrowOp.startsWith('o') ||
-        arrowOp.startsWith('x')
-      const rawEdgeLabel = arrowMatch[3]?.trim()
+    const arrowBody = arrowMatch?.[2]
+    const startMarker = arrowMatch?.[1]
+    const endMarker = arrowMatch?.[3]
+
+    if (
+      arrowMatch &&
+      arrowBody !== undefined &&
+      // An unmarked `--`/`==` is the text-label opener, not a link.
+      !(
+        startMarker === undefined &&
+        endMarker === undefined &&
+        AMBIGUOUS_UNMARKED_BODIES.has(arrowBody)
+      )
+    ) {
+      // `o`/`x` mark a circle/cross terminator (alongside `<` for a reversed
+      // arrow). Neither renderer models a distinct circle/cross marker shape
+      // yet, so these terminators are treated like a regular arrowhead (see
+      // issue #65) — the goal here is to stop the edge and its target node
+      // from being silently dropped.
+      hasArrowStart = startMarker !== undefined
+      const rawEdgeLabel = arrowMatch[4]?.trim()
       edgeLabel = rawEdgeLabel ? normalizeBrTags(rawEdgeLabel) : undefined
       remaining = remaining.slice(arrowMatch[0].length).trim()
-      style = arrowStyleFromOp(arrowOp)
-      hasArrowEnd =
-        arrowOp.endsWith('>') || arrowOp.endsWith('o') || arrowOp.endsWith('x')
+      style = arrowStyleFromBody(arrowBody)
+      hasArrowEnd = endMarker !== undefined
     } else {
       // Fallback: text-embedded label syntax (-- Yes -->, -. Maybe .->, == Sure ==>)
       const textMatch = remaining.match(TEXT_ARROW_REGEX)
@@ -749,7 +816,12 @@ function consumeNode(
     if (match) {
       id = match[1]!
       const label = normalizeBrTags(match[2]!)
-      registerNode(graph, subgraphStack, { id, label, shape })
+      // The slash-bracket family resolves its shape from the closing
+      // delimiter it captured in group 3; every other pattern has a fixed
+      // shape. See the SLASH_BRACKET note in NODE_PATTERNS.
+      const resolvedShape =
+        typeof shape === 'function' ? shape(match[3] ?? '') : shape
+      registerNode(graph, subgraphStack, { id, label, shape: resolvedShape })
       remaining = remaining.slice(match[0].length)
       break
     }
@@ -815,13 +887,17 @@ function trackInSubgraph(
   }
 }
 
-/** Map arrow operator string to edge style (ignoring direction) */
-function arrowStyleFromOp(op: string): EdgeStyle {
-  if (op === '-.->') return 'dotted'
-  if (op === '-.-') return 'dotted'
-  if (op === '==>') return 'thick'
-  if (op === '===') return 'thick'
-  // '-->'' and '---' are both solid
+/**
+ * Map a link body to its edge style, ignoring direction and run length.
+ *
+ * The body is the run between the optional start/end markers: `--`, `----`,
+ * `==`, `-.-`, `-..-`, `~~~`, etc. Classification is by the characters used,
+ * not the length, so every run length of a given style behaves identically.
+ */
+function arrowStyleFromBody(body: string): EdgeStyle {
+  if (body.startsWith('~')) return 'invisible'
+  if (body.includes('.')) return 'dotted'
+  if (body.startsWith('=')) return 'thick'
   return 'solid'
 }
 

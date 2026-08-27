@@ -12,6 +12,56 @@ graph TD
 
 All directions supported: `TD` (top-down), `LR` (left-right), `BT` (bottom-top), `RL` (right-left).
 
+### Node shapes
+
+| Syntax        | Shape                                |
+| ------------- | ------------------------------------ |
+| `A[text]`     | rectangle                            |
+| `A(text)`     | rounded                              |
+| `A([text])`   | stadium                              |
+| `A[[text]]`   | subroutine                           |
+| `A[(text)]`   | cylinder                             |
+| `A((text))`   | circle                               |
+| `A(((text)))` | double circle                        |
+| `A>text]`     | asymmetric                           |
+| `A{text}`     | diamond                              |
+| `A{{text}}`   | hexagon                              |
+| `A[/text/]`   | parallelogram                        |
+| `A[\text\]`   | parallelogram, leaning the other way |
+| `A[/text\]`   | trapezoid                            |
+| `A[\text/]`   | trapezoid, inverted                  |
+
+Note the difference between the parallelograms and the trapezoids: a
+parallelogram's delimiters mirror (`[/…/]`), a trapezoid's oppose (`[/…\]`).
+
+### Edge types
+
+| Syntax                | Meaning                     |
+| --------------------- | --------------------------- |
+| `A --> B`             | arrow                       |
+| `A --- B`             | open link, no arrowhead     |
+| `A -.-> B`            | dotted arrow                |
+| `A ==> B`             | thick arrow                 |
+| `A ~~~ B`             | invisible link              |
+| `A <--> B`            | bidirectional               |
+| `A --o B` / `A --x B` | circle / cross terminator   |
+| `A -->\|text\| B`     | labelled arrow              |
+| `A -- text --> B`     | labelled arrow, inline form |
+
+Runs may be lengthened (`A ----> B`, `A ==== B`, `A -..-> B`, `A ~~~~ B`). In
+Mermaid the extra characters are a layout-rank hint; they are parsed here but
+the rank hint itself is not yet applied, so a longer edge currently renders the
+same as its shortest form.
+
+An invisible link (`A ~~~ B`) is laid out like any other edge but draws
+nothing — useful for forcing rank or alignment without a visible connector.
+
+### Styling
+
+`classDef default` sets the base style for every node, as in Mermaid. A node's
+own class (`class A foo` or `A:::foo`) overrides it property by property, and
+an explicit `style A ...` directive overrides both.
+
 ## State Diagrams
 
 ```

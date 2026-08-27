@@ -155,7 +155,7 @@ export interface AsciiStyleClass {
 }
 
 /** Edge line style for ASCII rendering. */
-export type AsciiEdgeStyle = 'solid' | 'dotted' | 'thick'
+export type AsciiEdgeStyle = 'solid' | 'dotted' | 'thick' | 'invisible'
 
 /** An edge in the ASCII graph, with a routed path. */
 export interface AsciiEdge {
