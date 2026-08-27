@@ -14,7 +14,14 @@ import type {
   AsciiEdge,
   EdgeBundle,
 } from './types.ts'
-import { Up, Down, Left, Right, drawingCoordEquals } from './types.ts'
+import {
+  Up,
+  Down,
+  Left,
+  Right,
+  drawingCoordEquals,
+  requireGridCoord,
+} from './types.ts'
 import { copyCanvas } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { gridToDrawingCoord } from './grid.ts'
@@ -37,17 +44,11 @@ function getNodeAttachmentPoint(
   node: AsciiNode,
   dir: Direction,
 ): DrawingCoord {
-  const gc = node.gridCoord
-  if (gc === null) {
-    // Every node reaching bundled-edge drawing has already been placed by
-    // the grid layout pass (see grid.ts's createMapping) — a null here
-    // means drawing ran before layout, an upstream invariant violation
-    // rather than a value this function can recover from.
-    /* v8 ignore next */
-    throw new Error(
-      `Node "${node.name}" has no gridCoord; grid layout must run before bundled-edge drawing`,
-    )
-  }
+  // Every node reaching bundled-edge drawing has already been placed by the
+  // grid layout pass (see grid.ts's createMapping) — requireGridCoord
+  // validates that rather than trusting it silently across the module
+  // boundary, since the type checker can't see it.
+  const gc = requireGridCoord(node)
 
   // Calculate actual drawn dimensions from grid (matching drawBoxWithGridDimensions)
   let w = 0

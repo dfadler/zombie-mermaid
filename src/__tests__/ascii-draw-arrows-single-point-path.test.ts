@@ -20,6 +20,7 @@ import { drawArrow } from '../ascii/draw-arrows.ts'
 import { Down } from '../ascii/types.ts'
 import { mkCanvas, mkRoleCanvas } from '../ascii/canvas.ts'
 import type { AsciiEdge, AsciiGraph, AsciiNode } from '../ascii/types.ts'
+import { createGrid } from '../ascii/grid-occupancy.ts'
 
 function makeNode(name: string, x: number, y: number): AsciiNode {
   return {
@@ -42,7 +43,7 @@ function makeGraph(nodes: AsciiNode[]): AsciiGraph {
     edges: [],
     canvas: mkCanvas(10, 10),
     roleCanvas: mkRoleCanvas(10, 10),
-    grid: new Map(),
+    grid: createGrid(),
     columnWidth: new Map(),
     rowHeight: new Map(),
     subgraphs: [],

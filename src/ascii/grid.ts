@@ -15,32 +15,20 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
+import { requireGridCoord } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import { determinePath, determineLabelLine } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
-import { isOccupied, place } from './grid-occupancy.ts'
+import { isBlockFree, placeBlock, NODE_BLOCK_SIZE } from './grid-occupancy.ts'
 import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
 
-/**
- * Get a node's grid coordinate. Every consumer of a node's `gridCoord` after
- * layout (edge routing, edge bundling, drawing) runs strictly after
- * `createMapping` has placed every node, so this is always defined for a
- * real graph — but that guarantee lives in this module's control flow, not
- * in `AsciiNode`'s type (`gridCoord: GridCoord | null`), so it's narrowed
- * here explicitly rather than trusted silently across the module boundary.
- */
-export function requireGridCoord(node: AsciiNode): GridCoord {
-  const gc = node.gridCoord
-  if (gc === null) {
-    /* v8 ignore next */
-    throw new Error(
-      `Node "${node.name}" has no gridCoord; grid layout must run before it is read`,
-    )
-  }
-  return gc
-}
+// `requireGridCoord` is defined in types.ts (a pure predicate over
+// AsciiNode with no grid-state dependency) and re-exported here so the two
+// existing call sites that import it from this module (edge-routing.ts,
+// edge-bundling.ts) don't need to change.
+export { requireGridCoord }
 
 // ============================================================================
 // Grid coordinate → drawing coordinate conversion
@@ -106,7 +94,7 @@ export function reserveSpotInGrid(
   // Determine direction for collision handling
   const dir = effectiveDir ?? getEffectiveDirection(graph, node)
 
-  if (isOccupied(graph.grid, requested)) {
+  if (!isBlockFree(graph.grid, requested, NODE_BLOCK_SIZE)) {
     // Collision — shift perpendicular to main flow direction
     if (dir === 'LR') {
       return reserveSpotInGrid(
@@ -125,13 +113,7 @@ export function reserveSpotInGrid(
     }
   }
 
-  // Reserve the 3x3 block
-  for (let dx = 0; dx < 3; dx++) {
-    for (let dy = 0; dy < 3; dy++) {
-      const reserved: GridCoord = { x: requested.x + dx, y: requested.y + dy }
-      place(graph.grid, node, reserved)
-    }
-  }
+  placeBlock(graph.grid, requested, NODE_BLOCK_SIZE)
 
   node.gridCoord = requested
   return requested
@@ -147,7 +129,7 @@ export function reserveSpotInGrid(
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
  */
 export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
-  const gc = node.gridCoord!
+  const gc = requireGridCoord(node)
   const padding = graph.config.boxBorderPadding
 
   // Get shape-aware dimensions
@@ -340,6 +322,7 @@ function hasIncomingEdgeFromOutsideSubgraph(
   if (!hasExternalEdge) return false
 
   // Only return true for the topmost node with an external incoming edge
+  const nodeY = requireGridCoord(node).y
   for (const otherNode of nodeSg.nodes) {
     if (otherNode === node || !otherNode.gridCoord) continue
     let otherHasExternal = false
@@ -352,7 +335,7 @@ function hasIncomingEdgeFromOutsideSubgraph(
         }
       }
     }
-    if (otherHasExternal && otherNode.gridCoord.y < node.gridCoord!.y) {
+    if (otherHasExternal && otherNode.gridCoord.y < nodeY) {
       return false
     }
   }
@@ -527,7 +510,7 @@ function groupRootsByDownstreamTarget(
  * "root" — every node in the cycle has a real incoming edge. But the grid
  * layout still needs at least one seed node per such component to place
  * anything at all; with zero roots feeding it, that component would never
- * get a gridCoord and later crash (setColumnWidth reads `.gridCoord!.x`).
+ * get a gridCoord and later crash (setColumnWidth calls `requireGridCoord`).
  *
  * The old order-dependent detection accidentally provided this seed — the
  * first node the scan reached "looked like" a root simply because it
@@ -882,7 +865,7 @@ export function createMapping(graph: AsciiGraph): void {
 
   // Convert grid coords → drawing coords and generate box drawings
   for (const node of graph.nodes) {
-    node.drawingCoord = gridToDrawingCoord(graph, node.gridCoord!)
+    node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
     node.drawing = drawBox(node, graph)
   }
 
