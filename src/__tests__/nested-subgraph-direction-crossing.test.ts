@@ -233,6 +233,12 @@ flowchart TD
   })
 
   it('keeps mergeEdges trunk-bundling working for edges that get decomposed', () => {
+    /*
+     * X and Z share a layer, so a trunk with a short branch to each is a
+     * sound route — which is what makes this diagram a fair test that
+     * bundling survives decomposition. Fanning out to targets on *different*
+     * layers is covered separately below, where bundling must stand down.
+     */
     const src = `
 flowchart TD
   B[B node]
@@ -242,14 +248,8 @@ flowchart TD
     subgraph Inner
       direction LR
       X[X node]
-      Y[Y node]
-      X --> Y
-    end
-    subgraph Inner2
-      direction LR
       Z[Z node]
-      W[W node]
-      Z --> W
+      X --> Z
     end
   end
 `
