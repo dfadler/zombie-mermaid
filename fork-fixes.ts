@@ -206,7 +206,6 @@ function asciiToHtml(text: string): string {
   let out = ''
   for (const { segment } of segmenter.segment(text)) {
     const width = clusterDisplayWidth(segment)
-    if (width === 0) continue
     out +=
       width > 1
         ? `<span class="fix-wide" style="width:${width}ch">${escapeHtml(segment)}</span>`
