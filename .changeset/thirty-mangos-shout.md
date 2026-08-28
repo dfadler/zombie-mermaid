@@ -1,5 +1,5 @@
 ---
-"zombie-mermaid": patch
+'zombie-mermaid': patch
 ---
 
 Fix ASCII display width for combining marks and composed emoji.
