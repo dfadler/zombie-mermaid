@@ -13,4 +13,4 @@ jobs:
       issues: write
       pull-requests: read
     steps:
-      - uses: dfadler/issue-bot@main
+      - uses: dfadler/issue-bot@a2ff1506f85f8e25ad56c91c778a6920fcdbc75d # main, initial commit
