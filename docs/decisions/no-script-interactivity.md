@@ -77,11 +77,14 @@ implemented all at once.
 
 ## Consequences
 
-- **No client-side runtime, ever.** This rules out a hydration step, a
-  `zombie-mermaid/react` interactive component package, or any bundled JS
-  that ships alongside the SVG. A diagram is a self-contained asset; adding a
-  runtime would trade that away for interactivity this library has
-  deliberately decided not to own.
+- **No client-side runtime by default.** The `zombie-mermaid` package itself
+  ships zero bundled JS — a hydration step, a `zombie-mermaid/react`
+  interactive component, or any script shipped alongside the SVG is off the
+  table for the default output. A diagram is a self-contained asset, and
+  that property isn't up for trading away implicitly. An explicitly opt-in,
+  clearly-separate runtime is a different question, left open (not decided
+  either way) in [#236](https://github.com/dfadler/zombie-mermaid/issues/236)
+  — it does not change what today's default import does or doesn't execute.
 - **`interactions.callback` (and its `data-click-callback` predecessor) is
   never executed under any current or future option.** A `full` interactivity
   level does not mean "run diagram-supplied code" — it only
