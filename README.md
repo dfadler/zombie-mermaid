@@ -152,3 +152,7 @@ MIT — see [LICENSE](LICENSE) for details.
 Built with care by the team at [Craft](https://craft.do)
 
 </div>
+
+<!-- throwaway-test-2: exercising claude-review-app's new pulls.createReview
+     posting path (anchored review comments instead of a flat comment).
+     Safe to ignore/revert. -->
