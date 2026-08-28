@@ -179,18 +179,33 @@ function formatProse(text: string): string {
  *
  * Boxing works on grapheme clusters, not code points: a ZWJ family emoji, a
  * flag, or a skin-tone modifier is several code points that must stay in one
- * element, since a ligature cannot form across an element boundary.
- *
- * `isWideChar` is the renderer's own predicate and the per-code-point sum
- * mirrors `displayWidth`, so the page and the box math cannot disagree about
- * how many columns anything occupies.
+ * element, since a ligature cannot form across an element boundary. A
+ * cluster's width is the max-wideness of its code points (not their sum) —
+ * `isWideChar` is the renderer's own predicate and this mirrors
+ * `displayWidth`/`charDisplayWidth`'s per-cluster algorithm, so the page and
+ * the box math cannot disagree about how many columns anything occupies. A
+ * cluster made entirely of combining marks (Mn/Me) with no base character
+ * renders zero columns, for the same reason.
  */
+const FORK_FIXES_COMBINING_MARK_REGEX = /\p{Mn}|\p{Me}/u
+
+/** Mirrors `charDisplayWidth` in `src/ascii/display-width.ts` — see there. */
+function clusterDisplayWidth(cluster: string): number {
+  let sawWide = false
+  let sawNonMark = false
+  for (const ch of cluster) {
+    if (isWideChar(ch)) sawWide = true
+    if (!FORK_FIXES_COMBINING_MARK_REGEX.test(ch)) sawNonMark = true
+  }
+  if (sawWide) return 2
+  return sawNonMark ? 1 : 0
+}
+
 function asciiToHtml(text: string): string {
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
   let out = ''
   for (const { segment } of segmenter.segment(text)) {
-    let width = 0
-    for (const ch of segment) width += isWideChar(ch) ? 2 : 1
+    const width = clusterDisplayWidth(segment)
     out +=
       width > 1
         ? `<span class="fix-wide" style="width:${width}ch">${escapeHtml(segment)}</span>`
