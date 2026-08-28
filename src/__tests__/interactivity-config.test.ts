@@ -543,6 +543,70 @@ describe('edge IDs and animation (#198 row 6)', () => {
   })
 })
 
+describe('state-diagram edge IDs and animation', () => {
+  it('parses an edge id prefix on a transition', () => {
+    const graph = parseMermaid('stateDiagram-v2\n  s1 e1@--> s2')
+    expect(graph.edges[0]!.id).toBe('e1')
+    // The id must not leak into the node set.
+    expect([...graph.nodes.keys()].sort()).toEqual(['s1', 's2'])
+  })
+
+  it('parses an edge id prefix on a transition to/from a pseudostate', () => {
+    const graph = parseMermaid(
+      'stateDiagram-v2\n  [*] e1@--> s1\n  s1 e2@--> [*]',
+    )
+    expect(graph.edges[0]!.id).toBe('e1')
+    expect(graph.edges[1]!.id).toBe('e2')
+  })
+
+  it('keeps the transition label alongside an edge id', () => {
+    const graph = parseMermaid('stateDiagram-v2\n  s1 e1@--> s2 : go')
+    expect(graph.edges[0]!.id).toBe('e1')
+    expect(graph.edges[0]!.label).toBe('go')
+  })
+
+  it.each([
+    ['e1@{ animate: true }', true],
+    ['e1@{ animate: false }', false],
+    ['e1@{ animation: fast }', true],
+  ])('applies %s', (meta, expected) => {
+    const graph = parseMermaid(`stateDiagram-v2\n  s1 e1@--> s2\n  ${meta}`)
+    expect(graph.edges[0]!.animate).toBe(expected)
+  })
+
+  it('emits the id as data-id for CSS targeting', () => {
+    expect(renderMermaidSVG('stateDiagram-v2\n  s1 e1@--> s2')).toContain(
+      'data-id="e1"',
+    )
+  })
+
+  it('animates via CSS keyframes, guarded for reduced motion', () => {
+    const svg = renderMermaidSVG(
+      'stateDiagram-v2\n  s1 e1@--> s2\n  e1@{ animate: true }',
+    )
+    expect(svg).toContain('class="edge edge-animated"')
+    expect(svg).toContain('@keyframes zm-edge-dash')
+    expect(svg).toContain('prefers-reduced-motion')
+    expect(svg).not.toContain('<animate')
+  })
+
+  it('omits the keyframes entirely when no edge is animated', () => {
+    expect(renderMermaidSVG('stateDiagram-v2\n  s1 --> s2')).not.toContain(
+      'zm-edge-dash',
+    )
+  })
+
+  it('respects interactivity: none by stripping animation but keeping the edge', () => {
+    const svg = renderMermaidSVG(
+      'stateDiagram-v2\n  s1 e1@--> s2\n  e1@{ animate: true }',
+      { interactivity: 'none' },
+    )
+    expect(svg).not.toContain('edge-animated')
+    expect(svg).not.toContain('@keyframes zm-edge-dash')
+    expect(svg).toContain('data-id="e1"')
+  })
+})
+
 describe('no regression in ordinary diagrams', () => {
   it('renders an unconfigured diagram exactly as before', () => {
     const svg = renderMermaidSVG('flowchart TD\n  A[Start] --> B{Choice}')
