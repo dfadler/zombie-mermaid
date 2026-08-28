@@ -243,6 +243,41 @@ when a diagram actually animates an edge.
 own class (`class A foo` or `A:::foo`) overrides it property by property, and
 an explicit `style A ...` directive overrides both.
 
+### Known limitations
+
+Three pieces of Mermaid's flowchart syntax are recognized as intentionally
+out of scope rather than missing by accident. Each was audited against
+upstream Mermaid in [#198](https://github.com/dfadler/zombie-mermaid/issues/198);
+this section is that audit's record.
+
+**Icons and images (`A@{ icon: ... }`, `A@{ img: ... }`, inline `fa:name`
+text).** Rendering an icon means bundling or fetching an icon pack;
+rendering an image means fetching a remote URL. Both break the invariant
+that a diagram renders to a self-contained SVG with no network access —
+this renderer draws neither. The `A@{ icon: ... }` / `A@{ img: ... }` forms
+still parse (see [Icons and images](#icons-and-images) above): the
+reference string is shown as the node's label when no explicit `label:` is
+given, rather than the node going blank. Writing `fa:name` directly inside
+an ordinary bracket label (`A["fa:fa-camera Camera"]`, Mermaid's older
+syntax) isn't recognized as an icon reference at all — it's just the node's
+literal text, identical to any other label content.
+
+**Subgraph collapse (Mermaid v11.17.0+).** Mermaid added an interactive
+expand/collapse affordance for subgraphs. This renderer's output is a
+static SVG or ASCII string with no embedded script, so there is nowhere for
+an expand/collapse _interaction_ to live — collapsing a subgraph would have
+to mean picking one fixed rendered state (expanded or collapsed) at render
+time, which is a different feature. The real collapse syntax also could not
+be verified, since Mermaid itself isn't a dependency here; shipping a guess
+at the grammar seemed worse than not shipping it. **A `collapse <id>`
+statement, or `@{ ... }` metadata attached to a subgraph id, is not
+recognized as collapse syntax — treat it as unsupported rather than a
+no-op.** Verified empirically: both forms are absorbed by the ordinary node
+parser instead, which adds a stray, disconnected node to the diagram (with
+id `collapse`, or reusing the subgraph's own id) rather than leaving the
+diagram unchanged. Omit this syntax rather than relying on it to be
+harmlessly ignored.
+
 ## State Diagrams
 
 ```
