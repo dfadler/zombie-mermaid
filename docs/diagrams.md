@@ -452,6 +452,15 @@ This is independent of the per-node/per-point `<title>` tooltips from
 `interactive` hover tips — those are unid'd `<title>` elements nested inside
 each node/point's `<g>`, so they never collide with the root's generated id.
 
+**A `click A "url"` link overrides both `role="img"` and `decorative`.** A
+link renders as a real, focusable `<a href>` nested inside the SVG. Both
+`role="img"` (which tells assistive tech to stop descending into children)
+and `aria-hidden="true"` (which must never contain a focusable descendant,
+per the WAI-ARIA spec) would make that link Tab-reachable but invisible to a
+screen reader — so when any node has a link, the root gets no `role` at all,
+regardless of what `title`/`decorative` asked for. `title` still applies if
+given. See [issue #239](https://github.com/dfadler/zombie-mermaid/issues/239).
+
 ## ASCII Rendering
 
 For terminal environments, CLI tools, or anywhere you need plain text, render to ASCII or Unicode box-drawing characters:

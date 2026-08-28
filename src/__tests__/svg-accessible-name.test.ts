@@ -111,6 +111,75 @@ describe('svgOpenTag – accessible name', () => {
 })
 
 // ============================================================================
+// svgOpenTag – hasInteractiveLinks overrides role/aria-hidden (issue #239)
+//
+// role="img" tells assistive tech to stop descending into children, and
+// aria-hidden="true" on an ancestor of a focusable element is an explicit
+// WAI-ARIA violation. A `click A "url"` link renders as a real, focusable
+// <a href> inside the SVG, so neither is safe to apply when one exists.
+// ============================================================================
+
+describe('svgOpenTag – hasInteractiveLinks (issue #239)', () => {
+  it('omits role="img" even with no title or decorative flag', () => {
+    const tag = svgOpenTag(400, 300, colors, false, undefined, undefined, true)
+    expect(tag).not.toContain('role=')
+    expect(tag).not.toContain('aria-hidden')
+  })
+
+  it('overrides decorative — no aria-hidden when links are present', () => {
+    const tag = svgOpenTag(400, 300, colors, false, undefined, true, true)
+    expect(tag).not.toContain('aria-hidden')
+    expect(tag).not.toContain('role=')
+  })
+
+  it('still applies title/aria-labelledby when links are present', () => {
+    const tag = svgOpenTag(
+      400,
+      300,
+      colors,
+      false,
+      'Flow with a link',
+      false,
+      true,
+    )
+    expect(tag).not.toContain('role="img"')
+    expect(tag).toMatch(/aria-labelledby="zm-title-\d+"/)
+    expect(tag).toContain('<title id="zm-title-')
+    expect(tag).toContain('Flow with a link')
+  })
+
+  it('applies title even when decorative was also requested, since decorative is overridden', () => {
+    const tag = svgOpenTag(
+      400,
+      300,
+      colors,
+      false,
+      'Flow with a link',
+      true,
+      true,
+    )
+    expect(tag).not.toContain('aria-hidden')
+    expect(tag).not.toContain('role="img"')
+    expect(tag).toContain('Flow with a link')
+  })
+
+  it('behaves exactly as before when hasInteractiveLinks is false', () => {
+    const withoutFlag = svgOpenTag(400, 300, colors, false, 'A title')
+    __resetSvgTitleIdCounterForTests()
+    const withFalseFlag = svgOpenTag(
+      400,
+      300,
+      colors,
+      false,
+      'A title',
+      false,
+      false,
+    )
+    expect(withFalseFlag).toBe(withoutFlag)
+  })
+})
+
+// ============================================================================
 // renderMermaidSVG – wiring across every diagram type
 // ============================================================================
 
@@ -270,8 +339,10 @@ describe('renderMermaidSVG – accessible name alongside click/tooltip <title> e
       { title: 'Flowchart with a tooltip node' },
     )
 
-    // Root accessible name is present.
-    expect(svg).toContain('role="img"')
+    // Root accessible name is present, but role="img" is not: this diagram
+    // has a real click-based <a href>, and role="img" would hide it from
+    // assistive tech while leaving it Tab-reachable (see #239).
+    expect(svg).not.toContain('role="img"')
     expect(svg).toMatch(/aria-labelledby="zm-title-\d+"/)
     expect(svg).toContain('Flowchart with a tooltip node')
 
@@ -288,5 +359,34 @@ describe('renderMermaidSVG – accessible name alongside click/tooltip <title> e
     // Every id in the document is unique.
     const allIds = [...svg.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1])
     expect(new Set(allIds).size).toBe(allIds.length)
+  })
+
+  it('#239 repro: decorative + a click link no longer emits aria-hidden on a focusable ancestor', () => {
+    const svg = renderMermaidSVG(
+      'flowchart TD\n  click A "https://example.com"\n  A --> B',
+      { decorative: true },
+    )
+
+    // Before the fix: aria-hidden="true" on the root, with a focusable
+    // <a href> nested inside — an explicit WAI-ARIA violation (aria-hidden
+    // must not contain a focusable descendant) and a silent accessibility
+    // regression (the link vanishes from the a11y tree but stays Tab-reachable).
+    expect(svg).not.toContain('aria-hidden')
+    expect(svg).not.toContain('role="img"')
+    expect(svg).toContain('<a href="https://example.com">')
+  })
+
+  it('a rejected href scheme does not suppress role/aria-hidden, since no <a> is actually rendered', () => {
+    // The parser records the raw href unconditionally; safeHref() (in
+    // src/renderer.ts) is what filters it at render time, so a disallowed
+    // scheme like javascript: never becomes an <a> — the diagram has no real
+    // link, and hasInteractiveLinks must not treat it as one.
+    const svg = renderMermaidSVG(
+      'flowchart TD\n  click A "javascript:alert(1)"\n  A --> B',
+      { decorative: true },
+    )
+    expect(svg).not.toContain('<a href')
+    expect(svg).toContain('aria-hidden="true"')
+    expect(svg).not.toContain('role="img"')
   })
 })

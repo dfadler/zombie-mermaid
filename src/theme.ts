@@ -569,14 +569,32 @@ export function __resetSvgTitleIdCounterForTests(): void {
  *   reads the same as an `<img>` with no `alt`: present as a single image,
  *   unlabeled.
  *
+ * `hasInteractiveLinks` overrides all of the above (see #239): a `click A
+ * "url"` statement renders a real, focusable `<a href>` inside the SVG, and
+ * both `role="img"` and `aria-hidden="true"` are unsafe on an ancestor of a
+ * focusable element — `role="img"` tells assistive tech to stop descending
+ * into children (the link becomes unreachable by screen reader while still
+ * Tab-focusable), and `aria-hidden="true"` on a focusable descendant is an
+ * explicit WAI-ARIA violation (the link vanishes from the accessibility tree
+ * but not from the tab order). When any node has a link, the root gets no
+ * `role` at all — `decorative` is silently overridden rather than honored,
+ * since aria-hiding a diagram that contains an actionable link is not a safe
+ * request to fulfill — but `title`/`aria-labelledby` still apply if given:
+ * an accessible name is still valid on an element with no explicit role.
+ *
  * The per-node/per-point `<title>` tooltips added by earlier work (nested
  * inside `<g>` elements, with no `id` attribute) are unaffected: they never
  * collide with the root title's generated id, and a root `<title>` alongside
  * unrelated descendant `<title>` elements is valid SVG.
  *
  * @param transparent - If true, omits the background style for transparent SVGs
- * @param title - Accessible name text. Ignored when `decorative` is true.
+ * @param title - Accessible name text. Ignored when `decorative` is true
+ *                and there are no interactive links (see `hasInteractiveLinks`).
  * @param decorative - Marks the SVG as decorative (`aria-hidden="true"`).
+ *                      Overridden when `hasInteractiveLinks` is true.
+ * @param hasInteractiveLinks - True if any node has a `click`-based `href`.
+ *                              See #239 — forces no root `role` so the link
+ *                              stays reachable, regardless of `decorative`.
  */
 export function svgOpenTag(
   width: number,
@@ -585,6 +603,7 @@ export function svgOpenTag(
   transparent?: boolean,
   title?: string,
   decorative?: boolean,
+  hasInteractiveLinks?: boolean,
 ): string {
   // Build the style string with only the provided color variables
   const vars = [
@@ -603,7 +622,15 @@ export function svgOpenTag(
 
   let a11yAttrs = ''
   let titleEl = ''
-  if (decorative) {
+  if (hasInteractiveLinks) {
+    // No root role: role="img" or aria-hidden would hide a real, focusable
+    // <a href> descendant from assistive tech while leaving it Tab-reachable.
+    if (title) {
+      const id = nextTitleId()
+      a11yAttrs = ` aria-labelledby="${id}"`
+      titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
+    }
+  } else if (decorative) {
     a11yAttrs = ' aria-hidden="true"'
   } else {
     a11yAttrs = ' role="img"'
