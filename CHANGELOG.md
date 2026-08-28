@@ -1,5 +1,75 @@
 # Changelog
 
+## 1.3.0
+
+### Minor Changes
+
+- [#207](https://github.com/dfadler/zombie-mermaid/pull/207) [`3c809ca`](https://github.com/dfadler/zombie-mermaid/commit/3c809cabb07bc97bda999ff5687d20c296f167ac) Thanks [@dfadler](https://github.com/dfadler)! - Support Mermaid's expanded node syntax, `A@{ shape: doc, label: "Report" }` (v11.3.0+, from the audit in [#198](https://github.com/dfadler/zombie-mermaid/issues/198)).
+
+  The syntax did not parse at all before: `A@{ shape: doc }` fell through to the bare-id pattern, so a node called `A` was registered and the entire metadata block was stranded as unparsed text — losing both the shape and the label with no error.
+
+  All 124 documented Mermaid shape names and aliases now resolve, and 23 new geometries are drawn that the classic bracket syntax cannot express: document, stacked document/process, card, lined/divided/window-pane rectangles, triangles, filled and crossed circles, fork bar, notched pentagon, sloped rectangle, flag, bow-tie rectangle, delay, braces, lightning bolt, bare text, and anchor.
+
+  Block scanning is depth- and quote-aware, so a label containing `}` (`A@{ label: "a } b" }`) does not terminate the block early, and values may contain commas and colons. `icon:` and `img:` are parsed with `form:` selecting the outline; since this renderer draws neither FontAwesome glyphs nor remote images, an unlabelled icon/image node shows its reference as text rather than rendering blank. An unrecognized shape name falls back to a rectangle rather than failing the diagram.
+
+- [#208](https://github.com/dfadler/zombie-mermaid/pull/208) [`9be2755`](https://github.com/dfadler/zombie-mermaid/commit/9be27553fabdd0859b4b0bc0f34314d2fa2abd21) Thanks [@dfadler](https://github.com/dfadler)! - Support the interactivity and configuration rows of the flowchart syntax audit ([#198](https://github.com/dfadler/zombie-mermaid/issues/198)): `click`, `%%{init:...}%%` directives, edge curve styles, edge IDs with animation, and Mermaid's backtick markdown-string form.
+
+  **`click` interactions.** `click A "url" "tooltip" _target` and `click A call fn()` now parse. An href becomes a real SVG `<a>` link and a tooltip becomes a `<title>`, both working without script. Only `http`/`https`/`mailto` and relative or fragment references are emitted — a `javascript:` or `data:` href is dropped, since diagram text may be untrusted and an executable href would make any page that inlines the SVG vulnerable. An href containing a C0 control character is rejected outright: the URL parser strips tab and newline from anywhere in a URL, so `java<TAB>script:` would otherwise pass the scheme check as a relative reference and still reach the browser as `javascript:`. A callback is recorded as `data-click-callback` and never invoked; this renderer executes nothing a diagram supplies.
+
+  **`%%{init: ...}%%` directives.** Mermaid's relaxed JSON (unquoted keys, single quotes) is parsed, and a malformed directive is ignored rather than fatal. A directive supplies a default and never overrides an explicit render option. Keys that are parsed but deliberately not acted on — `securityLevel`, `defaultRenderer`, `fontFamily`, `htmlLabels`, `maxTextSize` — are reported with a reason rather than vanishing silently.
+
+  **Edge curve styles.** `flowchart.curve` accepts `linear`, `basis`, `natural`, `step`, `stepBefore`, and `stepAfter`. The default `linear` still emits `<polyline class="edge">`, so existing selectors keep working; only a non-linear curve switches to `<path>`. `basis` is a direct port of d3's `curveBasis`, verified to match its output exactly, so a curved edge traces the path Mermaid would draw. `natural` is deliberately _not_ d3's natural spline — see the note in `src/edge-curves.ts`.
+
+  **Edge IDs and animation.** `A e1@--> B` assigns an edge id, emitted as `data-id`, and `e1@{ animate: true }` renders a marching-ants dash via CSS keyframes, guarded by `prefers-reduced-motion`. Keyframes are emitted only when a diagram animates an edge.
+
+  **Markdown strings.** Mermaid's backtick-delimited form (``A["`**bold**`"]``) now has its backticks stripped; they previously rendered as literal characters. The `**bold**` / `*italic*` / `~~strike~~` conversions themselves already worked.
+
+- [#206](https://github.com/dfadler/zombie-mermaid/pull/206) [`673d3da`](https://github.com/dfadler/zombie-mermaid/commit/673d3da22305af381ac167e85d4b17fb20427dc6) Thanks [@dfadler](https://github.com/dfadler)! - Close four flowchart syntax gaps against the Mermaid spec (from the audit in [#198](https://github.com/dfadler/zombie-mermaid/issues/198)). Each previously failed silently — mis-parsing into something else rather than raising an error.
+
+  **Parallelogram shapes.** `A[/text/]` and `A[\text\]` are now parsed and rendered in both backends. Previously neither pattern matched any shape, so the node fell through to other parsing. Note these are distinct from the already-supported trapezoids: a parallelogram's delimiters mirror (`[/…/]`), a trapezoid's oppose (`[/…\]`).
+
+  **Variable-length edges.** `A ---- B`, `A ====> B`, `A -..-> B` and longer runs now parse as a single edge. The arrow regex matched a fixed alternation of the shortest forms, so surplus characters were stranded and corrupted the following token — surfacing as spurious extra nodes rather than an error. Run length is a layout-rank hint in Mermaid; it is now parsed without being mis-tokenized, though the rank hint itself is not yet applied to layout.
+
+  **Invisible links.** `A ~~~ B` is supported as a new `invisible` edge style. The edge participates in layout but draws no line, connector, or arrowhead. In SVG the element is retained with `stroke="none"` so it stays inspectable via `data-style`; in ASCII its cells are left blank.
+
+  **`classDef default` auto-apply.** A `classDef default` now styles every node, as in Mermaid, rather than only nodes that named it explicitly via `class X default`. A node's own class overrides it property by property, and `style` directives override both. Diagrams relying on `classDef default` previously rendered unstyled with no error.
+
+### Patch Changes
+
+- [#217](https://github.com/dfadler/zombie-mermaid/pull/217) [`ecf86af`](https://github.com/dfadler/zombie-mermaid/commit/ecf86afd86c2e5cc3b9c43599ccc6f1f8982b71b) Thanks [@dfadler](https://github.com/dfadler)! - Stop `mergeEdges` bundling from drawing an edge straight through the nodes it skips over.
+
+  Bundling replaces a routed edge with a shared trunk plus a straight branch to each endpoint. That substitution assumed the branch only ever spans the gap between two adjacent layers. When a fan-out reaches a target several layers down, the branch instead crosses every layer in between — and any node standing in its column got a line drawn through the middle of it.
+
+  In this diagram, `A --> C` was bundled with `A --> B`, which pinned its junction to the gap just below `A` and then dropped it in one unbroken run to `C`, straight through `B` and `F`:
+
+  ```mermaid
+  flowchart TB
+    A[PR push] --> B[CI workflows]
+    A --> C[merge status bot]
+    B --> F[workflow_run events]
+    F --> C
+  ```
+
+  A bundled branch is now checked against every node box before it is adopted; a branch that would collide keeps the layout engine's own routing, which already goes around the obstacles. If that leaves fewer than two branches in a bundle there is no trunk left to share, so the whole group stays as routed. The same check guards the fan-in pass, which could otherwise re-introduce the crossing on an edge the fan-out pass had just declined to bundle.
+
+  Bundles whose endpoints share a layer — the common fan-out and fan-in shapes — are unaffected and still merge into a single trunk.
+
+- [#203](https://github.com/dfadler/zombie-mermaid/pull/203) [`571fb9a`](https://github.com/dfadler/zombie-mermaid/commit/571fb9a97878c2c65a8e32c0b1cc12aae7edc501) Thanks [@dfadler](https://github.com/dfadler)! - Fix class and ER diagram ASCII boxes overflowing their own borders when they contain CJK, fullwidth, or other wide characters.
+
+  `drawMultiBox` measured text with `line.length` and wrote it one UTF-16 code unit per grid cell, so a wide glyph — which occupies two terminal columns — was sized as one. The same code-unit arithmetic was duplicated in `class-diagram.ts` and `er-diagram.ts`, which precompute box dimensions to reserve grid space before drawing, and in both renderers' relationship-label placement.
+
+  All of these now measure display width. The box-sizing arithmetic is consolidated into a single `measureMultiBox` helper that `drawMultiBox` and both callers share, so the space reserved by layout and the box actually drawn can no longer disagree — a desync that silently ate the gap between adjacent boxes.
+
+  This completes for multi-compartment boxes what [#66](https://github.com/dfadler/zombie-mermaid/issues/66) fixed for single boxes.
+
+- [#204](https://github.com/dfadler/zombie-mermaid/pull/204) [`f0e533e`](https://github.com/dfadler/zombie-mermaid/commit/f0e533e75c98446e262ddd48d76004157cc6b438) Thanks [@dfadler](https://github.com/dfadler)! - Support semicolons as statement separators in every diagram type.
+
+  `detectDiagramType` isolated the header by splitting on newline _or_ semicolon, so `sequenceDiagram;A->>B: Hi` routed correctly to the sequence pipeline — but each parser then split the body on newlines only. Everything after the header was discarded and the diagram rendered empty. The same gap affected `classDiagram`, `erDiagram`, and `xychart-beta`.
+
+  Flowcharts were broken differently: `flowchart TD;A-->B` did not render empty, it threw `Invalid mermaid header`, even though `graph TD; A-->B;` is long-standing Mermaid syntax.
+
+  Statement splitting now lives in one shared `splitStatements` helper used by the detector and all five parser entry points, so routing and parsing cannot disagree about where a statement ends. A semicolon inside a quoted label (`A["a; b"]`) or terminating a character reference (`A[&amp;]`, `A[&#x1F600;]`) is correctly treated as text rather than a separator, and comments are stripped before splitting so a `;` in a comment cannot resurrect the rest of the line as code.
+
 ## 1.2.0
 
 ### Minor Changes
