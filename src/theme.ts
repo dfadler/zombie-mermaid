@@ -309,6 +309,43 @@ function isSafeCssVarReference(font: string): boolean {
 }
 
 /**
+ * CSS generic font-family keywords. These are resolved by the browser/user
+ * agent to a locally available font and are never real font names a Google
+ * Fonts `@import` could fetch.
+ */
+const GENERIC_FONT_FAMILIES = new Set([
+  'sans-serif',
+  'serif',
+  'monospace',
+  'system-ui',
+  'ui-sans-serif',
+  'ui-serif',
+  'ui-monospace',
+  'ui-rounded',
+  'cursive',
+  'fantasy',
+  'math',
+  'emoji',
+  'fangsong',
+])
+
+/**
+ * Detect a `font` value that names a font *stack* (comma-separated list,
+ * e.g. `"ui-sans-serif, system-ui, sans-serif"`) or a single CSS generic
+ * family keyword (e.g. `"system-ui"`) rather than a single concrete font
+ * name. Neither is something a Google Fonts `@import` could ever
+ * successfully fetch: a stack has no single `family=` value to request, and
+ * a generic keyword is resolved locally by the browser, not hosted by
+ * Google Fonts. Skipping the `@import` for these avoids baking a dead,
+ * always-404 request into the SVG (see #223).
+ */
+function isFontStackOrGenericFamily(font: string): boolean {
+  const trimmed = font.trim()
+  if (trimmed.includes(',')) return true
+  return GENERIC_FONT_FAMILIES.has(trimmed.toLowerCase())
+}
+
+/**
  * Build the CSS variable derivation rules for the SVG <style> block.
  *
  * When an optional variable (--line, --accent, etc.) is set on the SVG or
@@ -321,6 +358,16 @@ function isSafeCssVarReference(font: string): boolean {
  * otherwise URL-encode the literal `var(...)` string into a `family=` query
  * param and produce a guaranteed no-op request — and the value is emitted
  * unquoted, since a quoted string isn't parsed as a `var()` call by CSS.
+ *
+ * The `@import` is likewise skipped when `font` is a font *stack* (a
+ * comma-separated list, e.g. `"ui-sans-serif, system-ui, sans-serif"`) or a
+ * single CSS generic family keyword (e.g. `"system-ui"`) — see
+ * `isFontStackOrGenericFamily`. Neither names a single concrete font that
+ * Google Fonts could host, so importing one always produces a dead,
+ * always-404 request (#223). This is additive to the `var()` skip above,
+ * and only affects the `@import` decision — the `text { font-family: ... }`
+ * rule still renders the literal value exactly as it does today.
+ *
  * Any other value is treated as a literal font name: sanitized and quoted
  * exactly as before.
  */
@@ -331,9 +378,10 @@ export function buildStyleBlock(font: string, hasMonoFont: boolean): string {
   // var() reference is passed through as-is so `var(--x, 'Fallback')` keeps
   // its own internal quotes intact.
   const safeFont = isVarReference ? font.trim() : font.replace(/[<>{};'"]/g, '')
+  const skipImport = isVarReference || isFontStackOrGenericFamily(font)
 
   const fontImports = [
-    ...(isVarReference
+    ...(skipImport
       ? []
       : [
           `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(safeFont)}:wght@400;500;600;700&amp;display=swap');`,
