@@ -637,6 +637,10 @@ function currentTheme(): DiagramColors | null {
   return (themeKey ? THEMES[themeKey] : null) ?? null
 }
 
+/**
+ * Render one sample's SVG (and, unless it's a Hero sample, its ASCII output)
+ * into the containers index.ts emitted for it.
+ */
 async function renderSample(i: number) {
   const sample = samples[i]
   const svgContainer = maybeGet('svg-' + i)
