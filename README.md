@@ -152,3 +152,6 @@ MIT — see [LICENSE](LICENSE) for details.
 Built with care by the team at [Craft](https://craft.do)
 
 </div>
+
+<!-- throwaway-test: exercising a new automated PR reviewer's end-to-end
+     pipeline (claude-review-app). Safe to ignore/revert. -->
