@@ -57,6 +57,9 @@ import type { CurveStyle } from './init-directive.ts'
  *                            see `resolveAnimationEnabled` in src/index.ts).
  *                            Default true — preserves the previously-ungated
  *                            behavior for callers who don't pass it.
+ * @param title - Accessible name (from `options.title`). See svgOpenTag() in
+ *                src/theme.ts.
+ * @param decorative - Marks the SVG decorative (from `options.decorative`).
  */
 export function renderSvg(
   graph: PositionedGraph,
@@ -67,13 +70,22 @@ export function renderSvg(
   curve: CurveStyle = 'linear',
   embedSource?: string,
   animationEnabled: boolean = true,
+  title?: string,
+  decorative?: boolean,
 ): string {
   const parts: string[] = []
 
   // SVG root with CSS variables + style block + defs
   parts.push(
     withDataSrc(
-      svgOpenTag(graph.width, graph.height, colors, transparent),
+      svgOpenTag(
+        graph.width,
+        graph.height,
+        colors,
+        transparent,
+        title,
+        decorative,
+      ),
       embedSource,
     ),
   )

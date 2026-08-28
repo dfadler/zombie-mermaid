@@ -274,6 +274,35 @@ export interface RenderOptions {
   embedSource?: boolean
 
   /**
+   * Accessible name for the rendered SVG (see GitHub issue #215). Rendered
+   * as `role="img"` + `aria-labelledby` pointing at a `<title>` child
+   * holding this text — the standard SVG/WAI-ARIA technique for naming an
+   * inline image. Without a name, assistive tech either treats the SVG as a
+   * plain group (every node/edge label announced individually, out of
+   * reading order) or skips it — a WCAG 1.1.1 failure for diagrams embedded
+   * in a page.
+   *
+   * Supply your own description of what the diagram shows (e.g. "Flowchart:
+   * Build → Test → Ship") — this library does not auto-generate one, since a
+   * fabricated summary like "flowchart with 3 nodes" would be a confidently
+   * useless accessible name. When omitted, the SVG still gets `role="img"`
+   * (so it's read as one image, not a leaky group) but claims no name — the
+   * same as an `<img>` with no `alt`.
+   *
+   * Ignored when `decorative` is true. Default: undefined (no name).
+   */
+  title?: string
+
+  /**
+   * Mark the diagram as decorative — already described in surrounding
+   * prose, so it shouldn't be announced as its own image. Emits
+   * `aria-hidden="true"` on the root `<svg>` instead of
+   * `role`/`aria-labelledby`/`<title>`; `title`, if also given, is ignored.
+   * Default: false
+   */
+  decorative?: boolean
+
+  /**
    * Edge path interpolation for flowcharts and state diagrams.
    * Default: 'linear'. A diagram's own
    * `%%{init: {"flowchart": {"curve": ...}}}%%` supplies this when the caller

@@ -11,6 +11,8 @@
 // colors, and the SVG adapts. No light/dark mode detection needed.
 // ============================================================================
 
+import { escapeXml } from './multiline-utils.ts'
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -512,17 +514,77 @@ export function getReadableTextColor(
 }
 
 /**
+ * Page-unique suffix generator for the root accessible-name `<title>` id.
+ *
+ * Mirrors `markerSuffix()` in src/renderer.ts, which solves the same
+ * "multiple SVGs inlined into one HTML page share a single id namespace"
+ * problem for arrow-marker ids — a marker's id is sanitized from its stroke
+ * color, since two markers with the same color are meant to share one
+ * definition. A title has no such natural per-call input (two diagrams can
+ * easily have the same title text and must still get distinct ids), so this
+ * increments a module-level counter instead: every `svgOpenTag()` call that
+ * renders a title gets a fresh, never-repeated id for the lifetime of the
+ * process, which is exactly what's needed for `aria-labelledby` to resolve
+ * correctly when several rendered diagrams are concatenated into one page.
+ */
+let titleIdCounter = 0
+
+function nextTitleId(): string {
+  titleIdCounter += 1
+  return `zm-title-${titleIdCounter}`
+}
+
+/**
+ * Test-only: reset the title-id counter so id assertions in tests don't
+ * depend on how many titled diagrams earlier tests in the same file rendered.
+ * Not part of the public API (not re-exported from src/index.ts).
+ */
+export function __resetSvgTitleIdCounterForTests(): void {
+  titleIdCounter = 0
+}
+
+/**
  * Build the SVG opening tag with CSS variables set as inline styles.
  * Only includes optional variables that are actually provided — unset ones
  * will fall back to the color-mix() derivations in the <style> block.
  *
+ * Also handles the SVG's accessible name (see `RenderOptions.title` /
+ * `RenderOptions.decorative` in src/types.ts, and GitHub issue #215):
+ *
+ * - `decorative: true` → `aria-hidden="true"` on the root, no `role` or
+ *   name. Use for a diagram already described in surrounding prose; `title`
+ *   is ignored when this is set.
+ * - `title` given (and not decorative) → `role="img"` +
+ *   `aria-labelledby="zm-title-N"` on the root, plus a `<title id="zm-title-N">`
+ *   as the SVG's first child holding the escaped text. This is the standard
+ *   SVG/WAI-ARIA "accessible name via a referenced title element" technique
+ *   (see MDN "SVG accessibility" and the WAI-ARIA `img` role: an element
+ *   with `role="img"` needs a computed accessible name to be meaningful to
+ *   assistive tech; `aria-labelledby` pointing at a `<title>` is the
+ *   documented way to supply one for inline SVG).
+ * - Neither given → `role="img"` only, no name. This still stops assistive
+ *   tech from treating the SVG as a plain group (which announces every
+ *   node/edge label individually, out of reading order — the core bug in
+ *   #215), without fabricating a name the library can't honestly claim. It
+ *   reads the same as an `<img>` with no `alt`: present as a single image,
+ *   unlabeled.
+ *
+ * The per-node/per-point `<title>` tooltips added by earlier work (nested
+ * inside `<g>` elements, with no `id` attribute) are unaffected: they never
+ * collide with the root title's generated id, and a root `<title>` alongside
+ * unrelated descendant `<title>` elements is valid SVG.
+ *
  * @param transparent - If true, omits the background style for transparent SVGs
+ * @param title - Accessible name text. Ignored when `decorative` is true.
+ * @param decorative - Marks the SVG as decorative (`aria-hidden="true"`).
  */
 export function svgOpenTag(
   width: number,
   height: number,
   colors: DiagramColors,
   transparent?: boolean,
+  title?: string,
+  decorative?: boolean,
 ): string {
   // Build the style string with only the provided color variables
   const vars = [
@@ -539,8 +601,22 @@ export function svgOpenTag(
 
   const bgStyle = transparent ? '' : ';background:var(--bg)'
 
+  let a11yAttrs = ''
+  let titleEl = ''
+  if (decorative) {
+    a11yAttrs = ' aria-hidden="true"'
+  } else {
+    a11yAttrs = ' role="img"'
+    if (title) {
+      const id = nextTitleId()
+      a11yAttrs += ` aria-labelledby="${id}"`
+      titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
+    }
+  }
+
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
-    `width="${width}" height="${height}" style="${vars}${bgStyle}">`
+    `width="${width}" height="${height}"${a11yAttrs} style="${vars}${bgStyle}">` +
+    titleEl
   )
 }

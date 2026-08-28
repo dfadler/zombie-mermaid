@@ -137,6 +137,17 @@ function resolveXYChartInteractive(options: RenderOptions): boolean {
  * // handy for a "copy source" button or an "open in Mermaid Live" link
  * // without re-attaching it via string surgery on the output.
  * const svg = renderMermaidSVG('graph TD\n  A --> B', { embedSource: true })
+ *
+ * // With an accessible name — role="img" + aria-labelledby pointing at a
+ * // <title> child, so assistive tech announces the diagram instead of
+ * // reading every node label individually (see issue #215).
+ * const svg = renderMermaidSVG('graph TD\n  A --> B', {
+ *   title: 'Flowchart: Build → Test → Ship'
+ * })
+ *
+ * // Decorative diagram — already described in surrounding prose, so it's
+ * // hidden from assistive tech (aria-hidden="true") instead of named.
+ * const svg = renderMermaidSVG('graph TD\n  A --> B', { decorative: true })
  * ```
  */
 export function renderMermaidSVG(
@@ -158,6 +169,8 @@ export function renderMermaidSVG(
   const fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(text)
   const embedSource = options.embedSource ? originalText : undefined
+  const title = options.title
+  const decorative = options.decorative
 
   const lines = splitStatements(text)
 
@@ -172,6 +185,8 @@ export function renderMermaidSVG(
         transparent,
         fontSizes,
         embedSource,
+        title,
+        decorative,
       )
     }
     case 'class': {
@@ -184,6 +199,8 @@ export function renderMermaidSVG(
         transparent,
         fontSizes,
         embedSource,
+        title,
+        decorative,
       )
     }
     case 'er': {
@@ -196,6 +213,8 @@ export function renderMermaidSVG(
         transparent,
         fontSizes,
         embedSource,
+        title,
+        decorative,
       )
     }
     case 'xychart': {
@@ -208,6 +227,8 @@ export function renderMermaidSVG(
         transparent,
         resolveXYChartInteractive(options),
         embedSource,
+        title,
+        decorative,
       )
     }
     case 'flowchart':
@@ -228,6 +249,8 @@ export function renderMermaidSVG(
         effective.curve ?? 'linear',
         embedSource,
         resolveAnimationEnabled(options),
+        title,
+        decorative,
       )
     }
   }

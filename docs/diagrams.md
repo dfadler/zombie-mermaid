@@ -249,6 +249,41 @@ edge animating.
 own class (`class A foo` or `A:::foo`) overrides it property by property, and
 an explicit `style A ...` directive overrides both.
 
+### Known limitations
+
+Three pieces of Mermaid's flowchart syntax are recognized as intentionally
+out of scope rather than missing by accident. Each was audited against
+upstream Mermaid in [#198](https://github.com/dfadler/zombie-mermaid/issues/198);
+this section is that audit's record.
+
+**Icons and images (`A@{ icon: ... }`, `A@{ img: ... }`, inline `fa:name`
+text).** Rendering an icon means bundling or fetching an icon pack;
+rendering an image means fetching a remote URL. Both break the invariant
+that a diagram renders to a self-contained SVG with no network access —
+this renderer draws neither. The `A@{ icon: ... }` / `A@{ img: ... }` forms
+still parse (see [Icons and images](#icons-and-images) above): the
+reference string is shown as the node's label when no explicit `label:` is
+given, rather than the node going blank. Writing `fa:name` directly inside
+an ordinary bracket label (`A["fa:fa-camera Camera"]`, Mermaid's older
+syntax) isn't recognized as an icon reference at all — it's just the node's
+literal text, identical to any other label content.
+
+**Subgraph collapse (Mermaid v11.17.0+).** Mermaid added an interactive
+expand/collapse affordance for subgraphs. This renderer's output is a
+static SVG or ASCII string with no embedded script, so there is nowhere for
+an expand/collapse _interaction_ to live — collapsing a subgraph would have
+to mean picking one fixed rendered state (expanded or collapsed) at render
+time, which is a different feature. The real collapse syntax also could not
+be verified, since Mermaid itself isn't a dependency here; shipping a guess
+at the grammar seemed worse than not shipping it. **A `collapse <id>`
+statement, or `@{ ... }` metadata attached to a subgraph id, is not
+recognized as collapse syntax — treat it as unsupported rather than a
+no-op.** Verified empirically: both forms are absorbed by the ordinary node
+parser instead, which adds a stray, disconnected node to the diagram (with
+id `collapse`, or reusing the subgraph's own id) rather than leaving the
+diagram unchanged. Omit this syntax rather than relying on it to be
+harmlessly ignored.
+
 ## State Diagrams
 
 ```
@@ -380,6 +415,42 @@ The chart renderer follows a clean, minimal design philosophy inspired by Apple 
 - **Sparse line dots** — Lines with 12 or fewer data points show data point dots by default for readability
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
+
+## Accessibility
+
+Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
+tech treats it as one image instead of a group whose node/edge labels get
+announced individually and out of reading order.
+
+```ts
+renderMermaidSVG('graph TD\n  A --> B', {
+  title: 'Flowchart: Build → Test → Ship',
+})
+```
+
+`title` supplies the accessible name: `aria-labelledby` on the root points
+at a `<title id="zm-title-N">` child holding the text — the standard
+SVG/WAI-ARIA technique for naming inline SVG. The `zm-title-N` id is unique
+per render call, so multiple diagrams inlined into one page never collide.
+This library never invents a name on your behalf (a generated "flowchart
+with 3 nodes" summary would be a confidently useless accessible name) — when
+`title` is omitted the SVG still gets `role="img"`, but claims no name, the
+same as an `<img>` with no `alt`.
+
+For a diagram that's already described in surrounding prose, mark it
+decorative instead of naming it:
+
+```ts
+renderMermaidSVG('graph TD\n  A --> B', { decorative: true })
+```
+
+This emits `aria-hidden="true"` in place of `role`/`aria-labelledby`/`<title>`,
+and `title`, if also given, is ignored.
+
+This is independent of the per-node/per-point `<title>` tooltips from
+[Interactions](#interactions) (`click A "url" "Tooltip"`) and the XY chart's
+`interactive` hover tips — those are unid'd `<title>` elements nested inside
+each node/point's `<g>`, so they never collide with the root's generated id.
 
 ## ASCII Rendering
 
