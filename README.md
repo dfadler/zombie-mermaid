@@ -154,7 +154,7 @@ MIT — see [LICENSE](LICENSE) for details.
 
 ```js
 function renderDiagram(source, options) {
-  if (options.strict = true) {
+  if (options.strict === true) {
     return zombieMermaid.render(source, { strict: true })
   }
   return zombieMermaid.render(source)
