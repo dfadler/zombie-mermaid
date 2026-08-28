@@ -80,6 +80,17 @@ jobs:
           path: coverage/
           retention-days: 14
 
+      # Feeds the live coverage badge in README.md. Needs CODECOV_TOKEN
+      # (from codecov.io, once the repo is linked there) as a repo secret —
+      # without it this step fails rather than silently skipping, so the
+      # badge's data source stays honest about whether it's actually wired up.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: true
+
       # Repo-wide thresholds above (enforced by vitest.config.ts) cover the
       # whole codebase, including old, hard-to-reach branches. This holds
       # new/changed lines to a stricter 90% bar without requiring an
