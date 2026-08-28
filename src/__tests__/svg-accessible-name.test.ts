@@ -375,4 +375,18 @@ describe('renderMermaidSVG – accessible name alongside click/tooltip <title> e
     expect(svg).not.toContain('role="img"')
     expect(svg).toContain('<a href="https://example.com">')
   })
+
+  it('a rejected href scheme does not suppress role/aria-hidden, since no <a> is actually rendered', () => {
+    // The parser records the raw href unconditionally; safeHref() (in
+    // src/renderer.ts) is what filters it at render time, so a disallowed
+    // scheme like javascript: never becomes an <a> — the diagram has no real
+    // link, and hasInteractiveLinks must not treat it as one.
+    const svg = renderMermaidSVG(
+      'flowchart TD\n  click A "javascript:alert(1)"\n  A --> B',
+      { decorative: true },
+    )
+    expect(svg).not.toContain('<a href')
+    expect(svg).toContain('aria-hidden="true"')
+    expect(svg).not.toContain('role="img"')
+  })
 })
