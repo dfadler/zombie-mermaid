@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.4.0
+
+### Minor Changes
+
+- [#227](https://github.com/dfadler/zombie-mermaid/pull/227) [`d6b55f3`](https://github.com/dfadler/zombie-mermaid/commit/d6b55f39e28bc772ab1f4be6eeadd5fad75d71ff) Thanks [@dfadler](https://github.com/dfadler)! - Add `embedSource` render option to stamp the diagram source onto the root `<svg>`.
+
+  Once a diagram is rendered to SVG, the Mermaid source that produced it is gone. Consumers building a "copy source" button or an "open in Mermaid Live Editor" link had to re-attach the source themselves by regex-splicing a `data-src` attribute into the finished SVG string — and doing that safely requires a replacer _function_, not a string, since a string second argument to `.replace()` interprets `$`-sequences (`$1`, `$&`, `$'`) found in the source as replacement patterns. `$'` in particular would splice the remainder of the SVG into the attribute, corrupting it.
+
+  Passing `embedSource: true` to `renderMermaidSVG` / `renderMermaidSVGAsync` now stamps the original, un-decoded diagram source onto the root `<svg>` as `data-src`, HTML-escaped, across every diagram type (flowchart, sequence, class, ER, xychart). Default is `false` — no behavior change unless you opt in.
+
+### Patch Changes
+
+- [#219](https://github.com/dfadler/zombie-mermaid/pull/219) [`125b80a`](https://github.com/dfadler/zombie-mermaid/commit/125b80a01e0bb0257d482e9a51ebc9e8d57440cf) Thanks [@dfadler](https://github.com/dfadler)! - Demo-site only, plus one generator fix.
+
+  **Interactivity samples.** The demo now has an `Interactivity` category covering `click` links and tooltips, curve styles via `%%{init: ...}%%`, and an animated edge. These features shipped in [#208](https://github.com/dfadler/zombie-mermaid/issues/208) but nothing on the site exercised them, so the only way to see them working was a video attached to a merged PR.
+
+  They earn their place beyond coverage: every sample renders as both SVG and ASCII, side by side, so the pair shows which features survive the trip to a terminal. The animated edge marches in the SVG and is a plain dashed line in the ASCII panel beside it — the degradation is visible rather than asserted.
+
+  **Description escaping.** `formatDescription` applied its backtick-to-`<code>` transform to unescaped text, so a description quoting markup emitted real elements into the page. `<title>` was the damaging case: in body position the HTML parser switches to text mode and consumes the rest of the document, including the module script that boots the gallery. The page rendered a permanent loading spinner with an empty console — the script was never parsed, so it never ran and never threw.
+
+  Descriptions are now escaped before the transform. The helpers moved to `demo/format.ts` so they can be tested directly, since `index.ts` writes its output at module scope and cannot be imported from a test.
+
+- [#226](https://github.com/dfadler/zombie-mermaid/pull/226) [`0371492`](https://github.com/dfadler/zombie-mermaid/commit/0371492ecf692a6327c0aaaf151857ea42189494) Thanks [@dfadler](https://github.com/dfadler)! - Fix a dead Google Fonts `@import` baked into every SVG when `font` is a font stack or a CSS generic family keyword.
+
+  `buildStyleBlock` only skipped the `@import` when `font` was a `var(...)` reference. Any other value — including a legitimate stack like `"ui-sans-serif, system-ui, sans-serif"` — got URL-encoded whole into a `family=` query param, producing an `@import` for a bogus font family name that always 404s.
+
+  The skip condition now also covers comma-separated font stacks and bare CSS generic family keywords (`sans-serif`, `serif`, `monospace`, `system-ui`, `ui-sans-serif`, `ui-serif`, `ui-monospace`, `ui-rounded`, `cursive`, `fantasy`, `math`, `emoji`, `fangsong`), none of which name a single concrete font that Google Fonts could ever host. The `var()` skip path and the `text { font-family: ... }` rendering are unchanged.
+
 ## 1.3.0
 
 ### Minor Changes
