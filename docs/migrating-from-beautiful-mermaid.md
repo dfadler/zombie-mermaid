@@ -9,7 +9,8 @@ This page covers what's safe to assume unchanged, itemizes the fixes most likely
 ## What is drop-in
 
 - `renderMermaidSVG`, `renderMermaidSVGAsync`, `renderMermaidASCII`, and `parseMermaid` all have the same signatures as in `beautiful-mermaid`.
-- `RenderOptions` and `AsciiRenderOptions` — colors, fonts, spacing, `mergeEdges`, theming — work exactly the same way. See [api-reference.md](api-reference.md).
+- `RenderOptions` and `AsciiRenderOptions` — colors, fonts, spacing, theming — work the same way. See [api-reference.md](api-reference.md).
+- `mergeEdges` is new to this fork's `RenderOptions` — `beautiful-mermaid` has no equivalent option, so there's no prior behavior it needs to match.
 - Built-in themes, Shiki compatibility, and CSS-variable-driven live theme switching are unchanged.
 - The CLI (`zombie-mermaid` binary) is new to this fork — `beautiful-mermaid` never had one — so there's no prior behavior it needs to preserve.
 
@@ -21,7 +22,7 @@ Each of these changes what gets drawn for Mermaid syntax that previously parsed 
 
 ### `classDef` / `class` styling
 
-This is the fix most likely to affect a real diagram, because `classDef`/`class` is common Mermaid syntax and `beautiful-mermaid`'s support for it had several sharp edges — all fixed together in this fork's [v1.2.0](https://github.com/dfadler/zombie-mermaid/releases/tag/v1.2.0) release:
+This is the fix most likely to affect a real diagram, because `classDef`/`class` is common Mermaid syntax and `beautiful-mermaid`'s support for it had several sharp edges. Most of these shipped together in this fork's [v1.2.0](https://github.com/dfadler/zombie-mermaid/releases/tag/v1.2.0) release; the last one (`classDef default`) needs [v1.3.0](https://github.com/dfadler/zombie-mermaid/releases/tag/v1.3.0):
 
 - **A trailing semicolon on a `class` statement produced a stray node.** `class B highlight;` — completely valid, optional Mermaid syntax — fell through class-assignment parsing (which required unterminated `\w+$`) into node parsing, so instead of styling node `B` the diagram grew an extra node literally labeled `class`. Fixed in [#53](https://github.com/dfadler/zombie-mermaid/pull/53).
 - **`:::className` before the shape brackets dropped the node's label entirely.** `A:::external[External User]` matched none of the shape-detection regexes (they require the id immediately before its brackets), so it fell back to a bare-id match and `[External User]` was discarded. Fixed in [#77](https://github.com/dfadler/zombie-mermaid/pull/77).
@@ -110,15 +111,24 @@ npm install beautiful-mermaid zombie-mermaid tsx
 ```
 
 ```typescript
-// audit.ts — render every .mmd file in a directory through both packages
-// and report which ones produce different SVG output.
+// audit.ts — render every .mmd file in a directory through both packages,
+// across every rendering path (SVG, Unicode ASCII, plain ASCII), and report
+// which combinations produce different output. Checking SVG alone would miss
+// the ASCII-only fixes above (wide-character box sizing, dropped ASCII
+// flowchart edges) — those never touch renderMermaidSVG at all.
 //
 // Usage: npx tsx audit.ts ./path/to/your/diagrams
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { renderMermaidSVG as renderOld } from 'beautiful-mermaid'
-import { renderMermaidSVG as renderNew } from 'zombie-mermaid'
+import {
+  renderMermaidSVG as renderSvgOld,
+  renderMermaidASCII as renderAsciiOld,
+} from 'beautiful-mermaid'
+import {
+  renderMermaidSVG as renderSvgNew,
+  renderMermaidASCII as renderAsciiNew,
+} from 'zombie-mermaid'
 
 const dir = process.argv[2]
 if (!dir) {
@@ -126,39 +136,82 @@ if (!dir) {
   process.exit(1)
 }
 
+// One entry per rendering path worth auditing independently — a diagram can
+// pass the SVG check while its ASCII output (Unicode or plain) still changes.
+const channels = [
+  {
+    name: 'svg',
+    ext: 'svg',
+    render: (s: string, r: typeof renderSvgOld) => r(s),
+  },
+  {
+    name: 'ascii-unicode',
+    ext: 'txt',
+    render: (s: string, r: typeof renderAsciiOld) => r(s, { useAscii: false }),
+  },
+  {
+    name: 'ascii-plain',
+    ext: 'txt',
+    render: (s: string, r: typeof renderAsciiOld) => r(s, { useAscii: true }),
+  },
+] as const
+
+const renderers = {
+  svg: [renderSvgOld, renderSvgNew],
+  'ascii-unicode': [renderAsciiOld, renderAsciiNew],
+  'ascii-plain': [renderAsciiOld, renderAsciiNew],
+} as const
+
 const files = readdirSync(dir).filter((f) => f.endsWith('.mmd'))
 let changed = 0
 
 for (const file of files) {
   const source = readFileSync(join(dir, file), 'utf8')
+  let fileChanged = false
 
-  let before: string
-  let after: string
-  try {
-    before = renderOld(source)
-  } catch (err) {
-    console.log(`[ERROR on old version] ${file}: ${(err as Error).message}`)
-    continue
-  }
-  try {
-    after = renderNew(source)
-  } catch (err) {
-    console.log(`[ERROR on new version]  ${file}: ${(err as Error).message}`)
-    continue
+  for (const channel of channels) {
+    const [renderOld, renderNew] = renderers[channel.name]
+
+    let before: string
+    let after: string
+    try {
+      before = channel.render(source, renderOld as never)
+    } catch (err) {
+      console.log(
+        `[ERROR on old, ${channel.name}] ${file}: ${(err as Error).message}`,
+      )
+      continue
+    }
+    try {
+      after = channel.render(source, renderNew as never)
+    } catch (err) {
+      console.log(
+        `[ERROR on new, ${channel.name}]  ${file}: ${(err as Error).message}`,
+      )
+      continue
+    }
+
+    if (before !== after) {
+      fileChanged = true
+      console.log(`[CHANGED, ${channel.name}] ${file}`)
+      // Write both out so you can diff them directly, e.g.:
+      //   diff .audit-out/<file>.svg.before.svg .audit-out/<file>.svg.after.svg
+      writeFileSync(
+        `.audit-out/${file}.${channel.name}.before.${channel.ext}`,
+        before,
+      )
+      writeFileSync(
+        `.audit-out/${file}.${channel.name}.after.${channel.ext}`,
+        after,
+      )
+    }
   }
 
-  if (before !== after) {
-    changed++
-    console.log(`[CHANGED] ${file}`)
-    // Write both out so you can diff them directly, e.g.:
-    //   diff .audit-out/<file>.before.svg .audit-out/<file>.after.svg
-    writeFileSync(`.audit-out/${file}.before.svg`, before)
-    writeFileSync(`.audit-out/${file}.after.svg`, after)
-  }
+  if (fileChanged) changed++
 }
 
 console.log(
-  `\n${changed} of ${files.length} diagram(s) render differently after upgrading.`,
+  `\n${changed} of ${files.length} diagram(s) render differently after upgrading (across svg/ascii-unicode/ascii-plain).`,
 )
 ```
 
