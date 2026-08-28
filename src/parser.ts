@@ -192,20 +192,9 @@ function parseFlowchart(lines: string[]): MermaidGraph {
       continue
     }
 
-    /*
-     * --- edge metadata: `e1@{ animate: true }` ---
-     *
-     * Told apart from a node's `A@{ shape: ... }` by whether the id was
-     * already declared as an edge id (`A e1@--> B`). Checked before node
-     * parsing so an edge id is never registered as a stray node.
-     */
-    const edgeMetaMatch = line.match(/^([\w-]+)(?=@\{)/)
-    if (edgeMetaMatch && graph.edges.some((e) => e.id === edgeMetaMatch[1])) {
-      const block = matchExpandedBlock(line.slice(edgeMetaMatch[1]!.length))
-      if (block) {
-        applyEdgeMeta(graph, edgeMetaMatch[1]!, parseExpandedMeta(block.body))
-        continue
-      }
+    // --- edge metadata: `e1@{ animate: true }` — shared with parseStateDiagram ---
+    if (tryApplyEdgeMetaLine(line, graph)) {
+      continue
     }
 
     // --- linkStyle: `linkStyle 0 stroke:#f00` or `linkStyle default stroke:#f00` ---
@@ -363,6 +352,11 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
       continue
     }
 
+    // --- edge metadata: `e1@{ animate: true }` — shared with parseFlowchart ---
+    if (tryApplyEdgeMetaLine(line, graph)) {
+      continue
+    }
+
     // --- composite state start: `state CompositeState {` ---
     const compositeMatch = line.match(
       /^state\s+(?:"([^"]+)"\s+as\s+)?([\w\p{L}]+)\s*\{$/u,
@@ -404,12 +398,21 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
       continue
     }
 
-    // --- transition: `s1 --> s2` or `s1 --> s2 : label` or `[*] --> s1` ---
+    /*
+     * --- transition: `s1 --> s2`, `s1 --> s2 : label`, `[*] --> s1`, or
+     * with an edge id (Mermaid v11.10.0+): `s1 e1@--> s2` ---
+     *
+     * State-diagram transitions only ever use `-->` (unlike flowchart's
+     * many arrow variants), so the edge id — same `id@` prefix syntax as
+     * flowchart's `A e1@--> B` — is captured inline in this one regex
+     * rather than needing flowchart's separate pre-arrow scan.
+     */
     const transitionMatch = line.match(
-      /^(\[\*\]|[\w\p{L}-]+)\s*(-->)\s*(\[\*\]|[\w\p{L}-]+)(?:\s*:\s*(.+))?$/u,
+      /^(\[\*\]|[\w\p{L}-]+)\s*(?:([\w-]+)@)?-->\s*(\[\*\]|[\w\p{L}-]+)(?:\s*:\s*(.+))?$/u,
     )
     if (transitionMatch) {
       let sourceId = transitionMatch[1]!
+      const edgeId = transitionMatch[2]
       let targetId = transitionMatch[3]!
       const rawTransitionLabel = transitionMatch[4]?.trim()
       const edgeLabel = rawTransitionLabel
@@ -450,6 +453,7 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
         style: 'solid',
         hasArrowStart: false,
         hasArrowEnd: true,
+        ...(edgeId !== undefined ? { id: edgeId } : {}),
       })
       continue
     }
@@ -800,6 +804,38 @@ function applyClickStatement(line: string, graph: MermaidGraph): void {
   if (interaction.href !== undefined || interaction.tooltip !== undefined) {
     graph.interactions.set(nodeId, interaction)
   }
+}
+
+/**
+ * Id immediately followed by the expanded-syntax opener on a standalone
+ * metadata line: `e1@{ ... }`.
+ *
+ * Shared by both parsers (`tryApplyEdgeMetaLine`) since the syntax and its
+ * "must already be a known edge id" disambiguation rule are identical for
+ * flowcharts and state diagrams — only how edge ids get declared differs
+ * (`A e1@--> B` vs. `A e1@--> B` with a simpler arrow set).
+ */
+const EDGE_META_ID_REGEX = /^([\w-]+)(?=@\{)/
+
+/**
+ * Try to parse and apply a standalone `e1@{ animate: true }` edge-metadata
+ * line.
+ *
+ * Told apart from a node's `A@{ shape: ... }` by whether the id was already
+ * declared as an edge id (`A e1@--> B`) — checked before node parsing so an
+ * edge id is never registered as a stray node. Shared between
+ * `parseFlowchart` and `parseStateDiagram`; returns `true` if the line was
+ * consumed as edge metadata (caller should `continue` its loop).
+ */
+function tryApplyEdgeMetaLine(line: string, graph: MermaidGraph): boolean {
+  const edgeMetaMatch = line.match(EDGE_META_ID_REGEX)
+  if (!edgeMetaMatch || !graph.edges.some((e) => e.id === edgeMetaMatch[1])) {
+    return false
+  }
+  const block = matchExpandedBlock(line.slice(edgeMetaMatch[1]!.length))
+  if (!block) return false
+  applyEdgeMeta(graph, edgeMetaMatch[1]!, parseExpandedMeta(block.body))
+  return true
 }
 
 /**
