@@ -122,6 +122,7 @@ zombie-mermaid --help                                   # Show all options
 - [Supported Diagrams](docs/diagrams.md) — syntax for every diagram type, XY chart styling, and ASCII rendering options
 - [React Integration](docs/react-integration.md) — zero-flash rendering with `useMemo()`
 - [API Reference](docs/api-reference.md) — full function and options reference
+- [Migrating from `beautiful-mermaid`](docs/migrating-from-beautiful-mermaid.md) — what's drop-in, which fixes change rendered output, and how to audit your own diagrams before upgrading
 
 More design write-ups and reference material live in [docs/](docs/).
 
