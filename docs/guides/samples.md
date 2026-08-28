@@ -7,7 +7,7 @@ adapting it.
 ## Where the samples live
 
 The [live demo](https://dfadler.github.io/zombie-mermaid/) renders every
-sample in the library — 84 of them, each shown three ways at once:
+browsable sample in the library — 88 of them, each shown three ways at once:
 
 - the **Mermaid source** you can copy,
 - the **rendered SVG**, and
@@ -19,23 +19,32 @@ terminal — some do not, and it is cheaper to find that out now.
 
 The samples are grouped by diagram type:
 
-| Category  | Samples | Good for                                           |
-| --------- | ------- | -------------------------------------------------- |
-| Flowchart | 24      | processes, decisions, pipelines, architecture      |
-| Sequence  | 16      | request/response, protocols, anything time-ordered |
-| Class     | 16      | type hierarchies, domain models                    |
-| ER        | 14      | database schemas, entity relationships             |
-| XY Chart  | 10      | bar and line charts                                |
-| State     | 4       | state machines, lifecycles                         |
+| Category      | Samples | Good for                                           |
+| ------------- | ------- | -------------------------------------------------- |
+| Flowchart     | 24      | processes, decisions, pipelines, architecture      |
+| Sequence      | 16      | request/response, protocols, anything time-ordered |
+| Class         | 16      | type hierarchies, domain models                    |
+| ER            | 14      | database schemas, entity relationships             |
+| XY Chart      | 10      | bar and line charts                                |
+| Interactivity | 4       | links, tooltips, curve styles, animated edges      |
+| State         | 4       | state machines, lifecycles                         |
 
 (The banner diagram at the top of the demo is a further sample, but it is
-not part of the browsable gallery — hence 84 here rather than the 85 the
+not part of the browsable gallery — hence 88 here rather than the 89 the
 page renders in total.)
+
+The **Interactivity** samples are worth opening even if you do not need
+links or animation. They are the clearest demonstration of what the three-way
+view is for. Both diagrams still render in ASCII — it is the browser-only
+behaviour that drops away: a `click` node loses its link and tooltip, and an
+animated edge is drawn as an ordinary solid line, with nothing to signal that
+motion was requested. If you are deciding whether to target a browser, a static
+image, or a terminal, that pair answers it directly.
 
 ## Finding one
 
 Open the sidebar (the ☰ button on narrow screens) and pick a category. Only
-one category renders at a time — with 84 samples each rendered twice, showing
+one category renders at a time — with 88 samples each rendered twice, showing
 all of them at once would make the page slow to load and slower to scan.
 
 Inside a category, sample titles say what the diagram _is for_ rather than

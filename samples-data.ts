@@ -373,6 +373,65 @@ export const samples: Sample[] = [
   },
 
   // ══════════════════════════════════════════════════════════════════════════
+  //  INTERACTIVITY & CONFIGURATION
+  //
+  //  Every sample on this page renders twice — SVG and ASCII. That is why
+  //  these samples are worth having rather than describing: the pair shows,
+  //  without anyone having to assert it, which features survive the trip to a
+  //  terminal and which are browser-only.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Interactivity: Links and Tooltips',
+    category: 'Interactivity',
+    description:
+      '`click` turns a node into a real SVG `<a href>`, and a quoted tooltip becomes a native `<title>`. Both are plain markup — no JavaScript is involved, and the tooltip is also what a screen reader announces. Hover a node to see it, and note the ASCII panel below: a terminal has neither links nor hover, so the diagram degrades to its labels.',
+    source: `flowchart LR
+  Docs[Docs] --> Repo[Repo]
+  Repo --> Guide[Guides]
+  click Docs "https://mermaid.js.org" "The Mermaid language reference" _blank
+  click Repo "https://github.com/dfadler/zombie-mermaid" "This repository" _blank
+  click Guide "./" "A relative reference, resolved against this page"`,
+  },
+  {
+    title: 'Interactivity: Curved Edges',
+    category: 'Interactivity',
+    description:
+      'A diagram can configure its own rendering with `%%{init: ...}%%`. Here it asks for the `basis` curve, a direct port of d3’s `curveBasis`, so edges bow through their bend points instead of turning square corners. An explicit `curve` render option always wins over the directive.',
+    source: `%%{init: {"flowchart": {"curve": "basis"}}}%%
+flowchart TD
+  Ingest[Ingest] --> Queue[Queue]
+  Queue --> Worker[Worker]
+  Queue --> Retry[Retry]
+  Worker --> Store[(Store)]
+  Retry --> Worker`,
+  },
+  {
+    title: 'Interactivity: Step Routing',
+    category: 'Interactivity',
+    description:
+      'The same directive with `step` instead, which routes every edge as right angles. The default stays `linear`, which still emits `<polyline class="edge">` so existing selectors keep working; only a non-linear curve switches the element to `<path>`.',
+    source: `%%{init: {"flowchart": {"curve": "step"}}}%%
+flowchart LR
+  Client[Client] --> Gateway[Gateway]
+  Gateway --> AuthSvc[Auth]
+  Gateway --> DataSvc[Data]
+  AuthSvc --> Cache[(Cache)]
+  DataSvc --> Cache`,
+  },
+  {
+    title: 'Interactivity: Animated Edge',
+    category: 'Interactivity',
+    description:
+      'An edge can be given an id and animated: `e1@--> B` names it, and `e1@{ animate: true }` gives it a marching dash via CSS `@keyframes`, guarded by `prefers-reduced-motion`. This is the clearest case of a browser-only feature. The SVG above moves; the ASCII panel below draws an ordinary solid edge, with neither the motion nor the dash to hint that any was asked for. A static rasterizer sits between the two, capturing the dashes as a single frozen frame.',
+    source: `flowchart LR
+  Producer[Producer] e1@--> Broker[Broker]
+  Broker e2@--> Consumer[Consumer]
+  e1@{ animate: true }
+  e2@{ animate: true }`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  STATE DIAGRAMS
   // ══════════════════════════════════════════════════════════════════════════
 
