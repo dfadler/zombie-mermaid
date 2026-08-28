@@ -95,12 +95,22 @@ function buildColors(options: RenderOptions): DiagramColors {
  * const svg = renderMermaidSVG('graph TD\n  A --> B', {
  *   bg: 'var(--background)', fg: 'var(--foreground)', transparent: true
  * })
+ *
+ * // With the original source stamped onto the root <svg> as data-src —
+ * // handy for a "copy source" button or an "open in Mermaid Live" link
+ * // without re-attaching it via string surgery on the output.
+ * const svg = renderMermaidSVG('graph TD\n  A --> B', { embedSource: true })
  * ```
  */
 export function renderMermaidSVG(
   text: string,
   options: RenderOptions = {},
 ): string {
+  // Captured before decodeXML() below so `embedSource` stamps the exact
+  // string the caller passed in, not the entity-decoded version used
+  // internally for parsing.
+  const originalText = text
+
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
   text = decodeXML(text)
@@ -110,6 +120,7 @@ export function renderMermaidSVG(
   const transparent = options.transparent ?? false
   const fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(text)
+  const embedSource = options.embedSource ? originalText : undefined
 
   const lines = splitStatements(text)
 
@@ -117,17 +128,38 @@ export function renderMermaidSVG(
     case 'sequence': {
       const diagram = parseSequenceDiagram(lines)
       const positioned = layoutSequenceDiagram(diagram, options)
-      return renderSequenceSvg(positioned, colors, font, transparent, fontSizes)
+      return renderSequenceSvg(
+        positioned,
+        colors,
+        font,
+        transparent,
+        fontSizes,
+        embedSource,
+      )
     }
     case 'class': {
       const diagram = parseClassDiagram(lines)
       const positioned = layoutClassDiagramSync(diagram, options)
-      return renderClassSvg(positioned, colors, font, transparent, fontSizes)
+      return renderClassSvg(
+        positioned,
+        colors,
+        font,
+        transparent,
+        fontSizes,
+        embedSource,
+      )
     }
     case 'er': {
       const diagram = parseErDiagram(lines)
       const positioned = layoutErDiagramSync(diagram, options)
-      return renderErSvg(positioned, colors, font, transparent, fontSizes)
+      return renderErSvg(
+        positioned,
+        colors,
+        font,
+        transparent,
+        fontSizes,
+        embedSource,
+      )
     }
     case 'xychart': {
       const chart = parseXYChart(lines)
@@ -138,6 +170,7 @@ export function renderMermaidSVG(
         font,
         transparent,
         options.interactive ?? false,
+        embedSource,
       )
     }
     case 'flowchart':
@@ -156,6 +189,7 @@ export function renderMermaidSVG(
         transparent,
         fontSizes,
         effective.curve ?? 'linear',
+        embedSource,
       )
     }
   }

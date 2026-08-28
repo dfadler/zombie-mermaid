@@ -27,6 +27,7 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 | `layerSpacing` | `number`  | `48`      | Vertical spacing between layers (flowchart/state only)                            |
 | `mergeEdges`   | `boolean` | `true`    | Bundle overlapping fan-out/fan-in edges into shared trunks (flowchart/state only) |
 | `interactive`  | `boolean` | `false`   | Enable hover tooltips on XY chart bars and data points                            |
+| `embedSource`  | `boolean` | `false`   | Stamp the original diagram source onto the root `<svg>` as `data-src` (HTML-escaped) |
 
 Class and ER diagrams use their own fixed internal spacing and currently ignore `padding`, `nodeSpacing`, `layerSpacing`, and `mergeEdges`.
 

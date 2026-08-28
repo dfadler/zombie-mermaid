@@ -119,3 +119,28 @@ describe('renderMermaidSVG – sequence diagrams', () => {
     expect(svg).toContain('POST /login')
   })
 })
+
+describe('renderMermaidSVG – sequence diagrams – embedSource', () => {
+  it('stamps data-src onto the root <svg> for a non-flowchart diagram type', () => {
+    const source = `sequenceDiagram
+      Alice->>Bob: Hello
+      Bob-->>Alice: Hi there`
+    const svg = renderMermaidSVG(source, { embedSource: true })
+    const rootOpenTag = svg.slice(0, svg.indexOf('>') + 1)
+    expect(rootOpenTag).toContain('xmlns="http://www.w3.org/2000/svg"')
+    const escaped = rootOpenTag.match(/\sdata-src="([^"]*)"/)?.[1]
+    expect(escaped).toBeDefined()
+    const unescaped = (escaped ?? '')
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+    expect(unescaped).toBe(source)
+  })
+
+  it('omits data-src by default', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      Alice->>Bob: Hello`)
+    expect(svg).not.toContain('data-src=')
+  })
+})

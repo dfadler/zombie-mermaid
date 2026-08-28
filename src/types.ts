@@ -236,6 +236,8 @@ export interface RenderOptions {
   transparent?: boolean
   /** Enable hover tooltips on chart data points (xychart only). Default: false */
   interactive?: boolean
+  /** Stamp the original diagram source onto the root `<svg>` as a `data-src` attribute (HTML-escaped). Default: false */
+  embedSource?: boolean
 
   /**
    * Edge path interpolation for flowcharts and state diagrams.
