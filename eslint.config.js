@@ -33,6 +33,7 @@ export default tseslint.config(
       'editor.ts',
       'dev.ts',
       'index.ts',
+      'fork-fixes.ts',
       'bench.ts',
       'xychart-test.ts',
       'check-diff-coverage.ts',
