@@ -41,7 +41,7 @@ export const samples: Sample[] = [
     category: 'Hero',
     description: 'Mermaid rendering, made beautiful.',
     source: `stateDiagram-v2
-    direction RL
+    direction LR
     [*] --> Input
     Input --> Parse: DSL
     Parse --> Layout: AST
