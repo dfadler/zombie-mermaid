@@ -423,7 +423,7 @@ flowchart LR
     title: 'Interactivity: Animated Edge',
     category: 'Interactivity',
     description:
-      'An edge can be given an id and animated: `e1@--> B` names it, and `e1@{ animate: true }` gives it a marching dash via CSS `@keyframes`, guarded by `prefers-reduced-motion`. This is the clearest case of a browser-only feature — the SVG above moves, while the ASCII panel below is a plain dashed line, and a static rasterizer would capture a single frame.',
+      'An edge can be given an id and animated: `e1@--> B` names it, and `e1@{ animate: true }` gives it a marching dash via CSS `@keyframes`, guarded by `prefers-reduced-motion`. This is the clearest case of a browser-only feature. The SVG above moves; the ASCII panel below draws an ordinary solid edge, with neither the motion nor the dash to hint that any was asked for. A static rasterizer sits between the two, capturing the dashes as a single frozen frame.',
     source: `flowchart LR
   Producer[Producer] e1@--> Broker[Broker]
   Broker e2@--> Consumer[Consumer]

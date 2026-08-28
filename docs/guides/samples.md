@@ -7,7 +7,7 @@ adapting it.
 ## Where the samples live
 
 The [live demo](https://dfadler.github.io/zombie-mermaid/) renders every
-sample in the library — 88 of them, each shown three ways at once:
+browsable sample in the library — 88 of them, each shown three ways at once:
 
 - the **Mermaid source** you can copy,
 - the **rendered SVG**, and
@@ -35,9 +35,11 @@ page renders in total.)
 
 The **Interactivity** samples are worth opening even if you do not need
 links or animation. They are the clearest demonstration of what the three-way
-view is for: a `click` link and an animated edge work in the SVG and simply do
-not exist in the ASCII rendering beside it. If you are deciding whether to
-target a browser, a static image, or a terminal, that pair answers it directly.
+view is for. Both diagrams still render in ASCII — it is the browser-only
+behaviour that drops away: a `click` node loses its link and tooltip, and an
+animated edge is drawn as an ordinary solid line, with nothing to signal that
+motion was requested. If you are deciding whether to target a browser, a static
+image, or a terminal, that pair answers it directly.
 
 ## Finding one
 
