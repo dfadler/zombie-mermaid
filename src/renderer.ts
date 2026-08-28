@@ -52,6 +52,11 @@ import type { CurveStyle } from './init-directive.ts'
  * @param embedSource - Original diagram source to stamp onto the root `<svg>`
  *                       as `data-src` (from `options.embedSource`). Omitted
  *                       when the option is off.
+ * @param animationEnabled - Whether `e1@{ animate: true }` edges actually
+ *                            animate (from `options.interactivity !== 'none'`,
+ *                            see `resolveAnimationEnabled` in src/index.ts).
+ *                            Default true — preserves the previously-ungated
+ *                            behavior for callers who don't pass it.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
  *                src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
@@ -64,6 +69,7 @@ export function renderSvg(
   fontSizes: FontSizes = FONT_SIZES,
   curve: CurveStyle = 'linear',
   embedSource?: string,
+  animationEnabled: boolean = true,
   title?: string,
   decorative?: boolean,
 ): string {
@@ -85,8 +91,9 @@ export function renderSvg(
   )
   parts.push(buildStyleBlock(font, false))
   // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
-  // an animated edge exists, so an ordinary diagram gains no extra markup.
-  if (graph.edges.some((e) => e.animate)) {
+  // an animated edge exists and animation is enabled, so an ordinary diagram
+  // (or one rendered with `interactivity: 'none'`) gains no extra markup.
+  if (animationEnabled && graph.edges.some((e) => e.animate)) {
     parts.push(edgeAnimationStyle())
   }
   parts.push('<defs>')
@@ -111,7 +118,7 @@ export function renderSvg(
   // 2. Edges (paths — rendered behind nodes)
   // Each edge is a <path> with semantic data-* attributes
   for (const edge of graph.edges) {
-    parts.push(renderEdge(edge, curve))
+    parts.push(renderEdge(edge, curve, animationEnabled))
   }
 
   // 3. Edge labels (positioned at midpoint of edge)
@@ -265,8 +272,16 @@ function renderGroup(
 // Edge rendering
 // ============================================================================
 
-function renderEdge(edge: PositionedEdge, curve: CurveStyle): string {
+function renderEdge(
+  edge: PositionedEdge,
+  curve: CurveStyle,
+  animationEnabled: boolean = true,
+): string {
   if (edge.points.length < 2) return ''
+
+  // `interactivity: 'none'` strips motion: the edge still renders (id,
+  // data-* attributes, arrowheads) but never gets the animated class or dash.
+  const animate = animationEnabled && (edge.animate ?? false)
 
   /*
    * A curved edge must be a <path>; only a path can express the
@@ -319,9 +334,9 @@ function renderEdge(edge: PositionedEdge, curve: CurveStyle): string {
   // - data-arrow-start/end: arrow presence flags
   // - data-label: edge label if present (for quick lookup without traversing DOM)
   const dataAttrs = [
-    // An animated edge (`e1@{ animate: true }`) carries an extra class; its
-    // keyframes live in the shared style block.
-    `class="edge${edge.animate ? ' edge-animated' : ''}"`,
+    // An animated edge (`e1@{ animate: true }`, with animation enabled)
+    // carries an extra class; its keyframes live in the shared style block.
+    `class="edge${animate ? ' edge-animated' : ''}"`,
     `data-from="${escapeAttr(edge.source)}"`,
     `data-to="${escapeAttr(edge.target)}"`,
     `data-style="${edge.style}"`,
@@ -339,8 +354,7 @@ function renderEdge(edge: PositionedEdge, curve: CurveStyle): string {
 
   // Marching ants need a dash pattern to march; supply one only when the
   // edge's own style hasn't already set stroke-dasharray.
-  const animatedDash =
-    edge.animate && !dashArray ? ' stroke-dasharray="8 6"' : ''
+  const animatedDash = animate && !dashArray ? ' stroke-dasharray="8 6"' : ''
 
   const geometry = curved
     ? `d="${pointsToPath(edge.points, curve)}"`

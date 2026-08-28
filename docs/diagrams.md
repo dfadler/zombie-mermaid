@@ -237,6 +237,12 @@ deprecated — and is guarded by `prefers-reduced-motion`, so a viewer who asked
 the system for less movement gets a still edge. The keyframes are emitted only
 when a diagram actually animates an edge.
 
+Rendering with `interactivity: 'none'` (see [api-reference.md](api-reference.md))
+strips the animation entirely — useful for print/rasterized output, where a
+CSS animation would otherwise silently render as one static frame. Any other
+`interactivity` level (including the default, `'static'`) leaves an animated
+edge animating.
+
 ### Styling
 
 `classDef default` sets the base style for every node, as in Mermaid. A node's
@@ -405,7 +411,7 @@ The chart renderer follows a clean, minimal design philosophy inspired by Apple 
 - **Floating labels** — No visible axis lines or tick marks; labels float freely for a clutter-free aesthetic
 - **Drop-shadow lines** — Each line series has a subtle shadow beneath it for depth
 - **Monochromatic palette** — Series 0 uses the theme's accent color; additional series get darker/lighter shades of the same hue with subtle hue drift, adapting automatically to light or dark backgrounds
-- **Interactive tooltips** — When rendered with `interactive: true`, hovering over bars or data points shows value tooltips. Multi-line tooltips appear when multiple series share an x-position
+- **Interactive tooltips** — When rendered with `interactivity: 'full'` (or the deprecated `interactive: true`), hovering over bars or data points shows value tooltips. Multi-line tooltips appear when multiple series share an x-position
 - **Sparse line dots** — Lines with 12 or fewer data points show data point dots by default for readability
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
