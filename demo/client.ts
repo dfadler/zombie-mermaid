@@ -114,19 +114,30 @@ function graphemes(text: string): string[] {
   return [...segmenter.segment(text)].map((s) => s.segment)
 }
 
+/** Unicode general categories Mn (Nonspacing_Mark) and Me (Enclosing_Mark). */
+const COMBINING_MARK_REGEX = /\p{Mn}|\p{Me}/u
+
 /**
  * Terminal columns the ASCII renderer allocated for one grapheme cluster.
  *
- * Deliberately mirrors `displayWidth`'s per-code-point sum rather than asking
- * how wide the cluster *ought* to be: the box borders were drawn against that
- * number, so reproducing it is what keeps them lined up. A cluster the
- * renderer over-counts is over-counted here too — consistently, which is the
- * point.
+ * Deliberately mirrors `charDisplayWidth` in `src/ascii/display-width.ts`
+ * rather than reimplementing "how wide should this look" from scratch: the
+ * box borders were drawn against that exact per-cluster number (2 columns
+ * if any code point in the cluster is wide, 1 otherwise, 0 for a
+ * mark-only cluster with no base character), so reproducing it is what
+ * keeps the browser's boxes lined up with the renderer's grid. A cluster
+ * the renderer over- or under-counts is matched here too — consistently,
+ * which is the point.
  */
 function columnsOf(cluster: string): number {
-  let width = 0
-  for (const ch of cluster) width += isWideChar(ch) ? 2 : 1
-  return width
+  let sawWide = false
+  let sawNonMark = false
+  for (const ch of cluster) {
+    if (isWideChar(ch)) sawWide = true
+    if (!COMBINING_MARK_REGEX.test(ch)) sawNonMark = true
+  }
+  if (sawWide) return 2
+  return sawNonMark ? 1 : 0
 }
 
 /**
