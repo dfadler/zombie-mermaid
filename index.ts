@@ -16,6 +16,7 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
+import { escapeHtml, formatDescription } from './demo/format.ts'
 import * as esbuild from 'esbuild'
 import { samples } from './samples-data.ts'
 import { THEMES } from './src/theme.ts'
@@ -80,19 +81,6 @@ function escapeJsonForScriptTag(json: string): string {
 //   3. Emit client-side JS that renders each diagram on page load
 // ============================================================================
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-/** Convert markdown-style backtick spans to <code> tags in description text. */
-function formatDescription(text: string): string {
-  return text.replace(/`([^`]+)`/g, '<code>$1</code>')
-}
-
 /** URL/id-safe slug for a category name, e.g. "XY Chart" -> "xy-chart". */
 function slugifyCategory(name: string): string {
   return name
@@ -126,6 +114,7 @@ const THEME_LABELS: Record<string, string> = {
  * standalone elsewhere; under a category heading that prefix is noise.
  */
 const CATEGORY_PREFIXES: Record<string, string> = {
+  Interactivity: 'Interactivity: ',
   State: 'State: ',
   Sequence: 'Sequence: ',
   Class: 'Class: ',
