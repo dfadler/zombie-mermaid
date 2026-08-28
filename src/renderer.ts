@@ -66,7 +66,10 @@ export function renderSvg(
 
   // SVG root with CSS variables + style block + defs
   parts.push(
-    withDataSrc(svgOpenTag(graph.width, graph.height, colors, transparent), embedSource),
+    withDataSrc(
+      svgOpenTag(graph.width, graph.height, colors, transparent),
+      embedSource,
+    ),
   )
   parts.push(buildStyleBlock(font, false))
   // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
@@ -1420,7 +1423,10 @@ export function escapeAttr(value: string): string {
  * than the diagram source's own markup, so it always lands on the root
  * element regardless of diagram type. No-op when `source` is undefined.
  */
-export function withDataSrc(svgTag: string, source: string | undefined): string {
+export function withDataSrc(
+  svgTag: string,
+  source: string | undefined,
+): string {
   if (source === undefined) return svgTag
   return svgTag.replace('<svg ', `<svg data-src="${escapeAttr(source)}" `)
 }
