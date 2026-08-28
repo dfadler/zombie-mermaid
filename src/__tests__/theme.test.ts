@@ -105,4 +105,28 @@ describe('buildStyleBlock – font handling', () => {
     expect(block).not.toMatch(/text \{ font-family: var\(/)
     expect(block).not.toContain('.evil { fill: red }')
   })
+
+  it('skips the Google Fonts @import for a comma-separated font stack (#223)', () => {
+    const block = buildStyleBlock('ui-sans-serif, system-ui, sans-serif', false)
+    expect(block).not.toContain('fonts.googleapis.com')
+  })
+
+  it('skips the Google Fonts @import for a bare CSS generic family keyword', () => {
+    const block = buildStyleBlock('system-ui', false)
+    expect(block).not.toContain('fonts.googleapis.com')
+  })
+
+  it('still emits the Google Fonts @import for a single real font name (regression guard)', () => {
+    const block = buildStyleBlock('Roboto', false)
+    expect(block).toContain(
+      "@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap');",
+    )
+  })
+
+  it('still renders a font stack literally in the text { font-family: ... } rule', () => {
+    const block = buildStyleBlock('ui-sans-serif, system-ui, sans-serif', false)
+    expect(block).toContain(
+      "text { font-family: 'ui-sans-serif, system-ui, sans-serif', system-ui, sans-serif; }",
+    )
+  })
 })
