@@ -77,6 +77,26 @@ describe('%%{init: ...}%% directives (#198 row 17)', () => {
     ).toBeUndefined()
   })
 
+  it('reports theme as unapplied rather than silently dropping it', () => {
+    /*
+     * `theme` is parsed and kept as metadata, but never applied: colors come
+     * from the caller's bg/fg, usually CSS variables so the diagram inherits
+     * the host page. Parsing it while neither applying nor reporting it was
+     * the worst of both — no effect and no warning.
+     */
+    const config = parseInitDirective('%%{init: {"theme": "dark"}}%%')
+    expect(config?.theme).toBe('dark')
+    expect(config?.ignored).toContain('theme')
+    expect(describeIgnored(config!).join(' ')).toMatch(/bg\/fg render options/)
+
+    const plain = renderMermaidSVG('flowchart TD\n  A --> B')
+    const themed = renderMermaidSVG(
+      '%%{init: {"theme": "dark"}}%%\nflowchart TD\n  A --> B',
+    )
+    // Pins the behaviour the reported reason describes.
+    expect(themed).toBe(plain)
+  })
+
   it('reports keys it parsed but deliberately does not act on', () => {
     const config = parseInitDirective(
       '%%{init: {"securityLevel": "loose", "defaultRenderer": "dagre"}}%%',

@@ -46,6 +46,8 @@ export interface InitConfig {
  * having the setting vanish silently.
  */
 const IGNORED_KEYS: Record<string, string> = {
+  theme:
+    "colors come from the caller's bg/fg render options, which are usually CSS variables so a diagram inherits the host page's light/dark. A diagram-supplied theme would hard-code colors that fight it. Mermaid's theme names (default/dark/forest/neutral) also have no equivalent in this renderer's palettes — pass `bg`/`fg`, or a THEMES entry, instead",
   securitylevel:
     'this renderer emits static SVG and never executes diagram-supplied script, so there is no sandbox to configure',
   defaultrenderer:
@@ -174,7 +176,13 @@ export function parseInitDirective(line: string): InitConfig | undefined {
     const lower = key.toLowerCase()
 
     if (lower === 'theme' && typeof value === 'string') {
+      /*
+       * Kept on the result as metadata for a caller that wants to act on it,
+       * but listed as ignored: it is parsed and deliberately not applied. See
+       * IGNORED_KEYS for why.
+       */
       config.theme = value
+      config.ignored.push(key)
       continue
     }
 
