@@ -290,6 +290,9 @@ export interface RenderOptions {
    * same as an `<img>` with no `alt`.
    *
    * Ignored when `decorative` is true. Default: undefined (no name).
+   *
+   * If the diagram has a `click A "url"` link, `role="img"` is never
+   * applied regardless of this option — see `decorative` below.
    */
   title?: string
 
@@ -299,6 +302,13 @@ export interface RenderOptions {
    * `aria-hidden="true"` on the root `<svg>` instead of
    * `role`/`aria-labelledby`/`<title>`; `title`, if also given, is ignored.
    * Default: false
+   *
+   * Silently overridden (no `aria-hidden`) if the diagram has any
+   * `click A "url"` link: that renders as a real, focusable `<a href>`
+   * inside the SVG, and `aria-hidden="true"` on an ancestor of a focusable
+   * element is an explicit WAI-ARIA violation — assistive tech would drop
+   * the link from the accessibility tree while it stays reachable by Tab.
+   * `title`, if also given, still applies in that case (see #239).
    */
   decorative?: boolean
 

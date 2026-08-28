@@ -75,6 +75,11 @@ export function renderSvg(
 ): string {
   const parts: string[] = []
 
+  // See #239: a click-based link renders as a focusable <a href> inside the
+  // SVG, which role="img"/aria-hidden would hide from assistive tech while
+  // leaving it Tab-reachable — svgOpenTag forces no root role in that case.
+  const hasInteractiveLinks = graph.nodes.some((n) => n.interaction?.href)
+
   // SVG root with CSS variables + style block + defs
   parts.push(
     withDataSrc(
@@ -85,6 +90,7 @@ export function renderSvg(
         transparent,
         title,
         decorative,
+        hasInteractiveLinks,
       ),
       embedSource,
     ),
