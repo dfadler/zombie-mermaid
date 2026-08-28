@@ -177,6 +177,11 @@ for (const file of files) {
     try {
       before = channel.render(source, renderOld as never)
     } catch (err) {
+      // A render failure is itself a migration-relevant difference — e.g.
+      // the old version throwing on syntax the new version now parses fine.
+      // Count it as a finding rather than silently skipping past it, or a
+      // diagram that's unsupported on one side could pass the audit clean.
+      fileChanged = true
       console.log(
         `[ERROR on old, ${channel.name}] ${file}: ${(err as Error).message}`,
       )
@@ -185,6 +190,7 @@ for (const file of files) {
     try {
       after = channel.render(source, renderNew as never)
     } catch (err) {
+      fileChanged = true
       console.log(
         `[ERROR on new, ${channel.name}]  ${file}: ${(err as Error).message}`,
       )
