@@ -6,7 +6,7 @@
 
 Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid).
 
-![zombie-mermaid's own rendering pipeline, drawn as a state diagram by zombie-mermaid itself](hero.png)
+![zombie-mermaid's own rendering pipeline, drawn as an animated flowchart by zombie-mermaid itself](hero.svg)
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-view_the_sample_gallery-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/)
 

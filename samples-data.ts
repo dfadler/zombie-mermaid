@@ -40,17 +40,21 @@ export const samples: Sample[] = [
     title: 'Beautiful Mermaid',
     category: 'Hero',
     description: 'Mermaid rendering, made beautiful.',
-    source: `stateDiagram-v2
-    direction LR
-    [*] --> Input
-    Input --> Parse: DSL
-    Parse --> Layout: AST
-    Layout --> SVG: Vector
-    Layout --> ASCII: Text
-    SVG --> Theme
-    ASCII --> Theme
-    Theme --> Output
-    Output --> [*]`,
+    source: `flowchart LR
+  Input([Input]) e1@-->|DSL| Parse([Parse])
+  Parse e2@-->|AST| Layout([Layout])
+  Layout e3@-->|Vector| SVG([SVG])
+  Layout e4@-->|Text| ASCII([ASCII])
+  SVG e5@--> Theme([Theme])
+  ASCII e6@--> Theme
+  Theme e7@--> Output([Output])
+  e1@{ animate: true }
+  e2@{ animate: true }
+  e3@{ animate: true }
+  e4@{ animate: true }
+  e5@{ animate: true }
+  e6@{ animate: true }
+  e7@{ animate: true }`,
     options: { transparent: true },
   },
 
