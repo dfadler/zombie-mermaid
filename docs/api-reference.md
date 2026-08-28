@@ -11,22 +11,23 @@ Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
 
 **RenderOptions:**
 
-| Option         | Type      | Default   | Description                                                                       |
-| -------------- | --------- | --------- | --------------------------------------------------------------------------------- |
-| `bg`           | `string`  | `#FFFFFF` | Background color (or CSS variable)                                                |
-| `fg`           | `string`  | `#27272A` | Foreground color (or CSS variable)                                                |
-| `line`         | `string?` | —         | Edge/connector color                                                              |
-| `accent`       | `string?` | —         | Arrow heads, highlights                                                           |
-| `muted`        | `string?` | —         | Secondary text, labels                                                            |
-| `surface`      | `string?` | —         | Node fill tint                                                                    |
-| `border`       | `string?` | —         | Node stroke color                                                                 |
-| `font`         | `string`  | `Inter`   | Font family                                                                       |
-| `transparent`  | `boolean` | `false`   | Render with transparent background                                                |
-| `padding`      | `number`  | `40`      | Canvas padding in px (flowchart/state only)                                       |
-| `nodeSpacing`  | `number`  | `28`      | Horizontal spacing between sibling nodes (flowchart/state only)                   |
-| `layerSpacing` | `number`  | `48`      | Vertical spacing between layers (flowchart/state only)                            |
-| `mergeEdges`   | `boolean` | `true`    | Bundle overlapping fan-out/fan-in edges into shared trunks (flowchart/state only) |
-| `interactive`  | `boolean` | `false`   | Enable hover tooltips on XY chart bars and data points                            |
+| Option         | Type      | Default   | Description                                                                          |
+| -------------- | --------- | --------- | ------------------------------------------------------------------------------------ |
+| `bg`           | `string`  | `#FFFFFF` | Background color (or CSS variable)                                                   |
+| `fg`           | `string`  | `#27272A` | Foreground color (or CSS variable)                                                   |
+| `line`         | `string?` | —         | Edge/connector color                                                                 |
+| `accent`       | `string?` | —         | Arrow heads, highlights                                                              |
+| `muted`        | `string?` | —         | Secondary text, labels                                                               |
+| `surface`      | `string?` | —         | Node fill tint                                                                       |
+| `border`       | `string?` | —         | Node stroke color                                                                    |
+| `font`         | `string`  | `Inter`   | Font family                                                                          |
+| `transparent`  | `boolean` | `false`   | Render with transparent background                                                   |
+| `padding`      | `number`  | `40`      | Canvas padding in px (flowchart/state only)                                          |
+| `nodeSpacing`  | `number`  | `28`      | Horizontal spacing between sibling nodes (flowchart/state only)                      |
+| `layerSpacing` | `number`  | `48`      | Vertical spacing between layers (flowchart/state only)                               |
+| `mergeEdges`   | `boolean` | `true`    | Bundle overlapping fan-out/fan-in edges into shared trunks (flowchart/state only)    |
+| `interactive`  | `boolean` | `false`   | Enable hover tooltips on XY chart bars and data points                               |
+| `embedSource`  | `boolean` | `false`   | Stamp the original diagram source onto the root `<svg>` as `data-src` (HTML-escaped) |
 
 Class and ER diagrams use their own fixed internal spacing and currently ignore `padding`, `nodeSpacing`, `layerSpacing`, and `mergeEdges`.
 

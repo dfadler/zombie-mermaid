@@ -1,6 +1,7 @@
 import type { PositionedXYChart } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import { withDataSrc } from '../renderer.ts'
 import { TEXT_BASELINE_SHIFT, estimateTextWidth } from '../styles.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './colors.ts'
 
@@ -54,6 +55,10 @@ const TIP = {
 
 /**
  * Render a positioned XY chart as an SVG string.
+ *
+ * @param embedSource - Original diagram source to stamp onto the root
+ *                       `<svg>` as `data-src` (from `options.embedSource`).
+ *                       Omitted when the option is off.
  */
 export function renderXYChartSvg(
   chart: PositionedXYChart,
@@ -61,6 +66,7 @@ export function renderXYChartSvg(
   font: string = 'Inter',
   transparent: boolean = false,
   interactive: boolean = false,
+  embedSource?: string,
 ): string {
   const parts: string[] = []
 
@@ -71,12 +77,13 @@ export function renderXYChartSvg(
     ...chart.bars.map((b) => b.colorIndex),
     ...chart.lines.map((l) => l.colorIndex),
   )
-  const svgTag = svgOpenTag(
-    chart.width,
-    chart.height,
-    colors,
-    transparent,
-  ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `)
+  const svgTag = withDataSrc(
+    svgOpenTag(chart.width, chart.height, colors, transparent).replace(
+      '<svg ',
+      `<svg data-xychart-colors="${maxColorIdx}" `,
+    ),
+    embedSource,
+  )
   parts.push(svgTag)
   parts.push(buildStyleBlock(font, false))
 

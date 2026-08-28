@@ -7,6 +7,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import { withDataSrc } from '../renderer.ts'
 import type { FontSizes } from '../styles.ts'
 import {
   FONT_SIZES,
@@ -47,6 +48,9 @@ const ER_FONT = {
  *
  * @param colors - DiagramColors with bg/fg and optional enrichment variables.
  * @param transparent - If true, renders with transparent background.
+ * @param embedSource - Original diagram source to stamp onto the root `<svg>`
+ *                       as `data-src` (from `options.embedSource`). Omitted
+ *                       when the option is off.
  */
 export function renderErSvg(
   diagram: PositionedErDiagram,
@@ -54,11 +58,17 @@ export function renderErSvg(
   font: string = 'Inter',
   transparent: boolean = false,
   fontSizes: FontSizes = FONT_SIZES,
+  embedSource?: string,
 ): string {
   const parts: string[] = []
 
   // SVG root with CSS variables + style block (with mono font) + defs
-  parts.push(svgOpenTag(diagram.width, diagram.height, colors, transparent))
+  parts.push(
+    withDataSrc(
+      svgOpenTag(diagram.width, diagram.height, colors, transparent),
+      embedSource,
+    ),
+  )
   parts.push(buildStyleBlock(font, true))
   parts.push('<defs>')
   parts.push('</defs>') // No marker defs — we draw crow's foot inline

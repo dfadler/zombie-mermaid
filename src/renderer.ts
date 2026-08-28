@@ -49,6 +49,9 @@ import type { CurveStyle } from './init-directive.ts'
  *                 These are set as CSS custom properties on the <svg> tag.
  *                 All element colors reference derived --_xxx variables.
  * @param transparent - If true, renders with transparent background.
+ * @param embedSource - Original diagram source to stamp onto the root `<svg>`
+ *                       as `data-src` (from `options.embedSource`). Omitted
+ *                       when the option is off.
  */
 export function renderSvg(
   graph: PositionedGraph,
@@ -57,11 +60,17 @@ export function renderSvg(
   transparent: boolean = false,
   fontSizes: FontSizes = FONT_SIZES,
   curve: CurveStyle = 'linear',
+  embedSource?: string,
 ): string {
   const parts: string[] = []
 
   // SVG root with CSS variables + style block + defs
-  parts.push(svgOpenTag(graph.width, graph.height, colors, transparent))
+  parts.push(
+    withDataSrc(
+      svgOpenTag(graph.width, graph.height, colors, transparent),
+      embedSource,
+    ),
+  )
   parts.push(buildStyleBlock(font, false))
   // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
   // an animated edge exists, so an ordinary diagram gains no extra markup.
@@ -1399,12 +1408,50 @@ function renderNodeLabel(
  * Escape a string for use as an XML/HTML attribute value.
  * Escapes quotes and ampersands to prevent attribute injection.
  */
-function escapeAttr(value: string): string {
+export function escapeAttr(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
+}
+
+/**
+ * Escape a string for embedding as a *multiline-safe* XML attribute value —
+ * `escapeAttr()` plus tab/LF/CR as numeric character references.
+ *
+ * A strict XML parser applies attribute-value normalization on the way in:
+ * any literal tab, LF, or CR in the value is collapsed to a single space.
+ * (This is why a standalone .svg file opened directly, or any output run
+ * through `DOMParser` with an XML/`image/svg+xml` mimetype, would silently
+ * flatten a multiline `data-src` back to one line.) Character references
+ * are exempt from that normalization — `&#10;` round-trips as an actual
+ * newline — so diagram source, which is virtually always multiline, needs
+ * this rather than `escapeAttr()` alone to survive the trip intact.
+ */
+function escapeMultilineAttr(value: string): string {
+  return escapeAttr(value)
+    .replace(/\r/g, '&#13;')
+    .replace(/\n/g, '&#10;')
+    .replace(/\t/g, '&#9;')
+}
+
+/**
+ * Splice a `data-src` attribute (the original diagram source, escaped) onto
+ * an already-built root `<svg ...>` opening tag, e.g. from
+ * `embedSource: true`. Applied to the string `svgOpenTag()` returns rather
+ * than the diagram source's own markup, so it always lands on the root
+ * element regardless of diagram type. No-op when `source` is undefined.
+ */
+export function withDataSrc(
+  svgTag: string,
+  source: string | undefined,
+): string {
+  if (source === undefined) return svgTag
+  return svgTag.replace(
+    '<svg ',
+    `<svg data-src="${escapeMultilineAttr(source)}" `,
+  )
 }
 
 /**

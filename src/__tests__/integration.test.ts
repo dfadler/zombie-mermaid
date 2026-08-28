@@ -593,3 +593,110 @@ describe('renderMermaidSVG – all shapes combined', () => {
     expect(svg).toContain('</svg>')
   })
 })
+
+// ============================================================================
+// embedSource
+// ============================================================================
+
+/** Reverses withDataSrc()'s escaping (order matters: &amp; last). */
+function unescapeAttr(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#13;/g, '\r')
+    .replace(/&#10;/g, '\n')
+    .replace(/&#9;/g, '\t')
+    .replace(/&amp;/g, '&')
+}
+
+/** Extracts the data-src attribute value from the root <svg ...> open tag. */
+function extractDataSrc(svg: string): string | undefined {
+  const rootOpenTag = svg.slice(0, svg.indexOf('>') + 1)
+  return rootOpenTag.match(/\sdata-src="([^"]*)"/)?.[1]
+}
+
+describe('renderMermaidSVG – embedSource', () => {
+  it('stamps the original source onto the root <svg> as data-src when true', () => {
+    const source = 'graph TD\n  A --> B'
+    const svg = renderMermaidSVG(source, { embedSource: true })
+    const rootOpenTag = svg.slice(0, svg.indexOf('>') + 1)
+    // Confirms this is the root element (has xmlns + viewBox), not some
+    // inner one, and that it carries the attribute.
+    expect(rootOpenTag).toContain('xmlns="http://www.w3.org/2000/svg"')
+    expect(rootOpenTag).toContain('viewBox=')
+    const dataSrc = extractDataSrc(svg)
+    expect(dataSrc).toBeDefined()
+    expect(unescapeAttr(dataSrc ?? '')).toBe(source)
+  })
+
+  it('omits data-src when embedSource is not set (default off)', () => {
+    const svg = renderMermaidSVG('graph TD\n  A --> B')
+    expect(svg).not.toContain('data-src=')
+  })
+
+  it('omits data-src when embedSource is explicitly false', () => {
+    const svg = renderMermaidSVG('graph TD\n  A --> B', { embedSource: false })
+    expect(svg).not.toContain('data-src=')
+  })
+
+  it('escapes &, ", <, > in the source and round-trips to the exact original', () => {
+    const source = 'graph TD\n  A["<Tom & Jerry> says \\"hi\\""] --> B'
+    const svg = renderMermaidSVG(source, { embedSource: true })
+    const escaped = extractDataSrc(svg)
+    expect(escaped).toBeDefined()
+
+    // Escaped form must not contain raw special characters that would break
+    // a double-quoted attribute or XML well-formedness.
+    expect(escaped).not.toContain('"')
+    expect(escaped).not.toMatch(/<[^!]/) // no raw '<' opening a tag
+    expect(escaped).toContain('&amp;')
+    expect(escaped).toContain('&lt;')
+    expect(escaped).toContain('&gt;')
+    expect(escaped).toContain('&quot;')
+
+    // Un-escaping it recovers the exact original source.
+    expect(unescapeAttr(escaped ?? '')).toBe(source)
+  })
+
+  it('the SVG remains well-formed (no unescaped quote breaking out of the attribute)', () => {
+    const source = 'graph TD\n  A["say \\"boo\\""] --> B'
+    const svg = renderMermaidSVG(source, { embedSource: true })
+    // The root tag's data-src attribute value must be closed by the very
+    // next unescaped double quote — i.e. exactly one data-src attribute.
+    const dataSrcOccurrences = svg.match(/data-src="/g) ?? []
+    expect(dataSrcOccurrences.length).toBe(1)
+  })
+
+  it('encodes tab/LF/CR as character references rather than emitting them literally', () => {
+    // A literal (unescaped) tab, LF, or CR inside a double-quoted XML
+    // attribute value is legal syntax, but a strict XML parser normalizes
+    // it away — see the real-parser round-trip test below. The attribute
+    // must carry character references for these instead.
+    const source = 'graph TD\r\n  A --> B\tC'
+    const svg = renderMermaidSVG(source, { embedSource: true })
+    const escaped = extractDataSrc(svg)
+    expect(escaped).toBeDefined()
+    expect(escaped).not.toMatch(/[\t\n\r]/)
+    expect(escaped).toContain('&#13;')
+    expect(escaped).toContain('&#10;')
+    expect(escaped).toContain('&#9;')
+    expect(unescapeAttr(escaped ?? '')).toBe(source)
+  })
+
+  it('round-trips a CRLF multiline source through a real XML parser', async () => {
+    // Regression guard for XML attribute-value normalization: a strict XML
+    // parser collapses literal tab/LF/CR in an attribute value to a single
+    // space, so a naive implementation that emitted \r\n directly would
+    // pass string-level assertions but come back flattened here.
+    const { JSDOM } = await import('jsdom')
+    const source = 'graph TD\r\n  A[First line] --> B[Second line]\r\n  B --> C'
+    const svg = renderMermaidSVG(source, { embedSource: true })
+
+    const dom = new JSDOM()
+    const doc = new dom.window.DOMParser().parseFromString(svg, 'image/svg+xml')
+    expect(doc.querySelector('parsererror')).toBeNull()
+    const root = doc.documentElement
+    expect(root.getAttribute('data-src')).toBe(source)
+  })
+})
