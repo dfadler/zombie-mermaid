@@ -13,4 +13,4 @@ jobs:
       issues: write
       pull-requests: read
     steps:
-      - uses: dfadler/issue-bot@1ab206ba2134b5bf0419ec69a69cb3a9d050cc27 # main, fixes invalid node22 runtime
+      - uses: dfadler/issue-bot@218b3478e4a6fa992ea813cabcdf0a60f7e27f10 # main, fixes thread dedup + node24
