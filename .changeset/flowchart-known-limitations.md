@@ -1,5 +1,5 @@
 ---
-"zombie-mermaid": patch
+'zombie-mermaid': patch
 ---
 
 Document flowchart icons, images, and subgraph collapse as intentionally unsupported.
