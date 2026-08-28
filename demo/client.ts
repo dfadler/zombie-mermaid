@@ -644,8 +644,10 @@ async function renderSample(i: number) {
   const svgPanel = maybeGet('svg-panel-' + i)
 
   // A sample outside the rendered category has no containers yet; the
-  // category's own render pass will call this again once it does.
-  if (!sample || !svgContainer || !asciiContainer) return
+  // category's own render pass will call this again once it does. Hero
+  // samples have no ASCII panel at all, so asciiContainer is expected to
+  // be null for them.
+  if (!sample || !svgContainer) return
 
   try {
     const svg = await renderMermaid(sample.source, sample.options)
