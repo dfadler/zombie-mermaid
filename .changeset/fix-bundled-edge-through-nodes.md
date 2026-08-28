@@ -8,7 +8,7 @@ Bundling replaces a routed edge with a shared trunk plus a straight branch to ea
 
 In this diagram, `A --> C` was bundled with `A --> B`, which pinned its junction to the gap just below `A` and then dropped it in one unbroken run to `C`, straight through `B` and `F`:
 
-```
+```mermaid
 flowchart TB
   A[PR push] --> B[CI workflows]
   A --> C[merge status bot]
