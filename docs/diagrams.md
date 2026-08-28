@@ -375,6 +375,42 @@ The chart renderer follows a clean, minimal design philosophy inspired by Apple 
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
 
+## Accessibility
+
+Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
+tech treats it as one image instead of a group whose node/edge labels get
+announced individually and out of reading order.
+
+```ts
+renderMermaidSVG('graph TD\n  A --> B', {
+  title: 'Flowchart: Build → Test → Ship',
+})
+```
+
+`title` supplies the accessible name: `aria-labelledby` on the root points
+at a `<title id="zm-title-N">` child holding the text — the standard
+SVG/WAI-ARIA technique for naming inline SVG. The `zm-title-N` id is unique
+per render call, so multiple diagrams inlined into one page never collide.
+This library never invents a name on your behalf (a generated "flowchart
+with 3 nodes" summary would be a confidently useless accessible name) — when
+`title` is omitted the SVG still gets `role="img"`, but claims no name, the
+same as an `<img>` with no `alt`.
+
+For a diagram that's already described in surrounding prose, mark it
+decorative instead of naming it:
+
+```ts
+renderMermaidSVG('graph TD\n  A --> B', { decorative: true })
+```
+
+This emits `aria-hidden="true"` in place of `role`/`aria-labelledby`/`<title>`,
+and `title`, if also given, is ignored.
+
+This is independent of the per-node/per-point `<title>` tooltips from
+[Interactions](#interactions) (`click A "url" "Tooltip"`) and the XY chart's
+`interactive` hover tips — those are unid'd `<title>` elements nested inside
+each node/point's `<g>`, so they never collide with the root's generated id.
+
 ## ASCII Rendering
 
 For terminal environments, CLI tools, or anywhere you need plain text, render to ASCII or Unicode box-drawing characters:

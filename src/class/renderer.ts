@@ -50,6 +50,9 @@ const CLS_FONT = {
  * @param embedSource - Original diagram source to stamp onto the root `<svg>`
  *                       as `data-src` (from `options.embedSource`). Omitted
  *                       when the option is off.
+ * @param title - Accessible name (from `options.title`). See svgOpenTag() in
+ *                src/theme.ts.
+ * @param decorative - Marks the SVG decorative (from `options.decorative`).
  */
 export function renderClassSvg(
   diagram: PositionedClassDiagram,
@@ -58,13 +61,22 @@ export function renderClassSvg(
   transparent: boolean = false,
   fontSizes: FontSizes = FONT_SIZES,
   embedSource?: string,
+  title?: string,
+  decorative?: boolean,
 ): string {
   const parts: string[] = []
 
   // SVG root with CSS variables + style block (with mono font) + defs
   parts.push(
     withDataSrc(
-      svgOpenTag(diagram.width, diagram.height, colors, transparent),
+      svgOpenTag(
+        diagram.width,
+        diagram.height,
+        colors,
+        transparent,
+        title,
+        decorative,
+      ),
       embedSource,
     ),
   )
