@@ -9,7 +9,63 @@ import type {
   PositionedNode,
   PositionedGroup,
   Direction,
+  Point,
 } from '../types.ts'
+
+/*
+ * Shrink applied to a node box before testing it against a bundled path, in px.
+ * A trunk that merely grazes a node's border reads as clean, so only a genuine
+ * overlap should disqualify a bundle.
+ */
+const NODE_CLEARANCE = 0.5
+
+/**
+ * True when every segment of `points` stays clear of all `nodes`, ignoring the
+ * ones named in `skipIds` (an edge's own endpoints, which it must touch).
+ *
+ * Bundling replaces a routed path with a trunk plus a straight branch to each
+ * target. That branch is only safe when it spans the gap between two adjacent
+ * layers; a target further away makes it cross every layer in between — and
+ * whatever nodes sit in them. The layout engine already routed those edges
+ * around the obstacles, so a bundle that would collide is rejected and the
+ * original routing kept.
+ *
+ * Paths here are rectilinear, so each segment is tested as a degenerate
+ * rectangle against each node's box.
+ */
+function pathClearOfNodes(
+  points: Point[],
+  nodes: PositionedNode[],
+  skipIds: Set<string>,
+): boolean {
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i]!
+    const b = points[i + 1]!
+    const segMinX = Math.min(a.x, b.x)
+    const segMaxX = Math.max(a.x, b.x)
+    const segMinY = Math.min(a.y, b.y)
+    const segMaxY = Math.max(a.y, b.y)
+
+    for (const node of nodes) {
+      if (skipIds.has(node.id)) continue
+      const minX = node.x + NODE_CLEARANCE
+      const maxX = node.x + node.width - NODE_CLEARANCE
+      const minY = node.y + NODE_CLEARANCE
+      const maxY = node.y + node.height - NODE_CLEARANCE
+      // A node smaller than the clearance on either axis can't block anything.
+      if (minX >= maxX || minY >= maxY) continue
+      if (
+        segMinX < maxX &&
+        segMaxX > minX &&
+        segMinY < maxY &&
+        segMaxY > minY
+      ) {
+        return false
+      }
+    }
+  }
+  return true
+}
 
 /**
  * Find all groups (outermost first) that geometrically contain the given point.
@@ -150,15 +206,24 @@ export function bundleEdgePaths(
         direction,
       )
 
+      const bundled: { edge: PositionedEdge; points: Point[] }[] = []
       for (const { edge, node: target } of targets) {
         const entryX = isLR ? target.x : target.x + target.width
         const entryY = target.y + target.height / 2
-        edge.points = [
+        const points = [
           { x: exitX, y: exitY },
           { x: junctionX, y: exitY },
           { x: junctionX, y: entryY },
           { x: entryX, y: entryY },
         ]
+        if (pathClearOfNodes(points, nodes, new Set([sourceId, target.id]))) {
+          bundled.push({ edge, points })
+        }
+      }
+      // One clear branch is not a bundle — leave the whole group as routed.
+      if (bundled.length < 2) continue
+      for (const { edge, points } of bundled) {
+        edge.points = points
         processed.add(edge)
       }
     } else {
@@ -177,15 +242,24 @@ export function bundleEdgePaths(
         direction,
       )
 
+      const bundled: { edge: PositionedEdge; points: Point[] }[] = []
       for (const { edge, node: target } of targets) {
         const entryX = target.x + target.width / 2
         const entryY = isBT ? target.y + target.height : target.y
-        edge.points = [
+        const points = [
           { x: exitX, y: exitY },
           { x: exitX, y: junctionY },
           { x: entryX, y: junctionY },
           { x: entryX, y: entryY },
         ]
+        if (pathClearOfNodes(points, nodes, new Set([sourceId, target.id]))) {
+          bundled.push({ edge, points })
+        }
+      }
+      // One clear branch is not a bundle — leave the whole group as routed.
+      if (bundled.length < 2) continue
+      for (const { edge, points } of bundled) {
+        edge.points = points
         processed.add(edge)
       }
     }
@@ -246,15 +320,24 @@ export function bundleEdgePaths(
         direction,
       )
 
+      const bundled: { edge: PositionedEdge; points: Point[] }[] = []
       for (const { edge, node: src } of sources) {
         const exitX = isLR ? src.x + src.width : src.x
         const exitY = src.y + src.height / 2
-        edge.points = [
+        const points = [
           { x: exitX, y: exitY },
           { x: junctionX, y: exitY },
           { x: junctionX, y: entryY },
           { x: entryX, y: entryY },
         ]
+        if (pathClearOfNodes(points, nodes, new Set([src.id, targetId]))) {
+          bundled.push({ edge, points })
+        }
+      }
+      // One clear branch is not a bundle — leave the whole group as routed.
+      if (bundled.length < 2) continue
+      for (const { edge, points } of bundled) {
+        edge.points = points
       }
     } else {
       const entryX = tgtCX
@@ -272,15 +355,24 @@ export function bundleEdgePaths(
         direction,
       )
 
+      const bundled: { edge: PositionedEdge; points: Point[] }[] = []
       for (const { edge, node: src } of sources) {
         const exitX = src.x + src.width / 2
         const exitY = isBT ? src.y : src.y + src.height
-        edge.points = [
+        const points = [
           { x: exitX, y: exitY },
           { x: exitX, y: junctionY },
           { x: entryX, y: junctionY },
           { x: entryX, y: entryY },
         ]
+        if (pathClearOfNodes(points, nodes, new Set([src.id, targetId]))) {
+          bundled.push({ edge, points })
+        }
+      }
+      // One clear branch is not a bundle — leave the whole group as routed.
+      if (bundled.length < 2) continue
+      for (const { edge, points } of bundled) {
+        edge.points = points
       }
     }
   }
