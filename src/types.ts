@@ -234,7 +234,41 @@ export interface RenderOptions {
   mergeEdges?: boolean
   /** Render with transparent background (no background style on SVG). Default: false */
   transparent?: boolean
-  /** Enable hover tooltips on chart data points (xychart only). Default: false */
+  /**
+   * Render-target-scoped interactivity level. Declarative only — this
+   * library never emits `<script>`; see
+   * docs/decisions/no-script-interactivity.md for the tier model this maps
+   * to (tier 1: `<title>`/text; tier 2: `<a href>`, CSS `:hover`, CSS
+   * animation; tier 3: `click ... call fn()`, recorded as data, never
+   * executed). Default: `'static'`.
+   *
+   * - `'none'` — strips flowchart edge animation (`e1@{ animate: true }`).
+   *   Intended for print/rasterized output, where a CSS `@keyframes`
+   *   animation would otherwise silently render as a single static frame
+   *   with no indication that motion was intended.
+   * - `'static'` — default. Preserves today's output as closely as
+   *   possible: flowchart edge animation still renders (a diagram that
+   *   opted into `e1@{ animate: true }` keeps animating for callers who
+   *   don't touch this option), and xychart hover tooltips stay off unless
+   *   requested via `'full'` or the deprecated `interactive: true` below.
+   *   Gating animation out of `'static'` specifically (the stricter tier-2
+   *   reading) is left as follow-up — see the ADR.
+   * - `'full'` — also enables xychart hover tooltips.
+   *
+   * Links (`click A "url"`) and `<title>` tooltips from `click` statements
+   * are not yet gated by this option in any mode — also follow-up, see the
+   * ADR's "Consequences" section.
+   */
+  interactivity?: 'none' | 'static' | 'full'
+  /**
+   * @deprecated Use `interactivity` instead. Enable hover tooltips on chart
+   * data points (xychart only). Default: false.
+   *
+   * When `interactivity` is not set, this boolean still controls xychart
+   * tooltips as before (`true` behaves like `interactivity: 'full'` for
+   * that one effect). When `interactivity` *is* set, it takes precedence
+   * and this field is ignored.
+   */
   interactive?: boolean
   /** Stamp the original diagram source onto the root `<svg>` as a `data-src` attribute (HTML-escaped). Default: false */
   embedSource?: boolean

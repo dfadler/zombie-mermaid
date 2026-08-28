@@ -70,6 +70,43 @@ function buildColors(options: RenderOptions): DiagramColors {
 }
 
 /**
+ * Resolve the effective interactivity level, defaulting unset to `'static'`.
+ * See `RenderOptions.interactivity` for what each level means.
+ */
+function resolveInteractivity(
+  options: RenderOptions,
+): 'none' | 'static' | 'full' {
+  return options.interactivity ?? 'static'
+}
+
+/**
+ * Whether flowchart/state-diagram edge animation (`e1@{ animate: true }`)
+ * should render. Gated behind `interactivity !== 'none'` — both the default
+ * (`'static'`) and `'full'` allow it, which preserves today's ungated
+ * behavior for callers who don't touch `interactivity`. Tightening this to
+ * `'full'`-only (the stricter tier-2 reading from the ADR) is tracked as
+ * follow-up work.
+ */
+function resolveAnimationEnabled(options: RenderOptions): boolean {
+  return resolveInteractivity(options) !== 'none'
+}
+
+/**
+ * Whether xychart hover tooltips should render.
+ *
+ * `interactivity` takes precedence over the deprecated `interactive`
+ * boolean when both are set. When only the deprecated boolean is set, it
+ * keeps controlling this exactly as before — `true` enables tooltips,
+ * `false`/unset does not — so existing callers see no behavior change.
+ */
+function resolveXYChartInteractive(options: RenderOptions): boolean {
+  if (options.interactivity !== undefined) {
+    return options.interactivity === 'full'
+  }
+  return options.interactive ?? false
+}
+
+/**
  * Render Mermaid diagram text to an SVG string — synchronously.
  *
  * Uses elk.bundled.js with a direct FakeWorker bypass (no setTimeout(0) delay).
@@ -169,7 +206,7 @@ export function renderMermaidSVG(
         colors,
         font,
         transparent,
-        options.interactive ?? false,
+        resolveXYChartInteractive(options),
         embedSource,
       )
     }
@@ -190,6 +227,7 @@ export function renderMermaidSVG(
         fontSizes,
         effective.curve ?? 'linear',
         embedSource,
+        resolveAnimationEnabled(options),
       )
     }
   }

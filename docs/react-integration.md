@@ -34,5 +34,6 @@ function MermaidDiagram({ code }: { code: string }) {
 - **No flash** — SVG is computed synchronously during render, not in a useEffect
 - **CSS variables** — Pass `var(--background)` etc. instead of hex colors. The SVG inherits from your app's CSS, so theme switches apply instantly without re-rendering
 - **Memoized** — Only recomputed when `code` changes
+- **Links and hover stay interactive** — `dangerouslySetInnerHTML` inlines the SVG into your page's DOM. An `<img src="data:image/svg+xml,...">` approach would render the SVG in the browser's secure static mode instead, where `click`-generated links and CSS `:hover` tooltips go inert — see [`docs/decisions/no-script-interactivity.md`](decisions/no-script-interactivity.md) for why
 
 **With the React Compiler:** the manual `useMemo()` above is the pattern for codebases without the compiler enabled. If your project has the [React Compiler](https://react.dev/learn/react-compiler) turned on, it memoizes this call automatically — you can call `renderMermaidSVG()` directly in the component body and drop the `useMemo()` wrapper. The synchronous, no-`useEffect` part still matters either way; only the manual memoization becomes redundant.
