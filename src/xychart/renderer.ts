@@ -59,6 +59,9 @@ const TIP = {
  * @param embedSource - Original diagram source to stamp onto the root
  *                       `<svg>` as `data-src` (from `options.embedSource`).
  *                       Omitted when the option is off.
+ * @param title - Accessible name (from `options.title`). See svgOpenTag() in
+ *                src/theme.ts.
+ * @param decorative - Marks the SVG decorative (from `options.decorative`).
  */
 export function renderXYChartSvg(
   chart: PositionedXYChart,
@@ -67,6 +70,8 @@ export function renderXYChartSvg(
   transparent: boolean = false,
   interactive: boolean = false,
   embedSource?: string,
+  title?: string,
+  decorative?: boolean,
 ): string {
   const parts: string[] = []
 
@@ -78,10 +83,14 @@ export function renderXYChartSvg(
     ...chart.lines.map((l) => l.colorIndex),
   )
   const svgTag = withDataSrc(
-    svgOpenTag(chart.width, chart.height, colors, transparent).replace(
-      '<svg ',
-      `<svg data-xychart-colors="${maxColorIdx}" `,
-    ),
+    svgOpenTag(
+      chart.width,
+      chart.height,
+      colors,
+      transparent,
+      title,
+      decorative,
+    ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `),
     embedSource,
   )
   parts.push(svgTag)

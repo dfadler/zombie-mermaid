@@ -52,6 +52,9 @@ import type { CurveStyle } from './init-directive.ts'
  * @param embedSource - Original diagram source to stamp onto the root `<svg>`
  *                       as `data-src` (from `options.embedSource`). Omitted
  *                       when the option is off.
+ * @param title - Accessible name (from `options.title`). See svgOpenTag() in
+ *                src/theme.ts.
+ * @param decorative - Marks the SVG decorative (from `options.decorative`).
  */
 export function renderSvg(
   graph: PositionedGraph,
@@ -61,13 +64,22 @@ export function renderSvg(
   fontSizes: FontSizes = FONT_SIZES,
   curve: CurveStyle = 'linear',
   embedSource?: string,
+  title?: string,
+  decorative?: boolean,
 ): string {
   const parts: string[] = []
 
   // SVG root with CSS variables + style block + defs
   parts.push(
     withDataSrc(
-      svgOpenTag(graph.width, graph.height, colors, transparent),
+      svgOpenTag(
+        graph.width,
+        graph.height,
+        colors,
+        transparent,
+        title,
+        decorative,
+      ),
       embedSource,
     ),
   )
