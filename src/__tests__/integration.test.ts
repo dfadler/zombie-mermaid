@@ -598,12 +598,15 @@ describe('renderMermaidSVG – all shapes combined', () => {
 // embedSource
 // ============================================================================
 
-/** Reverses escapeAttr()'s HTML-attribute escaping (order matters: &amp; last). */
+/** Reverses withDataSrc()'s escaping (order matters: &amp; last). */
 function unescapeAttr(value: string): string {
   return value
     .replace(/&quot;/g, '"')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&#13;/g, '\r')
+    .replace(/&#10;/g, '\n')
+    .replace(/&#9;/g, '\t')
     .replace(/&amp;/g, '&')
 }
 
@@ -663,5 +666,37 @@ describe('renderMermaidSVG – embedSource', () => {
     // next unescaped double quote — i.e. exactly one data-src attribute.
     const dataSrcOccurrences = svg.match(/data-src="/g) ?? []
     expect(dataSrcOccurrences.length).toBe(1)
+  })
+
+  it('encodes tab/LF/CR as character references rather than emitting them literally', () => {
+    // A literal (unescaped) tab, LF, or CR inside a double-quoted XML
+    // attribute value is legal syntax, but a strict XML parser normalizes
+    // it away — see the real-parser round-trip test below. The attribute
+    // must carry character references for these instead.
+    const source = 'graph TD\r\n  A --> B\tC'
+    const svg = renderMermaidSVG(source, { embedSource: true })
+    const escaped = extractDataSrc(svg)
+    expect(escaped).toBeDefined()
+    expect(escaped).not.toMatch(/[\t\n\r]/)
+    expect(escaped).toContain('&#13;')
+    expect(escaped).toContain('&#10;')
+    expect(escaped).toContain('&#9;')
+    expect(unescapeAttr(escaped ?? '')).toBe(source)
+  })
+
+  it('round-trips a CRLF multiline source through a real XML parser', async () => {
+    // Regression guard for XML attribute-value normalization: a strict XML
+    // parser collapses literal tab/LF/CR in an attribute value to a single
+    // space, so a naive implementation that emitted \r\n directly would
+    // pass string-level assertions but come back flattened here.
+    const { JSDOM } = await import('jsdom')
+    const source = 'graph TD\r\n  A[First line] --> B[Second line]\r\n  B --> C'
+    const svg = renderMermaidSVG(source, { embedSource: true })
+
+    const dom = new JSDOM()
+    const doc = new dom.window.DOMParser().parseFromString(svg, 'image/svg+xml')
+    expect(doc.querySelector('parsererror')).toBeNull()
+    const root = doc.documentElement
+    expect(root.getAttribute('data-src')).toBe(source)
   })
 })
