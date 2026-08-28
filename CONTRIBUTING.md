@@ -104,3 +104,5 @@ Be respectful and constructive in issues, PRs, and reviews. There's no separate 
 ## License
 
 By contributing, you agree your contributions are licensed under this project's [MIT license](LICENSE).
+
+<!-- issue-bot live test: this PR will be closed without merging -->
