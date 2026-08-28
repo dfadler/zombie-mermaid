@@ -196,6 +196,7 @@ function extractNodesAndGroups(
           height,
           inlineStyle,
           className,
+          interaction: graph.interactions.get(child.id),
         })
       }
 
@@ -390,6 +391,8 @@ function extractEdgesRecursively(
       points: orthogonalPoints,
       labelPosition,
       inlineStyle: resolveEdgeStyle(edgeIndex, graph),
+      id: originalEdge.id,
+      animate: originalEdge.animate,
     })
   }
 }

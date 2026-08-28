@@ -17,8 +17,20 @@ export function normalizeBrTags(label: string): string {
   // Strip surrounding double quotes (Mermaid uses them for special chars in labels)
   const unquoted =
     label.startsWith('"') && label.endsWith('"') ? label.slice(1, -1) : label
+
+  /*
+   * Mermaid's markdown-string form wraps the label in backticks —
+   * `A["` + '`**bold**`' + `"]`. The markdown conversion below already runs
+   * unconditionally, so the backticks only need removing; left in place they
+   * rendered as literal characters in the label.
+   */
+  const unfenced =
+    unquoted.length >= 2 && unquoted.startsWith('`') && unquoted.endsWith('`')
+      ? unquoted.slice(1, -1)
+      : unquoted
+
   return (
-    unquoted
+    unfenced
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/\\n/g, '\n')
       .replace(/<\/?(?:sub|sup|small|mark)\s*>/gi, '')
