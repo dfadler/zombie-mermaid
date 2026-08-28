@@ -1,5 +1,5 @@
 ---
-"zombie-mermaid": minor
+'zombie-mermaid': minor
 ---
 
 Add `title` and `decorative` render options so rendered SVGs can carry an accessible name (closes [#215](https://github.com/dfadler/zombie-mermaid/issues/215)).
