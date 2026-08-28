@@ -145,6 +145,22 @@ Thank you Alexander for the excellent foundation!
 
 MIT — see [LICENSE](LICENSE) for details.
 
+<!-- throwaway-test-engage: exercising claude-review-app's engage
+     (thread-reply/re-verify) flow end-to-end. Contains a deliberate,
+     obvious bug in the example snippet below so the reviewer has a real
+     finding to comment on. Safe to ignore/revert. -->
+
+### Strict-mode rendering (example)
+
+```js
+function renderDiagram(source, options) {
+  if (options.strict = true) {
+    return zombieMermaid.render(source, { strict: true })
+  }
+  return zombieMermaid.render(source)
+}
+```
+
 ---
 
 <div align="center">
