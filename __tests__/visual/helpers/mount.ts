@@ -20,8 +20,9 @@ import demoStylesheet from '../../../demo/styles.css?raw'
 const PANEL_MAX_WIDTH = '960px'
 
 /**
- * Cap on how long to wait for the demo stylesheet's Google Fonts `@import`
- * (Inter, JetBrains Mono) before screenshotting anyway.
+ * Cap on how long to wait for a mounted panel's web fonts (Inter, embedded
+ * per-SVG by renderMermaidSVG; JetBrains Mono, from the injected demo
+ * stylesheet) before screenshotting anyway.
  *
  * A screenshot taken while a web font is still loading captures the
  * fallback font mid-swap, which is exactly the kind of instability
@@ -35,21 +36,30 @@ const PANEL_MAX_WIDTH = '960px'
 const FONT_WAIT_TIMEOUT_MS = 8000
 
 let stylesInjected = false
-let fontsReadyPromise: Promise<void> | null = null
 
-/** Inject the stylesheet once per tab and wait for its fonts once per tab — not per mount. */
-async function ensureStylesInjected(): Promise<void> {
-  if (!stylesInjected) {
-    const style = document.createElement('style')
-    style.textContent = demoStylesheet as string
-    document.head.appendChild(style)
-    stylesInjected = true
-  }
-  fontsReadyPromise ??= Promise.race([
+function ensureStylesInjected(): void {
+  if (stylesInjected) return
+  const style = document.createElement('style')
+  style.textContent = demoStylesheet as string
+  document.head.appendChild(style)
+  stylesInjected = true
+}
+
+/**
+ * `document.fonts.ready` only reflects fonts the browser currently
+ * considers "needed" by the DOM as laid out *right now* — it does not
+ * re-resolve for fonts a later DOM insertion requires. So this must be
+ * called after the panel's content is in the document, not before: called
+ * too early (e.g. right after injecting the stylesheet but before the SVG
+ * or terminal content that actually uses those font-family rules is
+ * mounted), it can resolve before the relevant font has even started
+ * loading, silently defeating the wait it's supposed to provide.
+ */
+async function waitForFonts(): Promise<void> {
+  await Promise.race([
     document.fonts.ready.then(() => undefined),
     new Promise<void>((resolve) => setTimeout(resolve, FONT_WAIT_TIMEOUT_MS)),
   ])
-  await fontsReadyPromise
 }
 
 /**
@@ -61,7 +71,7 @@ export async function mountSvgPanel(
   svg: string,
   bg?: string,
 ): Promise<HTMLElement> {
-  await ensureStylesInjected()
+  ensureStylesInjected()
   const panel = document.createElement('div')
   panel.className = 'svg-panel'
   panel.style.width = 'fit-content'
@@ -72,6 +82,7 @@ export async function mountSvgPanel(
   container.innerHTML = svg
   panel.appendChild(container)
   document.body.appendChild(panel)
+  await waitForFonts()
   return panel
 }
 
@@ -79,13 +90,14 @@ export async function mountSvgPanel(
 export async function mountAsciiPanel(
   terminalWindow: HTMLElement,
 ): Promise<HTMLElement> {
-  await ensureStylesInjected()
+  ensureStylesInjected()
   const panel = document.createElement('div')
   panel.className = 'ascii-panel'
   panel.style.width = 'fit-content'
   panel.style.maxWidth = PANEL_MAX_WIDTH
   panel.appendChild(terminalWindow)
   document.body.appendChild(panel)
+  await waitForFonts()
   return panel
 }
 
