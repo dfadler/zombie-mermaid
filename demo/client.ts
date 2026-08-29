@@ -853,13 +853,29 @@ function showCategory(
 // ============================================================================
 
 let suppressScrollSpy = false
-let scrollSpySuppressTimer: ReturnType<typeof setTimeout> | null = null
+let scrollSpyQuietTimer: ReturnType<typeof setTimeout> | null = null
+
+/** No further `scroll` events for this long, while suppressed, counts as
+ * "the animation has stopped" — see `suppressScrollSpyUntilSettled` below. */
+const SCROLL_SPY_QUIET_MS = 150
 
 /**
  * Suppress scroll-spy hash updates until the current programmatic scroll
- * settles (the `scrollend` event), or after `timeoutMs` as a fallback for
- * a scroll that never actually moves (the target was already in view, so
- * `scrollend` never fires) or a browser that doesn't support the event.
+ * settles: either the browser reports it directly (`scrollend`), or —
+ * since `scrollend` isn't universal and a scroll that never actually moves
+ * (the target was already in view) never fires it at all — `scroll`
+ * events stop arriving for `SCROLL_SPY_QUIET_MS`.
+ *
+ * That quiet-period check is a debounce, not a fixed timeout: every
+ * `scroll` event received while suppressed restarts it. A fixed timeout
+ * would race a `scrollIntoView({behavior: 'smooth'})` animation whose
+ * duration this code doesn't control and doesn't know in advance — the
+ * browser picks it, and on a page this long a smooth scroll can still be
+ * moving well past a short fixed window. Firing the release mid-animation
+ * would let a rAF-throttled scroll-spy update read an intermediate
+ * position and overwrite the hash with the wrong sample, which then never
+ * self-corrects once the animation actually finishes (no further `scroll`
+ * events fire once it's settled).
  *
  * Needed because every `scrollIntoView` call in this file — a sidebar link
  * click, its keyboard-focus preview, a category switch's scroll-to-top, the
@@ -869,17 +885,43 @@ let scrollSpySuppressTimer: ReturnType<typeof setTimeout> | null = null
  * hash with each section it passes, then "settle" back on the intended
  * target only by coincidence.
  */
-function suppressScrollSpyUntilSettled(timeoutMs = 1000): void {
+/**
+ * Named at module scope (not created fresh per call) so that overlapping
+ * calls to `suppressScrollSpyUntilSettled` — e.g. a reader clicking a
+ * second sidebar link before the first one's scroll has settled — extend
+ * one suppression session via the same listener pair instead of stacking up
+ * independent ones. Two independent sessions would each release on their
+ * own schedule, and whichever settles first would turn suppression off
+ * while the other's scroll is still moving.
+ */
+function releaseScrollSpySuppression(): void {
+  suppressScrollSpy = false
+  window.removeEventListener('scrollend', releaseScrollSpySuppression)
+  window.removeEventListener('scroll', restartScrollSpyQuietTimer)
+  if (scrollSpyQuietTimer !== null) clearTimeout(scrollSpyQuietTimer)
+  scrollSpyQuietTimer = null
+}
+
+function restartScrollSpyQuietTimer(): void {
+  if (scrollSpyQuietTimer !== null) clearTimeout(scrollSpyQuietTimer)
+  scrollSpyQuietTimer = setTimeout(
+    releaseScrollSpySuppression,
+    SCROLL_SPY_QUIET_MS,
+  )
+}
+
+function suppressScrollSpyUntilSettled(): void {
   suppressScrollSpy = true
-  if (scrollSpySuppressTimer !== null) clearTimeout(scrollSpySuppressTimer)
-  const release = () => {
-    suppressScrollSpy = false
-    window.removeEventListener('scrollend', release)
-    if (scrollSpySuppressTimer !== null) clearTimeout(scrollSpySuppressTimer)
-    scrollSpySuppressTimer = null
-  }
-  window.addEventListener('scrollend', release, { once: true })
-  scrollSpySuppressTimer = setTimeout(release, timeoutMs)
+  // Both are safe to call even if already registered from an overlapping,
+  // still-in-flight suppression session — addEventListener with the same
+  // function reference is a no-op the second time.
+  window.addEventListener('scrollend', releaseScrollSpySuppression, {
+    once: true,
+  })
+  window.addEventListener('scroll', restartScrollSpyQuietTimer, {
+    passive: true,
+  })
+  restartScrollSpyQuietTimer()
 }
 
 /** Every `scrollIntoView` call above that's triggered by something other
