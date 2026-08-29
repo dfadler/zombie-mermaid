@@ -44,6 +44,16 @@ export class Grid {
   add(key: string): void {
     this.#cells.add(key)
   }
+
+  /**
+   * Release a single cell. For temporary reservations only (see
+   * `rerouteAroundStyleConflicts` in grid.ts) — every other reservation in
+   * this module (node blocks, in particular) is permanent for the life of
+   * a render, so a real caller should rarely need this.
+   */
+  delete(key: string): void {
+    this.#cells.delete(key)
+  }
 }
 
 /** Create a fresh, empty grid occupancy map. */
@@ -133,4 +143,56 @@ export function placeBlock(
       grid.add(gridKey(coord))
     }
   }
+}
+
+/**
+ * Every cell an edge's routed path passes through — including intermediate
+ * cells on each straight segment, not just the corner waypoints `path`
+ * itself contains (A* paths are simplified down to corners by `mergePath`).
+ *
+ * Segments are walked with integer Bresenham, not a naive "step both axes
+ * by their sign each iteration": A*-routed segments are always axis-aligned
+ * (see `MOVE_DIRS` in pathfinder.ts), but `determinePath`'s Case-4 direct
+ * fallback (`edge.path = [prefFrom, prefTo]`, used when A* finds no route
+ * at all) can produce an arbitrary, non-45°, non-axis-aligned segment. A
+ * naive "x += sign(dx); y += sign(dy)" walk only ever reaches
+ * `(to.x, to.y)` when `|dx| === |dy|` — for any other ratio, x and y drift
+ * past each other's target on different iterations and the loop's
+ * "both must match" exit condition is never satisfied, walking forever
+ * (this happened in testing, on a plain 4-edge fan-out, until it blew a
+ * `Set`'s max size). `MAX_WALK_STEPS` is a second, independent safety net
+ * in case a future caller feeds in a segment absurdly far from the grid's
+ * normal handful-of-columns/rows scale.
+ */
+const MAX_WALK_STEPS = 100_000
+
+export function pathCells(path: readonly GridCoord[]): GridCoord[] {
+  if (path.length === 0) return []
+  const cells: GridCoord[] = [path[0]!]
+  for (let i = 1; i < path.length; i++) {
+    const from = path[i - 1]!
+    const to = path[i]!
+    let x = from.x
+    let y = from.y
+    const absDx = Math.abs(to.x - from.x)
+    const absDy = Math.abs(to.y - from.y)
+    const sx = from.x < to.x ? 1 : -1
+    const sy = from.y < to.y ? 1 : -1
+    let err = absDx - absDy
+    let steps = 0
+    while ((x !== to.x || y !== to.y) && steps < MAX_WALK_STEPS) {
+      const e2 = 2 * err
+      if (e2 > -absDy) {
+        err -= absDy
+        x += sx
+      }
+      if (e2 < absDx) {
+        err += absDx
+        y += sy
+      }
+      cells.push({ x, y })
+      steps++
+    }
+  }
+  return cells
 }

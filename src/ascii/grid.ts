@@ -11,16 +11,23 @@ import type {
   GridCoord,
   DrawingCoord,
   Direction,
+  AsciiEdge,
   AsciiGraph,
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { requireGridCoord } from './types.ts'
+import { gridKey, requireGridCoord } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import { determinePath, determineLabelLine } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
 import { isBlockFree, placeBlock, NODE_BLOCK_SIZE } from './grid-occupancy.ts'
+import {
+  createEdgeCellStyles,
+  claimPathCells,
+  findStyleConflict,
+  type EdgeCellStyles,
+} from './edge-cell-styles.ts'
 import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
 
@@ -184,6 +191,57 @@ export function increaseGridSizeForPath(
     if (!graph.rowHeight.has(c.y)) {
       graph.rowHeight.set(c.y, Math.floor(graph.config.paddingY / 2))
     }
+  }
+}
+
+/**
+ * Cap on re-route attempts for a single edge's cross-style conflicts.
+ *
+ * `determinePath`'s A* attempts respect the blocked cells added below, but
+ * its Case-4 direct-fallback (used when both A* attempts fail outright)
+ * draws a straight line ignoring occupancy entirely — so a pathological
+ * layout where every route is blocked could keep "finding" the same
+ * conflict forever. This bounds that to a handful of tries; if a genuine
+ * conflict survives them, the edge keeps its last-routed (still
+ * overlapping) path rather than looping — the same "graceful degradation
+ * over a hard failure" the render-wide `PathBudget` already applies to A*
+ * itself.
+ */
+const MAX_STYLE_CONFLICT_REROUTES = 8
+
+/**
+ * After `edge` has been routed, check whether its path crosses a cell
+ * already claimed by a *different*-style edge (see edge-cell-styles.ts) and,
+ * if so, re-route it around the conflicting cell(s).
+ *
+ * Works by temporarily adding the conflicting cell to `graph.grid` — the
+ * same occupancy map A* already treats node cells as blocked through — so
+ * `determinePath`'s A* search avoids it on the next attempt, then removing
+ * that temporary block again once this edge is done (it must not
+ * permanently block the cell for other, unrelated edges; only *style*
+ * conflicts are meant to be avoided, not all future overlap).
+ */
+function rerouteAroundStyleConflicts(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  cellStyles: EdgeCellStyles,
+): void {
+  const temporarilyBlocked: GridCoord[] = []
+  try {
+    for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
+      const conflict = findStyleConflict(
+        graph.grid,
+        cellStyles,
+        edge.path,
+        edge.style,
+      )
+      if (!conflict) return
+      graph.grid.add(gridKey(conflict))
+      temporarilyBlocked.push(conflict)
+      determinePath(graph, edge)
+    }
+  } finally {
+    for (const cell of temporarilyBlocked) graph.grid.delete(gridKey(cell))
   }
 }
 
@@ -849,17 +907,31 @@ export function createMapping(graph: AsciiGraph): void {
   // Route bundled edges through junction points
   processBundles(graph)
 
-  // Route non-bundled edges via A* and determine label positions
+  // Route non-bundled edges via A* and determine label positions.
+  //
+  // `cellStyles` tracks which line style has claimed each cell an edge's
+  // path has passed through so far. After routing a non-bundled edge,
+  // `rerouteAroundStyleConflicts` checks whether its path crosses a cell
+  // already claimed by a *different*-style edge — e.g. a solid edge and a
+  // dotted back-edge with no shared source or target, independently
+  // finding the same empty column — and if so, re-routes just that edge
+  // around the conflicting cell(s). Same-style overlap is left completely
+  // untouched: it's how sibling/bundled edges are meant to share a trunk
+  // (see edge-cell-styles.ts's module doc).
+  const cellStyles = createEdgeCellStyles()
   for (const edge of graph.edges) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
       increaseGridSizeForPath(graph, edge.path)
+      claimPathCells(graph.grid, cellStyles, edge.path, edge.style)
       determineLabelLine(graph, edge)
       continue
     }
 
     determinePath(graph, edge)
+    rerouteAroundStyleConflicts(graph, edge, cellStyles)
     increaseGridSizeForPath(graph, edge.path)
+    claimPathCells(graph.grid, cellStyles, edge.path, edge.style)
     determineLabelLine(graph, edge)
   }
 
