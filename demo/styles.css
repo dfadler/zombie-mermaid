@@ -803,6 +803,28 @@ body::after {
   height: auto;
 }
 
+/* A wide flowchart (LR/RL) renders two variants — its own orientation plus
+ * a TD alternate for narrow viewports (see wideFlowchartAltDirection in
+ * demo/client.ts). `display: contents` makes the non-shown wrapper's own
+ * box disappear so it doesn't interfere with .svg-container's flex
+ * centering; only one variant's <svg> ever actually participates in
+ * layout at a time. Samples without an alternate render a single <svg>
+ * directly and never get this wrapper at all. */
+.orientation-variant {
+  display: none;
+}
+.orientation-variant.orientation-wide {
+  display: contents;
+}
+@media (max-width: 640px) {
+  .orientation-variant.orientation-wide {
+    display: none;
+  }
+  .orientation-variant.orientation-narrow {
+    display: contents;
+  }
+}
+
 /* -- ASCII panel --
  * Styled as a terminal window: fixed dark palette + titlebar chrome,
  * independent of the page's theme picker (see TERMINAL_PALETTE in

@@ -237,12 +237,159 @@ const ENRICHMENT_KEYS = [
 ] as const satisfies ReadonlyArray<keyof DiagramColors>
 
 /**
- * Each rendered SVG's original inline `style` attribute, indexed by sample.
- *
- * Sparse: only samples in a rendered category have an entry, so reads must
- * tolerate a hole (hence the `| undefined` and the guard at each use).
+ * Each rendered SVG's original inline `style` attribute, keyed by the
+ * element itself rather than sample index — a sample with a narrow-viewport
+ * orientation alternate (see `wideDiagramDirectionLine` below) renders two
+ * `<svg>`s, not one, so a single per-sample slot can't hold both.
  */
-const originalSvgStyles: Array<string | undefined> = []
+const originalSvgStyles = new WeakMap<SVGSVGElement, string>()
+
+/**
+ * Apply theme CSS variables to one rendered `<svg>` (or restore its
+ * pre-theme original style when `theme` is null, i.e. "Default"). Shared by
+ * every place that (re)renders a sample's SVG — `renderSample`, `applyTheme`'s
+ * per-sample loop, and the edit dialog's re-render — so each just loops over
+ * however many `<svg>` elements its container holds (one normally, two for a
+ * sample with an orientation alternate) and calls this per element, instead
+ * of tripling this logic to handle that "possibly two, not one" case.
+ */
+function applyThemeToSvgElement(
+  svgEl: SVGSVGElement,
+  theme: DiagramColors | null,
+): void {
+  if (theme) {
+    svgEl.style.setProperty('--bg', theme.bg)
+    svgEl.style.setProperty('--fg', theme.fg)
+    for (const prop of ENRICHMENT_KEYS) {
+      const value = theme[prop]
+      if (value) svgEl.style.setProperty('--' + prop, value)
+      else svgEl.style.removeProperty('--' + prop)
+    }
+    // Recompute xychart series color vars from the theme's accent
+    const maxColor = parseInt(
+      svgEl.getAttribute('data-xychart-colors') || '-1',
+      10,
+    )
+    if (maxColor >= 0) {
+      const accent = theme.accent || CHART_ACCENT_FALLBACK
+      svgEl.style.setProperty('--xychart-color-0', accent)
+      for (let ci = 1; ci <= maxColor; ci++) {
+        svgEl.style.setProperty(
+          '--xychart-color-' + ci,
+          getSeriesColor(ci, accent, theme.bg),
+        )
+      }
+    }
+  } else {
+    const original = originalSvgStyles.get(svgEl)
+    if (original !== undefined) svgEl.setAttribute('style', original)
+  }
+}
+
+/**
+ * The line (0-indexed into `source.split('\n')`) whose declared direction
+ * controls a wide (`LR`/`RL`) flowchart's or state diagram's overall
+ * orientation, or `null` if this source isn't one of those two diagram
+ * types, or is but isn't wide.
+ *
+ * Only flowcharts and state diagrams qualify — those are the two diagram
+ * types with a `TD`/`LR`-style orientation to swap; a `TD`/`TB`/`BT`
+ * flowchart is already tall-and-narrow, and non-flowchart, non-state
+ * diagram types (sequence, ER, class, xychart) don't have an equivalent
+ * notion of "orientation" to offer an alternate for.
+ *
+ * For a flowchart the direction lives in the header line itself (`graph
+ * LR`). For a state diagram it's a `direction LR` statement anywhere in
+ * the body — mirroring src/parser.ts's parseStateDiagram, only the
+ * *top-level* one counts (one inside `state X { … }` overrides that
+ * composite state alone), so this tracks composite-state brace depth with
+ * the same open/close patterns the real parser uses to find it.
+ */
+function wideDiagramDirectionLine(source: string): number | null {
+  const lines = source.split('\n')
+  const header = (lines[0] ?? '').trim()
+
+  const flowchartMatch = header.match(
+    /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
+  )
+  if (flowchartMatch) {
+    const direction = flowchartMatch[1]!.toUpperCase()
+    return direction === 'LR' || direction === 'RL' ? 0 : null
+  }
+
+  if (!/^stateDiagram(-v2)?\s*$/i.test(header)) return null
+
+  let compositeDepth = 0
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]!.trim()
+    if (compositeDepth === 0) {
+      const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
+      if (dirMatch) {
+        const direction = dirMatch[1]!.toUpperCase()
+        return direction === 'LR' || direction === 'RL' ? i : null
+      }
+    }
+    if (/^state\s+(?:"[^"]+"\s+as\s+)?[\w\p{L}]+\s*\{$/u.test(line)) {
+      compositeDepth++
+    } else if (line === '}') {
+      compositeDepth = Math.max(0, compositeDepth - 1)
+    }
+  }
+  return null
+}
+
+/**
+ * Rewrite the direction word on `lineIndex` (as found by
+ * `wideDiagramDirectionLine`) to `TD`, leaving the rest of the source
+ * untouched. `TD` is always the target rather than the literal opposite of
+ * whatever's declared (`BT` staying `BT`, say) because the goal is
+ * specifically "narrow enough for a small screen," not "rotate 180°."
+ */
+function withNarrowDirection(source: string, lineIndex: number): string {
+  const lines = source.split('\n')
+  const target = lines[lineIndex]
+  if (target === undefined) return source
+  lines[lineIndex] = target.replace(/(TD|TB|LR|BT|RL)(\s*)$/i, 'TD$2')
+  return lines.join('\n')
+}
+
+/**
+ * Render one sample's source into its SVG container, handling both the
+ * common case (a single `<svg>`) and a wide diagram's narrow-viewport
+ * alternate (two `<svg>`s, each wrapped so CSS can pick one — see
+ * `.orientation-variant` in demo/styles.css). Shared by `renderSample` and
+ * the edit dialog's re-render, which both need this same "one or two
+ * variants, themed and remembered for Default-mode restoration" sequence.
+ */
+async function renderSvgVariants(
+  svgContainer: HTMLElement,
+  sample: DemoSample,
+  theme: DiagramColors | null,
+): Promise<void> {
+  const directionLine = wideDiagramDirectionLine(sample.source)
+  if (directionLine !== null) {
+    const [wideSvg, narrowSvg] = await Promise.all([
+      renderMermaid(sample.source, sample.options),
+      renderMermaid(
+        withNarrowDirection(sample.source, directionLine),
+        sample.options,
+      ),
+    ])
+    svgContainer.innerHTML =
+      '<div class="orientation-variant orientation-wide">' +
+      wideSvg +
+      '</div><div class="orientation-variant orientation-narrow">' +
+      narrowSvg +
+      '</div>'
+  } else {
+    svgContainer.innerHTML = await renderMermaid(sample.source, sample.options)
+  }
+
+  svgContainer.querySelectorAll('svg').forEach((svgEl) => {
+    originalSvgStyles.set(svgEl, svgEl.getAttribute('style') || '')
+    applyThemeToSvgElement(svgEl, theme)
+  })
+}
 
 function hexToRgb(
   hex: string | null | undefined,
@@ -337,42 +484,15 @@ function applyTheme(themeKey: string) {
   // (not NodeList position) since not-yet-rendered categories mean this
   // list is sparse — a lazily-rendered sample picks up the live theme
   // itself (see renderSample), so skipping it here is correct, not stale.
+  // A sample with an orientation alternate (see renderSvgVariants) holds
+  // two <svg>s, so this applies to every one in the container, not just
+  // the first.
   for (let j = 0; j < samples.length; j++) {
     const svgContainerEl = maybeGet('svg-' + j)
-    const svgEl = svgContainerEl && svgContainerEl.querySelector('svg')
-    if (!svgEl) continue
-    if (theme) {
-      // Override with the global theme colors
-      svgEl.style.setProperty('--bg', theme.bg)
-      svgEl.style.setProperty('--fg', theme.fg)
-      // Set enrichment variables if provided, else remove so SVG
-      // internal color-mix() fallbacks activate
-      for (const prop of ENRICHMENT_KEYS) {
-        const value = theme[prop]
-        if (value) svgEl.style.setProperty('--' + prop, value)
-        else svgEl.style.removeProperty('--' + prop)
-      }
-      // Recompute xychart series color vars from the new accent
-      const maxColor = parseInt(
-        svgEl.getAttribute('data-xychart-colors') || '-1',
-        10,
-      )
-      if (maxColor >= 0) {
-        const accent = theme.accent || CHART_ACCENT_FALLBACK
-        svgEl.style.setProperty('--xychart-color-0', accent)
-        for (let ci = 1; ci <= maxColor; ci++) {
-          svgEl.style.setProperty(
-            '--xychart-color-' + ci,
-            getSeriesColor(ci, accent, theme.bg),
-          )
-        }
-      }
-    } else {
-      // Restore original inline style from initial render
-      if (originalSvgStyles[j] !== undefined) {
-        svgEl.setAttribute('style', originalSvgStyles[j] ?? '')
-      }
-    }
+    if (!svgContainerEl) continue
+    svgContainerEl.querySelectorAll('svg').forEach((svgEl) => {
+      applyThemeToSvgElement(svgEl, theme)
+    })
   }
 
   // 3. Update SVG panel backgrounds to match (skip hero panels - keep transparent)
@@ -661,43 +781,8 @@ async function renderSample(i: number) {
   if (!sample || !svgContainer) return
 
   try {
-    const svg = await renderMermaid(sample.source, sample.options)
     const theme: DiagramColors | null = currentTheme()
-    svgContainer.innerHTML = svg
-
-    // Store the SVG's original inline style for Default mode restoration
-    const svgEl = svgContainer.querySelector('svg')
-    if (svgEl) {
-      originalSvgStyles[i] = svgEl.getAttribute('style') || ''
-
-      // If a global theme is active, immediately override the SVG's variables
-      if (theme) {
-        svgEl.style.setProperty('--bg', theme.bg)
-        svgEl.style.setProperty('--fg', theme.fg)
-        for (const prop of ENRICHMENT_KEYS) {
-          const value = theme[prop]
-          if (value) svgEl.style.setProperty('--' + prop, value)
-          else svgEl.style.removeProperty('--' + prop)
-        }
-        // Recompute xychart series color vars from the saved theme's accent
-        const maxColor = parseInt(
-          svgEl.getAttribute('data-xychart-colors') || '-1',
-          10,
-        )
-        if (maxColor >= 0) {
-          const accent = theme.accent || CHART_ACCENT_FALLBACK
-          svgEl.style.setProperty('--xychart-color-0', accent)
-          for (let ci = 1; ci <= maxColor; ci++) {
-            svgEl.style.setProperty(
-              '--xychart-color-' + ci,
-              getSeriesColor(ci, accent, theme.bg),
-            )
-          }
-        }
-      }
-    } else {
-      originalSvgStyles[i] = ''
-    }
+    await renderSvgVariants(svgContainer, sample, theme)
 
     // Set panel background to match the SVG (skip for hero panels - keep transparent)
     const isHeroPanel = svgPanel?.classList.contains('hero-diagram-panel')
@@ -714,7 +799,6 @@ async function renderSample(i: number) {
       '<div class="render-error">SVG Error: ' +
       escapeHtml(String(err)) +
       '</div>'
-    originalSvgStyles[i] = ''
   }
 
   // Hero samples don't have ASCII panels
@@ -1055,38 +1139,7 @@ async function saveAndRender() {
   const editedSample = samples[index]
   if (!svgContainer || !editedSample) return
   try {
-    const svg = await renderMermaid(source, editedSample.options)
-    svgContainer.innerHTML = svg
-    const svgEl = svgContainer.querySelector('svg')
-    if (svgEl) {
-      originalSvgStyles[index] = svgEl.getAttribute('style') || ''
-      const activeTheme = localStorage.getItem('mermaid-theme')
-      const th = activeTheme ? THEMES[activeTheme] : undefined
-      if (th) {
-        svgEl.style.setProperty('--bg', th.bg)
-        svgEl.style.setProperty('--fg', th.fg)
-        for (const prop of ENRICHMENT_KEYS) {
-          const value = th[prop]
-          if (value) svgEl.style.setProperty('--' + prop, value)
-          else svgEl.style.removeProperty('--' + prop)
-        }
-        // Recompute xychart series color vars
-        const maxColor = parseInt(
-          svgEl.getAttribute('data-xychart-colors') || '-1',
-          10,
-        )
-        if (maxColor >= 0) {
-          const accent = th.accent || CHART_ACCENT_FALLBACK
-          svgEl.style.setProperty('--xychart-color-0', accent)
-          for (let ci = 1; ci <= maxColor; ci++) {
-            svgEl.style.setProperty(
-              '--xychart-color-' + ci,
-              getSeriesColor(ci, accent, th.bg),
-            )
-          }
-        }
-      }
-    }
+    await renderSvgVariants(svgContainer, editedSample, currentTheme())
   } catch (err) {
     svgContainer.innerHTML =
       '<div class="render-error">' + escapeHtml(String(err)) + '</div>'
