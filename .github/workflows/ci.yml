@@ -185,25 +185,17 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      # TEMPORARY bootstrap step: generates Linux baselines (-u writes
-      # references straight into __screenshots__/, unlike a plain run,
-      # whose "no existing reference" case writes into the ephemeral
-      # .vitest-attachments/ instead, which does not survive to the
-      # upload step below). Revert to `pnpm run test:visual` once the
-      # -linux.png baselines from this run are committed.
       - name: Run visual regression suite
-        run: pnpm run test:visual:update
+        run: pnpm run test:visual
 
-      # Two distinct failure shapes, both worth downloading without having
-      # to reproduce locally:
-      #   - .vitest-attachments/: actual/diff PNGs from a real mismatch
-      #     against an existing baseline.
-      #   - __screenshots__/**/*-linux.png: brand-new reference PNGs Vitest
-      #     writes straight into the repo tree when this platform has no
-      #     baseline yet (e.g. bootstrapping Linux baselines for the first
-      #     time). Review these before committing them as the new baseline.
+      # Only produced on a failing run — the actual/diff PNGs a mismatch
+      # writes next to the committed baseline in .vitest-attachments/, plus
+      # any brand-new reference PNGs Vitest writes straight into
+      # __screenshots__/ when a platform has no baseline yet at all. Lets a
+      # reviewer download and look at exactly what changed without
+      # reproducing locally.
       - name: Upload failure screenshots
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: visual-regression-failures
