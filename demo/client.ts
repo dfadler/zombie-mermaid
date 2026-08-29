@@ -550,7 +550,8 @@ sidebar.addEventListener('click', function (e) {
   closeSidebarDrawer()
   history.pushState(null, '', href)
   const target = document.querySelector(href)
-  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (target)
+    programmaticScrollTo(target, { behavior: 'smooth', block: 'start' })
 })
 
 // Keyboard-only preview: tabbing to a sidebar CTA scrolls its section into
@@ -565,7 +566,7 @@ sidebar.addEventListener('focusin', function (e) {
     const href = link.getAttribute('href')
     const linkTarget = href ? document.querySelector(href) : null
     if (linkTarget)
-      linkTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      programmaticScrollTo(linkTarget, { behavior: 'smooth', block: 'nearest' })
     return
   }
   const summary = eventElement(e.target)?.closest('summary')
@@ -576,7 +577,10 @@ sidebar.addEventListener('focusin', function (e) {
     if (!slug) return
     const summaryTarget = maybeGet('category-' + slug)
     if (summaryTarget)
-      summaryTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      programmaticScrollTo(summaryTarget, {
+        behavior: 'smooth',
+        block: 'nearest',
+      })
   }
 })
 
@@ -591,7 +595,7 @@ mustGet('browse-categories-btn').addEventListener('click', function () {
   if (drawerQuery.matches) {
     openSidebarDrawer()
   } else {
-    sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    programmaticScrollTo(sidebar, { behavior: 'smooth', block: 'start' })
     sidebar.classList.add('attention')
     setTimeout(function () {
       sidebar.classList.remove('attention')
@@ -802,7 +806,8 @@ function showCategory(
   if (options.updateHash) history.replaceState(null, '', '#category-' + slug)
   if (options.scrollToTop) {
     const banner = document.getElementById('category-banner')
-    if (banner) banner.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (banner)
+      programmaticScrollTo(banner, { behavior: 'smooth', block: 'start' })
   }
 
   return renderCategory(slug)
@@ -834,9 +839,129 @@ function showCategory(
 
   if (hash.indexOf('sample-') === 0) {
     const jumpTarget = document.getElementById(hash)
-    if (jumpTarget) jumpTarget.scrollIntoView({ block: 'start' })
+    if (jumpTarget) programmaticScrollTo(jumpTarget, { block: 'start' })
   }
 })()
+
+// ============================================================================
+// Scroll spy — keeps the URL hash in sync with whichever sample is
+// currently under the sticky nav bar, so a reader can copy/bookmark the
+// link to wherever they are in a long category without clicking the
+// sidebar link for that exact card. Uses history.replaceState (never
+// pushState) so scrolling never adds entries to browser history the way
+// the sidebar's own link clicks intentionally do.
+// ============================================================================
+
+let suppressScrollSpy = false
+let scrollSpySuppressTimer: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * Suppress scroll-spy hash updates until the current programmatic scroll
+ * settles (the `scrollend` event), or after `timeoutMs` as a fallback for
+ * a scroll that never actually moves (the target was already in view, so
+ * `scrollend` never fires) or a browser that doesn't support the event.
+ *
+ * Needed because every `scrollIntoView` call in this file — a sidebar link
+ * click, its keyboard-focus preview, a category switch's scroll-to-top, the
+ * initial hash landing above — passes by whatever samples sit between the
+ * old and new scroll position along the way. Without suppression, the
+ * scroll spy would treat that transit as real reading and overwrite the
+ * hash with each section it passes, then "settle" back on the intended
+ * target only by coincidence.
+ */
+function suppressScrollSpyUntilSettled(timeoutMs = 1000): void {
+  suppressScrollSpy = true
+  if (scrollSpySuppressTimer !== null) clearTimeout(scrollSpySuppressTimer)
+  const release = () => {
+    suppressScrollSpy = false
+    window.removeEventListener('scrollend', release)
+    if (scrollSpySuppressTimer !== null) clearTimeout(scrollSpySuppressTimer)
+    scrollSpySuppressTimer = null
+  }
+  window.addEventListener('scrollend', release, { once: true })
+  scrollSpySuppressTimer = setTimeout(release, timeoutMs)
+}
+
+/** Every `scrollIntoView` call above that's triggered by something other
+ * than the reader's own scrolling routes through here instead of calling
+ * `scrollIntoView` directly, so none of them fight the scroll spy above. */
+function programmaticScrollTo(
+  target: Element,
+  options: ScrollIntoViewOptions,
+): void {
+  suppressScrollSpyUntilSettled()
+  target.scrollIntoView(options)
+}
+
+/**
+ * The id of the `.sample` currently "under" the sticky nav bar: the last
+ * visible section (in document order) whose top has scrolled up to or past
+ * the detection line, defaulting to the first visible section when none
+ * have (the reader is above everything, e.g. at the very top of the page).
+ *
+ * The detection line sits `--nav-height` + 1rem down from the viewport
+ * top — the same offset `.sample`'s own `scroll-margin-top` already uses
+ * (demo/styles.css), so this agrees with where `scrollIntoView({block:
+ * 'start'})` actually lands a card rather than picking an arbitrary
+ * separate offset. `LINE_TOLERANCE_PX` absorbs the sub-pixel gap between
+ * that CSS offset and this computed one (observed ~0.1px in testing,
+ * presumably layout rounding) — without it, scrollIntoView could land a
+ * card's top a fraction of a pixel *past* the line, and the id-under-cursor
+ * would read as the *previous* card immediately after a sidebar link click
+ * navigated straight to this one.
+ *
+ * A hidden category's sections are skipped via `offsetParent === null`
+ * (the browser's default `[hidden]` stylesheet sets `display: none`) —
+ * this is what scopes the scroll spy to the hero cards (always visible)
+ * plus whichever single category is currently shown, with no separate
+ * bookkeeping needed when the active category changes.
+ */
+const LINE_TOLERANCE_PX = 2
+
+function currentSampleId(): string | null {
+  const navHeight = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--nav-height'),
+  )
+  const detectionLine =
+    (Number.isFinite(navHeight) ? navHeight : 0) + 16 + LINE_TOLERANCE_PX
+
+  const sections = document.querySelectorAll<HTMLElement>('.sample')
+  let current: HTMLElement | null = null
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i]!
+    if (section.offsetParent === null) continue // inside a hidden category
+    if (section.getBoundingClientRect().top > detectionLine) {
+      if (current === null) current = section
+      break
+    }
+    current = section
+  }
+  return current ? current.id : null
+}
+
+let lastScrollSpyHash = location.hash.slice(1)
+
+function updateScrollSpyHash(): void {
+  if (suppressScrollSpy) return
+  const id = currentSampleId()
+  if (!id || id === lastScrollSpyHash) return
+  lastScrollSpyHash = id
+  history.replaceState(null, '', '#' + id)
+}
+
+let scrollSpyTicking = false
+window.addEventListener(
+  'scroll',
+  function () {
+    if (scrollSpyTicking) return
+    scrollSpyTicking = true
+    requestAnimationFrame(function () {
+      updateScrollSpyHash()
+      scrollSpyTicking = false
+    })
+  },
+  { passive: true },
+)
 
 // ============================================================================
 // Edit dialog — open, close, save & re-render
