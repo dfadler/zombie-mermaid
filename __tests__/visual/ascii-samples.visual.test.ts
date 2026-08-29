@@ -17,26 +17,20 @@
  * silently changing what this suite covers.
  *
  * Lives at the repo root, not under src/__tests__: see the note at the top
- * of svg-samples.visual.test.ts.
+ * of svg-samples.visual.test.ts. Runs under Playwright Test for the same
+ * reason documented there.
  *
  * Run with `pnpm test:visual`. Update baselines after an intentional
  * rendering change with `pnpm test:visual:update`, then review the new
  * PNGs under __screenshots__/ before committing them.
  */
-import { describe, expect, it } from 'vitest'
-import { page } from 'vitest/browser'
+import { expect, test } from '@playwright/test'
 import { renderMermaidASCII } from '../../src/index.ts'
 import { samples } from '../../samples-data.ts'
 import { escapeHtml } from '../../demo/format.ts'
-import {
-  buildTerminalPanel,
-  TERMINAL_ASCII_OPTS,
-} from './helpers/terminal-panel.ts'
-import { mountAsciiPanel, unmount } from './helpers/mount.ts'
-
-// TEMPORARY diagnostic instrumentation — see the matching comment in
-// svg-samples.visual.test.ts. Remove once the CI hang is understood.
-console.log('[diagnostic] ascii-samples.visual.test.ts module evaluated')
+import { TERMINAL_ASCII_OPTS } from './helpers/terminal-panel.ts'
+import { buildHarnessScript } from './helpers/build-harness.ts'
+import type {} from './helpers/harness-types.ts'
 
 function slug(text: string): string {
   return text
@@ -45,37 +39,34 @@ function slug(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-let loggedFirstTestStart = false
-
-describe('gallery samples (samples-data.ts), ASCII/terminal', () => {
-  samples.forEach((sample, i) => {
+test.describe('gallery samples (samples-data.ts), ASCII/terminal', () => {
+  for (const [i, sample] of samples.entries()) {
     // Hero samples have no ASCII panel in the live demo either — see
     // index.ts's `isHero` branch.
-    if (sample.category === 'Hero') return
+    if (sample.category === 'Hero') continue
 
-    it(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async () => {
-      if (!loggedFirstTestStart) {
-        loggedFirstTestStart = true
-        // TEMPORARY diagnostic — see the module-scope comment above.
-        console.log(
-          '[diagnostic] ascii-samples.visual.test.ts first test started',
-        )
-      }
+    test(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async ({
+      page,
+    }) => {
       let html: string
       try {
         html = renderMermaidASCII(sample.source, TERMINAL_ASCII_OPTS)
       } catch {
         html = escapeHtml('(ASCII not supported for this diagram type)')
       }
-      const terminalWindow = buildTerminalPanel(html)
-      const panel = await mountAsciiPanel(terminalWindow)
-      try {
-        await expect(page.elementLocator(panel)).toMatchScreenshot(
-          `general/${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`,
-        )
-      } finally {
-        unmount(panel)
-      }
+
+      const harnessScript = await buildHarnessScript()
+      await page.setContent('<!DOCTYPE html><html><body></body></html>')
+      await page.addScriptTag({ content: harnessScript })
+
+      await page.evaluate((html) => {
+        const terminalWindow = window.__harness.buildTerminalPanel(html)
+        return window.__harness.mountAsciiPanel(terminalWindow)
+      }, html)
+
+      await expect(page.locator('.ascii-panel')).toHaveScreenshot(
+        `general-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}.png`,
+      )
     })
-  })
+  }
 })

@@ -5,10 +5,11 @@
  * test's own copy drifting from it) and mounts/unmounts a sample's output
  * into a panel so every screenshot is framed consistently.
  */
-// @ts-expect-error -- `?raw` is a Vite/Vitest import-query convention with
-// no ambient type; the string it resolves to is CSS, not a type worth
-// declaring project-wide for one file.
-import demoStylesheet from '../../../demo/styles.css?raw'
+// @ts-expect-error -- this file is only ever consumed by the esbuild bundle
+// build-harness.ts produces, which loads .css as the `text` loader (raw file
+// contents as a JS string) — not a type worth declaring project-wide for
+// one file.
+import demoStylesheet from '../../../demo/styles.css'
 
 /**
  * Cap on how wide a panel screenshot grows. Panels shrink-wrap to their

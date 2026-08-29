@@ -152,9 +152,7 @@ jobs:
   visual-regression:
     name: Visual regression (SVG + ASCII screenshots)
     runs-on: ubuntu-latest
-    # Setup (~1min) + up to 3 retry attempts at 4min each (see the retry
-    # step below) + headroom.
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       contents: read # only checks out code and runs the visual suite; no writes back to the repo
     # Same fork-of-this-fork guard as the `test` job above — see its comment
@@ -193,66 +191,27 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      # Retries within a per-attempt timeout, rather than one attempt riding
-      # the whole job timeout: vitest-dev/vitest#10791 (open, not backported
-      # to the 4.x line we're on) means a browser tester that goes silently
-      # unresponsive mid-run has no run-level deadline and would otherwise
-      # hang for the job's full timeout-minutes instead of failing. `timeout
-      # 240` bounds each attempt to 4 minutes instead. NOTE: on the run that
-      # added this, all 3 attempts hung identically (12m39s total) — this is
-      # NOT a reliable workaround by itself, just damage control while the
-      # underlying cause is still being tracked down.
-      #
-      # DEBUG namespaces, widened past pw:browser (which only showed
-      # Chromium launching and both tabs connecting to Vitest's dev server
-      # within ~1s, then total silence — consistent every time):
-      #   - vitest:browser:pool          Vitest's own orchestration/RPC
-      #                                  layer — logs session creation and
-      #                                  "run test %s" / "%s finished
-      #                                  running", so this pinpoints whether
-      #                                  a test is ever actually dispatched
-      #                                  to the browser or the hang is in
-      #                                  session/handshake setup.
-      #   - vitest:browser:playwright    Page lifecycle in the playwright
-      #                                  provider (openBrowserPage, goto).
-      #   - VITEST_PW_DEBUG=1            Undocumented flag in
-      #                                  @vitest/browser-playwright that
-      #                                  logs failed page requests
-      #                                  (resourceType, url, error) — would
-      #                                  catch a stuck/failed navigation
-      #                                  that pw:browser's console-forwarding
-      #                                  alone wouldn't surface.
+      # This suite runs under Playwright Test, not Vitest's browser mode —
+      # see zombie-mermaid#299 for why: Vitest's Node<->browser RPC bridge
+      # has an unfixed, still-open upstream bug (vitest-dev/vitest#10791)
+      # that hung this exact job's CI runs (reproduced even on the
+      # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
+      # browser entirely from Node, so there's no such bridge to hang on.
       - name: Run visual regression suite
-        run: |
-          for attempt in 1 2 3; do
-            echo "::group::Attempt $attempt/3"
-            if timeout 240 pnpm run test:visual; then
-              echo "::endgroup::"
-              exit 0
-            fi
-            echo "::endgroup::"
-            echo "Attempt $attempt failed or timed out." >&2
-          done
-          echo "All 3 attempts failed." >&2
-          exit 1
-        env:
-          DEBUG: pw:browser,vitest:browser:pool,vitest:browser:playwright
-          VITEST_PW_DEBUG: '1'
+        run: pnpm run test:visual
 
-      # Only produced on a failing run — the actual/diff PNGs a mismatch
-      # writes next to the committed baseline in .vitest-attachments/, plus
-      # any brand-new reference PNGs Vitest writes straight into
-      # __screenshots__/ when a platform has no baseline yet at all. Lets a
-      # reviewer download and look at exactly what changed without
-      # reproducing locally.
-      - name: Upload failure screenshots
+      # Playwright's own report/diff output, produced on a failing run — the
+      # actual/diff PNGs a mismatch writes alongside the committed baseline,
+      # plus an HTML report. Lets a reviewer download and look at exactly
+      # what changed without reproducing locally.
+      - name: Upload failure report
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: visual-regression-failures
           path: |
-            .vitest-attachments/
-            __tests__/visual/__screenshots__/**/*-linux.png
+            test-results/
+            playwright-report/
           retention-days: 14
           if-no-files-found: ignore
 

@@ -73,9 +73,11 @@ CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the 
 
 ### Visual regression tests
 
-`__tests__/visual/*.visual.test.ts` render every sample in `samples-data.ts` and `xychart-samples-data.ts` in a real headless Chromium tab — SVG output directly, ASCII output inside the same terminal-window chrome the live demo uses — and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. This catches regressions a string/snapshot comparison can't: a clipped label, a broken viewBox, a color resolving to the wrong palette entry, box-drawing glyphs misaligning at a given font.
+`__tests__/visual/*.visual.test.ts` render every sample in `samples-data.ts` and `xychart-samples-data.ts` in a real headless Chromium page — SVG output directly, ASCII output inside the same terminal-window chrome the live demo uses — and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. This catches regressions a string/snapshot comparison can't: a clipped label, a broken viewBox, a color resolving to the wrong palette entry, box-drawing glyphs misaligning at a given font.
 
-They run in their own Vitest project (`--project=visual`, browser mode via `@vitest/browser-playwright`), separately from the fast node/jsdom unit suite, and need a Chromium binary installed once:
+They run under [Playwright Test](https://playwright.dev/docs/test-intro) (`playwright.config.ts`), not Vitest — deliberately: an earlier Vitest-browser-mode implementation hit an unfixed, still-open upstream bug (Node↔browser tester sessions could go silently unresponsive with no run-level timeout, hanging CI forever) that reproduced even on Vitest's pre-release fix line. Playwright Test drives the browser entirely from Node (rendering itself already happens in Node — `renderMermaidSVG`/`renderMermaidASCII` are plain string functions — and only DOM mounting runs in the browser, via the bundled harness in `__tests__/visual/helpers/`), so there's no such bridge to hang on. See [#299](https://github.com/dfadler/zombie-mermaid/issues/299) for the full investigation.
+
+Separate from the fast node/jsdom unit suite, and needs a Chromium binary installed once:
 
 ```bash
 pnpm exec playwright install --with-deps chromium
@@ -88,7 +90,9 @@ After an intentional rendering change, regenerate baselines and review the new P
 pnpm run test:visual:update
 ```
 
-Baseline filenames are suffixed with browser + platform (e.g. `-chromium-darwin.png` / `-chromium-linux.png`), so a macOS dev machine and the Linux CI runner keep separate baselines rather than fighting over one. The cleanest way to (re)generate the `-linux.png` baselines is running the suite inside a `mcr.microsoft.com/playwright` Docker container matching the installed `playwright` version (rather than `--only-shell`, which renders subtly differently from the full Chrome-for-Testing binary this repo standardizes on) — a native macOS run won't match CI's Chromium build. If Docker isn't available, an alternative is to temporarily point CI's visual-regression job at `pnpm run test:visual:update` with the failure-artifact upload changed to `if: always()`, let it run once, download the resulting `-linux.png` files from the uploaded artifact, commit them, then revert the workflow step back to `pnpm run test:visual` / `if: failure()`.
+Baseline filenames are suffixed with browser + platform (e.g. `-chromium-darwin.png` / `-chromium-linux.png`), so a macOS dev machine and the Linux CI runner keep separate baselines rather than fighting over one — CI generates and commits its own the same way a local run does, there's no cross-platform bootstrapping needed.
+
+Font rasterization has genuine run-to-run jitter (see the comments in `playwright.config.ts` next to `expect.toHaveScreenshot`), so the comparison tolerance is deliberately looser than a byte-for-byte diff and CI retries a failing test twice before calling it a real failure. If you're touching rendering code, verify a real regression still fails clearly rather than just tightening tolerances until things pass.
 
 For a broader, human-reviewable sweep — not a pass/fail gate, just "what does my in-progress change actually alter" — run `pnpm run visual-diff`. It renders the full catalog with the working tree's renderer against a base ref (`--base=<ref>`, default `main`) into `visual-diff.html`, showing only samples whose output actually differs.
 
