@@ -97,9 +97,7 @@ describe('edge-cell-styles', () => {
       { x: 10, y: 10 },
       { x: 12, y: 10 },
     ]
-    expect(
-      findStyleConflict(grid, cellStyles, unrelated, 'dotted'),
-    ).toBeNull()
+    expect(findStyleConflict(grid, cellStyles, unrelated, 'dotted')).toBeNull()
   })
 
   /**
