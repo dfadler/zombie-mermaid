@@ -14,6 +14,15 @@ fork-fixes.html
 # Pre-fix source trees extracted by fork-fixes.ts; rebuilt on demand.
 .fork-fixes-cache/
 
+# Human-reviewable before/after report from scripts/visual-diff.ts.
+visual-diff.html
+.visual-diff-cache/
+
+# Actual/diff PNGs Vitest writes on a visual-test failure. The committed
+# baselines these compare against live in __tests__/visual/__screenshots__/
+# and are NOT ignored.
+.vitest-attachments/
+
 # IDE
 .idea/
 .vscode/
