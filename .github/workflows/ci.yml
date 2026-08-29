@@ -185,8 +185,14 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      # TEMPORARY bootstrap step: generates Linux baselines (-u writes
+      # references straight into __screenshots__/, unlike a plain run,
+      # whose "no existing reference" case writes into the ephemeral
+      # .vitest-attachments/ instead, which does not survive to the
+      # upload step below). Revert to `pnpm run test:visual` once the
+      # -linux.png baselines from this run are committed.
       - name: Run visual regression suite
-        run: pnpm run test:visual
+        run: pnpm run test:visual:update
 
       # Two distinct failure shapes, both worth downloading without having
       # to reproduce locally:
@@ -197,7 +203,7 @@ jobs:
       #     baseline yet (e.g. bootstrapping Linux baselines for the first
       #     time). Review these before committing them as the new baseline.
       - name: Upload failure screenshots
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: visual-regression-failures
