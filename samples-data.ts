@@ -1,5 +1,5 @@
 /**
- * Sample definitions for the beautiful-mermaid visual test suite.
+ * Sample definitions for the zombie-mermaid visual test suite.
  *
  * Shared by:
  *   - index.ts     — generates the HTML visual test page
@@ -37,7 +37,7 @@ export const samples: Sample[] = [
   // ══════════════════════════════════════════════════════════════════════════
 
   {
-    title: 'Beautiful Mermaid',
+    title: 'zombie-mermaid',
     category: 'Hero',
     description: 'Mermaid rendering, made beautiful.',
     source: `stateDiagram-v2
