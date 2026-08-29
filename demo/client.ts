@@ -354,6 +354,123 @@ function withNarrowDirection(source: string, lineIndex: number): string {
 }
 
 /**
+ * Mirrors demo/styles.css's `@media (max-width: 640px)` breakpoint. The
+ * SVG swap is pure CSS (see `.orientation-variant` there) because both
+ * orientations are pre-rendered elements CSS can pick between — but the
+ * source-code panel and ASCII output are plain text with no such pair, so
+ * they're updated imperatively here instead. Keep this in sync with
+ * styles.css if that breakpoint ever changes.
+ */
+const narrowViewportQuery = window.matchMedia('(max-width: 640px)')
+
+/**
+ * The source text to actually render for `sample` given the current
+ * viewport: `sample.source` unless it has a narrow-viewport alternate (see
+ * `wideDiagramDirectionLine`) and the viewport currently matches the
+ * narrow breakpoint.
+ */
+function sourceForViewport(sample: DemoSample): string {
+  const lineIndex = wideDiagramDirectionLine(sample.source)
+  if (lineIndex === null) return sample.source
+  return narrowViewportQuery.matches
+    ? withNarrowDirection(sample.source, lineIndex)
+    : sample.source
+}
+
+/**
+ * Re-render sample `i`'s ASCII output for the current viewport
+ * orientation, if it has an orientation alternate and its container
+ * exists. ASCII containers are created lazily per category (same as SVG —
+ * see renderSample), so a not-yet-rendered sample is a no-op here; it
+ * picks up the right orientation itself the first time it does render,
+ * since renderSample/saveAndRender call sourceForViewport too.
+ */
+function renderAsciiForViewport(i: number): void {
+  const sample = samples[i]
+  const asciiContainer = maybeGet('ascii-' + i)
+  if (!sample || !asciiContainer) return
+  if (wideDiagramDirectionLine(sample.source) === null) return
+  try {
+    asciiContainer.innerHTML = renderMermaidASCII(
+      sourceForViewport(sample),
+      TERMINAL_ASCII_OPTS,
+    )
+    applyWideCharWidths(asciiContainer)
+  } catch {
+    asciiContainer.textContent = '(ASCII not supported for this diagram type)'
+  }
+}
+
+/**
+ * Each orientation-qualifying sample's original build-time Shiki-highlighted
+ * source HTML (the `.shiki code` innerHTML), captured once up front before
+ * anything can overwrite it. Restoring this is how the "wide" orientation
+ * gets its syntax highlighting back after a narrow-viewport swap replaced
+ * it with plain text — Shiki itself isn't available client-side (see the
+ * "Shiki not available at runtime" note in saveAndRender). A sample's entry
+ * is dropped once edited, since the highlighting no longer matches the new
+ * source.
+ */
+const originalSourceCodeHtml = new Map<number, string>()
+for (let i = 0; i < samples.length; i++) {
+  const sample = samples[i]
+  if (!sample || wideDiagramDirectionLine(sample.source) === null) continue
+  const codeEl = document.querySelector<HTMLElement>(
+    '#source-panel-' + i + ' .shiki code',
+  )
+  if (codeEl) originalSourceCodeHtml.set(i, codeEl.innerHTML)
+}
+
+/**
+ * Show the orientation-appropriate source text in sample `i`'s source
+ * panel. Only the "wide" variant can be Shiki-highlighted (see
+ * `originalSourceCodeHtml`, which has no entry once the sample's been
+ * edited); the "narrow" variant, and "wide" after an edit, fall back to
+ * plain escaped text — the same degradation saveAndRender already accepts
+ * for an edited sample's own source panel.
+ */
+function updateSourcePanelOrientation(i: number): void {
+  const sample = samples[i]
+  if (!sample) return
+  const lineIndex = wideDiagramDirectionLine(sample.source)
+  if (lineIndex === null) return
+  const codeEl = document.querySelector<HTMLElement>(
+    '#source-panel-' + i + ' .shiki code',
+  )
+  if (!codeEl) return
+  codeEl.innerHTML = narrowViewportQuery.matches
+    ? escapeHtml(withNarrowDirection(sample.source, lineIndex))
+    : (originalSourceCodeHtml.get(i) ?? escapeHtml(sample.source))
+}
+
+// Reconcile every source panel with the current viewport right away — a
+// visitor can land directly on a narrow viewport, not just resize into one,
+// and every source panel already exists in the static HTML (unlike SVG/
+// ASCII, source panels aren't rendered lazily per category).
+for (let i = 0; i < samples.length; i++) updateSourcePanelOrientation(i)
+
+function applyViewportOrientation(): void {
+  for (let i = 0; i < samples.length; i++) {
+    updateSourcePanelOrientation(i)
+    renderAsciiForViewport(i)
+  }
+}
+
+narrowViewportQuery.addEventListener('change', applyViewportOrientation)
+
+// Fallback for environments where a viewport change doesn't reliably fire
+// MediaQueryList's own 'change' event even though `.matches` itself is
+// correct (observed with devtools/CDP-driven viewport emulation — some
+// don't dispatch it the way an actual window resize does). Gated on an
+// actual matches flip, not every resize tick, so this stays cheap.
+let lastNarrowMatch = narrowViewportQuery.matches
+window.addEventListener('resize', function () {
+  if (narrowViewportQuery.matches === lastNarrowMatch) return
+  lastNarrowMatch = narrowViewportQuery.matches
+  applyViewportOrientation()
+})
+
+/**
  * Render one sample's source into its SVG container, handling both the
  * common case (a single `<svg>`) and a wide diagram's narrow-viewport
  * alternate (two `<svg>`s, each wrapped so CSS can pick one — see
@@ -805,7 +922,7 @@ async function renderSample(i: number) {
   if (asciiContainer) {
     try {
       asciiContainer.innerHTML = renderMermaidASCII(
-        sample.source,
+        sourceForViewport(sample),
         TERMINAL_ASCII_OPTS,
       )
       applyWideCharWidths(asciiContainer)
@@ -1125,7 +1242,10 @@ async function saveAndRender() {
   // Close dialog immediately so user sees results rendering
   closeEditDialog()
 
-  // Update source panel with plain text (Shiki not available at runtime)
+  // Update source panel with plain text (Shiki not available at runtime).
+  // The edited source may newly qualify for an orientation alternate (or
+  // stop qualifying), so drop any stale cached highlighting for it and let
+  // updateSourcePanelOrientation pick the text for the current viewport.
   const sourcePanel = document.getElementById('source-panel-' + index)
   if (sourcePanel) {
     const shikiEl = sourcePanel.querySelector('.shiki')
@@ -1133,6 +1253,8 @@ async function saveAndRender() {
       shikiEl.innerHTML = '<code>' + escapeHtml(source) + '</code>'
     }
   }
+  originalSourceCodeHtml.delete(index)
+  updateSourcePanelOrientation(index)
 
   // Re-render SVG (async — renderMermaid returns a Promise)
   const svgContainer = maybeGet('svg-' + index)
@@ -1149,7 +1271,10 @@ async function saveAndRender() {
   const asciiContainer = maybeGet('ascii-' + index)
   if (asciiContainer) {
     try {
-      asciiContainer.innerHTML = renderMermaidASCII(source, TERMINAL_ASCII_OPTS)
+      asciiContainer.innerHTML = renderMermaidASCII(
+        sourceForViewport(editedSample),
+        TERMINAL_ASCII_OPTS,
+      )
       applyWideCharWidths(asciiContainer)
     } catch (e) {
       asciiContainer.textContent =
