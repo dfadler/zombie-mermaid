@@ -500,19 +500,23 @@ body::after {
   border-radius: 3px;
 }
 
+/* A narrow source rail plus one output pane (SVG/ASCII share it via the
+ * segmented toggle below) — not three columns splitting width three ways.
+ * `align-items: start` (rather than the grid default `stretch`) means each
+ * column sizes to its own content and the row height tracks whichever
+ * output view is actually showing, so switching to ASCII on a tall diagram
+ * grows the card instead of stretching the short source rail to match. */
 .sample-content {
   display: grid;
-  grid-template-columns:
-    minmax(200px, 1fr)
-    minmax(250px, 2fr)
-    minmax(250px, 2fr);
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  align-items: start;
   min-height: 420px;
 }
 @media (max-width: 900px) {
   .sample-content {
     grid-template-columns: 1fr;
   }
-  .ascii-panel {
+  .output-panel {
     border-left: none !important;
     border-top: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg)) !important;
   }
@@ -719,22 +723,72 @@ body::after {
   color: var(--t-bg);
 }
 
-/* -- SVG panel -- */
-.svg-panel {
+/* -- Output panel --
+ * Holds the SVG/ASCII segmented toggle plus both views. Only one view is
+ * ever visible (`.is-active`) — the inactive one is `display: none`, not
+ * just hidden, so it doesn't factor into the row's height and switching
+ * views doesn't leave a phantom gap behind the shorter one. */
+.output-panel {
   padding: 1.25rem 1.5rem;
+  border-left: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
   display: flex;
   flex-direction: column;
   min-width: 0; /* grid child: allow shrinking below content width */
+}
+.output-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+.seg {
+  display: inline-flex;
+  padding: 0.2rem;
+  background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
+  border: 1px solid color-mix(in srgb, var(--t-fg) 10%, var(--t-bg));
+  border-radius: 8px;
+}
+.seg-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.seg-btn:hover {
+  color: var(--t-fg);
+}
+.seg-btn:focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 2px;
+}
+.seg-btn[aria-selected='true'] {
+  background: var(--t-bg);
+  color: var(--t-fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.output-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* -- SVG panel -- */
+.svg-panel {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
   /* Background set dynamically: matches the SVG --bg in default mode,
      or the global theme bg when a theme is active. */
 }
-.svg-panel h3 {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-  margin-bottom: 0.75rem;
+.svg-panel.is-active {
+  display: flex;
+  flex: 1;
 }
 .svg-container {
   flex: 1;
@@ -754,11 +808,35 @@ body::after {
  * independent of the page's theme picker (see TERMINAL_PALETTE in
  * demo/client.ts) — real terminal output doesn't retheme itself. */
 .ascii-panel {
-  padding: 1.25rem 1.5rem;
-  border-left: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
-  display: flex;
+  display: none;
   flex-direction: column;
-  min-width: 0; /* grid child: allow shrinking below content width */
+  min-height: 0;
+}
+.ascii-panel.is-active {
+  display: flex;
+  flex: 1;
+}
+/* When ASCII is the active view, the whole chain drops to plain block
+ * layout instead of the flex sizing above: block boxes always size to
+ * their content, so a diagram taller than the panel grows the card
+ * (`.ascii-output` below loses its `overflow: auto` scrollbar) rather than
+ * being squeezed into a fixed-height box. Scoped to `.ascii-active`, set by
+ * the toggle handler in demo/client.ts, so the SVG view keeps the flex
+ * fill-available-height behavior above (there, the stage should still
+ * center a small diagram in whatever room the row has). */
+.output-panel.ascii-active .output-stage,
+.output-panel.ascii-active .ascii-panel.is-active,
+.output-panel.ascii-active .terminal-window {
+  display: block;
+  flex: none;
+  min-height: 0;
+  overflow: visible;
+}
+.output-panel.ascii-active .ascii-output {
+  display: block;
+  flex: none;
+  min-height: 0;
+  overflow: visible;
 }
 .terminal-window {
   display: flex;
@@ -807,7 +885,9 @@ body::after {
   padding: 1rem;
   font-size: 0.7rem;
   line-height: 1.3;
-  overflow: auto; /* a diagram taller than the window scrolls, like a real terminal's scrollback, rather than losing its bottom rows */
+  overflow: auto; /* fallback for a context with no .ascii-active override (e.g. print styles);
+     the ASCII view is the .output-panel.ascii-active case above in practice, which renders
+     at natural height with no scrollbar instead */
   white-space: pre;
   flex: 1;
   min-height: 0;

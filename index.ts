@@ -342,22 +342,32 @@ async function generateHtml(): Promise<string> {
           ${sample.options ? `<div class="options"><strong>Options:</strong> <code>${escapeHtml(JSON.stringify(sample.options))}</code></div>` : ''}
           <button class="edit-btn" data-sample="${i}">Edit</button>
         </div>
-        <div class="svg-panel" id="svg-panel-${i}" data-sample-bg="${bg}">
-          <div class="svg-container" id="svg-${i}">
-            <div class="loading-spinner"></div>
-          </div>
-        </div>
-        <div class="ascii-panel" id="ascii-panel-${i}">
-          <div class="terminal-window">
-            <div class="terminal-titlebar">
-              <span class="terminal-dots" aria-hidden="true">
-                <span class="terminal-dot terminal-dot-red"></span>
-                <span class="terminal-dot terminal-dot-yellow"></span>
-                <span class="terminal-dot terminal-dot-green"></span>
-              </span>
-              <span class="terminal-title">ascii</span>
+        <div class="output-panel">
+          <div class="output-head">
+            <div class="seg" role="tablist" aria-label="Output format">
+              <button type="button" class="seg-btn" data-view="svg" role="tab" aria-selected="true">SVG</button>
+              <button type="button" class="seg-btn" data-view="ascii" role="tab" aria-selected="false">ASCII</button>
             </div>
-            <pre class="ascii-output"><code id="ascii-${i}">Rendering\u2026</code><span class="terminal-cursor" aria-hidden="true">&nbsp;</span></pre>
+          </div>
+          <div class="output-stage">
+            <div class="svg-panel is-active" id="svg-panel-${i}" data-sample-bg="${bg}">
+              <div class="svg-container" id="svg-${i}">
+                <div class="loading-spinner"></div>
+              </div>
+            </div>
+            <div class="ascii-panel" id="ascii-panel-${i}">
+              <div class="terminal-window">
+                <div class="terminal-titlebar">
+                  <span class="terminal-dots" aria-hidden="true">
+                    <span class="terminal-dot terminal-dot-red"></span>
+                    <span class="terminal-dot terminal-dot-yellow"></span>
+                    <span class="terminal-dot terminal-dot-green"></span>
+                  </span>
+                  <span class="terminal-title">ascii</span>
+                </div>
+                <pre class="ascii-output"><code id="ascii-${i}">Rendering\u2026</code><span class="terminal-cursor" aria-hidden="true">&nbsp;</span></pre>
+              </div>
+            </div>
           </div>
         </div>
       </div>
