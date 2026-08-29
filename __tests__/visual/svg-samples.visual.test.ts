@@ -35,7 +35,7 @@ describe('gallery samples (samples-data.ts)', () => {
   samples.forEach((sample, i) => {
     it(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async () => {
       const svg = renderMermaidSVG(sample.source, sample.options)
-      const panel = mountSvgPanel(svg, sample.options?.bg)
+      const panel = await mountSvgPanel(svg, sample.options?.bg)
       try {
         await expect(page.elementLocator(panel)).toMatchScreenshot(
           `general/${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`,
@@ -51,7 +51,7 @@ describe('xychart samples (xychart-samples-data.ts)', () => {
   xychartSamples.forEach((sample, i) => {
     it(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async () => {
       const svg = renderMermaidSVG(sample.source)
-      const panel = mountSvgPanel(svg)
+      const panel = await mountSvgPanel(svg)
       try {
         await expect(page.elementLocator(panel)).toMatchScreenshot(
           `xychart/${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`,

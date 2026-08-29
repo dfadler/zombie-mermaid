@@ -19,14 +19,37 @@ import demoStylesheet from '../../../demo/styles.css?raw'
  */
 const PANEL_MAX_WIDTH = '960px'
 
-let stylesInjected = false
+/**
+ * Cap on how long to wait for the demo stylesheet's Google Fonts `@import`
+ * (Inter, JetBrains Mono) before screenshotting anyway.
+ *
+ * A screenshot taken while a web font is still loading captures the
+ * fallback font mid-swap, which is exactly the kind of instability
+ * `toMatchScreenshot()`'s stability detection keeps retrying against — on
+ * a CI runner with a slow/blocked path to the Google Fonts CDN, every
+ * single test in the file would otherwise burn its whole per-test timeout
+ * retrying a page that never stabilizes. Capped, not awaited unconditionally,
+ * so a fully broken network still produces a (fallback-font) screenshot
+ * once, rather than hanging until Vitest's test timeout kills every test.
+ */
+const FONT_WAIT_TIMEOUT_MS = 8000
 
-function ensureStylesInjected(): void {
-  if (stylesInjected) return
-  const style = document.createElement('style')
-  style.textContent = demoStylesheet as string
-  document.head.appendChild(style)
-  stylesInjected = true
+let stylesInjected = false
+let fontsReadyPromise: Promise<void> | null = null
+
+/** Inject the stylesheet once per tab and wait for its fonts once per tab — not per mount. */
+async function ensureStylesInjected(): Promise<void> {
+  if (!stylesInjected) {
+    const style = document.createElement('style')
+    style.textContent = demoStylesheet as string
+    document.head.appendChild(style)
+    stylesInjected = true
+  }
+  fontsReadyPromise ??= Promise.race([
+    document.fonts.ready.then(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, FONT_WAIT_TIMEOUT_MS)),
+  ])
+  await fontsReadyPromise
 }
 
 /**
@@ -34,8 +57,11 @@ function ensureStylesInjected(): void {
  * `.svg-container` chrome, matching how the live gallery frames it
  * (including the sample's own background, for samples rendered transparent).
  */
-export function mountSvgPanel(svg: string, bg?: string): HTMLElement {
-  ensureStylesInjected()
+export async function mountSvgPanel(
+  svg: string,
+  bg?: string,
+): Promise<HTMLElement> {
+  await ensureStylesInjected()
   const panel = document.createElement('div')
   panel.className = 'svg-panel'
   panel.style.width = 'fit-content'
@@ -50,8 +76,10 @@ export function mountSvgPanel(svg: string, bg?: string): HTMLElement {
 }
 
 /** Mount a pre-built terminal-window element inside the demo's `.ascii-panel` chrome. */
-export function mountAsciiPanel(terminalWindow: HTMLElement): HTMLElement {
-  ensureStylesInjected()
+export async function mountAsciiPanel(
+  terminalWindow: HTMLElement,
+): Promise<HTMLElement> {
+  await ensureStylesInjected()
   const panel = document.createElement('div')
   panel.className = 'ascii-panel'
   panel.style.width = 'fit-content'
