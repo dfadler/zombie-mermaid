@@ -30,6 +30,13 @@ export default defineConfig({
         test: {
           name: 'visual',
           include: ['__tests__/visual/**/*.visual.test.ts'],
+          // Above Vitest's 5000ms default: the first mount in each test
+          // file waits (capped at 8s) for the demo stylesheet's Google
+          // Fonts @import to finish, so a screenshot isn't taken mid
+          // fallback-to-webfont swap. A CI runner with a slow path to that
+          // CDN was otherwise hitting the default timeout on every single
+          // test (see FONT_WAIT_TIMEOUT_MS in helpers/mount.ts).
+          testTimeout: 15000,
           browser: {
             enabled: true,
             headless: true,

@@ -55,7 +55,7 @@ describe('gallery samples (samples-data.ts), ASCII/terminal', () => {
         html = escapeHtml('(ASCII not supported for this diagram type)')
       }
       const terminalWindow = buildTerminalPanel(html)
-      const panel = mountAsciiPanel(terminalWindow)
+      const panel = await mountAsciiPanel(terminalWindow)
       try {
         await expect(page.elementLocator(panel)).toMatchScreenshot(
           `general/${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`,
