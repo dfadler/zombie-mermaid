@@ -24,6 +24,15 @@ import { samples } from '../../samples-data.ts'
 import { xychartSamples } from '../../xychart-samples-data.ts'
 import { mountSvgPanel, unmount } from './helpers/mount.ts'
 
+// TEMPORARY diagnostic instrumentation for a CI-only hang under
+// investigation (browser launches and connects to Vitest's dev server, then
+// goes silent — see vitest-dev/vitest#10791). This console.log is forwarded
+// through Playwright's console-event bridge into the CI job log the moment
+// the browser evaluates this module, distinguishing "the browser never even
+// loaded the test file" from "it loaded but something inside a test hung."
+// Remove once the hang is understood.
+console.log('[diagnostic] svg-samples.visual.test.ts module evaluated')
+
 function slug(text: string): string {
   return text
     .toLowerCase()
@@ -31,9 +40,18 @@ function slug(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+let loggedFirstTestStart = false
+
 describe('gallery samples (samples-data.ts)', () => {
   samples.forEach((sample, i) => {
     it(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async () => {
+      if (!loggedFirstTestStart) {
+        loggedFirstTestStart = true
+        // TEMPORARY diagnostic — see the module-scope comment above.
+        console.log(
+          '[diagnostic] svg-samples.visual.test.ts first test started',
+        )
+      }
       const svg = renderMermaidSVG(sample.source, sample.options)
       const panel = await mountSvgPanel(svg, sample.options?.bg)
       try {

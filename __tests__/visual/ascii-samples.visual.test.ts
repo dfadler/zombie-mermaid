@@ -34,12 +34,18 @@ import {
 } from './helpers/terminal-panel.ts'
 import { mountAsciiPanel, unmount } from './helpers/mount.ts'
 
+// TEMPORARY diagnostic instrumentation — see the matching comment in
+// svg-samples.visual.test.ts. Remove once the CI hang is understood.
+console.log('[diagnostic] ascii-samples.visual.test.ts module evaluated')
+
 function slug(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+let loggedFirstTestStart = false
 
 describe('gallery samples (samples-data.ts), ASCII/terminal', () => {
   samples.forEach((sample, i) => {
@@ -48,6 +54,13 @@ describe('gallery samples (samples-data.ts), ASCII/terminal', () => {
     if (sample.category === 'Hero') return
 
     it(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async () => {
+      if (!loggedFirstTestStart) {
+        loggedFirstTestStart = true
+        // TEMPORARY diagnostic — see the module-scope comment above.
+        console.log(
+          '[diagnostic] ascii-samples.visual.test.ts first test started',
+        )
+      }
       let html: string
       try {
         html = renderMermaidASCII(sample.source, TERMINAL_ASCII_OPTS)
