@@ -197,16 +197,31 @@ jobs:
       # the whole job timeout: vitest-dev/vitest#10791 (open, not backported
       # to the 4.x line we're on) means a browser tester that goes silently
       # unresponsive mid-run has no run-level deadline and would otherwise
-      # hang for the job's full timeout-minutes instead of failing. That bug
-      # is what DEBUG=pw:browser (kept on below) caught directly: Chromium
-      # launches and both test files' tabs connect to Vitest's dev server
-      # within ~1s every time, then the run goes completely silent with zero
-      # further output. `timeout 240` bounds each attempt to 4 minutes, and
-      # a hung attempt is exactly as likely to be transient as it is
-      # persistent going by today's evidence (5 of 6 attempts on this branch
-      # hung; 1 didn't, on the identical runner image) — so retrying costs
-      # little for a real failure (those fail fast, not slowly) and gives
-      # multiple chances to land on a working run for a hang.
+      # hang for the job's full timeout-minutes instead of failing. `timeout
+      # 240` bounds each attempt to 4 minutes instead. NOTE: on the run that
+      # added this, all 3 attempts hung identically (12m39s total) — this is
+      # NOT a reliable workaround by itself, just damage control while the
+      # underlying cause is still being tracked down.
+      #
+      # DEBUG namespaces, widened past pw:browser (which only showed
+      # Chromium launching and both tabs connecting to Vitest's dev server
+      # within ~1s, then total silence — consistent every time):
+      #   - vitest:browser:pool          Vitest's own orchestration/RPC
+      #                                  layer — logs session creation and
+      #                                  "run test %s" / "%s finished
+      #                                  running", so this pinpoints whether
+      #                                  a test is ever actually dispatched
+      #                                  to the browser or the hang is in
+      #                                  session/handshake setup.
+      #   - vitest:browser:playwright    Page lifecycle in the playwright
+      #                                  provider (openBrowserPage, goto).
+      #   - VITEST_PW_DEBUG=1            Undocumented flag in
+      #                                  @vitest/browser-playwright that
+      #                                  logs failed page requests
+      #                                  (resourceType, url, error) — would
+      #                                  catch a stuck/failed navigation
+      #                                  that pw:browser's console-forwarding
+      #                                  alone wouldn't surface.
       - name: Run visual regression suite
         run: |
           for attempt in 1 2 3; do
@@ -221,7 +236,8 @@ jobs:
           echo "All 3 attempts failed." >&2
           exit 1
         env:
-          DEBUG: pw:browser
+          DEBUG: pw:browser,vitest:browser:pool,vitest:browser:playwright
+          VITEST_PW_DEBUG: '1'
 
       # Only produced on a failing run — the actual/diff PNGs a mismatch
       # writes next to the committed baseline in .vitest-attachments/, plus
