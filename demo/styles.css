@@ -749,34 +749,106 @@ body::after {
   height: auto;
 }
 
-/* -- ASCII panel -- */
+/* -- ASCII panel --
+ * Styled as a terminal window: fixed dark palette + titlebar chrome,
+ * independent of the page's theme picker (see TERMINAL_PALETTE in
+ * demo/client.ts) — real terminal output doesn't retheme itself. */
 .ascii-panel {
   padding: 1.25rem 1.5rem;
   border-left: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   min-width: 0; /* grid child: allow shrinking below content width */
 }
-.ascii-panel h3 {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
-  margin-bottom: 0.75rem;
+.terminal-window {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* flex child: allow shrinking to fit */
+  background: #0d1117;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+.terminal-dots {
+  display: flex;
+  gap: 0.4rem;
+}
+.terminal-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+.terminal-dot-red {
+  background: #ff5f56;
+}
+.terminal-dot-yellow {
+  background: #ffbd2e;
+}
+.terminal-dot-green {
+  background: #27c93f;
+}
+.terminal-title {
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: #7d8590;
+  margin-left: 0.25rem;
 }
 .ascii-output {
   padding: 1rem;
   font-size: 0.7rem;
   line-height: 1.3;
-  overflow-x: auto; /* horizontal scroll only */
-  overflow-y: hidden; /* scale to height, no vertical scroll */
+  overflow: auto; /* a diagram taller than the window scrolls, like a real terminal's scrollback, rather than losing its bottom rows */
   white-space: pre;
   flex: 1;
+  min-height: 0;
   max-width: 100%;
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: #e6edf3; /* fallback for glyphs the renderer leaves uncolored */
+  background: transparent;
+  scrollbar-color: #30363d transparent;
+}
+.ascii-output::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.ascii-output::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ascii-output::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 5px;
+}
+.terminal-cursor {
+  display: inline-block;
+  width: 0.55em;
+  margin-left: 1px;
+  background: #e6edf3;
+  animation: terminal-blink 1s step-end infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .terminal-cursor {
+    animation: none;
+  }
+}
+@keyframes terminal-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* -- Loading spinner -- */

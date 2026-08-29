@@ -203,6 +203,20 @@ const getSeriesColor = window.__mermaid.getSeriesColor
 const CHART_ACCENT_FALLBACK = window.__mermaid.CHART_ACCENT_FALLBACK
 const isWideChar = window.__mermaid.isWideChar
 
+// The ASCII panel renders as a terminal window (see demo/styles.css) with its
+// own fixed palette, independent of the page's theme picker — real terminal
+// output doesn't retheme itself when you change your editor's color scheme.
+const TERMINAL_PALETTE: DiagramColors = {
+  bg: '#0d1117',
+  fg: '#e6edf3',
+  line: '#3d444d',
+  accent: '#4493f8',
+  muted: '#9198a1',
+}
+const TERMINAL_ASCII_OPTS = {
+  theme: diagramColorsToAsciiTheme(TERMINAL_PALETTE),
+}
+
 const totalTimingEl = mustGet('total-timing')
 
 // -- Theme state --
@@ -376,29 +390,7 @@ function applyTheme(themeKey: string) {
     }
   }
 
-  // 4. Re-render ASCII panels with new theme colors — only for samples
-  // already rendered. An unrendered (category not yet opened) sample picks
-  // up the live theme itself when renderSample eventually runs for it, so
-  // skipping it here isn't stale, and avoids rendering ASCII for the whole
-  // sample set on every theme switch regardless of what's actually visible.
-  const asciiTheme = theme ? diagramColorsToAsciiTheme(theme) : null
-  for (let j = 0; j < samples.length; j++) {
-    if (originalSvgStyles[j] === undefined) continue
-    const asciiEl = maybeGet('ascii-' + j)
-    if (!asciiEl) continue
-    try {
-      asciiEl.innerHTML = renderMermaidASCII(
-        samples[j]!.source,
-        asciiTheme ? { theme: asciiTheme } : {},
-      )
-      applyWideCharWidths(asciiEl)
-    } catch {
-      // Leave the previous ASCII rendering in place — a theme switch
-      // should not blank a panel that rendered fine a moment ago.
-    }
-  }
-
-  // 5. Update active pill
+  // 4. Update active pill
   document.querySelectorAll('.theme-pill').forEach((pill) => {
     const isActive = pill.getAttribute('data-theme') === themeKey
     pill.classList.toggle('active', isActive)
@@ -724,11 +716,10 @@ async function renderSample(i: number) {
   // Hero samples don't have ASCII panels
   if (asciiContainer) {
     try {
-      const asciiTheme = currentTheme()
-      const asciiOpts = asciiTheme
-        ? { theme: diagramColorsToAsciiTheme(asciiTheme) }
-        : {}
-      asciiContainer.innerHTML = renderMermaidASCII(sample.source, asciiOpts)
+      asciiContainer.innerHTML = renderMermaidASCII(
+        sample.source,
+        TERMINAL_ASCII_OPTS,
+      )
       applyWideCharWidths(asciiContainer)
     } catch {
       asciiContainer.textContent = '(ASCII not supported for this diagram type)'
@@ -938,12 +929,7 @@ async function saveAndRender() {
   const asciiContainer = maybeGet('ascii-' + index)
   if (asciiContainer) {
     try {
-      const activeThemeKey = localStorage.getItem('mermaid-theme')
-      const activeColors = activeThemeKey ? THEMES[activeThemeKey] : undefined
-      const editAsciiOpts = activeColors
-        ? { theme: diagramColorsToAsciiTheme(activeColors) }
-        : {}
-      asciiContainer.innerHTML = renderMermaidASCII(source, editAsciiOpts)
+      asciiContainer.innerHTML = renderMermaidASCII(source, TERMINAL_ASCII_OPTS)
       applyWideCharWidths(asciiContainer)
     } catch (e) {
       asciiContainer.textContent =

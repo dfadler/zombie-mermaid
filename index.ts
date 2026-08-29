@@ -348,7 +348,17 @@ async function generateHtml(): Promise<string> {
           </div>
         </div>
         <div class="ascii-panel" id="ascii-panel-${i}">
-          <pre class="ascii-output"><code id="ascii-${i}">Rendering\u2026</code></pre>
+          <div class="terminal-window">
+            <div class="terminal-titlebar">
+              <span class="terminal-dots" aria-hidden="true">
+                <span class="terminal-dot terminal-dot-red"></span>
+                <span class="terminal-dot terminal-dot-yellow"></span>
+                <span class="terminal-dot terminal-dot-green"></span>
+              </span>
+              <span class="terminal-title">ascii</span>
+            </div>
+            <pre class="ascii-output"><code id="ascii-${i}">Rendering\u2026</code><span class="terminal-cursor" aria-hidden="true">&nbsp;</span></pre>
+          </div>
         </div>
       </div>
     </section>`,
