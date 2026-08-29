@@ -1077,15 +1077,40 @@ function showCategory(
     const jumpTarget = document.getElementById(hash)
     if (jumpTarget) programmaticScrollTo(jumpTarget, { block: 'start' })
   }
+
+  // Seed the sidebar highlight for the sample now on screen — the scroll
+  // spy below only moves it on a subsequent scroll, so without this the
+  // nav shows no active link until the reader scrolls at least once.
+  const initialId = currentSampleId()
+  if (initialId) setActiveSidebarLink(initialId)
 })()
 
+// Keep --samples-heading-height (demo/styles.css) in sync with the sticky
+// samples-heading bar's real rendered height, so `.sample`'s
+// scroll-margin-top and the scroll spy's detection line below both clear
+// it exactly. A ResizeObserver (not a one-off measurement) because the bar
+// wraps onto two lines below ~640px and unwraps again on resize.
+const samplesHeadingEl = document.querySelector('.samples-heading')
+if (samplesHeadingEl) {
+  new ResizeObserver(function (entries) {
+    const height = entries[0]?.borderBoxSize[0]?.blockSize
+    if (height !== undefined)
+      document.documentElement.style.setProperty(
+        '--samples-heading-height',
+        height + 'px',
+      )
+  }).observe(samplesHeadingEl)
+}
+
 // ============================================================================
-// Scroll spy — keeps the URL hash in sync with whichever sample is
-// currently under the sticky nav bar, so a reader can copy/bookmark the
+// Scroll spy — tracks whichever sample is currently under the sticky nav
+// bar and (a) keeps the URL hash in sync, so a reader can copy/bookmark the
 // link to wherever they are in a long category without clicking the
-// sidebar link for that exact card. Uses history.replaceState (never
-// pushState) so scrolling never adds entries to browser history the way
-// the sidebar's own link clicks intentionally do.
+// sidebar link for that exact card, and (b) highlights that sample's link
+// in the sidebar, so the nav shows reading position the same way it shows
+// an explicit click. Uses history.replaceState (never pushState) so
+// scrolling never adds entries to browser history the way the sidebar's
+// own link clicks intentionally do.
 // ============================================================================
 
 let suppressScrollSpy = false
@@ -1177,11 +1202,12 @@ function programmaticScrollTo(
  * the detection line, defaulting to the first visible section when none
  * have (the reader is above everything, e.g. at the very top of the page).
  *
- * The detection line sits `--nav-height` + 1rem down from the viewport
- * top — the same offset `.sample`'s own `scroll-margin-top` already uses
- * (demo/styles.css), so this agrees with where `scrollIntoView({block:
- * 'start'})` actually lands a card rather than picking an arbitrary
- * separate offset. `LINE_TOLERANCE_PX` absorbs the sub-pixel gap between
+ * The detection line sits `--nav-height` + `--samples-heading-height` +
+ * 1rem down from the viewport top — the same offset `.sample`'s own
+ * `scroll-margin-top` already uses (demo/styles.css), so this agrees with
+ * where `scrollIntoView({block: 'start'})` actually lands a card rather
+ * than picking an arbitrary separate offset. `LINE_TOLERANCE_PX` absorbs
+ * the sub-pixel gap between
  * that CSS offset and this computed one (observed ~0.1px in testing,
  * presumably layout rounding) — without it, scrollIntoView could land a
  * card's top a fraction of a pixel *past* the line, and the id-under-cursor
@@ -1196,12 +1222,19 @@ function programmaticScrollTo(
  */
 const LINE_TOLERANCE_PX = 2
 
-function currentSampleId(): string | null {
-  const navHeight = parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--nav-height'),
+function stickyOffsetPx(cssVar: string): number {
+  const value = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue(cssVar),
   )
+  return Number.isFinite(value) ? value : 0
+}
+
+function currentSampleId(): string | null {
   const detectionLine =
-    (Number.isFinite(navHeight) ? navHeight : 0) + 16 + LINE_TOLERANCE_PX
+    stickyOffsetPx('--nav-height') +
+    stickyOffsetPx('--samples-heading-height') +
+    16 +
+    LINE_TOLERANCE_PX
 
   const sections = document.querySelectorAll<HTMLElement>('.sample')
   let current: HTMLElement | null = null
@@ -1218,6 +1251,20 @@ function currentSampleId(): string | null {
 }
 
 let lastScrollSpyHash = location.hash.slice(1)
+let activeSidebarLink: HTMLAnchorElement | null = null
+
+/** Moves the `.active` highlight to the sidebar link for `sampleId`, if it
+ * has one — hero samples (never listed in the sidebar) simply clear the
+ * previous highlight and set none. */
+function setActiveSidebarLink(sampleId: string): void {
+  const link = document.querySelector<HTMLAnchorElement>(
+    '.sidebar-list a[href="#' + sampleId + '"]',
+  )
+  if (link === activeSidebarLink) return
+  activeSidebarLink?.classList.remove('active')
+  link?.classList.add('active')
+  activeSidebarLink = link
+}
 
 function updateScrollSpyHash(): void {
   if (suppressScrollSpy) return
@@ -1225,6 +1272,7 @@ function updateScrollSpyHash(): void {
   if (!id || id === lastScrollSpyHash) return
   lastScrollSpyHash = id
   history.replaceState(null, '', '#' + id)
+  setActiveSidebarLink(id)
 }
 
 let scrollSpyTicking = false
@@ -1240,6 +1288,40 @@ window.addEventListener(
   },
   { passive: true },
 )
+
+// ============================================================================
+// Scroll progress bar — a thin bar fixed to the viewport bottom, filled to
+// match how far down the whole page the reader has scrolled. With the
+// samples heading now pinned under the theme bar, a category deep in the
+// list can fill the entire screen with cards and read as "the end" even
+// when it isn't; this gives a persistent, content-independent signal of
+// how much more there is.
+// ============================================================================
+
+const scrollProgressBar = mustGet('scroll-progress-bar')
+
+function updateScrollProgress(): void {
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight
+  const pct = scrollable > 0 ? (window.scrollY / scrollable) * 100 : 100
+  scrollProgressBar.style.width = pct + '%'
+}
+
+let scrollProgressTicking = false
+function scheduleScrollProgressUpdate(): void {
+  if (scrollProgressTicking) return
+  scrollProgressTicking = true
+  requestAnimationFrame(function () {
+    updateScrollProgress()
+    scrollProgressTicking = false
+  })
+}
+window.addEventListener('scroll', scheduleScrollProgressUpdate, {
+  passive: true,
+})
+window.addEventListener('resize', scheduleScrollProgressUpdate, {
+  passive: true,
+})
+updateScrollProgress()
 
 // ============================================================================
 // Edit dialog — open, close, save & re-render

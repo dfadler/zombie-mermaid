@@ -435,6 +435,11 @@ ${styles}
        This invisible 1px div provides a real DOM element for Safari to detect. -->
   <div id="safari-theme-color" style="position:fixed;top:0;left:0;right:0;height:1px;background:var(--theme-bar-bg);z-index:9999;pointer-events:none;"></div>
 
+  <!-- Scroll progress bar — filled client-side as the page scrolls -->
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true">
+    <div class="scroll-progress-bar" id="scroll-progress-bar"></div>
+  </div>
+
   <!-- Navigation + theme bar -->
   <div class="theme-bar" id="theme-bar">
     <button class="sidebar-toggle shadow-minimal" id="sidebar-toggle" aria-label="Toggle sample navigation" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg></button>

@@ -66,6 +66,12 @@ body {
  * ----------------------------------------------------------------- */
 :root {
   --nav-height: 62px;
+  /* Height of the sticky samples-heading bar (theme bar + this stack to
+   * occlude the viewport top once both are pinned) — measured and kept
+   * live by a ResizeObserver in demo/client.ts, since unlike the theme
+   * bar's fixed single row, this one wraps onto two lines on narrow
+   * viewports. Defaults to 0 so nothing over-offsets before JS runs. */
+  --samples-heading-height: 0px;
 }
 .page-shell {
   display: flex;
@@ -101,12 +107,39 @@ body::after {
   background: linear-gradient(to top, var(--theme-bar-bg) 0%, transparent 100%);
 }
 
+/* -- Scroll progress bar (fixed to the viewport bottom) --
+ * Fills as the reader scrolls the whole page. With the samples heading now
+ * pinned under the theme bar, a category deep in the list can fill the
+ * entire screen with cards and read as "the end" when it isn't — this
+ * gives a persistent, content-independent signal of how much is left. */
+.scroll-progress {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+  z-index: 1005;
+  pointer-events: none;
+}
+.scroll-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--t-accent);
+}
+
 /* -- Theme selector bar (full-width, sits outside .content-wrapper) -- */
 .theme-bar {
   position: sticky;
   top: 0;
   z-index: 1001;
-  background: transparent;
+  /* Solid, not transparent: this bar is sticky and must fully obscure
+   * sample cards scrolling up underneath it, not just fade them via the
+   * gradient below. --theme-bar-bg already tracks the active theme (JS
+   * updates it on theme change), so this matches the gradient's own
+   * starting color exactly — same look at rest, opaque at any scroll
+   * position. */
+  background: var(--theme-bar-bg);
   padding: 0.5rem 2rem;
   min-height: var(--nav-height);
   box-sizing: border-box;
@@ -442,6 +475,16 @@ body::after {
   color: var(--t-fg);
   text-decoration: underline;
 }
+/* Tracks whichever sample is currently under the sticky nav bar — set by
+ * the scroll spy in demo/client.ts, the same signal that drives the URL
+ * hash. */
+.sidebar-list a.active {
+  color: var(--t-accent);
+  font-weight: 600;
+}
+.sidebar-list a.active .sidebar-num {
+  color: var(--t-accent);
+}
 .sidebar-num {
   color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg));
 }
@@ -451,7 +494,12 @@ body::after {
   background: var(--t-bg);
   margin-bottom: 2rem;
   overflow: hidden;
-  scroll-margin-top: calc(var(--nav-height) + 1rem);
+  /* Both the theme bar and the sticky samples-heading bar sit above any
+   * scrolled-to sample and must be cleared, or scrollIntoView lands it
+   * partly hidden underneath them. */
+  scroll-margin-top: calc(
+    var(--nav-height) + var(--samples-heading-height) + 1rem
+  );
 }
 
 /* -- Hero sample (full-width SVG showcase, above Samples heading) -- */
@@ -1135,7 +1183,22 @@ body::after {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
-  padding-top: 2.5rem;
+  margin-top: 2.5rem;
+  padding: 1rem 0;
+  /* Pinned directly under the theme bar (same offset the sidebar sticks
+   * at) so the active category and its "Browse diagram types" escape
+   * hatch stay reachable while scrolling through a long sample list.
+   * `margin-top` (not padding) carries the gap from the hero cards above
+   * it, since padding would stay part of the sticky box permanently and
+   * pad out the bar itself even once pinned. The solid background reuses
+   * body's own color-mix formula so sample cards scrolling underneath
+   * don't show through; the border gives the pinned bar a visible edge
+   * against them. */
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 5;
+  background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
 }
 .samples-heading .section-title {
   padding: 0;
