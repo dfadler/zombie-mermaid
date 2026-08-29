@@ -944,6 +944,34 @@ document.addEventListener('click', function (e) {
   const sampleIndex = btn?.dataset['sample']
   if (sampleIndex !== undefined) openEditDialog(parseInt(sampleIndex, 10))
 })
+
+/**
+ * SVG/ASCII segmented toggle (one per sample card).
+ *
+ * Delegated rather than bound per-sample: with up to 176 samples, and most
+ * never scrolled into view in a given session, per-card listeners would be
+ * pure setup cost for toggles nobody clicks.
+ */
+document.addEventListener('click', function (e) {
+  const segBtn = eventElement(e.target)?.closest<HTMLElement>('.seg-btn')
+  const outputPanel = segBtn?.closest<HTMLElement>('.output-panel')
+  if (!segBtn || !outputPanel) return
+  const view = segBtn.dataset['view']
+  const showAscii = view === 'ascii'
+
+  outputPanel.querySelectorAll<HTMLElement>('.seg-btn').forEach((b) => {
+    b.setAttribute('aria-selected', String(b === segBtn))
+  })
+  outputPanel
+    .querySelector('.svg-panel')
+    ?.classList.toggle('is-active', !showAscii)
+  outputPanel
+    .querySelector('.ascii-panel')
+    ?.classList.toggle('is-active', showAscii)
+  // See demo/styles.css's `.output-panel.ascii-active` rule: the ASCII view
+  // renders at its natural height instead of scrolling inside a fixed box.
+  outputPanel.classList.toggle('ascii-active', showAscii)
+})
 editSaveBtn.addEventListener('click', saveAndRender)
 editCancelBtn.addEventListener('click', closeEditDialog)
 editCloseBtn.addEventListener('click', closeEditDialog)
