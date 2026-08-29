@@ -23,9 +23,8 @@
  * surface what changed, not to reprint everything that didn't.
  */
 
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { samples } from '../samples-data.ts'
 import { xychartSamples } from '../xychart-samples-data.ts'
@@ -45,9 +44,15 @@ interface RendererModule {
   renderMermaidASCII?: (source: string, options?: unknown) => string
 }
 
-async function requireRef(ref: string): Promise<void> {
+/** Verify `ref` exists in this repo and return the commit SHA it resolves to. */
+async function resolveRef(ref: string): Promise<string> {
   try {
-    await exec('git', ['rev-parse', '--verify', `${ref}^{commit}`])
+    const { stdout } = await exec('git', [
+      'rev-parse',
+      '--verify',
+      `${ref}^{commit}`,
+    ])
+    return stdout.trim()
   } catch {
     const shallow = await exec('git', ['rev-parse', '--is-shallow-repository'])
       .then((r) => r.stdout.trim() === 'true')
@@ -61,19 +66,47 @@ async function requireRef(ref: string): Promise<void> {
   }
 }
 
+/**
+ * Extract `src/` at `ref`'s resolved commit SHA into a scratch directory and
+ * import its renderer.
+ *
+ * Keyed by the resolved SHA (not the raw ref) and always re-extracted rather
+ * than cached across runs: a moving ref like `main` would otherwise reuse a
+ * stale extraction under the same directory name, and a directory left
+ * behind by a prior run that crashed mid-extraction would otherwise look
+ * "already populated" and get reused incomplete.
+ */
 async function loadRendererAt(ref: string): Promise<RendererModule> {
-  const safeName = ref.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const dir = `${CACHE_DIR}${safeName}`
-  if (!existsSync(dir)) {
-    await requireRef(ref)
-    await mkdir(dir, { recursive: true })
-    const { stdout } = await exec(
-      'sh',
-      ['-c', `git archive ${ref} src | tar -x -C ${JSON.stringify(dir)}`],
-      { maxBuffer: 64 * 1024 * 1024 },
-    )
-    if (stdout.trim()) console.log(stdout.trim())
-  }
+  const sha = await resolveRef(ref)
+  const dir = `${CACHE_DIR}${sha}`
+  await rm(dir, { recursive: true, force: true })
+  await mkdir(dir, { recursive: true })
+
+  // Piped directly (no shell) so `ref`/`sha` is never interpolated into a
+  // command string — both come from `git rev-parse`'s own output, but this
+  // also just means a ref containing whitespace or shell metacharacters
+  // can't break the extraction.
+  await new Promise<void>((resolve, reject) => {
+    const archive = spawn('git', ['archive', sha, 'src'])
+    const untar = spawn('tar', ['-x', '-C', dir])
+    let archiveStderr = ''
+    archive.stderr.on('data', (chunk: Buffer) => {
+      archiveStderr += chunk.toString()
+    })
+    archive.on('error', reject)
+    untar.on('error', reject)
+    archive.stdout.pipe(untar.stdin)
+    archive.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`git archive exited with ${code}: ${archiveStderr}`))
+      }
+    })
+    untar.on('close', (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`tar exited with ${code}`))
+    })
+  })
+
   return (await import(`${dir}/src/index.ts`)) as RendererModule
 }
 
@@ -90,7 +123,12 @@ function renderSvgWith(
 function renderAsciiWith(mod: RendererModule, source: string): string {
   const fn = mod.renderMermaidASCII ?? mod.renderMermaidAscii
   if (!fn) throw new Error('no ASCII renderer export found')
-  return fn(source, { colorMode: 'html' })
+  // 'none': renderPanel below passes this through asciiToHtml, which
+  // escapes every grapheme for safe HTML embedding — 'html'-mode output
+  // (already-escaped `<span>` markup) would itself get escaped a second
+  // time and show up as literal tag text instead of colored spans. Matches
+  // fork-fixes.ts's ASCII rendering for the same reason.
+  return fn(source, { colorMode: 'none' })
 }
 
 interface Pair {

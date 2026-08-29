@@ -161,7 +161,15 @@ jobs:
     if: github.repository == 'dfadler/zombie-mermaid'
 
     steps:
+      # This job uploads a writable artifact (screenshots) on failure from
+      # a pull_request run, which can execute PR-controlled code (the repo's
+      # own test suite). actions/checkout's default persist-credentials:true
+      # would leave the read-only GITHUB_TOKEN in the local git config for
+      # that code to read; nothing after checkout needs authenticated git,
+      # so it's disabled.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
