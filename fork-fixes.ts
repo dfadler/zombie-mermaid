@@ -19,7 +19,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { forkFixes, type ForkFix } from './demo/fork-fixes-data.ts'
-import { isWideChar } from './src/text-metrics.ts'
+import { asciiToHtml } from './ascii-html.ts'
 
 const exec = promisify(execFile)
 
@@ -160,58 +160,6 @@ function formatProse(text: string): string {
   return escapeHtml(text)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-}
-
-/**
- * Render ASCII art as HTML with terminal column semantics preserved.
- *
- * A terminal gives every wide (CJK/fullwidth/emoji) glyph exactly two columns
- * — that rule is what the ASCII renderer's box math is built on. A browser
- * gives it whatever the fallback font's advance happens to be: measured at
- * **1.66×** the Latin advance here, because JetBrains Mono has no CJK
- * coverage and the glyph comes from a substitute face.
- *
- * Left alone, the CJK entry on this page displayed five different row widths
- * directly beneath a caption asserting that every row is the same width —
- * the page disproving its own claim. Each wide cluster is therefore boxed to
- * the column count the renderer allocated for it, reproducing the terminal's
- * geometry.
- *
- * Boxing works on grapheme clusters, not code points: a ZWJ family emoji, a
- * flag, or a skin-tone modifier is several code points that must stay in one
- * element, since a ligature cannot form across an element boundary. A
- * cluster's width is the max-wideness of its code points (not their sum) —
- * `isWideChar` is the renderer's own predicate and this mirrors
- * `displayWidth`/`charDisplayWidth`'s per-cluster algorithm, so the page and
- * the box math cannot disagree about how many columns anything occupies. A
- * cluster made entirely of combining marks (Mn/Me) with no base character
- * renders zero columns, for the same reason.
- */
-const FORK_FIXES_COMBINING_MARK_REGEX = /\p{Mn}|\p{Me}/u
-
-/** Mirrors `charDisplayWidth` in `src/ascii/display-width.ts` — see there. */
-function clusterDisplayWidth(cluster: string): number {
-  let sawWide = false
-  let sawNonMark = false
-  for (const ch of cluster) {
-    if (isWideChar(ch)) sawWide = true
-    if (!FORK_FIXES_COMBINING_MARK_REGEX.test(ch)) sawNonMark = true
-  }
-  if (sawWide) return 2
-  return sawNonMark ? 1 : 0
-}
-
-function asciiToHtml(text: string): string {
-  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-  let out = ''
-  for (const { segment } of segmenter.segment(text)) {
-    const width = clusterDisplayWidth(segment)
-    out +=
-      width > 1
-        ? `<span class="fix-wide" style="width:${width}ch">${escapeHtml(segment)}</span>`
-        : escapeHtml(segment)
-  }
-  return out
 }
 
 /**

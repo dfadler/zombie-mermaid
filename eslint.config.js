@@ -34,10 +34,12 @@ export default tseslint.config(
       'dev.ts',
       'index.ts',
       'fork-fixes.ts',
+      'ascii-html.ts',
       'bench.ts',
       'xychart-test.ts',
       'check-diff-coverage.ts',
       'scripts/**/*.ts',
+      '__tests__/**/*.ts',
     ],
     extends: [tseslint.configs.recommended],
     rules: {
