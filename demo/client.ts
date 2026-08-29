@@ -237,12 +237,311 @@ const ENRICHMENT_KEYS = [
 ] as const satisfies ReadonlyArray<keyof DiagramColors>
 
 /**
- * Each rendered SVG's original inline `style` attribute, indexed by sample.
- *
- * Sparse: only samples in a rendered category have an entry, so reads must
- * tolerate a hole (hence the `| undefined` and the guard at each use).
+ * Each rendered SVG's original inline `style` attribute, keyed by the
+ * element itself rather than sample index — a sample with a narrow-viewport
+ * orientation alternate (see `wideDiagramDirectionLine` below) renders two
+ * `<svg>`s, not one, so a single per-sample slot can't hold both.
  */
-const originalSvgStyles: Array<string | undefined> = []
+const originalSvgStyles = new WeakMap<SVGSVGElement, string>()
+
+/**
+ * Apply theme CSS variables to one rendered `<svg>` (or restore its
+ * pre-theme original style when `theme` is null, i.e. "Default"). Shared by
+ * every place that (re)renders a sample's SVG — `renderSample`, `applyTheme`'s
+ * per-sample loop, and the edit dialog's re-render — so each just loops over
+ * however many `<svg>` elements its container holds (one normally, two for a
+ * sample with an orientation alternate) and calls this per element, instead
+ * of tripling this logic to handle that "possibly two, not one" case.
+ */
+function applyThemeToSvgElement(
+  svgEl: SVGSVGElement,
+  theme: DiagramColors | null,
+): void {
+  if (theme) {
+    svgEl.style.setProperty('--bg', theme.bg)
+    svgEl.style.setProperty('--fg', theme.fg)
+    for (const prop of ENRICHMENT_KEYS) {
+      const value = theme[prop]
+      if (value) svgEl.style.setProperty('--' + prop, value)
+      else svgEl.style.removeProperty('--' + prop)
+    }
+    // Recompute xychart series color vars from the theme's accent
+    const maxColor = parseInt(
+      svgEl.getAttribute('data-xychart-colors') || '-1',
+      10,
+    )
+    if (maxColor >= 0) {
+      const accent = theme.accent || CHART_ACCENT_FALLBACK
+      svgEl.style.setProperty('--xychart-color-0', accent)
+      for (let ci = 1; ci <= maxColor; ci++) {
+        svgEl.style.setProperty(
+          '--xychart-color-' + ci,
+          getSeriesColor(ci, accent, theme.bg),
+        )
+      }
+    }
+  } else {
+    const original = originalSvgStyles.get(svgEl)
+    if (original !== undefined) svgEl.setAttribute('style', original)
+  }
+}
+
+/**
+ * The line (0-indexed into `source.split('\n')`) whose declared direction
+ * controls a wide (`LR`/`RL`) flowchart's or state diagram's overall
+ * orientation, or `null` if this source isn't one of those two diagram
+ * types, or is but isn't wide.
+ *
+ * Only flowcharts and state diagrams qualify — those are the two diagram
+ * types with a `TD`/`LR`-style orientation to swap; a `TD`/`TB`/`BT`
+ * flowchart is already tall-and-narrow, and non-flowchart, non-state
+ * diagram types (sequence, ER, class, xychart) don't have an equivalent
+ * notion of "orientation" to offer an alternate for.
+ *
+ * For a flowchart the direction lives in the header line itself (`graph
+ * LR`). For a state diagram it's a `direction LR` statement anywhere in
+ * the body — mirroring src/parser.ts's parseStateDiagram, only the
+ * *top-level* one counts (one inside `state X { … }` overrides that
+ * composite state alone), so this tracks composite-state brace depth with
+ * the same open/close patterns the real parser uses to find it.
+ */
+function wideDiagramDirectionLine(source: string): number | null {
+  const lines = source.split('\n')
+  const header = (lines[0] ?? '').trim()
+
+  const flowchartMatch = header.match(
+    /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
+  )
+  if (flowchartMatch) {
+    const direction = flowchartMatch[1]!.toUpperCase()
+    return direction === 'LR' || direction === 'RL' ? 0 : null
+  }
+
+  if (!/^stateDiagram(-v2)?\s*$/i.test(header)) return null
+
+  let compositeDepth = 0
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]!.trim()
+    if (compositeDepth === 0) {
+      const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
+      if (dirMatch) {
+        const direction = dirMatch[1]!.toUpperCase()
+        return direction === 'LR' || direction === 'RL' ? i : null
+      }
+    }
+    if (/^state\s+(?:"[^"]+"\s+as\s+)?[\w\p{L}]+\s*\{$/u.test(line)) {
+      compositeDepth++
+    } else if (line === '}') {
+      compositeDepth = Math.max(0, compositeDepth - 1)
+    }
+  }
+  return null
+}
+
+/**
+ * Rewrite the direction word on `lineIndex` (as found by
+ * `wideDiagramDirectionLine`) to `TD`, leaving the rest of the source
+ * untouched. `TD` is always the target rather than the literal opposite of
+ * whatever's declared (`BT` staying `BT`, say) because the goal is
+ * specifically "narrow enough for a small screen," not "rotate 180°."
+ */
+function withNarrowDirection(source: string, lineIndex: number): string {
+  const lines = source.split('\n')
+  const target = lines[lineIndex]
+  if (target === undefined) return source
+  lines[lineIndex] = target.replace(/(TD|TB|LR|BT|RL)(\s*)$/i, 'TD$2')
+  return lines.join('\n')
+}
+
+/**
+ * Mirrors demo/styles.css's `@media (max-width: 640px)` breakpoint. The
+ * SVG swap is pure CSS (see `.orientation-variant` there) because both
+ * orientations are pre-rendered elements CSS can pick between — but the
+ * source-code panel and ASCII output are plain text with no such pair, so
+ * they're updated imperatively here instead. Keep this in sync with
+ * styles.css if that breakpoint ever changes.
+ */
+const narrowViewportQuery = window.matchMedia('(max-width: 640px)')
+
+/**
+ * The source text to actually render for `sample` given the current
+ * viewport: `sample.source` unless it has a narrow-viewport alternate (see
+ * `wideDiagramDirectionLine`) and the viewport currently matches the
+ * narrow breakpoint.
+ */
+function sourceForViewport(sample: DemoSample): string {
+  const lineIndex = wideDiagramDirectionLine(sample.source)
+  if (lineIndex === null) return sample.source
+  return narrowViewportQuery.matches
+    ? withNarrowDirection(sample.source, lineIndex)
+    : sample.source
+}
+
+/**
+ * Re-render sample `i`'s ASCII output for the current viewport
+ * orientation, if it has an orientation alternate and its container
+ * exists. ASCII containers are created lazily per category (same as SVG —
+ * see renderSample), so a not-yet-rendered sample is a no-op here; it
+ * picks up the right orientation itself the first time it does render,
+ * since renderSample/saveAndRender call sourceForViewport too.
+ */
+function renderAsciiForViewport(i: number): void {
+  const sample = samples[i]
+  const asciiContainer = maybeGet('ascii-' + i)
+  if (!sample || !asciiContainer) return
+  if (wideDiagramDirectionLine(sample.source) === null) return
+  try {
+    asciiContainer.innerHTML = renderMermaidASCII(
+      sourceForViewport(sample),
+      TERMINAL_ASCII_OPTS,
+    )
+    applyWideCharWidths(asciiContainer)
+  } catch {
+    asciiContainer.textContent = '(ASCII not supported for this diagram type)'
+  }
+}
+
+/**
+ * Each orientation-qualifying sample's original build-time Shiki-highlighted
+ * source HTML (the `.shiki code` innerHTML), captured once up front before
+ * anything can overwrite it. Restoring this is how the "wide" orientation
+ * gets its syntax highlighting back after a narrow-viewport swap replaced
+ * it with plain text — Shiki itself isn't available client-side (see the
+ * "Shiki not available at runtime" note in saveAndRender). A sample's entry
+ * is dropped once edited, since the highlighting no longer matches the new
+ * source.
+ */
+const originalSourceCodeHtml = new Map<number, string>()
+for (let i = 0; i < samples.length; i++) {
+  const sample = samples[i]
+  if (!sample || wideDiagramDirectionLine(sample.source) === null) continue
+  const codeEl = document.querySelector<HTMLElement>(
+    '#source-panel-' + i + ' .shiki code',
+  )
+  if (codeEl) originalSourceCodeHtml.set(i, codeEl.innerHTML)
+}
+
+/**
+ * Show the orientation-appropriate source text in sample `i`'s source
+ * panel. Only the "wide" variant can be Shiki-highlighted (see
+ * `originalSourceCodeHtml`, which has no entry once the sample's been
+ * edited); the "narrow" variant, and "wide" after an edit, fall back to
+ * plain escaped text — the same degradation saveAndRender already accepts
+ * for an edited sample's own source panel.
+ */
+function updateSourcePanelOrientation(i: number): void {
+  const sample = samples[i]
+  if (!sample) return
+  const lineIndex = wideDiagramDirectionLine(sample.source)
+  if (lineIndex === null) return
+  const codeEl = document.querySelector<HTMLElement>(
+    '#source-panel-' + i + ' .shiki code',
+  )
+  if (!codeEl) return
+  codeEl.innerHTML = narrowViewportQuery.matches
+    ? escapeHtml(withNarrowDirection(sample.source, lineIndex))
+    : (originalSourceCodeHtml.get(i) ?? escapeHtml(sample.source))
+}
+
+// Reconcile every source panel with the current viewport right away — a
+// visitor can land directly on a narrow viewport, not just resize into one,
+// and every source panel already exists in the static HTML (unlike SVG/
+// ASCII, source panels aren't rendered lazily per category).
+for (let i = 0; i < samples.length; i++) updateSourcePanelOrientation(i)
+
+function applyViewportOrientation(): void {
+  for (let i = 0; i < samples.length; i++) {
+    updateSourcePanelOrientation(i)
+    renderAsciiForViewport(i)
+  }
+}
+
+narrowViewportQuery.addEventListener('change', applyViewportOrientation)
+
+// Fallback for environments where a viewport change doesn't reliably fire
+// MediaQueryList's own 'change' event even though `.matches` itself is
+// correct (observed with devtools/CDP-driven viewport emulation — some
+// don't dispatch it the way an actual window resize does). Gated on an
+// actual matches flip, not every resize tick, so this stays cheap.
+let lastNarrowMatch = narrowViewportQuery.matches
+window.addEventListener('resize', function () {
+  if (narrowViewportQuery.matches === lastNarrowMatch) return
+  lastNarrowMatch = narrowViewportQuery.matches
+  applyViewportOrientation()
+})
+
+/**
+ * Give every real `id="…"` in a rendered SVG string a unique prefix, and
+ * rewrite the `url(#…)` references (e.g. `marker-end`) that point at them
+ * to match. `renderSvgVariants` inserts two full SVG renders of the *same*
+ * sample into one container — both define fixed marker ids like
+ * `arrowhead` (see src/renderer.ts), and IDs must be unique per document;
+ * an unprefixed pair would be invalid markup and, per SVG's `url(#id)`
+ * resolution rules, fragile if the two definitions ever diverge (a
+ * *different* sample's same-named marker elsewhere on the page is a
+ * separate, pre-existing instance of this same pattern — out of scope
+ * here, since this only needs the two variants of one sample to not
+ * collide with *each other*).
+ *
+ * `(?<!data-)\bid=` deliberately excludes `data-id="…"` (used for nodes/
+ * edges, e.g. click-interactivity targets) — those aren't `url(#…)`
+ * reference targets and don't need rewriting.
+ */
+function withUniqueSvgIds(svg: string, prefix: string): string {
+  const ids = new Set<string>()
+  for (const m of svg.matchAll(/(?<!data-)\bid="([^"]+)"/g)) ids.add(m[1]!)
+  let result = svg
+  for (const id of ids) {
+    const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    result = result
+      .replace(
+        new RegExp(`(?<!data-)\\bid="${escaped}"`, 'g'),
+        `id="${prefix}${id}"`,
+      )
+      .replace(new RegExp(`url\\(#${escaped}\\)`, 'g'), `url(#${prefix}${id})`)
+      .replace(new RegExp(`href="#${escaped}"`, 'g'), `href="#${prefix}${id}"`)
+  }
+  return result
+}
+
+/**
+ * Render one sample's source into its SVG container, handling both the
+ * common case (a single `<svg>`) and a wide diagram's narrow-viewport
+ * alternate (two `<svg>`s, each wrapped so CSS can pick one — see
+ * `.orientation-variant` in demo/styles.css). Shared by `renderSample` and
+ * the edit dialog's re-render, which both need this same "one or two
+ * variants, themed and remembered for Default-mode restoration" sequence.
+ */
+async function renderSvgVariants(
+  svgContainer: HTMLElement,
+  sample: DemoSample,
+  theme: DiagramColors | null,
+): Promise<void> {
+  const directionLine = wideDiagramDirectionLine(sample.source)
+  if (directionLine !== null) {
+    const [wideSvg, narrowSvg] = await Promise.all([
+      renderMermaid(sample.source, sample.options),
+      renderMermaid(
+        withNarrowDirection(sample.source, directionLine),
+        sample.options,
+      ),
+    ])
+    const idPrefix = (svgContainer.id || 'sample') + '-'
+    svgContainer.innerHTML =
+      '<div class="orientation-variant orientation-wide">' +
+      withUniqueSvgIds(wideSvg, idPrefix + 'w-') +
+      '</div><div class="orientation-variant orientation-narrow">' +
+      withUniqueSvgIds(narrowSvg, idPrefix + 'n-') +
+      '</div>'
+  } else {
+    svgContainer.innerHTML = await renderMermaid(sample.source, sample.options)
+  }
+
+  svgContainer.querySelectorAll('svg').forEach((svgEl) => {
+    originalSvgStyles.set(svgEl, svgEl.getAttribute('style') || '')
+    applyThemeToSvgElement(svgEl, theme)
+  })
+}
 
 function hexToRgb(
   hex: string | null | undefined,
@@ -337,42 +636,15 @@ function applyTheme(themeKey: string) {
   // (not NodeList position) since not-yet-rendered categories mean this
   // list is sparse — a lazily-rendered sample picks up the live theme
   // itself (see renderSample), so skipping it here is correct, not stale.
+  // A sample with an orientation alternate (see renderSvgVariants) holds
+  // two <svg>s, so this applies to every one in the container, not just
+  // the first.
   for (let j = 0; j < samples.length; j++) {
     const svgContainerEl = maybeGet('svg-' + j)
-    const svgEl = svgContainerEl && svgContainerEl.querySelector('svg')
-    if (!svgEl) continue
-    if (theme) {
-      // Override with the global theme colors
-      svgEl.style.setProperty('--bg', theme.bg)
-      svgEl.style.setProperty('--fg', theme.fg)
-      // Set enrichment variables if provided, else remove so SVG
-      // internal color-mix() fallbacks activate
-      for (const prop of ENRICHMENT_KEYS) {
-        const value = theme[prop]
-        if (value) svgEl.style.setProperty('--' + prop, value)
-        else svgEl.style.removeProperty('--' + prop)
-      }
-      // Recompute xychart series color vars from the new accent
-      const maxColor = parseInt(
-        svgEl.getAttribute('data-xychart-colors') || '-1',
-        10,
-      )
-      if (maxColor >= 0) {
-        const accent = theme.accent || CHART_ACCENT_FALLBACK
-        svgEl.style.setProperty('--xychart-color-0', accent)
-        for (let ci = 1; ci <= maxColor; ci++) {
-          svgEl.style.setProperty(
-            '--xychart-color-' + ci,
-            getSeriesColor(ci, accent, theme.bg),
-          )
-        }
-      }
-    } else {
-      // Restore original inline style from initial render
-      if (originalSvgStyles[j] !== undefined) {
-        svgEl.setAttribute('style', originalSvgStyles[j] ?? '')
-      }
-    }
+    if (!svgContainerEl) continue
+    svgContainerEl.querySelectorAll('svg').forEach((svgEl) => {
+      applyThemeToSvgElement(svgEl, theme)
+    })
   }
 
   // 3. Update SVG panel backgrounds to match (skip hero panels - keep transparent)
@@ -661,43 +933,8 @@ async function renderSample(i: number) {
   if (!sample || !svgContainer) return
 
   try {
-    const svg = await renderMermaid(sample.source, sample.options)
     const theme: DiagramColors | null = currentTheme()
-    svgContainer.innerHTML = svg
-
-    // Store the SVG's original inline style for Default mode restoration
-    const svgEl = svgContainer.querySelector('svg')
-    if (svgEl) {
-      originalSvgStyles[i] = svgEl.getAttribute('style') || ''
-
-      // If a global theme is active, immediately override the SVG's variables
-      if (theme) {
-        svgEl.style.setProperty('--bg', theme.bg)
-        svgEl.style.setProperty('--fg', theme.fg)
-        for (const prop of ENRICHMENT_KEYS) {
-          const value = theme[prop]
-          if (value) svgEl.style.setProperty('--' + prop, value)
-          else svgEl.style.removeProperty('--' + prop)
-        }
-        // Recompute xychart series color vars from the saved theme's accent
-        const maxColor = parseInt(
-          svgEl.getAttribute('data-xychart-colors') || '-1',
-          10,
-        )
-        if (maxColor >= 0) {
-          const accent = theme.accent || CHART_ACCENT_FALLBACK
-          svgEl.style.setProperty('--xychart-color-0', accent)
-          for (let ci = 1; ci <= maxColor; ci++) {
-            svgEl.style.setProperty(
-              '--xychart-color-' + ci,
-              getSeriesColor(ci, accent, theme.bg),
-            )
-          }
-        }
-      }
-    } else {
-      originalSvgStyles[i] = ''
-    }
+    await renderSvgVariants(svgContainer, sample, theme)
 
     // Set panel background to match the SVG (skip for hero panels - keep transparent)
     const isHeroPanel = svgPanel?.classList.contains('hero-diagram-panel')
@@ -714,14 +951,13 @@ async function renderSample(i: number) {
       '<div class="render-error">SVG Error: ' +
       escapeHtml(String(err)) +
       '</div>'
-    originalSvgStyles[i] = ''
   }
 
   // Hero samples don't have ASCII panels
   if (asciiContainer) {
     try {
       asciiContainer.innerHTML = renderMermaidASCII(
-        sample.source,
+        sourceForViewport(sample),
         TERMINAL_ASCII_OPTS,
       )
       applyWideCharWidths(asciiContainer)
@@ -1041,7 +1277,10 @@ async function saveAndRender() {
   // Close dialog immediately so user sees results rendering
   closeEditDialog()
 
-  // Update source panel with plain text (Shiki not available at runtime)
+  // Update source panel with plain text (Shiki not available at runtime).
+  // The edited source may newly qualify for an orientation alternate (or
+  // stop qualifying), so drop any stale cached highlighting for it and let
+  // updateSourcePanelOrientation pick the text for the current viewport.
   const sourcePanel = document.getElementById('source-panel-' + index)
   if (sourcePanel) {
     const shikiEl = sourcePanel.querySelector('.shiki')
@@ -1049,44 +1288,15 @@ async function saveAndRender() {
       shikiEl.innerHTML = '<code>' + escapeHtml(source) + '</code>'
     }
   }
+  originalSourceCodeHtml.delete(index)
+  updateSourcePanelOrientation(index)
 
   // Re-render SVG (async — renderMermaid returns a Promise)
   const svgContainer = maybeGet('svg-' + index)
   const editedSample = samples[index]
   if (!svgContainer || !editedSample) return
   try {
-    const svg = await renderMermaid(source, editedSample.options)
-    svgContainer.innerHTML = svg
-    const svgEl = svgContainer.querySelector('svg')
-    if (svgEl) {
-      originalSvgStyles[index] = svgEl.getAttribute('style') || ''
-      const activeTheme = localStorage.getItem('mermaid-theme')
-      const th = activeTheme ? THEMES[activeTheme] : undefined
-      if (th) {
-        svgEl.style.setProperty('--bg', th.bg)
-        svgEl.style.setProperty('--fg', th.fg)
-        for (const prop of ENRICHMENT_KEYS) {
-          const value = th[prop]
-          if (value) svgEl.style.setProperty('--' + prop, value)
-          else svgEl.style.removeProperty('--' + prop)
-        }
-        // Recompute xychart series color vars
-        const maxColor = parseInt(
-          svgEl.getAttribute('data-xychart-colors') || '-1',
-          10,
-        )
-        if (maxColor >= 0) {
-          const accent = th.accent || CHART_ACCENT_FALLBACK
-          svgEl.style.setProperty('--xychart-color-0', accent)
-          for (let ci = 1; ci <= maxColor; ci++) {
-            svgEl.style.setProperty(
-              '--xychart-color-' + ci,
-              getSeriesColor(ci, accent, th.bg),
-            )
-          }
-        }
-      }
-    }
+    await renderSvgVariants(svgContainer, editedSample, currentTheme())
   } catch (err) {
     svgContainer.innerHTML =
       '<div class="render-error">' + escapeHtml(String(err)) + '</div>'
@@ -1096,7 +1306,10 @@ async function saveAndRender() {
   const asciiContainer = maybeGet('ascii-' + index)
   if (asciiContainer) {
     try {
-      asciiContainer.innerHTML = renderMermaidASCII(source, TERMINAL_ASCII_OPTS)
+      asciiContainer.innerHTML = renderMermaidASCII(
+        sourceForViewport(editedSample),
+        TERMINAL_ASCII_OPTS,
+      )
       applyWideCharWidths(asciiContainer)
     } catch (e) {
       asciiContainer.textContent =
