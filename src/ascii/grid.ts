@@ -21,7 +21,13 @@ import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import { determinePath, determineLabelLine } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
-import { isBlockFree, placeBlock, NODE_BLOCK_SIZE } from './grid-occupancy.ts'
+import {
+  isBlockFree,
+  placeBlock,
+  cloneGrid,
+  NODE_BLOCK_SIZE,
+  type Grid,
+} from './grid-occupancy.ts'
 import {
   createEdgeCellStyles,
   claimPathCells,
@@ -220,17 +226,30 @@ const MAX_STYLE_CONFLICT_REROUTES = 8
  * that temporary block again once this edge is done (it must not
  * permanently block the cell for other, unrelated edges; only *style*
  * conflicts are meant to be avoided, not all future overlap).
+ *
+ * `nodeOnlyGrid` — not `graph.grid` — is what gets passed to
+ * `findStyleConflict`'s "is this cell node-owned, and therefore not a real
+ * conflict" check. This must be a separate, frozen-at-node-placement-time
+ * grid: `graph.grid` gets `add`ed to right below for A*'s benefit, and if
+ * the *conflict check* used that same live grid, a cell temporarily
+ * blocked on attempt 1 would look node-occupied on attempt 2 — so if A*'s
+ * direct-fallback (which ignores occupancy) routes right back through it,
+ * the loop would wrongly see "no conflict" and stop, leaving the two
+ * differently-styled edges still overlapping there. See
+ * ascii-edge-cross-style-overlap.test.ts's regression test for this exact
+ * scenario.
  */
 function rerouteAroundStyleConflicts(
   graph: AsciiGraph,
   edge: AsciiEdge,
   cellStyles: EdgeCellStyles,
+  nodeOnlyGrid: Grid,
 ): void {
   const temporarilyBlocked: GridCoord[] = []
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict = findStyleConflict(
-        graph.grid,
+        nodeOnlyGrid,
         cellStyles,
         edge.path,
         edge.style,
@@ -918,20 +937,28 @@ export function createMapping(graph: AsciiGraph): void {
   // around the conflicting cell(s). Same-style overlap is left completely
   // untouched: it's how sibling/bundled edges are meant to share a trunk
   // (see edge-cell-styles.ts's module doc).
+  //
+  // `nodeOnlyGrid` snapshots `graph.grid` right here — after all node
+  // placement and bundle routing (which doesn't itself reserve into
+  // `graph.grid`; see routeBundledEdges), before any per-edge temporary
+  // reroute reservations start mutating the live `graph.grid` below. See
+  // `rerouteAroundStyleConflicts`'s doc for why the conflict check needs
+  // this frozen copy instead of the live grid.
   const cellStyles = createEdgeCellStyles()
+  const nodeOnlyGrid = cloneGrid(graph.grid)
   for (const edge of graph.edges) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
       increaseGridSizeForPath(graph, edge.path)
-      claimPathCells(graph.grid, cellStyles, edge.path, edge.style)
+      claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
       determineLabelLine(graph, edge)
       continue
     }
 
     determinePath(graph, edge)
-    rerouteAroundStyleConflicts(graph, edge, cellStyles)
+    rerouteAroundStyleConflicts(graph, edge, cellStyles, nodeOnlyGrid)
     increaseGridSizeForPath(graph, edge.path)
-    claimPathCells(graph.grid, cellStyles, edge.path, edge.style)
+    claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     determineLabelLine(graph, edge)
   }
 

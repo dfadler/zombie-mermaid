@@ -54,11 +54,36 @@ export class Grid {
   delete(key: string): void {
     this.#cells.delete(key)
   }
+
+  /** Iterate the reserved cell keys. Read-only — see `cloneGrid`. */
+  keys(): IterableIterator<string> {
+    return this.#cells.keys()
+  }
 }
 
 /** Create a fresh, empty grid occupancy map. */
 export function createGrid(): Grid {
   return new Grid()
+}
+
+/**
+ * Copy a grid's current reservations into a brand-new, independent `Grid`.
+ *
+ * Used to snapshot *node* occupancy before edge routing starts (grid.ts's
+ * `createMapping`, right after all `placeBlock` calls and before the
+ * edge-routing loop) so that later mutating `graph.grid` — specifically
+ * `rerouteAroundStyleConflicts`'s temporary `add`/`delete` of a conflicting
+ * cell — can't change what counts as "node-owned" for
+ * `edge-cell-styles.ts`'s conflict check. Without this, a temporarily
+ * blocked cell looks node-occupied to `findStyleConflict` for exactly as
+ * long as it's reserved, which is precisely when a re-route needs to
+ * re-check it — see the regression test this snapshot fixes in
+ * ascii-edge-cross-style-overlap.test.ts.
+ */
+export function cloneGrid(grid: Grid): Grid {
+  const clone = createGrid()
+  for (const key of grid.keys()) clone.add(key)
+  return clone
 }
 
 /** The N x N block of cells a node reserves: border, content, border. */
@@ -160,9 +185,14 @@ export function placeBlock(
  * past each other's target on different iterations and the loop's
  * "both must match" exit condition is never satisfied, walking forever
  * (this happened in testing, on a plain 4-edge fan-out, until it blew a
- * `Set`'s max size). `MAX_WALK_STEPS` is a second, independent safety net
- * in case a future caller feeds in a segment absurdly far from the grid's
- * normal handful-of-columns/rows scale.
+ * `Set`'s max size). `MAX_WALK_STEPS` is a second, independent safety net in
+ * case a future caller feeds in a segment absurdly far from the grid's
+ * normal handful-of-columns/rows scale — reaching it throws rather than
+ * returning a path quietly truncated partway through the segment, which
+ * would under-report to any caller checking "every cell this path touches"
+ * (`edge-cell-styles.ts`'s conflict detection, in particular): silently
+ * dropping the second half of a segment doesn't fail loudly, it just makes
+ * conflict detection blind to whatever's past the cutoff.
  */
 const MAX_WALK_STEPS = 100_000
 
@@ -180,7 +210,13 @@ export function pathCells(path: readonly GridCoord[]): GridCoord[] {
     const sy = from.y < to.y ? 1 : -1
     let err = absDx - absDy
     let steps = 0
-    while ((x !== to.x || y !== to.y) && steps < MAX_WALK_STEPS) {
+    while (x !== to.x || y !== to.y) {
+      if (steps >= MAX_WALK_STEPS) {
+        throw new Error(
+          `pathCells: segment from (${from.x},${from.y}) to (${to.x},${to.y}) ` +
+            `did not reach its endpoint within ${MAX_WALK_STEPS} steps`,
+        )
+      }
       const e2 = 2 * err
       if (e2 > -absDy) {
         err -= absDy

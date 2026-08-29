@@ -20,7 +20,18 @@ import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
 import { convertToAsciiGraph } from '../ascii/converter.ts'
 import { createMapping } from '../ascii/grid.ts'
-import { isOccupied, pathCells } from '../ascii/grid-occupancy.ts'
+import {
+  isOccupied,
+  pathCells,
+  createGrid,
+  cloneGrid,
+  placeBlock,
+} from '../ascii/grid-occupancy.ts'
+import {
+  createEdgeCellStyles,
+  findStyleConflict,
+  claimPathCells,
+} from '../ascii/edge-cell-styles.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'
 import type { AsciiConfig, AsciiEdge, AsciiGraph } from '../ascii/types.ts'
 
@@ -119,5 +130,83 @@ describe('cross-style edge overlap', () => {
     for (const label of ['A', 'B', 'C', 'D', 'E']) {
       expect(out).toContain(label)
     }
+  })
+
+  /**
+   * Regression for a CodeRabbit finding on this PR: `rerouteAroundStyleConflicts`
+   * (grid.ts) temporarily adds a conflicting cell to `graph.grid` so A*
+   * avoids it on retry, then removes the reservation once the edge is
+   * done. An earlier version passed that *same live, mutating* grid to
+   * `findStyleConflict`'s "is this cell node-owned, and therefore not a
+   * real conflict" check — so on a second re-route attempt, the cell
+   * blocked on attempt 1 looked node-occupied and got silently skipped. If
+   * A*'s direct fallback (which ignores occupancy entirely) still crossed
+   * that exact cell, the loop wrongly concluded "no conflict" and stopped,
+   * leaving the two differently-styled edges still overlapping there.
+   *
+   * The fix: pass a `nodeOnlyGrid` snapshot — cloned via `cloneGrid` right
+   * after node placement, before any edge is routed — to the conflict
+   * check instead. This test reproduces the exact mechanism directly:
+   * checking against the live (temp-mutated) grid misses the conflict;
+   * checking against a frozen snapshot correctly still reports it.
+   */
+  it('a temporary reroute reservation on the live grid must not hide a conflict from the frozen node-only snapshot', () => {
+    const grid = createGrid()
+    placeBlock(grid, { x: 4, y: 8 }) // node D's reserved 3x3 block
+    const nodeOnlyGrid = cloneGrid(grid) // taken before any temporary reservation
+
+    const cellStyles = createEdgeCellStyles()
+    const solidPath = [
+      { x: 2, y: 5 },
+      { x: 5, y: 5 },
+      { x: 5, y: 8 },
+    ]
+    claimPathCells(nodeOnlyGrid, cellStyles, solidPath, 'solid')
+
+    const dottedPathThatStillCrossesTheConflict = [
+      { x: 5, y: 1 },
+      { x: 5, y: 8 },
+    ]
+
+    // Simulate what `rerouteAroundStyleConflicts`'s retry loop does when
+    // A*'s direct fallback keeps returning the *same* unchanged path each
+    // time (occupancy-blind, by definition): each iteration finds the
+    // next not-yet-blocked conflicting cell and adds it to the live grid.
+    // With three open-space conflict cells in the path — (5,5), (5,6),
+    // (5,7) — three iterations exhaust every real conflict this way
+    // without the edge's route ever actually changing.
+    for (let i = 0; i < 3; i++) {
+      const conflict = findStyleConflict(
+        grid,
+        cellStyles,
+        dottedPathThatStillCrossesTheConflict,
+        'dotted',
+      )
+      expect(conflict).not.toBeNull()
+      grid.add(`${conflict!.x},${conflict!.y}`)
+    }
+
+    // The bug: after those three iterations, every real conflict cell now
+    // looks node-occupied on the live grid — checking against it reports
+    // "no conflict" even though the edge's path (unchanged this whole
+    // time) still overlaps the solid path in open space.
+    const missedByLiveGrid = findStyleConflict(
+      grid,
+      cellStyles,
+      dottedPathThatStillCrossesTheConflict,
+      'dotted',
+    )
+    expect(missedByLiveGrid).toBeNull()
+
+    // The fix: checking against the untouched snapshot is unaffected by
+    // any of those temporary reservations, so the real conflict is still
+    // caught (reported at the first crossing cell in path order).
+    const caughtByFrozenSnapshot = findStyleConflict(
+      nodeOnlyGrid,
+      cellStyles,
+      dottedPathThatStillCrossesTheConflict,
+      'dotted',
+    )
+    expect(caughtByFrozenSnapshot).toEqual({ x: 5, y: 5 })
   })
 })

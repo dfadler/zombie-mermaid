@@ -6,6 +6,7 @@ import {
   isBlockFree,
   placeBlock,
   pathCells,
+  cloneGrid,
   NODE_BLOCK_SIZE,
 } from '../ascii/grid-occupancy.ts'
 
@@ -190,6 +191,50 @@ describe('grid-occupancy', () => {
         { x: 2, y: 1 },
         { x: 2, y: 2 },
       ])
+    })
+
+    /**
+     * Regression: an earlier version silently returned a path truncated at
+     * `MAX_WALK_STEPS`, which under-reports to a caller checking "every
+     * cell this path touches" (edge-cell-styles.ts's conflict detection,
+     * specifically) — a conflict past the cutoff would simply never be
+     * seen. Throwing converts that silent blind spot into a loud failure.
+     */
+    it('throws rather than silently returning a truncated path past the walk limit', () => {
+      expect(() =>
+        pathCells([
+          { x: 0, y: 0 },
+          { x: 200_000, y: 0 },
+        ]),
+      ).toThrow(/did not reach its endpoint/)
+    })
+  })
+
+  describe('Grid.keys / cloneGrid', () => {
+    it('keys() iterates every reserved cell', () => {
+      const grid = createGrid()
+      grid.add('1,1')
+      grid.add('2,2')
+      expect(new Set(grid.keys())).toEqual(new Set(['1,1', '2,2']))
+    })
+
+    it('cloneGrid copies current reservations into an independent grid', () => {
+      const original = createGrid()
+      original.add('1,1')
+      const clone = cloneGrid(original)
+      expect(isOccupied(clone, { x: 1, y: 1 })).toBe(true)
+
+      // Independent: mutating one after cloning doesn't affect the other.
+      original.add('2,2')
+      expect(isOccupied(clone, { x: 2, y: 2 })).toBe(false)
+
+      clone.add('3,3')
+      expect(isOccupied(original, { x: 3, y: 3 })).toBe(false)
+    })
+
+    it('cloneGrid on an empty grid produces an empty grid', () => {
+      const clone = cloneGrid(createGrid())
+      expect([...clone.keys()]).toEqual([])
     })
   })
 })
