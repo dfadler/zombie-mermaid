@@ -40,7 +40,15 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: playwright(),
+            provider: playwright({
+              launchOptions: {
+                // Headless Chromium on a CI VM has no real GPU; leaving
+                // hardware acceleration on invites the GPU-sandbox-related
+                // crashes/hangs several Playwright issues report on
+                // GitHub-hosted Linux runners. Harmless locally too.
+                args: ['--disable-gpu'],
+              },
+            }),
             instances: [{ browser: 'chromium' }],
             expect: {
               toMatchScreenshot: {

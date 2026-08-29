@@ -183,18 +183,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Installs the same binary used to generate the committed
-      # -linux.png baselines (a Docker container built from the matching
-      # mcr.microsoft.com/playwright image — see CONTRIBUTING.md). Chromium
-      # headless-shell renders subtly differently in places, so this
-      # intentionally does NOT use `--only-shell`: staying on the full
-      # Chrome-for-Testing binary on both sides is what keeps CI's
-      # screenshots comparable to the baselines at all.
+      # Chromium headless-shell renders subtly differently in places, so
+      # this intentionally does NOT use `--only-shell`: staying on the full
+      # Chrome-for-Testing binary is what keeps this comparable to the
+      # committed -linux.png baselines (see CONTRIBUTING.md for how those
+      # were generated).
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      # DEBUG=pw:browser surfaces Playwright's own Chromium-launch stderr in
+      # the step log. Diagnostic only (no behavior change) — added after
+      # this job hung silently (no test output at all) on a couple of runs
+      # with no error surfaced anywhere, which made the actual cause
+      # impossible to see. Remove once a real CI hang is caught with it on
+      # and the underlying cause is fixed.
       - name: Run visual regression suite
         run: pnpm run test:visual
+        env:
+          DEBUG: pw:browser
 
       # Only produced on a failing run — the actual/diff PNGs a mismatch
       # writes next to the committed baseline in .vitest-attachments/, plus
