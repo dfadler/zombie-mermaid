@@ -42,6 +42,16 @@ export interface ForkFix {
    * ReDoS smell for no benefit, since every excerpt here is a fixed tag.
    */
   excerpt?: { from: string; to: string }
+  /**
+   * Upstream `lukilabs/beautiful-mermaid` issue number(s) this fix resolves.
+   *
+   * Several entries share one commit but map to distinct upstream reports
+   * (e.g. one PR fixing both ER aliases and ER `direction`), and one upstream
+   * issue is sometimes split across two commits that each fix a different
+   * symptom of it — hence an array on each side rather than a 1:1 field.
+   * Omitted for fixes that don't trace back to a specific numbered issue.
+   */
+  upstreamIssues?: number[]
 }
 
 export const forkFixes: ForkFix[] = [
@@ -56,6 +66,7 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: one mis-named node and no arrows. After: three nodes, two edges.',
+    upstreamIssues: [140],
   },
   {
     id: 'quoted-brackets',
@@ -68,6 +79,7 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: the label is cut off at the inner bracket. After: it reads in full.',
+    upstreamIssues: [125],
   },
   {
     id: 'cjk-subgraph-id',
@@ -81,6 +93,7 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: the subgraph frame is missing or mislabelled. After: it renders with its title.',
+    upstreamIssues: [89],
   },
   {
     id: 'cjk-box-width',
@@ -93,6 +106,7 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: the right border sits inside the text and rows are ragged. After: every row is the same width.',
+    upstreamIssues: [12, 13, 119, 122],
   },
   {
     id: 'circle-cross-edges',
@@ -105,6 +119,7 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: only A and B render, with no edges at all — C is gone. After: all three nodes and both edges.',
+    upstreamIssues: [109, 137],
   },
   {
     id: 'er-cardinality',
@@ -117,6 +132,7 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: nothing renders at all — losing the cardinality dropped the only relationship, and with it both entities. After: the full diagram, crow’s-foot marker included.',
+    upstreamIssues: [124],
   },
   {
     id: 'start-arrow-markers',
@@ -156,6 +172,7 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: the top row reads A1, B1, A2, B2 — the two groups interleaved. After: A1, A2, B1, B2, each pair above its own target.',
+    upstreamIssues: [64, 65, 68, 111, 112],
   },
   {
     id: 'class-blank-compartment',
@@ -206,5 +223,131 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: the leading note is missing entirely. After: it renders above the first message.',
+  },
+  {
+    id: 'er-entity-alias',
+    title: 'ER entity aliases discarded the alias and every attribute',
+    symptom:
+      'The entity-header pattern did not recognize `id[Alias]` bodies at all, so the line fell back to matching only the bare id — losing the alias *and* the entire attribute block that followed it.',
+    source:
+      'erDiagram\n  p[Person] { string firstName }\n  a["Customer Account"] { string email }\n  p ||--o| a : has',
+    fixCommit: '6e8a8b9',
+    pr: 81,
+    render: 'svg',
+    lookFor:
+      'Before: two boxes labeled only "p" and "a", each showing "(no attributes)" — the alias line failed to parse past the id. After: "Person" and "Customer Account", each with its attribute.',
+    upstreamIssues: [129],
+  },
+  {
+    id: 'er-direction',
+    title: 'ER `direction` directive had no effect on layout',
+    symptom:
+      'The top-level `direction` statement was parsed but never threaded into the ELK layout options, so `direction TB` rendered identically to the default left-to-right layout.',
+    source:
+      'erDiagram\n  direction TB\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ LINE_ITEM : contains\n  PRODUCT ||--o{ LINE_ITEM : includes',
+    fixCommit: '6e8a8b9',
+    pr: 81,
+    render: 'svg',
+    lookFor:
+      'Before: entities lay out left-to-right regardless of the `direction TB` statement. After: they stack top-to-bottom.',
+    upstreamIssues: [131],
+  },
+  {
+    id: 'subgraph-frame-merge',
+    title: 'An edge-less subgraph member merged two sibling subgraph frames',
+    symptom:
+      'Root-node placement treated an edge-less node as a shared "root" regardless of which subgraph it belonged to, so one subgraph’s bounding box could balloon out to enclose an unrelated sibling — corrupting both frames and interleaving their titles.',
+    source:
+      'flowchart TB\n  subgraph a["Frontend tier"]\n    a1["load balancer"]\n  end\n  subgraph b["Application tier"]\n    b1["worker pool"]\n    b2["api server"]\n  end\n  a1 --> b1',
+    fixCommit: 'a52458c',
+    pr: 96,
+    render: 'ascii',
+    lookFor:
+      'Before: the two subgraph frames merge into one box with a garbled title. After: two distinct, disjoint frames.',
+    upstreamIssues: [143],
+  },
+  {
+    id: 'invisible-links',
+    title: '`~~~` invisible-link syntax was not recognized',
+    symptom:
+      'The arrow regex had no alternative for `~~~`, so Mermaid’s invisible-link syntax — used to connect or order nodes without drawing a connector — failed to parse as an edge at all.',
+    source: 'flowchart LR\n  A --> B\n  A ~~~ C',
+    fixCommit: '673d3da',
+    pr: 206,
+    render: 'ascii',
+    lookFor:
+      'Before: C is disconnected from the rest of the graph — the `~~~` link is dropped entirely. After: C sits in the layout slot the invisible link puts it in, with no visible connector drawn to it.',
+    upstreamIssues: [144],
+  },
+  {
+    id: 'class-attribute-on-svg',
+    title: 'A node’s custom class never reached the rendered SVG',
+    symptom:
+      'The class name from `:::className` or `class A,B className` was resolved for inline fill/stroke, but never written onto the element itself, so external CSS had nothing to select.',
+    source:
+      'flowchart LR\n  A[Start]:::highlight --> B[End]\n  classDef highlight fill:#f9d5e5,stroke:#b5838d',
+    fixCommit: '7b4828b',
+    pr: 75,
+    render: 'svg',
+    excerpt: { from: '<g class="node', to: 'data-id="A"' },
+    lookFor:
+      'Both sides look identical on screen — the fill color already worked before this fix. Compare the markup: before, node A’s group carries only `class="node"`; after, `class="node highlight"`, so a stylesheet rule like `.highlight { }` can finally target it.',
+    upstreamIssues: [80],
+  },
+  {
+    id: 'cjk-state-names',
+    title: 'CJK state names failed to parse in state diagrams',
+    symptom:
+      'stateDiagram transition and state-name patterns were ASCII-only (`\\w`), so a diagram made entirely of Chinese, Japanese, or Korean state names failed to match a single one of them.',
+    source:
+      'stateDiagram-v2\n  [*] --> 空闲\n  空闲 --> 处理中 : 提交\n  处理中 --> 完成',
+    fixCommit: '9d722cf',
+    pr: 49,
+    render: 'svg',
+    lookFor:
+      'Before: a blank canvas — every state name failed to parse, leaving nothing to draw. After: all three states and both transitions render.',
+    upstreamIssues: [43],
+  },
+  {
+    id: 'text-embedded-edge-labels',
+    title: 'Text-embedded edge labels (`-- Yes -->`) were not parsed',
+    symptom:
+      'Mermaid’s inline label syntax on an arrow body — as opposed to the `-->|Yes|` pipe form — had no parser support. The label vanished, and the mis-tokenization also swallowed the bracketed label off the node the arrow pointed at.',
+    source:
+      'flowchart TD\n  A(Start) --> B{Is it sunny?}\n  B -- Yes --> C[Go to the park]\n  B -- No --> D[Stay indoors]\n  C --> E[Finish]\n  D --> E',
+    fixCommit: '9d722cf',
+    pr: 49,
+    render: 'svg',
+    lookFor:
+      'Before: the "Yes"/"No" edge labels are gone, and C and D render as bare ids instead of "Go to the park" / "Stay indoors". After: every edge and every node keeps its label.',
+    upstreamIssues: [32],
+  },
+  {
+    id: 'er-label-truncation',
+    title: 'Long ER relationship labels were truncated in ASCII output',
+    symptom:
+      'Labels longer than a fixed 6-character inter-entity gap were silently cut off — `"ordered in"` rendered as `"ordere"` — and even short labels sat flush against both entity boxes.',
+    source:
+      'erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  PRODUCT ||--o{ LINE_ITEM : "ordered in"',
+    fixCommit: 'f0683b0',
+    pr: 88,
+    render: 'ascii',
+    lookFor:
+      'Before: the second relationship label reads "ordere". After: it reads "ordered in" in full, with padding from both boxes.',
+    upstreamIssues: [121],
+  },
+  {
+    id: 'er-stray-tee',
+    title: 'A decision node’s edge label could land on a stray tee character',
+    symptom:
+      'The box-start connector always drew a tee/junction glyph based on the edge’s exit direction alone, with no check that a real perpendicular border line existed at that cell — so a label that shifted the attachment point left a disconnected `├` floating with blank cells on both sides.',
+    source:
+      'flowchart LR\n  A{Decision} -->|Yes| B[Do thing]\n  A -->|No| C[Other thing]',
+    fixCommit: '376be39',
+    pr: 95,
+    render: 'ascii',
+    lookFor:
+      'Before: a stray ├ sits disconnected on the "Yes" edge’s row. After: a plain ─ line in its place.',
+    upstreamIssues: [121],
   },
 ]
