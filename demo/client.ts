@@ -471,6 +471,40 @@ window.addEventListener('resize', function () {
 })
 
 /**
+ * Give every real `id="…"` in a rendered SVG string a unique prefix, and
+ * rewrite the `url(#…)` references (e.g. `marker-end`) that point at them
+ * to match. `renderSvgVariants` inserts two full SVG renders of the *same*
+ * sample into one container — both define fixed marker ids like
+ * `arrowhead` (see src/renderer.ts), and IDs must be unique per document;
+ * an unprefixed pair would be invalid markup and, per SVG's `url(#id)`
+ * resolution rules, fragile if the two definitions ever diverge (a
+ * *different* sample's same-named marker elsewhere on the page is a
+ * separate, pre-existing instance of this same pattern — out of scope
+ * here, since this only needs the two variants of one sample to not
+ * collide with *each other*).
+ *
+ * `(?<!data-)\bid=` deliberately excludes `data-id="…"` (used for nodes/
+ * edges, e.g. click-interactivity targets) — those aren't `url(#…)`
+ * reference targets and don't need rewriting.
+ */
+function withUniqueSvgIds(svg: string, prefix: string): string {
+  const ids = new Set<string>()
+  for (const m of svg.matchAll(/(?<!data-)\bid="([^"]+)"/g)) ids.add(m[1]!)
+  let result = svg
+  for (const id of ids) {
+    const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    result = result
+      .replace(
+        new RegExp(`(?<!data-)\\bid="${escaped}"`, 'g'),
+        `id="${prefix}${id}"`,
+      )
+      .replace(new RegExp(`url\\(#${escaped}\\)`, 'g'), `url(#${prefix}${id})`)
+      .replace(new RegExp(`href="#${escaped}"`, 'g'), `href="#${prefix}${id}"`)
+  }
+  return result
+}
+
+/**
  * Render one sample's source into its SVG container, handling both the
  * common case (a single `<svg>`) and a wide diagram's narrow-viewport
  * alternate (two `<svg>`s, each wrapped so CSS can pick one — see
@@ -492,11 +526,12 @@ async function renderSvgVariants(
         sample.options,
       ),
     ])
+    const idPrefix = (svgContainer.id || 'sample') + '-'
     svgContainer.innerHTML =
       '<div class="orientation-variant orientation-wide">' +
-      wideSvg +
+      withUniqueSvgIds(wideSvg, idPrefix + 'w-') +
       '</div><div class="orientation-variant orientation-narrow">' +
-      narrowSvg +
+      withUniqueSvgIds(narrowSvg, idPrefix + 'n-') +
       '</div>'
   } else {
     svgContainer.innerHTML = await renderMermaid(sample.source, sample.options)
