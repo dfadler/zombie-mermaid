@@ -262,6 +262,24 @@ function renderPanel(
   return `<div class="fix-svg">${output}</div>`
 }
 
+/**
+ * Link(s) to the upstream `lukilabs/beautiful-mermaid` issue(s) this fix
+ * resolves, when known. Several fork PRs address more than one upstream
+ * report, and one upstream report is sometimes split across two entries
+ * (each fixing a different symptom of it) — hence a joined list rather than
+ * a single link.
+ */
+function renderUpstreamIssues(upstreamIssues: number[] | undefined): string {
+  if (!upstreamIssues || upstreamIssues.length === 0) return ''
+  const links = upstreamIssues
+    .map(
+      (n) =>
+        `<a href="https://github.com/lukilabs/beautiful-mermaid/issues/${n}">upstream #${n}</a>`,
+    )
+    .join(', ')
+  return `<span class="fix-upstream">${links}</span>`
+}
+
 function renderFixSection(pair: RenderPair): string {
   const { fix } = pair
   const prUrl = `https://github.com/dfadler/zombie-mermaid/pull/${fix.pr}`
@@ -273,6 +291,7 @@ function renderFixSection(pair: RenderPair): string {
           <a href="${prUrl}">PR #${fix.pr}</a>
           <span class="fix-commit">fixed in <code>${escapeHtml(fix.fixCommit)}</code></span>
           <span class="fix-mode">${fix.render === 'svg' ? 'SVG' : 'ASCII'} output</span>
+          ${renderUpstreamIssues(fix.upstreamIssues)}
         </p>
         <pre class="fix-source">${escapeHtml(fix.source)}</pre>
         <div class="fix-pair">
