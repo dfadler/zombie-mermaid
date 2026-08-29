@@ -152,7 +152,9 @@ jobs:
   visual-regression:
     name: Visual regression (SVG + ASCII screenshots)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Setup (~1min) + up to 3 retry attempts at 4min each (see the retry
+    # step below) + headroom.
+    timeout-minutes: 20
     permissions:
       contents: read # only checks out code and runs the visual suite; no writes back to the repo
     # Same fork-of-this-fork guard as the `test` job above — see its comment
@@ -191,14 +193,33 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      # DEBUG=pw:browser surfaces Playwright's own Chromium-launch stderr in
-      # the step log. Diagnostic only (no behavior change) — added after
-      # this job hung silently (no test output at all) on a couple of runs
-      # with no error surfaced anywhere, which made the actual cause
-      # impossible to see. Remove once a real CI hang is caught with it on
-      # and the underlying cause is fixed.
+      # Retries within a per-attempt timeout, rather than one attempt riding
+      # the whole job timeout: vitest-dev/vitest#10791 (open, not backported
+      # to the 4.x line we're on) means a browser tester that goes silently
+      # unresponsive mid-run has no run-level deadline and would otherwise
+      # hang for the job's full timeout-minutes instead of failing. That bug
+      # is what DEBUG=pw:browser (kept on below) caught directly: Chromium
+      # launches and both test files' tabs connect to Vitest's dev server
+      # within ~1s every time, then the run goes completely silent with zero
+      # further output. `timeout 240` bounds each attempt to 4 minutes, and
+      # a hung attempt is exactly as likely to be transient as it is
+      # persistent going by today's evidence (5 of 6 attempts on this branch
+      # hung; 1 didn't, on the identical runner image) — so retrying costs
+      # little for a real failure (those fail fast, not slowly) and gives
+      # multiple chances to land on a working run for a hang.
       - name: Run visual regression suite
-        run: pnpm run test:visual
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::Attempt $attempt/3"
+            if timeout 240 pnpm run test:visual; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Attempt $attempt failed or timed out." >&2
+          done
+          echo "All 3 attempts failed." >&2
+          exit 1
         env:
           DEBUG: pw:browser
 

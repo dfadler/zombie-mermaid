@@ -37,6 +37,18 @@ export default defineConfig({
           // CDN was otherwise hitting the default timeout on every single
           // test (see FONT_WAIT_TIMEOUT_MS in helpers/mount.ts).
           testTimeout: 15000,
+          // Run the two test files' browser tabs one at a time rather than
+          // concurrently. Mitigates vitest-dev/vitest#10791 (open, not
+          // backported to the 4.x line as of 4.1.11): a tester page that
+          // goes silently unresponsive mid-run has no run-level deadline
+          // and hangs forever rather than failing, and reporters on that
+          // issue traced one trigger to cumulative Chromium-wide request
+          // volume from concurrent tabs. This doesn't fix the missing
+          // timeout, but it removes that specific trigger. Must be set
+          // here, in the project config — passing --maxWorkers on the CLI
+          // is silently ignored for a browser-mode project nested in
+          // `projects` (vitest-dev/vitest#11051).
+          fileParallelism: false,
           browser: {
             enabled: true,
             headless: true,
