@@ -1085,7 +1085,11 @@ body::after {
   display: block;
   flex: none;
   min-height: 0;
-  overflow: visible;
+  /* Horizontal only: a wide diagram scrolls within the card instead of
+     spilling past its right edge. Vertical stays unconstrained so the card
+     still grows to fit tall diagrams, per the comment above. */
+  overflow-x: auto;
+  overflow-y: visible;
 }
 .terminal-window {
   display: flex;
