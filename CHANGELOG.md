@@ -1,5 +1,84 @@
 # Changelog
 
+## 1.5.0
+
+### Minor Changes
+
+- [#233](https://github.com/dfadler/zombie-mermaid/pull/233) [`52bbbd3`](https://github.com/dfadler/zombie-mermaid/commit/52bbbd3aafb35cf426284e0d8d2cbf8bc3c5207d) Thanks [@dfadler](https://github.com/dfadler)! - Add `RenderOptions.interactivity` (`'none' | 'static' | 'full'`, default `'static'`) as a render-target-scoped replacement for the xychart-only `interactive` boolean, which is now deprecated but still works unchanged. `'none'` strips flowchart edge animation (`e1@{ animate: true }`) for print/rasterized output; `'full'` additionally enables xychart hover tooltips. See `docs/decisions/no-script-interactivity.md` for the tier model behind this option, and the `interactivity` TSDoc in `src/types.ts` for exactly what each level gates today.
+
+- [#252](https://github.com/dfadler/zombie-mermaid/pull/252) [`e275da8`](https://github.com/dfadler/zombie-mermaid/commit/e275da85ed43e1d9d2d8e359bb750110739ef55f) Thanks [@dfadler](https://github.com/dfadler)! - State diagrams now support the same edge-id and `e1@{ animate: true }` marching-ants animation syntax flowcharts already had (Mermaid v11.10.0+): `s1 e1@--> s2` declares an edge id, and a standalone `e1@{ animate: true }` line animates it via CSS `@keyframes`, guarded by `prefers-reduced-motion`. The renderer already handled this generically per-edge, so no renderer changes were needed — only `parseStateDiagram` gained the same parsing `parseFlowchart` already had, factored into a shared helper so the two parsers don't duplicate the metadata-line logic.
+
+- [#234](https://github.com/dfadler/zombie-mermaid/pull/234) [`3c3b04f`](https://github.com/dfadler/zombie-mermaid/commit/3c3b04f99ddab7eebaae1ec1be7fe2680b551715) Thanks [@dfadler](https://github.com/dfadler)! - Add `title` and `decorative` render options so rendered SVGs can carry an accessible name (closes [#215](https://github.com/dfadler/zombie-mermaid/issues/215)).
+
+  The root `<svg>` had no `role`, no `aria-label`/`aria-labelledby`, and no `<title>`. Without an accessible name, assistive tech either exposes the SVG as a plain group — every node/edge label announced individually, out of reading order — or skips it entirely: a WCAG 1.1.1 (Non-text Content) failure for the library's primary use case, diagrams inlined into a page or document.
+
+  Every SVG diagram type (flowchart, state, sequence, class, ER, xychart — they all funnel through the single `svgOpenTag()` in `src/theme.ts`) now gets `role="img"` on the root. Pass `title` to also give it a name:
+
+  ```ts
+  renderMermaidSVG('graph TD\n  A --> B', {
+    title: 'Flowchart: Build → Test → Ship',
+  })
+  // <svg ... role="img" aria-labelledby="zm-title-1">
+  //   <title id="zm-title-1">Flowchart: Build → Test → Ship</title>
+  ```
+
+  `aria-labelledby` points at a `<title>` child holding the text — the standard SVG/WAI-ARIA technique for naming inline SVG. The `zm-title-N` id increments per render call, so multiple diagrams inlined into one HTML page never collide, even when they share identical title text.
+
+  This library never fabricates a name: a generated "flowchart with 3 nodes" summary would be a confidently useless accessible name. When `title` is omitted, the SVG still gets `role="img"` (so it reads as a single image, not a leaky group) but claims no name — the same as an `<img>` with no `alt`.
+
+  For a diagram that's already described in surrounding prose, pass `decorative: true` instead:
+
+  ```ts
+  renderMermaidSVG('graph TD\n  A --> B', { decorative: true })
+  // <svg ... aria-hidden="true">
+  ```
+
+  This emits `aria-hidden="true"` in place of `role`/`aria-labelledby`/`<title>`; `title`, if also given, is ignored.
+
+  Both options are additive and default to their current absence (no `title`, `decorative: false`), so existing output only changes by gaining `role="img"` on the root — no breaking change. This is orthogonal to the per-node/per-point `<title>` tooltips from `click` interactions and XY chart hover tips: those are un-id'd `<title>` elements nested inside each node/point's `<g>`, so they never collide with the root's generated id, and a root `<title>` alongside descendant `<title>` elements is valid SVG.
+
+### Patch Changes
+
+- [#252](https://github.com/dfadler/zombie-mermaid/pull/252) [`e275da8`](https://github.com/dfadler/zombie-mermaid/commit/e275da85ed43e1d9d2d8e359bb750110739ef55f) Thanks [@dfadler](https://github.com/dfadler)! - Animate the README hero diagram's transitions using the new state-diagram edge animation support, and switch the hero image from a static `hero.png` screenshot to a generated `hero.svg` (via the new `scripts/generate-hero.ts`) so the animation actually plays on GitHub. The hero's state-diagram pill nodes, layout, and labels are unchanged.
+
+- [#269](https://github.com/dfadler/zombie-mermaid/pull/269) [`188a4ca`](https://github.com/dfadler/zombie-mermaid/commit/188a4cad888effdc41c949d975ab16bb8cdad521) Thanks [@dfadler](https://github.com/dfadler)! - Style the demo page's ASCII panel as a terminal window — dark chrome, a titlebar with traffic-light dots, and a blinking cursor — instead of following the page's theme picker like a plain text block. Also switch the panel to scroll instead of silently clipping diagrams taller than its row. No library API changes.
+
+- [#247](https://github.com/dfadler/zombie-mermaid/pull/247) [`d72abf3`](https://github.com/dfadler/zombie-mermaid/commit/d72abf3d470adc3de7fdd04d5ca0d964181b1cb2) Thanks [@dfadler](https://github.com/dfadler)! - Fix the demo site's hero diagram getting stuck on a permanent loading spinner. `renderSample()` required an ASCII-panel element to exist before rendering, but Hero-category samples never have one — the guard clause returned early and the hero diagram never rendered. No library API changes.
+
+- [#230](https://github.com/dfadler/zombie-mermaid/pull/230) [`d3fae98`](https://github.com/dfadler/zombie-mermaid/commit/d3fae985b9fb450c8a789c37698b805b0c2ad754) Thanks [@dfadler](https://github.com/dfadler)! - Document flowchart icons, images, and subgraph collapse as intentionally unsupported.
+
+  `docs/diagrams.md` now has a "Known limitations" section under Flowcharts covering `A@{ icon: ... }` / `A@{ img: ... }` / inline `fa:name` text, and Mermaid v11.17.0's subgraph collapse syntax — what each does today (parses but draws no glyph/image; collapse syntax isn't recognized and can add a stray disconnected node rather than being a no-op) and why it's out of scope (no bundled/fetched external resources, no embedded interactivity in a static SVG/ASCII output). No rendering behavior changed.
+
+- [#277](https://github.com/dfadler/zombie-mermaid/pull/277) [`5963814`](https://github.com/dfadler/zombie-mermaid/commit/5963814ceb71e46101a05d8c9666323d7b4488d4) Thanks [@dfadler](https://github.com/dfadler)! - Demo-site only: link the "What this fork fixes" page to the upstream issues it resolves, and add 9 new before/after entries.
+
+  The page named a commit and a PR for each fix but never mentioned the upstream `lukilabs/beautiful-mermaid` issue it traces back to, so a reader following a link from an upstream issue had no way to find the corresponding entry. We recently confirmed and commented on 25 fixed upstream issues (via `gh issue comment`); 23 of those trace to a renderer bug this page can demonstrate with a before/after diagram, and each now gets an "upstream #N" link in its entry's meta line. (The other 2 — [#45](https://github.com/dfadler/zombie-mermaid/issues/45) and [#73](https://github.com/dfadler/zombie-mermaid/issues/73) — are packaging/build fixes with no diagram to show, so they're not on this page at all.) `ForkFix` gained an optional `upstreamIssues: number[]` field for this (an array, since one PR sometimes fixes several upstream reports and one upstream report is sometimes split across two entries that each fix a different symptom of it).
+
+  Nine fixes that were confirmed against upstream issues but had no entry on the page at all are added: ER entity aliases and the `direction` directive ([#129](https://github.com/dfadler/zombie-mermaid/issues/129), [#131](https://github.com/dfadler/zombie-mermaid/issues/131)), an edge-less subgraph member merging two subgraph frames ([#143](https://github.com/dfadler/zombie-mermaid/issues/143)), `~~~` invisible-link syntax ([#144](https://github.com/dfadler/zombie-mermaid/issues/144)), `:::className` not reaching the rendered `<g>` element ([#80](https://github.com/dfadler/zombie-mermaid/issues/80)), CJK state names and text-embedded edge labels in flowcharts ([#43](https://github.com/dfadler/zombie-mermaid/issues/43), [#32](https://github.com/dfadler/zombie-mermaid/issues/32)), and ER relationship-label truncation plus a stray box-start tee character (both symptoms of [#121](https://github.com/dfadler/zombie-mermaid/issues/121)). Every new entry's before/after pair is generated the same way as the existing ones — rendered live against the actual pre-fix and current code, not hand-written — and was spot-checked against the real output rather than assumed from the commit message.
+
+- [#305](https://github.com/dfadler/zombie-mermaid/pull/305) [`e7957d3`](https://github.com/dfadler/zombie-mermaid/commit/e7957d356f6337145ff91bac0c96b85daa8b24aa) Thanks [@dfadler](https://github.com/dfadler)! - Demo site: add a persistent "Viewing X · Browse types" bar pinned to the bottom of the viewport on mobile/tablet, so a reader who scrolls to the end of a category's samples can still tell there are other diagram types to browse — the sidebar that normally shows this is hidden behind the hamburger drawer at that width. Also fix clicking a category in the sidebar landing with the newly active category's title hidden underneath the sticky theme-bar/samples-heading; it now scrolls to the category's first sample directly. No library API changes.
+
+- [#249](https://github.com/dfadler/zombie-mermaid/pull/249) [`9cb0672`](https://github.com/dfadler/zombie-mermaid/commit/9cb067244f4fcf47c34d39c5255f1bb799a02dfe) Thanks [@dfadler](https://github.com/dfadler)! - Orient the README hero diagram left-to-right instead of right-to-left, so it reads start-to-end in natural reading order. No library API changes.
+
+- [#275](https://github.com/dfadler/zombie-mermaid/pull/275) [`e094189`](https://github.com/dfadler/zombie-mermaid/commit/e09418932769f437ec4f87609db1dd3f2ac33842) Thanks [@dfadler](https://github.com/dfadler)! - Wide flowchart and state diagram samples on the samples page now render a second, top-down variant and swap to it under 640px viewport width (CSS media query), so a diagram authored left-to-right no longer overflows on mobile. Scoped to flowcharts/state diagrams declared `LR`/`RL` — other diagram types are unaffected. No library API changes.
+
+- [#272](https://github.com/dfadler/zombie-mermaid/pull/272) [`d5d366e`](https://github.com/dfadler/zombie-mermaid/commit/d5d366ed1289711bfa344c0e083c7f95b16bb2bf) Thanks [@dfadler](https://github.com/dfadler)! - Rework the samples page's card layout: instead of splitting each sample into three fixed columns (source / SVG / ASCII, ~1/3 width each), source now gets a narrow rail and SVG/ASCII share a single output pane switched with a segmented SVG/ASCII toggle. The active view gets the full remaining width instead of a third of it, and the ASCII view renders at its natural height instead of scrolling inside a fixed-height box. No library API changes.
+
+- [#274](https://github.com/dfadler/zombie-mermaid/pull/274) [`a6aec55`](https://github.com/dfadler/zombie-mermaid/commit/a6aec55dac4b986ec2e3a7daaa68e9d7c17dba66) Thanks [@dfadler](https://github.com/dfadler)! - The samples page's URL hash now updates as you scroll — it tracks whichever sample card is currently under the sticky nav bar (`history.replaceState`, so scrolling never adds entries to browser history the way clicking a sidebar link does). Copying the current URL now gets you back to wherever you were reading, not just wherever you last clicked. No library API changes.
+
+- [#271](https://github.com/dfadler/zombie-mermaid/pull/271) [`c170b7e`](https://github.com/dfadler/zombie-mermaid/commit/c170b7ec2e9f93b8b854384dcd69f00a844f9ee0) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII edge routing silently overlapping two unrelated edges of different line styles (e.g. a solid branch and a dotted retry/back-edge with no shared source or target) through the same grid cells, corrupting the rendered line into a mixed half-solid, half-dotted run with no visual indication that two distinct connections were there. Same-style edges continue to share routing space as before (this is how sibling/bundled edges cleanly merge trunks).
+
+- [#297](https://github.com/dfadler/zombie-mermaid/pull/297) [`6d2f8ec`](https://github.com/dfadler/zombie-mermaid/commit/6d2f8eccc175e89cfc63cf1df49d093f8e4d404d) Thanks [@dfadler](https://github.com/dfadler)! - The samples page's "Samples" heading and category banner ("Showing X — N of M samples · Browse diagram types") are now sticky, pinned just below the theme bar while scrolling a category — the theme bar itself is now fully opaque too, so cards scrolling underneath never show through either sticky bar. A thin scroll-progress bar now sits fixed to the bottom of the viewport, and the sidebar highlights whichever sample is currently on screen as you scroll, not just via the URL hash. No library API changes.
+
+- [#248](https://github.com/dfadler/zombie-mermaid/pull/248) [`978929e`](https://github.com/dfadler/zombie-mermaid/commit/978929e0d737506179ceb9124040ad0553154827) Thanks [@dfadler](https://github.com/dfadler)! - Fix `role="img"` and `decorative`'s `aria-hidden="true"` hiding a real, focusable `click A "url"` link from assistive tech while leaving it Tab-reachable — `aria-hidden` on an ancestor of a focusable element is an explicit WAI-ARIA violation. When any node has a link, the root `<svg>` now gets no `role` at all (`title`/`aria-labelledby` still apply if given); `decorative` is silently overridden in that case rather than honored. See [#239](https://github.com/dfadler/zombie-mermaid/issues/239).
+
+- [#232](https://github.com/dfadler/zombie-mermaid/pull/232) [`6f0e50f`](https://github.com/dfadler/zombie-mermaid/commit/6f0e50fcb9ebfd39d5bc889fc7c361067db4c3ea) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII display width for combining marks and composed emoji.
+
+  `displayWidth()` — the shared helper the ASCII/terminal renderer uses to size box borders — measured text per JS code point, which is wrong in two opposite directions. A decomposed combining mark (e.g. "café" as `e` + U+0301 COMBINING ACUTE ACCENT) counted as a full extra column even though a real terminal gives it zero, since it attaches to the preceding base character ([#205](https://github.com/dfadler/zombie-mermaid/issues/205)). A composed multi-code-point emoji sequence — a ZWJ family emoji, a flag via regional indicators, a skin-tone modifier — counted once per code point even though a terminal renders it as a single glyph occupying at most two columns, so a five-code-point family emoji measured as 8 columns wide instead of 2 ([#214](https://github.com/dfadler/zombie-mermaid/issues/214)).
+
+  Both are really the same bug: measuring by code point instead of by grapheme cluster, the Unicode notion of one user-perceived character. `displayWidth`, `charDisplayWidth`, and `toDisplayCells` now segment with `Intl.Segmenter` (`granularity: 'grapheme'`) and measure each cluster as a unit — 2 columns if any code point within it is "wide" (the existing CJK/fullwidth/emoji check), 1 otherwise, 0 for the degenerate case of a lone combining mark with no base character. `toDisplayCells` writes the whole cluster into one grid cell (plus a placeholder cell for wide clusters) so grid-cell count stays in sync with the column count the box-sizing math computes.
+
+  This fixes flowchart node labels, edge labels, subgraph titles, and both the single-box and multi-compartment (class/ER diagram) box-drawing paths, since all of them route through the same shared helper. The two call sites that intentionally mirror `displayWidth`'s per-cluster arithmetic to keep the demo site's HTML rendering of ASCII output in sync with the renderer's own box geometry (`fork-fixes.ts`, `demo/client.ts`) are updated to match.
+
 ## 1.4.0
 
 ### Minor Changes
