@@ -180,6 +180,75 @@ describe('ASCII: a later edge-less subgraph is not absorbed into an earlier one 
     expect(output).toContain('Group C')
   })
 
+  it('slides a second edge-less sibling past the first instead of colliding with it', () => {
+    // a3 and a4 are both edge-less and both unreachable from a1, so both
+    // get deferred and both attach to a1. The second one (a4) must slide
+    // past the first (a3) — exercising findSubgraphAdjacentSlot's "occupant
+    // belongs to the same subgraph, keep sliding" branch — rather than
+    // colliding with it.
+    const source = `flowchart TB
+  subgraph a["Group A"]
+    a1["alpha"]
+    a2["bravo"]
+    a3["charlie"]
+    a4["echo"]
+  end
+  a1 --> a2`
+
+    const graph = layoutFlowchart(source, 'TD')
+    const groupA = findSubgraph(graph, 'Group A')
+    expect(groupA.nodes.length).toBe(4)
+
+    const a3 = graph.nodes.find((n) => n.name === 'a3')!
+    const a4 = graph.nodes.find((n) => n.name === 'a4')!
+    expect(a3.gridCoord).not.toBeNull()
+    expect(a4.gridCoord).not.toBeNull()
+    // Distinct slots — a4 didn't overwrite a3's spot.
+    expect(a4.gridCoord).not.toEqual(a3.gridCoord)
+
+    const output = renderMermaidASCII(source)
+    expect(output).toContain('Group A')
+    expect(output).toContain('charlie')
+    expect(output).toContain('echo')
+  })
+
+  it('falls back gracefully (no crash, titles intact) when a non-root anchor is foreign-blocked on both sides', () => {
+    // b2 is edge-less and unreachable from b1, so it's deferred and anchors
+    // to b1 — but b1 is itself a *non-root* (a child of a1 via an edge), so
+    // this only resolves in the later fallback pass, after an unrelated
+    // external node's own child (e2) has already claimed the slot
+    // immediately next to b1, and the opposite slot is off-grid (negative).
+    // findSubgraphAdjacentSlot correctly refuses to slide through e2 in
+    // either direction (returning null), so this exercises its
+    // "foreign-blocked" path on both sides — but with no free adjacent slot
+    // available, the caller falls back to the pre-existing (#143-era) blind
+    // slide, which can still enclose e2. That fallback is a known, narrow
+    // limitation (see the "Defensive fallback" comment in grid.ts) distinct
+    // from the bug #301 fixes: it only arises when the deferred node's
+    // anchor is itself a non-root, not for the reported root-anchored case.
+    // This test guards against a crash or dropped title, not full
+    // disjointness.
+    const source = `flowchart TB
+  subgraph a["Group A"]
+    a1["alpha"]
+  end
+  subgraph b["Group B"]
+    b1["bravo"]
+    b2["charlie"]
+  end
+  e1["delta"]
+  a1 --> b1
+  e1 --> e2["echo"]`
+
+    const graph = layoutFlowchart(source, 'TD')
+    expect(graph.nodes.find((n) => n.name === 'b2')?.gridCoord).not.toBeNull()
+
+    const output = renderMermaidASCII(source)
+    expect(output).toContain('Group A')
+    expect(output).toContain('Group B')
+    expect(output).toContain('charlie')
+  })
+
   it('OK case: continues to work when every node in the earlier subgraph is on an edge', () => {
     const source = `flowchart TB
   subgraph a["Group A"]
