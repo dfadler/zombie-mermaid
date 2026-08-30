@@ -20,6 +20,13 @@ export default defineConfig({
   snapshotPathTemplate:
     '{snapshotDir}/{testFileName}/{arg}-{projectName}-{platform}{ext}',
   expect: {
+    // Above Playwright's 5000ms default: generating a brand-new baseline
+    // (no comparison shortcut, full "wait for a stable screenshot" loop)
+    // occasionally needs a bit more than that for a text-heavy sample —
+    // seen directly as a "Timeout: 5000ms exceeded" failure while
+    // bootstrapping Linux baselines in CI. Retries (see above) mask this
+    // most of the time, but a real margin is better than relying on that.
+    timeout: 15000,
     toHaveScreenshot: {
       // Font rasterization has genuine run-to-run jitter concentrated on
       // repeated text glyphs (confirmed by inspecting diff images: same
