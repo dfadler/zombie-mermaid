@@ -17,6 +17,16 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./ascii": {
+      "import": {
+        "types": "./dist/ascii.d.ts",
+        "default": "./dist/ascii.js"
+      },
+      "require": {
+        "types": "./dist/ascii.d.cts",
+        "default": "./dist/ascii.cjs"
+      }
     }
   },
   "repository": {

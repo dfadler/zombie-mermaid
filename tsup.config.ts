@@ -1,9 +1,12 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig([
-  // Library build (dual ESM/CJS, see package.json `exports`)
+  // Library build (dual ESM/CJS, see package.json `exports`).
+  // `src/ascii/index.ts` builds as its own entry (-> dist/ascii.*) so
+  // ASCII-only consumers importing `zombie-mermaid/ascii` never pull in
+  // elkjs, which the SVG path (src/index.ts) statically imports.
   {
-    entry: ['src/index.ts'],
+    entry: { index: 'src/index.ts', ascii: 'src/ascii/index.ts' },
     format: ['esm', 'cjs'],
     dts: true,
     splitting: false,
