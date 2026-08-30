@@ -16,6 +16,7 @@ import type {
   PositionedClassNode,
   PositionedClassRelationship,
 } from './types.ts'
+import { formatClassMember } from './format.ts'
 import type { RenderOptions, Point } from '../types.ts'
 import {
   estimateTextWidth,
@@ -258,17 +259,9 @@ function maxMemberWidth(members: ClassMember[]): number {
   if (members.length === 0) return 0
   let maxW = 0
   for (const m of members) {
-    const text = memberToString(m)
+    const text = formatClassMember(m)
     const w = estimateMonoTextWidth(text, CLS.memberFontSize)
     if (w > maxW) maxW = w
   }
   return maxW
-}
-
-/** Convert a class member to its display string */
-export function memberToString(m: ClassMember): string {
-  const vis = m.visibility ? `${m.visibility} ` : ''
-  const name = m.isMethod ? `${m.name}(${m.params || ''})` : m.name
-  const type = m.type ? `: ${m.type}` : ''
-  return `${vis}${name}${type}`
 }

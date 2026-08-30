@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
 
 describe('renderMermaidSVG – class diagrams', () => {
   it('renders a basic class diagram to valid SVG', () => {
@@ -114,5 +115,40 @@ describe('renderMermaidSVG – class diagrams', () => {
     expect(svg).toContain('Dog')
     expect(svg).toContain('Cat')
     expect(svg).toContain('abstract')
+  })
+})
+
+describe('SVG and ASCII method members stay in sync (issue #290)', () => {
+  it('both include method parameters, not just the name and return type', () => {
+    const source = `classDiagram
+class Animal {
+  +String name
+  +makeSound(volume) void
+}`
+    const svg = renderMermaidSVG(source)
+    const ascii = renderMermaidASCII(source, { useAscii: true })
+
+    // Both renderers share one parse (parseClassDiagram), but format the
+    // parsed ClassMember independently — this catches either one dropping
+    // the method's parameter list, which happened only to the ASCII path.
+    expect(svg).toContain('makeSound(volume)')
+    expect(ascii).toContain('makeSound(volume)')
+  })
+
+  it('renders a member with no visibility marker without a stray prefix', () => {
+    // e.g. enum values (`class Status { ACTIVE }`) parse with visibility: ''
+    // — formatClassMember's visibility branch was otherwise never exercised.
+    const source = `classDiagram
+class Status {
+  ACTIVE
+  INACTIVE
+}`
+    const svg = renderMermaidSVG(source)
+    const ascii = renderMermaidASCII(source, { useAscii: true })
+
+    expect(svg).toContain('ACTIVE')
+    expect(ascii).toContain('ACTIVE')
+    expect(ascii).not.toContain('+ACTIVE')
+    expect(ascii).not.toContain('+ ACTIVE')
   })
 })

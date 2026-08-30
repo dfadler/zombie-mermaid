@@ -11,11 +11,8 @@
 // ============================================================================
 
 import { parseClassDiagram } from '../class/parser.ts'
-import type {
-  ClassNode,
-  ClassMember,
-  RelationshipType,
-} from '../class/types.ts'
+import { formatClassMember } from '../class/format.ts'
+import type { ClassNode, RelationshipType } from '../class/types.ts'
 import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
 import {
   mkCanvas,
@@ -30,17 +27,6 @@ import { splitLines } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 
-// ============================================================================
-// Class member formatting
-// ============================================================================
-
-/** Format a class member as a display string: visibility + name + optional type */
-function formatMember(m: ClassMember): string {
-  const vis = m.visibility || ''
-  const type = m.type ? `: ${m.type}` : ''
-  return `${vis}${m.name}${type}`
-}
-
 /** Build the text sections for a class box: [header], [attributes], [methods] */
 function buildClassSections(cls: ClassNode): string[][] {
   // Header section: optional annotation + class name (may be multi-line)
@@ -51,10 +37,10 @@ function buildClassSections(cls: ClassNode): string[][] {
   header.push(...nameLines)
 
   // Attributes section
-  const attrs = cls.attributes.map(formatMember)
+  const attrs = cls.attributes.map(formatClassMember)
 
   // Methods section
-  const methods = cls.methods.map(formatMember)
+  const methods = cls.methods.map(formatClassMember)
 
   // Build sections from only the non-empty parts. Only attrs (2-section),
   // only methods (2-section), both (3-section), or neither (1-section, header only).
