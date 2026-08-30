@@ -861,9 +861,11 @@ document.addEventListener('keydown', function (e) {
     closeSidebarDrawer()
 })
 
-// "Browse diagram types" — the category banner's explicit nudge toward the
-// sidebar, since only one category renders by default (see below).
-mustGet('browse-categories-btn').addEventListener('click', function () {
+// "Browse diagram types" — the explicit nudge toward the sidebar shared by
+// the category banner (top of the samples section) and the category tabbar
+// (pinned to the bottom on mobile/tablet), since only one category renders
+// by default (see below).
+function browseDiagramTypes() {
   if (drawerQuery.matches) {
     openSidebarDrawer()
   } else {
@@ -873,7 +875,9 @@ mustGet('browse-categories-btn').addEventListener('click', function () {
       sidebar.classList.remove('attention')
     }, 1300)
   }
-})
+}
+mustGet('browse-categories-btn').addEventListener('click', browseDiagramTypes)
+mustGet('tabbar-browse-btn').addEventListener('click', browseDiagramTypes)
 
 // -- Restore saved theme immediately (before rendering begins) --
 const savedTheme = localStorage.getItem('mermaid-theme')
@@ -1033,7 +1037,9 @@ function showCategory(
   const activeView = maybeGet('category-' + slug)
   const nameEl = mustGet('active-category-name')
   const countEl = mustGet('active-category-count')
+  const tabbarNameEl = mustGet('tabbar-category-name')
   if (nameEl) nameEl.textContent = label
+  if (tabbarNameEl) tabbarNameEl.textContent = label
   if (countEl)
     countEl.textContent = String(
       activeView ? activeView.querySelectorAll('.sample').length : 0,
@@ -1041,9 +1047,14 @@ function showCategory(
 
   if (options.updateHash) history.replaceState(null, '', '#category-' + slug)
   if (options.scrollToTop) {
-    const banner = document.getElementById('category-banner')
-    if (banner)
-      programmaticScrollTo(banner, { behavior: 'smooth', block: 'start' })
+    // Scroll to the category's first sample, not #category-banner: the
+    // banner has no scroll-margin-top of its own, so aligning it to the
+    // viewport top leaves the sample right after it (and its title)
+    // hidden underneath the sticky theme-bar + samples-heading stack.
+    // `.sample`'s scroll-margin-top already accounts for both.
+    const firstSample = activeView?.querySelector<HTMLElement>('.sample')
+    if (firstSample)
+      programmaticScrollTo(firstSample, { behavior: 'smooth', block: 'start' })
   }
 
   return renderCategory(slug)

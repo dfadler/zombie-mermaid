@@ -505,7 +505,10 @@ ${styles}
        this stays pinned to the bottom of the viewport the whole time a
        visitor scrolls a category's samples — not just once they reach the
        end — as the one place that always says what they're viewing and how
-       to reach the rest. -->
+       to reach the rest. Sits above the scroll-progress line (see
+       demo/styles.css) rather than replacing it — that line tracks raw
+       page-scroll position, this tracks category identity; both answer a
+       different half of "is there more, and where." -->
   <div class="category-tabbar" id="category-tabbar">
     <span class="category-tabbar-label">Viewing <strong id="tabbar-category-name"></strong></span>
     <button type="button" class="category-banner-btn" id="tabbar-browse-btn">

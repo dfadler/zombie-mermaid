@@ -122,6 +122,16 @@ body::after {
   z-index: 1005;
   pointer-events: none;
 }
+/* Below 1024px the category-tabbar (further down this file) also pins to
+ * the viewport bottom to name the active category — sit just above it
+ * instead of underneath, so neither is hidden by the other. */
+@media (max-width: 1023px) {
+  .scroll-progress {
+    /* 53px, not 52: the tabbar's 1px border-top adds to its rendered
+     * height beyond its padding box. */
+    bottom: calc(53px + env(safe-area-inset-bottom, 0px));
+  }
+}
 .scroll-progress-bar {
   height: 100%;
   width: 0%;
@@ -1410,6 +1420,68 @@ body::after {
 }
 .category-view[hidden] {
   display: none;
+}
+
+/* -----------------------------------------------------------------
+ * Category tabbar — names the active category and gives an escape hatch
+ * to the others, persistently, on the screens where the sidebar (which
+ * shows the same info) is hidden behind the hamburger. Complements the
+ * scroll-progress line above rather than replacing it: that tracks raw
+ * scroll position, this tracks category identity.
+ * ----------------------------------------------------------------- */
+.category-tabbar {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .category-tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1005;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--t-bg) 92%, transparent);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid color-mix(in srgb, var(--t-fg) 10%, var(--t-bg));
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+  /* Reserve space so the fixed bar never permanently covers the last bit
+     of content or the footer. Scoped to :has(#category-tabbar) rather than
+     a bare `body` since this stylesheet is also inlined into fork-fixes.html,
+     which has no tabbar and shouldn't gain the extra bottom padding. */
+  body:has(#category-tabbar) {
+    padding-bottom: calc(53px + env(safe-area-inset-bottom, 0px));
+  }
+}
+.category-tabbar-label {
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.category-tabbar-label strong {
+  color: var(--t-fg);
+  font-weight: 600;
+}
+#tabbar-browse-btn {
+  flex-shrink: 0;
+  gap: 0.35rem;
+  background: var(--t-accent);
+  color: #fff;
+}
+#tabbar-browse-btn:hover {
+  background: color-mix(in srgb, var(--t-accent) 88%, black);
+  color: #fff;
+}
+#tabbar-browse-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Highlight the sidebar category currently shown in the main column —
