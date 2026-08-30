@@ -6,29 +6,32 @@ instead — this file only holds what's specific to _this_ repo's tooling.
 
 ## Worktree cleanup
 
-This repo's dev server (`dev.ts`) has two properties that make worktree cleanup easy
-to get wrong:
+This repo's dev server (`vite.config.ts`, run via `pnpm run dev` / `vite`) has two
+properties that make worktree cleanup easy to get wrong:
 
-- **Port defaults to 3456, shared unless overridden.** `dev.ts` reads `PORT` from the
-  environment (`PORT=3457 tsx dev.ts`), falling back to 3456 — so give each
-  simultaneously-running instance (a worktree alongside the main checkout, another
-  worktree, etc.) its own port rather than letting two land on the default together.
-  Two sessions that both fall back to 3456 will collide on bind, or — worse — one
-  will silently think it owns "the" dev server on that port when it's actually
-  someone else's.
-- **Live reload keeps the connection open.** `dev.ts` pushes rebuilds over SSE, so a
-  browser tab connected to it never goes network-idle. A headless capture
-  (`chrome --headless --screenshot`) against a _live_ `dev.ts` page hangs waiting for
-  network idle — build a static snapshot instead (`npx tsx index.ts`, serve the
-  resulting `index.html` with a plain static server) for any headless screenshot,
-  before/after comparison, or CI-style capture.
+- **Port defaults to 3456, shared unless overridden.** `vite.config.ts` reads `PORT`
+  from the environment (`PORT=3457 pnpm run dev`), falling back to 3456 — so give
+  each simultaneously-running instance (a worktree alongside the main checkout,
+  another worktree, etc.) its own port rather than letting two land on the default
+  together. Two sessions that both fall back to 3456 will collide on bind (Vite picks
+  the next free port and warns), or — worse — one will silently think it owns "the"
+  dev server on that port when it's actually someone else's.
+- **Live reload keeps the connection open.** Vite's HMR client holds a WebSocket open
+  (`/@vite/client`) for as long as a tab is connected, so that tab never goes
+  network-idle. A headless capture (`chrome --headless --screenshot`) against a
+  _live_ dev-server page hangs waiting for network idle — build a static snapshot
+  instead (`npx tsx index.ts`, serve the resulting `index.html` with a plain static
+  server) for any headless screenshot, before/after comparison, or CI-style capture.
 - **`preview_start` won't follow you into a worktree.** It resolves
   `.claude/launch.json` against the _original_ repo root regardless of where
   `EnterWorktree` switched the session's cwd (see the global `CLAUDE.md`'s worktree
-  section). To preview a worktree's own `dev.ts`, run it manually — `npx tsx
-<worktree-path>/dev.ts` (its imports resolve via `import.meta.url`, so it serves
-  correctly regardless of shell cwd) — as a background `Bash` process, and track that
-  PID yourself; nothing else will.
+  section). To preview a worktree's own dev server, run it manually from inside that
+  worktree — `cd <worktree-path> && PORT=<port> npx vite`. This repo has no
+  `worktree.symlinkDirectories` configured, so `node_modules` isn't shared between
+  worktrees; a worktree that `pnpm add`ed something (Vite itself, say) has its own
+  separate install, and `npx vite` run from anywhere else risks resolving a
+  different — or missing — `vite`. Run it as a background `Bash` process and track
+  that PID yourself; nothing else will.
 
 Before removing a worktree in this repo (`ExitWorktree`, or by hand), stop only the
 processes _you_ started for it — don't kill by port or by a generic name pattern
@@ -37,8 +40,8 @@ default port or process name:
 
 1. **Prefer killing by PID.** Capture it when you launch anything — the
    background-task PID the `Bash` tool returns, or `$!` right after backgrounding a
-   plain shell command. This matters most for `dev.ts`: its default port (3456) is
-   shared unless you passed `PORT=` (see above), so two sessions can each think of
+   plain shell command. This matters most for the dev server: its default port (3456)
+   is shared unless you passed `PORT=` (see above), so two sessions can each think of
    "the" dev server as theirs without being the same process — killing by port risks
    taking down someone else's server, not just your own.
 2. If you didn't capture a PID, verify before killing: `lsof -i:<port>` shows the

@@ -72,7 +72,7 @@
     "coverage:diff": "tsx check-diff-coverage.ts",
     "samples": "tsx index.ts",
     "editor": "tsx editor.ts",
-    "dev": "tsx dev.ts",
+    "dev": "vite",
     "bench": "tsx bench.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
@@ -107,6 +107,7 @@
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.68.0",
+    "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }
 }

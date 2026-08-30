@@ -31,7 +31,7 @@ export default tseslint.config(
       // literal inside index.ts, which no linter could see.
       'demo/**/*.ts',
       'editor.ts',
-      'dev.ts',
+      'vite.config.ts',
       'index.ts',
       'fork-fixes.ts',
       'ascii-html.ts',
