@@ -38,6 +38,23 @@ test('diag: ascii panel layout', async ({ page }) => {
         fontFamily: cs.fontFamily,
       }
     }
+    const styleEl = document.querySelector('style')
+    const styleText = styleEl?.textContent ?? ''
+    const sheet = styleEl?.sheet ?? null
+    let ruleCount = -1
+    let asciiPanelRuleTexts: string[] = []
+    let parseError: string | null = null
+    try {
+      if (sheet) {
+        ruleCount = sheet.cssRules.length
+        asciiPanelRuleTexts = [...sheet.cssRules]
+          .filter((r) => r.cssText.includes('.ascii-panel'))
+          .map((r) => r.cssText)
+      }
+    } catch (e) {
+      parseError = String(e)
+    }
+
     return {
       ascendPanel: rectAndStyle('.ascii-panel'),
       terminalWindow: rectAndStyle('.terminal-window'),
@@ -48,6 +65,13 @@ test('diag: ascii panel layout', async ({ page }) => {
       availableFonts: [...document.fonts].map((f) => `${f.family} ${f.status}`),
       monospaceCheck: document.fonts.check('12px monospace'),
       jetbrainsCheck: document.fonts.check('12px "JetBrains Mono"'),
+      userAgent: navigator.userAgent,
+      styleTextLength: styleText.length,
+      styleTextHash: [...styleText].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0),
+      cssParseRuleCount: ruleCount,
+      asciiPanelRuleTexts,
+      cssParseError: parseError,
+      inlinePanelStyle: document.querySelector('.ascii-panel')?.getAttribute('style'),
     }
   })
 
