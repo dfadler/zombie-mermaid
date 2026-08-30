@@ -194,18 +194,26 @@ jobs:
       # TEMPORARY bootstrap step: generates Linux baselines. Every test
       # fails without a baseline, and this job's retries: 2 means each of
       # the 277 tests is normally attempted 3 times (831 total executions)
-      # — that alone pushed the previous two bootstrap attempts past this
+      # — that alone pushed the first two bootstrap attempts past this
       # job's timeout, which is not itself a hang (the job log showed
       # continuous, active progress the whole time — very different from
       # the Vitest-based suite's silent hangs). --update-snapshots alone
       # does NOT avoid this: a missing snapshot still goes through the full
       # fail-then-retry cascade and only writes/passes on the *last*
       # attempt (confirmed from the job log's "××××F" pattern — same total
-      # work, just ending in pass instead of fail). `--retries=0` is what
-      # actually removes the multiplication, since every test needs exactly
-      # one attempt to create its baseline. Revert to `pnpm run test:visual`
-      # (no override) once the resulting -linux.png baselines from this run
-      # are committed.
+      # work, just ending in pass instead of fail).
+      #
+      # A third attempt tried `pnpm run test:visual:update -- --retries=0`,
+      # which *also* failed to disable retries — the job log showed the
+      # literal invoked command as `playwright test --update-snapshots --
+      # --retries=0`: the `--` pnpm needs to separate its own args from the
+      # script's wasn't stripped, so Playwright's CLI saw a stray `--` and
+      # treated `--retries=0` as a positional arg (a test-file pattern) that
+      # matched nothing, rather than as the flag it looks like. Calling
+      # `pnpm exec playwright` directly (bypassing the package.json script
+      # indirection that introduced the ambiguity in the first place) avoids
+      # this entirely. Revert to `pnpm run test:visual` once the resulting
+      # -linux.png baselines from this run are committed.
       #
       # This suite runs under Playwright Test, not Vitest's browser mode —
       # see zombie-mermaid#299 for why: Vitest's Node<->browser RPC bridge
@@ -214,7 +222,7 @@ jobs:
       # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
       # browser entirely from Node, so there's no such bridge to hang on.
       - name: Run visual regression suite
-        run: pnpm run test:visual:update -- --retries=0
+        run: pnpm exec playwright test --update-snapshots --retries=0
 
       # TEMPORARY (matches the bootstrap step above): if: always(), and
       # uploads the new -linux.png baselines --update-snapshots wrote
