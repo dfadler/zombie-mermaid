@@ -4,6 +4,14 @@ export default defineConfig({
   testDir: '__tests__/visual',
   testMatch: '**/*.visual.test.ts',
   fullyParallel: true,
+  // Playwright's default reporter (list locally, dot on CI) never writes an
+  // HTML report, so the `playwright-report/` path in ci.yml's failure-upload
+  // step had nothing to upload. `html` alongside it gives a real browsable
+  // report (open the artifact's index.html, or `pnpm exec playwright
+  // show-report <dir>` to serve it locally) with side-by-side diffs and full
+  // traces for every failure; `open: 'never'` keeps it from trying to launch
+  // a browser tab on a CI runner or interrupting a local run.
+  reporter: [['list'], ['html', { open: 'never' }]],
   // Capped rather than left at Playwright's CPU-count default: running many
   // Chromium instances concurrently measurably increases screenshot noise
   // (CPU contention affecting font rasterization timing) — a 6-worker local
