@@ -221,7 +221,7 @@ async function generateHtml(): Promise<string> {
 
   const highlighter = await createHighlighter({
     langs: ['mermaid'],
-    themes: ['github-light'],
+    themes: ['github-light', 'github-dark'],
   })
 
   // Step 1: Bundle the mermaid renderer for the browser
@@ -288,13 +288,13 @@ async function generateHtml(): Promise<string> {
   // The mermaid TextMate grammar requires a fenced code block prefix to tokenize properly
   // (see https://github.com/shikijs/shiki/issues/973), so we wrap each source with
   // ```mermaid ... ``` and then strip those fence lines from the output HTML.
-  // Source panels always use github-dark — Shiki's inline colors are used directly.
-  const highlightedSources = samples.map((sample) => {
-    const fenced = '```mermaid\n' + sample.source.trim() + '\n```'
-    const html = highlighter.codeToHtml(fenced, {
-      lang: 'mermaid',
-      theme: 'github-light',
-    })
+  // Source panels use github-light — Shiki's inline colors are used directly.
+  const highlightMermaid = (
+    source: string,
+    theme: 'github-light' | 'github-dark',
+  ): string => {
+    const fenced = '```mermaid\n' + source.trim() + '\n```'
+    const html = highlighter.codeToHtml(fenced, { lang: 'mermaid', theme })
     // Strip the first line (```mermaid) and last line (```) from the output
     return html
       .replace(
@@ -305,11 +305,26 @@ async function generateHtml(): Promise<string> {
         /\n<span class="line">.*?<\/span>(<\/code>)/, // last line
         '$1',
       )
-  })
+  }
+
+  const highlightedSources = samples.map((sample) =>
+    highlightMermaid(sample.source, 'github-light'),
+  )
+
+  // The Hero sample's "before" code panel shows its real source verbatim
+  // (the same string that drives the "after" render — including the
+  // @-edge-id/animate plumbing) and uses github-dark, since it's a
+  // stand-alone terminal-styled panel next to the rendered diagram, not the
+  // regular light-themed source panel.
+  const heroSample = samples.find((s) => s.category === 'Hero')
+  if (!heroSample) {
+    throw new Error('No sample with category "Hero" found in samples-data.ts')
+  }
+  const heroCodeHtml = highlightMermaid(heroSample.source, 'github-dark')
 
   // Step 5: Build sample card HTML shells (SVG + ASCII are empty, filled client-side)
   // data-sample-bg stores the per-sample background for "Default" mode restoration.
-  // Hero samples get special full-width SVG-only treatment and are placed before "Samples" heading.
+  // Hero samples get a before/after transform treatment and are placed before "Samples" heading.
   const heroCards: string[] = []
   const regularCardHtmlByIndex = new Map<number, string>()
 
@@ -318,12 +333,46 @@ async function generateHtml(): Promise<string> {
     const isHero = sample.category === 'Hero'
 
     if (isHero) {
-      // Hero sample: full-width SVG only, no header/source/ASCII panels
+      // Hero sample: raw source (left/top) transforms into the live,
+      // theme-reactive rendered diagram (right/bottom) — no header/ASCII
+      // panel, since this is a showcase, not a browsable sample.
       heroCards.push(`
     <section class="sample sample-hero" id="sample-${i}">
-      <div class="hero-diagram-panel" id="svg-panel-${i}" data-sample-bg="${bg}">
-        <div class="svg-container" id="svg-${i}">
-          <div class="loading-spinner"></div>
+      <div class="hero-transform">
+        <div class="hero-code-panel">
+          <div class="hero-code-titlebar">
+            <span class="hero-code-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </span>
+            <span class="hero-code-title">pipeline.mmd</span>
+          </div>
+          <div class="hero-code-body">${heroCodeHtml}</div>
+        </div>
+        <div class="hero-arrow" aria-hidden="true">
+          <span class="hero-arrow-caption">renders as</span>
+          <svg class="hero-arrow-icon" viewBox="0 0 56 56" fill="none">
+            <defs>
+              <linearGradient id="hero-arrow-grad-${i}" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#9570BE"/>
+                <stop offset="1" stop-color="#3b82f6"/>
+              </linearGradient>
+            </defs>
+            <line x1="4" y1="28" x2="44" y2="28" stroke="url(#hero-arrow-grad-${i})" stroke-width="2.5" stroke-linecap="round" class="hero-arrow-dash"/>
+            <path d="M36 16 L52 28 L36 40" stroke="url(#hero-arrow-grad-${i})" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="hero-diagram-panel" id="svg-panel-${i}" data-sample-bg="${bg}">
+          <div class="svg-container" id="svg-${i}">
+            <div class="loading-spinner"></div>
+          </div>
+          <div class="hero-tag-row">
+            <span class="hero-tag">SVG</span>
+            <span class="hero-tag">ASCII</span>
+            <span class="hero-tag hero-tag-brand">16 Themes</span>
+            <span class="hero-tag">Animated Edges</span>
+          </div>
         </div>
       </div>
     </section>`)
@@ -450,6 +499,20 @@ ${styles}
   </div>
 
   <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <!-- Persistent mobile/tablet nav: the sidebar (with its category list and
+       active-category state) is hidden behind the hamburger below 1024px, so
+       this stays pinned to the bottom of the viewport the whole time a
+       visitor scrolls a category's samples — not just once they reach the
+       end — as the one place that always says what they're viewing and how
+       to reach the rest. -->
+  <div class="category-tabbar" id="category-tabbar">
+    <span class="category-tabbar-label">Viewing <strong id="tabbar-category-name"></strong></span>
+    <button type="button" class="category-banner-btn" id="tabbar-browse-btn">
+      Browse types
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
 
   <div class="page-shell">
   <nav class="sidebar" id="sidebar" aria-label="Sample navigation">

@@ -36,30 +36,24 @@ export const samples: Sample[] = [
   //  HERO — Showcase diagram
   // ══════════════════════════════════════════════════════════════════════════
 
+  // The hero showcase (demo site + README) presents this as the "after" side
+  // of a before/after transform: raw Mermaid source on one side, this
+  // rendered, animated, themeable diagram on the other. See index.ts's hero
+  // section and scripts/generate-hero.ts.
   {
     title: 'zombie-mermaid',
     category: 'Hero',
     description: 'Mermaid rendering, made beautiful.',
     source: `stateDiagram-v2
     direction LR
-    [*] e1@--> Input
-    Input e2@--> Parse: DSL
-    Parse e3@--> Layout: AST
     Layout e4@--> SVG: Vector
     Layout e5@--> ASCII: Text
     SVG e6@--> Theme
     ASCII e7@--> Theme
-    Theme e8@--> Output
-    Output e9@--> [*]
-    e1@{ animate: true }
-    e2@{ animate: true }
-    e3@{ animate: true }
     e4@{ animate: true }
     e5@{ animate: true }
     e6@{ animate: true }
-    e7@{ animate: true }
-    e8@{ animate: true }
-    e9@{ animate: true }`,
+    e7@{ animate: true }`,
     options: { transparent: true },
   },
 
