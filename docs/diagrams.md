@@ -237,11 +237,12 @@ deprecated — and is guarded by `prefers-reduced-motion`, so a viewer who asked
 the system for less movement gets a still edge. The keyframes are emitted only
 when a diagram actually animates an edge.
 
-Rendering with `interactivity: 'none'` (see [api-reference.md](api-reference.md))
-strips the animation entirely — useful for print/rasterized output, where a
-CSS animation would otherwise silently render as one static frame. Any other
-`interactivity` level (including the default, `'static'`) leaves an animated
-edge animating.
+Animation only renders under `interactivity: 'full'` (see
+[api-reference.md](api-reference.md)) — the default (`'static'`) and `'none'`
+both render an animated edge as a still line, since CSS animation is tier-2
+*motion*. This is useful for print/rasterized output, where a CSS animation
+would otherwise silently render as one static frame with no indication that
+motion was intended.
 
 ### Styling
 

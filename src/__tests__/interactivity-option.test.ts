@@ -1,15 +1,19 @@
 /**
- * Tests for `RenderOptions.interactivity` (#216): the render-target-scoped
- * replacement for the xychart-only `interactive` boolean, wired into
- * flowchart edge animation (`e1@{ animate: true }`) and xychart hover
- * tooltips. See docs/decisions/no-script-interactivity.md for the tier
- * model this maps to, and `interactivity`'s TSDoc in src/types.ts for the
- * exact per-level behavior.
+ * Tests for `RenderOptions.interactivity` (#216, #231): the render-target-
+ * scoped replacement for the xychart-only `interactive` boolean, wired into
+ * flowchart edge animation (`e1@{ animate: true }`), `click`-based links/
+ * tooltips, and xychart hover tooltips. See
+ * docs/decisions/no-script-interactivity.md for the tier model this maps
+ * to, and `interactivity`'s TSDoc in src/types.ts for the exact per-level
+ * behavior.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
 
 const ANIMATED_FLOWCHART = 'flowchart TD\n  A e1@--> B\n  e1@{ animate: true }'
+
+const FLOWCHART_WITH_LINK =
+  'flowchart TD\n  A --> B\n  click A "https://example.com" "Tip"'
 
 const BAR_CHART = `xychart-beta
   x-axis [Jan, Feb, Mar, Apr]
@@ -20,11 +24,17 @@ const BAR_CHART = `xychart-beta
 // Default behavior is unchanged for callers who touch neither option
 // ============================================================================
 
-describe('interactivity — default (unset) behavior unchanged', () => {
-  it('flowchart: an animated edge still animates', () => {
+describe('interactivity — default (unset) behavior', () => {
+  it('flowchart: an animated edge does NOT animate (motion needs `full`)', () => {
     const svg = renderMermaidSVG(ANIMATED_FLOWCHART)
-    expect(svg).toContain('class="edge edge-animated"')
-    expect(svg).toContain('@keyframes zm-edge-dash')
+    expect(svg).not.toContain('edge-animated')
+    expect(svg).not.toContain('@keyframes zm-edge-dash')
+  })
+
+  it('flowchart: click-based links and tooltips still render', () => {
+    const svg = renderMermaidSVG(FLOWCHART_WITH_LINK)
+    expect(svg).toContain('<a href="https://example.com">')
+    expect(svg).toContain('<title>Tip</title>')
   })
 
   it('xychart: hover tooltips stay off', () => {
@@ -52,6 +62,14 @@ describe("interactivity: 'none'", () => {
     expect(svg).toContain('class="edge"')
   })
 
+  it('strips click-based links and tooltips', () => {
+    const svg = renderMermaidSVG(FLOWCHART_WITH_LINK, {
+      interactivity: 'none',
+    })
+    expect(svg).not.toContain('<a href=')
+    expect(svg).not.toContain('<title>Tip</title>')
+  })
+
   it('keeps xychart tooltips off', () => {
     const svg = renderMermaidSVG(BAR_CHART, { interactivity: 'none' })
     expect(svg).not.toContain('xychart-bar-group')
@@ -63,12 +81,20 @@ describe("interactivity: 'none'", () => {
 // ============================================================================
 
 describe("interactivity: 'static'", () => {
-  it('flowchart: an animated edge still animates', () => {
+  it('flowchart: an animated edge does NOT animate', () => {
     const svg = renderMermaidSVG(ANIMATED_FLOWCHART, {
       interactivity: 'static',
     })
-    expect(svg).toContain('class="edge edge-animated"')
-    expect(svg).toContain('@keyframes zm-edge-dash')
+    expect(svg).not.toContain('edge-animated')
+    expect(svg).not.toContain('@keyframes zm-edge-dash')
+  })
+
+  it('flowchart: click-based links and tooltips still render', () => {
+    const svg = renderMermaidSVG(FLOWCHART_WITH_LINK, {
+      interactivity: 'static',
+    })
+    expect(svg).toContain('<a href="https://example.com">')
+    expect(svg).toContain('<title>Tip</title>')
   })
 
   it('xychart: hover tooltips stay off', () => {
@@ -82,10 +108,16 @@ describe("interactivity: 'static'", () => {
 // ============================================================================
 
 describe("interactivity: 'full'", () => {
-  it('flowchart: an animated edge still animates', () => {
+  it('flowchart: an animated edge animates', () => {
     const svg = renderMermaidSVG(ANIMATED_FLOWCHART, { interactivity: 'full' })
     expect(svg).toContain('class="edge edge-animated"')
     expect(svg).toContain('@keyframes zm-edge-dash')
+  })
+
+  it('flowchart: click-based links and tooltips still render', () => {
+    const svg = renderMermaidSVG(FLOWCHART_WITH_LINK, { interactivity: 'full' })
+    expect(svg).toContain('<a href="https://example.com">')
+    expect(svg).toContain('<title>Tip</title>')
   })
 
   it('xychart: enables hover tooltip groups and hover CSS', () => {
@@ -112,9 +144,9 @@ describe('deprecated `interactive` boolean', () => {
     expect(svg).not.toContain('xychart-bar-group')
   })
 
-  it('does not affect flowchart edge animation', () => {
+  it('does not affect flowchart edge animation (still gated to interactivity: full)', () => {
     const svg = renderMermaidSVG(ANIMATED_FLOWCHART, { interactive: true })
-    expect(svg).toContain('class="edge edge-animated"')
+    expect(svg).not.toContain('edge-animated')
   })
 
   it('`interactivity`, when set, takes precedence over `interactive`', () => {

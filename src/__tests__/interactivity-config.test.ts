@@ -464,6 +464,56 @@ describe('click interactions (#198 row 10)', () => {
     expect(svg).not.toContain('<a href=')
     expect(svg).not.toContain('data-click-callback')
   })
+
+  describe('gated by interactivity: none (#231)', () => {
+    const WITH_HREF_AND_TOOLTIP =
+      'flowchart TD\n  A --> B\n  click A "https://example.com" "Helpful"'
+
+    it('strips the <a href> link', () => {
+      const svg = renderMermaidSVG(WITH_HREF_AND_TOOLTIP, {
+        interactivity: 'none',
+      })
+      expect(svg).not.toContain('<a href=')
+    })
+
+    it('strips the <title> tooltip', () => {
+      const svg = renderMermaidSVG(WITH_HREF_AND_TOOLTIP, {
+        interactivity: 'none',
+      })
+      expect(svg).not.toContain('<title>Helpful</title>')
+    })
+
+    it('leaves the node itself intact (shape, label)', () => {
+      const svg = renderMermaidSVG(WITH_HREF_AND_TOOLTIP, {
+        interactivity: 'none',
+      })
+      expect(svg).toContain('data-id="A"')
+      expect(svg).toContain('>A<')
+    })
+
+    it('still records a click callback as data (unaffected — never a link/tooltip)', () => {
+      const svg = renderMermaidSVG(
+        'flowchart TD\n  A --> B\n  click A call handler()',
+        { interactivity: 'none' },
+      )
+      expect(svg).toContain('data-click-callback="handler()"')
+    })
+
+    it.each(['static', 'full'] as const)(
+      'keeps the link and tooltip under interactivity: %s',
+      (interactivity) => {
+        const svg = renderMermaidSVG(WITH_HREF_AND_TOOLTIP, { interactivity })
+        expect(svg).toContain('<a href="https://example.com">')
+        expect(svg).toContain('<title>Helpful</title>')
+      },
+    )
+
+    it('keeps the link and tooltip under the default (unset) interactivity', () => {
+      const svg = renderMermaidSVG(WITH_HREF_AND_TOOLTIP)
+      expect(svg).toContain('<a href="https://example.com">')
+      expect(svg).toContain('<title>Helpful</title>')
+    })
+  })
 })
 
 describe('markdown label strings (#198 row 12)', () => {
@@ -513,9 +563,10 @@ describe('edge IDs and animation (#198 row 6)', () => {
     )
   })
 
-  it('animates via CSS keyframes, guarded for reduced motion', () => {
+  it('animates via CSS keyframes under interactivity: full, guarded for reduced motion', () => {
     const svg = renderMermaidSVG(
       'flowchart TD\n  A e1@--> B\n  e1@{ animate: true }',
+      { interactivity: 'full' },
     )
     expect(svg).toContain('class="edge edge-animated"')
     expect(svg).toContain('@keyframes zm-edge-dash')
@@ -526,10 +577,20 @@ describe('edge IDs and animation (#198 row 6)', () => {
     expect(svg).not.toContain('<animate')
   })
 
-  it('omits the keyframes entirely when no edge is animated', () => {
-    expect(renderMermaidSVG('flowchart TD\n  A --> B')).not.toContain(
-      'zm-edge-dash',
+  it('does not animate under the default interactivity (static)', () => {
+    // Animation is tier-2 motion, which 'static' now excludes — only
+    // 'full' animates. See interactivity-option.test.ts for full coverage.
+    const svg = renderMermaidSVG(
+      'flowchart TD\n  A e1@--> B\n  e1@{ animate: true }',
     )
+    expect(svg).not.toContain('edge-animated')
+    expect(svg).not.toContain('@keyframes zm-edge-dash')
+  })
+
+  it('omits the keyframes entirely when no edge is animated', () => {
+    expect(
+      renderMermaidSVG('flowchart TD\n  A --> B', { interactivity: 'full' }),
+    ).not.toContain('zm-edge-dash')
   })
 
   it('does not mistake a node metadata block for edge metadata', () => {
@@ -580,9 +641,10 @@ describe('state-diagram edge IDs and animation', () => {
     )
   })
 
-  it('animates via CSS keyframes, guarded for reduced motion', () => {
+  it('animates via CSS keyframes under interactivity: full, guarded for reduced motion', () => {
     const svg = renderMermaidSVG(
       'stateDiagram-v2\n  s1 e1@--> s2\n  e1@{ animate: true }',
+      { interactivity: 'full' },
     )
     expect(svg).toContain('class="edge edge-animated"')
     expect(svg).toContain('@keyframes zm-edge-dash')
@@ -590,10 +652,20 @@ describe('state-diagram edge IDs and animation', () => {
     expect(svg).not.toContain('<animate')
   })
 
-  it('omits the keyframes entirely when no edge is animated', () => {
-    expect(renderMermaidSVG('stateDiagram-v2\n  s1 --> s2')).not.toContain(
-      'zm-edge-dash',
+  it('does not animate under the default interactivity (static)', () => {
+    const svg = renderMermaidSVG(
+      'stateDiagram-v2\n  s1 e1@--> s2\n  e1@{ animate: true }',
     )
+    expect(svg).not.toContain('edge-animated')
+    expect(svg).not.toContain('@keyframes zm-edge-dash')
+  })
+
+  it('omits the keyframes entirely when no edge is animated', () => {
+    expect(
+      renderMermaidSVG('stateDiagram-v2\n  s1 --> s2', {
+        interactivity: 'full',
+      }),
+    ).not.toContain('zm-edge-dash')
   })
 
   it('respects interactivity: none by stripping animation but keeping the edge', () => {

@@ -71,9 +71,7 @@ PNG/JPEG, and ASCII/terminal text):
 because the _caller_ — not the diagram author — knows which output target a
 render is headed for (a live embedded page vs. a PNG for a slide deck vs. a
 terminal). See that option's TSDoc for exactly what each level does and does
-not gate as of this writing; some tier-2 gating (stripping `click`-based
-links/tooltips under `'none'`) is deliberately left as follow-up rather than
-implemented all at once.
+not gate.
 
 ## Consequences
 

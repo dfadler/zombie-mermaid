@@ -81,13 +81,22 @@ function resolveInteractivity(
 
 /**
  * Whether flowchart/state-diagram edge animation (`e1@{ animate: true }`)
- * should render. Gated behind `interactivity !== 'none'` — both the default
- * (`'static'`) and `'full'` allow it, which preserves today's ungated
- * behavior for callers who don't touch `interactivity`. Tightening this to
- * `'full'`-only (the stricter tier-2 reading from the ADR) is tracked as
- * follow-up work.
+ * should render. Gated to `'full'` only — CSS animation is tier-2 *motion*
+ * (see docs/decisions/no-script-interactivity.md), so the default
+ * (`'static'`, tier 1 + tier 2 minus motion) and `'none'` both render the
+ * edge as a still line.
  */
 function resolveAnimationEnabled(options: RenderOptions): boolean {
+  return resolveInteractivity(options) === 'full'
+}
+
+/**
+ * Whether flowchart `click`-based links (`<a href>`) and `<title>` tooltips
+ * should render. Gated behind `interactivity !== 'none'` — `'none'` is meant
+ * for print/rasterized output, where a link is meaningless, so it strips
+ * both; `'static'` and `'full'` both keep them.
+ */
+function resolveLinksEnabled(options: RenderOptions): boolean {
   return resolveInteractivity(options) !== 'none'
 }
 
@@ -249,6 +258,7 @@ export function renderMermaidSVG(
         effective.curve ?? 'linear',
         embedSource,
         resolveAnimationEnabled(options),
+        resolveLinksEnabled(options),
         title,
         decorative,
       )

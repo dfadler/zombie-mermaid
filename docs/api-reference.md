@@ -38,11 +38,9 @@ Class and ER diagrams use their own fixed internal spacing and currently ignore 
 
 **`interactivity`:** declarative-only interactivity level, scoped by output target — see [`docs/decisions/no-script-interactivity.md`](decisions/no-script-interactivity.md) for the full tier model this maps to.
 
-- `'none'` — flowchart edge animation (`e1@{ animate: true }`) never renders. Intended for print/rasterized output.
-- `'static'` (default) — preserves today's output as closely as possible: edge animation still renders where a diagram opts into it; xychart hover tooltips stay off unless requested via `'full'` or the deprecated `interactive: true`.
-- `'full'` — also enables xychart hover tooltips.
-
-`click`-based links and `<title>` tooltips are not yet gated by this option in any mode.
+- `'none'` — flowchart edge animation (`e1@{ animate: true }`) never renders, and `click`-based links (`<a href>`) and `<title>` tooltips are stripped. Intended for print/rasterized output, where both are meaningless.
+- `'static'` (default) — `click`-based links and `<title>` tooltips still render; flowchart edge animation does not (motion is gated to `'full'` only). xychart hover tooltips stay off unless requested via `'full'` or the deprecated `interactive: true`.
+- `'full'` — also enables flowchart edge animation and xychart hover tooltips.
 
 Two more advanced options exist — `fontSizes` (per-element font size overrides) and `sequence` (sequence-diagram row/gap tuning) — see the `RenderOptions` JSDoc in [`src/types.ts`](../src/types.ts) for their fields and defaults.
 
