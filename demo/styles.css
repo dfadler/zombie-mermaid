@@ -19,6 +19,10 @@ body {
   --t-bg: #ffffff;
   --t-fg: #27272a;
   --t-accent: #3b82f6;
+  /* Shared muted-text token: kept high enough (85%) that .description
+   * clears WCAG AA's 4.5:1 contrast ratio for 16px body text across every
+   * bundled theme (see .description below, issue #278). */
+  --t-muted: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));
   --foreground-rgb: 39, 39, 42;
   --accent-rgb: 59, 130, 246;
   --shadow-border-opacity: 0.08;
@@ -713,7 +717,7 @@ body::after {
   color: var(--t-fg);
 }
 .description {
-  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  color: var(--t-muted);
   font-size: 1rem;
   font-weight: 400;
   margin-top: 0.1rem;
