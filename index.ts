@@ -562,8 +562,8 @@ ${styles}
 
 ${heroCardsHtml}
 
-  <div class="samples-heading" id="samples-heading" tabindex="-1">
-    <h2 class="section-title">Samples</h2>
+  <div class="samples-heading">
+    <h2 class="section-title" id="samples-heading" tabindex="-1">Samples</h2>
     <div class="category-banner" id="category-banner">
       <span>Showing <strong id="active-category-name"></strong> — <span id="active-category-count"></span> of ${samples.length - heroCount} samples</span>
       <button type="button" class="category-banner-btn" id="browse-categories-btn">Browse diagram types</button>
