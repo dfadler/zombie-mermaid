@@ -69,12 +69,15 @@ Usage:
   zombie-mermaid --version                          Show version
 
 Options:
-  --ascii          Print ASCII/Unicode diagram to terminal
-  --svg            Render SVG (requires -o)
-  -o, --output     Output file path for SVG
-  --theme <name>   Apply a built-in theme (see 'themes' command)
-  -h, --help       Show help
-  -v, --version    Show version
+  --ascii              Print ASCII/Unicode diagram to terminal
+  --svg                Render SVG (requires -o)
+  -o, --output         Output file path for SVG
+  --theme <name>       Apply a built-in theme (see 'themes' command)
+  -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)
+  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
+  -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)
+  -h, --help           Show help
+  -v, --version        Show version
 `.trim(),
   )
 }

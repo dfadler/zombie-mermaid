@@ -135,6 +135,56 @@ describe('runRender – theme application', () => {
 })
 
 // ============================================================================
+// Padding/spacing flags
+// ============================================================================
+
+describe('runRender – padding flags', () => {
+  it('widens ASCII output when paddingX is increased', async () => {
+    const narrowStdout = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, paddingX: 1 }),
+      narrowStdout,
+      SIMPLE_FLOWCHART,
+    )
+
+    const wideStdout = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, paddingX: 30 }),
+      wideStdout,
+      SIMPLE_FLOWCHART,
+    )
+
+    const narrowWidth = Math.max(
+      ...narrowStdout.output().split('\n').map((line) => line.length),
+    )
+    const wideWidth = Math.max(
+      ...wideStdout.output().split('\n').map((line) => line.length),
+    )
+    expect(wideWidth).toBeGreaterThan(narrowWidth)
+  })
+
+  it('passes borderPadding through to the ASCII renderer', async () => {
+    const tightStdout = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, borderPadding: 0 }),
+      tightStdout,
+      SIMPLE_FLOWCHART,
+    )
+
+    const paddedStdout = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, borderPadding: 5 }),
+      paddedStdout,
+      SIMPLE_FLOWCHART,
+    )
+
+    expect(paddedStdout.output().length).toBeGreaterThan(
+      tightStdout.output().length,
+    )
+  })
+})
+
+// ============================================================================
 // Error cases
 // ============================================================================
 

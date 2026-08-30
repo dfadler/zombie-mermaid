@@ -21,6 +21,9 @@ export function renderArgs(overrides: Partial<RenderArgs> = {}): RenderArgs {
     svg: false,
     output: undefined,
     theme: undefined,
+    paddingX: undefined,
+    paddingY: undefined,
+    borderPadding: undefined,
     ...overrides,
   }
 }

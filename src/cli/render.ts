@@ -74,6 +74,10 @@ export async function runRender(
     const asciiOpts: AsciiRenderOptions = themeColors
       ? { colorMode: 'auto', theme: diagramColorsToAsciiTheme(themeColors) }
       : { colorMode: 'none' }
+    if (args.paddingX !== undefined) asciiOpts.paddingX = args.paddingX
+    if (args.paddingY !== undefined) asciiOpts.paddingY = args.paddingY
+    if (args.borderPadding !== undefined)
+      asciiOpts.boxBorderPadding = args.borderPadding
     const ascii = renderMermaidASCII(text, asciiOpts)
     out.write(ascii + '\n')
   }
