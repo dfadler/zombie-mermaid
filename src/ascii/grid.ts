@@ -622,6 +622,122 @@ function addPseudoRootsForUnreachableCycles(
 }
 
 /**
+ * Find the node whose grid block originates at `coord`, if any.
+ *
+ * Only meaningful before edge routing starts: every reserved grid cell at
+ * that point belongs to a placed node's block (edges haven't claimed any
+ * cells yet), and every block's origin sits on the 4-unit lattice that
+ * `reserveSpotInGrid` allocates from — so matching by exact origin equality
+ * is safe; there's no partial-overlap case to worry about yet.
+ */
+function findNodeAtGridOrigin(
+  graph: AsciiGraph,
+  coord: GridCoord,
+): AsciiNode | undefined {
+  return graph.nodes.find(
+    (n) =>
+      n.gridCoord !== null &&
+      n.gridCoord.x === coord.x &&
+      n.gridCoord.y === coord.y,
+  )
+}
+
+/**
+ * Find a free grid slot adjacent to `anchor` along `axis`, without walking
+ * through a node that belongs to a *different* top-level subgraph than
+ * `ownTopSg`.
+ *
+ * A deferred subgraph root (see the module doc above createMapping) anchors
+ * next to an already-placed sibling and slides along the shared axis until
+ * it finds free space. Sliding blindly — the naive approach, via
+ * `reserveSpotInGrid`'s generic collision handling — can walk straight
+ * through an unrelated sibling subgraph's node that already occupies the
+ * next slot over, landing the deferred node on the *far* side of that
+ * foreign node. That foreign node then sits between the anchor and the
+ * deferred node, so it falls inside this subgraph's bounding box and its own
+ * frame/title is dropped (#301).
+ *
+ * Tries `preferredSign` first (the direction the old blind slide always
+ * used), then the opposite sign. In each direction, stops — without
+ * accepting the enclosure — the moment it would have to step past a node
+ * belonging to a different top-level subgraph, and only continues past
+ * nodes belonging to the *same* one. Returns null if both directions are
+ * immediately foreign-blocked, so the caller can fall back to the old
+ * (occasionally imperfect but non-looping) blind-slide behavior.
+ */
+function findSubgraphAdjacentSlot(
+  graph: AsciiGraph,
+  anchor: GridCoord,
+  ownTopSg: AsciiSubgraph,
+  axis: 'x' | 'y',
+  preferredSign: 1 | -1,
+): GridCoord | null {
+  const other: 'x' | 'y' = axis === 'x' ? 'y' : 'x'
+
+  const tryDirection = (sign: 1 | -1): GridCoord | null => {
+    let offset = 4
+    for (;;) {
+      const axisVal = anchor[axis] + sign * offset
+      if (axisVal < 0) return null
+      const candidate: GridCoord =
+        axis === 'x'
+          ? { x: axisVal, y: anchor[other] }
+          : { x: anchor[other], y: axisVal }
+      if (isBlockFree(graph.grid, candidate, NODE_BLOCK_SIZE)) return candidate
+      const occupant = findNodeAtGridOrigin(graph, candidate)
+      if (!occupant || getTopLevelSubgraph(graph, occupant) !== ownTopSg) {
+        return null // a foreign subgraph (or unexpected gap) blocks this side
+      }
+      offset += 4
+    }
+  }
+
+  return (
+    tryDirection(preferredSign) ?? tryDirection((preferredSign * -1) as 1 | -1)
+  )
+}
+
+/**
+ * Place any deferred nodes waiting on `rootNode`'s top-level subgraph
+ * immediately adjacent to it, before returning control to the root-
+ * placement loop — so an unrelated subgraph's root can never claim the slot
+ * a deferred sibling needs first (#301). Removes the subgraph's entry from
+ * `deferredByTopSg` once handled (a subgraph's deferred nodes attach to
+ * whichever of its roots is placed *first*, not every one), and records each
+ * placed node in `resolvedDeferred` so the later fallback pass (for deferred
+ * nodes whose anchor turns out to be a non-root, only available after the
+ * reachable-children traversal) skips them.
+ */
+function placeDeferredSiblingsNextToRoot(
+  graph: AsciiGraph,
+  rootNode: AsciiNode,
+  deferredByTopSg: Map<AsciiSubgraph, AsciiNode[]>,
+  resolvedDeferred: Set<AsciiNode>,
+): void {
+  const topSg = getTopLevelSubgraph(graph, rootNode)
+  if (!topSg) return
+  const waiting = deferredByTopSg.get(topSg)
+  if (!waiting) return
+  deferredByTopSg.delete(topSg)
+
+  const anchor = requireGridCoord(rootNode)
+  const axis: 'x' | 'y' =
+    getEffectiveDirection(graph, rootNode) === 'LR' ? 'y' : 'x'
+
+  for (const deferred of waiting) {
+    const nodeDir = getEffectiveDirection(graph, deferred)
+    const slot = findSubgraphAdjacentSlot(graph, anchor, topSg, axis, 1)
+    reserveSpotInGrid(
+      graph,
+      graph.nodes[deferred.index]!,
+      slot ?? anchor,
+      nodeDir,
+    )
+    resolvedDeferred.add(deferred)
+  }
+}
+
+/**
  * Place all currently-reachable, still-unplaced children of already-placed
  * nodes, level by level, mutating `highestPositionPerLevel` as it goes.
  * Multi-pass: iterates until no more progress can be made in a full pass
@@ -803,6 +919,21 @@ export function createMapping(graph: AsciiGraph): void {
   // target no other root shares) keeps its original relative position.
   const groupedRootNodes = groupRootsByDownstreamTarget(graph, placementRoots)
 
+  // Deferred nodes grouped by their top-level subgraph, so the placement
+  // loops below can attach each subgraph's deferred members to whichever of
+  // its roots gets placed first — before any *other* subgraph's root gets a
+  // chance to claim the adjacent slot (#301). Entries are removed as they're
+  // resolved; `resolvedDeferred` then lets the later fallback pass skip
+  // anything already placed this way.
+  const deferredByTopSg = new Map<AsciiSubgraph, AsciiNode[]>()
+  for (const node of deferredRoots) {
+    const topSg = getTopLevelSubgraph(graph, node)!
+    const list = deferredByTopSg.get(topSg)
+    if (list) list.push(node)
+    else deferredByTopSg.set(topSg, [node])
+  }
+  const resolvedDeferred = new Set<AsciiNode>()
+
   // In LR mode with both external and subgraph roots, separate them
   // so subgraph roots are placed one level deeper
   let hasExternalRoots = false
@@ -839,6 +970,12 @@ export function createMapping(graph: AsciiGraph): void {
         : { x: highestPositionPerLevel[0] ?? 0, y: 0 }
     reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
     highestPositionPerLevel[0] = (highestPositionPerLevel[0] ?? 0) + 4
+    placeDeferredSiblingsNextToRoot(
+      graph,
+      node,
+      deferredByTopSg,
+      resolvedDeferred,
+    )
   }
 
   // Place subgraph root nodes at level 4 (one level in from the edge)
@@ -852,15 +989,24 @@ export function createMapping(graph: AsciiGraph): void {
       reserveSpotInGrid(graph, graph.nodes[node.index]!, requested)
       highestPositionPerLevel[subgraphLevel] =
         (highestPositionPerLevel[subgraphLevel] ?? 0) + 4
+      placeDeferredSiblingsNextToRoot(
+        graph,
+        node,
+        deferredByTopSg,
+        resolvedDeferred,
+      )
     }
   }
 
   // Place child nodes level by level (reachable from the roots placed so far).
   placeReachableChildren(graph, highestPositionPerLevel)
 
-  // Now place the deferred subgraph-orphan roots, anchored next to their
-  // already-placed subgraph siblings rather than at the shared root level.
+  // Now place whatever deferred subgraph-orphan roots weren't already
+  // resolved above (anchored to a root placed in this same subgraph) —
+  // these are the ones whose anchor is itself a non-root, only placed by
+  // the reachable-children traversal just above.
   for (const node of deferredRoots) {
+    if (resolvedDeferred.has(node)) continue
     const topSg = getTopLevelSubgraph(graph, node)!
     const nodeDir = getEffectiveDirection(graph, node)
     // Type predicate narrows `gridCoord` to non-null on every element, so the
@@ -874,9 +1020,7 @@ export function createMapping(graph: AsciiGraph): void {
     let requested: GridCoord
     if (placedSiblings.length > 0) {
       // Anchor to whichever placed sibling sits at the shallowest level
-      // (topmost row for TD, leftmost column for LR) — reserveSpotInGrid's
-      // built-in collision handling then slides this node along the same
-      // level until it finds a free spot immediately adjacent.
+      // (topmost row for TD, leftmost column for LR).
       let anchor = placedSiblings[0]!
       for (const sibling of placedSiblings) {
         const isShallower =
@@ -885,7 +1029,20 @@ export function createMapping(graph: AsciiGraph): void {
             : sibling.gridCoord.y < anchor.gridCoord.y
         if (isShallower) anchor = sibling
       }
-      requested = { x: anchor.gridCoord.x, y: anchor.gridCoord.y }
+      // Slide along the shared axis to find free space next to the anchor,
+      // staying clear of unrelated sibling subgraphs (#301) rather than
+      // reserveSpotInGrid's subgraph-agnostic blind slide. Falls back to the
+      // anchor's own coordinate (triggering the old blind slide inside
+      // reserveSpotInGrid below) only when both directions are immediately
+      // foreign-blocked.
+      const axis: 'x' | 'y' = nodeDir === 'LR' ? 'y' : 'x'
+      requested = findSubgraphAdjacentSlot(
+        graph,
+        anchor.gridCoord,
+        topSg,
+        axis,
+        1,
+      ) ?? { x: anchor.gridCoord.x, y: anchor.gridCoord.y }
     } else {
       // Defensive fallback — shouldn't normally happen, since we only defer
       // a node when it has a sibling that's guaranteed to be placed by the
