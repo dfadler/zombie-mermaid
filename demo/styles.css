@@ -107,6 +107,27 @@ body::after {
   background: linear-gradient(to top, var(--theme-bar-bg) 0%, transparent 100%);
 }
 
+/* -- Skip-to-content link --
+ * The very first focusable element in the document (see index.ts), so a
+ * keyboard-only visitor can jump straight past the theme bar and sidebar
+ * to the sample list instead of tabbing through the full nav on every
+ * page load. Hidden off-screen until it receives focus. */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0.5rem;
+  z-index: 2100;
+  padding: 0.6rem 1rem;
+  background: var(--t-accent);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 0.5rem;
+}
+
 /* -- Scroll progress bar (fixed to the viewport bottom) --
  * Fills as the reader scrolls the whole page. With the samples heading now
  * pinned under the theme bar, a category deep in the list can fill the

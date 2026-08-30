@@ -480,6 +480,8 @@ ${styles}
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#samples-heading">Skip to samples</a>
+
   <!-- Safari 26+ reads title bar color from the topmost fixed element's background.
        This invisible 1px div provides a real DOM element for Safari to detect. -->
   <div id="safari-theme-color" style="position:fixed;top:0;left:0;right:0;height:1px;background:var(--theme-bar-bg);z-index:9999;pointer-events:none;"></div>
@@ -560,7 +562,7 @@ ${styles}
 
 ${heroCardsHtml}
 
-  <div class="samples-heading">
+  <div class="samples-heading" id="samples-heading" tabindex="-1">
     <h2 class="section-title">Samples</h2>
     <div class="category-banner" id="category-banner">
       <span>Showing <strong id="active-category-name"></strong> — <span id="active-category-count"></span> of ${samples.length - heroCount} samples</span>
