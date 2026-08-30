@@ -502,25 +502,194 @@ body::after {
   );
 }
 
-/* -- Hero sample (full-width SVG showcase, above Samples heading) -- */
+/* -- Hero sample: before/after transform showcase, above Samples heading --
+ * Raw Mermaid source (left/top) becomes the live-rendered, theme-reactive
+ * diagram (right/bottom) — row layout on desktop, stacked on mobile so
+ * neither side ever gets scaled down to illegible text. */
 .sample-hero {
   margin-bottom: 0;
   background: transparent;
 }
-.hero-diagram-panel {
-  padding: 1rem 0;
+.hero-transform {
   display: flex;
-  justify-content: center;
+  align-items: stretch;
+  gap: 1.75rem;
+  padding: 0.5rem 0 2.5rem;
+}
+@media (max-width: 768px) {
+  .hero-transform {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0 2rem;
+  }
+}
+
+/* "Before": fixed dark terminal, independent of the theme picker — same
+ * rationale as .ascii-panel above: raw source text doesn't retheme itself. */
+.hero-code-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  background: #0d1117;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 768px) {
+  .hero-code-panel {
+    flex: none;
+    width: 100%;
+  }
+}
+.hero-code-titlebar {
+  display: flex;
   align-items: center;
-  background: transparent;
+  gap: 0.5rem;
+  padding: 0.7rem 0.875rem;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.hero-code-dots {
+  display: flex;
+  gap: 0.4rem;
+}
+.hero-code-dots .dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+.hero-code-dots .dot-red {
+  background: #ff5f56;
+}
+.hero-code-dots .dot-yellow {
+  background: #ffbd2e;
+}
+.hero-code-dots .dot-green {
+  background: #27c93f;
+}
+.hero-code-title {
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: #7d8590;
+  margin-left: 0.25rem;
+}
+.hero-code-body {
+  padding: 1.1rem 1.25rem;
+  font-size: 0.8rem;
+  line-height: 1.85;
+  overflow-x: auto;
+}
+.hero-code-body pre {
+  background: transparent !important;
+  font-family:
+    'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace !important;
+  white-space: pre;
+}
+
+/* "Renders as" arrow */
+.hero-arrow {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 0.25rem;
+}
+@media (max-width: 768px) {
+  .hero-arrow {
+    flex-direction: row-reverse;
+    padding: 0.25rem 0;
+  }
+}
+.hero-arrow-caption {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--t-fg) 45%, var(--t-bg));
+  white-space: nowrap;
+}
+.hero-arrow-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+@media (max-width: 768px) {
+  .hero-arrow-icon {
+    width: 2rem;
+    height: 2rem;
+    transform: rotate(90deg);
+  }
+}
+@keyframes hero-arrow-dash {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.hero-arrow-dash {
+  stroke-dasharray: 4 4;
+  animation: hero-arrow-dash 0.9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-arrow-dash {
+    animation: none;
+  }
+}
+
+/* "After": the live-rendered, theme-reactive diagram. Background is the
+ * plain --t-bg variable (no per-element JS sync needed — client.ts's
+ * "skip hero panels" branch leaves this alone, and it repaints on its own
+ * whenever the theme picker updates --t-bg on <body>). */
+.hero-diagram-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background: var(--t-bg);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--t-fg) 6%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+  padding: 1.75rem;
+}
+@media (max-width: 768px) {
+  .hero-diagram-panel {
+    flex: none;
+    width: 100%;
+    padding: 1.375rem 1.125rem;
+  }
 }
 .hero-diagram-panel .svg-container {
   width: 100%;
-  max-width: 100%;
+  max-width: 26rem;
 }
 .hero-diagram-panel .svg-container svg {
   width: 100%;
   height: auto;
+}
+.hero-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.hero-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--t-accent) 12%, var(--t-bg));
+  color: var(--t-accent);
+}
+.hero-tag-brand {
+  background: color-mix(in srgb, #9570be 14%, var(--t-bg));
+  color: #9570be;
 }
 
 .sample-header {

@@ -1,4 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1181.9379999999999 182.5" width="1181.9379999999999" height="182.5" role="img" style="--bg:#FFFFFF;--fg:#27272A">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 616" width="640" height="616" role="img" aria-label="Mermaid source rendering into a themed, animated diagram">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;display=swap');
+  @keyframes hero-readme-arrow-dash { to { stroke-dashoffset: -16; } }
+  .hero-readme-arrow-dash { stroke-dasharray: 4 4; animation: hero-readme-arrow-dash 0.9s linear infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-readme-arrow-dash { animation: none; }
+  }
+</style>
+
+<!-- "Before": raw Mermaid source, terminal-styled -->
+<rect x="0" y="0" width="640" height="320" rx="12" fill="#0d1117"/>
+<rect x="0" y="0" width="640" height="34" rx="12" fill="#161b22"/>
+<rect x="0" y="12" width="640" height="22" fill="#161b22"/>
+<circle cx="16" cy="17" r="5" fill="#ff5f56"/>
+<circle cx="32" cy="17" r="5" fill="#ffbd2e"/>
+<circle cx="48" cy="17" r="5" fill="#27c93f"/>
+<text x="64" y="21" font-size="11" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace" fill="#7d8590">pipeline.mmd</text>
+  <text x="24" y="62" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#4493f8">stateDiagram-v2</tspan></text>
+  <text x="40" y="86" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#4493f8">direction</tspan> <tspan style="fill:#e6edf3">LR</tspan></text>
+  <text x="40" y="110" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">Layout</tspan> <tspan style="fill:#6e7681">e4@--&gt;</tspan> <tspan style="fill:#e6edf3">SVG</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">Vector</tspan></text>
+  <text x="40" y="134" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">Layout</tspan> <tspan style="fill:#6e7681">e5@--&gt;</tspan> <tspan style="fill:#e6edf3">ASCII</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">Text</tspan></text>
+  <text x="40" y="158" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">SVG</tspan> <tspan style="fill:#6e7681">e6@--&gt;</tspan> <tspan style="fill:#e6edf3">Theme</tspan></text>
+  <text x="40" y="182" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">ASCII</tspan> <tspan style="fill:#6e7681">e7@--&gt;</tspan> <tspan style="fill:#e6edf3">Theme</tspan></text>
+  <text x="40" y="206" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e4@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
+  <text x="40" y="230" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e5@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
+  <text x="40" y="254" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e6@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
+  <text x="40" y="278" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e7@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
+
+<!-- "Renders as" arrow -->
+<defs>
+  <linearGradient id="hero-readme-arrow-grad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#9570BE"/>
+    <stop offset="1" stop-color="#3b82f6"/>
+  </linearGradient>
+</defs>
+<g transform="translate(320, 340)">
+  <line x1="0" y1="0" x2="0" y2="20" stroke="url(#hero-readme-arrow-grad)" stroke-width="2.5" stroke-linecap="round" class="hero-readme-arrow-dash"/>
+  <path d="M-10 14 L0 28 L10 14" stroke="url(#hero-readme-arrow-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</g>
+
+<!-- "After": the actual rendered, animated diagram -->
+<svg x="90" y="388" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 499.76199999999994 182.5" width="460" height="167.9799584602271" role="img" style="--bg:#FFFFFF;--fg:#27272A">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -33,64 +75,43 @@
     <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<polyline class="edge edge-animated" data-from="_start" data-to="Input" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e1" points="68,90.9 116,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="Input" data-to="Parse" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="DSL" data-id="e2" points="186.108,90.9 313.142,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="Parse" data-to="Layout" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="AST" data-id="e3" points="392.142,90.9 519.1759999999999,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="Layout" data-to="SVG" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Vector" data-id="e4" points="602.6220000000001,84.75 638.6220000000001,84.75 638.6220000000001,58.45 737.384,58.45" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="Layout" data-to="ASCII" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Text" data-id="e5" points="602.6220000000001,97.05000000000001 643.386,97.05000000000001 643.386,123.35000000000001 737.384,123.35000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="SVG" data-to="Theme" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e6" points="806.01,58.45 834.4559999999999,58.45 834.4559999999999,90.9 856.9739999999999,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="ASCII" data-to="Theme" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e7" points="811.938,123.35000000000001 834.4559999999999,123.35000000000001 834.4559999999999,90.9 856.9739999999999,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="Theme" data-to="Output" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e8" points="938.9379999999999,90.9 986.9379999999999,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="Output" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e9" points="1065.9379999999999,90.9 1113.9379999999999,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<g class="edge-label" data-from="Input" data-to="Parse" data-label="DSL">
-  <rect x="230.108" y="74.9" width="39.03399999999999" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="249.625" y="90.05000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">DSL</text>
-</g>
-<g class="edge-label" data-from="Parse" data-to="Layout" data-label="AST">
-  <rect x="436.142" y="74.9" width="39.03399999999999" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="455.659" y="90.05000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">AST</text>
-</g>
+<polyline class="edge edge-animated" data-from="Layout" data-to="SVG" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Vector" data-id="e4" points="123.446,84.75 159.446,84.75 159.446,58.45 258.20799999999997,58.45" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
+<polyline class="edge edge-animated" data-from="Layout" data-to="ASCII" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Text" data-id="e5" points="123.446,97.05000000000001 164.20999999999998,97.05000000000001 164.20999999999998,123.35000000000001 258.20799999999997,123.35000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
+<polyline class="edge edge-animated" data-from="SVG" data-to="Theme" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e6" points="326.83399999999995,58.45 355.28,58.45 355.28,90.9 377.798,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
+<polyline class="edge edge-animated" data-from="ASCII" data-to="Theme" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e7" points="332.76199999999994,123.35000000000001 355.28,123.35000000000001 355.28,90.9 377.798,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
 <g class="edge-label" data-from="Layout" data-to="SVG" data-label="Vector">
-  <rect x="646.6220000000001" y="42.45" width="49.726" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="671.4850000000001" y="57.6" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Vector</text>
+  <rect x="167.446" y="42.45" width="49.726" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="192.309" y="57.6" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Vector</text>
 </g>
 <g class="edge-label" data-from="Layout" data-to="ASCII" data-label="Text">
-  <rect x="651.386" y="107.35000000000001" width="39.034000000000006" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="670.903" y="122.50000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Text</text>
-</g>
-<g class="node" data-id="_start" data-label="" data-shape="state-start">
-  <circle cx="54" cy="90.9" r="12" fill="var(--_text)" stroke="none" />
-</g>
-<g class="node" data-id="Input" data-label="Input" data-shape="rounded">
-  <rect x="116" y="72.45" width="70.108" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="151.054" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Input</text>
-</g>
-<g class="node" data-id="Parse" data-label="Parse" data-shape="rounded">
-  <rect x="313.142" y="72.45" width="79" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="352.642" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Parse</text>
+  <rect x="172.20999999999998" y="107.35000000000001" width="39.034000000000006" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="191.72699999999998" y="122.50000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Text</text>
 </g>
 <g class="node" data-id="Layout" data-label="Layout" data-shape="rounded">
-  <rect x="519.1759999999999" y="72.45" width="83.446" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="560.8989999999999" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Layout</text>
+  <rect x="40" y="72.45" width="83.446" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="81.723" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Layout</text>
 </g>
 <g class="node" data-id="SVG" data-label="SVG" data-shape="rounded">
-  <rect x="737.384" y="40" width="68.62599999999999" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="771.697" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">SVG</text>
+  <rect x="258.20799999999997" y="40" width="68.62599999999999" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="292.52099999999996" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">SVG</text>
 </g>
 <g class="node" data-id="ASCII" data-label="ASCII" data-shape="rounded">
-  <rect x="737.384" y="104.9" width="74.554" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="774.6610000000001" y="123.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">ASCII</text>
+  <rect x="258.20799999999997" y="104.9" width="74.554" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="295.48499999999996" y="123.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">ASCII</text>
 </g>
 <g class="node" data-id="Theme" data-label="Theme" data-shape="rounded">
-  <rect x="856.9739999999999" y="72.45" width="81.964" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="897.9559999999999" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Theme</text>
+  <rect x="377.798" y="72.45" width="81.964" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="418.78" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Theme</text>
 </g>
-<g class="node" data-id="Output" data-label="Output" data-shape="rounded">
-  <rect x="986.9379999999999" y="72.45" width="79" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1026.4379999999999" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Output</text>
-</g>
-<g class="node" data-id="_end" data-label="" data-shape="state-end">
-  <circle cx="1127.9379999999999" cy="90.9" r="12" fill="none" stroke="var(--_text)" stroke-width="1.5" />
-  <circle cx="1127.9379999999999" cy="90.9" r="8" fill="var(--_text)" stroke="none" />
-</g>
+</svg>
+
+<!-- Feature tags -->
+  <rect x="156" y="575.9799584602271" width="42" height="26" rx="13" fill="rgba(59,130,246,0.1)"/>
+  <text x="177" y="592.9799584602271" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#2563eb">SVG</text>
+  <rect x="208" y="575.9799584602271" width="55" height="26" rx="13" fill="rgba(59,130,246,0.1)"/>
+  <text x="235.5" y="592.9799584602271" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#2563eb">ASCII</text>
+  <rect x="273" y="575.9799584602271" width="83" height="26" rx="13" fill="rgba(149,112,190,0.14)"/>
+  <text x="314.5" y="592.9799584602271" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#9570BE">16 Themes</text>
+  <rect x="366" y="575.9799584602271" width="118" height="26" rx="13" fill="rgba(59,130,246,0.1)"/>
+  <text x="425" y="592.9799584602271" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#2563eb">Animated Edges</text>
 </svg>
