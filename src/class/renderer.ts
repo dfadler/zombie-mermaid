@@ -19,6 +19,7 @@ import { CLS } from './layout.ts'
 import {
   renderMultilineText,
   escapeXml as escapeXmlUtil,
+  escapeAttr,
 } from '../multiline-utils.ts'
 
 // ============================================================================
@@ -457,15 +458,3 @@ function cardinalityOffset(
 
 // Use shared escapeXml from multiline-utils
 const escapeXml = escapeXmlUtil
-
-/**
- * Escape a string for use as an XML/HTML attribute value.
- * Escapes quotes and ampersands to prevent attribute injection.
- */
-function escapeAttr(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
