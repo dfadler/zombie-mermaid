@@ -56,6 +56,9 @@ export function toBlockType(value: string): Block['type'] {
 //   A--)B: Dashed open arrow
 //   A->>+B: Activate target
 //   A-->>-B: Deactivate source
+//   A<<->>B: Bidirectional solid arrow
+//   A<<-->>B: Bidirectional dashed arrow
+//   autonumber / autonumber <start> <step> / autonumber off
 //   loop Label ... end
 //   alt Label ... else Label ... end
 //   opt Label ... end
@@ -103,8 +106,31 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     dividers: Block['dividers']
   }> = []
 
+  // `autonumber` state — a bare `autonumber` turns numbering on starting at 1
+  // (step 1); `autonumber <start> <step>` sets both explicitly; `autonumber
+  // off` turns it back off. Only messages consume a number — notes and
+  // block/divider lines don't advance the counter.
+  const autonumber = { enabled: false, next: 1, step: 1 }
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!
+
+    // --- autonumber directive ---
+    const autonumberMatch = line.match(
+      /^autonumber(?:\s+(off|\d+(?:\.\d{1,2})?)(?:\s+(\d+(?:\.\d{1,2})?))?)?$/,
+    )
+    if (autonumberMatch) {
+      const start = autonumberMatch[1]
+      const step = autonumberMatch[2]
+      if (start === 'off') {
+        autonumber.enabled = false
+      } else {
+        autonumber.enabled = true
+        autonumber.next = start !== undefined ? Number(start) : 1
+        autonumber.step = step !== undefined ? Number(step) : 1
+      }
+      continue
+    }
 
     // --- Participant / Actor declaration ---
     // "participant A as Alice" or "participant Alice"
@@ -198,67 +224,49 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     }
 
     // --- Message ---
-    // Patterns: A->>B, A-->>B, A-)B, A--)B, with optional +/- activation
-    // Format: FROM ARROW TO: LABEL
+    // Patterns: A->>B, A-->>B, A-)B, A--)B, A<<->>B, A<<-->>B, with optional
+    // +/- activation. Format: FROM ARROW TO: LABEL
+    //
+    // FROM/TO are matched with a lazy `.+?` (not `\S+?`) so an undeclared
+    // actor name can contain spaces or internal hyphens — e.g. `cron
+    // job->>customer-notifier: hi` — mirroring real Mermaid's own sequence
+    // grammar, whose unquoted ACTOR token excludes only the characters that
+    // start an arrow/label (`/ \ + ( ) < - > :`) rather than all whitespace.
+    // Because the quantifier is lazy and anchored by the arrow/colon tokens
+    // that follow, this still resolves to the same minimal split as before
+    // for plain single-word names.
     const msgMatch = line.match(
-      /^(\S+?)\s*(--?>?>|--?[)x]|--?>>|--?>)\s*([+-]?)(\S+?)\s*:\s*(.+)$/,
+      /^(.+?)\s*(<<->>|<<-->>|--?>?>|--?[)x]|--?>>|--?>)\s*([+-]?)(.+?)\s*:\s*(.+)$/,
     )
     if (msgMatch) {
-      const from = msgMatch[1]!
-      const arrow = msgMatch[2]!
-      const activationMark = msgMatch[3]
-      const to = msgMatch[4]!
-      const label = normalizeBrTags(msgMatch[5]!.trim())
-
-      // Ensure both actors exist
-      ensureActor(diagram, actorIds, from)
-      ensureActor(diagram, actorIds, to)
-
-      // Determine line style and arrow head from the arrow operator
-      const lineStyle = arrow.startsWith('--') ? 'dashed' : 'solid'
-      // ">>" = filled arrow, ")" or ">" alone = open arrow, "x" = cross (treat as filled)
-      const arrowHead =
-        arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
-
-      const msg: Message = {
-        from,
-        to,
-        label,
-        lineStyle,
-        arrowHead,
-      }
-
-      // Activation/deactivation via +/- prefix on target
-      if (activationMark === '+') msg.activate = true
-      if (activationMark === '-') msg.deactivate = true
-
-      diagram.messages.push(msg)
+      pushMessage(
+        diagram,
+        actorIds,
+        autonumber,
+        msgMatch[1]!,
+        msgMatch[2]!,
+        msgMatch[3],
+        msgMatch[4]!,
+        msgMatch[5]!,
+      )
       continue
     }
 
     // --- Simplified message format: A->>B: Label (fallback with more relaxed regex) ---
     const simpleMsgMatch = line.match(
-      /^(\S+?)\s*(->>|-->>|-\)|--\)|-x|--x|->|-->)\s*([+-]?)(\S+?)\s*:\s*(.+)$/,
+      /^(.+?)\s*(<<->>|<<-->>|->>|-->>|-\)|--\)|-x|--x|->|-->)\s*([+-]?)(.+?)\s*:\s*(.+)$/,
     )
     if (simpleMsgMatch) {
-      const from = simpleMsgMatch[1]!
-      const arrow = simpleMsgMatch[2]!
-      const activationMark = simpleMsgMatch[3]
-      const to = simpleMsgMatch[4]!
-      const label = normalizeBrTags(simpleMsgMatch[5]!.trim())
-
-      ensureActor(diagram, actorIds, from)
-      ensureActor(diagram, actorIds, to)
-
-      const lineStyle = arrow.startsWith('--') ? 'dashed' : 'solid'
-      const arrowHead =
-        arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
-
-      const msg: Message = { from, to, label, lineStyle, arrowHead }
-      if (activationMark === '+') msg.activate = true
-      if (activationMark === '-') msg.deactivate = true
-
-      diagram.messages.push(msg)
+      pushMessage(
+        diagram,
+        actorIds,
+        autonumber,
+        simpleMsgMatch[1]!,
+        simpleMsgMatch[2]!,
+        simpleMsgMatch[3],
+        simpleMsgMatch[4]!,
+        simpleMsgMatch[5]!,
+      )
       continue
     }
 
@@ -280,4 +288,56 @@ function ensureActor(
     actorIds.add(id)
     diagram.actors.push({ id, label: id, type: 'participant' })
   }
+}
+
+/**
+ * Build a `Message` from a matched arrow-message line and push it onto the
+ * diagram. Shared by both message regexes in `parseSequenceDiagram` above so
+ * the arrow → line-style/arrow-head/bidirectional mapping and `autonumber`
+ * bookkeeping can't drift out of sync between them.
+ */
+function pushMessage(
+  diagram: SequenceDiagram,
+  actorIds: Set<string>,
+  autonumber: { enabled: boolean; next: number; step: number },
+  from: string,
+  arrow: string,
+  activationMark: string | undefined,
+  to: string,
+  rawLabel: string,
+): void {
+  ensureActor(diagram, actorIds, from)
+  ensureActor(diagram, actorIds, to)
+
+  const bidirectional = arrow === '<<->>' || arrow === '<<-->>'
+  const lineStyle = bidirectional
+    ? arrow === '<<-->>'
+      ? 'dashed'
+      : 'solid'
+    : arrow.startsWith('--')
+      ? 'dashed'
+      : 'solid'
+  // ">>" = filled arrow, ")" or ">" alone = open arrow, "x" = cross (treat as
+  // filled). Both bidirectional tokens end in ">>", so they fall out as filled.
+  const arrowHead =
+    arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
+
+  const msg: Message = {
+    from,
+    to,
+    label: normalizeBrTags(rawLabel.trim()),
+    lineStyle,
+    arrowHead,
+  }
+  if (bidirectional) msg.bidirectional = true
+  if (activationMark === '+') msg.activate = true
+  if (activationMark === '-') msg.deactivate = true
+
+  if (autonumber.enabled) {
+    msg.seqNumber = autonumber.next
+    autonumber.next =
+      Math.round((autonumber.next + autonumber.step) * 100) / 100
+  }
+
+  diagram.messages.push(msg)
 }

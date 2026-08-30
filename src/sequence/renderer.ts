@@ -236,12 +236,19 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
   const parts: string[] = []
   const dashArray = msg.lineStyle === 'dashed' ? ' stroke-dasharray="6 4"' : ''
   const markerId = msg.arrowHead === 'filled' ? 'seq-arrow' : 'seq-arrow-open'
+  // Bidirectional arrows (`<<->>` / `<<-->>`) reuse the same marker on both
+  // ends — the marker defs use orient="auto-start-reverse", which SVG
+  // automatically flips 180° for marker-start so it points outward at the
+  // line's start instead of reusing the marker-end orientation.
+  const markerStart = msg.bidirectional
+    ? ` marker-start="url(#${markerId})"`
+    : ''
 
   // Semantic wrapper with message metadata
   parts.push(
     `<g class="message" data-from="${escapeAttr(msg.from)}" data-to="${escapeAttr(msg.to)}" ` +
       `data-label="${escapeAttr(msg.label)}" data-line-style="${msg.lineStyle}" ` +
-      `data-arrow-head="${msg.arrowHead}" data-self="${msg.isSelf}">`,
+      `data-arrow-head="${msg.arrowHead}" data-self="${msg.isSelf}" data-bidirectional="${msg.bidirectional}">`,
   )
 
   if (msg.isSelf) {
@@ -252,7 +259,7 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     const labelPadding = 8 // Space between loop and label
     parts.push(
       `  <polyline points="${msg.x1},${msg.y} ${msg.x1 + loopW},${msg.y} ${msg.x1 + loopW},${msg.y + loopH} ${msg.x2},${msg.y + loopH}" ` +
-        `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})" />`,
+        `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
     )
     // Label to the right of the loop (supports multi-line)
     parts.push(
@@ -269,7 +276,7 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     // Normal message: horizontal arrow
     parts.push(
       `  <line x1="${msg.x1}" y1="${msg.y}" x2="${msg.x2}" y2="${msg.y}" ` +
-        `stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})" />`,
+        `stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
     )
     // Label above the arrow, centered (supports multi-line)
     const midX = (msg.x1 + msg.x2) / 2
@@ -285,8 +292,37 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
     )
   }
 
+  if (msg.seqNumber !== undefined) {
+    parts.push('  ' + renderSeqNumberBadge(msg, fontSizes))
+  }
+
   parts.push('</g>')
   return parts.join('\n')
+}
+
+/**
+ * Render the small `autonumber` badge Mermaid draws near the start of a
+ * message arrow: a circle with the sequence number centered inside it,
+ * layered on top of the arrow rather than folded into the label text.
+ */
+function renderSeqNumberBadge(
+  msg: PositionedMessage,
+  fontSizes: FontSizes,
+): string {
+  const radius = 8
+  const fontSize = Math.max(fontSizes.edgeLabel - 2, 8)
+  return (
+    `<g class="seq-number">` +
+    `<circle cx="${msg.x1}" cy="${msg.y}" r="${radius}" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    renderMultilineText(
+      String(msg.seqNumber),
+      msg.x1,
+      msg.y,
+      fontSize,
+      `font-size="${fontSize}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_arrow)"`,
+    ) +
+    `</g>`
+  )
 }
 
 /**

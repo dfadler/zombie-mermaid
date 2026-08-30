@@ -274,6 +274,132 @@ describe('toBlockType', () => {
 })
 
 // ============================================================================
+// autonumber directive
+// ============================================================================
+
+describe('parseSequenceDiagram – autonumber', () => {
+  it('bare autonumber numbers messages sequentially starting at 1', () => {
+    const d = parse(`sequenceDiagram
+      autonumber
+      A->>B: First
+      A->>B: Second
+      A->>B: Third`)
+    expect(d.messages.map((m) => m.seqNumber)).toEqual([1, 2, 3])
+  })
+
+  it('messages before autonumber are not numbered', () => {
+    const d = parse(`sequenceDiagram
+      A->>B: Unnumbered
+      autonumber
+      A->>B: Numbered`)
+    expect(d.messages[0]!.seqNumber).toBeUndefined()
+    expect(d.messages[1]!.seqNumber).toBe(1)
+  })
+
+  it('notes and blocks do not consume a sequence number', () => {
+    const d = parse(`sequenceDiagram
+      autonumber
+      A->>B: First
+      Note over A: a note
+      loop Every 5s
+        A->>B: Second
+      end`)
+    expect(d.messages.map((m) => m.seqNumber)).toEqual([1, 2])
+  })
+
+  it('autonumber off stops numbering, and a later bare autonumber restarts at 1', () => {
+    const d = parse(`sequenceDiagram
+      autonumber
+      A->>B: One
+      autonumber off
+      A->>B: Two
+      autonumber
+      A->>B: Three`)
+    expect(d.messages.map((m) => m.seqNumber)).toEqual([1, undefined, 1])
+  })
+
+  it('autonumber <start> <step> sets a custom starting value and increment', () => {
+    const d = parse(`sequenceDiagram
+      autonumber 10 5
+      A->>B: One
+      A->>B: Two
+      A->>B: Three`)
+    expect(d.messages.map((m) => m.seqNumber)).toEqual([10, 15, 20])
+  })
+
+  it('autonumber <start> alone defaults the step to 1', () => {
+    const d = parse(`sequenceDiagram
+      autonumber 100
+      A->>B: One
+      A->>B: Two`)
+    expect(d.messages.map((m) => m.seqNumber)).toEqual([100, 101])
+  })
+})
+
+// ============================================================================
+// Bidirectional arrows
+// ============================================================================
+
+describe('parseSequenceDiagram – bidirectional arrows', () => {
+  it('parses a bidirectional solid arrow: A<<->>B', () => {
+    const d = parse(`sequenceDiagram
+      A<<->>B: Sync call`)
+    expect(d.messages[0]!.lineStyle).toBe('solid')
+    expect(d.messages[0]!.arrowHead).toBe('filled')
+    expect(d.messages[0]!.bidirectional).toBe(true)
+  })
+
+  it('parses a bidirectional dashed arrow: A<<-->>B', () => {
+    const d = parse(`sequenceDiagram
+      A<<-->>B: Async call`)
+    expect(d.messages[0]!.lineStyle).toBe('dashed')
+    expect(d.messages[0]!.arrowHead).toBe('filled')
+    expect(d.messages[0]!.bidirectional).toBe(true)
+  })
+
+  it('a regular one-way arrow is not marked bidirectional', () => {
+    const d = parse(`sequenceDiagram
+      A->>B: One way`)
+    expect(d.messages[0]!.bidirectional).toBeUndefined()
+  })
+})
+
+// ============================================================================
+// Undeclared actor names with spaces/dashes/equals
+// ============================================================================
+
+describe('parseSequenceDiagram – multi-word inline actor names', () => {
+  it('parses an undeclared actor name containing a space', () => {
+    const d = parse(`sequenceDiagram
+      cron job->>customer-notifier: hi`)
+    expect(d.messages[0]!.from).toBe('cron job')
+    expect(d.messages[0]!.to).toBe('customer-notifier')
+    expect(d.actors.map((a) => a.id)).toEqual([
+      'cron job',
+      'customer-notifier',
+    ])
+  })
+
+  it('does not regress simple single-word actor names', () => {
+    const d = parse(`sequenceDiagram
+      Alice->>Bob: Hello`)
+    expect(d.messages[0]!.from).toBe('Alice')
+    expect(d.messages[0]!.to).toBe('Bob')
+  })
+
+  it('handles a multi-word name combined with activation markers', () => {
+    const d = parse(`sequenceDiagram
+      cron job->>+customer notifier: start
+      customer notifier-->>-cron job: done`)
+    expect(d.messages[0]!.from).toBe('cron job')
+    expect(d.messages[0]!.to).toBe('customer notifier')
+    expect(d.messages[0]!.activate).toBe(true)
+    expect(d.messages[1]!.from).toBe('customer notifier')
+    expect(d.messages[1]!.deactivate).toBe(true)
+  })
+})
+
+// ============================================================================
 // Pre-message notes
 // ============================================================================
 

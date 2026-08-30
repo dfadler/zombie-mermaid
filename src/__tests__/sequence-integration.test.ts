@@ -120,6 +120,49 @@ describe('renderMermaidSVG – sequence diagrams', () => {
   })
 })
 
+describe('renderMermaidSVG – sequence diagrams – autonumber', () => {
+  it('renders a sequence-number badge for each numbered message', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      autonumber
+      Alice->>Bob: Hello
+      Bob-->>Alice: Hi there`)
+    expect(svg.match(/class="seq-number"/g)?.length).toBe(2)
+    expect(svg).toContain('>1<')
+    expect(svg).toContain('>2<')
+  })
+
+  it('does not render a sequence-number badge without autonumber', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      Alice->>Bob: Hello`)
+    expect(svg).not.toContain('class="seq-number"')
+  })
+})
+
+describe('renderMermaidSVG – sequence diagrams – bidirectional arrows', () => {
+  it('renders a marker-start alongside marker-end for a bidirectional arrow', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      Alice<<->>Bob: Sync call`)
+    expect(svg).toContain('data-bidirectional="true"')
+    expect(svg).toMatch(/marker-start="url\(#seq-arrow\)"/)
+  })
+
+  it('a regular one-way arrow has no marker-start', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      Alice->>Bob: Hello`)
+    expect(svg).toContain('data-bidirectional="false"')
+    expect(svg).not.toContain('marker-start=')
+  })
+})
+
+describe('renderMermaidSVG – sequence diagrams – multi-word inline actor names', () => {
+  it('renders an undeclared actor name with a space and a hyphenated one', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      cron job->>customer-notifier: hi`)
+    expect(svg).toContain('cron job')
+    expect(svg).toContain('customer-notifier')
+  })
+})
+
 describe('renderMermaidSVG – sequence diagrams – embedSource', () => {
   it('stamps data-src onto the root <svg> for a non-flowchart diagram type', () => {
     const source = `sequenceDiagram
