@@ -152,7 +152,13 @@ jobs:
   visual-regression:
     name: Visual regression (SVG + ASCII screenshots)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # TEMPORARY: raised from 10 for the Linux-baseline bootstrap run, whose
+    # last attempt (retries genuinely disabled this time, confirmed from
+    # the invoked command line) still hit the 10-minute timeout with zero
+    # visible output the entire time — unlike earlier bootstrap attempts,
+    # which streamed continuous per-test progress. Revert to 10 once
+    # bootstrapping is done.
+    timeout-minutes: 20
     permissions:
       contents: read # only checks out code and runs the visual suite; no writes back to the repo
     # Same fork-of-this-fork guard as the `test` job above — see its comment
@@ -215,6 +221,17 @@ jobs:
       # this entirely. Revert to `pnpm run test:visual` once the resulting
       # -linux.png baselines from this run are committed.
       #
+      # A fourth attempt (correctly disabling retries this time — verified
+      # via the exact invoked command line) still hit the 10-minute
+      # timeout, but with ZERO output the whole time, unlike the earlier
+      # bootstrap attempts' continuous streaming progress — a real
+      # regression in observability, not necessarily in behavior.
+      # `--reporter=line` prints one flushed line per test as it finishes
+      # (unlike the default reporter's summary-style dot output, which may
+      # buffer differently when pnpm exec's stdout isn't a TTY), so this
+      # run will show definitively whether it's slow-but-working or
+      # actually stuck.
+      #
       # This suite runs under Playwright Test, not Vitest's browser mode —
       # see zombie-mermaid#299 for why: Vitest's Node<->browser RPC bridge
       # has an unfixed, still-open upstream bug (vitest-dev/vitest#10791)
@@ -222,7 +239,7 @@ jobs:
       # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
       # browser entirely from Node, so there's no such bridge to hang on.
       - name: Run visual regression suite
-        run: pnpm exec playwright test --update-snapshots --retries=0
+        run: pnpm exec playwright test --update-snapshots --retries=0 --reporter=line
 
       # TEMPORARY (matches the bootstrap step above): if: always(), and
       # uploads the new -linux.png baselines --update-snapshots wrote
