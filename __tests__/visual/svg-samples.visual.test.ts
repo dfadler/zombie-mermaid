@@ -41,6 +41,13 @@ function slug(text: string): string {
 
 test.describe('gallery samples (samples-data.ts)', () => {
   for (const [i, sample] of samples.entries()) {
+    // Hero samples render through their own `.hero-diagram-panel` full-width
+    // chrome (see index.ts's `isHero` branch), never through `.svg-panel`/
+    // `.output-panel` — mounting one through mountSvgPanel tests a wrapper
+    // it never actually uses in the real page. ascii-samples.visual.test.ts
+    // excludes Hero for the same reason.
+    if (sample.category === 'Hero') continue
+
     test(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async ({
       page,
     }) => {
