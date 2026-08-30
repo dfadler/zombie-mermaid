@@ -1249,15 +1249,29 @@ function currentSampleId(): string | null {
 
   const sections = document.querySelectorAll<HTMLElement>('.sample')
   let current: HTMLElement | null = null
+  let lastVisible: HTMLElement | null = null
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i]!
     if (section.offsetParent === null) continue // inside a hidden category
+    lastVisible = section
     if (section.getBoundingClientRect().top > detectionLine) {
       if (current === null) current = section
       break
     }
     current = section
   }
+
+  // At the bottom of the page, a last section shorter than the gap between
+  // the detection line and the viewport bottom never scrolls its top past
+  // the line, so the loop above never selects it — the previous section
+  // stays "current" even though it's fully scrolled out of view. Once
+  // there's no more room to scroll, the last visible section is
+  // definitionally the one on screen, regardless of the detection line.
+  const atBottom =
+    window.innerHeight + window.scrollY >=
+    document.documentElement.scrollHeight - LINE_TOLERANCE_PX
+  if (atBottom && lastVisible) return lastVisible.id
+
   return current ? current.id : null
 }
 
