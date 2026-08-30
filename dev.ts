@@ -5,7 +5,8 @@
  *
  * - Runs `index.ts` to generate index.html on startup
  * - Runs `editor.ts` to generate editor.html on startup
- * - Watches `src/` and `index.ts` for file changes
+ * - Watches src/, demo/, editor/, index.ts, samples-data.ts, editor.ts,
+ *   and fork-fixes.ts for file changes
  * - On change, rebuilds index.html and notifies browsers via SSE
  * - Serves index.html with an injected live-reload script
  *
@@ -81,10 +82,30 @@ async function rebuild(): Promise<void> {
 // File watching — debounced to coalesce rapid saves
 // ============================================================================
 
+// Only these top-level paths feed the rebuild — everything else (.git/,
+// node_modules/, .claude/worktrees/, test-results/, etc.) is noise that
+// fs.watch's recursive mode would otherwise surface as spurious rebuilds.
+const WATCHED_PREFIXES = [
+  'src/',
+  'demo/',
+  'editor/',
+  'index.ts',
+  'samples-data.ts',
+  'editor.ts',
+  'fork-fixes.ts',
+]
+
+function isWatchedPath(filename: string): boolean {
+  return WATCHED_PREFIXES.some(
+    (prefix) => filename === prefix || filename.startsWith(prefix),
+  )
+}
+
 let debounce: NodeJS.Timeout | null = null
 function onFileChange(_event: string, filename: string | null): void {
   // Ignore generated outputs
   if (filename === 'index.html' || filename === 'editor.html') return
+  if (!filename || !isWatchedPath(filename)) return
   if (debounce) clearTimeout(debounce)
   debounce = setTimeout(() => {
     console.log(
@@ -94,7 +115,8 @@ function onFileChange(_event: string, filename: string | null): void {
   }, 150)
 }
 
-// Watch the entire mermaid package for changes (excludes *.html outputs)
+// Watch the entire mermaid package for changes (excludes *.html outputs);
+// onFileChange filters to the paths the rebuild actually reads.
 watch(ROOT, { recursive: true }, onFileChange)
 
 // ============================================================================
