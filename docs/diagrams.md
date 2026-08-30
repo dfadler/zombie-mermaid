@@ -240,7 +240,7 @@ when a diagram actually animates an edge.
 Animation only renders under `interactivity: 'full'` (see
 [api-reference.md](api-reference.md)) — the default (`'static'`) and `'none'`
 both render an animated edge as a still line, since CSS animation is tier-2
-*motion*. This is useful for print/rasterized output, where a CSS animation
+_motion_. This is useful for print/rasterized output, where a CSS animation
 would otherwise silently render as one static frame with no indication that
 motion was intended.
 
