@@ -172,7 +172,7 @@ describe('ASCII renderer — wide characters in multi-compartment boxes (issue #
     )
     assertUniformDisplayWidth(single)
     assertBordersAligned(single, false)
-    expect(single).toContain('+name: String')
+    expect(single).toContain('+ name: String')
 
     const related = renderMermaidASCII(
       'classDiagram\n  class Animal {\n    +String name\n  }\n  class Dog\n  Animal <|-- Dog',
