@@ -24,6 +24,7 @@ export function renderArgs(overrides: Partial<RenderArgs> = {}): RenderArgs {
     paddingX: undefined,
     paddingY: undefined,
     borderPadding: undefined,
+    coords: false,
     ...overrides,
   }
 }

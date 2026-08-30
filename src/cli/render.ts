@@ -78,6 +78,7 @@ export async function runRender(
     if (args.paddingY !== undefined) asciiOpts.paddingY = args.paddingY
     if (args.borderPadding !== undefined)
       asciiOpts.boxBorderPadding = args.borderPadding
+    if (args.coords) asciiOpts.showCoords = true
     const ascii = renderMermaidASCII(text, asciiOpts)
     out.write(ascii + '\n')
   }

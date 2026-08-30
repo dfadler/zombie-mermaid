@@ -19,6 +19,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: undefined,
       paddingY: undefined,
       borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -40,6 +41,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: undefined,
       paddingY: undefined,
       borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -62,6 +64,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: undefined,
       paddingY: undefined,
       borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -85,6 +88,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: undefined,
       paddingY: undefined,
       borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -100,6 +104,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: undefined,
       paddingY: undefined,
       borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -115,6 +120,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: undefined,
       paddingY: undefined,
       borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -136,6 +142,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: undefined,
       paddingY: undefined,
       borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -161,6 +168,7 @@ describe('parseArgs – render happy paths', () => {
       paddingX: 10,
       paddingY: 3,
       borderPadding: 2,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -186,6 +194,23 @@ describe('parseArgs – render happy paths', () => {
       paddingX: 7,
       paddingY: 9,
       borderPadding: 0,
+      coords: false,
+    } satisfies RenderArgs)
+  })
+
+  it('parses --coords', () => {
+    const result = parseArgs(['render', 'diagram.mmd', '--ascii', '--coords'])
+    expect(result).toEqual({
+      command: 'render',
+      input: 'diagram.mmd',
+      ascii: true,
+      svg: false,
+      output: undefined,
+      theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: true,
     } satisfies RenderArgs)
   })
 })

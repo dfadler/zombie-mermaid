@@ -31,6 +31,7 @@ import { renderSequenceAscii } from './sequence.ts'
 import { renderClassAscii } from './class-diagram.ts'
 import { renderErAscii } from './er-diagram.ts'
 import { renderXYChartAscii } from './xychart.ts'
+import { addCoordsOverlay } from './coords.ts'
 import {
   detectColorMode,
   DEFAULT_ASCII_THEME,
@@ -64,6 +65,11 @@ export interface AsciiRenderOptions {
   colorMode?: ColorMode | 'auto'
   /** Theme colors for ASCII output. Uses default theme if not provided. */
   theme?: Partial<AsciiTheme>
+  /**
+   * Overlay spreadsheet-style row/column indices on the rendered output, to
+   * help debug layout spacing. Off by default.
+   */
+  showCoords?: boolean
 }
 
 /**
@@ -115,18 +121,24 @@ export function renderMermaidASCII(
 
   const diagramType: DiagramType = detectDiagramType(text)
 
+  let result: string
+
   switch (diagramType) {
     case 'xychart':
-      return renderXYChartAscii(text, config, colorMode, theme)
+      result = renderXYChartAscii(text, config, colorMode, theme)
+      break
 
     case 'sequence':
-      return renderSequenceAscii(text, config, colorMode, theme)
+      result = renderSequenceAscii(text, config, colorMode, theme)
+      break
 
     case 'class':
-      return renderClassAscii(text, config, colorMode, theme)
+      result = renderClassAscii(text, config, colorMode, theme)
+      break
 
     case 'er':
-      return renderErAscii(text, config, colorMode, theme)
+      result = renderErAscii(text, config, colorMode, theme)
+      break
 
     case 'flowchart':
     default: {
@@ -153,13 +165,15 @@ export function renderMermaidASCII(
         flipRoleCanvasVertically(graph.roleCanvas)
       }
 
-      return canvasToString(graph.canvas, {
+      result = canvasToString(graph.canvas, {
         roleCanvas: graph.roleCanvas,
         colorMode,
         theme,
       })
     }
   }
+
+  return options.showCoords ? addCoordsOverlay(result) : result
 }
 
 /** @deprecated Use `renderMermaidASCII` */

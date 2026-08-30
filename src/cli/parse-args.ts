@@ -19,6 +19,7 @@ export interface RenderArgs {
   paddingX: number | undefined
   paddingY: number | undefined
   borderPadding: number | undefined
+  coords: boolean
 }
 
 export interface SimpleCommand {
@@ -89,6 +90,7 @@ function parseRender(args: string[]): RenderArgs {
   let paddingX: number | undefined
   let paddingY: number | undefined
   let borderPadding: number | undefined
+  let coords = false
 
   let i = 0
   while (i < args.length) {
@@ -125,6 +127,9 @@ function parseRender(args: string[]): RenderArgs {
     } else if (arg === '-p' || arg === '--borderPadding') {
       borderPadding = parseNonNegativeIntFlag(args, i, arg)
       i += 2
+    } else if (arg === '--coords') {
+      coords = true
+      i++
     } else if (!arg.startsWith('-')) {
       // Positional argument = input file
       if (input !== undefined) {
@@ -158,5 +163,6 @@ function parseRender(args: string[]): RenderArgs {
     paddingX,
     paddingY,
     borderPadding,
+    coords,
   }
 }

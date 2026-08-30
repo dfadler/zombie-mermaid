@@ -76,6 +76,7 @@ Options:
   -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)
   -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)
+  --coords             Overlay row/column index rulers (ASCII, debug layout)
   -h, --help           Show help
   -v, --version        Show version
 `.trim(),

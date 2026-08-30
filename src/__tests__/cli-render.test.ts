@@ -185,6 +185,29 @@ describe('runRender – padding flags', () => {
 })
 
 // ============================================================================
+// --coords debug overlay
+// ============================================================================
+
+describe('runRender – coords overlay', () => {
+  it('adds coordinate ruler lines when coords is true', async () => {
+    const plainStdout = createMockStdout()
+    await runRender(renderArgs({ ascii: true }), plainStdout, SIMPLE_FLOWCHART)
+
+    const coordsStdout = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, coords: true }),
+      coordsStdout,
+      SIMPLE_FLOWCHART,
+    )
+
+    expect(coordsStdout.output().split('\n').length).toBeGreaterThan(
+      plainStdout.output().split('\n').length,
+    )
+    expect(coordsStdout.output()).toContain('0123456789')
+  })
+})
+
+// ============================================================================
 // Error cases
 // ============================================================================
 
