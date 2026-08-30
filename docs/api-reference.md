@@ -67,6 +67,14 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 | `colorMode`        | `string`              | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'` |
 | `theme`            | `Partial<AsciiTheme>` | —        | Override default colors for ASCII output                                |
 
+ASCII-only consumers can import from `zombie-mermaid/ascii` instead of the
+package root to avoid bundling `elkjs` (the SVG layout engine, statically
+imported by the root entry and unused by the ASCII path):
+
+```typescript
+import { renderMermaidASCII } from 'zombie-mermaid/ascii'
+```
+
 ## `parseMermaid(text): MermaidGraph`
 
 Parse Mermaid source into a structured graph object (for custom processing).

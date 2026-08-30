@@ -98,6 +98,16 @@ const ascii = renderMermaidASCII(`graph LR; A --> B --> C`)
 └───┘     └───┘     └───┘
 ```
 
+ASCII-only consumers (a CLI, a terminal UI, a serverless function) can import
+from `zombie-mermaid/ascii` instead of the package root. The root entry
+statically pulls in `elkjs` for the SVG layout engine — over 1.4MB minified —
+even if you never call `renderMermaidSVG`. The `/ascii` subpath never imports
+it:
+
+```typescript
+import { renderMermaidASCII } from 'zombie-mermaid/ascii'
+```
+
 Using this from React? See [React Integration](docs/react-integration.md) for a zero-flash `useMemo()` pattern.
 
 ---
