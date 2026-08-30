@@ -841,24 +841,37 @@ body::after {
   font-size: 0.75rem;
 }
 
-/* -- Edit button (subtle text link, bottom-left of source panel) -- */
+/* -- Edit button (small bordered button, bottom-left of source panel) --
+ * Was styled as faint tertiary text (color-mix 35%), which measured well
+ * under the 4.5:1 AA minimum on every bundled theme (see issue #279).
+ * Promoted to a bordered button so it reads as interactive without relying
+ * on text color alone; text color-mix bumped to 80%, matching .theme-pill. */
 .edit-btn {
   position: absolute;
   bottom: 0.75rem;
   left: 1.5rem;
-  background: none;
-  border: none;
-  padding: 0;
+  background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
+  border: 1px solid color-mix(in srgb, var(--t-fg) 20%, var(--t-bg));
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
   font-size: 0.75rem;
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-  color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
   cursor: pointer;
   text-decoration: none;
-  transition: color 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
 }
 .edit-btn:hover {
   color: var(--t-fg);
-  text-decoration: underline;
+  background: color-mix(in srgb, var(--t-fg) 10%, var(--t-bg));
+  border-color: color-mix(in srgb, var(--t-fg) 30%, var(--t-bg));
+}
+.edit-btn:focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 2px;
 }
 
 /* -- Edit dialog overlay -- */
