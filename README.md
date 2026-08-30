@@ -148,11 +148,3 @@ Thank you Alexander for the excellent foundation!
 ## License
 
 MIT — see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-Built with care by the team at [Craft](https://craft.do)
-
-</div>
