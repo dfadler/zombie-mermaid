@@ -54,7 +54,9 @@ export const samples: Sample[] = [
     e5@{ animate: true }
     e6@{ animate: true }
     e7@{ animate: true }`,
-    options: { transparent: true },
+    // Animation is gated to interactivity: 'full' (#231) — this showcase is
+    // specifically meant to animate, so it opts in explicitly.
+    options: { transparent: true, interactivity: 'full' },
   },
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -432,6 +434,9 @@ flowchart LR
   Broker e2@--> Consumer[Consumer]
   e1@{ animate: true }
   e2@{ animate: true }`,
+    // Animation is gated to interactivity: 'full' (#231) — this sample
+    // exists specifically to demonstrate it, so it opts in explicitly.
+    options: { interactivity: 'full' },
   },
 
   // ══════════════════════════════════════════════════════════════════════════

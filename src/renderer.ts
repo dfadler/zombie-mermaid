@@ -54,10 +54,16 @@ import type { CurveStyle } from './init-directive.ts'
  *                       as `data-src` (from `options.embedSource`). Omitted
  *                       when the option is off.
  * @param animationEnabled - Whether `e1@{ animate: true }` edges actually
- *                            animate (from `options.interactivity !== 'none'`,
+ *                            animate (from `options.interactivity === 'full'`,
  *                            see `resolveAnimationEnabled` in src/index.ts).
  *                            Default true — preserves the previously-ungated
  *                            behavior for callers who don't pass it.
+ * @param linksEnabled - Whether `click`-based `<a href>` links and `<title>`
+ *                       tooltips render (from
+ *                       `options.interactivity !== 'none'`, see
+ *                       `resolveLinksEnabled` in src/index.ts). Default true
+ *                       — preserves the previously-ungated behavior for
+ *                       callers who don't pass it.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
  *                src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
@@ -71,6 +77,7 @@ export function renderSvg(
   curve: CurveStyle = 'linear',
   embedSource?: string,
   animationEnabled: boolean = true,
+  linksEnabled: boolean = true,
   title?: string,
   decorative?: boolean,
 ): string {
@@ -82,9 +89,11 @@ export function renderSvg(
   // Uses the same safeHref() check renderNode uses to decide whether an <a>
   // is actually emitted — a rejected scheme or control character means no
   // link renders, so it shouldn't affect the SVG's accessibility semantics.
-  const hasInteractiveLinks = graph.nodes.some((n) =>
-    Boolean(safeHref(n.interaction?.href)),
-  )
+  // Gated by linksEnabled too: `interactivity: 'none'` strips the <a> below,
+  // so it shouldn't count toward this decision either.
+  const hasInteractiveLinks =
+    linksEnabled &&
+    graph.nodes.some((n) => Boolean(safeHref(n.interaction?.href)))
 
   // SVG root with CSS variables + style block + defs
   parts.push(
@@ -143,7 +152,7 @@ export function renderSvg(
 
   // 4. Nodes (shape + label wrapped in <g class="node">)
   for (const node of graph.nodes) {
-    parts.push(renderNode(node, font, fontSizes))
+    parts.push(renderNode(node, font, fontSizes, linksEnabled))
   }
 
   parts.push('</svg>')
@@ -495,11 +504,16 @@ function dist(a: Point, b: Point): number {
  * - data-id: original Mermaid node ID (for edge matching)
  * - data-label: display label text
  * - data-shape: shape type (rectangle, diamond, circle, etc.)
+ *
+ * @param linksEnabled - Whether a `click`-based `<a href>` link and `<title>`
+ *                       tooltip render (from `options.interactivity !==
+ *                       'none'`). Default true.
  */
 function renderNode(
   node: PositionedNode,
   font: string,
   fontSizes: FontSizes,
+  linksEnabled: boolean = true,
 ): string {
   const shape = renderNodeShape(node)
   const label = renderNodeLabel(node, font, fontSizes)
@@ -531,7 +545,9 @@ function renderNode(
   parts.push(`<g ${groupAttrs.join(' ')}>`)
 
   // An href becomes a real SVG link, which needs no script to work.
-  const href = safeHref(interaction?.href)
+  // `interactivity: 'none'` strips it — a link is meaningless in
+  // print/rasterized output, the target that level is meant for.
+  const href = linksEnabled ? safeHref(interaction?.href) : undefined
   const indent = href ? '    ' : '  '
   if (href) {
     const targetAttr = interaction?.target
@@ -540,8 +556,10 @@ function renderNode(
     parts.push(`  <a href="${escapeAttr(href)}"${targetAttr}>`)
   }
 
-  if (interaction?.tooltip) {
-    // <title> is SVG's native tooltip — no script, no CSS.
+  if (linksEnabled && interaction?.tooltip) {
+    // <title> is SVG's native tooltip — no script, no CSS. Gated by
+    // linksEnabled alongside href above: both come from the same `click`
+    // statement, and 'none' strips both.
     parts.push(`${indent}<title>${escapeXml(interaction.tooltip)}</title>`)
   }
 

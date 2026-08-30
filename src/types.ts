@@ -242,22 +242,23 @@ export interface RenderOptions {
    * animation; tier 3: `click ... call fn()`, recorded as data, never
    * executed). Default: `'static'`.
    *
-   * - `'none'` — strips flowchart edge animation (`e1@{ animate: true }`).
-   *   Intended for print/rasterized output, where a CSS `@keyframes`
-   *   animation would otherwise silently render as a single static frame
-   *   with no indication that motion was intended.
-   * - `'static'` — default. Preserves today's output as closely as
-   *   possible: flowchart edge animation still renders (a diagram that
-   *   opted into `e1@{ animate: true }` keeps animating for callers who
-   *   don't touch this option), and xychart hover tooltips stay off unless
-   *   requested via `'full'` or the deprecated `interactive: true` below.
-   *   Gating animation out of `'static'` specifically (the stricter tier-2
-   *   reading) is left as follow-up — see the ADR.
-   * - `'full'` — also enables xychart hover tooltips.
-   *
-   * Links (`click A "url"`) and `<title>` tooltips from `click` statements
-   * are not yet gated by this option in any mode — also follow-up, see the
-   * ADR's "Consequences" section.
+   * - `'none'` — strips flowchart/state-diagram edge animation
+   *   (`e1@{ animate: true }`), and strips `click`-based links
+   *   (`<a href>`) and `<title>` tooltips. Intended for print/rasterized
+   *   output: a CSS `@keyframes` animation would otherwise silently
+   *   render as a single static frame with no indication that motion
+   *   was intended, and a link is meaningless once rasterized.
+   * - `'static'` — default. Tier 1 + tier 2 minus motion: `click`-based
+   *   links and `<title>` tooltips still render, but flowchart/state-diagram
+   *   edge animation does not — a diagram that opts into
+   *   `e1@{ animate: true }` renders as a still line unless `'full'` is
+   *   requested. xychart hover tooltips stay off unless requested via
+   *   `'full'` or the deprecated `interactive: true` below. This is a
+   *   breaking change from earlier releases, where `'static'` (and the
+   *   default) still animated — animation is tier-2 *motion*, which the
+   *   stricter `'static'` reading excludes; see the ADR.
+   * - `'full'` — also enables flowchart/state-diagram edge animation and
+   *   xychart hover tooltips.
    */
   interactivity?: 'none' | 'static' | 'full'
   /**
