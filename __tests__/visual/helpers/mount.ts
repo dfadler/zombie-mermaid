@@ -64,6 +64,26 @@ async function waitForFonts(): Promise<void> {
 }
 
 /**
+ * Wrap a view panel (`.svg-panel` or `.ascii-panel`) in the demo's
+ * `.output-panel > .output-stage` shell and mark it `.is-active` — since
+ * index.ts#generateHtml, both view panels are only ever visible via that
+ * class (see demo/styles.css's `.svg-panel.is-active`/`.ascii-panel.is-active`
+ * rules and demo/client.ts's toggle handler, which is what applies it for a
+ * real page load). Mounting a panel standalone under `<body>` without this
+ * wrapper leaves it `display: none` and the screenshot locator times out
+ * waiting for an element that can never become visible.
+ */
+function wrapInOutputPanel(panel: HTMLElement, ascii: boolean): HTMLElement {
+  const outputPanel = document.createElement('div')
+  outputPanel.className = ascii ? 'output-panel ascii-active' : 'output-panel'
+  const stage = document.createElement('div')
+  stage.className = 'output-stage'
+  stage.appendChild(panel)
+  outputPanel.appendChild(stage)
+  return outputPanel
+}
+
+/**
  * Mount an SVG sample's rendered markup inside the demo's `.svg-panel` /
  * `.svg-container` chrome, matching how the live gallery frames it
  * (including the sample's own background, for samples rendered transparent).
@@ -74,7 +94,7 @@ export async function mountSvgPanel(
 ): Promise<HTMLElement> {
   ensureStylesInjected()
   const panel = document.createElement('div')
-  panel.className = 'svg-panel'
+  panel.className = 'svg-panel is-active'
   panel.style.width = 'fit-content'
   panel.style.maxWidth = PANEL_MAX_WIDTH
   if (bg) panel.style.background = bg
@@ -82,7 +102,7 @@ export async function mountSvgPanel(
   container.className = 'svg-container'
   container.innerHTML = svg
   panel.appendChild(container)
-  document.body.appendChild(panel)
+  document.body.appendChild(wrapInOutputPanel(panel, false))
   await waitForFonts()
   return panel
 }
@@ -93,16 +113,16 @@ export async function mountAsciiPanel(
 ): Promise<HTMLElement> {
   ensureStylesInjected()
   const panel = document.createElement('div')
-  panel.className = 'ascii-panel'
+  panel.className = 'ascii-panel is-active'
   panel.style.width = 'fit-content'
   panel.style.maxWidth = PANEL_MAX_WIDTH
   panel.appendChild(terminalWindow)
-  document.body.appendChild(panel)
+  document.body.appendChild(wrapInOutputPanel(panel, true))
   await waitForFonts()
   return panel
 }
 
-/** Remove a mounted panel so consecutive tests in the same tab don't stack up. */
+/** Remove a mounted panel (and its `.output-panel` wrapper) so consecutive tests in the same tab don't stack up. */
 export function unmount(panel: HTMLElement): void {
-  panel.remove()
+  ;(panel.closest('.output-panel') ?? panel).remove()
 }
