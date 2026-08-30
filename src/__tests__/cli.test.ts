@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseArgs } from '../cli/parse-args.ts'
-import type { RenderArgs, SimpleCommand } from '../cli/parse-args.ts'
+import type { RenderArgs, SimpleCommand, WebArgs } from '../cli/parse-args.ts'
 
 // ============================================================================
 // render command — happy paths
@@ -248,6 +248,32 @@ describe('parseArgs – simple commands', () => {
   it('returns version for -v', () => {
     const result = parseArgs(['-v'])
     expect(result).toEqual({ command: 'version' } satisfies SimpleCommand)
+  })
+})
+
+// ============================================================================
+// web command
+// ============================================================================
+
+describe('parseArgs – web command', () => {
+  it('parses "web" with the default port', () => {
+    const result = parseArgs(['web'])
+    expect(result).toEqual({ command: 'web', port: 3000 } satisfies WebArgs)
+  })
+
+  it('parses "web --port <n>"', () => {
+    const result = parseArgs(['web', '--port', '8080'])
+    expect(result).toEqual({ command: 'web', port: 8080 } satisfies WebArgs)
+  })
+
+  it('throws when --port is not a non-negative integer', () => {
+    expect(() => parseArgs(['web', '--port', 'nope'])).toThrow(
+      '--port requires a non-negative integer, got: "nope"',
+    )
+  })
+
+  it('throws on unknown flag in web sub-parser', () => {
+    expect(() => parseArgs(['web', '--bogus'])).toThrow('Unknown flag: --bogus')
   })
 })
 

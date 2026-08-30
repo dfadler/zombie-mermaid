@@ -26,7 +26,15 @@ export interface SimpleCommand {
   command: 'themes' | 'help' | 'version'
 }
 
-export type CliArgs = RenderArgs | SimpleCommand
+export interface WebArgs {
+  command: 'web'
+  port: number
+}
+
+export type CliArgs = RenderArgs | SimpleCommand | WebArgs
+
+/** Default port for `zombie-mermaid web` when `--port` isn't given. */
+export const DEFAULT_WEB_PORT = 3000
 
 // ============================================================================
 // Parser
@@ -56,6 +64,11 @@ export function parseArgs(argv: string[]): CliArgs {
   // Render command
   if (first === 'render') {
     return parseRender(rest)
+  }
+
+  // Web command
+  if (first === 'web') {
+    return parseWeb(rest)
   }
 
   throw new Error(`Unknown command: ${first}`)
@@ -165,4 +178,31 @@ function parseRender(args: string[]): RenderArgs {
     borderPadding,
     coords,
   }
+}
+
+// ============================================================================
+// web sub-parser
+// ============================================================================
+
+function parseWeb(args: string[]): WebArgs {
+  let port = DEFAULT_WEB_PORT
+
+  let i = 0
+  while (i < args.length) {
+    const arg = args[i]
+    if (arg === undefined) {
+      throw new Error(
+        `parseArgs: index ${i} out of range while parsing arguments`,
+      )
+    }
+
+    if (arg === '--port') {
+      port = parseNonNegativeIntFlag(args, i, arg)
+      i += 2
+    } else {
+      throw new Error(`Unknown flag: ${arg}`)
+    }
+  }
+
+  return { command: 'web', port }
 }
