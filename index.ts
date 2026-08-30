@@ -206,7 +206,7 @@ function renderThemePicker(): string {
       ${visiblePills.join('\n      ')}
     </div>
     <div class="theme-more-wrapper">
-      <button class="theme-pill shadow-minimal" id="theme-more-btn">${allDropdownPills.length} Themes</button>
+      <button class="theme-pill shadow-minimal" id="theme-more-btn" aria-label="More themes" aria-haspopup="true" aria-controls="theme-more-dropdown" aria-expanded="false">${allDropdownPills.length} Themes</button>
       <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
         ${allDropdownPills.join('\n        ')}
       </div>
