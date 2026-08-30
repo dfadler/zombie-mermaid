@@ -18,7 +18,7 @@ import {
   ARROW_HEAD,
   estimateTextWidth,
 } from '../styles.ts'
-import { renderMultilineText } from '../multiline-utils.ts'
+import { renderMultilineText, escapeAttr } from '../multiline-utils.ts'
 
 // ============================================================================
 // Sequence diagram SVG renderer
@@ -414,19 +414,4 @@ function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
     )}` +
     `\n</g>`
   )
-}
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-/**
- * Escape a string for use as an XML/HTML attribute value.
- */
-function escapeAttr(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
 }

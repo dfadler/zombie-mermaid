@@ -61,6 +61,23 @@ export function escapeXml(text: string): string {
     .replace(/'/g, '&#39;')
 }
 
+/**
+ * Escape a string for use as an XML/HTML attribute value.
+ * Escapes quotes and ampersands to prevent attribute injection.
+ *
+ * Deliberately distinct from `escapeXml()` above: attribute values in this
+ * codebase are always double-quoted, so single quotes don't need escaping —
+ * `escapeXml()` escapes them too (for safe embedding in either quote style),
+ * which would change output if reused here.
+ */
+export function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
 // ============================================================================
 // Inline formatting: <b>, <i>, <u>, <s> → SVG tspan attributes
 // ============================================================================

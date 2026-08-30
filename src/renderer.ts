@@ -19,6 +19,7 @@ import {
   renderMultilineText,
   renderMultilineTextWithBackground,
   escapeXml,
+  escapeAttr,
 } from './multiline-utils.ts'
 import { pointsToPath } from './edge-curves.ts'
 import type { CurveStyle } from './init-directive.ts'
@@ -1440,18 +1441,6 @@ function renderNodeLabel(
 // ============================================================================
 // Utilities
 // ============================================================================
-
-/**
- * Escape a string for use as an XML/HTML attribute value.
- * Escapes quotes and ampersands to prevent attribute injection.
- */
-export function escapeAttr(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
 
 /**
  * Escape a string for embedding as a *multiline-safe* XML attribute value —
