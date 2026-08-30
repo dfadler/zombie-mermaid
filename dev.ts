@@ -2,6 +2,9 @@
  * Development server with live reload for mermaid samples.
  *
  * Usage: tsx dev.ts
+ * Port defaults to 3456; override with the PORT env var, e.g.
+ * `PORT=3457 tsx dev.ts` — handy for running more than one instance at once
+ * (a worktree alongside the main checkout, say).
  *
  * - Runs `index.ts` to generate index.html on startup
  * - Runs `editor.ts` to generate editor.html on startup
@@ -25,7 +28,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 
-const PORT = 3456
+const PORT = Number(process.env.PORT) || 3456
 const ROOT = dirname(fileURLToPath(import.meta.url))
 
 // Resolve the local tsx CLI so rebuilds don't depend on PATH/.bin symlinks.

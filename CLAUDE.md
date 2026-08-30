@@ -9,10 +9,13 @@ instead — this file only holds what's specific to _this_ repo's tooling.
 This repo's dev server (`dev.ts`) has two properties that make worktree cleanup easy
 to get wrong:
 
-- **Fixed port, no env override.** `PORT = 3456` is hardcoded in `dev.ts` — it can't
-  be pointed at a different port per worktree. Only one instance can bind 3456 at a
-  time, so a worktree session's `dev.ts` and the main checkout's `dev.ts` (or another
-  worktree's) will collide if both try to run simultaneously.
+- **Port defaults to 3456, shared unless overridden.** `dev.ts` reads `PORT` from the
+  environment (`PORT=3457 tsx dev.ts`), falling back to 3456 — so give each
+  simultaneously-running instance (a worktree alongside the main checkout, another
+  worktree, etc.) its own port rather than letting two land on the default together.
+  Two sessions that both fall back to 3456 will collide on bind, or — worse — one
+  will silently think it owns "the" dev server on that port when it's actually
+  someone else's.
 - **Live reload keeps the connection open.** `dev.ts` pushes rebuilds over SSE, so a
   browser tab connected to it never goes network-idle. A headless capture
   (`chrome --headless --screenshot`) against a _live_ `dev.ts` page hangs waiting for
@@ -29,19 +32,19 @@ to get wrong:
 
 Before removing a worktree in this repo (`ExitWorktree`, or by hand), stop only the
 processes _you_ started for it — don't kill by port or by a generic name pattern
-alone, since another worktree (or the main checkout) can easily share the same fixed
-port or process name:
+alone, since another worktree (or the main checkout) can easily share the same
+default port or process name:
 
 1. **Prefer killing by PID.** Capture it when you launch anything — the
    background-task PID the `Bash` tool returns, or `$!` right after backgrounding a
-   plain shell command. This matters most for `dev.ts`, whose port (3456) is fixed
-   and shared (see above): two sessions can each think of "port 3456" as theirs
-   without being the same process, so killing by port risks taking down someone
-   else's server, not just your own.
-2. If you didn't capture a PID, verify before killing: `lsof -i:<port>` (`:3456` for
-   `dev.ts`) shows the owning command — confirm it's actually the server you started
-   before killing that PID, rather than piping `lsof -ti` straight into `xargs kill`.
-   Same for a throwaway static-file server you spun up for a headless capture
+   plain shell command. This matters most for `dev.ts`: its default port (3456) is
+   shared unless you passed `PORT=` (see above), so two sessions can each think of
+   "the" dev server as theirs without being the same process — killing by port risks
+   taking down someone else's server, not just your own.
+2. If you didn't capture a PID, verify before killing: `lsof -i:<port>` shows the
+   owning command — confirm it's actually the server you started before killing that
+   PID, rather than piping `lsof -ti` straight into `xargs kill`. Same for a
+   throwaway static-file server you spun up for a headless capture
    (`python3 -m http.server <port>`, `npx http-server`).
 3. For a headless Chrome instance launched for screenshots, match on the `--headless`
    flag itself (`ps aux | grep -- --headless`), not on the default profile directory
