@@ -239,7 +239,13 @@ jobs:
       # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
       # browser entirely from Node, so there's no such bridge to hang on.
       - name: Run visual regression suite
-        run: pnpm exec playwright test --update-snapshots --retries=0 --reporter=line
+        # TEMPORARY: narrowed to the diag-layout probe only (see
+        # __tests__/visual/diag-layout.visual.test.ts) to get a fast,
+        # cheap read of computed layout/fonts on the actual CI runner,
+        # instead of another 10-20min full-suite run. Revert to the full
+        # `--update-snapshots --retries=0 --reporter=line` invocation
+        # once the diagnosis is in.
+        run: pnpm exec playwright test diag-layout --reporter=line
 
       # TEMPORARY (matches the bootstrap step above): if: always(), and
       # uploads the new -linux.png baselines --update-snapshots wrote
