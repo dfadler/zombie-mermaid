@@ -7,6 +7,21 @@
   padding: 0;
 }
 
+/* Shared keyboard-focus ring for every interactive element site-wide, so
+ * no control (sidebar links, the Edit link, theme pills, etc.) falls back
+ * to the browser's default outline. Same values as .seg-btn:focus-visible
+ * below, which stays as-is since it already matches. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 2px;
+}
+
 /* -----------------------------------------------------------------
  * CSS custom property theming
  *
