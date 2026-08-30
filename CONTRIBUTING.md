@@ -31,9 +31,12 @@ Full Aikido SCA/secrets scanning as a CI/dashboard product is a separate, paid-a
 
 Useful scripts while developing (see `package.json` for the full list):
 
-- `pnpm test` — run the test suite once (Vitest)
+- `pnpm test` — run the unit/integration test suite once (Vitest)
 - `pnpm run test:watch` — Vitest in watch mode
 - `pnpm run test:coverage` — Vitest with coverage
+- `pnpm run test:visual` — visual regression suite (real-browser screenshots of every sample; see "Visual regression tests" below)
+- `pnpm run test:visual:update` — regenerate visual baselines after an intentional rendering change
+- `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
 - `pnpm run lint` — ESLint
 - `pnpm run build` — build the publishable package with tsup
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
@@ -58,14 +61,40 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 1. `pnpm install --frozen-lockfile`
 2. `pnpm run test:coverage`
 3. `pnpm exec tsc --noEmit`
+4. `pnpm run test:visual` (a separate CI job; needs `pnpm exec playwright install --with-deps chromium` first — see "Visual regression tests" below)
 
-Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code.
+Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs.
 
 CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account/token involved) that fails the build on findings. If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why — don't disable the rule repo-wide.
 
 ### Test coverage
 
 CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-26 the baseline is **78.74% statements / 67.91% branches / 83.22% functions / 80.58% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, kept a bit under the measured baseline as headroom) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
+
+### Visual regression tests
+
+`__tests__/visual/*.visual.test.ts` render every sample in `samples-data.ts` and `xychart-samples-data.ts` in a real headless Chromium page — SVG output directly, ASCII output inside the same terminal-window chrome the live demo uses — and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. This catches regressions a string/snapshot comparison can't: a clipped label, a broken viewBox, a color resolving to the wrong palette entry, box-drawing glyphs misaligning at a given font.
+
+They run under [Playwright Test](https://playwright.dev/docs/test-intro) (`playwright.config.ts`), not Vitest — deliberately: an earlier Vitest-browser-mode implementation hit an unfixed, still-open upstream bug (Node↔browser tester sessions could go silently unresponsive with no run-level timeout, hanging CI forever) that reproduced even on Vitest's pre-release fix line. Playwright Test drives the browser entirely from Node (rendering itself already happens in Node — `renderMermaidSVG`/`renderMermaidASCII` are plain string functions — and only DOM mounting runs in the browser, via the bundled harness in `__tests__/visual/helpers/`), so there's no such bridge to hang on. See [#299](https://github.com/dfadler/zombie-mermaid/issues/299) for the full investigation.
+
+Separate from the fast node/jsdom unit suite, and needs a Chromium binary installed once:
+
+```bash
+pnpm exec playwright install --with-deps chromium
+pnpm run test:visual
+```
+
+After an intentional rendering change, regenerate baselines and review the new PNGs before committing them:
+
+```bash
+pnpm run test:visual:update
+```
+
+Baseline filenames are suffixed with browser + platform (e.g. `-chromium-darwin.png` / `-chromium-linux.png`), so a macOS dev machine and the Linux CI runner keep separate baselines rather than fighting over one — CI generates and commits its own the same way a local run does, there's no cross-platform bootstrapping needed.
+
+Font rasterization has genuine run-to-run jitter (see the comments in `playwright.config.ts` next to `expect.toHaveScreenshot`), so the comparison tolerance is deliberately looser than a byte-for-byte diff and CI retries a failing test twice before calling it a real failure. If you're touching rendering code, verify a real regression still fails clearly rather than just tightening tolerances until things pass.
+
+For a broader, human-reviewable sweep — not a pass/fail gate, just "what does my in-progress change actually alter" — run `pnpm run visual-diff`. It renders the full catalog with the working tree's renderer against a base ref (`--base=<ref>`, default `main`) into `visual-diff.html`, showing only samples whose output actually differs.
 
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 

@@ -149,6 +149,68 @@ jobs:
       - name: Build site (generator check only, not deployed)
         run: pnpm run build:site
 
+  visual-regression:
+    name: Visual regression (SVG + ASCII screenshots)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # only checks out code and runs the visual suite; no writes back to the repo
+    # Same fork-of-this-fork guard as the `test` job above — see its comment
+    # for the full reasoning on what github.repository resolves to and what
+    # this does/doesn't protect against.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      # This job uploads a writable artifact (screenshots) on failure from
+      # a pull_request run, which can execute PR-controlled code (the repo's
+      # own test suite). actions/checkout's default persist-credentials:true
+      # would leave the read-only GITHUB_TOKEN in the local git config for
+      # that code to read; nothing after checkout needs authenticated git,
+      # so it's disabled.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Chromium headless-shell renders subtly differently in places, so
+      # this intentionally does NOT use `--only-shell`: staying on the full
+      # Chrome-for-Testing binary is what keeps this comparable to the
+      # committed -linux.png baselines (see CONTRIBUTING.md for how those
+      # were generated).
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # This suite runs under Playwright Test, not Vitest's browser mode —
+      # see zombie-mermaid#299 for why: Vitest's Node<->browser RPC bridge
+      # has an unfixed, still-open upstream bug (vitest-dev/vitest#10791)
+      # that hung this exact job's CI runs (reproduced even on the
+      # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
+      # browser entirely from Node, so there's no such bridge to hang on.
+      - name: Run visual regression suite
+        run: pnpm run test:visual
+
+      - name: Upload failure report
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: visual-regression-failures
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
   semgrep:
     name: Semgrep SAST scan
     runs-on: ubuntu-latest
