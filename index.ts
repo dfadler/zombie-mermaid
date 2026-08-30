@@ -583,12 +583,12 @@ ${clientJs}
 
   <!-- Edit dialog (shared single instance) -->
   <div class="edit-overlay" id="edit-overlay">
-    <div class="edit-dialog shadow-modal-small">
+    <div class="edit-dialog shadow-modal-small" role="dialog" aria-modal="true" aria-labelledby="edit-dialog-title">
       <div class="edit-dialog-header">
-        <span class="edit-dialog-title">Edit Diagram</span>
-        <button class="edit-dialog-close" id="edit-dialog-close">&times;</button>
+        <span class="edit-dialog-title" id="edit-dialog-title">Edit Diagram</span>
+        <button class="edit-dialog-close" id="edit-dialog-close" aria-label="Close">&times;</button>
       </div>
-      <textarea class="edit-dialog-textarea" id="edit-dialog-textarea"
+      <textarea class="edit-dialog-textarea" id="edit-dialog-textarea" aria-label="Mermaid source"
         spellcheck="false" autocomplete="off" autocorrect="off"></textarea>
       <div class="edit-dialog-footer">
         <button class="edit-dialog-btn edit-dialog-cancel" id="edit-dialog-cancel">Cancel</button>
