@@ -191,6 +191,18 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      # TEMPORARY bootstrap step: generates Linux baselines. Every test
+      # fails without a baseline, and this job's retries: 2 means each of
+      # the 277 tests would otherwise be attempted 3 times (831 total
+      # executions) just to fail 3x over — that alone pushed the previous
+      # bootstrap attempt past this job's timeout, which is not itself a
+      # hang (the job log showed continuous, active progress the whole
+      # time — very different from the Vitest-based suite's silent hangs).
+      # --update-snapshots creates baselines directly and passes instead of
+      # failing, so retries don't multiply anything. Revert to
+      # `pnpm run test:visual` once the resulting -linux.png baselines from
+      # this run are committed.
+      #
       # This suite runs under Playwright Test, not Vitest's browser mode —
       # see zombie-mermaid#299 for why: Vitest's Node<->browser RPC bridge
       # has an unfixed, still-open upstream bug (vitest-dev/vitest#10791)
@@ -198,20 +210,23 @@ jobs:
       # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
       # browser entirely from Node, so there's no such bridge to hang on.
       - name: Run visual regression suite
-        run: pnpm run test:visual
+        run: pnpm run test:visual:update
 
-      # Playwright's own report/diff output, produced on a failing run — the
-      # actual/diff PNGs a mismatch writes alongside the committed baseline,
-      # plus an HTML report. Lets a reviewer download and look at exactly
-      # what changed without reproducing locally.
+      # TEMPORARY (matches the bootstrap step above): if: always(), and
+      # uploads the new -linux.png baselines --update-snapshots wrote
+      # straight into __screenshots__/, not test-results/ (nothing fails
+      # in bootstrap mode, so there's no failure-only diff output to
+      # upload). Revert both once those baselines are downloaded and
+      # committed.
       - name: Upload failure report
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: visual-regression-failures
           path: |
             test-results/
             playwright-report/
+            __tests__/visual/__screenshots__/**/*-linux.png
           retention-days: 14
           if-no-files-found: ignore
 
