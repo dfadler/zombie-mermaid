@@ -20,18 +20,19 @@ properties that make worktree cleanup easy to get wrong:
   (`/@vite/client`) for as long as a tab is connected, so that tab never goes
   network-idle. A headless capture (`chrome --headless --screenshot`) against a
   _live_ dev-server page hangs waiting for network idle — build a static snapshot
-  instead (`npx tsx index.ts`, serve the resulting `index.html` with a plain static
+  instead (`pnpm run samples`, serve the resulting `index.html` with a plain static
   server) for any headless screenshot, before/after comparison, or CI-style capture.
 - **`preview_start` won't follow you into a worktree.** It resolves
   `.claude/launch.json` against the _original_ repo root regardless of where
   `EnterWorktree` switched the session's cwd (see the global `CLAUDE.md`'s worktree
   section). To preview a worktree's own dev server, run it manually from inside that
-  worktree — `cd <worktree-path> && PORT=<port> npx vite`. This repo has no
+  worktree — `cd <worktree-path> && PORT=<port> pnpm run dev` (use the repo's
+  declared `pnpm` scripts, not bare `npx`: this repo has no
   `worktree.symlinkDirectories` configured, so `node_modules` isn't shared between
-  worktrees; a worktree that `pnpm add`ed something (Vite itself, say) has its own
-  separate install, and `npx vite` run from anywhere else risks resolving a
-  different — or missing — `vite`. Run it as a background `Bash` process and track
-  that PID yourself; nothing else will.
+  worktrees, and a worktree that `pnpm add`ed something new — Vite itself, say — has
+  its own separate install that only `cd`ing in first and using `pnpm run` reliably
+  resolves) — as a background `Bash` process, and track that PID yourself; nothing
+  else will.
 
 Before removing a worktree in this repo (`ExitWorktree`, or by hand), stop only the
 processes _you_ started for it — don't kill by port or by a generic name pattern

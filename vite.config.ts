@@ -26,7 +26,12 @@ import { readFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, relative } from 'node:path'
-import { defineConfig, type Plugin, type ViteDevServer } from 'vite'
+import {
+  defineConfig,
+  normalizePath,
+  type Plugin,
+  type ViteDevServer,
+} from 'vite'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
 
@@ -64,8 +69,16 @@ function isWatchedPath(relPath: string): boolean {
 }
 
 let building = false
+// Set when a change arrives while a rebuild is already running, so it isn't
+// dropped on the floor — rebuild() runs once more right after the current
+// one finishes, instead of leaving index.html/editor.html stale until some
+// later, unrelated change happens to trigger another rebuild.
+let rebuildQueued = false
 async function rebuild(server: ViteDevServer): Promise<void> {
-  if (building) return
+  if (building) {
+    rebuildQueued = true
+    return
+  }
   building = true
   console.log('\x1b[36m[dev]\x1b[0m Rebuilding samples...')
   const t0 = performance.now()
@@ -85,6 +98,11 @@ async function rebuild(server: ViteDevServer): Promise<void> {
       `\x1b[31m[dev]\x1b[0m Build failed (samples exit ${samplesExit}, editor exit ${editorExit})`,
     )
   }
+
+  if (rebuildQueued) {
+    rebuildQueued = false
+    void rebuild(server)
+  }
 }
 
 function samplesRebuildPlugin(): Plugin {
@@ -103,7 +121,10 @@ function samplesRebuildPlugin(): Plugin {
       server.watcher.add(WATCHED_PREFIXES.map((prefix) => join(ROOT, prefix)))
 
       server.watcher.on('all', (_event, file) => {
-        const relPath = relative(ROOT, file)
+        // node:path's relative() uses the OS separator — normalize to
+        // forward slashes (matching WATCHED_PREFIXES) so this doesn't
+        // silently stop matching on Windows.
+        const relPath = normalizePath(relative(ROOT, file))
         // Ignore the generated outputs themselves, else a rebuild's own
         // writes would trigger another rebuild.
         if (relPath === 'index.html' || relPath === 'editor.html') return
