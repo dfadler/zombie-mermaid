@@ -684,7 +684,10 @@ mustGet('theme-pills').addEventListener('click', function (e) {
   applyTheme(pill.getAttribute('data-theme') || '')
   // Close "More" dropdown if a theme was picked from it
   const dd = mustGet('theme-more-dropdown')
-  if (dd && dd.classList.contains('open')) dd.classList.remove('open')
+  if (dd && dd.classList.contains('open')) {
+    dd.classList.remove('open')
+    mustGet('theme-more-btn').setAttribute('aria-expanded', 'false')
+  }
 })
 
 // -- "More" themes dropdown (direct listener, same pattern as Contents) --
@@ -694,7 +697,8 @@ const moreDropdown = mustGet('theme-more-dropdown')
 if (moreBtn && moreDropdown) {
   moreBtn.addEventListener('click', function (e) {
     e.stopPropagation()
-    moreDropdown.classList.toggle('open')
+    const isOpen = moreDropdown.classList.toggle('open')
+    moreBtn.setAttribute('aria-expanded', String(isOpen))
   })
 
   // Close on outside click
@@ -702,6 +706,7 @@ if (moreBtn && moreDropdown) {
     if (!moreDropdown.classList.contains('open')) return
     if (!eventElement(e.target)?.closest('.theme-more-wrapper')) {
       moreDropdown.classList.remove('open')
+      moreBtn.setAttribute('aria-expanded', 'false')
     }
   })
 
@@ -709,6 +714,7 @@ if (moreBtn && moreDropdown) {
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && moreDropdown.classList.contains('open')) {
       moreDropdown.classList.remove('open')
+      moreBtn.setAttribute('aria-expanded', 'false')
     }
   })
 }
