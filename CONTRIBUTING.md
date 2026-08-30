@@ -41,7 +41,7 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run build` — build the publishable package with tsup
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
-- `pnpm run dev` — local dev script (`dev.ts`)
+- `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
 - `pnpm run bench` — render benchmarks
 - `pnpm run format` — format the codebase with Prettier
 - `pnpm run format:check` — check formatting without writing changes

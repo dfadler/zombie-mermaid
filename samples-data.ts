@@ -2,9 +2,9 @@
  * Sample definitions for the zombie-mermaid visual test suite.
  *
  * Shared by:
- *   - index.ts     — generates the HTML visual test page
- *   - bench.ts     — runs performance benchmarks in Bun (no browser)
- *   - dev.ts       — dev server with live reload
+ *   - index.ts       — generates the HTML visual test page
+ *   - bench.ts       — runs performance benchmarks in Bun (no browser)
+ *   - vite.config.ts — dev server with live reload
  *
  * Every supported feature, shape, edge type, block construct, and theme
  * variant is exercised by at least one sample.
