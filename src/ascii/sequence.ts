@@ -460,15 +460,11 @@ export function renderSequenceAscii(
         const ah = isFilled ? (useAscii ? '>' : '▶') : useAscii ? '>' : '▷'
         setC(toX, arrowY, ah, 'arrow')
         // Bidirectional (`<<->>` / `<<-->>`): mirror the arrowhead at the
-        // departure end too.
+        // departure end too. Both bidirectional tokens end in ">>" (see
+        // parser.ts), so isFilled is always true here — no open-head
+        // variant to branch on, unlike the one-way `ah` glyph above.
         if (msg.bidirectional) {
-          const ahStart = isFilled
-            ? useAscii
-              ? '<'
-              : '◀'
-            : useAscii
-              ? '<'
-              : '◁'
+          const ahStart = useAscii ? '<' : '◀'
           setC(fromX, arrowY, ahStart, 'arrow')
         }
       } else {
@@ -476,13 +472,7 @@ export function renderSequenceAscii(
         const ah = isFilled ? (useAscii ? '<' : '◀') : useAscii ? '<' : '◁'
         setC(toX, arrowY, ah, 'arrow')
         if (msg.bidirectional) {
-          const ahStart = isFilled
-            ? useAscii
-              ? '>'
-              : '▶'
-            : useAscii
-              ? '>'
-              : '▷'
+          const ahStart = useAscii ? '>' : '▶'
           setC(fromX, arrowY, ahStart, 'arrow')
         }
       }

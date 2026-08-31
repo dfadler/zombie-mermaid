@@ -252,24 +252,6 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       continue
     }
 
-    // --- Simplified message format: A->>B: Label (fallback with more relaxed regex) ---
-    const simpleMsgMatch = line.match(
-      /^(.+?)\s*(<<->>|<<-->>|->>|-->>|-\)|--\)|-x|--x|->|-->)\s*([+-]?)(.+?)\s*:\s*(.+)$/,
-    )
-    if (simpleMsgMatch) {
-      pushMessage(
-        diagram,
-        actorIds,
-        autonumber,
-        simpleMsgMatch[1]!,
-        simpleMsgMatch[2]!,
-        simpleMsgMatch[3],
-        simpleMsgMatch[4]!,
-        simpleMsgMatch[5]!,
-      )
-      continue
-    }
-
     // --- activate / deactivate explicit commands ---
     // These are handled implicitly via +/- on messages but can also appear standalone
     // For now, we skip explicit activate/deactivate lines (they affect rendering only)

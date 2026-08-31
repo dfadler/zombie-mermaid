@@ -61,6 +61,32 @@ describe('ASCII sequence diagrams – autonumber', () => {
     expect(replyArrowLine).toBeDefined()
   })
 
+  it('omits the badge (without corrupting the arrow) when it would not fit, left-to-right', () => {
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+      autonumber 999999999999 1
+      A->>B: Yo`,
+      { useAscii: false },
+    )
+    const arrowLine = result.split('\n').find((l) => l.includes('▶'))
+    expect(arrowLine).toBeDefined()
+    expect(arrowLine).not.toMatch(/[0-9]/)
+  })
+
+  it('omits the badge (without corrupting the arrow) when it would not fit, right-to-left', () => {
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+      participant A
+      participant B
+      autonumber 999999999999 1
+      B->>A: Yo`,
+      { useAscii: false },
+    )
+    const arrowLine = result.split('\n').find((l) => l.includes('◀'))
+    expect(arrowLine).toBeDefined()
+    expect(arrowLine).not.toMatch(/[0-9]/)
+  })
+
   it('renders without autonumber unchanged (no stray digits near arrows)', () => {
     const result = renderMermaidASCII(
       `sequenceDiagram
