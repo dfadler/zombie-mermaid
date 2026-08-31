@@ -44,6 +44,23 @@ describe('ASCII sequence diagrams – autonumber', () => {
     expect(numberedArrowLine).toBeDefined()
   })
 
+  it('places the badge at the departure end for a right-to-left numbered message', () => {
+    // B->>A is right-to-left (B's lane is to the right of A's) — exercises
+    // the `!leftToRight` badge-placement branch, distinct from the
+    // left-to-right case in the first test above.
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+      autonumber
+      A->>B: Hello
+      B->>A: Reply`,
+      { useAscii: false },
+    )
+    const replyArrowLine = result
+      .split('\n')
+      .find((l) => l.includes('◀') && l.includes('2'))
+    expect(replyArrowLine).toBeDefined()
+  })
+
   it('renders without autonumber unchanged (no stray digits near arrows)', () => {
     const result = renderMermaidASCII(
       `sequenceDiagram
@@ -98,6 +115,30 @@ describe('ASCII sequence diagrams – bidirectional arrows', () => {
     )
     expect(result).toContain('<')
     expect(result).toContain('>')
+  })
+
+  it('draws arrowheads on both ends when the bidirectional message runs right-to-left', () => {
+    // B is declared second (lane to the right of A), so B<<-->>A draws
+    // right-to-left — exercises the mirrored-arrowhead branch for
+    // `!leftToRight`, distinct from the left-to-right case above.
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+      A->>B: Hello
+      B<<-->>A: Reply sync`,
+      { useAscii: false },
+    )
+    const arrowLines = result
+      .split('\n')
+      .filter((l) => l.includes('◀') || l.includes('▶'))
+    expect(arrowLines).toHaveLength(2)
+    // First message (A->>B) is one-way, only gets the destination arrowhead.
+    expect(arrowLines[0]).not.toContain('◀')
+    expect(arrowLines[0]).toContain('▶')
+    // Second message (B<<-->>A) is bidirectional and right-to-left: the
+    // primary arrowhead lands on the left (A) end, the mirrored one on the
+    // right (B) end.
+    expect(arrowLines[1]).toContain('◀')
+    expect(arrowLines[1]).toContain('▶')
   })
 })
 
