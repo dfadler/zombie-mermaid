@@ -29,7 +29,10 @@ const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
 function maxLineWidth(rendered: string): number {
   return rendered
     .split('\n')
-    .reduce((max, line) => Math.max(max, line.replace(ANSI_ESCAPE, '').length), 0)
+    .reduce(
+      (max, line) => Math.max(max, line.replace(ANSI_ESCAPE, '').length),
+      0,
+    )
 }
 
 /**
