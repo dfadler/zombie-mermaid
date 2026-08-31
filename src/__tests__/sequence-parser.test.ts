@@ -397,6 +397,107 @@ describe('parseSequenceDiagram – multi-word inline actor names', () => {
 })
 
 // ============================================================================
+// Issue #341 — hyphenated actor name containing an embedded arrow-like
+// substring (e.g. `-x`, `-)`, `--x`, `--)`) must not be mis-split at that
+// substring instead of the real arrow later in the line.
+// ============================================================================
+
+describe('parseSequenceDiagram – actor names with embedded arrow-like substrings', () => {
+  it('does not mis-split on an embedded "-x" substring (issue #341 repro)', () => {
+    const d = parse(`sequenceDiagram
+      foo-x-bar->>baz: hi`)
+    expect(d.messages[0]!.from).toBe('foo-x-bar')
+    expect(d.messages[0]!.to).toBe('baz')
+    expect(d.messages[0]!.label).toBe('hi')
+    expect(d.actors.map((a) => a.id)).toEqual(['foo-x-bar', 'baz'])
+  })
+
+  it('does not mis-split on an embedded "-)" substring', () => {
+    const d = parse(`sequenceDiagram
+      foo-)bar->>baz: hi`)
+    expect(d.messages[0]!.from).toBe('foo-)bar')
+    expect(d.messages[0]!.to).toBe('baz')
+  })
+
+  it('does not mis-split on an embedded "--x" substring', () => {
+    const d = parse(`sequenceDiagram
+      foo--x-bar->>baz: hi`)
+    expect(d.messages[0]!.from).toBe('foo--x-bar')
+    expect(d.messages[0]!.to).toBe('baz')
+  })
+
+  it('does not mis-split on an embedded "--)" substring', () => {
+    const d = parse(`sequenceDiagram
+      foo--)bar->>baz: hi`)
+    expect(d.messages[0]!.from).toBe('foo--)bar')
+    expect(d.messages[0]!.to).toBe('baz')
+  })
+
+  it('handles the arrow-like substring at the very start of the name', () => {
+    const d = parse(`sequenceDiagram
+      -x-foo->>Bob: hi`)
+    expect(d.messages[0]!.from).toBe('-x-foo')
+    expect(d.messages[0]!.to).toBe('Bob')
+  })
+
+  it('handles the arrow-like substring at the very end of the name', () => {
+    const d = parse(`sequenceDiagram
+      foo-x->>Bob: hi`)
+    expect(d.messages[0]!.from).toBe('foo-x')
+    expect(d.messages[0]!.to).toBe('Bob')
+  })
+
+  it('handles multiple embedded arrow-like substrings in one name', () => {
+    const d = parse(`sequenceDiagram
+      foo-x-bar-)-baz->>qux: multi`)
+    expect(d.messages[0]!.from).toBe('foo-x-bar-)-baz')
+    expect(d.messages[0]!.to).toBe('qux')
+  })
+
+  it('still parses a genuinely short arrow message (no long arrow to fall back past)', () => {
+    const d = parse(`sequenceDiagram
+      A-)B: open arrow`)
+    expect(d.messages[0]!.from).toBe('A')
+    expect(d.messages[0]!.to).toBe('B')
+    expect(d.messages[0]!.arrowHead).toBe('open')
+  })
+
+  it('still parses a genuine cross/lost message ("-x") with no embedded substring elsewhere', () => {
+    const d = parse(`sequenceDiagram
+      A-xB: lost message`)
+    expect(d.messages[0]!.from).toBe('A')
+    expect(d.messages[0]!.to).toBe('B')
+    expect(d.messages[0]!.arrowHead).toBe('filled')
+  })
+
+  it('a legitimate arrow elsewhere in the diagram still parses correctly alongside the fix', () => {
+    const d = parse(`sequenceDiagram
+      foo-x-bar->>baz: hi
+      baz-->>foo-x-bar: reply`)
+    expect(d.messages[0]!.from).toBe('foo-x-bar')
+    expect(d.messages[0]!.to).toBe('baz')
+    expect(d.messages[1]!.from).toBe('baz')
+    expect(d.messages[1]!.to).toBe('foo-x-bar')
+    expect(d.messages[1]!.lineStyle).toBe('dashed')
+  })
+
+  it('does not regress bidirectional arrow detection', () => {
+    const d = parse(`sequenceDiagram
+      Alice<<->>Bob: sync`)
+    expect(d.messages[0]!.from).toBe('Alice')
+    expect(d.messages[0]!.to).toBe('Bob')
+    expect(d.messages[0]!.bidirectional).toBe(true)
+  })
+
+  it('CodeRabbit-cited example still parses correctly (not a bug on its own)', () => {
+    const d = parse(`sequenceDiagram
+      customer-notifier->>Bob: ping`)
+    expect(d.messages[0]!.from).toBe('customer-notifier')
+    expect(d.messages[0]!.to).toBe('Bob')
+  })
+})
+
+// ============================================================================
 // Pre-message notes
 // ============================================================================
 
