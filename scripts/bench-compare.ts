@@ -32,13 +32,20 @@ interface BenchSummary {
   categories: Record<string, BenchCategorySummary>
 }
 
+// `pnpm run <script> -- <args>` forwards the literal `--` separator into this
+// script's argv (unlike `npm run`, which strips it) — filter it out so
+// `pnpm run bench:compare -- bench-current.json` and
+// `pnpm run bench:compare bench-current.json` behave identically regardless
+// of which convention the caller reaches for.
+const scriptArgs = process.argv.slice(2).filter((a) => a !== '--')
+
 function argValue(flag: string): string | null {
-  const arg = process.argv.find((a) => a.startsWith(flag))
+  const arg = scriptArgs.find((a) => a.startsWith(flag))
   return arg ? arg.slice(flag.length) : null
 }
 
-const currentPath = process.argv[2]
-if (!currentPath || currentPath.startsWith('--')) {
+const currentPath = scriptArgs.find((a) => !a.startsWith('--'))
+if (!currentPath) {
   console.error(
     'Usage: tsx scripts/bench-compare.ts <current.json> [--baseline=<path>] [--threshold=<pct>]',
   )
