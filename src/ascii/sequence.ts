@@ -21,11 +21,26 @@ import {
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
+import type { Message } from '../sequence/types.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
 // Shared between the drawing pass and the block-wall extent calculation so
 // self-arrows inside alt/loop/opt blocks don't get clipped by the wall.
 const SELF_LOOP_WIDTH = 4
+
+// Effective width of a self-message's loop, including room for an
+// autonumber badge drawn at the start of the top arm when active. The badge
+// digits replace the leading dashes rather than adding a second arrowhead,
+// so the loop only needs to widen by the badge's own digit count — one
+// extra column per digit — to keep the corner glyphs (┐/┘) intact.
+// Shared by the drawing pass, the canvas-width pass, and the block-wall
+// extent calculation so all three agree on how much room a numbered
+// self-message actually needs.
+function selfLoopWidth(msg: Message): number {
+  return msg.seqNumber === undefined
+    ? SELF_LOOP_WIDTH
+    : SELF_LOOP_WIDTH + String(msg.seqNumber).length
+}
 
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.
@@ -280,7 +295,7 @@ export function renderSequenceAscii(
     if (msg.from === msg.to) {
       const fi = actorIndexOf(msg.from)
       const selfRight =
-        llX[fi]! + SELF_LOOP_WIDTH + 2 + 2 + maxLineWidth(msg.label)
+        llX[fi]! + selfLoopWidth(msg) + 2 + 2 + maxLineWidth(msg.label)
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -398,20 +413,32 @@ export function renderSequenceAscii(
       //   │  │ Label     (row 1)
       //   │◄─┘           (row 2)
       //
-      // The loop is only SELF_LOOP_WIDTH (4) columns wide, with no spare
-      // room for a second arrowhead or a sequence-number badge without
-      // corrupting the loop's corner glyphs — so a bidirectional or
-      // autonumbered self-message still parses and still advances the
-      // autonumber counter, it just doesn't get the extra glyph drawn here.
+      // The loop is only SELF_LOOP_WIDTH (4) columns wide by default, with no
+      // spare room for a second arrowhead without corrupting the loop's
+      // corner glyphs — so a bidirectional self-message still parses and
+      // draws a single arrowhead only. An autonumbered self-message widens
+      // the loop (see selfLoopWidth) so the badge digits fit at the start
+      // of the top arm without touching the corner.
       const y0 = msgArrowY[m]!
-      const loopW = SELF_LOOP_WIDTH
+      const loopW = selfLoopWidth(msg)
+      const numStr =
+        msg.seqNumber === undefined ? undefined : String(msg.seqNumber)
       // Split the label on <br/>-normalized newlines so multi-line self-arrow
       // labels get one row each instead of dumping a literal \n mid-row.
       const msgLines = splitLines(msg.label)
 
-      // Row 0: start junction + horizontal + top-right corner
+      // Row 0: start junction + [autonumber badge] + horizontal + top-right
+      // corner. The badge, when present, replaces the leading dashes rather
+      // than sitting alongside them — mirroring how the normal-message
+      // badge overwrites the start of its arrow line.
       setC(fromX, y0, JL, 'junction')
-      for (let x = fromX + 1; x < fromX + loopW; x++)
+      let dashStart = fromX + 1
+      if (numStr !== undefined) {
+        for (let i = 0; i < numStr.length; i++)
+          setC(fromX + 1 + i, y0, numStr[i]!, 'text')
+        dashStart = fromX + 1 + numStr.length
+      }
+      for (let x = dashStart; x < fromX + loopW; x++)
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
@@ -525,7 +552,7 @@ export function renderSequenceAscii(
       // long self-arrow label gets clipped by / drawn outside the wall.
       if (f === t) {
         const selfRight =
-          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+          llX[f]! + selfLoopWidth(msg) + 2 + maxLineWidth(msg.label)
         maxLX = Math.max(maxLX, selfRight)
       }
     }
