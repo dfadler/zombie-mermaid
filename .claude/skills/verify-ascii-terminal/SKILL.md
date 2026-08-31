@@ -15,7 +15,7 @@ description: |
   real one, and this repo has already shipped a bug (the
   ascii-terminal-overflow-scroll fix) in that approximation's chrome.
 metadata:
-  version: "1.0.0"
+  version: '1.0.0'
 ---
 
 # Verify ASCII output in a real terminal, not just the browser mockup
@@ -37,9 +37,9 @@ This library has two independent ASCII "renderers" a change can affect:
    Playwright visual-regression suite have something to screenshot without
    spawning a real terminal.
 
-`ascii-html.ts`'s own header comment names the risk directly: *"A browser
-gives \[a wide glyph] whatever the fallback font's advance happens to be"* —
-the HTML mockup can only *approximate* real terminal geometry, not guarantee
+`ascii-html.ts`'s own header comment names the risk directly: _"A browser
+gives \[a wide glyph] whatever the fallback font's advance happens to be"_ —
+the HTML mockup can only _approximate_ real terminal geometry, not guarantee
 it. The `ascii-terminal-overflow-scroll` fix (this branch) was a bug in that
 approximation's CSS, not in `renderMermaidASCII` itself — proof the two can
 drift independently. `scripts/visual-diff.ts`, the tool this repo's
@@ -65,7 +65,7 @@ renderer, layout math with no ASCII-specific path, or non-rendering code.
 
 2. **Get the base-ref renderer without a full worktree.** Mirror
    `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`): `git
-   archive <base-sha> src | tar -x -C <scratch-dir>` pulls `src/` at the
+archive <base-sha> src | tar -x -C <scratch-dir>` pulls `src/` at the
    base commit into a scratch directory you can `import()` from — no
    worktree needed just to diff a renderer function.
 
