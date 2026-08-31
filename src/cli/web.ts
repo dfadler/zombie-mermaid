@@ -196,12 +196,18 @@ export function createWebServer(): Server {
   })
 }
 
-/** Start the web server and resolve once it's listening. */
+/**
+ * Start the web server and resolve once it's listening.
+ *
+ * Binds to the loopback interface only (127.0.0.1) — this is a local
+ * devtool for rendering diagrams, not a service meant to be reachable from
+ * other hosts on the network.
+ */
 export function startWebServer(port: number): Promise<Server> {
   return new Promise((resolve, reject) => {
     const server = createWebServer()
     server.once('error', reject)
-    server.listen(port, () => {
+    server.listen(port, '127.0.0.1', () => {
       server.removeListener('error', reject)
       resolve(server)
     })

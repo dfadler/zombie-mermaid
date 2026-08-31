@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { Server } from 'node:http'
-import { createWebServer, runWeb } from '../cli/web.ts'
+import { createWebServer, runWeb, startWebServer } from '../cli/web.ts'
 
 // ============================================================================
 // Server lifecycle helpers
@@ -157,6 +157,25 @@ describe('web server – unknown routes', () => {
   it('returns 404 for an unknown path', async () => {
     const res = await fetch(baseUrl + '/nope')
     expect(res.status).toBe(404)
+  })
+})
+
+// ============================================================================
+// startWebServer()
+// ============================================================================
+
+describe('startWebServer', () => {
+  it('binds to the loopback interface, not all interfaces', async () => {
+    const webServer = await startWebServer(0)
+    try {
+      const address = webServer.address()
+      if (address === null || typeof address === 'string') {
+        throw new Error('Expected server to bind to a port')
+      }
+      expect(address.address).toBe('127.0.0.1')
+    } finally {
+      webServer.close()
+    }
   })
 })
 

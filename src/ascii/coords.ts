@@ -23,9 +23,17 @@
  * Purely a string transform over the already-rendered output — safe to
  * apply regardless of diagram type, color mode, or Unicode/ASCII mode.
  */
+// Matches SGR color escape sequences (`\x1b[...m`) produced by ansi.ts's
+// ansi16/ansi256/truecolor modes. Stripped only for width MEASUREMENT below
+// — the original lines (with codes intact) are still what gets printed.
+const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
+
 export function addCoordsOverlay(rendered: string): string {
   const lines = rendered.split('\n')
-  const width = lines.reduce((max, line) => Math.max(max, line.length), 0)
+  const width = lines.reduce(
+    (max, line) => Math.max(max, line.replace(ANSI_ESCAPE, '').length),
+    0,
+  )
   const rowGutterWidth = String(Math.max(0, lines.length - 1)).length
 
   const gutter = ' '.repeat(rowGutterWidth + 1)

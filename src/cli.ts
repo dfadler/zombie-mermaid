@@ -86,9 +86,13 @@ Options:
   --svg                Render SVG (requires -o)
   -o, --output         Output file path for SVG
   --theme <name>       Apply a built-in theme (see 'themes' command)
-  -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)
-  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
-  -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)
+  -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5;
+                       flowchart/state diagrams only — sequence/class/ER
+                       diagrams use fixed internal spacing)
+  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5;
+                       flowchart/state diagrams only, see above)
+  -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1;
+                       flowchart/state diagrams only, see above)
   --coords             Overlay row/column index rulers (ASCII, debug layout)
   --port <n>           Port for the 'web' command (default: 3000)
   -h, --help           Show help

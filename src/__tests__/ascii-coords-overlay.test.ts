@@ -30,6 +30,17 @@ describe('addCoordsOverlay', () => {
   it('handles an empty string without throwing', () => {
     expect(() => addCoordsOverlay('')).not.toThrow()
   })
+
+  it('measures width by visible characters, not raw length with ANSI codes', () => {
+    // A 2-char-wide line wrapped in a color escape sequence is still only
+    // 2 columns wide on screen — the ruler must match that, not the ~10
+    // raw characters the escape codes add.
+    const colored = '\x1b[37mAB\x1b[0m'
+    const result = addCoordsOverlay(colored)
+    const lines = result.split('\n')
+    expect(lines[0]).toBe('  00')
+    expect(lines[1]).toBe('  01')
+  })
 })
 
 describe('renderMermaidASCII – showCoords', () => {
