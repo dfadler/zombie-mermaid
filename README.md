@@ -22,9 +22,11 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 ## Why This Fork Exists
 
-`beautiful-mermaid` is a genuinely good library — see "Why We Built This" below — but upstream development has stalled: as of this writing there are 30 open pull requests, the oldest dating back over half a year, and nothing has merged in months. `zombie-mermaid` is the same codebase, kept moving: upstream fixes get pulled in, PRs stuck in the upstream queue get a home, and releases actually ship.
+`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: as of August 2026, there are 30 open pull requests, the oldest dating back over half a year, and nothing has merged in months. I maintain `zombie-mermaid` as a fork that keeps it moving — pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors below.
+
+The ASCII rendering engine is based on [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) by Alexander Grooff, ported from Go to TypeScript and extended. Thank you Alexander for the excellent foundation! (And inspiration that this was possible.)
 
 ## Why We Built This
 
@@ -36,10 +38,6 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 - **Complex theming** — Customizing colors requires wrestling with CSS classes
 - **No terminal output** — Can't render to ASCII for CLI tools
 - **Heavy dependencies** — Pulls in a lot of code for simple diagrams
-
-We built `beautiful-mermaid` at [Craft](https://craft.do) to power diagrams in [Craft Agents](https://agents.craft.do). It's fast, beautiful, and works everywhere—from rich UIs to plain terminals.
-
-The ASCII rendering engine is based on [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) by Alexander Grooff. We ported it from Go to TypeScript and extended it. Thank you Alexander for the excellent foundation! (And inspiration that this was possible.)
 
 ## Features
 
@@ -143,7 +141,7 @@ More design write-ups and reference material live in [docs/](docs/).
 
 ## Attribution
 
-The ASCII rendering engine is based on [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) by Alexander Grooff. We ported it from Go to TypeScript and extended it with:
+The ASCII rendering engine is based on [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) by Alexander Grooff, ported from Go to TypeScript and extended with:
 
 - Sequence diagram support
 - Class diagram support
