@@ -87,35 +87,40 @@ archive <base-sha> src | tar -x -C <scratch-dir>` pulls `src/` at the
    even when comparing an older renderer):
 
    ```js
-   // /tmp/verify-ascii.mjs — usage: tsx verify-ascii.mjs <path-to-src/index.ts> <sample-index>
+   // /tmp/verify-ascii.mjs — usage: tsx verify-ascii.mjs <path-to-src/index.ts> <sample-index-or-file>
+   // Second arg is a numeric samples-data.ts index (e.g. "12"), or a path to
+   // a .mmd file — for the step 1 inline-fallback case, when no existing
+   // sample reaches the changed code path.
+   import { readFileSync } from 'node:fs'
    import { resolve } from 'node:path'
    import { pathToFileURL } from 'node:url'
    import { samples } from '/absolute/path/to/repo/samples-data.ts'
-   const [, , indexModulePath, sampleIndex] = process.argv
+   const [, , indexModulePath, sampleArg] = process.argv
+   const source = /^\d+$/.test(sampleArg)
+     ? samples[Number(sampleArg)].source
+     : readFileSync(sampleArg, 'utf8')
    // A relative specifier passed to import() resolves against this script's
    // own URL (/tmp/…), not process.cwd() — resolve to an absolute file URL
    // first so a relative ./src/index.ts arg lands on the right ref's tree.
    const { renderMermaidASCII } = await import(
      pathToFileURL(resolve(indexModulePath)).href
    )
-   process.stdout.write(
-     renderMermaidASCII(samples[Number(sampleIndex)].source, {
-       colorMode: 'auto',
-     }),
-   )
+   process.stdout.write(renderMermaidASCII(source, { colorMode: 'auto' }))
    ```
 
-   then run it against each ref's `src/index.ts` inside a PTY:
+   then run it against each ref's `src/index.ts` inside a PTY — replace `12`
+   below with the sample's actual index (or a `.mmd` file path for the
+   inline-fallback case):
 
    ```bash
    # after (working tree)
    agent_term.py start ascii-after --cwd "$PWD" -- \
-     tsx /tmp/verify-ascii.mjs ./src/index.ts 0
+     tsx /tmp/verify-ascii.mjs ./src/index.ts 12
    agent_term.py read ascii-after --history > after.txt
 
    # before (base ref, extracted per step 2 into <scratch-dir>)
    agent_term.py start ascii-before --cwd "$PWD" -- \
-     tsx /tmp/verify-ascii.mjs <scratch-dir>/src/index.ts 0
+     tsx /tmp/verify-ascii.mjs <scratch-dir>/src/index.ts 12
    agent_term.py read ascii-before --history > before.txt
    ```
 
