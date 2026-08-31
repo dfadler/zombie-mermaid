@@ -59,6 +59,14 @@ describe('ASCII sequence diagrams – autonumber', () => {
       .split('\n')
       .find((l) => l.includes('◀') && l.includes('2'))
     expect(replyArrowLine).toBeDefined()
+    // The badge belongs at the DEPARTURE end (B, on the right), not the
+    // arrival end (A, where the arrowhead points) — assert the digit's
+    // column comes after the arrowhead's, not just that both appear
+    // somewhere on the same line (a badge misplaced at the arrival end
+    // would still satisfy a same-line-only check).
+    const arrowCol = replyArrowLine!.indexOf('◀')
+    const badgeCol = replyArrowLine!.indexOf('2')
+    expect(badgeCol).toBeGreaterThan(arrowCol)
   })
 
   it('omits the badge (without corrupting the arrow) when it would not fit, left-to-right', () => {
