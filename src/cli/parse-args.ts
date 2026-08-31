@@ -16,13 +16,25 @@ export interface RenderArgs {
   svg: boolean
   output: string | undefined
   theme: string | undefined
+  paddingX: number | undefined
+  paddingY: number | undefined
+  borderPadding: number | undefined
+  coords: boolean
 }
 
 export interface SimpleCommand {
   command: 'themes' | 'help' | 'version'
 }
 
-export type CliArgs = RenderArgs | SimpleCommand
+export interface WebArgs {
+  command: 'web'
+  port: number
+}
+
+export type CliArgs = RenderArgs | SimpleCommand | WebArgs
+
+/** Default port for `zombie-mermaid web` when `--port` isn't given. */
+export const DEFAULT_WEB_PORT = 3000
 
 // ============================================================================
 // Parser
@@ -54,6 +66,11 @@ export function parseArgs(argv: string[]): CliArgs {
     return parseRender(rest)
   }
 
+  // Web command
+  if (first === 'web') {
+    return parseWeb(rest)
+  }
+
   throw new Error(`Unknown command: ${first}`)
 }
 
@@ -61,12 +78,32 @@ export function parseArgs(argv: string[]): CliArgs {
 // render sub-parser
 // ============================================================================
 
+/** Parse a numeric flag's value, throwing a clear error if it's missing or invalid. */
+function parseNonNegativeIntFlag(
+  args: string[],
+  i: number,
+  flag: string,
+): number {
+  const raw = args[i + 1]
+  if (i + 1 >= args.length || raw === undefined) {
+    throw new Error(`${flag} requires a numeric value`)
+  }
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`${flag} requires a non-negative integer, got: "${raw}"`)
+  }
+  return Number(raw)
+}
+
 function parseRender(args: string[]): RenderArgs {
   let input: string | undefined
   let ascii = false
   let svg = false
   let output: string | undefined
   let theme: string | undefined
+  let paddingX: number | undefined
+  let paddingY: number | undefined
+  let borderPadding: number | undefined
+  let coords = false
 
   let i = 0
   while (i < args.length) {
@@ -94,6 +131,18 @@ function parseRender(args: string[]): RenderArgs {
       if (i + 1 >= args.length) throw new Error('--theme requires a theme name')
       theme = args[i + 1]
       i += 2
+    } else if (arg === '-x' || arg === '--paddingX') {
+      paddingX = parseNonNegativeIntFlag(args, i, arg)
+      i += 2
+    } else if (arg === '-y' || arg === '--paddingY') {
+      paddingY = parseNonNegativeIntFlag(args, i, arg)
+      i += 2
+    } else if (arg === '-p' || arg === '--borderPadding') {
+      borderPadding = parseNonNegativeIntFlag(args, i, arg)
+      i += 2
+    } else if (arg === '--coords') {
+      coords = true
+      i++
     } else if (!arg.startsWith('-')) {
       // Positional argument = input file
       if (input !== undefined) {
@@ -117,5 +166,43 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('--svg requires -o <path>')
   }
 
-  return { command: 'render', input, ascii, svg, output, theme }
+  return {
+    command: 'render',
+    input,
+    ascii,
+    svg,
+    output,
+    theme,
+    paddingX,
+    paddingY,
+    borderPadding,
+    coords,
+  }
+}
+
+// ============================================================================
+// web sub-parser
+// ============================================================================
+
+function parseWeb(args: string[]): WebArgs {
+  let port = DEFAULT_WEB_PORT
+
+  let i = 0
+  while (i < args.length) {
+    const arg = args[i]
+    if (arg === undefined) {
+      throw new Error(
+        `parseArgs: index ${i} out of range while parsing arguments`,
+      )
+    }
+
+    if (arg === '--port') {
+      port = parseNonNegativeIntFlag(args, i, arg)
+      i += 2
+    } else {
+      throw new Error(`Unknown flag: ${arg}`)
+    }
+  }
+
+  return { command: 'web', port }
 }

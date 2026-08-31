@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import { parseArgs } from './cli/parse-args.ts'
 import type { CliArgs } from './cli/parse-args.ts'
 import { runRender } from './cli/render.ts'
+import { runWeb } from './cli/web.ts'
 import { THEMES } from './theme.ts'
 
 const require = createRequire(import.meta.url)
@@ -51,6 +52,17 @@ export async function main() {
         process.exit(1)
       }
       break
+
+    case 'web':
+      try {
+        await runWeb(args)
+      } catch (err) {
+        console.error(
+          `Error: ${err instanceof Error ? err.message : String(err)}`,
+        )
+        process.exit(1)
+      }
+      break
   }
 }
 
@@ -65,16 +77,26 @@ Usage:
   zombie-mermaid render <file> --ascii --svg -o <out.svg>   Both
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid themes                             List available themes
+  zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
   zombie-mermaid --help                             Show this help
   zombie-mermaid --version                          Show version
 
 Options:
-  --ascii          Print ASCII/Unicode diagram to terminal
-  --svg            Render SVG (requires -o)
-  -o, --output     Output file path for SVG
-  --theme <name>   Apply a built-in theme (see 'themes' command)
-  -h, --help       Show help
-  -v, --version    Show version
+  --ascii              Print ASCII/Unicode diagram to terminal
+  --svg                Render SVG (requires -o)
+  -o, --output         Output file path for SVG
+  --theme <name>       Apply a built-in theme (see 'themes' command)
+  -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5;
+                       flowchart/state diagrams only — sequence/class/ER
+                       diagrams use fixed internal spacing)
+  -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5;
+                       flowchart/state diagrams only, see above)
+  -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1;
+                       flowchart/state diagrams only, see above)
+  --coords             Overlay row/column index rulers (ASCII, debug layout)
+  --port <n>           Port for the 'web' command (default: 3000)
+  -h, --help           Show help
+  -v, --version        Show version
 `.trim(),
   )
 }

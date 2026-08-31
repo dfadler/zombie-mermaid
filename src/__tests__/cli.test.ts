@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseArgs } from '../cli/parse-args.ts'
-import type { RenderArgs, SimpleCommand } from '../cli/parse-args.ts'
+import type { RenderArgs, SimpleCommand, WebArgs } from '../cli/parse-args.ts'
 
 // ============================================================================
 // render command — happy paths
@@ -16,6 +16,10 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       output: undefined,
       theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -34,6 +38,10 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       output: 'out.svg',
       theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -53,6 +61,10 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       output: 'out.svg',
       theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -73,6 +85,10 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       output: 'out.svg',
       theme: 'tokyo-night',
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -85,6 +101,10 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       output: undefined,
       theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -97,6 +117,10 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       output: 'out.svg',
       theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
     } satisfies RenderArgs)
   })
 
@@ -115,6 +139,78 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       output: 'out.svg',
       theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
+    } satisfies RenderArgs)
+  })
+
+  it('parses -x/-y/-p padding flags (short form)', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--ascii',
+      '-x',
+      '10',
+      '-y',
+      '3',
+      '-p',
+      '2',
+    ])
+    expect(result).toEqual({
+      command: 'render',
+      input: 'diagram.mmd',
+      ascii: true,
+      svg: false,
+      output: undefined,
+      theme: undefined,
+      paddingX: 10,
+      paddingY: 3,
+      borderPadding: 2,
+      coords: false,
+    } satisfies RenderArgs)
+  })
+
+  it('parses --paddingX/--paddingY/--borderPadding (long form)', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--ascii',
+      '--paddingX',
+      '7',
+      '--paddingY',
+      '9',
+      '--borderPadding',
+      '0',
+    ])
+    expect(result).toEqual({
+      command: 'render',
+      input: 'diagram.mmd',
+      ascii: true,
+      svg: false,
+      output: undefined,
+      theme: undefined,
+      paddingX: 7,
+      paddingY: 9,
+      borderPadding: 0,
+      coords: false,
+    } satisfies RenderArgs)
+  })
+
+  it('parses --coords', () => {
+    const result = parseArgs(['render', 'diagram.mmd', '--ascii', '--coords'])
+    expect(result).toEqual({
+      command: 'render',
+      input: 'diagram.mmd',
+      ascii: true,
+      svg: false,
+      output: undefined,
+      theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: true,
     } satisfies RenderArgs)
   })
 })
@@ -152,6 +248,32 @@ describe('parseArgs – simple commands', () => {
   it('returns version for -v', () => {
     const result = parseArgs(['-v'])
     expect(result).toEqual({ command: 'version' } satisfies SimpleCommand)
+  })
+})
+
+// ============================================================================
+// web command
+// ============================================================================
+
+describe('parseArgs – web command', () => {
+  it('parses "web" with the default port', () => {
+    const result = parseArgs(['web'])
+    expect(result).toEqual({ command: 'web', port: 3000 } satisfies WebArgs)
+  })
+
+  it('parses "web --port <n>"', () => {
+    const result = parseArgs(['web', '--port', '8080'])
+    expect(result).toEqual({ command: 'web', port: 8080 } satisfies WebArgs)
+  })
+
+  it('throws when --port is not a non-negative integer', () => {
+    expect(() => parseArgs(['web', '--port', 'nope'])).toThrow(
+      '--port requires a non-negative integer, got: "nope"',
+    )
+  })
+
+  it('throws on unknown flag in web sub-parser', () => {
+    expect(() => parseArgs(['web', '--bogus'])).toThrow('Unknown flag: --bogus')
   })
 })
 
@@ -200,5 +322,29 @@ describe('parseArgs – validation errors', () => {
     ).toThrow(
       'Unexpected argument: diagram2.mmd (input file already set to "diagram1.mmd")',
     )
+  })
+
+  it('throws when -x is last argument with no value', () => {
+    expect(() => parseArgs(['render', 'diagram.mmd', '--ascii', '-x'])).toThrow(
+      '-x requires a numeric value',
+    )
+  })
+
+  it('throws when --paddingX is not a non-negative integer', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--paddingX', '-5']),
+    ).toThrow('--paddingX requires a non-negative integer, got: "-5"')
+  })
+
+  it('throws when -y is not numeric', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '-y', 'abc']),
+    ).toThrow('-y requires a non-negative integer, got: "abc"')
+  })
+
+  it('throws when --borderPadding is a decimal', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--borderPadding', '1.5']),
+    ).toThrow('--borderPadding requires a non-negative integer, got: "1.5"')
   })
 })
