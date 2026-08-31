@@ -72,15 +72,19 @@ describe('ASCII ER diagrams — padding (issue #343)', () => {
     expect(midCol - baseCol).toBe(wideCol - midCol)
   })
 
-  it('a very small paddingX tightens the gap below the default', () => {
+  it('a very small paddingX does not shrink the gap below the safe minimum', () => {
+    // Unlike sequence/class diagrams, ER's horizontal gap has a floor equal
+    // to its own default (6) rather than a smaller generic minimum — a
+    // smaller gap lets the crow's-foot markers on each end overlap (see the
+    // hGap comment in er-diagram.ts and ascii-padding-edge-cases.test.ts for
+    // the regression test), so a very negative paddingX clamps to the same
+    // gap as the default rather than tightening further.
     const base = renderMermaidASCII(RELATED, { useAscii: true })
     const tight = renderMermaidASCII(RELATED, {
       useAscii: true,
       paddingX: -10,
     })
-    expect(colOf(tight, 1, '| ORDER |')).toBeLessThan(
-      colOf(base, 1, '| ORDER |'),
-    )
+    expect(tight).toBe(base)
   })
 
   it('paddingY widens the gap between disconnected components', () => {

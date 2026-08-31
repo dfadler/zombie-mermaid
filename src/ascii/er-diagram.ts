@@ -214,8 +214,19 @@ export function renderErAscii(
   const useAscii = config.useAscii
   // See paddingOffset's doc comment (types.ts) for why these are an offset
   // from the padding defaults rather than the raw config values.
-  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 1) // horizontal gap between entity boxes
-  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 1) // vertical gap between rows (for relationship lines)
+  //
+  // hGap/vGap floors are higher than the generic "don't collapse to
+  // nothing" minimum of 1: crow's-foot markers are up to 2 cells wide and
+  // are drawn from each entity's edge inward (1-cell inset once the gap is
+  // >= 3 — see the "Inset the crow's foot markers" comment below), so a
+  // same-row relationship's two markers overlap unless
+  // gapWidth > 3 + 2*inset — i.e. unless the gap is at least 6 cells for the
+  // worst case of a 2-cell marker on each side (e.g. two "zero-many" ends).
+  // A vertical relationship needs at least 2 rows so the upper and lower
+  // markers don't land on the same row. (See issue #343's CodeRabbit
+  // review.)
+  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 6) // horizontal gap between entity boxes
+  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 2) // vertical gap between rows (for relationship lines)
   const componentGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 6, 1) // vertical gap between disconnected components
 
   // --- Build entity box dimensions ---

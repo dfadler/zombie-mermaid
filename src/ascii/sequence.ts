@@ -80,7 +80,11 @@ export function renderSequenceAscii(
     return idx
   }
 
-  const boxPad = config.boxBorderPadding
+  // Clamped: a negative boxBorderPadding would otherwise produce a negative
+  // actor/note box width for a short label (see issue #343's CodeRabbit
+  // review — the same class of bug fixed in draw-boxes.ts's
+  // measureMultiBox/drawMultiBox for class/ER boxes).
+  const boxPad = Math.max(0, config.boxBorderPadding)
   // Use max line width for multi-line actor labels
   const actorBoxWidths = diagram.actors.map(
     (a) => maxLineWidth(a.label) + 2 * boxPad + 2,
@@ -156,6 +160,19 @@ export function renderSequenceAscii(
   // to 0 rows is still a valid, readable layout, just a tight one.
   const rowGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 1, 0)
 
+  // Below rowGap's own floor of 0, three specific gaps still need at least
+  // one row: the row right after a divider (or the message row drawn there
+  // would land on the divider's own row and overwrite it), the row right
+  // after a block's closing border (same reasoning against whatever comes
+  // next), and the row before the footer (the footer's top border is drawn
+  // *before* messages/arrows in the draw pass — see "DRAW: actor header +
+  // footer boxes" below — so a message landing on the same row as the
+  // footer would draw its arrow through the footer's border). Everywhere
+  // else (blank row before a message, gap before a note, blank row before a
+  // block header) is genuinely optional spacing with no such collision risk,
+  // so those keep using rowGap directly. See issue #343's CodeRabbit review.
+  const minSeparatorGap = Math.max(rowGap, 1)
+
   // Pre-message notes: afterIndex === -1 — position before message loop
   for (const note of diagram.notes) {
     if (note.afterIndex !== -1) continue
@@ -206,7 +223,7 @@ export function renderSequenceAscii(
         if (diagram.blocks[b]!.dividers[d]!.index === m) {
           curY += rowGap
           divYMap.set(`${b}:${d}`, curY)
-          curY += rowGap
+          curY += minSeparatorGap
         }
       }
     }
@@ -276,12 +293,12 @@ export function renderSequenceAscii(
       if (diagram.blocks[b]!.endIndex === m) {
         curY += rowGap
         blockEndY.set(b, curY)
-        curY += rowGap
+        curY += minSeparatorGap
       }
     }
   }
 
-  curY += rowGap // gap before footer
+  curY += minSeparatorGap // gap before footer (mandatory — see minSeparatorGap)
   const footerY = curY
   const totalH = footerY + actorBoxH
 
