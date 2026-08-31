@@ -21,7 +21,11 @@ import {
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
-import { displayWidth, toDisplayCells } from './display-width.ts'
+import {
+  displayWidth,
+  toDisplayCells,
+  WIDE_CHAR_PLACEHOLDER,
+} from './display-width.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
 // Shared between the drawing pass and the block-wall extent calculation so
@@ -331,6 +335,21 @@ export function renderSequenceAscii(
     for (let i = 0; i < cells.length; i++) {
       const cx = x + i
       if (exclusiveMaxX !== undefined && cx >= exclusiveMaxX) break
+      // A wide grapheme's glyph cell is always immediately followed by its
+      // placeholder cell (toDisplayCells' pairing). Writing the glyph
+      // without room for that placeholder would leave its second terminal
+      // column unreserved even though the glyph still renders across two
+      // columns — reintroducing this file's own under-reservation bug
+      // right at the clip boundary instead of over the whole string. Stop
+      // one cell earlier instead of splitting the pair.
+      const isWideGlyphStart = cells[i + 1] === WIDE_CHAR_PLACEHOLDER
+      if (
+        isWideGlyphStart &&
+        exclusiveMaxX !== undefined &&
+        cx + 1 >= exclusiveMaxX
+      ) {
+        break
+      }
       setC(cx, y, cells[i]!, role)
     }
   }

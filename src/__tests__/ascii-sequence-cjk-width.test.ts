@@ -174,6 +174,27 @@ describe('ASCII sequence diagrams — CJK/wide-char box alignment (issue #334)',
     expect(ascii).toContain('条件が真の場合')
   })
 
+  it('clips an oversized CJK block header at a whole-grapheme boundary instead of corrupting the wall', () => {
+    // Unlike a self-message/normal-message label (which grow `totalW` to
+    // fit), a block's width comes from its *messages'* lifeline span, not
+    // from the header label — so a header label longer than that span must
+    // be clipped by writeTextCells' `exclusiveMaxX`, not merely centered.
+    const mermaid =
+      'sequenceDiagram\n  participant A as ア\n  participant B as ボ\n  alt 非常に長い条件のラベルがここに続きますよずっと\n    A->>B: x\n  end'
+    const ascii = renderMermaidASCII(mermaid, { colorMode: 'none' })
+    assertUniformWidthIgnoringArrowheads(ascii)
+    const lines = ascii.split('\n')
+    const headerLine = lines.find((l) => l.includes('alt ['))!
+    expect(headerLine).toBeDefined()
+    // Truncated, not the full label — proves the clip actually engaged.
+    expect(headerLine).not.toContain(
+      '非常に長い条件のラベルがここに続きますよずっと',
+    )
+    // The block's right wall glyph must still be present and well-formed —
+    // a code-unit-based clip could land mid-grapheme and corrupt it.
+    expect(headerLine).toMatch(/[┐┘]\s*$/)
+  })
+
   it('handles a CJK divider label inside an alt block', () => {
     const mermaid =
       'sequenceDiagram\n  participant A as アリス\n  participant B as ボブ\n  alt 場合A\n    A->>B: one\n  else 場合B\n    A->>B: two\n  end'
