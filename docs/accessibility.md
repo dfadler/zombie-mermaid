@@ -39,12 +39,12 @@ explicit `title`/`decorative` option — has a root `<svg>` that follows the
 WAI-ARIA `img` accessible-name pattern rather than being an anonymous,
 unlabeled group of child text nodes:
 
-| Situation                                                         | Root `<svg>` gets                                                          |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| No `click`-based link on the diagram, `title` not supplied          | `role="img"` (present, but with no claimed name — this library won't fabricate a description)                |
-| No `click`-based link, `title: '...'` supplied                      | `role="img"` + `aria-labelledby` pointing at a `<title id>` child holding the escaped text |
-| No `click`-based link, `decorative: true`                           | `aria-hidden="true"`, no `role`, no name                                    |
-| Any node has a `click A "url"` link (real, focusable `<a href>`)    | No `role` and no `aria-hidden` at all — both would hide the focusable link from assistive tech while leaving it Tab-reachable, an explicit WAI-ARIA violation. `title`, if supplied, still applies via `aria-labelledby` (a `role`-less element can still have a computed name). `decorative` is silently overridden — a diagram containing a real action is never fully hidden from assistive tech. |
+| Situation                                                        | Root `<svg>` gets                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No `click`-based link on the diagram, `title` not supplied       | `role="img"` (present, but with no claimed name — this library won't fabricate a description)                                                                                                                                                                                                                                                                                                        |
+| No `click`-based link, `title: '...'` supplied                   | `role="img"` + `aria-labelledby` pointing at a `<title id>` child holding the escaped text                                                                                                                                                                                                                                                                                                           |
+| No `click`-based link, `decorative: true`                        | `aria-hidden="true"`, no `role`, no name                                                                                                                                                                                                                                                                                                                                                             |
+| Any node has a `click A "url"` link (real, focusable `<a href>`) | No `role` and no `aria-hidden` at all — both would hide the focusable link from assistive tech while leaving it Tab-reachable, an explicit WAI-ARIA violation. `title`, if supplied, still applies via `aria-labelledby` (a `role`-less element can still have a computed name). `decorative` is silently overridden — a diagram containing a real action is never fully hidden from assistive tech. |
 
 This maps to two WCAG success criteria:
 
@@ -53,8 +53,8 @@ This maps to two WCAG success criteria:
   programmatically-associated text alternative. `zombie-mermaid` cannot
   satisfy 1.1.1 on its own when no `title` is given — a library has no way
   to author a meaningful description of diagram content it didn't create —
-  so the honest claim is: *the mechanism is always present and correctly
-  wired when a consumer uses it*, not that every rendered SVG is compliant
+  so the honest claim is: _the mechanism is always present and correctly
+  wired when a consumer uses it_, not that every rendered SVG is compliant
   regardless of caller input.
 - **[4.1.2 Name, Role, Value](https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html) (Level A):**
   the root always has a determinable role (`img`, or none when a focusable
@@ -80,7 +80,7 @@ added without a matching sample fails `tsc --noEmit` (the `typecheck` job)
 — coverage can't silently lapse the way an unmaintained list of ad hoc test
 cases could.
 
-**Not covered:** the *content* of a supplied `title` — whether it's a good
+**Not covered:** the _content_ of a supplied `title` — whether it's a good
 description is entirely up to the caller. ASCII output
 (`renderMermaidASCII`) has no accessible-name concept to speak of: it's
 plain text, and plain text read by a screen reader or braille display is
