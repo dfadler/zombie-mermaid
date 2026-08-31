@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-08-31T19:10:58.768Z",
+  "sampleCount": 89,
+  "svgTotalMs": 340.4436700000005,
+  "asciiTotalMs": 70.31062299999996,
+  "categories": {
+    "Hero": {
+      "sampleCount": 1,
+      "svgMs": 79.99454199999997,
+      "asciiMs": 6.491666000000009
+    },
+    "Flowchart": {
+      "sampleCount": 24,
+      "svgMs": 146.78791800000045,
+      "asciiMs": 31.76320699999974
+    },
+    "Interactivity": {
+      "sampleCount": 4,
+      "svgMs": 11.90833199999986,
+      "asciiMs": 2.3711250000000064
+    },
+    "State": {
+      "sampleCount": 4,
+      "svgMs": 26.347708000000125,
+      "asciiMs": 8.000584000000003
+    },
+    "Sequence": {
+      "sampleCount": 16,
+      "svgMs": 4.199500999999941,
+      "asciiMs": 5.2138760000000275
+    },
+    "Class": {
+      "sampleCount": 16,
+      "svgMs": 33.86358300000006,
+      "asciiMs": 6.58070900000007
+    },
+    "ER": {
+      "sampleCount": 14,
+      "svgMs": 28.930168000000094,
+      "asciiMs": 5.446167000000173
+    },
+    "XY Chart": {
+      "sampleCount": 10,
+      "svgMs": 8.411918000000014,
+      "asciiMs": 4.443288999999936
+    }
+  }
+}

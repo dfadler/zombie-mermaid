@@ -21,6 +21,7 @@ import * as esbuild from 'esbuild'
 import { THEMES } from './src/theme.ts'
 
 const THEME_LABELS: Record<string, string> = {
+  'zinc-light': 'Zinc Light',
   'zinc-dark': 'Zinc Dark',
   'tokyo-night': 'Tokyo Night',
   'tokyo-night-storm': 'Tokyo Storm',
@@ -35,6 +36,23 @@ const THEME_LABELS: Record<string, string> = {
   'solarized-light': 'Solarized',
   'solarized-dark': 'Solar Dark',
   'one-dark': 'One Dark',
+}
+
+// THEME_LABELS manually shadows THEMES' keys (src/theme.ts) so the dropdown
+// can show a human-friendly name instead of a raw slug. Adding a theme to
+// THEMES without adding a matching entry here doesn't break the build — the
+// dropdown markup below falls back to `THEME_LABELS[key] ?? key`, silently
+// rendering an unlabeled slug (e.g. "nord-light" instead of "Nord Light").
+// Fail loudly here instead, at generation time, so the gap gets noticed
+// immediately rather than discovered later in the rendered dropdown.
+const missingThemeLabels = Object.keys(THEMES).filter(
+  (key) => !(key in THEME_LABELS),
+)
+if (missingThemeLabels.length > 0) {
+  throw new Error(
+    `THEME_LABELS in editor.ts is missing label(s) for: ${missingThemeLabels.join(', ')}. ` +
+      'Add a human-friendly label for each new THEMES key.',
+  )
 }
 
 // ── File helpers ──────────────────────────────────────────────────────────────

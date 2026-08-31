@@ -116,6 +116,6 @@ export interface PositionedClassRelationship {
   toCardinality?: string
   /** Path points from source to target */
   points: Array<{ x: number; y: number }>
-  /** Dagre-computed label center position (avoids overlaps between nearby edges) */
+  /** ELK-computed label center position (avoids overlaps between nearby edges) */
   labelPosition?: { x: number; y: number }
 }
