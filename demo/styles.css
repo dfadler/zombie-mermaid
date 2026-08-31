@@ -881,15 +881,25 @@ body::after {
  * Was styled as faint tertiary text (color-mix 35%), which measured well
  * under the 4.5:1 AA minimum on every bundled theme (see issue #279).
  * Promoted to a bordered button so it reads as interactive without relying
- * on text color alone; text color-mix bumped to 80%, matching .theme-pill. */
+ * on text color alone; text color-mix bumped to 80%, matching .theme-pill.
+ * min-height/min-width plus flex centering (rather than sizing to the
+ * "Edit" text content alone) bring the tap target up to the 44px
+ * comfortable minimum from WCAG 2.5.5/2.5.8 — it measured 29x16px before
+ * (see issue #285). */
 .edit-btn {
   position: absolute;
   bottom: 0.75rem;
   left: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
   background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
   border: 1px solid color-mix(in srgb, var(--t-fg) 20%, var(--t-bg));
   border-radius: 6px;
-  padding: 0.3rem 0.65rem;
+  padding: 0.3rem 1rem;
   font-size: 0.75rem;
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
@@ -1050,6 +1060,18 @@ body::after {
   background: var(--t-bg);
   color: var(--t-fg);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+/* Narrow viewports: raise the tap target to the 44px comfortable minimum
+ * (measured 49x31px on a 375px viewport — see issue #285). Same breakpoint
+ * the orientation-swap feature already uses, so the segmented toggle only
+ * grows where the desktop layout has no room pressure to justify it. */
+@media (max-width: 640px) {
+  .seg-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
 }
 .output-stage {
   flex: 1;
