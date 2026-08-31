@@ -634,10 +634,19 @@ const NODE_PATTERNS: NodePattern[] = [
   }, // A(((text)))
 
   // Double delimiters with mixed brackets
-  { regex: /^([\w\p{L}-]+)\(\[((?:"[^"]*"|(?!\]\)).)+)\]\)/u, shape: 'stadium' }, // A([text])
+  {
+    regex: /^([\w\p{L}-]+)\(\[((?:"[^"]*"|(?!\]\)).)+)\]\)/u,
+    shape: 'stadium',
+  }, // A([text])
   { regex: /^([\w\p{L}-]+)\(\(((?:"[^"]*"|(?!\)\)).)+)\)\)/u, shape: 'circle' }, // A((text))
-  { regex: /^([\w\p{L}-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/u, shape: 'subroutine' }, // A[[text]]
-  { regex: /^([\w\p{L}-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/u, shape: 'cylinder' }, // A[(text)]
+  {
+    regex: /^([\w\p{L}-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/u,
+    shape: 'subroutine',
+  }, // A[[text]]
+  {
+    regex: /^([\w\p{L}-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/u,
+    shape: 'cylinder',
+  }, // A[(text)]
 
   /*
    * SLASH_BRACKET family — must come before plain [text].
@@ -674,7 +683,10 @@ const NODE_PATTERNS: NodePattern[] = [
   { regex: /^([\w\p{L}-]+)>((?:"[^"]*"|(?!\]).)+)\]/u, shape: 'asymmetric' }, // A>text]
 
   // Double curly braces (hexagon) — must come before single {text}
-  { regex: /^([\w\p{L}-]+)\{\{((?:"[^"]*"|(?!\}\}).)+)\}\}/u, shape: 'hexagon' }, // A{{text}}
+  {
+    regex: /^([\w\p{L}-]+)\{\{((?:"[^"]*"|(?!\}\}).)+)\}\}/u,
+    shape: 'hexagon',
+  }, // A{{text}}
 
   // Single-char delimiters (last — most common, least specific)
   { regex: /^([\w\p{L}-]+)\[((?:"[^"]*"|(?!\]).)+)\]/u, shape: 'rectangle' }, // A[text]

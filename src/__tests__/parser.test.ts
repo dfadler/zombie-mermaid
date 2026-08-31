@@ -511,7 +511,10 @@ describe('parseMermaid – non-ASCII bare node names (issue #328)', () => {
 
   it('parses a shape-bracketed node with a non-ASCII bare id (not just a non-ASCII label)', () => {
     const g = parseMermaid('graph LR\n  Lasaña[Texto] --> B')
-    expect(g.nodes.get('Lasaña')).toMatchObject({ id: 'Lasaña', label: 'Texto' })
+    expect(g.nodes.get('Lasaña')).toMatchObject({
+      id: 'Lasaña',
+      label: 'Texto',
+    })
     expect(g.edges).toHaveLength(1)
     expect(g.edges[0]!.source).toBe('Lasaña')
   })
