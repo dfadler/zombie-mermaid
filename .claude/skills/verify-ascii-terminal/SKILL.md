@@ -61,9 +61,13 @@ renderer, layout math with no ASCII-specific path, or non-rendering code.
 
 ## Procedure
 
-1. **Pick a sample.** Reuse an existing entry from `samples-data.ts` that
-   exercises the changed behavior where possible, rather than inventing a
-   new `.mmd` fixture.
+1. **Pick a sample.** Reuse an existing entry from `samples-data.ts` if one
+   exercises the changed behavior — but don't assume it does: `samples-data.ts`
+   is a curated, hand-maintained catalog with no automated check that it
+   stays current with every diagram feature. Confirm the entry you pick
+   actually reaches the changed code path (the diagram type and syntax
+   construct the change touches), and if none does, write a minimal inline
+   Mermaid source string covering it rather than skipping verification.
 
 2. **Get the base-ref renderer without a full worktree.** Mirror
    `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`): `git
