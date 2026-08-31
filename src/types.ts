@@ -90,6 +90,17 @@ export interface MermaidEdge {
   hasArrowStart: boolean
   /** Whether to render an arrowhead at the end (target end) of the edge */
   hasArrowEnd: boolean
+  /**
+   * Terminator shape at the source end when it's a circle/cross marker
+   * (`o--`/`x--`) rather than a plain arrowhead. Undefined for a regular
+   * `<`-style arrowhead or no marker at all — `hasArrowStart` alone still
+   * governs whether anything is drawn there. Currently consumed by the
+   * ASCII renderer only (see issue #330); the SVG renderer still draws a
+   * plain arrowhead for these.
+   */
+  startMarker?: 'circle' | 'cross'
+  /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
+  endMarker?: 'circle' | 'cross'
   /** Edge id from `A e1@--> B` (Mermaid v11.10.0+), for `e1@{ ... }` and CSS targeting */
   id?: string
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */

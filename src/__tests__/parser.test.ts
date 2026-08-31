@@ -375,6 +375,62 @@ describe('parseMermaid – circle/cross edges (issue #65)', () => {
     expect(g.edges[1]!.source).toBe('B')
     expect(g.edges[1]!.target).toBe('C')
   })
+
+  // --------------------------------------------------------------------
+  // Marker kind — distinct circle/cross terminator shape (issue #330).
+  // These record *which* marker was used so the ASCII renderer can draw a
+  // distinct glyph instead of treating --o/--x like a plain -->.
+  // --------------------------------------------------------------------
+
+  it('records endMarker: "circle" for --o, and no startMarker', () => {
+    const g = parseMermaid('graph LR\n  A --o B')
+    expect(g.edges[0]!.endMarker).toBe('circle')
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+  })
+
+  it('records endMarker: "cross" for --x, and no startMarker', () => {
+    const g = parseMermaid('graph LR\n  A --x B')
+    expect(g.edges[0]!.endMarker).toBe('cross')
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+  })
+
+  it('records both startMarker and endMarker as "circle" for o--o', () => {
+    const g = parseMermaid('graph LR\n  A o--o B')
+    expect(g.edges[0]!.startMarker).toBe('circle')
+    expect(g.edges[0]!.endMarker).toBe('circle')
+  })
+
+  it('records both startMarker and endMarker as "cross" for x--x', () => {
+    const g = parseMermaid('graph LR\n  A x--x B')
+    expect(g.edges[0]!.startMarker).toBe('cross')
+    expect(g.edges[0]!.endMarker).toBe('cross')
+  })
+
+  it('does not set a marker kind for a plain --> arrow', () => {
+    const g = parseMermaid('graph LR\n  A --> B')
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+    expect(g.edges[0]!.endMarker).toBeUndefined()
+  })
+
+  it('does not set a marker kind for a reversed <-- arrowhead (not a circle/cross)', () => {
+    const g = parseMermaid('graph LR\n  A <-- B')
+    expect(g.edges[0]!.hasArrowStart).toBe(true)
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+  })
+
+  it('records endMarker: "circle" via the text-embedded label form (-- label --o)', () => {
+    const g = parseMermaid('graph LR\n  A -- label --o B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.label).toBe('label')
+    expect(g.edges[0]!.endMarker).toBe('circle')
+  })
+
+  it('records endMarker: "cross" via the text-embedded label form (-- label --x)', () => {
+    const g = parseMermaid('graph LR\n  A -- label --x B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.label).toBe('label')
+    expect(g.edges[0]!.endMarker).toBe('cross')
+  })
 })
 
 // ============================================================================

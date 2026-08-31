@@ -587,6 +587,22 @@ const ARROW_REGEX = /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\|([^|]*)\|)?/
 const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
 
 /**
+ * Map a raw start/end marker character (`<`, `>`, `o`, `x`, or undefined) to
+ * the distinct terminator shape it draws, if any.
+ *
+ * `<`/`>` are plain arrowheads — already handled by `hasArrowStart`/
+ * `hasArrowEnd` — so they map to `undefined` here, same as no marker at all.
+ * Only `o`/`x` need their own shape (circle/cross) recorded, so the ASCII
+ * renderer can draw something other than the default arrowhead glyph — see
+ * issue #330.
+ */
+function markerKind(marker: string | undefined): 'circle' | 'cross' | undefined {
+  if (marker === 'o') return 'circle'
+  if (marker === 'x') return 'cross'
+  return undefined
+}
+
+/**
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
  * Tried as fallback when ARROW_REGEX doesn't match.
  *
@@ -895,6 +911,8 @@ function parseEdgeLine(
     let style: EdgeStyle
     let hasArrowEnd: boolean
     let edgeLabel: string | undefined
+    let startMarkerKind: 'circle' | 'cross' | undefined
+    let endMarkerKind: 'circle' | 'cross' | undefined
 
     /*
      * Optional edge id prefix: `A e1@--> B` (Mermaid v11.10.0+). Consumed
@@ -925,21 +943,24 @@ function parseEdgeLine(
       )
     ) {
       // `o`/`x` mark a circle/cross terminator (alongside `<` for a reversed
-      // arrow). Neither renderer models a distinct circle/cross marker shape
-      // yet, so these terminators are treated like a regular arrowhead (see
-      // issue #65) — the goal here is to stop the edge and its target node
-      // from being silently dropped.
+      // arrow) — `markerKind` records which, so the ASCII renderer can draw
+      // a distinct glyph instead of the default arrowhead (see issue #330,
+      // a follow-up to issue #65 which first stopped these from being
+      // dropped entirely).
       hasArrowStart = startMarker !== undefined
+      startMarkerKind = markerKind(startMarker)
       const rawEdgeLabel = arrowMatch[4]?.trim()
       edgeLabel = rawEdgeLabel ? normalizeBrTags(rawEdgeLabel) : undefined
       remaining = remaining.slice(arrowMatch[0].length).trim()
       style = arrowStyleFromBody(arrowBody)
       hasArrowEnd = endMarker !== undefined
+      endMarkerKind = markerKind(endMarker)
     } else {
       // Fallback: text-embedded label syntax (-- Yes -->, -. Maybe .->, == Sure ==>)
       const textMatch = remaining.match(TEXT_ARROW_REGEX)
       if (!textMatch) break
       hasArrowStart = Boolean(textMatch[1])
+      startMarkerKind = markerKind(textMatch[1])
       const rawLabel = textMatch[3]!.trim()
       edgeLabel = rawLabel ? normalizeBrTags(rawLabel) : undefined
       const openOp = textMatch[2]!
@@ -947,6 +968,9 @@ function parseEdgeLine(
       remaining = remaining.slice(textMatch[0].length).trim()
       style = textArrowStyleFromOps(openOp, closeOp)
       hasArrowEnd = closeOp.endsWith('>')
+      // closeOp is a variable-length run (e.g. "---o", "==x", "-.-.->"); only
+      // its final character can be a circle/cross marker.
+      endMarkerKind = markerKind(closeOp.slice(-1))
     }
 
     // Parse the next node group
@@ -965,6 +989,10 @@ function parseEdgeLine(
           style,
           hasArrowStart,
           hasArrowEnd,
+          ...(startMarkerKind !== undefined
+            ? { startMarker: startMarkerKind }
+            : {}),
+          ...(endMarkerKind !== undefined ? { endMarker: endMarkerKind } : {}),
           ...(edgeId !== undefined ? { id: edgeId } : {}),
         })
       }

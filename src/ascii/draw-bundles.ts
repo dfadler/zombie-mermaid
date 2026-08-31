@@ -28,6 +28,7 @@ import { gridToDrawingCoord } from './grid.ts'
 import { getShapeAttachmentPoint } from './shapes/index.ts'
 import type { ShapeDimensions } from './shapes/index.ts'
 import { drawLine } from './draw-lines.ts'
+import { markerArrowChar } from './draw-arrows.ts'
 
 // ============================================================================
 // Node attachment point helper
@@ -316,9 +317,22 @@ export function drawBundleArrowhead(
   if (graphDir === 'TD') dc.y -= 1
   else dc.x -= 1
 
-  // Draw arrowhead
+  // Draw arrowhead. A fan-in bundle merges several edges into one shared
+  // trunk/junction, so there's only one arrowhead to draw for all of them —
+  // it only gets a circle/cross glyph when every bundled edge agrees on the
+  // same marker; a mix (e.g. one `-->`, one `--o`) falls back to the plain
+  // directional arrowhead rather than guessing which edge's marker "wins".
+  // See issue #330.
+  const firstMarker = bundle.edges[0]?.endMarker
+  const sharedMarker = bundle.edges.every((e) => e.endMarker === firstMarker)
+    ? firstMarker
+    : undefined
+  const markerChar = markerArrowChar(graph.config.useAscii, sharedMarker)
+
   let char: string
-  if (!graph.config.useAscii) {
+  if (markerChar !== undefined) {
+    char = markerChar
+  } else if (!graph.config.useAscii) {
     if (dirEquals(dir, Up)) char = '▲'
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'
@@ -361,9 +375,14 @@ export function drawBundledEdgeArrowhead(
   if (graphDir === 'TD') dc.y -= 1
   else dc.x -= 1
 
-  // Draw arrowhead
+  // Draw arrowhead — this is a single edge (unlike the fan-in case above),
+  // so its own endMarker unambiguously picks the glyph. See issue #330.
+  const markerChar = markerArrowChar(graph.config.useAscii, edge.endMarker)
+
   let char: string
-  if (!graph.config.useAscii) {
+  if (markerChar !== undefined) {
+    char = markerChar
+  } else if (!graph.config.useAscii) {
     if (dirEquals(dir, Up)) char = '▲'
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'

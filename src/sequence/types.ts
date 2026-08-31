@@ -32,6 +32,14 @@ export interface Message {
   lineStyle: 'solid' | 'dashed'
   /** Arrow head: filled (closed) or open */
   arrowHead: 'filled' | 'open'
+  /**
+   * Set for a "lost message" cross-terminator (`-x`/`--x`). `arrowHead`
+   * stays `'filled'` for these (unchanged, to preserve existing SVG output)
+   * — this flag lets the ASCII renderer draw a distinct cross glyph instead
+   * of the plain filled arrowhead it shares with `->>`/`-->>`. See issue
+   * #330; not yet modeled by the SVG renderer's markers.
+   */
+  isLost?: boolean
   /** Activate the target lifeline (+) */
   activate?: boolean
   /** Deactivate the source lifeline (-) */
