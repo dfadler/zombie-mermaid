@@ -311,12 +311,20 @@ function renderSeqNumberBadge(
 ): string {
   const radius = 8
   const fontSize = Math.max(fontSizes.edgeLabel - 2, 8)
+  // Bidirectional messages also draw an arrowhead at x1 (the departure
+  // end) — badge-at-x1 would sit on top of it. Shift the badge into the
+  // arrow span, clear of the marker, in that case. One-way messages have
+  // no marker at x1, so they keep the badge exactly at the departure
+  // point as before.
+  const cx = msg.bidirectional
+    ? msg.x1 + Math.sign(msg.x2 - msg.x1) * (radius + ARROW_HEAD.width)
+    : msg.x1
   return (
     `<g class="seq-number">` +
-    `<circle cx="${msg.x1}" cy="${msg.y}" r="${radius}" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    `<circle cx="${cx}" cy="${msg.y}" r="${radius}" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
     renderMultilineText(
       String(msg.seqNumber),
-      msg.x1,
+      cx,
       msg.y,
       fontSize,
       `font-size="${fontSize}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_arrow)"`,
