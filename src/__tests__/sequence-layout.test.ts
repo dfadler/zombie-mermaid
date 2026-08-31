@@ -859,3 +859,28 @@ describe('sequence layout – pre-message notes', () => {
     }
   })
 })
+
+describe('sequence layout – bidirectional arrows and autonumber pass-through', () => {
+  it('carries the bidirectional flag from Message onto PositionedMessage', () => {
+    const result = layout(`sequenceDiagram
+      A<<->>B: Sync call
+      A->>B: One way`)
+    expect(result.messages[0]!.bidirectional).toBe(true)
+    expect(result.messages[1]!.bidirectional).toBe(false)
+  })
+
+  it('carries the sequence number from Message onto PositionedMessage', () => {
+    const result = layout(`sequenceDiagram
+      autonumber
+      A->>B: First
+      A->>B: Second`)
+    expect(result.messages[0]!.seqNumber).toBe(1)
+    expect(result.messages[1]!.seqNumber).toBe(2)
+  })
+
+  it('leaves seqNumber undefined when autonumber is not active', () => {
+    const result = layout(`sequenceDiagram
+      A->>B: First`)
+    expect(result.messages[0]!.seqNumber).toBeUndefined()
+  })
+})

@@ -269,6 +269,8 @@ export function layoutSequenceDiagram(
       x2,
       y: messageY,
       isSelf,
+      bidirectional: msg.bidirectional ?? false,
+      seqNumber: msg.seqNumber,
     })
 
     // Handle activation - track nesting depth for visual offset

@@ -120,6 +120,75 @@ describe('renderMermaidSVG – sequence diagrams', () => {
   })
 })
 
+describe('renderMermaidSVG – sequence diagrams – autonumber', () => {
+  it('renders a sequence-number badge for each numbered message', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      autonumber
+      Alice->>Bob: Hello
+      Bob-->>Alice: Hi there`)
+    expect(svg.match(/class="seq-number"/g)?.length).toBe(2)
+    expect(svg).toContain('>1<')
+    expect(svg).toContain('>2<')
+  })
+
+  it('does not render a sequence-number badge without autonumber', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      Alice->>Bob: Hello`)
+    expect(svg).not.toContain('class="seq-number"')
+  })
+
+  it('offsets the badge off the departure arrowhead for a numbered bidirectional message', () => {
+    // A numbered one-way message has no arrowhead at x1 (the departure
+    // end), so its badge stays centered there. A numbered bidirectional
+    // message DOES draw an arrowhead at x1 too — the badge must shift into
+    // the arrow span so it doesn't sit on top of it (see renderer.ts's
+    // renderSeqNumberBadge).
+    const svg = renderMermaidSVG(`sequenceDiagram
+      autonumber
+      Alice->>Bob: Hello
+      Alice<<->>Bob: Sync check`)
+    const lineX1s = [...svg.matchAll(/<line x1="([\d.]+)"/g)].map((m) =>
+      Number(m[1]),
+    )
+    const badgeCxs = [
+      ...svg.matchAll(/class="seq-number">\s*<circle cx="([\d.]+)"/g),
+    ].map((m) => Number(m[1]))
+    expect(badgeCxs).toHaveLength(2)
+    // First message: one-way, badge stays exactly at its line's x1.
+    expect(badgeCxs[0]).toBe(lineX1s[0])
+    // Second message: bidirectional, badge shifts away from x1 (Alice is
+    // on the left, so the arrow span runs rightward — the badge should
+    // move right of x1, not sit on it).
+    expect(badgeCxs[1]).not.toBe(lineX1s[1])
+    expect(badgeCxs[1]).toBeGreaterThan(lineX1s[1]!)
+  })
+})
+
+describe('renderMermaidSVG – sequence diagrams – bidirectional arrows', () => {
+  it('renders a marker-start alongside marker-end for a bidirectional arrow', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      Alice<<->>Bob: Sync call`)
+    expect(svg).toContain('data-bidirectional="true"')
+    expect(svg).toMatch(/marker-start="url\(#seq-arrow\)"/)
+  })
+
+  it('a regular one-way arrow has no marker-start', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      Alice->>Bob: Hello`)
+    expect(svg).toContain('data-bidirectional="false"')
+    expect(svg).not.toContain('marker-start=')
+  })
+})
+
+describe('renderMermaidSVG – sequence diagrams – multi-word inline actor names', () => {
+  it('renders an undeclared actor name with a space and a hyphenated one', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      cron job->>customer-notifier: hi`)
+    expect(svg).toContain('cron job')
+    expect(svg).toContain('customer-notifier')
+  })
+})
+
 describe('renderMermaidSVG – sequence diagrams – embedSource', () => {
   it('stamps data-src onto the root <svg> for a non-flowchart diagram type', () => {
     const source = `sequenceDiagram

@@ -36,6 +36,10 @@ export interface Message {
   activate?: boolean
   /** Deactivate the source lifeline (-) */
   deactivate?: boolean
+  /** Bidirectional arrow (`<<->>` or `<<-->>`) — draw an arrow head on both ends */
+  bidirectional?: boolean
+  /** Sequence number to display next to this arrow when `autonumber` is active */
+  seqNumber?: number
 }
 
 export interface Block {
@@ -111,6 +115,10 @@ export interface PositionedMessage {
   y: number
   /** Whether this is a self-message (same actor) */
   isSelf: boolean
+  /** Bidirectional arrow (`<<->>` or `<<-->>`) — draw an arrow head on both ends */
+  bidirectional: boolean
+  /** Sequence number to display next to this arrow when `autonumber` is active */
+  seqNumber?: number
 }
 
 /** Narrow rectangle on a lifeline showing active processing */

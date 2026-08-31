@@ -397,6 +397,12 @@ export function renderSequenceAscii(
       //   ├──┐           (row 0 = msgArrowY)
       //   │  │ Label     (row 1)
       //   │◄─┘           (row 2)
+      //
+      // The loop is only SELF_LOOP_WIDTH (4) columns wide, with no spare
+      // room for a second arrowhead or a sequence-number badge without
+      // corrupting the loop's corner glyphs — so a bidirectional or
+      // autonumbered self-message still parses and still advances the
+      // autonumber counter, it just doesn't get the extra glyph drawn here.
       const y0 = msgArrowY[m]!
       const loopW = SELF_LOOP_WIDTH
       // Split the label on <br/>-normalized newlines so multi-line self-arrow
@@ -453,10 +459,45 @@ export function renderSequenceAscii(
         // Arrowhead at destination
         const ah = isFilled ? (useAscii ? '>' : '▶') : useAscii ? '>' : '▷'
         setC(toX, arrowY, ah, 'arrow')
+        // Bidirectional (`<<->>` / `<<-->>`): mirror the arrowhead at the
+        // departure end too. Both bidirectional tokens end in ">>" (see
+        // parser.ts), so isFilled is always true here — no open-head
+        // variant to branch on, unlike the one-way `ah` glyph above.
+        if (msg.bidirectional) {
+          const ahStart = useAscii ? '<' : '◀'
+          setC(fromX, arrowY, ahStart, 'arrow')
+        }
       } else {
         for (let x = toX + 1; x < fromX; x++) setC(x, arrowY, lineChar, 'line')
         const ah = isFilled ? (useAscii ? '<' : '◀') : useAscii ? '<' : '◁'
         setC(toX, arrowY, ah, 'arrow')
+        if (msg.bidirectional) {
+          const ahStart = useAscii ? '>' : '▶'
+          setC(fromX, arrowY, ahStart, 'arrow')
+        }
+      }
+
+      // autonumber badge: overwrite the start of the arrow line with the
+      // sequence number, mirroring the small circled number the SVG
+      // renderer draws over the start of the arrow (see renderer.ts's
+      // renderSeqNumberBadge). Skipped if it wouldn't fit before the
+      // opposite arrowhead — the minimum lifeline gap (10 cols) comfortably
+      // fits typical 1-3 digit sequence numbers alongside short labels.
+      if (msg.seqNumber !== undefined) {
+        const numStr = String(msg.seqNumber)
+        if (leftToRight) {
+          const start = fromX + 1
+          if (start + numStr.length < toX) {
+            for (let i = 0; i < numStr.length; i++)
+              setC(start + i, arrowY, numStr[i]!, 'text')
+          }
+        } else {
+          const start = fromX - numStr.length
+          if (start > toX) {
+            for (let i = 0; i < numStr.length; i++)
+              setC(start + i, arrowY, numStr[i]!, 'text')
+          }
+        }
       }
     }
   }
