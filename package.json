@@ -27,6 +27,16 @@
         "types": "./dist/ascii.d.cts",
         "default": "./dist/ascii.cjs"
       }
+    },
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp.d.ts",
+        "default": "./dist/mcp.js"
+      },
+      "require": {
+        "types": "./dist/mcp.d.cts",
+        "default": "./dist/mcp.cjs"
+      }
     }
   },
   "repository": {
@@ -53,7 +63,9 @@
     "xychart",
     "state-diagram",
     "visualization",
-    "theming"
+    "theming",
+    "mcp",
+    "model-context-protocol"
   ],
   "author": "Dustin Fadler",
   "contributors": [
@@ -97,8 +109,10 @@
     "fork-fixes": "tsx fork-fixes.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "elkjs": "^0.11.0",
-    "entities": "^7.0.1"
+    "entities": "^7.0.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",

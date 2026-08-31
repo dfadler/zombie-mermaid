@@ -249,6 +249,11 @@ describe('parseArgs – simple commands', () => {
     const result = parseArgs(['-v'])
     expect(result).toEqual({ command: 'version' } satisfies SimpleCommand)
   })
+
+  it('parses "mcp"', () => {
+    const result = parseArgs(['mcp'])
+    expect(result).toEqual({ command: 'mcp' } satisfies SimpleCommand)
+  })
 })
 
 // ============================================================================

@@ -124,6 +124,37 @@ zombie-mermaid --help                                   # Show all options
 
 ---
 
+## MCP Server
+
+`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as two tools: `render_mermaid_svg` and `render_mermaid_ascii`. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
+
+Example Claude Desktop / Claude Code MCP server config:
+
+```json
+{
+  "mcpServers": {
+    "zombie-mermaid": {
+      "command": "npx",
+      "args": ["-y", "zombie-mermaid", "mcp"]
+    }
+  }
+}
+```
+
+Both tools accept a `diagram` string plus a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
+
+To embed the server in your own process instead of running it as a subcommand, import `zombie-mermaid/mcp` and connect it to any [MCP `Transport`](https://modelcontextprotocol.io/) yourself:
+
+```typescript
+import { createMcpServer } from 'zombie-mermaid/mcp'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+
+const server = createMcpServer()
+await server.connect(new StdioServerTransport())
+```
+
+---
+
 ## Docs
 
 - [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md)
