@@ -132,4 +132,4 @@ README help nobody.
 
 - [Theming reference](../theming.md) — every derivation, custom theme objects
 - [Browsing and using the samples](samples.md) — see themes applied across all
-  84 samples at once
+  88 samples at once
