@@ -100,9 +100,7 @@ describe('ASCII sequence diagrams – bidirectional arrows', () => {
       A->>B: Hello`,
       { useAscii: false },
     )
-    const arrowLine = result
-      .split('\n')
-      .find((l) => l.includes('▶'))
+    const arrowLine = result.split('\n').find((l) => l.includes('▶'))
     expect(arrowLine).toBeDefined()
     expect(arrowLine).not.toContain('◀')
   })

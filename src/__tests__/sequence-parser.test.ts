@@ -374,10 +374,7 @@ describe('parseSequenceDiagram – multi-word inline actor names', () => {
       cron job->>customer-notifier: hi`)
     expect(d.messages[0]!.from).toBe('cron job')
     expect(d.messages[0]!.to).toBe('customer-notifier')
-    expect(d.actors.map((a) => a.id)).toEqual([
-      'cron job',
-      'customer-notifier',
-    ])
+    expect(d.actors.map((a) => a.id)).toEqual(['cron job', 'customer-notifier'])
   })
 
   it('does not regress simple single-word actor names', () => {
