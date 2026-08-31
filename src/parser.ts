@@ -629,15 +629,15 @@ interface NodePattern {
 const NODE_PATTERNS: NodePattern[] = [
   // Triple delimiters (must be first)
   {
-    regex: /^([\w-]+)\(\(\(((?:"[^"]*"|(?!\)\)\)).)+)\)\)\)/,
+    regex: /^([\w\p{L}-]+)\(\(\(((?:"[^"]*"|(?!\)\)\)).)+)\)\)\)/u,
     shape: 'doublecircle',
   }, // A(((text)))
 
   // Double delimiters with mixed brackets
-  { regex: /^([\w-]+)\(\[((?:"[^"]*"|(?!\]\)).)+)\]\)/, shape: 'stadium' }, // A([text])
-  { regex: /^([\w-]+)\(\(((?:"[^"]*"|(?!\)\)).)+)\)\)/, shape: 'circle' }, // A((text))
-  { regex: /^([\w-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/, shape: 'subroutine' }, // A[[text]]
-  { regex: /^([\w-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/, shape: 'cylinder' }, // A[(text)]
+  { regex: /^([\w\p{L}-]+)\(\[((?:"[^"]*"|(?!\]\)).)+)\]\)/u, shape: 'stadium' }, // A([text])
+  { regex: /^([\w\p{L}-]+)\(\(((?:"[^"]*"|(?!\)\)).)+)\)\)/u, shape: 'circle' }, // A((text))
+  { regex: /^([\w\p{L}-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/u, shape: 'subroutine' }, // A[[text]]
+  { regex: /^([\w\p{L}-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/u, shape: 'cylinder' }, // A[(text)]
 
   /*
    * SLASH_BRACKET family — must come before plain [text].
@@ -662,24 +662,24 @@ const NODE_PATTERNS: NodePattern[] = [
    * first and captures it, and the captured delimiter selects the shape.
    */
   {
-    regex: /^([\w-]+)\[\/((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/,
+    regex: /^([\w\p{L}-]+)\[\/((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/u,
     shape: (close) => (close === '\\' ? 'trapezoid' : 'parallelogram'),
   }, // A[/text\] or A[/text/]
   {
-    regex: /^([\w-]+)\[\\((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/,
+    regex: /^([\w\p{L}-]+)\[\\((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/u,
     shape: (close) => (close === '/' ? 'trapezoid-alt' : 'parallelogram-alt'),
   }, // A[\text/] or A[\text\]
 
   // Asymmetric flag shape
-  { regex: /^([\w-]+)>((?:"[^"]*"|(?!\]).)+)\]/, shape: 'asymmetric' }, // A>text]
+  { regex: /^([\w\p{L}-]+)>((?:"[^"]*"|(?!\]).)+)\]/u, shape: 'asymmetric' }, // A>text]
 
   // Double curly braces (hexagon) — must come before single {text}
-  { regex: /^([\w-]+)\{\{((?:"[^"]*"|(?!\}\}).)+)\}\}/, shape: 'hexagon' }, // A{{text}}
+  { regex: /^([\w\p{L}-]+)\{\{((?:"[^"]*"|(?!\}\}).)+)\}\}/u, shape: 'hexagon' }, // A{{text}}
 
   // Single-char delimiters (last — most common, least specific)
-  { regex: /^([\w-]+)\[((?:"[^"]*"|(?!\]).)+)\]/, shape: 'rectangle' }, // A[text]
-  { regex: /^([\w-]+)\(((?:"[^"]*"|(?!\)).)+)\)/, shape: 'rounded' }, // A(text)
-  { regex: /^([\w-]+)\{((?:"[^"]*"|(?!\}).)+)\}/, shape: 'diamond' }, // A{text}
+  { regex: /^([\w\p{L}-]+)\[((?:"[^"]*"|(?!\]).)+)\]/u, shape: 'rectangle' }, // A[text]
+  { regex: /^([\w\p{L}-]+)\(((?:"[^"]*"|(?!\)).)+)\)/u, shape: 'rounded' }, // A(text)
+  { regex: /^([\w\p{L}-]+)\{((?:"[^"]*"|(?!\}).)+)\}/u, shape: 'diamond' }, // A{text}
 ]
 
 /**
@@ -694,8 +694,14 @@ const NODE_PATTERNS: NodePattern[] = [
  * always start with `-`/`=`/`<` followed by another non-word character
  * (`-`, `.`, `=`, `>`), which this pattern never matches into, so it now
  * stops cleanly at `A` and lets the arrow regex take over.
+ *
+ * `\p{L}` (any Unicode letter, alongside plain `\w`) is included so a bare
+ * non-ASCII name (`Lasaña`, `日本`) matches in full instead of truncating at
+ * the first non-ASCII character and silently stranding the rest of the line
+ * as unparsed text — see issue #328. This mirrors the state-diagram
+ * transition regex below, which already allows `\p{L}` for the same reason.
  */
-const BARE_NODE_REGEX = /^([\w]+(?:-[\w]+)*)/
+const BARE_NODE_REGEX = /^([\w\p{L}]+(?:-[\w\p{L}]+)*)/u
 
 /**
  * Node id immediately followed by the expanded-syntax opener: `A@{`.
@@ -704,7 +710,7 @@ const BARE_NODE_REGEX = /^([\w]+(?:-[\w]+)*)/
  * scanning (a label may contain `}`), which a regex would do badly, so
  * `matchExpandedBlock` takes over from here.
  */
-const EXPANDED_NODE_ID_REGEX = /^([\w-]+)(?=@\{)/
+const EXPANDED_NODE_ID_REGEX = /^([\w\p{L}-]+)(?=@\{)/u
 
 /**
  * Resolve the geometry for an `A@{ ... }` node.
@@ -767,7 +773,7 @@ function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
  * browser without script.
  */
 function applyClickStatement(line: string, graph: MermaidGraph): void {
-  const match = line.match(/^click\s+([\w-]+)\s+(.*)$/i)
+  const match = line.match(/^click\s+([\w\p{L}-]+)\s+(.*)$/iu)
   if (!match) return
 
   const nodeId = match[1]!
@@ -867,8 +873,14 @@ const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/
  * Regex for ::: class shorthand appearing BEFORE the shape brackets,
  * e.g. A:::external[Label]. Captures the bare id and the class name so
  * the shorthand can be stripped out before shape-pattern matching runs.
+ *
+ * The id group allows `\p{L}` (see BARE_NODE_REGEX above) so a non-ASCII
+ * id keeps working with this shorthand instead of falling through to
+ * BARE_NODE_REGEX with the `:::className` suffix left dangling as
+ * unparsed text. The class-name group stays ASCII-only — Mermaid class
+ * names follow CSS identifier conventions, not node-name conventions.
  */
-const PRE_CLASS_SHORTHAND_REGEX = /^([\w-]+):::([\w][\w-]*)/
+const PRE_CLASS_SHORTHAND_REGEX = /^([\w\p{L}-]+):::([\w][\w-]*)/u
 
 /**
  * Parse a line that contains node definitions and edges.
