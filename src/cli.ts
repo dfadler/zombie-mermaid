@@ -94,6 +94,9 @@ Options:
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1;
                        flowchart/state diagrams only, see above)
   --coords             Overlay row/column index rulers (ASCII, debug layout)
+  -w, --max-width <n|auto>  Warn on stderr if ASCII output exceeds this many
+                       columns ('auto' detects the terminal width). Does not
+                       reflow/shrink the diagram — see issue #335.
   --port <n>           Port for the 'web' command (default: 3000)
   -h, --help           Show help
   -v, --version        Show version

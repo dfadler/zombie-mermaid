@@ -17,6 +17,32 @@ export interface Writable {
   write: (s: string) => void
 }
 
+/** Fallback target width when `--max-width auto` can't detect a real terminal column count. */
+const DEFAULT_AUTO_MAX_WIDTH = 80
+
+// Matches SGR color escape sequences (`\x1b[...m`) produced by ansi.ts's
+// ansi16/ansi256/truecolor modes. Stripped only for width MEASUREMENT below —
+// mirrors the same approach coords.ts uses for its ruler overlay.
+const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
+
+/** Widest line in already-rendered ASCII/Unicode output, ignoring ANSI color codes. */
+function maxLineWidth(rendered: string): number {
+  return rendered
+    .split('\n')
+    .reduce((max, line) => Math.max(max, line.replace(ANSI_ESCAPE, '').length), 0)
+}
+
+/**
+ * Resolve `--max-width`'s target column count.
+ * `'auto'` reads the live terminal width (`process.stdout.columns`), falling
+ * back to `DEFAULT_AUTO_MAX_WIDTH` when not running in a TTY (piped output,
+ * CI, etc. — where there's no real terminal to fit).
+ */
+function resolveMaxWidth(maxWidth: number | 'auto'): number {
+  if (maxWidth !== 'auto') return maxWidth
+  return process.stdout.columns ?? DEFAULT_AUTO_MAX_WIDTH
+}
+
 // ============================================================================
 // Main entry point
 // ============================================================================
@@ -28,13 +54,17 @@ export interface Writable {
  * @param stdout - Writable stream for ASCII output (defaults to process.stdout)
  * @param stdinContent - Pre-read stdin content for testing; if undefined and
  *   no file input, reads from process.stdin at runtime
+ * @param stderr - Writable stream for warnings, e.g. `--max-width` overflow
+ *   (defaults to process.stderr)
  */
 export async function runRender(
   args: RenderArgs,
   stdout?: Writable,
   stdinContent?: string,
+  stderr?: Writable,
 ): Promise<void> {
   const out = stdout ?? process.stdout
+  const err = stderr ?? process.stderr
 
   let text: string
 
@@ -80,6 +110,24 @@ export async function runRender(
       asciiOpts.boxBorderPadding = args.borderPadding
     if (args.coords) asciiOpts.showCoords = true
     const ascii = renderMermaidASCII(text, asciiOpts)
+
+    if (args.maxWidth !== undefined) {
+      const targetWidth = resolveMaxWidth(args.maxWidth)
+      const actualWidth = maxLineWidth(ascii)
+      if (actualWidth > targetWidth) {
+        const source =
+          args.maxWidth === 'auto' ? `detected terminal width` : `--max-width`
+        err.write(
+          `Warning: ASCII output is ${actualWidth} columns wide, exceeding ` +
+            `${source} of ${targetWidth}. zombie-mermaid does not yet reflow ` +
+            `diagrams to fit (no compact spacing/label wrapping/direction-flip ` +
+            `cascade — see https://github.com/dfadler/zombie-mermaid/issues/335). ` +
+            `Try -x/-y/-p to reduce padding, a narrower direction (LR vs TD), or ` +
+            `widen your terminal.\n`,
+        )
+      }
+    }
+
     out.write(ascii + '\n')
   }
 
