@@ -96,3 +96,30 @@ jobs:
           # No NPM_TOKEN / NODE_AUTH_TOKEN: publishing uses npm trusted
           # publishing (OIDC), authenticated via the id-token permission
           # above plus the trusted-publisher link configured on npmjs.com.
+
+      # Runs only on an actual npm publish (not on the "open/update the
+      # Version PR" branch of changesets/action above) — the badge should
+      # track what was actually shipped, not every merge to main. Rebuilds
+      # from the just-published, just-versioned source (the publish step
+      # above already built once, but its dist/ doesn't survive between
+      # steps) so the measured size matches the published package exactly.
+      - name: Rebuild for badge measurement
+        if: steps.changesets.outputs.published == 'true'
+        run: pnpm run build
+
+      - name: Update bundle-size badge data
+        if: steps.changesets.outputs.published == 'true'
+        run: pnpm run badge:bundle-size
+
+      - name: Commit bundle-size badge data
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          if git diff --quiet -- badges/bundle-size.json; then
+            echo "Bundle size unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add badges/bundle-size.json
+          git commit -m 'chore: update bundle-size badge data'
+          git push origin HEAD:main
