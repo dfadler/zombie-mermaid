@@ -596,7 +596,9 @@ const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
  * renderer can draw something other than the default arrowhead glyph — see
  * issue #330.
  */
-function markerKind(marker: string | undefined): 'circle' | 'cross' | undefined {
+function markerKind(
+  marker: string | undefined,
+): 'circle' | 'cross' | undefined {
   if (marker === 'o') return 'circle'
   if (marker === 'x') return 'cross'
   return undefined

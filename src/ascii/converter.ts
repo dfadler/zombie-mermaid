@@ -123,9 +123,7 @@ export function convertToAsciiGraph(
       ...(mEdge.startMarker !== undefined
         ? { startMarker: mEdge.startMarker }
         : {}),
-      ...(mEdge.endMarker !== undefined
-        ? { endMarker: mEdge.endMarker }
-        : {}),
+      ...(mEdge.endMarker !== undefined ? { endMarker: mEdge.endMarker } : {}),
     })
   }
 
