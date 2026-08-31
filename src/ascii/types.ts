@@ -180,6 +180,22 @@ export interface AsciiEdge {
    * or bundle.sharedPath + pathToJunction (for fan-out).
    */
   pathToJunction?: GridCoord[]
+  /**
+   * Set when this edge shares both its source AND target with one or more
+   * sibling edges (true parallel/multi-edges, e.g. `A -->|One| B` and
+   * `A -->|Two| B`) — as opposed to edges that merely share one endpoint,
+   * which `bundle` above already handles via fan-in/fan-out junctions.
+   *
+   * `index` is this edge's 0-based position within the group (declaration
+   * order); `total` is the group's size. `index === 0` keeps the ordinary
+   * single-edge route (determinePath's ordinary preferred/alternative
+   * search), so a graph with no parallel edges renders identically to
+   * before this field existed. `index > 0` routes through an offset lane
+   * instead — see determinePath in edge-routing.ts — so sibling edges never
+   * compute the identical path (and therefore identically-positioned,
+   * mutually-corrupting labels; see #329).
+   */
+  parallelLane?: { index: number; total: number }
 }
 
 /** A subgraph container with bounding box for rendering. */

@@ -21,9 +21,10 @@ import {
   dirEquals,
   requireCardinalDirection,
 } from './types.ts'
-import { routeEdge } from './pathfinder.ts'
+import { routeEdge, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 import { displayWidth } from './display-width.ts'
+import { isOccupied, pathCells } from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
 // draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
@@ -188,6 +189,114 @@ export function determineStartAndEndDir(
 }
 
 // ============================================================================
+// Parallel edge (multi-edge) lane assignment
+// ============================================================================
+
+/**
+ * Grid rows (for a horizontal departure) or columns (for a vertical
+ * departure) between successive parallel-edge lanes. See
+ * `buildParallelLanePath` below.
+ */
+const PARALLEL_LANE_STEP = 2
+
+/**
+ * Group edges that share both their source AND target node — true
+ * parallel/multi-edges, e.g. `A -->|One| B` and `A -->|Two| B` — and tag
+ * each with its 0-based position in the group plus the group's size, via
+ * `edge.parallelLane`. `determinePath` below reads this to route every
+ * edge past the first through a distinct offset lane instead of the
+ * identical center path every one of them would otherwise compute
+ * independently (see #329: identical paths meant identically-positioned
+ * labels drawn on top of each other, corrupting each other's text).
+ *
+ * Self-loops are excluded (`edge.from === edge.to`): they're routed and
+ * drawn as a dedicated loop shape, not a lane-offset line between two
+ * distinct nodes, so they're out of scope here.
+ *
+ * Must run before `analyzeEdgeBundles` (edge-bundling.ts): that module's
+ * `canBundle` also refuses to fold a true-parallel group into one shared
+ * fan-in/fan-out trunk (see its own doc comment), but the two checks are
+ * independent — this function is the one that actually assigns lanes for
+ * `determinePath` to use.
+ */
+export function assignParallelEdgeLanes(graph: AsciiGraph): void {
+  const groups = new Map<string, AsciiEdge[]>()
+  for (const edge of graph.edges) {
+    if (edge.from === edge.to) continue // self-loop: not in scope here
+    const key = `${edge.from.name} ${edge.to.name}`
+    const existing = groups.get(key)
+    if (existing) existing.push(edge)
+    else groups.set(key, [edge])
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue
+    for (let i = 0; i < group.length; i++) {
+      group[i]!.parallelLane = { index: i, total: group.length }
+    }
+  }
+}
+
+/**
+ * Build an offset-lane path for a non-first edge in a parallel-edge group:
+ * leave the source node at the same attachment point every sibling in the
+ * group shares (consistent with how two edges are already allowed to share
+ * a node's own border cell — see edge-cell-styles.ts's module doc), jog
+ * `PARALLEL_LANE_STEP * laneIndex` grid units away from the group's shared
+ * center line, travel the full distance on that offset lane, then jog back
+ * to the target's attachment point.
+ *
+ * The offset always grows in one direction (never negative) so it can
+ * never land on a grid row/column that already exists above/left of the
+ * node block — `gridToDrawingCoord`'s row/column summation only handles
+ * coordinates from 0 upward, and `increaseGridSizeForPath` (grid.ts) is
+ * what actually grows the canvas for a lane's newly-introduced row/column.
+ *
+ * `preferredDir`/`preferredOppositeDir` are whatever `determineStartAndEndDir`
+ * computed for this edge (identical for every edge in the group, since they
+ * share the same from/to nodes) — always one of the four cardinal
+ * directions. A horizontal departure (Left/Right) offsets by row; a
+ * vertical departure (Up/Down) offsets by column.
+ */
+function buildParallelLanePath(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  preferredDir: Direction,
+  preferredOppositeDir: Direction,
+  laneIndex: number,
+): GridCoord[] {
+  const fromAttach = gridCoordDirection(
+    requireGridCoord(edge.from),
+    preferredDir,
+  )
+  const toAttach = gridCoordDirection(
+    requireGridCoord(edge.to),
+    preferredOppositeDir,
+  )
+  const offset = PARALLEL_LANE_STEP * laneIndex
+  const horizontalDeparture =
+    dirEquals(preferredDir, Left) || dirEquals(preferredDir, Right)
+
+  if (horizontalDeparture) {
+    const laneY = fromAttach.y + offset
+    return mergePath([
+      fromAttach,
+      { x: fromAttach.x, y: laneY },
+      { x: toAttach.x, y: laneY },
+      toAttach,
+    ])
+  }
+
+  const laneX = fromAttach.x + offset
+  return mergePath([
+    fromAttach,
+    { x: laneX, y: fromAttach.y },
+    { x: laneX, y: toAttach.y },
+    toAttach,
+  ])
+}
+
+// ============================================================================
 // Edge path determination
 // ============================================================================
 
@@ -219,6 +328,25 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     alternativeDir,
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
+
+  // Edges after the first in a true-parallel (same source AND target) group
+  // skip the normal preferred/alternative search entirely: that search
+  // would just find the identical center path every sibling edge shares,
+  // which is the root cause of #329. Route through an offset lane instead
+  // so this edge's path — and therefore its independently-centered label
+  // (determineLabelLine) — never overlaps a sibling's.
+  if (edge.parallelLane && edge.parallelLane.index > 0) {
+    edge.startDir = preferredDir
+    edge.endDir = preferredOppositeDir
+    edge.path = buildParallelLanePath(
+      graph,
+      edge,
+      preferredDir,
+      preferredOppositeDir,
+      edge.parallelLane.index,
+    )
+    return
+  }
 
   // Try preferred path — routeEdge tries an unobstructed direct L-shape
   // before falling back to A* (see routeEdge / tryDirectPath in
@@ -356,10 +484,30 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     segments.push({ line, width, index: i, isVertical })
   }
 
+  // A segment whose *interior* (every cell strictly between its own two
+  // endpoints — not the endpoints themselves, which are expected to touch
+  // a node border or a path corner) passes through a cell owned by some
+  // node's 3x3 block is a bad place for a label: the label text would be
+  // drawn across that node's own box-drawing characters instead of open
+  // grid. An ordinary A*/direct-routed path never does this (routing
+  // itself avoids node-occupied cells), but edge-routing.ts's parallel
+  // lane paths (buildParallelLanePath, for true multi-edges — see #329)
+  // are constructed directly rather than pathfound, and their short jog
+  // back into the target can otherwise look, by the width-only heuristic
+  // below, like the best available segment even though it runs straight
+  // across the target's own border row/column.
+  const clearOfNodes = (line: [GridCoord, GridCoord]): boolean => {
+    const cells = pathCells(line)
+    for (let i = 1; i < cells.length - 1; i++) {
+      if (isOccupied(graph.grid, cells[i]!)) return false
+    }
+    return true
+  }
+
   // Find segments wide enough for the label, excluding the first segment
   // The first segment is often shared between edges from the same source node
   const suitableSegments = segments.filter(
-    (s) => s.width >= lenLabel && s.index > 1,
+    (s) => s.width >= lenLabel && s.index > 1 && clearOfNodes(s.line),
   )
 
   let largestLine: [GridCoord, GridCoord]
@@ -371,15 +519,23 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     largestLine = suitableSegments[0]!.line
   } else {
     // Fall back to any suitable segment including the first
-    const fallbackSegments = segments.filter((s) => s.width >= lenLabel)
+    const fallbackSegments = segments.filter(
+      (s) => s.width >= lenLabel && clearOfNodes(s.line),
+    )
     if (fallbackSegments.length > 0) {
       fallbackSegments.sort((a, b) => b.index - a.index)
       largestLine = fallbackSegments[0]!.line
     } else {
-      // No segment wide enough — use the widest one
-      segments.sort((a, b) => b.width - a.width)
-      if (segments.length > 0) {
-        largestLine = segments[0]!.line
+      // No segment both wide enough and clear of nodes — prefer the
+      // widest segment that's at least clear of nodes (its column can
+      // still be widened below to fit the label), falling back to the
+      // widest segment overall only when every segment runs through a
+      // node (nothing better available at all).
+      const clearSegments = segments.filter((s) => clearOfNodes(s.line))
+      const pool = clearSegments.length > 0 ? clearSegments : segments
+      pool.sort((a, b) => b.width - a.width)
+      if (pool.length > 0) {
+        largestLine = pool[0]!.line
       } else {
         // No segments at all: edge.path has fewer than 2 points. This
         // happens when a routed edge's preferred from/to grid coordinates
