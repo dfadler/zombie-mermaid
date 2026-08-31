@@ -404,7 +404,7 @@ For the original design proposal behind this feature, see [xychart-design.md](xy
 
 ### XY Chart Styling
 
-The chart renderer follows a clean, minimal design philosophy inspired by Apple and Craft:
+The chart renderer follows a clean, minimal design philosophy, originally inspired by Apple's design language and Craft's interface for `beautiful-mermaid`:
 
 - **Dot grid** — A subtle dot pattern fills the plot area instead of traditional solid grid lines
 - **Rounded bars** — All bar corners are rounded for a modern, polished look

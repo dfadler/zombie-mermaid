@@ -1,6 +1,6 @@
 # Theming
 
-The theming system is the heart of `zombie-mermaid`. It's designed to be both powerful and dead simple.
+The theming system is the heart of `zombie-mermaid`: a small set of inputs drives every derived color in a diagram.
 
 ## The Two-Color Foundation
 
@@ -72,7 +72,7 @@ const svg = renderMermaidSVG(diagram, {
 
 ## Built-in Themes
 
-15 carefully curated themes ship out of the box:
+15 themes ship out of the box:
 
 | Theme               | Type  | Background | Accent    |
 | ------------------- | ----- | ---------- | --------- |
@@ -100,7 +100,7 @@ const svg = renderMermaidSVG(diagram, THEMES['tokyo-night'])
 
 ## Adding Your Own Theme
 
-Creating a theme is trivial. At minimum, just provide `bg` and `fg`:
+At minimum, a theme just needs `bg` and `fg`:
 
 ```typescript
 const myTheme = {
