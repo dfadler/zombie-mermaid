@@ -11,9 +11,15 @@
  *                threshold would flag CI variance, not real regressions. The
  *                goal is catching an accidental O(n^2), not micro-tuning.
  *
- * To refresh the baseline after an intentional perf change, run
- * `pnpm run bench -- --json=bench-baseline.json` locally and commit the
- * result.
+ * IMPORTANT: bench-baseline.json must be generated on a GitHub Actions
+ * runner, never on a local machine — a dev laptop measured roughly 2-2.5x
+ * faster than the shared ubuntu-latest runner across every category here,
+ * uniformly enough that a locally-generated baseline made every single
+ * category look like a regression on the very first real CI run (see the
+ * git history of bench-baseline.json for that incident). To refresh the
+ * baseline after an intentional perf change: push a commit, let the `bench`
+ * CI job run, download its `bench-result` artifact (`gh run download <run-id>
+ * --name bench-result`), and commit that file as the new bench-baseline.json.
  */
 
 import { readFile } from 'node:fs/promises'
@@ -110,8 +116,8 @@ if (deltaPct > thresholdPct) {
     `\nFAIL: combined render total regressed ${fmtPct(deltaPct)}, exceeding the +${thresholdPct}% threshold.`,
   )
   console.error(
-    'If this regression is expected (e.g. a deliberate feature trade-off), refresh the baseline: ' +
-      'pnpm run bench -- --json=bench-baseline.json',
+    'If this regression is expected (e.g. a deliberate feature trade-off), refresh the baseline ' +
+      'from a CI run, not a local machine — see the header comment in this file for why.',
   )
   process.exit(1)
 }

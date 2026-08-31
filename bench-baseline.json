@@ -1,48 +1,48 @@
 {
-  "generatedAt": "2026-08-31T19:10:58.768Z",
+  "generatedAt": "2026-08-31T19:18:36.383Z",
   "sampleCount": 89,
-  "svgTotalMs": 340.4436700000005,
-  "asciiTotalMs": 70.31062299999996,
+  "svgTotalMs": 926.7088220000003,
+  "asciiTotalMs": 153.47894700000018,
   "categories": {
     "Hero": {
       "sampleCount": 1,
-      "svgMs": 79.99454199999997,
-      "asciiMs": 6.491666000000009
+      "svgMs": 181.275175,
+      "asciiMs": 12.166748000000098
     },
     "Flowchart": {
       "sampleCount": 24,
-      "svgMs": 146.78791800000045,
-      "asciiMs": 31.76320699999974
+      "svgMs": 400.3930920000005,
+      "asciiMs": 61.8826609999993
     },
     "Interactivity": {
       "sampleCount": 4,
-      "svgMs": 11.90833199999986,
-      "asciiMs": 2.3711250000000064
+      "svgMs": 36.57199700000024,
+      "asciiMs": 5.989953000000014
     },
     "State": {
       "sampleCount": 4,
-      "svgMs": 26.347708000000125,
-      "asciiMs": 8.000584000000003
+      "svgMs": 73.46901200000002,
+      "asciiMs": 18.24142000000029
     },
     "Sequence": {
       "sampleCount": 16,
-      "svgMs": 4.199500999999941,
-      "asciiMs": 5.2138760000000275
+      "svgMs": 10.734662999999728,
+      "asciiMs": 12.215921000000208
     },
     "Class": {
       "sampleCount": 16,
-      "svgMs": 33.86358300000006,
-      "asciiMs": 6.58070900000007
+      "svgMs": 107.5563139999997,
+      "asciiMs": 15.54118200000039
     },
     "ER": {
       "sampleCount": 14,
-      "svgMs": 28.930168000000094,
-      "asciiMs": 5.446167000000173
+      "svgMs": 86.62174099999993,
+      "asciiMs": 13.380113000000165
     },
     "XY Chart": {
       "sampleCount": 10,
-      "svgMs": 8.411918000000014,
-      "asciiMs": 4.443288999999936
+      "svgMs": 30.086828000000196,
+      "asciiMs": 14.06094899999971
     }
   }
 }
