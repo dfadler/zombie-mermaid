@@ -4,10 +4,12 @@ description: |
   Verify an ASCII-rendering change against a real terminal (a genuine PTY)
   before producing the before/after screenshots a PR or issue description
   needs. Use this whenever the diff touches ASCII output — anything under
-  src/ascii/**, ascii-html.ts, demo/client.ts's ASCII path
-  (TERMINAL_ASCII_OPTS / applyWideCharWidths), index.ts's `.ascii-panel`
-  markup, or __tests__/visual/ascii-samples.visual.test.ts and its
-  baselines — and you're about to attach visual-verification screenshots
+  src/ascii/**, ascii-html.ts, src/cli.ts's ASCII path, demo/client.ts's
+  ASCII path (TERMINAL_ASCII_OPTS / applyWideCharWidths), index.ts's
+  `.ascii-panel` markup, scripts/visual-diff.ts,
+  __tests__/visual/helpers/terminal-panel.ts, or
+  __tests__/visual/ascii-samples.visual.test.ts and its baselines — and
+  you're about to attach visual-verification screenshots
   per the project's before/after requirement. Do NOT treat the Playwright
   visual-regression screenshots or scripts/visual-diff.ts's HTML report as
   sufficient proof on their own for this category of change: both render
@@ -66,32 +68,45 @@ renderer, layout math with no ASCII-specific path, or non-rendering code.
 2. **Get the base-ref renderer without a full worktree.** Mirror
    `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`): `git
 archive <base-sha> src | tar -x -C <scratch-dir>` pulls `src/` at the
-   base commit into a scratch directory you can `import()` from — no
-   worktree needed just to diff a renderer function.
+   base commit into a scratch directory — no worktree needed just to diff
+   a renderer function. This is also why `src/cli.ts` isn't the right tool
+   for the "before" side: it reads `../package.json` (for its `--version`
+   string) relative to its own file, which the scratch dir doesn't have.
+   Import `renderMermaidASCII` directly instead — the same function
+   `cli.ts` itself calls — and skip the CLI entirely on both sides.
 
 3. **Render both sides through a real PTY**, using the
    `detached-terminal` skill so `renderMermaidASCII`'s `'auto'` color-mode
-   detection sees a genuine terminal rather than a pipe:
+   detection sees a genuine terminal rather than a pipe. Write a small
+   throwaway runner once (the sample always comes from the _working
+   tree's_ `samples-data.ts`, per `scripts/visual-diff.ts`'s own comment,
+   even when comparing an older renderer):
+
+   ```js
+   // /tmp/verify-ascii.mjs — usage: tsx verify-ascii.mjs <path-to-src/index.ts> <sample-index>
+   import { samples } from '/absolute/path/to/repo/samples-data.ts'
+   const [, , indexModulePath, sampleIndex] = process.argv
+   const { renderMermaidASCII } = await import(indexModulePath)
+   process.stdout.write(
+     renderMermaidASCII(samples[Number(sampleIndex)].source, {
+       colorMode: 'auto',
+     }),
+   )
+   ```
+
+   then run it against each ref's `src/index.ts` inside a PTY:
 
    ```bash
    # after (working tree)
    agent_term.py start ascii-after --cwd "$PWD" -- \
-     tsx src/cli.ts render <sample>.mmd --ascii
+     tsx /tmp/verify-ascii.mjs ./src/index.ts 0
    agent_term.py read ascii-after --history > after.txt
 
    # before (base ref, extracted per step 2 into <scratch-dir>)
-   agent_term.py start ascii-before --cwd "<scratch-dir>" -- \
-     tsx src/cli.ts render <sample>.mmd --ascii
+   agent_term.py start ascii-before --cwd "$PWD" -- \
+     tsx /tmp/verify-ascii.mjs <scratch-dir>/src/index.ts 0
    agent_term.py read ascii-before --history > before.txt
    ```
-
-   (`src/cli.ts` needs its sibling `src/` modules and `package.json`
-   present to resolve its own version string — if the scratch dir from
-   `git archive` lacks `package.json`, copy the working tree's `cli.ts`
-   invocation against the extracted `src/` via a relative import instead
-   of trying to run the base ref's `cli.ts` standalone; the point is
-   exercising `renderMermaidASCII` from each ref through a real PTY, not
-   necessarily the full CLI binary on both sides.)
 
 4. **Diff `before.txt` vs `after.txt`.** Confirm the change is exactly
    what's intended — no incidental column-width, wrapping, or color

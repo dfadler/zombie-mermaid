@@ -37,9 +37,11 @@ properties that make worktree cleanup easy to get wrong:
 ## ASCII rendering changes: verify in a real terminal, not just the browser mockup
 
 Before attaching before/after screenshots to a PR/issue for any change touching
-ASCII output (`src/ascii/**`, `ascii-html.ts`, `demo/client.ts`'s ASCII path,
-`index.ts`'s `.ascii-panel`, or `__tests__/visual/ascii-samples.visual.test.ts`),
-invoke the `verify-ascii-terminal` skill first. The Playwright visual-regression
+ASCII output (`src/ascii/**`, `ascii-html.ts`, `src/cli.ts`'s ASCII path,
+`demo/client.ts`'s ASCII path, `index.ts`'s `.ascii-panel`,
+`scripts/visual-diff.ts`, `__tests__/visual/helpers/terminal-panel.ts`, or
+`__tests__/visual/ascii-samples.visual.test.ts`), invoke the
+`verify-ascii-terminal` skill first. The Playwright visual-regression
 suite and `scripts/visual-diff.ts` (the tool CONTRIBUTING.md points to for
 before/after PR reports) both render ASCII output through `ascii-html.ts`'s HTML
 approximation of a terminal, never a real one — this repo has already shipped a
