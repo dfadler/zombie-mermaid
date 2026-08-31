@@ -89,21 +89,32 @@ describe('ASCII sequence diagrams — CJK/wide-char box alignment (issue #334)',
         'sequenceDiagram\n  participant A as アリス\n  participant B as ボブ\n  A->>B: こんにちは'
 
       it('renders the issue repro with every row sharing one display width (up to arrowheads)', () => {
-        const ascii = renderMermaidASCII(mermaid, { useAscii, colorMode: 'none' })
+        const ascii = renderMermaidASCII(mermaid, {
+          useAscii,
+          colorMode: 'none',
+        })
         assertUniformWidthIgnoringArrowheads(ascii)
       })
 
       it('aligns the header participant box border with its CJK content', () => {
-        const ascii = renderMermaidASCII(mermaid, { useAscii, colorMode: 'none' })
+        const ascii = renderMermaidASCII(mermaid, {
+          useAscii,
+          colorMode: 'none',
+        })
         assertContentMatchesBorderAbove(ascii, 'アリス')
       })
 
       it('aligns the footer participant box border with its CJK content', () => {
-        const ascii = renderMermaidASCII(mermaid, { useAscii, colorMode: 'none' })
+        const ascii = renderMermaidASCII(mermaid, {
+          useAscii,
+          colorMode: 'none',
+        })
         const lines = ascii.split('\n')
         // The footer box repeats the same label — its content row is the
         // *last* line containing it, not the header's (first) occurrence.
-        const contentIndex = lines.map((l) => l.includes('アリス')).lastIndexOf(true)
+        const contentIndex = lines
+          .map((l) => l.includes('アリス'))
+          .lastIndexOf(true)
         expect(contentIndex).toBeGreaterThan(0)
         expect(terminalDisplayWidth(lines[contentIndex]!)).toBe(
           terminalDisplayWidth(lines[contentIndex - 1]!),
@@ -111,7 +122,10 @@ describe('ASCII sequence diagrams — CJK/wide-char box alignment (issue #334)',
       })
 
       it('centers the CJK message label between lifelines without widening its row', () => {
-        const ascii = renderMermaidASCII(mermaid, { useAscii, colorMode: 'none' })
+        const ascii = renderMermaidASCII(mermaid, {
+          useAscii,
+          colorMode: 'none',
+        })
         const lines = ascii.split('\n')
         const labelIndex = lines.findIndex((l) => l.includes('こんにちは'))
         expect(labelIndex).toBeGreaterThan(0)
@@ -125,7 +139,10 @@ describe('ASCII sequence diagrams — CJK/wide-char box alignment (issue #334)',
       })
 
       it('does not corrupt the label text itself', () => {
-        const ascii = renderMermaidASCII(mermaid, { useAscii, colorMode: 'none' })
+        const ascii = renderMermaidASCII(mermaid, {
+          useAscii,
+          colorMode: 'none',
+        })
         expect(ascii).toContain('アリス')
         expect(ascii).toContain('ボブ')
         expect(ascii).toContain('こんにちは')

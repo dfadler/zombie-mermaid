@@ -584,7 +584,13 @@ export function renderSequenceAscii(
       lineIdx < hdrLines.length && topY + lineIdx < botY;
       lineIdx++
     ) {
-      writeTextCells(bLeft + 1, topY + lineIdx, hdrLines[lineIdx]!, 'text', bRight)
+      writeTextCells(
+        bLeft + 1,
+        topY + lineIdx,
+        hdrLines[lineIdx]!,
+        'text',
+        bRight,
+      )
     }
 
     // Bottom border
