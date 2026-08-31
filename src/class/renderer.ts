@@ -21,6 +21,7 @@ import {
   escapeXml as escapeXmlUtil,
   escapeAttr,
 } from '../multiline-utils.ts'
+import { safeHref } from '../click-directive.ts'
 
 // ============================================================================
 // Class diagram SVG renderer
@@ -54,6 +55,10 @@ const CLS_FONT = {
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
  *                src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
+ * @param linksEnabled - Whether `click`-based `<a href>` links and `<title>`
+ *                       tooltips render (from `options.interactivity !==
+ *                       'none'`, see `resolveLinksEnabled` in src/index.ts).
+ *                       Default true — matches the flowchart/state renderer.
  */
 export function renderClassSvg(
   diagram: PositionedClassDiagram,
@@ -64,8 +69,18 @@ export function renderClassSvg(
   embedSource?: string,
   title?: string,
   decorative?: boolean,
+  linksEnabled: boolean = true,
 ): string {
   const parts: string[] = []
+
+  // See #239 / src/renderer.ts's renderSvg: a click-based link renders as a
+  // focusable <a href> inside the SVG, which role="img"/aria-hidden would
+  // hide from assistive tech while leaving it Tab-reachable — svgOpenTag
+  // forces no root role in that case. Gated by linksEnabled too, since
+  // `interactivity: 'none'` strips the <a> below.
+  const hasInteractiveLinks =
+    linksEnabled &&
+    diagram.classes.some((c) => Boolean(safeHref(c.interaction?.href)))
 
   // SVG root with CSS variables + style block (with mono font) + defs
   parts.push(
@@ -77,6 +92,7 @@ export function renderClassSvg(
         transparent,
         title,
         decorative,
+        hasInteractiveLinks,
       ),
       embedSource,
     ),
@@ -93,7 +109,7 @@ export function renderClassSvg(
 
   // 2. Class boxes
   for (const cls of diagram.classes) {
-    parts.push(renderClassBox(cls, fontSizes))
+    parts.push(renderClassBox(cls, fontSizes, linksEnabled))
   }
 
   // 3. Relationship labels and cardinality
@@ -149,13 +165,24 @@ function relationshipMarkerDefs(): string {
 /**
  * Render a class box with 3 compartments: header, attributes, methods.
  * Wrapped in <g class="class-node"> with semantic data attributes.
+ *
+ * @param linksEnabled - Whether a `click`-based `<a href>` link and `<title>`
+ *                       tooltip render (from `options.interactivity !==
+ *                       'none'`). Default true. Mirrors renderNode() in
+ *                       src/renderer.ts — see that function's docstring and
+ *                       docs/decisions/no-script-interactivity.md for why a
+ *                       `call`/callback binding is recorded as a data
+ *                       attribute rather than ever invoked.
  */
 function renderClassBox(
   cls: PositionedClassNode,
   fontSizes: FontSizes,
+  linksEnabled: boolean = true,
 ): string {
   const { x, y, width, height, headerHeight, attrHeight } = cls
   const parts: string[] = []
+
+  const interaction = cls.interaction
 
   // Semantic wrapper with class metadata
   // data-id: class identifier
@@ -164,9 +191,35 @@ function renderClassBox(
   const annotationAttr = cls.annotation
     ? ` data-annotation="${escapeAttr(cls.annotation)}"`
     : ''
-  parts.push(
-    `<g class="class-node" data-id="${escapeAttr(cls.id)}" data-label="${escapeAttr(cls.label)}"${annotationAttr}>`,
-  )
+  const groupAttrs = [
+    `class="class-node"`,
+    `data-id="${escapeAttr(cls.id)}"`,
+    `data-label="${escapeAttr(cls.label)}"`,
+  ]
+  if (interaction?.callback) {
+    // `click ClassName call fn()` is recorded, never invoked — see
+    // renderNode() in src/renderer.ts for the identical rationale.
+    groupAttrs.push(`data-click-callback="${escapeAttr(interaction.callback)}"`)
+  }
+  parts.push(`<g ${groupAttrs.join(' ')}${annotationAttr}>`)
+
+  // An href becomes a real SVG link, which needs no script to work.
+  // `interactivity: 'none'` strips it — a link is meaningless in
+  // print/rasterized output, the target that level is meant for.
+  const href = linksEnabled ? safeHref(interaction?.href) : undefined
+  if (href) {
+    const targetAttr = interaction?.target
+      ? ` target="${escapeAttr(interaction.target)}"`
+      : ''
+    parts.push(`  <a href="${escapeAttr(href)}"${targetAttr}>`)
+  }
+
+  if (linksEnabled && interaction?.tooltip) {
+    // <title> is SVG's native tooltip — no script, no CSS. Gated by
+    // linksEnabled alongside href above: both come from the same `click`
+    // statement, and 'none' strips both.
+    parts.push(`  <title>${escapeXml(interaction.tooltip)}</title>`)
+  }
 
   // Outer rectangle (full box)
   parts.push(
@@ -233,6 +286,7 @@ function renderClassBox(
     parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY))
   }
 
+  if (href) parts.push('  </a>')
   parts.push('</g>')
 
   return parts.join('\n')

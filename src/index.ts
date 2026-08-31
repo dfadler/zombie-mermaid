@@ -210,6 +210,7 @@ export function renderMermaidSVG(
         embedSource,
         title,
         decorative,
+        resolveLinksEnabled(options),
       )
     }
     case 'er': {
