@@ -174,9 +174,7 @@ describe('ASCII sequence diagrams – self-message autonumber badge (issue #342)
     const lines = result.split('\n')
 
     // First normal message numbered 1.
-    const firstArrowLine = lines.find(
-      (l) => l.includes('▶') && l.includes('1'),
-    )
+    const firstArrowLine = lines.find((l) => l.includes('▶') && l.includes('1'))
     expect(firstArrowLine).toBeDefined()
 
     // Self-message numbered 2, badge drawn on its loop's top arm.
