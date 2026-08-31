@@ -17,7 +17,7 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
-import * as esbuild from 'esbuild'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { THEMES } from './src/theme.ts'
 
 const THEME_LABELS: Record<string, string> = {
@@ -106,18 +106,13 @@ async function readHtmlPartials(themeItems: string): Promise<{
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-/** Bundle src/browser.ts for the browser via esbuild's JS API. */
+/** Bundle src/browser.ts for the browser via Vite's build() API. */
 async function bundleBrowserScript(): Promise<string> {
   try {
-    const buildResult = await esbuild.build({
-      entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
-      bundle: true,
-      platform: 'browser',
-      format: 'esm',
-      minify: true,
-      write: false,
-    })
-    return buildResult.outputFiles[0]!.text
+    return await bundleForBrowser(
+      new URL('./src/browser.ts', import.meta.url).pathname,
+      { minify: true },
+    )
   } catch (err) {
     console.error('Bundle failed:', err)
     process.exit(1)

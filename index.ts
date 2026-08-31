@@ -17,7 +17,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { escapeHtml, formatDescription } from './demo/format.ts'
-import * as esbuild from 'esbuild'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { samples } from './samples-data.ts'
 import { THEMES } from './src/theme.ts'
 import { createHighlighter } from 'shiki'
@@ -49,15 +49,12 @@ async function loadStyles(): Promise<string> {
  * page should stay readable in devtools, which the hand-written version was.
  */
 async function bundleClientScript(): Promise<string> {
-  const result = await esbuild.build({
-    entryPoints: [new URL('./demo/client.ts', import.meta.url).pathname],
-    bundle: true,
-    platform: 'browser',
-    format: 'esm',
-    minify: false,
-    write: false,
-  })
-  return result.outputFiles[0]!.text
+  return bundleForBrowser(
+    new URL('./demo/client.ts', import.meta.url).pathname,
+    {
+      minify: false,
+    },
+  )
 }
 
 /**
@@ -76,7 +73,7 @@ function escapeJsonForScriptTag(json: string): string {
 // HTML generation — dynamic version
 //
 // Instead of pre-rendering SVGs at build time, we:
-//   1. Bundle the mermaid renderer for the browser via esbuild's build() API
+//   1. Bundle the mermaid renderer for the browser via Vite's build() API
 //   2. Embed sample definitions as inline JSON
 //   3. Emit client-side JS that renders each diagram on page load
 // ============================================================================
@@ -227,15 +224,10 @@ async function generateHtml(): Promise<string> {
   // Step 1: Bundle the mermaid renderer for the browser
   let bundleJs: string
   try {
-    const buildResult = await esbuild.build({
-      entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
-      bundle: true,
-      platform: 'browser',
-      format: 'esm',
-      minify: true,
-      write: false,
-    })
-    bundleJs = buildResult.outputFiles[0]!.text
+    bundleJs = await bundleForBrowser(
+      new URL('./src/browser.ts', import.meta.url).pathname,
+      { minify: true },
+    )
   } catch (err) {
     console.error('Bundle build failed:', err)
     process.exit(1)
