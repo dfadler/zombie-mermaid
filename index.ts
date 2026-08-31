@@ -20,6 +20,7 @@ import { escapeHtml, formatDescription } from './demo/format.ts'
 import * as esbuild from 'esbuild'
 import { samples } from './samples-data.ts'
 import { THEMES } from './src/theme.ts'
+import { THEME_LABELS } from './demo/theme-labels.ts'
 import { createHighlighter } from 'shiki'
 
 /**
@@ -87,24 +88,6 @@ function slugifyCategory(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-}
-
-/** Human-readable labels for theme keys */
-const THEME_LABELS: Record<string, string> = {
-  'zinc-dark': 'Zinc Dark',
-  'tokyo-night': 'Tokyo Night',
-  'tokyo-night-storm': 'Tokyo Storm',
-  'tokyo-night-light': 'Tokyo Light',
-  'catppuccin-mocha': 'Catppuccin',
-  'catppuccin-latte': 'Latte',
-  nord: 'Nord',
-  'nord-light': 'Nord Light',
-  dracula: 'Dracula',
-  'github-light': 'GitHub',
-  'github-dark': 'GitHub Dark',
-  'solarized-light': 'Solarized',
-  'solarized-dark': 'Solar Dark',
-  'one-dark': 'One Dark',
 }
 
 /**
@@ -545,6 +528,10 @@ ${styles}
       <a href="fork-fixes.html" class="hero-btn hero-btn-secondary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         What this fork fixes
+      </a>
+      <a href="diagrams/" class="hero-btn hero-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Browse every theme
       </a>
       <button type="button" class="hero-btn hero-btn-secondary" id="random-theme-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
