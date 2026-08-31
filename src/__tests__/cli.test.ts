@@ -325,9 +325,9 @@ describe('parseArgs – validation errors', () => {
   })
 
   it('throws when -x is last argument with no value', () => {
-    expect(() =>
-      parseArgs(['render', 'diagram.mmd', '--ascii', '-x']),
-    ).toThrow('-x requires a numeric value')
+    expect(() => parseArgs(['render', 'diagram.mmd', '--ascii', '-x'])).toThrow(
+      '-x requires a numeric value',
+    )
   })
 
   it('throws when --paddingX is not a non-negative integer', () => {

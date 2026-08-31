@@ -155,10 +155,16 @@ describe('runRender – padding flags', () => {
     )
 
     const narrowWidth = Math.max(
-      ...narrowStdout.output().split('\n').map((line) => line.length),
+      ...narrowStdout
+        .output()
+        .split('\n')
+        .map((line) => line.length),
     )
     const wideWidth = Math.max(
-      ...wideStdout.output().split('\n').map((line) => line.length),
+      ...wideStdout
+        .output()
+        .split('\n')
+        .map((line) => line.length),
     )
     expect(wideWidth).toBeGreaterThan(narrowWidth)
   })

@@ -140,7 +140,10 @@ describe('web server – POST /render errors', () => {
     const res = await fetch(baseUrl + '/render', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'this is not mermaid {{{', format: 'svg' }),
+      body: JSON.stringify({
+        source: 'this is not mermaid {{{',
+        format: 'svg',
+      }),
     })
     expect(res.status).toBe(400)
   })
