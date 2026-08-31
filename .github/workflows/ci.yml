@@ -201,6 +201,7 @@ jobs:
         run: pnpm run test:visual
 
       - name: Upload failure report
+        id: upload-report
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -210,6 +211,37 @@ jobs:
             playwright-report/
           retention-days: 14
           if-no-files-found: ignore
+
+      # Surfaces the failure directly on the check's Summary tab — one click
+      # from the PR, no digging through the raw job log — with a direct link
+      # to download the full interactive Playwright report (side-by-side
+      # diffs + traces). This can't embed the interactive report itself:
+      # actions/upload-artifact's browser-preview mode only renders a single
+      # simple file with no external CSS/JS, and the Playwright HTML report
+      # is a full app (its own JS bundle, trace/diff viewer data) — see #306
+      # for the fuller evaluation of GitHub Pages / third-party hosting
+      # options that could close that remaining gap.
+      - name: Write visual regression summary
+        if: failure()
+        run: |
+          {
+            echo "## Visual regression failures"
+            echo
+            if [ -n "${{ steps.upload-report.outputs.artifact-url }}" ]; then
+              echo "[Download the full interactive Playwright report](${{ steps.upload-report.outputs.artifact-url }}) (the \`visual-regression-failures\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
+              echo
+            fi
+            echo "Failed screenshots:"
+            echo
+            diffs=$(find test-results -iname '*-diff.png' 2>/dev/null | sort || true)
+            if [ -z "$diffs" ]; then
+              echo "- (no per-screenshot diff files found — see the full report or job log for details)"
+            else
+              while IFS= read -r f; do
+                echo "- \`$(basename "$f")\`"
+              done <<< "$diffs"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   semgrep:
     name: Semgrep SAST scan
