@@ -28,6 +28,17 @@ It's still MIT-licensed, still built on the same foundation, and still credits t
 
 The ASCII rendering engine is based on [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) by Alexander Grooff, ported from Go to TypeScript and extended. Thank you Alexander for the excellent foundation! (And inspiration that this was possible.)
 
+## Why We Built This
+
+Diagrams are essential for AI-assisted programming. When you're working with an AI coding assistant, being able to visualize data flows, state machines, and system architecture—directly in your terminal or chat interface—makes complex concepts instantly graspable.
+
+[Mermaid](https://mermaid.js.org/) is the de facto standard for text-based diagrams. It's brilliant. But the default renderer has problems:
+
+- **Aesthetics** — Might be personal preference, but wished they looked more professional
+- **Complex theming** — Customizing colors requires wrestling with CSS classes
+- **No terminal output** — Can't render to ASCII for CLI tools
+- **Heavy dependencies** — Pulls in a lot of code for simple diagrams
+
 ## Features
 
 - **6 diagram types** — Flowcharts, State, Sequence, Class, ER, and XY Charts (bar, line, combined)
