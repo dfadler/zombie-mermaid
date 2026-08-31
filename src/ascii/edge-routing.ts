@@ -531,9 +531,27 @@ function buildParallelLanePath(
       usedOffsets.add(offset)
       return { path: gutterCandidate, labelSegment: gutterLabelSegment }
     }
+    // Defensive — shouldn't normally happen. The gutter candidate's
+    // vertical/horizontal travel runs entirely through the permanently
+    // node-free gutter column/row (see this function's doc: every node's
+    // own column-width padding reserves it, and placeBlock never claims
+    // it for any node), so gutterCandidate failing this check would mean
+    // that structural guarantee didn't hold for this graph's layout.
+    // Recorded anyway so the loop's very last iteration still has a
+    // best-effort path/labelSegment to fall back to.
+    /* v8 ignore next */
     path = gutterCandidate
+    /* v8 ignore next */
     labelSegment = gutterLabelSegment
   }
+  // Defensive — shouldn't normally happen, for the same reason as above:
+  // reaching here means every offset up to MAX_LANE_OFFSET_SEARCH failed
+  // both candidates, which requires the gutter's structural guarantee to
+  // not hold. Mirrors determinePath's own Case-4 direct fallback and
+  // findNonNodeColumn's "every column occupied" fallback elsewhere in this
+  // file: graceful degradation over a hard failure, not a case expected to
+  // be exercised by a realistic graph.
+  /* v8 ignore next */
   return { path, labelSegment }
 }
 
