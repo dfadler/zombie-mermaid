@@ -1386,6 +1386,13 @@ body::after {
   font-size: 0.85rem;
   color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
   margin: 0.15rem 0;
+  /* Matches `.sample`'s scroll-margin-top so a line like #total-timing
+   * clears the sticky theme bar (and, once stuck, the samples-heading
+   * bar) instead of rendering underneath them if it's ever scrolled or
+   * focused to directly, rather than only as part of a page-top load. */
+  scroll-margin-top: calc(
+    var(--nav-height) + var(--samples-heading-height) + 1rem
+  );
 }
 
 .hero-meta .meta a {
