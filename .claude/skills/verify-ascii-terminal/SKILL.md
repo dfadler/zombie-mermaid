@@ -84,9 +84,16 @@ archive <base-sha> src | tar -x -C <scratch-dir>` pulls `src/` at the
 
    ```js
    // /tmp/verify-ascii.mjs — usage: tsx verify-ascii.mjs <path-to-src/index.ts> <sample-index>
+   import { resolve } from 'node:path'
+   import { pathToFileURL } from 'node:url'
    import { samples } from '/absolute/path/to/repo/samples-data.ts'
    const [, , indexModulePath, sampleIndex] = process.argv
-   const { renderMermaidASCII } = await import(indexModulePath)
+   // A relative specifier passed to import() resolves against this script's
+   // own URL (/tmp/…), not process.cwd() — resolve to an absolute file URL
+   // first so a relative ./src/index.ts arg lands on the right ref's tree.
+   const { renderMermaidASCII } = await import(
+     pathToFileURL(resolve(indexModulePath)).href
+   )
    process.stdout.write(
      renderMermaidASCII(samples[Number(sampleIndex)].source, {
        colorMode: 'auto',
