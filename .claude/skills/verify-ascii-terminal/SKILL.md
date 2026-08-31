@@ -94,10 +94,15 @@ archive <base-sha> src | tar -x -C <scratch-dir>` pulls `src/` at the
    import { readFileSync } from 'node:fs'
    import { resolve } from 'node:path'
    import { pathToFileURL } from 'node:url'
-   import { samples } from '/absolute/path/to/repo/samples-data.ts'
    const [, , indexModulePath, sampleArg] = process.argv
+   // Resolved from cwd rather than hardcoded, so the runner works unmodified
+   // regardless of which checkout it's copied into — both invocations below
+   // run with --cwd "$PWD" (the repo root), matching "the sample always
+   // comes from the working tree's samples-data.ts" from step 3's intro.
    const source = /^\d+$/.test(sampleArg)
-     ? samples[Number(sampleArg)].source
+     ? (await import(pathToFileURL(resolve('samples-data.ts')).href)).samples[
+         Number(sampleArg)
+       ].source
      : readFileSync(sampleArg, 'utf8')
    // A relative specifier passed to import() resolves against this script's
    // own URL (/tmp/…), not process.cwd() — resolve to an absolute file URL
