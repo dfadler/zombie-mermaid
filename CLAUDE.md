@@ -34,6 +34,21 @@ properties that make worktree cleanup easy to get wrong:
   resolves) — as a background `Bash` process, and track that PID yourself; nothing
   else will.
 
+## ASCII rendering changes: verify in a real terminal, not just the browser mockup
+
+Before attaching before/after screenshots to a PR/issue for any change touching
+ASCII output (`src/ascii/**`, `ascii-html.ts`, `demo/client.ts`'s ASCII path,
+`index.ts`'s `.ascii-panel`, or `__tests__/visual/ascii-samples.visual.test.ts`),
+invoke the `verify-ascii-terminal` skill first. The Playwright visual-regression
+suite and `scripts/visual-diff.ts` (the tool CONTRIBUTING.md points to for
+before/after PR reports) both render ASCII output through `ascii-html.ts`'s HTML
+approximation of a terminal, never a real one — this repo has already shipped a
+bug (the `ascii-terminal-overflow-scroll` fix) in that approximation's chrome
+while the underlying renderer was fine. The skill covers rendering the same
+sample through a real PTY on both the base ref and the change, so a terminal-only
+regression (or an HTML-mockup-only one) can't hide behind a screenshot that only
+proves the mockup looks right.
+
 Before removing a worktree in this repo (`ExitWorktree`, or by hand), stop only the
 processes _you_ started for it — don't kill by port or by a generic name pattern
 alone, since another worktree (or the main checkout) can easily share the same
