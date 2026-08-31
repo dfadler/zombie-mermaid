@@ -6,7 +6,13 @@
 // and dual-path comparison for optimal edge routing.
 // ============================================================================
 
-import type { GridCoord, Direction, AsciiEdge, AsciiGraph } from './types.ts'
+import type {
+  GridCoord,
+  Direction,
+  AsciiEdge,
+  AsciiGraph,
+  AsciiNode,
+} from './types.ts'
 import {
   Up,
   Down,
@@ -200,6 +206,61 @@ export function determineStartAndEndDir(
 const PARALLEL_LANE_STEP = 2
 
 /**
+ * Bound on how far `buildParallelLanePath` will push a lane outward
+ * (1 grid unit per attempt) to escape a cell occupied by some *other*
+ * node's reserved block. Generous enough for any realistic diagram (a
+ * stack of many dozens of sibling rows/columns), while still bounding the
+ * search — see that function's doc for why an unbounded search isn't safe
+ * to assume will terminate quickly on a pathological graph.
+ */
+const MAX_LANE_OFFSET_SEARCH = 200
+
+/** Whether `cell` falls inside `node`'s own reserved 3x3 block. */
+function isCellInNodeBlock(node: AsciiNode, cell: GridCoord): boolean {
+  const gc = node.gridCoord
+  if (!gc) return false
+  return (
+    cell.x >= gc.x && cell.x <= gc.x + 2 && cell.y >= gc.y && cell.y <= gc.y + 2
+  )
+}
+
+/**
+ * Every cell in `cells` strictly between its own first and last entry is
+ * free of any node's reserved block — except a block listed in `ownNodes`,
+ * which is allowed. The first/last cells are excluded outright, because
+ * callers use this on lines/paths whose two endpoints are expected to
+ * touch a node border (where an edge departs/arrives) or an already-
+ * validated waypoint; only cells genuinely *passed through* matter here.
+ *
+ * Two callers, two different `ownNodes`:
+ *  - `determineLabelLine` calls this with no exemptions at all: label text
+ *    drawn across *any* node's border — including the edge's own source or
+ *    target — corrupts that node's box-drawing characters (see #329's
+ *    "Second┬Arrow" regression), so nothing is exempt there.
+ *  - `buildParallelLanePath` calls this with `[edge.from, edge.to]`
+ *    exempted: an edge's line is *expected* to graze its own node's other
+ *    border cells on the way to its actual attachment point — that's
+ *    exactly how the ├/┤/┬/┴ box connector glyphs get chosen elsewhere in
+ *    this renderer (see edge-cell-styles.ts's module doc for the same
+ *    "an edge's own node border is a legitimate shared cell" reasoning).
+ *    Only a *different*, unrelated node's block is a genuine collision
+ *    there.
+ */
+function interiorCellsClearOfNodes(
+  graph: AsciiGraph,
+  cells: readonly GridCoord[],
+  ownNodes: readonly AsciiNode[] = [],
+): boolean {
+  for (let i = 1; i < cells.length - 1; i++) {
+    const cell = cells[i]!
+    if (!isOccupied(graph.grid, cell)) continue
+    if (ownNodes.some((n) => isCellInNodeBlock(n, cell))) continue
+    return false
+  }
+  return true
+}
+
+/**
  * Group edges that share both their source AND target node — true
  * parallel/multi-edges, e.g. `A -->|One| B` and `A -->|Two| B` — and tag
  * each with its 0-based position in the group plus the group's size, via
@@ -231,8 +292,9 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
 
   for (const group of groups.values()) {
     if (group.length < 2) continue
+    const usedOffsets = new Set<number>()
     for (let i = 0; i < group.length; i++) {
-      group[i]!.parallelLane = { index: i, total: group.length }
+      group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
     }
   }
 }
@@ -241,10 +303,44 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
  * Build an offset-lane path for a non-first edge in a parallel-edge group:
  * leave the source node at the same attachment point every sibling in the
  * group shares (consistent with how two edges are already allowed to share
- * a node's own border cell — see edge-cell-styles.ts's module doc), jog
- * `PARALLEL_LANE_STEP * laneIndex` grid units away from the group's shared
- * center line, travel the full distance on that offset lane, then jog back
- * to the target's attachment point.
+ * a node's own border cell — see edge-cell-styles.ts's module doc), travel
+ * an offset lane, then return to the target's attachment point. Two
+ * candidate shapes are tried per offset, in order:
+ *
+ *  - **"wide"**: descend/cross straight down `fromAttach`'s own column/row,
+ *    travel the *full* node-to-node span at the offset lane, then rise back
+ *    up `toAttach`'s own column/row. This is what `determineLabelLine`
+ *    wants — a segment already wide enough to host the label outright —
+ *    and is correct whenever nothing else occupies that column/row at the
+ *    chosen offset.
+ *  - **"gutter"**: like "wide", but the two short jogs near each endpoint
+ *    step one extra grid unit into the gutter column/row immediately
+ *    before/after that node — reserved by every node's own
+ *    `setColumnWidth` padding (`columnWidth.set(gc.x - 1, ...)` in
+ *    grid.ts) and never claimed by `placeBlock` for *any* node, at *any*
+ *    row/column, by construction of the grid-level spacing scheme (`x`/`y`
+ *    levels are always `NODE_BLOCK_SIZE` + 1 apart). "wide" fails exactly
+ *    when a second, independent `X --> Y` chain placed directly below
+ *    `A`/`B` (a completely ordinary "second flow stacked under the first"
+ *    layout) shares `A`'s/`B`'s exact border column, so "wide"'s straight
+ *    descent runs right through `X`'s/`Y`'s own reserved block — "gutter"
+ *    detours around exactly that, at the cost of a narrower (often single-
+ *    column) middle segment; still a legitimate label location, just via
+ *    determineLabelLine's node-avoidance fallback tier rather than its
+ *    width-based one. (Routing each jog through `routeEdge`/A* was tried
+ *    before landing on this: A* has no notion of "this occupied cell is my
+ *    *own* node's, so it's fine to graze", so it detoured *away* from the
+ *    source's/target's own border on every lane, producing a self-crossing
+ *    zigzag instead of a clean jog.)
+ *
+ * Each candidate is validated via `interiorCellsClearOfNodes` (the edge's
+ * own two nodes exempted — grazing them is expected, exactly like the
+ * `edge-cell-styles.ts` "own node border is a legitimate shared cell"
+ * reasoning) before being accepted. If neither shape is clear at the
+ * current offset, it's pushed out one more grid unit and both are retried
+ * — bounded by `MAX_LANE_OFFSET_SEARCH` — mirroring `findNonNodeColumn`'s
+ * "search outward for a non-node column" pattern above, generalized to a
+ * whole path.
  *
  * The offset always grows in one direction (never negative) so it can
  * never land on a grid row/column that already exists above/left of the
@@ -257,14 +353,30 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
  * share the same from/to nodes) — always one of the four cardinal
  * directions. A horizontal departure (Left/Right) offsets by row; a
  * vertical departure (Up/Down) offsets by column.
+ *
+ * If every offset within the search bound is still blocked for both shapes
+ * (a genuinely pathological, densely-stacked graph), the last attempted
+ * path is returned anyway rather than failing the whole render — the same
+ * graceful-degradation-over-a-hard-failure choice `findNonNodeColumn` and
+ * `determinePath`'s Case-4 direct fallback already make elsewhere in this
+ * file.
  */
+/** A lane path plus the segment `determinePath` should use directly as
+ * this edge's label line — see `buildParallelLanePath`'s doc for why this
+ * is computed explicitly here rather than left to `determineLabelLine`'s
+ * general (width-based) heuristic. */
+interface ParallelLaneRoute {
+  path: GridCoord[]
+  labelSegment: [GridCoord, GridCoord]
+}
+
 function buildParallelLanePath(
   graph: AsciiGraph,
   edge: AsciiEdge,
   preferredDir: Direction,
   preferredOppositeDir: Direction,
   laneIndex: number,
-): GridCoord[] {
+): ParallelLaneRoute {
   const fromAttach = gridCoordDirection(
     requireGridCoord(edge.from),
     preferredDir,
@@ -273,27 +385,156 @@ function buildParallelLanePath(
     requireGridCoord(edge.to),
     preferredOppositeDir,
   )
-  const offset = PARALLEL_LANE_STEP * laneIndex
   const horizontalDeparture =
     dirEquals(preferredDir, Left) || dirEquals(preferredDir, Right)
+  const ownNodes = [edge.from, edge.to]
+  // Shared, by reference, across every edge in this parallel group (see
+  // types.ts's parallelLane doc) — records every offset a sibling lane has
+  // already committed to, so two lanes that each have to detour around the
+  // same obstacle can't converge on the identical offset (and therefore
+  // the identical path — the exact bug this whole mechanism exists to
+  // prevent, just between two lanes instead of the original center path).
+  const usedOffsets = edge.parallelLane!.usedOffsets
 
-  if (horizontalDeparture) {
-    const laneY = fromAttach.y + offset
-    return mergePath([
-      fromAttach,
-      { x: fromAttach.x, y: laneY },
-      { x: toAttach.x, y: laneY },
-      toAttach,
-    ])
+  // One grid unit further from each node, in the direction the edge
+  // already departs/arrives — lands in the permanently node-free gutter
+  // (see doc above) rather than the node's own border column/row.
+  const fromStep = dirEquals(preferredDir, Right)
+    ? 1
+    : dirEquals(preferredDir, Left)
+      ? -1
+      : dirEquals(preferredDir, Down)
+        ? 1
+        : -1
+  const toStep = dirEquals(preferredOppositeDir, Right)
+    ? 1
+    : dirEquals(preferredOppositeDir, Left)
+      ? -1
+      : dirEquals(preferredOppositeDir, Down)
+        ? 1
+        : -1
+  const fromGutter = horizontalDeparture
+    ? { x: fromAttach.x + fromStep, y: fromAttach.y }
+    : { x: fromAttach.x, y: fromAttach.y + fromStep }
+  const toGutter = horizontalDeparture
+    ? { x: toAttach.x + toStep, y: toAttach.y }
+    : { x: toAttach.x, y: toAttach.y + toStep }
+
+  // Always-valid fallback (ignores occupancy entirely) in case every
+  // offset attempt below fails outright — mirrors determinePath's own
+  // Case-4 direct fallback: an edge must always end up with *some* path so
+  // its arrowhead can still be drawn. Its label segment is the same
+  // degenerate zero-length line determineLabelLine itself falls back to
+  // for a path with no real segments — see this function's caller.
+  let path: GridCoord[] = [fromAttach, toAttach]
+  let labelSegment: [GridCoord, GridCoord] = [fromAttach, toAttach]
+
+  const startingOffset = PARALLEL_LANE_STEP * laneIndex
+  for (let step = 0; step < MAX_LANE_OFFSET_SEARCH; step++) {
+    const offset = startingOffset + step
+    if (usedOffsets.has(offset)) continue
+    const laneMain = fromAttach.y + offset
+    const laneCross = fromAttach.x + offset
+
+    // Candidate A ("wide"): travel the offset lane across the *full*
+    // node-to-node span (fromAttach.x..toAttach.x, or the vertical
+    // equivalent). Its middle segment is always genuinely wide (it spans
+    // two distinct nodes' attachment columns/rows), so it's used directly
+    // as the label segment — no need to search for it afterward. Tried
+    // first because it's clearly the better-looking result whenever safe.
+    const wideLabelSegment: [GridCoord, GridCoord] = horizontalDeparture
+      ? [
+          { x: fromAttach.x, y: laneMain },
+          { x: toAttach.x, y: laneMain },
+        ]
+      : [
+          { x: laneCross, y: fromAttach.y },
+          { x: laneCross, y: toAttach.y },
+        ]
+    const wideCandidate = mergePath([fromAttach, ...wideLabelSegment, toAttach])
+    if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
+      usedOffsets.add(offset)
+      return { path: wideCandidate, labelSegment: wideLabelSegment }
+    }
+    path = wideCandidate
+    labelSegment = wideLabelSegment
+
+    // Candidate B ("gutter"): candidate A travels along fromAttach's/
+    // toAttach's own border column/row for the vertical/horizontal jog,
+    // which can run straight through an unrelated node sharing that same
+    // column/row (see this function's doc) — candidate A's occupancy
+    // check just caught exactly that. Detour those two short jogs through
+    // the permanently node-free gutter instead.
+    //
+    // `fromGutter`/`toGutter` coincide exactly whenever the two nodes sit
+    // on directly adjacent grid levels (the ordinary case for "two edges
+    // between the same pair") — there being only one gutter column/row
+    // between them. When that happens the "travel" segment collapses to a
+    // single point, which every sibling lane's gutter candidate would
+    // share identically — reintroducing #329's own bug, just between two
+    // *lanes* instead of the original center path (this was caught while
+    // building this fix: see ascii-parallel-edges-329.test.ts's "no lane
+    // path passes through a cell owned by the unrelated X/Y chain" test).
+    // Use the vertical/horizontal "spike" descent instead in that case — a
+    // zero-length point *at* this lane's own offset depth, not a segment
+    // spanning from the attach row/column down to it: drawTextOnLine
+    // centers text at a line's *midpoint*, so a segment running from (say)
+    // row 1 down to row 7 centers its label at row 4, not row 7 — two
+    // lanes at different depths (rows 5 and 7, say) can still produce the
+    // *same* midpoint as some other lane's own row, corrupting labels all
+    // over again (also caught by the same test named above). A point's
+    // min/max/midpoint are all itself, so the label always lands exactly
+    // at this lane's own unique depth — narrow (its column/row is widened
+    // below like any single-segment label host), but unique per lane.
+    const gutterTravelHasWidth = horizontalDeparture
+      ? fromGutter.x !== toGutter.x
+      : fromGutter.y !== toGutter.y
+    const gutterLabelSegment: [GridCoord, GridCoord] = horizontalDeparture
+      ? gutterTravelHasWidth
+        ? [
+            { x: fromGutter.x, y: laneMain },
+            { x: toGutter.x, y: laneMain },
+          ]
+        : [
+            { x: fromGutter.x, y: laneMain },
+            { x: fromGutter.x, y: laneMain },
+          ]
+      : gutterTravelHasWidth
+        ? [
+            { x: laneCross, y: fromGutter.y },
+            { x: laneCross, y: toGutter.y },
+          ]
+        : [
+            { x: laneCross, y: fromGutter.y },
+            { x: laneCross, y: fromGutter.y },
+          ]
+    const gutterCandidate = horizontalDeparture
+      ? mergePath([
+          fromAttach,
+          fromGutter,
+          { x: fromGutter.x, y: laneMain },
+          { x: toGutter.x, y: laneMain },
+          toGutter,
+          toAttach,
+        ])
+      : mergePath([
+          fromAttach,
+          fromGutter,
+          { x: laneCross, y: fromGutter.y },
+          { x: laneCross, y: toGutter.y },
+          toGutter,
+          toAttach,
+        ])
+    if (
+      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes)
+    ) {
+      usedOffsets.add(offset)
+      return { path: gutterCandidate, labelSegment: gutterLabelSegment }
+    }
+    path = gutterCandidate
+    labelSegment = gutterLabelSegment
   }
-
-  const laneX = fromAttach.x + offset
-  return mergePath([
-    fromAttach,
-    { x: laneX, y: fromAttach.y },
-    { x: laneX, y: toAttach.y },
-    toAttach,
-  ])
+  return { path, labelSegment }
 }
 
 // ============================================================================
@@ -333,18 +574,29 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // skip the normal preferred/alternative search entirely: that search
   // would just find the identical center path every sibling edge shares,
   // which is the root cause of #329. Route through an offset lane instead
-  // so this edge's path — and therefore its independently-centered label
-  // (determineLabelLine) — never overlaps a sibling's.
+  // so this edge's path — and its label — never overlaps a sibling's.
+  //
+  // The label line is set directly here (via applyLabelLine), not left for
+  // determineLabelLine's later call to work out: buildParallelLanePath
+  // already knows exactly which segment of the lane it just built is the
+  // correct, sibling-distinct place for the label (see its own doc for why
+  // determineLabelLine's general width-based heuristic can't reliably
+  // re-derive that from the finished path alone). determineLabelLine
+  // itself skips lane edges for exactly this reason — see its own guard.
   if (edge.parallelLane && edge.parallelLane.index > 0) {
     edge.startDir = preferredDir
     edge.endDir = preferredOppositeDir
-    edge.path = buildParallelLanePath(
+    const route = buildParallelLanePath(
       graph,
       edge,
       preferredDir,
       preferredOppositeDir,
       edge.parallelLane.index,
     )
+    edge.path = route.path
+    if (edge.text.length > 0) {
+      applyLabelLine(graph, edge, route.labelSegment, displayWidth(edge.text))
+    }
     return
   }
 
@@ -459,9 +711,18 @@ function findNonNodeColumn(
  * label collisions when multiple edges share initial segments.
  * Falls back to the widest segment if none are suitable.
  * Also increases the column width at the label position to fit the text.
+ *
+ * No-ops for an edge past the first in a parallel-edge group
+ * (`edge.parallelLane.index > 0`): `determinePath` already called
+ * `applyLabelLine` directly for it, with a segment `buildParallelLanePath`
+ * chose explicitly rather than one this function's own width-based search
+ * could reliably re-derive from the finished lane path alone (see that
+ * function's doc) — re-running the search here would risk picking a
+ * different, sibling-colliding segment instead.
  */
 export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   if (edge.text.length === 0) return
+  if (edge.parallelLane && edge.parallelLane.index > 0) return
 
   const lenLabel = displayWidth(edge.text)
   const pathLen = edge.path.length
@@ -496,13 +757,8 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   // back into the target can otherwise look, by the width-only heuristic
   // below, like the best available segment even though it runs straight
   // across the target's own border row/column.
-  const clearOfNodes = (line: [GridCoord, GridCoord]): boolean => {
-    const cells = pathCells(line)
-    for (let i = 1; i < cells.length - 1; i++) {
-      if (isOccupied(graph.grid, cells[i]!)) return false
-    }
-    return true
-  }
+  const clearOfNodes = (line: [GridCoord, GridCoord]): boolean =>
+    interiorCellsClearOfNodes(graph, pathCells(line))
 
   // Find segments wide enough for the label, excluding the first segment
   // The first segment is often shared between edges from the same source node
@@ -528,11 +784,31 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     } else {
       // No segment both wide enough and clear of nodes — prefer the
       // widest segment that's at least clear of nodes (its column can
-      // still be widened below to fit the label), falling back to the
-      // widest segment overall only when every segment runs through a
-      // node (nothing better available at all).
+      // still be widened below to fit the label). Still prefer index > 1
+      // here too: a multi-segment lane path (buildParallelLanePath) can
+      // have every one of its later segments come up too narrow for this
+      // tier (e.g. a single-gutter-column "gutter" candidate — see that
+      // function's doc), and without this, the widest-clear-segment sort
+      // below would happily fall back to the *first* segment purely
+      // because it's typically the widest (it's on the shared trunk row
+      // every sibling edge from the same source uses) — reintroducing the
+      // exact same-row label collision this whole index > 1 exclusion
+      // exists to prevent, just via this tier instead of the ones above.
+      // Only fall back further — first to *any* clear segment regardless
+      // of index, then to every segment — when nothing clear survives
+      // even that relaxation (a single-segment edge with no room to
+      // exclude anything, or a segment that runs through a node with no
+      // alternative at all).
+      const clearLaterSegments = segments.filter(
+        (s) => s.index > 1 && clearOfNodes(s.line),
+      )
       const clearSegments = segments.filter((s) => clearOfNodes(s.line))
-      const pool = clearSegments.length > 0 ? clearSegments : segments
+      const pool =
+        clearLaterSegments.length > 0
+          ? clearLaterSegments
+          : clearSegments.length > 0
+            ? clearSegments
+            : segments
       pool.sort((a, b) => b.width - a.width)
       if (pool.length > 0) {
         largestLine = pool[0]!.line
@@ -549,27 +825,45 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     }
   }
 
-  // Ensure column at midpoint is wide enough for the label.
-  //
-  // The chosen column must not be one a node itself occupies (its 3-column
-  // border/content/border block, reserved in reserveSpotInGrid): a shared
-  // trunk segment often passes directly over/adjacent to another node's
-  // reserved columns on its way elsewhere, and if the label's midpoint
-  // happens to land there, widening it to fit the label inflates that
-  // node's own border-column width — which then drags things anchored to
-  // that column's *center* (like the box-start ├/┤/┬/┴ connector in
-  // draw-arrows.ts, computed via gridToDrawingCoord) away from the node's
-  // actual, fixed-width rendered border. Search outward from the ideal
-  // midpoint for the nearest column in the segment that isn't node-owned.
-  const minX = Math.min(largestLine[0].x, largestLine[1].x)
-  const maxX = Math.max(largestLine[0].x, largestLine[1].x)
+  applyLabelLine(graph, edge, largestLine, lenLabel)
+}
+
+/**
+ * Finish assigning a label to `line`: widen whichever column its midpoint
+ * falls in enough to fit the label, then commit `edge.labelLine`. Shared
+ * tail for `determineLabelLine`'s own segment-search heuristic above and
+ * `buildParallelLanePath`'s explicit segment choice below — the latter
+ * already knows exactly which segment is correct for its own lane (see
+ * that function's doc for why the heuristic above can't reliably infer it
+ * for a parallel-lane path), so it skips straight to this shared finish
+ * instead of going through the search.
+ *
+ * The chosen column must not be one a node itself occupies (its 3-column
+ * border/content/border block, reserved in reserveSpotInGrid): a shared
+ * trunk segment often passes directly over/adjacent to another node's
+ * reserved columns on its way elsewhere, and if the label's midpoint
+ * happens to land there, widening it to fit the label inflates that
+ * node's own border-column width — which then drags things anchored to
+ * that column's *center* (like the box-start ├/┤/┬/┴ connector in
+ * draw-arrows.ts, computed via gridToDrawingCoord) away from the node's
+ * actual, fixed-width rendered border. Search outward from the ideal
+ * midpoint for the nearest column in the segment that isn't node-owned.
+ */
+function applyLabelLine(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: [GridCoord, GridCoord],
+  lenLabel: number,
+): void {
+  const minX = Math.min(line[0].x, line[1].x)
+  const maxX = Math.max(line[0].x, line[1].x)
   const idealX = minX + Math.floor((maxX - minX) / 2)
   const middleX = findNonNodeColumn(graph, minX, maxX, idealX)
 
   const current = graph.columnWidth.get(middleX) ?? 0
   graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2))
 
-  edge.labelLine = [largestLine[0], largestLine[1]]
+  edge.labelLine = [line[0], line[1]]
 }
 
 /** Calculate the total character width of a line segment by summing column widths. */

@@ -21,14 +21,32 @@
  *  - `canBundle` (edge-bundling.ts) refuses to fold a true-parallel group
  *    into one shared fan-in/fan-out trunk, which would otherwise silently
  *    merge unlabeled duplicate edges into a single visible line.
+ *
+ * A second bug (caught in code review before merge, not by the original
+ * issue): `buildParallelLanePath`'s first version descended straight down
+ * the source's/target's *own* border column before crossing to the offset
+ * lane. That's fine for an isolated `A`/`B` pair, but an unrelated node
+ * placed directly below `A`/`B` — a completely ordinary "second,
+ * independent flow stacked under the first" layout, e.g. `X --> Y` right
+ * under `A --> B` — naturally shares that exact column, so the straight
+ * descent ran straight through the unrelated node's own reserved block.
+ * The fix tries a "wide" candidate lane first and falls back to routing the
+ * two short jogs through the permanently node-free gutter column/row
+ * between grid levels when "wide" collides with something. See that
+ * function's own doc for the full reasoning.
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
 import { convertToAsciiGraph } from '../ascii/converter.ts'
 import { createMapping } from '../ascii/grid.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'
-import { pathCells } from '../ascii/grid-occupancy.ts'
-import type { AsciiConfig, AsciiEdge, AsciiGraph } from '../ascii/types.ts'
+import { pathCells, isOccupied } from '../ascii/grid-occupancy.ts'
+import type {
+  AsciiConfig,
+  AsciiEdge,
+  AsciiGraph,
+  AsciiNode,
+} from '../ascii/types.ts'
 
 function buildGraph(source: string, graphDirection: 'LR' | 'TD'): AsciiGraph {
   const parsed = parseMermaid(source)
@@ -224,6 +242,68 @@ describe('parallel edges between the same node pair (#329)', () => {
     )
     const [only] = edgesBetween(graph, 'A', 'B')
     expect(only!.parallelLane).toBeUndefined()
+  })
+
+  describe('offset lanes never cross an unrelated node sharing the same border column/row', () => {
+    // A -->/--> B (parallel), with an independent X --> Y chain placed
+    // directly below A/B. In LR layout, X lands on A's own column and Y on
+    // B's own column — the exact shape that made an earlier version of
+    // buildParallelLanePath route straight through X's/Y's reserved block.
+    const LR_SOURCE = `flowchart LR
+    A -->|One| B
+    A -->|Two| B
+    A -->|Three| B
+    A -->|Four| B
+    X --> Y`
+
+    function interiorCellsOccupiedByForeignNode(
+      graph: AsciiGraph,
+      edge: AsciiEdge,
+    ): { x: number; y: number }[] {
+      const isOwn = (n: AsciiNode, c: { x: number; y: number }) => {
+        const gc = n.gridCoord
+        return (
+          gc !== null &&
+          c.x >= gc.x &&
+          c.x <= gc.x + 2 &&
+          c.y >= gc.y &&
+          c.y <= gc.y + 2
+        )
+      }
+      const cells = pathCells(edge.path)
+      return cells
+        .slice(1, -1)
+        .filter(
+          (c) =>
+            isOccupied(graph.grid, c) &&
+            !isOwn(edge.from, c) &&
+            !isOwn(edge.to, c),
+        )
+    }
+
+    it('no lane path passes through a cell owned by the unrelated X/Y chain', () => {
+      const graph = buildGraph(LR_SOURCE, 'LR')
+      const edges = edgesBetween(graph, 'A', 'B')
+      expect(edges).toHaveLength(4)
+      for (const edge of edges) {
+        const foreign = interiorCellsOccupiedByForeignNode(graph, edge)
+        expect(foreign).toEqual([])
+      }
+    })
+
+    it('every lane in the group still routes through a distinct path', () => {
+      const graph = buildGraph(LR_SOURCE, 'LR')
+      const edges = edgesBetween(graph, 'A', 'B')
+      const keys = new Set(edges.map((e) => pathKey(e.path)))
+      expect(keys.size).toBe(edges.length)
+    })
+
+    it('every label renders intact in the full render', () => {
+      const out = renderMermaidASCII(LR_SOURCE)
+      for (const label of ['One', 'Two', 'Three', 'Four']) {
+        expect(out).toContain(label)
+      }
+    })
   })
 })
 

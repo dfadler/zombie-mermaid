@@ -194,8 +194,16 @@ export interface AsciiEdge {
    * instead — see determinePath in edge-routing.ts — so sibling edges never
    * compute the identical path (and therefore identically-positioned,
    * mutually-corrupting labels; see #329).
+   *
+   * `usedOffsets` is the *same* Set object, by reference, on every edge in
+   * the group (assigned once in assignParallelEdgeLanes) — the lane-offset
+   * search in buildParallelLanePath can land two different lane indices on
+   * the same actual offset when both have to detour around the same
+   * obstacle (see that function's doc), so each successful search records
+   * its chosen offset here and skips any offset a sibling already claimed,
+   * keeping every lane in the group on a genuinely distinct path.
    */
-  parallelLane?: { index: number; total: number }
+  parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
 }
 
 /** A subgraph container with bounding box for rendering. */
