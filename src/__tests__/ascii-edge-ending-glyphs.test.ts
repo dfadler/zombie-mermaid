@@ -65,6 +65,29 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
     expect(result).toContain('✕')
   })
 
+  // The text-embedded label form (`A -- label --o B`) goes through a
+  // different parser branch (TEXT_ARROW_REGEX) than the plain `A --o B`
+  // form above. That branch originally computed hasArrowEnd as just
+  // `closeOp.endsWith('>')`, which is false for a "--o"/"--x" close — since
+  // the ASCII renderer only calls its arrowhead-drawing code at all when
+  // hasArrowEnd is true, the circle/cross glyph silently never rendered for
+  // this syntax form specifically, even though endMarker was set correctly.
+  it('draws the circle glyph for the text-embedded label form (-- label --o)', () => {
+    const result = renderMermaidASCII(`
+      graph LR
+        A -- label --o B
+    `)
+    expect(result).toContain('○')
+  })
+
+  it('draws the cross glyph for the text-embedded label form (-- label --x)', () => {
+    const result = renderMermaidASCII(`
+      graph LR
+        A -- label --x B
+    `)
+    expect(result).toContain('✕')
+  })
+
   it('draws circle/x glyphs at the start end for o-- and x--', () => {
     const resultCircle = renderMermaidASCII(`
       graph LR

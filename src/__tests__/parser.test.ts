@@ -418,18 +418,30 @@ describe('parseMermaid – circle/cross edges (issue #65)', () => {
     expect(g.edges[0]!.startMarker).toBeUndefined()
   })
 
-  it('records endMarker: "circle" via the text-embedded label form (-- label --o)', () => {
+  it('records endMarker: "circle" via the text-embedded label form (-- label --o), and hasArrowEnd', () => {
     const g = parseMermaid('graph LR\n  A -- label --o B')
     expect(g.edges).toHaveLength(1)
     expect(g.edges[0]!.label).toBe('label')
     expect(g.edges[0]!.endMarker).toBe('circle')
+    // A circle terminator is its own kind of arrow ending, like `>` — the
+    // ASCII renderer gates drawing any end glyph at all on hasArrowEnd, so
+    // this must be true or the circle glyph silently never renders.
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
   })
 
-  it('records endMarker: "cross" via the text-embedded label form (-- label --x)', () => {
+  it('records endMarker: "cross" via the text-embedded label form (-- label --x), and hasArrowEnd', () => {
     const g = parseMermaid('graph LR\n  A -- label --x B')
     expect(g.edges).toHaveLength(1)
     expect(g.edges[0]!.label).toBe('label')
     expect(g.edges[0]!.endMarker).toBe('cross')
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
+  })
+
+  it('leaves hasArrowEnd false for an unmarked text-embedded label edge (-- label ---)', () => {
+    const g = parseMermaid('graph LR\n  A -- label ---- B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.hasArrowEnd).toBe(false)
+    expect(g.edges[0]!.endMarker).toBeUndefined()
   })
 })
 

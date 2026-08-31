@@ -969,10 +969,13 @@ function parseEdgeLine(
       const closeOp = textMatch[4]!
       remaining = remaining.slice(textMatch[0].length).trim()
       style = textArrowStyleFromOps(openOp, closeOp)
-      hasArrowEnd = closeOp.endsWith('>')
       // closeOp is a variable-length run (e.g. "---o", "==x", "-.-.->"); only
-      // its final character can be a circle/cross marker.
+      // its final character can be a circle/cross marker. A circle/cross
+      // terminator is its own kind of arrow ending — like `>` — so it counts
+      // toward hasArrowEnd too; an unmarked run (`---`, `===`, `-.-`) is the
+      // only case with no arrowhead of any kind at the close.
       endMarkerKind = markerKind(closeOp.slice(-1))
+      hasArrowEnd = closeOp.endsWith('>') || endMarkerKind !== undefined
     }
 
     // Parse the next node group
