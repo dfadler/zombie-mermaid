@@ -138,6 +138,57 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     expect(ascii).not.toContain('hastagged-with')
   })
 
+  it('positions a jogged label next to the marker for the entity it actually describes', () => {
+    // Real catalog sample ("ER: Blog Platform Schema", used verbatim — see
+    // the row-search test above for why the attribute blocks matter here).
+    // A label's X position used to follow the relationship's column at its
+    // *upper* entity (POST, in this case) even when a jog moved the path
+    // over to the lower entity's column — so "tagged-with" rendered far
+    // from TAG's own marker, floating in the gap between it and COMMENT's
+    // markers with nothing visually tying it to what it describes. The
+    // label now follows the same target column the lower marker uses, so
+    // it sits immediately next to that marker instead.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        USER {
+          int id PK
+          string username UK
+          string email UK
+          date joined
+        }
+        POST {
+          int id PK
+          string title
+          text content
+          int author_id FK
+          date published
+        }
+        COMMENT {
+          int id PK
+          text body
+          int post_id FK
+          int user_id FK
+          date created
+        }
+        TAG {
+          int id PK
+          string name UK
+        }
+        USER ||--o{ POST : writes
+        USER ||--o{ COMMENT : authors
+        POST ||--o{ COMMENT : has
+        POST }|--o{ TAG : tagged-with`,
+      { colorMode: 'none' },
+    )
+
+    const row = ascii.split('\n').find((l) => l.includes('tagged-with'))
+    expect(row).toBeDefined()
+    const idx = row!.indexOf('tagged-with')
+    // TAG's own crow's-foot marker ("○╟"), then a single space, then the
+    // label — not a long run of blank columns with no marker in sight.
+    expect(row!.slice(idx - 3, idx)).toBe('○╟ ')
+  })
+
   it('drops a whole overlapping label in the same-row (horizontal) branch too', () => {
     // A-C is a direct, non-adjacent same-row relationship skipping over B,
     // so its label's clamped placement region spans the whole A..C gap and

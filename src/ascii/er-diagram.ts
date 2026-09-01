@@ -651,7 +651,13 @@ export function renderErAscii(
       // multi-line labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        const labelX = lineX + 2
+        // targetX, not lineX: when a jog moves the path over to the lower
+        // entity's own column, the label needs to sit next to where the
+        // line (and lower marker) actually end up, not next to the
+        // relationship's original column at the *upper* entity — otherwise
+        // it renders visually disconnected, floating in the gap between
+        // the two.
+        const labelX = targetX + 2
         const cellsPerLine = lines.map((line) => toDisplayCells(line))
         const maxCells = Math.max(...cellsPerLine.map((cells) => cells.length))
         const lastLx = labelX + maxCells - 1
@@ -717,6 +723,22 @@ export function renderErAscii(
               if (lx >= 0) {
                 setC(lx, y, cells[i]!, 'text')
               }
+            }
+            // A relationship's own jog can leave a line character
+            // immediately beside where its own label starts —
+            // setRelHChar only stops a *different*, later write from
+            // crowding an already-placed label; it can't retroactively
+            // clean up a dash this same relationship left right there
+            // moments earlier, before the label existed to protect
+            // against it. Clear one cell of breathing room on each side
+            // whenever a line glyph (from any relationship) is sitting
+            // there.
+            if (rc[labelX - 1]?.[y] === 'line') {
+              setC(labelX - 1, y, ' ', 'line')
+            }
+            const afterX = labelX + cells.length
+            if (rc[afterX]?.[y] === 'line') {
+              setC(afterX, y, ' ', 'line')
             }
           }
         }
