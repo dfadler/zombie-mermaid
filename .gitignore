@@ -20,6 +20,10 @@ sitemap.xml
 visual-diff.html
 .visual-diff-cache/
 
+# Transient bench.ts --json= output (CI's own run). bench-baseline.json is
+# the committed, intentionally-updated baseline and is NOT ignored.
+bench-current.json
+
 # Playwright Test's own report/diff output from a visual-test failure. The
 # committed baselines these compare against live in
 # __tests__/visual/__screenshots__/ and are NOT ignored.

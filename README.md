@@ -4,15 +4,17 @@
 
 **Render Mermaid diagrams as beautiful SVGs or ASCII art**
 
-Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid).
+Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) that refuses to die.
 
 ![Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself](hero.svg)
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-view_the_sample_gallery-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/)
+[![Beautiful Mermaid Fork Fixes](https://img.shields.io/badge/Beautiful_Mermaid_Fork_Fixes-before%2Fafter_evidence-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)
 
 [![npm version](https://img.shields.io/npm/v/zombie-mermaid.svg)](https://www.npmjs.com/package/zombie-mermaid)
 [![CI](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml/badge.svg)](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/dfadler/zombie-mermaid/branch/main/graph/badge.svg)](https://codecov.io/gh/dfadler/zombie-mermaid)
+[![Bundle Size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size)
 [![Socket Security](https://socket.dev/api/badge/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -22,7 +24,9 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 ## Why This Fork Exists
 
-`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: as of August 2026, there are 30 open pull requests, the oldest dating back over half a year, and nothing has merged in months. I maintain `zombie-mermaid` as a fork that keeps it moving — pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
+`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: dozens of [pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) sit open, some for over half a year, and nothing has merged in months — by most definitions, it's dead. I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
+
+This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase: every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below.
 
@@ -36,6 +40,16 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 - **Complex theming** — Customizing colors requires wrestling with CSS classes
 - **No terminal output** — Can't render to ASCII for CLI tools
 - **Heavy dependencies** — Pulls in a lot of code for simple diagrams
+
+### Bundle Size
+
+The **Bundle Size** badge above tracks the gzipped size of `zombie-mermaid`'s
+main entry point (`dist/index.js`) and updates automatically with every
+release — the same badge/CI-tracked pattern already backing the coverage and
+CI status badges. Need ASCII rendering only? `import { renderMermaidASCII }
+from 'zombie-mermaid/ascii'` skips [ELK.js](https://github.com/kieler/elkjs),
+the layout engine the SVG renderer depends on, for a substantially smaller
+bundle.
 
 ## Features
 

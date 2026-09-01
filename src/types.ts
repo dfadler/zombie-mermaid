@@ -3,6 +3,7 @@
 // ============================================================================
 
 import type { InitConfig, CurveStyle } from './init-directive.ts'
+import type { LayoutCache } from './elk-instance.ts'
 
 export interface MermaidGraph {
   direction: Direction
@@ -350,4 +351,20 @@ export interface RenderOptions {
     /** Gap between consecutively stacked notes. Default: 4 */
     noteStackGap?: number
   }
+
+  /**
+   * Opt-in ELK layout cache (see `createLayoutCache()`). When set,
+   * `layoutGraphSync()` / `layoutClassDiagramSync()` / `layoutErDiagramSync()`
+   * (flowchart/state, class, and ER diagrams — the ELK-based layout
+   * engines) skip re-running ELK layout on a cache hit, keyed on a
+   * deterministic serialization of the fully-resolved ELK input graph
+   * (diagram structure + every layout-affecting option already baked in).
+   *
+   * Unset (the default) preserves the original always-recompute behavior
+   * exactly — this cache is entirely opt-in. Create one instance and
+   * reuse it across renders (e.g. module scope, or a `useRef` in React);
+   * passing a freshly-created cache on every call defeats the point,
+   * since it starts empty each time.
+   */
+  layoutCache?: LayoutCache
 }
