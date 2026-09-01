@@ -84,6 +84,12 @@ var DEFAULT_SOURCE =
 var hashSource = getHashSource()
 if (hashSource) {
   editor.value = hashSource
+  // getHashSource() may have set state.theme (see sharing.js) as a side
+  // effect, but nothing had applied it yet -- a shared/linked-to theme was
+  // silently ignored, leaving only the source itself loaded.
+  diagramThemeIsAuto = false
+  applyThemeToPage(state.theme)
+  updateThemeButton()
 } else {
   editor.value = DEFAULT_SOURCE
 }

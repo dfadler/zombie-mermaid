@@ -7,6 +7,7 @@ import type {
   ClassNamespace,
 } from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
+import { applyClickStatement } from '../click-directive.ts'
 
 // ============================================================================
 // Class diagram parser
@@ -25,6 +26,7 @@ import { normalizeBrTags } from '../multiline-utils.ts'
 //   A "1" --> "*" B : label   (with cardinality + label)
 //   Animal : +String name     (inline attribute)
 //   namespace MyNamespace { class A { } }
+//   click Animal "https://example.com" "Tooltip" _blank   (see docs/decisions/no-script-interactivity.md)
 // ============================================================================
 
 /**
@@ -48,6 +50,7 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
     classes: [],
     relationships: [],
     namespaces: [],
+    interactions: new Map(),
   }
 
   // Track classes by ID for deduplication
@@ -87,6 +90,12 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
           currentClass.attributes.push(member.member)
         }
       }
+      continue
+    }
+
+    // --- click interaction: `click ClassName "url" "tooltip" _blank` / `click ClassName call fn()` ---
+    if (/^click\s+/i.test(line)) {
+      applyClickStatement(line, diagram.interactions)
       continue
     }
 

@@ -4,12 +4,19 @@
  * Runs all sample definitions through both renderers (SVG + ASCII)
  * and prints a table with per-sample timing and aggregate stats.
  *
- * Usage: tsx bench.ts
+ * Usage: tsx bench.ts [--json=<path>]
+ *   --json   Also write a machine-readable summary (totals + per-category
+ *            breakdown) to this path. Consumed by scripts/bench-compare.ts
+ *            to gate CI against bench-baseline.json.
  */
 
+import { writeFile } from 'node:fs/promises'
 import { samples } from './samples-data.ts'
 import { renderMermaid } from './src/index.ts'
 import { renderMermaidASCII } from './src/ascii/index.ts'
+
+const jsonArg = process.argv.find((a) => a.startsWith('--json='))
+const JSON_OUTPUT_PATH = jsonArg ? jsonArg.slice('--json='.length) : null
 
 // ============================================================================
 // Types
@@ -66,7 +73,7 @@ for (let i = 0; i < samples.length; i++) {
   let svgError: string | null = null
   let asciiError: string | null = null
 
-  // Render SVG (async — uses dagre layout for flowcharts/state/class/ER)
+  // Render SVG (async — uses ELK layout for flowcharts/state/class/ER)
   try {
     const t0 = performance.now()
     await renderMermaid(sample.source, sample.options)
@@ -76,7 +83,7 @@ for (let i = 0; i < samples.length; i++) {
     svgMs = -1
   }
 
-  // Render ASCII (sync — custom text layout, no dagre)
+  // Render ASCII (sync — custom text layout, no ELK)
   try {
     const t0 = performance.now()
     renderMermaidASCII(sample.source)
@@ -180,3 +187,40 @@ for (const [cat, catResults] of catMap) {
 }
 
 console.log()
+
+// ============================================================================
+// JSON summary (optional)
+// ============================================================================
+
+if (JSON_OUTPUT_PATH) {
+  const categories: Record<
+    string,
+    { sampleCount: number; svgMs: number; asciiMs: number }
+  > = {}
+  for (const [cat, catResults] of catMap) {
+    categories[cat] = {
+      sampleCount: catResults.length,
+      svgMs: catResults
+        .filter((r) => r.svgMs >= 0)
+        .reduce((a, r) => a + r.svgMs, 0),
+      asciiMs: catResults
+        .filter((r) => r.asciiMs >= 0)
+        .reduce((a, r) => a + r.asciiMs, 0),
+    }
+  }
+
+  const summary = {
+    generatedAt: new Date().toISOString(),
+    sampleCount: results.length,
+    svgTotalMs: svgTotal,
+    asciiTotalMs: asciiTotal,
+    categories,
+  }
+
+  await writeFile(
+    JSON_OUTPUT_PATH,
+    JSON.stringify(summary, null, 2) + '\n',
+    'utf-8',
+  )
+  console.log(`JSON summary written to ${JSON_OUTPUT_PATH}`)
+}
