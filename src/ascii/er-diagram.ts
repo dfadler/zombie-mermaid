@@ -338,6 +338,50 @@ export function renderErAscii(
     write(canvas, x, y, ch, { role, roleCanvas: rc })
   }
 
+  /**
+   * Set a character for a relationship's line/marker/label — but never
+   * overwrite a cell that already holds 'text' content. Relationships are
+   * drawn in declaration order and a later relationship's line, crow's-foot
+   * marker, or label can otherwise land on the exact cell an earlier
+   * relationship's label (or an entity's own header/attribute text) already
+   * wrote, silently corrupting it — a stray line glyph mid-word, or one
+   * label's characters spliced into another's (issue #392). Every write in
+   * this relationship-drawing pass goes through this guard rather than only
+   * the straight-line fills, since crow's-foot markers and labels are just
+   * as capable of landing on the same cell. The accepted trade-off is a gap
+   * in the line/marker/label at that spot, over destroying text that was
+   * already there.
+   */
+  function setRelChar(x: number, y: number, ch: string, role: CharRole): void {
+    if (rc[x]?.[y] === 'text') return
+    setC(x, y, ch, role)
+  }
+
+  /**
+   * True when every cell a label's line would occupy (after clamping to
+   * [minX, maxX]) is free of existing 'text'. Checked as a whole line rather
+   * than character-by-character: a per-character skip on a *label* write
+   * (unlike a line or marker) would let two overlapping labels' letters
+   * splice together into a new word that isn't either original label —
+   * e.g. "has" + the tail of "tagged-with" reading as "hasged-with" — which
+   * is more misleading than either label winning outright or neither
+   * appearing. A label either renders intact or is skipped entirely.
+   */
+  function canPlaceLabelLine(
+    cells: string[],
+    startX: number,
+    y: number,
+    minX: number,
+    maxX: number,
+  ): boolean {
+    for (let i = 0; i < cells.length; i++) {
+      const x = startX + i
+      if (x < minX || x > maxX) continue
+      if (rc[x]?.[y] === 'text') return false
+    }
+    return true
+  }
+
   // --- Draw entity boxes ---
   for (const p of placed.values()) {
     const boxCanvas = drawMultiBox(p.sections, useAscii)
@@ -394,7 +438,7 @@ export function renderErAscii(
 
       // Draw horizontal line
       for (let x = startX; x <= endX; x++) {
-        setC(x, lineY, lineH, 'line')
+        setRelChar(x, lineY, lineH, 'line')
       }
 
       // Inset the crow's foot markers and the label by 1 cell from each
@@ -410,13 +454,13 @@ export function renderErAscii(
       // Left marker (at left entity's right edge) - isRight=false
       const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       for (let i = 0; i < leftChars.length; i++) {
-        setC(markerStartX + i, lineY, leftChars[i]!, 'arrow')
+        setRelChar(markerStartX + i, lineY, leftChars[i]!, 'arrow')
       }
 
       // Right marker (at right entity's left edge) - isRight=true
       const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       for (let i = 0; i < rightChars.length; i++) {
-        setC(
+        setRelChar(
           markerEndX - rightChars.length + 1 + i,
           lineY,
           rightChars[i]!,
@@ -455,6 +499,11 @@ export function renderErAscii(
             Math.max(labelStart + cells.length, 1),
             Math.max(labelY + 1, 1),
           )
+          if (
+            !canPlaceLabelLine(cells, labelStart, labelY, labelMinX, labelMaxX)
+          ) {
+            continue
+          }
           for (let i = 0; i < cells.length; i++) {
             const lx = labelStart + i
             if (lx >= labelMinX && lx <= labelMaxX) {
@@ -477,7 +526,7 @@ export function renderErAscii(
 
       // Vertical line
       for (let y = startY; y <= endY; y++) {
-        setC(lineX, y, lineV, 'line')
+        setRelChar(lineX, y, lineV, 'line')
       }
 
       // If horizontal offset needed, add a horizontal segment
@@ -488,11 +537,11 @@ export function renderErAscii(
         const lx = Math.min(lineX, lowerCX)
         const rx = Math.max(lineX, lowerCX)
         for (let x = lx; x <= rx; x++) {
-          setC(x, midY, lineH, 'line')
+          setRelChar(x, midY, lineH, 'line')
         }
         // Vertical from midY to lower entity
         for (let y = midY + 1; y <= endY; y++) {
-          setC(lowerCX, y, lineV, 'line')
+          setRelChar(lowerCX, y, lineV, 'line')
         }
       }
 
@@ -509,7 +558,7 @@ export function renderErAscii(
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
       const upperChars = getCrowsFootChars(upperCard, useAscii, false)
       for (let i = 0; i < upperChars.length; i++) {
-        setC(
+        setRelChar(
           lineX - Math.floor(upperChars.length / 2) + i,
           markerStartY,
           upperChars[i]!,
@@ -521,7 +570,7 @@ export function renderErAscii(
       const targetX = lineX !== lowerCX ? lowerCX : lineX
       const lowerChars = getCrowsFootChars(lowerCard, useAscii, true)
       for (let i = 0; i < lowerChars.length; i++) {
-        setC(
+        setRelChar(
           targetX - Math.floor(lowerChars.length / 2) + i,
           markerEndY,
           lowerChars[i]!,
@@ -545,12 +594,17 @@ export function renderErAscii(
           if (y >= 0) {
             // Grid cells, not code units — see toDisplayCells.
             const cells = toDisplayCells(line)
-            for (let i = 0; i < cells.length; i++) {
-              const lx = labelX + i
-              if (lx >= 0) {
-                increaseSize(canvas, lx + 1, y + 1)
-                increaseRoleCanvasSize(rc, lx + 1, y + 1)
-                setC(lx, y, cells[i]!, 'text')
+            const lastLx = labelX + cells.length - 1
+            if (lastLx >= 0) {
+              increaseSize(canvas, lastLx + 1, y + 1)
+              increaseRoleCanvasSize(rc, lastLx + 1, y + 1)
+            }
+            if (canPlaceLabelLine(cells, labelX, y, 0, lastLx)) {
+              for (let i = 0; i < cells.length; i++) {
+                const lx = labelX + i
+                if (lx >= 0) {
+                  setC(lx, y, cells[i]!, 'text')
+                }
               }
             }
           }
