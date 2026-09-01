@@ -1,19 +1,12 @@
-import { createRequire } from 'node:module'
 import { parseArgs } from './cli/parse-args.ts'
 import type { CliArgs } from './cli/parse-args.ts'
 import { runRender } from './cli/render.ts'
 import { runWeb } from './cli/web.ts'
+import { runMcp } from './cli/mcp.ts'
 import { THEMES } from './theme.ts'
+import { getPackageVersion } from './package-info.ts'
 
-const require = createRequire(import.meta.url)
-const pkg: unknown = require('../package.json')
-const pkgVersion =
-  typeof pkg === 'object' &&
-  pkg !== null &&
-  'version' in pkg &&
-  typeof pkg.version === 'string'
-    ? pkg.version
-    : 'unknown'
+const pkgVersion = getPackageVersion()
 
 export async function main() {
   const argv = process.argv.slice(2)
@@ -63,6 +56,17 @@ export async function main() {
         process.exit(1)
       }
       break
+
+    case 'mcp':
+      try {
+        await runMcp()
+      } catch (err) {
+        console.error(
+          `Error: ${err instanceof Error ? err.message : String(err)}`,
+        )
+        process.exit(1)
+      }
+      break
   }
 }
 
@@ -78,6 +82,7 @@ Usage:
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
+  zombie-mermaid mcp                                Start an MCP server on stdio (render tools)
   zombie-mermaid --help                             Show this help
   zombie-mermaid --version                          Show version
 
