@@ -37,6 +37,7 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run test:visual` — visual regression suite (real-browser screenshots of every sample; see "Visual regression tests" below)
 - `pnpm run test:visual:update` — regenerate visual baselines after an intentional rendering change
 - `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
+- `pnpm run fork-fixes` — build `fork-fixes.html`; if you add or change a `render: 'ascii'` entry in `demo/fork-fixes-data.ts`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/` — those real-terminal screenshots are the before/after shown on that page, not a live render
 - `pnpm run lint` — ESLint
 - `pnpm run build` — build the publishable package with tsup
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`

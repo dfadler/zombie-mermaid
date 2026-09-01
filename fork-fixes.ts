@@ -27,6 +27,16 @@ const exec = promisify(execFile)
  *  module resolution still finds the shared node_modules. */
 const CACHE_DIR = new URL('./.fork-fixes-cache/', import.meta.url).pathname
 
+/**
+ * Real-terminal screenshots for `render: 'ascii'` entries, captured by
+ * scripts/capture-fork-fixes-terminal.ts (asciinema + agg against a genuine
+ * PTY, not ascii-html.ts's browser approximation) and committed here.
+ */
+const SCREENSHOTS_DIR = new URL(
+  './public/fork-fixes-screenshots/',
+  import.meta.url,
+).pathname
+
 interface RenderPair {
   fix: ForkFix
   before: string
@@ -163,10 +173,13 @@ function formatProse(text: string): string {
 }
 
 /**
- * Render one side of a pair: the diagram, an excerpt of its markup, the error
- * it threw, or an explicit note that it produced nothing.
+ * Render one side of a pair: a real-terminal screenshot, the diagram, an
+ * excerpt of its markup, the error it threw, or an explicit note that it
+ * produced nothing.
  */
 function renderPanel(
+  fixId: string,
+  side: 'before' | 'after',
   output: string,
   error: string | undefined,
   mode: 'svg' | 'ascii',
@@ -205,6 +218,10 @@ function renderPanel(
   }
 
   if (mode === 'ascii') {
+    const screenshotFile = `${fixId}-${side}.png`
+    if (existsSync(`${SCREENSHOTS_DIR}${screenshotFile}`)) {
+      return `<div class="fix-screenshot"><img src="fork-fixes-screenshots/${screenshotFile}" alt="${side} terminal output of \`zombie-mermaid render ${escapeHtml(fixId)}.mmd --ascii\`" loading="lazy" /></div>`
+    }
     return `<pre class="fix-ascii">${asciiToHtml(output.replace(/[ \t]+$/gm, ''))}</pre>`
   }
   return `<div class="fix-svg">${output}</div>`
@@ -245,11 +262,11 @@ function renderFixSection(pair: RenderPair): string {
         <div class="fix-pair">
           <div class="fix-side">
             <h3 class="fix-side-title fix-side-before">Before</h3>
-            ${renderPanel(pair.before, pair.beforeError, fix.render, fix.excerpt)}
+            ${renderPanel(fix.id, 'before', pair.before, pair.beforeError, fix.render, fix.excerpt)}
           </div>
           <div class="fix-side">
             <h3 class="fix-side-title fix-side-after">After</h3>
-            ${renderPanel(pair.after, pair.afterError, fix.render, fix.excerpt)}
+            ${renderPanel(fix.id, 'after', pair.after, pair.afterError, fix.render, fix.excerpt)}
           </div>
         </div>
         <p class="fix-lookfor">${formatProse(fix.lookFor)}</p>
