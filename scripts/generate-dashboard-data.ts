@@ -4,15 +4,16 @@
  * Usage: `pnpm run dashboard:data` (needs the `gh` CLI, authenticated —
  * `gh auth status` to check).
  *
- * This is a deliberately MANUAL/periodic step, not part of `build:site`.
- * `build:site` runs on every PR (ci.yml's `build-site` job) and on every
- * push to main (pages.yml) — making either of those hit the live GitHub API
- * would put a network dependency (and rate-limit exposure) on CI paths that
- * are otherwise fully hermetic. Instead, this script is run by hand (or a
- * future scheduled workflow — see zombie-mermaid#265) to refresh the
- * committed JSON snapshot, and dashboard.ts only ever reads that file. The
- * dashboard page shows `generatedAt` prominently so readers know it's a
- * snapshot, not a live feed.
+ * This is deliberately NOT part of `build:site`. `build:site` runs on every
+ * PR (ci.yml's `build-site` job) and on every push to main (pages.yml) —
+ * making either of those hit the live GitHub API would put a network
+ * dependency (and rate-limit exposure) on CI paths that are otherwise fully
+ * hermetic. Instead, `.github/workflows/dashboard-refresh.yml` runs this
+ * script on its own weekly schedule and commits the refreshed
+ * `demo/dashboard-data.json` to `main` if it changed (you can still run it
+ * by hand between scheduled runs). `dashboard.ts` only ever reads that
+ * committed file. The dashboard page shows `generatedAt` prominently so
+ * readers know it's a periodic snapshot, not a live feed.
  *
  * Data sources, all read-only:
  *  - `gh api repos/<owner>/<repo>` — push recency, open issue count
