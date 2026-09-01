@@ -557,15 +557,24 @@ export function renderErAscii(
       const endY = lower.y - 1
       const lineX = upper.x + Math.floor(upper.width / 2)
 
+      // If a horizontal offset is needed, the path jogs over to lowerCX at
+      // midY and continues down from there — so the initial vertical fill
+      // must stop at the jog row instead of also running the full height at
+      // the *original* lineX. Otherwise that leftover column keeps drawing
+      // all the way to endY, a stray parallel line beside the actual
+      // jogged path that doesn't connect to anything.
+      const lowerCX = lower.x + Math.floor(lower.width / 2)
+      const needsJog = lineX !== lowerCX
+      const midY = Math.floor((startY + endY) / 2)
+      const initialVertEnd = needsJog ? midY - 1 : endY
+
       // Vertical line
-      for (let y = startY; y <= endY; y++) {
+      for (let y = startY; y <= initialVertEnd; y++) {
         setRelChar(lineX, y, lineV, 'line')
       }
 
       // If horizontal offset needed, add a horizontal segment
-      const lowerCX = lower.x + Math.floor(lower.width / 2)
-      if (lineX !== lowerCX) {
-        const midY = Math.floor((startY + endY) / 2)
+      if (needsJog) {
         // Horizontal segment at midY
         const lx = Math.min(lineX, lowerCX)
         const rx = Math.max(lineX, lowerCX)
