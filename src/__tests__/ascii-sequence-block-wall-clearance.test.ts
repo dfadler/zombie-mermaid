@@ -42,9 +42,7 @@ function blockWallRightColumn(lines: string[], marker: string): number {
     const idx = row!.lastIndexOf(ch)
     if (idx > col) col = idx
   }
-  expect(col, `expected a right-wall glyph on line: ${row}`).toBeGreaterThan(
-    -1,
-  )
+  expect(col, `expected a right-wall glyph on line: ${row}`).toBeGreaterThan(-1)
   return col
 }
 
