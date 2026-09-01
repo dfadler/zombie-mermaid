@@ -30,23 +30,31 @@ import { execFile } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
-import { forkFixes } from '../demo/fork-fixes-data.ts'
+import { forkFixes as defaultForkFixes } from '../demo/fork-fixes-data.ts'
+import type { ForkFix } from '../demo/fork-fixes-data.ts'
 
 const exec = promisify(execFile)
 
-const FORK = { owner: 'dfadler', name: 'zombie-mermaid' }
-const UPSTREAM = { owner: 'lukilabs', name: 'beautiful-mermaid' }
+export const FORK = { owner: 'dfadler', name: 'zombie-mermaid' }
+export const UPSTREAM = { owner: 'lukilabs', name: 'beautiful-mermaid' }
 
-async function gh(args: string[]): Promise<string> {
+/**
+ * Signature every fetch* function below depends on instead of calling `gh`
+ * directly — lets tests supply canned responses without mocking
+ * node:child_process/execFile's promisify plumbing.
+ */
+export type GhFn = (args: string[]) => Promise<string>
+
+export async function gh(args: string[]): Promise<string> {
   const { stdout } = await exec('gh', args, { maxBuffer: 16 * 1024 * 1024 })
   return stdout
 }
 
-async function ghJson<T>(args: string[]): Promise<T> {
-  return JSON.parse(await gh(args)) as T
+async function ghJson<T>(ghFn: GhFn, args: string[]): Promise<T> {
+  return JSON.parse(await ghFn(args)) as T
 }
 
-interface RepoStats {
+export interface RepoStats {
   owner: string
   name: string
   url: string
@@ -58,24 +66,22 @@ interface RepoStats {
   latestRelease: { tag: string; publishedAt: string } | null
 }
 
-async function fetchRepoStats(repo: {
-  owner: string
-  name: string
-}): Promise<RepoStats> {
+export async function fetchRepoStats(
+  repo: { owner: string; name: string },
+  ghFn: GhFn = gh,
+): Promise<RepoStats> {
   const slug = `${repo.owner}/${repo.name}`
 
-  const info = await ghJson<{ pushed_at: string; open_issues_count: number }>([
-    'api',
-    `repos/${slug}`,
-    '--jq',
-    'tostring',
-  ])
+  const info = await ghJson<{
+    pushed_at: string
+    open_issues_count: number
+  }>(ghFn, ['api', `repos/${slug}`, '--jq', 'tostring'])
   // open_issues_count from the repo API counts *issues and PRs together* per
   // GitHub's own docs — the search-API counts below are used for anything
   // that needs issues and PRs told apart.
 
   const [openIssues, openPRs, mergedPRs, releases] = await Promise.all([
-    ghJson<{ total_count: number }>([
+    ghJson<{ total_count: number }>(ghFn, [
       'api',
       'search/issues',
       '-X',
@@ -85,7 +91,7 @@ async function fetchRepoStats(repo: {
       '--jq',
       'tostring',
     ]),
-    ghJson<{ total_count: number }>([
+    ghJson<{ total_count: number }>(ghFn, [
       'api',
       'search/issues',
       '-X',
@@ -95,7 +101,7 @@ async function fetchRepoStats(repo: {
       '--jq',
       'tostring',
     ]),
-    ghJson<{ total_count: number }>([
+    ghJson<{ total_count: number }>(ghFn, [
       'api',
       'search/issues',
       '-X',
@@ -105,7 +111,7 @@ async function fetchRepoStats(repo: {
       '--jq',
       'tostring',
     ]),
-    ghJson<Array<{ tag_name: string; published_at: string }>>([
+    ghJson<Array<{ tag_name: string; published_at: string }>>(ghFn, [
       'api',
       `repos/${slug}/releases`,
       '--jq',
@@ -128,7 +134,7 @@ async function fetchRepoStats(repo: {
   }
 }
 
-interface RescuedIssue {
+export interface RescuedIssue {
   number: number
   state: 'open' | 'closed'
   fixId: string
@@ -140,12 +146,15 @@ interface RescuedIssue {
  * State of every upstream issue any fork-fixes.ts entry claims to fix, one
  * batched GraphQL call rather than one REST call per issue.
  */
-async function fetchRescuedIssues(): Promise<RescuedIssue[]> {
+export async function fetchRescuedIssues(
+  fixes: ForkFix[] = defaultForkFixes,
+  ghFn: GhFn = gh,
+): Promise<RescuedIssue[]> {
   const byNumber = new Map<
     number,
     { fixId: string; fixTitle: string; forkPr: number }
   >()
-  for (const fix of forkFixes) {
+  for (const fix of fixes) {
     for (const n of fix.upstreamIssues ?? []) {
       // First fix wins if two entries somehow reference the same upstream
       // issue — good enough for a dashboard credit line, not load-bearing.
@@ -164,7 +173,7 @@ async function fetchRescuedIssues(): Promise<RescuedIssue[]> {
 
   const result = await ghJson<{
     data: { repository: Record<string, { number: number; state: string }> }
-  }>(['api', 'graphql', '-f', `query=${query}`, '--jq', 'tostring'])
+  }>(ghFn, ['api', 'graphql', '-f', `query=${query}`, '--jq', 'tostring'])
 
   return Object.values(result.data.repository).map((issue) => {
     const meta = byNumber.get(issue.number)!
@@ -178,7 +187,7 @@ async function fetchRescuedIssues(): Promise<RescuedIssue[]> {
   })
 }
 
-interface ResponseTimeStats {
+export interface ResponseTimeStats {
   sampleSize: number
   medianHours: number
   note: string
@@ -192,8 +201,9 @@ interface ResponseTimeStats {
  * and noisy sample (often the maintainer's own follow-up, not a distinct
  * responder) — presented with an explicit caveat rather than as an SLA.
  */
-async function fetchResponseTimeStats(
+export async function fetchResponseTimeStats(
   sampleLimit = 20,
+  ghFn: GhFn = gh,
 ): Promise<ResponseTimeStats | null> {
   const search = await ghJson<{
     items: Array<{
@@ -202,7 +212,7 @@ async function fetchResponseTimeStats(
       comments: number
       user: { login: string }
     }>
-  }>([
+  }>(ghFn, [
     'api',
     'search/issues',
     '-X',
@@ -223,7 +233,7 @@ async function fetchResponseTimeStats(
   for (const item of search.items) {
     const comments = await ghJson<
       Array<{ created_at: string; user: { login: string } }>
-    >([
+    >(ghFn, [
       'api',
       `repos/${FORK.owner}/${FORK.name}/issues/${item.number}/comments`,
       '--jq',
@@ -254,7 +264,7 @@ async function fetchResponseTimeStats(
   }
 }
 
-async function main() {
+export async function main() {
   console.log('Fetching repo stats (fork + upstream)...')
   const [fork, upstream] = await Promise.all([
     fetchRepoStats(FORK),
@@ -272,7 +282,7 @@ async function main() {
     fork,
     upstream,
     rescued: {
-      totalFixes: forkFixes.length,
+      totalFixes: defaultForkFixes.length,
       upstreamIssuesReferenced: rescuedIssues.length,
       upstreamIssuesStillOpen: rescuedIssues.filter((i) => i.state === 'open')
         .length,
@@ -291,4 +301,6 @@ async function main() {
   console.log(`Written to ${outPath}`)
 }
 
-await main()
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  await main()
+}

@@ -22,7 +22,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import dashboardData from './demo/dashboard-data.json' with { type: 'json' }
 
-interface RepoStats {
+export interface RepoStats {
   owner: string
   name: string
   url: string
@@ -34,7 +34,7 @@ interface RepoStats {
   latestRelease: { tag: string; publishedAt: string } | null
 }
 
-interface RescuedIssue {
+export interface RescuedIssue {
   number: number
   state: 'open' | 'closed'
   fixId: string
@@ -42,7 +42,7 @@ interface RescuedIssue {
   forkPr: number
 }
 
-interface DashboardData {
+export interface DashboardData {
   generatedAt: string
   fork: RepoStats
   upstream: RepoStats
@@ -62,7 +62,7 @@ interface DashboardData {
 
 const data = dashboardData as DashboardData
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -70,14 +70,21 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
-function daysSince(iso: string): number {
+/**
+ * `referenceIso` defaults to this snapshot's own `generatedAt` so existing
+ * call sites don't need to pass it — tests supply an explicit value instead
+ * of depending on the committed demo/dashboard-data.json's contents.
+ */
+export function daysSince(
+  iso: string,
+  referenceIso: string = data.generatedAt,
+): number {
   return Math.floor(
-    (new Date(data.generatedAt).getTime() - new Date(iso).getTime()) /
-      86_400_000,
+    (new Date(referenceIso).getTime() - new Date(iso).getTime()) / 86_400_000,
   )
 }
 
-function formatDate(iso: string): string {
+export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -85,7 +92,7 @@ function formatDate(iso: string): string {
   })
 }
 
-function formatDateTime(iso: string): string {
+export function formatDateTime(iso: string): string {
   return (
     new Date(iso).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -101,11 +108,14 @@ function formatDateTime(iso: string): string {
   )
 }
 
-function pluralDays(n: number): string {
+export function pluralDays(n: number): string {
   return `${n} day${n === 1 ? '' : 's'}`
 }
 
-function renderCompareTable(fork: RepoStats, upstream: RepoStats): string {
+export function renderCompareTable(
+  fork: RepoStats,
+  upstream: RepoStats,
+): string {
   const rows: Array<[string, string, string]> = [
     [
       'Last commit',
@@ -156,7 +166,7 @@ function renderCompareTable(fork: RepoStats, upstream: RepoStats): string {
       </div>`
 }
 
-function renderStatCards(rescued: DashboardData['rescued']): string {
+export function renderStatCards(rescued: DashboardData['rescued']): string {
   const cards: Array<[string, string, boolean]> = [
     [String(rescued.totalFixes), 'Bugs fixed in this fork', true],
     [
@@ -189,7 +199,7 @@ function renderStatCards(rescued: DashboardData['rescued']): string {
       </div>`
 }
 
-function renderIssueList(issues: RescuedIssue[]): string {
+export function renderIssueList(issues: RescuedIssue[]): string {
   return `
       <div class="dash-issue-list">
         ${issues
@@ -212,7 +222,7 @@ function renderIssueList(issues: RescuedIssue[]): string {
       </div>`
 }
 
-function renderResponseTime(rt: DashboardData['responseTime']): string {
+export function renderResponseTime(rt: DashboardData['responseTime']): string {
   if (!rt) {
     return `<p class="dash-response-note">No recent issue with a first comment was found to sample.</p>`
   }
@@ -226,7 +236,7 @@ function renderResponseTime(rt: DashboardData['responseTime']): string {
       </div>`
 }
 
-async function generate(): Promise<string> {
+export async function generate(): Promise<string> {
   const styles = await readFile(
     new URL('./demo/styles.css', import.meta.url),
     'utf8',
@@ -313,7 +323,9 @@ ${extra}
 </html>`
 }
 
-const html = await generate()
-const outPath = fileURLToPath(new URL('./dashboard.html', import.meta.url))
-await writeFile(outPath, html, 'utf8')
-console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const html = await generate()
+  const outPath = fileURLToPath(new URL('./dashboard.html', import.meta.url))
+  await writeFile(outPath, html, 'utf8')
+  console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
+}
