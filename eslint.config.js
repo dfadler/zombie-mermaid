@@ -12,6 +12,13 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
+      // Other worktrees' full checkouts (source *and* their own separate
+      // node_modules — this repo has no worktree.symlinkDirectories, so
+      // each worktree installs its own). Without this, ESLint's glob walks
+      // every worktree present under .claude/worktrees/ on every run —
+      // slow, and prone to ENOENT if a concurrent session removes a
+      // worktree mid-scan.
+      '.claude/worktrees/**',
       'site/**',
       'coverage/**',
       '**/*.html',
