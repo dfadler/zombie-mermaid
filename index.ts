@@ -600,7 +600,7 @@ ${styles}
       </button>
     </div>
     <div class="hero-meta">
-      <p class="meta" id="total-timing">Rendering ${samples.length * 2} samples\u2026</p>
+      <p class="meta" id="total-timing">Rendering samples\u2026</p>
       <div class="meta">ASCII rendering based on <a href="https://github.com/AlexanderGrooff/mermaid-ascii" target="_blank" rel="noopener">Mermaid-ASCII</a></div>
       <div class="meta">Early preview — actively evolving</div>
     </div>

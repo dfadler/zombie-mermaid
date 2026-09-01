@@ -990,13 +990,19 @@ const totalRenderable = samples.filter(function (s) {
 }).length
 
 function updateRenderStats() {
-  totalTimingEl.textContent =
-    renderedCount * 2 +
-    ' of ' +
-    totalRenderable * 2 +
-    ' samples (SVG+ASCII) rendered in ' +
-    renderedMs.toFixed(0) +
-    ' ms so far'
+  const rendered = renderedCount * 2
+  const total = totalRenderable * 2
+  const isComplete = renderedCount >= totalRenderable
+  // Framed as a performance highlight once complete ("this is fast"),
+  // and as plain progress copy while still running — not a raw counter
+  // dump, so it reads as intentional UI rather than leftover debug output.
+  totalTimingEl.textContent = isComplete
+    ? 'Rendered all ' +
+      total +
+      ' sample outputs (SVG + ASCII) in ' +
+      renderedMs.toFixed(0) +
+      'ms.'
+    : 'Rendering samples… ' + rendered + ' of ' + total + ' done.'
 }
 
 async function renderCategory(slug: string) {
