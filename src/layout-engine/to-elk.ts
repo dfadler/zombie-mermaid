@@ -35,7 +35,7 @@ function directionToElk(dir: MermaidGraph['direction']): string {
 }
 
 // ============================================================================
-// Node sizing (same logic as Dagre adapter)
+// Node sizing
 // ============================================================================
 
 function estimateNodeSize(

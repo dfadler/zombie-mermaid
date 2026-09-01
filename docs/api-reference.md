@@ -87,4 +87,8 @@ Object containing all 15 built-in themes. See [theming.md](theming.md) for the f
 
 ## `DEFAULTS: { bg: string, fg: string }`
 
+## `createMcpServer(): McpServer`
+
+Build an [MCP](https://modelcontextprotocol.io/) server exposing `render_mermaid_svg` and `render_mermaid_ascii` tools, from `zombie-mermaid/mcp`. Not connected to a transport — see the [README's MCP Server section](../README.md#mcp-server) for the `zombie-mermaid mcp` CLI subcommand (the common case) or how to connect it yourself.
+
 Default colors (`#FFFFFF` / `#27272A`).

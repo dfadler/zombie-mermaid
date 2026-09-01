@@ -53,6 +53,20 @@ const graphemeSegmenter = new Intl.Segmenter(undefined, {
 })
 
 /**
+ * U+FE0F VARIATION SELECTOR-16 explicitly requests the emoji (wide)
+ * presentation for the preceding base character, overriding whatever that
+ * character's own default presentation is. `isWideChar` only ever sees one
+ * isolated code point at a time (it's shared with the SVG text-measurement
+ * path, which has no grapheme-cluster concept), so it has no way to look
+ * ahead for a following VS16 — that requires cluster-level context, which
+ * only exists here. A base character normally classified narrow (e.g. ▶
+ * U+25B6, excluded from `isWideChar` as a Geometric Shapes glyph — see
+ * `isGeometricShapesTextDefault` in text-metrics.ts) still renders as a
+ * double-width emoji glyph in ▶️ once VS16 forces emoji presentation.
+ */
+const VARIATION_SELECTOR_16 = '\u{FE0F}'
+
+/**
  * Split text into grapheme clusters — user-perceived characters. A cluster
  * may span multiple JS code points: a combining mark attaches to its base
  * character, and a ZWJ emoji sequence / flag / skin-tone modifier sequence
@@ -82,8 +96,14 @@ function graphemeClusters(text: string): string[] {
  * - 1 otherwise, including a base character followed by zero-width
  *   combining marks (e.g. decomposed "é"), since the marks contribute no
  *   additional column within their cluster.
+ *
+ * A cluster containing VS16 (see `VARIATION_SELECTOR_16` above) is always
+ * width 2, regardless of what `isWideChar` reports for its base character —
+ * VS16 is an explicit, cluster-level request for emoji presentation that a
+ * single isolated code point can't express.
  */
 export function charDisplayWidth(cluster: string): number {
+  if (cluster.includes(VARIATION_SELECTOR_16)) return 2
   let sawWide = false
   let sawNonMark = false
   for (const ch of cluster) {
