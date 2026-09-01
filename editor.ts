@@ -14,6 +14,11 @@
  *   - editor/css/  — modular CSS components
  *   - editor/js/   — modular JS modules
  *   - editor/html/ — HTML partials (topbar, left-panel, right-panel)
+ *
+ * This imports src/theme.ts (and bundles src/browser.ts) by relative path
+ * rather than through the published package — a deliberate, accepted
+ * pattern here, not a gap to fix. See
+ * docs/decisions/editor-in-repo-module.md.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
