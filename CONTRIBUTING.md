@@ -43,6 +43,7 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run fork-fixes` — render the fork-fixes showcase (`fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
 - `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
+- `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
 - `pnpm run bench` — render benchmarks
 - `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
 - `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)

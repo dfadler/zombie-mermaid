@@ -14,6 +14,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 [![npm version](https://img.shields.io/npm/v/zombie-mermaid.svg)](https://www.npmjs.com/package/zombie-mermaid)
 [![CI](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml/badge.svg)](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/dfadler/zombie-mermaid/branch/main/graph/badge.svg)](https://codecov.io/gh/dfadler/zombie-mermaid)
+[![Bundle Size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size)
 [![Socket Security](https://socket.dev/api/badge/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -39,6 +40,16 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 - **Complex theming** — Customizing colors requires wrestling with CSS classes
 - **No terminal output** — Can't render to ASCII for CLI tools
 - **Heavy dependencies** — Pulls in a lot of code for simple diagrams
+
+### Bundle Size
+
+The **Bundle Size** badge above tracks the gzipped size of `zombie-mermaid`'s
+main entry point (`dist/index.js`) and updates automatically with every
+release — the same badge/CI-tracked pattern already backing the coverage and
+CI status badges. Need ASCII rendering only? `import { renderMermaidASCII }
+from 'zombie-mermaid/ascii'` skips [ELK.js](https://github.com/kieler/elkjs),
+the layout engine the SVG renderer depends on, for a substantially smaller
+bundle.
 
 ## Features
 
