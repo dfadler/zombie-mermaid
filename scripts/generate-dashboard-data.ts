@@ -28,6 +28,7 @@
 
 import { execFile } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { forkFixes } from '../demo/fork-fixes-data.ts'
 
@@ -195,7 +196,12 @@ async function fetchResponseTimeStats(
   sampleLimit = 20,
 ): Promise<ResponseTimeStats | null> {
   const search = await ghJson<{
-    items: Array<{ number: number; created_at: string; comments: number }>
+    items: Array<{
+      number: number
+      created_at: string
+      comments: number
+      user: { login: string }
+    }>
   }>([
     'api',
     'search/issues',
@@ -215,13 +221,20 @@ async function fetchResponseTimeStats(
 
   const hours: number[] = []
   for (const item of search.items) {
-    const comments = await ghJson<Array<{ created_at: string }>>([
+    const comments = await ghJson<
+      Array<{ created_at: string; user: { login: string } }>
+    >([
       'api',
       `repos/${FORK.owner}/${FORK.name}/issues/${item.number}/comments`,
       '--jq',
       'tostring',
     ])
-    const first = comments[0]
+    // The issue author's own follow-up comment isn't a response — find the
+    // first comment from someone else, matching this metric's actual name
+    // (response time, not first-comment time).
+    const first = comments.find(
+      (comment) => comment.user.login !== item.user.login,
+    )
     if (!first) continue
     const diffMs =
       new Date(first.created_at).getTime() - new Date(item.created_at).getTime()
@@ -271,8 +284,9 @@ async function main() {
     responseTime,
   }
 
-  const outPath = new URL('../demo/dashboard-data.json', import.meta.url)
-    .pathname
+  const outPath = fileURLToPath(
+    new URL('../demo/dashboard-data.json', import.meta.url),
+  )
   await writeFile(outPath, JSON.stringify(data, null, 2) + '\n', 'utf8')
   console.log(`Written to ${outPath}`)
 }

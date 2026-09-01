@@ -19,6 +19,7 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import dashboardData from './demo/dashboard-data.json' with { type: 'json' }
 
 interface RepoStats {
@@ -70,7 +71,10 @@ function escapeHtml(text: string): string {
 }
 
 function daysSince(iso: string): number {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+  return Math.floor(
+    (new Date(data.generatedAt).getTime() - new Date(iso).getTime()) /
+      86_400_000,
+  )
 }
 
 function formatDate(iso: string): string {
@@ -310,6 +314,6 @@ ${extra}
 }
 
 const html = await generate()
-const outPath = new URL('./dashboard.html', import.meta.url).pathname
+const outPath = fileURLToPath(new URL('./dashboard.html', import.meta.url))
 await writeFile(outPath, html, 'utf8')
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
