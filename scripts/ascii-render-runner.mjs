@@ -30,11 +30,22 @@ if (!indexModulePath || !sampleArg) {
   process.exit(2)
 }
 
-const source = /^\d+$/.test(sampleArg)
-  ? (await import(pathToFileURL(resolve('samples-data.ts')).href)).samples[
-      Number(sampleArg)
-    ].source
-  : readFileSync(sampleArg, 'utf8')
+let source
+if (/^\d+$/.test(sampleArg)) {
+  const { samples } = await import(
+    pathToFileURL(resolve('samples-data.ts')).href
+  )
+  const sample = samples[Number(sampleArg)]
+  if (!sample) {
+    console.error(
+      `usage: sample index ${sampleArg} is out of range (samples-data.ts has ${samples.length} entries, indices 0-${samples.length - 1})`,
+    )
+    process.exit(2)
+  }
+  source = sample.source
+} else {
+  source = readFileSync(sampleArg, 'utf8')
+}
 
 // Resolve to an absolute file URL first — a relative specifier passed to
 // import() resolves against this script's own URL, not process.cwd(), so a

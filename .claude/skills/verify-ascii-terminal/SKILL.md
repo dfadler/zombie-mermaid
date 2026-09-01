@@ -84,10 +84,12 @@ brew install asciinema agg
 pip3 install pillow
 ```
 
-`scripts/ascii-terminal-capture.sh --help` checks for all four
-(`asciinema`, `agg`, `python3`, and `npx`/`tsx` via the project's own
-`node_modules`) and fails fast with a clear message naming whichever is
-missing, rather than a confusing failure partway through.
+A real invocation of `scripts/ascii-terminal-capture.sh` checks for all four
+(`asciinema`, `agg`, `python3`, and `tsx` via the project's own
+`node_modules/.bin`) before recording anything, and fails fast with a clear
+message naming whichever is missing, rather than a confusing failure partway
+through. (`--help` on its own exits before that check runs — it doesn't
+validate anything, just prints usage.)
 
 ## Procedure
 

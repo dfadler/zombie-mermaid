@@ -12,7 +12,7 @@
 # when to invoke it.
 #
 # Usage: scripts/ascii-terminal-capture.sh <index-module-path> <sample-index-or-file> <output-prefix> [cols] [rows]
-set -uo pipefail
+set -euo pipefail
 
 EXIT_OK=0
 EXIT_USAGE=2
@@ -71,8 +71,22 @@ done
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 runner="$script_dir/ascii-render-runner.mjs"
 
-asciinema record --overwrite --quiet \
-  -c "npx tsx '$runner' '$index_module_path' '$sample_arg'" \
+repo_root="$(cd "$script_dir/.." && pwd)"
+if [ ! -x "$repo_root/node_modules/.bin/tsx" ]; then
+  echo "missing dependency: tsx (run 'pnpm install' in $repo_root first)" >&2
+  exit "$EXIT_DEPENDENCY"
+fi
+
+# Values are passed via environment rather than interpolated into the -c
+# string: a path/index containing a quote would otherwise close the quoted
+# argument early and inject shell syntax into the recorded PTY command.
+# The single-quoted -c string is intentional: it must stay literal here so
+# $RUNNER etc. expand inside the shell asciinema spawns for the recording,
+# not in this script's own shell.
+# shellcheck disable=SC2016
+RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
+  asciinema record --overwrite --quiet \
+  -c 'npx tsx "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
   --cols "$cols" --rows "$rows" \
   "${out_prefix}.cast"
 
