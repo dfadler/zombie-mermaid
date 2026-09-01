@@ -255,13 +255,17 @@ ${otherTypesGrid(profile.slug)}
     const themeDataScript = `<script>window.__diagramPageThemes = ${themesJson}; window.__diagramPageSource = ${sourceJson};</script>`
     const clientScript = `<script type="module" src="assets/diagram-page-client.js"></script>`
 
+    // False positive: `body` is built entirely from static DIAGRAM_TYPE_PROFILES
+    // data (escapeHtml()'d) plus renderMermaidSVG/shiki output covered by
+    // docs/decisions/no-script-interactivity.md's no-`<script>` guarantee — no
+    // user input reaches it. Semgrep can't trace that data flow.
     const html = pageHtml({
       title,
       description,
       canonical,
       cssHref: 'assets/diagram-page.css',
       faviconHref: '../favicon.svg',
-      body,
+      body, // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag
       bodyScript: `${themeDataScript}\n${clientScript}`,
     })
 
