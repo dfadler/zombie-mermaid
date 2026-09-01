@@ -188,6 +188,7 @@ function extractClassLayout(
         headerHeight: size.headerHeight,
         attrHeight: size.attrHeight,
         methodHeight: size.methodHeight,
+        interaction: diagram.interactions.get(cls.id),
       })
     }
   }

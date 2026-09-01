@@ -5,6 +5,8 @@
 // Class diagrams show UML class relationships, inheritance, composition, etc.
 // ============================================================================
 
+import type { NodeInteraction } from '../types.ts'
+
 /** Parsed class diagram — logical structure from mermaid text */
 export interface ClassDiagram {
   /** All class definitions */
@@ -13,6 +15,8 @@ export interface ClassDiagram {
   relationships: ClassRelationship[]
   /** Optional namespace groupings */
   namespaces: ClassNamespace[]
+  /** Maps class IDs to interactions declared by `click` statements */
+  interactions: Map<string, NodeInteraction>
 }
 
 export interface ClassNode {
@@ -103,6 +107,8 @@ export interface PositionedClassNode {
   attrHeight: number
   /** Height of the methods section */
   methodHeight: number
+  /** Interaction from a `click` statement — an href wraps the class box in an <a> */
+  interaction?: NodeInteraction
 }
 
 export interface PositionedClassRelationship {

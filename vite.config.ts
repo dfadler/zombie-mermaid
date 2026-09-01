@@ -62,6 +62,7 @@ const WATCHED_PREFIXES = [
   'editor.ts',
   'fork-fixes.ts',
   'pages.ts',
+  'dashboard.ts',
 ]
 
 function isWatchedPath(relPath: string): boolean {
