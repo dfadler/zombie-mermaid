@@ -43,8 +43,12 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot
 - `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
+- `pnpm run fork-fixes` — render the fork-fixes showcase (`fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
 - `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
+- `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
 - `pnpm run bench` — render benchmarks
+- `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
+- `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
 - `pnpm run format` — format the codebase with Prettier
 - `pnpm run format:check` — check formatting without writing changes
 
@@ -115,6 +119,15 @@ This is the part that makes this fork different from a typical project. Two situ
 - If the upstream PR was abandoned or blocked upstream, say so briefly — it helps reviewers understand why the fix is landing here instead of there.
 
 Either way, add a changeset (see below) describing what changed and, where relevant, that it originated upstream.
+
+### Adding a fork-fixes entry
+
+`demo/fork-fixes-data.ts` backs `fork-fixes.ts`, a before/after showcase of bugs this fork has fixed vs. upstream. It's a credible differentiator specifically because every pair is a _real_ render from an actual pre-fix/post-fix commit, not a hand-drawn illustration — the generator fails the build if a pair renders identically (see `fork-fixes.ts`'s own header comment and [#189](https://github.com/dfadler/zombie-mermaid/issues/189)). That evidentiary value only holds up if the page keeps growing with the fork, so treat adding an entry as a standing step for bug-fix PRs, not a one-time backfill (see [#295](https://github.com/dfadler/zombie-mermaid/issues/295)):
+
+- If your PR fixes a bug that changes _rendered_ output (SVG or ASCII — a wrong shape, a dropped edge, a corrupted label, a layout glitch, a crash on previously-malformed input), add an entry to the `forkFixes` array in `demo/fork-fixes-data.ts`: a minimal Mermaid `source` that reproduces the bug, the `fixCommit`, the PR number, and a short `lookFor` describing what changed. Run `pnpm run fork-fixes` locally to confirm your pair actually renders two different things before committing it — see the interface doc comments in `demo/fork-fixes-data.ts` for the full field list (including the optional `excerpt` and `upstreamIssues` fields).
+- If the fix is _not_ visible in rendered output (an internal refactor, a type-only fix, a performance fix, a fix to something other than the renderer itself), skip the entry — there's nothing for the showcase to demonstrate.
+- The PR template's checklist has a line for this; check it or explain why it doesn't apply.
+- A PR labeled `bug` that doesn't touch `demo/fork-fixes-data.ts` gets an automated, non-blocking reminder comment (`.github/workflows/fork-fixes-nudge.yml`) — a nudge to consider adding an entry, not a merge gate. It's fine to ignore when the fix genuinely has no visible rendering change.
 
 ### Staying aware of upstream changes
 

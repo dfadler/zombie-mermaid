@@ -22,6 +22,10 @@ import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
+import {
+  extractEdgePoints,
+  extractEdgeLabelPosition,
+} from './elk-adapter-utils.ts'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {
@@ -484,36 +488,9 @@ function collectEdgeSegments(
       if (!parsed) continue
       const { edgeIndex } = parsed
 
-      // Extract points
-      const points: Point[] = []
-      if (elkEdge.sections && elkEdge.sections.length > 0) {
-        const section = elkEdge.sections[0]!
-        points.push({
-          x: section.startPoint.x + offsetX,
-          y: section.startPoint.y + offsetY,
-        })
-        if (section.bendPoints) {
-          for (const bp of section.bendPoints) {
-            points.push({ x: bp.x + offsetX, y: bp.y + offsetY })
-          }
-        }
-        points.push({
-          x: section.endPoint.x + offsetX,
-          y: section.endPoint.y + offsetY,
-        })
-      }
-
-      // Extract label position
-      let labelPosition: Point | undefined
-      if (elkEdge.labels && elkEdge.labels.length > 0) {
-        const label = elkEdge.labels[0]!
-        if (label.x != null && label.y != null) {
-          labelPosition = {
-            x: label.x + (label.width ?? 0) / 2 + offsetX,
-            y: label.y + (label.height ?? 0) / 2 + offsetY,
-          }
-        }
-      }
+      // Extract points and label position
+      const points = extractEdgePoints(elkEdge, offsetX, offsetY)
+      const labelPosition = extractEdgeLabelPosition(elkEdge, offsetX, offsetY)
 
       // Store segment
       const seg: EdgeSegmentGroup = segments.get(edgeIndex) ?? {

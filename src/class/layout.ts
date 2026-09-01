@@ -17,7 +17,7 @@ import type {
   PositionedClassRelationship,
 } from './types.ts'
 import { formatClassMember } from './format.ts'
-import type { RenderOptions, Point } from '../types.ts'
+import type { RenderOptions } from '../types.ts'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
@@ -26,6 +26,10 @@ import {
 } from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
+import {
+  extractEdgePoints,
+  extractEdgeLabelPosition,
+} from '../layout-engine/elk-adapter-utils.ts'
 
 /** Layout constants for class diagrams */
 export const CLS = {
@@ -194,28 +198,8 @@ function extractClassLayout(
     // creates exactly one ELK edge per relationship, in the same order.
     const rel = diagram.relationships[i]!
 
-    const points: Point[] = []
-    if (elkEdge.sections && elkEdge.sections.length > 0) {
-      const section = elkEdge.sections[0]!
-      points.push({ x: section.startPoint.x, y: section.startPoint.y })
-      if (section.bendPoints) {
-        for (const bp of section.bendPoints) {
-          points.push({ x: bp.x, y: bp.y })
-        }
-      }
-      points.push({ x: section.endPoint.x, y: section.endPoint.y })
-    }
-
-    let labelPosition: Point | undefined
-    if (elkEdge.labels && elkEdge.labels.length > 0) {
-      const label = elkEdge.labels[0]!
-      if (label.x != null && label.y != null) {
-        labelPosition = {
-          x: label.x + (label.width ?? 0) / 2,
-          y: label.y + (label.height ?? 0) / 2,
-        }
-      }
-    }
+    const points = extractEdgePoints(elkEdge)
+    const labelPosition = extractEdgeLabelPosition(elkEdge)
 
     relationships.push({
       from: rel.from,
@@ -250,7 +234,7 @@ export function layoutClassDiagramSync(
   }
 
   const { elkGraph, classSizes } = buildClassElkGraph(diagram, options)
-  const result = elkLayoutSync(elkGraph)
+  const result = elkLayoutSync(elkGraph, options.layoutCache)
   return extractClassLayout(result, diagram, classSizes)
 }
 
