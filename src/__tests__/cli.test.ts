@@ -415,4 +415,30 @@ describe('parseArgs – validation errors', () => {
       parseArgs(['render', 'diagram.mmd', '--ascii', '--max-width', 'wide']),
     ).toThrow('--max-width requires "auto" or a positive integer, got: "wide"')
   })
+
+  it('throws when --max-width exceeds Number.MAX_SAFE_INTEGER', () => {
+    expect(() =>
+      parseArgs([
+        'render',
+        'diagram.mmd',
+        '--ascii',
+        '--max-width',
+        '9'.repeat(400),
+      ]),
+    ).toThrow(/--max-width requires "auto" or a positive integer, got:/)
+  })
+
+  it('throws when --max-width is given without --ascii', () => {
+    expect(() =>
+      parseArgs([
+        'render',
+        'diagram.mmd',
+        '--svg',
+        '-o',
+        'out.svg',
+        '--max-width',
+        '40',
+      ]),
+    ).toThrow('-w/--max-width requires --ascii')
+  })
 })

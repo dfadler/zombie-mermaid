@@ -119,12 +119,13 @@ function parseMaxWidthFlag(
   if (raw === 'auto') {
     return 'auto'
   }
-  if (!/^\d+$/.test(raw) || Number(raw) === 0) {
+  const value = Number(raw)
+  if (!/^\d+$/.test(raw) || value === 0 || !Number.isSafeInteger(value)) {
     throw new Error(
       `${flag} requires "auto" or a positive integer, got: "${raw}"`,
     )
   }
-  return Number(raw)
+  return value
 }
 
 function parseRender(args: string[]): RenderArgs {
@@ -201,6 +202,10 @@ function parseRender(args: string[]): RenderArgs {
 
   if (svg && output === undefined) {
     throw new Error('--svg requires -o <path>')
+  }
+
+  if (maxWidth !== undefined && !ascii) {
+    throw new Error('-w/--max-width requires --ascii')
   }
 
   return {

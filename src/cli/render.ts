@@ -4,6 +4,7 @@ import {
   diagramColorsToAsciiTheme,
 } from '../ascii/index.ts'
 import type { AsciiRenderOptions } from '../ascii/index.ts'
+import { displayWidth } from '../ascii/display-width.ts'
 import { renderMermaidSVG } from '../index.ts'
 import { THEMES } from '../theme.ts'
 import type { DiagramColors } from '../theme.ts'
@@ -30,7 +31,7 @@ function maxLineWidth(rendered: string): number {
   return rendered
     .split('\n')
     .reduce(
-      (max, line) => Math.max(max, line.replace(ANSI_ESCAPE, '').length),
+      (max, line) => Math.max(max, displayWidth(line.replace(ANSI_ESCAPE, ''))),
       0,
     )
 }
