@@ -121,5 +121,45 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
 
     expect(ascii).toContain('early')
     expect(ascii).not.toContain('longlonglabelhere')
+
+    // Not just the whole string: a per-character collision guard (the
+    // naive approach tried and rejected for canPlaceLabelLine, see above)
+    // could still leak part of the dropped label — e.g. "longlon" or
+    // "glabelhere" — into the gap right after "early" on the same row.
+    // Nothing alphabetic should appear there at all.
+    const labelRow = ascii.split('\n').find((l) => l.includes('early'))
+    expect(labelRow).toBeDefined()
+    const afterEarly = labelRow!.slice(
+      labelRow!.indexOf('early') + 'early'.length,
+    )
+    expect(afterEarly).not.toMatch(/[A-Za-z]/)
+  })
+
+  it('preserves an unrelated entity box border when a same-row line crosses through it', () => {
+    // Real catalog sample ("ER: Mixed Identifying & Non-Identifying"):
+    // ORDER-SHIPMENT is a direct, non-adjacent same-row relationship
+    // skipping over LINE_ITEM, so its dashed line crosses straight through
+    // LINE_ITEM's box (the routing itself — crossing through the box at all
+    // — is the separate, out-of-scope defect from #351/#390's "known
+    // limitation"). Text protection alone (the earlier tests above) keeps
+    // "LINE_ITEM" itself readable, but previously left the crossing line
+    // free to erase the box's border characters on either side of it,
+    // leaving an open-looking, broken box. Border cells are protected too.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        ORDER ||--|{ LINE_ITEM : contains
+        ORDER ||..o{ SHIPMENT : ships-via
+        PRODUCT ||--o{ LINE_ITEM : includes
+        PRODUCT ||..o{ REVIEW : receives`,
+      { colorMode: 'none' },
+    )
+
+    expect(ascii).toContain('┌───────────┐')
+    expect(ascii).toContain('└───────────┘')
+    // The crossing dashed line still runs right up to LINE_ITEM's box (that
+    // routing gap is out of scope), so its own '╌' sits just inside the
+    // border on both sides — but the border characters themselves must
+    // survive intact, not be replaced by more line/dash glyphs.
+    expect(ascii).toMatch(/│.LINE_ITEM.│/)
   })
 })

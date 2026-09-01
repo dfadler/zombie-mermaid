@@ -339,33 +339,48 @@ export function renderErAscii(
   }
 
   /**
+   * True for a cell a relationship draw must not silently overwrite: an
+   * entity's own box border, or 'text' (a label or an entity's own
+   * header/attribute text). Relationships are drawn in declaration order, so
+   * a later relationship's line, crow's-foot marker, or label can otherwise
+   * land on the exact cell an earlier one (or a plain entity box) already
+   * wrote, corrupting it — a stray line glyph mid-word, one label's
+   * characters spliced into another's, or (for a same-row relationship whose
+   * straight line runs across an unrelated entity sitting between its two
+   * endpoints) that entity's border erased outright (issue #392). This
+   * doesn't fix the underlying routing gap — the line still crosses straight
+   * through the box, an out-of-scope defect tracked in #351/#390's "known
+   * limitation" — it only stops that crossing from destroying content.
+   */
+  function isProtected(x: number, y: number): boolean {
+    const role = rc[x]?.[y]
+    return role === 'text' || role === 'border'
+  }
+
+  /**
    * Set a character for a relationship's line/marker/label — but never
-   * overwrite a cell that already holds 'text' content. Relationships are
-   * drawn in declaration order and a later relationship's line, crow's-foot
-   * marker, or label can otherwise land on the exact cell an earlier
-   * relationship's label (or an entity's own header/attribute text) already
-   * wrote, silently corrupting it — a stray line glyph mid-word, or one
-   * label's characters spliced into another's (issue #392). Every write in
-   * this relationship-drawing pass goes through this guard rather than only
-   * the straight-line fills, since crow's-foot markers and labels are just
-   * as capable of landing on the same cell. The accepted trade-off is a gap
-   * in the line/marker/label at that spot, over destroying text that was
+   * overwrite a protected cell (see isProtected). Every write in this
+   * relationship-drawing pass goes through this guard rather than only the
+   * straight-line fills, since crow's-foot markers and labels are just as
+   * capable of landing on the same cell. The accepted trade-off is a gap in
+   * the line/marker/label at that spot, over destroying content that was
    * already there.
    */
   function setRelChar(x: number, y: number, ch: string, role: CharRole): void {
-    if (rc[x]?.[y] === 'text') return
+    if (isProtected(x, y)) return
     setC(x, y, ch, role)
   }
 
   /**
    * True when every cell a label's line would occupy (after clamping to
-   * [minX, maxX]) is free of existing 'text'. Checked as a whole line rather
-   * than character-by-character: a per-character skip on a *label* write
-   * (unlike a line or marker) would let two overlapping labels' letters
-   * splice together into a new word that isn't either original label —
-   * e.g. "has" + the tail of "tagged-with" reading as "hasged-with" — which
-   * is more misleading than either label winning outright or neither
-   * appearing. A label either renders intact or is skipped entirely.
+   * [minX, maxX]) is free of protected content (see isProtected). Checked as
+   * a whole line rather than character-by-character: a per-character skip on
+   * a *label* write (unlike a line or marker) would let two overlapping
+   * labels' letters splice together into a new word that isn't either
+   * original label — e.g. "has" + the tail of "tagged-with" reading as
+   * "hasged-with" — which is more misleading than either label winning
+   * outright or neither appearing. A label either renders intact or is
+   * skipped entirely.
    */
   function canPlaceLabelLine(
     cells: string[],
@@ -377,7 +392,7 @@ export function renderErAscii(
     for (let i = 0; i < cells.length; i++) {
       const x = startX + i
       if (x < minX || x > maxX) continue
-      if (rc[x]?.[y] === 'text') return false
+      if (isProtected(x, y)) return false
     }
     return true
   }
