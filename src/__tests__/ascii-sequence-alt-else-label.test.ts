@@ -156,4 +156,50 @@ sequenceDiagram
       'opt [a fairly long optional condition label here]',
     )
   })
+
+  it('handles a block with no header label at all (bare "par")', () => {
+    // `block.label` is '' (falsy) here — exercises the `block.label ? ... :
+    // block.type` branch that a labelled alt/loop never reaches.
+    const result = renderMermaidASCII(
+      `
+sequenceDiagram
+    participant A
+    participant B
+    par
+        A->>B: x
+    and
+        A->>B: y
+    end
+`,
+      { useAscii: false },
+    )
+
+    expect(result).toContain('┌par')
+    expect(result).not.toContain('par [')
+  })
+
+  it('handles a bare else divider with no label text', () => {
+    // `divider.label` is '' (falsy) here — exercises the `if (divider.label)`
+    // false branch that a labelled else never reaches.
+    const result = renderMermaidASCII(
+      `
+sequenceDiagram
+    participant A
+    participant B
+    alt some long condition that needs the wall widened
+        A->>B: x
+    else
+        A->>B: y
+    end
+`,
+      { useAscii: false },
+    )
+
+    expect(result).toContain(
+      'alt [some long condition that needs the wall widened]',
+    )
+    // The bare divider must still render as a plain divider row, without a
+    // "[...]" label of its own.
+    expect(result).not.toMatch(/├\[.*\]/)
+  })
 })
