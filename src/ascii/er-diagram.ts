@@ -205,6 +205,14 @@ function mustGetEntityValue<T>(
  * on `canvas`, ignoring column `skipX` (the relationship's own vertical
  * stem, which legitimately already occupies that column across the whole
  * gap before a jog row is chosen — see `chooseFreeRow`).
+ *
+ * A column past the canvas's current width isn't drawn yet — `canvas[x]` is
+ * `undefined` there — but it isn't *occupied* either: relationship labels
+ * routinely land past the initial bounds and grow the canvas on write (see
+ * `increaseSize` at the label-drawing call sites below). Treating that as
+ * "not free" made `chooseFreeRow` reject perfectly good candidate rows near
+ * the canvas edge and fall back to the plain midpoint instead, undermining
+ * the whole point of the search.
  */
 // Exported for direct unit testing (see check-diff-coverage.ts's own
 // exports for the precedent this repo already uses) — renderErAscii's fixed
@@ -221,7 +229,9 @@ export function isRowFree(
 ): boolean {
   for (let x = xStart; x <= xEnd; x++) {
     if (x === skipX) continue
-    if (canvas[x]?.[y] !== ' ') return false
+    const col = canvas[x]
+    if (col === undefined) continue // not drawn yet — not occupied
+    if (col[y] !== ' ' && col[y] !== undefined) return false
   }
   return true
 }
@@ -578,6 +588,16 @@ export function renderErAscii(
         // Horizontal segment at midY
         const lx = Math.min(lineX, lowerCX)
         const rx = Math.max(lineX, lowerCX)
+        // The label (drawn below, once midY is chosen) always sits to the
+        // right of the stem at lineX + 2, regardless of which way the jog
+        // itself goes — so for a leftward jog (rx === lineX) the label span
+        // falls entirely outside [lx, rx], and even a rightward jog isn't
+        // guaranteed to reach far enough right to cover it. Widen the
+        // occupancy check (not the drawn jog segment itself) to include
+        // that span whenever there's a label, or the row chosen here could
+        // still get silently overwritten by this same relationship's own
+        // label a few lines down.
+        const labelEndX = rel.label ? lineX + 1 + maxLineWidth(rel.label) : rx
         // Pick a jog row that isn't already occupied by another entity box
         // or another relationship's already-drawn segment (issue #351 —
         // every jog previously used the same geometric midpoint regardless
@@ -587,7 +607,14 @@ export function renderErAscii(
         // is excluded from the occupancy check because this relationship's
         // own vertical stem already fills that whole column (see the loop
         // above) — that expected self-overlap isn't a collision.
-        midY = chooseFreeRow(canvas, startY, endY, lx, rx, lineX)
+        midY = chooseFreeRow(
+          canvas,
+          startY,
+          endY,
+          lx,
+          Math.max(rx, labelEndX),
+          lineX,
+        )
         for (let x = lx; x <= rx; x++) {
           setC(x, midY, lineH, 'line')
         }

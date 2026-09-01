@@ -118,6 +118,35 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     expect(ascii).toContain('has')
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
+
+  it('does not let a jog row collide with a label whose span falls outside the jog range (CodeRabbit review, PR #390)', () => {
+    // A relationship's label is always drawn to the right of the upper
+    // entity's own center column, regardless of which way its jog goes —
+    // for a leftward jog (or a short rightward one) that label span sits
+    // outside [lx, rx], the range renderErAscii originally checked for
+    // occupancy before choosing a jog row. Found by a differential search
+    // over random small diagrams comparing the old (narrow) and fixed
+    // (label-span-widened) occupancy ranges; this is the minimal case that
+    // reproduces it deterministically — DDDD--CCC's jog lands on a row
+    // that BB--A's own label already used, and without the widened check
+    // DDDD--CCC's own label ends up prefixed with a stray "│" bled through
+    // from BB--A's vertical stem.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        DDDD ||--o{ A : x0
+        BB ||--o{ A : l1
+        DDDD ||--o{ CCC : longerlabelhere2`,
+      { colorMode: 'none' },
+    )
+    const lines = ascii.split('\n')
+    const labelLine = lines.find((l) => l.includes('longerlabelhere2'))
+    expect(labelLine).toBeDefined()
+    const idx = labelLine!.indexOf('longerlabelhere2')
+    // The characters immediately before the label must be plain fill dashes,
+    // not a stray "│" bled through from an unrelated relationship's
+    // vertical stem sharing this row.
+    expect(labelLine!.slice(Math.max(0, idx - 3), idx)).not.toContain('│')
+  })
 })
 
 describe('ASCII ER — compact gutters between disconnected components (issue #351)', () => {
@@ -192,5 +221,51 @@ describe('chooseFreeRow / isRowFree (unit)', () => {
     write(canvas, 5, 3, '#') // only the skipped column is occupied
     expect(isRowFree(canvas, 3, 0, 10, 5)).toBe(true)
     expect(isRowFree(canvas, 3, 0, 10, -1)).toBe(false)
+  })
+
+  // CodeRabbit review on PR #390: a column past the canvas's current width
+  // was reported as `undefined` by a plain index and treated as occupied,
+  // even though nothing had actually been drawn there yet — a label routinely
+  // grows the canvas on write (see increaseSize at the label call sites),
+  // so a not-yet-allocated column is "not drawn", not "occupied".
+  it('treats a column past the canvas width as free, not occupied', () => {
+    const canvas = mkCanvas(5, 5) // columns 0..5 only
+    expect(isRowFree(canvas, 2, 0, 10, -1)).toBe(true)
+    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(3) // still the midpoint
+  })
+
+  // CodeRabbit review on PR #390: renderErAscii's jog-row selection checked
+  // occupancy only across [lx, rx] (the jog's own span), not the
+  // relationship's label — which is always drawn to the right of the upper
+  // entity's center column, regardless of which way the jog itself goes.
+  // For a leftward jog (rx sits at the upper entity's own column), the
+  // label span falls entirely outside that checked range.
+  it('rejects a midpoint row whose label span (right of the jog range) is occupied', () => {
+    const canvas = mkCanvas(30, 20)
+    const lineX = 10 // upper entity's center column
+    const lowerCX = 4 // lower entity's center column — left of lineX: a leftward jog
+    const lx = Math.min(lineX, lowerCX)
+    const rx = Math.max(lineX, lowerCX) // === lineX; the label starts past this
+    const labelEndX = lineX + 1 + 'some label'.length
+    // Nothing occupies [lx, rx] at the midpoint, but the label area
+    // (lineX + 2 .. labelEndX) is already occupied by earlier content.
+    occupyRow(canvas, 3, lineX + 2, labelEndX)
+    // Checking only the jog's own span (the pre-fix behavior) would accept
+    // row 3 even though the label that lands there next would collide.
+    expect(isRowFree(canvas, 3, lx, rx, lineX)).toBe(true)
+    // Widening the checked range to include the label span (the fix) finds
+    // the collision and moves to a different row instead.
+    const chosen = chooseFreeRow(
+      canvas,
+      0,
+      6,
+      lx,
+      Math.max(rx, labelEndX),
+      lineX,
+    )
+    expect(chosen).not.toBe(3)
+    expect(isRowFree(canvas, chosen, lx, Math.max(rx, labelEndX), lineX)).toBe(
+      true,
+    )
   })
 })
