@@ -4,7 +4,7 @@
 
 **Render Mermaid diagrams as beautiful SVGs or ASCII art**
 
-Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid).
+Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) that refuses to die.
 
 ![Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself](hero.svg)
 
@@ -23,7 +23,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 ## Why This Fork Exists
 
-`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: as of August 2026, there are 30 open pull requests, the oldest dating back over half a year, and nothing has merged in months. I maintain `zombie-mermaid` as a fork that keeps it moving — pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
+`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: dozens of [pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) sit open, some for over half a year, and nothing has merged in months — by most definitions, it's dead. I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
 This isn't just a claim — see **[what this fork fixes](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)** for an evidence-based before/after showcase: every bug listed there is rendered by the actual pre-fix and post-fix code, not described from memory.
 
