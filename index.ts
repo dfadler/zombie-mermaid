@@ -72,6 +72,50 @@ function escapeJsonForScriptTag(json: string): string {
   return json.replace(/<\/(script)/gi, '<\\/$1')
 }
 
+/**
+ * Build the `SoftwareApplication` JSON-LD block for the demo site's `<head>`.
+ *
+ * Values are pulled from package.json rather than hardcoded so the block
+ * can't drift from the published package (name/description/version/license
+ * all come from there; `sameAs`/`license` are derived from the repository
+ * URL). Deliberately omits `aggregateRating`/`review`/`offers` — Google's
+ * Software App rich-result eligibility requires one of those, but this repo
+ * has no real ratings or reviews to report, and fabricating one would be a
+ * Search Console webspam violation. This block is valid, accurate structured
+ * data; it just won't win the rich-result carousel on its own.
+ */
+async function buildJsonLd(): Promise<string> {
+  const pkgRaw = await readFile(
+    new URL('./package.json', import.meta.url),
+    'utf8',
+  )
+  const pkg = JSON.parse(pkgRaw) as {
+    description: string
+    version: string
+    license: string
+    repository: { url: string }
+  }
+  const repositoryUrl = pkg.repository.url
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Zombie Mermaid',
+    description: pkg.description,
+    softwareVersion: pkg.version,
+    applicationCategory: 'DeveloperApplication',
+    license: `${repositoryUrl}/blob/main/LICENSE`,
+    url: 'https://dfadler.github.io/zombie-mermaid/',
+    sameAs: repositoryUrl,
+  }
+
+  const json = escapeJsonForScriptTag(JSON.stringify(jsonLd, null, 2))
+  return json
+    .split('\n')
+    .map((line) => `    ${line}`)
+    .join('\n')
+}
+
 // ============================================================================
 // HTML generation — dynamic version
 //
@@ -218,6 +262,7 @@ async function generateHtml(): Promise<string> {
   // We use 'github-light' as the base theme — its hex colors get overridden by CSS
   // color-mix() rules derived from --t-fg / --t-bg so tokens adapt to any theme.
   const styles = await loadStyles()
+  const jsonLd = await buildJsonLd()
 
   const highlighter = await createHighlighter({
     langs: ['mermaid'],
@@ -470,6 +515,9 @@ async function generateHtml(): Promise<string> {
   <meta name="twitter:title" content="Zombie Mermaid" />
   <meta name="twitter:description" content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII." />
   <meta name="twitter:image" content="https://agents.craft.do/mermaid/og-image.png" />
+  <script type="application/ld+json">
+${jsonLd}
+  </script>
   <!-- Plausible Analytics -->
   <script defer data-domain="agents.craft.do/mermaid" src="https://plausible.io/js/script.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -552,7 +600,7 @@ ${styles}
       </button>
     </div>
     <div class="hero-meta">
-      <p class="meta" id="total-timing">Rendering ${samples.length * 2} samples\u2026</p>
+      <p class="meta" id="total-timing">Rendering samples\u2026</p>
       <div class="meta">ASCII rendering based on <a href="https://github.com/AlexanderGrooff/mermaid-ascii" target="_blank" rel="noopener">Mermaid-ASCII</a></div>
       <div class="meta">Early preview — actively evolving</div>
     </div>

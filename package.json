@@ -84,6 +84,8 @@
     "editor": "tsx editor.ts",
     "dev": "vite",
     "bench": "tsx bench.ts",
+    "bench:compare": "tsx scripts/bench-compare.ts",
+    "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
     "build": "tsup",
