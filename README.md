@@ -62,6 +62,7 @@ bundle.
 - **Mono mode** — Beautiful diagrams from just 2 colors
 - **Zero DOM dependencies** — Pure TypeScript, works everywhere
 - **Ultra-fast** — Renders 100+ diagrams in under 500ms
+- **Accessible SVG output, CI-enforced** — every diagram type always gets a `role`-correct, nameable root `<svg>`; see the [accessibility conformance statement](docs/accessibility.md) for exactly what's guaranteed
 
 ## Installation
 
@@ -141,6 +142,7 @@ zombie-mermaid --help                                   # Show all options
 ## Docs
 
 - [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md)
+- [Accessibility](docs/accessibility.md) — conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
 - [Theming](docs/theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
 - [Supported Diagrams](docs/diagrams.md) — syntax for every diagram type, XY chart styling, and ASCII rendering options
 - [React Integration](docs/react-integration.md) — zero-flash rendering with `useMemo()`
