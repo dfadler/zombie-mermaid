@@ -9,7 +9,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 ![Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself](hero.svg)
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-view_the_sample_gallery-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/)
-[![Fork Fixes](https://img.shields.io/badge/Fork_Fixes-before%2Fafter_evidence-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)
+[![Beautiful Mermaid Fork Fixes](https://img.shields.io/badge/Beautiful_Mermaid_Fork_Fixes-before%2Fafter_evidence-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)
 
 [![npm version](https://img.shields.io/npm/v/zombie-mermaid.svg)](https://www.npmjs.com/package/zombie-mermaid)
 [![CI](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml/badge.svg)](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml)
