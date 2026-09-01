@@ -23,6 +23,18 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { escapeHtml } from './demo/format.ts'
 import { THEMES } from './src/theme.ts'
+
+/**
+ * Builds the URL hash the live editor (editor/js/sharing.js's `getHashSource`)
+ * already knows how to read: `#` + base64(JSON.stringify({source, theme})).
+ * `Buffer.from(str, 'utf-8').toString('base64')` here matches the browser's
+ * `btoa(unescape(encodeURIComponent(str)))` for any valid UTF-8 string — both
+ * base64-encode the same UTF-8 byte sequence, just via different APIs.
+ */
+function editorHash(source: string, theme: string): string {
+  const payload = JSON.stringify({ source, theme })
+  return Buffer.from(payload, 'utf-8').toString('base64')
+}
 import { THEME_LABELS, THEME_DESCRIPTIONS } from './demo/theme-labels.ts'
 import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
 import { renderMermaidSVG } from './src/index.ts'
@@ -174,7 +186,7 @@ ${svg}
   <p class="theme-caption"><strong>${escapeHtml(themeLabel)} theme:</strong> ${escapeHtml(themeDescription)}</p>
 
   <div class="cta-row">
-    <a class="cta-btn primary" href="../../editor">Open in the live editor</a>
+    <a class="cta-btn primary" href="../../editor#${editorHash(profile.source, themeKey)}">Open in the live editor</a>
     <a class="cta-btn" href="../../#samples-heading">See all samples</a>
   </div>
 
