@@ -102,4 +102,24 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     expect(ascii).toContain('authors')
     expect(ascii).toContain('has')
   })
+
+  it('drops a whole overlapping label in the same-row (horizontal) branch too', () => {
+    // A-C is a direct, non-adjacent same-row relationship skipping over B,
+    // so its label's clamped placement region spans the whole A..C gap and
+    // can land on top of A-B's own (already-drawn, adjacent) label. The
+    // vertical-branch case above exercises canPlaceLabelLine via the
+    // vertical label loop; this exercises the same guard in the horizontal
+    // label loop.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : early
+        A ||--o{ C : longlonglabelhere
+        A ||--o{ D : y
+        B ||--o{ E : z`,
+      { colorMode: 'none' },
+    )
+
+    expect(ascii).toContain('early')
+    expect(ascii).not.toContain('longlonglabelhere')
+  })
 })
