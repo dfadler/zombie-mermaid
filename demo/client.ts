@@ -798,7 +798,18 @@ sidebarToggle.addEventListener('click', function (e) {
   else openSidebarDrawer()
 })
 
-sidebarBackdrop.addEventListener('click', closeSidebarDrawer)
+// A backdrop click means "dismiss the drawer without picking anything" —
+// unlike the sidebar's own click handler below, which switches category or
+// scrolls to a sample. Clearing an active search here (mirroring the Escape
+// key and the Clear button) matches that intent: the visitor is stepping
+// away from the drawer, not choosing a destination inside it.
+sidebarBackdrop.addEventListener('click', function (e) {
+  closeSidebarDrawer()
+  if (searchInput.value && !sidebar.contains(eventElement(e.target))) {
+    searchInput.value = ''
+    void runSearch('')
+  }
+})
 
 // A <summary> click switches the active category (see "Category switching"
 // below); a sample <a> click smooth-scrolls to it. Either way, close the
