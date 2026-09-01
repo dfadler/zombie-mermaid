@@ -16,7 +16,7 @@ import {
 } from './expanded-shapes.ts'
 import type { ExpandedNodeMeta } from './expanded-shapes.ts'
 import { extractInitConfig } from './init-directive.ts'
-import type { NodeInteraction } from './types.ts'
+import { applyClickStatement as applyClickStatementShared } from './click-directive.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()
@@ -765,45 +765,13 @@ function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
  * and does not execute script supplied by a diagram. An href, by contrast, is
  * genuinely actionable: the node is wrapped in an SVG <a>, which works in any
  * browser without script.
+ *
+ * The actual grammar and href-safety rules live in src/click-directive.ts,
+ * shared with the class diagram parser (src/class/parser.ts) — this is a
+ * thin wrapper binding it to this parser's `graph.interactions` map.
  */
 function applyClickStatement(line: string, graph: MermaidGraph): void {
-  const match = line.match(/^click\s+([\w-]+)\s+(.*)$/i)
-  if (!match) return
-
-  const nodeId = match[1]!
-  let rest = match[2]!.trim()
-
-  const interaction: NodeInteraction = { ...graph.interactions.get(nodeId) }
-
-  // `call fn()` / `callback fn()` — a script binding.
-  const callMatch = rest.match(/^(?:call|callback)\s+(.+?)\s*$/i)
-  if (callMatch) {
-    // A trailing quoted tooltip may follow the callback expression.
-    const withTooltip = callMatch[1]!.match(/^(.*?\))\s+"([^"]*)"\s*$/)
-    if (withTooltip) {
-      interaction.callback = withTooltip[1]!.trim()
-      interaction.tooltip = withTooltip[2]
-    } else {
-      interaction.callback = callMatch[1]!.trim()
-    }
-    graph.interactions.set(nodeId, interaction)
-    return
-  }
-
-  // Optional explicit `href` keyword.
-  rest = rest.replace(/^href\s+/i, '')
-
-  // Remaining tokens: "url" ["tooltip"] [_target]
-  const quoted = [...rest.matchAll(/"([^"]*)"/g)].map((m) => m[1]!)
-  if (quoted.length > 0) interaction.href = quoted[0]
-  if (quoted.length > 1) interaction.tooltip = quoted[1]
-
-  const targetMatch = rest.match(/(_blank|_self|_parent|_top)\s*$/i)
-  if (targetMatch) interaction.target = targetMatch[1]!.toLowerCase()
-
-  if (interaction.href !== undefined || interaction.tooltip !== undefined) {
-    graph.interactions.set(nodeId, interaction)
-  }
+  applyClickStatementShared(line, graph.interactions)
 }
 
 /**

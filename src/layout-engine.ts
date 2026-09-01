@@ -50,7 +50,7 @@ export function layoutGraphSync(
     fontSizes: resolveFontSizes(options.fontSizes),
   }
   const elkGraph = mermaidToElk(graph, opts)
-  const result = elkLayoutSync(elkGraph)
+  const result = elkLayoutSync(elkGraph, options.layoutCache)
   return elkToPositioned(result, graph, opts.mergeEdges)
 }
 

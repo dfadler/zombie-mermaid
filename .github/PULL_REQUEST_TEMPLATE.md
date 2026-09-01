@@ -19,6 +19,7 @@
 - [ ] `pnpm exec tsc --noEmit` passes
 - [ ] `pnpm test` passes
 - [ ] `CHANGELOG.md` updated under `[Unreleased]` (if applicable)
+- [ ] If this fixes a bug with a visible rendering change (SVG or ASCII), added a `demo/fork-fixes-data.ts` entry (see CONTRIBUTING.md's "Adding a fork-fixes entry") — otherwise N/A
 - [ ] Linked issue (if any): Closes #
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for setup and the full list of checks CI runs.

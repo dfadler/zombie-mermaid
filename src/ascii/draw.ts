@@ -32,7 +32,9 @@ import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
   drawBundleArrowhead,
+  drawBundleArrowheadStart,
   drawBundledEdgeArrowhead,
+  drawBundledEdgeArrowheadStart,
   drawJunctionCharacter,
 } from './draw-bundles.ts'
 import { drawSubgraphBox, drawSubgraphLabel } from './draw-subgraphs.ts'
@@ -201,6 +203,12 @@ export function drawGraph(graph: AsciiGraph): Canvas {
       boxStartCanvases.push(boxStartC)
       labelCanvases.push(labelC)
 
+      // For fan-in bundles, draw a start arrowhead at each individual source
+      if (bundle.type === 'fan-in' && edge.hasArrowStart) {
+        const arrowHeadStartC = drawBundledEdgeArrowheadStart(graph, edge)
+        arrowHeadStartCanvases.push(arrowHeadStartC)
+      }
+
       // Draw the bundle's shared path and arrowhead only once
       if (!processedBundles.has(bundle)) {
         processedBundles.add(bundle)
@@ -217,6 +225,17 @@ export function drawGraph(graph: AsciiGraph): Canvas {
         if (bundle.type === 'fan-in') {
           const arrowHeadC = drawBundleArrowhead(graph, bundle)
           arrowHeadEndCanvases.push(arrowHeadC)
+        }
+
+        // Draw start arrowhead at the shared source for fan-out (once for all
+        // edges in the bundle — the trunk leaving the source is drawn once,
+        // so it only gets a start arrowhead when every edge agrees on one).
+        if (
+          bundle.type === 'fan-out' &&
+          bundle.edges.every((e) => e.hasArrowStart)
+        ) {
+          const arrowHeadStartC = drawBundleArrowheadStart(graph, bundle)
+          arrowHeadStartCanvases.push(arrowHeadStartC)
         }
 
         // Draw junction character

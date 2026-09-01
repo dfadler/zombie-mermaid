@@ -433,6 +433,108 @@ export function renderErAscii(
     write(canvas, x, y, ch, { role, roleCanvas: rc })
   }
 
+  /**
+   * True for a cell a relationship draw must not silently overwrite: an
+   * entity's own box border, or 'text' (a label or an entity's own
+   * header/attribute text). Relationships are drawn in declaration order, so
+   * a later relationship's line, crow's-foot marker, or label can otherwise
+   * land on the exact cell an earlier one (or a plain entity box) already
+   * wrote, corrupting it — a stray line glyph mid-word, one label's
+   * characters spliced into another's, or (for a same-row relationship whose
+   * straight line runs across an unrelated entity sitting between its two
+   * endpoints) that entity's border erased outright (issue #392). This
+   * doesn't fix the underlying routing gap — the line still crosses straight
+   * through the box, an out-of-scope defect tracked in #351/#390's "known
+   * limitation" — it only stops that crossing from destroying content.
+   */
+  function isProtected(x: number, y: number): boolean {
+    const role = rc[x]?.[y]
+    return role === 'text' || role === 'border'
+  }
+
+  /**
+   * Set a character for a relationship's line/marker/label — but never
+   * overwrite a protected cell (see isProtected). Every write in this
+   * relationship-drawing pass goes through this guard rather than only the
+   * straight-line fills, since crow's-foot markers and labels are just as
+   * capable of landing on the same cell. The accepted trade-off is a gap in
+   * the line/marker/label at that spot, over destroying content that was
+   * already there.
+   */
+  function setRelChar(x: number, y: number, ch: string, role: CharRole): void {
+    if (isProtected(x, y)) return
+    setC(x, y, ch, role)
+  }
+
+  /**
+   * Fill one cell of a horizontal line/dash run — like setRelChar, but also
+   * backs off one extra cell on either side of an already-placed label.
+   * isProtected alone guards a label's own cells, but a *different*,
+   * later-processed vertical relationship's horizontal jog can still run
+   * its dashes right up against an earlier one's label with zero visual
+   * gap — e.g. "────authors────" — since the jog has no reason to know a
+   * label sits in its path unless it looks. Only used for horizontal fills
+   * (same-row connection line, vertical connection's jog): a vertical '│'
+   * passing a label's row doesn't read as visually cramped the same way, so
+   * it isn't padded.
+   */
+  function setRelHChar(x: number, y: number, ch: string): void {
+    if (isProtected(x, y)) return
+    if (rc[x - 1]?.[y] === 'text' || rc[x + 1]?.[y] === 'text') return
+    setC(x, y, ch, 'line')
+  }
+
+  /**
+   * True when every cell a label's line would occupy (after clamping to
+   * [minX, maxX]) is free of protected content (see isProtected). Checked as
+   * a whole line rather than character-by-character: a per-character skip on
+   * a *label* write (unlike a line or marker) would let two overlapping
+   * labels' letters splice together into a new word that isn't either
+   * original label — e.g. "has" + the tail of "tagged-with" reading as
+   * "hasged-with" — which is more misleading than either label winning
+   * outright or neither appearing. A label either renders intact or is
+   * skipped entirely.
+   */
+  function canPlaceLabelLine(
+    cells: string[],
+    startX: number,
+    y: number,
+    minX: number,
+    maxX: number,
+  ): boolean {
+    for (let i = 0; i < cells.length; i++) {
+      const x = startX + i
+      if (x < minX || x > maxX) continue
+      if (isProtected(x, y)) return false
+    }
+    return true
+  }
+
+  /**
+   * Like canPlaceLabelLine, but also refuses a cell already holding a
+   * crow's-foot marker ('arrow'). Used only when searching for an
+   * alternate row for a vertical relationship's label (see below): a
+   * label's own natural row is allowed to sit on top of that same
+   * relationship's freshly-drawn line (expected — the label always wins
+   * over the line beneath it), but a *different* row picked specifically
+   * to dodge a collision shouldn't destroy a marker it happens to land on
+   * instead.
+   */
+  function canPlaceLabelLineAvoidingMarkers(
+    cells: string[],
+    startX: number,
+    y: number,
+    minX: number,
+    maxX: number,
+  ): boolean {
+    for (let i = 0; i < cells.length; i++) {
+      const x = startX + i
+      if (x < minX || x > maxX) continue
+      if (isProtected(x, y) || rc[x]?.[y] === 'arrow') return false
+    }
+    return true
+  }
+
   // --- Draw entity boxes ---
   for (const p of placed.values()) {
     const boxCanvas = drawMultiBox(p.sections, useAscii)
@@ -489,7 +591,7 @@ export function renderErAscii(
 
       // Draw horizontal line
       for (let x = startX; x <= endX; x++) {
-        setC(x, lineY, lineH, 'line')
+        setRelHChar(x, lineY, lineH)
       }
 
       // Crow's-foot markers sit flush against each entity border (standard
@@ -511,13 +613,13 @@ export function renderErAscii(
       // Left marker (at left entity's right edge) - isRight=false
       const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       for (let i = 0; i < leftChars.length; i++) {
-        setC(markerStartX + i, lineY, leftChars[i]!, 'arrow')
+        setRelChar(markerStartX + i, lineY, leftChars[i]!, 'arrow')
       }
 
       // Right marker (at right entity's left edge) - isRight=true
       const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       for (let i = 0; i < rightChars.length; i++) {
-        setC(
+        setRelChar(
           markerEndX - rightChars.length + 1 + i,
           lineY,
           rightChars[i]!,
@@ -556,6 +658,11 @@ export function renderErAscii(
             Math.max(labelStart + cells.length, 1),
             Math.max(labelY + 1, 1),
           )
+          if (
+            !canPlaceLabelLine(cells, labelStart, labelY, labelMinX, labelMaxX)
+          ) {
+            continue
+          }
           for (let i = 0; i < cells.length; i++) {
             const lx = labelStart + i
             if (lx >= labelMinX && lx <= labelMaxX) {
@@ -575,38 +682,36 @@ export function renderErAscii(
       const startY = upper.y + upper.height
       const endY = lower.y - 1
       const lineX = upper.x + Math.floor(upper.width / 2)
-
-      // Vertical line
-      for (let y = startY; y <= endY; y++) {
-        setC(lineX, y, lineV, 'line')
-      }
-
-      // If horizontal offset needed, add a horizontal segment
       const lowerCX = lower.x + Math.floor(lower.width / 2)
+      const needsJog = lineX !== lowerCX
+
+      // Pick the row the jog (or, when no jog is needed, the label) will
+      // use *before* drawing anything, so the initial vertical fill below
+      // knows where to stop and the jog/label draw further down can reuse
+      // the exact same value instead of drifting onto a different row —
+      // see chooseFreeRow's docstring (issue #351: every jog/label
+      // previously used the same geometric midpoint regardless of what
+      // else shared that row, so unrelated relationships between the same
+      // two component rows collided into one garbled run, and a jog could
+      // cut straight across an unrelated entity's box).
       let midY = Math.floor((startY + endY) / 2)
-      if (lineX !== lowerCX) {
-        // Horizontal segment at midY
+      if (needsJog) {
         const lx = Math.min(lineX, lowerCX)
         const rx = Math.max(lineX, lowerCX)
         // The label (drawn below, once midY is chosen) always sits to the
-        // right of the stem at lineX + 2, regardless of which way the jog
-        // itself goes — so for a leftward jog (rx === lineX) the label span
-        // falls entirely outside [lx, rx], and even a rightward jog isn't
-        // guaranteed to reach far enough right to cover it. Widen the
+        // right of the jog's target column, regardless of which way the
+        // jog itself goes — so for a leftward jog (rx === lineX) the label
+        // span falls entirely outside [lx, rx], and even a rightward jog
+        // isn't guaranteed to reach far enough right to cover it. Widen the
         // occupancy check (not the drawn jog segment itself) to include
         // that span whenever there's a label, or the row chosen here could
         // still get silently overwritten by this same relationship's own
         // label a few lines down.
         const labelEndX = rel.label ? lineX + 1 + maxLineWidth(rel.label) : rx
-        // Pick a jog row that isn't already occupied by another entity box
-        // or another relationship's already-drawn segment (issue #351 —
-        // every jog previously used the same geometric midpoint regardless
-        // of what else shared that row, so unrelated relationships between
-        // the same two component rows collided into one garbled run, and a
-        // jog could cut straight across an unrelated entity's box). `lineX`
-        // is excluded from the occupancy check because this relationship's
-        // own vertical stem already fills that whole column (see the loop
-        // above) — that expected self-overlap isn't a collision.
+        // `lineX` is excluded from the occupancy check because this
+        // relationship's own vertical stem already fills that whole column
+        // (see the fill loop below) — that expected self-overlap isn't a
+        // collision.
         midY = chooseFreeRow(
           canvas,
           startY,
@@ -615,13 +720,6 @@ export function renderErAscii(
           Math.max(rx, labelEndX),
           lineX,
         )
-        for (let x = lx; x <= rx; x++) {
-          setC(x, midY, lineH, 'line')
-        }
-        // Vertical from midY to lower entity
-        for (let y = midY + 1; y <= endY; y++) {
-          setC(lowerCX, y, lineV, 'line')
-        }
       } else if (rel.label) {
         // No jog needed (upper and lower entities already share a column),
         // but a label is still drawn to the right of the stem at `midY`
@@ -642,6 +740,33 @@ export function renderErAscii(
         )
       }
 
+      // If a horizontal offset is needed, the path jogs over to lowerCX at
+      // midY and continues down from there — so the initial vertical fill
+      // must stop at the jog row instead of also running the full height at
+      // the *original* lineX. Otherwise that leftover column keeps drawing
+      // all the way to endY, a stray parallel line beside the actual
+      // jogged path that doesn't connect to anything.
+      const initialVertEnd = needsJog ? midY - 1 : endY
+
+      // Vertical line
+      for (let y = startY; y <= initialVertEnd; y++) {
+        setRelChar(lineX, y, lineV, 'line')
+      }
+
+      // If horizontal offset needed, add a horizontal segment
+      if (needsJog) {
+        // Horizontal segment at midY
+        const lx = Math.min(lineX, lowerCX)
+        const rx = Math.max(lineX, lowerCX)
+        for (let x = lx; x <= rx; x++) {
+          setRelHChar(x, midY, lineH)
+        }
+        // Vertical from midY to lower entity
+        for (let y = midY + 1; y <= endY; y++) {
+          setRelChar(lowerCX, y, lineV, 'line')
+        }
+      }
+
       // Crow's-foot markers sit flush against each entity border, matching
       // the horizontal-connection markers above — see issue #351. (No
       // separate label inset is needed here: the vertical label, below,
@@ -653,7 +778,7 @@ export function renderErAscii(
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
       const upperChars = getCrowsFootChars(upperCard, useAscii, false)
       for (let i = 0; i < upperChars.length; i++) {
-        setC(
+        setRelChar(
           lineX - Math.floor(upperChars.length / 2) + i,
           markerStartY,
           upperChars[i]!,
@@ -665,7 +790,7 @@ export function renderErAscii(
       const targetX = lineX !== lowerCX ? lowerCX : lineX
       const lowerChars = getCrowsFootChars(lowerCard, useAscii, true)
       for (let i = 0; i < lowerChars.length; i++) {
-        setC(
+        setRelChar(
           targetX - Math.floor(lowerChars.length / 2) + i,
           markerEndY,
           lowerChars[i]!,
@@ -674,7 +799,7 @@ export function renderErAscii(
       }
 
       // Relationship label — placed to the right of the vertical line at the
-      // jog row computed above (or the geometric midpoint when there's no
+      // jog row chosen above (or the geometric midpoint when there's no
       // jog), so a labeled relationship's text lands on the same row as its
       // own horizontal segment instead of a separately-computed row that
       // could drift onto an unrelated line (issue #351). We expand the
@@ -682,23 +807,98 @@ export function renderErAscii(
       // Supports multi-line labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        // Center lines vertically around midY
-        const startLabelY = midY - Math.floor((lines.length - 1) / 2)
+        // targetX, not lineX: when a jog moves the path over to the lower
+        // entity's own column, the label needs to sit next to where the
+        // line (and lower marker) actually end up, not next to the
+        // relationship's original column at the *upper* entity — otherwise
+        // it renders visually disconnected, floating in the gap between
+        // the two.
+        const labelX = targetX + 2
+        const cellsPerLine = lines.map((line) => toDisplayCells(line))
+        const maxCells = Math.max(...cellsPerLine.map((cells) => cells.length))
+        const lastLx = labelX + maxCells - 1
+        const blockHeight = lines.length
+        // `midY` (chosen above via chooseFreeRow, ahead of any drawing) is
+        // already the row this relationship's own jog/stem uses, so start
+        // the search for the label's block there rather than at a freshly
+        // recomputed geometric midpoint — otherwise the label could still
+        // drift onto a different row than its own horizontal segment.
+        const naturalStartY = midY - Math.floor((blockHeight - 1) / 2)
 
-        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-          const line = lines[lineIdx]!
-          const labelX = lineX + 2
-          const y = startLabelY + lineIdx
-          if (y >= 0) {
-            // Grid cells, not code units — see toDisplayCells.
-            const cells = toDisplayCells(line)
+        if (lastLx >= 0) {
+          increaseSize(canvas, lastLx + 1, endY + 1)
+          increaseRoleCanvasSize(rc, lastLx + 1, endY + 1)
+        }
+
+        // Multiple vertical relationships sharing the same upper/lower
+        // entity "rows" in the grid layout end up with the identical
+        // startY/endY — and so the identical natural midY — for their own
+        // labels. Without ever considering another row, only the first of
+        // them to draw would keep its label; the rest would find their
+        // natural row already taken and drop out entirely, even though
+        // there's room a row or two away. Try the natural row first, then
+        // scan outward (alternating below/above) within the relationship's
+        // own vertical run for the nearest row where the whole label fits
+        // cleanly — clear of both text/borders and markers, not just
+        // text/borders — before giving up.
+        let placedAtY: number | null = null
+        for (
+          let offset = 0;
+          offset <= endY - startY && placedAtY === null;
+          offset++
+        ) {
+          const candidates =
+            offset === 0
+              ? [naturalStartY]
+              : [naturalStartY + offset, naturalStartY - offset]
+          for (const candidateStart of candidates) {
+            if (
+              candidateStart < startY ||
+              candidateStart + blockHeight - 1 > endY
+            ) {
+              continue
+            }
+            const fits = cellsPerLine.every((cells, lineIdx) =>
+              canPlaceLabelLineAvoidingMarkers(
+                cells,
+                labelX,
+                candidateStart + lineIdx,
+                0,
+                lastLx,
+              ),
+            )
+            if (fits) {
+              placedAtY = candidateStart
+              break
+            }
+          }
+        }
+
+        if (placedAtY !== null) {
+          for (let lineIdx = 0; lineIdx < blockHeight; lineIdx++) {
+            const cells = cellsPerLine[lineIdx]!
+            const y = placedAtY + lineIdx
             for (let i = 0; i < cells.length; i++) {
               const lx = labelX + i
               if (lx >= 0) {
-                increaseSize(canvas, lx + 1, y + 1)
-                increaseRoleCanvasSize(rc, lx + 1, y + 1)
                 setC(lx, y, cells[i]!, 'text')
               }
+            }
+            // A relationship's own jog can leave a line character
+            // immediately beside where its own label starts —
+            // setRelHChar only stops a *different*, later write from
+            // crowding an already-placed label; it can't retroactively
+            // clean up a dash this same relationship left right there
+            // moments earlier, before the label existed to protect
+            // against it. Clear one cell of breathing room on each side
+            // whenever a line glyph (from any relationship) is sitting
+            // there.
+            if (rc[labelX - 1]?.[y] === 'line') {
+              setC(labelX - 1, y, ' ', 'line')
+            }
+            const afterX = labelX + cells.length
+            if (rc[afterX]?.[y] === 'line') {
+              setC(afterX, y, ' ', 'line')
             }
           }
         }

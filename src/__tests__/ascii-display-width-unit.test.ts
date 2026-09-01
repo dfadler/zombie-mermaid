@@ -95,6 +95,31 @@ describe('displayWidth — composed grapheme clusters (issue #214)', () => {
   })
 })
 
+describe('displayWidth — VS16 emoji-presentation override', () => {
+  // ▶️ / ◀️ — the arrowhead glyphs excluded from `isWideChar` as narrow
+  // Geometric Shapes characters (see text-metrics.ts), explicitly forced to
+  // emoji presentation via a trailing U+FE0F VARIATION SELECTOR-16.
+  const RIGHT_ARROW_VS16 = '▶' + '\u{FE0F}'
+  const LEFT_ARROW_VS16 = '◀' + '\u{FE0F}'
+
+  it('measures VS16-suffixed arrowheads as 2 columns despite the base character being narrow', () => {
+    expect(charDisplayWidth(RIGHT_ARROW_VS16)).toBe(2)
+    expect(charDisplayWidth(LEFT_ARROW_VS16)).toBe(2)
+  })
+
+  it('still measures the bare (VS16-less) arrowheads as narrow', () => {
+    expect(charDisplayWidth('▶')).toBe(1)
+    expect(charDisplayWidth('◀')).toBe(1)
+  })
+
+  it('keeps cell count in sync with displayWidth for a VS16 arrowhead', () => {
+    expect(toDisplayCells(RIGHT_ARROW_VS16)).toEqual([
+      RIGHT_ARROW_VS16,
+      WIDE_CHAR_PLACEHOLDER,
+    ])
+  })
+})
+
 describe('toDisplayCells — grid-cell/column-count invariant', () => {
   it('keeps cell count in sync with displayWidth for a decomposed mark', () => {
     expect(toDisplayCells(DECOMPOSED_CAFE).length).toBe(
