@@ -15,6 +15,7 @@ import {
   mkCanvas,
   mkRoleCanvas,
   canvasToString,
+  getCanvasSize,
   increaseSize,
   increaseRoleCanvasSize,
   write,
@@ -531,14 +532,43 @@ export function renderSequenceAscii(
     }
 
     const bLeft = Math.max(0, minLX - 4)
-    const bRight = Math.min(totalW - 1, maxLX + 4)
+    let bRight = Math.min(totalW - 1, maxLX + 4)
+
+    // Header ("alt [label]") and divider ("[else label]") text is drawn
+    // starting at bLeft + 1 (see below), clipped to whatever bRight the
+    // enclosed lifelines/self-arrows produced. A wall sized purely from
+    // message spans has no relationship to label length, so a long
+    // condition label was silently cut off mid-word instead of widening
+    // the block or the block wasn't widened to fit it (#352). Measure the
+    // longest label among the header and every divider up front and widen
+    // the wall — and the canvas itself, if the extra room isn't already
+    // there — to fit it before any drawing happens.
+    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
+    let maxLabelWidth = maxLineWidth(hdrLabel)
+    for (const divider of block.dividers) {
+      if (divider.label) {
+        maxLabelWidth = Math.max(
+          maxLabelWidth,
+          maxLineWidth(`[${divider.label}]`),
+        )
+      }
+    }
+    const neededRight = bLeft + 1 + maxLabelWidth
+    if (neededRight > bRight) {
+      bRight = neededRight
+      const [canvasMaxX] = getCanvasSize(canvas)
+      if (bRight > canvasMaxX) {
+        increaseSize(canvas, bRight, totalH - 1)
+        increaseRoleCanvasSize(rc, bRight, totalH - 1)
+      }
+      totalW = Math.max(totalW, bRight + 1)
+    }
 
     // Top border with block type label
     setC(bLeft, topY, TL, 'border')
     for (let x = bLeft + 1; x < bRight; x++) setC(x, topY, H, 'border')
     setC(bRight, topY, TR, 'border')
     // Write block header label over the top border (supports multi-line)
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
     const hdrLines = splitLines(hdrLabel)
 
     for (
