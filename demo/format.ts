@@ -32,3 +32,15 @@ export function escapeHtml(text: string): string {
 export function formatDescription(text: string): string {
   return escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>')
 }
+
+/**
+ * Make a JSON payload safe to embed in a `<script>` element.
+ *
+ * An HTML parser ends a script element at the first `</script`, wherever it
+ * appears — including inside a JSON string. A sample whose Mermaid source
+ * contained that sequence would truncate the page. JSON.stringify does not
+ * escape `<`, so the sequence is broken up here.
+ */
+export function escapeJsonForScriptTag(json: string): string {
+  return json.replace(/<\/(script)/gi, '<\\/$1')
+}

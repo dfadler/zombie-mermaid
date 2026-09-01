@@ -186,7 +186,9 @@ function samplesRebuildPlugin(): Plugin {
             ? 'text/css'
             : file.endsWith('.xml')
               ? 'application/xml'
-              : 'application/octet-stream'
+              : file.endsWith('.js')
+                ? 'text/javascript'
+                : 'application/octet-stream'
           res.setHeader('Content-Type', contentType)
           res.end(await readFile(path, 'utf-8'))
           return

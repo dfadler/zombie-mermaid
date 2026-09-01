@@ -16,11 +16,14 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
-import { escapeHtml, formatDescription } from './demo/format.ts'
+import {
+  escapeHtml,
+  formatDescription,
+  escapeJsonForScriptTag,
+} from './demo/format.ts'
 import * as esbuild from 'esbuild'
 import { samples } from './samples-data.ts'
-import { THEMES } from './src/theme.ts'
-import { THEME_LABELS } from './demo/theme-labels.ts'
+import { renderThemePicker } from './theme-picker.ts'
 import { createHighlighter } from 'shiki'
 
 /**
@@ -59,18 +62,6 @@ async function bundleClientScript(): Promise<string> {
     write: false,
   })
   return result.outputFiles[0]!.text
-}
-
-/**
- * Make a JSON payload safe to embed in a `<script>` element.
- *
- * An HTML parser ends a script element at the first `</script`, wherever it
- * appears — including inside a JSON string. A sample whose Mermaid source
- * contained that sequence would truncate the page. JSON.stringify does not
- * escape `<`, so the sequence is broken up here.
- */
-function escapeJsonForScriptTag(json: string): string {
-  return json.replace(/<\/(script)/gi, '<\\/$1')
 }
 
 // ============================================================================
@@ -144,57 +135,9 @@ function renderSidebar(
     .join('\n')
 }
 
-/** Themes shown as inline pills; the rest live in the "More" dropdown. */
-const INLINE_THEMES = new Set(['dracula', 'solarized-light'])
-
-/** The Default (no theme) pill's swatch colors. */
-const DEFAULT_SWATCH = { bg: '#FFFFFF', fg: '#27272A' }
-
-/** One theme pill, with a color swatch rendered at build time. */
-function renderThemePill(
-  key: string,
-  colors: { bg: string; fg: string },
-  active = false,
-): string {
-  const isDark = parseInt(colors.bg.replace('#', '').slice(0, 2), 16) < 0x80
-  const shadow = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
-  const label = key === '' ? 'Default' : (THEME_LABELS[key] ?? key)
-  const activeClass = active ? ' active' : ''
-  return `<button class="theme-pill shadow-minimal${activeClass}" data-theme="${key}"><span class="theme-swatch" style="background:${colors.bg};box-shadow:inset 0 0 0 1px ${shadow}"></span>${escapeHtml(label)}</button>`
-}
-
-/**
- * Build the theme picker: a few pills inline, every theme in a dropdown.
- *
- * Both lists include Default, so the dropdown is a complete picker on its own
- * and the inline pills are a shortcut rather than a separate set.
- */
-function renderThemePicker(): string {
-  const themeEntries = Object.entries(THEMES)
-
-  const visiblePills = [
-    renderThemePill('', DEFAULT_SWATCH, true),
-    ...themeEntries
-      .filter(([key]) => INLINE_THEMES.has(key))
-      .map(([key, colors]) => renderThemePill(key, colors)),
-  ]
-
-  const allDropdownPills = [
-    renderThemePill('', DEFAULT_SWATCH, true),
-    ...themeEntries.map(([key, colors]) => renderThemePill(key, colors)),
-  ]
-
-  return `
-    <div class="theme-pills-inline">
-      ${visiblePills.join('\n      ')}
-    </div>
-    <div class="theme-more-wrapper">
-      <button class="theme-pill shadow-minimal" id="theme-more-btn" aria-label="More themes" aria-haspopup="true" aria-controls="theme-more-dropdown" aria-expanded="false">${allDropdownPills.length} Themes</button>
-      <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
-        ${allDropdownPills.join('\n        ')}
-      </div>
-    </div>`
-}
+// renderThemePicker (and its supporting renderThemePill/INLINE_THEMES/
+// DEFAULT_SWATCH) now lives in demo/theme-picker.ts, shared with pages.ts —
+// see that module for the doc comment.
 
 async function generateHtml(): Promise<string> {
   // Step 0: Create Shiki highlighter for mermaid syntax highlighting in source panels.
@@ -265,7 +208,7 @@ async function generateHtml(): Promise<string> {
   const tocSections = renderSidebar(nonHeroCategories, displayNum)
 
   // Step 3b: Build theme selector pills (build-time so we include swatches)
-  const themePillsHtml = renderThemePicker()
+  const themePillsHtml = renderThemePicker({ includeDefault: true })
 
   // Step 4: Pre-highlight all sample sources with Shiki (build-time only, zero runtime cost).
   // The mermaid TextMate grammar requires a fenced code block prefix to tokenize properly

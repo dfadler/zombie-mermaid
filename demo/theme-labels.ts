@@ -1,10 +1,10 @@
 /**
  * Human-readable metadata for the built-in themes in `src/theme.ts`.
  *
- * Shared by `index.ts` (the theme picker's pill labels) and `pages.ts` (the
- * per-theme SEO landing pages, which also need a one-sentence description of
- * each theme's look for unique page copy) so the two never drift out of sync
- * with each other or with `THEMES` itself.
+ * Consumed by theme-picker.ts's `renderThemePill` (pill labels, and each
+ * pill's `title` tooltip) — shared by both index.ts's interactive gallery
+ * and pages.ts's per-diagram-type pages — so labels/descriptions never
+ * drift out of sync with each other or with `THEMES` itself.
  */
 
 /** Human-readable labels for theme keys, shown in the theme picker's pills. */
@@ -28,9 +28,8 @@ export const THEME_LABELS: Record<string, string> = {
 
 /**
  * One-sentence description of each theme's look, grounded in its actual
- * `THEMES` colors rather than generic marketing copy — used as unique page
- * content on the per-theme SEO pages (`pages.ts`), so two theme pages for
- * the same diagram type don't read as templated duplicates of each other.
+ * `THEMES` colors rather than generic marketing copy — shown as each theme
+ * pill's `title` tooltip.
  */
 export const THEME_DESCRIPTIONS: Record<string, string> = {
   'zinc-light':
