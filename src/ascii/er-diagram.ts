@@ -489,6 +489,31 @@ export function renderErAscii(
           setCGuarded(x, lineY, lineH, 'line')
         }
         labelBaseY = lineY + 1
+
+        // Two relationships between the exact same adjacent pair (a
+        // parallel/multi edge) both compute this identical row — without
+        // this search, the second relationship's label would silently
+        // overwrite the first's, since setCGuarded only guards a
+        // non-text write against existing text, not text-over-text.
+        // Search downward, within the row-gap band, for a row where the
+        // label is still on blank canvas.
+        if (rel.label) {
+          const labelMinX = startX + inset
+          const labelMaxX = endX - inset
+          const labelRows = splitLines(rel.label).length
+          const maxLabelY = lineY + 1 + Math.max(vGap - 1, 1)
+          while (
+            labelBaseY < maxLabelY &&
+            !regionClear(
+              labelMinX,
+              labelMaxX,
+              labelBaseY,
+              labelBaseY + labelRows - 1,
+            )
+          ) {
+            labelBaseY++
+          }
+        }
       } else {
         // Detour beneath the obstructing entity, through the free row-gap
         // band (vGap) that layout already reserves below every row, then
@@ -597,13 +622,31 @@ export function renderErAscii(
       const startY = upper.y + upper.height
       const endY = lower.y - 1
       const lineX = upper.x + Math.floor(upper.width / 2)
+      const lowerCX = lower.x + Math.floor(lower.width / 2)
 
-      // Vertical line. Column lineX stays within upper's own x-range, which
-      // by layout construction never overlaps a row-mate's box, so this
-      // straight run is safe regardless of how far it descends.
-      for (let y = startY; y <= endY; y++) {
-        setCGuarded(lineX, y, lineV, 'line')
+      /** True when column x is free of every entity box across [yStart, yEnd]. */
+      function columnClearOfBoxes(
+        x: number,
+        yStart: number,
+        yEnd: number,
+      ): boolean {
+        for (let y = yStart; y <= yEnd; y++) {
+          if (boxCells.has(`${x},${y}`)) return false
+        }
+        return true
       }
+
+      // Inset the crow's foot markers by 1 row from each entity box so the
+      // glyph cluster isn't flush against the border (issue #67). Computed
+      // up front (rather than only just before drawing the markers, as
+      // before) because the multi-row-obstruction routing below needs to
+      // jog *after* these rows, not immediately at startY/endY — otherwise
+      // the marker ends up sitting past where the line already turned
+      // away, disconnected from it.
+      const vGapHeight = endY - startY + 1
+      const vInset = vGapHeight >= 3 ? 1 : 0
+      const markerStartY = startY + vInset
+      const markerEndY = endY - vInset
 
       // The naive vertical midpoint can still sit inside a row-mate of
       // `upper` that's taller than `upper` itself, so a horizontal jog (or
@@ -620,6 +663,20 @@ export function renderErAscii(
       const lowerRowTop = lower.y
       const bandTop = Math.max(startY, upperRowBottom + 1)
       const bandBottom = Math.min(endY, lowerRowTop - 1)
+
+      // [bandTop, bandBottom] — not the wider [startY, endY] — is what the
+      // single-row clamp above already guarantees is clear of a row-mate of
+      // `upper` (or the top of `lower`'s own row). Checking the wider range
+      // here would misfire on exactly that already-handled case (a row-mate
+      // taller than `upper`, e.g. STUDENT next to a shorter TEACHER) and
+      // route it through the free-column bypass unnecessarily. A genuine
+      // multi-row obstruction — some entity in a row strictly between
+      // `upper`'s and `lower`'s own rows (e.g. A→G below, where D sits in
+      // the same column as A, two rows down) — still shows up here, since
+      // bandTop/bandBottom span every row in between, not just one.
+      const multiRowObstruction =
+        !columnClearOfBoxes(lineX, bandTop, bandBottom) ||
+        !columnClearOfBoxes(lowerCX, bandTop, bandBottom)
 
       /**
        * Pick a row within the free row-gap band for a horizontal run across
@@ -646,33 +703,90 @@ export function renderErAscii(
         return fallback
       }
 
-      // If horizontal offset needed, add a horizontal segment
-      const lowerCX = lower.x + Math.floor(lower.width / 2)
-      if (lineX !== lowerCX) {
-        const lx = Math.min(lineX, lowerCX)
-        const rx = Math.max(lineX, lowerCX)
-        const midY = pickBandY(lx, rx, 0)
+      // Where the visible line actually runs — lineX in the common case,
+      // or the free bypass column found below when a third entity sits
+      // directly in the way. The label (further down) anchors to whichever
+      // one is real, instead of always assuming lineX.
+      let routingX = lineX
 
-        // Horizontal segment at midY
-        for (let x = lx; x <= rx; x++) {
-          setCGuarded(x, midY, lineH, 'line')
+      if (multiRowObstruction) {
+        // Route around the intervening entity through a column that's
+        // completely free of every box across the whole vertical span,
+        // searched outward from lineX. Two short horizontal jogs — right
+        // after leaving upper, right before reaching lower — connect
+        // lineX/lowerCX to that column; the long middle run is a plain
+        // vertical line, guaranteed not to touch any box.
+        const canvasWidth = canvas.length
+        let viaX: number | undefined
+        for (let offset = 0; offset <= canvasWidth; offset++) {
+          if (columnClearOfBoxes(lineX + offset, startY, endY)) {
+            viaX = lineX + offset
+            break
+          }
+          if (offset > 0 && columnClearOfBoxes(lineX - offset, startY, endY)) {
+            viaX = lineX - offset
+            break
+          }
         }
-        // Vertical from midY to lower entity
-        for (let y = midY + 1; y <= endY; y++) {
+        // No column anywhere on the canvas is fully clear (a very dense
+        // diagram) — fall back to lineX. setCGuarded still guarantees no
+        // box gets corrupted; the line just keeps the gap it already had.
+        routingX = viaX ?? lineX
+
+        // Stay on lineX/lowerCX through the marker rows (so each crow's
+        // foot marker still sits on a connected line, same as the
+        // non-obstructed case below), then jog over to routingX for the
+        // long middle run.
+        for (let y = startY; y <= markerStartY; y++) {
+          setCGuarded(lineX, y, lineV, 'line')
+        }
+        for (
+          let x = Math.min(lineX, routingX);
+          x <= Math.max(lineX, routingX);
+          x++
+        ) {
+          setCGuarded(x, markerStartY, lineH, 'line')
+        }
+        for (let y = markerStartY; y <= markerEndY; y++) {
+          setCGuarded(routingX, y, lineV, 'line')
+        }
+        for (
+          let x = Math.min(routingX, lowerCX);
+          x <= Math.max(routingX, lowerCX);
+          x++
+        ) {
+          setCGuarded(x, markerEndY, lineH, 'line')
+        }
+        for (let y = markerEndY; y <= endY; y++) {
           setCGuarded(lowerCX, y, lineV, 'line')
+        }
+      } else {
+        // Vertical line. Column lineX stays within upper's own x-range,
+        // which by layout construction never overlaps a row-mate's box, so
+        // this straight run is safe regardless of how far it descends.
+        for (let y = startY; y <= endY; y++) {
+          setCGuarded(lineX, y, lineV, 'line')
+        }
+
+        // If horizontal offset needed, add a horizontal segment
+        if (lineX !== lowerCX) {
+          const lx = Math.min(lineX, lowerCX)
+          const rx = Math.max(lineX, lowerCX)
+          const midY = pickBandY(lx, rx, 0)
+
+          // Horizontal segment at midY
+          for (let x = lx; x <= rx; x++) {
+            setCGuarded(x, midY, lineH, 'line')
+          }
+          // Vertical from midY to lower entity
+          for (let y = midY + 1; y <= endY; y++) {
+            setCGuarded(lowerCX, y, lineV, 'line')
+          }
         }
       }
 
-      // Inset the crow's foot markers by 1 row from each entity box so the
-      // glyph cluster isn't flush against the border (issue #67). The line
-      // character still fills the inset row, keeping the connection visually
-      // continuous.
-      const vGapHeight = endY - startY + 1
-      const vInset = vGapHeight >= 3 ? 1 : 0
-      const markerStartY = startY + vInset
-      const markerEndY = endY - vInset
-
-      // Crow's foot markers (vertical direction)
+      // Crow's foot markers (vertical direction) — markerStartY/markerEndY
+      // computed up front, above.
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
       const upperChars = getCrowsFootChars(upperCard, useAscii, false)
       for (let i = 0; i < upperChars.length; i++) {
@@ -702,15 +816,31 @@ export function renderErAscii(
       // labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        const labelX = lineX + 2
+        const labelX = routingX + 2
         const labelWidth = Math.max(
           ...lines.map((l) => toDisplayCells(l).length),
         )
-        const startLabelY = pickBandY(
-          labelX,
-          labelX + labelWidth - 1,
-          lines.length - 1,
-        )
+        // In the multi-row-obstruction case, bandTop/bandBottom (derived
+        // from upper's and lower's own immediate rows) don't describe the
+        // routingX column's actual clear range — it's clear across the
+        // *entire* [startY, endY] span by construction (see above), so
+        // search that instead of the single-row band.
+        const startLabelY = multiRowObstruction
+          ? (() => {
+              for (let y = startY; y <= endY; y++) {
+                if (
+                  regionClear(
+                    labelX,
+                    labelX + labelWidth - 1,
+                    y,
+                    y + lines.length - 1,
+                  )
+                )
+                  return y
+              }
+              return Math.floor((startY + endY) / 2)
+            })()
+          : pickBandY(labelX, labelX + labelWidth - 1, lines.length - 1)
 
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
           const line = lines[lineIdx]!

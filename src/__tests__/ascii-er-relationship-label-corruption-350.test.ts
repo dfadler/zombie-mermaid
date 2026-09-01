@@ -302,3 +302,157 @@ describe('ASCII ER relationship label routing — long labels and crowded areas 
     expect(ascii).toContain('string name')
   })
 })
+
+// ============================================================================
+// Follow-up findings from CodeRabbit's review of the #350 fix (PR #391) —
+// both are the same "silently overwritten" shape as the original issue,
+// just between two relationships instead of a relationship and a box.
+// ============================================================================
+
+describe('ASCII ER relationship label routing — parallel relationships (CodeRabbit follow-up)', () => {
+  it('keeps both labels when two relationships connect the exact same adjacent pair (same-row)', () => {
+    // A↔B are adjacent (no obstruction), so both "first" and "second" land
+    // on the identical direct-path row unless the label search kicks in.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : first
+        A ||--o{ B : second`,
+      { colorMode: 'none' },
+    )
+    expect(ascii).toContain('first')
+    expect(ascii).toContain('second')
+  })
+
+  it('keeps both labels when two relationships connect the exact same vertical pair', () => {
+    // A (row1) and C (row2) are directly above/below each other; both
+    // "first" and "second" would compute the identical band midpoint
+    // without pickBandY's collision search.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : sibling
+        A ||--o{ C : first
+        A ||--o{ C : second`,
+      { colorMode: 'none' },
+    )
+    expect(ascii).toContain('sibling')
+    expect(ascii).toContain('first')
+    expect(ascii).toContain('second')
+  })
+})
+
+describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit follow-up)', () => {
+  it('keeps a relationship connected and boxes uncorrupted when it skips two rows', () => {
+    // 7 entities -> maxPerRow = 3 -> row1: A,B,C; row2: D,E,F; row3: G.
+    // A-G shares D's column two rows down, so the single-row-gap clamp
+    // alone doesn't cover it — this needs the free-column bypass.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : ab
+        B ||--o{ C : bc
+        C ||--o{ D : cd
+        D ||--o{ E : de
+        E ||--o{ F : ef
+        F ||--o{ G : fg
+        A ||--o{ G : ag
+        A {
+          string id
+          string name
+        }
+        D {
+          string id
+          string title
+        }
+        G {
+          string id
+          string label
+        }`,
+      { colorMode: 'none' },
+    )
+    // No box content lost.
+    expect(ascii).toContain('string id')
+    expect(ascii).toContain('string name')
+    expect(ascii).toContain('string title')
+    expect(ascii).toContain('string label')
+    // Every relationship label survives, including the multi-row one.
+    expect(ascii).toContain('ab')
+    expect(ascii).toContain('bc')
+    expect(ascii).toContain('cd')
+    expect(ascii).toContain('de')
+    expect(ascii).toContain('ef')
+    expect(ascii).toContain('fg')
+    expect(ascii).toContain('ag')
+  })
+
+  it('routes the multi-row relationship through a column with no box at all (not a coincidentally-empty cell)', () => {
+    // Same shape as above, but every entity carries an attribute so a
+    // "disconnected" line landing inside a box (rather than routing
+    // around it) would corrupt visible attribute text, not just an empty
+    // interior cell.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : ab
+        B ||--o{ C : bc
+        C ||--o{ D : cd
+        D ||--o{ E : de
+        E ||--o{ F : ef
+        F ||--o{ G : fg
+        A ||--o{ G : ag
+        A { string a1 }
+        B { string b1 }
+        C { string c1 }
+        D { string d1 }
+        E { string e1 }
+        F { string f1 }
+        G { string g1 }`,
+      { colorMode: 'none' },
+    )
+    for (const attr of ['a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1']) {
+      expect(ascii, `expected attribute "${attr}" to survive`).toContain(attr)
+    }
+    expect(ascii).toContain('ag')
+  })
+
+  it('draws the multi-row line outside the intervening box, not just around a coincidental gap', () => {
+    // A precise, geometry-aware check (not just "content survives"):
+    // setCGuarded alone would already stop attribute-text corruption even
+    // with the multi-row bypass disabled — it just leaves the line
+    // discontinuous through D's box, which "content survives" assertions
+    // can't tell apart from a real, routed connection. This test locates
+    // D's own top-border row and asserts a line/marker character exists
+    // *outside* D's box width on that exact row — proof the connector
+    // steps around D's box rather than merely being guarded away inside
+    // it (verified against a version of this fix with the bypass
+    // disabled: the extra character outside D's box does not appear).
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : ab
+        B ||--o{ C : bc
+        C ||--o{ D : cd
+        D ||--o{ E : de
+        E ||--o{ F : ef
+        F ||--o{ G : fg
+        A ||--o{ G : ag
+        A {
+          string id
+          string name
+        }
+        D {
+          string id
+          string title
+        }
+        G {
+          string id
+          string label
+        }`,
+      { colorMode: 'none' },
+    )
+    const lines = ascii.split('\n')
+    const dTopIdx = lines.findIndex(
+      (l, i) => l.includes('┌') && lines[i + 1]?.includes('│ D'),
+    )
+    expect(dTopIdx, 'expected to find D’s top-border row').toBeGreaterThan(-1)
+    const dTopLine = lines[dTopIdx]!
+    const afterDBox = dTopLine.slice(dTopLine.indexOf('┐') + 1)
+    expect(afterDBox).toMatch(/[│╢╟○]/)
+  })
+})
