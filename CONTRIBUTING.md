@@ -43,6 +43,8 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
 - `pnpm run bench` — render benchmarks
+- `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
+- `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
 - `pnpm run format` — format the codebase with Prettier
 - `pnpm run format:check` — check formatting without writing changes
 
