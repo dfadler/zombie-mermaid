@@ -28,6 +28,8 @@ export interface Sample {
     padding?: number
     transparent?: boolean
     interactive?: boolean
+    /** Passed straight through to the renderer's own option of the same name (see src/types.ts's RenderOptions). */
+    interactivity?: 'none' | 'static' | 'full'
   }
 }
 

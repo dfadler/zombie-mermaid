@@ -37,12 +37,19 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run test:visual` — visual regression suite (real-browser screenshots of every sample; see "Visual regression tests" below)
 - `pnpm run test:visual:update` — regenerate visual baselines after an intentional rendering change
 - `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
+- `pnpm run fork-fixes` — build `fork-fixes.html`; if you add or change a `render: 'ascii'` entry in `demo/fork-fixes-data.ts`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/` — those real-terminal screenshots are the before/after shown on that page, not a live render
 - `pnpm run lint` — ESLint
 - `pnpm run build` — build the publishable package with tsup
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
+- `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot
+- `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
+- `pnpm run fork-fixes` — render the fork-fixes showcase (`fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
 - `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
+- `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
 - `pnpm run bench` — render benchmarks
+- `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
+- `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
 - `pnpm run format` — format the codebase with Prettier
 - `pnpm run format:check` — check formatting without writing changes
 
@@ -98,6 +105,8 @@ Font rasterization has genuine run-to-run jitter (see the comments in `playwrigh
 
 For a broader, human-reviewable sweep — not a pass/fail gate, just "what does my in-progress change actually alter" — run `pnpm run visual-diff`. It renders the full catalog with the working tree's renderer against a base ref (`--base=<ref>`, default `main`) into `visual-diff.html`, showing only samples whose output actually differs.
 
+**`visual-diff.html` and the Playwright baselines above are for iterating locally — never for the before/after screenshot in a PR/issue body when the change touches ASCII output.** Both render ASCII through `ascii-html.ts`'s HTML/CSS approximation of a terminal, not a real one, and this repo has already shipped a bug in that approximation's chrome while the underlying renderer was fine. For an ASCII-affecting change, capture the actual PR screenshot with `scripts/ascii-terminal-capture.sh` instead, which renders through a real PTY headlessly (via `asciinema` + `agg` — `brew install asciinema agg && pip3 install pillow` once) and produces a `.png` straight from that real-terminal recording. See `scripts/ascii-terminal-capture.sh --help` for usage, or the `verify-ascii-terminal` skill for the full procedure.
+
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
 ## Porting fixes from upstream
@@ -113,6 +122,15 @@ This is the part that makes this fork different from a typical project. Two situ
 - If the upstream PR was abandoned or blocked upstream, say so briefly — it helps reviewers understand why the fix is landing here instead of there.
 
 Either way, add a changeset (see below) describing what changed and, where relevant, that it originated upstream.
+
+### Adding a fork-fixes entry
+
+`demo/fork-fixes-data.ts` backs `fork-fixes.ts`, a before/after showcase of bugs this fork has fixed vs. upstream. It's a credible differentiator specifically because every pair is a _real_ render from an actual pre-fix/post-fix commit, not a hand-drawn illustration — the generator fails the build if a pair renders identically (see `fork-fixes.ts`'s own header comment and [#189](https://github.com/dfadler/zombie-mermaid/issues/189)). That evidentiary value only holds up if the page keeps growing with the fork, so treat adding an entry as a standing step for bug-fix PRs, not a one-time backfill (see [#295](https://github.com/dfadler/zombie-mermaid/issues/295)):
+
+- If your PR fixes a bug that changes _rendered_ output (SVG or ASCII — a wrong shape, a dropped edge, a corrupted label, a layout glitch, a crash on previously-malformed input), add an entry to the `forkFixes` array in `demo/fork-fixes-data.ts`: a minimal Mermaid `source` that reproduces the bug, the `fixCommit`, the PR number, and a short `lookFor` describing what changed. Run `pnpm run fork-fixes` locally to confirm your pair actually renders two different things before committing it — see the interface doc comments in `demo/fork-fixes-data.ts` for the full field list (including the optional `excerpt` and `upstreamIssues` fields).
+- If the fix is _not_ visible in rendered output (an internal refactor, a type-only fix, a performance fix, a fix to something other than the renderer itself), skip the entry — there's nothing for the showcase to demonstrate.
+- The PR template's checklist has a line for this; check it or explain why it doesn't apply.
+- A PR labeled `bug` that doesn't touch `demo/fork-fixes-data.ts` gets an automated, non-blocking reminder comment (`.github/workflows/fork-fixes-nudge.yml`) — a nudge to consider adding an entry, not a merge gate. It's fine to ignore when the fix genuinely has no visible rendering change.
 
 ### Staying aware of upstream changes
 
