@@ -355,6 +355,66 @@ export function renderErAscii(
     }
   }
 
+  // --- Snapshot cells occupied by entity boxes ---
+  // Taken once, right after boxes are drawn and before any relationship
+  // line, crow's-foot marker, or label is drawn, so relationship rendering
+  // can never silently overwrite a box border or attribute text (issue
+  // #350). The obstruction-aware routing below (see `obstructionBottom` and
+  // the vertical row-band clamp) avoids these cells in the common cases;
+  // this snapshot is the last-resort guarantee for whatever routing doesn't
+  // anticipate.
+  const boxCells = new Set<string>()
+  for (const p of placed.values()) {
+    for (let by = 0; by < p.height; by++) {
+      for (let bx = 0; bx < p.width; bx++) {
+        boxCells.add(`${p.x + bx},${p.y + by}`)
+      }
+    }
+  }
+
+  /**
+   * Like setC, but refuses to draw into a cell reserved by an entity box
+   * (see boxCells above). Used for every relationship line, crow's-foot
+   * marker, and label write below, so a mis-routed segment degrades to a
+   * gap in the line rather than corrupting a box's border or attribute
+   * text.
+   */
+  function setCGuarded(x: number, y: number, ch: string, role: CharRole): void {
+    if (boxCells.has(`${x},${y}`)) return
+    // Two relationship lines are allowed to cross (a normal, expected part
+    // of ER layout), but a later relationship's line/marker must not punch
+    // through an earlier relationship's already-placed label text — that's
+    // the same silent-corruption shape as issue #350, just between two
+    // relationships instead of a relationship and a box.
+    if (role !== 'text' && rc[x]?.[y] === 'text') return
+    setC(x, y, ch, role)
+  }
+
+  /**
+   * True when every cell in the rectangle [xStart, xEnd] x [yStart, yEnd] is
+   * still blank — i.e. neither an entity box (see boxCells) nor a
+   * previously-drawn relationship line/marker/label occupies it. Used to
+   * pick a detour row for one relationship that doesn't land on top of
+   * another relationship's already-drawn line or label (both routed through
+   * the same row-gap band can otherwise silently overwrite each other).
+   * Reads directly from `canvas` rather than boxCells, since it must also
+   * see ink from relationships drawn earlier in this same loop.
+   */
+  function regionClear(
+    xStart: number,
+    xEnd: number,
+    yStart: number,
+    yEnd: number,
+  ): boolean {
+    for (let y = yStart; y <= yEnd; y++) {
+      for (let x = xStart; x <= xEnd; x++) {
+        const ch = canvas[x]?.[y]
+        if (ch !== undefined && ch !== ' ') return false
+      }
+    }
+    return true
+  }
+
   // --- Draw relationships ---
   const H = useAscii ? '-' : '─'
   const V = useAscii ? '|' : '│'
@@ -392,31 +452,93 @@ export function renderErAscii(
       const endX = right.x - 1
       const lineY = left.y + Math.floor(left.height / 2)
 
-      // Draw horizontal line
-      for (let x = startX; x <= endX; x++) {
-        setC(x, lineY, lineH, 'line')
+      // A straight line at lineY only stays clear of other boxes when left
+      // and right are actually adjacent in the row. When some other entity
+      // in the same row sits between them (e.g. ORDER↔SHIPMENT with
+      // LINE_ITEM placed in between — issue #350), the direct path runs
+      // straight through that entity's box. Detect that case by checking
+      // for any other row-mate whose x-range overlaps the gap.
+      let obstructionBottom: number | undefined
+      for (const other of placed.values()) {
+        if (other === left || other === right) continue
+        if (other.y !== left.y) continue
+        const overlapsGap = other.x < endX + 1 && other.x + other.width > startX
+        if (overlapsGap) {
+          obstructionBottom = Math.max(
+            obstructionBottom ?? 0,
+            other.y + other.height,
+          )
+        }
       }
 
-      // Inset the crow's foot markers and the label by 1 cell from each
-      // entity box so nothing sits flush against a border (issue #67). The
-      // line character still fills the inset cell, so the connection stays
-      // visually continuous.
+      // Inset the crow's foot markers by 1 cell from each entity box so
+      // nothing sits flush against a border (issue #67). The line character
+      // still fills the inset cell, so the connection stays visually
+      // continuous. These stay anchored to each box's own edge regardless
+      // of whether the path in between is direct or detoured.
       const gapWidth = endX - startX + 1
       const inset = gapWidth >= 3 ? 1 : 0
       const markerStartX = startX + inset
       const markerEndX = endX - inset
 
+      let labelBaseY: number
+
+      if (obstructionBottom === undefined) {
+        // Direct path: nothing sits between left and right in this row.
+        for (let x = startX; x <= endX; x++) {
+          setCGuarded(x, lineY, lineH, 'line')
+        }
+        labelBaseY = lineY + 1
+      } else {
+        // Detour beneath the obstructing entity, through the free row-gap
+        // band (vGap) that layout already reserves below every row, then
+        // back up to the right entity's edge. Nothing else is ever placed
+        // in that band, so it's guaranteed clear regardless of how much
+        // taller the obstruction is than left/right themselves.
+        const rowBottom = Math.max(
+          left.y + left.height,
+          right.y + right.height,
+          obstructionBottom,
+        )
+        // Reserve room for the label too (it goes one row below the detour
+        // line), and search downward for a row where both the detour line
+        // and the label are still on blank canvas — another relationship
+        // detoured through the same row-gap band would otherwise land on
+        // the exact same row and silently overwrite this one's label.
+        const labelRows = rel.label ? splitLines(rel.label).length : 0
+        let detourY = rowBottom + 1
+        const maxDetourY = rowBottom + Math.max(vGap * 3, 4)
+        while (
+          detourY < maxDetourY &&
+          !regionClear(startX, endX, detourY, detourY + labelRows)
+        ) {
+          detourY++
+        }
+        // Grow the canvas before drawing — a detour can reach further down
+        // than the initial component-based sizing anticipated.
+        increaseSize(canvas, endX + 1, detourY + labelRows + 1)
+        increaseRoleCanvasSize(rc, endX + 1, detourY + labelRows + 1)
+        for (let y = lineY; y <= detourY; y++) {
+          setCGuarded(startX, y, lineV, 'line')
+          setCGuarded(endX, y, lineV, 'line')
+        }
+        for (let x = startX; x <= endX; x++) {
+          setCGuarded(x, detourY, lineH, 'line')
+        }
+        labelBaseY = detourY + 1
+      }
+
       // Draw crow's foot markers at endpoints
       // Left marker (at left entity's right edge) - isRight=false
       const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       for (let i = 0; i < leftChars.length; i++) {
-        setC(markerStartX + i, lineY, leftChars[i]!, 'arrow')
+        setCGuarded(markerStartX + i, lineY, leftChars[i]!, 'arrow')
       }
 
       // Right marker (at right entity's left edge) - isRight=true
       const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       for (let i = 0; i < rightChars.length; i++) {
-        setC(
+        setCGuarded(
           markerEndX - rightChars.length + 1 + i,
           lineY,
           rightChars[i]!,
@@ -424,17 +546,18 @@ export function renderErAscii(
         )
       }
 
-      // Relationship label centered in the gap between the two entities, below the line.
-      // Clamp label to the padded gap region [startX + inset, endX - inset] so it
-      // never touches a box border. Supports multi-line labels. The gap itself is
-      // widened during layout (see pairLabelWidth) so the full label always fits.
+      // Relationship label centered in the gap between the two entities,
+      // below the line (or below the detour, when one was needed). Clamp
+      // label to the padded gap region [startX + inset, endX - inset] so it
+      // never touches a box border. Supports multi-line labels. The gap
+      // itself is widened during layout (see pairLabelWidth) so the full
+      // label always fits when the path is direct.
       if (rel.label) {
         const lines = splitLines(rel.label)
         const gapMid = Math.floor((startX + endX) / 2)
         const labelMinX = startX + inset
         const labelMaxX = endX - inset
 
-        // Place lines below the relationship line (lineY + 1, lineY + 2, ...)
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
           const line = lines[lineIdx]!
           // Grid cells, not code units — see toDisplayCells.
@@ -443,7 +566,7 @@ export function renderErAscii(
             labelMinX,
             gapMid - Math.floor(cells.length / 2),
           )
-          const labelY = lineY + 1 + lineIdx
+          const labelY = labelBaseY + lineIdx
           // Ensure canvas is tall enough
           increaseSize(
             canvas,
@@ -458,7 +581,7 @@ export function renderErAscii(
           for (let i = 0; i < cells.length; i++) {
             const lx = labelStart + i
             if (lx >= labelMinX && lx <= labelMaxX) {
-              setC(lx, labelY, cells[i]!, 'text')
+              setCGuarded(lx, labelY, cells[i]!, 'text')
             }
           }
         }
@@ -475,24 +598,68 @@ export function renderErAscii(
       const endY = lower.y - 1
       const lineX = upper.x + Math.floor(upper.width / 2)
 
-      // Vertical line
+      // Vertical line. Column lineX stays within upper's own x-range, which
+      // by layout construction never overlaps a row-mate's box, so this
+      // straight run is safe regardless of how far it descends.
       for (let y = startY; y <= endY; y++) {
-        setC(lineX, y, lineV, 'line')
+        setCGuarded(lineX, y, lineV, 'line')
+      }
+
+      // The naive vertical midpoint can still sit inside a row-mate of
+      // `upper` that's taller than `upper` itself, so a horizontal jog (or
+      // the label, placed near the same band) at that Y would run straight
+      // through that entity's box (issue #350 — e.g. `dispatches`, where
+      // SHIPMENT is shorter than its row-mate LINE_ITEM). Clamp to the
+      // row-gap band that's actually free of every entity: below the
+      // tallest box in upper's row, and above the top of lower's row.
+      const upperRowBottom = Math.max(
+        ...[...placed.values()]
+          .filter((p) => p.y === upper.y)
+          .map((p) => p.y + p.height),
+      )
+      const lowerRowTop = lower.y
+      const bandTop = Math.max(startY, upperRowBottom + 1)
+      const bandBottom = Math.min(endY, lowerRowTop - 1)
+
+      /**
+       * Pick a row within the free row-gap band for a horizontal run across
+       * [xStart, xEnd] (plus `extraRows` below it, for a multi-line label).
+       * Prefers a row that's still entirely blank — not already used by
+       * another relationship's line or label routed through the same band
+       * (issue #350) — falling back to the midpoint of the band (or of the
+       * full startY..endY span, if the band is degenerate) when nothing is
+       * fully clear.
+       */
+      function pickBandY(
+        xStart: number,
+        xEnd: number,
+        extraRows: number,
+      ): number {
+        const fallback =
+          bandTop <= bandBottom
+            ? Math.floor((bandTop + bandBottom) / 2)
+            : Math.floor((startY + endY) / 2)
+        if (bandTop > bandBottom) return fallback
+        for (let y = bandTop; y <= bandBottom; y++) {
+          if (regionClear(xStart, xEnd, y, y + extraRows)) return y
+        }
+        return fallback
       }
 
       // If horizontal offset needed, add a horizontal segment
       const lowerCX = lower.x + Math.floor(lower.width / 2)
       if (lineX !== lowerCX) {
-        const midY = Math.floor((startY + endY) / 2)
-        // Horizontal segment at midY
         const lx = Math.min(lineX, lowerCX)
         const rx = Math.max(lineX, lowerCX)
+        const midY = pickBandY(lx, rx, 0)
+
+        // Horizontal segment at midY
         for (let x = lx; x <= rx; x++) {
-          setC(x, midY, lineH, 'line')
+          setCGuarded(x, midY, lineH, 'line')
         }
         // Vertical from midY to lower entity
         for (let y = midY + 1; y <= endY; y++) {
-          setC(lowerCX, y, lineV, 'line')
+          setCGuarded(lowerCX, y, lineV, 'line')
         }
       }
 
@@ -509,7 +676,7 @@ export function renderErAscii(
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
       const upperChars = getCrowsFootChars(upperCard, useAscii, false)
       for (let i = 0; i < upperChars.length; i++) {
-        setC(
+        setCGuarded(
           lineX - Math.floor(upperChars.length / 2) + i,
           markerStartY,
           upperChars[i]!,
@@ -521,7 +688,7 @@ export function renderErAscii(
       const targetX = lineX !== lowerCX ? lowerCX : lineX
       const lowerChars = getCrowsFootChars(lowerCard, useAscii, true)
       for (let i = 0; i < lowerChars.length; i++) {
-        setC(
+        setCGuarded(
           targetX - Math.floor(lowerChars.length / 2) + i,
           markerEndY,
           lowerChars[i]!,
@@ -529,18 +696,24 @@ export function renderErAscii(
         )
       }
 
-      // Relationship label — placed to the right of the vertical line at the midpoint.
-      // We expand the canvas as needed since labels can extend beyond the initial bounds.
-      // Supports multi-line labels.
+      // Relationship label — placed to the right of the vertical line,
+      // within the free row-gap band. We expand the canvas as needed since
+      // labels can extend beyond the initial bounds. Supports multi-line
+      // labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        const midY = Math.floor((startY + endY) / 2)
-        // Center lines vertically around midY
-        const startLabelY = midY - Math.floor((lines.length - 1) / 2)
+        const labelX = lineX + 2
+        const labelWidth = Math.max(
+          ...lines.map((l) => toDisplayCells(l).length),
+        )
+        const startLabelY = pickBandY(
+          labelX,
+          labelX + labelWidth - 1,
+          lines.length - 1,
+        )
 
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
           const line = lines[lineIdx]!
-          const labelX = lineX + 2
           const y = startLabelY + lineIdx
           if (y >= 0) {
             // Grid cells, not code units — see toDisplayCells.
@@ -550,7 +723,7 @@ export function renderErAscii(
               if (lx >= 0) {
                 increaseSize(canvas, lx + 1, y + 1)
                 increaseRoleCanvasSize(rc, lx + 1, y + 1)
-                setC(lx, y, cells[i]!, 'text')
+                setCGuarded(lx, y, cells[i]!, 'text')
               }
             }
           }
