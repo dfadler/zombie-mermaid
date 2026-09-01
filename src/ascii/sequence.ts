@@ -27,6 +27,14 @@ import { splitStatements } from '../statements.ts'
 // self-arrows inside alt/loop/opt blocks don't get clipped by the wall.
 const SELF_LOOP_WIDTH = 4
 
+// Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
+// and the lifelines its own messages touch. Shared by every block type —
+// there is no per-type wall calculation, so this constant is the single
+// source of truth for that spacing (see BLOCK_WALL_MARGIN's use below for
+// why a *second*, independent use of it also guards against an untouched
+// lifeline).
+const BLOCK_WALL_MARGIN = 4
+
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.
  *
@@ -504,6 +512,12 @@ export function renderSequenceAscii(
 
   // ---- DRAW: blocks (loop, alt, opt, par, etc.) ----
 
+  // Largest column index it's currently safe to write a block wall into.
+  // Starts at the canvas's own right margin (mirrors the historical
+  // `totalW - 1` clamp) and is pushed out via increaseSize/
+  // increaseRoleCanvasSize below whenever a wall needs to grow past it.
+  let blockCanvasMaxX = totalW - 1
+
   for (let b = 0; b < diagram.blocks.length; b++) {
     const block = diagram.blocks[b]!
     const topY = blockStartY.get(b)
@@ -530,8 +544,32 @@ export function renderSequenceAscii(
       }
     }
 
-    const bLeft = Math.max(0, minLX - 4)
-    const bRight = Math.min(totalW - 1, maxLX + 4)
+    let bLeft = minLX - BLOCK_WALL_MARGIN
+    let bRight = maxLX + BLOCK_WALL_MARGIN
+
+    // minLX/maxLX (and therefore bLeft/bRight) only account for lifelines
+    // *this block's own messages* touch. That leaves a gap: the fixed
+    // margin above can coincidentally place a wall exactly on a different,
+    // untouched lifeline's column — subsuming it for the block's whole
+    // vertical span, since the wall glyph and the lifeline glyph occupy the
+    // same cell (see #353; `alt` hit this while `loop`/`opt` in the same
+    // diagram happened not to, purely because their own messages already
+    // reached the lifeline in question, clearing it by the same margin).
+    // Applies to every block type alike — nudge either wall past any
+    // lifeline it would otherwise land on.
+    for (const x of llX) {
+      if (bRight === x) bRight = x + BLOCK_WALL_MARGIN
+      if (bLeft === x) bLeft = x - BLOCK_WALL_MARGIN
+    }
+
+    bLeft = Math.max(0, bLeft)
+    if (bRight > blockCanvasMaxX) {
+      increaseSize(canvas, bRight + 1, totalH - 1)
+      increaseRoleCanvasSize(rc, bRight + 1, totalH - 1)
+      blockCanvasMaxX = bRight
+    } else {
+      bRight = Math.min(blockCanvasMaxX, bRight)
+    }
 
     // Top border with block type label
     setC(bLeft, topY, TL, 'border')
