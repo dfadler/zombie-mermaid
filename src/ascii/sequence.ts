@@ -21,6 +21,7 @@ import {
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
+import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
 // Shared between the drawing pass and the block-wall extent calculation so
@@ -79,7 +80,11 @@ export function renderSequenceAscii(
     return idx
   }
 
-  const boxPad = 1
+  // Clamped: a negative boxBorderPadding would otherwise produce a negative
+  // actor/note box width for a short label (see issue #343's CodeRabbit
+  // review — the same class of bug fixed in draw-boxes.ts's
+  // measureMultiBox/drawMultiBox for class/ER boxes).
+  const boxPad = Math.max(0, config.boxBorderPadding)
   // Use max line width for multi-line actor labels
   const actorBoxWidths = diagram.actors.map(
     (a) => maxLineWidth(a.label) + 2 * boxPad + 2,
@@ -110,13 +115,21 @@ export function renderSequenceAscii(
     }
   }
 
-  // Compute lifeline x-positions (greedy left-to-right)
+  // Compute lifeline x-positions (greedy left-to-right).
+  // See paddingOffset's doc comment (types.ts) for why this is an offset
+  // from the paddingX default rather than the raw config value.
+  const minLifelineGap = paddingOffset(
+    config.paddingX,
+    DEFAULT_PADDING_X,
+    10,
+    4,
+  )
   const llX: number[] = [halfBox[0]!]
   for (let i = 1; i < diagram.actors.length; i++) {
     const gap = Math.max(
       halfBox[i - 1]! + halfBox[i]! + 2,
       adjMaxWidth[i - 1]! + 2,
-      10,
+      minLifelineGap,
     )
     llX[i] = llX[i - 1]! + gap
   }
@@ -140,12 +153,32 @@ export function renderSequenceAscii(
 
   let curY = actorBoxH // start right below header boxes
 
+  // rowGap: the blank rows around messages, notes, and blocks. See
+  // paddingOffset's doc comment (types.ts) for why this is an offset from
+  // the paddingY default rather than the raw config value. Floored at 0 (not
+  // 1) since these are single-row gaps, not a whole box — collapsing a gap
+  // to 0 rows is still a valid, readable layout, just a tight one.
+  const rowGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 1, 0)
+
+  // Below rowGap's own floor of 0, three specific gaps still need at least
+  // one row: the row right after a divider (or the message row drawn there
+  // would land on the divider's own row and overwrite it), the row right
+  // after a block's closing border (same reasoning against whatever comes
+  // next), and the row before the footer (the footer's top border is drawn
+  // *before* messages/arrows in the draw pass — see "DRAW: actor header +
+  // footer boxes" below — so a message landing on the same row as the
+  // footer would draw its arrow through the footer's border). Everywhere
+  // else (blank row before a message, gap before a note, blank row before a
+  // block header) is genuinely optional spacing with no such collision risk,
+  // so those keep using rowGap directly. See issue #343's CodeRabbit review.
+  const minSeparatorGap = Math.max(rowGap, 1)
+
   // Pre-message notes: afterIndex === -1 — position before message loop
   for (const note of diagram.notes) {
     if (note.afterIndex !== -1) continue
-    curY += 1 // gap before note
+    curY += rowGap // gap before note
     const nLines = splitLines(note.text)
-    const nWidth = Math.max(...nLines.map((l) => l.length)) + 4
+    const nWidth = Math.max(...nLines.map((l) => l.length)) + 2 + 2 * boxPad
     const nHeight = nLines.length + 2
 
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
@@ -179,7 +212,7 @@ export function renderSequenceAscii(
     // Block openings at this message
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.startIndex === m) {
-        curY += 2 // 1 blank + 1 header row
+        curY += rowGap + 1 // blank rows + 1 fixed header row
         blockStartY.set(b, curY - 1)
       }
     }
@@ -188,14 +221,14 @@ export function renderSequenceAscii(
     for (let b = 0; b < diagram.blocks.length; b++) {
       for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
         if (diagram.blocks[b]!.dividers[d]!.index === m) {
-          curY += 1
+          curY += rowGap
           divYMap.set(`${b}:${d}`, curY)
-          curY += 1
+          curY += minSeparatorGap
         }
       }
     }
 
-    curY += 1 // blank row before message
+    curY += rowGap // blank row before message
 
     const msg = diagram.messages[m]!
     const isSelf = msg.from === msg.to
@@ -218,10 +251,10 @@ export function renderSequenceAscii(
     // Notes after this message
     for (let n = 0; n < diagram.notes.length; n++) {
       if (diagram.notes[n]!.afterIndex === m) {
-        curY += 1
+        curY += rowGap
         const note = diagram.notes[n]!
         const nLines = splitLines(note.text)
-        const nWidth = Math.max(...nLines.map((l) => l.length)) + 4
+        const nWidth = Math.max(...nLines.map((l) => l.length)) + 2 + 2 * boxPad
         const nHeight = nLines.length + 2
 
         // Determine x position based on note.position
@@ -258,14 +291,14 @@ export function renderSequenceAscii(
     // Block closings after this message
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.endIndex === m) {
-        curY += 1
+        curY += rowGap
         blockEndY.set(b, curY)
-        curY += 1
+        curY += minSeparatorGap
       }
     }
   }
 
-  curY += 1 // gap before footer
+  curY += minSeparatorGap // gap before footer (mandatory — see minSeparatorGap)
   const footerY = curY
   const totalH = footerY + actorBoxH
 
@@ -598,7 +631,7 @@ export function renderSequenceAscii(
       setC(np.x, ly, V, 'border')
       setC(np.x + np.width - 1, ly, V, 'border')
       for (let i = 0; i < np.lines[l]!.length; i++) {
-        setC(np.x + 2 + i, ly, np.lines[l]![i]!, 'text')
+        setC(np.x + 1 + boxPad + i, ly, np.lines[l]![i]!, 'text')
       }
     }
     // Bottom border

@@ -29,6 +29,7 @@ import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines, maxLineWidth } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
 import { toDisplayCells } from './display-width.ts'
+import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // ============================================================================
 // Entity box content
@@ -211,9 +212,22 @@ export function renderErAscii(
   if (diagram.entities.length === 0) return ''
 
   const useAscii = config.useAscii
-  const hGap = 6 // horizontal gap between entity boxes
-  const vGap = 4 // vertical gap between rows (for relationship lines)
-  const componentGap = 6 // vertical gap between disconnected components
+  // See paddingOffset's doc comment (types.ts) for why these are an offset
+  // from the padding defaults rather than the raw config values.
+  //
+  // hGap/vGap floors are higher than the generic "don't collapse to
+  // nothing" minimum of 1: crow's-foot markers are up to 2 cells wide and
+  // are drawn from each entity's edge inward (1-cell inset once the gap is
+  // >= 3 — see the "Inset the crow's foot markers" comment below), so a
+  // same-row relationship's two markers overlap unless
+  // gapWidth > 3 + 2*inset — i.e. unless the gap is at least 6 cells for the
+  // worst case of a 2-cell marker on each side (e.g. two "zero-many" ends).
+  // A vertical relationship needs at least 2 rows so the upper and lower
+  // markers don't land on the same row. (See issue #343's CodeRabbit
+  // review.)
+  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 6, 6) // horizontal gap between entity boxes
+  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 4, 2) // vertical gap between rows (for relationship lines)
+  const componentGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 6, 1) // vertical gap between disconnected components
 
   // --- Build entity box dimensions ---
   const entitySections = new Map<string, string[][]>()
@@ -229,7 +243,10 @@ export function renderErAscii(
     // Reserve exactly what drawMultiBox will draw — measuring it here rather
     // than re-deriving the arithmetic keeps layout and drawing in lockstep for
     // wide-character (CJK/fullwidth) content.
-    const { width: boxW, height: boxH } = measureMultiBox(sections)
+    const { width: boxW, height: boxH } = measureMultiBox(
+      sections,
+      config.boxBorderPadding,
+    )
 
     entityBoxW.set(ent.id, boxW)
     entityBoxH.set(ent.id, boxH)
@@ -442,7 +459,11 @@ export function renderErAscii(
 
   // --- Draw entity boxes ---
   for (const p of placed.values()) {
-    const boxCanvas = drawMultiBox(p.sections, useAscii)
+    const boxCanvas = drawMultiBox(
+      p.sections,
+      useAscii,
+      config.boxBorderPadding,
+    )
     for (let bx = 0; bx < boxCanvas.length; bx++) {
       for (let by = 0; by < boxCanvas[0]!.length; by++) {
         const ch = boxCanvas[bx]![by]!
