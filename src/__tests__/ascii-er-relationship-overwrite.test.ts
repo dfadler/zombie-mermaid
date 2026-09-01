@@ -10,6 +10,14 @@
 // This is a distinct mechanism from #351's jog-row collisions (fixed by
 // chooseFreeRow in #390): here nothing routes around anything, a later
 // write simply stomps an earlier one with no occupancy check at all.
+//
+// A vertical relationship's label goes one step further than plain
+// overwrite-avoidance: when multiple vertical relationships share the same
+// upper/lower entity "rows" (and so the same natural label row), simply
+// refusing to overwrite would silently drop every label but the first —
+// a real information loss, not just a corruption risk. Those labels
+// instead search nearby rows within the relationship's own vertical run
+// for a free spot before giving up.
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
@@ -78,16 +86,19 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     expect(crossingLine).toContain('B')
   })
 
-  it('drops a whole overlapping label rather than splicing its tail onto an earlier one', () => {
+  it('never splices one overlapping label onto another, whatever the outcome', () => {
     // Real catalog sample ("ER: Blog Platform Schema"): USER-COMMENT's
     // "authors" label, POST-COMMENT's "has" label, and POST-TAG's
-    // "tagged-with" label all land on the same row. Before this fix, the
-    // whole row was overwritten down to just "tagged-with" (silently
-    // erasing "authors" and "has" entirely). A naive per-character
-    // occupancy guard produces a worse failure mode here: "tagged-with"'s
-    // free trailing characters ("ged-with") get written right after "has",
-    // producing "hasged-with" — a new, plausible-looking word that is
-    // neither original label. A label must render whole or not at all.
+    // "tagged-with" label all naturally land on the same row. Before any
+    // fix, the whole row was overwritten down to just "tagged-with"
+    // (silently erasing "authors" and "has" entirely). A naive
+    // per-character occupancy guard produces a worse failure mode here:
+    // "tagged-with"'s free trailing characters ("ged-with") get written
+    // right after "has", producing "hasged-with" — a new, plausible-
+    // looking word that is neither original label. Whether a colliding
+    // label ends up relocated to a free row nearby or dropped outright
+    // (see the row-search test below for which one happens here), it must
+    // never partially splice into whatever's already at its natural row.
     const ascii = renderMermaidASCII(
       `erDiagram
         USER ||--o{ POST : writes
@@ -101,6 +112,30 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     expect(ascii).not.toContain('gedauthors')
     expect(ascii).toContain('authors')
     expect(ascii).toContain('has')
+  })
+
+  it('relocates a colliding vertical-relationship label to a free row instead of dropping it', () => {
+    // Same real catalog sample as above. USER-COMMENT, POST-COMMENT, and
+    // POST-TAG all share the same startY/endY (they connect the same pair
+    // of entity "rows" in the grid layout), so their labels ("authors",
+    // "has", "tagged-with") all compute the identical natural midY. Simply
+    // dropping whichever one loses that collision — the earlier behavior —
+    // is a real, visible information loss: a rendered relationship with no
+    // label at all. There's free space a row away, clear of both text and
+    // markers, so "tagged-with" should be relocated there rather than
+    // vanish.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        USER ||--o{ POST : writes
+        USER ||--o{ COMMENT : authors
+        POST ||--o{ COMMENT : has
+        POST }|--o{ TAG : tagged-with`,
+      { colorMode: 'none' },
+    )
+
+    expect(ascii).toContain('tagged-with')
+    // And still not spliced together with "has" on its new row either.
+    expect(ascii).not.toContain('hastagged-with')
   })
 
   it('drops a whole overlapping label in the same-row (horizontal) branch too', () => {

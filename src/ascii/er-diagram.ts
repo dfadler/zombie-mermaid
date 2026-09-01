@@ -415,6 +415,31 @@ export function renderErAscii(
     return true
   }
 
+  /**
+   * Like canPlaceLabelLine, but also refuses a cell already holding a
+   * crow's-foot marker ('arrow'). Used only when searching for an
+   * alternate row for a vertical relationship's label (see below): a
+   * label's own natural row is allowed to sit on top of that same
+   * relationship's freshly-drawn line (expected — the label always wins
+   * over the line beneath it), but a *different* row picked specifically
+   * to dodge a collision shouldn't destroy a marker it happens to land on
+   * instead.
+   */
+  function canPlaceLabelLineAvoidingMarkers(
+    cells: string[],
+    startX: number,
+    y: number,
+    minX: number,
+    maxX: number,
+  ): boolean {
+    for (let i = 0; i < cells.length; i++) {
+      const x = startX + i
+      if (x < minX || x > maxX) continue
+      if (isProtected(x, y) || rc[x]?.[y] === 'arrow') return false
+    }
+    return true
+  }
+
   // --- Draw entity boxes ---
   for (const p of placed.values()) {
     const boxCanvas = drawMultiBox(p.sections, useAscii)
@@ -620,33 +645,77 @@ export function renderErAscii(
         )
       }
 
-      // Relationship label — placed to the right of the vertical line at the midpoint.
-      // We expand the canvas as needed since labels can extend beyond the initial bounds.
-      // Supports multi-line labels.
+      // Relationship label — placed to the right of the vertical line,
+      // normally centered at the midpoint. We expand the canvas as needed
+      // since labels can extend beyond the initial bounds. Supports
+      // multi-line labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
+        const labelX = lineX + 2
+        const cellsPerLine = lines.map((line) => toDisplayCells(line))
+        const maxCells = Math.max(...cellsPerLine.map((cells) => cells.length))
+        const lastLx = labelX + maxCells - 1
+        const blockHeight = lines.length
         const midY = Math.floor((startY + endY) / 2)
-        // Center lines vertically around midY
-        const startLabelY = midY - Math.floor((lines.length - 1) / 2)
+        const naturalStartY = midY - Math.floor((blockHeight - 1) / 2)
 
-        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-          const line = lines[lineIdx]!
-          const labelX = lineX + 2
-          const y = startLabelY + lineIdx
-          if (y >= 0) {
-            // Grid cells, not code units — see toDisplayCells.
-            const cells = toDisplayCells(line)
-            const lastLx = labelX + cells.length - 1
-            if (lastLx >= 0) {
-              increaseSize(canvas, lastLx + 1, y + 1)
-              increaseRoleCanvasSize(rc, lastLx + 1, y + 1)
+        if (lastLx >= 0) {
+          increaseSize(canvas, lastLx + 1, endY + 1)
+          increaseRoleCanvasSize(rc, lastLx + 1, endY + 1)
+        }
+
+        // Multiple vertical relationships sharing the same upper/lower
+        // entity "rows" in the grid layout end up with the identical
+        // startY/endY — and so the identical natural midY — for their own
+        // labels. Without ever considering another row, only the first of
+        // them to draw would keep its label; the rest would find their
+        // natural row already taken and drop out entirely, even though
+        // there's room a row or two away. Try the natural row first, then
+        // scan outward (alternating below/above) within the relationship's
+        // own vertical run for the nearest row where the whole label fits
+        // cleanly — clear of both text/borders and markers, not just
+        // text/borders — before giving up.
+        let placedAtY: number | null = null
+        for (
+          let offset = 0;
+          offset <= endY - startY && placedAtY === null;
+          offset++
+        ) {
+          const candidates =
+            offset === 0
+              ? [naturalStartY]
+              : [naturalStartY + offset, naturalStartY - offset]
+          for (const candidateStart of candidates) {
+            if (
+              candidateStart < startY ||
+              candidateStart + blockHeight - 1 > endY
+            ) {
+              continue
             }
-            if (canPlaceLabelLine(cells, labelX, y, 0, lastLx)) {
-              for (let i = 0; i < cells.length; i++) {
-                const lx = labelX + i
-                if (lx >= 0) {
-                  setC(lx, y, cells[i]!, 'text')
-                }
+            const fits = cellsPerLine.every((cells, lineIdx) =>
+              canPlaceLabelLineAvoidingMarkers(
+                cells,
+                labelX,
+                candidateStart + lineIdx,
+                0,
+                lastLx,
+              ),
+            )
+            if (fits) {
+              placedAtY = candidateStart
+              break
+            }
+          }
+        }
+
+        if (placedAtY !== null) {
+          for (let lineIdx = 0; lineIdx < blockHeight; lineIdx++) {
+            const cells = cellsPerLine[lineIdx]!
+            const y = placedAtY + lineIdx
+            for (let i = 0; i < cells.length; i++) {
+              const lx = labelX + i
+              if (lx >= 0) {
+                setC(lx, y, cells[i]!, 'text')
               }
             }
           }
