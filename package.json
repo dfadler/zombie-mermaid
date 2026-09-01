@@ -65,7 +65,10 @@
     "visualization",
     "theming",
     "mcp",
-    "model-context-protocol"
+    "model-context-protocol",
+    "claude-code",
+    "ai-agent",
+    "llm-tools"
   ],
   "author": "Dustin Fadler",
   "contributors": [
