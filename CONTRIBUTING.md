@@ -98,6 +98,8 @@ Font rasterization has genuine run-to-run jitter (see the comments in `playwrigh
 
 For a broader, human-reviewable sweep — not a pass/fail gate, just "what does my in-progress change actually alter" — run `pnpm run visual-diff`. It renders the full catalog with the working tree's renderer against a base ref (`--base=<ref>`, default `main`) into `visual-diff.html`, showing only samples whose output actually differs.
 
+**`visual-diff.html` and the Playwright baselines above are for iterating locally — never for the before/after screenshot in a PR/issue body when the change touches ASCII output.** Both render ASCII through `ascii-html.ts`'s HTML/CSS approximation of a terminal, not a real one, and this repo has already shipped a bug in that approximation's chrome while the underlying renderer was fine. For an ASCII-affecting change, capture the actual PR screenshot with `scripts/ascii-terminal-capture.sh` instead, which renders through a real PTY headlessly (via `asciinema` + `agg` — `brew install asciinema agg && pip3 install pillow` once) and produces a `.png` straight from that real-terminal recording. See `scripts/ascii-terminal-capture.sh --help` for usage, or the `verify-ascii-terminal` skill for the full procedure.
+
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
 ## Porting fixes from upstream
