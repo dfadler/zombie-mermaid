@@ -16,7 +16,13 @@ import type {
   ErAttribute,
   Cardinality,
 } from '../er/types.ts'
-import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
+import type {
+  AsciiConfig,
+  CharRole,
+  AsciiTheme,
+  ColorMode,
+  Canvas,
+} from './types.ts'
 import {
   mkCanvas,
   mkRoleCanvas,
@@ -195,6 +201,70 @@ function mustGetEntityValue<T>(
 }
 
 /**
+ * Check whether every cell in row `y` across [xStart, xEnd] is still blank
+ * on `canvas`, ignoring column `skipX` (the relationship's own vertical
+ * stem, which legitimately already occupies that column across the whole
+ * gap before a jog row is chosen — see `chooseFreeRow`).
+ */
+function isRowFree(
+  canvas: Canvas,
+  y: number,
+  xStart: number,
+  xEnd: number,
+  skipX: number,
+): boolean {
+  for (let x = xStart; x <= xEnd; x++) {
+    if (x === skipX) continue
+    if (canvas[x]?.[y] !== ' ') return false
+  }
+  return true
+}
+
+/**
+ * Choose a row for a vertical relationship's horizontal jog segment,
+ * preferring the geometric midpoint between `startY` and `endY` but
+ * scanning outward (alternating below/above) for the nearest row across
+ * [xStart, xEnd] that isn't already occupied — by an entity box the naive
+ * midpoint would otherwise cut through, or by another relationship's
+ * already-drawn jog (see issue #351: every vertical relationship between
+ * the same two component rows previously computed the *same* midpoint,
+ * so their jogs and labels landed on one shared row and overwrote each
+ * other). Candidates are restricted to the open interval (startY, endY) so
+ * the chosen row never collides with the crow's-foot markers flush against
+ * either entity border.
+ *
+ * Falls back to the plain midpoint — the only row every caller used before
+ * this fix — when the gap is too small to have any candidate row at all, or
+ * when every candidate in the gap is occupied (a dense diagram where
+ * avoiding collisions entirely isn't possible with this renderer's
+ * straight-jog routing).
+ */
+function chooseFreeRow(
+  canvas: Canvas,
+  startY: number,
+  endY: number,
+  xStart: number,
+  xEnd: number,
+  skipX: number,
+): number {
+  const preferred = Math.floor((startY + endY) / 2)
+  if (isRowFree(canvas, preferred, xStart, xEnd, skipX)) return preferred
+
+  const maxOffset = endY - startY
+  for (let d = 1; d <= maxOffset; d++) {
+    const below = preferred + d
+    if (below < endY && isRowFree(canvas, below, xStart, xEnd, skipX)) {
+      return below
+    }
+    const above = preferred - d
+    if (above > startY && isRowFree(canvas, above, xStart, xEnd, skipX)) {
+      return above
+    }
+  }
+  return preferred
+}
+
+/**
  * Render a Mermaid ER diagram to ASCII/Unicode text.
  *
  * Pipeline: parse → build boxes → component-aware layout → draw boxes → draw relationships → string.
@@ -213,7 +283,14 @@ export function renderErAscii(
   const useAscii = config.useAscii
   const hGap = 6 // horizontal gap between entity boxes
   const vGap = 4 // vertical gap between rows (for relationship lines)
-  const componentGap = 6 // vertical gap between disconnected components
+  // Vertical gap between disconnected components. Unlike vGap, this gap
+  // never needs to fit a relationship line, a jog, or a label — disconnected
+  // components have no edges between them by definition — so it only needs
+  // enough room to read as a visual break between unrelated entities, not
+  // the same routing headroom a same-component row wrap needs. A gap this
+  // large previously left most of the output blank for diagrams with a few
+  // small unrelated components (issue #351).
+  const componentGap = 2
 
   // --- Build entity box dimensions ---
   const entitySections = new Map<string, string[][]>()
@@ -397,14 +474,20 @@ export function renderErAscii(
         setC(x, lineY, lineH, 'line')
       }
 
-      // Inset the crow's foot markers and the label by 1 cell from each
-      // entity box so nothing sits flush against a border (issue #67). The
-      // line character still fills the inset cell, so the connection stays
-      // visually continuous.
+      // Crow's-foot markers sit flush against each entity border (standard
+      // ER notation draws the tick/circle cluster touching the entity, not
+      // floating in the middle of the connecting line). Only the *label*
+      // gets an inset from the border (issue #67 — labels crammed flush
+      // against a box were hard to read); insetting the markers too, as a
+      // prior fix did, left a 1-cell run of the plain connecting-line
+      // character between the border and the marker. That fill cell uses
+      // the exact same glyph as the "one" cardinality marker ('│'/'|'), so
+      // it read as a stray, unexplained connector glyph floating next to
+      // the real marker — see issue #351.
       const gapWidth = endX - startX + 1
-      const inset = gapWidth >= 3 ? 1 : 0
-      const markerStartX = startX + inset
-      const markerEndX = endX - inset
+      const labelInset = gapWidth >= 3 ? 1 : 0
+      const markerStartX = startX
+      const markerEndX = endX
 
       // Draw crow's foot markers at endpoints
       // Left marker (at left entity's right edge) - isRight=false
@@ -431,8 +514,8 @@ export function renderErAscii(
       if (rel.label) {
         const lines = splitLines(rel.label)
         const gapMid = Math.floor((startX + endX) / 2)
-        const labelMinX = startX + inset
-        const labelMaxX = endX - inset
+        const labelMinX = startX + labelInset
+        const labelMaxX = endX - labelInset
 
         // Place lines below the relationship line (lineY + 1, lineY + 2, ...)
         for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
@@ -482,11 +565,21 @@ export function renderErAscii(
 
       // If horizontal offset needed, add a horizontal segment
       const lowerCX = lower.x + Math.floor(lower.width / 2)
+      let midY = Math.floor((startY + endY) / 2)
       if (lineX !== lowerCX) {
-        const midY = Math.floor((startY + endY) / 2)
         // Horizontal segment at midY
         const lx = Math.min(lineX, lowerCX)
         const rx = Math.max(lineX, lowerCX)
+        // Pick a jog row that isn't already occupied by another entity box
+        // or another relationship's already-drawn segment (issue #351 —
+        // every jog previously used the same geometric midpoint regardless
+        // of what else shared that row, so unrelated relationships between
+        // the same two component rows collided into one garbled run, and a
+        // jog could cut straight across an unrelated entity's box). `lineX`
+        // is excluded from the occupancy check because this relationship's
+        // own vertical stem already fills that whole column (see the loop
+        // above) — that expected self-overlap isn't a collision.
+        midY = chooseFreeRow(canvas, startY, endY, lx, rx, lineX)
         for (let x = lx; x <= rx; x++) {
           setC(x, midY, lineH, 'line')
         }
@@ -494,16 +587,32 @@ export function renderErAscii(
         for (let y = midY + 1; y <= endY; y++) {
           setC(lowerCX, y, lineV, 'line')
         }
+      } else if (rel.label) {
+        // No jog needed (upper and lower entities already share a column),
+        // but a label is still drawn to the right of the stem at `midY`
+        // (below) — that label is text, not part of this relationship's own
+        // line, so it needs the same collision check a jog's row gets:
+        // without it, a straight-through relationship's label could land on
+        // a row another relationship already used for its own jog (see
+        // issue #351 — reproduced by three entities where two independent
+        // relationships both terminate below the same row).
+        const labelWidth = maxLineWidth(rel.label)
+        midY = chooseFreeRow(
+          canvas,
+          startY,
+          endY,
+          lineX + 2,
+          lineX + 1 + labelWidth,
+          lineX,
+        )
       }
 
-      // Inset the crow's foot markers by 1 row from each entity box so the
-      // glyph cluster isn't flush against the border (issue #67). The line
-      // character still fills the inset row, keeping the connection visually
-      // continuous.
-      const vGapHeight = endY - startY + 1
-      const vInset = vGapHeight >= 3 ? 1 : 0
-      const markerStartY = startY + vInset
-      const markerEndY = endY - vInset
+      // Crow's-foot markers sit flush against each entity border, matching
+      // the horizontal-connection markers above — see issue #351. (No
+      // separate label inset is needed here: the vertical label, below,
+      // never clamped to an inset range in the first place.)
+      const markerStartY = startY
+      const markerEndY = endY
 
       // Crow's foot markers (vertical direction)
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
@@ -529,12 +638,15 @@ export function renderErAscii(
         )
       }
 
-      // Relationship label — placed to the right of the vertical line at the midpoint.
-      // We expand the canvas as needed since labels can extend beyond the initial bounds.
+      // Relationship label — placed to the right of the vertical line at the
+      // jog row computed above (or the geometric midpoint when there's no
+      // jog), so a labeled relationship's text lands on the same row as its
+      // own horizontal segment instead of a separately-computed row that
+      // could drift onto an unrelated line (issue #351). We expand the
+      // canvas as needed since labels can extend beyond the initial bounds.
       // Supports multi-line labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        const midY = Math.floor((startY + endY) / 2)
         // Center lines vertically around midY
         const startLabelY = midY - Math.floor((lines.length - 1) / 2)
 
