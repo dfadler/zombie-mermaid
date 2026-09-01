@@ -1,6 +1,6 @@
 {
   "name": "zombie-mermaid",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "license": "MIT",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies. Maintained fork of beautiful-mermaid.",
   "type": "module",
@@ -65,7 +65,10 @@
     "visualization",
     "theming",
     "mcp",
-    "model-context-protocol"
+    "model-context-protocol",
+    "claude-code",
+    "ai-agent",
+    "llm-tools"
   ],
   "author": "Dustin Fadler",
   "contributors": [

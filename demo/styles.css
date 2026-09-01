@@ -616,10 +616,15 @@ body.search-active .category-tabbar {
   list-style: none;
   font-size: 0.8rem;
 }
+/* No white-space: nowrap is set on this list, so titles wrap onto
+ * multiple lines rather than truncating to one — text-overflow: ellipsis
+ * needs nowrap to do anything, so it was never actually active here.
+ * overflow: hidden was therefore dead weight for truncation, but it did
+ * clip the shared :focus-visible ring (see a:focus-visible above) on
+ * these links down to a ~2px sliver. Dropped both properties rather than
+ * kept for a "just in case" truncation that isn't wired up (zombie-mermaid#325). */
 .sidebar-list li {
   margin-bottom: 0.3rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .sidebar-list a {
   color: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));

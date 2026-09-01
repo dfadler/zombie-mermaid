@@ -5,12 +5,18 @@
  * files reference `window.__harness` inside `page.evaluate()` callbacks
  * without a type assertion.
  */
-import type { mountAsciiPanel, mountSvgPanel, unmount } from './mount.ts'
+import type {
+  mountAsciiPanel,
+  mountSidebarList,
+  mountSvgPanel,
+  unmount,
+} from './mount.ts'
 import type { buildTerminalPanel } from './terminal-panel.ts'
 
 export interface HarnessApi {
   mountSvgPanel: typeof mountSvgPanel
   mountAsciiPanel: typeof mountAsciiPanel
+  mountSidebarList: typeof mountSidebarList
   unmount: typeof unmount
   buildTerminalPanel: typeof buildTerminalPanel
 }
