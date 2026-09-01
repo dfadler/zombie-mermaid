@@ -372,6 +372,24 @@ export function renderErAscii(
   }
 
   /**
+   * Fill one cell of a horizontal line/dash run — like setRelChar, but also
+   * backs off one extra cell on either side of an already-placed label.
+   * isProtected alone guards a label's own cells, but a *different*,
+   * later-processed vertical relationship's horizontal jog can still run
+   * its dashes right up against an earlier one's label with zero visual
+   * gap — e.g. "────authors────" — since the jog has no reason to know a
+   * label sits in its path unless it looks. Only used for horizontal fills
+   * (same-row connection line, vertical connection's jog): a vertical '│'
+   * passing a label's row doesn't read as visually cramped the same way, so
+   * it isn't padded.
+   */
+  function setRelHChar(x: number, y: number, ch: string): void {
+    if (isProtected(x, y)) return
+    if (rc[x - 1]?.[y] === 'text' || rc[x + 1]?.[y] === 'text') return
+    setC(x, y, ch, 'line')
+  }
+
+  /**
    * True when every cell a label's line would occupy (after clamping to
    * [minX, maxX]) is free of protected content (see isProtected). Checked as
    * a whole line rather than character-by-character: a per-character skip on
@@ -453,7 +471,7 @@ export function renderErAscii(
 
       // Draw horizontal line
       for (let x = startX; x <= endX; x++) {
-        setRelChar(x, lineY, lineH, 'line')
+        setRelHChar(x, lineY, lineH)
       }
 
       // Inset the crow's foot markers and the label by 1 cell from each
@@ -552,7 +570,7 @@ export function renderErAscii(
         const lx = Math.min(lineX, lowerCX)
         const rx = Math.max(lineX, lowerCX)
         for (let x = lx; x <= rx; x++) {
-          setRelChar(x, midY, lineH, 'line')
+          setRelHChar(x, midY, lineH)
         }
         // Vertical from midY to lower entity
         for (let y = midY + 1; y <= endY; y++) {

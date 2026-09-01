@@ -162,4 +162,56 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     // survive intact, not be replaced by more line/dash glyphs.
     expect(ascii).toMatch(/│.LINE_ITEM.│/)
   })
+
+  it('pads a label with a blank cell when a later relationship jog runs flush against it', () => {
+    // Real catalog sample ("ER: Blog Platform Schema", used verbatim —
+    // this needs the entities' attribute blocks to reproduce the exact
+    // geometry where it occurs): USER-COMMENT needs no horizontal jog of
+    // its own (its two entities are already column-aligned), so its label
+    // "authors" sits on a row that POST-COMMENT's much longer jog — a
+    // different, later-processed relationship — later fills with dashes
+    // clear across. isProtected alone keeps "authors" itself intact
+    // (that's what the earlier tests above cover), but without this
+    // padding the crossing dashes still ran flush against it on both sides
+    // ("────authors────") — readable, but visually indistinguishable from
+    // actual corruption at a glance.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        USER {
+          int id PK
+          string username UK
+          string email UK
+          date joined
+        }
+        POST {
+          int id PK
+          string title
+          text content
+          int author_id FK
+          date published
+        }
+        COMMENT {
+          int id PK
+          text body
+          int post_id FK
+          int user_id FK
+          date created
+        }
+        TAG {
+          int id PK
+          string name UK
+        }
+        USER ||--o{ POST : writes
+        USER ||--o{ COMMENT : authors
+        POST ||--o{ COMMENT : has
+        POST }|--o{ TAG : tagged-with`,
+      { colorMode: 'none' },
+    )
+
+    const row = ascii.split('\n').find((l) => l.includes('authors'))
+    expect(row).toBeDefined()
+    const idx = row!.indexOf('authors')
+    expect(row![idx - 1]).toBe(' ')
+    expect(row![idx + 'authors'.length]).toBe(' ')
+  })
 })
