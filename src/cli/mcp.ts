@@ -29,6 +29,8 @@ export async function runMcp(
   const server = createMcpServer()
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  log('zombie-mermaid MCP server running on stdio')
+  log(
+    'zombie-mermaid MCP server running on stdio (experimental — feedback welcome: https://github.com/dfadler/zombie-mermaid/issues)',
+  )
   return server
 }

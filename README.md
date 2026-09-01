@@ -126,6 +126,8 @@ zombie-mermaid --help                                   # Show all options
 
 ## MCP Server
 
+> 🧪 **Experimental — shipped to gauge interest, not a finished or best-effort implementation.** This is a first cut covering the common case; the tool surface may change based on feedback. Try it and [open an issue](https://github.com/dfadler/zombie-mermaid/issues/new) with what you'd want from it.
+
 `zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as two tools: `render_mermaid_svg` and `render_mermaid_ascii`. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
 
 Example Claude Desktop / Claude Code MCP server config:
