@@ -215,6 +215,6 @@ export function layoutErDiagramSync(
   }
 
   const { elkGraph, entitySizes } = buildErElkGraph(diagram, options)
-  const result = elkLayoutSync(elkGraph)
+  const result = elkLayoutSync(elkGraph, options.layoutCache)
   return extractErLayout(result, diagram, entitySizes)
 }

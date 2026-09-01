@@ -234,7 +234,7 @@ export function layoutClassDiagramSync(
   }
 
   const { elkGraph, classSizes } = buildClassElkGraph(diagram, options)
-  const result = elkLayoutSync(elkGraph)
+  const result = elkLayoutSync(elkGraph, options.layoutCache)
   return extractClassLayout(result, diagram, classSizes)
 }
 

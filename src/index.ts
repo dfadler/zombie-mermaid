@@ -25,6 +25,8 @@ export { fromShikiTheme, THEMES, DEFAULTS } from './theme.ts'
 export { parseMermaid } from './parser.ts'
 export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
 export type { AsciiRenderOptions } from './ascii/index.ts'
+export { createLayoutCache } from './elk-instance.ts'
+export type { LayoutCache } from './elk-instance.ts'
 
 import { decodeXML } from 'entities'
 import { parseMermaid } from './parser.ts'
