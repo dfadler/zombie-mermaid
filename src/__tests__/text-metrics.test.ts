@@ -295,4 +295,25 @@ describe('isWideChar', () => {
     expect(isWideChar('Ü')).toBe(false)
     expect(isWideChar('é')).toBe(false)
   })
+
+  it('returns false for arrowhead and box-drawing glyphs used by the ASCII renderer', () => {
+    // These are Extended_Pictographic (emoji-capable) but have no default
+    // Emoji_Presentation and render as a single narrow column in every real
+    // terminal. Regression test for the ▶ (U+25B6) misclassification —
+    // used as the sequence-diagram arrowhead in src/ascii/sequence.ts.
+    expect(isWideChar('▶')).toBe(false) // solid ->> / -->> arrowhead
+    expect(isWideChar('◀')).toBe(false) // solid self-message loop arrowhead
+    expect(isWideChar('▼')).toBe(false)
+    expect(isWideChar('▲')).toBe(false)
+    expect(isWideChar('◄')).toBe(false)
+    expect(isWideChar('►')).toBe(false)
+    expect(isWideChar('◁')).toBe(false)
+    expect(isWideChar('▷')).toBe(false)
+    expect(isWideChar('◢')).toBe(false)
+    expect(isWideChar('◣')).toBe(false)
+    expect(isWideChar('◤')).toBe(false)
+    expect(isWideChar('◥')).toBe(false)
+    expect(isWideChar('○')).toBe(false)
+    expect(isWideChar('✕')).toBe(false)
+  })
 })
