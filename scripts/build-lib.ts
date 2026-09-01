@@ -218,6 +218,16 @@ async function buildCli(): Promise<void> {
       // function`). `ssr: true` switches Vite to its Node-targeted
       // resolution, which imports node: built-ins for real instead.
       ssr: true,
+      // Vite's `build.minify` defaults to `false` under `ssr: true` (unlike
+      // the `'esbuild'` default `buildLibraryEntry`'s non-SSR builds get) —
+      // left unset, this build ships fully unminified: full identifier
+      // names, comments, tab indentation. That's what actually blew
+      // `dist/cli.js` past its budget (137.3 KB vs the old tsup output's
+      // ~94 KB gzipped for the same module set, mcp subcommand included);
+      // it wasn't dependency bloat — `isExternal` already keeps
+      // `@modelcontextprotocol/sdk`/`zod` out, matching tsup. Re-enabling
+      // esbuild minification here restores parity with the other entries.
+      minify: 'esbuild',
       // tsup's CLI config used sourcemap: false — the CLI is a standalone
       // executable, not a debugged-by-consumers library entry.
       sourcemap: false,
