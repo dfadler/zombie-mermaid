@@ -122,9 +122,7 @@ sequenceDiagram
     // bracket so a match against the (correct) full label's shared prefix
     // doesn't false-positive.
     expect(result).not.toContain('[a moderately long conditio]')
-    expect(result).not.toContain(
-      '[an even longer condition than the previous]',
-    )
+    expect(result).not.toContain('[an even longer condition than the previous]')
   })
 
   it('widens loop/opt block walls too, not just alt', () => {
