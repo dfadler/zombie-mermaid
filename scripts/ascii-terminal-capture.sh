@@ -34,6 +34,7 @@ GUI window) and writes <output-prefix>.cast, .txt, and .png.
   [cols] [rows]           Terminal size in character cells (default 100x40).
 
 Example (before/after a change, comparing against main):
+  mkdir -p tmp-base-ref
   git archive main src | tar -x -C tmp-base-ref
   scripts/ascii-terminal-capture.sh ./src/index.ts 12 /tmp/after
   scripts/ascii-terminal-capture.sh ./tmp-base-ref/src/index.ts 12 /tmp/before

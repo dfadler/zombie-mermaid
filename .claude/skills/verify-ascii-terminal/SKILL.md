@@ -106,6 +106,7 @@ validate anything, just prints usage.)
    `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`):
 
    ```bash
+   mkdir -p tmp-base-ref
    git archive main src | tar -x -C tmp-base-ref
    ```
 
