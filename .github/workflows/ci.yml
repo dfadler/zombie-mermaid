@@ -198,9 +198,11 @@ jobs:
       # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
       # browser entirely from Node, so there's no such bridge to hang on.
       - name: Run visual regression suite
+        id: visual-tests
         run: pnpm run test:visual
 
       - name: Upload failure report
+        id: upload-report
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -210,6 +212,118 @@ jobs:
             playwright-report/
           retention-days: 14
           if-no-files-found: ignore
+
+      # Surfaces the failure directly on the check's Summary tab — one click
+      # from the PR, no digging through the raw job log — with a direct link
+      # to download the full interactive Playwright report (side-by-side
+      # diffs + traces). This can't embed the interactive report itself:
+      # actions/upload-artifact's browser-preview mode only renders a single
+      # simple file with no external CSS/JS, and the Playwright HTML report
+      # is a full app (its own JS bundle, trace/diff viewer data) — see #306
+      # for the fuller evaluation of GitHub Pages / third-party hosting
+      # options that could close that remaining gap.
+      - name: Write visual regression summary
+        if: failure() && steps.visual-tests.conclusion == 'failure'
+        run: |
+          {
+            echo "## Visual regression failures"
+            echo
+            if [ -n "${{ steps.upload-report.outputs.artifact-url }}" ]; then
+              echo "[Download the full interactive Playwright report](${{ steps.upload-report.outputs.artifact-url }}) (the \`visual-regression-failures\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
+              echo
+            fi
+            echo "Failed screenshots:"
+            echo
+            diffs=$(find test-results -iname '*-diff.png' 2>/dev/null | sort || true)
+            if [ -z "$diffs" ]; then
+              echo "- (no per-screenshot diff files found — see the full report or job log for details)"
+            else
+              while IFS= read -r f; do
+                echo "- \`${f#test-results/}\`"
+              done <<< "$diffs"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  bench:
+    name: Benchmark regression gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # only checks out code and runs the benchmark; no writes back to the repo
+    # Same fork-of-this-fork guard as the `test` job above — see its comment
+    # for the full reasoning on what github.repository resolves to and what
+    # this does/doesn't protect against.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run benchmark
+        run: pnpm run bench -- --json=bench-current.json
+
+      # Gates against bench-baseline.json with a deliberately loose threshold
+      # (see scripts/bench-compare.ts) — shared runners are noisy enough that
+      # a tight threshold would flag CI variance rather than a real
+      # regression. The goal is catching an accidental algorithmic blowup,
+      # not micro-tuning render time.
+      - name: Compare against baseline
+        run: pnpm run bench:compare -- bench-current.json
+
+      - name: Upload benchmark result
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bench-result
+          path: bench-current.json
+          retention-days: 30
+
+  bundle-size:
+    name: Bundle size gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # only checks out code, builds, and checks dist/ sizes; no writes back to the repo
+    # Same fork-of-this-fork guard as the `test` job above — see its comment
+    # for the full reasoning on what github.repository resolves to and what
+    # this does/doesn't protect against.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        run: pnpm run build
+
+      # Gates published dist/ output against bundle-size-budget.json — see
+      # scripts/check-bundle-size.ts for why this is an in-house gzip check
+      # rather than a size-limit/bundlewatch dependency, and how to raise a
+      # budget after an intentional, reviewed size increase.
+      - name: Check bundle size
+        run: pnpm run check:bundle-size
 
   semgrep:
     name: Semgrep SAST scan

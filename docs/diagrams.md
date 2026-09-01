@@ -319,6 +319,22 @@ classDiagram
   Duck: +quack()
 ```
 
+### Interactions
+
+```
+classDiagram
+  class Animal
+  click Animal "https://example.com" "Tooltip" _blank
+  click Duck call myHandler()
+```
+
+Same grammar, same href-safety rules, and same `interactivity` gating as the
+flowchart/state [Interactions](#interactions) above — a `click` on a class
+wraps its box in a real `<a>` link, a tooltip becomes a `<title>`, and a
+`call`/`callback` binding is recorded as `data-click-callback` but never
+invoked. Both parsers share the implementation (`src/click-directive.ts`), so
+see that section for the full details.
+
 ## ER Diagrams
 
 ```
@@ -327,6 +343,16 @@ erDiagram
   ORDER ||--|{ LINE_ITEM : contains
   PRODUCT ||--o{ LINE_ITEM : "is in"
 ```
+
+**No `click` interaction support.** Unlike flowcharts and class diagrams,
+Mermaid's own erDiagram grammar has no `click` directive to parse — as of
+this writing it's an open, unmerged upstream feature request
+([mermaid-js/mermaid#2880](https://github.com/mermaid-js/mermaid/issues/2880),
+[PR #6985](https://github.com/mermaid-js/mermaid/pull/6985)), not a shipped
+part of the language. A `click ENTITY ...` line inside an `erDiagram` is
+silently ignored — not recognized as an entity, attribute, or relationship —
+rather than guessed at ahead of whatever syntax upstream eventually settles
+on. See [#292](https://github.com/dfadler/zombie-mermaid/issues/292).
 
 ## Inline Edge Styling
 
