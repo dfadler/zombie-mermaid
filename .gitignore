@@ -10,6 +10,7 @@ site/
 index.html
 editor.html
 fork-fixes.html
+dashboard.html
 
 # Pre-fix source trees extracted by fork-fixes.ts; rebuilt on demand.
 .fork-fixes-cache/

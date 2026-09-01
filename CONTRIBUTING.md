@@ -42,6 +42,8 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run build` — build the publishable package with tsup
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
+- `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot
+- `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
 - `pnpm run fork-fixes` — render the fork-fixes showcase (`fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
 - `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
 - `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
