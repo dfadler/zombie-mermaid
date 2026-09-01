@@ -122,4 +122,23 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add badges/bundle-size.json
           git commit -m 'chore: update bundle-size badge data'
-          git push origin HEAD:main
+
+          # main can move between this job's initial checkout (fetch-depth: 0,
+          # at the top of this workflow) and this push — e.g. another PR
+          # merging while `pnpm test`/`pnpm run typecheck`/changesets/action
+          # run above. A plain `git push` would fail outright on a
+          # non-fast-forward. Retry a bounded number of times, rebasing this
+          # single commit onto the latest main each time, rather than failing
+          # the whole release job over a race with an unrelated merge.
+          max_attempts=5
+          attempt=1
+          until git push origin HEAD:main; do
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "Failed to push bundle-size badge update after $max_attempts attempts." >&2
+              exit 1
+            fi
+            echo "Push rejected (attempt $attempt/$max_attempts) — main moved; rebasing and retrying."
+            git fetch origin main
+            git rebase origin/main
+            attempt=$((attempt + 1))
+          done
