@@ -49,6 +49,11 @@ import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
 import { renderThemePicker } from './theme-picker.ts'
 import { renderMermaidSVG } from './src/index.ts'
 import { createHighlighter } from 'shiki'
+import {
+  wideDiagramDirectionLine,
+  withNarrowDirection,
+  withUniqueSvgIds,
+} from './demo/diagram-orientation.ts'
 
 /** The live site's base URL (see README's "Live Demo" badge) — used for canonical links and sitemap.xml. */
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
@@ -200,20 +205,49 @@ async function main(): Promise<void> {
   for (const profile of DIAGRAM_TYPE_PROFILES) {
     const colors = THEMES[DEFAULT_THEME_KEY]!
 
-    const svg = renderMermaidSVG(profile.source, {
-      ...colors,
-      title: `${profile.label} diagram, zombie-mermaid`,
-      interactivity: 'none',
-    })
+    const renderDiagram = (source: string): string =>
+      renderMermaidSVG(source, {
+        ...colors,
+        title: `${profile.label} diagram, zombie-mermaid`,
+        interactivity: 'none',
+      })
 
-    const fenced = '```mermaid\n' + profile.source.trim() + '\n```'
-    const highlightedHtml = highlighter.codeToHtml(fenced, {
-      lang: 'mermaid',
-      theme: 'github-light',
-    })
-    const highlightedSource = highlightedHtml
-      .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1')
-      .replace(/\n<span class="line">.*?<\/span>(<\/code>)/, '$1')
+    const highlightSource = (source: string): string => {
+      const fenced = '```mermaid\n' + source.trim() + '\n```'
+      const highlightedHtml = highlighter.codeToHtml(fenced, {
+        lang: 'mermaid',
+        theme: 'github-light',
+      })
+      return highlightedHtml
+        .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1')
+        .replace(/\n<span class="line">.*?<\/span>(<\/code>)/, '$1')
+    }
+
+    // A wide (LR/RL) flowchart or state diagram gets a TD alternate for
+    // narrow viewports — the same orientation swap the main gallery's own
+    // samples use (demo/client.ts's renderSvgVariants), just pre-rendered
+    // at build time here instead of live in the browser. Both variants are
+    // pure static markup, picked between by demo/styles.css's
+    // `.orientation-variant` media query (bundled into this page's own
+    // stylesheet below) — no client JS needed to display the right one.
+    // See demo/diagram-orientation.ts's header comment.
+    const directionLine = wideDiagramDirectionLine(profile.source)
+    const narrowSource =
+      directionLine !== null
+        ? withNarrowDirection(profile.source, directionLine)
+        : null
+
+    const diagramMarkup =
+      narrowSource === null
+        ? renderDiagram(profile.source)
+        : `<div class="orientation-variant orientation-wide">${withUniqueSvgIds(renderDiagram(profile.source), `${profile.slug}-w-`)}</div>` +
+          `<div class="orientation-variant orientation-narrow">${withUniqueSvgIds(renderDiagram(narrowSource), `${profile.slug}-n-`)}</div>`
+
+    const sourcePanelMarkup =
+      narrowSource === null
+        ? highlightSource(profile.source)
+        : `<div class="orientation-variant orientation-wide">${highlightSource(profile.source)}</div>` +
+          `<div class="orientation-variant orientation-narrow">${highlightSource(narrowSource)}</div>`
 
     const title = `${profile.label} examples | Zombie Mermaid`
     const description = `${profile.intro} Rendered live in any of ${Object.keys(THEMES).length} built-in themes — free, open source, and dependency-free.`
@@ -229,7 +263,7 @@ async function main(): Promise<void> {
   <p class="lede">${escapeHtml(profile.intro)}</p>
 
   <div class="diagram-frame">
-${svg}
+${diagramMarkup}
   </div>
 
   <div class="cta-row">
@@ -239,7 +273,7 @@ ${svg}
 
   <h2 class="source-heading">Mermaid source</h2>
   <div class="source-panel">
-${highlightedSource}
+${sourcePanelMarkup}
   </div>
 
   <div class="section">
@@ -252,7 +286,10 @@ ${otherTypesGrid(profile.slug)}
     })
 
     const sourceJson = escapeJsonForScriptTag(JSON.stringify(profile.source))
-    const themeDataScript = `<script>window.__diagramPageThemes = ${themesJson}; window.__diagramPageSource = ${sourceJson};</script>`
+    const narrowSourceJson = escapeJsonForScriptTag(
+      JSON.stringify(narrowSource),
+    )
+    const themeDataScript = `<script>window.__diagramPageThemes = ${themesJson}; window.__diagramPageSource = ${sourceJson}; window.__diagramPageNarrowSource = ${narrowSourceJson};</script>`
     const clientScript = `<script type="module" src="assets/diagram-page-client.js"></script>`
 
     // False positive: `body` is built entirely from static DIAGRAM_TYPE_PROFILES

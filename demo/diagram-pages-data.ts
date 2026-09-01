@@ -27,7 +27,11 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     slug: 'flowchart',
     label: 'Flowchart',
     keyword: 'graph / flowchart',
-    source: `graph TD
+    // LR on purpose: wideDiagramDirectionLine (demo/diagram-orientation.ts)
+    // picks this up and pages.ts renders a TD alternate for narrow
+    // viewports, so this page — like the main gallery's own samples —
+    // shows whichever orientation actually fits the visitor's screen.
+    source: `graph LR
   A[Start] --> B[Process] --> C[End]`,
     intro:
       'Flowcharts map a process as boxes and arrows and are the most commonly used Mermaid diagram — CI pipelines, decision trees, onboarding steps. zombie-mermaid supports the full shape set (rounded, diamond, stadium, subroutine, cylinder, hexagon, and more), subgraphs, and both straight and curved edges.',
