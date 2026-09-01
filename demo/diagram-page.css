@@ -150,13 +150,27 @@ h1 {
   height: auto;
 }
 
+/* A short caption, not a section — the theme is a color choice, not the
+   page's topic, so it shouldn't compete with the diagram-type content for
+   attention via its own heading. */
+.theme-caption {
+  font-size: 0.875rem;
+  color: var(--t-muted);
+  margin-bottom: 1.5rem;
+}
+
+.theme-caption strong {
+  color: var(--t-fg);
+  font-weight: 600;
+}
+
 /* -- Source panel -- */
 .source-heading {
-  font-size: 0.8125rem;
+  /* Matches .section h2's weight — this is the page's actual type-specific
+     content and shouldn't read as a subordinate label next to the
+     theme/navigation sections below it. */
+  font-size: 1.125rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--t-muted);
   margin: 2rem 0 0.5rem;
 }
 

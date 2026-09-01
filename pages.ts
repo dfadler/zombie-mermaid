@@ -171,6 +171,8 @@ async function main(): Promise<void> {
 ${svg}
   </div>
 
+  <p class="theme-caption"><strong>${escapeHtml(themeLabel)} theme:</strong> ${escapeHtml(themeDescription)}</p>
+
   <div class="cta-row">
     <a class="cta-btn primary" href="../../editor">Open in the live editor</a>
     <a class="cta-btn" href="../../#samples-heading">See all samples</a>
@@ -179,11 +181,6 @@ ${svg}
   <h2 class="source-heading">Mermaid source</h2>
   <div class="source-panel">
 ${highlightedSourceByType.get(profile.slug) ?? ''}
-  </div>
-
-  <div class="section">
-    <h2>About the ${escapeHtml(themeLabel)} theme</h2>
-    <p>${escapeHtml(themeDescription)}</p>
   </div>
 
   <div class="section">
