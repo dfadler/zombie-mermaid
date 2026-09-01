@@ -14,7 +14,7 @@ import type {
   PositionedErEntity,
   PositionedErRelationship,
 } from './types.ts'
-import type { RenderOptions, Point } from '../types.ts'
+import type { RenderOptions } from '../types.ts'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
@@ -23,6 +23,7 @@ import {
 } from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
+import { extractEdgePoints } from '../layout-engine/elk-adapter-utils.ts'
 import type { Direction } from '../types.ts'
 
 /** Layout constants for ER diagrams */
@@ -181,17 +182,7 @@ function extractErLayout(
     // creates exactly one ELK edge per relationship, in the same order.
     const rel = diagram.relationships[i]!
 
-    const points: Point[] = []
-    if (elkEdge.sections && elkEdge.sections.length > 0) {
-      const section = elkEdge.sections[0]!
-      points.push({ x: section.startPoint.x, y: section.startPoint.y })
-      if (section.bendPoints) {
-        for (const bp of section.bendPoints) {
-          points.push({ x: bp.x, y: bp.y })
-        }
-      }
-      points.push({ x: section.endPoint.x, y: section.endPoint.y })
-    }
+    const points = extractEdgePoints(elkEdge)
 
     relationships.push({
       entity1: rel.entity1,
