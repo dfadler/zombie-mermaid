@@ -22,7 +22,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 ## Why This Fork Exists
 
-`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: as of August 2026, there are 30 open pull requests, the oldest dating back over half a year, and nothing has merged in months — by most definitions, it's dead. I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
+`beautiful-mermaid` is a genuinely good library — fast, beautiful, and works everywhere from rich UIs to plain terminals. But upstream development has stalled: dozens of [pull requests](https://github.com/lukilabs/beautiful-mermaid/pulls) sit open, some for over half a year, and nothing has merged in months — by most definitions, it's dead. I maintain `zombie-mermaid` as the fork that won't stay buried: pulling in upstream fixes, giving PRs stuck in the upstream queue a home, and actually shipping releases. Craft and Craft Agents aren't part of this project's process going forward; this is an independently maintained continuation.
 
 It's still MIT-licensed, still built on the same foundation, and still credits the original authors — including the ASCII rendering engine's origins — in [Attribution](#attribution) below.
 
