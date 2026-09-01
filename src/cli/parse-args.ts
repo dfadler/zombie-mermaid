@@ -23,7 +23,7 @@ export interface RenderArgs {
 }
 
 export interface SimpleCommand {
-  command: 'themes' | 'help' | 'version'
+  command: 'themes' | 'help' | 'version' | 'mcp'
 }
 
 export interface WebArgs {
@@ -69,6 +69,11 @@ export function parseArgs(argv: string[]): CliArgs {
   // Web command
   if (first === 'web') {
     return parseWeb(rest)
+  }
+
+  // MCP server command (no flags of its own yet)
+  if (first === 'mcp') {
+    return { command: 'mcp' }
   }
 
   throw new Error(`Unknown command: ${first}`)
