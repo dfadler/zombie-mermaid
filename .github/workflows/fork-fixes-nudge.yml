@@ -38,6 +38,14 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Serialize runs per PR: `synchronize` and `labeled` can fire close
+    # together, and without this both runs can pass the marker check
+    # (no comment posted yet) before either one posts, producing a
+    # duplicate advisory comment. cancel-in-progress: false so a run that's
+    # already checking/posting finishes rather than being killed mid-comment.
+    concurrency:
+      group: fork-fixes-nudge-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     # Same fork-of-this-fork guard used elsewhere (see ci.yml's `test` job)
     # plus the actual scope of this nudge: only PRs labeled `bug`.
     if: |
