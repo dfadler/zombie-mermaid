@@ -65,11 +65,17 @@ This maps to two WCAG success criteria:
 **Enforced by:** `src/__tests__/svg-accessible-name-conformance.test.ts`
 (added for [#294](https://github.com/dfadler/zombie-mermaid/issues/294)),
 which renders one real sample per `DiagramType` — a closed TypeScript union
-— through every `title`/`decorative` combination and asserts the table
-above, plus a separate matrix for the one diagram family
-(flowchart/state-diagram) that currently supports `click`-based links. This
-runs in the same Vitest suite as every other test (`pnpm test`), which CI
-runs on every PR — a regression here fails the build, not just a review.
+— plus a `stateDiagram-v2` sample, through every `title`/`decorative`
+combination (including `title` + `decorative` together, to confirm `title`
+is ignored when `decorative` is set), and asserts the table above. It also
+asserts a separate matrix for the one diagram type — flowchart — that
+currently supports `click`-based links; `stateDiagram-v2` looks like a
+candidate but does not actually support `click` links yet (a `click` line
+inside a `stateDiagram-v2` block is silently ignored by the parser today),
+so it's intentionally excluded from that matrix rather than asserted on
+assumption. This runs in the same Vitest suite as every other test
+(`pnpm test`), which CI runs on every PR — a regression here fails the
+build, not just a review.
 It complements the longer-standing
 `src/__tests__/svg-accessible-name.test.ts` (from
 [#215](https://github.com/dfadler/zombie-mermaid/issues/215) and

@@ -85,15 +85,24 @@ const STATE_DIAGRAM_SAMPLE =
 /**
  * Diagram types/syntaxes that currently support `click`-based interactive
  * links (real, focusable `<a href>` elements — see #239). Today that's only
- * flowchart/state-diagram nodes (`NodeInteraction.href`, wired in
- * src/renderer.ts); sequence/class/er/xychart have no click-link support at
- * all, so `hasInteractiveLinks` is always `false` for them (confirmed by
- * grep across src/{sequence,class,er,xychart}: none reference `click`).
+ * flowchart (`NodeInteraction.href`, applied via `applyClickStatement()` in
+ * `parseFlowchart()`'s per-line loop, src/parser.ts). `stateDiagram-v2`
+ * looks like a candidate too — see `STATE_DIAGRAM_SAMPLE`'s note above about
+ * sharing the render pipeline — but `parseStateDiagram()` is a fully
+ * separate per-line loop that never calls `applyClickStatement()`, so a
+ * `click` line inside a `stateDiagram-v2` block is silently ignored rather
+ * than producing an `<a href>` (verified directly: rendering
+ * `stateDiagram-v2\n  [*] --> Idle\n  click Idle "https://example.com"`
+ * produces no `<a href=` in the output). sequence/class/er/xychart also
+ * have no click-link support at all, so `hasInteractiveLinks` is always
+ * `false` for them (confirmed by grep across
+ * src/{sequence,class,er,xychart}: none reference `click`).
  *
  * Unlike `SAMPLE_BY_TYPE`, this isn't backed by a closed union — "which
  * diagram types support click links" isn't itself a TypeScript type — so if
- * a second diagram type grows click support, nothing here fails to compile
- * to force adding it. Add its sample manually when that happens.
+ * a diagram type (state-diagram included) grows click support, nothing here
+ * fails to compile to force adding it. Add its sample manually when that
+ * happens.
  */
 const CLICK_LINK_SAMPLES: Record<string, string> = {
   flowchart:
@@ -104,6 +113,13 @@ const OPTION_SETS: Array<{ name: string; options: RenderOptions }> = [
   { name: 'default (no title, not decorative)', options: {} },
   { name: 'with a title', options: { title: 'A diagram' } },
   { name: 'decorative', options: { decorative: true } },
+  // `title` is documented as ignored when `decorative: true` (svgOpenTag()'s
+  // TSDoc, src/theme.ts) — this combination exercises that precedence
+  // instead of leaving it asserted only in prose.
+  {
+    name: 'title + decorative (title should be ignored)',
+    options: { title: 'A diagram', decorative: true },
+  },
 ]
 
 interface AccessibilityExpectation {
