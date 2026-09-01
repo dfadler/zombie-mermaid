@@ -56,4 +56,13 @@ describe('cli.ts – mcp command dispatch', () => {
     )
     expect(exitSpy).toHaveBeenCalledWith(1)
   })
+
+  it('stringifies a non-Error rejection instead of reading a nonexistent .message', async () => {
+    runMcpMock.mockRejectedValue('raw string failure')
+    process.argv = ['node', 'zombie-mermaid', 'mcp']
+    await import('../cli.ts')
+    await vi.waitFor(() => expect(exitSpy).toHaveBeenCalled())
+    expect(errorSpy).toHaveBeenCalledWith('Error: raw string failure')
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
 })

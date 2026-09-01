@@ -1,5 +1,17 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderAsciiHandler } from '../mcp/tools/render-ascii.ts'
+import { renderMermaidASCII } from '../ascii/index.ts'
+
+// ============================================================================
+// renderMermaidASCII is wrapped (not fully replaced) so every test above
+// still exercises the real renderer — only the one test below that needs a
+// non-Error throw (impossible to provoke from real Mermaid source, since
+// the renderer only ever throws Error instances) overrides it per-call.
+// ============================================================================
+vi.mock('../ascii/index.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../ascii/index.ts')>()
+  return { ...actual, renderMermaidASCII: vi.fn(actual.renderMermaidASCII) }
+})
 
 describe('renderAsciiHandler', () => {
   it('renders a valid diagram to Unicode box-drawing art by default', () => {
@@ -62,5 +74,21 @@ describe('renderAsciiHandler', () => {
       throw new Error('Expected text content')
     }
     expect(content.text).toContain('Failed to render diagram to ASCII')
+  })
+
+  it('stringifies a non-Error throw instead of reading a nonexistent .message', () => {
+    vi.mocked(renderMermaidASCII).mockImplementationOnce(() => {
+      // Deliberately not an Error, to exercise the handler's String(err) fallback.
+      throw 'raw string failure'
+    })
+    const result = renderAsciiHandler({ diagram: 'graph LR\n  A --> B' })
+    expect(result.isError).toBe(true)
+    const [content] = result.content
+    if (content?.type !== 'text') {
+      throw new Error('Expected text content')
+    }
+    expect(content.text).toBe(
+      'Failed to render diagram to ASCII: raw string failure',
+    )
   })
 })
