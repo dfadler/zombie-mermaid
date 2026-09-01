@@ -812,6 +812,15 @@ sidebar.addEventListener('click', function (e) {
       .closest('.sidebar-group')
       ?.getAttribute('data-category-slug')
     if (!slug) return
+    // Explicitly picking a category while a search is active means "browse
+    // this category fully" — clear the query rather than leaving search's
+    // per-sample/per-group hidden state fighting the single-category view
+    // showCategory is about to set up.
+    if (searchInput.value) {
+      searchInput.value = ''
+      clearSearchUi()
+      categoryBeforeSearch = null
+    }
     showCategory(slug, {
       updateHash: true,
       scrollToTop: true,
@@ -884,6 +893,154 @@ function browseDiagramTypes() {
 }
 mustGet('browse-categories-btn').addEventListener('click', browseDiagramTypes)
 mustGet('tabbar-browse-btn').addEventListener('click', browseDiagramTypes)
+
+// ============================================================================
+// Sample search / filter (#284) — matches sample title, category (diagram
+// type), and description against the same `samples` array the page already
+// loaded, then toggles `hidden` on the affected sidebar entries and sample
+// sections. No new data source and no re-render of anything already on
+// screen; a category that gains a match for the first time renders lazily,
+// exactly as switching to it from the sidebar would (see renderCategory).
+// ============================================================================
+
+const searchInput = mustGet<HTMLInputElement>('sample-search')
+const searchClearBtn = mustGet<HTMLButtonElement>('sidebar-search-clear')
+const searchStatusEl = mustGet('sidebar-search-status')
+const searchEmptyEl = mustGet('search-empty')
+
+/** One slug per non-Hero category, in document order — derived from the
+ * DOM (same source renderCategory itself reads indices from) rather than
+ * duplicating the category grouping index.ts already baked into the page. */
+const categorySlugs: string[] = Array.from(
+  document.querySelectorAll<HTMLElement>('.category-view'),
+)
+  .map((view) => view.getAttribute('data-category'))
+  .filter((slug): slug is string => !!slug)
+
+/** The category shown right before the current search began, or null when
+ * no search is active. Captured once per search session (not on every
+ * keystroke) so it still points at the right place to restore no matter
+ * how the query changes in between. */
+let categoryBeforeSearch: string | null = null
+
+function sampleMatchesQuery(index: number, query: string): boolean {
+  const sample = samples[index]
+  if (!sample) return false
+  return (
+    sample.title.toLowerCase().includes(query) ||
+    sample.category.toLowerCase().includes(query) ||
+    (sample.description ?? '').toLowerCase().includes(query)
+  )
+}
+
+/** Index parsed from a `.sample` section's `id="sample-N"` or a sidebar
+ * link's `href="#sample-N"` — the same convention renderCategory,
+ * showCategory, and the scroll spy above all already rely on. */
+function sampleIndexFrom(idOrHref: string): number {
+  const marker = 'sample-'
+  const at = idOrHref.indexOf(marker)
+  return at === -1 ? NaN : parseInt(idOrHref.slice(at + marker.length), 10)
+}
+
+/** Resets every DOM effect a search applies — `hidden` on sample sections
+ * and sidebar entries, the status text, the empty-state message, and the
+ * `search-active` body class — without touching `categoryBeforeSearch` or
+ * re-showing a category. Shared by `exitSearch` (query cleared to empty)
+ * and the sidebar's own category-summary click handler (a category picked
+ * explicitly while a search was active). */
+function clearSearchUi(): void {
+  document.body.classList.remove('search-active')
+  searchClearBtn.hidden = true
+  searchStatusEl.textContent = ''
+  searchEmptyEl.hidden = true
+
+  document
+    .querySelectorAll<HTMLElement>('.sample')
+    .forEach((section) => (section.hidden = false))
+  document.querySelectorAll<HTMLElement>('.sidebar-group').forEach((group) => {
+    group.hidden = false
+    group
+      .querySelectorAll<HTMLElement>('.sidebar-list li')
+      .forEach((li) => (li.hidden = false))
+  })
+}
+
+function exitSearch(): void {
+  clearSearchUi()
+  const restoreSlug = categoryBeforeSearch
+  categoryBeforeSearch = null
+  if (restoreSlug) void showCategory(restoreSlug, { updateHash: false })
+}
+
+async function runSearch(rawQuery: string): Promise<void> {
+  const query = rawQuery.trim().toLowerCase()
+
+  if (!query) {
+    exitSearch()
+    return
+  }
+
+  if (categoryBeforeSearch === null) categoryBeforeSearch = activeCategorySlug
+  document.body.classList.add('search-active')
+  searchClearBtn.hidden = false
+
+  let totalMatches = 0
+  const categoriesToRender: string[] = []
+
+  for (const slug of categorySlugs) {
+    const view = maybeGet('category-' + slug)
+    const group = document.querySelector<HTMLDetailsElement>(
+      '.sidebar-group[data-category-slug="' + slug + '"]',
+    )
+    if (!view) continue
+
+    let categoryHasMatch = false
+    view.querySelectorAll<HTMLElement>('.sample').forEach((section) => {
+      const index = sampleIndexFrom(section.id)
+      const matches = sampleMatchesQuery(index, query)
+      section.hidden = !matches
+      if (matches) {
+        categoryHasMatch = true
+        totalMatches++
+      }
+    })
+    view.hidden = !categoryHasMatch
+    if (categoryHasMatch && !renderedCategories[slug])
+      categoriesToRender.push(slug)
+
+    if (group) {
+      group.hidden = !categoryHasMatch
+      if (categoryHasMatch) group.open = true
+      group.querySelectorAll<HTMLElement>('.sidebar-list li').forEach((li) => {
+        const href = li.querySelector('a')?.getAttribute('href') ?? ''
+        li.hidden = !sampleMatchesQuery(sampleIndexFrom(href), query)
+      })
+    }
+  }
+
+  searchEmptyEl.hidden = totalMatches !== 0
+  searchStatusEl.textContent =
+    totalMatches === 0
+      ? `No results for "${rawQuery.trim()}"`
+      : `${totalMatches} result${totalMatches === 1 ? '' : 's'} for "${rawQuery.trim()}"`
+
+  await Promise.all(categoriesToRender.map(renderCategory))
+}
+
+searchInput.addEventListener('input', function () {
+  void runSearch(searchInput.value)
+})
+searchInput.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape' || !searchInput.value) return
+  e.stopPropagation() // don't also close the mobile drawer via the document-level Escape handler
+  searchInput.value = ''
+  void runSearch('')
+})
+searchClearBtn.addEventListener('click', function () {
+  searchInput.value = ''
+  void runSearch('')
+  searchInput.focus()
+})
 
 // -- Restore saved theme immediately (before rendering begins) --
 const savedTheme = localStorage.getItem('mermaid-theme')
@@ -1027,11 +1184,20 @@ async function renderCategory(slug: string) {
   }
 }
 
+/**
+ * Slug of the category last shown via `showCategory` — the source of truth
+ * search (below) uses to remember what was on screen before a query
+ * started, so clearing the search can restore exactly that view rather
+ * than falling back to the first category.
+ */
+let activeCategorySlug: string | null = null
+
 function showCategory(
   slug: string,
   opts?: { updateHash?: boolean; scrollToTop?: boolean },
 ) {
   const options = opts ?? {}
+  activeCategorySlug = slug
 
   const views = document.querySelectorAll<HTMLElement>('.category-view')
   views.forEach((view) => {

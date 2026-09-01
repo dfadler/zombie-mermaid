@@ -569,6 +569,15 @@ ${styles}
 
   <div class="page-shell">
   <nav class="sidebar" id="sidebar" aria-label="Sample navigation">
+    <div class="sidebar-search">
+      <label for="sample-search" class="visually-hidden">Search samples by title, diagram type, or description</label>
+      <div class="sidebar-search-field">
+        <svg class="sidebar-search-icon" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
+        <input type="search" id="sample-search" class="sidebar-search-input" placeholder="Search samples…" autocomplete="off" spellcheck="false" />
+        <button type="button" class="sidebar-search-clear" id="sidebar-search-clear" aria-label="Clear search" hidden>&times;</button>
+      </div>
+      <div class="sidebar-search-status" id="sidebar-search-status" role="status" aria-live="polite" aria-atomic="true"></div>
+    </div>
     ${tocSections}
   </nav>
   <div class="page-main">
@@ -619,6 +628,11 @@ ${heroCardsHtml}
   </div>
 
 ${categoryViewsHtml}
+
+  <!-- Shown in place of the (all-hidden) category views when a search
+       matches no samples — see the "Sample search / filter" section of
+       demo/client.ts. -->
+  <p class="search-empty" id="search-empty" hidden>No samples match your search.</p>
 
   <!-- Sample definitions, read by the client script. Passed through the DOM
        rather than interpolated into demo/client.ts so that file stays plain,
