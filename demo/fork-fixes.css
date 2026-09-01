@@ -142,6 +142,20 @@
   height: auto;
 }
 
+/* Real-terminal screenshots (scripts/capture-fork-fixes-terminal.ts) carry
+   their own dark background, so — unlike .fix-svg/.fix-ascii — this panel
+   has no padding: a border around the terminal's own edge reads as a
+   window frame, not a mismatched inset. */
+.fix-screenshot {
+  display: flex;
+}
+
+.fix-screenshot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /*
  * A wide (CJK/fullwidth/emoji) glyph occupies exactly two terminal columns,
  * which is the rule the ASCII renderer's box math is built on. A browser

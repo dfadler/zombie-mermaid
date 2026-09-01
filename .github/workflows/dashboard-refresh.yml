@@ -1,0 +1,103 @@
+# Keeps demo/dashboard-data.json (the maintenance-transparency dashboard's
+# committed snapshot, dashboard.html) from going stale. scripts/generate-
+# dashboard-data.ts is deliberately NOT run from build:site — that runs on
+# every PR (ci.yml) and every push to main (pages.yml), and neither of those
+# should gain a live GitHub API dependency (rate limits, flake). This
+# workflow is that "future scheduled workflow" scripts/generate-dashboard-
+# data.ts's own header comment already pointed at.
+#
+# Same shape as upstream-check.yml (weekly cron + workflow_dispatch, fork
+# guard) but this one commits data instead of opening an issue — same
+# commit-if-changed pattern publish.yml already uses for
+# badges/bundle-size.json.
+name: Dashboard data refresh
+
+on:
+  schedule:
+    # Weekly, offset an hour from upstream-check.yml's Monday 13:00 UTC run
+    # so the two don't contend for the same runner minute.
+    - cron: '0 14 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  # Needed for the explicit `gh workflow run pages.yml` dispatch below — a
+  # GITHUB_TOKEN-authored push does not itself trigger pages.yml's `push`
+  # trigger (GitHub suppresses event cascades from the token, to prevent
+  # infinite workflow loops), so the live dashboard.html would otherwise
+  # keep serving the prior snapshot until some unrelated push to main
+  # happened to redeploy it. workflow_dispatch is an explicit exception to
+  # that suppression: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
+  actions: write
+
+jobs:
+  refresh-dashboard-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Same fork-of-this-fork guard used elsewhere (see ci.yml's `test` job
+    # for the full reasoning) — without it, workflow_dispatch run manually
+    # in a downstream fork would commit that fork's own stats to its main,
+    # which is harmless but pointless noise for the fork owner.
+    if: github.repository == 'dfadler/zombie-mermaid'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # Don't leave GITHUB_TOKEN in local git config while `pnpm install`
+          # runs untrusted dependency lifecycle scripts (pnpm-workspace.yaml
+          # allows esbuild's) — a compromised dependency could otherwise read
+          # it and push with `contents: write`. Authenticate explicitly, and
+          # only immediately before the push that actually needs it.
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Refresh dashboard data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run dashboard:data
+
+      - name: Commit and push if changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # generate-dashboard-data.ts always stamps a fresh `generatedAt`,
+          # so a plain `git diff` is non-empty on every run even when every
+          # actual metric is identical. Compare with that one field excluded
+          # so a no-op week doesn't produce a no-op commit every week.
+          if git show HEAD:demo/dashboard-data.json 2>/dev/null \
+              | jq 'del(.generatedAt)' > /tmp/old-data.json \
+            && jq 'del(.generatedAt)' demo/dashboard-data.json > /tmp/new-data.json \
+            && diff -q /tmp/old-data.json /tmp/new-data.json > /dev/null; then
+            echo "No substantive change (only generatedAt differs) — reverting and skipping commit."
+            git checkout -- demo/dashboard-data.json
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add demo/dashboard-data.json
+          git commit -m 'chore: refresh dashboard data snapshot'
+
+          # Authenticate only for this push, right before it — see the
+          # persist-credentials note on the checkout step above.
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+
+          # A GITHUB_TOKEN-authored push doesn't trigger pages.yml's own
+          # `push` trigger (see the `actions: write` permission comment
+          # above) — dispatch it explicitly so the live dashboard.html
+          # actually picks up this refreshed snapshot.
+          gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main

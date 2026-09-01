@@ -27,6 +27,16 @@
         "types": "./dist/ascii.d.cts",
         "default": "./dist/ascii.cjs"
       }
+    },
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp.d.ts",
+        "default": "./dist/mcp.js"
+      },
+      "require": {
+        "types": "./dist/mcp.d.cts",
+        "default": "./dist/mcp.cjs"
+      }
     }
   },
   "repository": {
@@ -53,7 +63,9 @@
     "xychart",
     "state-diagram",
     "visualization",
-    "theming"
+    "theming",
+    "mcp",
+    "model-context-protocol"
   ],
   "author": "Dustin Fadler",
   "contributors": [
@@ -82,23 +94,31 @@
     "coverage:diff": "tsx check-diff-coverage.ts",
     "samples": "tsx index.ts",
     "editor": "tsx editor.ts",
+    "pages": "tsx pages.ts",
     "dev": "vite",
     "bench": "tsx bench.ts",
+    "bench:compare": "tsx scripts/bench-compare.ts",
+    "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
+    "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
     "build": "tsx scripts/build-lib.ts",
-    "build:site": "tsx index.ts && tsx editor.ts && tsx fork-fixes.ts && mkdir -p site && mv index.html editor.html fork-fixes.html site/ && cp -r public/* site/",
+    "build:site": "rm -rf site && tsx index.ts && tsx editor.ts && tsx fork-fixes.ts && tsx pages.ts && tsx dashboard.ts && mkdir -p site && mv index.html editor.html fork-fixes.html sitemap.xml dashboard.html site/ && mv diagrams site/diagrams && cp -r public/* site/",
     "xychart-test": "tsx xychart-test.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepublishOnly": "pnpm run build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p demo/tsconfig.json",
-    "fork-fixes": "tsx fork-fixes.ts"
+    "fork-fixes": "tsx fork-fixes.ts",
+    "dashboard": "tsx dashboard.ts",
+    "dashboard:data": "tsx scripts/generate-dashboard-data.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "elkjs": "^0.11.0",
-    "entities": "^7.0.1"
+    "entities": "^7.0.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",

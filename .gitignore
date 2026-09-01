@@ -14,13 +14,24 @@ site/
 index.html
 editor.html
 fork-fixes.html
+diagrams/
+sitemap.xml
+dashboard.html
 
 # Pre-fix source trees extracted by fork-fixes.ts; rebuilt on demand.
 .fork-fixes-cache/
 
+# Scratch .cast/.gif/frame files from scripts/capture-fork-fixes-terminal.ts;
+# cleaned up on a successful run, ignored in case one is interrupted.
+.fork-fixes-screenshots-scratch/
+
 # Human-reviewable before/after report from scripts/visual-diff.ts.
 visual-diff.html
 .visual-diff-cache/
+
+# Transient bench.ts --json= output (CI's own run). bench-baseline.json is
+# the committed, intentionally-updated baseline and is NOT ignored.
+bench-current.json
 
 # Playwright Test's own report/diff output from a visual-test failure. The
 # committed baselines these compare against live in

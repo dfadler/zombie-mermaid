@@ -24,7 +24,7 @@
  *   current tsup output, so a combined types pass isn't a new behavior.
  *
  * Matches tsup.config.ts's previous two build groups:
- *   1. Library entries (`index`, `ascii`) — dual ESM+CJS, `.d.ts`/`.d.cts`.
+ *   1. Library entries (`index`, `ascii`, `mcp`) — dual ESM+CJS, `.d.ts`/`.d.cts`.
  *   2. CLI entry (`cli`) — ESM only, no types, shebang banner, executable.
  *
  * Usage: `pnpm run build` (`tsx scripts/build-lib.ts`).
@@ -55,12 +55,21 @@ const TYPES_TMP = resolve(ROOT, '.dts-tmp')
 // 'elkjs/lib/elk.bundled.js'`, silently inlining elkjs's entire (huge)
 // UMD bundle into `dist/index.js`/`dist/index.cjs`. A prefix-matching
 // function closes that gap for any current or future subpath import.
+//
+// `@modelcontextprotocol/sdk` and `zod` are only needed by the `mcp` entry
+// (and, transitively, the CLI's `mcp` subcommand, src/cli/mcp.ts) — kept
+// external here too so they never end up bundled into `dist/index.*` or
+// `dist/ascii.*`, matching tsup.config.ts's per-entry `external` lists.
 function isExternal(id: string): boolean {
   return (
     id === 'elkjs' ||
     id.startsWith('elkjs/') ||
     id === 'entities' ||
-    id.startsWith('entities/')
+    id.startsWith('entities/') ||
+    id === '@modelcontextprotocol/sdk' ||
+    id.startsWith('@modelcontextprotocol/sdk/') ||
+    id === 'zod' ||
+    id.startsWith('zod/')
   )
 }
 
@@ -90,6 +99,100 @@ async function buildLibraryEntry(
       },
       rollupOptions: {
         external: isExternal,
+      },
+    },
+  })
+}
+
+/**
+ * Builds the `mcp` entry (`src/mcp/index.ts` -> `dist/mcp.{js,cjs}`). Split
+ * into two separate `build()` calls, unlike `buildLibraryEntry`'s single
+ * dual-format call, because the CJS half needs extra handling that would be
+ * wrong to apply to the ESM half:
+ *
+ * - `ssr: true` on both — this entry transitively imports `node:module`
+ *   (via `src/package-info.ts`, used by `src/mcp/server.ts` for
+ *   `Implementation.version`); without it Vite's browser-oriented default
+ *   externalizes that behind a non-functional shim (see `buildCli`'s own
+ *   comment on the same issue).
+ * - The CJS half additionally needs a fix for `src/package-info.ts`'s
+ *   `createRequire(import.meta.url)`: `import.meta` isn't valid syntax in
+ *   CJS, and Rolldown's CJS output — unlike esbuild (tsup) or classic
+ *   Rollup, neither of which needed this — doesn't auto-polyfill a bare
+ *   `import.meta.url` access; left alone it silently rewrites `import.meta`
+ *   to `{}`, turning `createRequire(import.meta.url)` into
+ *   `createRequire(undefined)`, which throws at runtime
+ *   (`dist/mcp.cjs`'s `getPackageVersion()` would crash any CJS consumer
+ *   the moment `createMcpServer()` runs). `define` rewrites the expression
+ *   to a placeholder identifier at build time; `rollupOptions.output.intro`
+ *   defines that identifier for real, using CJS's own `__filename` (via
+ *   `pathToFileURL`) — the same fallback tsup's `shims: true` provided for
+ *   this exact file under esbuild (see the removed tsup.config.ts's
+ *   comment on the `mcp` entry, in git history).
+ * - `rollupOptions.output.entryFileNames` is set explicitly, duplicating
+ *   `lib.fileName` — under `ssr: true`, Vite/Rolldown silently ignores
+ *   `lib.fileName` and instead names the output chunk after the entry
+ *   file's own basename. `src/mcp/index.ts` and `src/index.ts` both have
+ *   basename `index`, so without this override both `build()` calls below
+ *   would emit `dist/index.js`/`dist/index.cjs` — silently clobbering the
+ *   real `index` entry's output (verified: reproduced the collision, then
+ *   confirmed `entryFileNames` fixes it, before adding this override).
+ */
+async function buildMcpEntry(): Promise<void> {
+  const entryFile = resolve(ROOT, 'src/mcp/index.ts')
+
+  await build({
+    root: ROOT,
+    configFile: false,
+    logLevel: 'warn',
+    publicDir: false,
+    build: {
+      outDir: DIST,
+      emptyOutDir: false,
+      target: 'es2022',
+      sourcemap: true,
+      ssr: true,
+      lib: {
+        entry: entryFile,
+        formats: ['es'] as LibraryFormats[],
+        fileName: () => 'mcp.js',
+      },
+      rollupOptions: {
+        external: isExternal,
+        output: {
+          entryFileNames: 'mcp.js',
+        },
+      },
+    },
+  })
+
+  await build({
+    root: ROOT,
+    configFile: false,
+    logLevel: 'warn',
+    publicDir: false,
+    define: {
+      'import.meta.url': '__zombie_mermaid_import_meta_url__',
+    },
+    build: {
+      outDir: DIST,
+      emptyOutDir: false,
+      target: 'es2022',
+      sourcemap: true,
+      ssr: true,
+      lib: {
+        entry: entryFile,
+        formats: ['cjs'] as LibraryFormats[],
+        fileName: () => 'mcp.cjs',
+      },
+      rollupOptions: {
+        external: isExternal,
+        output: {
+          entryFileNames: 'mcp.cjs',
+          intro:
+            'var __zombie_mermaid_import_meta_url__ = ' +
+            'require("node:url").pathToFileURL(__filename).href;',
+        },
       },
     },
   })
@@ -129,6 +232,14 @@ async function buildCli(): Promise<void> {
           // Matches tsup's `banner: { js: '#!/usr/bin/env node' }` — lets
           // `dist/cli.js` run directly via the `bin` mechanism.
           banner: '#!/usr/bin/env node',
+          // Under `ssr: true`, Vite/Rolldown ignores `lib.fileName` and
+          // names the output chunk after the entry file's own basename
+          // instead (harmless here only because `src/cli.ts`'s basename
+          // already happens to be `cli` — see `buildMcpEntry`'s doc
+          // comment, which hit the same behavior for real when its entry's
+          // basename didn't match). Set explicitly so this doesn't become a
+          // silent collision risk if the CLI entry ever moves/renames.
+          entryFileNames: 'cli.js',
         },
       },
     },
@@ -138,21 +249,26 @@ async function buildCli(): Promise<void> {
 }
 
 /**
- * Generates `index.d.ts` and `ascii.d.ts` in one combined, multi-entry
- * build (see the module doc comment for why this has to be separate from
- * the JS builds above). Runs into a throwaway directory since this pass's
- * *JS* output isn't the real one — only the `.d.ts` files it writes get
+ * Generates `index.d.ts`, `ascii.d.ts`, and `mcp.d.ts` in one combined,
+ * multi-entry build (see the module doc comment for why this has to be
+ * separate from the JS builds above). Runs into a throwaway directory since
+ * this pass's *JS* output isn't the real one — only the `.d.ts` files it writes get
  * kept, and only in the ESM ('es') format: `unplugin-dts`'s per-format
  * `.d.cts` output only kicks in when each format gets its own `outDir`
  * (it doesn't when both formats share one, as they do here to match
  * tsup's flat `dist/` layout), so this only asks for 'es'.
  *
  * The `.d.cts` twin is produced afterward, in main(), by copying the
- * `.d.ts` file byte-for-byte — verified safe because `bundleTypes` rolls
- * each entry into one fully self-contained file (no relative imports to
- * other declaration files whose extension would need to differ between
- * the ESM and CJS variant, unlike tsup's own `index.d.ts`/`index.d.cts`,
- * which only differed in the extension of an internal cross-file import).
+ * `.d.ts` file byte-for-byte — safe because `bundleTypes` rolls each entry
+ * into one fully self-contained file with no *relative* imports to other
+ * declaration files whose extension would need to differ between the ESM
+ * and CJS variant (unlike tsup's own `index.d.ts`/`index.d.cts`, which only
+ * differed in the extension of an internal cross-file import). A bare
+ * package-specifier import (e.g. `import { ElkNode } from 'elkjs'`, surfaced
+ * once `LayoutCache`'s public type started referencing it) is fine to
+ * duplicate verbatim too — Node resolves a bare specifier the same way
+ * regardless of the importing file's own module format, so only a
+ * *relative* import (`./`, `../`) would need special-casing here.
  */
 async function buildTypes(): Promise<void> {
   await build({
@@ -182,6 +298,7 @@ async function buildTypes(): Promise<void> {
         entry: {
           index: resolve(ROOT, 'src/index.ts'),
           ascii: resolve(ROOT, 'src/ascii/index.ts'),
+          mcp: resolve(ROOT, 'src/mcp/index.ts'),
         },
         formats: ['es'] as LibraryFormats[],
       },
@@ -194,19 +311,23 @@ async function buildTypes(): Promise<void> {
   const dtsFiles = (await readdir(TYPES_TMP)).filter((file) =>
     file.endsWith('.d.ts'),
   )
-  if (dtsFiles.length !== 2) {
+  if (dtsFiles.length !== 3) {
     throw new Error(
-      `Expected exactly index.d.ts and ascii.d.ts in ${TYPES_TMP}, found: ${dtsFiles.join(', ')}`,
+      `Expected exactly index.d.ts, ascii.d.ts, and mcp.d.ts in ${TYPES_TMP}, found: ${dtsFiles.join(', ')}`,
     )
   }
   const contents = await Promise.all(
     dtsFiles.map((file) => readFile(resolve(TYPES_TMP, file), 'utf-8')),
   )
   for (const [i, file] of dtsFiles.entries()) {
-    if (/^(import|export\s+[^;]*from)\s/m.test(contents[i]!)) {
+    if (
+      /^(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]\.\.?\//m.test(
+        contents[i]!,
+      )
+    ) {
       throw new Error(
-        `${file} has an import/re-export — no longer safe to duplicate verbatim as its ` +
-          `.d.cts twin. Update buildTypes()'s .d.cts generation to handle that.`,
+        `${file} has a relative import/re-export — no longer safe to duplicate verbatim ` +
+          `as its .d.cts twin. Update buildTypes()'s .d.cts generation to handle that.`,
       )
     }
   }
@@ -226,6 +347,7 @@ async function main(): Promise<void> {
   await rm(DIST, { recursive: true, force: true })
   await buildLibraryEntry('index', resolve(ROOT, 'src/index.ts'))
   await buildLibraryEntry('ascii', resolve(ROOT, 'src/ascii/index.ts'))
+  await buildMcpEntry()
   await buildCli()
   await buildTypes()
 }
