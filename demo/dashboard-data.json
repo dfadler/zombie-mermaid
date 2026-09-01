@@ -1,0 +1,205 @@
+{
+  "generatedAt": "2026-08-31T18:33:19.965Z",
+  "fork": {
+    "owner": "dfadler",
+    "name": "zombie-mermaid",
+    "url": "https://github.com/dfadler/zombie-mermaid",
+    "lastPushedAt": "2026-08-31T18:32:34Z",
+    "openIssues": 51,
+    "openPRs": 5,
+    "mergedPRs": 178,
+    "releaseCount": 4,
+    "latestRelease": {
+      "tag": "v1.5.0",
+      "publishedAt": "2026-08-30T16:40:50Z"
+    }
+  },
+  "upstream": {
+    "owner": "lukilabs",
+    "name": "beautiful-mermaid",
+    "url": "https://github.com/lukilabs/beautiful-mermaid",
+    "lastPushedAt": "2026-05-06T10:53:19Z",
+    "openIssues": 46,
+    "openPRs": 37,
+    "mergedPRs": 13,
+    "releaseCount": 6,
+    "latestRelease": {
+      "tag": "v1.1.2",
+      "publishedAt": "2026-02-26T14:05:31Z"
+    }
+  },
+  "rescued": {
+    "totalFixes": 22,
+    "upstreamIssuesReferenced": 23,
+    "upstreamIssuesStillOpen": 17,
+    "upstreamIssuesClosedIndependently": 6,
+    "issues": [
+      {
+        "number": 12,
+        "state": "closed",
+        "fixId": "cjk-box-width",
+        "fixTitle": "CJK labels overflowed their own ASCII box",
+        "forkPr": 94
+      },
+      {
+        "number": 13,
+        "state": "closed",
+        "fixId": "cjk-box-width",
+        "fixTitle": "CJK labels overflowed their own ASCII box",
+        "forkPr": 94
+      },
+      {
+        "number": 32,
+        "state": "closed",
+        "fixId": "text-embedded-edge-labels",
+        "fixTitle": "Text-embedded edge labels (`-- Yes -->`) were not parsed",
+        "forkPr": 49
+      },
+      {
+        "number": 43,
+        "state": "closed",
+        "fixId": "cjk-state-names",
+        "fixTitle": "CJK state names failed to parse in state diagrams",
+        "forkPr": 49
+      },
+      {
+        "number": 64,
+        "state": "open",
+        "fixId": "fan-in-grouping",
+        "fixTitle": "Fan-in roots were interleaved instead of grouped",
+        "forkPr": 89
+      },
+      {
+        "number": 65,
+        "state": "open",
+        "fixId": "fan-in-grouping",
+        "fixTitle": "Fan-in roots were interleaved instead of grouped",
+        "forkPr": 89
+      },
+      {
+        "number": 68,
+        "state": "open",
+        "fixId": "fan-in-grouping",
+        "fixTitle": "Fan-in roots were interleaved instead of grouped",
+        "forkPr": 89
+      },
+      {
+        "number": 80,
+        "state": "open",
+        "fixId": "class-attribute-on-svg",
+        "fixTitle": "A node’s custom class never reached the rendered SVG",
+        "forkPr": 75
+      },
+      {
+        "number": 89,
+        "state": "open",
+        "fixId": "cjk-subgraph-id",
+        "fixTitle": "CJK subgraph ids produced an empty id",
+        "forkPr": 71
+      },
+      {
+        "number": 109,
+        "state": "closed",
+        "fixId": "circle-cross-edges",
+        "fixTitle": "Circle and cross edge terminators dropped the target node",
+        "forkPr": 91
+      },
+      {
+        "number": 111,
+        "state": "open",
+        "fixId": "fan-in-grouping",
+        "fixTitle": "Fan-in roots were interleaved instead of grouped",
+        "forkPr": 89
+      },
+      {
+        "number": 112,
+        "state": "open",
+        "fixId": "fan-in-grouping",
+        "fixTitle": "Fan-in roots were interleaved instead of grouped",
+        "forkPr": 89
+      },
+      {
+        "number": 119,
+        "state": "open",
+        "fixId": "cjk-box-width",
+        "fixTitle": "CJK labels overflowed their own ASCII box",
+        "forkPr": 94
+      },
+      {
+        "number": 121,
+        "state": "open",
+        "fixId": "er-label-truncation",
+        "fixTitle": "Long ER relationship labels were truncated in ASCII output",
+        "forkPr": 88
+      },
+      {
+        "number": 122,
+        "state": "open",
+        "fixId": "cjk-box-width",
+        "fixTitle": "CJK labels overflowed their own ASCII box",
+        "forkPr": 94
+      },
+      {
+        "number": 124,
+        "state": "open",
+        "fixId": "er-cardinality",
+        "fixTitle": "ER “zero or more” cardinality was silently dropped",
+        "forkPr": 51
+      },
+      {
+        "number": 125,
+        "state": "open",
+        "fixId": "quoted-brackets",
+        "fixTitle": "Brackets inside a quoted label corrupted the label",
+        "forkPr": 80
+      },
+      {
+        "number": 129,
+        "state": "open",
+        "fixId": "er-entity-alias",
+        "fixTitle": "ER entity aliases discarded the alias and every attribute",
+        "forkPr": 81
+      },
+      {
+        "number": 131,
+        "state": "open",
+        "fixId": "er-direction",
+        "fixTitle": "ER `direction` directive had no effect on layout",
+        "forkPr": 81
+      },
+      {
+        "number": 137,
+        "state": "open",
+        "fixId": "circle-cross-edges",
+        "fixTitle": "Circle and cross edge terminators dropped the target node",
+        "forkPr": 91
+      },
+      {
+        "number": 140,
+        "state": "open",
+        "fixId": "no-space-arrows",
+        "fixTitle": "Arrows with no surrounding space dropped the edge",
+        "forkPr": 80
+      },
+      {
+        "number": 143,
+        "state": "open",
+        "fixId": "subgraph-frame-merge",
+        "fixTitle": "An edge-less subgraph member merged two sibling subgraph frames",
+        "forkPr": 96
+      },
+      {
+        "number": 144,
+        "state": "closed",
+        "fixId": "invisible-links",
+        "fixTitle": "`~~~` invisible-link syntax was not recognized",
+        "forkPr": 206
+      }
+    ]
+  },
+  "responseTime": {
+    "sampleSize": 20,
+    "medianHours": 1,
+    "note": "Median time from issue open to first comment, over the most recently commented issues. zombie-mermaid is a low-traffic, solo-maintained fork — treat this as directional, not an SLA."
+  }
+}

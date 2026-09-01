@@ -196,6 +196,52 @@ export interface AsciiSubgraph {
   direction?: 'LR' | 'TD'
 }
 
+// ============================================================================
+// Padding defaults
+//
+// Shared by every renderer that reads AsciiConfig's padding fields. Layouts
+// that predate `paddingX`/`paddingY`/`boxBorderPadding` becoming configurable
+// (sequence, class, ER — see issue #343) compute their own spacing as an
+// offset from these defaults rather than substituting the raw config value
+// directly, so that *not* passing a padding option still renders exactly as
+// it always has (no baseline/snapshot churn) while explicitly passing one
+// still visibly changes spacing. The flowchart/state grid layout (grid.ts)
+// predates this convention and uses `paddingX`/`paddingY` directly as its
+// column/row gap — don't "fix" that to go through these constants too, its
+// existing default already equals them, so behavior is identical.
+// ============================================================================
+
+/** `AsciiConfig.paddingX`'s default — see the block comment above. */
+export const DEFAULT_PADDING_X = 5
+/** `AsciiConfig.paddingY`'s default — see the block comment above. */
+export const DEFAULT_PADDING_Y = 5
+/** `AsciiConfig.boxBorderPadding`'s default — see the block comment above. */
+export const DEFAULT_BOX_BORDER_PADDING = 1
+
+/**
+ * Derive a diagram-local spacing constant from a padding option, offset from
+ * that option's default so a diagram whose own historical constant differs
+ * from the shared default (e.g. class diagrams' 4-column gap vs. the shared
+ * default of 5) still renders unchanged when the caller passes no explicit
+ * padding override. `-x`/`-y`/`-p` still visibly widen or tighten spacing
+ * because they shift `configValue` away from `defaultValue`.
+ *
+ * Shared by sequence.ts/class-diagram.ts/er-diagram.ts so the three
+ * renderers wired up for issue #343 apply padding the same way instead of
+ * each re-deriving this arithmetic.
+ *
+ * @param floor - Minimum result, so a large negative padding can't collapse
+ *   the spacing to zero or negative (which would overlap adjacent elements).
+ */
+export function paddingOffset(
+  configValue: number,
+  defaultValue: number,
+  base: number,
+  floor: number,
+): number {
+  return Math.max(floor, base + (configValue - defaultValue))
+}
+
 /** Configuration for ASCII rendering. */
 export interface AsciiConfig {
   /** true = ASCII chars (+,-,|), false = Unicode box-drawing (┌,─,│). Default: false */

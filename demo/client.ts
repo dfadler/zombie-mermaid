@@ -13,6 +13,12 @@
 // code with no build-time substitution.
 // ============================================================================
 
+import {
+  wideDiagramDirectionLine,
+  withNarrowDirection,
+  withUniqueSvgIds,
+} from './diagram-orientation.ts'
+
 /** The subset of the renderer bundle's exports this page uses. */
 interface MermaidBundle {
   THEMES: Record<string, DiagramColors>
@@ -287,73 +293,6 @@ function applyThemeToSvgElement(
 }
 
 /**
- * The line (0-indexed into `source.split('\n')`) whose declared direction
- * controls a wide (`LR`/`RL`) flowchart's or state diagram's overall
- * orientation, or `null` if this source isn't one of those two diagram
- * types, or is but isn't wide.
- *
- * Only flowcharts and state diagrams qualify — those are the two diagram
- * types with a `TD`/`LR`-style orientation to swap; a `TD`/`TB`/`BT`
- * flowchart is already tall-and-narrow, and non-flowchart, non-state
- * diagram types (sequence, ER, class, xychart) don't have an equivalent
- * notion of "orientation" to offer an alternate for.
- *
- * For a flowchart the direction lives in the header line itself (`graph
- * LR`). For a state diagram it's a `direction LR` statement anywhere in
- * the body — mirroring src/parser.ts's parseStateDiagram, only the
- * *top-level* one counts (one inside `state X { … }` overrides that
- * composite state alone), so this tracks composite-state brace depth with
- * the same open/close patterns the real parser uses to find it.
- */
-function wideDiagramDirectionLine(source: string): number | null {
-  const lines = source.split('\n')
-  const header = (lines[0] ?? '').trim()
-
-  const flowchartMatch = header.match(
-    /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
-  )
-  if (flowchartMatch) {
-    const direction = flowchartMatch[1]!.toUpperCase()
-    return direction === 'LR' || direction === 'RL' ? 0 : null
-  }
-
-  if (!/^stateDiagram(-v2)?\s*$/i.test(header)) return null
-
-  let compositeDepth = 0
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]!.trim()
-    if (compositeDepth === 0) {
-      const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
-      if (dirMatch) {
-        const direction = dirMatch[1]!.toUpperCase()
-        return direction === 'LR' || direction === 'RL' ? i : null
-      }
-    }
-    if (/^state\s+(?:"[^"]+"\s+as\s+)?[\w\p{L}]+\s*\{$/u.test(line)) {
-      compositeDepth++
-    } else if (line === '}') {
-      compositeDepth = Math.max(0, compositeDepth - 1)
-    }
-  }
-  return null
-}
-
-/**
- * Rewrite the direction word on `lineIndex` (as found by
- * `wideDiagramDirectionLine`) to `TD`, leaving the rest of the source
- * untouched. `TD` is always the target rather than the literal opposite of
- * whatever's declared (`BT` staying `BT`, say) because the goal is
- * specifically "narrow enough for a small screen," not "rotate 180°."
- */
-function withNarrowDirection(source: string, lineIndex: number): string {
-  const lines = source.split('\n')
-  const target = lines[lineIndex]
-  if (target === undefined) return source
-  lines[lineIndex] = target.replace(/(TD|TB|LR|BT|RL)(\s*)$/i, 'TD$2')
-  return lines.join('\n')
-}
-
-/**
  * Mirrors demo/styles.css's `@media (max-width: 640px)` breakpoint. The
  * SVG swap is pure CSS (see `.orientation-variant` there) because both
  * orientations are pre-rendered elements CSS can pick between — but the
@@ -469,40 +408,6 @@ window.addEventListener('resize', function () {
   lastNarrowMatch = narrowViewportQuery.matches
   applyViewportOrientation()
 })
-
-/**
- * Give every real `id="…"` in a rendered SVG string a unique prefix, and
- * rewrite the `url(#…)` references (e.g. `marker-end`) that point at them
- * to match. `renderSvgVariants` inserts two full SVG renders of the *same*
- * sample into one container — both define fixed marker ids like
- * `arrowhead` (see src/renderer.ts), and IDs must be unique per document;
- * an unprefixed pair would be invalid markup and, per SVG's `url(#id)`
- * resolution rules, fragile if the two definitions ever diverge (a
- * *different* sample's same-named marker elsewhere on the page is a
- * separate, pre-existing instance of this same pattern — out of scope
- * here, since this only needs the two variants of one sample to not
- * collide with *each other*).
- *
- * `(?<!data-)\bid=` deliberately excludes `data-id="…"` (used for nodes/
- * edges, e.g. click-interactivity targets) — those aren't `url(#…)`
- * reference targets and don't need rewriting.
- */
-function withUniqueSvgIds(svg: string, prefix: string): string {
-  const ids = new Set<string>()
-  for (const m of svg.matchAll(/(?<!data-)\bid="([^"]+)"/g)) ids.add(m[1]!)
-  let result = svg
-  for (const id of ids) {
-    const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    result = result
-      .replace(
-        new RegExp(`(?<!data-)\\bid="${escaped}"`, 'g'),
-        `id="${prefix}${id}"`,
-      )
-      .replace(new RegExp(`url\\(#${escaped}\\)`, 'g'), `url(#${prefix}${id})`)
-      .replace(new RegExp(`href="#${escaped}"`, 'g'), `href="#${prefix}${id}"`)
-  }
-  return result
-}
 
 /**
  * Render one sample's source into its SVG container, handling both the
@@ -798,7 +703,18 @@ sidebarToggle.addEventListener('click', function (e) {
   else openSidebarDrawer()
 })
 
-sidebarBackdrop.addEventListener('click', closeSidebarDrawer)
+// A backdrop click means "dismiss the drawer without picking anything" —
+// unlike the sidebar's own click handler below, which switches category or
+// scrolls to a sample. Clearing an active search here (mirroring the Escape
+// key and the Clear button) matches that intent: the visitor is stepping
+// away from the drawer, not choosing a destination inside it.
+sidebarBackdrop.addEventListener('click', function (e) {
+  closeSidebarDrawer()
+  if (searchInput.value && !sidebar.contains(eventElement(e.target))) {
+    searchInput.value = ''
+    void runSearch('')
+  }
+})
 
 // A <summary> click switches the active category (see "Category switching"
 // below); a sample <a> click smooth-scrolls to it. Either way, close the
@@ -812,6 +728,15 @@ sidebar.addEventListener('click', function (e) {
       .closest('.sidebar-group')
       ?.getAttribute('data-category-slug')
     if (!slug) return
+    // Explicitly picking a category while a search is active means "browse
+    // this category fully" — clear the query rather than leaving search's
+    // per-sample/per-group hidden state fighting the single-category view
+    // showCategory is about to set up.
+    if (searchInput.value) {
+      searchInput.value = ''
+      clearSearchUi()
+      categoryBeforeSearch = null
+    }
     showCategory(slug, {
       updateHash: true,
       scrollToTop: true,
@@ -884,6 +809,154 @@ function browseDiagramTypes() {
 }
 mustGet('browse-categories-btn').addEventListener('click', browseDiagramTypes)
 mustGet('tabbar-browse-btn').addEventListener('click', browseDiagramTypes)
+
+// ============================================================================
+// Sample search / filter (#284) — matches sample title, category (diagram
+// type), and description against the same `samples` array the page already
+// loaded, then toggles `hidden` on the affected sidebar entries and sample
+// sections. No new data source and no re-render of anything already on
+// screen; a category that gains a match for the first time renders lazily,
+// exactly as switching to it from the sidebar would (see renderCategory).
+// ============================================================================
+
+const searchInput = mustGet<HTMLInputElement>('sample-search')
+const searchClearBtn = mustGet<HTMLButtonElement>('sidebar-search-clear')
+const searchStatusEl = mustGet('sidebar-search-status')
+const searchEmptyEl = mustGet('search-empty')
+
+/** One slug per non-Hero category, in document order — derived from the
+ * DOM (same source renderCategory itself reads indices from) rather than
+ * duplicating the category grouping index.ts already baked into the page. */
+const categorySlugs: string[] = Array.from(
+  document.querySelectorAll<HTMLElement>('.category-view'),
+)
+  .map((view) => view.getAttribute('data-category'))
+  .filter((slug): slug is string => !!slug)
+
+/** The category shown right before the current search began, or null when
+ * no search is active. Captured once per search session (not on every
+ * keystroke) so it still points at the right place to restore no matter
+ * how the query changes in between. */
+let categoryBeforeSearch: string | null = null
+
+function sampleMatchesQuery(index: number, query: string): boolean {
+  const sample = samples[index]
+  if (!sample) return false
+  return (
+    sample.title.toLowerCase().includes(query) ||
+    sample.category.toLowerCase().includes(query) ||
+    (sample.description ?? '').toLowerCase().includes(query)
+  )
+}
+
+/** Index parsed from a `.sample` section's `id="sample-N"` or a sidebar
+ * link's `href="#sample-N"` — the same convention renderCategory,
+ * showCategory, and the scroll spy above all already rely on. */
+function sampleIndexFrom(idOrHref: string): number {
+  const marker = 'sample-'
+  const at = idOrHref.indexOf(marker)
+  return at === -1 ? NaN : parseInt(idOrHref.slice(at + marker.length), 10)
+}
+
+/** Resets every DOM effect a search applies — `hidden` on sample sections
+ * and sidebar entries, the status text, the empty-state message, and the
+ * `search-active` body class — without touching `categoryBeforeSearch` or
+ * re-showing a category. Shared by `exitSearch` (query cleared to empty)
+ * and the sidebar's own category-summary click handler (a category picked
+ * explicitly while a search was active). */
+function clearSearchUi(): void {
+  document.body.classList.remove('search-active')
+  searchClearBtn.hidden = true
+  searchStatusEl.textContent = ''
+  searchEmptyEl.hidden = true
+
+  document
+    .querySelectorAll<HTMLElement>('.sample')
+    .forEach((section) => (section.hidden = false))
+  document.querySelectorAll<HTMLElement>('.sidebar-group').forEach((group) => {
+    group.hidden = false
+    group
+      .querySelectorAll<HTMLElement>('.sidebar-list li')
+      .forEach((li) => (li.hidden = false))
+  })
+}
+
+function exitSearch(): void {
+  clearSearchUi()
+  const restoreSlug = categoryBeforeSearch
+  categoryBeforeSearch = null
+  if (restoreSlug) void showCategory(restoreSlug, { updateHash: false })
+}
+
+async function runSearch(rawQuery: string): Promise<void> {
+  const query = rawQuery.trim().toLowerCase()
+
+  if (!query) {
+    exitSearch()
+    return
+  }
+
+  if (categoryBeforeSearch === null) categoryBeforeSearch = activeCategorySlug
+  document.body.classList.add('search-active')
+  searchClearBtn.hidden = false
+
+  let totalMatches = 0
+  const categoriesToRender: string[] = []
+
+  for (const slug of categorySlugs) {
+    const view = maybeGet('category-' + slug)
+    const group = document.querySelector<HTMLDetailsElement>(
+      '.sidebar-group[data-category-slug="' + slug + '"]',
+    )
+    if (!view) continue
+
+    let categoryHasMatch = false
+    view.querySelectorAll<HTMLElement>('.sample').forEach((section) => {
+      const index = sampleIndexFrom(section.id)
+      const matches = sampleMatchesQuery(index, query)
+      section.hidden = !matches
+      if (matches) {
+        categoryHasMatch = true
+        totalMatches++
+      }
+    })
+    view.hidden = !categoryHasMatch
+    if (categoryHasMatch && !renderedCategories[slug])
+      categoriesToRender.push(slug)
+
+    if (group) {
+      group.hidden = !categoryHasMatch
+      if (categoryHasMatch) group.open = true
+      group.querySelectorAll<HTMLElement>('.sidebar-list li').forEach((li) => {
+        const href = li.querySelector('a')?.getAttribute('href') ?? ''
+        li.hidden = !sampleMatchesQuery(sampleIndexFrom(href), query)
+      })
+    }
+  }
+
+  searchEmptyEl.hidden = totalMatches !== 0
+  searchStatusEl.textContent =
+    totalMatches === 0
+      ? `No results for "${rawQuery.trim()}"`
+      : `${totalMatches} result${totalMatches === 1 ? '' : 's'} for "${rawQuery.trim()}"`
+
+  await Promise.all(categoriesToRender.map(renderCategory))
+}
+
+searchInput.addEventListener('input', function () {
+  void runSearch(searchInput.value)
+})
+searchInput.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape' || !searchInput.value) return
+  e.stopPropagation() // don't also close the mobile drawer via the document-level Escape handler
+  searchInput.value = ''
+  void runSearch('')
+})
+searchClearBtn.addEventListener('click', function () {
+  searchInput.value = ''
+  void runSearch('')
+  searchInput.focus()
+})
 
 // -- Restore saved theme immediately (before rendering begins) --
 const savedTheme = localStorage.getItem('mermaid-theme')
@@ -990,13 +1063,19 @@ const totalRenderable = samples.filter(function (s) {
 }).length
 
 function updateRenderStats() {
-  totalTimingEl.textContent =
-    renderedCount * 2 +
-    ' of ' +
-    totalRenderable * 2 +
-    ' samples (SVG+ASCII) rendered in ' +
-    renderedMs.toFixed(0) +
-    ' ms so far'
+  const rendered = renderedCount * 2
+  const total = totalRenderable * 2
+  const isComplete = renderedCount >= totalRenderable
+  // Framed as a performance highlight once complete ("this is fast"),
+  // and as plain progress copy while still running — not a raw counter
+  // dump, so it reads as intentional UI rather than leftover debug output.
+  totalTimingEl.textContent = isComplete
+    ? 'Rendered all ' +
+      total +
+      ' sample outputs (SVG + ASCII) in ' +
+      renderedMs.toFixed(0) +
+      'ms.'
+    : 'Rendering samples… ' + rendered + ' of ' + total + ' done.'
 }
 
 async function renderCategory(slug: string) {
@@ -1021,11 +1100,20 @@ async function renderCategory(slug: string) {
   }
 }
 
+/**
+ * Slug of the category last shown via `showCategory` — the source of truth
+ * search (below) uses to remember what was on screen before a query
+ * started, so clearing the search can restore exactly that view rather
+ * than falling back to the first category.
+ */
+let activeCategorySlug: string | null = null
+
 function showCategory(
   slug: string,
   opts?: { updateHash?: boolean; scrollToTop?: boolean },
 ) {
   const options = opts ?? {}
+  activeCategorySlug = slug
 
   const views = document.querySelectorAll<HTMLElement>('.category-view')
   views.forEach((view) => {
