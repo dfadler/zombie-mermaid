@@ -8,6 +8,14 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '../ascii/index.ts'
+import { chooseFreeRow, isRowFree } from '../ascii/er-diagram.ts'
+import { mkCanvas, write } from '../ascii/canvas.ts'
+import type { Canvas } from '../ascii/types.ts'
+
+/** Mark every cell in row `y` across [xStart, xEnd] as occupied. */
+function occupyRow(canvas: Canvas, y: number, xStart: number, xEnd: number) {
+  for (let x = xStart; x <= xEnd; x++) write(canvas, x, y, '#')
+}
 
 describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', () => {
   it('does not leave a lone "one" tick floating between dashes on a horizontal connector (Unicode)', () => {
@@ -144,5 +152,45 @@ describe('ASCII ER — compact gutters between disconnected components (issue #3
     expect(ascii).toContain('ORDER')
     expect(ascii).toContain('PRODUCT')
     expect(ascii).toContain('LINE_ITEM')
+  })
+})
+
+describe('chooseFreeRow / isRowFree (unit)', () => {
+  // renderErAscii's fixed vGap=4 only ever produces a 2-row-wide candidate
+  // interval, so the geometric midpoint is always the interval's first
+  // (topmost) row — the "scan upward" half of chooseFreeRow's search can
+  // never find a free row through the full render pipeline alone. These
+  // tests exercise that logic directly against a wider, constructed range.
+
+  it('returns the geometric midpoint when it is free', () => {
+    const canvas = mkCanvas(20, 20)
+    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(3)
+  })
+
+  it('scans downward when the midpoint is occupied', () => {
+    const canvas = mkCanvas(20, 20)
+    occupyRow(canvas, 3, 0, 10) // midpoint occupied
+    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(4)
+  })
+
+  it('scans upward when the midpoint and every row below it are occupied', () => {
+    const canvas = mkCanvas(20, 20)
+    occupyRow(canvas, 3, 0, 10) // midpoint
+    occupyRow(canvas, 4, 0, 10) // one below
+    // row 2 (one above the midpoint) stays free
+    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(2)
+  })
+
+  it('falls back to the geometric midpoint when every candidate row is occupied', () => {
+    const canvas = mkCanvas(20, 20)
+    for (let y = 1; y <= 5; y++) occupyRow(canvas, y, 0, 10)
+    expect(chooseFreeRow(canvas, 0, 6, 0, 10, -1)).toBe(3)
+  })
+
+  it('ignores the skipped column when checking occupancy', () => {
+    const canvas = mkCanvas(20, 20)
+    write(canvas, 5, 3, '#') // only the skipped column is occupied
+    expect(isRowFree(canvas, 3, 0, 10, 5)).toBe(true)
+    expect(isRowFree(canvas, 3, 0, 10, -1)).toBe(false)
   })
 })

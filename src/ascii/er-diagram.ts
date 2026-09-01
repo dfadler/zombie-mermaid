@@ -206,7 +206,13 @@ function mustGetEntityValue<T>(
  * stem, which legitimately already occupies that column across the whole
  * gap before a jog row is chosen — see `chooseFreeRow`).
  */
-function isRowFree(
+// Exported for direct unit testing (see check-diff-coverage.ts's own
+// exports for the precedent this repo already uses) — renderErAscii's fixed
+// vGap never produces a gap wide enough to exercise every branch of
+// chooseFreeRow's search order through the full render pipeline alone, so
+// the row-selection logic itself is tested directly against constructed
+// inputs instead.
+export function isRowFree(
   canvas: Canvas,
   y: number,
   xStart: number,
@@ -238,8 +244,10 @@ function isRowFree(
  * when every candidate in the gap is occupied (a dense diagram where
  * avoiding collisions entirely isn't possible with this renderer's
  * straight-jog routing).
+ *
+ * Exported for direct unit testing — see the comment on `isRowFree` above.
  */
-function chooseFreeRow(
+export function chooseFreeRow(
   canvas: Canvas,
   startY: number,
   endY: number,
