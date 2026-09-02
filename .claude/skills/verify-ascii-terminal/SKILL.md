@@ -82,6 +82,7 @@ renderer, layout math with no ASCII-specific path, or non-rendering code.
 ```bash
 brew install asciinema agg
 pip3 install pillow
+brew install --cask font-jetbrains-mono
 ```
 
 A real invocation of `scripts/ascii-terminal-capture.sh` checks for all four
@@ -90,6 +91,17 @@ A real invocation of `scripts/ascii-terminal-capture.sh` checks for all four
 message naming whichever is missing, rather than a confusing failure partway
 through. (`--help` on its own exits before that check runs — it doesn't
 validate anything, just prints usage.)
+
+The font install is not dependency-checked the way the four above are — `agg`
+silently falls back to the next entry in its `--font-family` list
+(`Menlo,JetBrains Mono,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono`,
+in `scripts/ascii-terminal-capture.sh`) instead of erroring, so a missing
+font produces no failure message at all. On a machine without JetBrains
+Mono, `agg` falls back to Menlo, whose "swash" rendering backend draws box-
+drawing junction glyphs like `┬` (used in actor-box bottom borders, e.g.
+`└─┬─┘`) with a visible notch/seam artifact — the recorded `.cast`/`.txt`
+output is unaffected, only the rasterized `.png` looks wrong. Install
+JetBrains Mono before capturing, not after noticing a screenshot looks off.
 
 ## Procedure
 
