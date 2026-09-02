@@ -34,7 +34,7 @@ export function applyClickStatement(
   line: string,
   interactions: Map<string, NodeInteraction>,
 ): void {
-  const match = line.match(/^click\s+([\w-]+)\s+(.*)$/i)
+  const match = line.match(/^click\s+([\w\p{L}-]+)\s+(.*)$/iu)
   if (!match) return
 
   const nodeId = match[1]!
