@@ -68,6 +68,20 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     expect(ascii).toContain('│┐ opens')
   })
 
+  it('draws the ASCII-mode corner glyph ("+") at the same jog, in useAscii mode', () => {
+    // Same repro and turn as the Unicode jog test above — getCornerChar's
+    // useAscii branch (a plain '+', matching getCrowsFootChars' own
+    // Unicode/ASCII split) has no Unicode-mode equivalent path, so it needs
+    // its own coverage rather than assuming the Unicode assertion implies it.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        USER ||--o{ LOG_ENTRY : generates
+        USER ||..o{ SESSION : opens`,
+      { colorMode: 'none', useAscii: true },
+    )
+    expect(ascii).toContain('|+ opens')
+  })
+
   it("draws corner glyphs at a vertical relationship's multi-row-obstruction bypass", () => {
     // Same 7-entity, 3-row shape as the multi-row-obstruction regression in
     // ascii-er-relationship-label-corruption-350.test.ts: A-G shares D's
@@ -100,5 +114,51 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     expect(ascii).toContain('┌─────────│──────────────────┘')
     expect(ascii).toContain('○╟─────────┘')
     expect(ascii).toContain('ag')
+  })
+
+  it('handles a bypass whose free column search finds a match to the left, not just to the right', () => {
+    // Same shape as the bypass test above, but D's box is widened enough
+    // that the free-column search (which tries lineX+offset before
+    // lineX-offset at every step — see columnClearOfBoxes' caller) exhausts
+    // rightward space and finds its match on the left side instead. This
+    // exercises the *other* branch of the horizDirAtLine/horizDirAtLower
+    // ternaries in the bypass block — every other test in this file only
+    // ever exercises the rightward case, since a plain sqrt-based row
+    // layout with same-sized entities always searches rightward-first
+    // successfully.
+    //
+    // In this specific diagram, the matched free column (routingX) lands
+    // off-canvas (negative — nothing to A's own left in this narrow
+    // layout), and the two corners at valid coordinates (A's own column,
+    // and G's own column) both land exactly on cells the crow's-foot
+    // markers already occupy — the marker legitimately wins there (same
+    // precedence as the rightward case: markers are drawn after corners,
+    // see drawCorner's own doc comment), so there's no *visible* new
+    // glyph to assert on here. What this test actually pins down is that
+    // reaching that branch doesn't corrupt anything or throw — content
+    // integrity, not a specific rendered character.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : ab
+        B ||--o{ C : bc
+        C ||--o{ D : cd
+        D ||--o{ E : de
+        E ||--o{ F : ef
+        F ||--o{ G : fg
+        A ||--o{ G : ag
+        D {
+          string this_is_a_very_long_attribute_name_to_widen_the_box
+        }
+        G {
+          string id
+        }`,
+      { colorMode: 'none' },
+    )
+    expect(ascii).toContain('ag')
+    expect(ascii).toContain('string id')
+    expect(ascii).toContain(
+      'string this_is_a_very_long_attribute_name_to_widen_the_box',
+    )
+    expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
 })
