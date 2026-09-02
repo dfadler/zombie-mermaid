@@ -31,6 +31,38 @@ function participants(names: string[]): string {
   return names.map((n) => `  participant ${n}`).join('\n')
 }
 
+const BORDER_ASCII = new Set(['+', '-', '|'])
+
+/**
+ * A block's left/right wall columns, found via the row containing
+ * `anchorText` (e.g. the block type keyword, which — unlike a header/divider
+ * label — is never itself truncated, so it's a stable anchor even when the
+ * label content next to it is clipped). The walls are constant across the
+ * whole block (header, every divider, and the body all share the same two
+ * wall columns), so one anchor row is enough regardless of which row a
+ * later containment check is against.
+ */
+function blockFrameSpan(
+  ascii: string,
+  anchorText: string,
+): { x0: number; x1: number } {
+  const lines = ascii.split('\n')
+  const y = lines.findIndex((l) => l.includes(anchorText))
+  if (y === -1)
+    throw new Error(`blockFrameSpan: no row containing "${anchorText}"`)
+  const line = lines[y]!
+  let x0 = line.length
+  let x1 = -1
+  for (let x = 0; x < line.length; x++) {
+    if (BORDER_ASCII.has(line[x]!)) {
+      x0 = Math.min(x0, x)
+      x1 = Math.max(x1, x)
+    }
+  }
+  if (x1 === -1) throw new Error(`blockFrameSpan: no border chars on row ${y}`)
+  return { x0, x1 }
+}
+
 // ---------------------------------------------------------------------------
 // Block-wall-fits-label matrix (generalizes PR #387 / issue #352)
 // ---------------------------------------------------------------------------
@@ -141,12 +173,22 @@ ${participants(c.actors)}
     ${c.actors[0]}->>${c.actors[1]}: x
   end`
       const ascii = renderMermaidASCII(src, { useAscii: true })
+      // Not just "does the full label appear somewhere" — it must also sit
+      // inside the block's own walls, not spill past them. findTextRect
+      // throws today (the label isn't present in full at all yet — that's
+      // the bug this case documents), which is exactly why this stays
+      // it.fails; once a fix prints the label in full, this line starts
+      // actually checking containment instead of trivially passing.
       expect(ascii).toContain(c.label)
+      const frame = blockFrameSpan(ascii, c.type)
+      const labelRect = findTextRect(ascii, c.label)
+      expect(labelRect.x0).toBeGreaterThanOrEqual(frame.x0)
+      expect(labelRect.x1).toBeLessThanOrEqual(frame.x1)
     })
   }
 
   it.fails(
-    'alt/else with multiple branches: every divider label survives unclipped',
+    'alt/else with multiple branches: every divider label survives unclipped and stays inside the frame',
     () => {
       const src = `sequenceDiagram
   participant A
@@ -159,6 +201,15 @@ ${participants(c.actors)}
       const ascii = renderMermaidASCII(src, { useAscii: true })
       expect(ascii).toContain(LONG_LABEL)
       expect(ascii).toContain(VERY_LONG_LABEL)
+      // Walls are constant across the whole block, so the header row alone
+      // (anchored on "alt", never itself truncated) gives the frame span
+      // both labels — header and divider — must stay inside.
+      const frame = blockFrameSpan(ascii, 'alt')
+      for (const label of [LONG_LABEL, VERY_LONG_LABEL]) {
+        const rect = findTextRect(ascii, label)
+        expect(rect.x0).toBeGreaterThanOrEqual(frame.x0)
+        expect(rect.x1).toBeLessThanOrEqual(frame.x1)
+      }
     },
   )
 })
@@ -188,7 +239,9 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
   Note left of A: ${LONG_LABEL}
   A->>B: hi`
       const ascii = renderMermaidASCII(src, { useAscii: true })
-      const noteRect = findTextRect(ascii, LONG_LABEL)
+      // findBoxRect, not findTextRect — the note's own border/padding must
+      // also stay clear of the lifeline, not just its bare text span.
+      const noteRect = findBoxRect(ascii, LONG_LABEL)
       const aliceCol = lifelineColumn(ascii, 'Alice')
       expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
     },
@@ -209,7 +262,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
   Note left of B: ${LONG_LABEL}
   B->>C: hi`
       const ascii = renderMermaidASCII(src, { useAscii: true })
-      const noteRect = findTextRect(ascii, LONG_LABEL)
+      const noteRect = findBoxRect(ascii, LONG_LABEL)
       const aliceCol = lifelineColumn(ascii, 'Alice')
       expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
     },
@@ -232,7 +285,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
   A->>B: hi
   Note right of B: ${LONG_LABEL}`
       const ascii = renderMermaidASCII(src, { useAscii: true })
-      const noteRect = findTextRect(ascii, LONG_LABEL)
+      const noteRect = findBoxRect(ascii, LONG_LABEL)
       const carolCol = lifelineColumn(ascii, 'Carol')
       expect(carolCol < noteRect.x0 || carolCol > noteRect.x1).toBe(true)
     },
@@ -248,7 +301,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
   Note left of B: hi
   B->>C: hi`
     const ascii = renderMermaidASCII(src, { useAscii: true })
-    const noteRect = findTextRect(ascii, 'hi')
+    const noteRect = findBoxRect(ascii, 'hi')
     const aliceCol = lifelineColumn(ascii, 'Alice')
     expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
   })
@@ -261,7 +314,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
   A->>B: hi
   Note right of B: ok`
     const ascii = renderMermaidASCII(src, { useAscii: true })
-    const noteRect = findTextRect(ascii, 'ok')
+    const noteRect = findBoxRect(ascii, 'ok')
     const carolCol = lifelineColumn(ascii, 'Carol')
     expect(carolCol < noteRect.x0 || carolCol > noteRect.x1).toBe(true)
   })
@@ -274,7 +327,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
   A->>B: hi
   Note over A,B: conversation complete`
     const ascii = renderMermaidASCII(src, { useAscii: true })
-    const noteRect = findTextRect(ascii, 'conversation complete')
+    const noteRect = findBoxRect(ascii, 'conversation complete')
     const carolCol = lifelineColumn(ascii, 'Carol')
     expect(carolCol < noteRect.x0 || carolCol > noteRect.x1).toBe(true)
   })
@@ -284,30 +337,51 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
 // Actor-kind fidelity: `actor` must render distinctly from `participant`
 // ---------------------------------------------------------------------------
 
+type ActorPosition = 'first' | 'middle' | 'last'
+
+/**
+ * Declares `id` (as either `actor` or `participant`) at `position` among two
+ * other fixed participants — first/middle/last are only meaningful with at
+ * least one neighbor on the relevant side, so this always yields 3 declared
+ * actors, not just `id` alone.
+ */
+function declareActorAt(
+  position: ActorPosition,
+  kind: 'actor' | 'participant',
+  id: string,
+): string {
+  const target = `${kind} ${id} as User`
+  const lines =
+    position === 'first'
+      ? [target, 'participant S as System', 'participant DB as Database']
+      : position === 'last'
+        ? ['participant S as System', 'participant DB as Database', target]
+        : ['participant S as System', target, 'participant DB as Database']
+  return lines.map((l) => `  ${l}`).join('\n')
+}
+
 describe('ASCII sequence — `actor` renders distinctly from `participant`', () => {
   // Bug: `actor.type` (captured by the parser — see src/sequence/types.ts:24,
   // "'actor' renders as a stick figure") is never read anywhere in
   // src/ascii/sequence.ts. Every actor draws through the same box-drawing
   // path regardless of declared type, so an `actor` and a `participant`
   // with the same label render byte-for-byte identically today.
-  it.fails.each([
+  it.fails.each<[ActorPosition, string]>([
     ['first', 'U'],
     ['middle', 'U'],
     ['last', 'U'],
   ])(
     'an %s-position `actor` looks different from a `participant` (%s)',
-    (_position, id) => {
+    (position, id) => {
       const asActor = renderMermaidASCII(
         `sequenceDiagram
-  actor ${id} as User
-  participant S as System
+${declareActorAt(position, 'actor', id)}
   ${id}->>S: hi`,
         { useAscii: true },
       )
       const asParticipant = renderMermaidASCII(
         `sequenceDiagram
-  participant ${id} as User
-  participant S as System
+${declareActorAt(position, 'participant', id)}
   ${id}->>S: hi`,
         { useAscii: true },
       )

@@ -17,6 +17,7 @@
  */
 
 import { mkdir, writeFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '../src/index.ts'
 import { samples } from '../samples-data.ts'
 import {
@@ -77,62 +78,67 @@ async function generate(): Promise<IndexEntry[]> {
   const session = await startRealMermaid()
   const index: IndexEntry[] = []
 
-  for (const { sample, i } of indexed) {
-    const id = `form-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`
+  try {
+    for (const { sample, i } of indexed) {
+      const id = `form-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`
 
-    let trimmedSvg: string | null = null
-    let mermaidError: string | null = null
-    try {
-      const svg = await renderRealMermaidSvg(
-        session,
-        id.replace(/-/g, '_'),
-        sample.source,
-      )
-      trimmedSvg = trimMermaidSvg(svg)
-    } catch (err) {
-      mermaidError = err instanceof Error ? err.message : String(err)
+      let trimmedSvg: string | null = null
+      let mermaidError: string | null = null
+      try {
+        const svg = await renderRealMermaidSvg(
+          session,
+          id.replace(/-/g, '_'),
+          sample.source,
+        )
+        trimmedSvg = trimMermaidSvg(svg)
+      } catch (err) {
+        mermaidError = err instanceof Error ? err.message : String(err)
+      }
+
+      let asciiText: string | null = null
+      let asciiError: string | null = null
+      try {
+        asciiText = renderMermaidASCII(sample.source, {
+          colorMode: 'none',
+        }).replace(/[ \t]+$/gm, '')
+      } catch (err) {
+        asciiError = err instanceof Error ? err.message : String(err)
+      }
+
+      const file: SampleFile = {
+        id,
+        category: sample.category ?? 'uncategorized',
+        title: sample.title,
+        source: sample.source,
+        trimmedSvg,
+        mermaidError,
+        asciiText,
+        asciiError,
+      }
+      const filePath = new URL(`${id}.json`, factsDir)
+      await writeFile(filePath, JSON.stringify(file, null, 2), 'utf8')
+
+      index.push({
+        id,
+        category: file.category,
+        title: file.title,
+        path: fileURLToPath(filePath),
+        judgeable: trimmedSvg !== null && asciiText !== null,
+        mermaidError,
+        asciiError,
+      })
     }
-
-    let asciiText: string | null = null
-    let asciiError: string | null = null
-    try {
-      asciiText = renderMermaidASCII(sample.source, {
-        colorMode: 'none',
-      }).replace(/[ \t]+$/gm, '')
-    } catch (err) {
-      asciiError = err instanceof Error ? err.message : String(err)
-    }
-
-    const file: SampleFile = {
-      id,
-      category: sample.category ?? 'uncategorized',
-      title: sample.title,
-      source: sample.source,
-      trimmedSvg,
-      mermaidError,
-      asciiText,
-      asciiError,
-    }
-    const filePath = new URL(`${id}.json`, factsDir)
-    await writeFile(filePath, JSON.stringify(file, null, 2), 'utf8')
-
-    index.push({
-      id,
-      category: file.category,
-      title: file.title,
-      path: filePath.pathname,
-      judgeable: trimmedSvg !== null && asciiText !== null,
-      mermaidError,
-      asciiError,
-    })
+  } finally {
+    await session.close()
   }
 
-  await session.close()
   return index
 }
 
 const index = await generate()
-const indexPath = new URL('../form-facts-index.json', import.meta.url).pathname
+const indexPath = fileURLToPath(
+  new URL('../form-facts-index.json', import.meta.url),
+)
 await writeFile(indexPath, JSON.stringify(index, null, 2), 'utf8')
 const judgeable = index.filter((e) => e.judgeable).length
 console.log(

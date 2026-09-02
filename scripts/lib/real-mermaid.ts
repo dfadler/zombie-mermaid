@@ -42,17 +42,25 @@ export async function startRealMermaid(): Promise<RealMermaidSession> {
   )
 
   const browser = await chromium.launch()
-  const page = await browser.newPage()
-  await page.setContent('<!DOCTYPE html><html><body></body></html>')
-  await page.addScriptTag({ content: mermaidJs })
-  await page.evaluate(() => {
-    window.mermaid.initialize({ startOnLoad: false, theme: 'default' })
-  })
+  try {
+    const page = await browser.newPage()
+    await page.setContent('<!DOCTYPE html><html><body></body></html>')
+    await page.addScriptTag({ content: mermaidJs })
+    await page.evaluate(() => {
+      window.mermaid.initialize({ startOnLoad: false, theme: 'default' })
+    })
 
-  return {
-    browser,
-    page,
-    close: () => browser.close(),
+    return {
+      browser,
+      page,
+      close: () => browser.close(),
+    }
+  } catch (err) {
+    // Setup failed after launch succeeded — close the browser ourselves
+    // before rethrowing, or the chromium process leaks (no session object
+    // to hand a `close()` back to the caller through).
+    await browser.close()
+    throw err
   }
 }
 

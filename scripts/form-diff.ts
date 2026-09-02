@@ -40,6 +40,7 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '../src/index.ts'
 import { samples } from '../samples-data.ts'
 import { escapeHtml } from '../demo/format.ts'
@@ -113,27 +114,29 @@ async function generate(): Promise<string> {
   const session = await startRealMermaid()
 
   const sections: string[] = []
-  for (const { sample, i } of indexed) {
-    const id = `form-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`
-    let mermaidPanel: string
-    try {
-      const svg = await renderRealMermaidSvg(
-        session,
-        id.replace(/-/g, '_'),
-        sample.source,
-      )
-      mermaidPanel =
-        svg.trim() === ''
-          ? '<div class="fix-empty">Rendered nothing.</div>'
-          : `<div class="fix-svg">${svg}</div>`
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      mermaidPanel = `<div class="fix-error"><strong>Threw:</strong> ${escapeHtml(message)}</div>`
+  try {
+    for (const { sample, i } of indexed) {
+      const id = `form-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`
+      let mermaidPanel: string
+      try {
+        const svg = await renderRealMermaidSvg(
+          session,
+          id.replace(/-/g, '_'),
+          sample.source,
+        )
+        mermaidPanel =
+          svg.trim() === ''
+            ? '<div class="fix-empty">Rendered nothing.</div>'
+            : `<div class="fix-svg">${svg}</div>`
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        mermaidPanel = `<div class="fix-error"><strong>Threw:</strong> ${escapeHtml(message)}</div>`
+      }
+      sections.push(renderSampleSection(id, sample, mermaidPanel))
     }
-    sections.push(renderSampleSection(id, sample, mermaidPanel))
+  } finally {
+    await session.close()
   }
-
-  await session.close()
 
   const styles = await readFile(
     new URL('../demo/styles.css', import.meta.url),
@@ -185,6 +188,6 @@ ${sections.join('\n')}
 }
 
 const html = await generate()
-const outPath = new URL('../form-diff.html', import.meta.url).pathname
+const outPath = fileURLToPath(new URL('../form-diff.html', import.meta.url))
 await writeFile(outPath, html, 'utf8')
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
