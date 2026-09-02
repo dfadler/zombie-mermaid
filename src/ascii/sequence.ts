@@ -23,6 +23,11 @@ import {
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
+import {
+  displayWidth,
+  toDisplayCells,
+  WIDE_CHAR_PLACEHOLDER,
+} from './display-width.ts'
 import type { Message } from '../sequence/types.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
@@ -260,7 +265,8 @@ export function renderSequenceAscii(
     if (note.afterIndex !== -1) continue
     curY += rowGap // gap before note
     const nLines = splitLines(note.text)
-    const nWidth = Math.max(...nLines.map((l) => l.length)) + 2 + 2 * boxPad
+    const nWidth =
+      Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
     const nHeight = nLines.length + 2
 
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
@@ -336,7 +342,8 @@ export function renderSequenceAscii(
         curY += rowGap
         const note = diagram.notes[n]!
         const nLines = splitLines(note.text)
-        const nWidth = Math.max(...nLines.map((l) => l.length)) + 2 + 2 * boxPad
+        const nWidth =
+          Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
         const nHeight = nLines.length + 2
 
         // Determine x position based on note.position
@@ -411,6 +418,59 @@ export function renderSequenceAscii(
     write(canvas, x, y, ch, { role, roleCanvas: rc })
   }
 
+  /**
+   * Write a line of text starting at grid cell (x, y), one grid cell per
+   * terminal column rather than one grid cell per JS code point.
+   *
+   * A CJK/kana/hangul/fullwidth-form/emoji grapheme renders as TWO terminal
+   * columns but is a single JS character — writing it into a single grid
+   * cell (as a naive `for (let i = 0; i < line.length; i++)` loop does)
+   * under-reserves a column for every wide character, so unrelated content
+   * (box borders, adjacent lifelines) drawn later at a fixed grid index no
+   * longer lines up with what a real terminal actually renders for this
+   * row (issue #334). `toDisplayCells` (display-width.ts) splits `text`
+   * into one entry per terminal column — a wide grapheme followed by an
+   * empty placeholder entry — so writing one cell per entry keeps this
+   * row's grid indices in step with its rendered terminal columns, the
+   * same approach `drawText` (canvas.ts) already uses for flowchart/class/
+   * ER diagram boxes.
+   *
+   * `exclusiveMaxX`, when given, additionally skips any cell at or past
+   * that grid index — matching call sites that previously bounded their
+   * own manual write loop with `x < totalW` (a one-column margin short of
+   * `setC`'s own canvas-edge clipping). `setC` still clips to the actual
+   * canvas bounds regardless, so omitting it just falls back to that.
+   */
+  function writeTextCells(
+    x: number,
+    y: number,
+    text: string,
+    role: CharRole,
+    exclusiveMaxX?: number,
+  ): void {
+    const cells = toDisplayCells(text)
+    for (let i = 0; i < cells.length; i++) {
+      const cx = x + i
+      if (exclusiveMaxX !== undefined && cx >= exclusiveMaxX) break
+      // A wide grapheme's glyph cell is always immediately followed by its
+      // placeholder cell (toDisplayCells' pairing). Writing the glyph
+      // without room for that placeholder would leave its second terminal
+      // column unreserved even though the glyph still renders across two
+      // columns — reintroducing this file's own under-reservation bug
+      // right at the clip boundary instead of over the whole string. Stop
+      // one cell earlier instead of splitting the pair.
+      const isWideGlyphStart = cells[i + 1] === WIDE_CHAR_PLACEHOLDER
+      if (
+        isWideGlyphStart &&
+        exclusiveMaxX !== undefined &&
+        cx + 1 >= exclusiveMaxX
+      ) {
+        break
+      }
+      setC(cx, y, cells[i]!, role)
+    }
+  }
+
   // ---- DRAW: helper to place a bordered actor box (supports multi-line labels) ----
 
   /**
@@ -454,12 +514,15 @@ export function renderSequenceAscii(
       const row = topY + 1 + i
       setC(left, row, V, 'border')
       setC(left + w - 1, row, V, 'border')
-      // Center this line within the box
+      // Center this line within the box. Centering offset and cell-writing
+      // both use display width (terminal columns), not `.length` (JS
+      // code units) — a code-unit-based offset would under-center CJK
+      // labels, and writing one grid cell per code unit (rather than per
+      // terminal column) would under-reserve columns for wide glyphs,
+      // both contributing to issue #334's border/content misalignment.
       const line = lines[i]!
-      const ls = left + 1 + boxPad + Math.floor((maxW - line.length) / 2)
-      for (let j = 0; j < line.length; j++) {
-        setC(ls + j, row, line[j]!, 'text')
-      }
+      const ls = left + 1 + boxPad + Math.floor((maxW - displayWidth(line)) / 2)
+      writeTextCells(ls, row, line, 'text')
     }
 
     // Bottom border
@@ -552,10 +615,7 @@ export function renderSequenceAscii(
       for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
         const rowY = y0 + 1 + lineIdx
         setC(fromX + loopW, rowY, V, 'line')
-        const line = msgLines[lineIdx]!
-        for (let i = 0; i < line.length; i++) {
-          if (labelX + i < totalW) setC(labelX + i, rowY, line[i]!, 'text')
-        }
+        writeTextCells(labelX, rowY, msgLines[lineIdx]!, 'text', totalW)
       }
 
       // Bottom row: arrow-back + horizontal + bottom-right corner
@@ -585,12 +645,11 @@ export function renderSequenceAscii(
 
       for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
         const line = msgLines[lineIdx]!
-        const labelStart = midX - Math.floor(line.length / 2)
+        // Center on display width, not `.length` — see writeTextCells' doc
+        // comment for why a code-unit-based offset under-centers CJK labels.
+        const labelStart = midX - Math.floor(displayWidth(line) / 2)
         const y = labelY + lineIdx
-        for (let i = 0; i < line.length; i++) {
-          const lx = labelStart + i
-          if (lx >= 0 && lx < totalW) setC(lx, y, line[i]!, 'text')
-        }
+        writeTextCells(labelStart, y, line, 'text', totalW)
       }
 
       // Draw arrow line
@@ -724,10 +783,13 @@ export function renderSequenceAscii(
       lineIdx < hdrLines.length && topY + lineIdx < botY;
       lineIdx++
     ) {
-      const line = hdrLines[lineIdx]!
-      for (let i = 0; i < line.length && bLeft + 1 + i < bRight; i++) {
-        setC(bLeft + 1 + i, topY + lineIdx, line[i]!, 'text')
-      }
+      writeTextCells(
+        bLeft + 1,
+        topY + lineIdx,
+        hdrLines[lineIdx]!,
+        'text',
+        bRight,
+      )
     }
 
     // Bottom border
@@ -753,9 +815,7 @@ export function renderSequenceAscii(
       const dLabel = block.dividers[d]!.label
       if (dLabel) {
         const dStr = `[${dLabel}]`
-        for (let i = 0; i < dStr.length && bLeft + 1 + i < bRight; i++) {
-          setC(bLeft + 1 + i, dY, dStr[i]!, 'text')
-        }
+        writeTextCells(bLeft + 1, dY, dStr, 'text', bRight)
       }
     }
   }
@@ -775,9 +835,7 @@ export function renderSequenceAscii(
       const ly = np.y + 1 + l
       setC(np.x, ly, V, 'border')
       setC(np.x + np.width - 1, ly, V, 'border')
-      for (let i = 0; i < np.lines[l]!.length; i++) {
-        setC(np.x + 1 + boxPad + i, ly, np.lines[l]![i]!, 'text')
-      }
+      writeTextCells(np.x + 1 + boxPad, ly, np.lines[l]!, 'text')
     }
     // Bottom border
     const by = np.y + np.height - 1
