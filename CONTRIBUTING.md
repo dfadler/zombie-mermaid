@@ -39,7 +39,7 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
 - `pnpm run fork-fixes` — build `fork-fixes.html`; if you add or change a `render: 'ascii'` entry in `demo/fork-fixes-data.ts`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/` — those real-terminal screenshots are the before/after shown on that page, not a live render
 - `pnpm run lint` — ESLint
-- `pnpm run build` — build the publishable package with tsup
+- `pnpm run build` — build the publishable package with Vite (`scripts/build-lib.ts`)
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot
