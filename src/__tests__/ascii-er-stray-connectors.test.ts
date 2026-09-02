@@ -69,6 +69,53 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
     expect(nextLine).toBeDefined()
     expect(nextLine!.trimStart().startsWith('┌')).toBe(true)
   })
+
+  // The tests above only exercise the "one"/"zero-many" glyphs (`│`, `○╟`).
+  // Review on #351 (https://github.com/dfadler/zombie-mermaid/issues/351#issuecomment-5497209031)
+  // re-tested with a different cardinality combination — "zero-or-one"
+  // (`│○`/`○│`) — and found the horizontal/vertical split holds for that
+  // glyph too: flush is clean vertically, but fuses with the border
+  // horizontally. These two tests lock in that finding directly rather
+  // than leaving it as a PR-description claim with no regression coverage.
+
+  it('fuses the "zero-or-one" marker with the entity border on a horizontal connector too (known trade-off, #351 review comment)', () => {
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        C |o--|| D : owns`,
+      { colorMode: 'none' },
+    )
+    // Matches the reviewer's own quoted "branch" output exactly:
+    // "│ C ││○───││ D │" — the zero-or-one marker's leading "│" touches C's
+    // own border directly (no separating fill cell — the horizontal
+    // wall-fusion trade-off, not a bug in this PR's own tests), and the
+    // "one" marker's "│" touches D's border the same way.
+    expect(ascii).toContain('C ││○')
+    expect(ascii).toContain('││ D')
+  })
+
+  it('does not leave a stray fill row before a vertical "zero-or-one" marker', () => {
+    // Forces a vertical connection the same way as the test above (a
+    // second entity fills row 1, wrapping the third onto its own row), but
+    // with the reviewer's "zero-or-one" cardinality on the vertical
+    // relationship instead of "zero-many" — confirming flush placement
+    // stays clean on the vertical axis regardless of which marker glyph is
+    // involved, unlike the horizontal case immediately above.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : ab
+        A |o--|| C : owns`,
+      { colorMode: 'none' },
+    )
+    const lines = ascii.split('\n')
+    // A's own end of the A→C relationship ("│○") must sit on the row
+    // immediately after A's box bottom border — not with a leftover blank
+    // row still separating it from the border.
+    const aBoxBottomIdx = lines.findIndex((l) => l.includes('└───┘ ab'))
+    expect(aBoxBottomIdx).toBeGreaterThan(-1)
+    const markerLine = lines[aBoxBottomIdx + 1]
+    expect(markerLine).toBeDefined()
+    expect(markerLine).toContain('│○')
+  })
 })
 
 describe('ASCII ER — relationships routed without colliding (issue #351)', () => {
