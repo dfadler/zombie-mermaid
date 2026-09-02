@@ -153,6 +153,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # Used below only to scrub this exact value out of the composed
+          # body before it's posted — never passed to `claude`/any LLM call
+          # in this job. GitHub's own secret-masking covers step log output,
+          # not content written to a file and then posted via
+          # `gh issue edit --body-file` — a judge-job verdict that somehow
+          # echoed this token (e.g. a successful prompt-injection attempt
+          # via a sample's own content) would sail straight through that
+          # gap otherwise. See PR #408 for the full reasoning.
+          CLAUDE_TOKEN_TO_SCRUB: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -225,6 +234,19 @@ jobs:
             printf 'Checked at %s — [full run](%s)\n\n---\n\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$RUN_URL"
             cat "$FINDINGS_BODY"
           } > "$BODY_FILE"
+
+          # Last-resort scrub, not the primary defense (that's the judge
+          # prompt itself telling the agent never to read or repeat
+          # credential material — see scripts/form-judge-category-prompt.md)
+          # — this only catches the token appearing verbatim, not an
+          # obfuscated/re-encoded leak. Skipped if the secret isn't
+          # configured, so a fresh clone without it set still runs.
+          if [ -n "$CLAUDE_TOKEN_TO_SCRUB" ]; then
+            ESCAPED_TOKEN="$(printf '%s' "$CLAUDE_TOKEN_TO_SCRUB" | sed 's/[.[\*^$/]/\\&/g')"
+            SCRUBBED_FILE="$(mktemp)"
+            sed "s/${ESCAPED_TOKEN}/[redacted]/g" "$BODY_FILE" > "$SCRUBBED_FILE"
+            BODY_FILE="$SCRUBBED_FILE"
+          fi
 
           gh label create "form-judge-report" \
             --repo "$REPO" \
