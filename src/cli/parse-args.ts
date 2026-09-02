@@ -20,6 +20,14 @@ export interface RenderArgs {
   paddingY: number | undefined
   borderPadding: number | undefined
   coords: boolean
+  /**
+   * Target width (terminal columns) to check ASCII output against.
+   * `'auto'` resolves to the current terminal's column count at render time
+   * (falling back to a fixed default when not running in a TTY).
+   * A positive integer is used as-is. `undefined` (the default) means no
+   * width check is performed.
+   */
+  maxWidth: number | 'auto' | undefined
 }
 
 export interface SimpleCommand {
@@ -99,6 +107,32 @@ function parseNonNegativeIntFlag(
   return Number(raw)
 }
 
+/**
+ * Parse `-w`/`--max-width`'s value: either the literal `auto` or a positive
+ * integer (0 is rejected — a zero-width terminal can't fit anything, so it's
+ * almost certainly a mistake rather than an intentional value).
+ */
+function parseMaxWidthFlag(
+  args: string[],
+  i: number,
+  flag: string,
+): number | 'auto' {
+  const raw = args[i + 1]
+  if (i + 1 >= args.length || raw === undefined) {
+    throw new Error(`${flag} requires a value ("auto" or a positive integer)`)
+  }
+  if (raw === 'auto') {
+    return 'auto'
+  }
+  const value = Number(raw)
+  if (!/^\d+$/.test(raw) || value === 0 || !Number.isSafeInteger(value)) {
+    throw new Error(
+      `${flag} requires "auto" or a positive integer, got: "${raw}"`,
+    )
+  }
+  return value
+}
+
 function parseRender(args: string[]): RenderArgs {
   let input: string | undefined
   let ascii = false
@@ -109,6 +143,7 @@ function parseRender(args: string[]): RenderArgs {
   let paddingY: number | undefined
   let borderPadding: number | undefined
   let coords = false
+  let maxWidth: number | 'auto' | undefined
 
   let i = 0
   while (i < args.length) {
@@ -148,6 +183,9 @@ function parseRender(args: string[]): RenderArgs {
     } else if (arg === '--coords') {
       coords = true
       i++
+    } else if (arg === '-w' || arg === '--max-width') {
+      maxWidth = parseMaxWidthFlag(args, i, arg)
+      i += 2
     } else if (!arg.startsWith('-')) {
       // Positional argument = input file
       if (input !== undefined) {
@@ -171,6 +209,10 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('--svg requires -o <path>')
   }
 
+  if (maxWidth !== undefined && !ascii) {
+    throw new Error('-w/--max-width requires --ascii')
+  }
+
   return {
     command: 'render',
     input,
@@ -182,6 +224,7 @@ function parseRender(args: string[]): RenderArgs {
     paddingY,
     borderPadding,
     coords,
+    maxWidth,
   }
 }
 

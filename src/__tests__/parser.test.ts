@@ -375,6 +375,74 @@ describe('parseMermaid – circle/cross edges (issue #65)', () => {
     expect(g.edges[1]!.source).toBe('B')
     expect(g.edges[1]!.target).toBe('C')
   })
+
+  // --------------------------------------------------------------------
+  // Marker kind — distinct circle/cross terminator shape (issue #330).
+  // These record *which* marker was used so the ASCII renderer can draw a
+  // distinct glyph instead of treating --o/--x like a plain -->.
+  // --------------------------------------------------------------------
+
+  it('records endMarker: "circle" for --o, and no startMarker', () => {
+    const g = parseMermaid('graph LR\n  A --o B')
+    expect(g.edges[0]!.endMarker).toBe('circle')
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+  })
+
+  it('records endMarker: "cross" for --x, and no startMarker', () => {
+    const g = parseMermaid('graph LR\n  A --x B')
+    expect(g.edges[0]!.endMarker).toBe('cross')
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+  })
+
+  it('records both startMarker and endMarker as "circle" for o--o', () => {
+    const g = parseMermaid('graph LR\n  A o--o B')
+    expect(g.edges[0]!.startMarker).toBe('circle')
+    expect(g.edges[0]!.endMarker).toBe('circle')
+  })
+
+  it('records both startMarker and endMarker as "cross" for x--x', () => {
+    const g = parseMermaid('graph LR\n  A x--x B')
+    expect(g.edges[0]!.startMarker).toBe('cross')
+    expect(g.edges[0]!.endMarker).toBe('cross')
+  })
+
+  it('does not set a marker kind for a plain --> arrow', () => {
+    const g = parseMermaid('graph LR\n  A --> B')
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+    expect(g.edges[0]!.endMarker).toBeUndefined()
+  })
+
+  it('does not set a marker kind for a reversed <-- arrowhead (not a circle/cross)', () => {
+    const g = parseMermaid('graph LR\n  A <-- B')
+    expect(g.edges[0]!.hasArrowStart).toBe(true)
+    expect(g.edges[0]!.startMarker).toBeUndefined()
+  })
+
+  it('records endMarker: "circle" via the text-embedded label form (-- label --o), and hasArrowEnd', () => {
+    const g = parseMermaid('graph LR\n  A -- label --o B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.label).toBe('label')
+    expect(g.edges[0]!.endMarker).toBe('circle')
+    // A circle terminator is its own kind of arrow ending, like `>` — the
+    // ASCII renderer gates drawing any end glyph at all on hasArrowEnd, so
+    // this must be true or the circle glyph silently never renders.
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
+  })
+
+  it('records endMarker: "cross" via the text-embedded label form (-- label --x), and hasArrowEnd', () => {
+    const g = parseMermaid('graph LR\n  A -- label --x B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.label).toBe('label')
+    expect(g.edges[0]!.endMarker).toBe('cross')
+    expect(g.edges[0]!.hasArrowEnd).toBe(true)
+  })
+
+  it('leaves hasArrowEnd false for an unmarked text-embedded label edge (-- label ---)', () => {
+    const g = parseMermaid('graph LR\n  A -- label ---- B')
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.hasArrowEnd).toBe(false)
+    expect(g.edges[0]!.endMarker).toBeUndefined()
+  })
 })
 
 // ============================================================================
@@ -453,6 +521,95 @@ describe('parseMermaid – no-space arrows (issue #61)', () => {
       style: 'thick',
       hasArrowEnd: false,
     })
+  })
+})
+
+// ============================================================================
+// Non-ASCII bare node names (issue #328) — BARE_NODE_REGEX and the sibling
+// id-capturing regexes inside consumeNode() used plain `\w`, which stops at
+// the first non-ASCII character and silently strands the rest of the line
+// as unparsed text (no error, no second node, no edge). Fixed by adding
+// `\p{L}` (any Unicode letter) alongside `\w`, mirroring the state-diagram
+// transition regex that already did this.
+// ============================================================================
+
+describe('parseMermaid – non-ASCII bare node names (issue #328)', () => {
+  it('parses the exact issue repro: accented Latin bare node names', () => {
+    const g = parseMermaid('graph LR\n  Lasaña --> Máquina')
+    expect(g.nodes.size).toBe(2)
+    expect(g.nodes.get('Lasaña')).toMatchObject({
+      id: 'Lasaña',
+      label: 'Lasaña',
+    })
+    expect(g.nodes.get('Máquina')).toMatchObject({
+      id: 'Máquina',
+      label: 'Máquina',
+    })
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('Lasaña')
+    expect(g.edges[0]!.target).toBe('Máquina')
+  })
+
+  it('parses bare CJK node names', () => {
+    const g = parseMermaid('graph LR\n  日本 --> 中国')
+    expect(g.nodes.size).toBe(2)
+    expect(g.nodes.get('日本')).toBeDefined()
+    expect(g.nodes.get('中国')).toBeDefined()
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('日本')
+    expect(g.edges[0]!.target).toBe('中国')
+  })
+
+  it('parses a bare node name mixing ASCII and non-ASCII characters', () => {
+    const g = parseMermaid('graph LR\n  Node_日本 --> Other')
+    expect(g.nodes.get('Node_日本')).toBeDefined()
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('Node_日本')
+    expect(g.edges[0]!.target).toBe('Other')
+  })
+
+  it('still sandwiches hyphens correctly for a non-ASCII bare id butted against a no-space arrow (no #61 regression)', () => {
+    const g = parseMermaid('flowchart LR\n  café-crème-->Máquina')
+    expect(g.nodes.get('café-crème')).toBeDefined()
+    expect(g.nodes.get('Máquina')).toBeDefined()
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('café-crème')
+    expect(g.edges[0]!.target).toBe('Máquina')
+  })
+
+  it('parses a shape-bracketed node with a non-ASCII bare id (not just a non-ASCII label)', () => {
+    const g = parseMermaid('graph LR\n  Lasaña[Texto] --> B')
+    expect(g.nodes.get('Lasaña')).toMatchObject({
+      id: 'Lasaña',
+      label: 'Texto',
+    })
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]!.source).toBe('Lasaña')
+  })
+
+  it('applies ::: class shorthand to a non-ASCII bare id', () => {
+    const g = parseMermaid('graph TD\n  Lasaña:::important --> B')
+    expect(g.nodes.get('Lasaña')).toBeDefined()
+    expect(g.classAssignments.get('Lasaña')).toBe('important')
+  })
+
+  it('applies ::: class shorthand appearing before shape brackets on a non-ASCII id', () => {
+    const g = parseMermaid('graph TD\n  Lasaña:::external[External User] --> B')
+    expect(g.nodes.get('Lasaña')).toMatchObject({ label: 'External User' })
+    expect(g.classAssignments.get('Lasaña')).toBe('external')
+  })
+
+  it('already worked for a quoted non-ASCII label on an ASCII id (control, confirms no regression)', () => {
+    const g = parseMermaid('graph TD\n  A["Lasaña"] --> B["Máquina"]')
+    expect(g.nodes.get('A')).toMatchObject({ label: 'Lasaña' })
+    expect(g.nodes.get('B')).toMatchObject({ label: 'Máquina' })
+    expect(g.edges).toHaveLength(1)
+  })
+
+  it('supports an emoji label when shape-bracketed (bare emoji ids still require quoting/brackets, same as before this fix)', () => {
+    const g = parseMermaid('graph LR\n  A["🎉 Party"] --> B')
+    expect(g.nodes.get('A')).toMatchObject({ label: '🎉 Party' })
+    expect(g.edges).toHaveLength(1)
   })
 })
 

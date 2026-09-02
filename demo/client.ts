@@ -1,8 +1,9 @@
 // ============================================================================
 // zombie-mermaid demo — client-side rendering, theming, and navigation
 //
-// Bundled by index.ts with esbuild and inlined into the generated page, the
-// same way src/browser.ts already is. It previously lived as a ~680-line
+// Bundled by index.ts via Vite's build() API (scripts/vite-bundle.ts) and
+// inlined into the generated page, the same way src/browser.ts already is.
+// It previously lived as a ~680-line
 // template-literal string inside index.ts, which meant no type checking, no
 // linting, and no editor support for the largest piece of behavior on the
 // page.

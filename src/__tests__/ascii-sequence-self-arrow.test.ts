@@ -126,3 +126,81 @@ sequenceDiagram
     expect(labelLine!.trimEnd().endsWith('│')).toBe(true)
   })
 })
+
+// ============================================================================
+// Self-message autonumber badge (issue #342)
+//
+// `autonumber` consumed a sequence number for a self-message but never drew
+// the badge glyph on the loop — the counter still advanced correctly, but a
+// numbered self-message and an unnumbered one looked identical. Fixed by
+// widening the loop (see `selfLoopWidth` in sequence.ts) to make room for the
+// badge digits at the start of the top arm, without disturbing the corner
+// glyphs (├/┐ on top, ◀/┘ on bottom).
+// ============================================================================
+
+describe('ASCII sequence diagrams – self-message autonumber badge (issue #342)', () => {
+  it('draws the autonumber badge on a self-message loop', () => {
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+      autonumber
+      A->>A: Reflect`,
+      { useAscii: false },
+    )
+    const lines = result.split('\n')
+    // The badge digit "1" sits on the loop's top arm, between the left
+    // junction and the top-right corner. (Actor boxes also contain "┐", so
+    // match on the junction character "├" to find the loop row specifically.)
+    const topArmLine = lines.find((l) => l.includes('├'))
+    expect(topArmLine).toBeDefined()
+    expect(topArmLine).toMatch(/├1─+┐/)
+    // The loop's corner glyphs must stay intact — a corrupted badge
+    // placement would overwrite the corner instead of just the dashes.
+    expect(result).toContain('┐')
+    expect(result).toContain('┘')
+    expect(result).toContain('Reflect')
+  })
+
+  it('keeps numbering in sequence across self-messages mixed with normal messages', () => {
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+      participant A
+      participant B
+      autonumber
+      A->>B: First
+      A->>A: Self
+      A->>B: Third`,
+      { useAscii: false },
+    )
+    const lines = result.split('\n')
+
+    // First normal message numbered 1.
+    const firstArrowLine = lines.find((l) => l.includes('▶') && l.includes('1'))
+    expect(firstArrowLine).toBeDefined()
+
+    // Self-message numbered 2, badge drawn on its loop's top arm.
+    const selfTopArmLine = lines.find((l) => l.includes('├'))
+    expect(selfTopArmLine).toBeDefined()
+    expect(selfTopArmLine).toMatch(/├2─+┐/)
+
+    // Third message (also A->>B) numbered 3, appearing after the self
+    // message's rows.
+    const selfIdx = lines.indexOf(selfTopArmLine ?? '')
+    const thirdArrowLine = lines
+      .slice(selfIdx + 1)
+      .find((l) => l.includes('▶') && l.includes('3'))
+    expect(thirdArrowLine).toBeDefined()
+  })
+
+  it('renders a self-message without autonumber unchanged (no stray digits, no regression)', () => {
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+      A->>A: Reflect`,
+      { useAscii: false },
+    )
+    // No autonumber active — the loop must render exactly as before: plain
+    // corners with no digit inserted into the top arm.
+    expect(result).toContain('├───┐')
+    expect(result).toContain('◀───┘')
+    expect(result).toContain('Reflect')
+  })
+})

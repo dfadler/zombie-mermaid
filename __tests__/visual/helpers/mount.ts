@@ -122,6 +122,57 @@ export async function mountAsciiPanel(
   return panel
 }
 
+/**
+ * Mount a minimal `.sidebar` nav containing one open `.sidebar-group` and a
+ * `.sidebar-list` of links, matching the real markup
+ * index.ts#renderSidebar produces. Used by sidebar-focus.visual.test.ts to
+ * catch the shared focus-visible ring (demo/styles.css's `a:focus-visible`,
+ * zombie-mermaid#283/#316) regressing back to being clipped by
+ * `.sidebar-list li` (zombie-mermaid#325) — a purely visual pixel-clipping
+ * effect that no non-visual test can see.
+ */
+export async function mountSidebarList(titles: string[]): Promise<HTMLElement> {
+  ensureStylesInjected()
+  const nav = document.createElement('nav')
+  nav.className = 'sidebar'
+  // The real `.sidebar` sets height: calc(100vh - var(--nav-height)) so it
+  // fills the viewport as a sticky, independently-scrollable column — not
+  // relevant here and, left as-is, would screenshot a viewport-tall image
+  // that's almost entirely blank below the few mounted links, diluting a
+  // clipped-vs-unclipped ring down to a tiny fraction of the image (below
+  // toHaveScreenshot's maxDiffPixelRatio, so a real regression wouldn't
+  // even fail the test). Shrink-wrap it instead, the same way
+  // mountSvgPanel below overrides width for tighter framing; this leaves
+  // every selector this test actually cares about (.sidebar-list li's
+  // overflow, .sidebar-list's own overflow) untouched.
+  nav.style.height = 'auto'
+  const details = document.createElement('details')
+  details.className = 'sidebar-group'
+  details.open = true
+  const summary = document.createElement('summary')
+  summary.textContent = 'Flowchart'
+  const ol = document.createElement('ol')
+  ol.className = 'sidebar-list'
+  for (const [i, title] of titles.entries()) {
+    const li = document.createElement('li')
+    const a = document.createElement('a')
+    a.href = `#sample-${i}`
+    const num = document.createElement('span')
+    num.className = 'sidebar-num'
+    num.textContent = `${i + 1}.`
+    a.appendChild(num)
+    a.appendChild(document.createTextNode(` ${title}`))
+    li.appendChild(a)
+    ol.appendChild(li)
+  }
+  details.appendChild(summary)
+  details.appendChild(ol)
+  nav.appendChild(details)
+  document.body.appendChild(nav)
+  await waitForFonts()
+  return nav
+}
+
 /** Remove a mounted panel (and its `.output-panel` wrapper) so consecutive tests in the same tab don't stack up. */
 export function unmount(panel: HTMLElement): void {
   ;(panel.closest('.output-panel') ?? panel).remove()
