@@ -111,7 +111,8 @@ jobs:
         uses: anthropics/claude-code-base-action@e8132bc5e637a42c27763fc757faa37e1ee43b34 # v0.0.63
         with:
           prompt_file: ${{ steps.prep.outputs.prompt_path }}
-          claude_args: '--max-turns 150 --allowedTools "Read,Write"'
+          max_turns: '150'
+          allowed_tools: 'Read,Write'
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Upload category results
