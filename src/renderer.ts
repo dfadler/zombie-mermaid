@@ -23,6 +23,7 @@ import {
 } from './multiline-utils.ts'
 import { pointsToPath } from './edge-curves.ts'
 import type { CurveStyle } from './init-directive.ts'
+import { safeHref } from './click-directive.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -572,37 +573,6 @@ function renderNode(
   parts.push('</g>')
 
   return parts.join('\n')
-}
-
-/**
- * Accept only link schemes that cannot execute script.
- *
- * A `click` target comes from diagram text, which may be untrusted. An
- * `href` of `javascript:...` (or a `data:` URL containing markup) would turn
- * a rendered diagram into an XSS vector for any page that inlines the SVG, so
- * anything but http/https/mailto and same-document or relative references is
- * dropped rather than emitted.
- *
- * C0 controls are rejected outright, before any other check. The URL parser
- * strips tab and newline from *anywhere* in a URL, so `java\tscript:` reaches
- * a browser as `javascript:` — while the scheme match below sees `java\t…`,
- * finds no scheme, and waves it through as a relative reference. Splitting a
- * blocked scheme with a control character is the whole bypass; there is no
- * legitimate URL with a raw control in it, so the entire range goes.
- */
-function safeHref(href: string | undefined): string | undefined {
-  if (!href) return undefined
-
-  if (/[\x00-\x1F\x7F]/.test(href)) return undefined
-
-  const trimmed = href.trim()
-  // Relative, absolute-path, and fragment references carry no scheme.
-  if (/^[./#?]/.test(trimmed)) return trimmed
-
-  const scheme = trimmed.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/)?.[1]
-  if (scheme === undefined) return trimmed
-
-  return /^(https?|mailto)$/i.test(scheme) ? trimmed : undefined
 }
 
 function renderNodeShape(node: PositionedNode): string {

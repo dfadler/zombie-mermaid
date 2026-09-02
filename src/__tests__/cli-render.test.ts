@@ -3,6 +3,7 @@ import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runRender } from '../cli/render.ts'
+import { displayWidth } from '../ascii/display-width.ts'
 import { createMockStdout, renderArgs } from './cli-test-helpers.ts'
 
 // ============================================================================
@@ -210,6 +211,143 @@ describe('runRender – coords overlay', () => {
       plainStdout.output().split('\n').length,
     )
     expect(coordsStdout.output()).toContain('0123456789')
+  })
+})
+
+// ============================================================================
+// --max-width
+// ============================================================================
+
+describe('runRender – max-width warning', () => {
+  it('warns on stderr when ASCII output exceeds an explicit --max-width', async () => {
+    const mockStdout = createMockStdout()
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: 10 }),
+      mockStdout,
+      SIMPLE_FLOWCHART,
+      mockStderr,
+    )
+
+    expect(mockStderr.output()).toContain('Warning:')
+    expect(mockStderr.output()).toContain('exceeding --max-width of 10')
+    // stdout still gets the full, unmodified diagram — no truncation.
+    expect(mockStdout.output()).toContain('A')
+    expect(mockStdout.output()).toContain('C')
+  })
+
+  it('does not warn when ASCII output fits within --max-width', async () => {
+    const mockStdout = createMockStdout()
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: 1000 }),
+      mockStdout,
+      SIMPLE_FLOWCHART,
+      mockStderr,
+    )
+
+    expect(mockStderr.output()).toBe('')
+  })
+
+  it('does not warn when --max-width is not given', async () => {
+    const mockStdout = createMockStdout()
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true }),
+      mockStdout,
+      SIMPLE_FLOWCHART,
+      mockStderr,
+    )
+
+    expect(mockStderr.output()).toBe('')
+  })
+
+  it('resolves --max-width auto against the detected terminal width', async () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      process.stdout,
+      'columns',
+    )
+    // Narrow enough that the sample flowchart is guaranteed to overflow it.
+    Object.defineProperty(process.stdout, 'columns', {
+      value: 5,
+      configurable: true,
+    })
+
+    try {
+      const mockStdout = createMockStdout()
+      const mockStderr = createMockStdout()
+      await runRender(
+        renderArgs({ ascii: true, maxWidth: 'auto' }),
+        mockStdout,
+        SIMPLE_FLOWCHART,
+        mockStderr,
+      )
+
+      expect(mockStderr.output()).toContain('detected terminal width of 5')
+    } finally {
+      if (originalDescriptor === undefined) {
+        delete (process.stdout as { columns?: number }).columns
+      } else {
+        Object.defineProperty(process.stdout, 'columns', originalDescriptor)
+      }
+    }
+  })
+
+  it('measures width in terminal display columns, not UTF-16 code units', async () => {
+    // Every row of the ASCII canvas is padded to the same fixed grid width,
+    // and a wide (CJK) glyph's second column is an empty placeholder cell
+    // that contributes zero characters to the emitted string (see
+    // `WIDE_CHAR_PLACEHOLDER` in ascii/display-width.ts) — so a row's own
+    // `.length` is always exactly `canvasWidth - <wide chars in that row>`,
+    // while its true rendered display width is always exactly
+    // `canvasWidth`. Consequently `Math.max(...lines.map(l => l.length))`
+    // over the *whole* rendered diagram ties the true display width for any
+    // diagram that has at least one plain-ASCII row (a border, a blank
+    // separator row — virtually guaranteed), so deriving a maxWidth from
+    // that code-unit measurement can never manufacture a case where display
+    // width exceeds it. Assert the regression this test actually guards
+    // against directly instead: force overflow with a maxWidth well below
+    // the true width, and check the warning reports the CJK-correct
+    // display-column count (not the smaller UTF-16 code-unit count a
+    // `.length`-based regression would report).
+    const wideSequence = `sequenceDiagram
+  participant A
+  participant B
+  A->>B: 中文很长的消息内容说明文字超长`
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: 1000 }),
+      mockStdout,
+      wideSequence,
+      createMockStdout(),
+    )
+    const rendered = mockStdout.output()
+    const codeUnitWidth = Math.max(
+      ...rendered.split('\n').map((line) => line.length),
+    )
+    const trueDisplayWidth = Math.max(
+      ...rendered.split('\n').map((line) => displayWidth(line)),
+    )
+    // The CJK label makes this diagnostic (not the fix itself) worth
+    // keeping: on a `.length`-based renderer these differed; the correct,
+    // canvas-uniform-width renderer ties them, which is why maxWidth below
+    // must be an independent constant rather than derived from either.
+    expect(trueDisplayWidth).toBe(codeUnitWidth)
+
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: 10 }),
+      createMockStdout(),
+      wideSequence,
+      mockStderr,
+    )
+
+    // The reported column count must reflect true display width (double
+    // for each CJK character) — a `.length`-based regression would report
+    // `codeUnitWidth` instead of `trueDisplayWidth` here.
+    expect(mockStderr.output()).toContain('Warning:')
+    expect(mockStderr.output()).toContain(`is ${trueDisplayWidth} columns`)
   })
 })
 

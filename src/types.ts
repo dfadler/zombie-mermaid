@@ -3,6 +3,7 @@
 // ============================================================================
 
 import type { InitConfig, CurveStyle } from './init-directive.ts'
+import type { LayoutCache } from './elk-instance.ts'
 
 export interface MermaidGraph {
   direction: Direction
@@ -90,6 +91,17 @@ export interface MermaidEdge {
   hasArrowStart: boolean
   /** Whether to render an arrowhead at the end (target end) of the edge */
   hasArrowEnd: boolean
+  /**
+   * Terminator shape at the source end when it's a circle/cross marker
+   * (`o--`/`x--`) rather than a plain arrowhead. Undefined for a regular
+   * `<`-style arrowhead or no marker at all — `hasArrowStart` alone still
+   * governs whether anything is drawn there. Currently consumed by the
+   * ASCII renderer only (see issue #330); the SVG renderer still draws a
+   * plain arrowhead for these.
+   */
+  startMarker?: 'circle' | 'cross'
+  /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
+  endMarker?: 'circle' | 'cross'
   /** Edge id from `A e1@--> B` (Mermaid v11.10.0+), for `e1@{ ... }` and CSS targeting */
   id?: string
   /** Set by `e1@{ animate: true }` — renders as a marching-ants dash */
@@ -350,4 +362,20 @@ export interface RenderOptions {
     /** Gap between consecutively stacked notes. Default: 4 */
     noteStackGap?: number
   }
+
+  /**
+   * Opt-in ELK layout cache (see `createLayoutCache()`). When set,
+   * `layoutGraphSync()` / `layoutClassDiagramSync()` / `layoutErDiagramSync()`
+   * (flowchart/state, class, and ER diagrams — the ELK-based layout
+   * engines) skip re-running ELK layout on a cache hit, keyed on a
+   * deterministic serialization of the fully-resolved ELK input graph
+   * (diagram structure + every layout-affecting option already baked in).
+   *
+   * Unset (the default) preserves the original always-recompute behavior
+   * exactly — this cache is entirely opt-in. Create one instance and
+   * reuse it across renders (e.g. module scope, or a `useRef` in React);
+   * passing a freshly-created cache on every call defeats the point,
+   * since it starts empty each time.
+   */
+  layoutCache?: LayoutCache
 }

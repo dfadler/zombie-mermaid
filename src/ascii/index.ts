@@ -38,6 +38,11 @@ import {
   diagramColorsToAsciiTheme,
 } from './ansi.ts'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
+import {
+  DEFAULT_PADDING_X,
+  DEFAULT_PADDING_Y,
+  DEFAULT_BOX_BORDER_PADDING,
+} from './types.ts'
 
 // Re-export types for external use
 export type { AsciiTheme, ColorMode }
@@ -104,9 +109,9 @@ export function renderMermaidASCII(
 ): string {
   const config: AsciiConfig = {
     useAscii: options.useAscii ?? false,
-    paddingX: options.paddingX ?? 5,
-    paddingY: options.paddingY ?? 5,
-    boxBorderPadding: options.boxBorderPadding ?? 1,
+    paddingX: options.paddingX ?? DEFAULT_PADDING_X,
+    paddingY: options.paddingY ?? DEFAULT_PADDING_Y,
+    boxBorderPadding: options.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING,
     graphDirection: 'TD', // default, overridden for flowcharts below
   }
 

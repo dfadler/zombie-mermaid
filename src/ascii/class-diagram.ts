@@ -26,6 +26,7 @@ import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
+import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 /** Build the text sections for a class box: [header], [attributes], [methods] */
 function buildClassSections(cls: ClassNode): string[][] {
@@ -156,8 +157,10 @@ export function renderClassAscii(
   if (diagram.classes.length === 0) return ''
 
   const useAscii = config.useAscii
-  const hGap = 4 // horizontal gap between class boxes
-  const vGap = 3 // vertical gap between levels (enough for relationship lines)
+  // See paddingOffset's doc comment (types.ts) for why these are an offset
+  // from the padding defaults rather than the raw config values.
+  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 4, 1) // horizontal gap between class boxes
+  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 3, 1) // vertical gap between levels (enough for relationship lines)
 
   // --- Build box dimensions for each class ---
   const classSections = new Map<string, string[][]>()
@@ -171,7 +174,10 @@ export function renderClassAscii(
     // Reserve exactly what drawMultiBox will draw — measuring it here rather
     // than re-deriving the arithmetic keeps layout and drawing in lockstep for
     // wide-character (CJK/fullwidth) content.
-    const { width: boxW, height: boxH } = measureMultiBox(sections)
+    const { width: boxW, height: boxH } = measureMultiBox(
+      sections,
+      config.boxBorderPadding,
+    )
 
     classBoxW.set(cls.id, boxW)
     classBoxH.set(cls.id, boxH)
@@ -307,7 +313,11 @@ export function renderClassAscii(
 
   // --- Draw class boxes ---
   for (const p of placed.values()) {
-    const boxCanvas = drawMultiBox(p.sections, useAscii)
+    const boxCanvas = drawMultiBox(
+      p.sections,
+      useAscii,
+      config.boxBorderPadding,
+    )
     // Copy box onto main canvas at (p.x, p.y) with role tracking
     for (let bx = 0; bx < boxCanvas.length; bx++) {
       for (let by = 0; by < boxCanvas[0]!.length; by++) {

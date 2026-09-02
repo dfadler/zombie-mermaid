@@ -1,0 +1,89 @@
+# Advisory-only nudge for #295: fork-fixes.ts's evidentiary strength (real
+# before/after renders from actual commits, see fork-fixes.ts's own header
+# comment and #189) depends on the showcase staying current, not being a
+# one-time backfill. This workflow reminds contributors when a `bug`-labeled
+# PR doesn't touch demo/fork-fixes-data.ts. It is a nudge, not a merge gate —
+# it never fails the build, matching #295's explicit ask for "a nudge rather
+# than a hard gate" and the precedent already set by upstream-check.yml
+# (advisory-only, silent when there's nothing to say).
+#
+# Uses `pull_request_target` rather than `pull_request` so the reminder still
+# reaches PRs from forks — this repo explicitly welcomes outside
+# contributions (see CONTRIBUTING.md), and a habit-forming nudge is most
+# useful for someone who has never seen this repo's CLAUDE.md conventions.
+# `pull_request_target` runs the workflow *file* from the base branch (a PR
+# can't rewrite its own checks) and gets a token that can comment even on
+# fork PRs. The usual danger with `pull_request_target` is combining it with
+# a checkout+build of PR-controlled code under that elevated token; this
+# workflow does neither — there is no checkout step, and the only
+# PR-controlled values it touches are the PR number and label list from the
+# trusted event payload (never PR title/body/diff content interpolated into
+# a shell command).
+name: Fork-fixes reminder
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+    branches: [main]
+
+permissions:
+  # `gh pr diff` reads PR metadata (pull-requests). PR comments are served
+  # off the Issues API under the hood (`gh pr comment` / `gh api
+  # .../issues/.../comments` both hit `/issues/{number}/comments`), so
+  # posting the nudge needs `issues: write` too.
+  pull-requests: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Serialize runs per PR: `synchronize` and `labeled` can fire close
+    # together, and without this both runs can pass the marker check
+    # (no comment posted yet) before either one posts, producing a
+    # duplicate advisory comment. cancel-in-progress: false so a run that's
+    # already checking/posting finishes rather than being killed mid-comment.
+    concurrency:
+      group: fork-fixes-nudge-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    # Same fork-of-this-fork guard used elsewhere (see ci.yml's `test` job)
+    # plus the actual scope of this nudge: only PRs labeled `bug`.
+    if: |
+      github.repository == 'dfadler/zombie-mermaid' &&
+      contains(github.event.pull_request.labels.*.name, 'bug')
+    steps:
+      - name: Check for a fork-fixes-data.ts change and nudge if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          MARKER="<!-- fork-fixes-nudge -->"
+
+          if gh pr diff "$PR_NUMBER" -R "$REPO" --name-only \
+              | grep -qx 'demo/fork-fixes-data.ts'; then
+            echo "PR already touches demo/fork-fixes-data.ts — nothing to nudge."
+            exit 0
+          fi
+
+          # Idempotent: don't repost the same reminder on every push to the PR.
+          existing="$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"$MARKER\"))][0].id // empty")"
+          if [ -n "$existing" ]; then
+            echo "Nudge comment already posted (id $existing) — skipping."
+            exit 0
+          fi
+
+          body_file="$(mktemp)"
+          {
+            echo "$MARKER"
+            echo "This PR is labeled \`bug\` but doesn't touch \`demo/fork-fixes-data.ts\`."
+            echo
+            echo "If this fix changes rendered output (SVG or ASCII), consider adding a before/after entry to the [fork-fixes showcase](https://github.com/$REPO/blob/main/demo/fork-fixes-data.ts) — see CONTRIBUTING.md's \"Adding a fork-fixes entry\" section. If it doesn't apply here (no visible rendering change, internal-only fix, etc.), feel free to ignore this."
+            echo
+            echo "_Advisory nudge, not a merge gate — [#295](https://github.com/$REPO/issues/295)._"
+          } > "$body_file"
+
+          gh pr comment "$PR_NUMBER" -R "$REPO" --body-file "$body_file"

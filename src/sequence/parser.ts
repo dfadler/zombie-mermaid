@@ -68,6 +68,20 @@ export function toBlockType(value: string): Block['type'] {
 //   Note over A,B: Text
 // ============================================================================
 
+// Message-line arrow regexes, shared by the two-pass match in the "Message"
+// branch of the parsing loop below (see the comment there for why there are
+// two, and issue #341 for the mis-split bug this two-pass approach fixes).
+// `MESSAGE_LONG_ARROW_RE` only recognizes the "long" arrow forms — anything
+// ending in `>` (`->`, `-->`, `->>`, `-->>`) plus the bidirectional tokens
+// (`<<->>`, `<<-->>`) — which essentially never occur by accident inside an
+// unquoted actor name. `MESSAGE_ANY_ARROW_RE` is the original, full
+// alternation (also matching the short open/cross forms `-)`, `--)`, `-x`,
+// `--x`), used as a fallback when a line has no long arrow at all.
+const MESSAGE_LONG_ARROW_RE =
+  /^(.+?)\s*(<<->>|<<-->>|--?>?>)\s*([+-]?)(.+?)\s*:\s*(.+)$/
+const MESSAGE_ANY_ARROW_RE =
+  /^(.+?)\s*(<<->>|<<-->>|--?>?>|--?[)x]|--?>>|--?>)\s*([+-]?)(.+?)\s*:\s*(.+)$/
+
 /**
  * Parse a Mermaid sequence diagram.
  * Expects the first line to be "sequenceDiagram".
@@ -235,9 +249,26 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     // Because the quantifier is lazy and anchored by the arrow/colon tokens
     // that follow, this still resolves to the same minimal split as before
     // for plain single-word names.
-    const msgMatch = line.match(
-      /^(.+?)\s*(<<->>|<<-->>|--?>?>|--?[)x]|--?>>|--?>)\s*([+-]?)(.+?)\s*:\s*(.+)$/,
-    )
+    //
+    // Two-pass match (issue #341): the lazy FROM capture stops as soon as
+    // *any* position looks like a valid arrow+TO+`:`+LABEL tail, which is a
+    // false positive when an unquoted actor name happens to contain a short
+    // open/cross arrow substring (`-)`, `--)`, `-x`, `--x` — matched by the
+    // `--?[)x]` alternative) ahead of the *real* arrow later in the line —
+    // e.g. `foo-x-bar->>baz: hi` mis-split at the embedded `-x` instead of
+    // the real `->>`. Those two-char forms are rare and highly ambiguous
+    // inside a bare identifier, whereas the "long" forms (anything ending
+    // in `>`, plus the bidirectional tokens) essentially never occur by
+    // accident, since they require a literal `>` character in an unquoted
+    // name. So: try the long forms only first, and only fall back to the
+    // full alternation (including the short forms) if the line has no long
+    // arrow at all — which is what keeps a genuinely short-arrow message
+    // like `A-)B: msg` working. This doesn't attempt to disambiguate every
+    // theoretically possible collision (e.g. a literal `->` substring
+    // embedded before a real `->>`) — see the issue's own "Scope" section,
+    // which limits the fix to the `-x`/`-)`/`--x`/`--)` substrings.
+    const msgMatch =
+      line.match(MESSAGE_LONG_ARROW_RE) ?? line.match(MESSAGE_ANY_ARROW_RE)
     if (msgMatch) {
       pushMessage(
         diagram,
@@ -303,6 +334,12 @@ function pushMessage(
   // filled). Both bidirectional tokens end in ">>", so they fall out as filled.
   const arrowHead =
     arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
+  // "x"/"--x" is Mermaid's "lost message" terminator — a cross, not a plain
+  // filled arrowhead. `arrow.includes('x')` is unambiguous here: the only
+  // arrow tokens containing "x" are "-x"/"--x" (see the message regex's
+  // `--?[)x]` alternative above), never "->>"/"-->>" or the bidirectional
+  // forms.
+  const isLost = arrow.includes('x')
 
   const msg: Message = {
     from,
@@ -311,6 +348,7 @@ function pushMessage(
     lineStyle,
     arrowHead,
   }
+  if (isLost) msg.isLost = true
   if (bidirectional) msg.bidirectional = true
   if (activationMark === '+') msg.activate = true
   if (activationMark === '-') msg.deactivate = true
