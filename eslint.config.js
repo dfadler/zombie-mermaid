@@ -28,6 +28,11 @@ export default tseslint.config(
       'samples-data.ts',
       'xychart-samples-data.ts',
       'tsup.config.ts',
+      // Workflow-tool scripts (Claude Code's Workflow orchestration DSL, not
+      // a plain ES module): the harness wraps the script body in an async
+      // function, so top-level `await`/`return` is valid there but not under
+      // standard module parsing — ESLint has no way to know that context.
+      'scripts/*.workflow.mjs',
     ],
   },
   {

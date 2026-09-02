@@ -3,6 +3,7 @@ import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runRender } from '../cli/render.ts'
+import { displayWidth } from '../ascii/display-width.ts'
 import { createMockStdout, renderArgs } from './cli-test-helpers.ts'
 
 // ============================================================================
@@ -293,12 +294,22 @@ describe('runRender – max-width warning', () => {
   })
 
   it('measures width in terminal display columns, not UTF-16 code units', async () => {
-    // A sequence-diagram message label floats over the canvas without a
-    // box border of matching width padding it out, so — unlike a flowchart
-    // node, where the box border always reaches the label's true display
-    // width — this is a case where String.length genuinely undercounts:
-    // each CJK character is 1 UTF-16 code unit but renders 2 terminal
-    // columns wide.
+    // Every row of the ASCII canvas is padded to the same fixed grid width,
+    // and a wide (CJK) glyph's second column is an empty placeholder cell
+    // that contributes zero characters to the emitted string (see
+    // `WIDE_CHAR_PLACEHOLDER` in ascii/display-width.ts) — so a row's own
+    // `.length` is always exactly `canvasWidth - <wide chars in that row>`,
+    // while its true rendered display width is always exactly
+    // `canvasWidth`. Consequently `Math.max(...lines.map(l => l.length))`
+    // over the *whole* rendered diagram ties the true display width for any
+    // diagram that has at least one plain-ASCII row (a border, a blank
+    // separator row — virtually guaranteed), so deriving a maxWidth from
+    // that code-unit measurement can never manufacture a case where display
+    // width exceeds it. Assert the regression this test actually guards
+    // against directly instead: force overflow with a maxWidth well below
+    // the true width, and check the warning reports the CJK-correct
+    // display-column count (not the smaller UTF-16 code-unit count a
+    // `.length`-based regression would report).
     const wideSequence = `sequenceDiagram
   participant A
   participant B
@@ -315,19 +326,28 @@ describe('runRender – max-width warning', () => {
     const codeUnitWidth = Math.max(
       ...rendered.split('\n').map((line) => line.length),
     )
+    const trueDisplayWidth = Math.max(
+      ...rendered.split('\n').map((line) => displayWidth(line)),
+    )
+    // The CJK label makes this diagnostic (not the fix itself) worth
+    // keeping: on a `.length`-based renderer these differed; the correct,
+    // canvas-uniform-width renderer ties them, which is why maxWidth below
+    // must be an independent constant rather than derived from either.
+    expect(trueDisplayWidth).toBe(codeUnitWidth)
 
     const mockStderr = createMockStdout()
     await runRender(
-      renderArgs({ ascii: true, maxWidth: codeUnitWidth }),
+      renderArgs({ ascii: true, maxWidth: 10 }),
       createMockStdout(),
       wideSequence,
       mockStderr,
     )
 
-    // The true display width exceeds the code-unit count, so measuring by
-    // display width must still warn even though code-unit length alone
-    // would report the diagram as fitting.
+    // The reported column count must reflect true display width (double
+    // for each CJK character) — a `.length`-based regression would report
+    // `codeUnitWidth` instead of `trueDisplayWidth` here.
     expect(mockStderr.output()).toContain('Warning:')
+    expect(mockStderr.output()).toContain(`is ${trueDisplayWidth} columns`)
   })
 })
 

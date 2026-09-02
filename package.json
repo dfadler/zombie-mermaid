@@ -106,7 +106,7 @@
     "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
     "form-diff": "tsx scripts/form-diff.ts",
-    "build": "tsup",
+    "build": "tsx scripts/build-lib.ts",
     "build:site": "rm -rf site && tsx index.ts && tsx editor.ts && tsx fork-fixes.ts && tsx pages.ts && tsx dashboard.ts && mkdir -p site && mv index.html editor.html fork-fixes.html sitemap.xml dashboard.html site/ && mv diagrams site/diagrams && cp -r public/* site/",
     "xychart-test": "tsx xychart-test.ts",
     "lint": "eslint .",
@@ -127,6 +127,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.1",
+    "@microsoft/api-extractor": "^7.59.0",
     "@playwright/test": "1.62.1",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^22.0.0",
@@ -138,10 +139,10 @@
     "mermaid": "11.17.2",
     "prettier": "^3.9.6",
     "shiki": "^3.19.0",
-    "tsup": "^8.5.1",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.68.0",
+    "unplugin-dts": "^1.0.3",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }
