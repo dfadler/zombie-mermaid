@@ -199,7 +199,8 @@ export function renderSequenceAscii(
       minLX = Math.min(minLX, llX[Math.min(f, t)]!)
       maxLX = Math.max(maxLX, llX[Math.max(f, t)]!)
       if (f === t) {
-        const selfRight = llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+        const selfRight =
+          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
         maxLX = Math.max(maxLX, selfRight)
       }
     }
