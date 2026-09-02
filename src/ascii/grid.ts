@@ -18,7 +18,11 @@ import type {
 } from './types.ts'
 import { gridKey, requireGridCoord } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
-import { determinePath, determineLabelLine } from './edge-routing.ts'
+import {
+  determinePath,
+  determineLabelLine,
+  assignParallelEdgeLanes,
+} from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
 import {
@@ -1075,6 +1079,13 @@ export function createMapping(graph: AsciiGraph): void {
   // each call is independently allowed to spend up to its own cap. See
   // pathfinder.ts's PathBudget for details.
   graph.pathBudget = createPathBudget()
+
+  // Tag true parallel/multi-edges (same source AND target, e.g. two
+  // separately-labeled A-->B edges) with a lane index before bundling
+  // analysis runs, so determinePath below can route sibling edges past the
+  // first through distinct offset lanes instead of all computing the
+  // identical center path (see #329).
+  assignParallelEdgeLanes(graph)
 
   // Analyze edges for bundling (parallel links like A & B --> C)
   // This groups edges that share sources or targets for cleaner visualization

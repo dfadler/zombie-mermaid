@@ -127,14 +127,38 @@ function isFullwidth(code: number): boolean {
  * Regex for emoji detection using Unicode property escapes.
  * Uses Emoji_Presentation and Extended_Pictographic (not just Emoji)
  * because \p{Emoji} includes digits and # which we don't want as fullwidth.
+ *
+ * \p{Extended_Pictographic} on its own is broader than "renders wide" — it
+ * flags characters that are merely emoji-*capable* (could take a VS16
+ * selector to become emoji), not characters that actually render wide by
+ * default. Most such characters (e.g. ❤ U+2764) are still conventionally
+ * treated as wide, so the OR is kept — except for the Geometric Shapes
+ * block (U+25A0–U+25FF, see `isGeometricShapesTextDefault` below), which
+ * this renderer itself uses for narrow box-drawing/arrowhead glyphs like
+ * ▶ U+25B6 and ◀ U+25C0 (see src/ascii/sequence.ts); those render as a
+ * single narrow column in every real terminal despite being flagged
+ * Extended_Pictographic.
  */
-const EMOJI_REGEX = /\p{Emoji_Presentation}|\p{Extended_Pictographic}/u
+const EMOJI_PRESENTATION_REGEX = /\p{Emoji_Presentation}/u
+const EXTENDED_PICTOGRAPHIC_REGEX = /\p{Extended_Pictographic}/u
+
+/**
+ * Geometric Shapes block (U+25A0–U+25FF). Characters here that also carry
+ * Emoji_Presentation (e.g. ◽ ◾) are unaffected by this — they're already
+ * caught by the Emoji_Presentation check in `isEmoji` before this applies.
+ */
+function isGeometricShapesTextDefault(code: number): boolean {
+  return code >= 0x25a0 && code <= 0x25ff
+}
 
 /**
  * Check if a character is an emoji (fullwidth)
  */
 function isEmoji(char: string): boolean {
-  return EMOJI_REGEX.test(char)
+  if (EMOJI_PRESENTATION_REGEX.test(char)) return true
+  const code = char.codePointAt(0)
+  if (code !== undefined && isGeometricShapesTextDefault(code)) return false
+  return EXTENDED_PICTOGRAPHIC_REGEX.test(char)
 }
 
 /**

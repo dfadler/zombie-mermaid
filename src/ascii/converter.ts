@@ -120,6 +120,10 @@ export function convertToAsciiGraph(
       style: mEdge.style,
       hasArrowStart: mEdge.hasArrowStart,
       hasArrowEnd: mEdge.hasArrowEnd,
+      ...(mEdge.startMarker !== undefined
+        ? { startMarker: mEdge.startMarker }
+        : {}),
+      ...(mEdge.endMarker !== undefined ? { endMarker: mEdge.endMarker } : {}),
     })
   }
 

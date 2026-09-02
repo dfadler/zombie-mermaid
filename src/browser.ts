@@ -4,7 +4,8 @@
 // Exposes renderMermaid and renderMermaidASCII on window.__mermaid so they
 // can be called from inline <script> tags in samples.html.
 //
-// Bundled via esbuild's `build({ platform: 'browser' })` in index.ts.
+// Bundled for the browser via Vite's build() API (scripts/vite-bundle.ts),
+// from both index.ts and editor.ts.
 // ============================================================================
 
 import { renderMermaidSVGAsync } from './index.ts'

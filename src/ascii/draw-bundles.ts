@@ -28,6 +28,7 @@ import { gridToDrawingCoord } from './grid.ts'
 import { getShapeAttachmentPoint } from './shapes/index.ts'
 import type { ShapeDimensions } from './shapes/index.ts'
 import { drawLine } from './draw-lines.ts'
+import { markerArrowChar } from './draw-arrows.ts'
 
 // ============================================================================
 // Node attachment point helper
@@ -316,9 +317,22 @@ export function drawBundleArrowhead(
   if (graphDir === 'TD') dc.y -= 1
   else dc.x -= 1
 
-  // Draw arrowhead
+  // Draw arrowhead. A fan-in bundle merges several edges into one shared
+  // trunk/junction, so there's only one arrowhead to draw for all of them —
+  // it only gets a circle/cross glyph when every bundled edge agrees on the
+  // same marker; a mix (e.g. one `-->`, one `--o`) falls back to the plain
+  // directional arrowhead rather than guessing which edge's marker "wins".
+  // See issue #330.
+  const firstMarker = bundle.edges[0]?.endMarker
+  const sharedMarker = bundle.edges.every((e) => e.endMarker === firstMarker)
+    ? firstMarker
+    : undefined
+  const markerChar = markerArrowChar(graph.config.useAscii, sharedMarker)
+
   let char: string
-  if (!graph.config.useAscii) {
+  if (markerChar !== undefined) {
+    char = markerChar
+  } else if (!graph.config.useAscii) {
     if (dirEquals(dir, Up)) char = '▲'
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'
@@ -360,6 +374,115 @@ export function drawBundledEdgeArrowhead(
   // Offset 1 char away from the box border so arrowhead sits outside the box
   if (graphDir === 'TD') dc.y -= 1
   else dc.x -= 1
+
+  // Draw arrowhead — this is a single edge (unlike the fan-in case above),
+  // so its own endMarker unambiguously picks the glyph. See issue #330.
+  const markerChar = markerArrowChar(graph.config.useAscii, edge.endMarker)
+
+  let char: string
+  if (markerChar !== undefined) {
+    char = markerChar
+  } else if (!graph.config.useAscii) {
+    if (dirEquals(dir, Up)) char = '▲'
+    else if (dirEquals(dir, Down)) char = '▼'
+    else if (dirEquals(dir, Left)) char = '◄'
+    else if (dirEquals(dir, Right)) char = '►'
+    else char = '▼' // default
+  } else {
+    if (dirEquals(dir, Up)) char = '^'
+    else if (dirEquals(dir, Down)) char = 'v'
+    else if (dirEquals(dir, Left)) char = '<'
+    else if (dirEquals(dir, Right)) char = '>'
+    else char = 'v' // default
+  }
+
+  write(canvas, dc.x, dc.y, char)
+  return canvas
+}
+
+/** Reverse a cardinal direction (start arrowheads point back at the node they exit). */
+function reverseDirection(dir: Direction): Direction {
+  if (dirEquals(dir, Up)) return Down
+  if (dirEquals(dir, Down)) return Up
+  if (dirEquals(dir, Left)) return Right
+  if (dirEquals(dir, Right)) return Left
+  return dir
+}
+
+/**
+ * Draw the start-side arrowhead for a fan-out bundle (single arrowhead at
+ * the shared source, mirroring drawBundleArrowhead's shared-target end).
+ */
+export function drawBundleArrowheadStart(
+  graph: AsciiGraph,
+  bundle: EdgeBundle,
+): Canvas {
+  const canvas = copyCanvas(graph.canvas)
+
+  if (bundle.sharedPath.length < 2) return canvas
+
+  // Get the first segment direction (source -> next point) and reverse it:
+  // the start arrowhead points back into the source, opposite the trunk's
+  // direction of travel.
+  const first = bundle.sharedPath[0]!
+  const second = bundle.sharedPath[1]!
+  const dir = reverseDirection(determineDirection(first, second))
+
+  // Get drawing coord 1 char outside the source node's border (not on the
+  // border itself), on the side the trunk exits from.
+  const graphDir = graph.config.graphDirection
+  const exitDir = graphDir === 'TD' ? Down : Right
+  const dc = getNodeAttachmentPoint(graph, bundle.sharedNode, exitDir)
+  // Offset 1 char away from the box border so arrowhead sits outside the box
+  if (graphDir === 'TD') dc.y += 1
+  else dc.x += 1
+
+  // Draw arrowhead
+  let char: string
+  if (!graph.config.useAscii) {
+    if (dirEquals(dir, Up)) char = '▲'
+    else if (dirEquals(dir, Down)) char = '▼'
+    else if (dirEquals(dir, Left)) char = '◄'
+    else if (dirEquals(dir, Right)) char = '►'
+    else char = '▲' // default
+  } else {
+    if (dirEquals(dir, Up)) char = '^'
+    else if (dirEquals(dir, Down)) char = 'v'
+    else if (dirEquals(dir, Left)) char = '<'
+    else if (dirEquals(dir, Right)) char = '>'
+    else char = '^' // default
+  }
+
+  write(canvas, dc.x, dc.y, char)
+  return canvas
+}
+
+/**
+ * Draw the start-side arrowhead for a single edge in a fan-in bundle
+ * (mirroring drawBundledEdgeArrowhead's per-edge target end).
+ */
+export function drawBundledEdgeArrowheadStart(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): Canvas {
+  const canvas = copyCanvas(graph.canvas)
+
+  if (!edge.pathToJunction || edge.pathToJunction.length < 2) return canvas
+
+  // Get the first segment direction and reverse it: the start arrowhead
+  // points back into the edge's own source, opposite its direction of travel.
+  const first = edge.pathToJunction[0]!
+  const second = edge.pathToJunction[1]!
+  const dir = reverseDirection(determineDirection(first, second))
+
+  // Get drawing coord 1 char outside the source node's border, on the side
+  // this edge actually exits from.
+  const dc = getNodeAttachmentPoint(graph, edge.from, edge.startDir)
+  // Offset 1 char away from the box border so arrowhead sits outside the box
+  if (dirEquals(edge.startDir, Up)) dc.y -= 1
+  else if (dirEquals(edge.startDir, Down)) dc.y += 1
+  else if (dirEquals(edge.startDir, Left)) dc.x -= 1
+  else if (dirEquals(edge.startDir, Right)) dc.x += 1
 
   // Draw arrowhead
   let char: string

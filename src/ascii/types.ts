@@ -172,6 +172,14 @@ export interface AsciiEdge {
   hasArrowStart: boolean
   /** Whether to render an arrowhead at the end (target end) of the edge */
   hasArrowEnd: boolean
+  /**
+   * Terminator shape at the source end when it's a circle/cross marker
+   * (`o--`/`x--`) rather than a plain arrowhead. Undefined draws the
+   * regular arrowhead glyph (per `hasArrowStart`). See issue #330.
+   */
+  startMarker?: 'circle' | 'cross'
+  /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
+  endMarker?: 'circle' | 'cross'
   /** Bundle this edge belongs to (if any). Set during bundling analysis. */
   bundle?: EdgeBundle
   /**
@@ -180,6 +188,30 @@ export interface AsciiEdge {
    * or bundle.sharedPath + pathToJunction (for fan-out).
    */
   pathToJunction?: GridCoord[]
+  /**
+   * Set when this edge shares both its source AND target with one or more
+   * sibling edges (true parallel/multi-edges, e.g. `A -->|One| B` and
+   * `A -->|Two| B`) — as opposed to edges that merely share one endpoint,
+   * which `bundle` above already handles via fan-in/fan-out junctions.
+   *
+   * `index` is this edge's 0-based position within the group (declaration
+   * order); `total` is the group's size. `index === 0` keeps the ordinary
+   * single-edge route (determinePath's ordinary preferred/alternative
+   * search), so a graph with no parallel edges renders identically to
+   * before this field existed. `index > 0` routes through an offset lane
+   * instead — see determinePath in edge-routing.ts — so sibling edges never
+   * compute the identical path (and therefore identically-positioned,
+   * mutually-corrupting labels; see #329).
+   *
+   * `usedOffsets` is the *same* Set object, by reference, on every edge in
+   * the group (assigned once in assignParallelEdgeLanes) — the lane-offset
+   * search in buildParallelLanePath can land two different lane indices on
+   * the same actual offset when both have to detour around the same
+   * obstacle (see that function's doc), so each successful search records
+   * its chosen offset here and skips any offset a sibling already claimed,
+   * keeping every lane in the group on a genuinely distinct path.
+   */
+  parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
 }
 
 /** A subgraph container with bounding box for rendering. */
@@ -194,6 +226,52 @@ export interface AsciiSubgraph {
   maxY: number
   /** Optional direction override for layout within this subgraph (LR or TD). */
   direction?: 'LR' | 'TD'
+}
+
+// ============================================================================
+// Padding defaults
+//
+// Shared by every renderer that reads AsciiConfig's padding fields. Layouts
+// that predate `paddingX`/`paddingY`/`boxBorderPadding` becoming configurable
+// (sequence, class, ER — see issue #343) compute their own spacing as an
+// offset from these defaults rather than substituting the raw config value
+// directly, so that *not* passing a padding option still renders exactly as
+// it always has (no baseline/snapshot churn) while explicitly passing one
+// still visibly changes spacing. The flowchart/state grid layout (grid.ts)
+// predates this convention and uses `paddingX`/`paddingY` directly as its
+// column/row gap — don't "fix" that to go through these constants too, its
+// existing default already equals them, so behavior is identical.
+// ============================================================================
+
+/** `AsciiConfig.paddingX`'s default — see the block comment above. */
+export const DEFAULT_PADDING_X = 5
+/** `AsciiConfig.paddingY`'s default — see the block comment above. */
+export const DEFAULT_PADDING_Y = 5
+/** `AsciiConfig.boxBorderPadding`'s default — see the block comment above. */
+export const DEFAULT_BOX_BORDER_PADDING = 1
+
+/**
+ * Derive a diagram-local spacing constant from a padding option, offset from
+ * that option's default so a diagram whose own historical constant differs
+ * from the shared default (e.g. class diagrams' 4-column gap vs. the shared
+ * default of 5) still renders unchanged when the caller passes no explicit
+ * padding override. `-x`/`-y`/`-p` still visibly widen or tighten spacing
+ * because they shift `configValue` away from `defaultValue`.
+ *
+ * Shared by sequence.ts/class-diagram.ts/er-diagram.ts so the three
+ * renderers wired up for issue #343 apply padding the same way instead of
+ * each re-deriving this arithmetic.
+ *
+ * @param floor - Minimum result, so a large negative padding can't collapse
+ *   the spacing to zero or negative (which would overlap adjacent elements).
+ */
+export function paddingOffset(
+  configValue: number,
+  defaultValue: number,
+  base: number,
+  floor: number,
+): number {
+  return Math.max(floor, base + (configValue - defaultValue))
 }
 
 /** Configuration for ASCII rendering. */

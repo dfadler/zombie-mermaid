@@ -23,11 +23,27 @@ import {
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
+import type { Message } from '../sequence/types.ts'
+import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.
 // Shared between the drawing pass and the block-wall extent calculation so
 // self-arrows inside alt/loop/opt blocks don't get clipped by the wall.
 const SELF_LOOP_WIDTH = 4
+
+// Effective width of a self-message's loop, including room for an
+// autonumber badge drawn at the start of the top arm when active. The badge
+// digits replace the leading dashes rather than adding a second arrowhead,
+// so the loop only needs to widen by the badge's own digit count — one
+// extra column per digit — to keep the corner glyphs (┐/┘) intact.
+// Shared by the drawing pass, the canvas-width pass, and the block-wall
+// extent calculation so all three agree on how much room a numbered
+// self-message actually needs.
+function selfLoopWidth(msg: Message): number {
+  return msg.seqNumber === undefined
+    ? SELF_LOOP_WIDTH
+    : SELF_LOOP_WIDTH + String(msg.seqNumber).length
+}
 
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.
@@ -97,7 +113,11 @@ export function renderSequenceAscii(
     return width
   }
 
-  const boxPad = 1
+  // Clamped: a negative boxBorderPadding would otherwise produce a negative
+  // actor/note box width for a short label (see issue #343's CodeRabbit
+  // review — the same class of bug fixed in draw-boxes.ts's
+  // measureMultiBox/drawMultiBox for class/ER boxes).
+  const boxPad = Math.max(0, config.boxBorderPadding)
   // Use max line width for multi-line actor labels
   const actorBoxWidths = diagram.actors.map(
     (a) => maxLineWidth(a.label) + 2 * boxPad + 2,
@@ -128,13 +148,21 @@ export function renderSequenceAscii(
     }
   }
 
-  // Compute lifeline x-positions (greedy left-to-right)
+  // Compute lifeline x-positions (greedy left-to-right).
+  // See paddingOffset's doc comment (types.ts) for why this is an offset
+  // from the paddingX default rather than the raw config value.
+  const minLifelineGap = paddingOffset(
+    config.paddingX,
+    DEFAULT_PADDING_X,
+    10,
+    4,
+  )
   const llX: number[] = [halfBox[0]!]
   for (let i = 1; i < diagram.actors.length; i++) {
     const gap = Math.max(
       halfBox[i - 1]! + halfBox[i]! + 2,
       adjMaxWidth[i - 1]! + 2,
-      10,
+      minLifelineGap,
     )
     llX[i] = llX[i - 1]! + gap
   }
@@ -207,12 +235,32 @@ export function renderSequenceAscii(
 
   let curY = actorBoxH // start right below header boxes
 
+  // rowGap: the blank rows around messages, notes, and blocks. See
+  // paddingOffset's doc comment (types.ts) for why this is an offset from
+  // the paddingY default rather than the raw config value. Floored at 0 (not
+  // 1) since these are single-row gaps, not a whole box — collapsing a gap
+  // to 0 rows is still a valid, readable layout, just a tight one.
+  const rowGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 1, 0)
+
+  // Below rowGap's own floor of 0, three specific gaps still need at least
+  // one row: the row right after a divider (or the message row drawn there
+  // would land on the divider's own row and overwrite it), the row right
+  // after a block's closing border (same reasoning against whatever comes
+  // next), and the row before the footer (the footer's top border is drawn
+  // *before* messages/arrows in the draw pass — see "DRAW: actor header +
+  // footer boxes" below — so a message landing on the same row as the
+  // footer would draw its arrow through the footer's border). Everywhere
+  // else (blank row before a message, gap before a note, blank row before a
+  // block header) is genuinely optional spacing with no such collision risk,
+  // so those keep using rowGap directly. See issue #343's CodeRabbit review.
+  const minSeparatorGap = Math.max(rowGap, 1)
+
   // Pre-message notes: afterIndex === -1 — position before message loop
   for (const note of diagram.notes) {
     if (note.afterIndex !== -1) continue
-    curY += 1 // gap before note
+    curY += rowGap // gap before note
     const nLines = splitLines(note.text)
-    const nWidth = Math.max(...nLines.map((l) => l.length)) + 4
+    const nWidth = Math.max(...nLines.map((l) => l.length)) + 2 + 2 * boxPad
     const nHeight = nLines.length + 2
 
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
@@ -246,7 +294,7 @@ export function renderSequenceAscii(
     // Block openings at this message
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.startIndex === m) {
-        curY += 2 // 1 blank + 1 header row
+        curY += rowGap + 1 // blank rows + 1 fixed header row
         blockStartY.set(b, curY - 1)
       }
     }
@@ -255,14 +303,14 @@ export function renderSequenceAscii(
     for (let b = 0; b < diagram.blocks.length; b++) {
       for (let d = 0; d < diagram.blocks[b]!.dividers.length; d++) {
         if (diagram.blocks[b]!.dividers[d]!.index === m) {
-          curY += 1
+          curY += rowGap
           divYMap.set(`${b}:${d}`, curY)
-          curY += 1
+          curY += minSeparatorGap
         }
       }
     }
 
-    curY += 1 // blank row before message
+    curY += rowGap // blank row before message
 
     const msg = diagram.messages[m]!
     const isSelf = msg.from === msg.to
@@ -285,10 +333,10 @@ export function renderSequenceAscii(
     // Notes after this message
     for (let n = 0; n < diagram.notes.length; n++) {
       if (diagram.notes[n]!.afterIndex === m) {
-        curY += 1
+        curY += rowGap
         const note = diagram.notes[n]!
         const nLines = splitLines(note.text)
-        const nWidth = Math.max(...nLines.map((l) => l.length)) + 4
+        const nWidth = Math.max(...nLines.map((l) => l.length)) + 2 + 2 * boxPad
         const nHeight = nLines.length + 2
 
         // Determine x position based on note.position
@@ -325,14 +373,14 @@ export function renderSequenceAscii(
     // Block closings after this message
     for (let b = 0; b < diagram.blocks.length; b++) {
       if (diagram.blocks[b]!.endIndex === m) {
-        curY += 1
+        curY += rowGap
         blockEndY.set(b, curY)
-        curY += 1
+        curY += minSeparatorGap
       }
     }
   }
 
-  curY += 1 // gap before footer
+  curY += minSeparatorGap // gap before footer (mandatory — see minSeparatorGap)
   const footerY = curY
   const totalH = footerY + actorBoxH
 
@@ -347,7 +395,7 @@ export function renderSequenceAscii(
     if (msg.from === msg.to) {
       const fi = actorIndexOf(msg.from)
       const selfRight =
-        llX[fi]! + SELF_LOOP_WIDTH + 2 + 2 + maxLineWidth(msg.label)
+        llX[fi]! + selfLoopWidth(msg) + 2 + 2 + maxLineWidth(msg.label)
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -455,6 +503,11 @@ export function renderSequenceAscii(
     const isSelf = fi === ti
     const isDashed = msg.lineStyle === 'dashed'
     const isFilled = msg.arrowHead === 'filled'
+    // "lost message" (-x/--x): a distinct cross terminator, not the plain
+    // filled arrowhead it otherwise shares with ->>/-->>. Direction-
+    // independent, unlike the arrow glyphs below — see issue #330.
+    const isLost = msg.isLost === true
+    const lostChar = useAscii ? 'x' : '✕'
 
     // Arrow line character (solid vs dashed)
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
@@ -465,20 +518,32 @@ export function renderSequenceAscii(
       //   │  │ Label     (row 1)
       //   │◄─┘           (row 2)
       //
-      // The loop is only SELF_LOOP_WIDTH (4) columns wide, with no spare
-      // room for a second arrowhead or a sequence-number badge without
-      // corrupting the loop's corner glyphs — so a bidirectional or
-      // autonumbered self-message still parses and still advances the
-      // autonumber counter, it just doesn't get the extra glyph drawn here.
+      // The loop is only SELF_LOOP_WIDTH (4) columns wide by default, with no
+      // spare room for a second arrowhead without corrupting the loop's
+      // corner glyphs — so a bidirectional self-message still parses and
+      // draws a single arrowhead only. An autonumbered self-message widens
+      // the loop (see selfLoopWidth) so the badge digits fit at the start
+      // of the top arm without touching the corner.
       const y0 = msgArrowY[m]!
-      const loopW = SELF_LOOP_WIDTH
+      const loopW = selfLoopWidth(msg)
+      const numStr =
+        msg.seqNumber === undefined ? undefined : String(msg.seqNumber)
       // Split the label on <br/>-normalized newlines so multi-line self-arrow
       // labels get one row each instead of dumping a literal \n mid-row.
       const msgLines = splitLines(msg.label)
 
-      // Row 0: start junction + horizontal + top-right corner
+      // Row 0: start junction + [autonumber badge] + horizontal + top-right
+      // corner. The badge, when present, replaces the leading dashes rather
+      // than sitting alongside them — mirroring how the normal-message
+      // badge overwrites the start of its arrow line.
       setC(fromX, y0, JL, 'junction')
-      for (let x = fromX + 1; x < fromX + loopW; x++)
+      let dashStart = fromX + 1
+      if (numStr !== undefined) {
+        for (let i = 0; i < numStr.length; i++)
+          setC(fromX + 1 + i, y0, numStr[i]!, 'text')
+        dashStart = fromX + 1 + numStr.length
+      }
+      for (let x = dashStart; x < fromX + loopW; x++)
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
@@ -495,7 +560,15 @@ export function renderSequenceAscii(
 
       // Bottom row: arrow-back + horizontal + bottom-right corner
       const bottomY = y0 + 1 + msgLines.length
-      const arrowChar = isFilled ? (useAscii ? '<' : '◀') : useAscii ? '<' : '◁'
+      const arrowChar = isLost
+        ? lostChar
+        : isFilled
+          ? useAscii
+            ? '<'
+            : '◀'
+          : useAscii
+            ? '<'
+            : '◁'
       setC(fromX, bottomY, arrowChar, 'arrow')
       for (let x = fromX + 1; x < fromX + loopW; x++)
         setC(x, bottomY, lineChar, 'line')
@@ -524,7 +597,15 @@ export function renderSequenceAscii(
       if (leftToRight) {
         for (let x = fromX + 1; x < toX; x++) setC(x, arrowY, lineChar, 'line')
         // Arrowhead at destination
-        const ah = isFilled ? (useAscii ? '>' : '▶') : useAscii ? '>' : '▷'
+        const ah = isLost
+          ? lostChar
+          : isFilled
+            ? useAscii
+              ? '>'
+              : '▶'
+            : useAscii
+              ? '>'
+              : '▷'
         setC(toX, arrowY, ah, 'arrow')
         // Bidirectional (`<<->>` / `<<-->>`): mirror the arrowhead at the
         // departure end too. Both bidirectional tokens end in ">>" (see
@@ -536,7 +617,15 @@ export function renderSequenceAscii(
         }
       } else {
         for (let x = toX + 1; x < fromX; x++) setC(x, arrowY, lineChar, 'line')
-        const ah = isFilled ? (useAscii ? '<' : '◀') : useAscii ? '<' : '◁'
+        const ah = isLost
+          ? lostChar
+          : isFilled
+            ? useAscii
+              ? '<'
+              : '◀'
+            : useAscii
+              ? '<'
+              : '◁'
         setC(toX, arrowY, ah, 'arrow')
         if (msg.bidirectional) {
           const ahStart = useAscii ? '>' : '▶'
@@ -592,7 +681,7 @@ export function renderSequenceAscii(
       // long self-arrow label gets clipped by / drawn outside the wall.
       if (f === t) {
         const selfRight =
-          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+          llX[f]! + selfLoopWidth(msg) + 2 + maxLineWidth(msg.label)
         maxLX = Math.max(maxLX, selfRight)
       }
     }
@@ -687,7 +776,7 @@ export function renderSequenceAscii(
       setC(np.x, ly, V, 'border')
       setC(np.x + np.width - 1, ly, V, 'border')
       for (let i = 0; i < np.lines[l]!.length; i++) {
-        setC(np.x + 2 + i, ly, np.lines[l]![i]!, 'text')
+        setC(np.x + 1 + boxPad + i, ly, np.lines[l]![i]!, 'text')
       }
     }
     // Bottom border

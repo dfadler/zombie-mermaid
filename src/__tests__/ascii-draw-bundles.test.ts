@@ -28,7 +28,9 @@ import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
   drawBundleArrowhead,
+  drawBundleArrowheadStart,
   drawBundledEdgeArrowhead,
+  drawBundledEdgeArrowheadStart,
   drawJunctionCharacter,
 } from '../ascii/draw-bundles.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'
@@ -65,6 +67,18 @@ const FAN_OUT = `flowchart TD
   C[Source] --> A[One]
   C --> B[Two]`
 
+const BIDIRECTIONAL_FAN_IN = `flowchart TD
+  A[One] <--> C[Target]
+  B[Two] <--> C`
+
+const BIDIRECTIONAL_FAN_OUT = `flowchart TD
+  C[Source] <--> A[One]
+  C <--> B[Two]`
+
+const MIXED_FAN_OUT = `flowchart TD
+  C[Source] --> A[One]
+  C[Source] <--> B[Two]`
+
 describe('draw-bundles: rendered fan-in/fan-out diagrams', () => {
   it('draws a fan-in bundle with a T-junction and single arrowhead (unicode)', () => {
     const out = renderMermaidASCII(FAN_IN, { useAscii: false })
@@ -90,6 +104,26 @@ describe('draw-bundles: rendered fan-in/fan-out diagrams', () => {
   it('draws a fan-out bundle with one arrowhead per target (ASCII)', () => {
     const out = renderMermaidASCII(FAN_OUT, { useAscii: true })
     expect(out.match(/v/g)).toHaveLength(2)
+  })
+
+  it('draws a start arrowhead at each source for a bidirectional fan-in bundle', () => {
+    const out = renderMermaidASCII(BIDIRECTIONAL_FAN_IN, { useAscii: false })
+    // One end arrowhead at the shared target, plus one start arrowhead per source.
+    expect(out.match(/▼/g)).toHaveLength(1)
+    expect(out.match(/▲/g)).toHaveLength(2)
+  })
+
+  it('draws a single shared start arrowhead for a bidirectional fan-out bundle', () => {
+    const out = renderMermaidASCII(BIDIRECTIONAL_FAN_OUT, { useAscii: false })
+    // One end arrowhead per target, plus a single shared start arrowhead at the source.
+    expect(out.match(/▼/g)).toHaveLength(2)
+    expect(out.match(/▲/g)).toHaveLength(1)
+  })
+
+  it('omits the shared fan-out start arrowhead when the bundled edges disagree on hasArrowStart', () => {
+    const out = renderMermaidASCII(MIXED_FAN_OUT, { useAscii: false })
+    expect(out.match(/▼/g)).toHaveLength(2)
+    expect(out).not.toContain('▲')
   })
 })
 
@@ -434,6 +468,170 @@ describe('drawBundleArrowhead', () => {
     }
     const canvas = drawBundleArrowhead(lrGraph, b)
     expect(nonSpaceChars(canvas)).toBe('▼')
+  })
+})
+
+describe('drawBundleArrowheadStart', () => {
+  const graph = buildGraph(BIDIRECTIONAL_FAN_OUT)
+  const bundle = graph.bundles[0]!
+
+  it('returns an unmodified canvas when sharedPath has fewer than 2 points', () => {
+    const shortBundle = {
+      ...bundle,
+      sharedPath: [bundle.junctionPoint!],
+    }
+    const canvas = drawBundleArrowheadStart(graph, shortBundle)
+    expect(nonSpaceChars(canvas)).toBe('')
+  })
+
+  it.each<['Up' | 'Left' | 'Right', string]>([
+    ['Up', '▼'],
+    ['Left', '►'],
+    ['Right', '◄'],
+  ])(
+    'draws a trunk departing %s as the reversed %s arrowhead (unicode)',
+    (dir, expectedChar) => {
+      const b = { ...bundle, sharedPath: arrivalSharedPath(dir) }
+      const canvas = drawBundleArrowheadStart(graph, b)
+      expect(nonSpaceChars(canvas)).toBe(expectedChar)
+    },
+  )
+
+  it.each<['Up' | 'Left' | 'Right', string]>([
+    ['Up', 'v'],
+    ['Left', '>'],
+    ['Right', '<'],
+  ])(
+    'draws a trunk departing %s as the reversed %s arrowhead (ASCII)',
+    (dir, expectedChar) => {
+      const asciiGraph = buildGraph(BIDIRECTIONAL_FAN_OUT, true)
+      const asciiBundle = asciiGraph.bundles[0]!
+      const b = {
+        ...asciiBundle,
+        sharedPath: arrivalSharedPath(dir),
+      }
+      const canvas = drawBundleArrowheadStart(asciiGraph, b)
+      expect(nonSpaceChars(canvas)).toBe(expectedChar)
+    },
+  )
+
+  it('falls back to the default arrowhead for a diagonal trunk direction (unicode)', () => {
+    const b = {
+      ...bundle,
+      sharedPath: [
+        { x: 1, y: 2 },
+        { x: 5, y: 4 },
+      ],
+    }
+    const canvas = drawBundleArrowheadStart(graph, b)
+    expect(nonSpaceChars(canvas)).toBe('▲')
+  })
+
+  it('falls back to the default arrowhead for a diagonal trunk direction (ASCII)', () => {
+    const asciiGraph = buildGraph(BIDIRECTIONAL_FAN_OUT, true)
+    const asciiBundle = asciiGraph.bundles[0]!
+    const b = {
+      ...asciiBundle,
+      sharedPath: [
+        { x: 1, y: 2 },
+        { x: 5, y: 4 },
+      ],
+    }
+    const canvas = drawBundleArrowheadStart(asciiGraph, b)
+    expect(nonSpaceChars(canvas)).toBe('^')
+  })
+
+  it('offsets the arrowhead horizontally for an LR graph direction', () => {
+    // Bundling never fires for LR graphs (see edge-bundling.ts), so this
+    // exercises the function's LR branch directly rather than through a
+    // real diagram.
+    const lrGraph = {
+      ...graph,
+      config: { ...graph.config, graphDirection: 'LR' as const },
+    }
+    const b = {
+      ...bundle,
+      sharedPath: [
+        { x: 1, y: 2 },
+        { x: 1, y: 4 },
+      ],
+    }
+    const canvas = drawBundleArrowheadStart(lrGraph, b)
+    expect(nonSpaceChars(canvas)).toBe('▲')
+  })
+})
+
+describe('drawBundledEdgeArrowheadStart', () => {
+  const graph = buildGraph(BIDIRECTIONAL_FAN_IN)
+  const bundle = graph.bundles[0]!
+  const edgeTemplate = bundle.edges[0]!
+
+  it('returns an unmodified canvas when pathToJunction is undefined', () => {
+    const edge = { ...edgeTemplate, pathToJunction: undefined }
+    const canvas = drawBundledEdgeArrowheadStart(graph, edge)
+    expect(nonSpaceChars(canvas)).toBe('')
+  })
+
+  it.each<['Up' | 'Left' | 'Right', string]>([
+    ['Up', '▼'],
+    ['Left', '►'],
+    ['Right', '◄'],
+  ])(
+    'draws an edge departing %s as the reversed %s arrowhead (unicode)',
+    (dir, expectedChar) => {
+      const edge = {
+        ...edgeTemplate,
+        pathToJunction: arrivalSharedPath(dir),
+      }
+      const canvas = drawBundledEdgeArrowheadStart(graph, edge)
+      expect(nonSpaceChars(canvas)).toBe(expectedChar)
+    },
+  )
+
+  it.each<['Up' | 'Left' | 'Right', string]>([
+    ['Up', 'v'],
+    ['Left', '>'],
+    ['Right', '<'],
+  ])(
+    'draws an edge departing %s as the reversed %s arrowhead (ASCII)',
+    (dir, expectedChar) => {
+      const asciiGraph = buildGraph(BIDIRECTIONAL_FAN_IN, true)
+      const asciiBundle = asciiGraph.bundles[0]!
+      const asciiEdgeTemplate = asciiBundle.edges[0]!
+      const edge = {
+        ...asciiEdgeTemplate,
+        pathToJunction: arrivalSharedPath(dir),
+      }
+      const canvas = drawBundledEdgeArrowheadStart(asciiGraph, edge)
+      expect(nonSpaceChars(canvas)).toBe(expectedChar)
+    },
+  )
+
+  it('falls back to the default arrowhead for a diagonal edge direction (unicode)', () => {
+    const edge = {
+      ...edgeTemplate,
+      pathToJunction: [
+        { x: 1, y: 2 },
+        { x: 5, y: 4 },
+      ],
+    }
+    const canvas = drawBundledEdgeArrowheadStart(graph, edge)
+    expect(nonSpaceChars(canvas)).toBe('▼')
+  })
+
+  it('falls back to the default arrowhead for a diagonal edge direction (ASCII)', () => {
+    const asciiGraph = buildGraph(BIDIRECTIONAL_FAN_IN, true)
+    const asciiBundle = asciiGraph.bundles[0]!
+    const asciiEdgeTemplate = asciiBundle.edges[0]!
+    const edge = {
+      ...asciiEdgeTemplate,
+      pathToJunction: [
+        { x: 1, y: 2 },
+        { x: 5, y: 4 },
+      ],
+    }
+    const canvas = drawBundledEdgeArrowheadStart(asciiGraph, edge)
+    expect(nonSpaceChars(canvas)).toBe('v')
   })
 })
 

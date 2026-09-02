@@ -16,7 +16,7 @@ import {
 } from './expanded-shapes.ts'
 import type { ExpandedNodeMeta } from './expanded-shapes.ts'
 import { extractInitConfig } from './init-directive.ts'
-import type { NodeInteraction } from './types.ts'
+import { applyClickStatement as applyClickStatementShared } from './click-directive.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()
@@ -587,6 +587,24 @@ const ARROW_REGEX = /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\|([^|]*)\|)?/
 const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
 
 /**
+ * Map a raw start/end marker character (`<`, `>`, `o`, `x`, or undefined) to
+ * the distinct terminator shape it draws, if any.
+ *
+ * `<`/`>` are plain arrowheads — already handled by `hasArrowStart`/
+ * `hasArrowEnd` — so they map to `undefined` here, same as no marker at all.
+ * Only `o`/`x` need their own shape (circle/cross) recorded, so the ASCII
+ * renderer can draw something other than the default arrowhead glyph — see
+ * issue #330.
+ */
+function markerKind(
+  marker: string | undefined,
+): 'circle' | 'cross' | undefined {
+  if (marker === 'o') return 'circle'
+  if (marker === 'x') return 'cross'
+  return undefined
+}
+
+/**
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
  * Tried as fallback when ARROW_REGEX doesn't match.
  *
@@ -765,45 +783,13 @@ function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
  * and does not execute script supplied by a diagram. An href, by contrast, is
  * genuinely actionable: the node is wrapped in an SVG <a>, which works in any
  * browser without script.
+ *
+ * The actual grammar and href-safety rules live in src/click-directive.ts,
+ * shared with the class diagram parser (src/class/parser.ts) — this is a
+ * thin wrapper binding it to this parser's `graph.interactions` map.
  */
 function applyClickStatement(line: string, graph: MermaidGraph): void {
-  const match = line.match(/^click\s+([\w-]+)\s+(.*)$/i)
-  if (!match) return
-
-  const nodeId = match[1]!
-  let rest = match[2]!.trim()
-
-  const interaction: NodeInteraction = { ...graph.interactions.get(nodeId) }
-
-  // `call fn()` / `callback fn()` — a script binding.
-  const callMatch = rest.match(/^(?:call|callback)\s+(.+?)\s*$/i)
-  if (callMatch) {
-    // A trailing quoted tooltip may follow the callback expression.
-    const withTooltip = callMatch[1]!.match(/^(.*?\))\s+"([^"]*)"\s*$/)
-    if (withTooltip) {
-      interaction.callback = withTooltip[1]!.trim()
-      interaction.tooltip = withTooltip[2]
-    } else {
-      interaction.callback = callMatch[1]!.trim()
-    }
-    graph.interactions.set(nodeId, interaction)
-    return
-  }
-
-  // Optional explicit `href` keyword.
-  rest = rest.replace(/^href\s+/i, '')
-
-  // Remaining tokens: "url" ["tooltip"] [_target]
-  const quoted = [...rest.matchAll(/"([^"]*)"/g)].map((m) => m[1]!)
-  if (quoted.length > 0) interaction.href = quoted[0]
-  if (quoted.length > 1) interaction.tooltip = quoted[1]
-
-  const targetMatch = rest.match(/(_blank|_self|_parent|_top)\s*$/i)
-  if (targetMatch) interaction.target = targetMatch[1]!.toLowerCase()
-
-  if (interaction.href !== undefined || interaction.tooltip !== undefined) {
-    graph.interactions.set(nodeId, interaction)
-  }
+  applyClickStatementShared(line, graph.interactions)
 }
 
 /**
@@ -895,6 +881,8 @@ function parseEdgeLine(
     let style: EdgeStyle
     let hasArrowEnd: boolean
     let edgeLabel: string | undefined
+    let startMarkerKind: 'circle' | 'cross' | undefined
+    let endMarkerKind: 'circle' | 'cross' | undefined
 
     /*
      * Optional edge id prefix: `A e1@--> B` (Mermaid v11.10.0+). Consumed
@@ -925,28 +913,37 @@ function parseEdgeLine(
       )
     ) {
       // `o`/`x` mark a circle/cross terminator (alongside `<` for a reversed
-      // arrow). Neither renderer models a distinct circle/cross marker shape
-      // yet, so these terminators are treated like a regular arrowhead (see
-      // issue #65) — the goal here is to stop the edge and its target node
-      // from being silently dropped.
+      // arrow) — `markerKind` records which, so the ASCII renderer can draw
+      // a distinct glyph instead of the default arrowhead (see issue #330,
+      // a follow-up to issue #65 which first stopped these from being
+      // dropped entirely).
       hasArrowStart = startMarker !== undefined
+      startMarkerKind = markerKind(startMarker)
       const rawEdgeLabel = arrowMatch[4]?.trim()
       edgeLabel = rawEdgeLabel ? normalizeBrTags(rawEdgeLabel) : undefined
       remaining = remaining.slice(arrowMatch[0].length).trim()
       style = arrowStyleFromBody(arrowBody)
       hasArrowEnd = endMarker !== undefined
+      endMarkerKind = markerKind(endMarker)
     } else {
       // Fallback: text-embedded label syntax (-- Yes -->, -. Maybe .->, == Sure ==>)
       const textMatch = remaining.match(TEXT_ARROW_REGEX)
       if (!textMatch) break
       hasArrowStart = Boolean(textMatch[1])
+      startMarkerKind = markerKind(textMatch[1])
       const rawLabel = textMatch[3]!.trim()
       edgeLabel = rawLabel ? normalizeBrTags(rawLabel) : undefined
       const openOp = textMatch[2]!
       const closeOp = textMatch[4]!
       remaining = remaining.slice(textMatch[0].length).trim()
       style = textArrowStyleFromOps(openOp, closeOp)
-      hasArrowEnd = closeOp.endsWith('>')
+      // closeOp is a variable-length run (e.g. "---o", "==x", "-.-.->"); only
+      // its final character can be a circle/cross marker. A circle/cross
+      // terminator is its own kind of arrow ending — like `>` — so it counts
+      // toward hasArrowEnd too; an unmarked run (`---`, `===`, `-.-`) is the
+      // only case with no arrowhead of any kind at the close.
+      endMarkerKind = markerKind(closeOp.slice(-1))
+      hasArrowEnd = closeOp.endsWith('>') || endMarkerKind !== undefined
     }
 
     // Parse the next node group
@@ -965,6 +962,10 @@ function parseEdgeLine(
           style,
           hasArrowStart,
           hasArrowEnd,
+          ...(startMarkerKind !== undefined
+            ? { startMarker: startMarkerKind }
+            : {}),
+          ...(endMarkerKind !== undefined ? { endMarker: endMarkerKind } : {}),
           ...(edgeId !== undefined ? { id: edgeId } : {}),
         })
       }

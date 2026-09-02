@@ -157,6 +157,11 @@ export function measureMultiBox(
   sections: string[][],
   padding: number = 1,
 ): { width: number; height: number } {
+  // A caller-supplied padding (ultimately AsciiConfig.boxBorderPadding, which
+  // reaches here unclamped from the public renderMermaidASCII options) could
+  // be negative — clamp rather than let it produce a negative box width for
+  // a short label (see issue #343's CodeRabbit review).
+  padding = Math.max(0, padding)
   // Width: widest line across all sections + 2*padding + 2 border chars.
   // displayWidth (not line.length) because CJK/fullwidth glyphs occupy two
   // terminal columns each, so a code-unit count under-measures them.
@@ -194,6 +199,10 @@ export function drawMultiBox(
   useAscii: boolean,
   padding: number = 1,
 ): Canvas {
+  // Clamp here too (not just inside measureMultiBox) since `padding` is also
+  // used directly below for each line's startX — see the comment in
+  // measureMultiBox for why a negative value can reach this function.
+  padding = Math.max(0, padding)
   const { width: boxWidth, height: boxHeight } = measureMultiBox(
     sections,
     padding,

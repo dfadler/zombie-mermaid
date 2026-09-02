@@ -12,13 +12,19 @@
  * test file; only DOM mounting needs to run in the browser, which is all
  * this file and the modules it re-exports do.
  */
-import { mountAsciiPanel, mountSvgPanel, unmount } from './mount.ts'
+import {
+  mountAsciiPanel,
+  mountSidebarList,
+  mountSvgPanel,
+  unmount,
+} from './mount.ts'
 import { buildTerminalPanel } from './terminal-panel.ts'
 import type {} from './harness-types.ts'
 
 window.__harness = {
   mountSvgPanel,
   mountAsciiPanel,
+  mountSidebarList,
   unmount,
   buildTerminalPanel,
 }
