@@ -4,13 +4,14 @@
  * on it as this repo's dev server. See zombie-mermaid#307.
  *
  * `index.ts`/`editor.ts` still do the actual work: each is a one-shot
- * generator that bundles the browser code (esbuild) and inlines it, the
- * sample data, and the highlighted source into one self-contained HTML
- * file — the same file CI's visual-regression suite and the published
- * GitHub Pages site (`build:site`) use. This config's job is only to
- * re-run those generators on a relevant file change and serve the result,
- * with Vite providing the HTTP server, file watching, and HMR websocket
- * (replacing the old custom SSE channel) for free.
+ * generator that bundles the browser code — via Vite's own `build()` API,
+ * see scripts/vite-bundle.ts — and inlines it, the sample data, and the
+ * highlighted source into one self-contained HTML file — the same file
+ * CI's visual-regression suite and the published GitHub Pages site
+ * (`build:site`) use. This config's job is only to re-run those generators
+ * on a relevant file change and serve the result, with Vite providing the
+ * HTTP server, file watching, and HMR websocket (replacing the old custom
+ * SSE channel) for free.
  *
  * Usage: `pnpm run dev` (`vite`). Port defaults to 3456; override with the
  * PORT env var, e.g. `PORT=3457 pnpm run dev` — handy for running more than
