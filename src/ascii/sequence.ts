@@ -746,6 +746,21 @@ export function renderSequenceAscii(
       }
     }
 
+    // MERGE HAZARD (flagged in review on #387, re: #388 touching this same
+    // bLeft/bRight computation for #353): `bLeft` must be the FINAL,
+    // fully-resolved left wall column before `neededRight` below is
+    // computed from it. #388 computes bLeft/bRight as `let`s, nudges them
+    // away from any untouched lifeline they'd otherwise land on, and only
+    // clamps to 0 at the very end. If a future merge of that logic lands
+    // `neededRight`'s computation between an earlier (unclamped/un-nudged)
+    // assignment to bLeft and its final one, `neededRight` will be computed
+    // against a stale value — silently widening the wall one or more
+    // columns short of the label whenever minLX/the nudge puts bLeft below
+    // its margin (this repo's own #352 repro hits exactly that case: `A` is
+    // actor 0, so minLX - 4 is negative and bLeft only becomes 0 via the
+    // clamp). Keep this line — and the `neededRight` line right after it —
+    // reading from bLeft's fully-resolved value, whatever the final shape
+    // of the merged computation looks like.
     const bLeft = Math.max(0, minLX - 4)
     let bRight = Math.min(totalW - 1, maxLX + 4)
 
