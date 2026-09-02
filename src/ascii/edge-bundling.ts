@@ -168,6 +168,24 @@ function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
     if (fromSg !== toSg) return false
   }
 
+  // A group formed by shared-target (fan-in) or shared-source (fan-out)
+  // grouping can still contain two edges that ALSO share the other
+  // endpoint — true parallel/multi-edges (e.g. two unlabeled `A --> B`
+  // edges), not a genuine fan-in/fan-out. Folding those into one shared
+  // trunk+junction would visually merge them into a single line (the same
+  // "second edge silently wins" defect this bundling feature is supposed
+  // to avoid — see #329), rather than the distinct offset lanes
+  // assignParallelEdgeLanes (edge-routing.ts) already gives them. Detect it
+  // generically: the group is fan-in (shared `.to`) or fan-out (shared
+  // `.from`) by construction (see analyzeEdgeBundles' two call sites), so
+  // checking whichever endpoint *isn't* uniformly shared for duplicates
+  // catches both cases without the caller having to say which one it is.
+  const sameTarget = edges.every((e) => e.to === edges[0]!.to)
+  const otherEndpoints = sameTarget
+    ? edges.map((e) => e.from)
+    : edges.map((e) => e.to)
+  if (new Set(otherEndpoints).size !== otherEndpoints.length) return false
+
   return true
 }
 
