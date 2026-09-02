@@ -162,7 +162,7 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
 
-  it('handles a bypass whose free-column search finds a match at lineX itself', () => {
+  it('does not corrupt content when the bypass free-column search matches lineX itself (content-integrity coverage only)', () => {
     // The obstruction that triggers multiRowObstruction is detected within
     // the narrow row-gap band (bandTop..bandBottom — see the comment above
     // that check), but the free-column search below scans the *full*
@@ -175,6 +175,15 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // isn't usually confined that way). Found the same way as the
     // leftward-bypass case above: varying A's own attribute width while
     // instrumenting routingX locally, not by construction alone.
+    //
+    // When that block is skipped, nothing observably distinguishes this
+    // render from an equivalent diagram that never triggered
+    // multiRowObstruction at all — skipping the block draws no corner, so
+    // there is no glyph unique to this path to assert on (raised in review
+    // on this PR: the assertions below prove the branch doesn't corrupt
+    // content or throw when reached, not that it visibly changed anything —
+    // hence this test's name and scope are deliberately about integrity,
+    // not a specific rendered character).
     const ascii = renderMermaidASCII(
       `erDiagram
         A ||--o{ B : ab
