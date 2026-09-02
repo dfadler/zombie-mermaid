@@ -47,6 +47,34 @@ sequenceDiagram
     expect(result).not.toContain('[credentials rej┤')
   })
 
+  it('does not let the widened wall swallow an uninvolved participant lifeline (#387)', () => {
+    // C has no messages inside the block, so widening the wall to fit the
+    // long label must push C's lifeline clear of it rather than land on
+    // top of/next to it. Before this fix, the wall's right edge landed one
+    // column past C's already-placed lifeline, drawing the block's own
+    // wall and C's lifeline back-to-back on every interior row with no gap
+    // between them — two adjacent "│" characters that read as one thing
+    // enclosing a participant the block has nothing to do with.
+    const result = renderMermaidASCII(
+      `
+sequenceDiagram
+    participant A
+    participant B
+    participant C
+    alt credentials valid
+        A->>B: x
+    else credentials rejected
+        A->>B: y
+    end
+`,
+      { useAscii: false },
+    )
+
+    for (const line of result.split('\n')) {
+      expect(line).not.toMatch(/││/)
+    }
+  })
+
   it('leaves short labels that already fit unchanged (no regression)', () => {
     const result = renderMermaidASCII(
       `
@@ -198,8 +226,11 @@ sequenceDiagram
     expect(result).toContain(
       'alt [some long condition that needs the wall widened]',
     )
-    // The bare divider must still render as a plain divider row, without a
-    // "[...]" label of its own.
+    // The bare divider must still render as a plain divider row — checked
+    // positively (a dashed line actually exists) as well as negatively (it
+    // carries no "[...]" label of its own). The negative check alone would
+    // still pass if the renderer silently dropped the divider entirely.
+    expect(result).toMatch(/├╌+┤/)
     expect(result).not.toMatch(/├\[.*\]/)
   })
 })
