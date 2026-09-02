@@ -197,6 +197,11 @@ jobs:
       # that hung this exact job's CI runs (reproduced even on the
       # vitest@5.0.0-rc line meant to fix it). Playwright Test drives the
       # browser entirely from Node, so there's no such bridge to hang on.
+      #
+      # For ASCII samples this job only screenshots ascii-html.ts's browser/
+      # HTML approximation of a terminal, never a real PTY — a passing run
+      # here is not proof ASCII output is correct in an actual terminal (see
+      # zombie-mermaid#348 and CONTRIBUTING.md's "Visual regression tests").
       - name: Run visual regression suite
         id: visual-tests
         run: pnpm run test:visual

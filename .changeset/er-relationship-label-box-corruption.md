@@ -1,5 +1,0 @@
----
-'zombie-mermaid': patch
----
-
-ASCII backend: erDiagram relationship lines and labels no longer silently overwrite an entity box's border or attribute text. Two entities placed in the same layout row were always connected with a straight line even when a third entity sat between them (e.g. `ORDER ||--o| SHIPMENT` with `LINE_ITEM` placed in between), compositing the connecting line and its label directly on top of that third entity — a well-formed-looking but wrong attribute name (`int totalCents` silently became `int hasalCents`). A parallel bug affected vertical connections between different rows: the horizontal jog used the naive vertical midpoint, which could land inside a row-mate taller than the connection's own upper entity. Relationship routing is now obstruction-aware — it detours around an entity that sits between two connected boxes, and clamps the vertical jog into the row-gap band that's actually free of every entity — and a last-resort occupancy guard ensures a relationship line, marker, or label can never draw into a cell already reserved by an entity box or by an earlier relationship's label. Fixes #350.
