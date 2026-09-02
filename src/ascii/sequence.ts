@@ -686,6 +686,18 @@ export function renderSequenceAscii(
       const ly = np.y + 1 + l
       setC(np.x, ly, V, 'border')
       setC(np.x + np.width - 1, ly, V, 'border')
+      // Blank the full interior (content + padding columns) first — the
+      // note is drawn over lifelines that were already painted down every
+      // row in this span, and the content loop below only touches the
+      // exact columns the text occupies. Whenever a note's computed width
+      // happens to put its own padding column on top of a lifeline's x
+      // position (e.g. "Note over A,B" wide enough to reach B's lifeline),
+      // that untouched padding column lets the stale lifeline character
+      // leak through as a doubled border glyph right next to the note's
+      // own right border.
+      for (let x = np.x + 1; x < np.x + np.width - 1; x++) {
+        setC(x, ly, ' ', 'text')
+      }
       for (let i = 0; i < np.lines[l]!.length; i++) {
         setC(np.x + 1 + boxPad + i, ly, np.lines[l]![i]!, 'text')
       }
