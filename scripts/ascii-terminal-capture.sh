@@ -106,12 +106,15 @@ TSX="$repo_root/node_modules/.bin/tsx" RUNNER="$runner" INDEX_MODULE_PATH="$inde
 asciinema convert --overwrite --quiet "${out_prefix}.cast" "${out_prefix}.txt"
 
 # The first installed font in this list wins; agg falls back silently (no
-# error) when one is missing. At least one of these should actually be
-# installed - a fallback can render box-drawing junction glyphs (e.g. "┬")
-# with a visible notch artifact under agg's swash rendering backend. See
-# --help / this script's header comment.
+# error) when one is missing. JetBrains Mono is listed first deliberately:
+# Menlo is a stock macOS font that's essentially always present, so listing
+# it first would make the "install JetBrains Mono" setup step a no-op on
+# macOS - Menlo would still win every time. A missing/skipped font can
+# render box-drawing junction glyphs (e.g. "┬") with a visible notch
+# artifact under agg's swash rendering backend. See --help / this script's
+# header comment.
 agg --quiet \
-  --font-family "Menlo,JetBrains Mono,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono" \
+  --font-family "JetBrains Mono,Menlo,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono" \
   --theme github-dark \
   --select 100% \
   "${out_prefix}.cast" "${out_prefix}.gif"
