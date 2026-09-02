@@ -903,8 +903,10 @@ body.search-active .category-tabbar {
   position: relative;
   /* Bottom padding reserves room for the absolutely-positioned .edit-btn
    * below, so wrapped source text that fills the scrollable area doesn't
-   * render underneath it (see issue #403). */
-  padding: 0.75rem 1.5rem 3.75rem;
+   * render underneath it (see issue #403). max() with the button's fixed
+   * 44px + 0.75rem footprint keeps that true even at a smaller root font
+   * size, where a plain rem value would shrink below the button's height. */
+  padding: 0.75rem 1.5rem max(3.75rem, calc(44px + 0.75rem));
   border-right: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
   min-width: 0; /* grid child: allow shrinking below content width */
   overflow-y: auto;
