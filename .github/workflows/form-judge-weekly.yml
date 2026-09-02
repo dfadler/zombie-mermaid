@@ -19,12 +19,14 @@
 # relies on documented capabilities (Read/Write, an explicit prompt) rather
 # than betting a scheduled, unattended job on an unconfirmed one.
 #
-# Requires the ANTHROPIC_API_KEY repo secret (Settings → Secrets and
-# variables → Actions) — this workflow cannot add it for you. Recommend a
-# manual `workflow_dispatch` run to confirm the whole pipeline actually
-# works end to end before trusting the schedule; the sequential-per-category
-# judging above is a first cut and may need turn/prompt tuning once it's
-# actually been run against real CI timing.
+# Requires the CLAUDE_CODE_OAUTH_TOKEN repo secret (Settings → Secrets and
+# variables → Actions — generate the value with `claude setup-token`,
+# add it as a repo secret, never paste it anywhere else) — this workflow
+# cannot add it for you. Recommend a manual `workflow_dispatch` run to
+# confirm the whole pipeline actually works end to end before trusting the
+# schedule; the sequential-per-category judging above is a first cut and
+# may need turn/prompt tuning once it's actually been run against real CI
+# timing.
 name: Form-judge weekly report
 
 on:
@@ -103,7 +105,7 @@ jobs:
         with:
           prompt_file: ${{ steps.prep.outputs.prompt_path }}
           claude_args: '--max-turns 150 --allowedTools "Read,Write"'
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Upload category results
         if: always()
