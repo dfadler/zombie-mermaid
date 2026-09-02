@@ -198,7 +198,8 @@ export function renderSequenceAscii(
     if (note.afterIndex !== -1) continue
     curY += rowGap // gap before note
     const nLines = splitLines(note.text)
-    const nWidth = Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+    const nWidth =
+      Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
     const nHeight = nLines.length + 2
 
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
@@ -274,7 +275,8 @@ export function renderSequenceAscii(
         curY += rowGap
         const note = diagram.notes[n]!
         const nLines = splitLines(note.text)
-        const nWidth = Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+        const nWidth =
+          Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
         const nHeight = nLines.length + 2
 
         // Determine x position based on note.position
