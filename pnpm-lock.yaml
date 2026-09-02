@@ -52,7 +52,7 @@ importers:
         specifier: ^30.0.1
         version: 30.0.1
       mermaid:
-        specifier: ^11.17.2
+        specifier: 11.17.2
         version: 11.17.2
       prettier:
         specifier: ^3.9.6

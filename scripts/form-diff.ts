@@ -39,19 +39,12 @@
  * samples embedded together on this one page.
  */
 
-import { chromium } from '@playwright/test'
 import { readFile, writeFile } from 'node:fs/promises'
 import { renderMermaidASCII } from '../src/index.ts'
 import { samples } from '../samples-data.ts'
 import { escapeHtml } from '../demo/format.ts'
 import { asciiToHtml } from '../ascii-html.ts'
-import type { Mermaid } from 'mermaid'
-
-declare global {
-  interface Window {
-    mermaid: Mermaid
-  }
-}
+import { startRealMermaid, renderRealMermaidSvg } from './lib/real-mermaid.ts'
 
 const categoryArg = process.argv.find((a) => a.startsWith('--category='))
 const CATEGORY_FILTER = categoryArg
@@ -112,31 +105,14 @@ async function generate(): Promise<string> {
     `Rendering ${indexed.length} sample(s) through real mermaid.js${CATEGORY_FILTER ? ` (category: ${CATEGORY_FILTER})` : ''}…`,
   )
 
-  const mermaidJs = await readFile(
-    new URL('../node_modules/mermaid/dist/mermaid.min.js', import.meta.url),
-    'utf8',
-  )
-
-  const browser = await chromium.launch()
-  const page = await browser.newPage()
-  await page.setContent('<!DOCTYPE html><html><body></body></html>')
-  await page.addScriptTag({ content: mermaidJs })
-  await page.evaluate(() => {
-    window.mermaid.initialize({ startOnLoad: false, theme: 'default' })
-  })
+  const session = await startRealMermaid()
 
   const sections: string[] = []
   for (const { sample, i } of indexed) {
     const id = `form-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`
     let mermaidPanel: string
     try {
-      const svg = await page.evaluate(
-        async ([renderId, source]) => {
-          const { svg } = await window.mermaid.render(renderId, source)
-          return svg
-        },
-        [id.replace(/-/g, '_'), sample.source] as [string, string],
-      )
+      const svg = await renderRealMermaidSvg(session, id.replace(/-/g, '_'), sample.source)
       mermaidPanel = svg.trim() === '' ? '<div class="fix-empty">Rendered nothing.</div>' : `<div class="fix-svg">${svg}</div>`
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
@@ -145,7 +121,7 @@ async function generate(): Promise<string> {
     sections.push(renderSampleSection(id, sample, mermaidPanel))
   }
 
-  await browser.close()
+  await session.close()
 
   const styles = await readFile(
     new URL('../demo/styles.css', import.meta.url),
