@@ -161,4 +161,36 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     )
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
+
+  it('handles a bypass whose free-column search finds a match at lineX itself', () => {
+    // The obstruction that triggers multiRowObstruction is detected within
+    // the narrow row-gap band (bandTop..bandBottom — see the comment above
+    // that check), but the free-column search below scans the *full*
+    // startY..endY span. When the obstruction is confined to the band and
+    // lineX's own column is otherwise clear across the fuller span, offset
+    // 0 of that search succeeds immediately at lineX itself — so
+    // `routingX === lineX`, skipping the "if (lineX !== routingX)" corner
+    // block entirely (every other bypass test in this file has
+    // routingX !== lineX, since a same-sized-entity layout's obstruction
+    // isn't usually confined that way). Found the same way as the
+    // leftward-bypass case above: varying A's own attribute width while
+    // instrumenting routingX locally, not by construction alone.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        A ||--o{ B : ab
+        B ||--o{ C : bc
+        C ||--o{ D : cd
+        D ||--o{ E : de
+        E ||--o{ F : ef
+        F ||--o{ G : fg
+        A ||--o{ G : ag
+        A {
+          string x
+        }`,
+      { colorMode: 'none' },
+    )
+    expect(ascii).toContain('ag')
+    expect(ascii).toContain('string x')
+    expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
+  })
 })
