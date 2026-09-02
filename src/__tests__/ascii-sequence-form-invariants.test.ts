@@ -181,10 +181,8 @@ ${participants(c.actors)}
     })
   }
 
-  it(
-    'alt/else with multiple branches: every divider label survives unclipped and stays inside the frame',
-    () => {
-      const src = `sequenceDiagram
+  it('alt/else with multiple branches: every divider label survives unclipped and stays inside the frame', () => {
+    const src = `sequenceDiagram
   participant A
   participant B
   alt ${LONG_LABEL}
@@ -192,20 +190,19 @@ ${participants(c.actors)}
   else ${VERY_LONG_LABEL}
     A->>B: y
   end`
-      const ascii = renderMermaidASCII(src, { useAscii: true })
-      expect(ascii).toContain(LONG_LABEL)
-      expect(ascii).toContain(VERY_LONG_LABEL)
-      // Walls are constant across the whole block, so the header row alone
-      // (anchored on "alt", never itself truncated) gives the frame span
-      // both labels — header and divider — must stay inside.
-      const frame = blockFrameSpan(ascii, 'alt')
-      for (const label of [LONG_LABEL, VERY_LONG_LABEL]) {
-        const rect = findTextRect(ascii, label)
-        expect(rect.x0).toBeGreaterThanOrEqual(frame.x0)
-        expect(rect.x1).toBeLessThanOrEqual(frame.x1)
-      }
-    },
-  )
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    expect(ascii).toContain(LONG_LABEL)
+    expect(ascii).toContain(VERY_LONG_LABEL)
+    // Walls are constant across the whole block, so the header row alone
+    // (anchored on "alt", never itself truncated) gives the frame span
+    // both labels — header and divider — must stay inside.
+    const frame = blockFrameSpan(ascii, 'alt')
+    for (const label of [LONG_LABEL, VERY_LONG_LABEL]) {
+      const rect = findTextRect(ascii, label)
+      expect(rect.x0).toBeGreaterThanOrEqual(frame.x0)
+      expect(rect.x1).toBeLessThanOrEqual(frame.x1)
+    }
+  })
 })
 
 // ---------------------------------------------------------------------------
