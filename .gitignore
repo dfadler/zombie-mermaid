@@ -29,6 +29,14 @@ dashboard.html
 visual-diff.html
 .visual-diff-cache/
 
+# Human-reviewable SVG-vs-ASCII report from scripts/form-diff.ts.
+form-diff.html
+
+# Per-sample real-mermaid/ASCII data dump from scripts/form-facts.ts, input
+# to the scripts/form-judge.workflow.mjs judge pipeline.
+.form-facts/
+form-facts-index.json
+
 # Transient bench.ts --json= output (CI's own run). bench-baseline.json is
 # the committed, intentionally-updated baseline and is NOT ignored.
 bench-current.json
