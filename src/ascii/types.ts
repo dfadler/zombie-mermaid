@@ -172,6 +172,14 @@ export interface AsciiEdge {
   hasArrowStart: boolean
   /** Whether to render an arrowhead at the end (target end) of the edge */
   hasArrowEnd: boolean
+  /**
+   * Terminator shape at the source end when it's a circle/cross marker
+   * (`o--`/`x--`) rather than a plain arrowhead. Undefined draws the
+   * regular arrowhead glyph (per `hasArrowStart`). See issue #330.
+   */
+  startMarker?: 'circle' | 'cross'
+  /** Terminator shape at the target end (`--o`/`--x`). See `startMarker`. */
+  endMarker?: 'circle' | 'cross'
   /** Bundle this edge belongs to (if any). Set during bundling analysis. */
   bundle?: EdgeBundle
   /**

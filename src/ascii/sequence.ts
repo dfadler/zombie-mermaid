@@ -436,6 +436,11 @@ export function renderSequenceAscii(
     const isSelf = fi === ti
     const isDashed = msg.lineStyle === 'dashed'
     const isFilled = msg.arrowHead === 'filled'
+    // "lost message" (-x/--x): a distinct cross terminator, not the plain
+    // filled arrowhead it otherwise shares with ->>/-->>. Direction-
+    // independent, unlike the arrow glyphs below — see issue #330.
+    const isLost = msg.isLost === true
+    const lostChar = useAscii ? 'x' : '✕'
 
     // Arrow line character (solid vs dashed)
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
@@ -488,7 +493,15 @@ export function renderSequenceAscii(
 
       // Bottom row: arrow-back + horizontal + bottom-right corner
       const bottomY = y0 + 1 + msgLines.length
-      const arrowChar = isFilled ? (useAscii ? '<' : '◀') : useAscii ? '<' : '◁'
+      const arrowChar = isLost
+        ? lostChar
+        : isFilled
+          ? useAscii
+            ? '<'
+            : '◀'
+          : useAscii
+            ? '<'
+            : '◁'
       setC(fromX, bottomY, arrowChar, 'arrow')
       for (let x = fromX + 1; x < fromX + loopW; x++)
         setC(x, bottomY, lineChar, 'line')
@@ -517,7 +530,15 @@ export function renderSequenceAscii(
       if (leftToRight) {
         for (let x = fromX + 1; x < toX; x++) setC(x, arrowY, lineChar, 'line')
         // Arrowhead at destination
-        const ah = isFilled ? (useAscii ? '>' : '▶') : useAscii ? '>' : '▷'
+        const ah = isLost
+          ? lostChar
+          : isFilled
+            ? useAscii
+              ? '>'
+              : '▶'
+            : useAscii
+              ? '>'
+              : '▷'
         setC(toX, arrowY, ah, 'arrow')
         // Bidirectional (`<<->>` / `<<-->>`): mirror the arrowhead at the
         // departure end too. Both bidirectional tokens end in ">>" (see
@@ -529,7 +550,15 @@ export function renderSequenceAscii(
         }
       } else {
         for (let x = toX + 1; x < fromX; x++) setC(x, arrowY, lineChar, 'line')
-        const ah = isFilled ? (useAscii ? '<' : '◀') : useAscii ? '<' : '◁'
+        const ah = isLost
+          ? lostChar
+          : isFilled
+            ? useAscii
+              ? '<'
+              : '◀'
+            : useAscii
+              ? '<'
+              : '◁'
         setC(toX, arrowY, ah, 'arrow')
         if (msg.bidirectional) {
           const ahStart = useAscii ? '>' : '▶'

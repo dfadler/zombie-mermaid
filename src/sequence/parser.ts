@@ -334,6 +334,12 @@ function pushMessage(
   // filled). Both bidirectional tokens end in ">>", so they fall out as filled.
   const arrowHead =
     arrow.includes('>>') || arrow.includes('x') ? 'filled' : 'open'
+  // "x"/"--x" is Mermaid's "lost message" terminator — a cross, not a plain
+  // filled arrowhead. `arrow.includes('x')` is unambiguous here: the only
+  // arrow tokens containing "x" are "-x"/"--x" (see the message regex's
+  // `--?[)x]` alternative above), never "->>"/"-->>" or the bidirectional
+  // forms.
+  const isLost = arrow.includes('x')
 
   const msg: Message = {
     from,
@@ -342,6 +348,7 @@ function pushMessage(
     lineStyle,
     arrowHead,
   }
+  if (isLost) msg.isLost = true
   if (bidirectional) msg.bidirectional = true
   if (activationMark === '+') msg.activate = true
   if (activationMark === '-') msg.deactivate = true
