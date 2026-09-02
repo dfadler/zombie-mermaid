@@ -42,7 +42,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '../src/index.ts'
-import { samples } from '../samples-data.ts'
+import { samples, type Sample } from '../samples-data.ts'
 import { escapeHtml } from '../demo/format.ts'
 import { asciiToHtml } from '../ascii-html.ts'
 import { startRealMermaid, renderRealMermaidSvg } from './lib/real-mermaid.ts'
@@ -51,12 +51,6 @@ const categoryArg = process.argv.find((a) => a.startsWith('--category='))
 const CATEGORY_FILTER = categoryArg
   ? categoryArg.slice('--category='.length)
   : undefined
-
-interface Sample {
-  title: string
-  category?: string
-  source: string
-}
 
 function slug(text: string): string {
   return text
