@@ -41,6 +41,11 @@ Example (before/after a change, comparing against main):
   diff /tmp/before.txt /tmp/after.txt
 
 Requires (install once): brew install asciinema agg && pip3 install pillow
+Also install the first font in the --font-family list below (e.g.
+brew install --cask font-jetbrains-mono) - a missing font falls back
+silently to the next one with no error, and can produce subtle
+box-drawing glyph artifacts (e.g. a notched "┬") rather than an
+obvious failure.
 EOF
 }
 
@@ -62,7 +67,7 @@ out_prefix="$3"
 cols="${4:-100}"
 rows="${5:-40}"
 
-for cmd in npx asciinema agg python3; do
+for cmd in asciinema agg python3; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "missing dependency: $cmd (see --help for install instructions)" >&2
     exit "$EXIT_DEPENDENCY"
@@ -84,17 +89,32 @@ fi
 # The single-quoted -c string is intentional: it must stay literal here so
 # $RUNNER etc. expand inside the shell asciinema spawns for the recording,
 # not in this script's own shell.
+#
+# Invoke the already-verified local tsx binary directly rather than `npx
+# tsx`: npx's own resolve/spinner sequence can emit terminal control codes
+# (cursor-column-move + clear-line) into this same recorded PTY, and since
+# renderMermaidASCII's output has no trailing newline after its last line,
+# that cleanup sequence can land on and erase the diagram's final line
+# before the recording ends - a silent, reproducible clipping bug.
 # shellcheck disable=SC2016
-RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
+TSX="$repo_root/node_modules/.bin/tsx" RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
   asciinema record --overwrite --quiet \
-  -c 'npx tsx "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
+  -c '"$TSX" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
   --cols "$cols" --rows "$rows" \
   "${out_prefix}.cast"
 
 asciinema convert --overwrite --quiet "${out_prefix}.cast" "${out_prefix}.txt"
 
+# The first installed font in this list wins; agg falls back silently (no
+# error) when one is missing. JetBrains Mono is listed first deliberately:
+# Menlo is a stock macOS font that's essentially always present, so listing
+# it first would make the "install JetBrains Mono" setup step a no-op on
+# macOS - Menlo would still win every time. A missing/skipped font can
+# render box-drawing junction glyphs (e.g. "┬") with a visible notch
+# artifact under agg's swash rendering backend. See --help / this script's
+# header comment.
 agg --quiet \
-  --font-family "Menlo,JetBrains Mono,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono" \
+  --font-family "JetBrains Mono,Menlo,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono" \
   --theme github-dark \
   --select 100% \
   "${out_prefix}.cast" "${out_prefix}.gif"

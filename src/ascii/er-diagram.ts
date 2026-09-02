@@ -632,6 +632,44 @@ export function renderErAscii(
   const dashH = useAscii ? '.' : '╌'
   const dashV = useAscii ? ':' : '┊'
 
+  /**
+   * Character for the single cell where a routed relationship's path turns
+   * — a vertical segment and a horizontal segment meeting at a right angle
+   * (issue #414). `vertDir` is the direction the vertical segment extends
+   * away from this corner cell ('up' toward smaller y, 'down' toward
+   * larger y); `horizDir` is the direction the horizontal segment extends
+   * away from this same cell. Collapses to '+' in ASCII mode, matching
+   * getCrowsFootChars' own useAscii branching.
+   */
+  function getCornerChar(
+    vertDir: 'up' | 'down',
+    horizDir: 'left' | 'right',
+  ): string {
+    if (useAscii) return '+'
+    if (vertDir === 'down') return horizDir === 'right' ? '┌' : '┐'
+    return horizDir === 'right' ? '└' : '┘'
+  }
+
+  /**
+   * Draw a corner glyph at a routed relationship's turn point, through the
+   * same setCGuarded occupancy guard as every other relationship write (see
+   * setCGuarded's doc comment above), so a corner can never overwrite an
+   * entity box border or another relationship's already-placed label text
+   * — the same corruption shape #391 fixed for plain line/marker writes.
+   * Called after the plain line segments (and, in the multi-row-bypass
+   * case, before the crow's-foot markers) are drawn, so the corner glyph
+   * replaces whichever line/dash character would otherwise occupy that one
+   * cell where the path actually changes direction.
+   */
+  function drawCorner(
+    x: number,
+    y: number,
+    vertDir: 'up' | 'down',
+    horizDir: 'left' | 'right',
+  ): void {
+    setCGuarded(x, y, getCornerChar(vertDir, horizDir), 'line')
+  }
+
   for (const rel of diagram.relationships) {
     const e1 = placed.get(rel.entity1)
     const e2 = placed.get(rel.entity2)
@@ -767,6 +805,14 @@ export function renderErAscii(
         }
         for (let x = startX; x <= endX; x++) {
           setCGuardedH(x, detourY, lineH, 'line')
+        }
+        // Mark the two points where the detour actually turns — straight
+        // down from the row, then straight across, then straight back up —
+        // so the turn reads as one continuous line rather than a line
+        // ending flush against an unrelated mark (issue #414).
+        if (startX !== endX) {
+          drawCorner(startX, detourY, 'up', 'right')
+          drawCorner(endX, detourY, 'up', 'left')
         }
         labelBaseY = detourY + 1
       }
@@ -988,6 +1034,25 @@ export function renderErAscii(
         for (let y = markerEndY; y <= endY; y++) {
           setCGuarded(lowerCX, y, lineV, 'line')
         }
+        // Mark the bypass's four turns (issue #414). Drawn before the
+        // crow's-foot markers below, so a marker centered on the same
+        // column/row still wins where the two coincide — same precedence
+        // as before this change, when the marker overwrote a plain line
+        // character there instead of a corner.
+        if (lineX !== routingX) {
+          const horizDirAtLine = routingX > lineX ? 'right' : 'left'
+          const horizDirAtRouting =
+            horizDirAtLine === 'right' ? 'left' : 'right'
+          drawCorner(lineX, markerStartY, 'up', horizDirAtLine)
+          drawCorner(routingX, markerStartY, 'down', horizDirAtRouting)
+        }
+        if (routingX !== lowerCX) {
+          const horizDirAtRouting2 = lowerCX > routingX ? 'right' : 'left'
+          const horizDirAtLower =
+            horizDirAtRouting2 === 'right' ? 'left' : 'right'
+          drawCorner(routingX, markerEndY, 'up', horizDirAtRouting2)
+          drawCorner(lowerCX, markerEndY, 'down', horizDirAtLower)
+        }
       } else {
         // Vertical line. Column lineX stays within upper's own x-range,
         // which by layout construction never overlaps a row-mate's box, so
@@ -1017,6 +1082,14 @@ export function renderErAscii(
           for (let y = midY + 1; y <= endY; y++) {
             setCGuarded(lowerCX, y, lineV, 'line')
           }
+          // Mark the jog's two turns (issue #414): the vertical run from
+          // upper arrives from above and turns toward lowerCX; the
+          // vertical run into lower departs downward, having turned away
+          // from lineX.
+          const horizDirAtLine = lowerCX > lineX ? 'right' : 'left'
+          const horizDirAtLower = horizDirAtLine === 'right' ? 'left' : 'right'
+          drawCorner(lineX, midY, 'up', horizDirAtLine)
+          drawCorner(lowerCX, midY, 'down', horizDirAtLower)
           // The path now ends at lowerCX, not lineX — the lower marker and
           // label (below) must anchor there too, or they render visually
           // disconnected from the line that actually reaches them (#392).
