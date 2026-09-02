@@ -6,6 +6,10 @@ dist/
 site/
 *.tsbuildinfo
 
+# scripts/build-lib.ts's throwaway declaration-file workspace — removed at
+# the end of a normal run, but left behind if the build crashes mid-way.
+.dts-tmp/
+
 # Generated files
 index.html
 editor.html
