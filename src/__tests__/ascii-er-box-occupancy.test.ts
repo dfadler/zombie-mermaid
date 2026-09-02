@@ -15,7 +15,11 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '../ascii/index.ts'
-import { findBoxRect, findTextRect, rectsOverlap } from './helpers/ascii-form.ts'
+import {
+  findBoxRect,
+  findTextRect,
+  rectsOverlap,
+} from './helpers/ascii-form.ts'
 
 /** Assert no two named entity boxes in `ascii` overlap. */
 function expectNoBoxOverlap(ascii: string, names: string[]): void {
@@ -65,7 +69,10 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
     const src = `erDiagram
   CUSTOMER_ACCOUNT_PROFILE ||--o{ SHIPPING_ADDRESS_RECORD : has`
     const ascii = renderMermaidASCII(src, { useAscii: true })
-    expectNoBoxOverlap(ascii, ['CUSTOMER_ACCOUNT_PROFILE', 'SHIPPING_ADDRESS_RECORD'])
+    expectNoBoxOverlap(ascii, [
+      'CUSTOMER_ACCOUNT_PROFILE',
+      'SHIPPING_ADDRESS_RECORD',
+    ])
   })
 
   it('3 entities, adjacent-only chain (smoke case)', () => {
@@ -91,7 +98,11 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
   A ||--o| C : a_very_long_descriptive_relationship_name`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectNoBoxOverlap(ascii, ['A', 'B', 'C'])
-    expectLabelOutsideBoxes(ascii, 'a_very_long_descriptive_relationship_name', ['B'])
+    expectLabelOutsideBoxes(
+      ascii,
+      'a_very_long_descriptive_relationship_name',
+      ['B'],
+    )
   })
 
   it('3 entities, A-C skip B, long names', () => {
@@ -99,7 +110,11 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
   ALPHA_ENTITY ||--o{ BRAVO_ENTITY : one
   ALPHA_ENTITY ||--o| CHARLIE_ENTITY : skips_b`
     const ascii = renderMermaidASCII(src, { useAscii: true })
-    expectNoBoxOverlap(ascii, ['ALPHA_ENTITY', 'BRAVO_ENTITY', 'CHARLIE_ENTITY'])
+    expectNoBoxOverlap(ascii, [
+      'ALPHA_ENTITY',
+      'BRAVO_ENTITY',
+      'CHARLIE_ENTITY',
+    ])
   })
 
   it('5 entities, 3-per-row layout, A-C skip B in row 1', () => {
@@ -174,10 +189,13 @@ describe('ASCII ER diagrams — entity boxes never overlap (issue #350 family)',
     const ascii = renderMermaidASCII(src, { useAscii: true })
     const label1 = findTextRect(ascii, 'places_order')
     const label2 = findTextRect(ascii, 'returns_item')
-    expect(rectsOverlap(label1, label2), 'the two relationship labels overlap').toBe(false)
+    expect(
+      rectsOverlap(label1, label2),
+      'the two relationship labels overlap',
+    ).toBe(false)
   })
 
-  it('3 entities, two-char crow\'s-foot markers, minimal gap', () => {
+  it("3 entities, two-char crow's-foot markers, minimal gap", () => {
     const src = `erDiagram
   A }o--o{ B : m2m
   B }o--o{ C : m2m2`

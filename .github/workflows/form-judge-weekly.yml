@@ -55,7 +55,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        category: [Flowchart, Sequence, Class, ER, State, Interactivity, 'XY Chart']
+        category:
+          [Flowchart, Sequence, Class, ER, State, Interactivity, 'XY Chart']
 
     steps:
       - name: Checkout

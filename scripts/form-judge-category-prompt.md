@@ -14,7 +14,7 @@ before invoking this prompt.
 
 ---
 
-You are auditing category **"__CATEGORY__"** of a structural-fidelity report.
+You are auditing category `__CATEGORY__` of a structural-fidelity report.
 
 Read the index file at `__INDEX_PATH__` — a JSON array of `{id, category,
 title, path, judgeable, mermaidError, asciiError}` entries for every sample
@@ -25,6 +25,7 @@ nothing to compare) — just note it as skipped in your final summary, don't
 try to judge it.
 
 For each judgeable entry, read its file at `path`. It contains:
+
 - `source` — the mermaid diagram source text
 - `trimmedSvg` — real mermaid.js's SVG output for that source (boilerplate
   `<defs>`/`<marker>`/`<style>` stripped; what remains is the actual
@@ -37,6 +38,7 @@ For each judgeable entry, read its file at `path`. It contains:
 
 Judge whether `asciiText` is a reasonable **structural** reproduction of
 what `trimmedSvg` shows. Look specifically for:
+
 - An element rendered as the wrong kind (e.g. a mermaid `actor` —
   `data-type="actor"` — drawn as a plain box instead of something visually
   distinct from a `participant`)
@@ -67,7 +69,7 @@ progress survives even if you run out of turns partway through:
 ```
 
 `faithful` is `false` only when at least one finding is severe enough that
-you would *not* call the ASCII output a reasonable reproduction overall — a
+you would _not_ call the ASCII output a reasonable reproduction overall — a
 sample can be `faithful: true` while still carrying a minor cosmetic
 finding worth noting (e.g. token order in an attribute line) that isn't, on
 its own, a structural defect.

@@ -30,7 +30,10 @@ function expectNoBoxOverlap(ascii: string, names: string[]): void {
 }
 
 function manyAttrs(prefix: string, count: number): string {
-  return Array.from({ length: count }, (_, i) => `    +String ${prefix}${i}`).join('\n')
+  return Array.from(
+    { length: count },
+    (_, i) => `    +String ${prefix}${i}`,
+  ).join('\n')
 }
 
 /** Assert every one of `needles` appears verbatim, exactly once, in `text`. */
@@ -151,7 +154,11 @@ ${manyAttrs('b', 6)}
   MidRepository --> CharlieController
   CharlieController --> AlphaService`
     const ascii = renderMermaidASCII(src, { useAscii: true })
-    expectNoBoxOverlap(ascii, ['AlphaService', 'MidRepository', 'CharlieController'])
+    expectNoBoxOverlap(ascii, [
+      'AlphaService',
+      'MidRepository',
+      'CharlieController',
+    ])
   })
 
   it('2 levels (A,B / C,D), C tall, A->D association (cross-level jog)', () => {

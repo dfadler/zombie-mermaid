@@ -21,7 +21,8 @@ const VERDICT_SCHEMA = {
           severity: { type: 'string', enum: ['minor', 'moderate', 'major'] },
           summary: {
             type: 'string',
-            description: 'One-sentence statement of the specific structural defect.',
+            description:
+              'One-sentence statement of the specific structural defect.',
           },
           evidence: {
             type: 'string',
@@ -68,14 +69,16 @@ log(
 )
 
 const verdicts = await pipeline(judgeable, (entry) =>
-  agent(buildPrompt(entry), { label: entry.id, phase: 'Judge', schema: VERDICT_SCHEMA }).then(
-    (v) => ({
-      id: entry.id,
-      category: entry.category,
-      title: entry.title,
-      verdict: v,
-    }),
-  ),
+  agent(buildPrompt(entry), {
+    label: entry.id,
+    phase: 'Judge',
+    schema: VERDICT_SCHEMA,
+  }).then((v) => ({
+    id: entry.id,
+    category: entry.category,
+    title: entry.title,
+    verdict: v,
+  })),
 )
 
 const results = verdicts.filter(Boolean)

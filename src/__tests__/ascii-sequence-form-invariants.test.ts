@@ -54,9 +54,21 @@ describe('ASCII sequence — block frame fits its own label (issue #352 family)'
   }> = [
     { name: 'alt, short label, 2 actors', type: 'alt', actors: ['A', 'B'] },
     { name: 'loop, short label, 2 actors', type: 'loop', actors: ['A', 'B'] },
-    { name: 'opt, short label, 3 actors', type: 'opt', actors: ['A', 'B', 'C'] },
-    { name: 'par, short label, 3 actors', type: 'par', actors: ['A', 'B', 'C'] },
-    { name: 'critical, short label, 2 actors', type: 'critical', actors: ['A', 'B'] },
+    {
+      name: 'opt, short label, 3 actors',
+      type: 'opt',
+      actors: ['A', 'B', 'C'],
+    },
+    {
+      name: 'par, short label, 3 actors',
+      type: 'par',
+      actors: ['A', 'B', 'C'],
+    },
+    {
+      name: 'critical, short label, 2 actors',
+      type: 'critical',
+      actors: ['A', 'B'],
+    },
   ]
 
   for (const c of shortLabelCases) {
@@ -77,17 +89,42 @@ ${participants(c.actors)}
     label: string
     actors: string[]
   }> = [
-    { name: 'alt, long label, 2 actors', type: 'alt', label: LONG_LABEL, actors: ['A', 'B'] },
+    {
+      name: 'alt, long label, 2 actors',
+      type: 'alt',
+      label: LONG_LABEL,
+      actors: ['A', 'B'],
+    },
     {
       name: 'alt, very long label, 2 actors',
       type: 'alt',
       label: VERY_LONG_LABEL,
       actors: ['A', 'B'],
     },
-    { name: 'alt, long label, 5 actors', type: 'alt', label: LONG_LABEL, actors: ['A', 'B', 'C', 'D', 'E'] },
-    { name: 'loop, long label, 2 actors', type: 'loop', label: LONG_LABEL, actors: ['A', 'B'] },
-    { name: 'opt, long label, 3 actors', type: 'opt', label: LONG_LABEL, actors: ['A', 'B', 'C'] },
-    { name: 'par, long label, 3 actors', type: 'par', label: LONG_LABEL, actors: ['A', 'B', 'C'] },
+    {
+      name: 'alt, long label, 5 actors',
+      type: 'alt',
+      label: LONG_LABEL,
+      actors: ['A', 'B', 'C', 'D', 'E'],
+    },
+    {
+      name: 'loop, long label, 2 actors',
+      type: 'loop',
+      label: LONG_LABEL,
+      actors: ['A', 'B'],
+    },
+    {
+      name: 'opt, long label, 3 actors',
+      type: 'opt',
+      label: LONG_LABEL,
+      actors: ['A', 'B', 'C'],
+    },
+    {
+      name: 'par, long label, 3 actors',
+      type: 'par',
+      label: LONG_LABEL,
+      actors: ['A', 'B', 'C'],
+    },
     {
       name: 'critical, very long label, 2 actors',
       type: 'critical',
@@ -108,8 +145,10 @@ ${participants(c.actors)}
     })
   }
 
-  it.fails('alt/else with multiple branches: every divider label survives unclipped', () => {
-    const src = `sequenceDiagram
+  it.fails(
+    'alt/else with multiple branches: every divider label survives unclipped',
+    () => {
+      const src = `sequenceDiagram
   participant A
   participant B
   alt ${LONG_LABEL}
@@ -117,10 +156,11 @@ ${participants(c.actors)}
   else ${VERY_LONG_LABEL}
     A->>B: y
   end`
-    const ascii = renderMermaidASCII(src, { useAscii: true })
-    expect(ascii).toContain(LONG_LABEL)
-    expect(ascii).toContain(VERY_LONG_LABEL)
-  })
+      const ascii = renderMermaidASCII(src, { useAscii: true })
+      expect(ascii).toContain(LONG_LABEL)
+      expect(ascii).toContain(VERY_LONG_LABEL)
+    },
+  )
 })
 
 // ---------------------------------------------------------------------------
@@ -140,7 +180,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
     // than its (small) left margin clamps to column 0, so the note's own
     // rectangle swallows its own actor's lifeline column instead of sitting
     // entirely to its left.
-    'note left of the leftmost actor does not overlap that actor\'s own lifeline',
+    "note left of the leftmost actor does not overlap that actor's own lifeline",
     () => {
       const src = `sequenceDiagram
   participant A as Alice
@@ -160,7 +200,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
     // Notes (Right/Left/Over)" sample ("Alice prepares" reaching into Bob's
     // lifeline). A non-leftmost actor with a real left neighbor and a note
     // wide enough that `llX[aIdx] - nWidth - 1 < 0`.
-    'note left of a non-leftmost actor does not overlap the left-neighbor\'s lifeline',
+    "note left of a non-leftmost actor does not overlap the left-neighbor's lifeline",
     () => {
       const src = `sequenceDiagram
   participant A as Alice
@@ -183,7 +223,7 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
     // overwrites that actor's lifeline. No `Math.max(0, …)` clamp involved
     // — a genuinely different bug from the two above, sharing only the
     // visible symptom.
-    'note right of an actor does not overlap the next actor\'s lifeline',
+    "note right of an actor does not overlap the next actor's lifeline",
     () => {
       const src = `sequenceDiagram
   participant A as Alice
@@ -254,21 +294,24 @@ describe('ASCII sequence — `actor` renders distinctly from `participant`', () 
     ['first', 'U'],
     ['middle', 'U'],
     ['last', 'U'],
-  ])('an %s-position `actor` looks different from a `participant` (%s)', (_position, id) => {
-    const asActor = renderMermaidASCII(
-      `sequenceDiagram
+  ])(
+    'an %s-position `actor` looks different from a `participant` (%s)',
+    (_position, id) => {
+      const asActor = renderMermaidASCII(
+        `sequenceDiagram
   actor ${id} as User
   participant S as System
   ${id}->>S: hi`,
-      { useAscii: true },
-    )
-    const asParticipant = renderMermaidASCII(
-      `sequenceDiagram
+        { useAscii: true },
+      )
+      const asParticipant = renderMermaidASCII(
+        `sequenceDiagram
   participant ${id} as User
   participant S as System
   ${id}->>S: hi`,
-      { useAscii: true },
-    )
-    expect(asActor).not.toBe(asParticipant)
-  })
+        { useAscii: true },
+      )
+      expect(asActor).not.toBe(asParticipant)
+    },
+  )
 })

@@ -19,7 +19,11 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { renderMermaidASCII } from '../src/index.ts'
 import { samples } from '../samples-data.ts'
-import { startRealMermaid, renderRealMermaidSvg, trimMermaidSvg } from './lib/real-mermaid.ts'
+import {
+  startRealMermaid,
+  renderRealMermaidSvg,
+  trimMermaidSvg,
+} from './lib/real-mermaid.ts'
 
 const categoryArg = process.argv.find((a) => a.startsWith('--category='))
 const CATEGORY_FILTER = categoryArg
@@ -79,7 +83,11 @@ async function generate(): Promise<IndexEntry[]> {
     let trimmedSvg: string | null = null
     let mermaidError: string | null = null
     try {
-      const svg = await renderRealMermaidSvg(session, id.replace(/-/g, '_'), sample.source)
+      const svg = await renderRealMermaidSvg(
+        session,
+        id.replace(/-/g, '_'),
+        sample.source,
+      )
       trimmedSvg = trimMermaidSvg(svg)
     } catch (err) {
       mermaidError = err instanceof Error ? err.message : String(err)
@@ -88,7 +96,9 @@ async function generate(): Promise<IndexEntry[]> {
     let asciiText: string | null = null
     let asciiError: string | null = null
     try {
-      asciiText = renderMermaidASCII(sample.source, { colorMode: 'none' }).replace(/[ \t]+$/gm, '')
+      asciiText = renderMermaidASCII(sample.source, {
+        colorMode: 'none',
+      }).replace(/[ \t]+$/gm, '')
     } catch (err) {
       asciiError = err instanceof Error ? err.message : String(err)
     }

@@ -67,7 +67,8 @@ function slug(text: string): string {
 function renderAsciiPanel(sample: Sample): string {
   try {
     const ascii = renderMermaidASCII(sample.source, { colorMode: 'none' })
-    if (ascii.trim() === '') return '<div class="fix-empty">Rendered nothing.</div>'
+    if (ascii.trim() === '')
+      return '<div class="fix-empty">Rendered nothing.</div>'
     return `<pre class="fix-ascii">${asciiToHtml(ascii.replace(/[ \t]+$/gm, ''))}</pre>`
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -75,7 +76,11 @@ function renderAsciiPanel(sample: Sample): string {
   }
 }
 
-function renderSampleSection(id: string, sample: Sample, mermaidSvgPanel: string): string {
+function renderSampleSection(
+  id: string,
+  sample: Sample,
+  mermaidSvgPanel: string,
+): string {
   return `
       <section class="fix" id="${id}">
         <h2><a class="fix-anchor" href="#${id}">${escapeHtml(sample.category ?? 'uncategorized')} / ${escapeHtml(sample.title)}</a></h2>
@@ -112,8 +117,15 @@ async function generate(): Promise<string> {
     const id = `form-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}`
     let mermaidPanel: string
     try {
-      const svg = await renderRealMermaidSvg(session, id.replace(/-/g, '_'), sample.source)
-      mermaidPanel = svg.trim() === '' ? '<div class="fix-empty">Rendered nothing.</div>' : `<div class="fix-svg">${svg}</div>`
+      const svg = await renderRealMermaidSvg(
+        session,
+        id.replace(/-/g, '_'),
+        sample.source,
+      )
+      mermaidPanel =
+        svg.trim() === ''
+          ? '<div class="fix-empty">Rendered nothing.</div>'
+          : `<div class="fix-svg">${svg}</div>`
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       mermaidPanel = `<div class="fix-error"><strong>Threw:</strong> ${escapeHtml(message)}</div>`
