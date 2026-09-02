@@ -214,6 +214,124 @@ describe('runRender – coords overlay', () => {
 })
 
 // ============================================================================
+// --max-width
+// ============================================================================
+
+describe('runRender – max-width warning', () => {
+  it('warns on stderr when ASCII output exceeds an explicit --max-width', async () => {
+    const mockStdout = createMockStdout()
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: 10 }),
+      mockStdout,
+      SIMPLE_FLOWCHART,
+      mockStderr,
+    )
+
+    expect(mockStderr.output()).toContain('Warning:')
+    expect(mockStderr.output()).toContain('exceeding --max-width of 10')
+    // stdout still gets the full, unmodified diagram — no truncation.
+    expect(mockStdout.output()).toContain('A')
+    expect(mockStdout.output()).toContain('C')
+  })
+
+  it('does not warn when ASCII output fits within --max-width', async () => {
+    const mockStdout = createMockStdout()
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: 1000 }),
+      mockStdout,
+      SIMPLE_FLOWCHART,
+      mockStderr,
+    )
+
+    expect(mockStderr.output()).toBe('')
+  })
+
+  it('does not warn when --max-width is not given', async () => {
+    const mockStdout = createMockStdout()
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true }),
+      mockStdout,
+      SIMPLE_FLOWCHART,
+      mockStderr,
+    )
+
+    expect(mockStderr.output()).toBe('')
+  })
+
+  it('resolves --max-width auto against the detected terminal width', async () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      process.stdout,
+      'columns',
+    )
+    // Narrow enough that the sample flowchart is guaranteed to overflow it.
+    Object.defineProperty(process.stdout, 'columns', {
+      value: 5,
+      configurable: true,
+    })
+
+    try {
+      const mockStdout = createMockStdout()
+      const mockStderr = createMockStdout()
+      await runRender(
+        renderArgs({ ascii: true, maxWidth: 'auto' }),
+        mockStdout,
+        SIMPLE_FLOWCHART,
+        mockStderr,
+      )
+
+      expect(mockStderr.output()).toContain('detected terminal width of 5')
+    } finally {
+      if (originalDescriptor === undefined) {
+        delete (process.stdout as { columns?: number }).columns
+      } else {
+        Object.defineProperty(process.stdout, 'columns', originalDescriptor)
+      }
+    }
+  })
+
+  it('measures width in terminal display columns, not UTF-16 code units', async () => {
+    // A sequence-diagram message label floats over the canvas without a
+    // box border of matching width padding it out, so — unlike a flowchart
+    // node, where the box border always reaches the label's true display
+    // width — this is a case where String.length genuinely undercounts:
+    // each CJK character is 1 UTF-16 code unit but renders 2 terminal
+    // columns wide.
+    const wideSequence = `sequenceDiagram
+  participant A
+  participant B
+  A->>B: 中文很长的消息内容说明文字超长`
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: 1000 }),
+      mockStdout,
+      wideSequence,
+      createMockStdout(),
+    )
+    const rendered = mockStdout.output()
+    const codeUnitWidth = Math.max(
+      ...rendered.split('\n').map((line) => line.length),
+    )
+
+    const mockStderr = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, maxWidth: codeUnitWidth }),
+      createMockStdout(),
+      wideSequence,
+      mockStderr,
+    )
+
+    // The true display width exceeds the code-unit count, so measuring by
+    // display width must still warn even though code-unit length alone
+    // would report the diagram as fitting.
+    expect(mockStderr.output()).toContain('Warning:')
+  })
+})
+
+// ============================================================================
 // Error cases
 // ============================================================================
 
