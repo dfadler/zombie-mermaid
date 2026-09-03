@@ -154,9 +154,15 @@ function renderVertical(
   // Canvas dimensions
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
+  const hasYTitle = !!chart.yAxis.title
   const hasLegend = chart.series.length > 1
   const titleRow = hasTitle ? 0 : -1
-  const plotTop = (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0)
+  // A rotated axis title has no ASCII equivalent, so the y-axis title is
+  // rendered as its own left-aligned row directly above the y-axis gutter
+  // (see step 2.5 below) rather than a literal vertical/rotated label —
+  // reserve that row here so the plot area shifts down to make room for it.
+  const plotTop =
+    (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0) + (hasYTitle ? 1 : 0)
   const plotLeft = yGutter + 1 // +1 for axis character
   const totalW = plotLeft + bandW * dataCount + 2
   const xAxisRow = plotTop + plotH
@@ -206,6 +212,12 @@ function renderVertical(
       ch,
       seriesColors,
     )
+  }
+
+  // 2.5. Y-axis title — left-aligned directly above the y-axis gutter, on
+  // the row reserved for it in plotTop above.
+  if (chart.yAxis.title) {
+    writeText(canvas, roles, plotTop - 1, 0, chart.yAxis.title, 'text')
   }
 
   // 3. Y-axis line + ticks + labels
