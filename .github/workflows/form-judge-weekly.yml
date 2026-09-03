@@ -193,6 +193,23 @@ jobs:
           timeout_minutes: '15'
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
+      - name: Restore Node.js for pnpm (after the judge step)
+        # claude-code-base-action's own internal setup runs its own
+        # actions/setup-node pinned to Node 18.x, and that change persists
+        # on the runner's PATH for the rest of the job — not scoped to just
+        # that action's steps. It always happens, whether or not the judge
+        # step's own Claude session ever actually ran (e.g. even when
+        # claude-code-base-action's "Install Claude Code" curl step itself
+        # fails). pnpm now requires Node >=22.13, so without this, every
+        # pnpm-based step below fails with "This version of pnpm requires
+        # at least Node.js v22.13" regardless of whether the judge step
+        # itself succeeded, failed, or was skipped entirely — confirmed via
+        # a real run (job 100761465707).
+        if: always()
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
       - name: Finalize judge cache for this category
         # Runs even if the judge step above was skipped (nothing needed
         # judging) or failed/timed out partway through a batch — it derives
