@@ -67,13 +67,17 @@ function fmtMs(ms: number): string {
 for (const sample of samples) {
   try {
     await renderMermaid(sample.source, sample.options)
-  } catch {
-    // Warm-up only — real errors surface in the timed run below.
+  } catch (err) {
+    // Non-fatal: an expected per-sample failure (e.g. an unsupported
+    // diagram type) is re-caught and reported properly by the timed run
+    // below. Logged here only so an *unexpected* warm-up-only failure still
+    // leaves a trace in the Actions log instead of vanishing silently.
+    console.warn(`Warm-up SVG render failed for "${sample.title}": ${err}`)
   }
   try {
     renderMermaidASCII(sample.source)
-  } catch {
-    // Warm-up only — real errors surface in the timed run below.
+  } catch (err) {
+    console.warn(`Warm-up ASCII render failed for "${sample.title}": ${err}`)
   }
 }
 
