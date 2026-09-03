@@ -226,13 +226,18 @@ body::after {
   color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
   white-space: nowrap;
 }
+.theme-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
 .theme-pills {
   display: flex;
   gap: 0.3rem;
   overflow: visible;
   padding: 4px;
   margin: -4px;
-  margin-left: auto;
   position: relative;
   z-index: 2;
 }
