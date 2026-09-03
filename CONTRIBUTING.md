@@ -68,7 +68,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 1. `pnpm install --frozen-lockfile`
 2. `pnpm run test:coverage`
 3. `pnpm exec tsc --noEmit`
-4. `pnpm run test:visual` (a separate CI job; needs `pnpm exec playwright install --with-deps chromium` first — see "Visual regression tests" below)
+4. `pnpm run test:visual` (a separate CI job, sharded 4-way for wall-clock speed; needs `pnpm exec playwright install --with-deps chromium` first — see "Visual regression tests" below)
 
 Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs — but for ASCII output specifically, a passing visual-regression check is not the same as a real-terminal check; see the caveat in "Visual regression tests" below before treating it as final proof.
 
@@ -101,7 +101,7 @@ pnpm run test:visual:update
 
 Baseline filenames are suffixed with browser + platform (e.g. `-chromium-darwin.png` / `-chromium-linux.png`), so a macOS dev machine and the Linux CI runner keep separate baselines rather than fighting over one — CI generates and commits its own the same way a local run does, there's no cross-platform bootstrapping needed.
 
-Don't trust a `mcr.microsoft.com/playwright:*` Docker container as a stand-in for the real `ubuntu-latest` CI runner when checking whether a `-chromium-linux.png` baseline is stale — confirmed in [#326](https://github.com/dfadler/zombie-mermaid/issues/326) to render the ASCII/terminal-panel samples ~100px wider than CI actually does (almost certainly a font-substitution difference between the image's own bundled fonts and what `playwright install --with-deps chromium` installs on bare `ubuntu-latest`), producing baseline "staleness" that doesn't reproduce in CI at all. If a linux baseline is suspected stale, verify against an actual CI run (or its `visual-regression-failures` artifact) rather than a local Docker approximation.
+Don't trust a `mcr.microsoft.com/playwright:*` Docker container as a stand-in for the real `ubuntu-latest` CI runner when checking whether a `-chromium-linux.png` baseline is stale — confirmed in [#326](https://github.com/dfadler/zombie-mermaid/issues/326) to render the ASCII/terminal-panel samples ~100px wider than CI actually does (almost certainly a font-substitution difference between the image's own bundled fonts and what `playwright install --with-deps chromium` installs on bare `ubuntu-latest`), producing baseline "staleness" that doesn't reproduce in CI at all. If a linux baseline is suspected stale, verify against an actual CI run (or its `visual-regression-failures-<shard>` artifacts — the job is sharded 4-way, so a failure can land in any one of them) rather than a local Docker approximation.
 
 Font rasterization has genuine run-to-run jitter (see the comments in `playwright.config.ts` next to `expect.toHaveScreenshot`), so the comparison tolerance is deliberately looser than a byte-for-byte diff and CI retries a failing test twice before calling it a real failure. If you're touching rendering code, verify a real regression still fails clearly rather than just tightening tolerances until things pass.
 
