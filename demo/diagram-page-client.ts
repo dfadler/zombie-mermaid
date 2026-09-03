@@ -275,8 +275,19 @@ if (moreBtn && moreDropdown) {
 //    here too. An empty string means "explicit default" there, which
 //    already matches this page's build-time default, so there's nothing to
 //    apply.
-const saved = localStorage.getItem('mermaid-theme')
+//
+// One-time migration: a visitor who picked a theme on a diagrams page
+// before this file switched keys (see #438) has it stored under the old,
+// diagrams-page-only 'zm-diagram-page-theme' key. Fall back to that only
+// when the shared key was never set, so they don't silently lose their
+// choice -- applyTheme below re-persists it under 'mermaid-theme',
+// completing the migration, and the stale key is then discarded either way.
+const LEGACY_THEME_KEY = 'zm-diagram-page-theme'
+const saved =
+  localStorage.getItem('mermaid-theme') ??
+  localStorage.getItem(LEGACY_THEME_KEY)
 if (saved && THEMES[saved]) applyTheme(saved)
+localStorage.removeItem(LEGACY_THEME_KEY)
 
 // Reconcile the editor-link href with the current viewport right away — a
 // visitor can land directly on a narrow viewport, not just resize into
