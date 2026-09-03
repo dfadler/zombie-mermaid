@@ -764,23 +764,35 @@ export function renderSequenceAscii(
 
     // minLX/maxLX (and therefore bLeft/bRight) only account for lifelines
     // *this block's own messages* touch. That leaves a gap: the fixed
-    // margin above can coincidentally place a wall exactly on a different,
-    // untouched lifeline's column — subsuming it for the block's whole
-    // vertical span, since the wall glyph and the lifeline glyph occupy the
-    // same cell (see #353; `alt` hit this while `loop`/`opt` in the same
-    // diagram happened not to, purely because their own messages already
-    // reached the lifeline in question, clearing it by the same margin).
-    // Applies to every block type alike — nudge either wall past any
-    // lifeline it would otherwise land on.
+    // margin above can coincidentally place a wall exactly on — or even
+    // past — a different, untouched lifeline's column (#353).
+    //
+    // The fix is to PULL the wall back short of that lifeline, not push it
+    // past. Verified against real mermaid.js's own SVG output for #353's
+    // reproduction (the closest thing to ground truth this renderer has,
+    // per scripts/lib/real-mermaid.ts): `loop`/`opt` there enclose
+    // `Database` because their own messages touch it directly, but `alt`
+    // — which never messages `Database` — stops well short of it
+    // (right edge 124px before Database's lifeline, not past it), even
+    // though `loop`/`opt` in the very same diagram extend ~11px past
+    // Database's lifeline to enclose it. Real mermaid never widens a
+    // block's wall to enclose a lifeline its own messages don't touch;
+    // it only ever clears one it was already going to reach. Applies to
+    // every block type alike, both walls.
+    let nextRightLL = Number.POSITIVE_INFINITY
+    let nextLeftLL = Number.NEGATIVE_INFINITY
     for (const x of llX) {
-      if (bRight === x) bRight = x + BLOCK_WALL_MARGIN
-      if (bLeft === x) bLeft = x - BLOCK_WALL_MARGIN
+      if (x > maxLX && x < nextRightLL) nextRightLL = x
+      if (x < minLX && x > nextLeftLL) nextLeftLL = x
     }
+    if (bRight >= nextRightLL) bRight = nextRightLL - BLOCK_WALL_MARGIN
+    if (bLeft <= nextLeftLL) bLeft = nextLeftLL + BLOCK_WALL_MARGIN
 
-    // bLeft is now FINAL and fully resolved (nudged + clamped) — #352's
-    // label widening below must read from this value, not an intermediate
-    // one, or the widened wall can come out short (see the merge-hazard
-    // note this replaced, from the #387/#388 review discussion).
+    // bLeft is now FINAL and fully resolved (pulled back + clamped) —
+    // #352's label widening below must read from this value, not an
+    // intermediate one, or the widened wall can come out short (see the
+    // merge-hazard note this replaced, from the #387/#388 review
+    // discussion).
     bLeft = Math.max(0, bLeft)
 
     // Header ("alt [label]") and divider ("[else label]") text is drawn
@@ -796,14 +808,14 @@ export function renderSequenceAscii(
     const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
     const neededRight = bLeft + 1 + maxBlockLabelWidth(block)
     if (neededRight > bRight) {
+      // Trust the lifeline-shifting layout pass above to have already
+      // pushed any untouched trailing participant clear of this: pulling
+      // back here instead would silently re-truncate the label (#352),
+      // and pushing forward would silently re-open the #353 mismatch this
+      // block just fixed. If a diagram ever reaches this widened value
+      // without enough room, that's a bug in the shifting pass's estimate,
+      // not something to paper over here.
       bRight = neededRight
-      // Label-driven widening can itself land bRight exactly on a lifeline
-      // that this block's own messages never touched — the same #353
-      // collision, one step later. Re-apply the untouched-lifeline nudge
-      // to the widened value before it's treated as final.
-      for (const x of llX) {
-        if (bRight === x) bRight = x + BLOCK_WALL_MARGIN
-      }
     }
 
     if (bRight > blockCanvasMaxX) {

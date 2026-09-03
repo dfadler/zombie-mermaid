@@ -5,9 +5,9 @@
 // (src/ascii/sequence.ts's "DRAW: blocks" pass): a fixed BLOCK_WALL_MARGIN
 // padding around the leftmost/rightmost lifeline the block's own messages
 // touch. That calculation only ever looks at lifelines the block's messages
-// reach — so the fixed margin can coincidentally land a wall exactly on a
+// reach — so the fixed margin could coincidentally land a wall exactly on a
 // *different*, untouched lifeline's column, subsuming it (wall glyph and
-// lifeline glyph share the same cell) for the block's whole vertical span.
+// lifeline glyph sharing the same cell) for the block's whole vertical span.
 //
 // This bit `alt` in the issue's repro (a diagram combining `loop`, `alt`,
 // and `opt`, where only `alt` doesn't reach the diagram's rightmost
@@ -15,6 +15,19 @@
 // messages already reached that lifeline and so were naturally padded past
 // it by the same margin. It is not a per-block-type bug: all three share
 // identical wall-calculation code.
+//
+// The fix pulls a wall back short of an untouched lifeline rather than
+// pushing it past one — verified against real mermaid.js's own SVG output
+// for this exact diagram (see scripts/lib/real-mermaid.ts): `loop`/`opt`
+// there enclose `Database` because their own messages touch it directly,
+// but `alt` — which never messages `Database` — stops well short of it
+// (124px of real clearance, not a few px of overshoot), even though
+// `loop`/`opt` in the same diagram extend ~11px *past* Database's lifeline
+// to enclose it. Real mermaid never widens a block's wall to enclose a
+// lifeline its own messages don't touch. An earlier version of this test
+// asserted the opposite (`alt` should match `loop`/`opt` by enclosing
+// Database) — that was a reasonable-sounding but unverified guess at the
+// "consistent" fix; it wasn't checked against real mermaid at the time.
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
@@ -83,26 +96,33 @@ sequenceDiagram
     const lines = result.split('\n')
 
     const llCols = lifelineColumns(lines)
-    const rightmostLL = Math.max(...llCols)
+    const rightmostLL = Math.max(...llCols) // Database
+    const authServiceLL = llCols[2]! // touched by alt directly
 
     const loopRight = blockWallRightColumn(lines, 'loop [token refresh]')
     const altRight = blockWallRightColumn(lines, 'alt [credentials valid]')
     const optRight = blockWallRightColumn(lines, 'opt [remember me]')
 
-    // None of the three walls may land on any lifeline column — the bug
-    // manifested as alt's right wall landing exactly on the Database
-    // lifeline's column.
+    // None of the three walls may land on any lifeline column — the
+    // original bug manifested as alt's right wall landing exactly on the
+    // Database lifeline's column.
     for (const wallCol of [loopRight, altRight, optRight]) {
       expect(llCols).not.toContain(wallCol)
     }
 
-    // All three clear the rightmost lifeline, and by the same margin —
-    // loop/opt already did; alt must now match rather than sit flush on it.
+    // loop/opt both message Database directly, so both enclose it with
+    // clearance — matching real mermaid.
     expect(loopRight).toBeGreaterThan(rightmostLL)
-    expect(altRight).toBeGreaterThan(rightmostLL)
     expect(optRight).toBeGreaterThan(rightmostLL)
-    expect(altRight).toBe(loopRight)
-    expect(altRight).toBe(optRight)
+
+    // alt never messages Database — real mermaid stops alt's wall well
+    // short of it rather than widening to enclose it, so alt must NOT
+    // match loop/opt's right column here. It still clears the lifeline it
+    // does touch (Auth Service).
+    expect(altRight).toBeGreaterThan(authServiceLL)
+    expect(altRight).toBeLessThan(rightmostLL)
+    expect(altRight).not.toBe(loopRight)
+    expect(altRight).not.toBe(optRight)
 
     // The Database lifeline must still be drawn as a lifeline (not
     // subsumed into the alt block's wall) for a row inside the alt block's
@@ -110,9 +130,9 @@ sequenceDiagram
     const selfArrowRow = lines.find((l) => l.includes('mint access token'))
     expect(selfArrowRow).toBeDefined()
     expect(selfArrowRow![rightmostLL]).toBe('│')
-    // ...and that lifeline column is strictly to the left of the alt
-    // block's own right wall on that row — two distinct glyphs, not one.
-    expect(rightmostLL).toBeLessThan(altRight)
+    // ...and that lifeline sits outside (to the right of) alt's own right
+    // wall on that row — two distinct glyphs, not one, and not enclosed.
+    expect(altRight).toBeLessThan(rightmostLL)
   })
 
   it('keeps a consistent right wall across every else-branch of a multi-branch alt', () => {
