@@ -352,12 +352,15 @@ function declareActorAt(
 }
 
 describe('ASCII sequence — `actor` renders distinctly from `participant`', () => {
-  // Bug: `actor.type` (captured by the parser — see src/sequence/types.ts:24,
-  // "'actor' renders as a stick figure") is never read anywhere in
-  // src/ascii/sequence.ts. Every actor draws through the same box-drawing
-  // path regardless of declared type, so an `actor` and a `participant`
-  // with the same label render byte-for-byte identically today.
-  it.fails.each<[ActorPosition, string]>([
+  // Fixed (issue #449): `actor.type` (captured by the parser — see
+  // src/sequence/types.ts:24) is now read in src/ascii/sequence.ts's
+  // `drawActorBox`, which draws an `actor` box with rounded corners
+  // (╭╮╰╯ / .' in ASCII mode) instead of the square corners (┌┐└┘ / +)
+  // used for a plain `participant` — reusing the same "rounded corners =
+  // soft/person-like shape" vocabulary as the flowchart `rounded` node
+  // shape (src/ascii/shapes/rounded.ts). Promoted from `it.fails` now that
+  // the gap is closed, per this file's own documented convention.
+  it.each<[ActorPosition, string]>([
     ['first', 'U'],
     ['middle', 'U'],
     ['last', 'U'],

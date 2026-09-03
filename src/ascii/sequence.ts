@@ -83,6 +83,16 @@ export function renderSequenceAscii(
   const TR = useAscii ? '+' : '┐'
   const BL = useAscii ? '+' : '└'
   const BR = useAscii ? '+' : '┘'
+  // Rounded corners mark an `actor` box (mermaid's `actor` keyword) as
+  // visually distinct from a plain `participant` box, which keeps the
+  // square corners above. This reuses the same "rounded corners = soft/
+  // person-like shape" vocabulary as the flowchart `rounded` node shape
+  // (src/ascii/shapes/rounded.ts, src/ascii/shapes/corners.ts) rather than
+  // inventing a new convention — see issue #449.
+  const ATL = useAscii ? '.' : '╭'
+  const ATR = useAscii ? '.' : '╮'
+  const ABL = useAscii ? "'" : '╰'
+  const ABR = useAscii ? "'" : '╯'
   const JT = useAscii ? '+' : '┬' // top junction on lifeline
   const JB = useAscii ? '+' : '┴' // bottom junction on lifeline
   const JL = useAscii ? '+' : '├' // left junction
@@ -518,17 +528,26 @@ export function renderSequenceAscii(
    *    center-aligned would alter class/ER diagram box sizing, which must
    *    stay untouched.
    */
-  function drawActorBox(cx: number, topY: number, label: string): void {
+  function drawActorBox(
+    cx: number,
+    topY: number,
+    label: string,
+    isActor: boolean,
+  ): void {
     const lines = splitLines(label)
     const maxW = maxLineWidth(label)
     const w = maxW + 2 * boxPad + 2
     const h = lines.length + 2 // lines + top/bottom border
     const left = cx - Math.floor(w / 2)
+    const tl = isActor ? ATL : TL
+    const tr = isActor ? ATR : TR
+    const bl = isActor ? ABL : BL
+    const br = isActor ? ABR : BR
 
     // Top border
-    setC(left, topY, TL, 'border')
+    setC(left, topY, tl, 'border')
     for (let x = 1; x < w - 1; x++) setC(left + x, topY, H, 'border')
-    setC(left + w - 1, topY, TR, 'border')
+    setC(left + w - 1, topY, tr, 'border')
 
     // Content lines (centered horizontally within the box)
     for (let i = 0; i < lines.length; i++) {
@@ -548,9 +567,9 @@ export function renderSequenceAscii(
 
     // Bottom border
     const bottomY = topY + h - 1
-    setC(left, bottomY, BL, 'border')
+    setC(left, bottomY, bl, 'border')
     for (let x = 1; x < w - 1; x++) setC(left + x, bottomY, H, 'border')
-    setC(left + w - 1, bottomY, BR, 'border')
+    setC(left + w - 1, bottomY, br, 'border')
   }
 
   // ---- DRAW: lifelines ----
@@ -566,8 +585,9 @@ export function renderSequenceAscii(
 
   for (let i = 0; i < diagram.actors.length; i++) {
     const actor = diagram.actors[i]!
-    drawActorBox(llX[i]!, 0, actor.label)
-    drawActorBox(llX[i]!, footerY, actor.label)
+    const isActor = actor.type === 'actor'
+    drawActorBox(llX[i]!, 0, actor.label, isActor)
+    drawActorBox(llX[i]!, footerY, actor.label, isActor)
 
     // Lifeline junctions on box borders (Unicode only)
     if (!useAscii) {
