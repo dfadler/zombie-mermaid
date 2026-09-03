@@ -697,18 +697,29 @@ export function renderSequenceAscii(
 
     // minLX/maxLX (and therefore bLeft/bRight) only account for lifelines
     // *this block's own messages* touch. That leaves a gap: the fixed
-    // margin above can coincidentally place a wall exactly on a different,
-    // untouched lifeline's column — subsuming it for the block's whole
-    // vertical span, since the wall glyph and the lifeline glyph occupy the
-    // same cell (see #353; `alt` hit this while `loop`/`opt` in the same
-    // diagram happened not to, purely because their own messages already
-    // reached the lifeline in question, clearing it by the same margin).
-    // Applies to every block type alike — nudge either wall past any
-    // lifeline it would otherwise land on.
+    // margin above can coincidentally place a wall exactly on — or past —
+    // a different, untouched lifeline's column (#353).
+    //
+    // The fix is to PULL the wall back short of that lifeline, not push it
+    // past. Verified against real mermaid.js's own SVG output for this
+    // exact diagram (see scripts/lib/real-mermaid.ts, the same engine
+    // behind GitHub's own mermaid preview): `loop`/`opt` enclose `Database`
+    // there because their own messages touch it directly, but `alt` —
+    // which never messages `Database` — stops well short of it (124px of
+    // real clearance, not a few px of overshoot), even though `loop`/`opt`
+    // in the same diagram extend ~11px *past* Database's lifeline to
+    // enclose it. Real mermaid never widens a block's wall to enclose a
+    // lifeline its own messages don't touch; it only ever clears one it
+    // was already going to reach. Applies to every block type alike, both
+    // walls.
+    let nextRightLL = Number.POSITIVE_INFINITY
+    let nextLeftLL = Number.NEGATIVE_INFINITY
     for (const x of llX) {
-      if (bRight === x) bRight = x + BLOCK_WALL_MARGIN
-      if (bLeft === x) bLeft = x - BLOCK_WALL_MARGIN
+      if (x > maxLX && x < nextRightLL) nextRightLL = x
+      if (x < minLX && x > nextLeftLL) nextLeftLL = x
     }
+    if (bRight >= nextRightLL) bRight = nextRightLL - BLOCK_WALL_MARGIN
+    if (bLeft <= nextLeftLL) bLeft = nextLeftLL + BLOCK_WALL_MARGIN
 
     bLeft = Math.max(0, bLeft)
     if (bRight > blockCanvasMaxX) {
