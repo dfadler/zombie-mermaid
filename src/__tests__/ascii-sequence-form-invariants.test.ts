@@ -68,17 +68,15 @@ function blockFrameSpan(
 // ---------------------------------------------------------------------------
 
 describe('ASCII sequence — block frame fits its own label (issue #352 family)', () => {
-  // As of this writing, PR #387 (issue #352's fix) is open but not yet
-  // merged: `main` still derives a block's wall purely from
-  // `minLX`/`maxLX` (src/ascii/sequence.ts:603-623), with no reference to
-  // the header/divider label's own width, and hard-clips the label text at
-  // `bRight` while drawing it (:639-640). Running this matrix against
-  // current `main` shows the gap is not limited to `alt`/`else` (PR #387's
-  // title/scope) or to one specific label length — every block type
-  // truncates any label wider than the message-driven span. Short labels
-  // that already fit are live regression locks; everything wider is
-  // `it.fails`, documenting the gap PR #387 will need to close generically
-  // (all five block types) rather than only for its own alt/else repro.
+  // PR #387 (issue #352's fix) closes this gap generically — for every
+  // block type, not just its own alt/else repro — by measuring the
+  // longest header/divider label up front and widening the wall (see
+  // `maxBlockLabelWidth` in src/ascii/sequence.ts) rather than deriving it
+  // purely from `minLX`/`maxLX`. The long-label matrix below was written
+  // as `it.fails` against pre-#387 `main`, documenting that the gap wasn't
+  // limited to `alt`/`else` or to one label length; now that the fix has
+  // landed, every case is a plain `it()` regression lock, same as the
+  // short-label cases above.
   const shortLabelCases: Array<{
     name: string
     type: 'alt' | 'loop' | 'opt' | 'par' | 'critical'
@@ -166,7 +164,7 @@ ${participants(c.actors)}
   ]
 
   for (const c of longLabelCases) {
-    it.fails(c.name, () => {
+    it(c.name, () => {
       const src = `sequenceDiagram
 ${participants(c.actors)}
   ${c.type} ${c.label}
@@ -174,11 +172,7 @@ ${participants(c.actors)}
   end`
       const ascii = renderMermaidASCII(src, { useAscii: true })
       // Not just "does the full label appear somewhere" — it must also sit
-      // inside the block's own walls, not spill past them. findTextRect
-      // throws today (the label isn't present in full at all yet — that's
-      // the bug this case documents), which is exactly why this stays
-      // it.fails; once a fix prints the label in full, this line starts
-      // actually checking containment instead of trivially passing.
+      // inside the block's own walls, not spill past them.
       expect(ascii).toContain(c.label)
       const frame = blockFrameSpan(ascii, c.type)
       const labelRect = findTextRect(ascii, c.label)
@@ -187,10 +181,8 @@ ${participants(c.actors)}
     })
   }
 
-  it.fails(
-    'alt/else with multiple branches: every divider label survives unclipped and stays inside the frame',
-    () => {
-      const src = `sequenceDiagram
+  it('alt/else with multiple branches: every divider label survives unclipped and stays inside the frame', () => {
+    const src = `sequenceDiagram
   participant A
   participant B
   alt ${LONG_LABEL}
@@ -198,20 +190,19 @@ ${participants(c.actors)}
   else ${VERY_LONG_LABEL}
     A->>B: y
   end`
-      const ascii = renderMermaidASCII(src, { useAscii: true })
-      expect(ascii).toContain(LONG_LABEL)
-      expect(ascii).toContain(VERY_LONG_LABEL)
-      // Walls are constant across the whole block, so the header row alone
-      // (anchored on "alt", never itself truncated) gives the frame span
-      // both labels — header and divider — must stay inside.
-      const frame = blockFrameSpan(ascii, 'alt')
-      for (const label of [LONG_LABEL, VERY_LONG_LABEL]) {
-        const rect = findTextRect(ascii, label)
-        expect(rect.x0).toBeGreaterThanOrEqual(frame.x0)
-        expect(rect.x1).toBeLessThanOrEqual(frame.x1)
-      }
-    },
-  )
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    expect(ascii).toContain(LONG_LABEL)
+    expect(ascii).toContain(VERY_LONG_LABEL)
+    // Walls are constant across the whole block, so the header row alone
+    // (anchored on "alt", never itself truncated) gives the frame span
+    // both labels — header and divider — must stay inside.
+    const frame = blockFrameSpan(ascii, 'alt')
+    for (const label of [LONG_LABEL, VERY_LONG_LABEL]) {
+      const rect = findTextRect(ascii, label)
+      expect(rect.x0).toBeGreaterThanOrEqual(frame.x0)
+      expect(rect.x1).toBeLessThanOrEqual(frame.x1)
+    }
+  })
 })
 
 // ---------------------------------------------------------------------------
