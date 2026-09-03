@@ -311,9 +311,13 @@ Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
 
 - **`box ... end` participant grouping.** Mermaid's colored/transparent
   background grouping of participants is not recognized.
-- **`create`/`destroy` participant lifecycle.** A participant cannot be
-  introduced or removed mid-diagram; only declaring every participant up
-  front is supported.
+- **`create`/`destroy` participant lifecycle.** These keywords, which mark a
+  participant as starting or ending its lifeline at a specific point in the
+  diagram, are not recognized. This is not a requirement to declare
+  participants up front, though: an undeclared name used in a message is
+  auto-created on first use (`pushMessage` → `ensureActor`), matching real
+  Mermaid's own behavior — the gap is specifically the explicit
+  lifecycle-boundary syntax, not participant declaration order.
 - **Standalone `activate`/`deactivate` commands.** Only the inline `+`/`-`
   shorthand on an arrow (`A->>+B`, `A-->>-B`) toggles activation — the
   separate `activate A` / `deactivate A` statement form is not recognized.
@@ -354,9 +358,16 @@ Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
 
 - **`note for X "text"` / standalone notes.** Class-diagram notes are not
   recognized.
-- **`classDef`/`style`/`class`/`:::` styling.** None of Mermaid's styling
-  directives are recognized for class diagrams, unlike flowcharts and state
-  diagrams.
+- **`classDef`/`style` directives, and the styling use of `class`/`:::`.**
+  None of Mermaid's styling directives are recognized for class diagrams,
+  unlike flowcharts and state diagrams. This is separate from the
+  `class ClassName` **declaration** form shown above, which is fully
+  supported — only the styling usage (`class A,B className` to attach a
+  style class, or `A:::className` shorthand) is unrecognized. The `:::`
+  form isn't cleanly ignored: `A:::foo` is parsed as a class named `A` with
+  a literal member named `::foo`, because the inline-attribute pattern
+  (`ClassName : member`) matches the first colon before any `:::` shorthand
+  is considered.
 
 ## ER Diagrams
 
