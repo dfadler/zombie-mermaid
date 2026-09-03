@@ -118,6 +118,14 @@ jobs:
           # been retired (404 not_found_error), so leaving `model` unset
           # is not a safe default for an unattended weekly job.
           model: 'claude-sonnet-5'
+          # The action's own internal Claude-process timeout defaults to
+          # 10 minutes — separate from this job's 45-minute timeout-minutes
+          # above, and too tight for the largest category: Flowchart (24
+          # samples, the most of any category) measured at ~10m11s and got
+          # killed right at the 10-minute mark. Setup steps before this one
+          # take well under a minute, so 40 minutes leaves ample headroom
+          # under the 45-minute job cap for every category.
+          timeout_minutes: '40'
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Upload category results
