@@ -305,6 +305,19 @@ sequenceDiagram
   Bob-->>Alice: Great, thanks!
 ```
 
+### Known limitations
+
+Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
+
+- **`box ... end` participant grouping.** Mermaid's colored/transparent
+  background grouping of participants is not recognized.
+- **`create`/`destroy` participant lifecycle.** A participant cannot be
+  introduced or removed mid-diagram; only declaring every participant up
+  front is supported.
+- **Standalone `activate`/`deactivate` commands.** Only the inline `+`/`-`
+  shorthand on an arrow (`A->>+B`, `A-->>-B`) toggles activation — the
+  separate `activate A` / `deactivate A` statement form is not recognized.
+
 ## Class Diagrams
 
 ```
@@ -334,6 +347,16 @@ wraps its box in a real `<a>` link, a tooltip becomes a `<title>`, and a
 `call`/`callback` binding is recorded as `data-click-callback` but never
 invoked. Both parsers share the implementation (`src/click-directive.ts`), so
 see that section for the full details.
+
+### Known limitations
+
+Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
+
+- **`note for X "text"` / standalone notes.** Class-diagram notes are not
+  recognized.
+- **`classDef`/`style`/`class`/`:::` styling.** None of Mermaid's styling
+  directives are recognized for class diagrams, unlike flowcharts and state
+  diagrams.
 
 ## ER Diagrams
 
