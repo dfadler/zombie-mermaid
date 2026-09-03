@@ -742,6 +742,136 @@ function placeDeferredSiblingsNextToRoot(
 }
 
 /**
+ * Full chain of subgraph ancestors containing `node`, outermost first,
+ * ending with the innermost subgraph directly containing it (empty if the
+ * node isn't in any subgraph).
+ */
+function getSubgraphChain(graph: AsciiGraph, node: AsciiNode): AsciiSubgraph[] {
+  const chain: AsciiSubgraph[] = []
+  let sg = getNodeSubgraph(graph, node)
+  while (sg) {
+    chain.unshift(sg)
+    sg = sg.parent
+  }
+  return chain
+}
+
+/** The list `sg` is declared among: its parent's `children`, or the top-level subgraphs if `sg` has no parent. */
+function siblingSubgraphs(
+  graph: AsciiGraph,
+  sg: AsciiSubgraph,
+): AsciiSubgraph[] {
+  return sg.parent
+    ? sg.parent.children
+    : graph.subgraphs.filter((s) => s.parent === null)
+}
+
+/**
+ * Every subgraph (at any nesting depth) that has at least one incoming edge
+ * from a node outside itself — i.e. a subgraph that's genuinely "fed" by
+ * something external, the way `us-east`/`us-west` are each fed by `E -->
+ * A`/`E --> C` in #444's sample. Computed once per createMapping call and
+ * reused across every orderNodesForSiblingSubgraphs call, rather than
+ * rechecked per comparison — a single pass over `graph.edges` per subgraph
+ * would otherwise run inside the sort comparator itself.
+ */
+function computeExternallyFedSubgraphs(graph: AsciiGraph): Set<AsciiSubgraph> {
+  const fed = new Set<AsciiSubgraph>()
+  for (const sg of graph.subgraphs) {
+    const members = new Set(collectSubgraphMembers(sg).map((n) => n.name))
+    for (const edge of graph.edges) {
+      if (members.has(edge.to.name) && !members.has(edge.from.name)) {
+        fed.add(sg)
+        break
+      }
+    }
+  }
+  return fed
+}
+
+/**
+ * Compare two nodes by the declaration order of the sibling subgraphs they
+ * diverge into, REVERSED — matching real mermaid.js's dagre-based cluster
+ * placement: when a node fans out into two or more distinct sibling
+ * subgraphs (e.g. `E --> A` into `us-east`, `E --> C` into `us-west`, both
+ * nested in `Cloud`), the LAST-declared sibling subgraph ends up leftmost
+ * (topmost column), not the first — independent of the order the fan-out
+ * edges themselves were declared in. Empirically verified against real
+ * mermaid.js (see #444): reversing declaration order of the diverging
+ * subgraph reproduces its cluster x-coordinates exactly, while reversing
+ * edge order does not.
+ *
+ * Returns 0 (no reordering — callers fall back to original edge-declaration
+ * order) when:
+ *  - the two nodes share the same innermost subgraph, or one of them isn't
+ *    inside a subgraph at the level the other diverges into — mermaid.js
+ *    only reverses order between genuine sibling-subgraph branches, not
+ *    between a subgraph member and a plain node, or two members of the same
+ *    subgraph; or
+ *  - either diverging subgraph has no incoming edge from outside itself
+ *    (per `fedSubgraphs`) — two independent, unconnected subgraphs (no
+ *    shared external node fanning into both) keep their declaration order;
+ *    reversal is specifically a cluster *fan-in* effect, not a blanket rule
+ *    (see src/__tests__/ascii-subgraph-title-padding.test.ts's connector-
+ *    less case, which must keep rendering both subgraphs in declared order).
+ */
+function compareBySiblingSubgraphOrder(
+  graph: AsciiGraph,
+  fedSubgraphs: Set<AsciiSubgraph>,
+  a: AsciiNode,
+  b: AsciiNode,
+): number {
+  const chainA = getSubgraphChain(graph, a)
+  const chainB = getSubgraphChain(graph, b)
+  let i = 0
+  while (i < chainA.length && i < chainB.length && chainA[i] === chainB[i]) {
+    i++
+  }
+  const divA = chainA[i]
+  const divB = chainB[i]
+  if (!divA || !divB) return 0
+  if (!fedSubgraphs.has(divA) || !fedSubgraphs.has(divB)) return 0
+
+  const siblings = siblingSubgraphs(graph, divA)
+  const idxA = siblings.indexOf(divA)
+  const idxB = siblings.indexOf(divB)
+  if (idxA === -1 || idxB === -1) return 0
+  return idxB - idxA
+}
+
+/**
+ * Reorder `nodes` so that any sibling subgraphs represented within it fan
+ * out in reverse declaration order — see compareBySiblingSubgraphOrder.
+ * Everything else keeps its original relative order: `Array.prototype.sort`
+ * is stable (guaranteed since ES2019), so pairs the comparator treats as
+ * equal (0) never move relative to each other.
+ *
+ * Used for two distinct lists in placeReachableChildren, and both need it:
+ * the direct children of a single already-placed parent (so e.g. `E -->
+ * A`/`E --> C` claim their column slots in the right order), AND the outer
+ * per-pass traversal of `graph.nodes` itself (so that when A and C's own
+ * children — B and D — get discovered in a later pass, whichever parent's
+ * subtree should render leftmost is *visited* first too). The level-by-
+ * level placement below assigns column slots strictly in visitation order
+ * via a single shared `highestPositionPerLevel` counter per level, with no
+ * notion of "this child belongs under that specific parent's column" — so
+ * reordering only the first hop (a parent's direct children) without also
+ * reordering which parent's subtree gets *discovered* first in later passes
+ * leaves grandchildren claiming slots in the original (unreversed) order,
+ * misaligning them under the wrong parent entirely.
+ */
+function orderNodesForSiblingSubgraphs(
+  graph: AsciiGraph,
+  fedSubgraphs: Set<AsciiSubgraph>,
+  nodes: AsciiNode[],
+): AsciiNode[] {
+  if (nodes.length < 2) return nodes
+  return [...nodes].sort((a, b) =>
+    compareBySiblingSubgraphOrder(graph, fedSubgraphs, a, b),
+  )
+}
+
+/**
  * Place all currently-reachable, still-unplaced children of already-placed
  * nodes, level by level, mutating `highestPositionPerLevel` as it goes.
  * Multi-pass: iterates until no more progress can be made in a full pass
@@ -752,14 +882,29 @@ function placeReachableChildren(
   graph: AsciiGraph,
   highestPositionPerLevel: number[],
 ): void {
+  // Computed once — subgraph membership and edges don't change during
+  // placement, so both this and the ordering it feeds (see
+  // orderNodesForSiblingSubgraphs) stay valid across every pass below.
+  const fedSubgraphs = computeExternallyFedSubgraphs(graph)
+  const traversalOrder = orderNodesForSiblingSubgraphs(
+    graph,
+    fedSubgraphs,
+    graph.nodes,
+  )
+
   let progressed = true
   while (progressed) {
     progressed = false
-    for (const node of graph.nodes) {
+    for (const node of traversalOrder) {
       if (node.gridCoord === null) continue // skip unplaced nodes
       const gc = node.gridCoord
 
-      for (const child of getChildren(graph, node)) {
+      const children = orderNodesForSiblingSubgraphs(
+        graph,
+        fedSubgraphs,
+        getChildren(graph, node),
+      )
+      for (const child of children) {
         if (child.gridCoord !== null) continue // already placed
 
         // Determine direction for this edge (parent -> child)
