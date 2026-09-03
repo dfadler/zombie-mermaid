@@ -55,6 +55,28 @@ function fmtMs(ms: number): string {
 // Main
 // ============================================================================
 
+// Warm up both renderers against every category once, untimed, before
+// measuring. Without this, a one-time process-level cost that only the
+// first call to some code path pays (e.g. V8 lazily initializing ICU on the
+// first `Intl`/`toLocaleString` call — see xychart's `formatTipValue`) gets
+// attributed entirely to whichever sample happens to hit that path first,
+// rather than being amortized the way it would be in a real long-running
+// process. That produced a single-sample outlier (~1-1.7s on one xychart
+// sample vs ~1-3ms on every other) large enough to blow the regression
+// gate's threshold on its own even though nothing else regressed.
+for (const sample of samples) {
+  try {
+    await renderMermaid(sample.source, sample.options)
+  } catch {
+    // Warm-up only — real errors surface in the timed run below.
+  }
+  try {
+    renderMermaidASCII(sample.source)
+  } catch {
+    // Warm-up only — real errors surface in the timed run below.
+  }
+}
+
 const results: Result[] = []
 const totalStart = performance.now()
 
