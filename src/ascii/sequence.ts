@@ -36,6 +36,14 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 // self-arrows inside alt/loop/opt blocks don't get clipped by the wall.
 const SELF_LOOP_WIDTH = 4
 
+// Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
+// and the lifelines its own messages touch. Shared by every block type —
+// there is no per-type wall calculation, so this constant is the single
+// source of truth for that spacing (see BLOCK_WALL_MARGIN's use below for
+// why a *second*, independent use of it also guards against an untouched
+// lifeline).
+const BLOCK_WALL_MARGIN = 4
+
 // Effective width of a self-message's loop, including room for an
 // autonumber badge drawn at the start of the top arm when active. The badge
 // digits replace the leading dashes rather than adding a second arrowhead,
@@ -184,6 +192,18 @@ export function renderSequenceAscii(
   // #352's original fix). Push every lifeline after the block's rightmost
   // participant out of the way before anything downstream depends on
   // these positions.
+  //
+  // This runs independently of, and before, the draw-time pull-back added
+  // for #353 (below, in the "DRAW: blocks" pass): that pull-back only ever
+  // shrinks a block's *natural* (message-driven) extent away from an
+  // untouched lifeline it would otherwise land on — it has no notion of
+  // the label-driven width computed here. Without this pass shifting the
+  // lifeline out of the way first, a long label would push bRight straight
+  // back past whatever #353's pull-back had just cleared, re-enclosing it.
+  // This pass's own estimate below (naturalRight/labelRight, using
+  // BLOCK_WALL_MARGIN unclamped by any pull-back) is always >= whatever
+  // the draw-time pass can ultimately produce, so it shifts at least far
+  // enough — never more precisely, but never insufficiently either.
   for (const block of diagram.blocks) {
     let loIdx = -1
     let hiIdx = -1
@@ -208,8 +228,8 @@ export function renderSequenceAscii(
     // last actor, has nothing after it that could be swallowed.
     if (hiIdx === -1 || hiIdx + 1 >= diagram.actors.length) continue
 
-    const bLeft = Math.max(0, minLX - 4)
-    const naturalRight = maxLX + 4
+    const bLeft = Math.max(0, minLX - BLOCK_WALL_MARGIN)
+    const naturalRight = maxLX + BLOCK_WALL_MARGIN
     const labelRight = bLeft + 1 + maxBlockLabelWidth(block)
     const bRight = Math.max(naturalRight, labelRight)
 
@@ -720,6 +740,12 @@ export function renderSequenceAscii(
 
   // ---- DRAW: blocks (loop, alt, opt, par, etc.) ----
 
+  // Largest column index it's currently safe to write a block wall into.
+  // Starts at the canvas's own right margin (mirrors the historical
+  // `totalW - 1` clamp) and is pushed out via increaseSize/
+  // increaseRoleCanvasSize below whenever a wall needs to grow past it.
+  let blockCanvasMaxX = totalW - 1
+
   for (let b = 0; b < diagram.blocks.length; b++) {
     const block = diagram.blocks[b]!
     const topY = blockStartY.get(b)
@@ -746,35 +772,71 @@ export function renderSequenceAscii(
       }
     }
 
-    // MERGE HAZARD (flagged in review on #387, re: #388 touching this same
-    // bLeft/bRight computation for #353): `bLeft` must be the FINAL,
-    // fully-resolved left wall column before `neededRight` below is
-    // computed from it. #388 computes bLeft/bRight as `let`s, nudges them
-    // away from any untouched lifeline they'd otherwise land on, and only
-    // clamps to 0 at the very end. If a future merge of that logic lands
-    // `neededRight`'s computation between an earlier (unclamped/un-nudged)
-    // assignment to bLeft and its final one, `neededRight` will be computed
-    // against a stale value — silently widening the wall one or more
-    // columns short of the label whenever minLX/the nudge puts bLeft below
-    // its margin (this repo's own #352 repro hits exactly that case: `A` is
-    // actor 0, so minLX - 4 is negative and bLeft only becomes 0 via the
-    // clamp). Keep this line — and the `neededRight` line right after it —
-    // reading from bLeft's fully-resolved value, whatever the final shape
-    // of the merged computation looks like.
-    const bLeft = Math.max(0, minLX - 4)
-    let bRight = Math.min(totalW - 1, maxLX + 4)
+    let bLeft = minLX - BLOCK_WALL_MARGIN
+    let bRight = maxLX + BLOCK_WALL_MARGIN
+
+    // minLX/maxLX (and therefore bLeft/bRight) only account for lifelines
+    // *this block's own messages* touch. That leaves a gap: the fixed
+    // margin above can coincidentally place a wall exactly on — or past —
+    // a different, untouched lifeline's column (#353).
+    //
+    // The fix is to PULL the wall back short of that lifeline, not push it
+    // past. Verified against real mermaid.js's own SVG output for this
+    // exact diagram (see scripts/lib/real-mermaid.ts, the same engine
+    // behind GitHub's own mermaid preview): `loop`/`opt` enclose `Database`
+    // there because their own messages touch it directly, but `alt` —
+    // which never messages `Database` — stops well short of it (124px of
+    // real clearance, not a few px of overshoot), even though `loop`/`opt`
+    // in the same diagram extend ~11px *past* Database's lifeline to
+    // enclose it. Real mermaid never widens a block's wall to enclose a
+    // lifeline its own messages don't touch; it only ever clears one it
+    // was already going to reach. Applies to every block type alike, both
+    // walls.
+    let nextRightLL = Number.POSITIVE_INFINITY
+    let nextLeftLL = Number.NEGATIVE_INFINITY
+    for (const x of llX) {
+      if (x > maxLX && x < nextRightLL) nextRightLL = x
+      if (x < minLX && x > nextLeftLL) nextLeftLL = x
+    }
+    // Never pull back past maxLX/minLX themselves — those already include
+    // the self-arrow extent computed above, and an untouched lifeline
+    // sitting close enough behind one can otherwise pull bRight below the
+    // self-arrow's own label, which the later block-border draw then
+    // overwrites (the label silently loses characters — CodeRabbit caught
+    // this on this exact fix). Clearing the untouched lifeline yields to
+    // not clipping this block's own content when the two can't both fit.
+    if (bRight >= nextRightLL)
+      bRight = Math.max(maxLX, nextRightLL - BLOCK_WALL_MARGIN)
+    if (bLeft <= nextLeftLL)
+      bLeft = Math.min(minLX, nextLeftLL + BLOCK_WALL_MARGIN)
+
+    bLeft = Math.max(0, bLeft)
+    if (bRight > blockCanvasMaxX) {
+      increaseSize(canvas, bRight + 1, totalH - 1)
+      increaseRoleCanvasSize(rc, bRight + 1, totalH - 1)
+      blockCanvasMaxX = bRight
+    }
 
     // Header ("alt [label]") and divider ("[else label]") text is drawn
     // starting at bLeft + 1 (see below), clipped to whatever bRight the
-    // enclosed lifelines/self-arrows produced. A wall sized purely from
-    // message spans has no relationship to label length, so a long
-    // condition label was silently cut off mid-word instead of widening
-    // the block or the block wasn't widened to fit it (#352). Measure the
+    // pull-back above produced. A wall sized purely from message spans
+    // (even after that untouched-lifeline pull-back) has no relationship
+    // to label length, so a long condition label was silently cut off
+    // mid-word instead of the block widening to fit it (#352). Measure the
     // longest label among the header and every divider up front and widen
     // the wall — and the canvas itself, if the extra room isn't already
-    // there — to fit it before any drawing happens. (Any participant this
-    // widening would otherwise have swallowed was already pushed further
-    // right by the lifeline-shifting layout pass above.)
+    // there — to fit it before any drawing happens.
+    //
+    // `bLeft` here MUST be the fully-resolved value above (post pull-back,
+    // post clamp) — computing `neededRight` from an intermediate bLeft
+    // would silently under-widen whenever minLX/the pull-back puts bLeft
+    // below its margin (this repo's own #352 repro hits exactly that case:
+    // `A` is actor 0, so minLX - BLOCK_WALL_MARGIN is negative and bLeft
+    // only becomes 0 via the clamp above). Any participant this widening
+    // would otherwise swallow was already pushed further right by the
+    // lifeline-shifting layout pass earlier in this function, so growing
+    // bRight here doesn't re-collide with whatever the pull-back above
+    // just cleared.
     const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
     const neededRight = bLeft + 1 + maxBlockLabelWidth(block)
     if (neededRight > bRight) {
@@ -785,6 +847,7 @@ export function renderSequenceAscii(
         increaseRoleCanvasSize(rc, bRight, totalH - 1)
       }
       totalW = Math.max(totalW, bRight + 1)
+      blockCanvasMaxX = Math.max(blockCanvasMaxX, bRight)
     }
 
     // Top border with block type label
