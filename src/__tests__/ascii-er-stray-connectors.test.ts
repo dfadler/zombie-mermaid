@@ -18,34 +18,55 @@ function occupyRow(canvas: Canvas, y: number, xStart: number, xEnd: number) {
 }
 
 describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', () => {
-  it('insets the "one" tick from the border on a horizontal connector (Unicode) — reverted per review preference, issue #413', () => {
+  it('insets only the colliding "one" marker on a horizontal connector, leaving the non-colliding "zero-many" marker flush (Unicode) — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none' },
     )
-    // #390 briefly made horizontal markers sit flush against the border to
-    // avoid a "─│─" run (line-fill dash, lone "one" tick, line-fill dash)
-    // that the #351 fix worried would read as a stray, unexplained
-    // connector glyph. The reviewer on #351 re-examined that in a real
-    // terminal and found flush vs. inset makes no legibility difference —
-    // adjacent monospace glyphs each sit centered in their own cell and
-    // don't visually fuse either way — and asked for inset back as a
-    // readability preference (issue #413, not a defect). This test locks
-    // in that reverted behavior instead of the flush one.
+    // #390 briefly made every horizontal marker sit flush against the
+    // border to avoid a "─│─" run (line-fill dash, lone "one" tick,
+    // line-fill dash) that the #351 fix worried would read as a stray,
+    // unexplained connector glyph. Review on #351/#413 found that concern
+    // doesn't hold in a real terminal (adjacent monospace glyphs don't
+    // visually fuse regardless of spacing), but a *blanket* revert back to
+    // inset for every horizontal marker was its own overcorrection: it
+    // adds an unrequested gap to markers that were never ambiguous in the
+    // first place. "zero-many" ('○╟') doesn't share a glyph with the
+    // border ('│') the way "one" ('│') does, so only "one" needs the
+    // inset — "zero-many" stays flush, matching #390's original intent for
+    // that glyph. This test locks in the per-side, collision-conditional
+    // result instead of a uniform one.
     expect(ascii).toContain('CUSTOMER │─│')
-    expect(ascii).toContain('○╟─│ ORDER')
+    expect(ascii).toContain('○╟│ ORDER')
   })
 
-  it('insets the "one" tick from the border on a horizontal connector (ASCII) — reverted per review preference, issue #413', () => {
+  it('insets only the colliding "one" marker on a horizontal connector, leaving the non-colliding "zero-many" marker flush (ASCII) — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none', useAscii: true },
     )
-    // Same reversion as the Unicode case above, in the ASCII glyph set.
+    // Same per-side reasoning as the Unicode case above, in the ASCII glyph set.
     expect(ascii).toContain('CUSTOMER |-|')
-    expect(ascii).toContain('o<-| ORDER')
+    expect(ascii).toContain('o<| ORDER')
+  })
+
+  it('leaves both markers flush on a horizontal connector when neither collides with the border', () => {
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        CUSTOMER }o--o{ ORDER : has`,
+      { colorMode: 'none' },
+    )
+    // Neither "zero-many" marker ('╢○'/'○╟') shares a glyph with the
+    // border ('│'), so a blanket inset (the reviewer's original diff,
+    // applied uniformly) would add a gap to both sides for no reason.
+    // Matches #390's original flush output exactly, since this case was
+    // never part of the #413 collision in the first place.
+    expect(ascii).toContain('CUSTOMER │╢○')
+    expect(ascii).toContain('○╟│ ORDER')
+    expect(ascii).not.toContain('CUSTOMER │─')
+    expect(ascii).not.toContain('─│ ORDER')
   })
 
   it('does not leave a stray fill row between a vertical marker and its entity border', () => {
@@ -78,13 +99,14 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   // Review on #351 (https://github.com/dfadler/zombie-mermaid/issues/351#issuecomment-5497209031)
   // re-tested with a different cardinality combination — "zero-or-one"
   // (`│○`/`○│`) — confirming the vertical marker stays flush either way.
-  // The horizontal case below was briefly flush-against-the-border (#390);
-  // that same review comment (and issue #413) reverted horizontal markers
-  // back to inset as a readability preference, not a defect. These two
-  // tests lock in that finding directly rather than leaving it as a
-  // PR-description claim with no regression coverage.
+  // "zero-or-one" also collides with the border on the horizontal axis
+  // (its leading/trailing glyph is the same `│` as the "one" marker), so
+  // — unlike "zero-many" above — *both* sides of a `C |o--|| D` connector
+  // get the inset, not just one. These two tests lock in that finding
+  // directly rather than leaving it as a PR-description claim with no
+  // regression coverage.
 
-  it('insets the "zero-or-one" marker from the entity border on a horizontal connector (reverted per review preference, issue #413)', () => {
+  it('insets the "zero-or-one" marker from the entity border on a horizontal connector, since it collides on both sides — issue #413', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
         C |o--|| D : owns`,

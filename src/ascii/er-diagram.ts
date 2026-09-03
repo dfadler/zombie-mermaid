@@ -720,23 +720,37 @@ export function renderErAscii(
         }
       }
 
-      // Horizontal crow's-foot markers get the same inset as the label
-      // (issue #67). This was briefly flush against the border (see #390,
-      // #351) to avoid a 1-cell run of connecting-line character between
-      // the border and the marker that could read as a stray extra "one"
-      // marker glyph ('│'/'|'). Rendered in a real terminal, though, that
-      // concern doesn't hold: adjacent monospace box-drawing glyphs each
-      // sit centered in their own cell and don't visually fuse regardless
-      // of spacing, and flush markers read as an unrelated readability
-      // preference, not a defect — see issue #413 and the review comment
-      // at https://github.com/dfadler/zombie-mermaid/issues/351#issuecomment-5497209031.
-      // This reverts to the inset that predates #390 for horizontal
-      // markers only; the vertical marker site (already flush against
-      // '─', with no such collision) is untouched.
+      // Horizontal crow's-foot markers: flush against the border by default
+      // (standard ER notation, and #390's original intent), except where a
+      // marker's own border-adjacent glyph is character-identical to the
+      // border glyph itself ('one'/'zero-one' use '│'/'|', the same as the
+      // vertical border) — there, flush reads as a doubled border rather
+      // than a marker touching one, so that side gets the same inset as
+      // the label (issue #67). 'many'/'zero-many' markers ('╢'/'╟',
+      // '○╢'/'○╟') never collide with the border glyph and stay flush,
+      // matching #390's original intent for them.
+      //
+      // This was briefly a blanket inset for every horizontal marker
+      // (matching the review comment at
+      // https://github.com/dfadler/zombie-mermaid/issues/351#issuecomment-5497209031,
+      // which found flush unreadable but tested against a raw text
+      // comparison, not a render) — rendered in a real terminal, adjacent
+      // monospace box-drawing glyphs each sit centered in their own cell
+      // and don't visually fuse regardless of spacing, so a blanket inset
+      // wasn't fixing a defect, it was just adding unrequested space to
+      // markers that already read fine flush (e.g. `CUSTOMER }o--o{ ORDER`
+      // — no collision on either side, no reason for either to move).
+      // Narrowed to per-side glyph-identity detection instead, so only the
+      // colliding side ever moves — see issue #413.
       const gapWidth = endX - startX + 1
       const labelInset = gapWidth >= 3 ? 1 : 0
-      const markerStartX = startX + labelInset
-      const markerEndX = endX - labelInset
+      const leftChars = getCrowsFootChars(leftCard, useAscii, false)
+      const rightChars = getCrowsFootChars(rightCard, useAscii, true)
+      const leftInset = gapWidth >= 3 && leftChars[0] === V ? 1 : 0
+      const rightInset =
+        gapWidth >= 3 && rightChars[rightChars.length - 1] === V ? 1 : 0
+      const markerStartX = startX + leftInset
+      const markerEndX = endX - rightInset
 
       let labelBaseY: number
 
@@ -820,13 +834,11 @@ export function renderErAscii(
 
       // Draw crow's foot markers at endpoints
       // Left marker (at left entity's right edge) - isRight=false
-      const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       for (let i = 0; i < leftChars.length; i++) {
         setCGuarded(markerStartX + i, lineY, leftChars[i]!, 'arrow')
       }
 
       // Right marker (at right entity's left edge) - isRight=true
-      const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       for (let i = 0; i < rightChars.length; i++) {
         setCGuarded(
           markerEndX - rightChars.length + 1 + i,
