@@ -182,7 +182,10 @@ function applyTheme(themeKey: string): void {
 
   updateEditorLink(themeKey)
 
-  localStorage.setItem('zm-diagram-page-theme', themeKey)
+  // Shared with demo/client.ts's main gallery -- same key, same origin, so a
+  // theme picked on either surface carries over to the other instead of
+  // each page silently re-defaulting on the visitor.
+  localStorage.setItem('mermaid-theme', themeKey)
 }
 
 // The editor link's encoded source must track the orientation actually on
@@ -256,8 +259,12 @@ if (moreBtn && moreDropdown) {
 }
 
 // -- Restore a previously picked theme, if it differs from this page's
-//    build-time default --
-const saved = localStorage.getItem('zm-diagram-page-theme')
+//    build-time default -- reads the same 'mermaid-theme' key the main
+//    gallery (demo/client.ts) writes, so a theme picked there is honored
+//    here too. An empty string means "explicit default" there, which
+//    already matches this page's build-time default, so there's nothing to
+//    apply.
+const saved = localStorage.getItem('mermaid-theme')
 if (saved && THEMES[saved]) applyTheme(saved)
 
 // Reconcile the editor-link href with the current viewport right away — a
