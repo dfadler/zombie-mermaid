@@ -10,6 +10,7 @@
 // ============================================================================
 
 import { parseSequenceDiagram } from '../sequence/parser.ts'
+import type { Block } from '../sequence/types.ts'
 import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
 import {
   mkCanvas,
@@ -108,6 +109,22 @@ export function renderSequenceAscii(
     return idx
   }
 
+  /**
+   * Widest line among a block's header ("alt [label]") and every divider
+   * ("[else label]") — the minimum wall width the block's own text needs,
+   * independent of how far its messages' lifelines happen to span.
+   */
+  function maxBlockLabelWidth(block: Block): number {
+    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
+    let width = maxLineWidth(hdrLabel)
+    for (const divider of block.dividers) {
+      if (divider.label) {
+        width = Math.max(width, maxLineWidth(`[${divider.label}]`))
+      }
+    }
+    return width
+  }
+
   // Clamped: a negative boxBorderPadding would otherwise produce a negative
   // actor/note box width for a short label (see issue #343's CodeRabbit
   // review — the same class of bug fixed in draw-boxes.ts's
@@ -160,6 +177,56 @@ export function renderSequenceAscii(
       minLifelineGap,
     )
     llX[i] = llX[i - 1]! + gap
+  }
+
+  // A block's wall only needs to reach as far right as the lifelines its
+  // own messages touch (see the identical minLX/maxLX calc in the block
+  // drawing pass below) — but the header/divider LABEL can need more room
+  // than that. If an uninvolved participant's lifeline already sits at or
+  // past that label-driven width, drawing the wall there lands on a
+  // different column than the lifeline (which was already placed) and
+  // just leaves that lifeline's "│" sitting inside the block, right next
+  // to the block's own wall — visually indistinguishable from the block
+  // enclosing a participant it has nothing to do with (#387, on top of
+  // #352's original fix). Push every lifeline after the block's rightmost
+  // participant out of the way before anything downstream depends on
+  // these positions.
+  for (const block of diagram.blocks) {
+    let loIdx = -1
+    let hiIdx = -1
+    let minLX = Number.POSITIVE_INFINITY
+    let maxLX = -1
+    for (let m = block.startIndex; m <= block.endIndex; m++) {
+      if (m >= diagram.messages.length) break
+      const msg = diagram.messages[m]!
+      const f = actorIndexOf(msg.from)
+      const t = actorIndexOf(msg.to)
+      loIdx = loIdx === -1 ? Math.min(f, t) : Math.min(loIdx, f, t)
+      hiIdx = Math.max(hiIdx, f, t)
+      minLX = Math.min(minLX, llX[Math.min(f, t)]!)
+      maxLX = Math.max(maxLX, llX[Math.max(f, t)]!)
+      if (f === t) {
+        const selfRight =
+          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+        maxLX = Math.max(maxLX, selfRight)
+      }
+    }
+    // An empty block, or one whose rightmost participant is already the
+    // last actor, has nothing after it that could be swallowed.
+    if (hiIdx === -1 || hiIdx + 1 >= diagram.actors.length) continue
+
+    const bLeft = Math.max(0, minLX - 4)
+    const naturalRight = maxLX + 4
+    const labelRight = bLeft + 1 + maxBlockLabelWidth(block)
+    const bRight = Math.max(naturalRight, labelRight)
+
+    const nextLL = llX[hiIdx + 1]!
+    const shift = bRight + 2 - nextLL
+    if (shift > 0) {
+      for (let i = hiIdx + 1; i < llX.length; i++) {
+        llX[i] = llX[i]! + shift
+      }
+    }
   }
 
   // ---- LAYOUT: compute vertical positions for messages ----
@@ -710,21 +777,53 @@ export function renderSequenceAscii(
       if (bLeft === x) bLeft = x - BLOCK_WALL_MARGIN
     }
 
+    // bLeft is now FINAL and fully resolved (nudged + clamped) — #352's
+    // label widening below must read from this value, not an intermediate
+    // one, or the widened wall can come out short (see the merge-hazard
+    // note this replaced, from the #387/#388 review discussion).
     bLeft = Math.max(0, bLeft)
+
+    // Header ("alt [label]") and divider ("[else label]") text is drawn
+    // starting at bLeft + 1 (see below), clipped to whatever bRight the
+    // enclosed lifelines/self-arrows produced. A wall sized purely from
+    // message spans has no relationship to label length, so a long
+    // condition label was silently cut off mid-word instead of widening
+    // the block to fit it (#352). Measure the longest label among the
+    // header and every divider up front and widen the wall to fit it
+    // before any drawing happens. (Any participant this widening would
+    // otherwise have swallowed was already pushed further right by the
+    // lifeline-shifting layout pass above.)
+    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
+    const neededRight = bLeft + 1 + maxBlockLabelWidth(block)
+    if (neededRight > bRight) {
+      bRight = neededRight
+      // Label-driven widening can itself land bRight exactly on a lifeline
+      // that this block's own messages never touched — the same #353
+      // collision, one step later. Re-apply the untouched-lifeline nudge
+      // to the widened value before it's treated as final.
+      for (const x of llX) {
+        if (bRight === x) bRight = x + BLOCK_WALL_MARGIN
+      }
+    }
+
     if (bRight > blockCanvasMaxX) {
-      increaseSize(canvas, bRight + 1, totalH - 1)
-      increaseRoleCanvasSize(rc, bRight + 1, totalH - 1)
+      // Grow to exactly bRight — not bRight + 1 — so a wall widened to fit
+      // a label (#352) closes immediately after it with no trailing blank
+      // column; #353's lifeline-clearance nudge above doesn't depend on
+      // the extra column either, so this is safe for both.
+      increaseSize(canvas, bRight, totalH - 1)
+      increaseRoleCanvasSize(rc, bRight, totalH - 1)
       blockCanvasMaxX = bRight
     } else {
       bRight = Math.min(blockCanvasMaxX, bRight)
     }
+    totalW = Math.max(totalW, bRight + 1)
 
     // Top border with block type label
     setC(bLeft, topY, TL, 'border')
     for (let x = bLeft + 1; x < bRight; x++) setC(x, topY, H, 'border')
     setC(bRight, topY, TR, 'border')
     // Write block header label over the top border (supports multi-line)
-    const hdrLabel = block.label ? `${block.type} [${block.label}]` : block.type
     const hdrLines = splitLines(hdrLabel)
 
     for (
