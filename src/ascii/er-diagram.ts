@@ -720,22 +720,23 @@ export function renderErAscii(
         }
       }
 
-      // Crow's-foot markers sit flush against each entity border (standard
-      // ER notation draws the tick/circle cluster touching the entity, not
-      // floating in the middle of the connecting line). Only the *label*
-      // gets an inset from the border (issue #67 — labels crammed flush
-      // against a box were hard to read); insetting the markers too, as a
-      // prior fix did, left a 1-cell run of the plain connecting-line
-      // character between the border and the marker. That fill cell uses
-      // the exact same glyph as the "one" cardinality marker ('│'/'|'), so
-      // it read as a stray, unexplained connector glyph floating next to
-      // the real marker — see issue #351. Markers stay anchored to each
-      // box's own edge regardless of whether the path in between is direct
-      // or detoured (issue #350).
+      // Horizontal crow's-foot markers get the same inset as the label
+      // (issue #67). This was briefly flush against the border (see #390,
+      // #351) to avoid a 1-cell run of connecting-line character between
+      // the border and the marker that could read as a stray extra "one"
+      // marker glyph ('│'/'|'). Rendered in a real terminal, though, that
+      // concern doesn't hold: adjacent monospace box-drawing glyphs each
+      // sit centered in their own cell and don't visually fuse regardless
+      // of spacing, and flush markers read as an unrelated readability
+      // preference, not a defect — see issue #413 and the review comment
+      // at https://github.com/dfadler/zombie-mermaid/issues/351#issuecomment-5497209031.
+      // This reverts to the inset that predates #390 for horizontal
+      // markers only; the vertical marker site (already flush against
+      // '─', with no such collision) is untouched.
       const gapWidth = endX - startX + 1
       const labelInset = gapWidth >= 3 ? 1 : 0
-      const markerStartX = startX
-      const markerEndX = endX
+      const markerStartX = startX + labelInset
+      const markerEndX = endX - labelInset
 
       let labelBaseY: number
 
