@@ -135,12 +135,36 @@ h1 {
   border-radius: 4px;
 }
 
+/* -- Diagram + source layout: source on the left, diagram on the right -- */
+.diagram-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.source-column {
+  flex: 1 1 40%;
+  min-width: 0;
+}
+
+.diagram-column {
+  flex: 1 1 55%;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .diagram-layout {
+    flex-direction: column;
+  }
+}
+
 /* -- Diagram panel -- */
 .diagram-frame {
   border: 1px solid var(--t-border);
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
@@ -171,14 +195,14 @@ h1 {
      theme/navigation sections below it. */
   font-size: 1.125rem;
   font-weight: 600;
-  margin: 2rem 0 0.5rem;
+  margin: 0 0 0.5rem;
 }
 
 .source-panel {
   border: 1px solid var(--t-border);
   border-radius: 8px;
   overflow-x: auto;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 .source-panel pre {
