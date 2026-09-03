@@ -38,7 +38,7 @@ function slug(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-interface SampleFile {
+export interface SampleFile {
   id: string
   category: string
   title: string
@@ -49,7 +49,7 @@ interface SampleFile {
   asciiError: string | null
 }
 
-interface IndexEntry {
+export interface IndexEntry {
   id: string
   category: string
   title: string

@@ -46,7 +46,7 @@ import * as esbuild from 'esbuild'
 import { escapeHtml, escapeJsonForScriptTag } from './demo/format.ts'
 import { THEMES } from './src/theme.ts'
 import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
-import { renderThemePicker } from './theme-picker.ts'
+import { renderThemePicker, DEFAULT_SWATCH } from './theme-picker.ts'
 import { renderMermaidSVG } from './src/index.ts'
 import { createHighlighter } from 'shiki'
 import {
@@ -60,8 +60,16 @@ const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
 
 const OUT_DIR = new URL('./diagrams/', import.meta.url)
 
-/** Every page renders with this theme initially; the picker switches from here. */
-const DEFAULT_THEME_KEY = Object.keys(THEMES)[0]!
+/**
+ * Every page renders with this theme initially; the picker switches from
+ * here. Set to '' (the main gallery's "Default" pseudo-theme, not a real
+ * THEMES entry -- see theme-picker.ts's DEFAULT_SWATCH) rather than an
+ * arbitrary real theme, so a first-time visitor with no stored preference
+ * sees the exact same look index.ts's gallery shows by default -- and so
+ * this stays correct even if THEMES gets reordered, instead of silently
+ * tracking whatever entry happens to come first.
+ */
+const DEFAULT_THEME_KEY = ''
 
 /**
  * Builds the URL hash the live editor (editor/js/sharing.js's `getHashSource`)
@@ -188,9 +196,16 @@ async function main(): Promise<void> {
     themes: ['github-light'],
   })
 
-  const themesJson = escapeJsonForScriptTag(JSON.stringify(THEMES))
+  // Include the '' (Default) pseudo-theme alongside the real THEMES entries
+  // so demo/diagram-page-client.ts can look it up like any other theme key
+  // -- e.g. if a visitor switches to another theme and back to Default, or
+  // if a theme picked on the main gallery (which does use '' for its own
+  // Default pill) needs restoring here.
+  const themesJson = escapeJsonForScriptTag(
+    JSON.stringify({ '': DEFAULT_SWATCH, ...THEMES }),
+  )
   const themePillsHtml = renderThemePicker({
-    includeDefault: false,
+    includeDefault: true,
     activeThemeKey: DEFAULT_THEME_KEY,
   })
 
@@ -203,7 +218,7 @@ async function main(): Promise<void> {
     }).join('\n')
 
   for (const profile of DIAGRAM_TYPE_PROFILES) {
-    const colors = THEMES[DEFAULT_THEME_KEY]!
+    const colors = DEFAULT_SWATCH
 
     const renderDiagram = (source: string): string =>
       renderMermaidSVG(source, {

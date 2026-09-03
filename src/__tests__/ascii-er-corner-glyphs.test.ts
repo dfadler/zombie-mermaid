@@ -50,23 +50,22 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // left vertical drop) and closes with '┘' (turning up into the right
     // vertical drop) instead of plain '─' at both ends.
     //
-    // #390 (merged after this test was first written) made crow's-foot
-    // markers flush against entity borders, freeing up a row of vertical
-    // space that used to be consumed by the old inset gap. That shifted
-    // this diagram's row assignments enough that "tracks" (an unrelated
-    // MIDDLE_ENTITY→FIFTH_ENTITY relationship) now shares its label's row
-    // with "relates_to"'s own detour line, instead of landing on a
-    // different row the way it did pre-#390 — the two corner glyphs are
-    // still there, just with "tracks"'s label interleaved between them
-    // now rather than a plain, uninterrupted dash run. relates_to's own
-    // label correctly relocates to the row below (regionClear's collision
-    // search) rather than being lost or corrupted — verified via a raw
-    // column-by-column trace, not just eyeballing the render, that both
-    // relationships' full content survives intact; this is the same
-    // "denser but not broken" class of trade-off already documented for
-    // dense diagrams elsewhere (#390's PR description, issue #411), not a
-    // new regression from this test's own fix.
+    // MIDDLE_ENTITY's own vertical "one" marker for its "tracks"
+    // relationship no longer crosses this detour row directly — #390's
+    // flush-marker change (merged after this test was first written) puts
+    // the marker flush against MIDDLE_ENTITY's own border, one row above
+    // the detour line, rather than inset into the detour's own row the
+    // way the old inset positioning did. Checked separately below instead
+    // of assuming they share a row.
     expect(ascii).toContain('└─────────────── tracks ────────────┘')
+    const lines = ascii.split('\n')
+    const detourLineIndex = lines.findIndex((l) =>
+      l.includes('└─────────────── tracks ────────────┘'),
+    )
+    expect(detourLineIndex).toBeGreaterThan(0)
+    // MIDDLE_ENTITY's "tracks" marker ('┼', flush against its own border)
+    // sits on the row immediately above the detour line.
+    expect(lines[detourLineIndex - 1]).toMatch(/┼/)
     expect(ascii).toContain('relates_to')
     expect(ascii).toContain('tracks')
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
@@ -83,18 +82,18 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
       { colorMode: 'none' },
     )
     // The jog's dashed line ('╌', a non-identifying relationship) opens
-    // with a solid corner glyph at the turn instead of another dash. USER
-    // and SESSION's columns are only 1 apart, so the jog's two turns (one
-    // leaving USER's column, one entering SESSION's) land on adjacent
-    // cells of the same row rather than having a dash run between them —
-    // '└┐': the path arrives from above, turns right ('└'), immediately
-    // reaches the next column, and turns down again ('┐'). (Post-#390:
-    // flush markers freed a row of vertical space this jog now sits one
-    // row higher in, but the two-adjacent-corners shape itself was always
-    // correct for a 1-column jog — verified by direction, not just by
-    // eyeballing the glyphs: getCornerChar('up','right') is '└' and
-    // getCornerChar('down','left') is '┐', matching lowerCX > lineX here.)
-    expect(ascii).toContain('└┐ opens')
+    // with a solid '┐' corner glyph at the turn instead of another dash.
+    // USER's own vertical "one" marker for this relationship ('┼', a
+    // crossing tick rather than '│', which would blend into the plain
+    // line, or a bare '─', which would sever it — see getCrowsFootChars'
+    // `vertical` param) sits flush against USER's own border, one row
+    // above the jog — not fused onto the same row as the jog's corner
+    // (#390's flush-marker change, merged after this test was first
+    // written, shifted the marker there).
+    const lines = ascii.split('\n')
+    const jogLineIndex = lines.findIndex((l) => l.includes('└┐ opens'))
+    expect(jogLineIndex).toBeGreaterThan(0)
+    expect(lines[jogLineIndex - 1]).toMatch(/┼/)
   })
 
   it('draws the ASCII-mode corner glyph ("+") at the same jog, in useAscii mode', () => {
@@ -112,6 +111,9 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
         USER ||..o{ SESSION : opens`,
       { colorMode: 'none', useAscii: true },
     )
+    // Leading '+' is USER's vertical "one" marker (ASCII-mode equivalent
+    // of the Unicode '┼' above); the trailing '+' is the jog's own corner
+    // glyph, already ASCII '+' in this mode.
     expect(ascii).toContain('++ opens')
   })
 

@@ -78,11 +78,17 @@ function getCrowsFootChars(
   card: Cardinality,
   useAscii: boolean,
   isRight = false,
+  vertical = false,
 ): string {
   if (useAscii) {
     switch (card) {
       case 'one':
-        return '|'
+        // A bare '-' has no vertical extent, so it reads as a gap in the
+        // vertical line rather than a tick crossing it (issue: PR #442's
+        // fix made the marker visible but visually severed the line). '+'
+        // carries both strokes, matching how '|' crosses the horizontal
+        // line in the non-vertical case below.
+        return vertical ? '+' : '|'
       case 'zero-one':
         return isRight ? 'o|' : '|o'
       case 'many':
@@ -94,7 +100,10 @@ function getCrowsFootChars(
     // Use cleaner Unicode characters
     switch (card) {
       case 'one':
-        return '│'
+        // Same reasoning as the ASCII '+' above: '┼' keeps the vertical
+        // stroke (line stays visually continuous) while adding the
+        // horizontal stroke that marks the "one" cardinality.
+        return vertical ? '┼' : '│'
       case 'zero-one':
         return isRight ? '○│' : '│○'
       case 'many':
@@ -1113,7 +1122,7 @@ export function renderErAscii(
       // Crow's foot markers (vertical direction) — markerStartY/markerEndY
       // computed up front, above.
       // Upper marker (at upper entity's bottom edge) - treat as source side (isRight=false)
-      const upperChars = getCrowsFootChars(upperCard, useAscii, false)
+      const upperChars = getCrowsFootChars(upperCard, useAscii, false, true)
       for (let i = 0; i < upperChars.length; i++) {
         setCGuarded(
           lineX - Math.floor(upperChars.length / 2) + i,
@@ -1125,7 +1134,7 @@ export function renderErAscii(
 
       // Lower marker (at lower entity's top edge) - treat as target side (isRight=true)
       const targetX = lineX !== lowerCX ? lowerCX : lineX
-      const lowerChars = getCrowsFootChars(lowerCard, useAscii, true)
+      const lowerChars = getCrowsFootChars(lowerCard, useAscii, true, true)
       for (let i = 0; i < lowerChars.length; i++) {
         setCGuarded(
           targetX - Math.floor(lowerChars.length / 2) + i,
