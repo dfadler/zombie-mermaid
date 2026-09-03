@@ -718,8 +718,17 @@ export function renderSequenceAscii(
       if (x > maxLX && x < nextRightLL) nextRightLL = x
       if (x < minLX && x > nextLeftLL) nextLeftLL = x
     }
-    if (bRight >= nextRightLL) bRight = nextRightLL - BLOCK_WALL_MARGIN
-    if (bLeft <= nextLeftLL) bLeft = nextLeftLL + BLOCK_WALL_MARGIN
+    // Never pull back past maxLX/minLX themselves — those already include
+    // the self-arrow extent computed above, and an untouched lifeline
+    // sitting close enough behind one can otherwise pull bRight below the
+    // self-arrow's own label, which the later block-border draw then
+    // overwrites (the label silently loses characters — CodeRabbit caught
+    // this on this exact fix). Clearing the untouched lifeline yields to
+    // not clipping this block's own content when the two can't both fit.
+    if (bRight >= nextRightLL)
+      bRight = Math.max(maxLX, nextRightLL - BLOCK_WALL_MARGIN)
+    if (bLeft <= nextLeftLL)
+      bLeft = Math.min(minLX, nextLeftLL + BLOCK_WALL_MARGIN)
 
     bLeft = Math.max(0, bLeft)
     if (bRight > blockCanvasMaxX) {

@@ -175,4 +175,41 @@ sequenceDiagram
       expect(llCols).not.toContain(wallCol)
     }
   })
+
+  it('does not let the pulled-back wall overwrite a self-message label (CodeRabbit)', () => {
+    // A short self-arrow label on the only touched actor, with an
+    // untouched actor sitting just past the label's own extent: the
+    // pull-back fix above can compute a wall column that lands inside the
+    // self-arrow's own label span rather than after it, and the later
+    // block-border draw then silently overwrites the label's first
+    // character(s). B is untouched by the loop's only message (a self-arrow
+    // on A) and sits close enough (default lifeline spacing) to trigger the
+    // pull-back for a short label.
+    const src = `
+sequenceDiagram
+    participant A
+    participant B
+    loop x
+        A->>A: abc
+    end
+`
+    const result = renderMermaidASCII(src, { useAscii: false })
+    const lines = result.split('\n')
+
+    // The label must survive intact and contiguous — a pull-back that
+    // clips into it would replace its leading character(s) with the
+    // block's own border glyph instead.
+    const labelRow = lines.find((l) => l.includes('abc'))
+    expect(labelRow).toBeDefined()
+
+    // The block's own right wall must sit at or after the label's last
+    // column, never inside its span.
+    const llCols = lifelineColumns(lines)
+    const wallRight = blockWallRightColumn(lines, 'loop [x]')
+    const labelEndCol = labelRow!.lastIndexOf('abc') + 'abc'.length - 1
+    expect(wallRight).toBeGreaterThanOrEqual(labelEndCol)
+    // ...and still clear of B's lifeline column, the invariant this whole
+    // suite is about.
+    expect(llCols).not.toContain(wallRight)
+  })
 })
