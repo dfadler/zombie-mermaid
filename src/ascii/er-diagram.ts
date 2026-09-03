@@ -722,20 +722,30 @@ export function renderErAscii(
 
       // Crow's-foot markers sit flush against each entity border (standard
       // ER notation draws the tick/circle cluster touching the entity, not
-      // floating in the middle of the connecting line). Only the *label*
-      // gets an inset from the border (issue #67 — labels crammed flush
-      // against a box were hard to read); insetting the markers too, as a
-      // prior fix did, left a 1-cell run of the plain connecting-line
-      // character between the border and the marker. That fill cell uses
-      // the exact same glyph as the "one" cardinality marker ('│'/'|'), so
-      // it read as a stray, unexplained connector glyph floating next to
-      // the real marker — see issue #351. Markers stay anchored to each
-      // box's own edge regardless of whether the path in between is direct
-      // or detoured (issue #350).
+      // floating in the middle of the connecting line) — issue #351. Only
+      // the *label* gets an unconditional inset from the border (issue
+      // #67 — labels crammed flush against a box were hard to read).
+      //
+      // Exception: a marker's own edge glyph can be the exact same
+      // character as the box border it sits against ('one'/'zero-one' use
+      // '│'/'|', identical to the vertical border glyph — see
+      // getCrowsFootChars). Flush in that case doesn't read as a marker
+      // touching a border, it reads as the border itself doubled, with the
+      // real marker floating past it (issue #413). Detect this per side by
+      // comparing the marker's own border-adjacent character against the
+      // border glyph, rather than hardcoding it to "always inset
+      // horizontal" — a future cardinality notation whose edge glyph
+      // doesn't collide (like the existing 'many'/'zero-many' crow's-foot
+      // glyphs) stays flush automatically.
+      const leftChars = getCrowsFootChars(leftCard, useAscii, false)
+      const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       const gapWidth = endX - startX + 1
       const labelInset = gapWidth >= 3 ? 1 : 0
-      const markerStartX = startX
-      const markerEndX = endX
+      const leftInset = gapWidth >= 3 && leftChars[0] === V ? 1 : 0
+      const rightInset =
+        gapWidth >= 3 && rightChars[rightChars.length - 1] === V ? 1 : 0
+      const markerStartX = startX + leftInset
+      const markerEndX = endX - rightInset
 
       let labelBaseY: number
 
@@ -819,13 +829,11 @@ export function renderErAscii(
 
       // Draw crow's foot markers at endpoints
       // Left marker (at left entity's right edge) - isRight=false
-      const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       for (let i = 0; i < leftChars.length; i++) {
         setCGuarded(markerStartX + i, lineY, leftChars[i]!, 'arrow')
       }
 
       // Right marker (at right entity's left edge) - isRight=true
-      const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       for (let i = 0; i < rightChars.length; i++) {
         setCGuarded(
           markerEndX - rightChars.length + 1 + i,

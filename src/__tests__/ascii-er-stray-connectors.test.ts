@@ -18,30 +18,32 @@ function occupyRow(canvas: Canvas, y: number, xStart: number, xEnd: number) {
 }
 
 describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', () => {
-  it('does not leave a lone "one" tick floating between dashes on a horizontal connector (Unicode)', () => {
+  it('gives the "one" marker a border gap instead of fusing with the entity wall (Unicode)', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none' },
     )
-    // Before the fix, the marker was inset 1 cell from the border, leaving
-    // the plain line-fill character ('─') on either side of the lone "one"
-    // marker ('│') — rendering as "─│─", a bar that reads as noise because
-    // it touches neither the entity border nor another marker glyph.
-    expect(ascii).not.toMatch(/─│─/)
-    // The marker instead sits flush against the CUSTOMER border, and the
-    // zero-many cluster sits flush against the ORDER border.
-    expect(ascii).toContain('CUSTOMER ││')
+    // #390 made every horizontal marker flush against its entity border.
+    // For "one" ('│'), whose own glyph is identical to the vertical border
+    // glyph, that read as a doubled border wall rather than a marker
+    // touching a border — issue #413. The fix reinstates a 1-cell gap, but
+    // only for a marker whose border-adjacent glyph actually collides with
+    // the border character; the zero-many cluster ('○╟'), which doesn't
+    // collide, stays flush exactly as #390 intended.
+    expect(ascii).not.toContain('CUSTOMER ││')
+    expect(ascii).toContain('CUSTOMER │─│')
     expect(ascii).toContain('○╟│ ORDER')
   })
 
-  it('does not leave a lone "one" tick floating between dashes on a horizontal connector (ASCII)', () => {
+  it('gives the "one" marker a border gap instead of fusing with the entity wall (ASCII)', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
         CUSTOMER ||--o{ ORDER : places`,
       { colorMode: 'none', useAscii: true },
     )
-    expect(ascii).not.toMatch(/-\|-/)
+    expect(ascii).not.toContain('CUSTOMER ||')
+    expect(ascii).toContain('CUSTOMER |-|')
   })
 
   it('does not leave a stray fill row between a vertical marker and its entity border', () => {
@@ -74,23 +76,26 @@ describe('ASCII ER — no stray connector glyph next to a marker (issue #351)', 
   // Review on #351 (https://github.com/dfadler/zombie-mermaid/issues/351#issuecomment-5497209031)
   // re-tested with a different cardinality combination — "zero-or-one"
   // (`│○`/`○│`) — and found the horizontal/vertical split holds for that
-  // glyph too: flush is clean vertically, but fuses with the border
-  // horizontally. These two tests lock in that finding directly rather
-  // than leaving it as a PR-description claim with no regression coverage.
+  // glyph too: flush was clean vertically, but fused with the border
+  // horizontally (issue #413, fixed below). These two tests lock in that
+  // finding directly rather than leaving it as a PR-description claim with
+  // no regression coverage.
 
-  it('fuses the "zero-or-one" marker with the entity border on a horizontal connector too (known trade-off, #351 review comment)', () => {
+  it('gives the "zero-or-one" marker a border gap on a horizontal connector too (issue #413)', () => {
     const ascii = renderMermaidASCII(
       `erDiagram
         C |o--|| D : owns`,
       { colorMode: 'none' },
     )
-    // Matches the reviewer's own quoted "branch" output exactly:
-    // "│ C ││○───││ D │" — the zero-or-one marker's leading "│" touches C's
-    // own border directly (no separating fill cell — the horizontal
-    // wall-fusion trade-off, not a bug in this PR's own tests), and the
-    // "one" marker's "│" touches D's border the same way.
-    expect(ascii).toContain('C ││○')
-    expect(ascii).toContain('││ D')
+    // Before #413's fix this rendered as "│ C ││○───││ D │" — the
+    // zero-or-one marker's leading "│" touched C's own border directly (no
+    // separating fill cell), and the "one" marker's "│" touched D's border
+    // the same way. Both sides now get a 1-cell gap instead, since both
+    // markers' border-adjacent glyph ('│') collides with the border glyph.
+    expect(ascii).not.toContain('C ││○')
+    expect(ascii).not.toContain('││ D')
+    expect(ascii).toContain('C │─│○')
+    expect(ascii).toContain('─│ D')
   })
 
   it('does not leave a stray fill row before a vertical "zero-or-one" marker', () => {
