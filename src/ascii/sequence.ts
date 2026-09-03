@@ -34,6 +34,14 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 // self-arrows inside alt/loop/opt blocks don't get clipped by the wall.
 const SELF_LOOP_WIDTH = 4
 
+// Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
+// and the lifelines its own messages touch. Shared by every block type —
+// there is no per-type wall calculation, so this constant is the single
+// source of truth for that spacing (see BLOCK_WALL_MARGIN's use below for
+// why a *second*, independent use of it also guards against an untouched
+// lifeline).
+const BLOCK_WALL_MARGIN = 4
+
 // Effective width of a self-message's loop, including room for an
 // autonumber badge drawn at the start of the top arm when active. The badge
 // digits replace the leading dashes rather than adding a second arrowhead,
@@ -652,6 +660,12 @@ export function renderSequenceAscii(
 
   // ---- DRAW: blocks (loop, alt, opt, par, etc.) ----
 
+  // Largest column index it's currently safe to write a block wall into.
+  // Starts at the canvas's own right margin (mirrors the historical
+  // `totalW - 1` clamp) and is pushed out via increaseSize/
+  // increaseRoleCanvasSize below whenever a wall needs to grow past it.
+  let blockCanvasMaxX = totalW - 1
+
   for (let b = 0; b < diagram.blocks.length; b++) {
     const block = diagram.blocks[b]!
     const topY = blockStartY.get(b)
@@ -678,8 +692,52 @@ export function renderSequenceAscii(
       }
     }
 
-    const bLeft = Math.max(0, minLX - 4)
-    const bRight = Math.min(totalW - 1, maxLX + 4)
+    let bLeft = minLX - BLOCK_WALL_MARGIN
+    let bRight = maxLX + BLOCK_WALL_MARGIN
+
+    // minLX/maxLX (and therefore bLeft/bRight) only account for lifelines
+    // *this block's own messages* touch. That leaves a gap: the fixed
+    // margin above can coincidentally place a wall exactly on — or past —
+    // a different, untouched lifeline's column (#353).
+    //
+    // The fix is to PULL the wall back short of that lifeline, not push it
+    // past. Verified against real mermaid.js's own SVG output for this
+    // exact diagram (see scripts/lib/real-mermaid.ts, the same engine
+    // behind GitHub's own mermaid preview): `loop`/`opt` enclose `Database`
+    // there because their own messages touch it directly, but `alt` —
+    // which never messages `Database` — stops well short of it (124px of
+    // real clearance, not a few px of overshoot), even though `loop`/`opt`
+    // in the same diagram extend ~11px *past* Database's lifeline to
+    // enclose it. Real mermaid never widens a block's wall to enclose a
+    // lifeline its own messages don't touch; it only ever clears one it
+    // was already going to reach. Applies to every block type alike, both
+    // walls.
+    let nextRightLL = Number.POSITIVE_INFINITY
+    let nextLeftLL = Number.NEGATIVE_INFINITY
+    for (const x of llX) {
+      if (x > maxLX && x < nextRightLL) nextRightLL = x
+      if (x < minLX && x > nextLeftLL) nextLeftLL = x
+    }
+    // Never pull back past maxLX/minLX themselves — those already include
+    // the self-arrow extent computed above, and an untouched lifeline
+    // sitting close enough behind one can otherwise pull bRight below the
+    // self-arrow's own label, which the later block-border draw then
+    // overwrites (the label silently loses characters — CodeRabbit caught
+    // this on this exact fix). Clearing the untouched lifeline yields to
+    // not clipping this block's own content when the two can't both fit.
+    if (bRight >= nextRightLL)
+      bRight = Math.max(maxLX, nextRightLL - BLOCK_WALL_MARGIN)
+    if (bLeft <= nextLeftLL)
+      bLeft = Math.min(minLX, nextLeftLL + BLOCK_WALL_MARGIN)
+
+    bLeft = Math.max(0, bLeft)
+    if (bRight > blockCanvasMaxX) {
+      increaseSize(canvas, bRight + 1, totalH - 1)
+      increaseRoleCanvasSize(rc, bRight + 1, totalH - 1)
+      blockCanvasMaxX = bRight
+    } else {
+      bRight = Math.min(blockCanvasMaxX, bRight)
+    }
 
     // Top border with block type label
     setC(bLeft, topY, TL, 'border')
