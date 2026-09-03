@@ -48,12 +48,13 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     )
     // The detour's horizontal run now opens with '└' (turning up out of the
     // left vertical drop) and closes with '┘' (turning up into the right
-    // vertical drop) instead of plain '─' at both ends. (The '│' that used
-    // to sit mid-run here, at the same row as MIDDLE_ENTITY's own vertical
-    // "one" marker for its "tracks" relationship, is now '─' per the
-    // vertical-marker fix — a vertical "one" tick must read distinctly from
-    // the plain line it crosses, see getCrowsFootChars' `vertical` param.)
-    expect(ascii).toContain('└───────────────────────────────────┘')
+    // vertical drop) instead of plain '─' at both ends. The '┼' mid-run is
+    // MIDDLE_ENTITY's own vertical "one" marker for its "tracks"
+    // relationship, crossing this detour at the same cell — '┼' rather than
+    // plain '─' so it still reads as a marker instead of disappearing into
+    // the surrounding run of the same character (see getCrowsFootChars'
+    // `vertical` param).
+    expect(ascii).toContain('└─────────────────┼─────────────────┘')
     expect(ascii).toContain('relates_to')
   })
 
@@ -69,11 +70,11 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     )
     // The jog's dashed line ('╌', a non-identifying relationship) opens
     // with a solid '┐' corner glyph at the turn instead of another dash.
-    // The leading '─' is USER's own vertical "one" marker for this
-    // relationship — '─' rather than '│' per the vertical-marker fix, so
-    // it reads distinctly from the plain line it would otherwise blend
-    // into (see getCrowsFootChars' `vertical` param).
-    expect(ascii).toContain('─┐ opens')
+    // The leading '┼' is USER's own vertical "one" marker for this
+    // relationship — a crossing tick rather than '│' (which would blend
+    // into the plain line) or a bare '─' (which would sever it — see
+    // getCrowsFootChars' `vertical` param).
+    expect(ascii).toContain('┼┐ opens')
   })
 
   it('draws the ASCII-mode corner glyph ("+") at the same jog, in useAscii mode', () => {
@@ -87,9 +88,10 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
         USER ||..o{ SESSION : opens`,
       { colorMode: 'none', useAscii: true },
     )
-    // Leading '-' is USER's vertical "one" marker (ASCII-mode equivalent
-    // of the Unicode '─' above).
-    expect(ascii).toContain('-+ opens')
+    // Leading '+' is USER's vertical "one" marker (ASCII-mode equivalent
+    // of the Unicode '┼' above); the trailing '+' is the jog's own corner
+    // glyph, already ASCII '+' in this mode.
+    expect(ascii).toContain('++ opens')
   })
 
   it("draws corner glyphs at a vertical relationship's multi-row-obstruction bypass", () => {

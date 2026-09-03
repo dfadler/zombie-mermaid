@@ -77,7 +77,12 @@ function getCrowsFootChars(
   if (useAscii) {
     switch (card) {
       case 'one':
-        return vertical ? '-' : '|'
+        // A bare '-' has no vertical extent, so it reads as a gap in the
+        // vertical line rather than a tick crossing it (issue: PR #442's
+        // fix made the marker visible but visually severed the line). '+'
+        // carries both strokes, matching how '|' crosses the horizontal
+        // line in the non-vertical case below.
+        return vertical ? '+' : '|'
       case 'zero-one':
         return isRight ? 'o|' : '|o'
       case 'many':
@@ -89,7 +94,10 @@ function getCrowsFootChars(
     // Use cleaner Unicode characters
     switch (card) {
       case 'one':
-        return vertical ? '─' : '│'
+        // Same reasoning as the ASCII '+' above: '┼' keeps the vertical
+        // stroke (line stays visually continuous) while adding the
+        // horizontal stroke that marks the "one" cardinality.
+        return vertical ? '┼' : '│'
       case 'zero-one':
         return isRight ? '○│' : '│○'
       case 'many':
