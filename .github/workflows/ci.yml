@@ -159,6 +159,19 @@ jobs:
     # for the full reasoning on what github.repository resolves to and what
     # this does/doesn't protect against.
     if: github.repository == 'dfadler/zombie-mermaid'
+    # Splits the ~280 screenshot tests across 4 parallel runners via
+    # Playwright's own --shard flag. Each shard still runs at
+    # playwright.config.ts's workers: 2 — that cap exists to avoid
+    # CPU-contention noise in the pixel diffs (see the comment there), and
+    # sharding across separate runners doesn't reintroduce it since each
+    # shard has its own CPU, unlike raising workers on one runner would.
+    # fail-fast: false so one flaky/failing shard doesn't cancel the others
+    # mid-run and hide their results.
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
 
     steps:
       # This job uploads a writable artifact (screenshots) on failure from
@@ -188,8 +201,28 @@ jobs:
       # Chrome-for-Testing binary is what keeps this comparable to the
       # committed -linux.png baselines (see CONTRIBUTING.md for how those
       # were generated).
-      - name: Install Playwright Chromium
+      #
+      # The browser binary itself is cached below, keyed on pnpm-lock.yaml
+      # (which pins the playwright version) — a cache hit skips the
+      # download/extract, which is most of this step's cost. What a cache
+      # hit does NOT restore is the runner's system packages (--with-deps'
+      # apt install), since those live outside ~/.cache/ms-playwright and
+      # aren't part of the cached path — so that has to run unconditionally
+      # on every run regardless of cache state, cache hit or not.
+      - name: Cache Playwright Chromium browser binary
+        id: playwright-cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium (with system deps)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps only (browser cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
 
       # This suite runs under Playwright Test, not Vitest's browser mode —
       # see zombie-mermaid#299 for why: Vitest's Node<->browser RPC bridge
@@ -202,16 +235,23 @@ jobs:
       # HTML approximation of a terminal, never a real PTY — a passing run
       # here is not proof ASCII output is correct in an actual terminal (see
       # zombie-mermaid#348 and CONTRIBUTING.md's "Visual regression tests").
+      #
+      # --shard runs only this shard's slice of the suite; `pnpm run
+      # test:visual` isn't used directly here since it doesn't forward
+      # extra playwright args.
       - name: Run visual regression suite
         id: visual-tests
-        run: pnpm run test:visual
+        run: pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
+      # One artifact per shard — upload-artifact v4 requires unique names
+      # within a run, and each shard produces its own disjoint slice of
+      # test-results/playwright-report anyway, so there's nothing to merge.
       - name: Upload failure report
         id: upload-report
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: visual-regression-failures
+          name: visual-regression-failures-${{ matrix.shardIndex }}
           path: |
             test-results/
             playwright-report/
@@ -231,10 +271,10 @@ jobs:
         if: failure() && steps.visual-tests.conclusion == 'failure'
         run: |
           {
-            echo "## Visual regression failures"
+            echo "## Visual regression failures (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
             echo
             if [ -n "${{ steps.upload-report.outputs.artifact-url }}" ]; then
-              echo "[Download the full interactive Playwright report](${{ steps.upload-report.outputs.artifact-url }}) (the \`visual-regression-failures\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
+              echo "[Download the full interactive Playwright report](${{ steps.upload-report.outputs.artifact-url }}) (the \`visual-regression-failures-${{ matrix.shardIndex }}\` artifact) — extract it and run \`pnpm exec playwright show-report playwright-report\` for the side-by-side diff/trace viewer."
               echo
             fi
             echo "Failed screenshots:"
