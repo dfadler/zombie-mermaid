@@ -28,7 +28,11 @@ import {
   requireCardinalDirection,
 } from './types.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
-import { getNodeSubgraph, requireGridCoord } from './grid.ts'
+import {
+  getNodeSubgraph,
+  gridToDrawingCoord,
+  requireGridCoord,
+} from './grid.ts'
 import { displayWidth } from './display-width.ts'
 import { isOccupied, pathCells } from './grid-occupancy.ts'
 
@@ -745,6 +749,18 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   const lenLabel = displayWidth(edge.text)
   const pathLen = edge.path.length
 
+  // A candidate segment needs strictly more room than the label's own
+  // character count: `calculateLineWidth` for a horizontal segment now
+  // measures the actual drawing-space distance between its two endpoints
+  // (see that function's doc), and centering a label of exactly that width
+  // inside that distance still lands its first character on the segment's
+  // starting endpoint — which, for a segment that approaches a node, *is*
+  // that node's border column (issue #450). This mirrors the `+ 2` padding
+  // `applyLabelLine` already reserves around the label once a segment is
+  // chosen, so the segment-selection check and the space actually reserved
+  // for it agree on what "enough room" means.
+  const minSegmentWidth = lenLabel + 2
+
   // Collect all segments with their widths and orientation
   const segments: {
     line: [GridCoord, GridCoord]
@@ -781,7 +797,7 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   // Find segments wide enough for the label, excluding the first segment
   // The first segment is often shared between edges from the same source node
   const suitableSegments = segments.filter(
-    (s) => s.width >= lenLabel && s.index > 1 && clearOfNodes(s.line),
+    (s) => s.width >= minSegmentWidth && s.index > 1 && clearOfNodes(s.line),
   )
 
   let largestLine: [GridCoord, GridCoord]
@@ -794,7 +810,7 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   } else {
     // Fall back to any suitable segment including the first
     const fallbackSegments = segments.filter(
-      (s) => s.width >= lenLabel && clearOfNodes(s.line),
+      (s) => s.width >= minSegmentWidth && clearOfNodes(s.line),
     )
     if (fallbackSegments.length > 0) {
       fallbackSegments.sort((a, b) => b.index - a.index)
@@ -884,16 +900,40 @@ function applyLabelLine(
   edge.labelLine = [line[0], line[1]]
 }
 
-/** Calculate the total character width of a line segment by summing column widths. */
+/**
+ * Calculate the character width available for centering a label on a line
+ * segment.
+ *
+ * For a vertical segment (both endpoints share an X column), this is that
+ * column's own width — the horizontal room a centered label has to either
+ * side of the line.
+ *
+ * For a horizontal segment, this used to sum every spanned column's *own*
+ * width, but that over-counts the room actually available: `drawTextOnLine`
+ * centers the label across the segment's *drawing-space* distance between
+ * its two endpoints, and `gridToDrawingCoord` places a column at its
+ * *center*, not its leading edge — so the real distance between two
+ * adjacent columns is roughly half of each column's width, not the sum of
+ * their full widths. A short final approach segment into a node (one grid
+ * column wide, ending on that node's own border column) could pass the old
+ * sum-based check by counting a distant column's generous width, then get
+ * centered with its first character landing on or before the segment's own
+ * starting endpoint — which, for a segment that terminates at a node, is
+ * that node's border cell, so the label overwrote the border character
+ * outright (issue #450: `done`'s label erasing the `Closed` state box's
+ * right border in `stateDiagram-v2` sample 31). Measuring the same
+ * drawing-space distance `drawTextOnLine` centers within keeps this check
+ * in sync with what actually gets drawn.
+ */
 function calculateLineWidth(
   graph: AsciiGraph,
   line: [GridCoord, GridCoord],
 ): number {
-  let total = 0
-  const startX = Math.min(line[0].x, line[1].x)
-  const endX = Math.max(line[0].x, line[1].x)
-  for (let x = startX; x <= endX; x++) {
-    total += graph.columnWidth.get(x) ?? 0
+  const [a, b] = line
+  if (a.x === b.x) {
+    return graph.columnWidth.get(a.x) ?? 0
   }
-  return total
+  return Math.abs(
+    gridToDrawingCoord(graph, b).x - gridToDrawingCoord(graph, a).x,
+  )
 }
