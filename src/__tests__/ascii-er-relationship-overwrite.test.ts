@@ -181,12 +181,28 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
       { colorMode: 'none' },
     )
 
-    const row = ascii.split('\n').find((l) => l.includes('tagged-with'))
-    expect(row).toBeDefined()
-    const idx = row!.indexOf('tagged-with')
-    // TAG's own crow's-foot marker ("○╟"), then a single space, then the
-    // label — not a long run of blank columns with no marker in sight.
-    expect(row!.slice(idx - 3, idx)).toBe('○╟ ')
+    const lines = ascii.split('\n')
+    const labelRowIdx = lines.findIndex((l) => l.includes('tagged-with'))
+    expect(labelRowIdx).toBeGreaterThanOrEqual(0)
+    const row = lines[labelRowIdx]!
+    const idx = row.indexOf('tagged-with')
+    // Since issue #453, POST also has a second bottom attachment ("has")
+    // converging on COMMENT, so POST's own attachment columns for "has"
+    // and "tagged-with" are staggered instead of both centered on POST —
+    // which in turn changes where "tagged-with"'s jog (and so its label)
+    // lands. The label is now preceded by the jog's own corner glyph
+    // ('┌ ') rather than sitting flush after the marker on the same row —
+    // but that corner still connects straight down to TAG's own
+    // crow's-foot marker ("○╟") one row below, at the same column, so the
+    // label still reads as clearly anchored to TAG's marker rather than
+    // floating disconnected from it.
+    expect(row.slice(idx - 2, idx)).toBe('┌ ')
+    const cornerCol = idx - 2
+    const markerRow = lines[labelRowIdx + 1]!
+    // The marker sits at or adjacent to the corner's column — connected by
+    // the vertical line the corner turns into, not necessarily flush at
+    // the exact same column as the '┌' glyph itself.
+    expect(markerRow.slice(cornerCol - 1, cornerCol + 2)).toContain('○╟')
   })
 
   it('drops a whole overlapping label in the same-row (horizontal) branch too', () => {

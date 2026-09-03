@@ -110,9 +110,15 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
         }`,
       { colorMode: 'none' },
     )
-    // Corner glyphs at both jogs of the bypass route.
-    expect(ascii).toContain('┌─────────│──────────────────┘')
-    expect(ascii).toContain('○╟─────────┘')
+    // Corner glyphs at both jogs of the bypass route. G is also the shared
+    // target of "fg" (from F, same row as G) and "ag" (this bypass) — since
+    // issue #453, each gets its own staggered attachment column instead of
+    // both landing on G's exact center, which shifts these exact strings
+    // from a single shared-center bypass to two side-by-side ones; the
+    // corner glyphs at the bypass's own turns are still there, just at the
+    // updated column.
+    expect(ascii).toContain('┌─│──────────────────┘')
+    expect(ascii).toContain('○╟─────────────────┘')
     expect(ascii).toContain('ag')
   })
 

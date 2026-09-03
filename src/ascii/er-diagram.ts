@@ -578,6 +578,80 @@ export function renderErAscii(
     setCGuarded(x, y, getCornerChar(vertDir, horizDir), 'line')
   }
 
+  /**
+   * Attachment columns for vertical (different-row) relationships, keyed by
+   * entity id, one bucket per edge the relationship attaches to. Without
+   * this, every vertical relationship's marker independently defaults to
+   * its entity's exact horizontal center — so when two or more
+   * relationships converge on the *same* entity's top edge (or leave from
+   * the same bottom edge) — e.g. USER→COMMENT and POST→COMMENT both ending
+   * at COMMENT — their markers land on the identical cell and read as one
+   * merged crow's-foot instead of two distinguishable relationships (issue
+   * #453). Real mermaid.js avoids this by staggering each edge's
+   * attachment point along the entity's border based on where the other
+   * endpoint sits; `attachmentX` below mirrors that by spreading multiple
+   * attachments left-to-right across the entity's own width, ordered by the
+   * other entity's center X (so the visual left-to-right order of the
+   * relationships matches the left-to-right order of their sources).
+   * Entities with only one attachment on a given side are unaffected — they
+   * still resolve to dead center, exactly as before this change.
+   */
+  interface VerticalAttachment {
+    rel: (typeof diagram.relationships)[number]
+    otherCenterX: number
+  }
+  const topAttachments = new Map<string, VerticalAttachment[]>()
+  const bottomAttachments = new Map<string, VerticalAttachment[]>()
+  for (const rel of diagram.relationships) {
+    const e1 = placed.get(rel.entity1)
+    const e2 = placed.get(rel.entity2)
+    if (!e1 || !e2) continue
+    const e1CY = e1.y + Math.floor(e1.height / 2)
+    const e2CY = e2.y + Math.floor(e2.height / 2)
+    const sameRow = Math.abs(e1CY - e2CY) < Math.max(e1.height, e2.height)
+    if (sameRow) continue
+    const [upperE, lowerE] = e1CY < e2CY ? [e1, e2] : [e2, e1]
+    const upperCX = upperE.x + Math.floor(upperE.width / 2)
+    const lowerCX = lowerE.x + Math.floor(lowerE.width / 2)
+    let bottomList = bottomAttachments.get(upperE.entity.id)
+    if (!bottomList) {
+      bottomList = []
+      bottomAttachments.set(upperE.entity.id, bottomList)
+    }
+    bottomList.push({ rel, otherCenterX: lowerCX })
+    let topList = topAttachments.get(lowerE.entity.id)
+    if (!topList) {
+      topList = []
+      topAttachments.set(lowerE.entity.id, topList)
+    }
+    topList.push({ rel, otherCenterX: upperCX })
+  }
+
+  /**
+   * Resolve the attachment column for `rel` on `entity`'s given side. Falls
+   * back to dead center when that side has zero or one attachment (the
+   * common case, and the pre-#453 behavior). With two or more, spreads them
+   * evenly across the entity's own width — inset by 1 cell from each edge
+   * so a 2-cell-wide crow's-foot marker (e.g. "zero-many") doesn't sit
+   * flush against a box corner — ordered by the other entity's center X.
+   */
+  function attachmentX(
+    entity: PlacedEntity,
+    rel: (typeof diagram.relationships)[number],
+    attachments: Map<string, VerticalAttachment[]>,
+  ): number {
+    const list = attachments.get(entity.entity.id)
+    const centerX = entity.x + Math.floor(entity.width / 2)
+    if (!list || list.length <= 1) return centerX
+    const sorted = [...list].sort((a, b) => a.otherCenterX - b.otherCenterX)
+    const idx = sorted.findIndex((a) => a.rel === rel)
+    if (idx === -1) return centerX
+    const margin = Math.min(1, Math.floor((entity.width - 1) / 2))
+    const usableWidth = Math.max(0, entity.width - 1 - margin * 2)
+    const step = sorted.length > 1 ? usableWidth / (sorted.length - 1) : 0
+    return entity.x + margin + Math.round(idx * step)
+  }
+
   for (const rel of diagram.relationships) {
     const e1 = placed.get(rel.entity1)
     const e2 = placed.get(rel.entity2)
@@ -791,8 +865,11 @@ export function renderErAscii(
 
       const startY = upper.y + upper.height
       const endY = lower.y - 1
-      const lineX = upper.x + Math.floor(upper.width / 2)
-      const lowerCX = lower.x + Math.floor(lower.width / 2)
+      // Dead center when this entity has only one relationship attaching
+      // to this side; otherwise staggered so it doesn't collide with a
+      // sibling relationship's marker on the same edge (issue #453).
+      const lineX = attachmentX(upper, rel, bottomAttachments)
+      const lowerCX = attachmentX(lower, rel, topAttachments)
 
       /** True when column x is free of every entity box across [yStart, yEnd]. */
       function columnClearOfBoxes(
