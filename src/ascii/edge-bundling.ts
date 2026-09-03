@@ -186,6 +186,39 @@ function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
     : edges.map((e) => e.to)
   if (new Set(otherEndpoints).size !== otherEndpoints.length) return false
 
+  // Bundling assumes every source sits strictly before the shared target
+  // along the graph-direction axis for fan-in (TD: above it; LR: left of
+  // it), or every target sits strictly after the shared source for
+  // fan-out — calculateJunctionPoint places the junction on that side of
+  // the shared node and routeBundledEdges exits/enters it accordingly. The
+  // grid layout can violate that: a node's rank gets pinned by whichever
+  // incoming edge's source is placed first (placeReachableChildren in
+  // grid.ts never revisits an already-placed node), so a "diamond" like
+  // `Queue --> Worker` plus `Queue --> Retry --> Worker` can leave Worker
+  // at the SAME rank as Retry instead of one rank after it (#454).
+  // Bundling that pair would route Retry's edge through the same
+  // trunk+arrowhead as Queue's, silently swallowing Retry's own arrowhead
+  // into a line that looks like it belongs solely to Queue. Refuse to
+  // bundle whenever any edge doesn't actually satisfy the "before the
+  // target" / "after the source" assumption; routed independently instead,
+  // it gets its own distinct, visible arrowhead into/out of the shared node.
+  const axis: 'x' | 'y' = graph.config.graphDirection === 'LR' ? 'x' : 'y'
+  const sharedNode = sameTarget ? edges[0]!.to : edges[0]!.from
+  const sharedCoord = sharedNode.gridCoord
+  if (!sharedCoord) return false
+  for (const edge of edges) {
+    const otherNode = sameTarget ? edge.from : edge.to
+    const otherCoord = otherNode.gridCoord
+    if (!otherCoord) return false
+    if (sameTarget) {
+      // fan-in: source must be strictly before the shared target
+      if (otherCoord[axis] >= sharedCoord[axis]) return false
+    } else {
+      // fan-out: target must be strictly after the shared source
+      if (otherCoord[axis] <= sharedCoord[axis]) return false
+    }
+  }
+
   return true
 }
 
