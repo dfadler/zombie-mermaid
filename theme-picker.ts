@@ -1,11 +1,13 @@
 /**
  * Shared theme-picker UI: a few pills inline, the rest in a "More" dropdown.
  *
- * Used by both the interactive gallery (index.ts, which also offers a
- * "Default" pseudo-theme meaning "no override, use each sample's own
- * baked-in colors") and the per-diagram-type SEO pages (pages.ts, where
- * every pill is a real theme and exactly one is always active, matching
- * whichever theme the page happened to render with at build time).
+ * Used by both the interactive gallery (index.ts) and the per-diagram-type
+ * SEO pages (pages.ts) -- both include the "Default" pseudo-theme pill
+ * (empty key) and both render it active initially, so a first-time visitor
+ * sees the exact same look on either surface. On index.ts, Default means
+ * "no override, use each sample's own baked-in colors"; on pages.ts it
+ * means DEFAULT_SWATCH below, since a diagrams page always renders exactly
+ * one diagram with no per-sample baked-in colors to fall back to.
  */
 import { escapeHtml } from './demo/format.ts'
 import { THEMES } from './src/theme.ts'
@@ -36,10 +38,11 @@ export function renderThemePill(
  * Build the theme picker: a few pills inline, every theme in a dropdown.
  *
  * `includeDefault` prepends the "Default" pseudo-theme pill (empty key,
- * always rendered active) ahead of the real themes — the gallery's own
- * concept, not something the SEO pages need. `activeThemeKey`, when given,
- * marks the matching real-theme pill active instead (the SEO pages' case:
- * the theme the page actually rendered with at build time).
+ * always rendered active) ahead of the real themes. `activeThemeKey` marks
+ * a real-theme pill active instead -- only takes effect when `includeDefault`
+ * is false, or when `activeThemeKey` isn't the empty string the Default
+ * pill already occupies, since the Default pill's own active state doesn't
+ * consult it.
  */
 export function renderThemePicker(opts: {
   includeDefault: boolean

@@ -163,7 +163,9 @@ function updateEditorLink(themeKey: string): void {
 
 function activeThemeKey(): string {
   const active = document.querySelector('.theme-pill.active')
-  return active?.getAttribute('data-theme') || Object.keys(THEMES)[0]!
+  // The Default pill's data-theme is '' -- `??`, not `||`, so that valid,
+  // falsy key isn't mistaken for "no active pill found" and overridden.
+  return active?.getAttribute('data-theme') ?? Object.keys(THEMES)[0]!
 }
 
 function applyTheme(themeKey: string): void {
@@ -184,8 +186,15 @@ function applyTheme(themeKey: string): void {
 
   // Shared with demo/client.ts's main gallery -- same key, same origin, so a
   // theme picked on either surface carries over to the other instead of
-  // each page silently re-defaulting on the visitor.
-  localStorage.setItem('mermaid-theme', themeKey)
+  // each page silently re-defaulting on the visitor. Mirrors demo/client.ts's
+  // own set/remove split: '' (Default) is stored as an *absence* of a
+  // preference, not the literal empty string, since it's already what a
+  // visitor with no stored preference sees by default.
+  if (themeKey) {
+    localStorage.setItem('mermaid-theme', themeKey)
+  } else {
+    localStorage.removeItem('mermaid-theme')
+  }
 }
 
 // The editor link's encoded source must track the orientation actually on
@@ -219,7 +228,9 @@ mustGet('theme-pills').addEventListener('click', (e) => {
   const pill = target.closest('.theme-pill')
   if (!pill || pill.id === 'theme-more-btn') return
   const themeKey = pill.getAttribute('data-theme')
-  if (themeKey) applyTheme(themeKey)
+  // Not `if (themeKey)` -- the Default pill's data-theme is '', a valid key
+  // that a truthiness check would silently ignore a click on.
+  if (themeKey !== null) applyTheme(themeKey)
 
   const dd = document.getElementById('theme-more-dropdown')
   if (dd?.classList.contains('open')) {
