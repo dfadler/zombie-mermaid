@@ -72,15 +72,54 @@ export function computeContentHash(
     .digest('hex')
 }
 
-/** Never throws — a missing or malformed cache file is treated as empty. */
+/**
+ * A malformed entry (missing/non-string `hash`, or a `verdictLine` that
+ * isn't itself a valid JSON object) must never reach
+ * buildReducedSetAndSeededResults: rewriteVerdictId falls back to
+ * returning its input unchanged on a parse failure, and a non-string
+ * `verdictLine` would flow through as a JavaScript `undefined` — pushed
+ * into the results file as the literal text "undefined", which would
+ * later abort the report job's `jq`-per-line parsing (set -euo pipefail)
+ * for every category, not just leave one entry corrupted.
+ */
+function isValidCacheEntry(value: unknown): value is CacheEntry {
+  if (!value || typeof value !== 'object') return false
+  const entry = value as Record<string, unknown>
+  if (typeof entry.hash !== 'string' || typeof entry.verdictLine !== 'string') {
+    return false
+  }
+  try {
+    const parsedVerdict: unknown = JSON.parse(entry.verdictLine)
+    return (
+      parsedVerdict !== null &&
+      typeof parsedVerdict === 'object' &&
+      !Array.isArray(parsedVerdict)
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Never throws — a missing or malformed cache file is treated as empty,
+ * and an individual malformed entry within an otherwise-valid file is
+ * dropped rather than rejecting the whole file (same "fail toward
+ * re-judging, never toward a crash" philosophy as everywhere else here).
+ */
 export function parseCacheFile(raw: string | null): CacheFile {
   if (!raw) return {}
   try {
     const parsed: unknown = JSON.parse(raw)
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as CacheFile
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {}
     }
-    return {}
+    const cache: CacheFile = {}
+    for (const [title, value] of Object.entries(
+      parsed as Record<string, unknown>,
+    )) {
+      if (isValidCacheEntry(value)) cache[title] = value
+    }
+    return cache
   } catch {
     return {}
   }

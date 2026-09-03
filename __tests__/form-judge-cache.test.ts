@@ -118,6 +118,64 @@ describe('parseCacheFile', () => {
       'State: Basic': { hash: 'abc', verdictLine: '{}' },
     })
   })
+
+  it('drops an entry with a missing verdictLine, keeping other valid entries', () => {
+    const raw = JSON.stringify({
+      Good: { hash: 'abc', verdictLine: '{}' },
+      Bad: { hash: 'abc' },
+    })
+    expect(parseCacheFile(raw)).toEqual({
+      Good: { hash: 'abc', verdictLine: '{}' },
+    })
+  })
+
+  it('drops an entry with a non-string hash', () => {
+    const raw = JSON.stringify({
+      Bad: { hash: 123, verdictLine: '{}' },
+    })
+    expect(parseCacheFile(raw)).toEqual({})
+  })
+
+  it('drops an entry whose verdictLine is not valid JSON', () => {
+    const raw = JSON.stringify({
+      Bad: { hash: 'abc', verdictLine: 'not json' },
+    })
+    expect(parseCacheFile(raw)).toEqual({})
+  })
+
+  it('drops an entry whose verdictLine parses to a non-object (e.g. an array)', () => {
+    const raw = JSON.stringify({
+      Bad: { hash: 'abc', verdictLine: '[1,2,3]' },
+    })
+    expect(parseCacheFile(raw)).toEqual({})
+  })
+})
+
+describe('parseCacheFile + buildReducedSetAndSeededResults end to end', () => {
+  it('a malformed cache entry (matching hash, missing verdictLine) is treated as a miss, not seeded as "undefined"', () => {
+    const entry = makeIndexEntry()
+    const facts = makeSampleFile()
+    const renderId = renderIdFor(entry.id)
+    const hash = computeContentHash(
+      facts.trimmedSvg!,
+      facts.asciiText!,
+      renderId,
+    )
+
+    // The real production path: a raw cache file string, as restored from
+    // actions/cache, parsed through the actual public API rather than a
+    // hand-constructed CacheFile that bypasses the type contract.
+    const rawCache = JSON.stringify({ [entry.title]: { hash } })
+    const cache = parseCacheFile(rawCache)
+    const factsById = new Map([[entry.id, facts]])
+
+    const result = buildReducedSetAndSeededResults([entry], factsById, cache)
+
+    // Dropped by parseCacheFile, so this is a cache miss: judged fresh,
+    // not seeded with a corrupted "undefined" verdict line.
+    expect(result.combinedData).toHaveLength(1)
+    expect(result.seededResultLines).toEqual([])
+  })
 })
 
 describe('rewriteVerdictId', () => {
