@@ -364,12 +364,15 @@ Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
   one) are both silently ignored. This is separate from the plain
   `class ClassName` **declaration** form shown above, which is fully
   supported and parses correctly. The `:::` shorthand (`class
-  Animal:::someclass`) isn't cleanly ignored, though: the class-declaration
+Animal:::someclass`) isn't cleanly ignored, though: the class-declaration
   regex captures the colons as part of the identifier, so this produces a
   class whose id and label are the literal string `Animal:::someclass`
-  rather than a class named `Animal` with a style tag. A class body
-  attached to that same line (`class Animal:::someclass { ... }`) still
-  parses its members correctly — only the class's own id/label is wrong.
+  rather than a class named `Animal` with a style tag. If the declaration
+  opens a multiline body (`class Animal:::someclass {`), the members on
+  later lines still parse correctly — only the class's own id/label is
+  wrong. A same-line body (`class Animal:::someclass { -int sizeInFeet }`)
+  isn't recognized at all: the class-body regex requires the line to end
+  with a bare `{`, so the whole line is dropped, not just misparsed.
 
 ## ER Diagrams
 
