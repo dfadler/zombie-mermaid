@@ -111,7 +111,24 @@ jobs:
         uses: anthropics/claude-code-base-action@e8132bc5e637a42c27763fc757faa37e1ee43b34 # v0.0.63
         with:
           prompt_file: ${{ steps.prep.outputs.prompt_path }}
-          claude_args: '--max-turns 150 --allowedTools "Read,Write"'
+          max_turns: '150'
+          allowed_tools: 'Read,Write'
+          # Pinned explicitly: this action version's own default
+          # (claude-sonnet-4-20250514) is a dated snapshot that has since
+          # been retired (404 not_found_error), so leaving `model` unset
+          # is not a safe default for an unattended weekly job.
+          model: 'claude-sonnet-5'
+          # The action's own internal Claude-process timeout defaults to
+          # 10 minutes — separate from this job's 45-minute timeout-minutes
+          # above, and too tight for the largest category: Flowchart (24
+          # samples, the most of any category) measured at ~10m11s and got
+          # killed right at the 10-minute mark — only ~11s over. 15 minutes
+          # gives that ~50% headroom without gutting the timeout as a real
+          # safety net: a genuinely hung run should still fail well short of
+          # the 45-minute job cap rather than burn the full budget silently.
+          # If a future category's sample count pushes past this, raise it
+          # again from a measured run, not preemptively.
+          timeout_minutes: '15'
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Upload category results
