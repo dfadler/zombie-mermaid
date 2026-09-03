@@ -10,23 +10,30 @@
 # Code's Workflow tool — a capability specific to that interactive session,
 # not confirmed to exist in claude-code-base-action's headless mode. Rather
 # than assume it does, each matrix leg below runs ONE non-interactive Claude
-# session per diagram *category*, judging that category's samples
-# sequentially within a single conversation (writing each verdict to a
-# results file as it goes, so progress survives even if a leg runs out of
-# turns). Parallelism instead comes from the matrix itself — one job per
-# category, which is a plain, well-supported GitHub Actions feature. This is
-# slower per-sample than true agent-level parallelism would be, but it only
-# relies on documented capabilities (Read/Write, an explicit prompt) rather
-# than betting a scheduled, unattended job on an unconfirmed one.
+# session per diagram *category*. True per-sample parallelism via a
+# scheduled Workflow-tool session is tracked separately as a follow-up (see
+# issue #436) rather than assumed here.
+#
+# Performance note: two optimizations keep a category's session small. (1)
+# scripts/form-judge-prepare.ts resolves every non-judgeable sample and
+# every sample whose rendered output hasn't changed since a previous run
+# (a verdict cache, keyed by title and a content hash — see
+# scripts/lib/form-judge-cache.ts — persisted across runs via
+# actions/cache) deterministically, with no LLM call at all; the judge
+# session only ever sees the genuinely-changed subset, which is often empty
+# (the "Judge this category" step is skipped entirely when it is). (2) that
+# subset is read once as one combined JSON file, not once per sample, and
+# judged in batches — one write-and-preserve-prior-content cycle per batch
+# of samples rather than per sample — cutting round-trip overhead on
+# whatever's left. Parallelism still also comes from the matrix itself —
+# one job per category, a plain, well-supported GitHub Actions feature.
 #
 # Requires the CLAUDE_CODE_OAUTH_TOKEN repo secret (Settings → Secrets and
 # variables → Actions — generate the value with `claude setup-token`,
 # add it as a repo secret, never paste it anywhere else) — this workflow
 # cannot add it for you. Recommend a manual `workflow_dispatch` run to
 # confirm the whole pipeline actually works end to end before trusting the
-# schedule; the sequential-per-category judging above is a first cut and
-# may need turn/prompt tuning once it's actually been run against real CI
-# timing.
+# schedule.
 name: Form-judge weekly report
 
 on:
@@ -86,28 +93,65 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Compute category slug
+        id: slug
+        run: |
+          set -euo pipefail
+          echo "slug=$(echo "${{ matrix.category }}" | tr '[:upper:] ' '[:lower:]-')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore judge cache for this category
+        id: cache-restore
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .form-judge-cache/${{ steps.slug.outputs.slug }}.json
+          # The primary key always includes run_id+run_attempt, so it can
+          # never exact-hit on restore — restore-keys prefix matching is
+          # what actually resolves this cache to the most recent previous
+          # save. See the "Save judge cache" step below for why the key
+          # needs to be unique per run rather than stable.
+          key: form-judge-cache-${{ steps.slug.outputs.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            form-judge-cache-${{ steps.slug.outputs.slug }}-
+
       - name: Render facts for this category
         run: pnpm run form-facts -- --category="${{ matrix.category }}"
+
+      - name: Prepare judging input (skip cache hits and non-judgeable entries)
+        run: |
+          set -euo pipefail
+          mkdir -p .form-judge-cache
+          pnpm run form-judge-prepare -- \
+            --index="$GITHUB_WORKSPACE/form-facts-index.json" \
+            --cache="$GITHUB_WORKSPACE/.form-judge-cache/${{ steps.slug.outputs.slug }}.json" \
+            --data-out="$GITHUB_WORKSPACE/form-judge-data-${{ steps.slug.outputs.slug }}.json" \
+            --results-out="$GITHUB_WORKSPACE/form-judge-results-${{ steps.slug.outputs.slug }}.jsonl" \
+            --hashes-out="$GITHUB_WORKSPACE/form-judge-hashes-${{ steps.slug.outputs.slug }}.json"
 
       - name: Prepare prompt and results path
         id: prep
         run: |
           set -euo pipefail
-          SLUG="$(echo "${{ matrix.category }}" | tr '[:upper:] ' '[:lower:]-')"
+          SLUG="${{ steps.slug.outputs.slug }}"
+          DATA_PATH="$GITHUB_WORKSPACE/form-judge-data-${SLUG}.json"
           RESULTS_PATH="$GITHUB_WORKSPACE/form-judge-results-${SLUG}.jsonl"
+          HASHES_PATH="$GITHUB_WORKSPACE/form-judge-hashes-${SLUG}.json"
           PROMPT_PATH="$GITHUB_WORKSPACE/form-judge-prompt-${SLUG}.md"
           sed \
             -e "s|__CATEGORY__|${{ matrix.category }}|g" \
-            -e "s|__INDEX_PATH__|$GITHUB_WORKSPACE/form-facts-index.json|g" \
+            -e "s|__DATA_PATH__|$DATA_PATH|g" \
             -e "s|__RESULTS_PATH__|$RESULTS_PATH|g" \
+            -e "s|__BATCH_SIZE__|5|g" \
             scripts/form-judge-category-prompt.md > "$PROMPT_PATH"
+          HAS_WORK="$(jq 'length > 0' "$DATA_PATH")"
           {
-            echo "slug=$SLUG"
             echo "results_path=$RESULTS_PATH"
+            echo "hashes_path=$HASHES_PATH"
             echo "prompt_path=$PROMPT_PATH"
+            echo "has_work=$HAS_WORK"
           } >> "$GITHUB_OUTPUT"
 
       - name: Judge this category
+        if: steps.prep.outputs.has_work == 'true'
         uses: anthropics/claude-code-base-action@e8132bc5e637a42c27763fc757faa37e1ee43b34 # v0.0.63
         with:
           prompt_file: ${{ steps.prep.outputs.prompt_path }}
@@ -149,11 +193,33 @@ jobs:
           timeout_minutes: '15'
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
+      - name: Finalize judge cache for this category
+        # Runs even if the judge step above was skipped (nothing needed
+        # judging) or failed/timed out partway through a batch — it derives
+        # the updated cache purely from whatever's actually in the final
+        # results file, so a partial run just means fewer entries get
+        # cached, never a false "already checked". See
+        # scripts/form-judge-finalize-cache.ts.
+        if: always()
+        run: |
+          set -euo pipefail
+          pnpm run form-judge-finalize-cache -- \
+            --results="${{ steps.prep.outputs.results_path }}" \
+            --hashes="${{ steps.prep.outputs.hashes_path }}" \
+            --cache-out="$GITHUB_WORKSPACE/.form-judge-cache/${{ steps.slug.outputs.slug }}.json"
+
+      - name: Save judge cache for this category
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .form-judge-cache/${{ steps.slug.outputs.slug }}.json
+          key: form-judge-cache-${{ steps.slug.outputs.slug }}-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Upload category results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: form-judge-results-${{ steps.prep.outputs.slug }}
+          name: form-judge-results-${{ steps.slug.outputs.slug }}
           path: ${{ steps.prep.outputs.results_path }}
           if-no-files-found: warn
           retention-days: 14
