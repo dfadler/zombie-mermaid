@@ -96,10 +96,17 @@ fi
 # renderMermaidASCII's output has no trailing newline after its last line,
 # that cleanup sequence can land on and erase the diagram's final line
 # before the recording ends - a silent, reproducible clipping bug.
+#
+# Hide the cursor before running the command, and don't show it again: the
+# recording's final frame is whatever the cursor state was when the PTY
+# closed, and agg renders a still-visible cursor as an opaque block over
+# whatever character it sits on. Since the PTY is closed right after the
+# command exits, there's no later terminal session to leave in a hidden-
+# cursor state - nothing depends on restoring it.
 # shellcheck disable=SC2016
 TSX="$repo_root/node_modules/.bin/tsx" RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
   asciinema record --overwrite --quiet \
-  -c '"$TSX" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
+  -c 'printf "\033[?25l"; "$TSX" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
   --cols "$cols" --rows "$rows" \
   "${out_prefix}.cast"
 
