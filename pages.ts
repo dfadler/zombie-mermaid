@@ -262,18 +262,23 @@ async function main(): Promise<void> {
   <h1>${escapeHtml(profile.label)} examples</h1>
   <p class="lede">${escapeHtml(profile.intro)}</p>
 
-  <div class="diagram-frame">
+  <div class="diagram-layout">
+    <div class="source-column">
+      <h2 class="source-heading">Mermaid source</h2>
+      <div class="source-panel">
+${sourcePanelMarkup}
+      </div>
+    </div>
+    <div class="diagram-column">
+      <div class="diagram-frame">
 ${diagramMarkup}
+      </div>
+    </div>
   </div>
 
   <div class="cta-row">
     <a class="cta-btn primary" href="../editor#${editorHash(profile.source, DEFAULT_THEME_KEY)}">Open in the live editor</a>
     <a class="cta-btn" href="../#samples-heading">See all samples</a>
-  </div>
-
-  <h2 class="source-heading">Mermaid source</h2>
-  <div class="source-panel">
-${sourcePanelMarkup}
   </div>
 
   <div class="section">

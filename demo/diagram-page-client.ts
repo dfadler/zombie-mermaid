@@ -85,6 +85,51 @@ function mustGet(id: string): HTMLElement {
   return el
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  let value = hex.trim()
+  if (value[0] === '#') value = value.slice(1)
+  if (value.length === 3) value = value.replace(/(.)/g, '$1$1')
+  // parseInt(value, 16) alone would accept a malformed value like '12zz34'
+  // by silently parsing just its valid '12' prefix -- require every
+  // character to be a hex digit first so a bad theme color falls back to
+  // the caller's default instead of producing a wrong one.
+  if (!/^[0-9a-f]{6}$/i.test(value)) return null
+  const intValue = parseInt(value, 16)
+  return {
+    r: (intValue >> 16) & 255,
+    g: (intValue >> 8) & 255,
+    b: intValue & 255,
+  }
+}
+
+/**
+ * Restyle the page chrome itself (background, text, borders, CTA gradient,
+ * pill shadows) to match the selected theme, not just the diagram SVG.
+ * Mirrors demo/client.ts's applyTheme steps 1 + setShadowVars: this page's
+ * CSS (demo/diagram-page.css) already derives everything from --t-bg/--t-fg/
+ * --t-accent plus the shadow-* variables, so setting them on <body> is
+ * enough to repaint the whole page — no per-element JS needed.
+ */
+function applyThemeToPage(theme: DiagramColors): void {
+  const body = document.body
+  const accent = theme.accent || '#3b82f6'
+  body.style.setProperty('--t-bg', theme.bg)
+  body.style.setProperty('--t-fg', theme.fg)
+  body.style.setProperty('--t-accent', accent)
+
+  const fgRgb = hexToRgb(theme.fg) || { r: 39, g: 39, b: 42 }
+  const bgRgb = hexToRgb(theme.bg) || { r: 255, g: 255, b: 255 }
+  const brightness = (bgRgb.r * 299 + bgRgb.g * 587 + bgRgb.b * 114) / 1000
+  const darkMode = brightness < 140
+
+  body.style.setProperty(
+    '--foreground-rgb',
+    `${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b}`,
+  )
+  body.style.setProperty('--shadow-border-opacity', darkMode ? '0.15' : '0.08')
+  body.style.setProperty('--shadow-blur-opacity', darkMode ? '0.12' : '0.06')
+}
+
 // A page with an orientation alternate (see demo/diagram-orientation.ts)
 // renders two `<svg>`s, one per `.orientation-variant` — only one is ever
 // shown, but both need theming kept in sync so switching themes doesn't
@@ -122,8 +167,10 @@ function activeThemeKey(): string {
 }
 
 function applyTheme(themeKey: string): void {
-  if (!THEMES[themeKey]) return
+  const theme = THEMES[themeKey]
+  if (!theme) return
 
+  applyThemeToPage(theme)
   applyThemeToDiagram(themeKey)
 
   document.querySelectorAll('.theme-pill').forEach((pill) => {

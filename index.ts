@@ -461,8 +461,14 @@ ${styles}
   <div class="theme-bar" id="theme-bar">
     <button class="sidebar-toggle shadow-minimal" id="sidebar-toggle" aria-label="Toggle sample navigation" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg></button>
     <a class="brand-badge shadow-minimal" href="https://github.com/dfadler/zombie-mermaid" target="_blank" rel="noopener"><span><strong>Zombie Mermaid</strong></span></a>
-    <div class="theme-pills" id="theme-pills">
-      ${themePillsHtml}
+    <div class="theme-bar-right">
+      <button type="button" class="theme-pill shadow-minimal" id="random-theme-btn" aria-label="Random theme" title="Random theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        Random
+      </button>
+      <div class="theme-pills" id="theme-pills">
+        ${themePillsHtml}
+      </div>
     </div>
   </div>
 
@@ -523,16 +529,12 @@ ${styles}
       </a>
       <a href="diagrams/" class="hero-btn hero-btn-secondary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Browse every theme
+        Browse every diagram type
       </a>
       <a href="dashboard.html" class="hero-btn hero-btn-secondary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Maintenance dashboard
       </a>
-      <button type="button" class="hero-btn hero-btn-secondary" id="random-theme-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-        Random Theme
-      </button>
     </div>
     <div class="hero-meta">
       <p class="meta" id="total-timing">Rendering samples\u2026</p>

@@ -112,7 +112,25 @@ jobs:
         with:
           prompt_file: ${{ steps.prep.outputs.prompt_path }}
           max_turns: '150'
+          # `allowed_tools` (--allowedTools) only pre-approves these two —
+          # it does NOT restrict which tools are available, confirmed
+          # against the CLI docs (code.claude.com/docs/en/cli-reference)
+          # and empirically: a real run's session-init event still listed
+          # the full default toolset, and the judge actually called Bash
+          # repeatedly (e.g. spinning up ad hoc python3 heredocs to
+          # manually re-derive facts already in its own prompt input,
+          # which is also most of why some categories run long). The
+          # actual restriction mechanism is `disallowed_tools`
+          # (--disallowedTools), which removes tools from context
+          # entirely — every default tool other than Read/Write is denied
+          # below. This matters beyond performance: the earlier security
+          # review of this workflow (see PR #408) assumed the judge job
+          # never gets Bash/WebFetch/WebSearch to bound the blast radius
+          # of a successful prompt-injection attempt via a sample's own
+          # content — that assumption only holds now that these are
+          # actually denied, not just left un-pre-approved.
           allowed_tools: 'Read,Write'
+          disallowed_tools: 'Task,Bash,Glob,Grep,LS,ExitPlanMode,Edit,MultiEdit,NotebookEdit,WebFetch,TodoWrite,WebSearch,BashOutput,KillBash'
           # Pinned explicitly: this action version's own default
           # (claude-sonnet-4-20250514) is a dated snapshot that has since
           # been retired (404 not_found_error), so leaving `model` unset
