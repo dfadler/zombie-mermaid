@@ -208,8 +208,10 @@ sequenceDiagram
     const wallRight = blockWallRightColumn(lines, 'loop [x]')
     const labelEndCol = labelRow!.lastIndexOf('abc') + 'abc'.length - 1
     expect(wallRight).toBeGreaterThanOrEqual(labelEndCol)
-    // ...and still clear of B's lifeline column, the invariant this whole
-    // suite is about.
-    expect(llCols).not.toContain(wallRight)
+    // ...and strictly before B's own column — not just "not exactly on
+    // it," which would also pass if the wall were pushed past B instead
+    // (enclosing the untouched lifeline, the opposite regression this
+    // suite exists to catch).
+    expect(wallRight).toBeLessThan(llCols[1]!)
   })
 })
