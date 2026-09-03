@@ -163,7 +163,9 @@ function updateEditorLink(themeKey: string): void {
 
 function activeThemeKey(): string {
   const active = document.querySelector('.theme-pill.active')
-  return active?.getAttribute('data-theme') || Object.keys(THEMES)[0]!
+  // The Default pill's data-theme is '' -- `??`, not `||`, so that valid,
+  // falsy key isn't mistaken for "no active pill found" and overridden.
+  return active?.getAttribute('data-theme') ?? Object.keys(THEMES)[0]!
 }
 
 function applyTheme(themeKey: string): void {
@@ -182,7 +184,17 @@ function applyTheme(themeKey: string): void {
 
   updateEditorLink(themeKey)
 
-  localStorage.setItem('zm-diagram-page-theme', themeKey)
+  // Shared with demo/client.ts's main gallery -- same key, same origin, so a
+  // theme picked on either surface carries over to the other instead of
+  // each page silently re-defaulting on the visitor. Mirrors demo/client.ts's
+  // own set/remove split: '' (Default) is stored as an *absence* of a
+  // preference, not the literal empty string, since it's already what a
+  // visitor with no stored preference sees by default.
+  if (themeKey) {
+    localStorage.setItem('mermaid-theme', themeKey)
+  } else {
+    localStorage.removeItem('mermaid-theme')
+  }
 }
 
 // The editor link's encoded source must track the orientation actually on
@@ -216,7 +228,9 @@ mustGet('theme-pills').addEventListener('click', (e) => {
   const pill = target.closest('.theme-pill')
   if (!pill || pill.id === 'theme-more-btn') return
   const themeKey = pill.getAttribute('data-theme')
-  if (themeKey) applyTheme(themeKey)
+  // Not `if (themeKey)` -- the Default pill's data-theme is '', a valid key
+  // that a truthiness check would silently ignore a click on.
+  if (themeKey !== null) applyTheme(themeKey)
 
   const dd = document.getElementById('theme-more-dropdown')
   if (dd?.classList.contains('open')) {
@@ -256,9 +270,24 @@ if (moreBtn && moreDropdown) {
 }
 
 // -- Restore a previously picked theme, if it differs from this page's
-//    build-time default --
-const saved = localStorage.getItem('zm-diagram-page-theme')
+//    build-time default -- reads the same 'mermaid-theme' key the main
+//    gallery (demo/client.ts) writes, so a theme picked there is honored
+//    here too. An empty string means "explicit default" there, which
+//    already matches this page's build-time default, so there's nothing to
+//    apply.
+//
+// One-time migration: a visitor who picked a theme on a diagrams page
+// before this file switched keys (see #438) has it stored under the old,
+// diagrams-page-only 'zm-diagram-page-theme' key. Fall back to that only
+// when the shared key was never set, so they don't silently lose their
+// choice -- applyTheme below re-persists it under 'mermaid-theme',
+// completing the migration, and the stale key is then discarded either way.
+const LEGACY_THEME_KEY = 'zm-diagram-page-theme'
+const saved =
+  localStorage.getItem('mermaid-theme') ??
+  localStorage.getItem(LEGACY_THEME_KEY)
 if (saved && THEMES[saved]) applyTheme(saved)
+localStorage.removeItem(LEGACY_THEME_KEY)
 
 // Reconcile the editor-link href with the current viewport right away — a
 // visitor can land directly on a narrow viewport, not just resize into
