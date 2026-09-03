@@ -113,6 +113,11 @@ jobs:
           prompt_file: ${{ steps.prep.outputs.prompt_path }}
           max_turns: '150'
           allowed_tools: 'Read,Write'
+          # Pinned explicitly: this action version's own default
+          # (claude-sonnet-4-20250514) is a dated snapshot that has since
+          # been retired (404 not_found_error), so leaving `model` unset
+          # is not a safe default for an unattended weekly job.
+          model: 'claude-sonnet-5'
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Upload category results
