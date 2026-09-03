@@ -89,9 +89,12 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   let value = hex.trim()
   if (value[0] === '#') value = value.slice(1)
   if (value.length === 3) value = value.replace(/(.)/g, '$1$1')
-  if (value.length !== 6) return null
+  // parseInt(value, 16) alone would accept a malformed value like '12zz34'
+  // by silently parsing just its valid '12' prefix -- require every
+  // character to be a hex digit first so a bad theme color falls back to
+  // the caller's default instead of producing a wrong one.
+  if (!/^[0-9a-f]{6}$/i.test(value)) return null
   const intValue = parseInt(value, 16)
-  if (Number.isNaN(intValue)) return null
   return {
     r: (intValue >> 16) & 255,
     g: (intValue >> 8) & 255,
