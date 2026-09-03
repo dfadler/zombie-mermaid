@@ -199,14 +199,18 @@ export function renderClassAscii(
   const children = new Map<string, Set<string>>() // parent → set of child IDs
 
   for (const rel of diagram.relationships) {
-    // For inheritance/realization, the marker (hollow triangle) points to the parent.
-    // - `Animal <|-- Dog` (markerAt='from'): Animal is parent, Dog is child
-    // - `Bird ..|> Flyable` (markerAt='to'): Flyable is parent, Bird is child
-    // For other relationships, use the default from→to direction.
-    const isHierarchical =
-      rel.type === 'inheritance' || rel.type === 'realization'
-    const parentId = isHierarchical && rel.markerAt === 'to' ? rel.to : rel.from
-    const childId = isHierarchical && rel.markerAt === 'to' ? rel.from : rel.to
+    // Level (top/bottom) placement always follows `from` → `to`, regardless
+    // of relationship type or which end the visual marker (triangle/diamond/
+    // arrowhead) is drawn at — this matches ELK's layered algorithm and the
+    // official mermaid.com renderer, which ranks nodes by edge direction, not
+    // by where the arrowhead glyph happens to be drawn.
+    // - `Animal <|-- Dog` (from=Animal, to=Dog): Animal above Dog.
+    // - `Bird ..|> Flyable` (from=Bird, to=Flyable): Bird above Flyable, even
+    //   though the hollow-triangle marker is drawn at the Flyable end.
+    // `markerAt` only controls which end draws the marker glyph (see
+    // `getRelMarker`/`getMarkerShape` below) — it must not affect placement.
+    const parentId = rel.from
+    const childId = rel.to
 
     const parentSet = parents.get(childId) ?? new Set<string>()
     parents.set(childId, parentSet)

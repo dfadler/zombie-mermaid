@@ -213,18 +213,23 @@ describe('Class Diagram Arrow Directions', () => {
   // ============================================================================
 
   describe('Realization (..|>)', () => {
-    test('interface above implementation - triangle points UP', () => {
-      // Circle ..|> Shape means "Circle implements Shape"
-      // Shape (interface/parent) should be placed ABOVE Circle (implementation/child)
+    test('implementation above interface - triangle points UP', () => {
+      // Circle ..|> Shape means "Circle implements Shape".
+      // Layout always places "from" above "to" regardless of relationship
+      // type or which end the marker glyph is drawn at (matches ELK/
+      // mermaid.com behavior — see class-diagram.ts's level-assignment
+      // comment and issue #446), so Circle (from) is placed ABOVE
+      // Shape (to/interface), with the hollow triangle pointing down
+      // into Shape.
       const diagram = `classDiagram
         Circle ..|> Shape`
       const result = renderMermaidASCII(diagram)
 
-      // Shape (interface) should be above Circle (implementation)
+      // Circle (implementation) should be above Shape (interface)
       const lines = result.split('\n')
       const shapeLine = lines.findIndex((l) => l.includes('Shape'))
       const circleLine = lines.findIndex((l) => l.includes('Circle'))
-      expect(shapeLine).toBeLessThan(circleLine)
+      expect(circleLine).toBeLessThan(shapeLine)
       expect(result).toContain('△')
     })
 
@@ -249,14 +254,14 @@ describe('Class Diagram Arrow Directions', () => {
         Square ..|> Shape`
       const result = renderMermaidASCII(diagram)
 
-      // Shape (interface) above both implementations
+      // Both implementations (from) above Shape (interface/to)
       const lines = result.split('\n')
       const shapeLine = lines.findIndex((l) => l.includes('Shape'))
       const circleLine = lines.findIndex((l) => l.includes('Circle'))
       const squareLine = lines.findIndex((l) => l.includes('Square'))
 
-      expect(shapeLine).toBeLessThan(circleLine)
-      expect(shapeLine).toBeLessThan(squareLine)
+      expect(circleLine).toBeLessThan(shapeLine)
+      expect(squareLine).toBeLessThan(shapeLine)
       // At least one triangle (may merge visually if same connection point)
       expect(result).toContain('△')
     })
