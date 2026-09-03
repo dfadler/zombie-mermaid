@@ -358,16 +358,18 @@ Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
 
 - **`note for X "text"` / standalone notes.** Class-diagram notes are not
   recognized.
-- **`classDef`/`style` directives, and the styling use of `class`/`:::`.**
-  None of Mermaid's styling directives are recognized for class diagrams,
-  unlike flowcharts and state diagrams. This is separate from the
+- **`classDef`/`cssClass`, and the `:::` shorthand.** None of Mermaid's
+  class-diagram styling syntax is recognized: `classDef className props`
+  (defining a style) and `cssClass "nodeId1,nodeId2" className` (attaching
+  one) are both silently ignored. This is separate from the plain
   `class ClassName` **declaration** form shown above, which is fully
-  supported — only the styling usage (`class A,B className` to attach a
-  style class, or `A:::className` shorthand) is unrecognized. The `:::`
-  form isn't cleanly ignored: `A:::foo` is parsed as a class named `A` with
-  a literal member named `::foo`, because the inline-attribute pattern
-  (`ClassName : member`) matches the first colon before any `:::` shorthand
-  is considered.
+  supported and parses correctly. The `:::` shorthand (`class
+  Animal:::someclass`) isn't cleanly ignored, though: the class-declaration
+  regex captures the colons as part of the identifier, so this produces a
+  class whose id and label are the literal string `Animal:::someclass`
+  rather than a class named `Animal` with a style tag. A class body
+  attached to that same line (`class Animal:::someclass { ... }`) still
+  parses its members correctly — only the class's own id/label is wrong.
 
 ## ER Diagrams
 
