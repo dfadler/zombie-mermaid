@@ -770,7 +770,13 @@ export function renderErAscii(
       // label content (maxMarkerWidth + 1) — below that, insetting both
       // sides would just shrink an already-tight label region for no
       // readability benefit. Was a flat `>= 3` (issue #415); derived here
-      // so it stays correct if maxMarkerWidth ever changes.
+      // so it stays correct if maxMarkerWidth ever changes. The false
+      // branch is unreachable today — hGap's own floor (paddingOffset's
+      // hard-coded 6, independent of config.paddingX) keeps gapWidth well
+      // above maxMarkerWidth + 1 for the current glyph set — but is kept
+      // (not simplified to a bare `1`) so a future wider marker glyph set
+      // is still handled correctly without revisiting this line.
+      /* v8 ignore next */
       const labelInset = gapWidth >= maxMarkerWidth + 1 ? 1 : 0
       const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       const rightChars = getCrowsFootChars(rightCard, useAscii, true)
