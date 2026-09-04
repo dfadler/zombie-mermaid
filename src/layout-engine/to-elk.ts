@@ -404,41 +404,7 @@ export function mermaidToElk(
     }
   }
 
-  // Add subgraphs as compound nodes with children and their internal edges.
-  //
-  // Sibling subgraphs are appended in *reverse* declaration order, and the
-  // whole group of subgraph children is placed before top-level leaf nodes
-  // in `rootChildren`, to match real mermaid.js's own model order — which
-  // is what ELK's `considerModelOrder` uses as a tie-break during crossing
-  // minimization, and thus what ultimately decides left-right sibling
-  // order.
-  //
-  // Verified against mermaid@11.17.2's bundled flowDb.getData()
-  // (node_modules/mermaid/dist/mermaid.min.js): it builds the node list fed
-  // to the layout engine by first iterating the parsed `subGraphs` array
-  // *backwards* (`for (let g = i.length - 1; g >= 0; g--) …`) to emit every
-  // cluster/subgraph node, and only afterward appends plain vertices in
-  // forward (declaration) order. Since a compound node's `children()` order
-  // in the resulting graph is exactly the order its child nodes were
-  // inserted, sibling subgraphs under the same parent end up in reversed
-  // declaration order while sibling leaf nodes stay forward — see issue #444.
-  for (const sg of [...graph.subgraphs].reverse()) {
-    rootChildren.push(
-      subgraphToElk(
-        sg,
-        graph,
-        opts,
-        edgesBySubgraph,
-        portsBySubgraph,
-        hopEdgesByContainer,
-        graph.direction,
-      ),
-    )
-  }
-
-  // Add top-level nodes (those not in any subgraph), after subgraphs, in
-  // forward declaration order — matching mermaid's own vertices-after-
-  // clusters ordering (see comment above).
+  // Add top-level nodes (those not in any subgraph).
   for (const [id, node] of graph.nodes) {
     if (!subgraphNodeIds.has(id) && !subgraphIds.has(id)) {
       const size = estimateNodeSize(
@@ -454,6 +420,44 @@ export function mermaidToElk(
         labels: [{ text: node.label }],
       })
     }
+  }
+
+  // Add subgraphs as compound nodes with children and their internal
+  // edges. Sibling subgraphs are appended in *reverse* declaration order
+  // (only relative to each other — their position as a group, before or
+  // after the top-level leaf nodes above, is left as-is) to match real
+  // mermaid.js's own sibling-subgraph order, which is what ELK's
+  // `considerModelOrder` uses as a tie-break during crossing minimization
+  // and thus what ultimately decides left-right sibling order.
+  //
+  // Verified against mermaid@11.17.2's bundled flowDb.getData()
+  // (node_modules/mermaid/dist/mermaid.min.js): it builds the node list fed
+  // to the layout engine by iterating the parsed `subGraphs` array
+  // *backwards* to emit cluster/subgraph nodes. Since a compound node's
+  // `children()` order in the resulting graph is exactly the order its
+  // child nodes were inserted, sibling subgraphs under the same parent end
+  // up in reversed declaration order — see issue #444.
+  //
+  // Deliberately scoped to *only* the sibling-subgraph reversal, not a
+  // wholesale "all clusters before all leaves" reordering (which mermaid's
+  // own mechanism also does, globally): moving the whole subgraphs group
+  // ahead of top-level leaf nodes changed which edge in a cycle ELK treats
+  // as a feedback edge for a sample mixing top-level leaves and a
+  // subgraph in a cyclic flow (e.g. "CI/CD Pipeline"), reordering the
+  // entire rank structure rather than just left-right sibling position —
+  // a much bigger, unreviewed blast radius than the reported bug needs.
+  for (const sg of [...graph.subgraphs].reverse()) {
+    rootChildren.push(
+      subgraphToElk(
+        sg,
+        graph,
+        opts,
+        edgesBySubgraph,
+        portsBySubgraph,
+        hopEdgesByContainer,
+        graph.direction,
+      ),
+    )
   }
 
   // Add root-level edges
@@ -595,27 +599,8 @@ function subgraphToElk(
     }))
   }
 
-  // Add nested subgraphs recursively, before direct leaf children and in
-  // reverse declaration order — matching real mermaid.js's own model order
-  // for sibling subgraphs (see the matching comment in `mermaidToElk` for
-  // why, and issue #444).
+  // Add direct child (leaf) nodes, in forward declaration order.
   const children: ElkGraphNode[] = []
-  for (const child of [...sg.children].reverse()) {
-    children.push(
-      subgraphToElk(
-        child,
-        graph,
-        opts,
-        edgesBySubgraph,
-        portsBySubgraph,
-        hopEdgesByContainer,
-        effectiveDirection,
-      ),
-    )
-  }
-
-  // Add direct child (leaf) nodes, after nested subgraphs, in forward
-  // declaration order.
   for (const nodeId of sg.nodeIds) {
     const node = graph.nodes.get(nodeId)
     if (node) {
@@ -632,6 +617,25 @@ function subgraphToElk(
         labels: [{ text: node.label }],
       })
     }
+  }
+
+  // Add nested subgraphs recursively, in reverse declaration order relative
+  // to *each other* only (their position as a group, before or after the
+  // leaf nodes above, is left as-is — see the matching comment and
+  // rationale in `mermaidToElk`) — matching real mermaid.js's own sibling-
+  // subgraph order (issue #444).
+  for (const child of [...sg.children].reverse()) {
+    children.push(
+      subgraphToElk(
+        child,
+        graph,
+        opts,
+        edgesBySubgraph,
+        portsBySubgraph,
+        hopEdgesByContainer,
+        effectiveDirection,
+      ),
+    )
   }
 
   // Add internal edges (edges where both endpoints are in this subgraph)
