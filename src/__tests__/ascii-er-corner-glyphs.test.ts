@@ -46,16 +46,29 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
         MIDDLE_ENTITY ||--o{ FIFTH_ENTITY : tracks`,
       { colorMode: 'none' },
     )
-    // The detour's horizontal run now opens with '└' (turning up out of the
+    // The detour's horizontal run opens with '└' (turning up out of the
     // left vertical drop) and closes with '┘' (turning up into the right
-    // vertical drop) instead of plain '─' at both ends. The '┼' mid-run is
+    // vertical drop) instead of plain '─' at both ends.
+    //
     // MIDDLE_ENTITY's own vertical "one" marker for its "tracks"
-    // relationship, crossing this detour at the same cell — '┼' rather than
-    // plain '─' so it still reads as a marker instead of disappearing into
-    // the surrounding run of the same character (see getCrowsFootChars'
-    // `vertical` param).
-    expect(ascii).toContain('└─────────────────┼─────────────────┘')
+    // relationship no longer crosses this detour row directly — #390's
+    // flush-marker change (merged after this test was first written) puts
+    // the marker flush against MIDDLE_ENTITY's own border, one row above
+    // the detour line, rather than inset into the detour's own row the
+    // way the old inset positioning did. Checked separately below instead
+    // of assuming they share a row.
+    expect(ascii).toContain('└─────────────── tracks ────────────┘')
+    const lines = ascii.split('\n')
+    const detourLineIndex = lines.findIndex((l) =>
+      l.includes('└─────────────── tracks ────────────┘'),
+    )
+    expect(detourLineIndex).toBeGreaterThan(0)
+    // MIDDLE_ENTITY's "tracks" marker ('┼', flush against its own border)
+    // sits on the row immediately above the detour line.
+    expect(lines[detourLineIndex - 1]).toMatch(/┼/)
     expect(ascii).toContain('relates_to')
+    expect(ascii).toContain('tracks')
+    expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
 
   it("draws corner glyphs at a vertical relationship's horizontal jog", () => {
@@ -70,11 +83,17 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     )
     // The jog's dashed line ('╌', a non-identifying relationship) opens
     // with a solid '┐' corner glyph at the turn instead of another dash.
-    // The leading '┼' is USER's own vertical "one" marker for this
-    // relationship — a crossing tick rather than '│' (which would blend
-    // into the plain line) or a bare '─' (which would sever it — see
-    // getCrowsFootChars' `vertical` param).
-    expect(ascii).toContain('┼┐ opens')
+    // USER's own vertical "one" marker for this relationship ('┼', a
+    // crossing tick rather than '│', which would blend into the plain
+    // line, or a bare '─', which would sever it — see getCrowsFootChars'
+    // `vertical` param) sits flush against USER's own border, one row
+    // above the jog — not fused onto the same row as the jog's corner
+    // (#390's flush-marker change, merged after this test was first
+    // written, shifted the marker there).
+    const lines = ascii.split('\n')
+    const jogLineIndex = lines.findIndex((l) => l.includes('└┐ opens'))
+    expect(jogLineIndex).toBeGreaterThan(0)
+    expect(lines[jogLineIndex - 1]).toMatch(/┼/)
   })
 
   it('draws the ASCII-mode corner glyph ("+") at the same jog, in useAscii mode', () => {
@@ -82,6 +101,10 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // useAscii branch (a plain '+', matching getCrowsFootChars' own
     // Unicode/ASCII split) has no Unicode-mode equivalent path, so it needs
     // its own coverage rather than assuming the Unicode assertion implies it.
+    // Both adjacent corners use the same '+' glyph regardless of direction
+    // in ASCII mode, so the two-corner pair reads as '++' rather than
+    // Unicode's direction-distinct '└┐' — see the Unicode test above for
+    // why there are two adjacent corners here at all.
     const ascii = renderMermaidASCII(
       `erDiagram
         USER ||--o{ LOG_ENTRY : generates

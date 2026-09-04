@@ -45,23 +45,23 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
       { colorMode: 'none' },
     )
     const lines = ascii.split('\n')
-    const markerLineIndex = lines.findIndex((l) => l.includes('┼ ac'))
+    // The marker sits flush against A's own border (#390's flush-marker
+    // change — merged after this test was first written, which shifted
+    // the vertical label off the marker's own row; the label's position
+    // is a separate geometric-midpoint calculation, not anchored to the
+    // marker — see the row-by-row check below instead of assuming they
+    // share a line).
+    const markerLineIndex = lines.findIndex((l) => /^\s*┼\s*$/.test(l))
     expect(markerLineIndex).toBeGreaterThanOrEqual(0)
+    expect(lines[markerLineIndex - 1]).toContain('└───┘')
 
-    // The marker line must NOT contain a lone '│' marker character in the
-    // same column as the '┼' tick (that would be the pre-fix, invisible
-    // rendering), nor a bare '─' (visible, but severs the line — see the
-    // header comment above).
-    expect(ascii).not.toMatch(/\n {2}│ ac\n/)
-    expect(ascii).not.toMatch(/\n {2}─ ac\n/)
-    expect(ascii).toContain('┼ ac')
+    // The marker's own line must not be a lone '│' (the pre-fix, invisible
+    // rendering) or a bare '─' (an earlier fix attempt, which visually
+    // severs the line — see the header comment above).
+    expect(lines[markerLineIndex]).not.toMatch(/^\s*[│─]\s*$/)
 
-    // The line immediately above the marker is the plain vertical
-    // connector, in the same column as the marker's own vertical stroke —
-    // i.e. the line reads as continuous through the marker, not broken by
-    // it.
-    const markerCol = lines[markerLineIndex]!.indexOf('┼')
-    expect(lines[markerLineIndex - 1]![markerCol]).toBe('│')
+    // The line continues unbroken below the marker, through the label row.
+    expect(lines[markerLineIndex + 1]).toContain('│ ac')
   })
 
   it('renders distinct ticks at both ends when both entities have "one" cardinality', () => {
@@ -73,13 +73,21 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
     )
     // Two separate '┼' marker ticks: one at A's lower edge, one at C's
     // upper edge, both distinct from the '│' line around them.
-    const tickCount = (ascii.match(/┼/g) ?? []).length
-    expect(tickCount).toBeGreaterThanOrEqual(2)
-    expect(ascii).toContain('┼ ac')
-    // A plain '│' segment must still exist above the two ticks (the
-    // buffer row inset from A's box — see the "Inset the crow's foot
-    // markers" comment in er-diagram.ts).
-    expect(ascii).toMatch(/│[\s\S]*┼[\s\S]*┼/)
+    const lines = ascii.split('\n')
+    const tickLineIndexes = lines
+      .map((l, i) => (/^\s*┼\s*$/.test(l) ? i : -1))
+      .filter((i) => i >= 0)
+    expect(tickLineIndexes.length).toBe(2)
+    const [upperTick, lowerTick] = tickLineIndexes as [number, number]
+    // Upper tick flush against A's border, lower tick flush against C's
+    // (#390's flush-marker change), with the connecting line still
+    // reading as continuous — every row between the two ticks starts with
+    // the plain '│' line-fill character.
+    expect(lines[upperTick - 1]).toContain('└───┘')
+    expect(lines[lowerTick + 1]).toContain('┌───┐')
+    for (let i = upperTick + 1; i < lowerTick; i++) {
+      expect(lines[i]).toMatch(/^\s*│/)
+    }
   })
 
   it('renders the ASCII-mode equivalent ("+" instead of "|") for the vertical "one" marker', () => {
@@ -89,11 +97,14 @@ describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', ()
         A ||--o{ C : ac`,
       { colorMode: 'none', useAscii: true },
     )
-    expect(ascii).toContain('+ ac')
+    const lines = ascii.split('\n')
+    const markerLineIndex = lines.findIndex((l) => /^\s*\+\s*$/.test(l))
+    expect(markerLineIndex).toBeGreaterThanOrEqual(0)
+    expect(lines[markerLineIndex - 1]).toContain('+---+')
     // The pre-fix invisible rendering used a lone '|' on the marker line;
     // an earlier fix attempt used a bare '-', which visually severs the
     // line (no vertical extent) — see the header comment above.
-    expect(ascii).not.toMatch(/\n {2}\| ac\n/)
-    expect(ascii).not.toMatch(/\n {2}- ac\n/)
+    expect(lines[markerLineIndex]).not.toMatch(/^\s*[|-]\s*$/)
+    expect(lines[markerLineIndex + 1]).toContain('| ac')
   })
 })
