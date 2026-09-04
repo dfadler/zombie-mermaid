@@ -171,10 +171,19 @@ flowchart TD
 `
     const svg = renderMermaidSVG(src)
 
-    // Direction override still honored under the deeper-nesting decomposition.
+    // Inner's `direction LR` is *not* honored here: X has an edge crossing
+    // Inner's boundary (B --> X, X --> C) and so does Y (Y --> D), so per
+    // mermaid.js's documented precedence rule ("If any of a subgraph's
+    // nodes are linked to the outside, subgraph direction will be ignored.
+    // Instead the subgraph will inherit the direction of the parent
+    // graph." — https://mermaid.js.org/syntax/flowchart.html) Inner
+    // inherits the root's TD direction instead. Verified against real
+    // mermaid.js output: X and Y render at the same x-coordinate with
+    // increasing y, not side by side.
     const x = nodeRect(svg, 'X')
     const y = nodeRect(svg, 'Y')
-    expect(y.x).toBeGreaterThan(x.x + x.width - 1)
+    expect(y.y).toBeGreaterThan(x.y + x.height - 1)
+    expect(Math.abs(y.x - x.x)).toBeLessThan(Math.max(x.width, y.width))
 
     // Both deep cross-boundary edges must have actually routed (non-empty,
     // finite polylines) rather than being dropped or degenerating to a
@@ -234,10 +243,20 @@ flowchart TD
 
   it('keeps mergeEdges trunk-bundling working for edges that get decomposed', () => {
     /*
-     * X and Z share a layer, so a trunk with a short branch to each is a
-     * sound route — which is what makes this diagram a fair test that
-     * bundling survives decomposition. Fanning out to targets on *different*
-     * layers is covered separately below, where bundling must stand down.
+     * No edge between X and Z, so neither constrains the other's rank —
+     * both are only linked from B (each via a crossing edge, which is what
+     * exercises the port-decomposition machinery under test) and land on
+     * the same layer, giving a genuine fan-out from a shared trunk. (An
+     * earlier version of this diagram had `X --> Z` and relied on Inner's
+     * `direction LR` override to force them onto the same visual row —
+     * but that override is dropped per mermaid.js's crossing-edge
+     * precedence rule, since B --> X and B --> Z both cross Inner's
+     * boundary; with the edge removed, same-layer placement holds
+     * regardless of which direction Inner ends up inheriting.) A trunk
+     * with a short branch to each is a sound route — which is what makes
+     * this diagram a fair test that bundling survives decomposition.
+     * Fanning out to targets on genuinely *different* layers is a
+     * different scenario, where bundling correctly stands down instead.
      */
     const src = `
 flowchart TD
@@ -249,7 +268,6 @@ flowchart TD
       direction LR
       X[X node]
       Z[Z node]
-      X --> Z
     end
   end
 `
