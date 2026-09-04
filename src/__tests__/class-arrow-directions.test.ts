@@ -163,6 +163,32 @@ describe('Class Diagram Arrow Directions', () => {
       expect(result).toContain('v')
       expect(result).not.toContain('^')
     })
+
+    test('association routed around an obstruction still points down (non-hierarchical detour case)', () => {
+      // Same detour/collision-avoidance routing as the realization test
+      // below, but with a plain association so the target-below-source
+      // detour branch's `isHierarchical` ternary is exercised on its
+      // non-hierarchical ('down') side too, not just the hierarchical
+      // ('up') side.
+      const diagram = `classDiagram
+        class Flyable {
+          <<interface>>
+          +fly() void
+        }
+        class Helper {
+          +assist() void
+        }
+        class Bird {
+          +fly() void
+        }
+        Bird --> Helper
+        Helper --> Flyable
+        Bird --> Flyable`
+      const result = renderMermaidASCII(diagram)
+
+      expect(result).toContain('▼')
+      expect(result).not.toContain('▲')
+    })
   })
 
   // ============================================================================
@@ -383,6 +409,27 @@ describe('Class Diagram Arrow Directions', () => {
       expect(result).toContain('│ A │')
       expect(result).toContain('│ B │')
       expect(result).toContain('│ C │')
+    })
+
+    test('circular reference with a realization edge points the hollow triangle correctly (same-level routing)', () => {
+      // Same cyclic structure as the test above (which forces A and C onto
+      // the same level, routing their connecting edge below both boxes and
+      // back up — a third, separate marker-drawing branch from the two
+      // "target below/above source" cases covered elsewhere in this file),
+      // but with the cycle-closing edge as a realization instead of a
+      // dependency, so this same-level branch's `isHierarchical` rotation
+      // compensation is exercised on its hierarchical side too.
+      const diagram = `classDiagram
+        A --> B
+        B --> C
+        C ..|> A`
+      const result = renderMermaidASCII(diagram)
+
+      // The hollow triangle must point up, into A (the realized interface,
+      // approached from below after routing under B) — not down, away from
+      // it.
+      expect(result).toContain('△')
+      expect(result).not.toContain('▽')
     })
   })
 
