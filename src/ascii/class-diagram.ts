@@ -199,14 +199,18 @@ export function renderClassAscii(
   const children = new Map<string, Set<string>>() // parent → set of child IDs
 
   for (const rel of diagram.relationships) {
-    // For inheritance/realization, the marker (hollow triangle) points to the parent.
-    // - `Animal <|-- Dog` (markerAt='from'): Animal is parent, Dog is child
-    // - `Bird ..|> Flyable` (markerAt='to'): Flyable is parent, Bird is child
-    // For other relationships, use the default from→to direction.
-    const isHierarchical =
-      rel.type === 'inheritance' || rel.type === 'realization'
-    const parentId = isHierarchical && rel.markerAt === 'to' ? rel.to : rel.from
-    const childId = isHierarchical && rel.markerAt === 'to' ? rel.from : rel.to
+    // Level assignment always places "from" above "to", for every relationship
+    // type — including inheritance and realization — matching real mermaid.js's
+    // layout. This is independent of which end carries the UML marker glyph
+    // (`rel.markerAt`, used only to orient the arrowhead when drawing the line
+    // below); e.g. `Bird ..|> Flyable` (markerAt='to') places Bird above
+    // Flyable even though the hollow-triangle marker touches Flyable. See
+    // issue #446 — this used to special-case inheritance/realization to put
+    // whichever end held the marker on top, which produced the correct order
+    // for `<|--` (where marker happens to be at 'from') but reversed it for
+    // `..|>` (where marker is at 'to').
+    const parentId = rel.from
+    const childId = rel.to
 
     const parentSet = parents.get(childId) ?? new Set<string>()
     parents.set(childId, parentSet)
