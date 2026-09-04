@@ -651,13 +651,18 @@ export function renderErAscii(
    */
   const verticalLanes: { x: number; yStart: number; yEnd: number }[] = []
 
-  /** True when [yStart, yEnd] at column x sits one column from an existing lane whose row range overlaps it. */
+  /**
+   * True when [yStart, yEnd] at column x sits one column from an existing
+   * lane whose row range overlaps it. Every call site passes a range
+   * derived from startY/endY (upper's bottom to lower's top, or a row
+   * within that span), which the layout always establishes as
+   * startY <= endY — a degenerate/inverted range never reaches here.
+   */
   function verticalLaneConflict(
     x: number,
     yStart: number,
     yEnd: number,
   ): boolean {
-    if (yEnd < yStart) return false
     for (const lane of verticalLanes) {
       if (Math.abs(lane.x - x) !== 1) continue
       if (yStart <= lane.yEnd && yEnd >= lane.yStart) return true
@@ -678,7 +683,6 @@ export function renderErAscii(
    * place.
    */
   function viaColumnBlocked(x: number, yStart: number, yEnd: number): boolean {
-    if (yEnd < yStart) return false
     for (const lane of verticalLanes) {
       if (Math.abs(lane.x - x) > 1) continue
       if (yStart <= lane.yEnd && yEnd >= lane.yStart) return true
@@ -686,12 +690,7 @@ export function renderErAscii(
     return false
   }
 
-  function registerVerticalLane(
-    x: number,
-    yStart: number,
-    yEnd: number,
-  ): void {
-    if (yEnd < yStart) return
+  function registerVerticalLane(x: number, yStart: number, yEnd: number): void {
     verticalLanes.push({ x, yStart, yEnd })
   }
 
