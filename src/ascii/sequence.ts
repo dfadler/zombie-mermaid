@@ -236,9 +236,15 @@ export function renderSequenceAscii(
     const nextLL = llX[hiIdx + 1]!
     const shift = bRight + 2 - nextLL
     if (shift > 0) {
-      for (let i = hiIdx + 1; i < llX.length; i++) {
-        llX[i] = llX[i]! + shift
-      }
+      // Shift every lifeline from hiIdx+1 onward by `shift`, in place —
+      // llX's identity has to survive this pass (later blocks in this same
+      // loop, and everything downstream, read positions back out of it) so
+      // this can't rebuild the array under a new binding. Deriving the
+      // shifted values with .map() and writing them back via splice (same
+      // start/length, so it's a pure overwrite) avoids the index-reassignment
+      // loop without changing what ends up in llX.
+      const shifted = llX.slice(hiIdx + 1).map((x) => x + shift)
+      llX.splice(hiIdx + 1, shifted.length, ...shifted)
     }
   }
 
