@@ -1225,11 +1225,7 @@ function compareBySiblingSubgraphOrder(
   const chainA = subgraphChain(graph, a)
   const chainB = subgraphChain(graph, b)
   let i = 0
-  while (
-    i < chainA.length &&
-    i < chainB.length &&
-    chainA[i] === chainB[i]
-  ) {
+  while (i < chainA.length && i < chainB.length && chainA[i] === chainB[i]) {
     i++
   }
   const sgA = chainA[i]
