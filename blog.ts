@@ -26,7 +26,7 @@
  * does for diagrams/.
  */
 
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { Marked, type Tokens } from 'marked'
 import { createHighlighter, type Highlighter } from 'shiki'
 import { escapeHtml } from './demo/format.ts'
@@ -42,6 +42,30 @@ const OUT_DIR = new URL('./blog/', import.meta.url)
 const RESERVED_SLUGS = new Set(['index', 'feed'])
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
+const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/**
+ * `new Date("2026-02-30T...")` doesn't throw — it silently rolls over to
+ * March 2nd. A frontmatter typo like that would otherwise ship a wrong
+ * date instead of a build error, so validate the calendar date by
+ * round-tripping it through UTC components rather than trusting `Date` to
+ * reject an out-of-range day/month on its own.
+ */
+function isValidCalendarDate(value: string): boolean {
+  const match = DATE_PATTERN.exec(value)
+  if (!match) return false
+  const [, yearStr, monthStr, dayStr] = match
+  const year = Number(yearStr)
+  const month = Number(monthStr)
+  const day = Number(dayStr)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  )
+}
 
 interface Post {
   slug: string
@@ -110,6 +134,11 @@ async function loadPosts(): Promise<Post[]> {
           `${sourceFile}: missing required frontmatter field "${required}"`,
         )
       }
+    }
+    if (!isValidCalendarDate(fields.date!)) {
+      throw new Error(
+        `${sourceFile}: date "${fields.date}" must be a real calendar date in YYYY-MM-DD format`,
+      )
     }
 
     const filenameStem = filename.slice(0, -'.md'.length)
@@ -236,6 +265,11 @@ function rfc822Date(isoDate: string): string {
 }
 
 async function main(): Promise<void> {
+  // A renamed or deleted post must actually disappear from the built site,
+  // not linger from a previous run — clear the whole output directory
+  // before regenerating it. Safe to remove wholesale: OUT_DIR only ever
+  // holds generated output, never blog-posts/ (a sibling, not a child).
+  await rm(OUT_DIR, { recursive: true, force: true })
   await mkdir(new URL('./assets/', OUT_DIR), { recursive: true })
 
   const [demoCss, blogCss] = await Promise.all([
