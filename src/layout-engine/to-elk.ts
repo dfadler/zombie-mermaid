@@ -126,6 +126,41 @@ function hasAnyDirectionOverride(subgraphs: MermaidSubgraph[]): boolean {
   return false
 }
 
+/** Recursively collect every node ID that is a member of `sg`, including nested descendants. */
+function collectAllMemberNodeIds(sg: MermaidSubgraph, out: Set<string>): void {
+  for (const id of sg.nodeIds) out.add(id)
+  for (const child of sg.children) collectAllMemberNodeIds(child, out)
+}
+
+/**
+ * Real mermaid.js ignores a subgraph's own `direction` override once any of
+ * its member nodes (including nested descendants) has an edge to something
+ * outside the subgraph — the subgraph then inherits its parent's direction
+ * instead. Per the docs: "If any of a subgraph's nodes are linked to the
+ * outside, subgraph direction will be ignored. Instead the subgraph will
+ * inherit the direction of the parent graph."
+ * https://mermaid.js.org/syntax/flowchart.html
+ *
+ * Verified against real mermaid.js output for nested subgraphs with
+ * `direction LR` and an edge crossing the boundary (e.g. `B --> X` where X
+ * is inside the subgraph): the crossing-linked nodes render at the same
+ * x-coordinate with increasing y — stacked per the parent's direction,
+ * despite the subgraph's own `direction LR`. Mirrors the equivalent ASCII
+ * fix in src/ascii/converter.ts (subgraphDirectionIsHonored, issue #445).
+ */
+function subgraphDirectionIsHonored(
+  sg: MermaidSubgraph,
+  graph: MermaidGraph,
+): boolean {
+  const memberIds = new Set<string>()
+  collectAllMemberNodeIds(sg, memberIds)
+  if (memberIds.size === 0) return true
+
+  const isInside = (id: string): boolean => memberIds.has(id) || id === sg.id
+
+  return !graph.edges.some((e) => isInside(e.source) !== isInside(e.target))
+}
+
 /**
  * Build a map from subgraph ID to its full ancestor chain, outermost first,
  * ending with the subgraph itself (e.g. Inner nested in Outer → ["Outer", "Inner"]).
@@ -397,6 +432,7 @@ export function mermaidToElk(
         edgesBySubgraph,
         portsBySubgraph,
         hopEdgesByContainer,
+        graph.direction,
       ),
     )
   }
@@ -483,6 +519,15 @@ export function mermaidToElk(
  *
  * When using SEPARATE hierarchy handling (for direction override support),
  * also adds hierarchical ports for cross-hierarchy edges.
+ *
+ * `inheritedDirection` is the effective direction of the nearest ancestor
+ * (a subgraph's own honored override, or ultimately the root graph's
+ * direction) — used when this subgraph's own override is dropped per
+ * `subgraphDirectionIsHonored`. Explicitly propagating it, rather than
+ * leaving `elk.direction` unset and relying on ELK's own property
+ * inheritance under `hierarchyHandling: SEPARATE`, keeps the "inherit the
+ * parent's direction" behavior correct and independent of ELK's inheritance
+ * semantics for that property.
  */
 function subgraphToElk(
   sg: MermaidSubgraph,
@@ -496,6 +541,7 @@ function subgraphToElk(
   >,
   portsBySubgraph: Map<string, Set<string>>,
   hopEdgesByContainer: Map<string, ElkExtendedEdge[]>,
+  inheritedDirection: MermaidGraph['direction'],
 ): ElkGraphNode {
   const layoutOptions: LayoutOptions = {
     'elk.algorithm': 'layered',
@@ -510,10 +556,15 @@ function subgraphToElk(
     'elk.spacing.nodeNode': String(opts.nodeSpacing),
   }
 
-  // Apply direction override if specified
-  if (sg.direction) {
-    layoutOptions['elk.direction'] = directionToElk(sg.direction)
-  }
+  // Apply this subgraph's own direction override only if it's actually
+  // honored (no member node has an edge crossing the boundary); otherwise
+  // fall back to the inherited (parent) direction, per mermaid.js's
+  // documented precedence rule.
+  const effectiveDirection =
+    sg.direction !== undefined && subgraphDirectionIsHonored(sg, graph)
+      ? sg.direction
+      : inheritedDirection
+  layoutOptions['elk.direction'] = directionToElk(effectiveDirection)
 
   // Ports, built before children/edges since they don't depend on them.
   let elkPorts: ElkNode['ports']
@@ -555,6 +606,7 @@ function subgraphToElk(
         edgesBySubgraph,
         portsBySubgraph,
         hopEdgesByContainer,
+        effectiveDirection,
       ),
     )
   }
