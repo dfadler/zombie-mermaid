@@ -330,6 +330,19 @@ export function renderErAscii(
   // accordingly; still offset from config.paddingY like the others.
   const componentGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 2, 1)
 
+  // Widest crow's-foot marker glyph across every cardinality, in the
+  // current mode (ASCII/Unicode) — the same "up to 2 cells wide" fact the
+  // hGap/vGap comment above states, but computed here instead of restated
+  // as a raw literal, so anything sized off it (labelInset, labelX below)
+  // automatically tracks a future change to the marker glyph set (issue
+  // #415, following #384's precedent for hGap/vGap/componentGap).
+  const maxMarkerWidth = Math.max(
+    ...(['one', 'zero-one', 'many', 'zero-many'] as const).flatMap((card) => [
+      getCrowsFootChars(card, useAscii, false).length,
+      getCrowsFootChars(card, useAscii, true).length,
+    ]),
+  )
+
   // --- Build entity box dimensions ---
   const entitySections = new Map<string, string[][]>()
   const entityBoxW = new Map<string, number>()
@@ -811,7 +824,19 @@ export function renderErAscii(
       // Narrowed to per-side glyph-identity detection instead, so only the
       // colliding side ever moves — see issue #413.
       const gapWidth = endX - startX + 1
-      const labelInset = gapWidth >= 3 ? 1 : 0
+      // Only worth insetting the label off the border when the gap could
+      // fit the widest possible marker plus at least one cell of actual
+      // label content (maxMarkerWidth + 1) — below that, insetting both
+      // sides would just shrink an already-tight label region for no
+      // readability benefit. Was a flat `>= 3` (issue #415); derived here
+      // so it stays correct if maxMarkerWidth ever changes. The false
+      // branch is unreachable today — hGap's own floor (paddingOffset's
+      // hard-coded 6, independent of config.paddingX) keeps gapWidth well
+      // above maxMarkerWidth + 1 for the current glyph set — but is kept
+      // (not simplified to a bare `1`) so a future wider marker glyph set
+      // is still handled correctly without revisiting this line.
+      /* v8 ignore next */
+      const labelInset = gapWidth >= maxMarkerWidth + 1 ? 1 : 0
       const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       const leftInset = gapWidth >= 3 && leftChars[0] === V ? 1 : 0
@@ -1269,7 +1294,21 @@ export function renderErAscii(
       // bounds. Supports multi-line labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        const labelX = routingX + 2
+        // How far a centered vertical marker's own rightmost glyph column
+        // extends past its own center column — see upperChars/lowerChars
+        // above, drawn via `center - Math.floor(chars.length / 2) + i`. For
+        // every current 1- or 2-cell marker this is 0 (centering always
+        // leans the extra cell left, never right), so labelX below reduces
+        // to routingX + 2, matching the flat constant this replaces — but
+        // it stays correct if a future marker's glyph or centering ever
+        // extended past the line column (issue #415).
+        const markerRightExtent = Math.max(
+          upperChars.length - 1 - Math.floor(upperChars.length / 2),
+          lowerChars.length - 1 - Math.floor(lowerChars.length / 2),
+        )
+        // 1 cell for the line column itself + 1 cell of breathing room
+        // before the label starts. Was a flat `+ 2` (issue #415).
+        const labelX = routingX + markerRightExtent + 2
         const cellsPerLine = lines.map((line) => toDisplayCells(line))
         const maxCells = Math.max(...cellsPerLine.map((cells) => cells.length))
         const lastLx = labelX + maxCells - 1
