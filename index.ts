@@ -20,6 +20,8 @@ import {
   escapeHtml,
   formatDescription,
   escapeJsonForScriptTag,
+  buildSoftwareApplicationJsonLd,
+  type SoftwareApplicationPackageInfo,
 } from './demo/format.ts'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { samples } from './samples-data.ts'
@@ -62,41 +64,22 @@ async function bundleClientScript(): Promise<string> {
 }
 
 /**
- * Build the `SoftwareApplication` JSON-LD block for the demo site's `<head>`.
+ * Read package.json and build the `SoftwareApplication` JSON-LD block for
+ * the demo site's `<head>`, indented and escaped for embedding in a
+ * `<script type="application/ld+json">` tag.
  *
- * Values are pulled from package.json rather than hardcoded so the block
- * can't drift from the published package (name/description/version/license
- * all come from there; `sameAs`/`license` are derived from the repository
- * URL). Deliberately omits `aggregateRating`/`review`/`offers` — Google's
- * Software App rich-result eligibility requires one of those, but this repo
- * has no real ratings or reviews to report, and fabricating one would be a
- * Search Console webspam violation. This block is valid, accurate structured
- * data; it just won't win the rich-result carousel on its own.
+ * The I/O (reading package.json) lives here; the JSON-LD shape itself is
+ * `buildSoftwareApplicationJsonLd` in demo/format.ts, which is pure and unit
+ * tested directly — see that function's doc comment for why the block is
+ * shaped the way it is.
  */
 async function buildJsonLd(): Promise<string> {
   const pkgRaw = await readFile(
     new URL('./package.json', import.meta.url),
     'utf8',
   )
-  const pkg = JSON.parse(pkgRaw) as {
-    description: string
-    version: string
-    license: string
-    repository: { url: string }
-  }
-  const repositoryUrl = pkg.repository.url
-
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'Zombie Mermaid',
-    description: pkg.description,
-    softwareVersion: pkg.version,
-    applicationCategory: 'DeveloperApplication',
-    license: `${repositoryUrl}/blob/main/LICENSE`,
-    url: 'https://dfadler.github.io/zombie-mermaid/',
-    sameAs: repositoryUrl,
-  }
+  const pkg = JSON.parse(pkgRaw) as SoftwareApplicationPackageInfo
+  const jsonLd = buildSoftwareApplicationJsonLd(pkg)
 
   const json = escapeJsonForScriptTag(JSON.stringify(jsonLd, null, 2))
   return json
