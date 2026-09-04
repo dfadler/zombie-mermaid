@@ -36,6 +36,15 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 // self-arrows inside alt/loop/opt blocks don't get clipped by the wall.
 const SELF_LOOP_WIDTH = 4
 
+// Small stick-figure glyph drawn above an `actor`-kind participant's label
+// (inside the same bordered box a `participant` gets), so mermaid's two
+// declaration keywords stay visually distinct in ASCII output the way real
+// mermaid.js's SVG renderer distinguishes them (a circle-person icon vs. a
+// plain box) — see issue #449. Plain ASCII already, so — unlike H/V/TL/etc.
+// above — there's no separate useAscii/unicode variant to pick between.
+const ACTOR_GLYPH_LINES = ['O', '/|\\', '/ \\']
+const ACTOR_GLYPH_WIDTH = 3
+
 // Horizontal clearance between a block's (loop/alt/opt/par/etc.) side wall
 // and the lifelines its own messages touch. Shared by every block type —
 // there is no per-type wall calculation, so this constant is the single
@@ -131,13 +140,23 @@ export function renderSequenceAscii(
   // review — the same class of bug fixed in draw-boxes.ts's
   // measureMultiBox/drawMultiBox for class/ER boxes).
   const boxPad = Math.max(0, config.boxBorderPadding)
+  // `maxLineWidth`/`lineCount` account for the label only; add the
+  // stick-figure glyph's own footprint (see ACTOR_GLYPH_LINES below) for
+  // actor-kind participants so box sizing matches what drawActorBox draws.
+  const actorContentWidth = (a: { label: string; type: 'participant' | 'actor' }) =>
+    Math.max(
+      maxLineWidth(a.label),
+      a.type === 'actor' ? ACTOR_GLYPH_WIDTH : 0,
+    )
+  const actorContentHeight = (a: { label: string; type: 'participant' | 'actor' }) =>
+    lineCount(a.label) + (a.type === 'actor' ? ACTOR_GLYPH_LINES.length : 0)
   // Use max line width for multi-line actor labels
   const actorBoxWidths = diagram.actors.map(
-    (a) => maxLineWidth(a.label) + 2 * boxPad + 2,
+    (a) => actorContentWidth(a) + 2 * boxPad + 2,
   )
   const halfBox = actorBoxWidths.map((w) => Math.ceil(w / 2))
   // Calculate actor box heights based on number of lines in label
-  const actorBoxHeights = diagram.actors.map((a) => lineCount(a.label) + 2) // lines + top/bottom border
+  const actorBoxHeights = diagram.actors.map((a) => actorContentHeight(a) + 2) // content lines + top/bottom border
   const actorBoxH = Math.max(...actorBoxHeights, 3) // Use max height for consistent lifeline positioning
 
   // Compute minimum gap between adjacent lifelines based on message labels.
@@ -517,12 +536,38 @@ export function renderSequenceAscii(
    *    changing `drawMultiBox` itself to be display-width-aware and
    *    center-aligned would alter class/ER diagram box sizing, which must
    *    stay untouched.
+   *
+   * For an `actor`-kind participant, `ACTOR_GLYPH_LINES` (a small stick
+   * figure) is prepended to the label lines, inside the same box — the
+   * box's width/height precompute above (`actorContentWidth`/
+   * `actorContentHeight`) already reserves room for it so this stays a
+   * pure drawing step with no additional sizing math.
+   *
+   * `boxH` is always the diagram-wide `actorBoxH` (the tallest box among
+   * *all* actors), not this actor's own content height — every box must
+   * bottom out at the same row so the lifeline/junction drawn below it
+   * (which unconditionally starts at row `actorBoxH`, see the "DRAW:
+   * lifelines" section below) connects directly to the box's bottom
+   * border instead of leaving a gap. A participant box shorter than an
+   * adjacent actor's stick-figure box gets blank rows appended above its
+   * bottom border to make up the difference.
    */
-  function drawActorBox(cx: number, topY: number, label: string): void {
-    const lines = splitLines(label)
-    const maxW = maxLineWidth(label)
+  function drawActorBox(
+    cx: number,
+    topY: number,
+    label: string,
+    actorType: 'participant' | 'actor',
+    boxH: number,
+  ): void {
+    const glyphLines = actorType === 'actor' ? ACTOR_GLYPH_LINES : []
+    const lines = [...glyphLines, ...splitLines(label)]
+    const maxW = Math.max(
+      maxLineWidth(label),
+      glyphLines.length > 0 ? ACTOR_GLYPH_WIDTH : 0,
+    )
     const w = maxW + 2 * boxPad + 2
-    const h = lines.length + 2 // lines + top/bottom border
+    const h = boxH
+    const contentRows = h - 2
     const left = cx - Math.floor(w / 2)
 
     // Top border
@@ -530,18 +575,21 @@ export function renderSequenceAscii(
     for (let x = 1; x < w - 1; x++) setC(left + x, topY, H, 'border')
     setC(left + w - 1, topY, TR, 'border')
 
-    // Content lines (centered horizontally within the box)
-    for (let i = 0; i < lines.length; i++) {
+    // Content rows (top-aligned; horizontally centered). Any rows beyond
+    // `lines.length` (up to `contentRows`) stay blank padding — see the
+    // `boxH` doc note above.
+    for (let i = 0; i < contentRows; i++) {
       const row = topY + 1 + i
       setC(left, row, V, 'border')
       setC(left + w - 1, row, V, 'border')
+      const line = lines[i]
+      if (line === undefined) continue
       // Center this line within the box. Centering offset and cell-writing
       // both use display width (terminal columns), not `.length` (JS
       // code units) — a code-unit-based offset would under-center CJK
       // labels, and writing one grid cell per code unit (rather than per
       // terminal column) would under-reserve columns for wide glyphs,
       // both contributing to issue #334's border/content misalignment.
-      const line = lines[i]!
       const ls = left + 1 + boxPad + Math.floor((maxW - displayWidth(line)) / 2)
       writeTextCells(ls, row, line, 'text')
     }
@@ -566,8 +614,8 @@ export function renderSequenceAscii(
 
   for (let i = 0; i < diagram.actors.length; i++) {
     const actor = diagram.actors[i]!
-    drawActorBox(llX[i]!, 0, actor.label)
-    drawActorBox(llX[i]!, footerY, actor.label)
+    drawActorBox(llX[i]!, 0, actor.label, actor.type, actorBoxH)
+    drawActorBox(llX[i]!, footerY, actor.label, actor.type, actorBoxH)
 
     // Lifeline junctions on box borders (Unicode only)
     if (!useAscii) {
