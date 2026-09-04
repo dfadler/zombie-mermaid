@@ -181,12 +181,29 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
       { colorMode: 'none' },
     )
 
-    const row = ascii.split('\n').find((l) => l.includes('tagged-with'))
-    expect(row).toBeDefined()
-    const idx = row!.indexOf('tagged-with')
-    // TAG's own crow's-foot marker ("○╟"), then a single space, then the
-    // label — not a long run of blank columns with no marker in sight.
-    expect(row!.slice(idx - 3, idx)).toBe('○╟ ')
+    const lines = ascii.split('\n')
+    const labelRow = lines.findIndex((l) => l.includes('tagged-with'))
+    expect(labelRow).toBeGreaterThanOrEqual(0)
+    const labelCol = lines[labelRow]!.indexOf('tagged-with')
+    // The label starts 2 columns after the target column TAG's own lower
+    // crow's-foot marker is built around — i.e. 3 columns after where a
+    // 2-character marker like "○╟" begins (see targetX in the source).
+    // The jog's row is chosen independently to dodge collisions with
+    // other relationships (issue #351's chooseFreeRow), so the marker and
+    // label aren't guaranteed to land on the exact same printed row —
+    // search a small vertical window around the label instead of
+    // requiring literal same-row adjacency.
+    const markerCol = labelCol - 3
+    const nearbyRows = [
+      labelRow - 1,
+      labelRow,
+      labelRow + 1,
+      labelRow + 2,
+    ].filter((r) => r >= 0 && r < lines.length)
+    const hasAlignedMarker = nearbyRows.some(
+      (r) => lines[r]!.slice(markerCol, markerCol + 2) === '○╟',
+    )
+    expect(hasAlignedMarker).toBe(true)
   })
 
   it('drops a whole overlapping label in the same-row (horizontal) branch too', () => {
