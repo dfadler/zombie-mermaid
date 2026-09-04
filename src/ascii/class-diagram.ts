@@ -503,7 +503,20 @@ export function renderClassAscii(
 
         // Markers for detour case
         if (marker.markerAt === 'to') {
-          const markerChar = getMarkerShape(marker.type, useAscii, 'down')
+          // Target sits below this point — the arrowhead must point down
+          // into it. Hierarchical markers (inheritance/realization) rotate
+          // opposite to directional ones (association/dependency): passing
+          // 'up' yields a hierarchical marker's down-pointing glyph, while
+          // 'down' yields a directional marker's down-pointing glyph. See
+          // the matching compensation in the "target is above source"
+          // branch below, which handles the mirrored case.
+          const isHierarchical =
+            marker.type === 'inheritance' || marker.type === 'realization'
+          const markerChar = getMarkerShape(
+            marker.type,
+            useAscii,
+            isHierarchical ? 'up' : 'down',
+          )
           setC(toCX, entryY, markerChar, 'arrow')
         }
         if (marker.markerAt === 'from') {
@@ -541,10 +554,19 @@ export function renderClassAscii(
 
         // Markers for no-collision case
         if (marker.markerAt === 'to') {
+          // Same rotation compensation as the detour case above — target is
+          // below this point, so hierarchical markers need 'up' to point
+          // down into it.
+          const isHierarchical =
+            marker.type === 'inheritance' || marker.type === 'realization'
           setC(
             toCX,
             toTY - 1,
-            getMarkerShape(marker.type, useAscii, 'down'),
+            getMarkerShape(
+              marker.type,
+              useAscii,
+              isHierarchical ? 'up' : 'down',
+            ),
             'arrow',
           )
         }
@@ -646,7 +668,16 @@ export function renderClassAscii(
         }
       }
       if (marker.markerAt === 'to') {
-        const markerChar = getMarkerShape(marker.type, useAscii, 'up')
+        // Target sits above this point (line detours below both boxes then
+        // comes back up) — mirrors the "target is above source" branch's
+        // compensation above.
+        const isHierarchical =
+          marker.type === 'inheritance' || marker.type === 'realization'
+        const markerChar = getMarkerShape(
+          marker.type,
+          useAscii,
+          isHierarchical ? 'down' : 'up',
+        )
         const my = toP.y + toP.height
         for (let i = 0; i < markerChar.length; i++) {
           setC(

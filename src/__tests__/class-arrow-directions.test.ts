@@ -213,12 +213,14 @@ describe('Class Diagram Arrow Directions', () => {
   // ============================================================================
 
   describe('Realization (..|>)', () => {
-    test('implementation above interface - triangle touches interface below', () => {
+    test('implementation above interface - triangle points down into interface', () => {
       // Circle ..|> Shape means "Circle implements Shape". Layout places
       // "from" above "to" for every relationship type (matching real
       // mermaid.js — see issue #446), so Circle (implementation/from) is
       // placed ABOVE Shape (interface/to), with the hollow triangle sitting
-      // just above Shape, its base touching the interface box.
+      // just above Shape, its TIP touching (pointing down into) the
+      // interface box — a hollow triangle points toward whichever box it's
+      // adjacent to, not away from it.
       const diagram = `classDiagram
         Circle ..|> Shape`
       const result = renderMermaidASCII(diagram)
@@ -228,7 +230,7 @@ describe('Class Diagram Arrow Directions', () => {
       const shapeLine = lines.findIndex((l) => l.includes('Shape'))
       const circleLine = lines.findIndex((l) => l.includes('Circle'))
       expect(circleLine).toBeLessThan(shapeLine)
-      expect(result).toContain('△')
+      expect(result).toContain('▽')
     })
 
     test('realization with <|.. syntax (marker at from end)', () => {
@@ -260,8 +262,9 @@ describe('Class Diagram Arrow Directions', () => {
 
       expect(circleLine).toBeLessThan(shapeLine)
       expect(squareLine).toBeLessThan(shapeLine)
-      // At least one triangle (may merge visually if same connection point)
-      expect(result).toContain('△')
+      // At least one triangle (may merge visually if same connection point).
+      // markerAt='to' here (Shape), so the triangle points down into it: ▽.
+      expect(result).toContain('▽')
     })
   })
 
@@ -304,8 +307,13 @@ describe('Class Diagram Arrow Directions', () => {
         K ..|> L : realization`
       const result = renderMermaidASCII(diagram)
 
-      // Upward triangles for inheritance and realization
-      expect(result.match(/△/g)?.length).toBe(2)
+      // A above B (inheritance, marker at 'from'/A) — marker sits just below
+      // A pointing up into it: △. K above L (realization, marker at
+      // 'to'/L) — marker sits just above L pointing down into it: ▽. Both
+      // point toward their parent/interface; the glyph differs because the
+      // marker's position relative to its target differs.
+      expect(result.match(/△/g)?.length).toBe(1)
+      expect(result.match(/▽/g)?.length).toBe(1)
 
       // Downward arrows for association and dependency
       expect(result.match(/▼/g)?.length).toBe(2)
