@@ -266,6 +266,40 @@ describe('Class Diagram Arrow Directions', () => {
       // markerAt='to' here (Shape), so the triangle points down into it: ▽.
       expect(result).toContain('▽')
     })
+
+    test('realization edge routed around an obstruction still points down into the interface', () => {
+      // Bird realizes Flyable two levels down (Helper sits in between,
+      // forced there by Bird-->Helper and Helper-->Flyable), so Bird's
+      // realization edge can't run straight down — it must detour around
+      // Helper's box via the collision-avoidance routing path. This is a
+      // different code path from the direct/no-collision case covered by
+      // the tests above, and had its own separate rotation bug that was
+      // missed in the original fix (only caught in review): the detour
+      // branch's marker-drawing code needed the same `isHierarchical`
+      // rotation compensation as the direct-routing branches.
+      const diagram = `classDiagram
+        class Flyable {
+          <<interface>>
+          +fly() void
+        }
+        class Helper {
+          +assist() void
+        }
+        class Bird {
+          +fly() void
+        }
+        Bird --> Helper
+        Helper --> Flyable
+        Bird ..|> Flyable`
+      const result = renderMermaidASCII(diagram)
+
+      // The realization edge is declared last, so it draws last and its
+      // marker wins where it lands on the same cell as Helper-->Flyable's
+      // own (unrelated, association-style) arrowhead — a separate,
+      // pre-existing limitation of this renderer's last-write-wins cell
+      // model, not something this test is about.
+      expect(result).toContain('▽')
+    })
   })
 
   // ============================================================================
