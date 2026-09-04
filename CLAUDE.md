@@ -55,6 +55,17 @@ fix) in that approximation's chrome while the underlying renderer was fine
 — so they stay useful for iterating locally but must never supply the
 screenshot that ends up in a PR/issue body for this category of change.
 
+Whenever a PR or issue includes a "Visual verification" (or equivalent
+before/after) section for this category of change, paste the exact Mermaid
+source used to produce both renders inline, in a fenced ` ```mermaid ` code
+block directly after that heading — before the before/after image table, not
+after it — rather than only linking to a sample index or a separate issue's
+reproduction. A reviewer (or a future reader) must be able to verify the
+screenshots from the PR/issue body alone, without chasing down another issue
+that may no longer contain a matching repro. See
+[#402](https://github.com/dfadler/zombie-mermaid/issues/402), which this
+requirement exists to close.
+
 Before removing a worktree in this repo (`ExitWorktree`, or by hand), stop only the
 processes _you_ started for it — don't kill by port or by a generic name pattern
 alone, since another worktree (or the main checkout) can easily share the same

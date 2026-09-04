@@ -352,12 +352,13 @@ function declareActorAt(
 }
 
 describe('ASCII sequence — `actor` renders distinctly from `participant`', () => {
-  // Bug: `actor.type` (captured by the parser — see src/sequence/types.ts:24,
-  // "'actor' renders as a stick figure") is never read anywhere in
-  // src/ascii/sequence.ts. Every actor draws through the same box-drawing
-  // path regardless of declared type, so an `actor` and a `participant`
-  // with the same label render byte-for-byte identically today.
-  it.fails.each<[ActorPosition, string]>([
+  // Fixed by issue #449: `src/ascii/sequence.ts`'s `drawActorBox` now draws
+  // a small stick-figure glyph (`ACTOR_GLYPH_LINES`) above the label for
+  // `actor.type === 'actor'`, so an `actor` and a `participant` with the
+  // same label no longer render byte-for-byte identically. Per this file's
+  // header convention, a case confirmed fixed is promoted from `it.fails`
+  // to a plain `it()` regression lock.
+  it.each<[ActorPosition, string]>([
     ['first', 'U'],
     ['middle', 'U'],
     ['last', 'U'],

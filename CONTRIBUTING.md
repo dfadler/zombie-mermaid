@@ -109,6 +109,14 @@ For a broader, human-reviewable sweep — not a pass/fail gate, just "what does 
 
 **`visual-diff.html` and the Playwright baselines above are for iterating locally — never for the before/after screenshot in a PR/issue body when the change touches ASCII output.** Both render ASCII through `ascii-html.ts`'s HTML/CSS approximation of a terminal, not a real one, and this repo has already shipped a bug in that approximation's chrome while the underlying renderer was fine. For an ASCII-affecting change, capture the actual PR screenshot with `scripts/ascii-terminal-capture.sh` instead, which renders through a real PTY headlessly (via `asciinema` + `agg` — `brew install asciinema agg && pip3 install pillow` once) and produces a `.png` straight from that real-terminal recording. Also install the rasterizer's preferred font once (`brew install --cask font-jetbrains-mono`): `agg` silently falls back to the next font in its list when one is missing, and on a machine without JetBrains Mono that fallback (Menlo) renders box-drawing junction glyphs like `┬` with a visible notch artifact — no error, just a subtly wrong screenshot. See `scripts/ascii-terminal-capture.sh --help` for usage, or the `verify-ascii-terminal` skill for the full procedure.
 
+Whatever kind of change produced them, a PR/issue's "Visual verification" (or
+equivalent before/after) section must include the exact Mermaid source used
+to produce both renders, inline in a fenced ` ```mermaid ` code block
+directly after that heading and before the before/after image table — not
+just a link to a sample index or a separate issue's reproduction. Without the
+inline source, the screenshots aren't verifiable from the PR/issue body
+alone; see [#402](https://github.com/dfadler/zombie-mermaid/issues/402).
+
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
 ## Porting fixes from upstream

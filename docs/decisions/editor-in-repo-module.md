@@ -17,9 +17,12 @@ same shape of internal coupling — it imports `../index.ts`,
 `../ascii/index.ts`, and `../package-info.ts` by relative path, not through
 the published package — and that was an accepted, deliberate design: same
 package, same source tree, exposed externally only via a `package.json`
-`exports` subpath (`"./mcp"`) built by tsup. There is no version-pinning
-problem, no separate `package.json`, no separate release process — it ships
-and versions together with the rest of the package.
+`exports` subpath (`"./mcp"`) built alongside the rest of the package by
+whatever the current library build is (Vite's library mode, as of
+[#378](https://github.com/dfadler/zombie-mermaid/pull/378) — previously
+tsup). There is no version-pinning problem, no separate `package.json`, no
+separate release process — it ships and versions together with the rest of
+the package.
 
 A separate `zombie-mermaid-editor` repo, stood up now, would need to solve a
 dependency-boundary problem (version pinning, keeping `THEME_LABELS` in sync
