@@ -143,13 +143,15 @@ export function renderSequenceAscii(
   // `maxLineWidth`/`lineCount` account for the label only; add the
   // stick-figure glyph's own footprint (see ACTOR_GLYPH_LINES below) for
   // actor-kind participants so box sizing matches what drawActorBox draws.
-  const actorContentWidth = (a: { label: string; type: 'participant' | 'actor' }) =>
-    Math.max(
-      maxLineWidth(a.label),
-      a.type === 'actor' ? ACTOR_GLYPH_WIDTH : 0,
-    )
-  const actorContentHeight = (a: { label: string; type: 'participant' | 'actor' }) =>
-    lineCount(a.label) + (a.type === 'actor' ? ACTOR_GLYPH_LINES.length : 0)
+  const actorContentWidth = (a: {
+    label: string
+    type: 'participant' | 'actor'
+  }) =>
+    Math.max(maxLineWidth(a.label), a.type === 'actor' ? ACTOR_GLYPH_WIDTH : 0)
+  const actorContentHeight = (a: {
+    label: string
+    type: 'participant' | 'actor'
+  }) => lineCount(a.label) + (a.type === 'actor' ? ACTOR_GLYPH_LINES.length : 0)
   // Use max line width for multi-line actor labels
   const actorBoxWidths = diagram.actors.map(
     (a) => actorContentWidth(a) + 2 * boxPad + 2,
