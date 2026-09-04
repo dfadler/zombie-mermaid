@@ -44,6 +44,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import * as esbuild from 'esbuild'
 import { escapeHtml, escapeJsonForScriptTag } from './demo/format.ts'
+import { renderShell, pageHtml } from './demo/site-shell.ts'
 import { THEMES } from './src/theme.ts'
 import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
 import { renderThemePicker, DEFAULT_SWATCH } from './theme-picker.ts'
@@ -96,79 +97,6 @@ async function bundleDiagramPageClient(): Promise<string> {
     write: false,
   })
   return result.outputFiles[0]!.text
-}
-
-/** Renders the site header/theme-bar/breadcrumb/footer shell shared by every diagrams/ page. */
-function renderShell(opts: {
-  breadcrumb: string
-  body: string
-  homeHref: string
-  themePillsHtml?: string
-}): string {
-  const themeBar = opts.themePillsHtml
-    ? `
-  <div class="theme-bar" id="theme-bar">
-    <a class="brand-badge shadow-minimal" href="${opts.homeHref}"><span><strong>Zombie Mermaid</strong></span></a>
-    <div class="theme-pills" id="theme-pills">
-      ${opts.themePillsHtml}
-    </div>
-  </div>`
-    : `
-  <div class="site-header">
-    <a class="brand-badge" href="${opts.homeHref}">
-      <strong>Zombie Mermaid</strong>
-    </a>
-    <nav class="header-links">
-      <a href="${opts.homeHref}">Samples</a>
-      <a href="${opts.homeHref}editor">Editor</a>
-      <a href="https://github.com/dfadler/zombie-mermaid" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-  </div>`
-
-  return `${themeBar}
-  <div class="content-wrapper">
-  <div class="breadcrumb">${opts.breadcrumb}</div>
-${opts.body}
-  <footer class="site-footer">
-    <span>&copy; 2026 zombie-mermaid</span>
-    <a href="https://github.com/dfadler/zombie-mermaid" target="_blank" rel="noopener noreferrer">GitHub</a>
-  </footer>
-  </div>`
-}
-
-function pageHtml(opts: {
-  title: string
-  description: string
-  canonical: string
-  cssHref: string
-  faviconHref: string
-  body: string
-  bodyScript?: string
-}): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(opts.title)}</title>
-  <meta name="description" content="${escapeHtml(opts.description)}" />
-  <link rel="canonical" href="${opts.canonical}" />
-  <meta property="og:title" content="${escapeHtml(opts.title)}" />
-  <meta property="og:description" content="${escapeHtml(opts.description)}" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="${opts.canonical}" />
-  <meta name="twitter:card" content="summary" />
-  <link rel="icon" type="image/svg+xml" href="${opts.faviconHref}" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="${opts.cssHref}" />
-</head>
-<body>
-${opts.body}
-${opts.bodyScript ?? ''}
-</body>
-</html>`
 }
 
 async function main(): Promise<void> {
