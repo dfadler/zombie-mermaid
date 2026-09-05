@@ -809,7 +809,7 @@ export function renderClassAscii(
         }
       }
     }
-  }
+  })
 
   // --- Precompute each label's horizontal territory ---
   // A label's left/right bound is derived purely from connection-point
@@ -1057,7 +1057,7 @@ export function renderClassAscii(
         }
       }
     }
-  })
+  }
 
   return canvasToString(canvas, { roleCanvas: rc, colorMode, theme })
 }
