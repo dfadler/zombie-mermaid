@@ -202,19 +202,42 @@ function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
   // bundle whenever any edge doesn't actually satisfy the "before the
   // target" / "after the source" assumption; routed independently instead,
   // it gets its own distinct, visible arrowhead into/out of the shared node.
+  // `analyzeEdgeBundles` (this function's only caller) already gates on
+  // `graphDirection === 'TD'` before ever calling `canBundle`, so the 'LR'
+  // arm is unreachable today — kept for whenever LR bundling support
+  // lands, matching this comment block's own "TD: above it; LR: left of
+  // it" framing above.
+  /* v8 ignore next */
   const axis: 'x' | 'y' = graph.config.graphDirection === 'LR' ? 'x' : 'y'
   const sharedNode = sameTarget ? edges[0]!.to : edges[0]!.from
   const sharedCoord = sharedNode.gridCoord
+  // Grid layout always runs before bundling — every node reaching this
+  // point has a gridCoord (see `requireGridCoord`'s own use lower in this
+  // file for the same assumption). Defensive only; not reachable from any
+  // real diagram.
+  /* v8 ignore next */
   if (!sharedCoord) return false
   for (const edge of edges) {
     const otherNode = sameTarget ? edge.from : edge.to
     const otherCoord = otherNode.gridCoord
+    /* v8 ignore next */
     if (!otherCoord) return false
     if (sameTarget) {
       // fan-in: source must be strictly before the shared target
       if (otherCoord[axis] >= sharedCoord[axis]) return false
     } else {
-      // fan-out: target must be strictly after the shared source
+      // fan-out: target must be strictly after the shared source. The
+      // fan-in violation above is reachable via a plain diamond (a shared
+      // target reached both directly and via a detour — see #454's own
+      // repro and this file's regression test) because rank assignment
+      // can shortchange whichever of two *competing parents* gets visited
+      // second. The mirror-image fan-out violation would need a target's
+      // rank to land at or before its own source's — topologically only
+      // possible with an actual cycle, not exercised by any sample in
+      // this repo. Kept for symmetry with the fan-in case above (and
+      // because a cycle isn't inherently invalid mermaid syntax) rather
+      // than assumed impossible.
+      /* v8 ignore next */
       if (otherCoord[axis] <= sharedCoord[axis]) return false
     }
   }
