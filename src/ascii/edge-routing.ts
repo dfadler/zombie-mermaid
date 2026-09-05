@@ -743,7 +743,21 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   if (edge.parallelLane && edge.parallelLane.index > 0) return
 
   const lenLabel = displayWidth(edge.text)
-  const pathLen = edge.path.length
+
+  // Every routed path is axis-aligned (A* is 4-directional and
+  // tryDirectPath builds explicit L-shapes), with one exception:
+  // determinePath's Case-4 direct fallback, `[prefFrom, prefTo]`, which is
+  // a single *diagonal* segment. draw-lines.ts's drawLine never draws a
+  // diagonal — it draws that segment as an L, horizontal-first (along
+  // from.y to to.x, then down/up to to.y). A label centered on the
+  // diagonal itself lands mid-way between the two legs, in open grid that
+  // has nothing to do with this edge and is often right next to some
+  // *other* edge's connector (#418, "All Edge Styles": the `thick` label
+  // abutting the dotted edge's column). Expand any diagonal segment into
+  // the same two legs drawLine will draw, so the label search below only
+  // ever considers line segments that actually get drawn.
+  const points = expandDiagonalSegments(edge.path)
+  const pathLen = points.length
 
   // Collect all segments with their widths and orientation
   const segments: {
@@ -754,8 +768,8 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   }[] = []
 
   for (let i = 1; i < pathLen; i++) {
-    const p1 = edge.path[i - 1]!
-    const p2 = edge.path[i]!
+    const p1 = points[i - 1]!
+    const p2 = points[i]!
     const line: [GridCoord, GridCoord] = [p1, p2]
     const width = calculateLineWidth(graph, line)
     // A segment is vertical if X coords are same, horizontal if Y coords are same
@@ -874,6 +888,26 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   }
 
   applyLabelLine(graph, edge, largestLine, lenLabel)
+}
+
+/**
+ * Replace every diagonal step in `path` (consecutive points that differ in
+ * both x and y) with the two axis-aligned legs draw-lines.ts's drawLine
+ * actually draws for it: horizontal first, to the corner `{x: next.x,
+ * y: prev.y}`, then vertical. Axis-aligned steps pass through unchanged, so
+ * an ordinary routed path comes back identical. Only determinePath's Case-4
+ * direct fallback produces a diagonal in practice — see determineLabelLine.
+ */
+export function expandDiagonalSegments(path: GridCoord[]): GridCoord[] {
+  const out: GridCoord[] = []
+  for (const point of path) {
+    const prev = out[out.length - 1]
+    if (prev && prev.x !== point.x && prev.y !== point.y) {
+      out.push({ x: point.x, y: prev.y })
+    }
+    out.push(point)
+  }
+  return out
 }
 
 /**
