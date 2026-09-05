@@ -1,0 +1,341 @@
+/**
+ * Stylesheet for the per-diagram-type/per-theme SEO landing pages generated
+ * by pages.ts (see /diagrams/<type>/<theme>.html).
+ *
+ * A separate, much smaller stylesheet from demo/styles.css rather than a
+ * reuse of it: styles.css is built for the single interactive gallery page
+ * (theme picker, sidebar, edit dialog, segmented SVG/ASCII toggle — all of
+ * it JS-driven), none of which these static pages have. This file shares
+ * the same brand tokens (fonts, accent colors) for visual consistency, but
+ * stays plain, unminified CSS with no JS dependency, and is linked once as
+ * an external file (not inlined per page) so a visitor's second page load
+ * comes from cache instead of re-downloading the same rules 90 times over.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--t-accent);
+  outline-offset: 2px;
+}
+
+body {
+  --t-bg: #ffffff;
+  --t-fg: #27272a;
+  --t-accent: #3b82f6;
+  --t-brand: #9570be;
+  --t-muted: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
+  --t-border: color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
+
+  font-family:
+    'Geist',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
+  color: var(--t-fg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.page-shell {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 3rem;
+}
+
+/* -- Header -- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 0 1.5rem;
+}
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--t-fg);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.brand-badge:hover {
+  color: var(--t-accent);
+}
+
+.header-links {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.header-links a {
+  color: var(--t-muted);
+  text-decoration: none;
+}
+
+.header-links a:hover {
+  color: var(--t-accent);
+}
+
+/* -- Breadcrumb -- */
+.breadcrumb {
+  font-size: 0.8125rem;
+  color: var(--t-muted);
+  margin-bottom: 1.25rem;
+}
+
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--t-accent);
+}
+
+.breadcrumb .sep {
+  margin: 0 0.4rem;
+  opacity: 0.6;
+}
+
+/* -- Page heading -- */
+h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.75rem;
+}
+
+.lede {
+  font-size: 1.0625rem;
+  color: var(--t-muted);
+  max-width: 68ch;
+  margin-bottom: 2rem;
+}
+
+.lede code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.9em;
+  background: color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+/* -- Diagram + source layout: source on the left, diagram on the right -- */
+.diagram-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.source-column {
+  flex: 1 1 40%;
+  min-width: 0;
+}
+
+.diagram-column {
+  flex: 1 1 55%;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .diagram-layout {
+    flex-direction: column;
+  }
+}
+
+/* -- Diagram panel -- */
+.diagram-frame {
+  border: 1px solid var(--t-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.diagram-frame svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* A short caption, not a section — the theme is a color choice, not the
+   page's topic, so it shouldn't compete with the diagram-type content for
+   attention via its own heading. */
+.theme-caption {
+  font-size: 0.875rem;
+  color: var(--t-muted);
+  margin-bottom: 1.5rem;
+}
+
+.theme-caption strong {
+  color: var(--t-fg);
+  font-weight: 600;
+}
+
+/* -- Source panel -- */
+.source-heading {
+  /* Matches .section h2's weight — this is the page's actual type-specific
+     content and shouldn't read as a subordinate label next to the
+     theme/navigation sections below it. */
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.source-panel {
+  border: 1px solid var(--t-border);
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 0;
+}
+
+.source-panel pre {
+  margin: 0;
+  padding: 1rem 1.25rem;
+}
+
+.source-panel code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* -- Prose sections -- */
+.section {
+  margin-bottom: 2rem;
+}
+
+.section h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.section p {
+  color: var(--t-muted);
+  max-width: 68ch;
+}
+
+/* -- Cross-link grids -- */
+.link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.link-grid a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--t-border);
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--t-fg);
+  font-size: 0.875rem;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.link-grid a:hover {
+  border-color: var(--t-accent);
+  color: var(--t-accent);
+}
+
+.link-grid a.is-current {
+  border-color: var(--t-brand);
+  color: var(--t-brand);
+  font-weight: 600;
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+/* -- CTA row -- */
+.cta-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 2rem 0;
+}
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--t-border);
+  color: var(--t-fg);
+}
+
+.cta-btn.primary {
+  background: linear-gradient(135deg, var(--t-brand), var(--t-accent));
+  color: #fff;
+  border-color: transparent;
+}
+
+.cta-btn:not(.primary):hover {
+  border-color: var(--t-accent);
+  color: var(--t-accent);
+}
+
+/* -- Footer -- */
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--t-border);
+  font-size: 0.8125rem;
+  color: var(--t-muted);
+}
+
+.site-footer a {
+  color: inherit;
+}
+
+/* -- Index/hub page -- */
+.type-group {
+  margin-bottom: 2rem;
+}
+
+.type-group h2 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.type-group .type-intro {
+  color: var(--t-muted);
+  font-size: 0.9375rem;
+  max-width: 68ch;
+  margin-bottom: 0.75rem;
+}

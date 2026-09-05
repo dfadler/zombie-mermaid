@@ -120,13 +120,17 @@ export function convertToAsciiGraph(
       style: mEdge.style,
       hasArrowStart: mEdge.hasArrowStart,
       hasArrowEnd: mEdge.hasArrowEnd,
+      ...(mEdge.startMarker !== undefined
+        ? { startMarker: mEdge.startMarker }
+        : {}),
+      ...(mEdge.endMarker !== undefined ? { endMarker: mEdge.endMarker } : {}),
     })
   }
 
   // Convert subgraphs recursively
   const subgraphs: AsciiSubgraph[] = []
   for (const mSg of parsed.subgraphs) {
-    convertSubgraph(mSg, null, nodeMap, subgraphs)
+    convertSubgraph(mSg, null, nodeMap, subgraphs, parsed)
   }
 
   // Deduplicate subgraph node membership to match Go parser behavior.
@@ -201,6 +205,34 @@ function collectAllMemberNodeIds(mSg: MermaidSubgraph, out: Set<string>): void {
 }
 
 /**
+ * Real mermaid.js ignores a subgraph's own `direction` override once any of
+ * its member nodes (including nested descendants) has an edge to something
+ * outside the subgraph — the subgraph then inherits the parent graph's
+ * direction instead. Per the docs: "If any of a subgraph's nodes are linked
+ * to the outside, subgraph direction will be ignored. Instead the subgraph
+ * will inherit the direction of the parent graph."
+ * https://mermaid.js.org/syntax/flowchart.html
+ *
+ * Verified against real mermaid.js output for issue #445 (`graph TD` +
+ * `direction LR` subgraph with `E --> A` / `D --> F` edges crossing the
+ * boundary): all member nodes render at the same x-coordinate with
+ * increasing y, i.e. stacked top-down per the outer `TD` direction, despite
+ * the subgraph's own `direction LR`.
+ */
+function subgraphDirectionIsHonored(
+  mSg: MermaidSubgraph,
+  parsed: MermaidGraph,
+): boolean {
+  const memberIds = new Set<string>()
+  collectAllMemberNodeIds(mSg, memberIds)
+  if (memberIds.size === 0) return true
+
+  const isInside = (id: string): boolean => memberIds.has(id) || id === mSg.id
+
+  return !parsed.edges.some((e) => isInside(e.source) !== isInside(e.target))
+}
+
+/**
  * Pick a real member node to stand in for a subgraph when it's used as an
  * edge endpoint (e.g. `ONE --> TWO` where ONE/TWO are subgraph ids — issue
  * #65). The ASCII grid can only route edges between real nodes, so an edge
@@ -246,10 +278,15 @@ function convertSubgraph(
   parent: AsciiSubgraph | null,
   nodeMap: Map<string, AsciiNode>,
   allSubgraphs: AsciiSubgraph[],
+  parsed: MermaidGraph,
 ): AsciiSubgraph {
-  // Normalize subgraph direction: BT→TD, RL→LR (same as root graph normalization)
+  // Normalize subgraph direction: BT→TD, RL→LR (same as root graph normalization).
+  // A subgraph with an edge crossing its own boundary loses its direction
+  // override in real mermaid.js (see subgraphDirectionIsHonored) — skip
+  // normalizing it in that case so it falls through to the parent's
+  // direction like everything else.
   let normalizedDirection: 'LR' | 'TD' | undefined
-  if (mSg.direction) {
+  if (mSg.direction && subgraphDirectionIsHonored(mSg, parsed)) {
     normalizedDirection =
       mSg.direction === 'LR' || mSg.direction === 'RL' ? 'LR' : 'TD'
   }
@@ -276,7 +313,7 @@ function convertSubgraph(
 
   // Recurse into children
   for (const childMSg of mSg.children) {
-    const child = convertSubgraph(childMSg, sg, nodeMap, allSubgraphs)
+    const child = convertSubgraph(childMSg, sg, nodeMap, allSubgraphs, parsed)
     sg.children.push(child)
 
     // Child nodes are also part of parent subgraphs (Go behavior).

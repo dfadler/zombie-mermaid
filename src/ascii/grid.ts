@@ -18,7 +18,11 @@ import type {
 } from './types.ts'
 import { gridKey, requireGridCoord } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
-import { determinePath, determineLabelLine } from './edge-routing.ts'
+import {
+  determinePath,
+  determineLabelLine,
+  assignParallelEdgeLanes,
+} from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
 import {
@@ -751,11 +755,39 @@ function placeReachableChildren(
   let progressed = true
   while (progressed) {
     progressed = false
-    for (const node of graph.nodes) {
-      if (node.gridCoord === null) continue // skip unplaced nodes
-      const gc = node.gridCoord
 
-      for (const child of getChildren(graph, node)) {
+    // Visit already-placed nodes in cross-axis order (left-to-right for TD,
+    // top-to-bottom for LR) rather than raw `graph.nodes` declaration
+    // order. `highestPositionPerLevel[level]` hands out each level's next
+    // free slot in visiting order, so a parent that's actually positioned
+    // further along the cross axis must also be visited later — otherwise
+    // its children claim an earlier (visually misaligned) slot than a
+    // parent positioned before it, decoupling a child's column/row from its
+    // own parent's. This matters once sibling placement order can diverge
+    // from `graph.nodes` order — e.g. `compareBySiblingSubgraphOrder`
+    // above, which places a later-declared sibling subgraph's root before
+    // an earlier-declared one's (see issue #444).
+    const crossAxisOf = (n: AsciiNode): number =>
+      graph.config.graphDirection === 'LR'
+        ? (n.gridCoord?.y ?? 0)
+        : (n.gridCoord?.x ?? 0)
+    const placedNodes = graph.nodes
+      .filter((n) => n.gridCoord !== null)
+      .sort((a, b) => crossAxisOf(a) - crossAxisOf(b))
+
+    for (const node of placedNodes) {
+      const gc = node.gridCoord
+      if (gc === null) continue // unreachable: `placedNodes` is pre-filtered
+
+      // Sort children so siblings that land in different subgraphs get
+      // mermaid.js's reversed-declaration-order sibling placement (see
+      // compareBySiblingSubgraphOrder) instead of raw edge-declaration
+      // order — the sort is stable, so pairs with no subgraph-order
+      // preference (the common case) keep their original relative order.
+      const children = [...getChildren(graph, node)].sort((x, y) =>
+        compareBySiblingSubgraphOrder(graph, x, y),
+      )
+      for (const child of children) {
         if (child.gridCoord !== null) continue // already placed
 
         // Determine direction for this edge (parent -> child)
@@ -1076,6 +1108,13 @@ export function createMapping(graph: AsciiGraph): void {
   // pathfinder.ts's PathBudget for details.
   graph.pathBudget = createPathBudget()
 
+  // Tag true parallel/multi-edges (same source AND target, e.g. two
+  // separately-labeled A-->B edges) with a lane index before bundling
+  // analysis runs, so determinePath below can route sibling edges past the
+  // first through distinct offset lanes instead of all computing the
+  // identical center path (see #329).
+  assignParallelEdgeLanes(graph)
+
   // Analyze edges for bundling (parallel links like A & B --> C)
   // This groups edges that share sources or targets for cleaner visualization
   graph.bundles = analyzeEdgeBundles(graph)
@@ -1142,6 +1181,61 @@ function getEdgesFromNode(
   node: AsciiNode,
 ): AsciiGraph['edges'] {
   return graph.edges.filter((e) => e.from.name === node.name)
+}
+
+/**
+ * Outermost-to-innermost chain of subgraphs directly containing `node`
+ * (empty if the node isn't in any subgraph).
+ */
+function subgraphChain(graph: AsciiGraph, node: AsciiNode): AsciiSubgraph[] {
+  const innermost = getNodeSubgraph(graph, node)
+  const chain: AsciiSubgraph[] = []
+  let current: AsciiSubgraph | null = innermost
+  while (current !== null) {
+    chain.unshift(current)
+    current = current.parent
+  }
+  return chain
+}
+
+/**
+ * Order two nodes the way real mermaid.js orders the sibling subgraphs they
+ * (transitively) belong to, when they diverge into *different* subgraphs
+ * under a shared subgraph ancestor (or both at the top level) — otherwise 0
+ * (no preference; the caller's sort is stable, so original edge-declaration
+ * order is preserved).
+ *
+ * Verified against mermaid@11.17.2's bundled flowDb.getData()
+ * (node_modules/mermaid/dist/mermaid.min.js): it builds the layout node list
+ * by iterating the parsed `subGraphs` array *backwards* to emit cluster
+ * nodes, so sibling subgraphs end up in reversed declaration order in the
+ * graph the layout engine actually sees — see the matching comment in
+ * `../layout-engine/to-elk.ts`'s `mermaidToElk`, and issue #444. The ASCII
+ * grid has no compound-node concept for the layout engine to order — node
+ * position here is driven entirely by BFS descent from edges (see
+ * `placeReachableChildren`) — so this comparator recovers the same visual
+ * left-right order by reordering sibling children at the point they'd
+ * otherwise be placed in raw edge-declaration order.
+ */
+function compareBySiblingSubgraphOrder(
+  graph: AsciiGraph,
+  a: AsciiNode,
+  b: AsciiNode,
+): number {
+  const chainA = subgraphChain(graph, a)
+  const chainB = subgraphChain(graph, b)
+  let i = 0
+  while (i < chainA.length && i < chainB.length && chainA[i] === chainB[i]) {
+    i++
+  }
+  const sgA = chainA[i]
+  const sgB = chainB[i]
+  if (!sgA || !sgB || sgA === sgB) return 0
+  // Reversed declaration order: later-declared sibling sorts first. Sibling
+  // relative declaration order is recovered from each one's position in the
+  // flat `graph.subgraphs` list, which preserves source order (see
+  // `convertSubgraph`'s pre-order-DFS push in converter.ts).
+  return graph.subgraphs.indexOf(sgB) - graph.subgraphs.indexOf(sgA)
 }
 
 /** Get all direct children of a node (targets of outgoing edges). */

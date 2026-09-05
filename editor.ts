@@ -14,13 +14,19 @@
  *   - editor/css/  — modular CSS components
  *   - editor/js/   — modular JS modules
  *   - editor/html/ — HTML partials (topbar, left-panel, right-panel)
+ *
+ * This imports src/theme.ts (and bundles src/browser.ts) by relative path
+ * rather than through the published package — a deliberate, accepted
+ * pattern here, not a gap to fix. See
+ * docs/decisions/editor-in-repo-module.md.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
-import * as esbuild from 'esbuild'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { THEMES } from './src/theme.ts'
 
 const THEME_LABELS: Record<string, string> = {
+  'zinc-light': 'Zinc Light',
   'zinc-dark': 'Zinc Dark',
   'tokyo-night': 'Tokyo Night',
   'tokyo-night-storm': 'Tokyo Storm',
@@ -35,6 +41,23 @@ const THEME_LABELS: Record<string, string> = {
   'solarized-light': 'Solarized',
   'solarized-dark': 'Solar Dark',
   'one-dark': 'One Dark',
+}
+
+// THEME_LABELS manually shadows THEMES' keys (src/theme.ts) so the dropdown
+// can show a human-friendly name instead of a raw slug. Adding a theme to
+// THEMES without adding a matching entry here doesn't break the build — the
+// dropdown markup below falls back to `THEME_LABELS[key] ?? key`, silently
+// rendering an unlabeled slug (e.g. "nord-light" instead of "Nord Light").
+// Fail loudly here instead, at generation time, so the gap gets noticed
+// immediately rather than discovered later in the rendered dropdown.
+const missingThemeLabels = Object.keys(THEMES).filter(
+  (key) => !(key in THEME_LABELS),
+)
+if (missingThemeLabels.length > 0) {
+  throw new Error(
+    `THEME_LABELS in editor.ts is missing label(s) for: ${missingThemeLabels.join(', ')}. ` +
+      'Add a human-friendly label for each new THEMES key.',
+  )
 }
 
 // ── File helpers ──────────────────────────────────────────────────────────────
@@ -106,18 +129,13 @@ async function readHtmlPartials(themeItems: string): Promise<{
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-/** Bundle src/browser.ts for the browser via esbuild's JS API. */
+/** Bundle src/browser.ts for the browser via Vite's build() API. */
 async function bundleBrowserScript(): Promise<string> {
   try {
-    const buildResult = await esbuild.build({
-      entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
-      bundle: true,
-      platform: 'browser',
-      format: 'esm',
-      minify: true,
-      write: false,
-    })
-    return buildResult.outputFiles[0]!.text
+    return await bundleForBrowser(
+      new URL('./src/browser.ts', import.meta.url).pathname,
+      { minify: true },
+    )
   } catch (err) {
     console.error('Bundle failed:', err)
     process.exit(1)

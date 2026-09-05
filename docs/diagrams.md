@@ -305,6 +305,23 @@ sequenceDiagram
   Bob-->>Alice: Great, thanks!
 ```
 
+### Known limitations
+
+Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
+
+- **`box ... end` participant grouping.** Mermaid's colored/transparent
+  background grouping of participants is not recognized.
+- **`create`/`destroy` participant lifecycle.** These keywords, which mark a
+  participant as starting or ending its lifeline at a specific point in the
+  diagram, are not recognized. This is not a requirement to declare
+  participants up front, though: an undeclared name used in a message is
+  auto-created on first use (`pushMessage` → `ensureActor`), matching real
+  Mermaid's own behavior — the gap is specifically the explicit
+  lifecycle-boundary syntax, not participant declaration order.
+- **Standalone `activate`/`deactivate` commands.** Only the inline `+`/`-`
+  shorthand on an arrow (`A->>+B`, `A-->>-B`) toggles activation — the
+  separate `activate A` / `deactivate A` statement form is not recognized.
+
 ## Class Diagrams
 
 ```
@@ -319,6 +336,44 @@ classDiagram
   Duck: +quack()
 ```
 
+### Interactions
+
+```
+classDiagram
+  class Animal
+  click Animal "https://example.com" "Tooltip" _blank
+  click Duck call myHandler()
+```
+
+Same grammar, same href-safety rules, and same `interactivity` gating as the
+flowchart/state [Interactions](#interactions) above — a `click` on a class
+wraps its box in a real `<a>` link, a tooltip becomes a `<title>`, and a
+`call`/`callback` binding is recorded as `data-click-callback` but never
+invoked. Both parsers share the implementation (`src/click-directive.ts`), so
+see that section for the full details.
+
+### Known limitations
+
+Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
+
+- **`note for X "text"` / standalone notes.** Class-diagram notes are not
+  recognized.
+- **`classDef`/`cssClass`, and the `:::` shorthand.** None of Mermaid's
+  class-diagram styling syntax is recognized: `classDef className props`
+  (defining a style) and `cssClass "nodeId1,nodeId2" className` (attaching
+  one) are both silently ignored. This is separate from the plain
+  `class ClassName` **declaration** form shown above, which is fully
+  supported and parses correctly. The `:::` shorthand (`class
+Animal:::someclass`) isn't cleanly ignored, though: the class-declaration
+  regex captures the colons as part of the identifier, so this produces a
+  class whose id and label are the literal string `Animal:::someclass`
+  rather than a class named `Animal` with a style tag. If the declaration
+  opens a multiline body (`class Animal:::someclass {`), the members on
+  later lines still parse correctly — only the class's own id/label is
+  wrong. A same-line body (`class Animal:::someclass { -int sizeInFeet }`)
+  isn't recognized at all: the class-body regex requires the line to end
+  with a bare `{`, so the whole line is dropped, not just misparsed.
+
 ## ER Diagrams
 
 ```
@@ -327,6 +382,16 @@ erDiagram
   ORDER ||--|{ LINE_ITEM : contains
   PRODUCT ||--o{ LINE_ITEM : "is in"
 ```
+
+**No `click` interaction support.** Unlike flowcharts and class diagrams,
+Mermaid's own erDiagram grammar has no `click` directive to parse — as of
+this writing it's an open, unmerged upstream feature request
+([mermaid-js/mermaid#2880](https://github.com/mermaid-js/mermaid/issues/2880),
+[PR #6985](https://github.com/mermaid-js/mermaid/pull/6985)), not a shipped
+part of the language. A `click ENTITY ...` line inside an `erDiagram` is
+silently ignored — not recognized as an entity, attribute, or relationship —
+rather than guessed at ahead of whatever syntax upstream eventually settles
+on. See [#292](https://github.com/dfadler/zombie-mermaid/issues/292).
 
 ## Inline Edge Styling
 

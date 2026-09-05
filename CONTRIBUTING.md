@@ -37,12 +37,20 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run test:visual` — visual regression suite (real-browser screenshots of every sample; see "Visual regression tests" below)
 - `pnpm run test:visual:update` — regenerate visual baselines after an intentional rendering change
 - `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
+- `pnpm run fork-fixes` — build `fork-fixes.html`; if you add or change a `render: 'ascii'` entry in `demo/fork-fixes-data.ts`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/` — those real-terminal screenshots are the before/after shown on that page, not a live render
 - `pnpm run lint` — ESLint
-- `pnpm run build` — build the publishable package with tsup
+- `pnpm run build` — build the publishable package with Vite (`scripts/build-lib.ts`)
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
+- `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot
+- `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
+- `pnpm run fork-fixes` — render the fork-fixes showcase (`fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
+- `pnpm run blog` — render the blog (`blog.ts`) from `blog-posts/*.md` to `blog/`; must run after `pnpm run pages` in `build:site` since it appends to the `sitemap.xml` that `pages.ts` generates. See `blog-posts/README.md` for the post frontmatter format.
 - `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
+- `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
 - `pnpm run bench` — render benchmarks
+- `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
+- `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
 - `pnpm run format` — format the codebase with Prettier
 - `pnpm run format:check` — check formatting without writing changes
 
@@ -61,9 +69,9 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 1. `pnpm install --frozen-lockfile`
 2. `pnpm run test:coverage`
 3. `pnpm exec tsc --noEmit`
-4. `pnpm run test:visual` (a separate CI job; needs `pnpm exec playwright install --with-deps chromium` first — see "Visual regression tests" below)
+4. `pnpm run test:visual` (a separate CI job, sharded 4-way for wall-clock speed; needs `pnpm exec playwright install --with-deps chromium` first — see "Visual regression tests" below)
 
-Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs.
+Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs — but for ASCII output specifically, a passing visual-regression check is not the same as a real-terminal check; see the caveat in "Visual regression tests" below before treating it as final proof.
 
 CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account/token involved) that fails the build on findings. If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why — don't disable the rule repo-wide.
 
@@ -74,6 +82,8 @@ CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the 
 ### Visual regression tests
 
 `__tests__/visual/*.visual.test.ts` render every sample in `samples-data.ts` and `xychart-samples-data.ts` in a real headless Chromium page — SVG output directly, ASCII output inside the same terminal-window chrome the live demo uses — and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. This catches regressions a string/snapshot comparison can't: a clipped label, a broken viewBox, a color resolving to the wrong palette entry, box-drawing glyphs misaligning at a given font.
+
+**For ASCII samples, a green run here is not proof a real terminal renders the change correctly.** The `.terminal-window` chrome is `ascii-html.ts`'s HTML/CSS _approximation_ of a terminal, rendered inside a browser — it reimplements column-width math (`applyWideCharWidths`) rather than using an actual PTY, so it can drift from what `renderMermaidASCII` produces in a real shell. `ascii-terminal-overflow-scroll` shipped exactly that kind of bug: a regression in the HTML mockup's CSS that this suite didn't catch, while the underlying renderer was fine the whole time — and the reverse (a real-terminal-only regression this mockup can't see) is just as possible. If your change touches anything ASCII-related, verify it in an actual terminal before trusting this suite's screenshots as final proof — a Claude Code session in this repo should invoke the `verify-ascii-terminal` skill (`.claude/skills/verify-ascii-terminal/`) first; without that tooling, run `zombie-mermaid render --ascii` (or call `renderMermaidASCII` directly) in a real shell on both sides of the change and compare by eye.
 
 They run under [Playwright Test](https://playwright.dev/docs/test-intro) (`playwright.config.ts`), not Vitest — deliberately: an earlier Vitest-browser-mode implementation hit an unfixed, still-open upstream bug (Node↔browser tester sessions could go silently unresponsive with no run-level timeout, hanging CI forever) that reproduced even on Vitest's pre-release fix line. Playwright Test drives the browser entirely from Node (rendering itself already happens in Node — `renderMermaidSVG`/`renderMermaidASCII` are plain string functions — and only DOM mounting runs in the browser, via the bundled harness in `__tests__/visual/helpers/`), so there's no such bridge to hang on. See [#299](https://github.com/dfadler/zombie-mermaid/issues/299) for the full investigation.
 
@@ -92,11 +102,21 @@ pnpm run test:visual:update
 
 Baseline filenames are suffixed with browser + platform (e.g. `-chromium-darwin.png` / `-chromium-linux.png`), so a macOS dev machine and the Linux CI runner keep separate baselines rather than fighting over one — CI generates and commits its own the same way a local run does, there's no cross-platform bootstrapping needed.
 
-Don't trust a `mcr.microsoft.com/playwright:*` Docker container as a stand-in for the real `ubuntu-latest` CI runner when checking whether a `-chromium-linux.png` baseline is stale — confirmed in [#326](https://github.com/dfadler/zombie-mermaid/issues/326) to render the ASCII/terminal-panel samples ~100px wider than CI actually does (almost certainly a font-substitution difference between the image's own bundled fonts and what `playwright install --with-deps chromium` installs on bare `ubuntu-latest`), producing baseline "staleness" that doesn't reproduce in CI at all. If a linux baseline is suspected stale, verify against an actual CI run (or its `visual-regression-failures` artifact) rather than a local Docker approximation.
+Don't trust a `mcr.microsoft.com/playwright:*` Docker container as a stand-in for the real `ubuntu-latest` CI runner when checking whether a `-chromium-linux.png` baseline is stale — confirmed in [#326](https://github.com/dfadler/zombie-mermaid/issues/326) to render the ASCII/terminal-panel samples ~100px wider than CI actually does (almost certainly a font-substitution difference between the image's own bundled fonts and what `playwright install --with-deps chromium` installs on bare `ubuntu-latest`), producing baseline "staleness" that doesn't reproduce in CI at all. If a linux baseline is suspected stale, verify against an actual CI run (or its `visual-regression-failures-<shard>` artifacts — the job is sharded 4-way, so a failure can land in any one of them) rather than a local Docker approximation.
 
 Font rasterization has genuine run-to-run jitter (see the comments in `playwright.config.ts` next to `expect.toHaveScreenshot`), so the comparison tolerance is deliberately looser than a byte-for-byte diff and CI retries a failing test twice before calling it a real failure. If you're touching rendering code, verify a real regression still fails clearly rather than just tightening tolerances until things pass.
 
 For a broader, human-reviewable sweep — not a pass/fail gate, just "what does my in-progress change actually alter" — run `pnpm run visual-diff`. It renders the full catalog with the working tree's renderer against a base ref (`--base=<ref>`, default `main`) into `visual-diff.html`, showing only samples whose output actually differs.
+
+**`visual-diff.html` and the Playwright baselines above are for iterating locally — never for the before/after screenshot in a PR/issue body when the change touches ASCII output.** Both render ASCII through `ascii-html.ts`'s HTML/CSS approximation of a terminal, not a real one, and this repo has already shipped a bug in that approximation's chrome while the underlying renderer was fine. For an ASCII-affecting change, capture the actual PR screenshot with `scripts/ascii-terminal-capture.sh` instead, which renders through a real PTY headlessly (via `asciinema` + `agg` — `brew install asciinema agg && pip3 install pillow` once) and produces a `.png` straight from that real-terminal recording. Also install the rasterizer's preferred font once (`brew install --cask font-jetbrains-mono`): `agg` silently falls back to the next font in its list when one is missing, and on a machine without JetBrains Mono that fallback (Menlo) renders box-drawing junction glyphs like `┬` with a visible notch artifact — no error, just a subtly wrong screenshot. See `scripts/ascii-terminal-capture.sh --help` for usage, or the `verify-ascii-terminal` skill for the full procedure.
+
+Whatever kind of change produced them, a PR/issue's "Visual verification" (or
+equivalent before/after) section must include the exact Mermaid source used
+to produce both renders, inline in a fenced ` ```mermaid ` code block
+directly after that heading and before the before/after image table — not
+just a link to a sample index or a separate issue's reproduction. Without the
+inline source, the screenshots aren't verifiable from the PR/issue body
+alone; see [#402](https://github.com/dfadler/zombie-mermaid/issues/402).
 
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
 
@@ -113,6 +133,15 @@ This is the part that makes this fork different from a typical project. Two situ
 - If the upstream PR was abandoned or blocked upstream, say so briefly — it helps reviewers understand why the fix is landing here instead of there.
 
 Either way, add a changeset (see below) describing what changed and, where relevant, that it originated upstream.
+
+### Adding a fork-fixes entry
+
+`demo/fork-fixes-data.ts` backs `fork-fixes.ts`, a before/after showcase of bugs this fork has fixed vs. upstream. It's a credible differentiator specifically because every pair is a _real_ render from an actual pre-fix/post-fix commit, not a hand-drawn illustration — the generator fails the build if a pair renders identically (see `fork-fixes.ts`'s own header comment and [#189](https://github.com/dfadler/zombie-mermaid/issues/189)). That evidentiary value only holds up if the page keeps growing with the fork, so treat adding an entry as a standing step for bug-fix PRs, not a one-time backfill (see [#295](https://github.com/dfadler/zombie-mermaid/issues/295)):
+
+- If your PR fixes a bug that changes _rendered_ output (SVG or ASCII — a wrong shape, a dropped edge, a corrupted label, a layout glitch, a crash on previously-malformed input), add an entry to the `forkFixes` array in `demo/fork-fixes-data.ts`: a minimal Mermaid `source` that reproduces the bug, the `fixCommit`, the PR number, and a short `lookFor` describing what changed. Run `pnpm run fork-fixes` locally to confirm your pair actually renders two different things before committing it — see the interface doc comments in `demo/fork-fixes-data.ts` for the full field list (including the optional `excerpt` and `upstreamIssues` fields).
+- If the fix is _not_ visible in rendered output (an internal refactor, a type-only fix, a performance fix, a fix to something other than the renderer itself), skip the entry — there's nothing for the showcase to demonstrate.
+- The PR template's checklist has a line for this; check it or explain why it doesn't apply.
+- A PR labeled `bug` that doesn't touch `demo/fork-fixes-data.ts` gets an automated, non-blocking reminder comment (`.github/workflows/fork-fixes-nudge.yml`) — a nudge to consider adding an entry, not a merge gate. It's fine to ignore when the fix genuinely has no visible rendering change.
 
 ### Staying aware of upstream changes
 

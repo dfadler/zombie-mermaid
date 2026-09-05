@@ -154,10 +154,15 @@ function renderVertical(
   // Canvas dimensions
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
+  const hasYTitle = !!chart.yAxis.title
   const hasLegend = chart.series.length > 1
   const titleRow = hasTitle ? 0 : -1
   const plotTop = (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0)
-  const plotLeft = yGutter + 1 // +1 for axis character
+  // Reserve a column for the rotated y-axis title (rendered top-to-bottom,
+  // one character per row, mirroring how mermaid.js rotates it 90deg along
+  // the left edge) plus a 1-column gap before the tick-value gutter.
+  const yTitleWidth = hasYTitle ? 2 : 0
+  const plotLeft = yTitleWidth + yGutter + 1 // +1 for axis character
   const totalW = plotLeft + bandW * dataCount + 2
   const xAxisRow = plotTop + plotH
   const xLabelRow = xAxisRow + 1
@@ -231,7 +236,7 @@ function renderVertical(
       'border',
     )
     // Label
-    const labelStart = yGutter - label.length
+    const labelStart = yTitleWidth + yGutter - label.length
     writeText(canvas, roles, displayRow, Math.max(0, labelStart), label, 'text')
   }
 
@@ -261,6 +266,21 @@ function renderVertical(
     )
   }
 
+  // 5b. Y-axis title — rendered rotated: one character per row, top-to-
+  // bottom, in the leftmost column, mirroring how mermaid.js's SVG rotates
+  // this label 90deg along the left edge of the chart. Vertically centered
+  // within the plot's row range.
+  if (chart.yAxis.title) {
+    const title = chart.yAxis.title
+    const startRow =
+      plotTop + Math.max(0, Math.floor((plotH - title.length) / 2))
+    for (let i = 0; i < title.length; i++) {
+      const row = startRow + i
+      if (row >= plotTop + plotH) break
+      set(canvas, roles, row, 0, title[i]!, 'text')
+    }
+  }
+
   // 6. Grid lines (subtle horizontal dots at y-tick positions)
   for (const tick of yTicks) {
     const row = valueToRow(tick)
@@ -281,10 +301,15 @@ function renderVertical(
   }
 
   if (barEntries.length > 0) {
-    const barCount = barEntries.length
+    // Multiple bar series in the same xychart-beta share one x-position and
+    // width per category — mermaid.js overlays/occludes them rather than
+    // laying them out as side-by-side grouped bars (confirmed against real
+    // mermaid.js SVG output: bar-plot-N rects for every series in a category
+    // carry identical x/width, differing only in y/height — see issue #452).
+    // Draw order (series declaration order) is what produces the occlusion:
+    // a later series drawn on top of an earlier, taller-or-shorter one.
     const usable = Math.max(1, bandW - 2)
-    const singleBarW = Math.max(1, Math.min(Math.floor(usable / barCount), 8))
-    const groupW = singleBarW * barCount + (barCount - 1)
+    const singleBarW = Math.max(1, Math.min(usable, 8))
     const baseRow = valueToRow(Math.max(0, yRange.min))
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
@@ -292,8 +317,7 @@ function renderVertical(
       const hexColor = seriesColors[entry.globalIdx]!
       for (let i = 0; i < entry.data.length; i++) {
         const cx = bandCenter(i)
-        const groupLeft = cx - Math.floor(groupW / 2)
-        const bx = groupLeft + bIdx * (singleBarW + 1)
+        const bx = cx - Math.floor(singleBarW / 2)
         const valRow = valueToRow(entry.data[i]!)
         const fromRow = Math.min(baseRow, valRow)
         const toRow = Math.max(baseRow, valRow)
@@ -489,18 +513,18 @@ function renderHorizontal(
   }
 
   if (barEntries.length > 0) {
-    const barCount = barEntries.length
+    // Same overlay/occlusion behavior as the vertical layout above (issue
+    // #452): every bar series in a category shares one row rather than
+    // being split into grouped sub-rows, so a later series' bar paints over
+    // an earlier one.
     const singleBarH = 1
-    const groupH = singleBarH * barCount + (barCount - 1)
     const baseCol = valueToCol(Math.max(0, yRange.min))
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!
       const hexColor = seriesColors[entry.globalIdx]!
       for (let i = 0; i < entry.data.length; i++) {
-        const my = bandMid(i)
-        const groupTop = my - Math.floor(groupH / 2)
-        const by = groupTop + bIdx * (singleBarH + 1)
+        const by = bandMid(i)
         const valCol = valueToCol(entry.data[i]!)
         const fromCol = Math.min(baseCol, valCol)
         const toCol = Math.max(baseCol, valCol)

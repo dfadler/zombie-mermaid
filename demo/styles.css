@@ -126,6 +126,21 @@ body::after {
   background: linear-gradient(to top, var(--theme-bar-bg) 0%, transparent 100%);
 }
 
+/* -- Visually hidden but still exposed to assistive tech — used for the
+ * sample search field's real `<label>`, which sighted visitors read via
+ * the input's visible placeholder instead. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* -- Skip-to-content link --
  * The very first focusable element in the document (see index.ts), so a
  * keyboard-only visitor can jump straight past the theme bar and sidebar
@@ -211,13 +226,18 @@ body::after {
   color: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
   white-space: nowrap;
 }
+.theme-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
 .theme-pills {
   display: flex;
   gap: 0.3rem;
   overflow: visible;
   padding: 4px;
   margin: -4px;
-  margin-left: auto;
   position: relative;
   z-index: 2;
 }
@@ -468,6 +488,95 @@ body::after {
     display: block;
   }
 }
+/* -- Sidebar search — filters samples by title, category, and description
+ * client-side (see demo/client.ts's "Sample search / filter" section).
+ * Nothing here re-renders; the sidebar list and sample cards just toggle
+ * their `hidden` attribute in response to the query. */
+.sidebar-search {
+  margin-bottom: 1rem;
+}
+.sidebar-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.sidebar-search-icon {
+  position: absolute;
+  left: 0.6rem;
+  width: 14px;
+  height: 14px;
+  color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
+  pointer-events: none;
+}
+.sidebar-search-input {
+  width: 100%;
+  padding: 0.45rem 1.9rem;
+  border: 1px solid color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--t-fg) 3%, var(--t-bg));
+  color: var(--t-fg);
+  font: inherit;
+  font-size: 0.8rem;
+}
+.sidebar-search-input::placeholder {
+  color: color-mix(in srgb, var(--t-fg) 45%, var(--t-bg));
+}
+/* WebKit's own cancel-button affordance is redundant with — and styled
+ * inconsistently from — the cross-browser .sidebar-search-clear button
+ * below, so hide it and keep one clear control everywhere. */
+.sidebar-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+.sidebar-search-clear {
+  position: absolute;
+  right: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.sidebar-search-clear:hover {
+  background: color-mix(in srgb, var(--t-fg) 10%, var(--t-bg));
+  color: var(--t-fg);
+}
+.sidebar-search-clear[hidden] {
+  display: none;
+}
+/* Both a visible status line and an aria-live region — sighted visitors
+ * see the result count under the field, screen readers hear it announced
+ * as it changes (see aria-live on the element in index.ts). */
+.sidebar-search-status {
+  margin-top: 0.35rem;
+  min-height: 1em;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
+}
+/* -- "No results" empty state, shown in place of the (all-hidden) category
+ * views while a search matches nothing. -- */
+.search-empty {
+  padding: 2rem 0;
+  color: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
+  font-size: 0.9rem;
+}
+/* The category banner and mobile tabbar both name a single active
+ * category, which doesn't apply while search results span categories —
+ * hide both for the duration. */
+body.search-active .category-banner {
+  display: none;
+}
+body.search-active .category-tabbar {
+  display: none;
+}
+
 .sidebar-group {
   border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 8%, var(--t-bg));
   padding: 0.6rem 0;
@@ -512,10 +621,15 @@ body::after {
   list-style: none;
   font-size: 0.8rem;
 }
+/* No white-space: nowrap is set on this list, so titles wrap onto
+ * multiple lines rather than truncating to one — text-overflow: ellipsis
+ * needs nowrap to do anything, so it was never actually active here.
+ * overflow: hidden was therefore dead weight for truncation, but it did
+ * clip the shared :focus-visible ring (see a:focus-visible above) on
+ * these links down to a ~2px sliver. Dropped both properties rather than
+ * kept for a "just in case" truncation that isn't wired up (zombie-mermaid#325). */
 .sidebar-list li {
   margin-bottom: 0.3rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .sidebar-list a {
   color: color-mix(in srgb, var(--t-fg) 85%, var(--t-bg));
@@ -792,7 +906,12 @@ body::after {
 /* -- Source panel -- */
 .source-panel {
   position: relative;
-  padding: 0.75rem 1.5rem;
+  /* Bottom padding reserves room for the absolutely-positioned .edit-btn
+   * below, so wrapped source text that fills the scrollable area doesn't
+   * render underneath it (see issue #403). max() with the button's fixed
+   * 44px + 0.75rem footprint keeps that true even at a smaller root font
+   * size, where a plain rem value would shrink below the button's height. */
+  padding: 0.75rem 1.5rem max(3.75rem, calc(44px + 0.75rem));
   border-right: 1px solid color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
   min-width: 0; /* grid child: allow shrinking below content width */
   overflow-y: auto;
@@ -881,15 +1000,25 @@ body::after {
  * Was styled as faint tertiary text (color-mix 35%), which measured well
  * under the 4.5:1 AA minimum on every bundled theme (see issue #279).
  * Promoted to a bordered button so it reads as interactive without relying
- * on text color alone; text color-mix bumped to 80%, matching .theme-pill. */
+ * on text color alone; text color-mix bumped to 80%, matching .theme-pill.
+ * min-height/min-width plus flex centering (rather than sizing to the
+ * "Edit" text content alone) bring the tap target up to the 44px
+ * comfortable minimum from WCAG 2.5.5/2.5.8 — it measured 29x16px before
+ * (see issue #285). */
 .edit-btn {
   position: absolute;
   bottom: 0.75rem;
   left: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
   background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
   border: 1px solid color-mix(in srgb, var(--t-fg) 20%, var(--t-bg));
   border-radius: 6px;
-  padding: 0.3rem 0.65rem;
+  padding: 0.3rem 1rem;
   font-size: 0.75rem;
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
@@ -1050,6 +1179,18 @@ body::after {
   background: var(--t-bg);
   color: var(--t-fg);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+/* Narrow viewports: raise the tap target to the 44px comfortable minimum
+ * (measured 49x31px on a 375px viewport — see issue #285). Same breakpoint
+ * the orientation-swap feature already uses, so the segmented toggle only
+ * grows where the desktop layout has no room pressure to justify it. */
+@media (max-width: 640px) {
+  .seg-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
 }
 .output-stage {
   flex: 1;
@@ -1386,6 +1527,13 @@ body::after {
   font-size: 0.85rem;
   color: color-mix(in srgb, var(--t-fg) 40%, var(--t-bg));
   margin: 0.15rem 0;
+  /* Matches `.sample`'s scroll-margin-top so a line like #total-timing
+   * clears the sticky theme bar (and, once stuck, the samples-heading
+   * bar) instead of rendering underneath them if it's ever scrolled or
+   * focused to directly, rather than only as part of a page-top load. */
+  scroll-margin-top: calc(
+    var(--nav-height) + var(--samples-heading-height) + 1rem
+  );
 }
 
 .hero-meta .meta a {

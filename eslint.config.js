@@ -12,6 +12,13 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
+      // Other worktrees' full checkouts (source *and* their own separate
+      // node_modules — this repo has no worktree.symlinkDirectories, so
+      // each worktree installs its own). Without this, ESLint's glob walks
+      // every worktree present under .claude/worktrees/ on every run —
+      // slow, and prone to ENOENT if a concurrent session removes a
+      // worktree mid-scan.
+      '.claude/worktrees/**',
       'site/**',
       'coverage/**',
       '**/*.html',
@@ -21,6 +28,11 @@ export default tseslint.config(
       'samples-data.ts',
       'xychart-samples-data.ts',
       'tsup.config.ts',
+      // Workflow-tool scripts (Claude Code's Workflow orchestration DSL, not
+      // a plain ES module): the harness wraps the script body in an async
+      // function, so top-level `await`/`return` is valid there but not under
+      // standard module parsing — ESLint has no way to know that context.
+      'scripts/*.workflow.mjs',
     ],
   },
   {

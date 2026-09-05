@@ -1,0 +1,10 @@
+{
+  "unit": "gzip-bytes",
+  "budgets": {
+    "dist/index.js": 112640,
+    "dist/index.cjs": 112640,
+    "dist/ascii.js": 66560,
+    "dist/ascii.cjs": 66560,
+    "dist/cli.js": 118784
+  }
+}

@@ -16,10 +16,16 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
-import { escapeHtml, formatDescription } from './demo/format.ts'
-import * as esbuild from 'esbuild'
+import {
+  escapeHtml,
+  formatDescription,
+  escapeJsonForScriptTag,
+  buildSoftwareApplicationJsonLd,
+  type SoftwareApplicationPackageInfo,
+} from './demo/format.ts'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { samples } from './samples-data.ts'
-import { THEMES } from './src/theme.ts'
+import { renderThemePicker } from './theme-picker.ts'
 import { createHighlighter } from 'shiki'
 
 /**
@@ -49,34 +55,44 @@ async function loadStyles(): Promise<string> {
  * page should stay readable in devtools, which the hand-written version was.
  */
 async function bundleClientScript(): Promise<string> {
-  const result = await esbuild.build({
-    entryPoints: [new URL('./demo/client.ts', import.meta.url).pathname],
-    bundle: true,
-    platform: 'browser',
-    format: 'esm',
-    minify: false,
-    write: false,
-  })
-  return result.outputFiles[0]!.text
+  return bundleForBrowser(
+    new URL('./demo/client.ts', import.meta.url).pathname,
+    {
+      minify: false,
+    },
+  )
 }
 
 /**
- * Make a JSON payload safe to embed in a `<script>` element.
+ * Read package.json and build the `SoftwareApplication` JSON-LD block for
+ * the demo site's `<head>`, indented and escaped for embedding in a
+ * `<script type="application/ld+json">` tag.
  *
- * An HTML parser ends a script element at the first `</script`, wherever it
- * appears — including inside a JSON string. A sample whose Mermaid source
- * contained that sequence would truncate the page. JSON.stringify does not
- * escape `<`, so the sequence is broken up here.
+ * The I/O (reading package.json) lives here; the JSON-LD shape itself is
+ * `buildSoftwareApplicationJsonLd` in demo/format.ts, which is pure and unit
+ * tested directly — see that function's doc comment for why the block is
+ * shaped the way it is.
  */
-function escapeJsonForScriptTag(json: string): string {
-  return json.replace(/<\/(script)/gi, '<\\/$1')
+async function buildJsonLd(): Promise<string> {
+  const pkgRaw = await readFile(
+    new URL('./package.json', import.meta.url),
+    'utf8',
+  )
+  const pkg = JSON.parse(pkgRaw) as SoftwareApplicationPackageInfo
+  const jsonLd = buildSoftwareApplicationJsonLd(pkg)
+
+  const json = escapeJsonForScriptTag(JSON.stringify(jsonLd, null, 2))
+  return json
+    .split('\n')
+    .map((line) => `    ${line}`)
+    .join('\n')
 }
 
 // ============================================================================
 // HTML generation — dynamic version
 //
 // Instead of pre-rendering SVGs at build time, we:
-//   1. Bundle the mermaid renderer for the browser via esbuild's build() API
+//   1. Bundle the mermaid renderer for the browser via Vite's build() API
 //   2. Embed sample definitions as inline JSON
 //   3. Emit client-side JS that renders each diagram on page load
 // ============================================================================
@@ -87,24 +103,6 @@ function slugifyCategory(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-}
-
-/** Human-readable labels for theme keys */
-const THEME_LABELS: Record<string, string> = {
-  'zinc-dark': 'Zinc Dark',
-  'tokyo-night': 'Tokyo Night',
-  'tokyo-night-storm': 'Tokyo Storm',
-  'tokyo-night-light': 'Tokyo Light',
-  'catppuccin-mocha': 'Catppuccin',
-  'catppuccin-latte': 'Latte',
-  nord: 'Nord',
-  'nord-light': 'Nord Light',
-  dracula: 'Dracula',
-  'github-light': 'GitHub',
-  'github-dark': 'GitHub Dark',
-  'solarized-light': 'Solarized',
-  'solarized-dark': 'Solar Dark',
-  'one-dark': 'One Dark',
 }
 
 /**
@@ -161,63 +159,16 @@ function renderSidebar(
     .join('\n')
 }
 
-/** Themes shown as inline pills; the rest live in the "More" dropdown. */
-const INLINE_THEMES = new Set(['dracula', 'solarized-light'])
-
-/** The Default (no theme) pill's swatch colors. */
-const DEFAULT_SWATCH = { bg: '#FFFFFF', fg: '#27272A' }
-
-/** One theme pill, with a color swatch rendered at build time. */
-function renderThemePill(
-  key: string,
-  colors: { bg: string; fg: string },
-  active = false,
-): string {
-  const isDark = parseInt(colors.bg.replace('#', '').slice(0, 2), 16) < 0x80
-  const shadow = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
-  const label = key === '' ? 'Default' : (THEME_LABELS[key] ?? key)
-  const activeClass = active ? ' active' : ''
-  return `<button class="theme-pill shadow-minimal${activeClass}" data-theme="${key}"><span class="theme-swatch" style="background:${colors.bg};box-shadow:inset 0 0 0 1px ${shadow}"></span>${escapeHtml(label)}</button>`
-}
-
-/**
- * Build the theme picker: a few pills inline, every theme in a dropdown.
- *
- * Both lists include Default, so the dropdown is a complete picker on its own
- * and the inline pills are a shortcut rather than a separate set.
- */
-function renderThemePicker(): string {
-  const themeEntries = Object.entries(THEMES)
-
-  const visiblePills = [
-    renderThemePill('', DEFAULT_SWATCH, true),
-    ...themeEntries
-      .filter(([key]) => INLINE_THEMES.has(key))
-      .map(([key, colors]) => renderThemePill(key, colors)),
-  ]
-
-  const allDropdownPills = [
-    renderThemePill('', DEFAULT_SWATCH, true),
-    ...themeEntries.map(([key, colors]) => renderThemePill(key, colors)),
-  ]
-
-  return `
-    <div class="theme-pills-inline">
-      ${visiblePills.join('\n      ')}
-    </div>
-    <div class="theme-more-wrapper">
-      <button class="theme-pill shadow-minimal" id="theme-more-btn" aria-label="More themes" aria-haspopup="true" aria-controls="theme-more-dropdown" aria-expanded="false">${allDropdownPills.length} Themes</button>
-      <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
-        ${allDropdownPills.join('\n        ')}
-      </div>
-    </div>`
-}
+// renderThemePicker (and its supporting renderThemePill/INLINE_THEMES/
+// DEFAULT_SWATCH) now lives in demo/theme-picker.ts, shared with pages.ts —
+// see that module for the doc comment.
 
 async function generateHtml(): Promise<string> {
   // Step 0: Create Shiki highlighter for mermaid syntax highlighting in source panels.
   // We use 'github-light' as the base theme — its hex colors get overridden by CSS
   // color-mix() rules derived from --t-fg / --t-bg so tokens adapt to any theme.
   const styles = await loadStyles()
+  const jsonLd = await buildJsonLd()
 
   const highlighter = await createHighlighter({
     langs: ['mermaid'],
@@ -227,15 +178,10 @@ async function generateHtml(): Promise<string> {
   // Step 1: Bundle the mermaid renderer for the browser
   let bundleJs: string
   try {
-    const buildResult = await esbuild.build({
-      entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
-      bundle: true,
-      platform: 'browser',
-      format: 'esm',
-      minify: true,
-      write: false,
-    })
-    bundleJs = buildResult.outputFiles[0]!.text
+    bundleJs = await bundleForBrowser(
+      new URL('./src/browser.ts', import.meta.url).pathname,
+      { minify: true },
+    )
   } catch (err) {
     console.error('Bundle build failed:', err)
     process.exit(1)
@@ -282,7 +228,7 @@ async function generateHtml(): Promise<string> {
   const tocSections = renderSidebar(nonHeroCategories, displayNum)
 
   // Step 3b: Build theme selector pills (build-time so we include swatches)
-  const themePillsHtml = renderThemePicker()
+  const themePillsHtml = renderThemePicker({ includeDefault: true })
 
   // Step 4: Pre-highlight all sample sources with Shiki (build-time only, zero runtime cost).
   // The mermaid TextMate grammar requires a fenced code block prefix to tokenize properly
@@ -470,6 +416,9 @@ async function generateHtml(): Promise<string> {
   <meta name="twitter:title" content="Zombie Mermaid" />
   <meta name="twitter:description" content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII." />
   <meta name="twitter:image" content="https://agents.craft.do/mermaid/og-image.png" />
+  <script type="application/ld+json">
+${jsonLd}
+  </script>
   <!-- Plausible Analytics -->
   <script defer data-domain="agents.craft.do/mermaid" src="https://plausible.io/js/script.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -495,8 +444,14 @@ ${styles}
   <div class="theme-bar" id="theme-bar">
     <button class="sidebar-toggle shadow-minimal" id="sidebar-toggle" aria-label="Toggle sample navigation" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg></button>
     <a class="brand-badge shadow-minimal" href="https://github.com/dfadler/zombie-mermaid" target="_blank" rel="noopener"><span><strong>Zombie Mermaid</strong></span></a>
-    <div class="theme-pills" id="theme-pills">
-      ${themePillsHtml}
+    <div class="theme-bar-right">
+      <button type="button" class="theme-pill shadow-minimal" id="random-theme-btn" aria-label="Random theme" title="Random theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        Random
+      </button>
+      <div class="theme-pills" id="theme-pills">
+        ${themePillsHtml}
+      </div>
     </div>
   </div>
 
@@ -521,6 +476,15 @@ ${styles}
 
   <div class="page-shell">
   <nav class="sidebar" id="sidebar" aria-label="Sample navigation">
+    <div class="sidebar-search">
+      <label for="sample-search" class="visually-hidden">Search samples by title, diagram type, or description</label>
+      <div class="sidebar-search-field">
+        <svg class="sidebar-search-icon" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5"/></svg>
+        <input type="search" id="sample-search" class="sidebar-search-input" placeholder="Search samples…" autocomplete="off" spellcheck="false" />
+        <button type="button" class="sidebar-search-clear" id="sidebar-search-clear" aria-label="Clear search" hidden>&times;</button>
+      </div>
+      <div class="sidebar-search-status" id="sidebar-search-status" role="status" aria-live="polite" aria-atomic="true"></div>
+    </div>
     ${tocSections}
   </nav>
   <div class="page-main">
@@ -546,13 +510,21 @@ ${styles}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         What this fork fixes
       </a>
-      <button type="button" class="hero-btn hero-btn-secondary" id="random-theme-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-        Random Theme
-      </button>
+      <a href="diagrams/" class="hero-btn hero-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Browse every diagram type
+      </a>
+      <a href="blog/" class="hero-btn hero-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        Blog
+      </a>
+      <a href="dashboard.html" class="hero-btn hero-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Maintenance dashboard
+      </a>
     </div>
     <div class="hero-meta">
-      <p class="meta" id="total-timing">Rendering ${samples.length * 2} samples\u2026</p>
+      <p class="meta" id="total-timing">Rendering samples\u2026</p>
       <div class="meta">ASCII rendering based on <a href="https://github.com/AlexanderGrooff/mermaid-ascii" target="_blank" rel="noopener">Mermaid-ASCII</a></div>
       <div class="meta">Early preview — actively evolving</div>
     </div>
@@ -571,6 +543,11 @@ ${heroCardsHtml}
   </div>
 
 ${categoryViewsHtml}
+
+  <!-- Shown in place of the (all-hidden) category views when a search
+       matches no samples — see the "Sample search / filter" section of
+       demo/client.ts. -->
+  <p class="search-empty" id="search-empty" hidden>No samples match your search.</p>
 
   <!-- Sample definitions, read by the client script. Passed through the DOM
        rather than interpolated into demo/client.ts so that file stays plain,

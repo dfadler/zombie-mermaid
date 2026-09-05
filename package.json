@@ -1,6 +1,6 @@
 {
   "name": "zombie-mermaid",
-  "version": "1.5.0",
+  "version": "1.8.0",
   "license": "MIT",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies. Maintained fork of beautiful-mermaid.",
   "type": "module",
@@ -26,6 +26,16 @@
       "require": {
         "types": "./dist/ascii.d.cts",
         "default": "./dist/ascii.cjs"
+      }
+    },
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp.d.ts",
+        "default": "./dist/mcp.js"
+      },
+      "require": {
+        "types": "./dist/mcp.d.cts",
+        "default": "./dist/mcp.cjs"
       }
     }
   },
@@ -53,7 +63,12 @@
     "xychart",
     "state-diagram",
     "visualization",
-    "theming"
+    "theming",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "ai-agent",
+    "llm-tools"
   ],
   "author": "Dustin Fadler",
   "contributors": [
@@ -82,27 +97,41 @@
     "coverage:diff": "tsx check-diff-coverage.ts",
     "samples": "tsx index.ts",
     "editor": "tsx editor.ts",
+    "pages": "tsx pages.ts",
+    "blog": "tsx blog.ts",
     "dev": "vite",
     "bench": "tsx bench.ts",
+    "bench:compare": "tsx scripts/bench-compare.ts",
+    "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
+    "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
-    "build": "tsup",
-    "build:site": "tsx index.ts && tsx editor.ts && tsx fork-fixes.ts && mkdir -p site && mv index.html editor.html fork-fixes.html site/ && cp -r public/* site/",
+    "form-diff": "tsx scripts/form-diff.ts",
+    "form-facts": "tsx scripts/form-facts.ts",
+    "form-judge-prepare": "tsx scripts/form-judge-prepare.ts",
+    "form-judge-finalize-cache": "tsx scripts/form-judge-finalize-cache.ts",
+    "build": "tsx scripts/build-lib.ts",
+    "build:site": "rm -rf site && tsx index.ts && tsx editor.ts && tsx fork-fixes.ts && tsx pages.ts && tsx blog.ts && tsx dashboard.ts && mkdir -p site && mv index.html editor.html fork-fixes.html sitemap.xml dashboard.html site/ && mv diagrams site/diagrams && mv blog site/blog && cp -r public/* site/",
     "xychart-test": "tsx xychart-test.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepublishOnly": "pnpm run build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p demo/tsconfig.json",
-    "fork-fixes": "tsx fork-fixes.ts"
+    "fork-fixes": "tsx fork-fixes.ts",
+    "dashboard": "tsx dashboard.ts",
+    "dashboard:data": "tsx scripts/generate-dashboard-data.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "elkjs": "^0.11.0",
-    "entities": "^7.0.1"
+    "entities": "^7.0.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.1",
+    "@microsoft/api-extractor": "^7.59.0",
     "@playwright/test": "1.62.1",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^22.0.0",
@@ -111,12 +140,14 @@
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^30.0.1",
+    "marked": "^18.0.11",
+    "mermaid": "11.17.2",
     "prettier": "^3.9.6",
     "shiki": "^3.19.0",
-    "tsup": "^8.5.1",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.68.0",
+    "unplugin-dts": "^1.0.3",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }

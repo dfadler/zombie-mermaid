@@ -9,7 +9,12 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": [],
     "noEmit": true,
-    "rootDir": ".",
+    // ".." (repo root), not "." (this directory): demo/diagram-pages-data.ts
+    // imports ../samples-data.ts (a repo-root file, reused for real Mermaid
+    // examples rather than duplicating them) — under noEmit this only
+    // affects rootDir's own consistency check, not what actually gets
+    // checked, so widening it doesn't pull in extra files.
+    "rootDir": "..",
     "declaration": false,
     "declarationMap": false
   },

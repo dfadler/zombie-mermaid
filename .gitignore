@@ -6,17 +6,49 @@ dist/
 site/
 *.tsbuildinfo
 
+# scripts/build-lib.ts's throwaway declaration-file workspace — removed at
+# the end of a normal run, but left behind if the build crashes mid-way.
+.dts-tmp/
+
 # Generated files
 index.html
 editor.html
 fork-fixes.html
+diagrams/
+sitemap.xml
+dashboard.html
 
 # Pre-fix source trees extracted by fork-fixes.ts; rebuilt on demand.
 .fork-fixes-cache/
 
+# Scratch .cast/.gif/frame files from scripts/capture-fork-fixes-terminal.ts;
+# cleaned up on a successful run, ignored in case one is interrupted.
+.fork-fixes-screenshots-scratch/
+
 # Human-reviewable before/after report from scripts/visual-diff.ts.
 visual-diff.html
 .visual-diff-cache/
+
+# Human-reviewable SVG-vs-ASCII report from scripts/form-diff.ts.
+form-diff.html
+
+# Per-sample real-mermaid/ASCII data dump from scripts/form-facts.ts, input
+# to the scripts/form-judge.workflow.mjs judge pipeline.
+.form-facts/
+form-facts-index.json
+
+# Per-category verdict cache (scripts/lib/form-judge-cache.ts) and the
+# intermediate files scripts/form-judge-prepare.ts / form-judge-finalize-
+# cache.ts produce from it — all local-runnable, none of it committed.
+.form-judge-cache/
+form-judge-data-*.json
+form-judge-hashes-*.json
+form-judge-results-*.jsonl
+form-judge-prompt-*.md
+
+# Transient bench.ts --json= output (CI's own run). bench-baseline.json is
+# the committed, intentionally-updated baseline and is NOT ignored.
+bench-current.json
 
 # Playwright Test's own report/diff output from a visual-test failure. The
 # committed baselines these compare against live in

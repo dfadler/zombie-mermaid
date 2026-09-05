@@ -89,6 +89,7 @@ export function drawArrow(
       graph,
       linesDrawn[linesDrawn.length - 1]!,
       lineDirs[lineDirs.length - 1]!,
+      edge.endMarker,
     )
   } else {
     arrowHeadEndCanvas = copyCanvas(graph.canvas)
@@ -112,7 +113,12 @@ export function drawArrow(
 
     // Create a synthetic line ending at the arrow position for drawArrowHead
     const syntheticLine: DrawingCoord[] = [firstPoint, arrowPos]
-    arrowHeadStartCanvas = drawArrowHead(graph, syntheticLine, startDir)
+    arrowHeadStartCanvas = drawArrowHead(
+      graph,
+      syntheticLine,
+      startDir,
+      edge.startMarker,
+    )
   } else {
     arrowHeadStartCanvas = copyCanvas(graph.canvas)
   }
@@ -300,13 +306,37 @@ function drawBoxStart(
 }
 
 /**
+ * Fixed glyph for a `--o`/`--x` circle/cross terminator — direction-
+ * independent, unlike the triangular arrowheads below, so callers don't
+ * need to know which way the edge points to pick it. Returns undefined for
+ * a plain arrowhead (no marker), so a caller can fall back to its own
+ * directional glyph selection. Shared by drawArrowHead below (single-edge
+ * arrowheads) and draw-bundles.ts (fan-in/fan-out bundled arrowheads) so
+ * the glyph choice can't drift between the two. See issue #330.
+ */
+export function markerArrowChar(
+  useAscii: boolean,
+  marker: 'circle' | 'cross' | undefined,
+): string | undefined {
+  if (marker === 'circle') return useAscii ? 'o' : '○'
+  if (marker === 'cross') return useAscii ? 'x' : '✕'
+  return undefined
+}
+
+/**
  * Draw the arrowhead at the end of an edge path.
  * Uses triangular Unicode symbols (▲▼◄►) or ASCII symbols (^v<>).
+ *
+ * `marker` overrides the directional triangle with a fixed circle/cross
+ * glyph for `--o`/`--x` (flowchart) terminators — those are direction-
+ * independent, so the direction computed below is only used to place it,
+ * never to pick which glyph to draw. See issue #330.
  */
 function drawArrowHead(
   graph: AsciiGraph,
   lastLine: DrawingCoord[],
   fallbackDir: Direction,
+  marker?: 'circle' | 'cross',
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   if (lastLine.length === 0) return canvas
@@ -318,7 +348,10 @@ function drawArrowHead(
 
   let char: string
 
-  if (!graph.config.useAscii) {
+  const markerChar = markerArrowChar(graph.config.useAscii, marker)
+  if (markerChar !== undefined) {
+    char = markerChar
+  } else if (!graph.config.useAscii) {
     if (dirEquals(dir, Up)) char = '▲'
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'

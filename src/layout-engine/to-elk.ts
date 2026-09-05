@@ -35,7 +35,7 @@ function directionToElk(dir: MermaidGraph['direction']): string {
 }
 
 // ============================================================================
-// Node sizing (same logic as Dagre adapter)
+// Node sizing
 // ============================================================================
 
 function estimateNodeSize(
@@ -124,6 +124,41 @@ function hasAnyDirectionOverride(subgraphs: MermaidSubgraph[]): boolean {
     if (hasAnyDirectionOverride(sg.children)) return true
   }
   return false
+}
+
+/** Recursively collect every node ID that is a member of `sg`, including nested descendants. */
+function collectAllMemberNodeIds(sg: MermaidSubgraph, out: Set<string>): void {
+  for (const id of sg.nodeIds) out.add(id)
+  for (const child of sg.children) collectAllMemberNodeIds(child, out)
+}
+
+/**
+ * Real mermaid.js ignores a subgraph's own `direction` override once any of
+ * its member nodes (including nested descendants) has an edge to something
+ * outside the subgraph — the subgraph then inherits its parent's direction
+ * instead. Per the docs: "If any of a subgraph's nodes are linked to the
+ * outside, subgraph direction will be ignored. Instead the subgraph will
+ * inherit the direction of the parent graph."
+ * https://mermaid.js.org/syntax/flowchart.html
+ *
+ * Verified against real mermaid.js output for nested subgraphs with
+ * `direction LR` and an edge crossing the boundary (e.g. `B --> X` where X
+ * is inside the subgraph): the crossing-linked nodes render at the same
+ * x-coordinate with increasing y — stacked per the parent's direction,
+ * despite the subgraph's own `direction LR`. Mirrors the equivalent ASCII
+ * fix in src/ascii/converter.ts (subgraphDirectionIsHonored, issue #445).
+ */
+function subgraphDirectionIsHonored(
+  sg: MermaidSubgraph,
+  graph: MermaidGraph,
+): boolean {
+  const memberIds = new Set<string>()
+  collectAllMemberNodeIds(sg, memberIds)
+  if (memberIds.size === 0) return true
+
+  const isInside = (id: string): boolean => memberIds.has(id) || id === sg.id
+
+  return !graph.edges.some((e) => isInside(e.source) !== isInside(e.target))
 }
 
 /**
@@ -369,7 +404,7 @@ export function mermaidToElk(
     }
   }
 
-  // Add top-level nodes (those not in any subgraph)
+  // Add top-level nodes (those not in any subgraph).
   for (const [id, node] of graph.nodes) {
     if (!subgraphNodeIds.has(id) && !subgraphIds.has(id)) {
       const size = estimateNodeSize(
@@ -387,8 +422,31 @@ export function mermaidToElk(
     }
   }
 
-  // Add subgraphs as compound nodes with children and their internal edges
-  for (const sg of graph.subgraphs) {
+  // Add subgraphs as compound nodes with children and their internal
+  // edges. Sibling subgraphs are appended in *reverse* declaration order
+  // (only relative to each other — their position as a group, before or
+  // after the top-level leaf nodes above, is left as-is) to match real
+  // mermaid.js's own sibling-subgraph order, which is what ELK's
+  // `considerModelOrder` uses as a tie-break during crossing minimization
+  // and thus what ultimately decides left-right sibling order.
+  //
+  // Verified against mermaid@11.17.2's bundled flowDb.getData()
+  // (node_modules/mermaid/dist/mermaid.min.js): it builds the node list fed
+  // to the layout engine by iterating the parsed `subGraphs` array
+  // *backwards* to emit cluster/subgraph nodes. Since a compound node's
+  // `children()` order in the resulting graph is exactly the order its
+  // child nodes were inserted, sibling subgraphs under the same parent end
+  // up in reversed declaration order — see issue #444.
+  //
+  // Deliberately scoped to *only* the sibling-subgraph reversal, not a
+  // wholesale "all clusters before all leaves" reordering (which mermaid's
+  // own mechanism also does, globally): moving the whole subgraphs group
+  // ahead of top-level leaf nodes changed which edge in a cycle ELK treats
+  // as a feedback edge for a sample mixing top-level leaves and a
+  // subgraph in a cyclic flow (e.g. "CI/CD Pipeline"), reordering the
+  // entire rank structure rather than just left-right sibling position —
+  // a much bigger, unreviewed blast radius than the reported bug needs.
+  for (const sg of [...graph.subgraphs].reverse()) {
     rootChildren.push(
       subgraphToElk(
         sg,
@@ -397,6 +455,7 @@ export function mermaidToElk(
         edgesBySubgraph,
         portsBySubgraph,
         hopEdgesByContainer,
+        graph.direction,
       ),
     )
   }
@@ -483,6 +542,15 @@ export function mermaidToElk(
  *
  * When using SEPARATE hierarchy handling (for direction override support),
  * also adds hierarchical ports for cross-hierarchy edges.
+ *
+ * `inheritedDirection` is the effective direction of the nearest ancestor
+ * (a subgraph's own honored override, or ultimately the root graph's
+ * direction) — used when this subgraph's own override is dropped per
+ * `subgraphDirectionIsHonored`. Explicitly propagating it, rather than
+ * leaving `elk.direction` unset and relying on ELK's own property
+ * inheritance under `hierarchyHandling: SEPARATE`, keeps the "inherit the
+ * parent's direction" behavior correct and independent of ELK's inheritance
+ * semantics for that property.
  */
 function subgraphToElk(
   sg: MermaidSubgraph,
@@ -496,6 +564,7 @@ function subgraphToElk(
   >,
   portsBySubgraph: Map<string, Set<string>>,
   hopEdgesByContainer: Map<string, ElkExtendedEdge[]>,
+  inheritedDirection: MermaidGraph['direction'],
 ): ElkGraphNode {
   const layoutOptions: LayoutOptions = {
     'elk.algorithm': 'layered',
@@ -510,10 +579,15 @@ function subgraphToElk(
     'elk.spacing.nodeNode': String(opts.nodeSpacing),
   }
 
-  // Apply direction override if specified
-  if (sg.direction) {
-    layoutOptions['elk.direction'] = directionToElk(sg.direction)
-  }
+  // Apply this subgraph's own direction override only if it's actually
+  // honored (no member node has an edge crossing the boundary); otherwise
+  // fall back to the inherited (parent) direction, per mermaid.js's
+  // documented precedence rule.
+  const effectiveDirection =
+    sg.direction !== undefined && subgraphDirectionIsHonored(sg, graph)
+      ? sg.direction
+      : inheritedDirection
+  layoutOptions['elk.direction'] = directionToElk(effectiveDirection)
 
   // Ports, built before children/edges since they don't depend on them.
   let elkPorts: ElkNode['ports']
@@ -525,7 +599,7 @@ function subgraphToElk(
     }))
   }
 
-  // Add direct child nodes
+  // Add direct child (leaf) nodes, in forward declaration order.
   const children: ElkGraphNode[] = []
   for (const nodeId of sg.nodeIds) {
     const node = graph.nodes.get(nodeId)
@@ -545,8 +619,12 @@ function subgraphToElk(
     }
   }
 
-  // Add nested subgraphs recursively
-  for (const child of sg.children) {
+  // Add nested subgraphs recursively, in reverse declaration order relative
+  // to *each other* only (their position as a group, before or after the
+  // leaf nodes above, is left as-is — see the matching comment and
+  // rationale in `mermaidToElk`) — matching real mermaid.js's own sibling-
+  // subgraph order (issue #444).
+  for (const child of [...sg.children].reverse()) {
     children.push(
       subgraphToElk(
         child,
@@ -555,6 +633,7 @@ function subgraphToElk(
         edgesBySubgraph,
         portsBySubgraph,
         hopEdgesByContainer,
+        effectiveDirection,
       ),
     )
   }

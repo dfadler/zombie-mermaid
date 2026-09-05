@@ -28,6 +28,8 @@ export interface Sample {
     padding?: number
     transparent?: boolean
     interactive?: boolean
+    /** Passed straight through to the renderer's own option of the same name (see src/types.ts's RenderOptions). */
+    interactivity?: 'none' | 'static' | 'full'
   }
 }
 
@@ -1403,5 +1405,30 @@ flowchart LR
     line [72, 65, 58, 50, 45, 38, 30, 22, 12, 0]
     line [72, 65, 58, 50, 43, 36, 29, 22, 14, 0]`,
     options: { interactive: true },
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Appended, not grouped with its category (see comment on the entry
+  //  below) — the ASCII/SVG visual regression suites key baseline
+  //  filenames off each sample's flat array index, so inserting anywhere
+  //  but the very end renumbers every following baseline and forces a
+  //  wall-of-unrelated-PNGs diff. Category display in the live demo groups
+  //  by the `category` field, not array position, so this still shows up
+  //  under "Sequence" there.
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    title: 'Sequence: Alt/Else Long Label With Uninvolved Participant',
+    category: 'Sequence',
+    description:
+      "Regression coverage for #352/#387: a long alt/else condition label sits next to a participant (C) that has no messages inside the block. Widening the block wall to fit the label must not swallow C's lifeline.",
+    source: `sequenceDiagram
+  participant A
+  participant B
+  participant C
+  alt credentials valid
+    A->>B: x
+  else credentials rejected
+    A->>B: y
+  end`,
   },
 ]

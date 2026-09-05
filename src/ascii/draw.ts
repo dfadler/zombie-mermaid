@@ -24,7 +24,7 @@ import type {
   AsciiSubgraph,
   EdgeBundle,
 } from './types.ts'
-import { mergeCanvases } from './canvas.ts'
+import { mergeCanvases, write } from './canvas.ts'
 import type { RoleCanvas, CharRole } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow } from './draw-arrows.ts'
@@ -32,7 +32,9 @@ import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
   drawBundleArrowhead,
+  drawBundleArrowheadStart,
   drawBundledEdgeArrowhead,
+  drawBundledEdgeArrowheadStart,
   drawJunctionCharacter,
 } from './draw-bundles.ts'
 import { drawSubgraphBox, drawSubgraphLabel } from './draw-subgraphs.ts'
@@ -201,6 +203,12 @@ export function drawGraph(graph: AsciiGraph): Canvas {
       boxStartCanvases.push(boxStartC)
       labelCanvases.push(labelC)
 
+      // For fan-in bundles, draw a start arrowhead at each individual source
+      if (bundle.type === 'fan-in' && edge.hasArrowStart) {
+        const arrowHeadStartC = drawBundledEdgeArrowheadStart(graph, edge)
+        arrowHeadStartCanvases.push(arrowHeadStartC)
+      }
+
       // Draw the bundle's shared path and arrowhead only once
       if (!processedBundles.has(bundle)) {
         processedBundles.add(bundle)
@@ -217,6 +225,17 @@ export function drawGraph(graph: AsciiGraph): Canvas {
         if (bundle.type === 'fan-in') {
           const arrowHeadC = drawBundleArrowhead(graph, bundle)
           arrowHeadEndCanvases.push(arrowHeadC)
+        }
+
+        // Draw start arrowhead at the shared source for fan-out (once for all
+        // edges in the bundle — the trunk leaving the source is drawn once,
+        // so it only gets a start arrowhead when every edge agrees on one).
+        if (
+          bundle.type === 'fan-out' &&
+          bundle.edges.every((e) => e.hasArrowStart)
+        ) {
+          const arrowHeadStartC = drawBundleArrowheadStart(graph, bundle)
+          arrowHeadStartCanvases.push(arrowHeadStartC)
         }
 
         // Draw junction character
@@ -295,9 +314,23 @@ export function drawGraph(graph: AsciiGraph): Canvas {
   // Draw subgraph labels last (on top)
   for (const sg of graph.subgraphs) {
     if (sg.nodes.length === 0) continue
-    const [labelCanvas, offset] = drawSubgraphLabel(sg, graph)
+    const [labelCanvas, offset, footprint] = drawSubgraphLabel(sg, graph)
     graph.canvas = mergeCanvases(graph.canvas, offset, useAscii, labelCanvas)
     fillRolesFromCanvas(graph.roleCanvas, labelCanvas, offset, 'text')
+    // mergeCanvases treats an overlay's space characters as transparent (so
+    // sparse edge/arrow layers don't blank each other out) — but the title's
+    // own footprint should win outright, including cells whose character is
+    // a literal space (e.g. "US West Region"). Otherwise a connector line
+    // already drawn at that cell shows through the label's internal space
+    // (issue #447: rendered as "US West│Region"). Force those specific
+    // cells, bypassing mergeCanvases's space-skip.
+    for (const { x, y } of footprint) {
+      const ch = labelCanvas[x]?.[y]
+      if (ch === ' ') {
+        write(graph.canvas, x + offset.x, y + offset.y, ch)
+        setRole(graph.roleCanvas, x + offset.x, y + offset.y, 'text')
+      }
+    }
   }
 
   return graph.canvas
