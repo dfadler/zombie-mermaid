@@ -14,6 +14,11 @@ diagrams/
 sitemap.xml
 dashboard.html
 
+# blog.ts output (blog/<slug>.html, blog/index.html, blog/feed.xml,
+# blog/assets/); mv'd into site/blog by build:site. blog-posts/ (the
+# Markdown sources) is a separate, non-ignored sibling directory.
+blog/
+
 # Pre-fix source trees extracted by fork-fixes.ts; rebuilt on demand.
 .fork-fixes-cache/
 
