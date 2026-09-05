@@ -26,6 +26,7 @@ import {
 } from '../styles.ts'
 import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
+import { resolveNodeStyle } from '../style-directives.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -189,6 +190,12 @@ function extractClassLayout(
         attrHeight: size.attrHeight,
         methodHeight: size.methodHeight,
         interaction: diagram.interactions.get(cls.id),
+        // Same cascade the flowchart layout applies (src/layout-engine/
+        // from-elk.ts): classDef default → assigned class → `style`.
+        inlineStyle: resolveNodeStyle(cls.id, diagram),
+        // Kept separately from inlineStyle so the class name still reaches
+        // the SVG `class` attribute when it has no matching classDef.
+        className: diagram.classAssignments.get(cls.id),
       })
     }
   }

@@ -6,9 +6,16 @@
 // ============================================================================
 
 import type { NodeInteraction } from '../types.ts'
+import type { StyleDirectives } from '../style-directives.ts'
 
-/** Parsed class diagram — logical structure from mermaid text */
-export interface ClassDiagram {
+/**
+ * Parsed class diagram — logical structure from mermaid text.
+ *
+ * Extends {@link StyleDirectives} so `classDef` / `cssClass` / `style` /
+ * `:::` resolve through the same cascade flowcharts use (see
+ * src/style-directives.ts).
+ */
+export interface ClassDiagram extends StyleDirectives {
   /** All class definitions */
   classes: ClassNode[]
   /** Relationships between classes */
@@ -109,6 +116,10 @@ export interface PositionedClassNode {
   methodHeight: number
   /** Interaction from a `click` statement — an href wraps the class box in an <a> */
   interaction?: NodeInteraction
+  /** Inline styles resolved from classDef + `style` statements — override theme defaults */
+  inlineStyle?: Record<string, string>
+  /** Style class assigned via `cssClass`, `class A name`, or `:::name` — emitted onto the group's `class` attribute so external CSS can target it */
+  className?: string
 }
 
 export interface PositionedClassRelationship {

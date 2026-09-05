@@ -352,27 +352,51 @@ wraps its box in a real `<a>` link, a tooltip becomes a `<title>`, and a
 invoked. Both parsers share the implementation (`src/click-directive.ts`), so
 see that section for the full details.
 
+### Styling
+
+```
+classDiagram
+  class Animal:::highlight {
+    +int age
+  }
+  class Mineral
+  Animal <|-- Dog:::highlight
+  classDef default fill:#eef,stroke:#669
+  classDef highlight fill:#f96,stroke:#333,stroke-width:2px
+  style Mineral fill:#bbf,stroke:#f66,color:#fff
+  cssClass "Mineral" highlight
+```
+
+The same grammar as flowchart [Styling](#styling) above, sharing one
+implementation (`src/style-directives.ts`) and one cascade: `classDef
+default` is the base for every class, a class's own style class (attached
+with `cssClass "A,B" name`, `class A,B name`, or the `:::name` shorthand on a
+declaration or either end of a relationship) overrides it property by
+property, and an explicit `style ClassName ...` overrides both. `classDef
+a,b props` defines several classes at once. Mermaid's own class grammar only
+spells the attachment as `cssClass` or `:::`; the flowchart-style `class A,B
+name` is accepted too for parity.
+
+The SVG applies `fill`, `stroke`, and `stroke-width` to the class box (the
+header band takes the same fill — Mermaid paints the whole box one color),
+and `color` to its text. With a custom `fill` but no `color`, the text is
+set to black or white by the fill's luminance, the same rule the flowchart
+renderer uses, so a light fill stays readable in a dark theme. Any other
+property is parsed and kept on the resolved style but not drawn. The style
+class name is also emitted on the box's `<g class="class-node name">` so
+external CSS can target it.
+
+**ASCII output is unaffected by styling** — it has no fills or strokes to
+apply, matching how flowchart ASCII treats `classDef`/`style`. The
+statements are parsed (so they never leak into the output as stray boxes)
+and the `:::` shorthand is stripped from the class name.
+
 ### Known limitations
 
 Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
 
 - **`note for X "text"` / standalone notes.** Class-diagram notes are not
   recognized.
-- **`classDef`/`cssClass`, and the `:::` shorthand.** None of Mermaid's
-  class-diagram styling syntax is recognized: `classDef className props`
-  (defining a style) and `cssClass "nodeId1,nodeId2" className` (attaching
-  one) are both silently ignored. This is separate from the plain
-  `class ClassName` **declaration** form shown above, which is fully
-  supported and parses correctly. The `:::` shorthand (`class
-Animal:::someclass`) isn't cleanly ignored, though: the class-declaration
-  regex captures the colons as part of the identifier, so this produces a
-  class whose id and label are the literal string `Animal:::someclass`
-  rather than a class named `Animal` with a style tag. If the declaration
-  opens a multiline body (`class Animal:::someclass {`), the members on
-  later lines still parse correctly — only the class's own id/label is
-  wrong. A same-line body (`class Animal:::someclass { -int sizeInFeet }`)
-  isn't recognized at all: the class-body regex requires the line to end
-  with a bare `{`, so the whole line is dropped, not just misparsed.
 
 ## ER Diagrams
 

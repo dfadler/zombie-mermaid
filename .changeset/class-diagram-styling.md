@@ -1,0 +1,5 @@
+---
+'zombie-mermaid': minor
+---
+
+Class diagrams now support Mermaid's styling syntax: `classDef name props` (including a comma-separated name list), `style ClassName props`, `cssClass "A,B" name`, the flowchart-style `class A,B name`, and the `:::name` shorthand on a class declaration (with or without a body) or on either end of a relationship. The SVG applies `fill`, `stroke`, `stroke-width`, and `color` to the class box with the same `classDef default` → class → `style` cascade flowcharts use, and picks a readable text color for a custom fill; ASCII output parses and ignores styling, matching flowchart ASCII. A `:::` shorthand no longer leaks into the class id (`Animal:::someclass` used to render as a class literally named that), and a single-line class body (`class Animal { -int size }`) now parses instead of being dropped. The flowchart and class parsers share one implementation (`src/style-directives.ts`); flowchart behaviour is unchanged apart from also accepting `classDef a,b props`.

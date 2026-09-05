@@ -6,7 +6,8 @@ import type {
   RelationshipType,
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
-import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import { svgOpenTag, buildStyleBlock, getReadableTextColor } from '../theme.ts'
+import { sanitizeClassName } from '../style-directives.ts'
 import { withDataSrc } from '../renderer.ts'
 import type { FontSizes } from '../styles.ts'
 import {
@@ -179,10 +180,33 @@ function renderClassBox(
   fontSizes: FontSizes,
   linksEnabled: boolean = true,
 ): string {
-  const { x, y, width, height, headerHeight, attrHeight } = cls
+  const { x, y, width, height, headerHeight, attrHeight, inlineStyle } = cls
   const parts: string[] = []
 
   const interaction = cls.interaction
+
+  // Resolve box colors — inline styles (from `classDef`/`cssClass`/`style`)
+  // override the CSS-variable defaults the same way renderNodeShape() in
+  // src/renderer.ts does for flowchart nodes. With no inline style the
+  // variables keep deriving from the theme via color-mix(), so dark mode is
+  // untouched; a concrete `fill` is used verbatim, exactly as Mermaid does.
+  const fill = escapeAttr(inlineStyle?.fill ?? 'var(--_node-fill)')
+  const stroke = escapeAttr(inlineStyle?.stroke ?? 'var(--_node-stroke)')
+  const strokeWidth = escapeAttr(
+    inlineStyle?.['stroke-width'] ?? String(STROKE_WIDTHS.outerBox),
+  )
+  // Mermaid paints the whole class box one color, so a custom fill replaces
+  // the header band too rather than leaving the theme's band on top of it.
+  const headerFill = inlineStyle?.fill ? fill : 'var(--_group-hdr)'
+  // An explicit `color:` wins; otherwise a concrete custom fill gets a
+  // black/white text color chosen for contrast (see getReadableTextColor,
+  // issue #55). Left undefined when neither applies so the syntax-colored
+  // member tspans keep their theme defaults.
+  const textColor = inlineStyle?.color
+    ? escapeAttr(inlineStyle.color)
+    : inlineStyle?.fill
+      ? escapeAttr(getReadableTextColor(inlineStyle.fill, 'var(--_text)'))
+      : undefined
 
   // Semantic wrapper with class metadata
   // data-id: class identifier
@@ -191,8 +215,12 @@ function renderClassBox(
   const annotationAttr = cls.annotation
     ? ` data-annotation="${escapeAttr(cls.annotation)}"`
     : ''
+  // A style class from `cssClass`/`class A name`/`:::name` is emitted onto
+  // the group so external CSS can target it, after the same allowlist the
+  // flowchart renderer applies.
+  const safeClassName = sanitizeClassName(cls.className)
   const groupAttrs = [
-    `class="class-node"`,
+    `class="${safeClassName ? `class-node ${safeClassName}` : 'class-node'}"`,
     `data-id="${escapeAttr(cls.id)}"`,
     `data-label="${escapeAttr(cls.label)}"`,
   ]
@@ -224,13 +252,13 @@ function renderClassBox(
   // Outer rectangle (full box)
   parts.push(
     `  <rect x="${x}" y="${y}" width="${width}" height="${height}" ` +
-      `rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      `rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
   )
 
   // Header background
   parts.push(
     `  <rect x="${x}" y="${y}" width="${width}" height="${headerHeight}" ` +
-      `rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      `rx="0" ry="0" fill="${headerFill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
   )
 
   // Annotation (<<interface>>, <<abstract>>, etc.)
@@ -240,7 +268,7 @@ function renderClassBox(
     parts.push(
       `  <text x="${x + width / 2}" y="${annotY}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
         `font-size="${CLS_FONT.annotationSize}" font-weight="${CLS_FONT.annotationWeight}" ` +
-        `font-style="italic" fill="var(--_text-muted)">&lt;&lt;${escapeXml(cls.annotation)}&gt;&gt;</text>`,
+        `font-style="italic" fill="${textColor ?? 'var(--_text-muted)'}">&lt;&lt;${escapeXml(cls.annotation)}&gt;&gt;</text>`,
     )
     nameY = y + headerHeight / 2 + 6
   }
@@ -253,7 +281,7 @@ function renderClassBox(
         x + width / 2,
         nameY,
         fontSizes.nodeLabel,
-        `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="var(--_text)"`,
+        `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="${textColor ?? 'var(--_text)'}"`,
       ),
   )
 
@@ -261,7 +289,7 @@ function renderClassBox(
   const attrTop = y + headerHeight
   parts.push(
     `  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-      `stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+      `stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
   )
 
   // Attributes
@@ -269,21 +297,21 @@ function renderClassBox(
   for (let i = 0; i < cls.attributes.length; i++) {
     const member = cls.attributes[i]!
     const memberY = attrTop + 4 + i * memberRowH + memberRowH / 2
-    parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY))
+    parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY, textColor))
   }
 
   // Divider line between attributes and methods
   const methodTop = attrTop + attrHeight
   parts.push(
     `  <line x1="${x}" y1="${methodTop}" x2="${x + width}" y2="${methodTop}" ` +
-      `stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+      `stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
   )
 
   // Methods
   for (let i = 0; i < cls.methods.length; i++) {
     const member = cls.methods[i]!
     const memberY = methodTop + 4 + i * memberRowH + memberRowH / 2
-    parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY))
+    parts.push('  ' + renderMember(member, x + CLS.boxPadX, memberY, textColor))
   }
 
   if (href) parts.push('  </a>')
@@ -299,17 +327,32 @@ function renderClassBox(
  *   - member name (incl. parens for methods) → textSecondary
  *   - colon separator → textFaint
  *   - type annotation → textMuted
+ *
+ * @param textColor - A resolved custom text color (from `style ... color:` or
+ *                    derived from a custom `fill`). When given, every tspan
+ *                    uses it: the per-part theme tints are tuned against the
+ *                    theme's own node fill and can't be assumed readable on
+ *                    an arbitrary user-chosen background.
  */
-function renderMember(member: ClassMember, x: number, y: number): string {
+function renderMember(
+  member: ClassMember,
+  x: number,
+  y: number,
+  textColor?: string,
+): string {
   const fontStyle = member.isAbstract ? ' font-style="italic"' : ''
   const decoration = member.isStatic ? ' text-decoration="underline"' : ''
+
+  const faint = textColor ?? 'var(--_text-faint)'
+  const secondary = textColor ?? 'var(--_text-sec)'
+  const muted = textColor ?? 'var(--_text-muted)'
 
   // Build tspan parts for syntax-highlighted member text
   const spans: string[] = []
 
   if (member.visibility) {
     spans.push(
-      `<tspan fill="var(--_text-faint)">${escapeXml(member.visibility)} </tspan>`,
+      `<tspan fill="${faint}">${escapeXml(member.visibility)} </tspan>`,
     )
   }
 
@@ -319,13 +362,11 @@ function renderMember(member: ClassMember, x: number, y: number): string {
     : member.name
   // False positive: displayName is passed through escapeXml() (see src/multiline-utils.ts),
   // which escapes &, <, >, ", ' before interpolation, so this is not raw/unescaped HTML.
-  spans.push(`<tspan fill="var(--_text-sec)">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
+  spans.push(`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 
   if (member.type) {
-    spans.push(`<tspan fill="var(--_text-faint)">: </tspan>`)
-    spans.push(
-      `<tspan fill="var(--_text-muted)">${escapeXml(member.type)}</tspan>`,
-    )
+    spans.push(`<tspan fill="${faint}">: </tspan>`)
+    spans.push(`<tspan fill="${muted}">${escapeXml(member.type)}</tspan>`)
   }
 
   return (

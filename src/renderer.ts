@@ -24,6 +24,7 @@ import {
 import { pointsToPath } from './edge-curves.ts'
 import type { CurveStyle } from './init-directive.ts'
 import { safeHref } from './click-directive.ts'
+import { sanitizeClassName } from './style-directives.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -1466,22 +1467,4 @@ export function withDataSrc(
     '<svg ',
     `<svg data-src="${escapeMultilineAttr(source)}" `,
   )
-}
-
-/**
- * Validate a user-authored class name (from `:::className` or
- * `class A className`) before it's emitted into the SVG `class` attribute.
- *
- * The parser already constrains class names to word characters and hyphens
- * (see CLASS_SHORTHAND_REGEX / the `class` statement regex in parser.ts), so
- * this is a defense-in-depth allowlist rather than an escaping step — a
- * class name can't be made "safe" by escaping since any character other than
- * a valid CSS identifier character would break the class token itself, not
- * just the surrounding attribute quotes. Anything that doesn't match a valid
- * CSS identifier (letters, digits, underscore, hyphen; not starting with a
- * digit or a hyphen+digit) is dropped rather than emitted.
- */
-function sanitizeClassName(className: string | undefined): string | undefined {
-  if (!className) return undefined
-  return /^-?[a-zA-Z_][a-zA-Z0-9_-]*$/.test(className) ? className : undefined
 }

@@ -8,6 +8,13 @@ import type {
 } from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
 import { applyClickStatement } from '../click-directive.ts'
+import {
+  splitClassShorthand,
+  tryApplyClassAssignment,
+  tryApplyClassDef,
+  tryApplyCssClass,
+  tryApplyStyleStatement,
+} from '../style-directives.ts'
 
 // ============================================================================
 // Class diagram parser
@@ -27,6 +34,8 @@ import { applyClickStatement } from '../click-directive.ts'
 //   Animal : +String name     (inline attribute)
 //   namespace MyNamespace { class A { } }
 //   click Animal "https://example.com" "Tooltip" _blank   (see docs/decisions/no-script-interactivity.md)
+//   classDef name fill:#f96   /  style Animal fill:#f96   /  cssClass "A,B" name
+//   class Animal:::name       (style-class shorthand, also on relationship ends)
 // ============================================================================
 
 /**
@@ -51,6 +60,9 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
     relationships: [],
     namespaces: [],
     interactions: new Map(),
+    classDefs: new Map(),
+    classAssignments: new Map(),
+    nodeStyles: new Map(),
   }
 
   // Track classes by ID for deduplication
@@ -82,14 +94,7 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
       }
 
       // Parse member: visibility, name, type, optional parens for method
-      const member = parseMember(line)
-      if (member) {
-        if (member.isMethod) {
-          currentClass.methods.push(member.member)
-        } else {
-          currentClass.attributes.push(member.member)
-        }
-      }
+      addMember(currentClass, line)
       continue
     }
 
@@ -98,6 +103,19 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
       applyClickStatement(line, diagram.interactions)
       continue
     }
+
+    // --- Styling: `classDef`, `style`, `cssClass "A,B" name`, `class A,B name` ---
+    // Shared with the flowchart parser (src/style-directives.ts). The
+    // `class A,B name` assignment form is checked before the declaration
+    // regexes below: a declaration never has a second bare-word token after
+    // the class id (`class Animal`, `class Animal~T~`, `class Animal {`), so
+    // the two can't collide. Mermaid's own class grammar only spells the
+    // attachment as `cssClass "A,B" name` / `A:::name`; the flowchart-style
+    // `class A,B name` is accepted here for parity with flowcharts.
+    if (tryApplyClassDef(line, diagram)) continue
+    if (tryApplyStyleStatement(line, diagram)) continue
+    if (tryApplyCssClass(line, diagram)) continue
+    if (tryApplyClassAssignment(line, diagram)) continue
 
     // --- Namespace block start ---
     const nsMatch = line.match(/^namespace\s+(\S+)\s*\{$/)
@@ -113,45 +131,37 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
       continue
     }
 
-    // --- Class block start: `class ClassName {` or `class ClassName` ---
+    // --- Class block start: `class ClassName {` or `class ClassName:::style {` ---
     const classBlockMatch = line.match(/^class\s+(\S+?)(?:\s*~(\w+)~)?\s*\{$/)
     if (classBlockMatch) {
-      const id = classBlockMatch[1]!
-      const generic = classBlockMatch[2]
-      const cls = ensureClass(classMap, id)
-      if (generic) {
-        cls.label = `${id}<${generic}>`
-      }
-      currentClass = cls
+      const id = declareClass(classBlockMatch[1]!, classBlockMatch[2])
+      currentClass = classMap.get(id) ?? null
       braceDepth = 1
-      if (currentNamespace) {
-        currentNamespace.classIds.push(id)
-      }
       continue
     }
 
-    // --- Standalone class declaration (no body): `class ClassName` ---
+    // --- Standalone class declaration (no body): `class ClassName` / `class ClassName:::style` ---
     const classOnlyMatch = line.match(/^class\s+(\S+?)(?:\s*~(\w+)~)?\s*$/)
     if (classOnlyMatch) {
-      const id = classOnlyMatch[1]!
-      const generic = classOnlyMatch[2]
-      const cls = ensureClass(classMap, id)
-      if (generic) {
-        cls.label = `${id}<${generic}>`
-      }
-      if (currentNamespace) {
-        currentNamespace.classIds.push(id)
-      }
+      declareClass(classOnlyMatch[1]!, classOnlyMatch[2])
       continue
     }
 
-    // --- Inline annotation: `class ClassName { <<interface>> }` (single line) ---
-    const inlineAnnotMatch = line.match(
-      /^class\s+(\S+?)\s*\{\s*<<(\w+)>>\s*\}$/,
-    )
-    if (inlineAnnotMatch) {
-      const cls = ensureClass(classMap, inlineAnnotMatch[1]!)
-      cls.annotation = inlineAnnotMatch[2]!
+    // --- Single-line body: `class ClassName { <<interface>> }` / `class ClassName:::style { -int size }` ---
+    // One annotation or one member; `;`-separated members on a single line
+    // are already split into separate statements upstream, so a multi-member
+    // body can't reach here intact.
+    const inlineBodyMatch = line.match(/^class\s+(\S+?)\s*\{\s*(.*?)\s*\}$/)
+    if (inlineBodyMatch) {
+      const id = declareClass(inlineBodyMatch[1]!, undefined)
+      const cls = classMap.get(id)
+      const body = inlineBodyMatch[2]!
+      const annotMatch = body.match(/^<<(\w+)>>$/)
+      if (cls && annotMatch) {
+        cls.annotation = annotMatch[1]!
+      } else if (cls && body) {
+        addMember(cls, body)
+      }
       continue
     }
 
@@ -161,15 +171,7 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
       // Make sure this isn't a relationship line (those have arrows)
       const rest = inlineAttrMatch[2]!
       if (!rest.match(/<\|--|--|\*--|o--|-->|\.\.>|\.\.\|>/)) {
-        const cls = ensureClass(classMap, inlineAttrMatch[1]!)
-        const member = parseMember(rest)
-        if (member) {
-          if (member.isMethod) {
-            cls.methods.push(member.member)
-          } else {
-            cls.attributes.push(member.member)
-          }
-        }
+        addMember(ensureClass(classMap, inlineAttrMatch[1]!), rest)
         continue
       }
     }
@@ -180,9 +182,12 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
     // Can also be reversed: --o, --*, --|>
     const rel = parseRelationship(line)
     if (rel) {
-      // Ensure both classes exist
-      ensureClass(classMap, rel.from)
-      ensureClass(classMap, rel.to)
+      // Ensure both classes exist. Either end may carry the `:::style`
+      // shorthand (Mermaid's docs warn against combining it with a relation
+      // statement, but it's better to strip it than to mint a class whose id
+      // is the literal `Animal:::someclass`).
+      rel.from = declareClass(rel.from, undefined, false)
+      rel.to = declareClass(rel.to, undefined, false)
       diagram.relationships.push(rel)
       continue
     }
@@ -190,6 +195,44 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
 
   diagram.classes = [...classMap.values()]
   return diagram
+
+  /**
+   * Register a class from a declaration token, splitting off any `:::style`
+   * shorthand into `diagram.classAssignments`. Returns the bare id.
+   *
+   * @param generic - `~T~` generic parameter captured by the declaration regex
+   * @param inNamespace - whether to record the class in the open namespace
+   *                      (declarations do; relationship endpoints don't)
+   */
+  function declareClass(
+    token: string,
+    generic: string | undefined,
+    inNamespace: boolean = true,
+  ): string {
+    const { id, className } = splitClassShorthand(token)
+    const cls = ensureClass(classMap, id)
+    if (generic) {
+      cls.label = `${id}<${generic}>`
+    }
+    if (className) {
+      diagram.classAssignments.set(id, className)
+    }
+    if (inNamespace && currentNamespace) {
+      currentNamespace.classIds.push(id)
+    }
+    return id
+  }
+}
+
+/** Parse one member line and file it under the class's attributes or methods. */
+function addMember(cls: ClassNode, line: string): void {
+  const member = parseMember(line)
+  if (!member) return
+  if (member.isMethod) {
+    cls.methods.push(member.member)
+  } else {
+    cls.attributes.push(member.member)
+  }
 }
 
 /** Ensure a class exists in the map, creating a default if needed */
@@ -279,9 +322,12 @@ function parseMember(
 /** Parse a relationship line into a ClassRelationship */
 function parseRelationship(line: string): ClassRelationship | null {
   // Relationship regex — handles all arrow types with optional cardinality and labels
-  // Pattern: FROM ["card"] ARROW ["card"] TO [: label]
+  // Pattern: FROM ["card"] ARROW ["card"] TO[:::style] [: label]
+  // The `:::style` shorthand on TO is matched as its own group so the `:`
+  // label separator that follows can't swallow it as a label of `::style`;
+  // it's re-joined onto the id here and split off again by the caller.
   const match = line.match(
-    /^(\S+?)\s+(?:"([^"]*?)"\s+)?(<\|--|<\|\.\.|\*--|o--|-->|--\*|--o|--\|>|\.\.>|\.\.\|>|<--|<\.\.?|--)\s+(?:"([^"]*?)"\s+)?(\S+?)(?:\s*:\s*(.+))?$/,
+    /^(\S+?)\s+(?:"([^"]*?)"\s+)?(<\|--|<\|\.\.|\*--|o--|-->|--\*|--o|--\|>|\.\.>|\.\.\|>|<--|<\.\.?|--)\s+(?:"([^"]*?)"\s+)?(\S+?)(?::::([\w][\w-]*))?(?:\s*:\s*(.+))?$/,
   )
   if (!match) return null
 
@@ -295,8 +341,8 @@ function parseRelationship(line: string): ClassRelationship | null {
   const toCardinality = rawToCardinality
     ? normalizeBrTags(rawToCardinality)
     : undefined
-  const to = match[5]!
-  const rawLabel = match[6]?.trim()
+  const to = match[6] ? `${match[5]!}:::${match[6]}` : match[5]!
+  const rawLabel = match[7]?.trim()
   const label = rawLabel ? normalizeBrTags(rawLabel) : undefined
 
   const parsed = parseArrow(arrow)
