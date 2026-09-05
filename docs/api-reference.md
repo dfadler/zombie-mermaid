@@ -73,6 +73,7 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 | `colorMode`        | `string`                               | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'`                                                                                                                                                                                            |
 | `theme`            | `Partial<AsciiTheme>`                  | —        | Override default colors for ASCII output                                                                                                                                                                                                                           |
 | `direction`        | `'TD' \| 'TB' \| 'BT' \| 'LR' \| 'RL'` | —        | Override the diagram's top-level layout direction at render time, same semantics as `RenderOptions.direction` above. Flowchart and state diagrams only in ASCII output — the ASCII ER layout has no direction concept and ignores it, as do sequence/class/xychart |
+| `hyperlinks`       | `boolean`                              | `false`  | Wrap `click` hrefs in OSC 8 terminal hyperlinks (see [ASCII terminal hyperlinks](diagrams.md#ascii-terminal-hyperlinks))                                                                                                                                           |
 
 ASCII-only consumers can import from `zombie-mermaid/ascii` instead of the
 package root to avoid bundling `elkjs` (the SVG layout engine, statically

@@ -579,8 +579,30 @@ renderMermaidASCII(diagram, {
   boxBorderPadding: 1,  // Padding inside node boxes
   colorMode: 'auto',    // 'none' | 'auto' | 'ansi16' | 'ansi256' | 'truecolor' | 'html'
   theme: { ... },       // Partial<AsciiTheme> — override default colors
+  hyperlinks: false,    // true = OSC 8 terminal hyperlinks for `click` hrefs
 })
 ```
+
+### ASCII terminal hyperlinks
+
+A `click A "https://..."` directive normally has nowhere to go in text
+output. With `hyperlinks: true`, each node whose `click` declared an
+http/https/mailto/relative href gets its label wrapped in an
+[OSC 8](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda)
+escape pair (`ESC ] 8 ; ; <url> ESC \` … `ESC ] 8 ; ; ESC \`), which
+terminals that support it — iTerm2, WezTerm, kitty, Windows Terminal,
+VTE-based terminals such as GNOME Terminal — render as a clickable link. The
+sequences are zero-width: they never change layout, box drawing, or column
+widths, and stripping them yields exactly the non-hyperlinked output.
+Flowchart nodes and class-diagram class names are linked; `click ... call
+fn()` bindings emit nothing, and unsafe schemes (`javascript:`, `data:`) are
+dropped by the same filter the SVG renderer uses.
+
+It is off by default, and the library does no terminal capability
+detection: not every terminal or pager handles OSC 8 gracefully (`less`
+needs `-R` and a recent version), so the caller decides. The option is
+ignored in `colorMode: 'html'`, which is rendered by a browser rather than a
+terminal. From the CLI, pass `--hyperlinks` alongside `--ascii`.
 
 ### ASCII XY Charts
 

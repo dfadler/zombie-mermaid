@@ -16,6 +16,17 @@
  *                             renderer — see scripts/visual-diff.ts's own
  *                             comment on why), or a path to a .mmd file for
  *                             a one-off diagram not in the catalog.
+ *
+ * Environment:
+ *   ASCII_RENDER_OPTIONS      Optional JSON object of extra renderMermaidASCII
+ *                             options merged over the default
+ *                             `{ colorMode: 'auto' }` — e.g.
+ *                             `'{"hyperlinks":true}'` to capture an opt-in
+ *                             feature on the "after" side of a comparison.
+ *                             Passed through the environment (which the PTY
+ *                             asciinema spawns inherits) rather than argv so
+ *                             scripts/ascii-terminal-capture.sh's positional
+ *                             interface stays unchanged.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -54,4 +65,27 @@ const { renderMermaidASCII } = await import(
   pathToFileURL(resolve(indexModulePath)).href
 )
 
-process.stdout.write(renderMermaidASCII(source, { colorMode: 'auto' }))
+let extraOptions = {}
+const rawOptions = process.env.ASCII_RENDER_OPTIONS
+if (rawOptions !== undefined && rawOptions !== '') {
+  let parsed
+  try {
+    parsed = JSON.parse(rawOptions)
+  } catch {
+    console.error(
+      `usage: ASCII_RENDER_OPTIONS is not valid JSON: ${rawOptions}`,
+    )
+    process.exit(2)
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(
+      `usage: ASCII_RENDER_OPTIONS must be a JSON object, got: ${rawOptions}`,
+    )
+    process.exit(2)
+  }
+  extraOptions = parsed
+}
+
+process.stdout.write(
+  renderMermaidASCII(source, { colorMode: 'auto', ...extraOptions }),
+)

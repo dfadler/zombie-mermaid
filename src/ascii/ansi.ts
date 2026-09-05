@@ -9,6 +9,7 @@
 import type { CharRole, AsciiTheme, ColorMode } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { MIX } from '../theme.ts'
+import { joinWithLinks, LinkRunTracker } from './hyperlinks.ts'
 
 declare const document: unknown
 
@@ -356,27 +357,38 @@ export function colorizeChar(
 /**
  * Colorize an entire line efficiently by grouping consecutive same-role characters.
  * This reduces the number of escape sequences (ANSI) or span tags (HTML) in the output.
+ *
+ * `links` (one href-or-null per cell, see hyperlinks.ts) wraps each run of
+ * linked cells in an OSC 8 hyperlink pair. The pair is inserted into the
+ * character stream *without* disturbing the SGR grouping — an open/close
+ * may land inside a color run rather than splitting it — so the output with
+ * every OSC 8 sequence stripped is identical to the output without links.
+ * Ignored in 'html' mode, which is rendered by a browser, not a terminal.
  */
 export function colorizeLine(
   chars: string[],
   roles: (CharRole | null)[],
   theme: AsciiTheme,
   mode: ColorMode,
+  links?: readonly (string | null)[],
 ): string {
   if (mode === 'none') {
-    return chars.join('')
+    return links ? joinWithLinks(chars, links) : chars.join('')
   }
 
   if (mode === 'html') {
     return colorizeLineHtml(chars, roles, theme)
   }
 
+  const linkRuns = new LinkRunTracker()
   let result = ''
   let currentRole: CharRole | null = null
   let buffer = ''
 
   for (const [i, char] of chars.entries()) {
     const role = roles[i] ?? null
+    // Zero-width; goes wherever this cell's character goes.
+    const linkMarker = links ? linkRuns.advance(links[i] ?? null) : ''
 
     // Whitespace doesn't need coloring
     if (char === ' ') {
@@ -390,13 +402,13 @@ export function colorizeLine(
         buffer = ''
         currentRole = null
       }
-      result += char
+      result += linkMarker + char
       continue
     }
 
     // Same role as previous — accumulate
     if (role === currentRole) {
-      buffer += char
+      buffer += linkMarker + char
       continue
     }
 
@@ -408,7 +420,7 @@ export function colorizeLine(
         result += buffer
       }
     }
-    buffer = char
+    buffer = linkMarker + char
     currentRole = role
   }
 
@@ -419,7 +431,7 @@ export function colorizeLine(
     result += buffer
   }
 
-  return result
+  return result + linkRuns.finish()
 }
 
 /**
