@@ -13,6 +13,20 @@ import { parseClassDiagram } from '../class/parser.ts'
 import { parseMermaid } from '../parser.ts'
 import { renderMermaidSVG } from '../index.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'
+
+/**
+ * Escape regex metacharacters so a value can be interpolated into a
+ * `RegExp` literally. Every call site in this file passes a class-diagram
+ * identifier from a hardcoded test string, never untrusted input. Semgrep's
+ * detect-non-literal-regexp rule flags any `new RegExp()` built from a
+ * template literal regardless of escaping (it's a syntactic check, not a
+ * taint one that would credit the escaping), so the call site below still
+ * needs a scoped `nosemgrep` — this helper is what makes that suppression
+ * actually sound rather than just quiet.
+ */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 import { splitStatements } from '../statements.ts'
 import {
   parseStyleProps,
@@ -29,9 +43,12 @@ function parse(text: string) {
 
 /** The `<g class="class-node ...">` opening tag for one class id. */
 function classGroup(svg: string, id: string): string {
-  const match = svg.match(
-    new RegExp(`<g class="class-node[^"]*" data-id="${id}"[^>]*>`),
-  )
+  // `id` is escaped below, so this can't misbehave as a regex even though
+  // Semgrep's rule flags any RegExp built from a template literal
+  // regardless of escaping. Every caller passes a hardcoded test-file
+  // identifier, never untrusted input.
+  const pattern = `<g class="class-node[^"]*" data-id="${escapeRegExp(id)}"[^>]*>`
+  const match = svg.match(new RegExp(pattern)) // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   expect(match, `no class-node group for ${id}`).not.toBeNull()
   return match![0]
 }
