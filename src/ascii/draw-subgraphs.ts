@@ -47,18 +47,32 @@ export function drawSubgraphBox(sg: AsciiSubgraph, graph: AsciiGraph): Canvas {
   return canvas
 }
 
+/**
+ * A single cell of a subgraph title's own footprint — including cells whose
+ * character is a literal space (e.g. the space inside "US West Region").
+ * Callers use this to force those cells to win over whatever was already
+ * drawn underneath (see the caller in `draw.ts` for why: `mergeCanvases`
+ * treats overlay spaces as transparent, which lets a connector line drawn
+ * earlier show through a label's internal spaces — issue #447).
+ */
+export interface SubgraphLabelCell {
+  x: number
+  y: number
+}
+
 /** Draw a subgraph label centered in its header area. Supports multi-line labels. */
 // `_graph` isn't read here but is kept to match the `(sg, graph)` signature
 // shared by the other `draw*` subgraph helpers in this file.
 export function drawSubgraphLabel(
   sg: AsciiSubgraph,
   _graph: AsciiGraph,
-): [Canvas, DrawingCoord] {
+): [Canvas, DrawingCoord, SubgraphLabelCell[]] {
   const width = sg.maxX - sg.minX
   const height = sg.maxY - sg.minY
-  if (width <= 0 || height <= 0) return [mkCanvas(0, 0), { x: 0, y: 0 }]
+  if (width <= 0 || height <= 0) return [mkCanvas(0, 0), { x: 0, y: 0 }, []]
 
   const canvas = mkCanvas(width, height)
+  const footprint: SubgraphLabelCell[] = []
 
   // Support multi-line subgraph labels
   const lines = splitLines(sg.name)
@@ -86,8 +100,9 @@ export function drawSubgraphLabel(
     for (let j = 0; j < cells.length; j++) {
       if (labelX + j >= width || labelY >= height) continue
       write(canvas, labelX + j, labelY, cells[j]!)
+      footprint.push({ x: labelX + j, y: labelY })
     }
   }
 
-  return [canvas, { x: sg.minX, y: sg.minY }]
+  return [canvas, { x: sg.minX, y: sg.minY }, footprint]
 }

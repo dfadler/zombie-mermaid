@@ -126,6 +126,77 @@ function getMarkerShape(
   }
 }
 
+/**
+ * Clip a relationship label's padded display cells to fit within
+ * [writableStart, writableEnd] — the room that's actually free on its row
+ * before it would collide with a *different* relationship's label that a
+ * previous iteration already drew there (see the call site in
+ * `renderClassAscii` for how that room is computed).
+ *
+ * Deliberately clips in place rather than re-centering into the available
+ * window: shifting a label's anchor to dodge a collision can push it
+ * further right than its natural centered position, which then collides
+ * with the *next* relationship's rightful space and cascades into
+ * dropping labels entirely — this happened while fixing issue #447 (a
+ * label pinned near the left canvas edge, itself already clamped rightward
+ * by `Math.max(0, idealLabelStart)`, swallowed its neighbor's whole ideal
+ * column). Truncated text gets an ellipsis on whichever side got clipped;
+ * the label's own padding spaces are dropped first since they're the least
+ * meaningful thing to lose.
+ */
+function fitLabelToAvailableWidth(
+  naturalStart: number,
+  naturalCells: string[],
+  text: string,
+  writableStart: number,
+  writableEnd: number,
+): { start: number; cells: string[] } {
+  const naturalEnd = naturalStart + naturalCells.length - 1
+  const clippedLeft = writableStart > naturalStart
+  const clippedRight = writableEnd < naturalEnd
+  if (!clippedLeft && !clippedRight) {
+    return { start: naturalStart, cells: naturalCells }
+  }
+
+  // Only the side(s) that actually collided move inward — an unclipped
+  // side keeps its natural bound. Using the raw `writableStart`/
+  // `writableEnd` for *both* sides here (even the uncollided one) would
+  // center the shrunk label inside the entire remaining canvas rather
+  // than snug against its own natural extent, drifting it away from its
+  // own relationship and into a completely different one's territory.
+  const effectiveStart = clippedLeft ? writableStart : naturalStart
+  const effectiveEnd = clippedRight ? writableEnd : naturalEnd
+  const availableCols = Math.max(0, effectiveEnd - effectiveStart + 1)
+  const ellipsisCount = (clippedLeft ? 1 : 0) + (clippedRight ? 1 : 0)
+
+  if (availableCols === 0) return { start: effectiveStart, cells: [] }
+  if (availableCols < ellipsisCount) {
+    // Not even room for both ellipsis markers — show a single one rather
+    // than nothing, so a squeezed-out label still leaves a visible trace.
+    return { start: effectiveStart, cells: ['…'] }
+  }
+
+  const innerWidth = Math.max(0, availableCols - ellipsisCount)
+  const textCells = toDisplayCells(text)
+  const kept =
+    textCells.length <= innerWidth
+      ? textCells
+      : clippedLeft && !clippedRight
+        ? textCells.slice(textCells.length - innerWidth) // keep the tail
+        : textCells.slice(0, innerWidth) // keep the head
+
+  const cells = [
+    ...(clippedLeft ? ['…'] : []),
+    ...kept,
+    ...(clippedRight ? ['…'] : []),
+  ]
+  // Center the shrunk label within the writable window so it still reads
+  // near the relationship it belongs to, rather than hugging one edge.
+  const start =
+    effectiveStart + Math.max(0, Math.floor((availableCols - cells.length) / 2))
+  return { start, cells }
+}
+
 // ============================================================================
 // Layout and rendering
 // ============================================================================
@@ -689,10 +760,140 @@ export function renderClassAscii(
         }
       }
     }
+  }
 
-    // Draw relationship label at midpoint if present (supports multi-line)
+  // --- Precompute each label's horizontal territory ---
+  // A label's left/right bound is derived purely from connection-point
+  // geometry — never from draw order or from what another relationship's
+  // label happened to render as. Two labels whose natural (fully centered,
+  // unclamped) spans would actually overlap split the contested space
+  // evenly at the midpoint between their connection columns; labels that
+  // don't naturally overlap are left unconstrained by each other.
+  //
+  // This matters because a *reactive* approach — only checking cells an
+  // earlier iteration already drew text into — cascades: a label pinned
+  // near the canvas's left edge (idealLabelStart < 0) used to be *shifted*
+  // fully into view via `Math.max(0, idealLabelStart)` rather than
+  // *clipped*, which silently ate into its neighbor's rightful column; that
+  // neighbor then had nothing left to reactively claim and vanished
+  // entirely, while labels further along drifted based on whatever was
+  // left over. Precomputing fixed, mutually exclusive territories up front
+  // — before any label is drawn — means every label's placement is
+  // consistent regardless of relationship order, and a genuinely
+  // insufficient column width (e.g. six same-row relationships spaced
+  // closer together than their labels are wide) truncates *all* of them
+  // consistently instead of destroying an arbitrary subset. See issue #447.
+  interface LabelGeometry {
+    rel: (typeof diagram.relationships)[number]
+    idealMidX: number
+    naturalStart: number
+    naturalEnd: number
+    rowStart: number
+    rowEnd: number
+  }
+  const labelGeometry: LabelGeometry[] = []
+  for (const rel of diagram.relationships) {
+    if (!rel.label) continue
+    const fromP = placed.get(rel.from)
+    const toP = placed.get(rel.to)
+    if (!fromP || !toP) continue
+    const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    const fromBY = fromP.y + fromP.height - 1
+    const toCX = toP.x + Math.floor(toP.width / 2)
+    const toTY = toP.y
+    const idealMidX = Math.floor((fromCX + toCX) / 2)
+
+    // Same baseMidY branch the draw pass below uses — needed so territory
+    // splitting only ever kicks in between labels that could actually land
+    // on overlapping rows. Two relationships can share a similar idealMidX
+    // while being drawn many rows apart (e.g. one class's two separate
+    // outgoing edges to two different targets at different heights) —
+    // splitting their X territory in that case truncates both for no
+    // reason, since they never actually collide.
+    const lines = splitLines(rel.label)
+    const halfHeight = Math.floor(lines.length / 2)
+    let baseMidY: number
+    if (fromBY < toTY) {
+      baseMidY = Math.floor((fromBY + 1 + toTY - 1) / 2)
+    } else if (toP.y + toP.height - 1 < fromP.y) {
+      const toBY = toP.y + toP.height - 1
+      baseMidY = Math.floor((toBY + 1 + fromP.y - 1) / 2)
+    } else {
+      baseMidY = Math.max(fromBY, toP.y + toP.height - 1) + 2
+    }
+
+    const width = Math.max(...lines.map(displayWidth)) + 2 // +2 for padding
+    // Clamped the same way the draw loop below clamps it (never negative —
+    // a label can't render left of the canvas edge) so this overlap check
+    // reflects what will actually be drawn. Using the *unclamped* value
+    // here would miss overlaps a left-edge label creates once it's shifted
+    // into view: it would compute this label's territory as if it stayed
+    // off-canvas at its raw, negative position instead of at column 0,
+    // under-detecting a real collision with its neighbor (issue #447).
+    const naturalStart = Math.max(0, idealMidX - Math.floor(width / 2))
+    labelGeometry.push({
+      rel,
+      idealMidX,
+      naturalStart,
+      naturalEnd: naturalStart + width - 1,
+      rowStart: baseMidY - halfHeight,
+      rowEnd: baseMidY + halfHeight,
+    })
+  }
+  labelGeometry.sort((a, b) => a.idealMidX - b.idealMidX)
+
+  /** Whether two labels' row spans actually intersect — see LabelGeometry's rowStart/rowEnd comment. */
+  function rowsOverlap(a: LabelGeometry, b: LabelGeometry): boolean {
+    return a.rowStart <= b.rowEnd && b.rowStart <= a.rowEnd
+  }
+
+  const territoryByRel = new Map<
+    (typeof diagram.relationships)[number],
+    { left: number; right: number }
+  >()
+  for (let i = 0; i < labelGeometry.length; i++) {
+    const g = labelGeometry[i]!
+    const prev = labelGeometry[i - 1]
+    const next = labelGeometry[i + 1]
+    const left =
+      prev && prev.naturalEnd >= g.naturalStart && rowsOverlap(prev, g)
+        ? Math.floor((prev.idealMidX + g.idealMidX) / 2) + 1
+        : -Infinity
+    const right =
+      next && g.naturalEnd >= next.naturalStart && rowsOverlap(g, next)
+        ? Math.floor((g.idealMidX + next.idealMidX) / 2)
+        : Infinity
+    territoryByRel.set(g.rel, { left, right })
+  }
+
+  // --- Draw relationship labels ---
+  // Deliberately a separate pass over *all* relationships, run only after
+  // every relationship's lines are drawn above. Labels used to be drawn
+  // inline with each relationship's own lines, which let a *later*
+  // relationship's connector line silently overwrite an *earlier*
+  // relationship's already-drawn label whenever both routes crossed the
+  // same row — e.g. two edges converging on one target box both jog through
+  // the same midpoint row (issue #447, "teaches" truncated to "tea" and
+  // merged into a box-drawing corner). Running all lines first means no
+  // line write can ever land on top of label text again.
+  for (const rel of diagram.relationships) {
+    const fromP = placed.get(rel.from)
+    const toP = placed.get(rel.to)
+    if (!fromP || !toP) continue
+    if (!rel.label) continue
+
+    // Exclude source and target boxes from collision detection
+    const excludeIds = new Set([rel.from, rel.to])
+
+    // Connection points: center-bottom of source → center-top of target
+    const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    const fromBY = fromP.y + fromP.height - 1
+    const toCX = toP.x + Math.floor(toP.width / 2)
+    const toTY = toP.y
+
+    // Draw relationship label at midpoint (supports multi-line)
     // Add padding around the label for readability
-    if (rel.label) {
+    {
       const lines = splitLines(rel.label)
       const maxLabelWidth = Math.max(...lines.map((l) => displayWidth(l))) + 2 // +2 for padding
 
@@ -762,16 +963,36 @@ export function renderClassAscii(
       // Center lines vertically around labelY
       const startY = labelY - halfHeight
 
+      const territory = territoryByRel.get(rel)!
+
       for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-        const paddedLine = ` ${lines[lineIdx]!} ` // Add space padding on both sides
+        const y = startY + lineIdx
+        const text = lines[lineIdx]!
+
         // Grid cells, not code units: a wide glyph occupies two columns, so
         // measuring/writing by code unit would centre the label wrong and
         // overrun the space cleared for it.
-        const cells = toDisplayCells(paddedLine)
-        // Calculate label start, but ensure it doesn't go negative
-        const idealLabelStart = idealMidX - Math.floor(cells.length / 2)
-        const labelStart = Math.max(0, idealLabelStart)
-        const y = startY + lineIdx
+        const naturalCells = toDisplayCells(` ${text} `) // space padding on both sides
+        // Clamped to never go negative — matches the clamp the territory
+        // precomputation above already applied when deciding whether this
+        // label and its neighbors' natural spans overlap, so the two stay
+        // consistent. `fitLabelToAvailableWidth` still clips in place
+        // rather than shifting for whatever collisions the territory
+        // bounds encode, including one this very clamp creates against a
+        // left neighbor (see the territory precomputation's comment).
+        const naturalStart = Math.max(
+          0,
+          idealMidX - Math.floor(naturalCells.length / 2),
+        )
+
+        const { start: labelStart, cells } = fitLabelToAvailableWidth(
+          naturalStart,
+          naturalCells,
+          text,
+          Math.max(0, territory.left),
+          territory.right,
+        )
+
         // Ensure canvas is wide enough for the label
         const labelEnd = labelStart + cells.length
         if (labelEnd > 0 && y >= 0) {

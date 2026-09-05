@@ -10,7 +10,7 @@ classDiagram
 | A |    | C |    | E |    | G |    | I |    | K |    
 +---+    +---+    +---+    +---+    +---+    +---+    
   ^        *        o        |        :        :      
- inherit owns      has     uses    depend implements  
+inheri…  owns      has     uses    depends …mplements 
   |        |        |        v        v        v      
 +---+    +---+    +---+    +---+    +---+    +---+    
 | B |    | D |    | F |    | H |    | J |    | L |    
