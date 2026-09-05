@@ -24,6 +24,7 @@ export type {
   MermaidGraph,
   NodeInteraction,
   PositionedGraph,
+  Direction,
 } from './types.ts'
 export type { DiagramColors, ThemeName } from './theme.ts'
 export { fromShikiTheme, THEMES, DEFAULTS } from './theme.ts'
@@ -41,9 +42,11 @@ import type { RenderOptions } from './types.ts'
 import type { DiagramColors } from './theme.ts'
 import { DEFAULTS } from './theme.ts'
 import { resolveFontSizes } from './styles.ts'
+import { isMonospaceFont, setMonospaceMetrics } from './text-metrics.ts'
 import { detectDiagramType } from './diagram-type.ts'
 import type { DiagramType } from './diagram-type.ts'
 import { applyInitConfig } from './init-directive.ts'
+import { withDirectionOverride } from './direction-override.ts'
 import { splitStatements } from './statements.ts'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
@@ -181,6 +184,8 @@ export function renderMermaidSVG(
 
   const colors = buildColors(options)
   const font = options.font ?? 'Inter'
+  // Box sizing depends on the metrics model, so pick it before any layout runs.
+  setMonospaceMetrics(isMonospaceFont(font))
   const transparent = options.transparent ?? false
   const fontSizes = resolveFontSizes(options.fontSizes)
   const diagramType: DiagramType = detectDiagramType(text)
@@ -221,7 +226,12 @@ export function renderMermaidSVG(
       )
     }
     case 'er': {
-      const diagram = parseErDiagram(lines)
+      // `options.direction` replaces the diagram's own top-level `direction`
+      // line, if any, before layout. See src/direction-override.ts.
+      const diagram = withDirectionOverride(
+        parseErDiagram(lines),
+        options.direction,
+      )
       const positioned = layoutErDiagramSync(diagram, options)
       return renderErSvg(
         positioned,
@@ -250,12 +260,17 @@ export function renderMermaidSVG(
     }
     case 'flowchart':
     default: {
-      const graph = parseMermaid(text)
+      const parsed = parseMermaid(text)
       // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
       // render option always wins. See src/init-directive.ts.
-      const effective = graph.initConfig
-        ? applyInitConfig(options, graph.initConfig)
+      const effective = parsed.initConfig
+        ? applyInitConfig(options, parsed.initConfig)
         : options
+      // `direction` replaces the header's (or a state diagram's top-level
+      // `direction` line's) direction before layout; nested subgraph /
+      // composite-state directions live on the subgraph objects and still
+      // apply on top of it. See src/direction-override.ts.
+      const graph = withDirectionOverride(parsed, effective.direction)
       const positioned = layoutGraphSync(graph, effective)
       return renderSvg(
         positioned,
