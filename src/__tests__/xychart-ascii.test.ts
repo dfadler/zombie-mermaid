@@ -70,6 +70,29 @@ describe('xychart ASCII – bar charts', () => {
     expect(result).toContain('Bar 1')
     expect(result).toContain('Bar 2')
   })
+
+  it('overlays (not groups side-by-side) multiple bar series in the same category', () => {
+    // Regression guard for issue #452: real mermaid.js draws every bar
+    // series in a category at the identical x-position/width (an
+    // overlaid/occluding layout, with a later series painted on top of an
+    // earlier one) rather than splitting them into adjacent grouped-bar
+    // columns. Each category's bar characters should therefore form a
+    // single contiguous run per row, never two runs separated by a gap.
+    const result = render(`xychart-beta
+      x-axis [A]
+      bar [10]
+      bar [20]`)
+    const lines = result
+      .split('\n')
+      // Exclude the legend row ("█ Bar 1  █ Bar 2") — its two swatches are
+      // expected to be separate runs; only plot rows matter here.
+      .filter((line) => !/[A-Za-z]/.test(line))
+    expect(lines.length).toBeGreaterThan(0)
+    for (const line of lines) {
+      const runs = line.match(/█+/g) ?? []
+      expect(runs.length).toBeLessThanOrEqual(1)
+    }
+  })
 })
 
 // ============================================================================

@@ -301,10 +301,15 @@ function renderVertical(
   }
 
   if (barEntries.length > 0) {
-    const barCount = barEntries.length
+    // Multiple bar series in the same xychart-beta share one x-position and
+    // width per category — mermaid.js overlays/occludes them rather than
+    // laying them out as side-by-side grouped bars (confirmed against real
+    // mermaid.js SVG output: bar-plot-N rects for every series in a category
+    // carry identical x/width, differing only in y/height — see issue #452).
+    // Draw order (series declaration order) is what produces the occlusion:
+    // a later series drawn on top of an earlier, taller-or-shorter one.
     const usable = Math.max(1, bandW - 2)
-    const singleBarW = Math.max(1, Math.min(Math.floor(usable / barCount), 8))
-    const groupW = singleBarW * barCount + (barCount - 1)
+    const singleBarW = Math.max(1, Math.min(usable, 8))
     const baseRow = valueToRow(Math.max(0, yRange.min))
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
@@ -312,8 +317,7 @@ function renderVertical(
       const hexColor = seriesColors[entry.globalIdx]!
       for (let i = 0; i < entry.data.length; i++) {
         const cx = bandCenter(i)
-        const groupLeft = cx - Math.floor(groupW / 2)
-        const bx = groupLeft + bIdx * (singleBarW + 1)
+        const bx = cx - Math.floor(singleBarW / 2)
         const valRow = valueToRow(entry.data[i]!)
         const fromRow = Math.min(baseRow, valRow)
         const toRow = Math.max(baseRow, valRow)
@@ -509,18 +513,18 @@ function renderHorizontal(
   }
 
   if (barEntries.length > 0) {
-    const barCount = barEntries.length
+    // Same overlay/occlusion behavior as the vertical layout above (issue
+    // #452): every bar series in a category shares one row rather than
+    // being split into grouped sub-rows, so a later series' bar paints over
+    // an earlier one.
     const singleBarH = 1
-    const groupH = singleBarH * barCount + (barCount - 1)
     const baseCol = valueToCol(Math.max(0, yRange.min))
 
     for (let bIdx = 0; bIdx < barEntries.length; bIdx++) {
       const entry = barEntries[bIdx]!
       const hexColor = seriesColors[entry.globalIdx]!
       for (let i = 0; i < entry.data.length; i++) {
-        const my = bandMid(i)
-        const groupTop = my - Math.floor(groupH / 2)
-        const by = groupTop + bIdx * (singleBarH + 1)
+        const by = bandMid(i)
         const valCol = valueToCol(entry.data[i]!)
         const fromCol = Math.min(baseCol, valCol)
         const toCol = Math.max(baseCol, valCol)
