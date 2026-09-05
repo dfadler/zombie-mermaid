@@ -194,6 +194,68 @@ describe('CLI e2e – render', () => {
 // error handling
 // ============================================================================
 
+describe('CLI e2e – output ergonomics (#456)', () => {
+  it('render <file> --svg writes <stem>.svg next to the input', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const result = await runCli(['render', inputPath, '--svg'])
+    expect(result.exitCode).toBe(0)
+    expect(await readFile(join(tmpDir, 'diagram.svg'), 'utf-8')).toContain(
+      '<svg',
+    )
+  })
+
+  it('render <file> -o out.svg infers SVG from the extension', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'inferred.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const result = await runCli(['render', inputPath, '-o', outputPath])
+    expect(result.exitCode).toBe(0)
+    expect(await readFile(outputPath, 'utf-8')).toContain('<svg')
+  })
+
+  it('render --svg -o - pipes the SVG to stdout', async () => {
+    const result = await runCli(
+      ['render', '--svg', '-o', '-'],
+      SIMPLE_FLOWCHART,
+    )
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toMatch(/^<svg[\s\S]*<\/svg>$/)
+  })
+
+  it('refuses to overwrite without --force, and overwrites with it', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'existing.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'ORIGINAL')
+
+    const refused = await runCli([
+      'render',
+      inputPath,
+      '--svg',
+      '-o',
+      outputPath,
+    ])
+    expect(refused.exitCode).toBe(1)
+    expect(refused.stderr).toContain('Refusing to overwrite existing file')
+    expect(refused.stderr).toContain('--force')
+    expect(await readFile(outputPath, 'utf-8')).toBe('ORIGINAL')
+
+    const forced = await runCli([
+      'render',
+      inputPath,
+      '--svg',
+      '-o',
+      outputPath,
+      '--force',
+    ])
+    expect(forced.exitCode).toBe(0)
+    expect(await readFile(outputPath, 'utf-8')).toContain('<svg')
+  })
+})
+
 describe('CLI e2e – error handling', () => {
   it('exits 1 and prints "Error" to stderr on unknown command', async () => {
     const { exitCode, stderr } = await runCli(['badcommand'])

@@ -8,6 +8,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock, getReadableTextColor } from '../theme.ts'
+import type { SvgEmitOptions } from '../theme.ts'
 import { sanitizeClassName } from '../style-directives.ts'
 import { withDataSrc } from '../renderer.ts'
 import type { FontSizes } from '../styles.ts'
@@ -61,6 +62,9 @@ const CLS_FONT = {
  *                       tooltips render (from `options.interactivity !==
  *                       'none'`, see `resolveLinksEnabled` in src/index.ts).
  *                       Default true — matches the flowchart/state renderer.
+ * @param emit - Strict-CSP controls (from `options.nonce` /
+ *               `options.styleAttribute`, see #216). Default: no nonce,
+ *               root `style` attribute on.
  */
 export function renderClassSvg(
   diagram: PositionedClassDiagram,
@@ -72,6 +76,7 @@ export function renderClassSvg(
   title?: string,
   decorative?: boolean,
   linksEnabled: boolean = true,
+  emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
 
@@ -95,11 +100,12 @@ export function renderClassSvg(
         title,
         decorative,
         hasInteractiveLinks,
+        emit.styleAttribute,
       ),
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, true))
+  parts.push(buildStyleBlock(font, true, emit.nonce))
   parts.push('<defs>')
   parts.push(relationshipMarkerDefs())
   parts.push('</defs>')
@@ -233,11 +239,8 @@ function renderClassBox(
     `data-id="${escapeAttr(cls.id)}"`,
     `data-label="${escapeAttr(cls.label)}"`,
   ]
-  if (interaction?.callback) {
-    // `click ClassName call fn()` is recorded, never invoked — see
-    // renderNode() in src/renderer.ts for the identical rationale.
-    groupAttrs.push(`data-click-callback="${escapeAttr(interaction.callback)}"`)
-  }
+  // `click ClassName call fn()` is parsed, never invoked, and never written
+  // into the markup — see renderNode() in src/renderer.ts for the rationale.
   parts.push(`<g ${groupAttrs.join(' ')}${annotationAttr}>`)
 
   // An href becomes a real SVG link, which needs no script to work.
