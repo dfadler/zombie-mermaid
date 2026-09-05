@@ -23,6 +23,27 @@ export interface SequenceDiagram {
    * render identically.
    */
   activations: ActivationEvent[]
+  /**
+   * `box <color?> <label?> … end` participant groups, in source order. A box
+   * with no members (nothing declared inside it) is kept here but drawn by
+   * neither renderer.
+   */
+  boxes: ParticipantBox[]
+}
+
+/** A `box … end` group of participants (Mermaid's "Grouping / Box"). */
+export interface ParticipantBox {
+  /** Descriptive label; empty when the box has none. */
+  label: string
+  /**
+   * Validated CSS colour (named, `#hex`, `rgb()`/`rgba()`, `hsl()`/`hsla()`)
+   * exactly as written. Unset for a transparent box — including an explicit
+   * `box transparent …`, and any first word that isn't a colour, which then
+   * counts as the start of the label (Mermaid's `parseBoxData` rule).
+   */
+  color?: string
+  /** Ids of the participants declared (or first used) inside the box. */
+  actorIds: string[]
 }
 
 /**
@@ -127,6 +148,19 @@ export interface PositionedSequenceDiagram {
   activations: Activation[]
   blocks: PositionedBlock[]
   notes: PositionedNote[]
+  /** `box … end` group backgrounds, drawn behind everything else. */
+  boxes: PositionedParticipantBox[]
+}
+
+/** A positioned `box … end` group: a full-height background behind its participants. */
+export interface PositionedParticipantBox {
+  label: string
+  /** See {@link ParticipantBox.color}. */
+  color?: string
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface PositionedActor {

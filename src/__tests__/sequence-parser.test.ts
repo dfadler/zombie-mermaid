@@ -676,3 +676,149 @@ describe('parseSequenceDiagram – create/destroy', () => {
     expect(d.actors[2]!.createdAt).toBeUndefined()
   })
 })
+
+// ============================================================================
+// box ... end participant grouping (#419)
+// ============================================================================
+
+describe('parseSequenceDiagram – box...end', () => {
+  it('records a labelled, coloured box and its members', () => {
+    const d = parse(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    expect(d.boxes).toEqual([
+      { label: 'Group 1', color: 'Aqua', actorIds: ['A', 'B'] },
+    ])
+  })
+
+  it('supports a box with a label but no colour', () => {
+    const d = parse(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A'] }])
+  })
+
+  it('supports a colour-only box with no label', () => {
+    const d = parse(`sequenceDiagram
+      box Aqua
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    expect(d.boxes).toEqual([
+      { label: '', color: 'Aqua', actorIds: ['A', 'B'] },
+    ])
+  })
+
+  it('supports a bare box with neither colour nor label', () => {
+    const d = parse(`sequenceDiagram
+      box
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.boxes).toEqual([{ label: '', actorIds: ['A'] }])
+  })
+
+  it('treats an explicit "transparent" as no colour', () => {
+    const d = parse(`sequenceDiagram
+      box transparent Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A'] }])
+  })
+
+  it('does not record box/end lines as messages or actors', () => {
+    const d = parse(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.actors.some((a) => a.id === 'box' || a.id === 'end')).toBe(false)
+    expect(d.messages).toHaveLength(1)
+  })
+
+  it('assigns a participant re-declared inside the box (or auto-created there via a message)', () => {
+    const d = parse(`sequenceDiagram
+      participant A
+      box Group 1
+      participant A
+      participant B
+      end
+      A->>C: hi`)
+    // C is auto-created by the message, outside the box
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A', 'B'] }])
+    expect(d.actors.map((a) => a.id)).toEqual(['A', 'B', 'C'])
+  })
+
+  it('keeps multiple boxes independent, in source order', () => {
+    const d = parse(`sequenceDiagram
+      box Aqua Group1
+      participant A
+      participant B
+      end
+      box Group2
+      participant C
+      end
+      A->>B: hi
+      B->>C: yo`)
+    expect(d.boxes).toEqual([
+      { label: 'Group1', color: 'Aqua', actorIds: ['A', 'B'] },
+      { label: 'Group2', actorIds: ['C'] },
+    ])
+  })
+
+  it('keeps an empty box (no members) but with no actors', () => {
+    const d = parse(`sequenceDiagram
+      box Empty
+      end
+      A->>B: hi`)
+    expect(d.boxes).toEqual([{ label: 'Empty', actorIds: [] }])
+  })
+
+  it('lets a loop block opened inside a box close before the box does', () => {
+    const d = parse(`sequenceDiagram
+      box Group 1
+      participant A
+      participant B
+      loop every day
+      A->>B: hi
+      end
+      end
+      A->>B: bye`)
+    expect(d.blocks).toHaveLength(1)
+    expect(d.blocks[0]!.type).toBe('loop')
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A', 'B'] }])
+    expect(d.messages).toHaveLength(2)
+  })
+
+  it('rejects a nested box', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+        box G1
+        box G2
+        participant A
+        end
+        end`),
+    ).toThrow(/cannot be nested/)
+  })
+
+  it('rejects a participant declared in two different boxes', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+        box G1
+        participant A
+        end
+        box G2
+        participant A
+        end`),
+    ).toThrow(
+      "A same participant should only be defined in one Box: A can't be in 'G1' and in 'G2' at the same time.",
+    )
+  })
+})

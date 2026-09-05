@@ -250,3 +250,63 @@ describe('renderMermaidSVG – create/destroy (#419)', () => {
     expect(svg).not.toContain('destroy B')
   })
 })
+
+describe('renderMermaidSVG – box...end (#419)', () => {
+  it('draws a labelled, coloured background behind the grouped actors', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    expect(svg).toContain(
+      '<g class="participant-box" data-label="Group 1" data-color="Aqua">',
+    )
+    expect(svg).toContain('color-mix(in srgb, Aqua 35%, var(--bg))')
+    expect(svg).toContain('>Group 1<')
+    // The box background is emitted before the actors/lifelines it groups
+    // (render order: backgrounds first, so it never paints over content)
+    const boxIdx = svg.indexOf('class="participant-box"')
+    const actorIdx = svg.indexOf('class="actor"')
+    expect(boxIdx).toBeGreaterThan(-1)
+    expect(boxIdx).toBeLessThan(actorIdx)
+  })
+
+  it('renders an unlabelled box without a data-label attribute or visible text', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Aqua
+      participant A
+      end
+      A->>A: hi`)
+    expect(svg).toContain('<g class="participant-box" data-color="Aqua">')
+  })
+
+  it('renders a colourless box with fill="none" and no data-color attribute', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(svg).toContain('<g class="participant-box" data-label="Group 1">')
+    expect(svg).not.toContain('data-color=')
+    expect(svg).toMatch(/participant-box[\s\S]*?fill="none"/)
+  })
+
+  it('does not render a background for a box with no members', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Empty
+      end
+      A->>B: hi`)
+    expect(svg).not.toContain('participant-box')
+  })
+
+  it('never leaks the box/end keywords into rendered text', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(svg).not.toContain('>box<')
+    expect(svg).not.toContain('>end<')
+  })
+})

@@ -1032,3 +1032,75 @@ describe('sequence layout – create/destroy', () => {
     expect(aLine.destroyed).toBeUndefined()
   })
 })
+
+// ============================================================================
+// box ... end participant grouping (#419)
+// ============================================================================
+
+describe('sequence layout – box...end', () => {
+  it('spans a box background from the leftmost to the rightmost member', () => {
+    const result = layout(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      participant B
+      end
+      participant C
+      A->>B: hi
+      B->>C: yo`)
+
+    expect(result.boxes).toHaveLength(1)
+    const box = result.boxes[0]!
+    expect(box.label).toBe('Group 1')
+    expect(box.color).toBe('Aqua')
+    const a = result.actors.find((x) => x.id === 'A')!
+    const b = result.actors.find((x) => x.id === 'B')!
+    const c = result.actors.find((x) => x.id === 'C')!
+    // The box covers A and B but not C
+    expect(box.x).toBeLessThan(a.x - a.width / 2)
+    expect(box.x + box.width).toBeGreaterThan(b.x + b.width / 2)
+    expect(box.x + box.width).toBeLessThan(c.x - c.width / 2)
+  })
+
+  it('reserves a label band above the actor row when any box has a label', () => {
+    const withLabel = layout(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    const withoutLabel = layout(`sequenceDiagram
+      participant A
+      A->>A: hi`)
+    const aWith = withLabel.actors.find((x) => x.id === 'A')!
+    const aWithout = withoutLabel.actors.find((x) => x.id === 'A')!
+    expect(aWith.y).toBeGreaterThan(aWithout.y)
+  })
+
+  it('does not render a box with no members', () => {
+    const result = layout(`sequenceDiagram
+      box Empty
+      end
+      A->>B: hi`)
+    expect(result.boxes).toHaveLength(0)
+  })
+
+  it('extends the box background down to the lifeline bottoms', () => {
+    const result = layout(`sequenceDiagram
+      box Group 1
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    const box = result.boxes[0]!
+    const aLine = result.lifelines.find((l) => l.actorId === 'A')!
+    expect(box.y + box.height).toBeGreaterThanOrEqual(aLine.bottomY)
+  })
+
+  it('omits color when the box has none', () => {
+    const result = layout(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(result.boxes[0]!.color).toBeUndefined()
+  })
+})

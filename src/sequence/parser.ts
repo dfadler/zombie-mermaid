@@ -1,5 +1,18 @@
 import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
+import { parseBoxHeader } from './box-color.ts'
+
+/**
+ * Which `box … end` group (index into `diagram.boxes`) is currently open,
+ * and which box each participant already belongs to. Threaded through the
+ * actor-creating helpers so a participant first mentioned inside a box —
+ * by a declaration, a `create`, or (leniently) a message — joins it, the
+ * way Mermaid's `addActor` assigns `currentBox`.
+ */
+interface BoxContext {
+  open: number | undefined
+  membership: Map<string, number>
+}
 
 /**
  * Narrow a regex-captured block keyword to `Block['type']`. The capturing
@@ -60,6 +73,7 @@ export function toBlockType(value: string): Block['type'] {
 //   create participant C [as Label] / create actor C [as Label]
 //                                 (on the line before C's first message)
 //   destroy C                     (on the line before C's last message)
+//   box <color?> <label?> ... end (participant grouping; see box-color.ts)
 //   A<<->>B: Bidirectional solid arrow
 //   A<<-->>B: Bidirectional dashed arrow
 //   autonumber / autonumber <start> <step> / autonumber off
@@ -113,7 +127,15 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     blocks: [],
     notes: [],
     activations: [],
+    boxes: [],
   }
+
+  const boxCtx: BoxContext = { open: undefined, membership: new Map() }
+  // Block-stack depth at the moment the open box began. Mermaid's grammar
+  // only allows participant declarations inside a box, so `end` there can
+  // only mean the box — but this parser is lenient about other statements,
+  // and a `loop` opened inside a box must still own the next `end`.
+  let boxOpenedAtDepth = 0
 
   // Track actor IDs to auto-create actors referenced in messages
   const actorIds = new Set<string>()
@@ -143,6 +165,29 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!
 
+    // --- box <color?> <label?> ---
+    // Opens a participant group; closed by `end`. Boxes cannot nest
+    // (Mermaid's grammar rejects it), so a second `box` while one is open
+    // is an error rather than an implicit close.
+    const boxMatch = line.match(/^box(?:\s+(.*))?$/)
+    if (boxMatch) {
+      if (boxCtx.open !== undefined) {
+        throw new Error(
+          'Sequence diagram: a box cannot be nested inside another box — close the open box with "end" first',
+        )
+      }
+      const { color, label } = parseBoxHeader(boxMatch[1] ?? '')
+      const box: SequenceDiagram['boxes'][number] = {
+        label: normalizeBrTags(label),
+        actorIds: [],
+      }
+      if (color !== undefined) box.color = color
+      diagram.boxes.push(box)
+      boxCtx.open = diagram.boxes.length - 1
+      boxOpenedAtDepth = blockStack.length
+      continue
+    }
+
     // --- create participant / create actor ---
     // "create participant C" / "create actor C as Label" — the line before
     // C's first message. Same shape as a plain declaration, so the alias and
@@ -166,6 +211,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         label: normalizeBrTags(createMatch[3]?.trim() ?? id),
         type,
       })
+      joinOpenBox(diagram, boxCtx, id)
       pendingCreate = id
       continue
     }
@@ -175,7 +221,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     const destroyMatch = line.match(/^destroy\s+(.+)$/)
     if (destroyMatch) {
       const id = destroyMatch[1]!.trim()
-      ensureActor(diagram, actorIds, id)
+      ensureActor(diagram, actorIds, boxCtx, id)
       pendingDestroy = id
       continue
     }
@@ -214,6 +260,9 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         actorIds.add(id)
         diagram.actors.push({ id, label, type })
       }
+      // A re-declaration inside a box joins it (or errors if it already
+      // belongs to a different one) — Mermaid's `addActor` rule.
+      joinOpenBox(diagram, boxCtx, id)
       continue
     }
 
@@ -230,7 +279,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
 
       // Ensure actors exist
       for (const aid of noteActorIds) {
-        ensureActor(diagram, actorIds, aid)
+        ensureActor(diagram, actorIds, boxCtx, aid)
       }
 
       let position: 'left' | 'right' | 'over' = 'over'
@@ -275,6 +324,18 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       continue
     }
 
+    // --- Box end ---
+    // `end` closes the open box unless a block was opened *inside* it,
+    // in which case the block (innermost) owns this `end`.
+    if (
+      line === 'end' &&
+      boxCtx.open !== undefined &&
+      blockStack.length === boxOpenedAtDepth
+    ) {
+      boxCtx.open = undefined
+      continue
+    }
+
     // --- Block end ---
     if (line === 'end' && blockStack.length > 0) {
       const completed = blockStack.pop()!
@@ -300,7 +361,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     const activationMatch = line.match(/^(activate|deactivate)\s+(.+)$/)
     if (activationMatch) {
       const actorId = activationMatch[2]!.trim()
-      ensureActor(diagram, actorIds, actorId)
+      ensureActor(diagram, actorIds, boxCtx, actorId)
       diagram.activations.push({
         actorId,
         kind: activationMatch[1] === 'activate' ? 'start' : 'end',
@@ -345,6 +406,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       pushMessage(
         diagram,
         actorIds,
+        boxCtx,
         autonumber,
         msgMatch[1]!,
         msgMatch[2]!,
@@ -397,12 +459,39 @@ function findActor(diagram: SequenceDiagram, id: string): Actor {
 function ensureActor(
   diagram: SequenceDiagram,
   actorIds: Set<string>,
+  boxCtx: BoxContext,
   id: string,
 ): void {
   if (!actorIds.has(id)) {
     actorIds.add(id)
     diagram.actors.push({ id, label: id, type: 'participant' })
   }
+  joinOpenBox(diagram, boxCtx, id)
+}
+
+/**
+ * Put `id` into the currently open `box`, if any. A participant already in
+ * a *different* box is an error (Mermaid's own wording); one already in
+ * this box, or no box open, is a no-op.
+ */
+function joinOpenBox(
+  diagram: SequenceDiagram,
+  boxCtx: BoxContext,
+  id: string,
+): void {
+  const open = boxCtx.open
+  if (open === undefined) return
+  const existing = boxCtx.membership.get(id)
+  if (existing === open) return
+  if (existing !== undefined) {
+    const from = diagram.boxes[existing]!.label
+    const to = diagram.boxes[open]!.label
+    throw new Error(
+      `A same participant should only be defined in one Box: ${id} can't be in '${from}' and in '${to}' at the same time.`,
+    )
+  }
+  boxCtx.membership.set(id, open)
+  diagram.boxes[open]!.actorIds.push(id)
 }
 
 /**
@@ -414,6 +503,7 @@ function ensureActor(
 function pushMessage(
   diagram: SequenceDiagram,
   actorIds: Set<string>,
+  boxCtx: BoxContext,
   autonumber: { enabled: boolean; next: number; step: number },
   from: string,
   arrow: string,
@@ -421,8 +511,8 @@ function pushMessage(
   to: string,
   rawLabel: string,
 ): void {
-  ensureActor(diagram, actorIds, from)
-  ensureActor(diagram, actorIds, to)
+  ensureActor(diagram, actorIds, boxCtx, from)
+  ensureActor(diagram, actorIds, boxCtx, to)
 
   const bidirectional = arrow === '<<->>' || arrow === '<<-->>'
   const lineStyle = bidirectional

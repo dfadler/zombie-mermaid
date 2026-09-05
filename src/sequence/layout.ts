@@ -7,6 +7,7 @@ import type {
   Activation,
   PositionedBlock,
   PositionedNote,
+  PositionedParticipantBox,
 } from './types.ts'
 import type { RenderOptions } from '../types.ts'
 import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
@@ -59,7 +60,22 @@ const SEQ = {
   noteOffsetAfterMessage: 8,
   /** Gap between consecutively stacked notes */
   noteStackGap: 4,
+  /**
+   * `box … end` group padding: horizontal clearance beyond the outermost
+   * member's box, vertical clearance above the actor boxes (under the label
+   * band) and below the lifeline bottoms.
+   */
+  boxPad: 10,
 } as const
+
+/**
+ * Height of the label band at the top of a `box … end` group, in px — the
+ * label's font size plus vertical breathing room. Shared with the renderer
+ * so the label lands centred in the band the layout reserved for it.
+ */
+export function boxLabelHeight(labelFontSize: number): number {
+  return labelFontSize + 8
+}
 
 /** Resolved sequence-layout config — same shape as {@link SEQ} but mutable numbers. */
 type SeqConfig = { [K in keyof typeof SEQ]: number }
@@ -98,6 +114,7 @@ export function layoutSequenceDiagram(
       activations: [],
       blocks: [],
       notes: [],
+      boxes: [],
     }
   }
 
@@ -134,8 +151,18 @@ export function layoutSequenceDiagram(
     actorIndex.set(diagram.actors[i]!.id, i)
   }
 
-  // 2. Position actors at the top
-  const actorY = seq.padding
+  // 2. Position actors at the top. A `box … end` group draws a full-height
+  //    background starting at the top padding, so when any (non-empty) box
+  //    exists the actor row moves down to leave room for the box's top
+  //    padding and — if any box has a label — its label band. Mermaid does
+  //    the same (`bumpVerticalPos(boxes[0].textMaxHeight)`).
+  const renderedBoxes = diagram.boxes.filter((b) => b.actorIds.length > 0)
+  const anyBoxLabel = renderedBoxes.some((b) => b.label !== '')
+  const boxTopInset =
+    renderedBoxes.length === 0
+      ? 0
+      : seq.boxPad + (anyBoxLabel ? boxLabelHeight(fontSizes.edgeLabel) : 0)
+  const actorY = seq.padding + boxTopInset
   const actors: PositionedActor[] = diagram.actors.map((a, i) => ({
     id: a.id,
     label: a.label,
@@ -145,6 +172,27 @@ export function layoutSequenceDiagram(
     width: actorWidths[i]!,
     height: seq.actorHeight,
   }))
+
+  // Box backgrounds span from the outermost member's left edge to the
+  // outermost member's right edge (plus padding) — any participant declared
+  // between two members sits visually inside, as in Mermaid. Heights are
+  // filled in once the diagram bottom is known (step 8 below).
+  const boxes: PositionedParticipantBox[] = renderedBoxes.map((box) => {
+    const idxs = box.actorIds.map((id) => actorIndex.get(id) ?? 0)
+    const lo = Math.min(...idxs)
+    const hi = Math.max(...idxs)
+    const left = actorCenterX[lo]! - actorWidths[lo]! / 2 - seq.boxPad
+    const right = actorCenterX[hi]! + actorWidths[hi]! / 2 + seq.boxPad
+    const positioned: PositionedParticipantBox = {
+      label: box.label,
+      x: left,
+      y: seq.padding,
+      width: right - left,
+      height: 0,
+    }
+    if (box.color !== undefined) positioned.color = box.color
+    return positioned
+  })
 
   // 3. Stack messages vertically
   let messageY = actorY + seq.actorHeight + seq.headerGap
@@ -558,6 +606,10 @@ export function layoutSequenceDiagram(
     globalMinX = Math.min(globalMinX, n.x)
     globalMaxX = Math.max(globalMaxX, n.x + n.width)
   }
+  for (const b of boxes) {
+    globalMinX = Math.min(globalMinX, b.x)
+    globalMaxX = Math.max(globalMaxX, b.x + b.width)
+  }
   // Include self-message labels in bounding box — they extend to the right of the actor
   // and could be clipped if not accounted for in the SVG width
   for (const m of messages) {
@@ -587,6 +639,7 @@ export function layoutSequenceDiagram(
       b.x += shiftX
     }
     for (const n of notes) n.x += shiftX
+    for (const b of boxes) b.x += shiftX
     // Also shift actor center X array (used for lifelines below)
     for (let i = 0; i < actorCenterX.length; i++) actorCenterX[i]! += shiftX
   }
@@ -621,6 +674,12 @@ export function layoutSequenceDiagram(
     return lifeline
   })
 
+  // Box backgrounds run from the top padding to just under the lifeline
+  // bottoms (boxPad < padding, so this stays inside the diagram height).
+  for (const b of boxes) {
+    b.height = diagramBottom - seq.padding + seq.boxPad - b.y
+  }
+
   // 9. Calculate diagram dimensions from the bounding box
   const diagramWidth = globalMaxX + shiftX + seq.padding
   const diagramHeight = diagramBottom
@@ -634,5 +693,6 @@ export function layoutSequenceDiagram(
     activations,
     blocks,
     notes,
+    boxes,
   }
 }

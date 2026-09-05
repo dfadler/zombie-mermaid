@@ -379,12 +379,55 @@ arrowhead and read as a lost message (`-x`). One row is reserved for it. A
 self-message cannot create its own recipient (the loop glyphs occupy the
 box's cells), so that degenerate case keeps the header box.
 
+### Participant grouping (`box ... end`)
+
+`box <color?> <label?> ... end` groups a run of participants under a shared
+background, spanning from the leftmost to the rightmost member declared
+inside it:
+
+```
+sequenceDiagram
+  box Aqua Group 1
+  participant A
+  participant B
+  end
+  participant C
+  A->>B: hello
+  B->>C: world
+```
+
+The header word (or an `rgb(...)`/`hsl(...)` call) is a colour if it matches
+a CSS named colour, hex, or `rgb()`/`hsl()` function form; otherwise the
+whole header is the label. `box transparent Group 1` is explicitly
+colourless with a label (Mermaid's own convention), and either piece can be
+omitted — `box`, `box Aqua`, and `box Group 1` are all valid. A box cannot
+nest inside another box, and a participant can only belong to one box;
+both are errors with Mermaid's own wording. A participant first declared
+(or auto-created by a message) while a box is open joins it, matching
+Mermaid's `addActor` rule; one declared after the box's `end` does not, even
+if a later message places it visually between two grouped members.
+
+In SVG, the group is a background rectangle with a themed stroke, drawn
+behind everything else, with the label centred in a band above the
+participant boxes. A colour is blended into the theme background via
+`color-mix()` at a fixed percentage rather than painted as-is, so it reads
+as an appropriate tint in both light and dark themes instead of the same
+opaque swatch in both.
+
+In ASCII output the group is a labelled bracket around the header boxes and
+an unlabelled one around the footer boxes — not a full-height background,
+which would otherwise cut through every message crossing the group's
+boundary. Colour is not representable in ASCII and is ignored; only the
+label, if any, is drawn. A participant created or destroyed inside an open
+box is included in the box's span, but its header or footer bracket segment
+reflects only the members actually present in that row (a created
+participant has no header box to bracket; a destroyed one has no footer
+box).
+
 ### Known limitations
 
-Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
-
-- **`box ... end` participant grouping.** Mermaid's colored/transparent
-  background grouping of participants is not recognized.
+None currently — `activate`/`deactivate`, `create`/`destroy`, and
+`box ... end` are all recognized (see above).
 
 ## Class Diagrams
 
