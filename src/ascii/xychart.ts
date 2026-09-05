@@ -154,10 +154,15 @@ function renderVertical(
   // Canvas dimensions
   const hasTitle = !!chart.title
   const hasXTitle = !!chart.xAxis.title
+  const hasYTitle = !!chart.yAxis.title
   const hasLegend = chart.series.length > 1
   const titleRow = hasTitle ? 0 : -1
   const plotTop = (hasTitle ? 2 : 0) + (hasLegend ? 1 : 0)
-  const plotLeft = yGutter + 1 // +1 for axis character
+  // Reserve a column for the rotated y-axis title (rendered top-to-bottom,
+  // one character per row, mirroring how mermaid.js rotates it 90deg along
+  // the left edge) plus a 1-column gap before the tick-value gutter.
+  const yTitleWidth = hasYTitle ? 2 : 0
+  const plotLeft = yTitleWidth + yGutter + 1 // +1 for axis character
   const totalW = plotLeft + bandW * dataCount + 2
   const xAxisRow = plotTop + plotH
   const xLabelRow = xAxisRow + 1
@@ -231,7 +236,7 @@ function renderVertical(
       'border',
     )
     // Label
-    const labelStart = yGutter - label.length
+    const labelStart = yTitleWidth + yGutter - label.length
     writeText(canvas, roles, displayRow, Math.max(0, labelStart), label, 'text')
   }
 
@@ -259,6 +264,21 @@ function renderVertical(
       title,
       'text',
     )
+  }
+
+  // 5b. Y-axis title — rendered rotated: one character per row, top-to-
+  // bottom, in the leftmost column, mirroring how mermaid.js's SVG rotates
+  // this label 90deg along the left edge of the chart. Vertically centered
+  // within the plot's row range.
+  if (chart.yAxis.title) {
+    const title = chart.yAxis.title
+    const startRow =
+      plotTop + Math.max(0, Math.floor((plotH - title.length) / 2))
+    for (let i = 0; i < title.length; i++) {
+      const row = startRow + i
+      if (row >= plotTop + plotH) break
+      set(canvas, roles, row, 0, title[i]!, 'text')
+    }
   }
 
   // 6. Grid lines (subtle horizontal dots at y-tick positions)
