@@ -136,6 +136,9 @@ zombie-mermaid --help                                   # Show all options
 ```
 
 `--theme <name>` applies a built-in theme (from `themes`) to either output mode.
+`--hyperlinks` (with `--ascii`) turns `click` hrefs into OSC 8 terminal
+hyperlinks — off by default, since terminal and pager support varies (see
+[ASCII terminal hyperlinks](docs/diagrams.md#ascii-terminal-hyperlinks)).
 
 ---
 

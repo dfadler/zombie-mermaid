@@ -32,6 +32,7 @@ import { renderClassAscii } from './class-diagram.ts'
 import { renderErAscii } from './er-diagram.ts'
 import { renderXYChartAscii } from './xychart.ts'
 import { addCoordsOverlay } from './coords.ts'
+import { buildNodeLinkCanvas, flipLinkCanvasVertically } from './hyperlinks.ts'
 import {
   detectColorMode,
   DEFAULT_ASCII_THEME,
@@ -75,6 +76,19 @@ export interface AsciiRenderOptions {
    * help debug layout spacing. Off by default.
    */
   showCoords?: boolean
+  /**
+   * Emit OSC 8 terminal hyperlinks: each node whose `click` directive
+   * declared an http/https/mailto/relative href gets its label wrapped in
+   * an `ESC ] 8 ; ; <url> ESC \` … `ESC ] 8 ; ; ESC \` pair, which
+   * terminals that support OSC 8 (iTerm2, WezTerm, kitty, Windows
+   * Terminal, VTE-based terminals) render as a clickable link. The
+   * sequences are zero-width and never affect layout; `click ... call fn()`
+   * bindings emit nothing. Off by default — not every terminal or pager
+   * handles OSC 8 gracefully (`less` needs `-R`), and no capability
+   * detection is attempted here; the caller decides. Ignored when
+   * `colorMode` is 'html'.
+   */
+  hyperlinks?: boolean
 }
 
 /**
@@ -138,7 +152,9 @@ export function renderMermaidASCII(
       break
 
     case 'class':
-      result = renderClassAscii(text, config, colorMode, theme)
+      result = renderClassAscii(text, config, colorMode, theme, {
+        hyperlinks: options.hyperlinks ?? false,
+      })
       break
 
     case 'er':
@@ -163,17 +179,25 @@ export function renderMermaidASCII(
       createMapping(graph)
       drawGraph(graph)
 
+      // Opt-in OSC 8 hyperlinks: mark each `click`-linked node's label cells
+      // now, from the drawn node positions, before any flip below moves them.
+      const linkCanvas = options.hyperlinks
+        ? buildNodeLinkCanvas(graph, parsed.interactions)
+        : undefined
+
       // BT: flip the finished canvas vertically so the flow runs bottom→top.
       // The grid layout ran as TD; flipping + character remapping produces BT.
       if (parsed.direction === 'BT') {
         flipCanvasVertically(graph.canvas)
         flipRoleCanvasVertically(graph.roleCanvas)
+        if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
       }
 
       result = canvasToString(graph.canvas, {
         roleCanvas: graph.roleCanvas,
         colorMode,
         theme,
+        linkCanvas,
       })
     }
   }

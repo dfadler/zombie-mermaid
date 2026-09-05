@@ -20,6 +20,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -43,6 +44,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -67,6 +69,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -92,6 +95,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -109,6 +113,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -126,6 +131,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -149,6 +155,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -176,6 +183,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: 3,
       borderPadding: 2,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -203,6 +211,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: 9,
       borderPadding: 0,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -220,6 +229,30 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: true,
+      hyperlinks: false,
+      maxWidth: undefined,
+    } satisfies RenderArgs)
+  })
+
+  it('parses --hyperlinks', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--ascii',
+      '--hyperlinks',
+    ])
+    expect(result).toEqual({
+      command: 'render',
+      input: 'diagram.mmd',
+      ascii: true,
+      svg: false,
+      output: undefined,
+      theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
+      hyperlinks: true,
       maxWidth: undefined,
     } satisfies RenderArgs)
   })
@@ -237,6 +270,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: 40,
     } satisfies RenderArgs)
   })
@@ -260,6 +294,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: 'auto',
     } satisfies RenderArgs)
   })
@@ -445,5 +480,18 @@ describe('parseArgs – validation errors', () => {
         '40',
       ]),
     ).toThrow('-w/--max-width requires --ascii')
+  })
+
+  it('throws when --hyperlinks is given without --ascii', () => {
+    expect(() =>
+      parseArgs([
+        'render',
+        'diagram.mmd',
+        '--svg',
+        '-o',
+        'out.svg',
+        '--hyperlinks',
+      ]),
+    ).toThrow('--hyperlinks requires --ascii')
   })
 })

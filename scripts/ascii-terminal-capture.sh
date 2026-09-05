@@ -33,6 +33,10 @@ GUI window) and writes <output-prefix>.cast, .txt, and .png.
   <output-prefix>         Output path prefix, e.g. /tmp/after -> /tmp/after.cast, .txt, .png
   [cols] [rows]           Terminal size in character cells (default 100x40).
 
+Set ASCII_RENDER_OPTIONS='{"hyperlinks":true}' (any JSON object of
+renderMermaidASCII options) in the environment to capture an opt-in render
+option; the PTY inherits it. See scripts/ascii-render-runner.mjs.
+
 Example (before/after a change, comparing against main):
   mkdir -p tmp-base-ref
   git archive main src | tar -x -C tmp-base-ref

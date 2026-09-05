@@ -95,6 +95,12 @@ Options:
   -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)
   --coords             Overlay row/column index rulers (ASCII, debug layout)
+  --hyperlinks         Emit OSC 8 terminal hyperlinks for \`click\` hrefs
+                       (ASCII). Off by default: terminal support varies —
+                       iTerm2, WezTerm, kitty, Windows Terminal, and
+                       VTE-based terminals render them as clickable links;
+                       others may show the URL or nothing. Pagers need
+                       OSC 8 support too (\`less -R\`, recent versions).
   -w, --max-width <n|auto>  Fit ASCII output within this many columns
                        ('auto' detects the terminal width): applies compact
                        spacing automatically when needed, and warns on

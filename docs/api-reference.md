@@ -56,14 +56,15 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 
 **AsciiRenderOptions:**
 
-| Option             | Type                  | Default  | Description                                                             |
-| ------------------ | --------------------- | -------- | ----------------------------------------------------------------------- |
-| `useAscii`         | `boolean`             | `false`  | Use ASCII instead of Unicode                                            |
-| `paddingX`         | `number`              | `5`      | Horizontal node spacing                                                 |
-| `paddingY`         | `number`              | `5`      | Vertical node spacing                                                   |
-| `boxBorderPadding` | `number`              | `1`      | Inner box padding                                                       |
-| `colorMode`        | `string`              | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'` |
-| `theme`            | `Partial<AsciiTheme>` | —        | Override default colors for ASCII output                                |
+| Option             | Type                  | Default  | Description                                                                                                              |
+| ------------------ | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `useAscii`         | `boolean`             | `false`  | Use ASCII instead of Unicode                                                                                             |
+| `paddingX`         | `number`              | `5`      | Horizontal node spacing                                                                                                  |
+| `paddingY`         | `number`              | `5`      | Vertical node spacing                                                                                                    |
+| `boxBorderPadding` | `number`              | `1`      | Inner box padding                                                                                                        |
+| `colorMode`        | `string`              | `'auto'` | `'none'`, `'auto'`, `'ansi16'`, `'ansi256'`, `'truecolor'`, or `'html'`                                                  |
+| `theme`            | `Partial<AsciiTheme>` | —        | Override default colors for ASCII output                                                                                 |
+| `hyperlinks`       | `boolean`             | `false`  | Wrap `click` hrefs in OSC 8 terminal hyperlinks (see [ASCII terminal hyperlinks](diagrams.md#ascii-terminal-hyperlinks)) |
 
 ASCII-only consumers can import from `zombie-mermaid/ascii` instead of the
 package root to avoid bundling `elkjs` (the SVG layout engine, statically

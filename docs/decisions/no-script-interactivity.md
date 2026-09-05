@@ -56,7 +56,11 @@ PNG/JPEG, and ASCII/terminal text):
   navigate, `:hover` doesn't fire. A rasterizer captures one frame of a CSS
   animation and then stops, so animation becomes indistinguishable from a
   plain static line. ASCII output has no markup or CSS to carry it, so tier 2
-  disappears entirely there.
+  disappears entirely there — with one opt-in exception: `renderMermaidASCII`'s
+  `hyperlinks: true` (CLI `--hyperlinks`) wraps `click` hrefs in OSC 8
+  terminal-hyperlink escapes, still declarative and still zero script, so a
+  link is the one tier-2 mechanism that can survive every target, terminal
+  included, when the caller asks for it ([#216](https://github.com/dfadler/zombie-mermaid/issues/216)).
 - **Tier 3** is the one this library refuses to implement, at any render
   option, for any diagram. `click A call fn()` is parsed and exposed as data
   (`NodeInteraction.callback`, and the `interactions` map from
