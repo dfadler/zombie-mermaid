@@ -134,6 +134,7 @@ zombie-mermaid render diagram.mmd --svg -o out.svg      # Render to a named SVG 
 zombie-mermaid render diagram.mmd -o out.svg            # Same — the format is inferred from .svg
 zombie-mermaid render diagram.mmd --svg -o - | pbcopy   # Write the SVG to stdout
 zombie-mermaid render diagram.mmd --ascii -o out.txt    # Write the ASCII rendering to a file
+zombie-mermaid render diagram.mmd --html                # Self-contained pan/zoom HTML viewer
 cat diagram.mmd | zombie-mermaid render --ascii         # Read from stdin
 zombie-mermaid themes                                   # List built-in theme names
 zombie-mermaid --help                                   # Show all options
@@ -141,7 +142,9 @@ zombie-mermaid --help                                   # Show all options
 
 `--theme <name>` applies a built-in theme (from `themes`) to either output mode.
 
-**Output rules.** `-o` is the destination for the run's _file_ output — the SVG when `--svg` is given, otherwise the ASCII rendering — and `-o -` sends it to stdout instead. A recognised extension (`.svg`, `.txt`) picks the format on its own, so the flag can be dropped; an extension that contradicts an explicit flag (`--svg -o out.txt`) is an error, while unrecognised ones are simply used as given. `--svg` with no `-o` writes `<input stem>.svg` beside the input (stdin input has no name to derive from, so it must pass `-o`). ASCII always prints to the terminal when SVG is also requested (`--ascii --svg -o out.svg`), and never carries ANSI colour codes when written to a file. **An existing output file is never overwritten unless you pass `--force`/`-f`.**
+**Output rules.** `-o` is the destination for the run's _file_ output — SVG or HTML when `--svg`/`--html` is given, otherwise the ASCII rendering — and `-o -` sends it to stdout instead. A recognised extension (`.svg`, `.html`/`.htm`, `.txt`) picks the format on its own, so the flag can be dropped; an extension that contradicts an explicit flag (`--svg -o out.txt`) is an error, while unrecognised ones are simply used as given. `--svg`/`--html` with no `-o` writes `<input stem>.svg`/`.html` beside the input (stdin input has no name to derive from, so it must pass `-o`). `--svg` and `--html` cannot both be set — run the command twice for both. ASCII always prints to the terminal when SVG/HTML is also requested (`--ascii --svg -o out.svg`), and never carries ANSI colour codes when written to a file. **An existing output file is never overwritten unless you pass `--force`/`-f`.**
+
+**`--html`** wraps the rendered SVG in a self-contained pan/zoom viewer — one file, no server, no network — with drag/scroll pan, ctrl/cmd+scroll and pinch to zoom, fit/1:1 buttons, a light/dark toggle that follows `prefers-color-scheme`, and keyboard controls. It opens straight from disk and survives being emailed as a single attachment. This is the one place in the project that ships client-side JavaScript, and deliberately so — see [`docs/decisions/no-script-interactivity.md`](docs/decisions/no-script-interactivity.md): the library's own SVG output stays permanently script-free, and this viewer is a separate CLI artifact wrapping that output, never part of it.
 
 ---
 

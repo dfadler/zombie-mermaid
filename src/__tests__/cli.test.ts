@@ -14,6 +14,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      html: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -38,6 +39,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      html: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -63,6 +65,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: true,
+      html: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -89,6 +92,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      html: false,
       output: 'out.svg',
       force: false,
       theme: 'tokyo-night',
@@ -107,6 +111,7 @@ describe('parseArgs – render happy paths', () => {
       input: undefined,
       ascii: true,
       svg: false,
+      html: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -125,6 +130,7 @@ describe('parseArgs – render happy paths', () => {
       input: undefined,
       ascii: false,
       svg: true,
+      html: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -149,6 +155,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      html: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -177,6 +184,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      html: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -205,6 +213,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      html: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -223,6 +232,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      html: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -241,6 +251,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      html: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -265,6 +276,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      html: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -460,7 +472,7 @@ describe('parseArgs – validation errors', () => {
 
   it('throws when render has no output flags', () => {
     expect(() => parseArgs(['render', 'diagram.mmd'])).toThrow(
-      'Specify --ascii and/or --svg',
+      'Specify --ascii, --svg, and/or --html',
     )
   })
 
@@ -560,5 +572,112 @@ describe('parseArgs – validation errors', () => {
         '40',
       ]),
     ).toThrow('-w/--max-width requires --ascii')
+  })
+})
+
+// ============================================================================
+// --html
+// ============================================================================
+
+describe('parseArgs – --html', () => {
+  it('parses --html with an explicit -o path', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--html',
+      '-o',
+      'out.html',
+    ]) as RenderArgs
+    expect(result.html).toBe(true)
+    expect(result.svg).toBe(false)
+    expect(result.output).toBe('out.html')
+  })
+
+  it('derives <input stem>.html when --html is given with no -o', () => {
+    const result = parseArgs(['render', 'diagram.mmd', '--html']) as RenderArgs
+    expect(result.html).toBe(true)
+    expect(result.output).toBe('diagram.html')
+  })
+
+  it('infers --html from a .html extension with no flag', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '-o',
+      'out.html',
+    ]) as RenderArgs
+    expect(result.html).toBe(true)
+    expect(result.svg).toBe(false)
+  })
+
+  it('infers --html from a .htm extension with no flag', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '-o',
+      'out.htm',
+    ]) as RenderArgs
+    expect(result.html).toBe(true)
+  })
+
+  it('allows --html -o - to write to stdout', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--html',
+      '-o',
+      '-',
+    ]) as RenderArgs
+    expect(result.html).toBe(true)
+    expect(result.output).toBe('-')
+  })
+
+  it('allows --ascii with --html (ascii to stdout, html to file)', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--ascii',
+      '--html',
+      '-o',
+      'out.html',
+    ]) as RenderArgs
+    expect(result.ascii).toBe(true)
+    expect(result.html).toBe(true)
+  })
+
+  it('throws when --svg and --html are both set', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--svg', '--html']),
+    ).toThrow('--svg and --html cannot both be set')
+  })
+
+  it('throws when -o has a .svg extension but --html was requested', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--html', '-o', 'out.svg']),
+    ).toThrow('but --html output would be written to it')
+  })
+
+  it('throws when -o has an .html extension but --svg was requested', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--svg', '-o', 'out.html']),
+    ).toThrow('but --svg output would be written to it')
+  })
+
+  it('throws when -o has a .txt extension but --html was requested', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--html', '-o', 'out.txt']),
+    ).toThrow('but --html output would be written to it')
+  })
+
+  it('throws when -o - would send both ASCII and HTML to stdout', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--html', '-o', '-']),
+    ).toThrow('-o - would send both ASCII and HTML to stdout')
+  })
+
+  it('throws when --html is given for stdin input with no -o', () => {
+    expect(() => parseArgs(['render', '--html'])).toThrow(
+      '--html needs -o <path> (or -o - for stdout) when reading from stdin',
+    )
   })
 })

@@ -75,6 +75,16 @@ not gate.
 
 ## Consequences
 
+- **The CLI's `--html` viewer is a narrow, deliberate exception, not a
+  reversal.** `render --html` (added in [#456](https://github.com/dfadler/zombie-mermaid/issues/456))
+  wraps a rendered SVG in a self-contained pan/zoom viewer with its own
+  small client script (`src/cli/html-viewer-client.js`). That script pans,
+  zooms, and toggles light/dark — it never touches `interactions.callback`
+  or executes anything diagram-supplied. It is also a separate artifact the
+  CLI writes on request, never part of `renderMermaidSVG`'s own output: the
+  library's SVG stays exactly as script-free as this ADR requires: only the
+  CLI's optional wrapper carries a script, and only because the viewer
+  chrome itself needs one.
 - **No client-side runtime by default.** The `zombie-mermaid` package itself
   ships zero bundled JS — a hydration step, a `zombie-mermaid/react`
   interactive component, or any script shipped alongside the SVG is off the

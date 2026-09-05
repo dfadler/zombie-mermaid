@@ -13,8 +13,10 @@ import {
 import { renderMermaidSVG } from '../index.ts'
 import { THEMES } from '../theme.ts'
 import type { DiagramColors } from '../theme.ts'
+import { buildHtmlViewer } from './html-viewer.ts'
 import type { RenderArgs } from './parse-args.ts'
 import { STDOUT_OUTPUT } from './parse-args.ts'
+import { parse as parsePath } from 'node:path'
 
 // ============================================================================
 // Types
@@ -128,22 +130,25 @@ export async function runRender(
   }
 
   // Where each format goes (see RenderArgs.output). ASCII prints to stdout
-  // unless it is the only format and -o names a file; SVG goes to -o, which
-  // may be stdout (`-`). parse-args guarantees the two never both target
-  // stdout.
+  // unless it is the only format and -o names a file; SVG/HTML go to -o,
+  // which may be stdout (`-`). parse-args guarantees --svg and --html are
+  // never both set, and that ASCII never shares stdout with either.
   const svgToStdout = args.svg && args.output === STDOUT_OUTPUT
+  const htmlToStdout = args.html && args.output === STDOUT_OUTPUT
   const asciiFile =
     args.ascii &&
     !args.svg &&
+    !args.html &&
     args.output !== undefined &&
     args.output !== STDOUT_OUTPUT
       ? args.output
       : undefined
   const svgFile = args.svg && !svgToStdout ? args.output : undefined
+  const htmlFile = args.html && !htmlToStdout ? args.output : undefined
 
   // Refuse to clobber before doing any work, so a refused run leaves
   // stdout untouched too (no half-printed ASCII ahead of the error).
-  for (const path of [asciiFile, svgFile]) {
+  for (const path of [asciiFile, svgFile, htmlFile]) {
     if (path !== undefined) await assertNotExisting(path, args.force)
   }
 
@@ -244,6 +249,17 @@ export async function runRender(
       out.write(svg)
     } else if (svgFile !== undefined) {
       await writeOutputFile(svgFile, svg, args.force)
+    }
+  }
+
+  if (args.html) {
+    const svg = renderMermaidSVG(text, themeColors ?? {})
+    const title = args.input ? parsePath(args.input).name : undefined
+    const html = buildHtmlViewer({ svg, title })
+    if (htmlToStdout) {
+      out.write(html)
+    } else if (htmlFile !== undefined) {
+      await writeOutputFile(htmlFile, html, args.force)
     }
   }
 }
