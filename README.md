@@ -130,12 +130,13 @@ Installing the package also exposes a `zombie-mermaid` binary:
 ```bash
 zombie-mermaid render diagram.mmd --ascii              # Print ASCII/Unicode to terminal
 zombie-mermaid render diagram.mmd --svg -o out.svg      # Render to an SVG file
+zombie-mermaid render diagram.mmd --svg -o out.svg --resolve-colors   # …with concrete colors, for resvg/Inkscape/etc.
 cat diagram.mmd | zombie-mermaid render --ascii         # Read from stdin
 zombie-mermaid themes                                   # List built-in theme names
 zombie-mermaid --help                                   # Show all options
 ```
 
-`--theme <name>` applies a built-in theme (from `themes`) to either output mode.
+`--theme <name>` applies a built-in theme (from `themes`) to either output mode. `--resolve-colors` replaces the CSS `var()`/`color-mix()` theming in SVG output with computed colors so rasterizers that don't evaluate CSS (resvg, librsvg, Inkscape) render the theme instead of black — see [docs/theming.md](docs/theming.md#resolved-colors-for-rasterizers).
 `--direction <dir>` (`TD`, `TB`, `BT`, `LR`, or `RL`) overrides the diagram's layout direction in either output mode without editing the source — flowchart, state, and ER diagrams; a nested subgraph's own `direction` still applies on top of it. The same override is available to library callers as the `direction` render option (see [API Reference](docs/api-reference.md)).
 
 ---

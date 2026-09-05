@@ -308,6 +308,26 @@ export interface RenderOptions {
   embedSource?: boolean
 
   /**
+   * Replace every CSS `var(--…)` and `color-mix(…)` in the output with its
+   * computed sRGB value (`#rrggbb`, or `rgba()` when translucent), using
+   * the same mix percentages the `<style>` block declares (see
+   * `MIX` in src/theme.ts — there is one table, not a copy). Default: false.
+   *
+   * Browsers evaluate both natively, so the default output stays a live
+   * function of its CSS custom properties (docs/theming.md). Rasterizers
+   * and non-browser SVG consumers — resvg, librsvg, Inkscape, ImageMagick —
+   * implement neither and render the whole theme as black; turn this on
+   * for any output headed to one of them (GitHub issue #456).
+   *
+   * Trade-off: the result is a fixed palette. Overriding `--bg`/`--fg` on
+   * the embedded SVG no longer restyles it, and passing a `var(...)`
+   * reference as a color (the React live-theming pattern) has nothing to
+   * resolve against — such references, and any `var()` this library did
+   * not declare itself (e.g. a host-page font variable), are left as-is.
+   */
+  resolveColors?: boolean
+
+  /**
    * Accessible name for the rendered SVG (see GitHub issue #215). Rendered
    * as `role="img"` + `aria-labelledby` pointing at a `<title>` child
    * holding this text — the standard SVG/WAI-ARIA technique for naming an

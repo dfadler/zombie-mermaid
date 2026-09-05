@@ -12,6 +12,7 @@
 // ============================================================================
 
 import { escapeXml } from './multiline-utils.ts'
+import { parseHexColor } from './color-utils.ts'
 
 // ============================================================================
 // Types
@@ -438,41 +439,6 @@ export function buildStyleBlock(font: string, hasMonoFont: boolean): string {
 // references, named colors, malformed values) is left alone — the caller
 // falls back to the theme foreground.
 // ============================================================================
-
-/** Matches #rgb, #rgba, #rrggbb, #rrggbbaa hex color literals. */
-const HEX_COLOR_RE =
-  /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
-
-/**
- * Parse a hex color string into 0-255 RGB components.
- * Returns null for anything that isn't a well-formed hex literal (e.g.
- * `var(--foo)`, named CSS colors, or attribute-injection payloads) — the
- * caller should treat those as unresolvable and fall back.
- */
-function parseHexColor(value: string): [number, number, number] | null {
-  const match = HEX_COLOR_RE.exec(value.trim())
-  if (!match) return null
-  // HEX_COLOR_RE has exactly one, non-optional capture group, so it's always
-  // populated when `match` is non-null — but that's a fact about the regex's
-  // construction, not something the type checker can see. Guard explicitly
-  // (falling back to "unresolvable", same as a non-match) rather than
-  // asserting past it, so a future edit to the pattern can't silently turn
-  // this into a runtime `undefined`.
-  const captured = match[1]
-  if (captured === undefined) return null
-  let hex = captured
-  if (hex.length === 3 || hex.length === 4) {
-    hex = hex
-      .split('')
-      .map((c) => c + c)
-      .join('')
-  }
-  return [
-    parseInt(hex.slice(0, 2), 16),
-    parseInt(hex.slice(2, 4), 16),
-    parseInt(hex.slice(4, 6), 16),
-  ]
-}
 
 /**
  * Perceptual luminance of an sRGB color on a 0-1 scale (0 = black, 1 =

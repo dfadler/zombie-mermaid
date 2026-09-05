@@ -17,6 +17,8 @@ export interface RenderArgs {
   input: string | undefined
   ascii: boolean
   svg: boolean
+  /** `--resolve-colors`: substitute computed sRGB values for CSS var()/color-mix() in SVG output. */
+  resolveColors: boolean
   output: string | undefined
   theme: string | undefined
   paddingX: number | undefined
@@ -168,6 +170,7 @@ function parseRender(args: string[]): RenderArgs {
   let input: string | undefined
   let ascii = false
   let svg = false
+  let resolveColors = false
   let output: string | undefined
   let theme: string | undefined
   let paddingX: number | undefined
@@ -194,6 +197,9 @@ function parseRender(args: string[]): RenderArgs {
       i++
     } else if (arg === '--svg') {
       svg = true
+      i++
+    } else if (arg === '--resolve-colors') {
+      resolveColors = true
       i++
     } else if (arg === '-o' || arg === '--output') {
       if (i + 1 >= args.length) throw new Error('-o requires a file path')
@@ -248,11 +254,16 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('-w/--max-width requires --ascii')
   }
 
+  if (resolveColors && !svg) {
+    throw new Error('--resolve-colors requires --svg')
+  }
+
   return {
     command: 'render',
     input,
     ascii,
     svg,
+    resolveColors,
     output,
     theme,
     paddingX,
