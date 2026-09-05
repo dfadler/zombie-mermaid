@@ -68,4 +68,23 @@ describe('ASCII subgraph direction override — honored case (issue #445)', () =
     expect(rowA).toBeLessThan(rowB)
     expect(rowB).toBeLessThan(rowC)
   })
+
+  it('does not crash on a subgraph with a direction override and zero member nodes', () => {
+    // Exercises subgraphDirectionIsHonored's `memberIds.size === 0` early
+    // return: an edge-case subgraph declaring only `direction`, no nodes.
+    // There's no member node to check for a boundary-crossing edge, so it
+    // trivially counts as "honored" (nothing to un-honor) rather than
+    // throwing or mis-rendering the rest of the diagram.
+    const ascii = renderMermaidASCII(
+      `graph TD
+  subgraph Empty
+    direction LR
+  end
+  A --> B`,
+      { colorMode: 'none' },
+    )
+
+    expect(ascii).toContain('A')
+    expect(ascii).toContain('B')
+  })
 })
