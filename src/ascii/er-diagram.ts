@@ -330,6 +330,19 @@ export function renderErAscii(
   // accordingly; still offset from config.paddingY like the others.
   const componentGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 2, 1)
 
+  // Widest crow's-foot marker glyph across every cardinality, in the
+  // current mode (ASCII/Unicode) — the same "up to 2 cells wide" fact the
+  // hGap/vGap comment above states, but computed here instead of restated
+  // as a raw literal, so anything sized off it (labelInset, labelX below)
+  // automatically tracks a future change to the marker glyph set (issue
+  // #415, following #384's precedent for hGap/vGap/componentGap).
+  const maxMarkerWidth = Math.max(
+    ...(['one', 'zero-one', 'many', 'zero-many'] as const).flatMap((card) => [
+      getCrowsFootChars(card, useAscii, false).length,
+      getCrowsFootChars(card, useAscii, true).length,
+    ]),
+  )
+
   // --- Build entity box dimensions ---
   const entitySections = new Map<string, string[][]>()
   const entityBoxW = new Map<string, number>()
@@ -635,6 +648,65 @@ export function renderErAscii(
     return true
   }
 
+  /**
+   * Vertical relationship "lanes" already drawn — one entry per straight
+   * vertical run, added as each relationship's connector is finalized.
+   * Checked before drawing each subsequent vertical connector so that two
+   * *unrelated* relationships' stems never land on immediately-adjacent
+   * (but not identical) columns purely by coincidence: with nothing in the
+   * rendered output to distinguish them, that reads as a single connector
+   * that inexplicably shifts sideways partway down, rather than as two
+   * independent lines (issue #411). A relationship's own two segments
+   * (either side of its own jog) are never checked against this registry
+   * as they're computed — only against lanes registered by *earlier*
+   * relationships in this same loop — since a single line legitimately
+   * bending at its own jog is not the ambiguity this guards against.
+   */
+  const verticalLanes: { x: number; yStart: number; yEnd: number }[] = []
+
+  /**
+   * True when [yStart, yEnd] at column x sits one column from an existing
+   * lane whose row range overlaps it. Every call site passes a range
+   * derived from startY/endY (upper's bottom to lower's top, or a row
+   * within that span), which the layout always establishes as
+   * startY <= endY — a degenerate/inverted range never reaches here.
+   */
+  function verticalLaneConflict(
+    x: number,
+    yStart: number,
+    yEnd: number,
+  ): boolean {
+    for (const lane of verticalLanes) {
+      if (Math.abs(lane.x - x) !== 1) continue
+      if (yStart <= lane.yEnd && yEnd >= lane.yStart) return true
+    }
+    return false
+  }
+
+  /**
+   * Like verticalLaneConflict, but also rejects the *same* column as an
+   * existing lane (diff 0), not just an adjacent one (diff 1). Used only
+   * when searching for a via/bypass column (see the multiRowObstruction
+   * branch below): landing the bypass on another relationship's own
+   * column wouldn't just be visually adjacent, it would run straight
+   * through — and setCGuarded doesn't protect a 'line' cell from being
+   * overwritten by another 'line' write, so the two relationships' glyphs
+   * (including corner turns) would silently blend into one path, which is
+   * worse than the adjacent-column aliasing this fix targets in the first
+   * place.
+   */
+  function viaColumnBlocked(x: number, yStart: number, yEnd: number): boolean {
+    for (const lane of verticalLanes) {
+      if (Math.abs(lane.x - x) > 1) continue
+      if (yStart <= lane.yEnd && yEnd >= lane.yStart) return true
+    }
+    return false
+  }
+
+  function registerVerticalLane(x: number, yStart: number, yEnd: number): void {
+    verticalLanes.push({ x, yStart, yEnd })
+  }
+
   // --- Draw relationships ---
   const H = useAscii ? '-' : '─'
   const V = useAscii ? '|' : '│'
@@ -826,7 +898,19 @@ export function renderErAscii(
       // Narrowed to per-side glyph-identity detection instead, so only the
       // colliding side ever moves — see issue #413.
       const gapWidth = endX - startX + 1
-      const labelInset = gapWidth >= 3 ? 1 : 0
+      // Only worth insetting the label off the border when the gap could
+      // fit the widest possible marker plus at least one cell of actual
+      // label content (maxMarkerWidth + 1) — below that, insetting both
+      // sides would just shrink an already-tight label region for no
+      // readability benefit. Was a flat `>= 3` (issue #415); derived here
+      // so it stays correct if maxMarkerWidth ever changes. The false
+      // branch is unreachable today — hGap's own floor (paddingOffset's
+      // hard-coded 6, independent of config.paddingX) keeps gapWidth well
+      // above maxMarkerWidth + 1 for the current glyph set — but is kept
+      // (not simplified to a bare `1`) so a future wider marker glyph set
+      // is still handled correctly without revisiting this line.
+      /* v8 ignore next */
+      const labelInset = gapWidth >= maxMarkerWidth + 1 ? 1 : 0
       const leftChars = getCrowsFootChars(leftCard, useAscii, false)
       const rightChars = getCrowsFootChars(rightCard, useAscii, true)
       const leftInset = gapWidth >= 3 && leftChars[0] === V ? 1 : 0
@@ -1037,20 +1121,6 @@ export function renderErAscii(
       const bandTop = Math.max(startY, upperRowBottom + 1)
       const bandBottom = Math.min(endY, lowerRowTop - 1)
 
-      // [bandTop, bandBottom] — not the wider [startY, endY] — is what the
-      // single-row clamp above already guarantees is clear of a row-mate of
-      // `upper` (or the top of `lower`'s own row). Checking the wider range
-      // here would misfire on exactly that already-handled case (a row-mate
-      // taller than `upper`, e.g. STUDENT next to a shorter TEACHER) and
-      // route it through the free-column bypass unnecessarily. A genuine
-      // multi-row obstruction — some entity in a row strictly between
-      // `upper`'s and `lower`'s own rows (e.g. A→G below, where D sits in
-      // the same column as A, two rows down) — still shows up here, since
-      // bandTop/bandBottom span every row in between, not just one.
-      const multiRowObstruction =
-        !columnClearOfBoxes(lineX, bandTop, bandBottom) ||
-        !columnClearOfBoxes(lowerCX, bandTop, bandBottom)
-
       /**
        * Pick a row within the free row-gap band for a horizontal run across
        * [xStart, xEnd] (plus `extraRows` below it, for a multi-line label).
@@ -1076,6 +1146,49 @@ export function renderErAscii(
         return fallback
       }
 
+      // Natural (unescalated) routing: a single straight column when the
+      // two entities share a center column, otherwise a two-segment jog
+      // through a row picked by pickBandY. Computed up front — even though
+      // it ends up unused when multiRowObstruction below escalates to the
+      // via-column bypass instead — because deciding *whether* to escalate
+      // also depends on whether this natural routing's own columns would
+      // land adjacent to another relationship's already-drawn vertical run
+      // (see verticalLaneConflict, issue #411).
+      const needsJog = lineX !== lowerCX
+      const lx = Math.min(lineX, lowerCX)
+      const rx = Math.max(lineX, lowerCX)
+      const midY = needsJog ? pickBandY(lx, rx, 0) : endY
+      const initialVertEnd = needsJog ? midY - 1 : endY
+
+      // [bandTop, bandBottom] — not the wider [startY, endY] — is what the
+      // single-row clamp above already guarantees is clear of a row-mate of
+      // `upper` (or the top of `lower`'s own row). Checking the wider range
+      // here would misfire on exactly that already-handled case (a row-mate
+      // taller than `upper`, e.g. STUDENT next to a shorter TEACHER) and
+      // route it through the free-column bypass unnecessarily. A genuine
+      // multi-row obstruction — some entity in a row strictly between
+      // `upper`'s and `lower`'s own rows (e.g. A→G below, where D sits in
+      // the same column as A, two rows down) — still shows up here, since
+      // bandTop/bandBottom span every row in between, not just one.
+      //
+      // Also escalates to the via-column bypass when the *natural* routing
+      // computed above would put lineX's or lowerCX's own straight segment
+      // column-adjacent to a different relationship's already-registered
+      // vertical lane over an overlapping row range (issue #411) — bumping
+      // this relationship onto its own distinct column keeps the two
+      // readable as separate lines instead of one that appears to bend
+      // sideways where they happen to sit closest.
+      // The registered/checked range for each column includes the jog row
+      // (midY) itself, not just the pure-vertical run up to it — the corner
+      // glyph at (lineX, midY) or (lowerCX, midY) is where the bend
+      // actually happens, and it's exactly as visually adjacent to a
+      // neighboring column as the straight run above/below it.
+      const multiRowObstruction =
+        !columnClearOfBoxes(lineX, bandTop, bandBottom) ||
+        !columnClearOfBoxes(lowerCX, bandTop, bandBottom) ||
+        verticalLaneConflict(lineX, startY, needsJog ? midY : endY) ||
+        (needsJog && verticalLaneConflict(lowerCX, midY, endY))
+
       // Where the visible line actually runs — lineX in the common case,
       // or the free bypass column found below when a third entity sits
       // directly in the way. The label (further down) anchors to whichever
@@ -1089,15 +1202,32 @@ export function renderErAscii(
         // after leaving upper, right before reaching lower — connect
         // lineX/lowerCX to that column; the long middle run is a plain
         // vertical line, guaranteed not to touch any box.
+        // Also skips a column that would collide with (viaColumnBlocked
+        // rejects both identical and lane-adjacent columns) a different
+        // relationship's already-registered vertical run (issue #411) — a
+        // via column must be safe on both fronts, and reusing another
+        // relationship's own column outright would silently blend the two
+        // paths together (setCGuarded lets one 'line' write overwrite
+        // another), which is worse than the adjacency this escalation is
+        // meant to fix.
         const canvasWidth = canvas.length
         let viaX: number | undefined
         for (let offset = 0; offset <= canvasWidth; offset++) {
-          if (columnClearOfBoxes(lineX + offset, startY, endY)) {
-            viaX = lineX + offset
+          const right = lineX + offset
+          if (
+            columnClearOfBoxes(right, startY, endY) &&
+            !viaColumnBlocked(right, startY, endY)
+          ) {
+            viaX = right
             break
           }
-          if (offset > 0 && columnClearOfBoxes(lineX - offset, startY, endY)) {
-            viaX = lineX - offset
+          const left = lineX - offset
+          if (
+            offset > 0 &&
+            columnClearOfBoxes(left, startY, endY) &&
+            !viaColumnBlocked(left, startY, endY)
+          ) {
+            viaX = left
             break
           }
         }
@@ -1152,6 +1282,12 @@ export function renderErAscii(
           drawCorner(routingX, markerEndY, 'up', horizDirAtRouting2)
           drawCorner(lowerCX, markerEndY, 'down', horizDirAtLower)
         }
+        // Register the long middle run so a later relationship's own
+        // vertical connector won't land adjacent to it either (#411). The
+        // short lineX/lowerCX stubs at the marker rows are only 1 row deep
+        // (markerStartY..markerStartY, markerEndY..markerEndY) — negligible
+        // for this check, so they're not registered separately.
+        registerVerticalLane(routingX, markerStartY, markerEndY)
       } else {
         // Vertical line. Column lineX stays within upper's own x-range,
         // which by layout construction never overlaps a row-mate's box, so
@@ -1162,14 +1298,16 @@ export function renderErAscii(
         // leftover remnant keeps drawing all the way to endY at the
         // original lineX, a stray parallel line beside the actual jogged
         // path that connects to nothing (issue #392).
-        const needsJog = lineX !== lowerCX
-        const lx = Math.min(lineX, lowerCX)
-        const rx = Math.max(lineX, lowerCX)
-        const midY = needsJog ? pickBandY(lx, rx, 0) : endY
-        const initialVertEnd = needsJog ? midY - 1 : endY
+        //
+        // needsJog/lx/rx/midY/initialVertEnd were already computed above,
+        // alongside the multiRowObstruction check itself (issue #411) —
+        // reused here rather than recomputed.
         for (let y = startY; y <= initialVertEnd; y++) {
           setCGuarded(lineX, y, lineV, 'line')
         }
+        // Registered range includes the jog row itself (midY) when jogging
+        // — see the multiRowObstruction comment above for why.
+        registerVerticalLane(lineX, startY, needsJog ? midY : initialVertEnd)
 
         // If horizontal offset needed, add a horizontal segment
         if (needsJog) {
@@ -1181,6 +1319,7 @@ export function renderErAscii(
           for (let y = midY + 1; y <= endY; y++) {
             setCGuarded(lowerCX, y, lineV, 'line')
           }
+          registerVerticalLane(lowerCX, midY, endY)
           // Mark the jog's two turns (issue #414): the vertical run from
           // upper arrives from above and turns toward lowerCX; the
           // vertical run into lower departs downward, having turned away
@@ -1232,7 +1371,21 @@ export function renderErAscii(
       // bounds. Supports multi-line labels.
       if (rel.label) {
         const lines = splitLines(rel.label)
-        const labelX = routingX + 2
+        // How far a centered vertical marker's own rightmost glyph column
+        // extends past its own center column — see upperChars/lowerChars
+        // above, drawn via `center - Math.floor(chars.length / 2) + i`. For
+        // every current 1- or 2-cell marker this is 0 (centering always
+        // leans the extra cell left, never right), so labelX below reduces
+        // to routingX + 2, matching the flat constant this replaces — but
+        // it stays correct if a future marker's glyph or centering ever
+        // extended past the line column (issue #415).
+        const markerRightExtent = Math.max(
+          upperChars.length - 1 - Math.floor(upperChars.length / 2),
+          lowerChars.length - 1 - Math.floor(lowerChars.length / 2),
+        )
+        // 1 cell for the line column itself + 1 cell of breathing room
+        // before the label starts. Was a flat `+ 2` (issue #415).
+        const labelX = routingX + markerRightExtent + 2
         const cellsPerLine = lines.map((line) => toDisplayCells(line))
         const maxCells = Math.max(...cellsPerLine.map((cells) => cells.length))
         const lastLx = labelX + maxCells - 1

@@ -111,9 +111,12 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
         USER ||..o{ SESSION : opens`,
       { colorMode: 'none', useAscii: true },
     )
-    // Leading '+' is USER's vertical "one" marker (ASCII-mode equivalent
-    // of the Unicode '┼' above); the trailing '+' is the jog's own corner
-    // glyph, already ASCII '+' in this mode.
+    // Both '+' characters are the jog's own two adjacent corner glyphs
+    // (ASCII mode uses a plain '+' for every corner direction — see the
+    // Unicode test above, which shows the same shape as '└┐'). USER's own
+    // vertical "one" marker sits on its own row above this line, flush
+    // against USER's border (#390's flush-marker change) — not fused onto
+    // this line the way an earlier version of this comment assumed.
     expect(ascii).toContain('++ opens')
   })
 
