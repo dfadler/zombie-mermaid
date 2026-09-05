@@ -27,10 +27,15 @@ on:
     branches: [main]
 
 permissions:
-  # `gh pr diff` reads PR metadata (pull-requests). PR comments are served
-  # off the Issues API under the hood (`gh pr comment` / `gh api
-  # .../issues/.../comments` both hit `/issues/{number}/comments`), so
-  # posting the nudge needs `issues: write` too.
+  # `gh pr diff` reads PR metadata (pull-requests). The comment itself is
+  # posted via `gh api repos/.../issues/{number}/comments` (REST), which
+  # only needs `issues: write` — NOT `gh pr comment`, which goes through
+  # the GraphQL `addComment` mutation and requires `pull-requests: write`
+  # even for a comment on a pull request (see dfadler/zombie-mermaid#493,
+  # runs 33980953733/33980954246: `gh pr comment` failed here with
+  # "Resource not accessible by integration (addComment)" under
+  # `pull-requests: read`). Posting via the REST issues-comments endpoint
+  # keeps this workflow's PR permission at read-only.
   pull-requests: read
   issues: write
 
@@ -86,4 +91,4 @@ jobs:
             echo "_Advisory nudge, not a merge gate — [#295](https://github.com/$REPO/issues/295)._"
           } > "$body_file"
 
-          gh pr comment "$PR_NUMBER" -R "$REPO" --body-file "$body_file"
+          gh api "repos/$REPO/issues/$PR_NUMBER/comments" -F body=@"$body_file"
