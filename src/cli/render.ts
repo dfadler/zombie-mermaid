@@ -5,6 +5,11 @@ import {
 } from '../ascii/index.ts'
 import type { AsciiRenderOptions } from '../ascii/index.ts'
 import { displayWidth } from '../ascii/display-width.ts'
+import {
+  DEFAULT_PADDING_X,
+  DEFAULT_PADDING_Y,
+  DEFAULT_BOX_BORDER_PADDING,
+} from '../ascii/types.ts'
 import { renderMermaidSVG } from '../index.ts'
 import { THEMES } from '../theme.ts'
 import type { DiagramColors } from '../theme.ts'
@@ -20,6 +25,25 @@ export interface Writable {
 
 /** Fallback target width when `--max-width auto` can't detect a real terminal column count. */
 const DEFAULT_AUTO_MAX_WIDTH = 80
+
+// ============================================================================
+// --max-width automatic compact-spacing fallback
+//
+// The smallest correct "make wide output respect the constraint" behavior
+// per issue #335: when the diagram exceeds --max-width at its current
+// spacing, automatically retry with the tightest spacing the renderer
+// supports before giving up. This never touches diagram *structure* (no
+// label wrapping, no direction flip, no truncation) — it only tightens the
+// gaps around and inside boxes, so it can never corrupt the diagram, only
+// shrink it. If the diagram still doesn't fit after compacting, the
+// original (or best-effort compacted) output is printed in full, alongside
+// a warning — never truncated output.
+// ============================================================================
+
+/** Tightest spacing values tried as the automatic --max-width fallback. */
+const COMPACT_PADDING_X = 1
+const COMPACT_PADDING_Y = 1
+const COMPACT_BOX_BORDER_PADDING = 0
 
 // Matches SGR color escape sequences (`\x1b[...m`) produced by ansi.ts's
 // ansi16/ansi256/truecolor modes. Stripped only for width MEASUREMENT below —
@@ -113,21 +137,73 @@ export async function runRender(
     if (args.borderPadding !== undefined)
       asciiOpts.boxBorderPadding = args.borderPadding
     if (args.coords) asciiOpts.showCoords = true
-    const ascii = renderMermaidASCII(text, asciiOpts)
+    let ascii = renderMermaidASCII(text, asciiOpts)
 
     if (args.maxWidth !== undefined) {
       const targetWidth = resolveMaxWidth(args.maxWidth)
-      const actualWidth = maxLineWidth(ascii)
+      let actualWidth = maxLineWidth(ascii)
+      let compactApplied = false
+
+      if (actualWidth > targetWidth) {
+        const currentPaddingX = asciiOpts.paddingX ?? DEFAULT_PADDING_X
+        const currentPaddingY = asciiOpts.paddingY ?? DEFAULT_PADDING_Y
+        const currentBorderPadding =
+          asciiOpts.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING
+        const compactPaddingX = Math.min(currentPaddingX, COMPACT_PADDING_X)
+        const compactPaddingY = Math.min(currentPaddingY, COMPACT_PADDING_Y)
+        const compactBorderPadding = Math.min(
+          currentBorderPadding,
+          COMPACT_BOX_BORDER_PADDING,
+        )
+        // Only retry if compacting would actually tighten something — e.g.
+        // an explicit -x/-y/-p already at or below compact levels has
+        // nothing left to give.
+        const canCompact =
+          compactPaddingX < currentPaddingX ||
+          compactPaddingY < currentPaddingY ||
+          compactBorderPadding < currentBorderPadding
+
+        if (canCompact) {
+          const compactAscii = renderMermaidASCII(text, {
+            ...asciiOpts,
+            paddingX: compactPaddingX,
+            paddingY: compactPaddingY,
+            boxBorderPadding: compactBorderPadding,
+          })
+          const compactWidth = maxLineWidth(compactAscii)
+          if (compactWidth < actualWidth) {
+            ascii = compactAscii
+            actualWidth = compactWidth
+            compactApplied = true
+          }
+        }
+      }
+
       if (actualWidth > targetWidth) {
         const source =
           args.maxWidth === 'auto' ? `detected terminal width` : `--max-width`
+        const compactNote = compactApplied
+          ? `Compact spacing (-x ${COMPACT_PADDING_X} -y ${COMPACT_PADDING_Y} ` +
+            `-p ${COMPACT_BOX_BORDER_PADDING}) was already applied ` +
+            `automatically. `
+          : ''
+        const suggestion = compactApplied
+          ? 'Try a narrower direction (LR vs TD), shorter labels, or widen your terminal.'
+          : 'Try -x/-y/-p for tighter spacing, a narrower direction (LR vs TD), or widen your terminal.'
         err.write(
           `Warning: ASCII output is ${actualWidth} columns wide, exceeding ` +
-            `${source} of ${targetWidth}. zombie-mermaid does not yet reflow ` +
-            `diagrams to fit (no compact spacing/label wrapping/direction-flip ` +
-            `cascade — see https://github.com/dfadler/zombie-mermaid/issues/335). ` +
-            `Try -x/-y/-p to reduce padding, a narrower direction (LR vs TD), or ` +
-            `widen your terminal.\n`,
+            `${source} of ${targetWidth}. ${compactNote}zombie-mermaid does ` +
+            `not reflow diagram structure to fit (no label wrapping or ` +
+            `direction-flip cascade — see ` +
+            `https://github.com/dfadler/zombie-mermaid/issues/335). ` +
+            `${suggestion}\n`,
+        )
+      } else if (compactApplied) {
+        err.write(
+          `Note: ASCII output exceeded ${targetWidth} columns at the ` +
+            `requested spacing; applied compact spacing automatically ` +
+            `(-x ${COMPACT_PADDING_X} -y ${COMPACT_PADDING_Y} -p ` +
+            `${COMPACT_BOX_BORDER_PADDING}) to fit.\n`,
         )
       }
     }
