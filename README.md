@@ -136,6 +136,7 @@ zombie-mermaid --help                                   # Show all options
 ```
 
 `--theme <name>` applies a built-in theme (from `themes`) to either output mode.
+`--direction <dir>` (`TD`, `TB`, `BT`, `LR`, or `RL`) overrides the diagram's layout direction in either output mode without editing the source — flowchart, state, and ER diagrams; a nested subgraph's own `direction` still applies on top of it. The same override is available to library callers as the `direction` render option (see [API Reference](docs/api-reference.md)).
 `--hyperlinks` (with `--ascii`) turns `click` hrefs into OSC 8 terminal
 hyperlinks — off by default, since terminal and pager support varies (see
 [ASCII terminal hyperlinks](docs/diagrams.md#ascii-terminal-hyperlinks)).

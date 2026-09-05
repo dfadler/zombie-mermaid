@@ -5,6 +5,9 @@
 // "no external dependencies" philosophy.
 // ============================================================================
 
+import { isDirection } from '../parser.ts'
+import type { Direction } from '../types.ts'
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -34,6 +37,13 @@ export interface RenderArgs {
    * width check is performed.
    */
   maxWidth: number | 'auto' | undefined
+  /**
+   * Layout direction override (`--direction`), already upper-cased and
+   * validated. Passed straight through as `RenderOptions.direction` /
+   * `AsciiRenderOptions.direction`; `undefined` (the default) keeps the
+   * diagram's own direction.
+   */
+  direction: Direction | undefined
 }
 
 export interface SimpleCommand {
@@ -139,6 +149,27 @@ function parseMaxWidthFlag(
   return value
 }
 
+/**
+ * Parse `--direction`'s value: one of the Mermaid direction tokens, accepted
+ * case-insensitively (the same leniency a `graph lr` header gets from the
+ * parser) and normalized to the upper-case `Direction` the renderers take.
+ */
+function parseDirectionFlag(
+  args: string[],
+  i: number,
+  flag: string,
+): Direction {
+  const raw = args[i + 1]
+  if (i + 1 >= args.length || raw === undefined) {
+    throw new Error(`${flag} requires a value (one of TD, TB, BT, LR, RL)`)
+  }
+  const upper = raw.toUpperCase()
+  if (!isDirection(upper)) {
+    throw new Error(`${flag} requires one of TD, TB, BT, LR, RL, got: "${raw}"`)
+  }
+  return upper
+}
+
 function parseRender(args: string[]): RenderArgs {
   let input: string | undefined
   let ascii = false
@@ -151,6 +182,7 @@ function parseRender(args: string[]): RenderArgs {
   let coords = false
   let hyperlinks = false
   let maxWidth: number | 'auto' | undefined
+  let direction: Direction | undefined
 
   let i = 0
   while (i < args.length) {
@@ -196,6 +228,9 @@ function parseRender(args: string[]): RenderArgs {
     } else if (arg === '-w' || arg === '--max-width') {
       maxWidth = parseMaxWidthFlag(args, i, arg)
       i += 2
+    } else if (arg === '--direction') {
+      direction = parseDirectionFlag(args, i, arg)
+      i += 2
     } else if (!arg.startsWith('-')) {
       // Positional argument = input file
       if (input !== undefined) {
@@ -240,6 +275,7 @@ function parseRender(args: string[]): RenderArgs {
     coords,
     hyperlinks,
     maxWidth,
+    direction,
   }
 }
 
