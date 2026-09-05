@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { access, readFile, writeFile } from 'node:fs/promises'
 import {
   renderMermaidASCII,
   diagramColorsToAsciiTheme,
@@ -15,6 +15,7 @@ import type { RenderOptions } from '../types.ts'
 import { THEMES } from '../theme.ts'
 import type { DiagramColors } from '../theme.ts'
 import type { RenderArgs } from './parse-args.ts'
+import { STDOUT_OUTPUT } from './parse-args.ts'
 
 // ============================================================================
 // Types
@@ -127,12 +128,34 @@ export async function runRender(
     }
   }
 
+  // Where each format goes (see RenderArgs.output). ASCII prints to stdout
+  // unless it is the only format and -o names a file; SVG goes to -o, which
+  // may be stdout (`-`). parse-args guarantees the two never both target
+  // stdout.
+  const svgToStdout = args.svg && args.output === STDOUT_OUTPUT
+  const asciiFile =
+    args.ascii &&
+    !args.svg &&
+    args.output !== undefined &&
+    args.output !== STDOUT_OUTPUT
+      ? args.output
+      : undefined
+  const svgFile = args.svg && !svgToStdout ? args.output : undefined
+
+  // Refuse to clobber before doing any work, so a refused run leaves
+  // stdout untouched too (no half-printed ASCII ahead of the error).
+  for (const path of [asciiFile, svgFile]) {
+    if (path !== undefined) await assertNotExisting(path, args.force)
+  }
+
   if (args.ascii) {
     // Use plain text by default (respects terminal colors on any background).
-    // Only apply ANSI colors when the user explicitly passes --theme.
-    const asciiOpts: AsciiRenderOptions = themeColors
-      ? { colorMode: 'auto', theme: diagramColorsToAsciiTheme(themeColors) }
-      : { colorMode: 'none' }
+    // Only apply ANSI colors when the user explicitly passes --theme — and
+    // only for terminal output: a .txt file gets no escape codes regardless.
+    const asciiOpts: AsciiRenderOptions =
+      themeColors && asciiFile === undefined
+        ? { colorMode: 'auto', theme: diagramColorsToAsciiTheme(themeColors) }
+        : { colorMode: 'none' }
     if (args.paddingX !== undefined) asciiOpts.paddingX = args.paddingX
     if (args.paddingY !== undefined) asciiOpts.paddingY = args.paddingY
     if (args.borderPadding !== undefined)
@@ -210,20 +233,75 @@ export async function runRender(
       }
     }
 
-    out.write(ascii + '\n')
+    if (asciiFile !== undefined) {
+      await writeOutputFile(asciiFile, ascii + '\n', args.force)
+    } else {
+      out.write(ascii + '\n')
+    }
   }
 
-  if (args.svg && args.output) {
+  if (args.svg) {
     const svgOpts: RenderOptions = { ...themeColors }
     if (args.direction !== undefined) svgOpts.direction = args.direction
     const svg = renderMermaidSVG(text, svgOpts)
-    await writeFile(args.output, svg, 'utf-8')
+    if (svgToStdout) {
+      out.write(svg)
+    } else if (svgFile !== undefined) {
+      await writeOutputFile(svgFile, svg, args.force)
+    }
   }
 }
 
 // ============================================================================
 // Helpers
 // ============================================================================
+
+function overwriteRefusal(path: string): Error {
+  return new Error(
+    `Refusing to overwrite existing file "${path}" — pass --force to replace it`,
+  )
+}
+
+/** Fail early if `path` already exists and `--force` wasn't given. */
+async function assertNotExisting(path: string, force: boolean): Promise<void> {
+  if (force) return
+  let exists = true
+  try {
+    await access(path)
+  } catch {
+    exists = false
+  }
+  if (exists) throw overwriteRefusal(path)
+}
+
+/**
+ * Write an output file, refusing to replace an existing one unless `force`.
+ * `assertNotExisting` already ran before rendering; the exclusive-create
+ * flag (`wx`) closes the window between that check and this write, so a
+ * file that appears in between is still refused rather than clobbered.
+ */
+async function writeOutputFile(
+  path: string,
+  content: string,
+  force: boolean,
+): Promise<void> {
+  try {
+    await writeFile(path, content, {
+      encoding: 'utf-8',
+      flag: force ? 'w' : 'wx',
+    })
+  } catch (err) {
+    if (
+      !force &&
+      err instanceof Error &&
+      'code' in err &&
+      err.code === 'EEXIST'
+    ) {
+      throw overwriteRefusal(path)
+    }
+    throw err
+  }
+}
 
 async function readStdin(): Promise<string> {
   const chunks: string[] = []

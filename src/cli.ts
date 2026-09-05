@@ -77,8 +77,11 @@ zombie-mermaid — render Mermaid diagrams from the command line
 
 Usage:
   zombie-mermaid render <file> --ascii              Render to ASCII in terminal
-  zombie-mermaid render <file> --svg -o <out.svg>   Render to SVG file
-  zombie-mermaid render <file> --ascii --svg -o <out.svg>   Both
+  zombie-mermaid render <file> --svg                Render to <file stem>.svg
+  zombie-mermaid render <file> --svg -o <out.svg>   Render to a named SVG file
+  zombie-mermaid render <file> -o out.svg           Format inferred from the extension
+  zombie-mermaid render <file> --svg -o -           Write SVG to stdout
+  zombie-mermaid render <file> --ascii --svg -o <out.svg>   Both (ASCII to terminal)
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
@@ -87,9 +90,17 @@ Usage:
   zombie-mermaid --version                          Show version
 
 Options:
-  --ascii              Print ASCII/Unicode diagram to terminal
-  --svg                Render SVG (requires -o)
-  -o, --output         Output file path for SVG
+  --ascii              Print ASCII/Unicode diagram to terminal, or to -o <file.txt>
+                       when it is the only format
+  --svg                Render SVG to -o <path> (default: <input stem>.svg;
+                       stdin input must give -o)
+  -o, --output <path>  Output file for the SVG (or for ASCII when --svg is
+                       not given). '-' writes to stdout. A .svg or .txt
+                       extension selects the format when no --svg/--ascii
+                       flag is given; one that contradicts the flags is an
+                       error. Existing files are never overwritten without
+                       --force.
+  -f, --force          Overwrite an existing output file
   --theme <name>       Apply a built-in theme (see 'themes' command)
   --direction <dir>    Override the diagram's layout direction: TD, TB, BT, LR, or RL
                        (flowchart, state, and ER diagrams; nested subgraph

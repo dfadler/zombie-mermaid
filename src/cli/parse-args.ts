@@ -5,6 +5,7 @@
 // "no external dependencies" philosophy.
 // ============================================================================
 
+import { extname, format as formatPath, parse as parsePath } from 'node:path'
 import { isDirection } from '../parser.ts'
 import type { Direction } from '../types.ts'
 
@@ -17,7 +18,16 @@ export interface RenderArgs {
   input: string | undefined
   ascii: boolean
   svg: boolean
+  /**
+   * Destination for the invocation's *file* output (SVG when `--svg` is
+   * set, otherwise ASCII): a path, or `STDOUT_OUTPUT` (`-`) for stdout.
+   * `undefined` means "nothing goes to a file" — only possible for
+   * ASCII-only runs, since `--svg` without `-o` derives a path from the
+   * input file name at parse time (see `parseRender`).
+   */
   output: string | undefined
+  /** `--force`/`-f`: overwrite an existing output file instead of refusing. */
+  force: boolean
   theme: string | undefined
   paddingX: number | undefined
   paddingY: number | undefined
@@ -53,6 +63,44 @@ export type CliArgs = RenderArgs | SimpleCommand | WebArgs
 
 /** Default port for `zombie-mermaid web` when `--port` isn't given. */
 export const DEFAULT_WEB_PORT = 3000
+
+/** The `-o` value that means "write to stdout instead of a file". */
+export const STDOUT_OUTPUT = '-'
+
+/**
+ * Output file extensions the `render` command recognises, and the format
+ * each implies. Used two ways (see `parseRender`):
+ *
+ * - **Inference** — `-o out.svg` with no `--svg` flag turns `--svg` on, so
+ *   the extension alone is enough to pick a format.
+ * - **Conflict detection** — an extension that names a format *other* than
+ *   the one `-o` is about to receive is almost certainly a mistake
+ *   (`--svg -o out.txt` would write SVG markup into a `.txt`), so it's an
+ *   error rather than silently honoured. Unrecognised extensions are left
+ *   alone: `--svg -o diagram.xml` writes SVG to `diagram.xml`.
+ */
+export const OUTPUT_EXTENSIONS: Readonly<Record<string, 'svg' | 'ascii'>> = {
+  '.svg': 'svg',
+  '.txt': 'ascii',
+}
+
+/** Format implied by `output`'s extension, or undefined when unrecognised (or stdout). */
+export function inferOutputFormat(
+  output: string | undefined,
+): 'svg' | 'ascii' | undefined {
+  if (output === undefined || output === STDOUT_OUTPUT) return undefined
+  return OUTPUT_EXTENSIONS[extname(output).toLowerCase()]
+}
+
+/**
+ * Default output path for a file format when `-o` is omitted: the input
+ * path with its extension swapped (`docs/flow.mmd` → `docs/flow.svg`; an
+ * extensionless `flow` → `flow.svg`).
+ */
+export function defaultOutputPath(input: string, ext: string): string {
+  const parsed = parsePath(input)
+  return formatPath({ dir: parsed.dir, name: parsed.name, ext })
+}
 
 // ============================================================================
 // Parser
@@ -169,6 +217,7 @@ function parseRender(args: string[]): RenderArgs {
   let ascii = false
   let svg = false
   let output: string | undefined
+  let force = false
   let theme: string | undefined
   let paddingX: number | undefined
   let paddingY: number | undefined
@@ -196,9 +245,14 @@ function parseRender(args: string[]): RenderArgs {
       svg = true
       i++
     } else if (arg === '-o' || arg === '--output') {
-      if (i + 1 >= args.length) throw new Error('-o requires a file path')
+      if (i + 1 >= args.length) {
+        throw new Error('-o requires a file path (or - for stdout)')
+      }
       output = args[i + 1]
       i += 2
+    } else if (arg === '-f' || arg === '--force') {
+      force = true
+      i++
     } else if (arg === '--theme') {
       if (i + 1 >= args.length) throw new Error('--theme requires a theme name')
       theme = args[i + 1]
@@ -221,8 +275,14 @@ function parseRender(args: string[]): RenderArgs {
     } else if (arg === '--direction') {
       direction = parseDirectionFlag(args, i, arg)
       i += 2
-    } else if (!arg.startsWith('-')) {
-      // Positional argument = input file
+    } else if (!arg.startsWith('-') || arg === STDOUT_OUTPUT) {
+      // Positional argument = input file. A bare `-` here is *not* stdin
+      // (stdin is the no-file default) — reject it like any other stray.
+      if (arg === STDOUT_OUTPUT) {
+        throw new Error(
+          `Unexpected argument: - (use -o - to write output to stdout; omit the input file to read stdin)`,
+        )
+      }
       if (input !== undefined) {
         throw new Error(
           `Unexpected argument: ${arg} (input file already set to "${input}")`,
@@ -235,13 +295,56 @@ function parseRender(args: string[]): RenderArgs {
     }
   }
 
-  // Validation
-  if (!ascii && !svg) {
-    throw new Error('Specify --ascii and/or --svg -o <path>')
+  // ---- Output resolution (see OUTPUT_EXTENSIONS and STDOUT_OUTPUT) ----
+
+  // 1. A recognised `-o` extension is additive: `-o out.svg` implies --svg.
+  //    `.txt` implies --ascii, but only when SVG isn't also headed for
+  //    that same path — that combination is a conflict, not an inference.
+  const inferred = inferOutputFormat(output)
+  if (inferred === 'svg') {
+    svg = true
+  } else if (inferred === 'ascii') {
+    if (svg) {
+      throw new Error(
+        `-o ${output} has a .txt extension, but --svg output would be written to it. ` +
+          `Use a .svg path (or -o - for stdout) for SVG output.`,
+      )
+    }
+    ascii = true
   }
 
+  // 2. Something must be produced.
+  if (!ascii && !svg) {
+    if (output !== undefined && output !== STDOUT_OUTPUT) {
+      const known = Object.keys(OUTPUT_EXTENSIONS).join(', ')
+      throw new Error(
+        `Cannot infer an output format from "${output}" — pass --ascii or --svg, ` +
+          `or use a recognised extension (${known})`,
+      )
+    }
+    throw new Error(
+      'Specify --ascii and/or --svg (or -o <path> with a .svg/.txt extension)',
+    )
+  }
+
+  // 3. stdout can carry one stream. ASCII always prints there unless it is
+  //    the sole format and -o names a file, so `--ascii --svg -o -` would
+  //    interleave two documents.
+  if (output === STDOUT_OUTPUT && ascii && svg) {
+    throw new Error(
+      '-o - would send both ASCII and SVG to stdout; drop --ascii, or write the SVG to a file path',
+    )
+  }
+
+  // 4. --svg without -o: derive <input stem>.svg. Stdin has no name to
+  //    derive from, so that case must say where the SVG should go.
   if (svg && output === undefined) {
-    throw new Error('--svg requires -o <path>')
+    if (input === undefined) {
+      throw new Error(
+        '--svg needs -o <path> (or -o - for stdout) when reading from stdin — there is no input file name to derive an output name from',
+      )
+    }
+    output = defaultOutputPath(input, '.svg')
   }
 
   if (maxWidth !== undefined && !ascii) {
@@ -254,6 +357,7 @@ function parseRender(args: string[]): RenderArgs {
     ascii,
     svg,
     output,
+    force,
     theme,
     paddingX,
     paddingY,
