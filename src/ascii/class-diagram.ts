@@ -537,6 +537,36 @@ export function renderClassAscii(
     return Math.max(-maxOffset, Math.min(maxOffset, offset))
   }
 
+  /**
+   * A relationship's connection columns: center-bottom of its source and
+   * center-top of its target, each shifted by the relationship's group
+   * offset (see `relColumnOffset` above). Every pass that positions
+   * something relative to a relationship's route — the line-drawing loop,
+   * the label-territory precompute, and the label-drawing pass — must go
+   * through this one helper. When the line pass alone applied the offset,
+   * a reciprocal pair's labels were still measured and drawn against the
+   * shared box center: the territory pass saw two labels with identical
+   * midpoints and split the column between them, truncating both to a
+   * single mashed `rea……ies` while their lines sat on separate columns.
+   */
+  function connectionColumns(
+    relIndex: number,
+    fromP: PlacedClass,
+    toP: PlacedClass,
+  ): { fromCX: number; toCX: number } {
+    const rawOffset = relColumnOffset.get(relIndex) ?? 0
+    return {
+      fromCX:
+        fromP.x +
+        Math.floor(fromP.width / 2) +
+        clampToBoxWidth(rawOffset, fromP.width),
+      toCX:
+        toP.x +
+        Math.floor(toP.width / 2) +
+        clampToBoxWidth(rawOffset, toP.width),
+    }
+  }
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -549,16 +579,9 @@ export function renderClassAscii(
     // Exclude source and target boxes from collision detection
     const excludeIds = new Set([rel.from, rel.to])
 
-    const rawOffset = relColumnOffset.get(relIndex) ?? 0
-
     // Connection points: center-bottom of source → center-top of target
-    const fromCX =
-      fromP.x +
-      Math.floor(fromP.width / 2) +
-      clampToBoxWidth(rawOffset, fromP.width)
+    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
     const fromBY = fromP.y + fromP.height - 1
-    const toCX =
-      toP.x + Math.floor(toP.width / 2) + clampToBoxWidth(rawOffset, toP.width)
     const toTY = toP.y
 
     // Route: Manhattan routing with collision avoidance
@@ -809,7 +832,7 @@ export function renderClassAscii(
         }
       }
     }
-  }
+  })
 
   // --- Precompute each label's horizontal territory ---
   // A label's left/right bound is derived purely from connection-point
@@ -841,14 +864,13 @@ export function renderClassAscii(
     rowEnd: number
   }
   const labelGeometry: LabelGeometry[] = []
-  for (const rel of diagram.relationships) {
+  for (const [relIndex, rel] of diagram.relationships.entries()) {
     if (!rel.label) continue
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
     if (!fromP || !toP) continue
-    const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
     const fromBY = fromP.y + fromP.height - 1
-    const toCX = toP.x + Math.floor(toP.width / 2)
     const toTY = toP.y
     const idealMidX = Math.floor((fromCX + toCX) / 2)
 
@@ -925,7 +947,7 @@ export function renderClassAscii(
   // the same midpoint row (issue #447, "teaches" truncated to "tea" and
   // merged into a box-drawing corner). Running all lines first means no
   // line write can ever land on top of label text again.
-  for (const rel of diagram.relationships) {
+  for (const [relIndex, rel] of diagram.relationships.entries()) {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
     if (!fromP || !toP) continue
@@ -935,9 +957,8 @@ export function renderClassAscii(
     const excludeIds = new Set([rel.from, rel.to])
 
     // Connection points: center-bottom of source → center-top of target
-    const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
     const fromBY = fromP.y + fromP.height - 1
-    const toCX = toP.x + Math.floor(toP.width / 2)
     const toTY = toP.y
 
     // Draw relationship label at midpoint (supports multi-line)
@@ -1057,7 +1078,7 @@ export function renderClassAscii(
         }
       }
     }
-  })
+  }
 
   return canvasToString(canvas, { roleCanvas: rc, colorMode, theme })
 }
