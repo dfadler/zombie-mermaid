@@ -379,4 +379,18 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: only `four` survives, on two lines. After: `one`, `two`, `three`, and `four` each sit on their own lane, joined to the boxes by a short jog, with four distinct arrowheads.',
   },
+  {
+    id: 'class-label-detour-routing',
+    title: 'A detoured relationship’s label ignored its own routed path',
+    symptom:
+      'A relationship’s label always anchored on the straight-line midpoint between its source and target boxes, even when its line detoured around an intermediate box to avoid it — so the label sat wherever the *unrouted* line would have gone, not the *actual* one, reading as though it terminated at the wrong box.',
+    source:
+      'classDiagram\n  class Model {\n    -data Map\n    +getData() Map\n    +setData(key, val) void\n    +notify() void\n  }\n  class View {\n    -model Model\n    +render() void\n    +update() void\n  }\n  class Controller {\n    -model Model\n    -view View\n    +handleInput(event) void\n    +updateModel(data) void\n  }\n  Controller --> Model : updates\n  Controller --> View : refreshes\n  View --> Model : reads\n  Model ..> View : notifies',
+    fixCommit: '1bf8096',
+    // TODO: set to the PR that carries 1bf8096 once it is opened.
+    pr: 0,
+    render: 'ascii',
+    lookFor:
+      'Before: `refreshes` and `updates` sit stacked on adjacent rows above the single arrowhead entering Model, reading as though both terminate there. After: `refreshes` sits beside its own detour line, past Model’s right border, clearly distinct from `updates`.',
+  },
 ]
