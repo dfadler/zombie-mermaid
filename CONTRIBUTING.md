@@ -42,7 +42,7 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run build` — build the publishable package with Vite (`scripts/build-lib.ts`)
 - `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
-- `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot
+- `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot. Its markup comes from React components in `demo/components/` rendered with `react-dom/server` (the [#423](https://github.com/dfadler/zombie-mermaid/issues/423) pilot); every `.tsx` file there must open with `/** @jsxRuntime automatic */` — see the `jsx` comment in `demo/tsconfig.json` for why
 - `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
 - `pnpm run fork-fixes` — render the fork-fixes showcase (`fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
 - `pnpm run blog` — render the blog (`blog.ts`) from `blog-posts/*.md` to `blog/`; must run after `pnpm run pages` in `build:site` since it appends to the `sitemap.xml` that `pages.ts` generates. See `blog-posts/README.md` for the post frontmatter format.

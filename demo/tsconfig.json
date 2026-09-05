@@ -7,6 +7,17 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    // JSX for the site's React components (demo/components/**/*.tsx, the
+    // #423 migration). `react-jsx` covers tsc and Vite/Vitest, which both
+    // resolve the nearest tsconfig for a file under demo/. The `tsx` CLI
+    // the generators run under does NOT: it reads only the repo-root
+    // tsconfig.json, and applies it only to files that config's `include`
+    // matches (src/**), so a .tsx file here would otherwise be compiled
+    // with esbuild's classic-runtime default and throw `React is not
+    // defined` at generation time. Every .tsx file therefore also opens
+    // with a `/** @jsxRuntime automatic */` pragma, which esbuild honours
+    // regardless of tsconfig (enforced by __tests__/demo-jsx-pragma.test.ts).
+    "jsx": "react-jsx",
     "types": [],
     "noEmit": true,
     // ".." (repo root), not "." (this directory): demo/diagram-pages-data.ts
@@ -18,5 +29,5 @@
     "declaration": false,
     "declarationMap": false
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

@@ -42,6 +42,8 @@ export default tseslint.config(
       // The demo page's own client-side code. It used to be a template
       // literal inside index.ts, which no linter could see.
       'demo/**/*.ts',
+      // The site's React components (see #423).
+      'demo/**/*.tsx',
       'editor.ts',
       'vite.config.ts',
       'index.ts',
