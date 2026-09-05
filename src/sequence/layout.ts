@@ -246,6 +246,60 @@ export function layoutSequenceDiagram(
   const activations: Activation[] = []
   const nestingOffset = 4 // Horizontal offset per nesting level
 
+  /** Open an activation bar on `actorId` at row `y` (stacks for nesting). */
+  function startActivation(actorId: string, y: number): void {
+    const stack = activationStacks.get(actorId) ?? []
+    activationStacks.set(actorId, stack)
+    const depth = stack.length // Current depth before pushing
+    stack.push({ startY: y, depth })
+  }
+
+  /**
+   * Close the innermost open activation on `actorId` at row `y`. A
+   * deactivate with nothing open is ignored rather than fatal (Mermaid
+   * itself errors here; this renderer has always been lenient about it).
+   */
+  function endActivation(actorId: string, y: number): void {
+    const stack = activationStacks.get(actorId)
+    if (!stack || stack.length === 0) return
+    const { startY, depth } = stack.pop()!
+    const idx = actorIndex.get(actorId) ?? 0
+    // Offset nested activations to the right for visual distinction
+    const xOffset = depth * nestingOffset
+    activations.push({
+      actorId,
+      x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
+      topY: startY,
+      bottomY: y,
+      width: seq.activationWidth,
+    })
+  }
+
+  /**
+   * Standalone `activate`/`deactivate` statements, grouped by the message
+   * they follow. Applied at that message's row — the same row the `+`/`-`
+   * shorthand on that message would use — through the same two helpers, so
+   * the two spellings can't drift apart.
+   */
+  const activationEventsByAfterIndex = new Map<
+    number,
+    typeof diagram.activations
+  >()
+  for (const event of diagram.activations) {
+    const list = activationEventsByAfterIndex.get(event.afterIndex) ?? []
+    list.push(event)
+    activationEventsByAfterIndex.set(event.afterIndex, list)
+  }
+  function applyActivationEvents(afterIndex: number, y: number): void {
+    for (const event of activationEventsByAfterIndex.get(afterIndex) ?? []) {
+      if (event.kind === 'start') startActivation(event.actorId, y)
+      else endActivation(event.actorId, y)
+    }
+  }
+
+  // Events before the first message open at the top of the message area.
+  applyActivationEvents(-1, messageY)
+
   for (let msgIdx = 0; msgIdx < diagram.messages.length; msgIdx++) {
     const msg = diagram.messages[msgIdx]!
     const fromIdx = actorIndex.get(msg.from) ?? 0
@@ -273,30 +327,13 @@ export function layoutSequenceDiagram(
       seqNumber: msg.seqNumber,
     })
 
-    // Handle activation - track nesting depth for visual offset
-    if (msg.activate) {
-      const stack = activationStacks.get(msg.to) ?? []
-      activationStacks.set(msg.to, stack)
-      const depth = stack.length // Current depth before pushing
-      stack.push({ startY: messageY, depth })
-    }
-
-    if (msg.deactivate) {
-      const stack = activationStacks.get(msg.from)
-      if (stack && stack.length > 0) {
-        const { startY, depth } = stack.pop()!
-        const idx = actorIndex.get(msg.from) ?? 0
-        // Offset nested activations to the right for visual distinction
-        const xOffset = depth * nestingOffset
-        activations.push({
-          actorId: msg.from,
-          x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
-          topY: startY,
-          bottomY: messageY,
-          width: seq.activationWidth,
-        })
-      }
-    }
+    // Handle activation - track nesting depth for visual offset. The `+`
+    // shorthand activates the recipient, `-` deactivates the sender (see
+    // parser.ts); standalone statements following this message apply at
+    // the same row, after the shorthand, in source order.
+    if (msg.activate) startActivation(msg.to, messageY)
+    if (msg.deactivate) endActivation(msg.from, messageY)
+    applyActivationEvents(msgIdx, messageY)
 
     // Advance messageY past the message itself
     messageY += isSelf

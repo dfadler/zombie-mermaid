@@ -216,3 +216,18 @@ describe('renderMermaidSVG – sequence diagrams – embedSource', () => {
     expect(svg).not.toContain('data-src=')
   })
 })
+
+describe('renderMermaidSVG – standalone activate/deactivate (#419)', () => {
+  it('produces byte-identical SVG to the +/- shorthand', () => {
+    const standalone = renderMermaidSVG(`sequenceDiagram
+      Alice->>John: Hello John, how are you?
+      activate John
+      John-->>Alice: Great!
+      deactivate John`)
+    const shorthand = renderMermaidSVG(`sequenceDiagram
+      Alice->>+John: Hello John, how are you?
+      John-->>-Alice: Great!`)
+    expect(standalone).toContain('<rect class="activation" data-actor="John"')
+    expect(standalone).toBe(shorthand)
+  })
+})

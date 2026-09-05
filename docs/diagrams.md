@@ -305,6 +305,40 @@ sequenceDiagram
   Bob-->>Alice: Great, thanks!
 ```
 
+### Activations
+
+Both of Mermaid's spellings are accepted and render identically:
+
+```
+sequenceDiagram
+  Alice->>John: Hello John, how are you?
+  activate John
+  John-->>Alice: Great!
+  deactivate John
+```
+
+is the same diagram as
+
+```
+sequenceDiagram
+  Alice->>+John: Hello John, how are you?
+  John-->>-Alice: Great!
+```
+
+A standalone `activate X` opens an activation bar on `X` at the row of the
+message it follows; `deactivate X` closes the innermost open bar on `X` at
+the row of the message it follows. That is exactly what the arrow shorthand
+does — `+` activates the _recipient_ after the message, `-` deactivates the
+_sender_ after it — so the two forms can be mixed freely, and activations
+stack for the same actor in either spelling (a nested bar is offset slightly
+to the right). An `activate` before the first message opens at the first
+message row; a `deactivate` with nothing open is ignored rather than fatal
+(Mermaid itself reports an error there).
+
+The ASCII renderer does not currently draw activation bars for _either_
+form; the standalone statements parse and are simply not drawn, the same as
+the shorthand.
+
 ### Known limitations
 
 Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
@@ -313,14 +347,14 @@ Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
   background grouping of participants is not recognized.
 - **`create`/`destroy` participant lifecycle.** These keywords, which mark a
   participant as starting or ending its lifeline at a specific point in the
-  diagram, are not recognized. This is not a requirement to declare
-  participants up front, though: an undeclared name used in a message is
-  auto-created on first use (`pushMessage` → `ensureActor`), matching real
-  Mermaid's own behavior — the gap is specifically the explicit
-  lifecycle-boundary syntax, not participant declaration order.
-- **Standalone `activate`/`deactivate` commands.** Only the inline `+`/`-`
-  shorthand on an arrow (`A->>+B`, `A-->>-B`) toggles activation — the
-  separate `activate A` / `deactivate A` statement form is not recognized.
+  diagram, are not recognized — the whole line is dropped, so a
+  `create actor D as Donald` also loses its `actor` kind and its alias (`D`
+  is then auto-created from its first message as a plain participant
+  labelled `D`). This is not a requirement to declare participants up front,
+  though: an undeclared name used in a message is auto-created on first use
+  (`pushMessage` → `ensureActor`), matching real Mermaid's own behavior — the
+  gap is specifically the explicit lifecycle-boundary syntax, not
+  participant declaration order.
 
 ## Class Diagrams
 

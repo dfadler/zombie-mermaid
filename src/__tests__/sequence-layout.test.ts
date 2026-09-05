@@ -884,3 +884,84 @@ describe('sequence layout – bidirectional arrows and autonumber pass-through',
     expect(result.messages[0]!.seqNumber).toBeUndefined()
   })
 })
+
+// ============================================================================
+// Standalone activate / deactivate (#419) — must match the +/- shorthand
+// ============================================================================
+
+describe('sequence layout – standalone activate/deactivate', () => {
+  it('renders the same activation box as the +/- shorthand', () => {
+    const standalone = layout(`sequenceDiagram
+      Alice->>John: Hello John, how are you?
+      activate John
+      John-->>Alice: Great!
+      deactivate John`)
+    const shorthand = layout(`sequenceDiagram
+      Alice->>+John: Hello John, how are you?
+      John-->>-Alice: Great!`)
+    expect(standalone.activations).toHaveLength(1)
+    expect(standalone.activations).toEqual(shorthand.activations)
+    expect(standalone.messages.map((m) => m.y)).toEqual(
+      shorthand.messages.map((m) => m.y),
+    )
+  })
+
+  it('stacks nested standalone activations exactly like nested shorthand ones', () => {
+    const standalone = layout(`sequenceDiagram
+      Alice->>John: one
+      activate John
+      Alice->>John: two
+      activate John
+      John-->>Alice: three
+      deactivate John
+      John-->>Alice: four
+      deactivate John`)
+    const shorthand = layout(`sequenceDiagram
+      Alice->>+John: one
+      Alice->>+John: two
+      John-->>-Alice: three
+      John-->>-Alice: four`)
+    expect(standalone.activations).toHaveLength(2)
+    expect(standalone.activations).toEqual(shorthand.activations)
+  })
+
+  it('mixes the two spellings on one actor (shorthand start, standalone end)', () => {
+    const result = layout(`sequenceDiagram
+      Alice->>+John: Hello
+      John-->>Alice: Great!
+      deactivate John`)
+    expect(result.activations).toHaveLength(1)
+    expect(result.activations[0]!.topY).toBe(result.messages[0]!.y)
+    expect(result.activations[0]!.bottomY).toBe(result.messages[1]!.y)
+  })
+
+  it('an activate before the first message opens at the first message row', () => {
+    const result = layout(`sequenceDiagram
+      activate Server
+      Client->>Server: ping
+      Server-->>Client: pong
+      deactivate Server`)
+    expect(result.activations).toHaveLength(1)
+    expect(result.activations[0]!.topY).toBe(result.messages[0]!.y)
+    expect(result.activations[0]!.bottomY).toBe(result.messages[1]!.y)
+  })
+
+  it('a standalone deactivate with nothing open is ignored, like a stray "-"', () => {
+    const result = layout(`sequenceDiagram
+      A->>B: x
+      deactivate B`)
+    expect(result.activations).toHaveLength(0)
+  })
+
+  it('an unclosed standalone activate runs to the bottom of the diagram', () => {
+    const result = layout(`sequenceDiagram
+      A->>B: x
+      activate B
+      B->>A: y`)
+    expect(result.activations).toHaveLength(1)
+    expect(result.activations[0]!.topY).toBe(result.messages[0]!.y)
+    expect(result.activations[0]!.bottomY).toBeGreaterThan(
+      result.messages[1]!.y,
+    )
+  })
+})

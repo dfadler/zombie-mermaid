@@ -56,6 +56,7 @@ export function toBlockType(value: string): Block['type'] {
 //   A--)B: Dashed open arrow
 //   A->>+B: Activate target
 //   A-->>-B: Deactivate source
+//   activate A / deactivate A   (standalone form of the +/- shorthand)
 //   A<<->>B: Bidirectional solid arrow
 //   A<<-->>B: Bidirectional dashed arrow
 //   autonumber / autonumber <start> <step> / autonumber off
@@ -108,6 +109,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     messages: [],
     blocks: [],
     notes: [],
+    activations: [],
   }
 
   // Track actor IDs to auto-create actors referenced in messages
@@ -237,6 +239,27 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       continue
     }
 
+    // --- Standalone activate / deactivate ---
+    // "activate A" / "deactivate A". Mermaid's own grammar expands the `+`/`-`
+    // arrow shorthand into exactly this (message, then an activeStart for the
+    // recipient / activeEnd for the sender), so record the same event the
+    // shorthand implies and let layout.ts feed both through one activation
+    // stack. Checked before the message regex: neither keyword contains an
+    // arrow token, but an actor literally named `activate` used as a message
+    // *source* (`activate->>B: x`) still reaches the message branch, since
+    // the `\s+` here requires whitespace after the keyword.
+    const activationMatch = line.match(/^(activate|deactivate)\s+(.+)$/)
+    if (activationMatch) {
+      const actorId = activationMatch[2]!.trim()
+      ensureActor(diagram, actorIds, actorId)
+      diagram.activations.push({
+        actorId,
+        kind: activationMatch[1] === 'activate' ? 'start' : 'end',
+        afterIndex: diagram.messages.length - 1,
+      })
+      continue
+    }
+
     // --- Message ---
     // Patterns: A->>B, A-->>B, A-)B, A--)B, A<<->>B, A<<-->>B, with optional
     // +/- activation. Format: FROM ARROW TO: LABEL
@@ -282,10 +305,6 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       )
       continue
     }
-
-    // --- activate / deactivate explicit commands ---
-    // These are handled implicitly via +/- on messages but can also appear standalone
-    // For now, we skip explicit activate/deactivate lines (they affect rendering only)
   }
 
   return diagram

@@ -535,3 +535,44 @@ describe('parseSequenceDiagram – pre-message notes', () => {
     expect(d.messages).toHaveLength(0)
   })
 })
+
+// ============================================================================
+// Standalone activate / deactivate (#419)
+// ============================================================================
+
+describe('parseSequenceDiagram – standalone activate/deactivate', () => {
+  it('records activate/deactivate statements as events keyed to the preceding message', () => {
+    const d = parse(`sequenceDiagram
+      Alice->>John: Hello
+      activate John
+      John-->>Alice: Great!
+      deactivate John`)
+    expect(d.messages).toHaveLength(2)
+    expect(d.activations).toEqual([
+      { actorId: 'John', kind: 'start', afterIndex: 0 },
+      { actorId: 'John', kind: 'end', afterIndex: 1 },
+    ])
+    // The standalone form leaves the shorthand flags untouched
+    expect(d.messages[0]!.activate).toBeUndefined()
+    expect(d.messages[1]!.deactivate).toBeUndefined()
+  })
+
+  it('an activate before any message gets afterIndex -1 and auto-creates the actor', () => {
+    const d = parse(`sequenceDiagram
+      activate Server
+      Client->>Server: ping`)
+    expect(d.activations[0]).toEqual({
+      actorId: 'Server',
+      kind: 'start',
+      afterIndex: -1,
+    })
+    expect(d.actors.map((a) => a.id)).toEqual(['Server', 'Client'])
+  })
+
+  it('is not confused by an actor literally named "activate" used as a message source', () => {
+    const d = parse(`sequenceDiagram
+      activate->>B: hi`)
+    expect(d.activations).toHaveLength(0)
+    expect(d.messages[0]!.from).toBe('activate')
+  })
+})

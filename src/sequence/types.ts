@@ -15,6 +15,33 @@ export interface SequenceDiagram {
   blocks: Block[]
   /** Notes attached to actors */
   notes: Note[]
+  /**
+   * Standalone `activate X` / `deactivate X` statements, in source order.
+   * The inline `+`/`-` arrow shorthand is *not* recorded here — it stays on
+   * `Message.activate` / `Message.deactivate` — but both feed the same
+   * activation stack at layout time (see layout.ts), so the two forms
+   * render identically.
+   */
+  activations: ActivationEvent[]
+}
+
+/**
+ * One standalone `activate X` (`kind: 'start'`) or `deactivate X`
+ * (`kind: 'end'`) statement. Mermaid's own grammar expands the `+`/`-` arrow
+ * shorthand into exactly these events — `A->>+B` is a message followed by an
+ * `activeStart` for the recipient, `A-->>-B` a message followed by an
+ * `activeEnd` for the sender — so this is the primitive and the shorthand is
+ * sugar over it.
+ */
+export interface ActivationEvent {
+  actorId: string
+  kind: 'start' | 'end'
+  /**
+   * Index of the message this statement follows (-1 if it precedes every
+   * message). The activation bar starts/ends at that message's row, which
+   * is where the shorthand form's bar starts/ends too.
+   */
+  afterIndex: number
 }
 
 export interface Actor {
