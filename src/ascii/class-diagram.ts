@@ -494,10 +494,53 @@ export function renderClassAscii(
   const dashH = useAscii ? '.' : '╌'
   const dashV = useAscii ? ':' : '┊'
 
-  for (const rel of diagram.relationships) {
+  // When more than one relationship connects the same pair of classes —
+  // most commonly a pair going in opposite directions, e.g. both
+  // `View --> Model` and `Model ..> View` — every relationship's connection
+  // point defaults to the exact same box-center column. Left alone, that
+  // means their lines, arrowheads, and labels all land on the same cells:
+  // whichever relationship draws last silently overwrites the other's, so
+  // it appears to vanish from the ASCII output entirely (issue #448). Give
+  // each relationship in such a group its own column, spread symmetrically
+  // around the box center, so their routes never start from the same point.
+  // Spacing is sized to the widest label in the group (not a fixed
+  // constant) so long labels still clear each other horizontally.
+  const relColumnOffset = new Map<number, number>()
+  {
+    const pairGroups = new Map<string, number[]>()
+    diagram.relationships.forEach((rel, i) => {
+      const pairKey = [rel.from, rel.to].sort().join('::')
+      const group = pairGroups.get(pairKey) ?? []
+      group.push(i)
+      pairGroups.set(pairKey, group)
+    })
+    for (const group of pairGroups.values()) {
+      if (group.length < 2) continue
+      const n = group.length
+      const widestLabel = Math.max(
+        ...group.map((i) => {
+          const label = diagram.relationships[i]!.label
+          if (!label) return 3 // room for just a line/arrow
+          return Math.max(...splitLines(label).map((l) => displayWidth(l))) + 2
+        }),
+      )
+      const step = widestLabel + 1 // +1 for a visual gap between labels
+      group.forEach((relIndex, pos) => {
+        relColumnOffset.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
+      })
+    }
+  }
+
+  /** Keep an offset connection point within the box's own width. */
+  function clampToBoxWidth(offset: number, boxWidth: number): number {
+    const maxOffset = Math.max(0, Math.floor((boxWidth - 2) / 2))
+    return Math.max(-maxOffset, Math.min(maxOffset, offset))
+  }
+
+  diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
-    if (!fromP || !toP) continue
+    if (!fromP || !toP) return
 
     const marker = getRelMarker(rel.type, rel.markerAt)
     const lineH = marker.dashed ? dashH : H
@@ -506,10 +549,16 @@ export function renderClassAscii(
     // Exclude source and target boxes from collision detection
     const excludeIds = new Set([rel.from, rel.to])
 
+    const rawOffset = relColumnOffset.get(relIndex) ?? 0
+
     // Connection points: center-bottom of source → center-top of target
-    const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    const fromCX =
+      fromP.x +
+      Math.floor(fromP.width / 2) +
+      clampToBoxWidth(rawOffset, fromP.width)
     const fromBY = fromP.y + fromP.height - 1
-    const toCX = toP.x + Math.floor(toP.width / 2)
+    const toCX =
+      toP.x + Math.floor(toP.width / 2) + clampToBoxWidth(rawOffset, toP.width)
     const toTY = toP.y
 
     // Route: Manhattan routing with collision avoidance
@@ -1008,7 +1057,7 @@ export function renderClassAscii(
         }
       }
     }
-  }
+  })
 
   return canvasToString(canvas, { roleCanvas: rc, colorMode, theme })
 }
