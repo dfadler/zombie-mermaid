@@ -7,6 +7,7 @@ import type {
   Activation,
   PositionedBlock,
   PositionedNote,
+  PositionedParticipantBox,
 } from './types.ts'
 import type { RenderOptions } from '../types.ts'
 import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
@@ -59,7 +60,22 @@ const SEQ = {
   noteOffsetAfterMessage: 8,
   /** Gap between consecutively stacked notes */
   noteStackGap: 4,
+  /**
+   * `box … end` group padding: horizontal clearance beyond the outermost
+   * member's box, vertical clearance above the actor boxes (under the label
+   * band) and below the lifeline bottoms.
+   */
+  boxPad: 10,
 } as const
+
+/**
+ * Height of the label band at the top of a `box … end` group, in px — the
+ * label's font size plus vertical breathing room. Shared with the renderer
+ * so the label lands centred in the band the layout reserved for it.
+ */
+export function boxLabelHeight(labelFontSize: number): number {
+  return labelFontSize + 8
+}
 
 /** Resolved sequence-layout config — same shape as {@link SEQ} but mutable numbers. */
 type SeqConfig = { [K in keyof typeof SEQ]: number }
@@ -98,6 +114,7 @@ export function layoutSequenceDiagram(
       activations: [],
       blocks: [],
       notes: [],
+      boxes: [],
     }
   }
 
@@ -134,8 +151,18 @@ export function layoutSequenceDiagram(
     actorIndex.set(diagram.actors[i]!.id, i)
   }
 
-  // 2. Position actors at the top
-  const actorY = seq.padding
+  // 2. Position actors at the top. A `box … end` group draws a full-height
+  //    background starting at the top padding, so when any (non-empty) box
+  //    exists the actor row moves down to leave room for the box's top
+  //    padding and — if any box has a label — its label band. Mermaid does
+  //    the same (`bumpVerticalPos(boxes[0].textMaxHeight)`).
+  const renderedBoxes = diagram.boxes.filter((b) => b.actorIds.length > 0)
+  const anyBoxLabel = renderedBoxes.some((b) => b.label !== '')
+  const boxTopInset =
+    renderedBoxes.length === 0
+      ? 0
+      : seq.boxPad + (anyBoxLabel ? boxLabelHeight(fontSizes.edgeLabel) : 0)
+  const actorY = seq.padding + boxTopInset
   const actors: PositionedActor[] = diagram.actors.map((a, i) => ({
     id: a.id,
     label: a.label,
@@ -145,6 +172,27 @@ export function layoutSequenceDiagram(
     width: actorWidths[i]!,
     height: seq.actorHeight,
   }))
+
+  // Box backgrounds span from the outermost member's left edge to the
+  // outermost member's right edge (plus padding) — any participant declared
+  // between two members sits visually inside, as in Mermaid. Heights are
+  // filled in once the diagram bottom is known (step 8 below).
+  const boxes: PositionedParticipantBox[] = renderedBoxes.map((box) => {
+    const idxs = box.actorIds.map((id) => actorIndex.get(id) ?? 0)
+    const lo = Math.min(...idxs)
+    const hi = Math.max(...idxs)
+    const left = actorCenterX[lo]! - actorWidths[lo]! / 2 - seq.boxPad
+    const right = actorCenterX[hi]! + actorWidths[hi]! / 2 + seq.boxPad
+    const positioned: PositionedParticipantBox = {
+      label: box.label,
+      x: left,
+      y: seq.padding,
+      width: right - left,
+      height: 0,
+    }
+    if (box.color !== undefined) positioned.color = box.color
+    return positioned
+  })
 
   // 3. Stack messages vertically
   let messageY = actorY + seq.actorHeight + seq.headerGap
@@ -246,6 +294,60 @@ export function layoutSequenceDiagram(
   const activations: Activation[] = []
   const nestingOffset = 4 // Horizontal offset per nesting level
 
+  /** Open an activation bar on `actorId` at row `y` (stacks for nesting). */
+  function startActivation(actorId: string, y: number): void {
+    const stack = activationStacks.get(actorId) ?? []
+    activationStacks.set(actorId, stack)
+    const depth = stack.length // Current depth before pushing
+    stack.push({ startY: y, depth })
+  }
+
+  /**
+   * Close the innermost open activation on `actorId` at row `y`. A
+   * deactivate with nothing open is ignored rather than fatal (Mermaid
+   * itself errors here; this renderer has always been lenient about it).
+   */
+  function endActivation(actorId: string, y: number): void {
+    const stack = activationStacks.get(actorId)
+    if (!stack || stack.length === 0) return
+    const { startY, depth } = stack.pop()!
+    const idx = actorIndex.get(actorId) ?? 0
+    // Offset nested activations to the right for visual distinction
+    const xOffset = depth * nestingOffset
+    activations.push({
+      actorId,
+      x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
+      topY: startY,
+      bottomY: y,
+      width: seq.activationWidth,
+    })
+  }
+
+  /**
+   * Standalone `activate`/`deactivate` statements, grouped by the message
+   * they follow. Applied at that message's row — the same row the `+`/`-`
+   * shorthand on that message would use — through the same two helpers, so
+   * the two spellings can't drift apart.
+   */
+  const activationEventsByAfterIndex = new Map<
+    number,
+    typeof diagram.activations
+  >()
+  for (const event of diagram.activations) {
+    const list = activationEventsByAfterIndex.get(event.afterIndex) ?? []
+    list.push(event)
+    activationEventsByAfterIndex.set(event.afterIndex, list)
+  }
+  function applyActivationEvents(afterIndex: number, y: number): void {
+    for (const event of activationEventsByAfterIndex.get(afterIndex) ?? []) {
+      if (event.kind === 'start') startActivation(event.actorId, y)
+      else endActivation(event.actorId, y)
+    }
+  }
+
+  // Events before the first message open at the top of the message area.
+  applyActivationEvents(-1, messageY)
+
   for (let msgIdx = 0; msgIdx < diagram.messages.length; msgIdx++) {
     const msg = diagram.messages[msgIdx]!
     const fromIdx = actorIndex.get(msg.from) ?? 0
@@ -257,7 +359,19 @@ export function layoutSequenceDiagram(
     if (extra > 0) messageY += extra
 
     const x1 = actorCenterX[fromIdx]!
-    const x2 = actorCenterX[toIdx]!
+    let x2 = actorCenterX[toIdx]!
+
+    // A `create participant` message ends at the near edge of the box it
+    // creates rather than at the lifeline centre — the box sits on this row
+    // (see the created-actor placement after this loop), so an arrow to the
+    // centre would run underneath it. Mermaid's renderer makes the same
+    // adjustment (`receiverAdjustment(actor, width / 2)`).
+    const createsRecipient =
+      !isSelf && diagram.actors[toIdx]!.createdAt === msgIdx
+    if (createsRecipient) {
+      const halfW = actorWidths[toIdx]! / 2
+      x2 += x1 < x2 ? -halfW : halfW
+    }
 
     messages.push({
       from: msg.from,
@@ -273,35 +387,22 @@ export function layoutSequenceDiagram(
       seqNumber: msg.seqNumber,
     })
 
-    // Handle activation - track nesting depth for visual offset
-    if (msg.activate) {
-      const stack = activationStacks.get(msg.to) ?? []
-      activationStacks.set(msg.to, stack)
-      const depth = stack.length // Current depth before pushing
-      stack.push({ startY: messageY, depth })
-    }
-
-    if (msg.deactivate) {
-      const stack = activationStacks.get(msg.from)
-      if (stack && stack.length > 0) {
-        const { startY, depth } = stack.pop()!
-        const idx = actorIndex.get(msg.from) ?? 0
-        // Offset nested activations to the right for visual distinction
-        const xOffset = depth * nestingOffset
-        activations.push({
-          actorId: msg.from,
-          x: actorCenterX[idx]! - seq.activationWidth / 2 + xOffset,
-          topY: startY,
-          bottomY: messageY,
-          width: seq.activationWidth,
-        })
-      }
-    }
+    // Handle activation - track nesting depth for visual offset. The `+`
+    // shorthand activates the recipient, `-` deactivates the sender (see
+    // parser.ts); standalone statements following this message apply at
+    // the same row, after the shorthand, in source order.
+    if (msg.activate) startActivation(msg.to, messageY)
+    if (msg.deactivate) endActivation(msg.from, messageY)
+    applyActivationEvents(msgIdx, messageY)
 
     // Advance messageY past the message itself
     messageY += isSelf
       ? seq.selfMessageHeight + seq.messageRowHeight
       : seq.messageRowHeight
+    // The created box is centred on this row, so its lower half hangs
+    // below the arrow — give the next row room to clear it (Mermaid bumps
+    // by the same half-height after a creating message).
+    if (createsRecipient) messageY += seq.actorHeight / 2
 
     // Position notes that appear after this message.
     // Notes start below the self-message loop (if self) or below the arrow,
@@ -505,6 +606,10 @@ export function layoutSequenceDiagram(
     globalMinX = Math.min(globalMinX, n.x)
     globalMaxX = Math.max(globalMaxX, n.x + n.width)
   }
+  for (const b of boxes) {
+    globalMinX = Math.min(globalMinX, b.x)
+    globalMaxX = Math.max(globalMaxX, b.x + b.width)
+  }
   // Include self-message labels in bounding box — they extend to the right of the actor
   // and could be clipped if not accounted for in the SVG width
   for (const m of messages) {
@@ -534,19 +639,48 @@ export function layoutSequenceDiagram(
       b.x += shiftX
     }
     for (const n of notes) n.x += shiftX
+    for (const b of boxes) b.x += shiftX
     // Also shift actor center X array (used for lifelines below)
     for (let i = 0; i < actorCenterX.length; i++) actorCenterX[i]! += shiftX
   }
 
-  // 7. Calculate final lifelines (after shift so X positions are correct)
-  const lifelines: Lifeline[] = diagram.actors.map((a, i) => ({
-    actorId: a.id,
-    x: actorCenterX[i]!,
-    topY: actorY + seq.actorHeight,
-    bottomY: diagramBottom - seq.padding,
-  }))
+  // 7. Participant lifecycle: a created participant's box moves from the
+  //    header down to its creating message's row, centred on the arrow
+  //    (Mermaid: `actor.starty = lineStartY - actor.height / 2`), and a
+  //    destroyed participant's lifeline stops at its destroying message.
+  //    Both indices come from the parser, which already verified the
+  //    message exists and involves the actor — the `?? messageY` fallbacks
+  //    only guard the type, not a reachable state.
+  for (let i = 0; i < diagram.actors.length; i++) {
+    const createdAt = diagram.actors[i]!.createdAt
+    if (createdAt !== undefined) {
+      actors[i]!.y = (messages[createdAt]?.y ?? messageY) - seq.actorHeight / 2
+    }
+  }
 
-  // 8. Calculate diagram dimensions from the bounding box
+  // 8. Calculate final lifelines (after shift so X positions are correct)
+  const lifelines: Lifeline[] = diagram.actors.map((a, i) => {
+    const destroyedAt = a.destroyedAt
+    const lifeline: Lifeline = {
+      actorId: a.id,
+      x: actorCenterX[i]!,
+      topY: actors[i]!.y + seq.actorHeight,
+      bottomY:
+        destroyedAt === undefined
+          ? diagramBottom - seq.padding
+          : (messages[destroyedAt]?.y ?? messageY),
+    }
+    if (destroyedAt !== undefined) lifeline.destroyed = true
+    return lifeline
+  })
+
+  // Box backgrounds run from the top padding to just under the lifeline
+  // bottoms (boxPad < padding, so this stays inside the diagram height).
+  for (const b of boxes) {
+    b.height = diagramBottom - seq.padding + seq.boxPad - b.y
+  }
+
+  // 9. Calculate diagram dimensions from the bounding box
   const diagramWidth = globalMaxX + shiftX + seq.padding
   const diagramHeight = diagramBottom
 
@@ -559,5 +693,6 @@ export function layoutSequenceDiagram(
     activations,
     blocks,
     notes,
+    boxes,
   }
 }

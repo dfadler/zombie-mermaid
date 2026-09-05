@@ -1,5 +1,18 @@
-import type { SequenceDiagram, Message, Block } from './types.ts'
+import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
+import { parseBoxHeader } from './box-color.ts'
+
+/**
+ * Which `box … end` group (index into `diagram.boxes`) is currently open,
+ * and which box each participant already belongs to. Threaded through the
+ * actor-creating helpers so a participant first mentioned inside a box —
+ * by a declaration, a `create`, or (leniently) a message — joins it, the
+ * way Mermaid's `addActor` assigns `currentBox`.
+ */
+interface BoxContext {
+  open: number | undefined
+  membership: Map<string, number>
+}
 
 /**
  * Narrow a regex-captured block keyword to `Block['type']`. The capturing
@@ -56,6 +69,11 @@ export function toBlockType(value: string): Block['type'] {
 //   A--)B: Dashed open arrow
 //   A->>+B: Activate target
 //   A-->>-B: Deactivate source
+//   activate A / deactivate A   (standalone form of the +/- shorthand)
+//   create participant C [as Label] / create actor C [as Label]
+//                                 (on the line before C's first message)
+//   destroy C                     (on the line before C's last message)
+//   box <color?> <label?> ... end (participant grouping; see box-color.ts)
 //   A<<->>B: Bidirectional solid arrow
 //   A<<-->>B: Bidirectional dashed arrow
 //   autonumber / autonumber <start> <step> / autonumber off
@@ -108,7 +126,16 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     messages: [],
     blocks: [],
     notes: [],
+    activations: [],
+    boxes: [],
   }
+
+  const boxCtx: BoxContext = { open: undefined, membership: new Map() }
+  // Block-stack depth at the moment the open box began. Mermaid's grammar
+  // only allows participant declarations inside a box, so `end` there can
+  // only mean the box — but this parser is lenient about other statements,
+  // and a `loop` opened inside a box must still own the next `end`.
+  let boxOpenedAtDepth = 0
 
   // Track actor IDs to auto-create actors referenced in messages
   const actorIds = new Set<string>()
@@ -126,8 +153,78 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
   // block/divider lines don't advance the counter.
   const autonumber = { enabled: false, next: 1, step: 1 }
 
+  // `create participant X` / `destroy X` bind to the very next message —
+  // Mermaid's sequenceDb enforces that the next message's recipient is the
+  // created participant, and that the destroyed one is its sender or
+  // recipient, throwing otherwise. Mirrored here (same error text) rather
+  // than guessing which later message was meant. A directive with no
+  // message after it at all is left as a plain declaration.
+  let pendingCreate: string | undefined
+  let pendingDestroy: string | undefined
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!
+
+    // --- box <color?> <label?> ---
+    // Opens a participant group; closed by `end`. Boxes cannot nest
+    // (Mermaid's grammar rejects it), so a second `box` while one is open
+    // is an error rather than an implicit close.
+    const boxMatch = line.match(/^box(?:\s+(.*))?$/)
+    if (boxMatch) {
+      if (boxCtx.open !== undefined) {
+        throw new Error(
+          'Sequence diagram: a box cannot be nested inside another box — close the open box with "end" first',
+        )
+      }
+      const { color, label } = parseBoxHeader(boxMatch[1] ?? '')
+      const box: SequenceDiagram['boxes'][number] = {
+        label: normalizeBrTags(label),
+        actorIds: [],
+      }
+      if (color !== undefined) box.color = color
+      diagram.boxes.push(box)
+      boxCtx.open = diagram.boxes.length - 1
+      boxOpenedAtDepth = blockStack.length
+      continue
+    }
+
+    // --- create participant / create actor ---
+    // "create participant C" / "create actor C as Label" — the line before
+    // C's first message. Same shape as a plain declaration, so the alias and
+    // the participant/actor kind are kept, not dropped with the keyword.
+    const createMatch = line.match(
+      /^create\s+(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/,
+    )
+    if (createMatch) {
+      const type: 'participant' | 'actor' =
+        createMatch[1] === 'actor' ? 'actor' : 'participant'
+      const id = createMatch[2]!
+      if (actorIds.has(id)) {
+        // Mermaid's own wording (sequenceDb `createParticipant`).
+        throw new Error(
+          "It is not possible to have actors with the same id, even if one is destroyed before the next is created. Use 'AS' aliases to simulate the behavior",
+        )
+      }
+      actorIds.add(id)
+      diagram.actors.push({
+        id,
+        label: normalizeBrTags(createMatch[3]?.trim() ?? id),
+        type,
+      })
+      joinOpenBox(diagram, boxCtx, id)
+      pendingCreate = id
+      continue
+    }
+
+    // --- destroy ---
+    // "destroy C" — the line before C's last message.
+    const destroyMatch = line.match(/^destroy\s+(.+)$/)
+    if (destroyMatch) {
+      const id = destroyMatch[1]!.trim()
+      ensureActor(diagram, actorIds, boxCtx, id)
+      pendingDestroy = id
+      continue
+    }
 
     // --- autonumber directive ---
     const autonumberMatch = line.match(
@@ -163,6 +260,9 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         actorIds.add(id)
         diagram.actors.push({ id, label, type })
       }
+      // A re-declaration inside a box joins it (or errors if it already
+      // belongs to a different one) — Mermaid's `addActor` rule.
+      joinOpenBox(diagram, boxCtx, id)
       continue
     }
 
@@ -179,7 +279,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
 
       // Ensure actors exist
       for (const aid of noteActorIds) {
-        ensureActor(diagram, actorIds, aid)
+        ensureActor(diagram, actorIds, boxCtx, aid)
       }
 
       let position: 'left' | 'right' | 'over' = 'over'
@@ -224,6 +324,18 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       continue
     }
 
+    // --- Box end ---
+    // `end` closes the open box unless a block was opened *inside* it,
+    // in which case the block (innermost) owns this `end`.
+    if (
+      line === 'end' &&
+      boxCtx.open !== undefined &&
+      blockStack.length === boxOpenedAtDepth
+    ) {
+      boxCtx.open = undefined
+      continue
+    }
+
     // --- Block end ---
     if (line === 'end' && blockStack.length > 0) {
       const completed = blockStack.pop()!
@@ -233,6 +345,27 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         startIndex: completed.startIndex,
         endIndex: Math.max(diagram.messages.length - 1, completed.startIndex),
         dividers: completed.dividers,
+      })
+      continue
+    }
+
+    // --- Standalone activate / deactivate ---
+    // "activate A" / "deactivate A". Mermaid's own grammar expands the `+`/`-`
+    // arrow shorthand into exactly this (message, then an activeStart for the
+    // recipient / activeEnd for the sender), so record the same event the
+    // shorthand implies and let layout.ts feed both through one activation
+    // stack. Checked before the message regex: neither keyword contains an
+    // arrow token, but an actor literally named `activate` used as a message
+    // *source* (`activate->>B: x`) still reaches the message branch, since
+    // the `\s+` here requires whitespace after the keyword.
+    const activationMatch = line.match(/^(activate|deactivate)\s+(.+)$/)
+    if (activationMatch) {
+      const actorId = activationMatch[2]!.trim()
+      ensureActor(diagram, actorIds, boxCtx, actorId)
+      diagram.activations.push({
+        actorId,
+        kind: activationMatch[1] === 'activate' ? 'start' : 'end',
+        afterIndex: diagram.messages.length - 1,
       })
       continue
     }
@@ -273,6 +406,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       pushMessage(
         diagram,
         actorIds,
+        boxCtx,
         autonumber,
         msgMatch[1]!,
         msgMatch[2]!,
@@ -280,27 +414,84 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         msgMatch[4]!,
         msgMatch[5]!,
       )
+      const msgIndex = diagram.messages.length - 1
+      const msg = diagram.messages[msgIndex]!
+      if (pendingCreate !== undefined) {
+        if (msg.to !== pendingCreate) {
+          throw new Error(
+            `The created participant ${pendingCreate} does not have an associated creating message after its declaration. Please check the sequence diagram.`,
+          )
+        }
+        findActor(diagram, pendingCreate).createdAt = msgIndex
+        pendingCreate = undefined
+      }
+      if (pendingDestroy !== undefined) {
+        if (msg.from !== pendingDestroy && msg.to !== pendingDestroy) {
+          throw new Error(
+            `The destroyed participant ${pendingDestroy} does not have an associated destroying message after its declaration. Please check the sequence diagram.`,
+          )
+        }
+        findActor(diagram, pendingDestroy).destroyedAt = msgIndex
+        pendingDestroy = undefined
+      }
       continue
     }
-
-    // --- activate / deactivate explicit commands ---
-    // These are handled implicitly via +/- on messages but can also appear standalone
-    // For now, we skip explicit activate/deactivate lines (they affect rendering only)
   }
 
   return diagram
+}
+
+/**
+ * Look up an actor the parser itself already registered (every caller
+ * passes an id that went through `ensureActor` or the create branch first,
+ * so the miss branch is a parser-invariant violation, not user error).
+ */
+function findActor(diagram: SequenceDiagram, id: string): Actor {
+  const actor = diagram.actors.find((a) => a.id === id)
+  if (actor === undefined) {
+    /* v8 ignore next */
+    throw new Error(`Sequence diagram: unknown actor "${id}"`)
+  }
+  return actor
 }
 
 /** Ensure an actor exists, creating a default participant if not */
 function ensureActor(
   diagram: SequenceDiagram,
   actorIds: Set<string>,
+  boxCtx: BoxContext,
   id: string,
 ): void {
   if (!actorIds.has(id)) {
     actorIds.add(id)
     diagram.actors.push({ id, label: id, type: 'participant' })
   }
+  joinOpenBox(diagram, boxCtx, id)
+}
+
+/**
+ * Put `id` into the currently open `box`, if any. A participant already in
+ * a *different* box is an error (Mermaid's own wording); one already in
+ * this box, or no box open, is a no-op.
+ */
+function joinOpenBox(
+  diagram: SequenceDiagram,
+  boxCtx: BoxContext,
+  id: string,
+): void {
+  const open = boxCtx.open
+  if (open === undefined) return
+  const existing = boxCtx.membership.get(id)
+  if (existing === open) return
+  if (existing !== undefined) {
+    const from = diagram.boxes[existing]!.label
+    const to = diagram.boxes[open]!.label
+    throw new Error(
+      `A same participant should only be defined in one Box: ${id} can't be in '${from}' and in '${to}' at the same time.`,
+    )
+  }
+  boxCtx.membership.set(id, open)
+  diagram.boxes[open]!.actorIds.push(id)
 }
 
 /**
@@ -312,6 +503,7 @@ function ensureActor(
 function pushMessage(
   diagram: SequenceDiagram,
   actorIds: Set<string>,
+  boxCtx: BoxContext,
   autonumber: { enabled: boolean; next: number; step: number },
   from: string,
   arrow: string,
@@ -319,8 +511,8 @@ function pushMessage(
   to: string,
   rawLabel: string,
 ): void {
-  ensureActor(diagram, actorIds, from)
-  ensureActor(diagram, actorIds, to)
+  ensureActor(diagram, actorIds, boxCtx, from)
+  ensureActor(diagram, actorIds, boxCtx, to)
 
   const bidirectional = arrow === '<<->>' || arrow === '<<-->>'
   const lineStyle = bidirectional

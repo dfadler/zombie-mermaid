@@ -333,22 +333,129 @@ sequenceDiagram
   Bob-->>Alice: Great, thanks!
 ```
 
+### Activations
+
+Both of Mermaid's spellings are accepted and render identically:
+
+```
+sequenceDiagram
+  Alice->>John: Hello John, how are you?
+  activate John
+  John-->>Alice: Great!
+  deactivate John
+```
+
+is the same diagram as
+
+```
+sequenceDiagram
+  Alice->>+John: Hello John, how are you?
+  John-->>-Alice: Great!
+```
+
+A standalone `activate X` opens an activation bar on `X` at the row of the
+message it follows; `deactivate X` closes the innermost open bar on `X` at
+the row of the message it follows. That is exactly what the arrow shorthand
+does — `+` activates the _recipient_ after the message, `-` deactivates the
+_sender_ after it — so the two forms can be mixed freely, and activations
+stack for the same actor in either spelling (a nested bar is offset slightly
+to the right). An `activate` before the first message opens at the first
+message row; a `deactivate` with nothing open is ignored rather than fatal
+(Mermaid itself reports an error there).
+
+The ASCII renderer does not currently draw activation bars for _either_
+form; the standalone statements parse and are simply not drawn, the same as
+the shorthand.
+
+### Participant creation and destruction
+
+Mermaid's `create` / `destroy` directives go on the line before the message
+that creates or destroys the participant:
+
+```
+sequenceDiagram
+  Alice->>Bob: Hello Bob, how are you ?
+  Bob->>Alice: Fine, thank you. And you?
+  create participant Carl
+  Alice->>Carl: Hi Carl!
+  create actor D as Donald
+  Carl->>D: Hi!
+  destroy Carl
+  Alice-xCarl: We are too many
+  destroy Bob
+  Bob->>Alice: I agree
+```
+
+`create participant X` / `create actor X [as Label]` takes the same shape as
+a plain declaration, so the alias and the participant/actor kind are kept.
+The created participant's box is drawn centred on the row of the message
+that creates it, instead of in the header, and its lifeline starts there;
+the creating arrow stops at the box's edge. `destroy X` ends `X`'s lifeline
+at the next message with a cross, and no footer box is drawn for it.
+
+Mermaid's binding rules apply, with Mermaid's own error text: the message
+right after `create` must have the created participant as its _recipient_
+("only the recipient can be created"), the message right after `destroy`
+must have the destroyed participant as its sender _or_ recipient, and a
+`create` for an id that already exists is an error ("use `as` aliases to
+simulate the behavior"). A directive with no message after it at all is
+treated as a plain declaration rather than an error.
+
+In ASCII output the cross sits on the row directly _under_ the destroying
+arrow, not on the arrow row — a cross on the arrow row would replace the
+arrowhead and read as a lost message (`-x`). One row is reserved for it. A
+self-message cannot create its own recipient (the loop glyphs occupy the
+box's cells), so that degenerate case keeps the header box.
+
+### Participant grouping (`box ... end`)
+
+`box <color?> <label?> ... end` groups a run of participants under a shared
+background, spanning from the leftmost to the rightmost member declared
+inside it:
+
+```
+sequenceDiagram
+  box Aqua Group 1
+  participant A
+  participant B
+  end
+  participant C
+  A->>B: hello
+  B->>C: world
+```
+
+The header word (or an `rgb(...)`/`hsl(...)` call) is a colour if it matches
+a CSS named colour, hex, or `rgb()`/`hsl()` function form; otherwise the
+whole header is the label. `box transparent Group 1` is explicitly
+colourless with a label (Mermaid's own convention), and either piece can be
+omitted — `box`, `box Aqua`, and `box Group 1` are all valid. A box cannot
+nest inside another box, and a participant can only belong to one box;
+both are errors with Mermaid's own wording. A participant first declared
+(or auto-created by a message) while a box is open joins it, matching
+Mermaid's `addActor` rule; one declared after the box's `end` does not, even
+if a later message places it visually between two grouped members.
+
+In SVG, the group is a background rectangle with a themed stroke, drawn
+behind everything else, with the label centred in a band above the
+participant boxes. A colour is blended into the theme background via
+`color-mix()` at a fixed percentage rather than painted as-is, so it reads
+as an appropriate tint in both light and dark themes instead of the same
+opaque swatch in both.
+
+In ASCII output the group is a labelled bracket around the header boxes and
+an unlabelled one around the footer boxes — not a full-height background,
+which would otherwise cut through every message crossing the group's
+boundary. Colour is not representable in ASCII and is ignored; only the
+label, if any, is drawn. A participant created or destroyed inside an open
+box is included in the box's span, but its header or footer bracket segment
+reflects only the members actually present in that row (a created
+participant has no header box to bracket; a destroyed one has no footer
+box).
+
 ### Known limitations
 
-Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
-
-- **`box ... end` participant grouping.** Mermaid's colored/transparent
-  background grouping of participants is not recognized.
-- **`create`/`destroy` participant lifecycle.** These keywords, which mark a
-  participant as starting or ending its lifeline at a specific point in the
-  diagram, are not recognized. This is not a requirement to declare
-  participants up front, though: an undeclared name used in a message is
-  auto-created on first use (`pushMessage` → `ensureActor`), matching real
-  Mermaid's own behavior — the gap is specifically the explicit
-  lifecycle-boundary syntax, not participant declaration order.
-- **Standalone `activate`/`deactivate` commands.** Only the inline `+`/`-`
-  shorthand on an arrow (`A->>+B`, `A-->>-B`) toggles activation — the
-  separate `activate A` / `deactivate A` statement form is not recognized.
+None currently — `activate`/`deactivate`, `create`/`destroy`, and
+`box ... end` are all recognized (see above).
 
 ## Class Diagrams
 

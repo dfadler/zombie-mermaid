@@ -6,7 +6,9 @@ import type {
   Activation,
   PositionedBlock,
   PositionedNote,
+  PositionedParticipantBox,
 } from './types.ts'
+import { boxLabelHeight } from './layout.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
 import type { SvgEmitOptions } from '../theme.ts'
@@ -28,6 +30,7 @@ import { renderMultilineText, escapeAttr } from '../multiline-utils.ts'
 // All colors use CSS custom properties (var(--_xxx)) from the theme system.
 //
 // Render order (back to front):
+//   0. Participant-group backgrounds (box … end)
 //   1. Block backgrounds (loop/alt/opt)
 //   2. Lifelines (dashed vertical lines)
 //   3. Activation boxes
@@ -86,6 +89,11 @@ export function renderSequenceSvg(
   // Arrow marker definitions
   parts.push(arrowMarkerDefs())
   parts.push('</defs>')
+
+  // 0. Participant-group backgrounds (box … end), behind everything
+  for (const box of diagram.boxes) {
+    parts.push(renderParticipantBox(box, fontSizes))
+  }
 
   // 1. Block backgrounds (loop/alt/opt rectangles)
   for (const block of diagram.blocks) {
@@ -216,12 +224,26 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
  * Includes data-actor to link to its actor.
  */
 function renderLifeline(lifeline: Lifeline): string {
-  return (
+  const line =
     `<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
     `x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
     `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`
+  if (!lifeline.destroyed) return line
+  // `destroy X`: the lifeline ends at the destroying message's row, marked
+  // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
+  // lifeline pass (before messages), so the destroying arrow lands on top.
+  const { x, bottomY: y } = lifeline
+  const r = DESTROY_CROSS_HALF
+  return (
+    line +
+    `\n<path class="destroy" data-actor="${escapeAttr(lifeline.actorId)}" ` +
+    `d="M${x - r} ${y - r} L${x + r} ${y + r} M${x + r} ${y - r} L${x - r} ${y + r}" ` +
+    `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-linecap="round" />`
   )
 }
+
+/** Half-size of the `destroy` cross at the end of a lifeline, in px. */
+const DESTROY_CROSS_HALF = 8
 
 /**
  * Render an activation box (narrow filled rectangle on lifeline).
@@ -338,6 +360,59 @@ function renderSeqNumberBadge(
     ) +
     `</g>`
   )
+}
+
+/**
+ * How much of a `box` colour shows through: the colour is mixed into the
+ * theme background at this percentage rather than painted as-is, so
+ * `box Purple` reads as a purple tint on a light theme and a deep purple on
+ * a dark one instead of the same opaque swatch on both (Mermaid paints the
+ * literal colour). The stroke and label use theme variables, so a colourless
+ * box still shows its grouping in every theme.
+ */
+const BOX_COLOR_MIX_PERCENT = 35
+
+/**
+ * Render a `box … end` participant-group background: a full-height rect
+ * behind the grouped lifelines with the label centred in its top band.
+ * Wrapped in <g class="participant-box"> with semantic data attributes.
+ *
+ * `box.color` is emitted verbatim inside `color-mix()` — safe because the
+ * parser only records a value that matched its fixed named-colour list or
+ * the hex / rgb() / hsl() patterns (see box-color.ts), never arbitrary
+ * diagram text.
+ */
+function renderParticipantBox(
+  box: PositionedParticipantBox,
+  fontSizes: FontSizes,
+): string {
+  const labelAttr = box.label ? ` data-label="${escapeAttr(box.label)}"` : ''
+  const colorAttr =
+    box.color !== undefined ? ` data-color="${escapeAttr(box.color)}"` : ''
+  const fill =
+    box.color !== undefined
+      ? `color-mix(in srgb, ${escapeAttr(box.color)} ${BOX_COLOR_MIX_PERCENT}%, var(--bg))`
+      : 'none'
+  const parts: string[] = [
+    `<g class="participant-box"${labelAttr}${colorAttr}>`,
+    `  <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="4" ry="4" ` +
+      `fill="${fill}" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+  ]
+  if (box.label) {
+    // Centred in the label band the layout reserved above the actor boxes.
+    parts.push(
+      '  ' +
+        renderMultilineText(
+          box.label,
+          box.x + box.width / 2,
+          box.y + boxLabelHeight(fontSizes.edgeLabel) / 2,
+          fontSizes.edgeLabel,
+          `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+        ),
+    )
+  }
+  parts.push('</g>')
+  return parts.join('\n')
 }
 
 /**

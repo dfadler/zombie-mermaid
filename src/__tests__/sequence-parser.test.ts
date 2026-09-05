@@ -535,3 +535,290 @@ describe('parseSequenceDiagram – pre-message notes', () => {
     expect(d.messages).toHaveLength(0)
   })
 })
+
+// ============================================================================
+// Standalone activate / deactivate (#419)
+// ============================================================================
+
+describe('parseSequenceDiagram – standalone activate/deactivate', () => {
+  it('records activate/deactivate statements as events keyed to the preceding message', () => {
+    const d = parse(`sequenceDiagram
+      Alice->>John: Hello
+      activate John
+      John-->>Alice: Great!
+      deactivate John`)
+    expect(d.messages).toHaveLength(2)
+    expect(d.activations).toEqual([
+      { actorId: 'John', kind: 'start', afterIndex: 0 },
+      { actorId: 'John', kind: 'end', afterIndex: 1 },
+    ])
+    // The standalone form leaves the shorthand flags untouched
+    expect(d.messages[0]!.activate).toBeUndefined()
+    expect(d.messages[1]!.deactivate).toBeUndefined()
+  })
+
+  it('an activate before any message gets afterIndex -1 and auto-creates the actor', () => {
+    const d = parse(`sequenceDiagram
+      activate Server
+      Client->>Server: ping`)
+    expect(d.activations[0]).toEqual({
+      actorId: 'Server',
+      kind: 'start',
+      afterIndex: -1,
+    })
+    expect(d.actors.map((a) => a.id)).toEqual(['Server', 'Client'])
+  })
+
+  it('is not confused by an actor literally named "activate" used as a message source', () => {
+    const d = parse(`sequenceDiagram
+      activate->>B: hi`)
+    expect(d.activations).toHaveLength(0)
+    expect(d.messages[0]!.from).toBe('activate')
+  })
+})
+
+// ============================================================================
+// create / destroy participant lifecycle (#419)
+// ============================================================================
+
+describe('parseSequenceDiagram – create/destroy', () => {
+  const mermaidExample = `sequenceDiagram
+    Alice->>Bob: Hello Bob, how are you ?
+    Bob->>Alice: Fine, thank you. And you?
+    create participant Carl
+    Alice->>Carl: Hi Carl!
+    create actor D as Donald
+    Carl->>D: Hi!
+    destroy Carl
+    Alice-xCarl: We are too many
+    destroy Bob
+    Bob->>Alice: I agree`
+
+  it("binds create/destroy to the next message's index (Mermaid's own example)", () => {
+    const d = parse(mermaidExample)
+    const byId = new Map(d.actors.map((a) => [a.id, a]))
+    expect(d.actors.map((a) => a.id)).toEqual(['Alice', 'Bob', 'Carl', 'D'])
+    expect(byId.get('Carl')!.createdAt).toBe(2)
+    expect(byId.get('D')!.createdAt).toBe(3)
+    expect(byId.get('Carl')!.destroyedAt).toBe(4)
+    expect(byId.get('Bob')!.destroyedAt).toBe(5)
+    expect(byId.get('Alice')!.createdAt).toBeUndefined()
+    expect(byId.get('Alice')!.destroyedAt).toBeUndefined()
+  })
+
+  it('keeps the alias and the actor kind on a created participant', () => {
+    const d = parse(mermaidExample)
+    const donald = d.actors.find((a) => a.id === 'D')!
+    expect(donald.label).toBe('Donald')
+    expect(donald.type).toBe('actor')
+    const carl = d.actors.find((a) => a.id === 'Carl')!
+    expect(carl.label).toBe('Carl')
+    expect(carl.type).toBe('participant')
+  })
+
+  it('does not record a create/destroy directive as a message or an actor', () => {
+    const d = parse(mermaidExample)
+    expect(d.messages).toHaveLength(6)
+    expect(d.actors.some((a) => a.id.startsWith('create'))).toBe(false)
+    expect(d.actors.some((a) => a.id.startsWith('destroy'))).toBe(false)
+  })
+
+  it('destroy auto-creates an undeclared participant, like a message would', () => {
+    const d = parse(`sequenceDiagram
+      destroy X
+      A->>X: bye`)
+    expect(d.actors.map((a) => a.id)).toEqual(['X', 'A'])
+    expect(d.actors[0]!.destroyedAt).toBe(0)
+  })
+
+  it('rejects a create whose next message does not target the created participant', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+      create participant C
+      C->>A: I sent this`),
+    ).toThrow(
+      'The created participant C does not have an associated creating message after its declaration',
+    )
+  })
+
+  it('rejects a destroy whose next message does not involve the destroyed participant', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+      destroy B
+      A->>C: unrelated`),
+    ).toThrow(
+      'The destroyed participant B does not have an associated destroying message after its declaration',
+    )
+  })
+
+  it('accepts a destroy whose next message has the destroyed participant as sender', () => {
+    const d = parse(`sequenceDiagram
+      destroy B
+      B->>A: last words`)
+    expect(d.actors.find((a) => a.id === 'B')!.destroyedAt).toBe(0)
+  })
+
+  it('rejects creating a participant id that already exists', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+      participant A
+      create participant A`),
+    ).toThrow('It is not possible to have actors with the same id')
+  })
+
+  it('treats a trailing create/destroy with no message after it as a plain declaration', () => {
+    const d = parse(`sequenceDiagram
+      A->>B: x
+      destroy B
+      create participant C`)
+    expect(d.actors.map((a) => a.id)).toEqual(['A', 'B', 'C'])
+    expect(d.actors[1]!.destroyedAt).toBeUndefined()
+    expect(d.actors[2]!.createdAt).toBeUndefined()
+  })
+})
+
+// ============================================================================
+// box ... end participant grouping (#419)
+// ============================================================================
+
+describe('parseSequenceDiagram – box...end', () => {
+  it('records a labelled, coloured box and its members', () => {
+    const d = parse(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    expect(d.boxes).toEqual([
+      { label: 'Group 1', color: 'Aqua', actorIds: ['A', 'B'] },
+    ])
+  })
+
+  it('supports a box with a label but no colour', () => {
+    const d = parse(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A'] }])
+  })
+
+  it('supports a colour-only box with no label', () => {
+    const d = parse(`sequenceDiagram
+      box Aqua
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    expect(d.boxes).toEqual([
+      { label: '', color: 'Aqua', actorIds: ['A', 'B'] },
+    ])
+  })
+
+  it('supports a bare box with neither colour nor label', () => {
+    const d = parse(`sequenceDiagram
+      box
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.boxes).toEqual([{ label: '', actorIds: ['A'] }])
+  })
+
+  it('treats an explicit "transparent" as no colour', () => {
+    const d = parse(`sequenceDiagram
+      box transparent Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A'] }])
+  })
+
+  it('does not record box/end lines as messages or actors', () => {
+    const d = parse(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(d.actors.some((a) => a.id === 'box' || a.id === 'end')).toBe(false)
+    expect(d.messages).toHaveLength(1)
+  })
+
+  it('assigns a participant re-declared inside the box (or auto-created there via a message)', () => {
+    const d = parse(`sequenceDiagram
+      participant A
+      box Group 1
+      participant A
+      participant B
+      end
+      A->>C: hi`)
+    // C is auto-created by the message, outside the box
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A', 'B'] }])
+    expect(d.actors.map((a) => a.id)).toEqual(['A', 'B', 'C'])
+  })
+
+  it('keeps multiple boxes independent, in source order', () => {
+    const d = parse(`sequenceDiagram
+      box Aqua Group1
+      participant A
+      participant B
+      end
+      box Group2
+      participant C
+      end
+      A->>B: hi
+      B->>C: yo`)
+    expect(d.boxes).toEqual([
+      { label: 'Group1', color: 'Aqua', actorIds: ['A', 'B'] },
+      { label: 'Group2', actorIds: ['C'] },
+    ])
+  })
+
+  it('keeps an empty box (no members) but with no actors', () => {
+    const d = parse(`sequenceDiagram
+      box Empty
+      end
+      A->>B: hi`)
+    expect(d.boxes).toEqual([{ label: 'Empty', actorIds: [] }])
+  })
+
+  it('lets a loop block opened inside a box close before the box does', () => {
+    const d = parse(`sequenceDiagram
+      box Group 1
+      participant A
+      participant B
+      loop every day
+      A->>B: hi
+      end
+      end
+      A->>B: bye`)
+    expect(d.blocks).toHaveLength(1)
+    expect(d.blocks[0]!.type).toBe('loop')
+    expect(d.boxes).toEqual([{ label: 'Group 1', actorIds: ['A', 'B'] }])
+    expect(d.messages).toHaveLength(2)
+  })
+
+  it('rejects a nested box', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+        box G1
+        box G2
+        participant A
+        end
+        end`),
+    ).toThrow(/cannot be nested/)
+  })
+
+  it('rejects a participant declared in two different boxes', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+        box G1
+        participant A
+        end
+        box G2
+        participant A
+        end`),
+    ).toThrow(
+      "A same participant should only be defined in one Box: A can't be in 'G1' and in 'G2' at the same time.",
+    )
+  })
+})

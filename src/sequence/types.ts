@@ -15,6 +15,54 @@ export interface SequenceDiagram {
   blocks: Block[]
   /** Notes attached to actors */
   notes: Note[]
+  /**
+   * Standalone `activate X` / `deactivate X` statements, in source order.
+   * The inline `+`/`-` arrow shorthand is *not* recorded here — it stays on
+   * `Message.activate` / `Message.deactivate` — but both feed the same
+   * activation stack at layout time (see layout.ts), so the two forms
+   * render identically.
+   */
+  activations: ActivationEvent[]
+  /**
+   * `box <color?> <label?> … end` participant groups, in source order. A box
+   * with no members (nothing declared inside it) is kept here but drawn by
+   * neither renderer.
+   */
+  boxes: ParticipantBox[]
+}
+
+/** A `box … end` group of participants (Mermaid's "Grouping / Box"). */
+export interface ParticipantBox {
+  /** Descriptive label; empty when the box has none. */
+  label: string
+  /**
+   * Validated CSS colour (named, `#hex`, `rgb()`/`rgba()`, `hsl()`/`hsla()`)
+   * exactly as written. Unset for a transparent box — including an explicit
+   * `box transparent …`, and any first word that isn't a colour, which then
+   * counts as the start of the label (Mermaid's `parseBoxData` rule).
+   */
+  color?: string
+  /** Ids of the participants declared (or first used) inside the box. */
+  actorIds: string[]
+}
+
+/**
+ * One standalone `activate X` (`kind: 'start'`) or `deactivate X`
+ * (`kind: 'end'`) statement. Mermaid's own grammar expands the `+`/`-` arrow
+ * shorthand into exactly these events — `A->>+B` is a message followed by an
+ * `activeStart` for the recipient, `A-->>-B` a message followed by an
+ * `activeEnd` for the sender — so this is the primitive and the shorthand is
+ * sugar over it.
+ */
+export interface ActivationEvent {
+  actorId: string
+  kind: 'start' | 'end'
+  /**
+   * Index of the message this statement follows (-1 if it precedes every
+   * message). The activation bar starts/ends at that message's row, which
+   * is where the shorthand form's bar starts/ends too.
+   */
+  afterIndex: number
 }
 
 export interface Actor {
@@ -22,6 +70,19 @@ export interface Actor {
   label: string
   /** 'participant' renders as a box, 'actor' renders as a stick figure */
   type: 'participant' | 'actor'
+  /**
+   * Index of the message that creates this participant (`create participant
+   * X` on the line before it). The participant's box is drawn at that
+   * message's row instead of in the header, and its lifeline starts there.
+   * Unset for participants that exist from the top of the diagram.
+   */
+  createdAt?: number
+  /**
+   * Index of the message that destroys this participant (`destroy X` on the
+   * line before it). Its lifeline ends at that message's row with a cross,
+   * and no footer box is drawn. Unset for participants that live to the end.
+   */
+  destroyedAt?: number
 }
 
 export interface Message {
@@ -87,6 +148,19 @@ export interface PositionedSequenceDiagram {
   activations: Activation[]
   blocks: PositionedBlock[]
   notes: PositionedNote[]
+  /** `box … end` group backgrounds, drawn behind everything else. */
+  boxes: PositionedParticipantBox[]
+}
+
+/** A positioned `box … end` group: a full-height background behind its participants. */
+export interface PositionedParticipantBox {
+  label: string
+  /** See {@link ParticipantBox.color}. */
+  color?: string
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface PositionedActor {
@@ -107,6 +181,12 @@ export interface Lifeline {
   x: number
   topY: number
   bottomY: number
+  /**
+   * Set when the actor is destroyed mid-diagram (`Actor.destroyedAt`):
+   * `bottomY` is then the destroying message's row rather than the diagram
+   * bottom, and the renderer marks it with a cross.
+   */
+  destroyed?: boolean
 }
 
 export interface PositionedMessage {
