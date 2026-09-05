@@ -11,6 +11,7 @@ import {
   DEFAULT_BOX_BORDER_PADDING,
 } from '../ascii/types.ts'
 import { renderMermaidSVG } from '../index.ts'
+import type { RenderOptions } from '../types.ts'
 import { THEMES } from '../theme.ts'
 import type { DiagramColors } from '../theme.ts'
 import type { RenderArgs } from './parse-args.ts'
@@ -137,6 +138,7 @@ export async function runRender(
     if (args.borderPadding !== undefined)
       asciiOpts.boxBorderPadding = args.borderPadding
     if (args.coords) asciiOpts.showCoords = true
+    if (args.direction !== undefined) asciiOpts.direction = args.direction
     let ascii = renderMermaidASCII(text, asciiOpts)
 
     if (args.maxWidth !== undefined) {
@@ -212,7 +214,9 @@ export async function runRender(
   }
 
   if (args.svg && args.output) {
-    const svg = renderMermaidSVG(text, themeColors ?? {})
+    const svgOpts: RenderOptions = { ...themeColors }
+    if (args.direction !== undefined) svgOpts.direction = args.direction
+    const svg = renderMermaidSVG(text, svgOpts)
     await writeFile(args.output, svg, 'utf-8')
   }
 }
