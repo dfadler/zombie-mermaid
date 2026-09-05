@@ -350,4 +350,33 @@ export const forkFixes: ForkFix[] = [
       'Before: a stray ├ sits disconnected on the "Yes" edge’s row. After: a plain ─ line in its place.',
     upstreamIssues: [121],
   },
+  {
+    id: 'class-label-column-width',
+    title: 'Long class relationship labels on narrow classes were truncated',
+    symptom:
+      'A class’s column was sized from its box alone, never from the relationship label that had to fit beside it — so single-letter classes with labels like `inheritance` had every label squeezed into the box’s own width and cut to `…`.',
+    source:
+      'classDiagram\n  A <|-- B : inheritance\n  C *-- D : composition\n  E o-- F : aggregation\n  G --> H : association\n  I ..> J : dependency\n  K ..|> L : realization',
+    fixCommit: '60a40d2',
+    // TODO: set to the PR that carries 60a40d2 once it is opened.
+    pr: 0,
+    render: 'ascii',
+    lookFor:
+      'Before: five of the six labels read `inheri…`, `composi…`, and so on. After: the columns spread apart just enough for all six to render in full.',
+  },
+  {
+    id: 'class-fanned-relationships',
+    title:
+      'More than two relationships between narrow classes overwrote each other',
+    symptom:
+      'Each relationship in a group got its own column offset, but the offsets were then clamped back inside the box — a width-5 box only has room for three — so several relationships collapsed onto one connection point and the last one drawn silently overwrote the rest.',
+    source:
+      'classDiagram\n  class A\n  class B\n  A --> B : one\n  A --> B : two\n  A --> B : three\n  A --> B : four',
+    fixCommit: '60a40d2',
+    // TODO: set to the PR that carries 60a40d2 once it is opened.
+    pr: 0,
+    render: 'ascii',
+    lookFor:
+      'Before: only `four` survives, on two lines. After: `one`, `two`, `three`, and `four` each sit on their own lane, joined to the boxes by a short jog, with four distinct arrowheads.',
+  },
 ]
