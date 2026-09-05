@@ -21,6 +21,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -44,6 +45,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -68,6 +70,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -93,6 +96,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -110,6 +114,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -127,6 +132,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -150,6 +156,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -177,6 +184,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: 2,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -204,6 +212,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: 0,
       coords: false,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -221,6 +230,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: true,
       maxWidth: undefined,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -238,6 +248,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: 40,
+      direction: undefined,
     } satisfies RenderArgs)
   })
 
@@ -261,6 +272,7 @@ describe('parseArgs – render happy paths', () => {
       borderPadding: undefined,
       coords: false,
       maxWidth: 'auto',
+      direction: undefined,
     } satisfies RenderArgs)
   })
 })
@@ -445,5 +457,83 @@ describe('parseArgs – validation errors', () => {
         '40',
       ]),
     ).toThrow('-w/--max-width requires --ascii')
+  })
+})
+
+// ============================================================================
+// --direction (issue #276)
+// ============================================================================
+
+describe('parseArgs – --direction', () => {
+  it('parses --direction <dir> for ASCII output', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--ascii',
+      '--direction',
+      'TB',
+    ])
+    expect(result).toEqual({
+      command: 'render',
+      input: 'diagram.mmd',
+      ascii: true,
+      svg: false,
+      output: undefined,
+      theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
+      maxWidth: undefined,
+      direction: 'TB',
+    } satisfies RenderArgs)
+  })
+
+  it('parses --direction <dir> for SVG output', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--svg',
+      '-o',
+      'out.svg',
+      '--direction',
+      'LR',
+    ])
+    expect(result).toMatchObject({ command: 'render', direction: 'LR' })
+  })
+
+  it('accepts every direction token and normalizes case', () => {
+    for (const token of ['TD', 'TB', 'BT', 'LR', 'RL']) {
+      expect(
+        parseArgs(['render', 'd.mmd', '--ascii', '--direction', token]),
+      ).toMatchObject({ direction: token })
+      expect(
+        parseArgs([
+          'render',
+          'd.mmd',
+          '--ascii',
+          '--direction',
+          token.toLowerCase(),
+        ]),
+      ).toMatchObject({ direction: token })
+    }
+  })
+
+  it('leaves direction undefined when --direction is not given', () => {
+    expect(parseArgs(['render', 'd.mmd', '--ascii'])).toMatchObject({
+      direction: undefined,
+    })
+  })
+
+  it('throws when --direction is last argument with no value', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--direction']),
+    ).toThrow('--direction requires a value (one of TD, TB, BT, LR, RL)')
+  })
+
+  it('throws on an unrecognized direction token', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--direction', 'UP']),
+    ).toThrow('--direction requires one of TD, TB, BT, LR, RL, got: "UP"')
   })
 })
