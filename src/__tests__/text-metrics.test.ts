@@ -144,11 +144,15 @@ describe('measureTextWidth', () => {
   })
 
   // Sum of per-char ratios — verifies the formula without pinning calibration
-  const ratioSum = (text: string) => [...text].reduce((s, ch) => s + getCharWidth(ch), 0)
+  const ratioSum = (text: string) =>
+    [...text].reduce((s, ch) => s + getCharWidth(ch), 0)
 
   it('handles lowercase text with narrow letters', () => {
     const width = measureTextWidth('hello', fontSize, fontWeight)
-    expect(width).toBeCloseTo(ratioSum('hello') * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('hello') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('narrow text is narrower than uniform estimate', () => {
@@ -167,12 +171,18 @@ describe('measureTextWidth', () => {
 
   it('handles mixed Latin text', () => {
     const width = measureTextWidth('Will', fontSize, fontWeight)
-    expect(width).toBeCloseTo(ratioSum('Will') * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('Will') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('handles spaces correctly', () => {
     const width = measureTextWidth('a b', fontSize, fontWeight)
-    expect(width).toBeCloseTo(ratioSum('a b') * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('a b') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('handles decomposed accents (base + combining mark)', () => {
@@ -193,7 +203,10 @@ describe('measureTextWidth', () => {
 
   it('handles mixed Latin and CJK', () => {
     const width = measureTextWidth('Hello中国', fontSize, fontWeight)
-    expect(width).toBeCloseTo(ratioSum('Hello中国') * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('Hello中国') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('heavier weights produce wider estimates', () => {
@@ -225,8 +238,8 @@ describe('measureTextWidth', () => {
 
 describe('calibration against real Inter widths (11px, weight 400)', () => {
   const REAL_INTER_WIDTHS: Record<string, number> = {
-    'yes': 18.19,
-    'no': 13.09,
+    yes: 18.19,
+    no: 13.09,
     'on failure': 48.47,
     'validates credentials': 106.56,
     'sends confirmation email': 130.6,
@@ -240,14 +253,20 @@ describe('calibration against real Inter widths (11px, weight 400)', () => {
   it('never underestimates real width by more than 3%', () => {
     for (const [text, real] of Object.entries(REAL_INTER_WIDTHS)) {
       const est = measureTextWidth(text, 11, 400)
-      expect(est, `"${text}" est ${est.toFixed(1)} vs real ${real}`).toBeGreaterThanOrEqual(real * 0.97)
+      expect(
+        est,
+        `"${text}" est ${est.toFixed(1)} vs real ${real}`,
+      ).toBeGreaterThanOrEqual(real * 0.97)
     }
   })
 
   it('never overestimates real width by more than 12% + 3px', () => {
     for (const [text, real] of Object.entries(REAL_INTER_WIDTHS)) {
       const est = measureTextWidth(text, 11, 400)
-      expect(est, `"${text}" est ${est.toFixed(1)} vs real ${real}`).toBeLessThanOrEqual(real * 1.12 + 3)
+      expect(
+        est,
+        `"${text}" est ${est.toFixed(1)} vs real ${real}`,
+      ).toBeLessThanOrEqual(real * 1.12 + 3)
     }
   })
 
@@ -258,7 +277,10 @@ describe('calibration against real Inter widths (11px, weight 400)', () => {
     for (const [text, real] of Object.entries(REAL_INTER_WIDTHS)) {
       const est = measureTextWidth(text, 11, 400)
       const gapPerSide = (est + EDGE_LABEL_PADDING * 2 - real) / 2
-      expect(gapPerSide, `"${text}" gap ${gapPerSide.toFixed(1)}px`).toBeGreaterThanOrEqual(6)
+      expect(
+        gapPerSide,
+        `"${text}" gap ${gapPerSide.toFixed(1)}px`,
+      ).toBeGreaterThanOrEqual(6)
     }
   })
 })
