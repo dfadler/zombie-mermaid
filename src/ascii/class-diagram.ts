@@ -788,6 +788,8 @@ export function renderClassAscii(
     idealMidX: number
     naturalStart: number
     naturalEnd: number
+    rowStart: number
+    rowEnd: number
   }
   const labelGeometry: LabelGeometry[] = []
   for (const rel of diagram.relationships) {
@@ -796,9 +798,31 @@ export function renderClassAscii(
     const toP = placed.get(rel.to)
     if (!fromP || !toP) continue
     const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    const fromBY = fromP.y + fromP.height - 1
     const toCX = toP.x + Math.floor(toP.width / 2)
+    const toTY = toP.y
     const idealMidX = Math.floor((fromCX + toCX) / 2)
-    const width = Math.max(...splitLines(rel.label).map(displayWidth)) + 2 // +2 for padding
+
+    // Same baseMidY branch the draw pass below uses — needed so territory
+    // splitting only ever kicks in between labels that could actually land
+    // on overlapping rows. Two relationships can share a similar idealMidX
+    // while being drawn many rows apart (e.g. one class's two separate
+    // outgoing edges to two different targets at different heights) —
+    // splitting their X territory in that case truncates both for no
+    // reason, since they never actually collide.
+    const lines = splitLines(rel.label)
+    const halfHeight = Math.floor(lines.length / 2)
+    let baseMidY: number
+    if (fromBY < toTY) {
+      baseMidY = Math.floor((fromBY + 1 + toTY - 1) / 2)
+    } else if (toP.y + toP.height - 1 < fromP.y) {
+      const toBY = toP.y + toP.height - 1
+      baseMidY = Math.floor((toBY + 1 + fromP.y - 1) / 2)
+    } else {
+      baseMidY = Math.max(fromBY, toP.y + toP.height - 1) + 2
+    }
+
+    const width = Math.max(...lines.map(displayWidth)) + 2 // +2 for padding
     // Clamped the same way the draw loop below clamps it (never negative —
     // a label can't render left of the canvas edge) so this overlap check
     // reflects what will actually be drawn. Using the *unclamped* value
@@ -812,9 +836,16 @@ export function renderClassAscii(
       idealMidX,
       naturalStart,
       naturalEnd: naturalStart + width - 1,
+      rowStart: baseMidY - halfHeight,
+      rowEnd: baseMidY + halfHeight,
     })
   }
   labelGeometry.sort((a, b) => a.idealMidX - b.idealMidX)
+
+  /** Whether two labels' row spans actually intersect — see LabelGeometry's rowStart/rowEnd comment. */
+  function rowsOverlap(a: LabelGeometry, b: LabelGeometry): boolean {
+    return a.rowStart <= b.rowEnd && b.rowStart <= a.rowEnd
+  }
 
   const territoryByRel = new Map<
     (typeof diagram.relationships)[number],
@@ -825,11 +856,11 @@ export function renderClassAscii(
     const prev = labelGeometry[i - 1]
     const next = labelGeometry[i + 1]
     const left =
-      prev && prev.naturalEnd >= g.naturalStart
+      prev && prev.naturalEnd >= g.naturalStart && rowsOverlap(prev, g)
         ? Math.floor((prev.idealMidX + g.idealMidX) / 2) + 1
         : -Infinity
     const right =
-      next && g.naturalEnd >= next.naturalStart
+      next && g.naturalEnd >= next.naturalStart && rowsOverlap(g, next)
         ? Math.floor((g.idealMidX + next.idealMidX) / 2)
         : Infinity
     territoryByRel.set(g.rel, { left, right })
