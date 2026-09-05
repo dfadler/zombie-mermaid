@@ -107,7 +107,7 @@ fi
 TSX="$repo_root/node_modules/.bin/tsx" RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
   asciinema record --overwrite --quiet \
   -c 'printf "\033[?25l"; "$TSX" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
-  --cols "$cols" --rows "$rows" \
+  --window-size "${cols}x${rows}" \
   "${out_prefix}.cast"
 
 asciinema convert --overwrite --quiet "${out_prefix}.cast" "${out_prefix}.txt"

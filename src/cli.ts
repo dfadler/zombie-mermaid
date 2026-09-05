@@ -95,9 +95,11 @@ Options:
   -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)
   --coords             Overlay row/column index rulers (ASCII, debug layout)
-  -w, --max-width <n|auto>  Warn on stderr if ASCII output exceeds this many
-                       columns ('auto' detects the terminal width). Does not
-                       reflow/shrink the diagram — see issue #335.
+  -w, --max-width <n|auto>  Fit ASCII output within this many columns
+                       ('auto' detects the terminal width): applies compact
+                       spacing automatically when needed, and warns on
+                       stderr if it still doesn't fit (no label wrapping or
+                       direction-flip — see issue #335).
   --port <n>           Port for the 'web' command (default: 3000)
   -h, --help           Show help
   -v, --version        Show version

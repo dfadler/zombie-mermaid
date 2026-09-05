@@ -160,6 +160,14 @@ JetBrains Mono before capturing, not after noticing a screenshot looks off.
    produce the real screenshot" step through `visual-diff`/Playwright; using
    either of those for the attached image is exactly the mistake this skill
    exists to prevent, even after doing the real-PTY check in steps 3–4.
+   Under the "Visual verification" heading, paste the exact Mermaid source
+   from step 1 (the `samples-data.ts` entry's `source`, or the inline `.mmd`
+   content for the fallback case) inline in a fenced ` ```mermaid ` code
+   block directly after the heading, before the before/after images — not
+   just a reference to the sample index or a link to a separate issue's
+   reproduction. Without the inline source, the screenshots aren't
+   independently verifiable from the PR/issue body alone (see
+   [#402](https://github.com/dfadler/zombie-mermaid/issues/402)).
 
 6. **If the real-terminal capture and an HTML-mockup rendering (e.g. the
    live demo, or a Playwright baseline) disagree** — the terminal shows one

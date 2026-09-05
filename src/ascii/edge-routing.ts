@@ -778,10 +778,32 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   const clearOfNodes = (line: [GridCoord, GridCoord]): boolean =>
     interiorCellsClearOfNodes(graph, pathCells(line))
 
-  // Find segments wide enough for the label, excluding the first segment
-  // The first segment is often shared between edges from the same source node
+  // A segment is "terminal" when one of its own two endpoints IS the
+  // source's or target's box-border attachment point — i.e. it's the very
+  // first or very last segment of the path. `clearOfNodes` above can't
+  // catch a bad terminal segment on its own: it only inspects *interior*
+  // cells (by design — a path's endpoints are expected to touch a node
+  // border), so a short, node-adjacent segment with no interior cells at
+  // all (e.g. the single-grid-step box-start connector straight into a
+  // node) sails through as "clear" even though its own endpoint sits
+  // exactly on that node's border column/row. Centering a label on such a
+  // segment lands the text right where the border glyph (or box-start
+  // connector) is drawn, silently erasing it (#450) — the label canvas is
+  // merged on top of the node box canvas, so whichever writes last wins.
+  // Excluding both terminal segments (not just the first, as before) from
+  // the primary and "later" fallback tiers below keeps a label away from
+  // either node's border, symmetric with how the first segment was already
+  // excluded for being "often shared between edges from the same source
+  // node".
+  const isTerminalSegment = (s: (typeof segments)[number]): boolean =>
+    s.index === 1 || s.index === segments.length
+
+  // Find segments wide enough for the label, excluding terminal segments
+  // (the first, often shared between edges from the same source node; and
+  // the last, which is the box-start connector straight into the target —
+  // see isTerminalSegment above).
   const suitableSegments = segments.filter(
-    (s) => s.width >= lenLabel && s.index > 1 && clearOfNodes(s.line),
+    (s) => s.width >= lenLabel && !isTerminalSegment(s) && clearOfNodes(s.line),
   )
 
   let largestLine: [GridCoord, GridCoord]
@@ -792,7 +814,15 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     suitableSegments.sort((a, b) => b.index - a.index)
     largestLine = suitableSegments[0]!.line
   } else {
-    // Fall back to any suitable segment including the first
+    // Fall back to any suitable segment, including a terminal one (the
+    // first or last — see isTerminalSegment above): a very short path with
+    // no non-terminal segment at all has nothing better to offer, and a
+    // label landing on a terminal segment's *interior* is still preferable
+    // to no label at all. (A terminal segment with literally zero interior
+    // cells — the box-start-connector case #450 was filed against — can
+    // still slip through here; that's an accepted last-resort trade-off,
+    // not a regression, since this tier only runs once every non-terminal
+    // segment has already been ruled out.)
     const fallbackSegments = segments.filter(
       (s) => s.width >= lenLabel && clearOfNodes(s.line),
     )
@@ -802,23 +832,23 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     } else {
       // No segment both wide enough and clear of nodes — prefer the
       // widest segment that's at least clear of nodes (its column can
-      // still be widened below to fit the label). Still prefer index > 1
-      // here too: a multi-segment lane path (buildParallelLanePath) can
-      // have every one of its later segments come up too narrow for this
-      // tier (e.g. a single-gutter-column "gutter" candidate — see that
-      // function's doc), and without this, the widest-clear-segment sort
-      // below would happily fall back to the *first* segment purely
-      // because it's typically the widest (it's on the shared trunk row
-      // every sibling edge from the same source uses) — reintroducing the
-      // exact same-row label collision this whole index > 1 exclusion
-      // exists to prevent, just via this tier instead of the ones above.
-      // Only fall back further — first to *any* clear segment regardless
-      // of index, then to every segment — when nothing clear survives
-      // even that relaxation (a single-segment edge with no room to
-      // exclude anything, or a segment that runs through a node with no
-      // alternative at all).
+      // still be widened below to fit the label). Still prefer a
+      // non-terminal segment here too: a multi-segment lane path
+      // (buildParallelLanePath) can have every one of its later segments
+      // come up too narrow for this tier (e.g. a single-gutter-column
+      // "gutter" candidate — see that function's doc), and without this,
+      // the widest-clear-segment sort below would happily fall back to the
+      // *first* segment purely because it's typically the widest (it's on
+      // the shared trunk row every sibling edge from the same source
+      // uses) — reintroducing the exact same-row label collision this
+      // whole terminal-segment exclusion exists to prevent, just via this
+      // tier instead of the ones above. Only fall back further — first to
+      // *any* clear segment regardless of terminal-ness, then to every
+      // segment — when nothing clear survives even that relaxation (a
+      // single-segment edge with no room to exclude anything, or a segment
+      // that runs through a node with no alternative at all).
       const clearLaterSegments = segments.filter(
-        (s) => s.index > 1 && clearOfNodes(s.line),
+        (s) => !isTerminalSegment(s) && clearOfNodes(s.line),
       )
       const clearSegments = segments.filter((s) => clearOfNodes(s.line))
       const pool =

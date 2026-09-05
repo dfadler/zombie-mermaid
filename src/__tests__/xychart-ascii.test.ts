@@ -250,6 +250,32 @@ describe('xychart ASCII – titles and axes', () => {
     expect(result).toContain('100')
   })
 
+  it('renders a y-axis title vertically (one character per row) in vertical orientation', () => {
+    const result = render(`xychart-beta
+      x-axis [A, B]
+      y-axis "Score" 0 --> 100
+      bar [25, 75]`)
+    // The title should be spelled out top-to-bottom in the leftmost column,
+    // mirroring how mermaid.js rotates it 90deg along the left edge — not
+    // dropped entirely (issue #451).
+    const lines = result.split('\n')
+    const leftColumn = lines.map((l) => l[0] ?? ' ').join('')
+    expect(leftColumn).toContain('Score')
+  })
+
+  it('does not reserve a y-axis title column when no y-axis title is set', () => {
+    const result = render(`xychart-beta
+      x-axis [A, B]
+      y-axis 0 --> 100
+      bar [25, 75]`)
+    const lines = result.split('\n')
+    // Without a title, the leftmost column should be blank/whitespace on
+    // every line (no stray characters from title-column reservation).
+    for (const line of lines) {
+      expect(line[0] === undefined || line[0] === ' ').toBe(true)
+    }
+  })
+
   it('renders without title when not specified', () => {
     const result = render(`xychart-beta
       x-axis [A, B]
