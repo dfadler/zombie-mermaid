@@ -1,6 +1,7 @@
 import type { PositionedXYChart } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
-import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import { svgOpenTag, buildStyleBlock, styleOpenTag } from '../theme.ts'
+import type { SvgEmitOptions } from '../theme.ts'
 import { withDataSrc } from '../renderer.ts'
 import { TEXT_BASELINE_SHIFT, estimateTextWidth } from '../styles.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './colors.ts'
@@ -62,6 +63,9 @@ const TIP = {
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
  *                src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
+ * @param emit - Strict-CSP controls (from `options.nonce` /
+ *               `options.styleAttribute`, see #216). Default: no nonce,
+ *               root `style` attribute on.
  */
 export function renderXYChartSvg(
   chart: PositionedXYChart,
@@ -72,6 +76,7 @@ export function renderXYChartSvg(
   embedSource?: string,
   title?: string,
   decorative?: boolean,
+  emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
 
@@ -90,11 +95,13 @@ export function renderXYChartSvg(
       transparent,
       title,
       decorative,
+      undefined,
+      emit.styleAttribute,
     ).replace('<svg ', `<svg data-xychart-colors="${maxColorIdx}" `),
     embedSource,
   )
   parts.push(svgTag)
-  parts.push(buildStyleBlock(font, false))
+  parts.push(buildStyleBlock(font, false, emit.nonce))
 
   // Sparse lines (≤12 points) show dots by default
   const maxLinePoints = Math.max(...chart.lines.map((l) => l.points.length), 0)
@@ -107,6 +114,7 @@ export function renderXYChartSvg(
     sparse,
     colors.accent,
     colors.bg,
+    emit.nonce,
   )
   parts.push(chartCss)
   if (chartDefs) parts.push(chartDefs)
@@ -372,6 +380,7 @@ function chartStyles(
   sparse: boolean,
   themeAccent?: string,
   bgColor?: string,
+  nonce?: string,
 ): { style: string; defs: string } {
   const accentHex = themeAccent ?? CHART_ACCENT_FALLBACK
 
@@ -422,7 +431,7 @@ function chartStyles(
   const colorVarsBlock =
     colorVarDefs.length > 0 ? `\n  svg {\n${colorVarDefs.join('\n')}\n  }` : ''
 
-  const style = `<style>
+  const style = `${styleOpenTag(nonce)}
   .xychart-grid { fill: var(--_inner-stroke); stroke: none; opacity: 0.65; }
   .xychart-bar { stroke-width: 1.5; }
   .xychart-line { fill: none; stroke-width: ${CHART_FONT.lineWidth}; stroke-linecap: round; stroke-linejoin: round; }

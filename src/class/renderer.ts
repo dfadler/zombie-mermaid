@@ -7,6 +7,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import type { SvgEmitOptions } from '../theme.ts'
 import { withDataSrc } from '../renderer.ts'
 import type { FontSizes } from '../styles.ts'
 import {
@@ -59,6 +60,9 @@ const CLS_FONT = {
  *                       tooltips render (from `options.interactivity !==
  *                       'none'`, see `resolveLinksEnabled` in src/index.ts).
  *                       Default true — matches the flowchart/state renderer.
+ * @param emit - Strict-CSP controls (from `options.nonce` /
+ *               `options.styleAttribute`, see #216). Default: no nonce,
+ *               root `style` attribute on.
  */
 export function renderClassSvg(
   diagram: PositionedClassDiagram,
@@ -70,6 +74,7 @@ export function renderClassSvg(
   title?: string,
   decorative?: boolean,
   linksEnabled: boolean = true,
+  emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
 
@@ -93,11 +98,12 @@ export function renderClassSvg(
         title,
         decorative,
         hasInteractiveLinks,
+        emit.styleAttribute,
       ),
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, true))
+  parts.push(buildStyleBlock(font, true, emit.nonce))
   parts.push('<defs>')
   parts.push(relationshipMarkerDefs())
   parts.push('</defs>')

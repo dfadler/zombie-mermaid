@@ -324,6 +324,69 @@ export interface RenderOptions {
   embedSource?: boolean
 
   /**
+   * CSP nonce to stamp on every `<style>` element in the output (see GitHub
+   * issue #216).
+   *
+   * The renderer styles its SVG with an inline `<style>` element (the theme
+   * block; flowcharts with `e1@{ animate: true }` edges and xycharts add a
+   * second one). A host page whose `Content-Security-Policy` has a
+   * `style-src` without `'unsafe-inline'` blocks those, and the diagram
+   * silently renders unstyled. The standard fix is a per-response nonce:
+   * the host generates one, lists it as `style-src 'nonce-<value>'`, and
+   * puts `nonce="<value>"` on each element it wants to allow. Pass that
+   * value here and every emitted `<style>` gets it — one `<style>` left
+   * un-nonced is enough to lose the whole diagram's styling, so this is
+   * applied at the single shared emission point rather than per diagram
+   * type.
+   *
+   * The value is attribute-escaped on output. An empty string is treated as
+   * unset. Default: undefined (no `nonce` attribute).
+   *
+   * A nonce only authorises `<style>` *elements* — it cannot authorise a
+   * `style="…"` *attribute* (browsers apply nonces to elements only), so the
+   * root `<svg style="--bg: …">` attribute stays blocked under the same
+   * policy. Pair this with `styleAttribute: false` and put the theme
+   * variables in your own stylesheet; see that option.
+   */
+  nonce?: string
+
+  /**
+   * Emit the root `<svg style="--bg: …; --fg: …; background: var(--bg)">`
+   * attribute. Default: true.
+   *
+   * That attribute is how the theme colours reach the SVG: every rule in
+   * the embedded `<style>` block resolves against the `--bg`/`--fg`/…
+   * custom properties it sets. Under a strict `Content-Security-Policy`
+   * (`style-src` without `'unsafe-inline'`) the browser drops it, and no
+   * `nonce` can rescue it — nonces apply to elements, never attributes —
+   * so the diagram loses its colours even when the `<style>` element itself
+   * is allowed (see GitHub issue #216).
+   *
+   * Set this to `false` to leave the attribute out entirely. The host must
+   * then define the same custom properties on the SVG or an ancestor from
+   * its own (nonced or external) stylesheet; `themeCssVariables(options)`
+   * returns the exact declaration list the attribute would have carried,
+   * so the two can't drift:
+   *
+   * ```ts
+   * const opts = { bg: '#fff', fg: '#000', nonce, styleAttribute: false }
+   * const svg = renderMermaidSVG(code, opts)
+   * const css = `.diagram svg { ${themeCssVariables(opts)} }`
+   * // `<style nonce="…">${css}</style>` + `<div class="diagram">${svg}</div>`
+   * ```
+   *
+   * With the attribute gone, the SVG has no inline `background` either; the
+   * declarations from `themeCssVariables()` include it (unless
+   * `transparent`) so the host's rule restores it. Only the *root* `style`
+   * attribute is affected: a per-node `style A font-family:…` override
+   * still renders as that node's own `style` attribute, since it's diagram
+   * content rather than theming, and under such a CSP it is simply ignored
+   * by the browser. `nonce` and this option are independent — a host using
+   * hashes rather than nonces may want only this one.
+   */
+  styleAttribute?: boolean
+
+  /**
    * Accessible name for the rendered SVG (see GitHub issue #215). Rendered
    * as `role="img"` + `aria-labelledby` pointing at a `<title>` child
    * holding this text — the standard SVG/WAI-ARIA technique for naming an
