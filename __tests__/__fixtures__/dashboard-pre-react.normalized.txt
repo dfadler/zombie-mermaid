@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    </meta>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    </meta>
+    <title>
+      "Maintenance dashboard — zombie-mermaid"
+    </title>
+    <meta content="A factual, snapshot comparison of zombie-mermaid's maintenance activity against upstream beautiful-mermaid: commit recency, issue/PR throughput, and bugs fixed here that remain open upstream." name="description">
+    </meta>
+    <link href="favicon.svg" rel="icon" type="image/svg+xml">
+    </link>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    </link>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    </link>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    </link>
+    <style>
+      "/* fixture: stands in for demo/styles.css */\nbody > .content-wrapper { max-width: 60rem; }\n/* fixture: stands in for demo/dashboard.css */\n.dash-header { padding: 0; }"
+    </style>
+  </head>
+  <body>
+    <div class="content-wrapper">
+      <header class="dash-header">
+        <p class="dash-breadcrumb">
+          <a href="index.html">
+            "← Back to the gallery"
+          </a>
+        </p>
+        <h1>
+          "Maintenance dashboard"
+        </h1>
+        <p class="dash-intro">
+          "A factual comparison of this fork's maintenance activity against "
+          <a href="https://github.com/lukilabs/beautiful-mermaid">
+            "upstream beautiful-mermaid"
+          </a>
+          " — commit recency, issue/PR throughput, and bugs fixed here that are still open upstream. Every number below is sourced straight from each repo's GitHub API, not hand-tallied."
+        </p>
+        <p class="dash-snapshot-note">
+          "📸 Snapshot as of {{GENERATED_AT}} — refreshed periodically, not live. See "
+          <a href="https://github.com/dfadler/zombie-mermaid/blob/main/scripts/generate-dashboard-data.ts">
+            "generate-dashboard-data.ts"
+          </a>
+          "."
+        </p>
+      </header>
+      <section class="dash-section">
+        <h2>
+          "Fork vs. upstream"
+        </h2>
+        <p class="dash-section-intro">
+          "Head-to-head activity metrics, pulled from the GitHub REST/search APIs for both repositories."
+        </p>
+        <div class="dash-compare-wrap">
+          <table class="dash-compare">
+            <thead>
+              <tr>
+                <th scope="col">
+                  "Metric"
+                </th>
+                <th scope="col">
+                  "zombie-mermaid (this fork)"
+                </th>
+                <th scope="col">
+                  "beautiful-mermaid (upstream)"
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  "Last commit"
+                </th>
+                <td class="dash-fork-col">
+                  "2 days ago"
+                </td>
+                <td>
+                  "94 days ago"
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  "Open issues"
+                </th>
+                <td class="dash-fork-col">
+                  "3"
+                </td>
+                <td>
+                  "50"
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  "Open PRs"
+                </th>
+                <td class="dash-fork-col">
+                  "2"
+                </td>
+                <td>
+                  "10"
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  "Merged PRs"
+                </th>
+                <td class="dash-fork-col">
+                  "41"
+                </td>
+                <td>
+                  "5"
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  "Releases published"
+                </th>
+                <td class="dash-fork-col">
+                  "2"
+                </td>
+                <td>
+                  "0"
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  "Latest release"
+                </th>
+                <td class="dash-fork-col">
+                  "v1.2.0 (Jul 15, 2026)"
+                </td>
+                <td>
+                  "—"
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="dash-section">
+        <h2>
+          "Rescued from upstream"
+        </h2>
+        <p class="dash-section-intro">
+          "Bugs this fork fixed, cross-referenced against the upstream issue each one resolves. See the "
+          <a href="fork-fixes.html">
+            "full before/after showcase"
+          </a>
+          " for rendered proof of each fix."
+        </p>
+        <div class="dash-stats">
+          <div class="dash-stat-card">
+            <div class="dash-stat-value dash-accent">
+              "7"
+            </div>
+            <div class="dash-stat-label">
+              "Bugs fixed in this fork"
+            </div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-value">
+              "5"
+            </div>
+            <div class="dash-stat-label">
+              "Distinct upstream issues those fixes address"
+            </div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-value dash-accent">
+              "3"
+            </div>
+            <div class="dash-stat-label">
+              "Still open upstream, unfixed"
+            </div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-value">
+              "2"
+            </div>
+            <div class="dash-stat-label">
+              "Since closed upstream too"
+            </div>
+          </div>
+        </div>
+        <div class="dash-issue-list">
+          <div class="dash-issue-row">
+            <span class="dash-issue-badge dash-open">
+              "still open upstream"
+            </span>
+            <span class="dash-issue-title">
+              "Fix <A> & \"B\""
+            </span>
+            <span class="dash-issue-links">
+              <a href="https://github.com/lukilabs/beautiful-mermaid/issues/10">
+                "upstream #10"
+              </a>
+              <a href="https://github.com/dfadler/zombie-mermaid/pull/100">
+                "fixed in PR #100"
+              </a>
+              <a href="fork-fixes.html#fix-a">
+                "before/after"
+              </a>
+            </span>
+          </div>
+          <div class="dash-issue-row">
+            <span class="dash-issue-badge dash-closed">
+              "closed upstream"
+            </span>
+            <span class="dash-issue-title">
+              "Fix B's thing"
+            </span>
+            <span class="dash-issue-links">
+              <a href="https://github.com/lukilabs/beautiful-mermaid/issues/20">
+                "upstream #20"
+              </a>
+              <a href="https://github.com/dfadler/zombie-mermaid/pull/101">
+                "fixed in PR #101"
+              </a>
+              <a href="fork-fixes.html#fix-b">
+                "before/after"
+              </a>
+            </span>
+          </div>
+          <div class="dash-issue-row">
+            <span class="dash-issue-badge dash-closed">
+              "closed upstream"
+            </span>
+            <span class="dash-issue-title">
+              "Fix C, the other half of upstream #20"
+            </span>
+            <span class="dash-issue-links">
+              <a href="https://github.com/lukilabs/beautiful-mermaid/issues/20">
+                "upstream #20"
+              </a>
+              <a href="https://github.com/dfadler/zombie-mermaid/pull/102">
+                "fixed in PR #102"
+              </a>
+              <a href="fork-fixes.html#fix-c">
+                "before/after"
+              </a>
+            </span>
+          </div>
+        </div>
+      </section>
+      <section class="dash-section">
+        <h2>
+          "Response time"
+        </h2>
+        <p class="dash-section-intro">
+          "How quickly a newly opened issue gets a first reply in this fork."
+        </p>
+        <div class="dash-response">
+          <div class="dash-stat-card" style="min-width: 11rem;">
+            <div class="dash-stat-value dash-accent">
+              "<1h"
+            </div>
+            <div class="dash-stat-label">
+              "Median time to first response (n=4)"
+            </div>
+          </div>
+          <p class="dash-response-note">
+            "caveat <em>text</em> & more"
+          </p>
+        </div>
+      </section>
+      <footer class="dash-footer">
+        <p>
+          <a href="https://github.com/dfadler/zombie-mermaid">
+            "zombie-mermaid"
+          </a>
+          " — a fork of "
+          <a href="https://github.com/lukilabs/beautiful-mermaid">
+            "beautiful-mermaid"
+          </a>
+          ". Data refreshed via "
+          <code>
+            "pnpm run dashboard:data"
+          </code>
+          "; see also the "
+          <a href="https://github.com/dfadler/zombie-mermaid/issues/259">
+            "recurring \"state of the fork\" report"
+          </a>
+          "."
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

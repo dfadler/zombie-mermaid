@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-08-03T12:00:00Z",
+  "fork": {
+    "owner": "dfadler",
+    "name": "zombie-mermaid",
+    "url": "https://github.com/dfadler/zombie-mermaid",
+    "lastPushedAt": "2026-08-01T12:00:00Z",
+    "openIssues": 3,
+    "openPRs": 2,
+    "mergedPRs": 41,
+    "releaseCount": 2,
+    "latestRelease": { "tag": "v1.2.0", "publishedAt": "2026-07-15T12:00:00Z" }
+  },
+  "upstream": {
+    "owner": "lukilabs",
+    "name": "beautiful-mermaid",
+    "url": "https://github.com/lukilabs/beautiful-mermaid",
+    "lastPushedAt": "2026-05-01T12:00:00Z",
+    "openIssues": 50,
+    "openPRs": 10,
+    "mergedPRs": 5,
+    "releaseCount": 0,
+    "latestRelease": null
+  },
+  "rescued": {
+    "totalFixes": 7,
+    "upstreamIssuesReferenced": 5,
+    "upstreamIssuesStillOpen": 3,
+    "upstreamIssuesClosedIndependently": 2,
+    "issues": [
+      {
+        "number": 10,
+        "state": "open",
+        "fixId": "fix-a",
+        "fixTitle": "Fix <A> & \"B\"",
+        "forkPr": 100
+      },
+      {
+        "number": 20,
+        "state": "closed",
+        "fixId": "fix-b",
+        "fixTitle": "Fix B's thing",
+        "forkPr": 101
+      },
+      {
+        "number": 20,
+        "state": "closed",
+        "fixId": "fix-c",
+        "fixTitle": "Fix C, the other half of upstream #20",
+        "forkPr": 102
+      }
+    ]
+  },
+  "responseTime": {
+    "sampleSize": 4,
+    "medianHours": 0.3,
+    "note": "caveat <em>text</em> & more"
+  }
+}
