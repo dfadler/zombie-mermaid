@@ -640,9 +640,16 @@ export function renderClassAscii(
    * `fromCX`/`toCX` are the *lanes*: the columns the line's vertical run,
    * arrowhead-side jog, and label all sit on. They carry the full offset,
    * so relationships in a group never share a lane. Every pass that
-   * positions something on a relationship (line routing, label territory,
-   * label placement) must use these, so the label ends up on the same
-   * column the line actually runs along.
+   * positions something relative to a relationship's route — the
+   * line-drawing loop, the label-territory precompute, and the
+   * label-drawing pass — must go through this one helper and use these
+   * lanes, so the label ends up on the same column the line actually runs
+   * along. When only the line pass applied the offset (an earlier version
+   * of this fix), a reciprocal pair's labels were still measured and drawn
+   * against the shared box center: the territory pass saw two labels with
+   * identical midpoints and split the column between them, truncating both
+   * to a single mashed `rea……ies` while their lines sat on separate columns
+   * (issue #448).
    *
    * `fromAnchorX`/`toAnchorX` are where the line meets each box border —
    * the lane pulled back inside the box (see `anchorOffset`). When a group
@@ -654,6 +661,8 @@ export function renderClassAscii(
    * relationships overwrite one another. Relationships may end up sharing
    * an anchor when a group outnumbers the box's columns — that's fine,
    * their jogs merge into a small trunk at the border — but never a lane.
+   * Labels always use the lane, never the anchor: only the line's
+   * box-border touchpoint needs pulling back inside the box.
    */
   function connectionColumns(
     relIndex: number,
