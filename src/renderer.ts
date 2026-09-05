@@ -532,17 +532,16 @@ function renderNode(
     `data-label="${escapeAttr(node.label)}"`,
     `data-shape="${node.shape}"`,
   ]
-  if (interaction?.callback) {
-    /*
-     * `click A call fn()` is recorded, never invoked. This renderer produces
-     * a static SVG string and executes nothing a diagram supplies — running
-     * diagram-authored script would make every rendered diagram an execution
-     * vector. The binding is exposed as data so a host application can wire
-     * it up itself if it chooses to trust the source.
-     */
-    groupAttrs.push(`data-click-callback="${escapeAttr(interaction.callback)}"`)
-  }
-
+  /*
+   * `click A call fn()` is deliberately absent from the markup. This renderer
+   * produces a static SVG string and executes nothing a diagram supplies —
+   * running diagram-authored script would make every rendered diagram an
+   * execution vector. The binding is exposed as data instead, on the
+   * `interactions` map `parseMermaid()` returns, and the `data-id` attribute
+   * above is the hook a host binds it to. The inert `data-click-callback`
+   * attribute once emitted here was removed in #216 — see
+   * docs/decisions/no-script-interactivity.md.
+   */
   parts.push(`<g ${groupAttrs.join(' ')}>`)
 
   // An href becomes a real SVG link, which needs no script to work.

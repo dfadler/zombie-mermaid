@@ -196,11 +196,8 @@ function renderClassBox(
     `data-id="${escapeAttr(cls.id)}"`,
     `data-label="${escapeAttr(cls.label)}"`,
   ]
-  if (interaction?.callback) {
-    // `click ClassName call fn()` is recorded, never invoked — see
-    // renderNode() in src/renderer.ts for the identical rationale.
-    groupAttrs.push(`data-click-callback="${escapeAttr(interaction.callback)}"`)
-  }
+  // `click ClassName call fn()` is parsed, never invoked, and never written
+  // into the markup — see renderNode() in src/renderer.ts for the rationale.
   parts.push(`<g ${groupAttrs.join(' ')}${annotationAttr}>`)
 
   // An href becomes a real SVG link, which needs no script to work.
