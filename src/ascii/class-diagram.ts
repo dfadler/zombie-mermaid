@@ -752,6 +752,28 @@ export function renderClassAscii(
     setJogCell(laneX, row, laneCorner, 'corner')
   }
 
+  // A detoured relationship's actual routed path — the far column its
+  // vertical trunk runs along, and the rows its horizontal jogs sit on —
+  // keyed by relationship index. The line-drawing pass below is the only
+  // place that decides whether (and where) a relationship detours, but the
+  // label-territory precompute and label-drawing passes further down need
+  // that same decision too, so they can anchor a detoured relationship's
+  // label on its real path instead of the straight-line source/target
+  // midpoint (issue #487). Populated only for the "target below source,
+  // needs a detour around an intermediate box" case — the only routing
+  // branch that currently detours at all.
+  const detourRoutes = new Map<
+    number,
+    {
+      routeX: number
+      exitY: number
+      entryY: number
+      fromAnchorX: number
+      toAnchorX: number
+      clearSide: 'left' | 'right'
+    }
+  >()
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -798,6 +820,21 @@ export function renderClassAscii(
 
         const exitY = fromBY + 1
         const entryY = toTY - 1
+        detourRoutes.set(relIndex, {
+          routeX,
+          exitY,
+          entryY,
+          fromAnchorX,
+          toAnchorX,
+          // `findClearColumn` starts its search at `fromCX` and only
+          // returns a different column when that one collided with a box
+          // over the route's full y-range — so whichever side it moved
+          // toward is the side with clearance, and the box it moved away
+          // from sits on the other side of `routeX`. The label-anchor pass
+          // uses this to keep a detour label's whole width clear of that
+          // box, not just the single column `routeX` itself.
+          clearSide: routeX > fromCX ? 'right' : 'left',
+        })
 
         // 1. Horizontal from source anchor to route column
         const lx1 = Math.min(fromAnchorX, routeX)
@@ -1052,6 +1089,99 @@ export function renderClassAscii(
     }
   })
 
+  /**
+   * Where a relationship's label should ideally center — the column and row
+   * the territory precompute and label-drawing passes below both anchor on.
+   *
+   * For the common case (no detour), this is the straight-line midpoint
+   * between the source and target connection columns/rows, same as before.
+   *
+   * For a relationship whose line detours around an intermediate box (see
+   * `detourRoutes` above), the label instead anchors on the *actual routed
+   * path*: beside the midpoint of the detour's vertical trunk (the longest
+   * segment in the common case), or — when the boxes are close enough
+   * together that the trunk has no vertical room at all — the midpoint of
+   * whichever horizontal jog is longer. Anchoring at the straight-line
+   * midpoint ignored the detour entirely, so a detoured relationship's
+   * label could land in the same column (and even the same row) as an
+   * unrelated relationship's straight-line label, reading as though both
+   * terminated at the same box (issue #487).
+   *
+   * `labelWidth` (the padded display width the caller is about to draw)
+   * matters for the vertical-trunk case specifically: `findClearColumn`
+   * only guarantees the single column `routeX` is clear of boxes over the
+   * trunk's row range, not a whole label-width window centered on it. A
+   * label centered directly on `routeX` routinely re-overlapped the very
+   * box the trunk was routed around to avoid — visible as the label
+   * appearing to collide with (or get shoved off) the box the trunk hugs.
+   * `detour.clearSide` says which side of `routeX` is the side
+   * `findClearColumn` actually found clear (see its call site), so the
+   * label is anchored flush against the trunk on that side instead of
+   * straddling it.
+   */
+  function computeLabelAnchor(
+    relIndex: number,
+    fromP: PlacedClass,
+    toP: PlacedClass,
+    labelWidth: number,
+  ): { idealMidX: number; baseMidY: number } {
+    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
+    const fromBY = fromP.y + fromP.height - 1
+    const toTY = toP.y
+
+    if (fromBY < toTY) {
+      const detour = detourRoutes.get(relIndex)
+      if (detour) {
+        const trunkTop = detour.exitY + 1
+        const trunkBottom = detour.entryY
+        if (trunkBottom >= trunkTop) {
+          // Vertical trunk has room — it's the longest segment of the
+          // route in the common case, so anchor there. The label sits
+          // flush against the trunk on its clear side (see doc comment)
+          // rather than centered on it, with a 1-column gap for legibility.
+          const gap = 1
+          const idealMidX =
+            detour.clearSide === 'right'
+              ? detour.routeX + gap + Math.floor(labelWidth / 2)
+              : detour.routeX - gap - Math.ceil(labelWidth / 2)
+          return {
+            idealMidX,
+            baseMidY: Math.floor((trunkTop + trunkBottom) / 2),
+          }
+        }
+        // Boxes are close enough together that the trunk has no vertical
+        // room (exit and entry jogs sit on the same or adjacent rows) —
+        // anchor on whichever horizontal jog is longer instead.
+        const exitWidth = Math.abs(detour.routeX - detour.fromAnchorX)
+        const entryWidth = Math.abs(detour.toAnchorX - detour.routeX)
+        return entryWidth >= exitWidth
+          ? {
+              idealMidX: Math.floor((detour.routeX + detour.toAnchorX) / 2),
+              baseMidY: detour.entryY,
+            }
+          : {
+              idealMidX: Math.floor((detour.fromAnchorX + detour.routeX) / 2),
+              baseMidY: detour.exitY,
+            }
+      }
+      return {
+        idealMidX: Math.floor((fromCX + toCX) / 2),
+        baseMidY: Math.floor((fromBY + 1 + toTY - 1) / 2),
+      }
+    }
+    if (toP.y + toP.height - 1 < fromP.y) {
+      const toBY = toP.y + toP.height - 1
+      return {
+        idealMidX: Math.floor((fromCX + toCX) / 2),
+        baseMidY: Math.floor((toBY + 1 + fromP.y - 1) / 2),
+      }
+    }
+    return {
+      idealMidX: Math.floor((fromCX + toCX) / 2),
+      baseMidY: Math.max(fromBY, toP.y + toP.height - 1) + 2,
+    }
+  }
+
   // --- Precompute each label's horizontal territory ---
   // A label's left/right bound is derived purely from connection-point
   // geometry — never from draw order or from what another relationship's
@@ -1087,31 +1217,24 @@ export function renderClassAscii(
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
     if (!fromP || !toP) continue
-    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
-    const fromBY = fromP.y + fromP.height - 1
-    const toTY = toP.y
-    const idealMidX = Math.floor((fromCX + toCX) / 2)
 
-    // Same baseMidY branch the draw pass below uses — needed so territory
-    // splitting only ever kicks in between labels that could actually land
-    // on overlapping rows. Two relationships can share a similar idealMidX
+    // Same anchor the draw pass below uses — needed so territory splitting
+    // only ever kicks in between labels that could actually land on
+    // overlapping rows. Two relationships can share a similar idealMidX
     // while being drawn many rows apart (e.g. one class's two separate
     // outgoing edges to two different targets at different heights) —
     // splitting their X territory in that case truncates both for no
     // reason, since they never actually collide.
     const lines = splitLines(rel.label)
     const halfHeight = Math.floor(lines.length / 2)
-    let baseMidY: number
-    if (fromBY < toTY) {
-      baseMidY = Math.floor((fromBY + 1 + toTY - 1) / 2)
-    } else if (toP.y + toP.height - 1 < fromP.y) {
-      const toBY = toP.y + toP.height - 1
-      baseMidY = Math.floor((toBY + 1 + fromP.y - 1) / 2)
-    } else {
-      baseMidY = Math.max(fromBY, toP.y + toP.height - 1) + 2
-    }
 
     const width = Math.max(...lines.map(displayWidth)) + 2 // +2 for padding
+    const { idealMidX, baseMidY } = computeLabelAnchor(
+      relIndex,
+      fromP,
+      toP,
+      width,
+    )
     // Clamped the same way the draw loop below clamps it (never negative —
     // a label can't render left of the canvas edge) so this overlap check
     // reflects what will actually be drawn. Using the *unclamped* value
@@ -1173,9 +1296,6 @@ export function renderClassAscii(
 
     // Exclude source and target boxes from collision detection
     const excludeIds = new Set([rel.from, rel.to])
-
-    // Connection points: center-bottom of source → center-top of target
-    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -1185,24 +1305,15 @@ export function renderClassAscii(
       const lines = splitLines(rel.label)
       const maxLabelWidth = Math.max(...lines.map((l) => displayWidth(l))) + 2 // +2 for padding
 
-      // Calculate ideal label position based on routing direction
-      let baseMidY: number
-      let idealMidX: number
-
-      if (fromBY < toTY) {
-        // Target below source: place in gap between source bottom and target top
-        baseMidY = Math.floor((fromBY + 1 + toTY - 1) / 2)
-        idealMidX = Math.floor((fromCX + toCX) / 2)
-      } else if (toP.y + toP.height - 1 < fromP.y) {
-        // Target above source: place in gap between target bottom and source top
-        const toBY = toP.y + toP.height - 1
-        baseMidY = Math.floor((toBY + 1 + fromP.y - 1) / 2)
-        idealMidX = Math.floor((fromCX + toCX) / 2)
-      } else {
-        // Same level: place label at midpoint of the detour line
-        baseMidY = Math.max(fromBY, toP.y + toP.height - 1) + 2
-        idealMidX = Math.floor((fromCX + toCX) / 2)
-      }
+      // Calculate ideal label position based on routing direction (and, for
+      // a detoured relationship, its actual routed path — see
+      // `computeLabelAnchor`).
+      const { idealMidX, baseMidY } = computeLabelAnchor(
+        relIndex,
+        fromP,
+        toP,
+        maxLabelWidth,
+      )
 
       // Find a clear vertical position for the label (not inside any box)
       let labelY = baseMidY
