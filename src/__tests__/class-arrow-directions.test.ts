@@ -163,6 +163,32 @@ describe('Class Diagram Arrow Directions', () => {
       expect(result).toContain('v')
       expect(result).not.toContain('^')
     })
+
+    test('association routed around an obstruction still points down (non-hierarchical detour case)', () => {
+      // Same detour/collision-avoidance routing as the realization test
+      // below, but with a plain association so the target-below-source
+      // detour branch's `isHierarchical` ternary is exercised on its
+      // non-hierarchical ('down') side too, not just the hierarchical
+      // ('up') side.
+      const diagram = `classDiagram
+        class Flyable {
+          <<interface>>
+          +fly() void
+        }
+        class Helper {
+          +assist() void
+        }
+        class Bird {
+          +fly() void
+        }
+        Bird --> Helper
+        Helper --> Flyable
+        Bird --> Flyable`
+      const result = renderMermaidASCII(diagram)
+
+      expect(result).toContain('▼')
+      expect(result).not.toContain('▲')
+    })
   })
 
   // ============================================================================
@@ -213,19 +239,24 @@ describe('Class Diagram Arrow Directions', () => {
   // ============================================================================
 
   describe('Realization (..|>)', () => {
-    test('interface above implementation - triangle points UP', () => {
-      // Circle ..|> Shape means "Circle implements Shape"
-      // Shape (interface/parent) should be placed ABOVE Circle (implementation/child)
+    test('implementation above interface - triangle points down into interface', () => {
+      // Circle ..|> Shape means "Circle implements Shape". Layout places
+      // "from" above "to" for every relationship type (matching real
+      // mermaid.js — see issue #446), so Circle (implementation/from) is
+      // placed ABOVE Shape (interface/to), with the hollow triangle sitting
+      // just above Shape, its TIP touching (pointing down into) the
+      // interface box — a hollow triangle points toward whichever box it's
+      // adjacent to, not away from it.
       const diagram = `classDiagram
         Circle ..|> Shape`
       const result = renderMermaidASCII(diagram)
 
-      // Shape (interface) should be above Circle (implementation)
+      // Circle (implementation) should be above Shape (interface)
       const lines = result.split('\n')
       const shapeLine = lines.findIndex((l) => l.includes('Shape'))
       const circleLine = lines.findIndex((l) => l.includes('Circle'))
-      expect(shapeLine).toBeLessThan(circleLine)
-      expect(result).toContain('△')
+      expect(circleLine).toBeLessThan(shapeLine)
+      expect(result).toContain('▽')
     })
 
     test('realization with <|.. syntax (marker at from end)', () => {
@@ -249,16 +280,51 @@ describe('Class Diagram Arrow Directions', () => {
         Square ..|> Shape`
       const result = renderMermaidASCII(diagram)
 
-      // Shape (interface) above both implementations
+      // Both implementations above the shared interface
       const lines = result.split('\n')
       const shapeLine = lines.findIndex((l) => l.includes('Shape'))
       const circleLine = lines.findIndex((l) => l.includes('Circle'))
       const squareLine = lines.findIndex((l) => l.includes('Square'))
 
-      expect(shapeLine).toBeLessThan(circleLine)
-      expect(shapeLine).toBeLessThan(squareLine)
-      // At least one triangle (may merge visually if same connection point)
-      expect(result).toContain('△')
+      expect(circleLine).toBeLessThan(shapeLine)
+      expect(squareLine).toBeLessThan(shapeLine)
+      // At least one triangle (may merge visually if same connection point).
+      // markerAt='to' here (Shape), so the triangle points down into it: ▽.
+      expect(result).toContain('▽')
+    })
+
+    test('realization edge routed around an obstruction still points down into the interface', () => {
+      // Bird realizes Flyable two levels down (Helper sits in between,
+      // forced there by Bird-->Helper and Helper-->Flyable), so Bird's
+      // realization edge can't run straight down — it must detour around
+      // Helper's box via the collision-avoidance routing path. This is a
+      // different code path from the direct/no-collision case covered by
+      // the tests above, and had its own separate rotation bug that was
+      // missed in the original fix (only caught in review): the detour
+      // branch's marker-drawing code needed the same `isHierarchical`
+      // rotation compensation as the direct-routing branches.
+      const diagram = `classDiagram
+        class Flyable {
+          <<interface>>
+          +fly() void
+        }
+        class Helper {
+          +assist() void
+        }
+        class Bird {
+          +fly() void
+        }
+        Bird --> Helper
+        Helper --> Flyable
+        Bird ..|> Flyable`
+      const result = renderMermaidASCII(diagram)
+
+      // The realization edge is declared last, so it draws last and its
+      // marker wins where it lands on the same cell as Helper-->Flyable's
+      // own (unrelated, association-style) arrowhead — a separate,
+      // pre-existing limitation of this renderer's last-write-wins cell
+      // model, not something this test is about.
+      expect(result).toContain('▽')
     })
   })
 
@@ -301,8 +367,13 @@ describe('Class Diagram Arrow Directions', () => {
         K ..|> L : realization`
       const result = renderMermaidASCII(diagram)
 
-      // Upward triangles for inheritance and realization
-      expect(result.match(/△/g)?.length).toBe(2)
+      // A above B (inheritance, marker at 'from'/A) — marker sits just below
+      // A pointing up into it: △. K above L (realization, marker at
+      // 'to'/L) — marker sits just above L pointing down into it: ▽. Both
+      // point toward their parent/interface; the glyph differs because the
+      // marker's position relative to its target differs.
+      expect(result.match(/△/g)?.length).toBe(1)
+      expect(result.match(/▽/g)?.length).toBe(1)
 
       // Downward arrows for association and dependency
       expect(result.match(/▼/g)?.length).toBe(2)
@@ -338,6 +409,27 @@ describe('Class Diagram Arrow Directions', () => {
       expect(result).toContain('│ A │')
       expect(result).toContain('│ B │')
       expect(result).toContain('│ C │')
+    })
+
+    test('circular reference with a realization edge points the hollow triangle correctly (same-level routing)', () => {
+      // Same cyclic structure as the test above (which forces A and C onto
+      // the same level, routing their connecting edge below both boxes and
+      // back up — a third, separate marker-drawing branch from the two
+      // "target below/above source" cases covered elsewhere in this file),
+      // but with the cycle-closing edge as a realization instead of a
+      // dependency, so this same-level branch's `isHierarchical` rotation
+      // compensation is exercised on its hierarchical side too.
+      const diagram = `classDiagram
+        A --> B
+        B --> C
+        C ..|> A`
+      const result = renderMermaidASCII(diagram)
+
+      // The hollow triangle must point up, into A (the realized interface,
+      // approached from below after routing under B) — not down, away from
+      // it.
+      expect(result).toContain('△')
+      expect(result).not.toContain('▽')
     })
   })
 
