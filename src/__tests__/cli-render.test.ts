@@ -614,3 +614,67 @@ describe('runRender – errors', () => {
     ).rejects.toThrow()
   })
 })
+
+// ============================================================================
+// --direction (issue #276)
+// ============================================================================
+
+describe('runRender – --direction', () => {
+  /** Line index (0-based) of the first output line containing `label`. */
+  const rowOf = (text: string, label: string): number =>
+    text.split('\n').findIndex((line) => line.includes(label))
+
+  it('re-lays ASCII output out along the overridden axis', async () => {
+    const plain = createMockStdout()
+    await runRender(renderArgs({ ascii: true }), plain, SIMPLE_FLOWCHART)
+    // graph LR: every node on the same row.
+    expect(rowOf(plain.output(), 'A')).toBe(rowOf(plain.output(), 'C'))
+
+    const overridden = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, direction: 'TB' }),
+      overridden,
+      SIMPLE_FLOWCHART,
+    )
+    // --direction TB: nodes stack top-down.
+    expect(rowOf(overridden.output(), 'C')).toBeGreaterThan(
+      rowOf(overridden.output(), 'A'),
+    )
+    expect(overridden.output()).not.toBe(plain.output())
+  })
+
+  it('applies the override to SVG output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    const plainPath = join(tmpDir, 'plain.svg')
+    const overriddenPath = join(tmpDir, 'overridden.svg')
+
+    await runRender(
+      renderArgs({ input: inputPath, svg: true, output: plainPath }),
+    )
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        svg: true,
+        output: overriddenPath,
+        direction: 'TB',
+      }),
+    )
+
+    const plain = await readFile(plainPath, 'utf-8')
+    const overridden = await readFile(overriddenPath, 'utf-8')
+    expect(overridden).not.toBe(plain)
+
+    // Same result as if the source had said `graph TB`.
+    const rewrittenPath = join(tmpDir, 'rewritten.mmd')
+    await writeFile(
+      rewrittenPath,
+      SIMPLE_FLOWCHART.replace('graph LR', 'graph TB'),
+    )
+    const rewrittenOut = join(tmpDir, 'rewritten.svg')
+    await runRender(
+      renderArgs({ input: rewrittenPath, svg: true, output: rewrittenOut }),
+    )
+    expect(overridden).toBe(await readFile(rewrittenOut, 'utf-8'))
+  })
+})

@@ -49,10 +49,12 @@ import { THEMES } from './src/theme.ts'
 import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
 import { renderThemePicker, DEFAULT_SWATCH } from './theme-picker.ts'
 import { renderMermaidSVG } from './src/index.ts'
+import type { RenderOptions } from './src/index.ts'
 import { createHighlighter } from 'shiki'
 import {
   wideDiagramDirectionLine,
   withNarrowDirection,
+  NARROW_DIRECTION,
   withUniqueSvgIds,
 } from './demo/diagram-orientation.ts'
 
@@ -148,11 +150,15 @@ async function main(): Promise<void> {
   for (const profile of DIAGRAM_TYPE_PROFILES) {
     const colors = DEFAULT_SWATCH
 
-    const renderDiagram = (source: string): string =>
+    const renderDiagram = (
+      source: string,
+      extra: Pick<RenderOptions, 'direction'> = {},
+    ): string =>
       renderMermaidSVG(source, {
         ...colors,
         title: `${profile.label} diagram, zombie-mermaid`,
         interactivity: 'none',
+        ...extra,
       })
 
     const highlightSource = (source: string): string => {
@@ -173,7 +179,10 @@ async function main(): Promise<void> {
     // pure static markup, picked between by demo/styles.css's
     // `.orientation-variant` media query (bundled into this page's own
     // stylesheet below) — no client JS needed to display the right one.
-    // See demo/diagram-orientation.ts's header comment.
+    // The narrow SVG is the unmodified source under the library's
+    // `direction` override (issue #276); `narrowSource` (the rewritten
+    // text) is only for the source panel shown alongside it. See
+    // demo/diagram-orientation.ts's header comment.
     const directionLine = wideDiagramDirectionLine(profile.source)
     const narrowSource =
       directionLine !== null
@@ -184,7 +193,7 @@ async function main(): Promise<void> {
       narrowSource === null
         ? renderDiagram(profile.source)
         : `<div class="orientation-variant orientation-wide">${withUniqueSvgIds(renderDiagram(profile.source), `${profile.slug}-w-`)}</div>` +
-          `<div class="orientation-variant orientation-narrow">${withUniqueSvgIds(renderDiagram(narrowSource), `${profile.slug}-n-`)}</div>`
+          `<div class="orientation-variant orientation-narrow">${withUniqueSvgIds(renderDiagram(profile.source, { direction: NARROW_DIRECTION }), `${profile.slug}-n-`)}</div>`
 
     const sourcePanelMarkup =
       narrowSource === null

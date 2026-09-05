@@ -102,6 +102,9 @@ Options:
                        --force.
   -f, --force          Overwrite an existing output file
   --theme <name>       Apply a built-in theme (see 'themes' command)
+  --direction <dir>    Override the diagram's layout direction: TD, TB, BT, LR, or RL
+                       (flowchart, state, and ER diagrams; nested subgraph
+                       directions still apply on top of it)
   -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)
   -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)

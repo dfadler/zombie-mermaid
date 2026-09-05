@@ -18,6 +18,7 @@ import {
   wideDiagramDirectionLine,
   withNarrowDirection,
   withUniqueSvgIds,
+  NARROW_DIRECTION,
 } from './diagram-orientation.ts'
 
 /** The subset of the renderer bundle's exports this page uses. */
@@ -304,17 +305,19 @@ function applyThemeToSvgElement(
 const narrowViewportQuery = window.matchMedia('(max-width: 640px)')
 
 /**
- * The source text to actually render for `sample` given the current
- * viewport: `sample.source` unless it has a narrow-viewport alternate (see
- * `wideDiagramDirectionLine`) and the viewport currently matches the
- * narrow breakpoint.
+ * The ASCII render options for `sample` given the current viewport:
+ * `TERMINAL_ASCII_OPTS` as-is, unless the sample has a narrow-viewport
+ * alternate (see `wideDiagramDirectionLine`) and the viewport currently
+ * matches the narrow breakpoint — then the same options plus the library's
+ * `direction` override (issue #276), which re-lays the unmodified source
+ * out top-down. The source text itself is never rewritten for rendering.
  */
-function sourceForViewport(sample: DemoSample): string {
-  const lineIndex = wideDiagramDirectionLine(sample.source)
-  if (lineIndex === null) return sample.source
+function asciiOptionsForViewport(sample: DemoSample): Record<string, unknown> {
+  if (wideDiagramDirectionLine(sample.source) === null)
+    return TERMINAL_ASCII_OPTS
   return narrowViewportQuery.matches
-    ? withNarrowDirection(sample.source, lineIndex)
-    : sample.source
+    ? { ...TERMINAL_ASCII_OPTS, direction: NARROW_DIRECTION }
+    : TERMINAL_ASCII_OPTS
 }
 
 /**
@@ -323,7 +326,7 @@ function sourceForViewport(sample: DemoSample): string {
  * exists. ASCII containers are created lazily per category (same as SVG —
  * see renderSample), so a not-yet-rendered sample is a no-op here; it
  * picks up the right orientation itself the first time it does render,
- * since renderSample/saveAndRender call sourceForViewport too.
+ * since renderSample/saveAndRender call asciiOptionsForViewport too.
  */
 function renderAsciiForViewport(i: number): void {
   const sample = samples[i]
@@ -332,8 +335,8 @@ function renderAsciiForViewport(i: number): void {
   if (wideDiagramDirectionLine(sample.source) === null) return
   try {
     asciiContainer.innerHTML = renderMermaidASCII(
-      sourceForViewport(sample),
-      TERMINAL_ASCII_OPTS,
+      sample.source,
+      asciiOptionsForViewport(sample),
     )
     applyWideCharWidths(asciiContainer)
   } catch {
@@ -423,14 +426,15 @@ async function renderSvgVariants(
   sample: DemoSample,
   theme: DiagramColors | null,
 ): Promise<void> {
-  const directionLine = wideDiagramDirectionLine(sample.source)
-  if (directionLine !== null) {
+  if (wideDiagramDirectionLine(sample.source) !== null) {
+    // The narrow variant is the same source under the library's
+    // `direction` override (issue #276) — no source rewrite needed.
     const [wideSvg, narrowSvg] = await Promise.all([
       renderMermaid(sample.source, sample.options),
-      renderMermaid(
-        withNarrowDirection(sample.source, directionLine),
-        sample.options,
-      ),
+      renderMermaid(sample.source, {
+        ...sample.options,
+        direction: NARROW_DIRECTION,
+      }),
     ])
     const idPrefix = (svgContainer.id || 'sample') + '-'
     svgContainer.innerHTML =
@@ -1041,8 +1045,8 @@ async function renderSample(i: number) {
   if (asciiContainer) {
     try {
       asciiContainer.innerHTML = renderMermaidASCII(
-        sourceForViewport(sample),
-        TERMINAL_ASCII_OPTS,
+        sample.source,
+        asciiOptionsForViewport(sample),
       )
       applyWideCharWidths(asciiContainer)
     } catch {
@@ -1509,8 +1513,8 @@ async function saveAndRender() {
   if (asciiContainer) {
     try {
       asciiContainer.innerHTML = renderMermaidASCII(
-        sourceForViewport(editedSample),
-        TERMINAL_ASCII_OPTS,
+        editedSample.source,
+        asciiOptionsForViewport(editedSample),
       )
       applyWideCharWidths(asciiContainer)
     } catch (e) {
