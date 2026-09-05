@@ -182,26 +182,31 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     )
 
     const lines = ascii.split('\n')
-    const labelRow = lines.findIndex((l) => l.includes('tagged-with'))
-    expect(labelRow).toBeGreaterThanOrEqual(0)
-    const labelCol = lines[labelRow]!.indexOf('tagged-with')
-    // The label starts 2 columns after the target column TAG's own lower
-    // crow's-foot marker is built around — i.e. 3 columns after where a
-    // 2-character marker like "○╟" begins (see targetX in the source).
-    // The jog's row is chosen independently to dodge collisions with
-    // other relationships (issue #351's chooseFreeRow), so the marker and
-    // label aren't guaranteed to land on the exact same printed row —
-    // search a small vertical window around the label instead of
-    // requiring literal same-row adjacency.
-    const markerCol = labelCol - 3
+    const labelRowIdx = lines.findIndex((l) => l.includes('tagged-with'))
+    expect(labelRowIdx).toBeGreaterThanOrEqual(0)
+    const row = lines[labelRowIdx]!
+    const idx = row.indexOf('tagged-with')
+    // Since issue #453, POST also has a second bottom attachment ("has")
+    // converging on COMMENT, so POST's own attachment columns for "has"
+    // and "tagged-with" are staggered instead of both centered on POST —
+    // which in turn changes where "tagged-with"'s jog (and so its label)
+    // lands. The label is preceded by the jog's own corner glyph ('┌ ')
+    // rather than sitting flush after the marker on the same row.
+    expect(row.slice(idx - 2, idx)).toBe('┌ ')
+    const cornerCol = idx - 2
+    // The marker sits at or adjacent to the corner's column, connected by
+    // the vertical line the corner turns into — but not necessarily on the
+    // very next row: issue #351's multi-row-obstruction routing can insert
+    // an extra connector row between the jog and the marker, so the exact
+    // row offset isn't fixed. Search a small vertical window below the
+    // corner instead of requiring literal same-row-plus-one adjacency.
     const nearbyRows = [
-      labelRow - 1,
-      labelRow,
-      labelRow + 1,
-      labelRow + 2,
-    ].filter((r) => r >= 0 && r < lines.length)
-    const hasAlignedMarker = nearbyRows.some(
-      (r) => lines[r]!.slice(markerCol, markerCol + 2) === '○╟',
+      labelRowIdx + 1,
+      labelRowIdx + 2,
+      labelRowIdx + 3,
+    ].filter((r) => r < lines.length)
+    const hasAlignedMarker = nearbyRows.some((r) =>
+      lines[r]!.slice(cornerCol - 1, cornerCol + 2).includes('○╟'),
     )
     expect(hasAlignedMarker).toBe(true)
   })
