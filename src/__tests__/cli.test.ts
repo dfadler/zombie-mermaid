@@ -16,6 +16,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       output: undefined,
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -41,6 +42,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       output: 'out.svg',
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -67,6 +69,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       output: 'out.svg',
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -94,6 +97,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       output: 'out.svg',
+      force: false,
       theme: 'tokyo-night',
       paddingX: undefined,
       paddingY: undefined,
@@ -113,6 +117,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       output: undefined,
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -132,6 +137,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       output: 'out.svg',
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -157,6 +163,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       output: 'out.svg',
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -186,6 +193,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       output: undefined,
+      force: false,
       theme: undefined,
       paddingX: 10,
       paddingY: 3,
@@ -215,6 +223,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       output: undefined,
+      force: false,
       theme: undefined,
       paddingX: 7,
       paddingY: 9,
@@ -234,6 +243,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       output: undefined,
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -253,6 +263,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       output: undefined,
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -278,6 +289,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       output: undefined,
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,
@@ -320,6 +332,109 @@ describe('parseArgs – --resolve-colors', () => {
     expect(() =>
       parseArgs(['render', 'diagram.mmd', '--ascii', '--resolve-colors']),
     ).toThrow('--resolve-colors requires --svg')
+  })
+})
+
+// ============================================================================
+// Output ergonomics (#456): -o -, extension inference, default names, --force
+// ============================================================================
+
+describe('parseArgs – output ergonomics', () => {
+  const render = (argv: string[]) => {
+    const args = parseArgs(['render', ...argv])
+    if (args.command !== 'render') throw new Error('expected render')
+    return args
+  }
+
+  it('accepts -o - as "write the SVG to stdout"', () => {
+    const args = render(['diagram.mmd', '--svg', '-o', '-'])
+    expect(args.svg).toBe(true)
+    expect(args.output).toBe('-')
+  })
+
+  it('accepts -o - with --ascii alone (a no-op: ASCII already goes to stdout)', () => {
+    const args = render(['diagram.mmd', '--ascii', '-o', '-'])
+    expect(args.ascii).toBe(true)
+    expect(args.svg).toBe(false)
+    expect(args.output).toBe('-')
+  })
+
+  it('rejects -o - when both ASCII and SVG would land on stdout', () => {
+    expect(() =>
+      render(['diagram.mmd', '--ascii', '--svg', '-o', '-']),
+    ).toThrow('-o - would send both ASCII and SVG to stdout')
+  })
+
+  it('infers --svg from a .svg extension when no format flag is given', () => {
+    const args = render(['diagram.mmd', '-o', 'out.svg'])
+    expect(args.svg).toBe(true)
+    expect(args.ascii).toBe(false)
+    expect(args.output).toBe('out.svg')
+  })
+
+  it('infers --svg case-insensitively (.SVG)', () => {
+    expect(render(['diagram.mmd', '-o', 'OUT.SVG']).svg).toBe(true)
+  })
+
+  it('infers --ascii from a .txt extension, writing ASCII to that file', () => {
+    const args = render(['diagram.mmd', '-o', 'out.txt'])
+    expect(args.ascii).toBe(true)
+    expect(args.svg).toBe(false)
+    expect(args.output).toBe('out.txt')
+  })
+
+  it('adds --svg when --ascii is given with a .svg -o (ASCII to terminal, SVG to file)', () => {
+    const args = render(['diagram.mmd', '--ascii', '-o', 'out.svg'])
+    expect(args.ascii).toBe(true)
+    expect(args.svg).toBe(true)
+    expect(args.output).toBe('out.svg')
+  })
+
+  it('rejects --svg with a .txt -o (extension contradicts the format written there)', () => {
+    expect(() => render(['diagram.mmd', '--svg', '-o', 'out.txt'])).toThrow(
+      '-o out.txt has a .txt extension, but --svg output would be written to it',
+    )
+  })
+
+  it('lets an explicit flag win over an unrecognised extension', () => {
+    const args = render(['diagram.mmd', '--svg', '-o', 'diagram.xml'])
+    expect(args.svg).toBe(true)
+    expect(args.output).toBe('diagram.xml')
+  })
+
+  it('rejects -o with an unrecognised extension and no format flag', () => {
+    expect(() => render(['diagram.mmd', '-o', 'out.xml'])).toThrow(
+      'Cannot infer an output format from "out.xml"',
+    )
+  })
+
+  it('defaults the SVG output name to the input stem when --svg has no -o', () => {
+    expect(render(['diagram.mmd', '--svg']).output).toBe('diagram.svg')
+    expect(render(['docs/flow.mermaid', '--svg']).output).toBe('docs/flow.svg')
+    expect(render(['flow', '--svg']).output).toBe('flow.svg')
+    expect(render(['a.b/diagram.mmd', '--svg']).output).toBe('a.b/diagram.svg')
+  })
+
+  it('keeps --ascii without -o as stdout only (no file, no default name)', () => {
+    expect(render(['diagram.mmd', '--ascii']).output).toBeUndefined()
+  })
+
+  it('parses -f and --force', () => {
+    expect(render(['diagram.mmd', '--svg', '-f']).force).toBe(true)
+    expect(render(['diagram.mmd', '--svg', '--force']).force).toBe(true)
+    expect(render(['diagram.mmd', '--svg']).force).toBe(false)
+  })
+
+  it('rejects a bare - as the input file (stdin is the no-file default)', () => {
+    expect(() => render(['-', '--ascii'])).toThrow(
+      'Unexpected argument: - (use -o - to write output to stdout',
+    )
+  })
+
+  it('reports -o missing its value with the stdout hint', () => {
+    expect(() => render(['diagram.mmd', '--svg', '-o'])).toThrow(
+      '-o requires a file path (or - for stdout)',
+    )
   })
 })
 
@@ -391,15 +506,15 @@ describe('parseArgs – web command', () => {
 // ============================================================================
 
 describe('parseArgs – validation errors', () => {
-  it('throws when render has --svg but no -o', () => {
-    expect(() => parseArgs(['render', 'diagram.mmd', '--svg'])).toThrow(
-      '--svg requires -o <path>',
+  it('throws when render has --svg but no -o and no input file to name the output after', () => {
+    expect(() => parseArgs(['render', '--svg'])).toThrow(
+      '--svg needs -o <path> (or -o - for stdout) when reading from stdin',
     )
   })
 
   it('throws when render has no output flags', () => {
     expect(() => parseArgs(['render', 'diagram.mmd'])).toThrow(
-      'Specify --ascii and/or --svg -o <path>',
+      'Specify --ascii and/or --svg',
     )
   })
 
@@ -522,6 +637,7 @@ describe('parseArgs – --direction', () => {
       svg: false,
       output: undefined,
       resolveColors: false,
+      force: false,
       theme: undefined,
       paddingX: undefined,
       paddingY: undefined,

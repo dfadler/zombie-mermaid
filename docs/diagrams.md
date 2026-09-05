@@ -218,10 +218,38 @@ references, are emitted.** A `javascript:` or `data:` href is dropped —
 diagram text may be untrusted, and an executable href would make any page
 that inlines the SVG vulnerable.
 
-**A `call`/callback binding is recorded, never invoked.** This renderer emits
-a static SVG string and executes nothing a diagram supplies. The binding is
-exposed as `data-click-callback` so a host application can wire it up itself
-if it chooses to trust the source.
+**A `call`/callback binding is parsed, never invoked — and never written
+into the SVG.** This renderer emits a static SVG string and executes nothing
+a diagram supplies. The binding surfaces as data instead: the `interactions`
+map (`Map<string, NodeInteraction>`, keyed by node id) on the graph that
+`parseMermaid()` returns. A host application that trusts its diagram source
+binds the behaviour itself, using the `data-id` attribute every node's `<g>`
+already carries as the hook. Map the expression text to your own functions
+rather than evaluating it:
+
+```typescript
+import { parseMermaid, renderMermaidSVG } from 'zombie-mermaid'
+
+const source = 'flowchart TD\n  A --> B\n  click B call showDetail()'
+container.innerHTML = renderMermaidSVG(source)
+
+const handlers: Record<string, (nodeId: string) => void> = {
+  'showDetail()': (nodeId) => openDetailPanel(nodeId),
+}
+
+for (const [nodeId, { callback }] of parseMermaid(source).interactions) {
+  const handler = callback === undefined ? undefined : handlers[callback]
+  if (!handler) continue // an href/tooltip-only click, or an unknown callback
+  container
+    .querySelector(`[data-id="${nodeId}"]`)
+    ?.addEventListener('click', () => handler(nodeId))
+}
+```
+
+Earlier releases also wrote the expression into an inert
+`data-click-callback` attribute on the node group. That attribute was
+removed in [#216](https://github.com/dfadler/zombie-mermaid/issues/216) —
+reading the typed map is the supported path.
 
 ### Edge IDs and animation
 
@@ -348,9 +376,13 @@ classDiagram
 Same grammar, same href-safety rules, and same `interactivity` gating as the
 flowchart/state [Interactions](#interactions) above — a `click` on a class
 wraps its box in a real `<a>` link, a tooltip becomes a `<title>`, and a
-`call`/`callback` binding is recorded as `data-click-callback` but never
-invoked. Both parsers share the implementation (`src/click-directive.ts`), so
-see that section for the full details.
+`call`/`callback` binding is parsed but never invoked and never written into
+the SVG (a class box's `<g class="class-node">` carries the same `data-id`
+hook). Both parsers share the implementation (`src/click-directive.ts`), so
+see that section for the full details. One gap: `parseMermaid()` handles
+flowchart and state sources only, and the class-diagram parser isn't part of
+the public API yet, so a class diagram's parsed `interactions` map isn't
+currently reachable from outside the library.
 
 ### Known limitations
 

@@ -5,7 +5,7 @@
  * relationships (all 6 types), cardinality, labels, inline attributes.
  */
 import { describe, it, expect } from 'vitest'
-import { parseClassDiagram } from '../class/parser.ts'
+import { parseClassDiagram, parseGenericTypes } from '../class/parser.ts'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {
@@ -237,5 +237,91 @@ describe('parseClassDiagram – full diagram', () => {
     expect(animal.annotation).toBe('abstract')
     expect(animal.attributes).toHaveLength(1)
     expect(animal.methods).toHaveLength(2)
+  })
+})
+
+// ============================================================================
+// Generic types (`~T~` → `<T>`, matching mermaid's parseGenericTypes) — #418
+// ============================================================================
+
+describe('parseGenericTypes', () => {
+  it('converts a simple generic', () => {
+    expect(parseGenericTypes('List~Observer~')).toBe('List<Observer>')
+  })
+
+  it('converts a generic whose arguments contain a comma', () => {
+    expect(parseGenericTypes('Map~K,V~')).toBe('Map<K,V>')
+  })
+
+  it('converts nested generics outermost-first', () => {
+    expect(parseGenericTypes('List~List~T~~')).toBe('List<List<T>>')
+  })
+
+  it('converts several generics in one string independently', () => {
+    expect(parseGenericTypes('Map~K,V~ m, List~T~ l')).toBe(
+      'Map<K,V> m, List<T> l',
+    )
+  })
+
+  it('leaves a lone tilde alone', () => {
+    expect(parseGenericTypes('approx ~ value')).toBe('approx ~ value')
+  })
+
+  it('leaves text without tildes untouched', () => {
+    expect(parseGenericTypes('String name')).toBe('String name')
+  })
+})
+
+describe('parseClassDiagram – generic types in members', () => {
+  it('converts an attribute type generic', () => {
+    const d = parse(`classDiagram
+      class EventEmitter {
+        -List~Observer~ observers
+      }`)
+    const attr = d.classes[0]!.attributes[0]!
+    expect(attr.visibility).toBe('-')
+    expect(attr.type).toBe('List<Observer>')
+    expect(attr.name).toBe('observers')
+  })
+
+  it('converts multi-argument and nested attribute generics', () => {
+    const d = parse(`classDiagram
+      class Registry {
+        +Map~String,Handler~ handlers
+        +List~List~int~~ matrix
+      }`)
+    const [handlers, matrix] = d.classes[0]!.attributes
+    expect(handlers!.type).toBe('Map<String,Handler>')
+    expect(handlers!.name).toBe('handlers')
+    expect(matrix!.type).toBe('List<List<int>>')
+    expect(matrix!.name).toBe('matrix')
+  })
+
+  it('converts generics in method params and return types', () => {
+    const d = parse(`classDiagram
+      class Repo {
+        +findAll(Map~String,Object~ filter) List~Entity~
+      }`)
+    const m = d.classes[0]!.methods[0]!
+    expect(m.name).toBe('findAll')
+    expect(m.params).toBe('Map<String,Object> filter')
+    expect(m.type).toBe('List<Entity>')
+  })
+
+  it('does not pair a package-visibility tilde with a generic tilde', () => {
+    const d = parse(`classDiagram
+      class Cache {
+        ~List~Entry~ entries
+      }`)
+    const attr = d.classes[0]!.attributes[0]!
+    expect(attr.visibility).toBe('~')
+    expect(attr.type).toBe('List<Entry>')
+    expect(attr.name).toBe('entries')
+  })
+
+  it('converts generics in inline member syntax', () => {
+    const d = parse(`classDiagram
+      Store : -List~Item~ items`)
+    expect(d.classes[0]!.attributes[0]!.type).toBe('List<Item>')
   })
 })

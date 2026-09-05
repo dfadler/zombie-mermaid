@@ -115,6 +115,143 @@ describe('runRender – --resolve-colors', () => {
 })
 
 // ============================================================================
+// Output ergonomics (#456)
+// ============================================================================
+
+describe('runRender – output ergonomics', () => {
+  it('writes the SVG to stdout for -o -, byte-identical to the file output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const filePath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, svg: true, output: '-' }),
+      mockStdout,
+    )
+    await runRender(
+      renderArgs({ input: inputPath, svg: true, output: filePath }),
+    )
+
+    expect(mockStdout.output()).toMatch(/^<svg[\s\S]*<\/svg>$/)
+    expect(mockStdout.output()).toBe(await readFile(filePath, 'utf-8'))
+  })
+
+  it('refuses to overwrite an existing output file, naming the file and --force', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'ORIGINAL')
+
+    const mockStdout = createMockStdout()
+    await expect(
+      runRender(
+        renderArgs({
+          input: inputPath,
+          ascii: true,
+          svg: true,
+          output: outputPath,
+        }),
+        mockStdout,
+      ),
+    ).rejects.toThrow(
+      `Refusing to overwrite existing file "${outputPath}" — pass --force to replace it`,
+    )
+    expect(await readFile(outputPath, 'utf-8')).toBe('ORIGINAL')
+    // Refused before any work: nothing was printed ahead of the error.
+    expect(mockStdout.output()).toBe('')
+  })
+
+  it('overwrites an existing output file with force', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'ORIGINAL')
+
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        svg: true,
+        output: outputPath,
+        force: true,
+      }),
+    )
+
+    expect(await readFile(outputPath, 'utf-8')).toContain('<svg')
+  })
+
+  it('writes ASCII to a file when it is the only format and -o names one', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.txt')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, ascii: true, output: outputPath }),
+      mockStdout,
+    )
+
+    const text = await readFile(outputPath, 'utf-8')
+    expect(text).toContain('A')
+    expect(text).toContain('C')
+    expect(text.endsWith('\n')).toBe(true)
+    expect(mockStdout.output()).toBe('')
+  })
+
+  it('writes ASCII to a file without ANSI escapes even when a theme is set', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.txt')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        ascii: true,
+        output: outputPath,
+        theme: 'tokyo-night',
+      }),
+    )
+
+    expect(await readFile(outputPath, 'utf-8')).not.toMatch(/\x1b\[/)
+  })
+
+  it('refuses to overwrite an existing ASCII output file too', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.txt')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'ORIGINAL')
+
+    await expect(
+      runRender(
+        renderArgs({ input: inputPath, ascii: true, output: outputPath }),
+      ),
+    ).rejects.toThrow('Refusing to overwrite existing file')
+    expect(await readFile(outputPath, 'utf-8')).toBe('ORIGINAL')
+  })
+
+  it('still prints ASCII to stdout when both formats are requested with a file -o', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        ascii: true,
+        svg: true,
+        output: outputPath,
+      }),
+      mockStdout,
+    )
+
+    expect(mockStdout.output()).toContain('A')
+    expect(mockStdout.output()).not.toContain('<svg')
+    expect(await readFile(outputPath, 'utf-8')).toContain('<svg')
+  })
+})
+
+// ============================================================================
 // Both ASCII + SVG
 // ============================================================================
 
