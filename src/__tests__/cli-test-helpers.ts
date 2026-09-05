@@ -20,6 +20,7 @@ export function renderArgs(overrides: Partial<RenderArgs> = {}): RenderArgs {
     ascii: false,
     svg: false,
     output: undefined,
+    force: false,
     theme: undefined,
     paddingX: undefined,
     paddingY: undefined,
