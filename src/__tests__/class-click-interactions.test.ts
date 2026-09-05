@@ -124,13 +124,37 @@ describe('renderMermaidSVG – class diagram click interactions', () => {
     })
   })
 
-  it('records a callback as data but never emits executable script', () => {
-    const svg = renderMermaidSVG(
-      'classDiagram\n  class Animal\n  click Animal call handler()',
-    )
-    expect(svg).toContain('data-click-callback="handler()"')
-    expect(svg).not.toContain('<script')
-    expect(svg).not.toContain('onclick')
+  describe('a call/callback binding (#216)', () => {
+    const WITH_CALLBACK =
+      'classDiagram\n  class Animal\n  click Animal call handler()'
+
+    it('surfaces only through the parsed interactions map', () => {
+      expect(parse(WITH_CALLBACK).interactions.get('Animal')).toEqual({
+        callback: 'handler()',
+      })
+    })
+
+    it('leaves no trace of the callback in the SVG', () => {
+      const svg = renderMermaidSVG(WITH_CALLBACK)
+      // The inert `data-click-callback` attribute was removed in #216.
+      expect(svg).not.toContain('data-click-callback')
+      expect(svg).not.toContain('handler()')
+      expect(svg).not.toContain('<script')
+      expect(svg).not.toContain('onclick')
+    })
+
+    it('keeps the data-id hook a host binds the callback to', () => {
+      expect(renderMermaidSVG(WITH_CALLBACK)).toContain('data-id="Animal"')
+    })
+
+    it('still renders the href link and <title> tooltip alongside it', () => {
+      const svg = renderMermaidSVG(
+        'classDiagram\n  class Animal\n  class Dog\n  click Animal "https://example.com" "Tip"\n  click Dog call handler()',
+      )
+      expect(svg).toContain('<a href="https://example.com">')
+      expect(svg).toContain('<title>Tip</title>')
+      expect(svg).not.toContain('data-click-callback')
+    })
   })
 
   describe('unaffected diagrams (no accidental behavior change)', () => {
@@ -190,12 +214,13 @@ describe('renderMermaidSVG – class diagram click interactions', () => {
       expect(svg).toContain('>Animal<')
     })
 
-    it('still records a click callback as data (unaffected — never a link/tooltip)', () => {
+    it('emits nothing for a click callback at any level (never a link/tooltip, never an attribute)', () => {
       const svg = renderMermaidSVG(
         'classDiagram\n  class Animal\n  click Animal call handler()',
         { interactivity: 'none' },
       )
-      expect(svg).toContain('data-click-callback="handler()"')
+      expect(svg).not.toContain('data-click-callback')
+      expect(svg).not.toContain('handler()')
     })
 
     it.each(['static', 'full'] as const)(

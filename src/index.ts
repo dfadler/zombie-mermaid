@@ -22,6 +22,7 @@
 export type {
   RenderOptions,
   MermaidGraph,
+  NodeInteraction,
   PositionedGraph,
   Direction,
 } from './types.ts'

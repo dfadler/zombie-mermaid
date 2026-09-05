@@ -85,6 +85,12 @@ import { renderMermaidASCII } from 'zombie-mermaid/ascii'
 ## `parseMermaid(text): MermaidGraph`
 
 Parse Mermaid source into a structured graph object (for custom processing).
+Handles flowchart and state diagram sources. The returned
+`MermaidGraph.interactions` (`Map<string, NodeInteraction>`, keyed by node
+id) carries every `click` statement's href, tooltip, and `call`/`callback`
+expression — and is the only place a callback surfaces, since the rendered
+SVG never carries it. See the flowchart
+[Interactions](diagrams.md#interactions) section for how a host binds it.
 
 ## `fromShikiTheme(theme): DiagramColors`
 

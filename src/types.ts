@@ -112,8 +112,9 @@ export interface MermaidEdge {
  * An interaction attached to a node by a `click` statement.
  *
  * This renderer emits static SVG and never executes diagram-supplied script,
- * so a `call`/callback binding is recorded but not invoked — see
- * docs/diagrams.md. An `href` becomes a real SVG link.
+ * so a `call`/callback binding is parsed but not invoked — see
+ * docs/diagrams.md and docs/decisions/no-script-interactivity.md. An `href`
+ * becomes a real SVG link and a tooltip becomes a `<title>`.
  */
 export interface NodeInteraction {
   /** `click A "https://..."` — rendered as an <a> wrapper */
@@ -122,7 +123,22 @@ export interface NodeInteraction {
   target?: string
   /** Tooltip text — rendered as a <title> child */
   tooltip?: string
-  /** `click A call fn()` — recorded as a data attribute, never executed */
+  /**
+   * `click A call fn()` — the raw expression text (`fn()`), exposed as data
+   * only. Nothing in the rendered SVG carries it and the library never
+   * evaluates it; a host that trusts its diagram source reads it from
+   * `parseMermaid(source).interactions` and binds behaviour to the node's
+   * `data-id` attribute itself:
+   *
+   * ```ts
+   * for (const [id, { callback }] of parseMermaid(source).interactions) {
+   *   if (callback === 'showDetail()') {
+   *     svgRoot.querySelector(`[data-id="${id}"]`)
+   *       ?.addEventListener('click', () => showDetail(id))
+   *   }
+   * }
+   * ```
+   */
   callback?: string
 }
 
