@@ -14,6 +14,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       output: undefined,
       theme: undefined,
       paddingX: undefined,
@@ -37,6 +38,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      resolveColors: false,
       output: 'out.svg',
       theme: undefined,
       paddingX: undefined,
@@ -61,6 +63,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: true,
+      resolveColors: false,
       output: 'out.svg',
       theme: undefined,
       paddingX: undefined,
@@ -86,6 +89,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      resolveColors: false,
       output: 'out.svg',
       theme: 'tokyo-night',
       paddingX: undefined,
@@ -103,6 +107,7 @@ describe('parseArgs – render happy paths', () => {
       input: undefined,
       ascii: true,
       svg: false,
+      resolveColors: false,
       output: undefined,
       theme: undefined,
       paddingX: undefined,
@@ -120,6 +125,7 @@ describe('parseArgs – render happy paths', () => {
       input: undefined,
       ascii: false,
       svg: true,
+      resolveColors: false,
       output: 'out.svg',
       theme: undefined,
       paddingX: undefined,
@@ -143,6 +149,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      resolveColors: false,
       output: 'out.svg',
       theme: undefined,
       paddingX: undefined,
@@ -170,6 +177,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       output: undefined,
       theme: undefined,
       paddingX: 10,
@@ -197,6 +205,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       output: undefined,
       theme: undefined,
       paddingX: 7,
@@ -214,6 +223,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       output: undefined,
       theme: undefined,
       paddingX: undefined,
@@ -231,6 +241,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       output: undefined,
       theme: undefined,
       paddingX: undefined,
@@ -254,6 +265,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       output: undefined,
       theme: undefined,
       paddingX: undefined,
@@ -268,6 +280,36 @@ describe('parseArgs – render happy paths', () => {
 // ============================================================================
 // simple commands
 // ============================================================================
+
+describe('parseArgs – --resolve-colors', () => {
+  it('parses render <file> --svg -o out.svg --resolve-colors', () => {
+    const args = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--svg',
+      '-o',
+      'out.svg',
+      '--resolve-colors',
+    ])
+    expect(args.command).toBe('render')
+    if (args.command !== 'render') throw new Error('expected render')
+    expect(args.resolveColors).toBe(true)
+    expect(args.svg).toBe(true)
+    expect(args.output).toBe('out.svg')
+  })
+
+  it('defaults resolveColors to false', () => {
+    const args = parseArgs(['render', 'diagram.mmd', '--svg', '-o', 'out.svg'])
+    if (args.command !== 'render') throw new Error('expected render')
+    expect(args.resolveColors).toBe(false)
+  })
+
+  it('throws when --resolve-colors is given without --svg', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--resolve-colors']),
+    ).toThrow('--resolve-colors requires --svg')
+  })
+})
 
 describe('parseArgs – simple commands', () => {
   it('parses "themes"', () => {

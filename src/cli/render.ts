@@ -212,7 +212,10 @@ export async function runRender(
   }
 
   if (args.svg && args.output) {
-    const svg = renderMermaidSVG(text, themeColors ?? {})
+    const svg = renderMermaidSVG(text, {
+      ...themeColors,
+      resolveColors: args.resolveColors,
+    })
     await writeFile(args.output, svg, 'utf-8')
   }
 }

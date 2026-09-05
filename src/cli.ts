@@ -89,6 +89,11 @@ Usage:
 Options:
   --ascii              Print ASCII/Unicode diagram to terminal
   --svg                Render SVG (requires -o)
+  --resolve-colors     Replace CSS var()/color-mix() in the SVG with computed
+                       sRGB values, for rasterizers and other non-browser SVG
+                       consumers (resvg, librsvg, Inkscape) that don't
+                       evaluate them. The default output stays a live function
+                       of its CSS variables. Requires --svg.
   -o, --output         Output file path for SVG
   --theme <name>       Apply a built-in theme (see 'themes' command)
   -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)

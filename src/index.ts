@@ -23,6 +23,7 @@ export type { RenderOptions, MermaidGraph, PositionedGraph } from './types.ts'
 export type { DiagramColors, ThemeName } from './theme.ts'
 export { fromShikiTheme, THEMES, DEFAULTS } from './theme.ts'
 export { parseMermaid } from './parser.ts'
+import { resolveCssColors } from './resolve-colors.ts'
 export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
 export type { AsciiRenderOptions } from './ascii/index.ts'
 export { createLayoutCache } from './elk-instance.ts'
@@ -165,6 +166,14 @@ export function renderMermaidSVG(
   text: string,
   options: RenderOptions = {},
 ): string {
+  const svg = renderMermaidSVGRaw(text, options)
+  return options.resolveColors
+    ? resolveCssColors(svg, buildColors(options))
+    : svg
+}
+
+/** The renderer proper — `renderMermaidSVG` minus the optional `resolveColors` post-pass. */
+function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   // Captured before decodeXML() below so `embedSource` stamps the exact
   // string the caller passed in, not the entity-decoded version used
   // internally for parsing.

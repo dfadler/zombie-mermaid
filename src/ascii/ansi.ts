@@ -9,6 +9,7 @@
 import type { CharRole, AsciiTheme, ColorMode } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { MIX } from '../theme.ts'
+import { mixHexColors as mixColors, parseHexRgba } from '../color-utils.ts'
 
 declare const document: unknown
 
@@ -36,18 +37,6 @@ export const DEFAULT_ASCII_THEME: AsciiTheme = {
 // that the SVG renderer uses via CSS color-mix(). This ensures visual
 // consistency between SVG and ASCII output for any theme.
 // ============================================================================
-
-/** Mix fg into bg at a given percentage (replicates CSS color-mix(in srgb)). */
-function mixColors(fg: string, bg: string, pct: number): string {
-  const f = parseHex(fg),
-    b = parseHex(bg)
-  const mix = (a: number, z: number) =>
-    Math.round(a * (pct / 100) + z * (1 - pct / 100))
-  const r = mix(f.r, b.r),
-    g = mix(f.g, b.g),
-    bl = mix(f.b, b.b)
-  return '#' + [r, g, bl].map((c) => c.toString(16).padStart(2, '0')).join('')
-}
 
 /**
  * Derive an AsciiTheme from SVG DiagramColors using the same mixing ratios.
@@ -137,28 +126,14 @@ export function detectColorMode(): ColorMode {
 // ============================================================================
 
 /**
- * Parse a hex color string to RGB values.
- * Supports both 3-char (#RGB) and 6-char (#RRGGBB) formats.
+ * Parse a hex color string to RGB values for ANSI escape generation.
+ * Accepts 3/6-digit hex with or without a leading `#` (theme colors always
+ * carry one; the bare form is kept for backward compatibility). Anything
+ * unparseable falls back to black rather than emitting a NaN escape.
  */
 function parseHex(hex: string): { r: number; g: number; b: number } {
-  const h = hex.replace('#', '')
-  if (h.length === 3) {
-    // .charAt() always returns a string (never undefined) — unlike bracket
-    // indexing, it isn't subject to noUncheckedIndexedAccess.
-    const c0 = h.charAt(0)
-    const c1 = h.charAt(1)
-    const c2 = h.charAt(2)
-    return {
-      r: parseInt(c0 + c0, 16),
-      g: parseInt(c1 + c1, 16),
-      b: parseInt(c2 + c2, 16),
-    }
-  }
-  return {
-    r: parseInt(h.substring(0, 2), 16),
-    g: parseInt(h.substring(2, 4), 16),
-    b: parseInt(h.substring(4, 6), 16),
-  }
+  const rgba = parseHexRgba(hex.startsWith('#') ? hex : `#${hex}`)
+  return rgba ?? { r: 0, g: 0, b: 0 }
 }
 
 // ============================================================================
