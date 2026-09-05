@@ -1,0 +1,5 @@
+---
+'zombie-mermaid': patch
+---
+
+ASCII class diagrams: a class's column now reserves room for what its relationships need beside the box, not just the box's own content width. A long relationship label on a narrow class (e.g. the "All 6 Relationship Types" sample, where single-letter classes carry labels like `inheritance`) previously collided with its neighbours' labels and every label was truncated to `…`; the columns now spread apart just far enough for each label to render in full (#488). More than two relationships between a narrow pair of classes (e.g. four `A --> B` relationships with labels) previously clamped their fanned-out connection columns back inside the box, so distinct relationships collapsed onto one connection point and overwrote each other; each relationship now keeps its own lane, joined to the box border by a short jog, so all of their lines, arrowheads, and labels stay visible (#489). Classes whose boxes are already wider than their labels are laid out exactly as before.
