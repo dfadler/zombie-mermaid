@@ -5,6 +5,20 @@ import { evaluateCssColorValue, resolveCssColors } from '../resolve-colors.ts'
 import { mixHexColors } from '../color-utils.ts'
 import { diagramColorsToAsciiTheme } from '../ascii/ansi.ts'
 
+/**
+ * Escape regex metacharacters so a value can be interpolated into a
+ * `RegExp` literally. The one call site below always passes a hardcoded
+ * `--_*` CSS custom-property name, never untrusted input. Semgrep's
+ * detect-non-literal-regexp rule flags any `new RegExp()` built from a
+ * template literal regardless of escaping (it's a syntactic check, not a
+ * taint one that would credit the escaping), so that call site still needs
+ * a scoped `nosemgrep` — this helper is what makes that suppression
+ * actually sound rather than just quiet.
+ */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 // ============================================================================
 // Fixtures — one diagram per supported type, each exercising the
 // theme-derived variables (subgraph header, edge label, notes, ER key
@@ -242,8 +256,10 @@ describe('renderMermaidSVG({ resolveColors: true })', () => {
       ...colors,
       resolveColors: true,
     })
-    const declared = (name: string): string | undefined =>
-      new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(svg)?.[1]
+    const declared = (name: string): string | undefined => {
+      const pattern = `${escapeRegExp(name)}:\\s*(#[0-9a-f]{6})`
+      return new RegExp(pattern, 'i').exec(svg)?.[1] // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+    }
 
     expect(declared('--_line')).toBe(
       mixHexColors(colors.fg, colors.bg, MIX.line),
