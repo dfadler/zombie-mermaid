@@ -26,6 +26,7 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from './elk-adapter-utils.ts'
+import { resolveNodeStyle } from '../style-directives.ts'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {
@@ -542,49 +543,6 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
   for (const child of sg.children) {
     collectAllSubgraphIds(child, out)
   }
-}
-
-/**
- * Resolve inline styles for a node from classDefs and nodeStyles.
- *
- * Cascade, weakest to strongest:
- *   1. `classDef default` — Mermaid's implicit base for every node
- *   2. the node's own assigned class (`class A foo` / `A:::foo`)
- *   3. an explicit `style A ...` directive
- */
-function resolveNodeStyle(
-  nodeId: string,
-  graph: MermaidGraph,
-): Record<string, string> | undefined {
-  let result: Record<string, string> | undefined
-
-  /*
-   * `classDef default` applies to every node without being assigned. It was
-   * previously honored only when a node named it explicitly (`class X
-   * default`), which silently diverges from Mermaid: a diagram styling all
-   * its nodes via `classDef default` rendered unstyled with no error.
-   */
-  const defaultDef = graph.classDefs.get('default')
-  if (defaultDef) {
-    result = { ...defaultDef }
-  }
-
-  // Then the node's own class, overriding the default property by property.
-  const className = graph.classAssignments.get(nodeId)
-  if (className) {
-    const classDef = graph.classDefs.get(className)
-    if (classDef) {
-      result = result ? { ...result, ...classDef } : { ...classDef }
-    }
-  }
-
-  // Then, apply explicit style directives (override class styles)
-  const nodeStyle = graph.nodeStyles.get(nodeId)
-  if (nodeStyle) {
-    result = result ? { ...result, ...nodeStyle } : { ...nodeStyle }
-  }
-
-  return result
 }
 
 /**

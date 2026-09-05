@@ -6,9 +6,16 @@
 // ============================================================================
 
 import type { NodeInteraction } from '../types.ts'
+import type { StyleDirectives } from '../style-directives.ts'
 
-/** Parsed class diagram — logical structure from mermaid text */
-export interface ClassDiagram {
+/**
+ * Parsed class diagram — logical structure from mermaid text.
+ *
+ * Extends {@link StyleDirectives} so `classDef` / `cssClass` / `style` /
+ * `:::` resolve through the same cascade flowcharts use (see
+ * src/style-directives.ts).
+ */
+export interface ClassDiagram extends StyleDirectives {
   /** All class definitions */
   classes: ClassNode[]
   /** Relationships between classes */
@@ -17,6 +24,20 @@ export interface ClassDiagram {
   namespaces: ClassNamespace[]
   /** Maps class IDs to interactions declared by `click` statements */
   interactions: Map<string, NodeInteraction>
+  /** Notes, in source order — `note "text"` and `note for X "text"` */
+  notes: ClassNote[]
+}
+
+/**
+ * A class-diagram note. Mermaid lays an attached note out as its own node
+ * joined to the class by a dotted, arrowless link (classDb.getData); a free
+ * note is a lone node.
+ */
+export interface ClassNote {
+  /** Note text; `\n` / `<br/>` in the source are already normalized to newlines */
+  text: string
+  /** Class this note is attached to (`note for X`); absent for a free note */
+  forClass?: string
 }
 
 export interface ClassNode {
@@ -89,6 +110,21 @@ export interface PositionedClassDiagram {
   height: number
   classes: PositionedClassNode[]
   relationships: PositionedClassRelationship[]
+  notes: PositionedClassNote[]
+}
+
+export interface PositionedClassNote {
+  /** Layout id — never collides with a class id (class ids contain no spaces) */
+  id: string
+  text: string
+  /** Class this note is attached to, when that class exists in the diagram */
+  forClass?: string
+  x: number
+  y: number
+  width: number
+  height: number
+  /** Routed path of the dotted note→class link; absent for a free note */
+  linkPoints?: Array<{ x: number; y: number }>
 }
 
 export interface PositionedClassNode {
@@ -109,6 +145,10 @@ export interface PositionedClassNode {
   methodHeight: number
   /** Interaction from a `click` statement — an href wraps the class box in an <a> */
   interaction?: NodeInteraction
+  /** Inline styles resolved from classDef + `style` statements — override theme defaults */
+  inlineStyle?: Record<string, string>
+  /** Style class assigned via `cssClass`, `class A name`, or `:::name` — emitted onto the group's `class` attribute so external CSS can target it */
+  className?: string
 }
 
 export interface PositionedClassRelationship {

@@ -384,27 +384,79 @@ flowchart and state sources only, and the class-diagram parser isn't part of
 the public API yet, so a class diagram's parsed `interactions` map isn't
 currently reachable from outside the library.
 
-### Known limitations
+### Styling
 
-Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
+```
+classDiagram
+  class Animal:::highlight {
+    +int age
+  }
+  class Mineral
+  Animal <|-- Dog:::highlight
+  classDef default fill:#eef,stroke:#669
+  classDef highlight fill:#f96,stroke:#333,stroke-width:2px
+  style Mineral fill:#bbf,stroke:#f66,color:#fff
+  cssClass "Mineral" highlight
+```
 
-- **`note for X "text"` / standalone notes.** Class-diagram notes are not
-  recognized.
-- **`classDef`/`cssClass`, and the `:::` shorthand.** None of Mermaid's
-  class-diagram styling syntax is recognized: `classDef className props`
-  (defining a style) and `cssClass "nodeId1,nodeId2" className` (attaching
-  one) are both silently ignored. This is separate from the plain
-  `class ClassName` **declaration** form shown above, which is fully
-  supported and parses correctly. The `:::` shorthand (`class
-Animal:::someclass`) isn't cleanly ignored, though: the class-declaration
-  regex captures the colons as part of the identifier, so this produces a
-  class whose id and label are the literal string `Animal:::someclass`
-  rather than a class named `Animal` with a style tag. If the declaration
-  opens a multiline body (`class Animal:::someclass {`), the members on
-  later lines still parse correctly — only the class's own id/label is
-  wrong. A same-line body (`class Animal:::someclass { -int sizeInFeet }`)
-  isn't recognized at all: the class-body regex requires the line to end
-  with a bare `{`, so the whole line is dropped, not just misparsed.
+The same grammar as flowchart [Styling](#styling) above, sharing one
+implementation (`src/style-directives.ts`) and one cascade: `classDef
+default` is the base for every class, a class's own style class (attached
+with `cssClass "A,B" name`, `class A,B name`, or the `:::name` shorthand on a
+declaration or either end of a relationship) overrides it property by
+property, and an explicit `style ClassName ...` overrides both. `classDef
+a,b props` defines several classes at once. Mermaid's own class grammar only
+spells the attachment as `cssClass` or `:::`; the flowchart-style `class A,B
+name` is accepted too for parity.
+
+The SVG applies `fill`, `stroke`, and `stroke-width` to the class box (the
+header band takes the same fill — Mermaid paints the whole box one color),
+and `color` to its text. With a custom `fill` but no `color`, the text is
+set to black or white by the fill's luminance, the same rule the flowchart
+renderer uses, so a light fill stays readable in a dark theme. Any other
+property is parsed and kept on the resolved style but not drawn. The style
+class name is also emitted on the box's `<g class="class-node name">` so
+external CSS can target it.
+
+**ASCII output is unaffected by styling** — it has no fills or strokes to
+apply, matching how flowchart ASCII treats `classDef`/`style`. The
+statements are parsed (so they never leak into the output as stray boxes)
+and the `:::` shorthand is stripped from the class name.
+
+### Notes
+
+```
+classDiagram
+  note "This is a general note"
+  note for Dog "Best friend\nof humans"
+  Animal <|-- Dog
+```
+
+`note "text"` is a free-floating note; `note for ClassName "text"` attaches
+one to a class. A literal `\n` in the text is a line break, as in Mermaid
+(whose renderer JSON-parses the string before splitting it); `<br/>` works
+too, as it does in every other label here. The text must be double-quoted.
+
+The SVG follows Mermaid's own construction: a note is a node of its own
+(drawn as the same dog-eared box the sequence renderer uses), and an
+attached note is joined to its class by a dotted, arrowless link, which is
+what keeps the two adjacent in the layout — with the top-to-bottom layout
+that puts the note above its class. A note whose class is never declared
+renders as a free note rather than conjuring the class. Notes take the
+theme's note colors and are not affected by `style`/`classDef` — Mermaid
+doesn't allow styling them individually either.
+
+In ASCII, an attached note sits directly to the right of its class on the
+same row, drawn with rounded corners (`╭ ╮ ╰ ╯`, or `. . ' '` in pure-ASCII
+mode) so it can't be mistaken for a class box, and joined by a short dashed
+connector; a free note goes on the top row after the classes.
+
+```
+┌─────┐    ╭─────────────╮
+│ Dog │╌╌╌╌│ Best friend │
+└─────┘    │ of humans   │
+           ╰─────────────╯
+```
 
 ## ER Diagrams
 
