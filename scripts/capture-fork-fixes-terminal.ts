@@ -118,8 +118,12 @@ async function captureSide(
   const trimmedPlain = plain.replace(/[ \t]+$/gm, '')
   const promptLine = `$ zombie-mermaid render ${id}.mmd --ascii`
   const contentLines = trimmedPlain.split('\n')
-  const cols =
-    Math.max(displayWidth(promptLine), maxLineWidth(trimmedPlain)) + 2
+  // Sized from the *untrimmed* render: the runner below prints the canvas
+  // as-is, and every row is padded to the canvas width — a few cells past
+  // the visible content. Sizing from the trimmed width made any diagram
+  // wider than its own prompt line wrap in the PTY and scroll its top rows
+  // off the screenshot.
+  const cols = Math.max(displayWidth(promptLine), maxLineWidth(plain)) + 2
   const rows = 1 + 1 + contentLines.length + 1
 
   await mkdir(SCRATCH_DIR, { recursive: true })
