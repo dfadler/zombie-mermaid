@@ -244,6 +244,27 @@ export interface RenderOptions {
   componentSpacing?: number
   /** Whether to bundle overlapping fan-out/fan-in edge paths into shared trunks to reduce visual clutter. Default: true */
   mergeEdges?: boolean
+  /**
+   * Force the diagram's layout direction, overriding the one its source
+   * declares — a flowchart's `graph LR` / `flowchart TD` header, or a state
+   * diagram's / ER diagram's top-level `direction LR` line. Applied after
+   * parsing and before layout, so the source text is never rewritten and
+   * `parseMermaid()` output is unaffected.
+   *
+   * Replaces only the *top-level* direction. A nested subgraph's or
+   * composite state's own `direction` line still applies on top of this
+   * override, exactly as it does on top of the diagram's own header — the
+   * override behaves as if the caller had written that direction in the
+   * source header, nothing more.
+   *
+   * Flowchart, state, and ER diagrams only — the three diagram types that
+   * have a direction concept to override. Sequence, class, and XY-chart
+   * diagrams ignore it (no error; output is identical with or without it).
+   *
+   * Unset (the default) keeps the source's direction, so existing output is
+   * unchanged. See issue #276.
+   */
+  direction?: Direction
   /** Render with transparent background (no background style on SVG). Default: false */
   transparent?: boolean
   /**

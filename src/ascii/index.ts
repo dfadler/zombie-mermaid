@@ -17,6 +17,8 @@
 // ============================================================================
 
 import { parseMermaid } from '../parser.ts'
+import { withDirectionOverride } from '../direction-override.ts'
+import type { Direction } from '../types.ts'
 import { detectDiagramType } from '../diagram-type.ts'
 import type { DiagramType } from '../diagram-type.ts'
 import { convertToAsciiGraph } from './converter.ts'
@@ -75,6 +77,23 @@ export interface AsciiRenderOptions {
    * help debug layout spacing. Off by default.
    */
   showCoords?: boolean
+  /**
+   * Force the diagram's layout direction, overriding the one its source
+   * declares (a flowchart's `graph LR` header, or a state diagram's
+   * top-level `direction LR` line). Applied after parsing and before
+   * layout — the source text is never rewritten. Replaces only the
+   * top-level direction: a nested subgraph's or composite state's own
+   * `direction` line still applies on top of it, exactly as it does on top
+   * of the diagram's own header.
+   *
+   * Flowchart and state diagrams only in ASCII output. The ASCII ER layout
+   * has no direction concept (it already ignores a source `direction`
+   * line), and sequence/class/XY-chart diagrams have none to override, so
+   * all of those ignore this option (no error; output is identical with or
+   * without it). Same semantics as `RenderOptions.direction` for SVG. See
+   * issue #276.
+   */
+  direction?: Direction
 }
 
 /**
@@ -147,8 +166,13 @@ export function renderMermaidASCII(
 
     case 'flowchart':
     default: {
-      // Flowchart + state diagram pipeline (original)
-      const parsed = parseMermaid(text)
+      // Flowchart + state diagram pipeline (original). `options.direction`
+      // replaces the parsed top-level direction before layout; see
+      // src/direction-override.ts.
+      const parsed = withDirectionOverride(
+        parseMermaid(text),
+        options.direction,
+      )
 
       // Normalize direction for grid layout.
       // BT is laid out as TD then flipped vertically after drawing.
