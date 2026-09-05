@@ -1,6 +1,7 @@
 import type {
   PositionedClassDiagram,
   PositionedClassNode,
+  PositionedClassNote,
   PositionedClassRelationship,
   ClassMember,
   RelationshipType,
@@ -31,10 +32,10 @@ import { safeHref } from '../click-directive.ts'
 // All colors use CSS custom properties (var(--_xxx)) from the theme system.
 //
 // Render order:
-//   1. Relationship lines (behind boxes)
+//   1. Relationship lines and note links (behind boxes)
 //   2. Class boxes (header + attributes + methods compartments)
-//   3. Relationship endpoint markers (diamonds, triangles)
-//   4. Labels and cardinality
+//   3. Notes (dog-eared boxes)
+//   4. Relationship labels and cardinality
 // ============================================================================
 
 /** Font sizes specific to class diagrams */
@@ -103,9 +104,12 @@ export function renderClassSvg(
   parts.push(relationshipMarkerDefs())
   parts.push('</defs>')
 
-  // 1. Relationship lines (rendered behind boxes)
+  // 1. Relationship lines and note links (rendered behind boxes)
   for (const rel of diagram.relationships) {
     parts.push(renderRelationship(rel))
+  }
+  for (const note of diagram.notes) {
+    parts.push(renderNoteLink(note))
   }
 
   // 2. Class boxes
@@ -113,7 +117,12 @@ export function renderClassSvg(
     parts.push(renderClassBox(cls, fontSizes, linksEnabled))
   }
 
-  // 3. Relationship labels and cardinality
+  // 3. Notes
+  for (const note of diagram.notes) {
+    parts.push(renderNote(note, fontSizes))
+  }
+
+  // 4. Relationship labels and cardinality
   for (const rel of diagram.relationships) {
     parts.push(renderRelationshipLabels(rel, fontSizes))
   }
@@ -373,6 +382,73 @@ function renderMember(
     `<text x="${x}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
     `font-size="${CLS_FONT.memberSize}" font-weight="${CLS_FONT.memberWeight}"${fontStyle}${decoration}>` +
     `${spans.join('')}</text>`
+  )
+}
+
+// ============================================================================
+// Note rendering
+// ============================================================================
+
+/** Size of the folded corner on a note box, in px */
+const NOTE_FOLD = 6
+
+/**
+ * Render a note as a dog-eared box: a polygon with its top-right corner
+ * clipped plus a small fold triangle — the same shape the sequence renderer
+ * draws for its notes (src/sequence/renderer.ts renderNote), so notes look
+ * alike across diagram types. Wrapped in <g class="class-note"> with
+ * `data-for` naming the class it's attached to, if any.
+ */
+function renderNote(note: PositionedClassNote, fontSizes: FontSizes): string {
+  const { x, y, width: w, height: h } = note
+  const forAttr =
+    note.forClass !== undefined
+      ? ` data-for="${escapeAttr(note.forClass)}"`
+      : ''
+
+  // Note body: (x,y) → (x+w-fold,y) → (x+w,y+fold) → (x+w,y+h) → (x,y+h)
+  const bodyPoints = [
+    `${x},${y}`,
+    `${x + w - NOTE_FOLD},${y}`,
+    `${x + w},${y + NOTE_FOLD}`,
+    `${x + w},${y + h}`,
+    `${x},${y + h}`,
+  ].join(' ')
+  const foldPoints =
+    `${x + w - NOTE_FOLD},${y} ${x + w},${y + NOTE_FOLD} ` +
+    `${x + w - NOTE_FOLD},${y + NOTE_FOLD}`
+
+  return (
+    `<g class="class-note"${forAttr}>` +
+    `\n  <polygon points="${bodyPoints}" ` +
+    `fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    `\n  <polygon points="${foldPoints}" ` +
+    `fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    `\n  ${renderMultilineText(
+      note.text,
+      x + w / 2,
+      y + h / 2,
+      fontSizes.edgeLabel,
+      `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+    )}` +
+    `\n</g>`
+  )
+}
+
+/**
+ * Render the dotted, arrowless link from a `note for X` note to its class
+ * (Mermaid's `pattern: 'dotted'` note edge). Empty for a free note.
+ */
+function renderNoteLink(note: PositionedClassNote): string {
+  if (!note.linkPoints || note.linkPoints.length < 2) return ''
+  const pathData = note.linkPoints.map((p) => `${p.x},${p.y}`).join(' ')
+  const forAttr =
+    note.forClass !== undefined
+      ? ` data-for="${escapeAttr(note.forClass)}"`
+      : ''
+  return (
+    `<polyline class="class-note-link"${forAttr} points="${pathData}" ` +
+    `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}" stroke-dasharray="2 3" />`
   )
 }
 

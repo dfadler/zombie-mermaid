@@ -12,8 +12,19 @@
 
 import { parseClassDiagram } from '../class/parser.ts'
 import { formatClassMember } from '../class/format.ts'
-import type { ClassNode, RelationshipType } from '../class/types.ts'
-import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
+import type {
+  ClassDiagram,
+  ClassNode,
+  ClassNote,
+  RelationshipType,
+} from '../class/types.ts'
+import type {
+  AsciiConfig,
+  Canvas,
+  CharRole,
+  AsciiTheme,
+  ColorMode,
+} from './types.ts'
 import {
   mkCanvas,
   mkRoleCanvas,
@@ -23,6 +34,7 @@ import {
   write,
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
+import { getCorners } from './shapes/corners.ts'
 import { splitLines } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
@@ -223,7 +235,8 @@ export function renderClassAscii(
   theme?: AsciiTheme,
 ): string {
   const lines = splitStatements(text)
-  const diagram = parseClassDiagram(lines)
+  // Notes ride through the layout as pseudo-classes — see withNotePseudoClasses.
+  const { diagram, notesById } = withNotePseudoClasses(parseClassDiagram(lines))
 
   if (diagram.classes.length === 0) return ''
 
@@ -322,6 +335,11 @@ export function renderClassAscii(
   for (const cls of diagram.classes) {
     if (!level.has(cls.id)) level.set(cls.id, 0)
   }
+
+  // A `note for X` note has no relationships, so it landed on level 0 above;
+  // move it onto its class's row so the row placement below puts it right
+  // beside that class.
+  pinNoteLevels(notesById, level)
 
   // --- Position classes by level ---
   // Group classes by level
@@ -1075,5 +1093,114 @@ export function renderClassAscii(
     }
   }
 
+  // Notes were drawn as plain boxes above; round their corners and join
+  // each attached note to its class. Last, so a connector never lands on
+  // top of a relationship line or label.
+  decorateAsciiNotes(notesById, placed, canvas, useAscii, setC)
+
   return canvasToString(canvas, { roleCanvas: rc, colorMode, theme })
+}
+
+// ============================================================================
+// Notes — `note "text"` / `note for X "text"` (issue #420)
+//
+// A note is laid out as a pseudo-class: it gets a box like any class (a
+// single header-only section holding the note text, via the same
+// buildClassSections/drawMultiBox path), and is spliced into
+// `diagram.classes` immediately after the class it annotates so the row
+// placement puts it directly to that class's right. A free note, or one
+// whose class doesn't exist, is appended to the end and sits on the top row.
+// After all boxes and relationships are drawn, decorateAsciiNotes() swaps
+// the note's corners for rounded ones — the same rectangle-vs-rounded
+// distinction the flowchart ASCII renderer draws — and joins an attached
+// note to its class with a short dashed connector, the ASCII counterpart of
+// the dotted note→class link Mermaid draws. Class ids can't contain
+// whitespace, so a pseudo id with a space in it can never collide with one.
+// ============================================================================
+
+/**
+ * Return a copy of `parsed` whose `classes` list also contains one
+ * pseudo-class per note, positioned as described above, plus a map from each
+ * pseudo id to its note.
+ */
+function withNotePseudoClasses(parsed: ClassDiagram): {
+  diagram: ClassDiagram
+  notesById: Map<string, ClassNote>
+} {
+  const notesById = new Map<string, ClassNote>()
+  if (parsed.notes.length === 0) return { diagram: parsed, notesById }
+
+  const pseudo = (index: number, note: ClassNote): ClassNode => {
+    const id = `note ${index}`
+    notesById.set(id, note)
+    return { id, label: note.text, attributes: [], methods: [] }
+  }
+
+  const classIds = new Set(parsed.classes.map((c) => c.id))
+  const classes: ClassNode[] = []
+  for (const cls of parsed.classes) {
+    classes.push(cls)
+    for (const [i, note] of parsed.notes.entries()) {
+      if (note.forClass === cls.id) classes.push(pseudo(i, note))
+    }
+  }
+  for (const [i, note] of parsed.notes.entries()) {
+    if (note.forClass === undefined || !classIds.has(note.forClass)) {
+      classes.push(pseudo(i, note))
+    }
+  }
+
+  return { diagram: { ...parsed, classes }, notesById }
+}
+
+/** Put each attached note on the same level as its class. */
+function pinNoteLevels(
+  notesById: Map<string, ClassNote>,
+  level: Map<string, number>,
+): void {
+  for (const [id, note] of notesById) {
+    if (note.forClass === undefined) continue
+    const classLevel = level.get(note.forClass)
+    if (classLevel !== undefined) level.set(id, classLevel)
+  }
+}
+
+/**
+ * Round each note box's corners and draw the dashed connector from an
+ * attached note's class to the note. The connector only fills cells that
+ * are still blank, so it can never break a relationship line that happens
+ * to route through the gap.
+ */
+function decorateAsciiNotes(
+  notesById: Map<string, ClassNote>,
+  placed: Map<string, PlacedClass>,
+  canvas: Canvas,
+  useAscii: boolean,
+  setC: (x: number, y: number, ch: string, role: CharRole) => void,
+): void {
+  if (notesById.size === 0) return
+  const corners = getCorners('rounded', useAscii)
+  const dash = useAscii ? '.' : '╌'
+
+  for (const [id, note] of notesById) {
+    const p = placed.get(id)
+    if (!p) continue
+    const right = p.x + p.width - 1
+    const bottom = p.y + p.height - 1
+    setC(p.x, p.y, corners.tl, 'border')
+    setC(right, p.y, corners.tr, 'border')
+    setC(p.x, bottom, corners.bl, 'border')
+    setC(right, bottom, corners.br, 'border')
+
+    if (note.forClass === undefined) continue
+    const cls = placed.get(note.forClass)
+    // By construction the note sits directly right of its class on the same
+    // row; anything else means the layout changed under us — skip the line
+    // rather than draw one through the middle of the diagram.
+    if (!cls || cls.x + cls.width > p.x || cls.y !== p.y) continue
+    const y = cls.y + 1
+    for (let x = cls.x + cls.width; x < p.x; x++) {
+      if (canvas[x]?.[y] === ' ') setC(x, y, dash, 'line')
+    }
+  }
 }

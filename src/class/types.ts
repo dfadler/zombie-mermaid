@@ -24,6 +24,20 @@ export interface ClassDiagram extends StyleDirectives {
   namespaces: ClassNamespace[]
   /** Maps class IDs to interactions declared by `click` statements */
   interactions: Map<string, NodeInteraction>
+  /** Notes, in source order — `note "text"` and `note for X "text"` */
+  notes: ClassNote[]
+}
+
+/**
+ * A class-diagram note. Mermaid lays an attached note out as its own node
+ * joined to the class by a dotted, arrowless link (classDb.getData); a free
+ * note is a lone node.
+ */
+export interface ClassNote {
+  /** Note text; `\n` / `<br/>` in the source are already normalized to newlines */
+  text: string
+  /** Class this note is attached to (`note for X`); absent for a free note */
+  forClass?: string
 }
 
 export interface ClassNode {
@@ -96,6 +110,21 @@ export interface PositionedClassDiagram {
   height: number
   classes: PositionedClassNode[]
   relationships: PositionedClassRelationship[]
+  notes: PositionedClassNote[]
+}
+
+export interface PositionedClassNote {
+  /** Layout id — never collides with a class id (class ids contain no spaces) */
+  id: string
+  text: string
+  /** Class this note is attached to, when that class exists in the diagram */
+  forClass?: string
+  x: number
+  y: number
+  width: number
+  height: number
+  /** Routed path of the dotted note→class link; absent for a free note */
+  linkPoints?: Array<{ x: number; y: number }>
 }
 
 export interface PositionedClassNode {

@@ -36,6 +36,7 @@ import {
 //   click Animal "https://example.com" "Tooltip" _blank   (see docs/decisions/no-script-interactivity.md)
 //   classDef name fill:#f96   /  style Animal fill:#f96   /  cssClass "A,B" name
 //   class Animal:::name       (style-class shorthand, also on relationship ends)
+//   note "text"  /  note for Animal "line1\nline2"
 // ============================================================================
 
 /**
@@ -63,6 +64,7 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
     classDefs: new Map(),
     classAssignments: new Map(),
     nodeStyles: new Map(),
+    notes: [],
   }
 
   // Track classes by ID for deduplication
@@ -101,6 +103,22 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
     // --- click interaction: `click ClassName "url" "tooltip" _blank` / `click ClassName call fn()` ---
     if (/^click\s+/i.test(line)) {
       applyClickStatement(line, diagram.interactions)
+      continue
+    }
+
+    // --- Notes: `note "text"` / `note for ClassName "text"` ---
+    // Mermaid's grammar takes a quoted string (`noteText: STR`) and its
+    // renderer splits the text on `\n` after JSON-parsing it (svgDraw.js
+    // drawNote), so a literal `\n` in the source is a line break;
+    // normalizeBrTags handles that and `<br/>`, the form the rest of this
+    // repo's labels use. The class need not be declared first (or at all).
+    const noteMatch = line.match(/^note\s+(?:for\s+(\S+)\s+)?"([^"]*)"\s*$/)
+    if (noteMatch) {
+      const forClass = noteMatch[1]
+      diagram.notes.push({
+        text: normalizeBrTags(noteMatch[2]!),
+        ...(forClass ? { forClass } : {}),
+      })
       continue
     }
 

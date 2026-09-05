@@ -391,12 +391,40 @@ apply, matching how flowchart ASCII treats `classDef`/`style`. The
 statements are parsed (so they never leak into the output as stray boxes)
 and the `:::` shorthand is stripped from the class name.
 
-### Known limitations
+### Notes
 
-Not yet implemented — no matching syntax anywhere in `src/class/parser.ts`:
+```
+classDiagram
+  note "This is a general note"
+  note for Dog "Best friend\nof humans"
+  Animal <|-- Dog
+```
 
-- **`note for X "text"` / standalone notes.** Class-diagram notes are not
-  recognized.
+`note "text"` is a free-floating note; `note for ClassName "text"` attaches
+one to a class. A literal `\n` in the text is a line break, as in Mermaid
+(whose renderer JSON-parses the string before splitting it); `<br/>` works
+too, as it does in every other label here. The text must be double-quoted.
+
+The SVG follows Mermaid's own construction: a note is a node of its own
+(drawn as the same dog-eared box the sequence renderer uses), and an
+attached note is joined to its class by a dotted, arrowless link, which is
+what keeps the two adjacent in the layout — with the top-to-bottom layout
+that puts the note above its class. A note whose class is never declared
+renders as a free note rather than conjuring the class. Notes take the
+theme's note colors and are not affected by `style`/`classDef` — Mermaid
+doesn't allow styling them individually either.
+
+In ASCII, an attached note sits directly to the right of its class on the
+same row, drawn with rounded corners (`╭ ╮ ╰ ╯`, or `. . ' '` in pure-ASCII
+mode) so it can't be mistaken for a class box, and joined by a short dashed
+connector; a free note goes on the top row after the classes.
+
+```
+┌─────┐    ╭─────────────╮
+│ Dog │╌╌╌╌│ Best friend │
+└─────┘    │ of humans   │
+           ╰─────────────╯
+```
 
 ## ER Diagrams
 
