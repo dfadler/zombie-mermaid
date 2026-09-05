@@ -537,6 +537,32 @@ export function renderClassAscii(
     return Math.max(-maxOffset, Math.min(maxOffset, offset))
   }
 
+  // Each relationship's actual connection columns: the source/target box
+  // center plus that relationship's reciprocal-pair offset (above), clamped
+  // to the box. Computed once, up front, and shared by the drawing loop,
+  // the label-territory precomputation, and the label-drawing pass below,
+  // so all three agree on where a relationship's line really starts and
+  // ends. Recomputing plain box centers in the label passes would put a
+  // reciprocal pair's two labels back on the same column and let one
+  // overwrite the other -- exactly the #448 symptom -- even though their
+  // lines were drawn apart.
+  const connectionColumns = diagram.relationships.map((rel, relIndex) => {
+    const fromP = placed.get(rel.from)
+    const toP = placed.get(rel.to)
+    if (!fromP || !toP) return undefined
+    const rawOffset = relColumnOffset.get(relIndex) ?? 0
+    return {
+      fromCX:
+        fromP.x +
+        Math.floor(fromP.width / 2) +
+        clampToBoxWidth(rawOffset, fromP.width),
+      toCX:
+        toP.x +
+        Math.floor(toP.width / 2) +
+        clampToBoxWidth(rawOffset, toP.width),
+    }
+  })
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -549,16 +575,10 @@ export function renderClassAscii(
     // Exclude source and target boxes from collision detection
     const excludeIds = new Set([rel.from, rel.to])
 
-    const rawOffset = relColumnOffset.get(relIndex) ?? 0
-
-    // Connection points: center-bottom of source → center-top of target
-    const fromCX =
-      fromP.x +
-      Math.floor(fromP.width / 2) +
-      clampToBoxWidth(rawOffset, fromP.width)
+    // Connection points: bottom of source → top of target, at each
+    // relationship's own (possibly offset) column
+    const { fromCX, toCX } = connectionColumns[relIndex]!
     const fromBY = fromP.y + fromP.height - 1
-    const toCX =
-      toP.x + Math.floor(toP.width / 2) + clampToBoxWidth(rawOffset, toP.width)
     const toTY = toP.y
 
     // Route: Manhattan routing with collision avoidance
@@ -841,14 +861,13 @@ export function renderClassAscii(
     rowEnd: number
   }
   const labelGeometry: LabelGeometry[] = []
-  for (const rel of diagram.relationships) {
-    if (!rel.label) continue
+  diagram.relationships.forEach((rel, relIndex) => {
+    if (!rel.label) return
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
-    if (!fromP || !toP) continue
-    const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    if (!fromP || !toP) return
+    const { fromCX, toCX } = connectionColumns[relIndex]!
     const fromBY = fromP.y + fromP.height - 1
-    const toCX = toP.x + Math.floor(toP.width / 2)
     const toTY = toP.y
     const idealMidX = Math.floor((fromCX + toCX) / 2)
 
@@ -888,7 +907,7 @@ export function renderClassAscii(
       rowStart: baseMidY - halfHeight,
       rowEnd: baseMidY + halfHeight,
     })
-  }
+  })
   labelGeometry.sort((a, b) => a.idealMidX - b.idealMidX)
 
   /** Whether two labels' row spans actually intersect — see LabelGeometry's rowStart/rowEnd comment. */
@@ -925,19 +944,19 @@ export function renderClassAscii(
   // the same midpoint row (issue #447, "teaches" truncated to "tea" and
   // merged into a box-drawing corner). Running all lines first means no
   // line write can ever land on top of label text again.
-  for (const rel of diagram.relationships) {
+  diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
-    if (!fromP || !toP) continue
-    if (!rel.label) continue
+    if (!fromP || !toP) return
+    if (!rel.label) return
 
     // Exclude source and target boxes from collision detection
     const excludeIds = new Set([rel.from, rel.to])
 
-    // Connection points: center-bottom of source → center-top of target
-    const fromCX = fromP.x + Math.floor(fromP.width / 2)
+    // Connection points: the same per-relationship columns the lines above
+    // were drawn at, so a label sits on its own relationship's line
+    const { fromCX, toCX } = connectionColumns[relIndex]!
     const fromBY = fromP.y + fromP.height - 1
-    const toCX = toP.x + Math.floor(toP.width / 2)
     const toTY = toP.y
 
     // Draw relationship label at midpoint (supports multi-line)
@@ -1057,7 +1076,7 @@ export function renderClassAscii(
         }
       }
     }
-  }
+  })
 
   return canvasToString(canvas, { roleCanvas: rc, colorMode, theme })
 }
