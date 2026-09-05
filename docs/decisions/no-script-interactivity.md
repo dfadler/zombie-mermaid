@@ -24,7 +24,8 @@ This invariant was never written down. [#208](https://github.com/dfadler/zombie-
 added `click` links/tooltips/callbacks, edge animation, and edge IDs, and in
 the process emitted `data-click-callback="showDetail(...)"` — an attribute
 that records a callback binding without invoking it, which is fine, but is
-also the shape a future change could get wrong. Nothing in the codebase said
+also the shape a future change could get wrong. (That attribute has since
+been removed — see the amendment below.) Nothing in the codebase said
 _why_ that attribute stops at recording rather than dispatching, so the next
 person to touch it — human or agent — has no documented reason not to "finish
 the job" and wire it up to `new Function()` or an event listener. This ADR is
@@ -75,6 +76,16 @@ not gate.
 
 ## Consequences
 
+- **The CLI's `--html` viewer is a narrow, deliberate exception, not a
+  reversal.** `render --html` (added in [#456](https://github.com/dfadler/zombie-mermaid/issues/456))
+  wraps a rendered SVG in a self-contained pan/zoom viewer with its own
+  small client script (`src/cli/html-viewer-client.js`). That script pans,
+  zooms, and toggles light/dark — it never touches `interactions.callback`
+  or executes anything diagram-supplied. It is also a separate artifact the
+  CLI writes on request, never part of `renderMermaidSVG`'s own output: the
+  library's SVG stays exactly as script-free as this ADR requires: only the
+  CLI's optional wrapper carries a script, and only because the viewer
+  chrome itself needs one.
 - **No client-side runtime by default.** The `zombie-mermaid` package itself
   ships zero bundled JS — a hydration step, a `zombie-mermaid/react`
   interactive component, or any script shipped alongside the SVG is off the
@@ -83,10 +94,10 @@ not gate.
   clearly-separate runtime is a different question, left open (not decided
   either way) in [#236](https://github.com/dfadler/zombie-mermaid/issues/236)
   — it does not change what today's default import does or doesn't execute.
-- **`interactions.callback` (and its `data-click-callback` predecessor) is
-  never executed under any current or future option.** A `full` interactivity
-  level does not mean "run diagram-supplied code" — it only
-  ever means "render more of tiers 1–2." Anyone re-proposing callback
+- **`interactions.callback` (and the `data-click-callback` attribute it
+  replaced) is never executed under any current or future option.** A
+  `full` interactivity level does not mean "run diagram-supplied code" — it
+  only ever means "render more of tiers 1–2." Anyone re-proposing callback
   execution needs to argue against this ADR explicitly, not just against the
   current option surface.
 - **`<img>`-embedding silently loses tier 2.** This is inherent to how
@@ -105,3 +116,18 @@ not gate.
 - **A future change that makes tier 3 do something at runtime is not a bug
   fix or an enhancement — it is a reversal of this decision** and needs its
   own ADR (or an explicit amendment to this one), not a quiet PR.
+
+## Amendment (2026-09-05)
+
+The inert `data-click-callback` attribute is no longer emitted.
+[#216](https://github.com/dfadler/zombie-mermaid/issues/216) pointed out
+that even as pure data it was the wrong shape: a host had to find DOM nodes
+and parse a string back out of an attribute, when `parseMermaid()` already
+returned the same binding typed, keyed by node id, in `interactions`. The
+attribute was dropped, and `parseMermaid(source).interactions` is documented
+as the supported path (see `docs/diagrams.md`); the node's existing
+`data-id` attribute is the hook a host binds to.
+
+The decision itself is unchanged. Tier 3 is still parsed and exposed as
+data, and still executed by nobody but a host that chooses to. Removing the
+attribute only removed a second, worse copy of that data from the markup.

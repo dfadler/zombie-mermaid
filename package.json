@@ -110,7 +110,7 @@
     "form-facts": "tsx scripts/form-facts.ts",
     "form-judge-prepare": "tsx scripts/form-judge-prepare.ts",
     "form-judge-finalize-cache": "tsx scripts/form-judge-finalize-cache.ts",
-    "build": "tsx scripts/build-lib.ts",
+    "build": "vite build --app --config vite.config.lib.ts",
     "build:site": "rm -rf site && tsx index.ts && tsx editor.ts && tsx fork-fixes.ts && tsx pages.ts && tsx blog.ts && tsx dashboard.ts && mkdir -p site && mv index.html editor.html fork-fixes.html sitemap.xml dashboard.html site/ && mv diagrams site/diagrams && mv blog site/blog && cp -r public/* site/",
     "xychart-test": "tsx xychart-test.ts",
     "lint": "eslint .",

@@ -11,11 +11,27 @@
 // colors, and the SVG adapts. No light/dark mode detection needed.
 // ============================================================================
 
-import { escapeXml } from './multiline-utils.ts'
+import { escapeXml, escapeAttr } from './multiline-utils.ts'
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * How the renderers emit their two inline-style surfaces — the `<style>`
+ * element(s) and the root `<svg style="--bg: …">` attribute. Both exist so a
+ * host page with a strict `Content-Security-Policy` (`style-src` without
+ * `'unsafe-inline'`) can still render diagrams with their colours intact;
+ * see `RenderOptions.nonce` / `RenderOptions.styleAttribute` in src/types.ts
+ * and GitHub issue #216. Threaded as one object through every diagram
+ * renderer so the two options can't drift apart per diagram type.
+ */
+export interface SvgEmitOptions {
+  /** Value for a `nonce` attribute on every emitted `<style>` element. */
+  nonce?: string
+  /** Emit the root `style="--bg: …"` attribute. Default: true. */
+  styleAttribute?: boolean
+}
 
 /**
  * Diagram color configuration.
@@ -348,11 +364,34 @@ function isFontStackOrGenericFamily(font: string): boolean {
 }
 
 /**
+ * The opening `<style>` tag every renderer uses — with a `nonce` attribute
+ * when the caller supplied one (see `RenderOptions.nonce`, #216).
+ *
+ * All `<style>` emission points go through this one function so a nonce
+ * can't be missed on one of them: under a nonce-based CSP a single
+ * un-nonced `<style>` is silently dropped by the browser, which for the
+ * theme block means an unstyled diagram with no console hint as to why.
+ *
+ * An empty/whitespace-only nonce is treated as unset — `nonce=""` would
+ * authorise nothing and only mislead a reader into thinking it did.
+ * The value is attribute-escaped; a real nonce is base64 and never needs
+ * escaping, but the option is a plain string and this keeps a stray `"`
+ * from breaking out of the attribute.
+ */
+export function styleOpenTag(nonce?: string): string {
+  if (nonce === undefined || nonce.trim() === '') return '<style>'
+  return `<style nonce="${escapeAttr(nonce)}">`
+}
+
+/**
  * Build the CSS variable derivation rules for the SVG <style> block.
  *
  * When an optional variable (--line, --accent, etc.) is set on the SVG or
  * a parent element, it's used directly. When unset, the fallback computes
  * a blended value from --fg and --bg using color-mix().
+ *
+ * `nonce`, when given, lands on the `<style>` element as a `nonce`
+ * attribute — see `styleOpenTag()`.
  *
  * `font` is user-supplied input. When it's a CSS `var(...)` reference (e.g.
  * `var(--font-family-body)`, letting the SVG inherit a host page's
@@ -373,7 +412,11 @@ function isFontStackOrGenericFamily(font: string): boolean {
  * Any other value is treated as a literal font name: sanitized and quoted
  * exactly as before.
  */
-export function buildStyleBlock(font: string, hasMonoFont: boolean): string {
+export function buildStyleBlock(
+  font: string,
+  hasMonoFont: boolean,
+  nonce?: string,
+): string {
   const isVarReference = isSafeCssVarReference(font)
   // Literal font names are sanitized before quoting (strip characters that
   // could break out of the CSS string or the <style> block). A validated
@@ -413,7 +456,7 @@ export function buildStyleBlock(font: string, hasMonoFont: boolean): string {
     --_key-badge:     color-mix(in srgb, var(--fg) ${MIX.keyBadge}%, var(--bg));`
 
   return [
-    '<style>',
+    styleOpenTag(nonce),
     ...(fontImports.length > 0 ? [`  ${fontImports.join('\n  ')}`] : []),
     `  text { font-family: ${isVarReference ? safeFont : `'${safeFont}'`}, system-ui, sans-serif; }`,
     ...(hasMonoFont
@@ -544,9 +587,56 @@ export function __resetSvgTitleIdCounterForTests(): void {
 }
 
 /**
+ * The exact CSS declaration list the root `<svg style="…">` attribute
+ * carries: the theme custom properties (`--bg`, `--fg`, plus whichever
+ * enrichment variables were actually provided — unset ones fall back to the
+ * color-mix() derivations in the `<style>` block) and, unless `transparent`,
+ * a `background: var(--bg)`.
+ *
+ * Exposed (via `themeCssVariables()` in src/index.ts) so a host that turns
+ * the attribute off with `styleAttribute: false` — because its
+ * Content-Security-Policy forbids `style=` attributes, which a nonce can
+ * never authorise (#216) — can put the very same declarations in its own
+ * stylesheet on a wrapper instead. Single source of truth for the variable
+ * list: `svgOpenTag()` and the helper both call this, so the two can't
+ * drift.
+ *
+ * Emitted compactly (`--bg:#fff;--fg:#000;background:var(--bg)`) rather
+ * than pretty-printed: it's the same string the attribute has always
+ * carried, so default output stays byte-identical. Colour values are the
+ * caller's own `RenderOptions` and are not escaped here — same as before.
+ */
+export function themeStyleDeclarations(
+  colors: DiagramColors,
+  transparent?: boolean,
+): string {
+  const vars = [
+    `--bg:${colors.bg}`,
+    `--fg:${colors.fg}`,
+    colors.line ? `--line:${colors.line}` : '',
+    colors.accent ? `--accent:${colors.accent}` : '',
+    colors.muted ? `--muted:${colors.muted}` : '',
+    colors.surface ? `--surface:${colors.surface}` : '',
+    colors.border ? `--border:${colors.border}` : '',
+  ]
+    .filter(Boolean)
+    .join(';')
+
+  const bgStyle = transparent ? '' : ';background:var(--bg)'
+  return `${vars}${bgStyle}`
+}
+
+/**
  * Build the SVG opening tag with CSS variables set as inline styles.
  * Only includes optional variables that are actually provided — unset ones
  * will fall back to the color-mix() derivations in the <style> block.
+ *
+ * `styleAttribute: false` drops the `style="…"` attribute entirely (the
+ * host supplies those declarations from its own stylesheet — see
+ * `themeStyleDeclarations()` and `RenderOptions.styleAttribute`, #216).
+ * Every other attribute — `xmlns`, `viewBox`, `width`/`height`, the
+ * `role`/`aria-*` accessibility attributes, and anything a caller splices
+ * on afterwards (`data-src`, `data-xychart-colors`) — is unaffected.
  *
  * Also handles the SVG's accessible name (see `RenderOptions.title` /
  * `RenderOptions.decorative` in src/types.ts, and GitHub issue #215):
@@ -595,6 +685,7 @@ export function __resetSvgTitleIdCounterForTests(): void {
  * @param hasInteractiveLinks - True if any node has a `click`-based `href`.
  *                              See #239 — forces no root `role` so the link
  *                              stays reachable, regardless of `decorative`.
+ * @param styleAttribute - Emit the root `style="…"` attribute. Default true.
  */
 export function svgOpenTag(
   width: number,
@@ -604,21 +695,11 @@ export function svgOpenTag(
   title?: string,
   decorative?: boolean,
   hasInteractiveLinks?: boolean,
+  styleAttribute: boolean = true,
 ): string {
-  // Build the style string with only the provided color variables
-  const vars = [
-    `--bg:${colors.bg}`,
-    `--fg:${colors.fg}`,
-    colors.line ? `--line:${colors.line}` : '',
-    colors.accent ? `--accent:${colors.accent}` : '',
-    colors.muted ? `--muted:${colors.muted}` : '',
-    colors.surface ? `--surface:${colors.surface}` : '',
-    colors.border ? `--border:${colors.border}` : '',
-  ]
-    .filter(Boolean)
-    .join(';')
-
-  const bgStyle = transparent ? '' : ';background:var(--bg)'
+  const styleAttr = styleAttribute
+    ? ` style="${themeStyleDeclarations(colors, transparent)}"`
+    : ''
 
   let a11yAttrs = ''
   let titleEl = ''
@@ -643,7 +724,7 @@ export function svgOpenTag(
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
-    `width="${width}" height="${height}"${a11yAttrs} style="${vars}${bgStyle}">` +
+    `width="${width}" height="${height}"${a11yAttrs}${styleAttr}>` +
     titleEl
   )
 }

@@ -77,8 +77,12 @@ zombie-mermaid — render Mermaid diagrams from the command line
 
 Usage:
   zombie-mermaid render <file> --ascii              Render to ASCII in terminal
-  zombie-mermaid render <file> --svg -o <out.svg>   Render to SVG file
-  zombie-mermaid render <file> --ascii --svg -o <out.svg>   Both
+  zombie-mermaid render <file> --svg                Render to <file stem>.svg
+  zombie-mermaid render <file> --svg -o <out.svg>   Render to a named SVG file
+  zombie-mermaid render <file> -o out.svg           Format inferred from the extension
+  zombie-mermaid render <file> --svg -o -           Write SVG to stdout
+  zombie-mermaid render <file> --ascii --svg -o <out.svg>   Both (ASCII to terminal)
+  zombie-mermaid render <file> --html               Self-contained pan/zoom HTML viewer
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
@@ -87,10 +91,25 @@ Usage:
   zombie-mermaid --version                          Show version
 
 Options:
-  --ascii              Print ASCII/Unicode diagram to terminal
-  --svg                Render SVG (requires -o)
-  -o, --output         Output file path for SVG
+  --ascii              Print ASCII/Unicode diagram to terminal, or to -o <file.txt>
+                       when it is the only format
+  --svg                Render SVG to -o <path> (default: <input stem>.svg;
+                       stdin input must give -o)
+  --html               Render a self-contained HTML pan/zoom viewer to -o
+                       <path> (default: <input stem>.html). Embeds the SVG;
+                       no server, no network, opens from disk. Cannot be
+                       combined with --svg (different content, same slot).
+  -o, --output <path>  Output file for the SVG/HTML (or for ASCII when
+                       neither is given). '-' writes to stdout. A .svg,
+                       .html, or .txt extension selects the format when no
+                       --svg/--html/--ascii flag is given; one that
+                       contradicts the flags is an error. Existing files
+                       are never overwritten without --force.
+  -f, --force          Overwrite an existing output file
   --theme <name>       Apply a built-in theme (see 'themes' command)
+  --direction <dir>    Override the diagram's layout direction: TD, TB, BT, LR, or RL
+                       (flowchart, state, and ER diagrams; nested subgraph
+                       directions still apply on top of it)
   -x, --paddingX <n>   Horizontal spacing between nodes (ASCII, default: 5)
   -y, --paddingY <n>   Vertical spacing between nodes (ASCII, default: 5)
   -p, --borderPadding <n>  Padding inside node boxes (ASCII, default: 1)

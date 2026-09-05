@@ -379,4 +379,34 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: only `four` survives, on two lines. After: `one`, `two`, `three`, and `four` each sit on their own lane, joined to the boxes by a short jog, with four distinct arrowheads.',
   },
+  {
+    id: 'class-generic-types',
+    title: 'Class member generics kept mermaid’s raw `~T~` tildes',
+    symptom:
+      'Mermaid converts `List~Observer~` to `List<Observer>` before rendering; the class parser here kept the tildes, so both the SVG and ASCII output showed `List~Observer~` — flagged by the weekly form-judge audit (#418).',
+    source:
+      'classDiagram\n  class EventEmitter {\n    -List~Observer~ observers\n    +attach(Observer) void\n  }\n  class Observer {\n    <<interface>>\n    +update() void\n  }\n  EventEmitter --> Observer',
+    fixCommit: '2a06338',
+    // TODO(#418 sweep): replace with the PR number once the PR is opened —
+    // the branch was pushed without GitHub write access.
+    pr: 0,
+    render: 'ascii',
+    lookFor:
+      'Before: the EventEmitter attribute reads `List~Observer~`. After: it reads `List<Observer>`, the form real mermaid renders.',
+  },
+  {
+    id: 'edge-label-diagonal-fallback',
+    title: 'An edge label could float next to a different edge’s line',
+    symptom:
+      'When an edge’s route fell back to a direct path (every L-shaped route and A* blocked — e.g. the third edge leaving the same side of a node), its label was centered on the never-drawn diagonal between the two legs that actually get drawn, landing in open grid next to an unrelated edge’s connector: `┆thick` two columns away from the thick edge’s own `┃`. Flagged by the weekly form-judge audit (#418).',
+    source:
+      'graph TD\n  A[Source] -->|solid| B[Target 1]\n  A -.->|dotted| C[Target 2]\n  A ==>|thick| D[Target 3]',
+    fixCommit: '64c8dd4',
+    // TODO(#418 sweep): replace with the PR number once the PR is opened —
+    // the branch was pushed without GitHub write access.
+    pr: 0,
+    render: 'ascii',
+    lookFor:
+      'Before: "thick" sits glued to the dotted edge’s ┆ column. After: it sits on the thick edge’s own ┃ line, like "dotted" does on its ┆ line.',
+  },
 ]
