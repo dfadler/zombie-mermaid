@@ -556,11 +556,16 @@ export function renderClassAscii(
   }
 
   /**
-   * Connection columns for one relationship: the source's bottom-center and
-   * the target's top-center, shifted by the relationship's per-pair offset.
-   * Every pass that positions something on a relationship (line routing,
-   * label territory, label placement) must use this, so the label ends up
-   * on the same column the line actually leaves from.
+   * A relationship's connection columns: center-bottom of its source and
+   * center-top of its target, each shifted by the relationship's group
+   * offset (see `relColumnOffset` above). Every pass that positions
+   * something relative to a relationship's route — the line-drawing loop,
+   * the label-territory precompute, and the label-drawing pass — must go
+   * through this one helper. When the line pass alone applied the offset,
+   * a reciprocal pair's labels were still measured and drawn against the
+   * shared box center: the territory pass saw two labels with identical
+   * midpoints and split the column between them, truncating both to a
+   * single mashed `rea……ies` while their lines sat on separate columns.
    */
   function connectionColumns(
     relIndex: number,
