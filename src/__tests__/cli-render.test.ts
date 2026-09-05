@@ -616,6 +616,83 @@ describe('runRender – errors', () => {
 })
 
 // ============================================================================
+// HTML viewer output (#456)
+// ============================================================================
+
+describe('runRender – HTML viewer output', () => {
+  it('renders a self-contained HTML file embedding the SVG', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: outputPath }),
+    )
+
+    const html = await readFile(outputPath, 'utf-8')
+    expect(html).toMatch(/^<!doctype html>/)
+    expect(html).toContain('<svg')
+    expect(html).toContain('</svg>')
+    expect(html).toContain('id="stage"')
+    expect(html).toContain('id="diagram"')
+    expect(html).toContain('<script>')
+    // No externally-loaded assets — a single file that opens from disk
+    // with no network, per the issue's requirement. (The SVG's own
+    // `xmlns="http://www.w3.org/2000/svg"` is a namespace URI, not a
+    // fetched resource, so it's deliberately not what this checks.)
+    expect(html).not.toMatch(/<script[^>]+src=/)
+    expect(html).not.toMatch(/<link[^>]+href=/)
+    expect(html).not.toMatch(/\bfetch\(/)
+  })
+
+  it('writes HTML to stdout for -o -, byte-identical to the file output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const filePath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: '-' }),
+      mockStdout,
+    )
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: filePath }),
+    )
+
+    const fileContent = await readFile(filePath, 'utf-8')
+    expect(mockStdout.output()).toBe(fileContent)
+  })
+
+  it('titles the page from the input file stem', async () => {
+    const inputPath = join(tmpDir, 'my-cool-diagram.mmd')
+    const outputPath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: outputPath }),
+    )
+
+    const html = await readFile(outputPath, 'utf-8')
+    expect(html).toContain('<title>my-cool-diagram</title>')
+  })
+
+  it('refuses to overwrite an existing .html file without --force', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'existing content')
+
+    await expect(
+      runRender(
+        renderArgs({ input: inputPath, html: true, output: outputPath }),
+      ),
+    ).rejects.toThrow(/Refusing to overwrite existing file/)
+
+    expect(await readFile(outputPath, 'utf-8')).toBe('existing content')
+  })
+})
+
+// ============================================================================
 // --direction (issue #276)
 // ============================================================================
 
