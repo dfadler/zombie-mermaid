@@ -1431,4 +1431,21 @@ flowchart LR
     A->>B: y
   end`,
   },
+  {
+    title: 'Sequence: Create/Destroy Participants',
+    category: 'Sequence',
+    description:
+      "Mermaid's own `create`/`destroy` example (#419): Carl and Donald appear at the message that creates them, Carl and Bob's lifelines end with a cross at the message that destroys them.",
+    source: `sequenceDiagram
+  Alice->>Bob: Hello Bob, how are you ?
+  Bob->>Alice: Fine, thank you. And you?
+  create participant Carl
+  Alice->>Carl: Hi Carl!
+  create actor D as Donald
+  Carl->>D: Hi!
+  destroy Carl
+  Alice-xCarl: We are too many
+  destroy Bob
+  Bob->>Alice: I agree`,
+  },
 ]

@@ -49,6 +49,19 @@ export interface Actor {
   label: string
   /** 'participant' renders as a box, 'actor' renders as a stick figure */
   type: 'participant' | 'actor'
+  /**
+   * Index of the message that creates this participant (`create participant
+   * X` on the line before it). The participant's box is drawn at that
+   * message's row instead of in the header, and its lifeline starts there.
+   * Unset for participants that exist from the top of the diagram.
+   */
+  createdAt?: number
+  /**
+   * Index of the message that destroys this participant (`destroy X` on the
+   * line before it). Its lifeline ends at that message's row with a cross,
+   * and no footer box is drawn. Unset for participants that live to the end.
+   */
+  destroyedAt?: number
 }
 
 export interface Message {
@@ -134,6 +147,12 @@ export interface Lifeline {
   x: number
   topY: number
   bottomY: number
+  /**
+   * Set when the actor is destroyed mid-diagram (`Actor.destroyedAt`):
+   * `bottomY` is then the destroying message's row rather than the diagram
+   * bottom, and the renderer marks it with a cross.
+   */
+  destroyed?: boolean
 }
 
 export interface PositionedMessage {

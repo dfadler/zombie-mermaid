@@ -160,6 +160,38 @@ export function renderSequenceAscii(
   // Calculate actor box heights based on number of lines in label
   const actorBoxHeights = diagram.actors.map((a) => actorContentHeight(a) + 2) // content lines + top/bottom border
   const actorBoxH = Math.max(...actorBoxHeights, 3) // Use max height for consistent lifeline positioning
+  // Left border column of each actor's box — drawActorBox derives the same
+  // `left` from the lifeline centre, so a creating arrow can stop just short
+  // of it (see "DRAW: messages" below).
+  const actorBoxLeft = (i: number, cx: number) =>
+    cx - Math.floor(actorBoxWidths[i]! / 2)
+
+  // ---- Participant lifecycle (create / destroy) ----
+  //
+  // A `create participant X` box is drawn centred on the row of the message
+  // that creates it, in place of a header box; a `destroy X` lifeline stops
+  // one row under the destroying arrow with a cross glyph, and gets no
+  // footer box. Mermaid draws the created box centred on the message line
+  // and ends the destroyed lifeline with a cross at that line; the ASCII
+  // form keeps the arrowhead intact by putting the cross on the row below
+  // — a cross *on* the arrow row would replace the arrowhead and read as a
+  // lost message (`-x`) instead.
+  //
+  // Rows above the arrow taken by the created box, and rows below it. For
+  // the default 3-row box that's one row each side of the arrow row.
+  const createdBoxAbove = Math.floor((actorBoxH - 1) / 2)
+  const createdBoxBelow = actorBoxH - 1 - createdBoxAbove
+  // Message index → index of the actor it creates (recipient) / destroys.
+  const createdByMsg = new Map<number, number>()
+  const destroyedByMsg = new Map<number, number>()
+  diagram.actors.forEach((a, i) => {
+    if (a.createdAt !== undefined) createdByMsg.set(a.createdAt, i)
+    if (a.destroyedAt !== undefined) destroyedByMsg.set(a.destroyedAt, i)
+  })
+  // Filled in by the vertical layout pass: actor index → top row of its
+  // created box / row of its destroy cross.
+  const createdBoxTop = new Map<number, number>()
+  const destroyRow = new Map<number, number>()
 
   // Compute minimum gap between adjacent lifelines based on message labels.
   // For messages spanning multiple actors, distribute the required width across gaps.
@@ -372,16 +404,37 @@ export function renderSequenceAscii(
     // Calculate height needed for multi-line message labels
     const msgLineCount = lineCount(msg.label)
 
+    // A self-message can't sensibly create its own recipient (the loop
+    // glyphs would sit where the box goes), so that degenerate case keeps
+    // the header box instead.
+    const createdIdx = isSelf ? undefined : createdByMsg.get(m)
+    const destroyedIdx = destroyedByMsg.get(m)
+
     if (isSelf) {
       // Self-message occupies 3+ rows: top-arm, label-col(s), bottom-arm
       msgLabelY[m] = curY + 1
       msgArrowY[m] = curY
       curY += 2 + msgLineCount // top-arm + label lines + bottom-arm
     } else {
-      // Normal message: label row(s) then arrow row
+      // Normal message: label row(s), then — for a creating message — the
+      // rows of the created box above the arrow, then the arrow row, then
+      // the created box's rows below it.
+      const boxAbove = createdIdx === undefined ? 0 : createdBoxAbove
+      const boxBelow = createdIdx === undefined ? 0 : createdBoxBelow
       msgLabelY[m] = curY
-      msgArrowY[m] = curY + msgLineCount // arrow goes after all label lines
-      curY += msgLineCount + 1 // label lines + arrow row
+      msgArrowY[m] = curY + msgLineCount + boxAbove
+      curY += msgLineCount + boxAbove + 1 + boxBelow
+      if (createdIdx !== undefined) {
+        createdBoxTop.set(createdIdx, msgArrowY[m]! - boxAbove)
+      }
+    }
+
+    // One reserved row under the arrow (under the bottom arm, for a
+    // self-message) for the destroy cross, so it never lands on whatever
+    // comes next when rowGap is 0.
+    if (destroyedIdx !== undefined) {
+      destroyRow.set(destroyedIdx, curY)
+      curY += 1
     }
 
     // Notes after this message
@@ -611,9 +664,18 @@ export function renderSequenceAscii(
 
   // ---- DRAW: lifelines ----
 
+  // A created participant's lifeline starts under its mid-diagram box; a
+  // destroyed one's ends at its cross row (drawn in the messages pass, so
+  // the cross wins over the `│` painted here).
+  const lifelineTop = (i: number) => {
+    const boxTop = createdBoxTop.get(i)
+    return boxTop === undefined ? actorBoxH : boxTop + actorBoxH
+  }
+  const lifelineBottom = (i: number) => destroyRow.get(i) ?? footerY
+
   for (let i = 0; i < diagram.actors.length; i++) {
     const x = llX[i]!
-    for (let y = actorBoxH; y <= footerY; y++) {
+    for (let y = lifelineTop(i); y <= lifelineBottom(i); y++) {
       setC(x, y, V, 'line')
     }
   }
@@ -622,13 +684,19 @@ export function renderSequenceAscii(
 
   for (let i = 0; i < diagram.actors.length; i++) {
     const actor = diagram.actors[i]!
-    drawActorBox(llX[i]!, 0, actor.label, actor.type, actorBoxH)
-    drawActorBox(llX[i]!, footerY, actor.label, actor.type, actorBoxH)
+    // Created: the box sits on its creating message's row, not in the
+    // header. Destroyed: no footer box — the lifeline already ended.
+    const headerTop = createdBoxTop.get(i) ?? 0
+    const destroyed = destroyRow.has(i)
+    drawActorBox(llX[i]!, headerTop, actor.label, actor.type, actorBoxH)
+    if (!destroyed) {
+      drawActorBox(llX[i]!, footerY, actor.label, actor.type, actorBoxH)
+    }
 
     // Lifeline junctions on box borders (Unicode only)
     if (!useAscii) {
-      setC(llX[i]!, actorBoxH - 1, JT, 'junction')
-      setC(llX[i]!, footerY, JB, 'junction')
+      setC(llX[i]!, headerTop + actorBoxH - 1, JT, 'junction')
+      if (!destroyed) setC(llX[i]!, footerY, JB, 'junction')
     }
   }
 
@@ -716,6 +784,18 @@ export function renderSequenceAscii(
       const arrowY = msgArrowY[m]!
       const leftToRight = fromX < toX
 
+      // A creating message's arrow stops at the created box's near border
+      // instead of the lifeline centre (the box occupies this row — see the
+      // lifecycle comment near createdBoxAbove). `headX` is where the
+      // arrowhead goes; the line runs from the sender up to it.
+      const createsRecipient = createdByMsg.get(m) === ti
+      let headX = toX
+      if (createsRecipient) {
+        const boxLeft = actorBoxLeft(ti, toX)
+        const boxRight = boxLeft + actorBoxWidths[ti]! - 1
+        headX = leftToRight ? boxLeft - 1 : boxRight + 1
+      }
+
       // Draw label centered between the two lifelines (supports multi-line)
       const midX = Math.floor((fromX + toX) / 2)
       const msgLines = splitLines(msg.label)
@@ -731,7 +811,8 @@ export function renderSequenceAscii(
 
       // Draw arrow line
       if (leftToRight) {
-        for (let x = fromX + 1; x < toX; x++) setC(x, arrowY, lineChar, 'line')
+        for (let x = fromX + 1; x < headX; x++)
+          setC(x, arrowY, lineChar, 'line')
         // Arrowhead at destination
         const ah = isLost
           ? lostChar
@@ -742,7 +823,7 @@ export function renderSequenceAscii(
             : useAscii
               ? '>'
               : '▷'
-        setC(toX, arrowY, ah, 'arrow')
+        setC(headX, arrowY, ah, 'arrow')
         // Bidirectional (`<<->>` / `<<-->>`): mirror the arrowhead at the
         // departure end too. Both bidirectional tokens end in ">>" (see
         // parser.ts), so isFilled is always true here — no open-head
@@ -752,7 +833,8 @@ export function renderSequenceAscii(
           setC(fromX, arrowY, ahStart, 'arrow')
         }
       } else {
-        for (let x = toX + 1; x < fromX; x++) setC(x, arrowY, lineChar, 'line')
+        for (let x = headX + 1; x < fromX; x++)
+          setC(x, arrowY, lineChar, 'line')
         const ah = isLost
           ? lostChar
           : isFilled
@@ -762,7 +844,7 @@ export function renderSequenceAscii(
             : useAscii
               ? '<'
               : '◁'
-        setC(toX, arrowY, ah, 'arrow')
+        setC(headX, arrowY, ah, 'arrow')
         if (msg.bidirectional) {
           const ahStart = useAscii ? '>' : '▶'
           setC(fromX, arrowY, ahStart, 'arrow')
@@ -785,13 +867,22 @@ export function renderSequenceAscii(
           }
         } else {
           const start = fromX - numStr.length
-          if (start > toX) {
+          if (start > headX) {
             for (let i = 0; i < numStr.length; i++)
               setC(start + i, arrowY, numStr[i]!, 'text')
           }
         }
       }
     }
+  }
+
+  // ---- DRAW: destroy crosses ----
+
+  // Same glyph as a lost message's terminator, on the destroyed actor's
+  // lifeline one row under the destroying arrow (see the lifecycle comment
+  // near createdBoxAbove for why not on the arrow row itself).
+  for (const [i, y] of destroyRow) {
+    setC(llX[i]!, y, useAscii ? 'x' : '✕', 'arrow')
   }
 
   // ---- DRAW: blocks (loop, alt, opt, par, etc.) ----

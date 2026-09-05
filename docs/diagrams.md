@@ -339,22 +339,52 @@ The ASCII renderer does not currently draw activation bars for _either_
 form; the standalone statements parse and are simply not drawn, the same as
 the shorthand.
 
+### Participant creation and destruction
+
+Mermaid's `create` / `destroy` directives go on the line before the message
+that creates or destroys the participant:
+
+```
+sequenceDiagram
+  Alice->>Bob: Hello Bob, how are you ?
+  Bob->>Alice: Fine, thank you. And you?
+  create participant Carl
+  Alice->>Carl: Hi Carl!
+  create actor D as Donald
+  Carl->>D: Hi!
+  destroy Carl
+  Alice-xCarl: We are too many
+  destroy Bob
+  Bob->>Alice: I agree
+```
+
+`create participant X` / `create actor X [as Label]` takes the same shape as
+a plain declaration, so the alias and the participant/actor kind are kept.
+The created participant's box is drawn centred on the row of the message
+that creates it, instead of in the header, and its lifeline starts there;
+the creating arrow stops at the box's edge. `destroy X` ends `X`'s lifeline
+at the next message with a cross, and no footer box is drawn for it.
+
+Mermaid's binding rules apply, with Mermaid's own error text: the message
+right after `create` must have the created participant as its _recipient_
+("only the recipient can be created"), the message right after `destroy`
+must have the destroyed participant as its sender _or_ recipient, and a
+`create` for an id that already exists is an error ("use `as` aliases to
+simulate the behavior"). A directive with no message after it at all is
+treated as a plain declaration rather than an error.
+
+In ASCII output the cross sits on the row directly _under_ the destroying
+arrow, not on the arrow row — a cross on the arrow row would replace the
+arrowhead and read as a lost message (`-x`). One row is reserved for it. A
+self-message cannot create its own recipient (the loop glyphs occupy the
+box's cells), so that degenerate case keeps the header box.
+
 ### Known limitations
 
 Not yet implemented — no matching syntax anywhere in `src/sequence/parser.ts`:
 
 - **`box ... end` participant grouping.** Mermaid's colored/transparent
   background grouping of participants is not recognized.
-- **`create`/`destroy` participant lifecycle.** These keywords, which mark a
-  participant as starting or ending its lifeline at a specific point in the
-  diagram, are not recognized — the whole line is dropped, so a
-  `create actor D as Donald` also loses its `actor` kind and its alias (`D`
-  is then auto-created from its first message as a plain participant
-  labelled `D`). This is not a requirement to declare participants up front,
-  though: an undeclared name used in a message is auto-created on first use
-  (`pushMessage` → `ensureActor`), matching real Mermaid's own behavior — the
-  gap is specifically the explicit lifecycle-boundary syntax, not
-  participant declaration order.
 
 ## Class Diagrams
 

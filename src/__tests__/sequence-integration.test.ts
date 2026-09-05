@@ -231,3 +231,22 @@ describe('renderMermaidSVG – standalone activate/deactivate (#419)', () => {
     expect(standalone).toBe(shorthand)
   })
 })
+
+describe('renderMermaidSVG – create/destroy (#419)', () => {
+  it('draws a destroy cross on the destroyed lifeline and none elsewhere', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      A->>B: one
+      create participant C
+      A->>C: two
+      destroy B
+      A->>B: three`)
+    const crosses = svg.match(/<path class="destroy" data-actor="([^"]*)"/g)
+    expect(crosses).toEqual(['<path class="destroy" data-actor="B"'])
+    // The created participant still gets an actor box and a lifeline
+    expect(svg).toContain('<g class="actor" data-id="C"')
+    expect(svg).toContain('<line class="lifeline" data-actor="C"')
+    // Directive keywords never leak into the output as text
+    expect(svg).not.toContain('create participant')
+    expect(svg).not.toContain('destroy B')
+  })
+})

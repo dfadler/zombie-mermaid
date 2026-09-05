@@ -311,7 +311,19 @@ export function layoutSequenceDiagram(
     if (extra > 0) messageY += extra
 
     const x1 = actorCenterX[fromIdx]!
-    const x2 = actorCenterX[toIdx]!
+    let x2 = actorCenterX[toIdx]!
+
+    // A `create participant` message ends at the near edge of the box it
+    // creates rather than at the lifeline centre — the box sits on this row
+    // (see the created-actor placement after this loop), so an arrow to the
+    // centre would run underneath it. Mermaid's renderer makes the same
+    // adjustment (`receiverAdjustment(actor, width / 2)`).
+    const createsRecipient =
+      !isSelf && diagram.actors[toIdx]!.createdAt === msgIdx
+    if (createsRecipient) {
+      const halfW = actorWidths[toIdx]! / 2
+      x2 += x1 < x2 ? -halfW : halfW
+    }
 
     messages.push({
       from: msg.from,
@@ -339,6 +351,10 @@ export function layoutSequenceDiagram(
     messageY += isSelf
       ? seq.selfMessageHeight + seq.messageRowHeight
       : seq.messageRowHeight
+    // The created box is centred on this row, so its lower half hangs
+    // below the arrow — give the next row room to clear it (Mermaid bumps
+    // by the same half-height after a creating message).
+    if (createsRecipient) messageY += seq.actorHeight / 2
 
     // Position notes that appear after this message.
     // Notes start below the self-message loop (if self) or below the arrow,
@@ -575,15 +591,37 @@ export function layoutSequenceDiagram(
     for (let i = 0; i < actorCenterX.length; i++) actorCenterX[i]! += shiftX
   }
 
-  // 7. Calculate final lifelines (after shift so X positions are correct)
-  const lifelines: Lifeline[] = diagram.actors.map((a, i) => ({
-    actorId: a.id,
-    x: actorCenterX[i]!,
-    topY: actorY + seq.actorHeight,
-    bottomY: diagramBottom - seq.padding,
-  }))
+  // 7. Participant lifecycle: a created participant's box moves from the
+  //    header down to its creating message's row, centred on the arrow
+  //    (Mermaid: `actor.starty = lineStartY - actor.height / 2`), and a
+  //    destroyed participant's lifeline stops at its destroying message.
+  //    Both indices come from the parser, which already verified the
+  //    message exists and involves the actor — the `?? messageY` fallbacks
+  //    only guard the type, not a reachable state.
+  for (let i = 0; i < diagram.actors.length; i++) {
+    const createdAt = diagram.actors[i]!.createdAt
+    if (createdAt !== undefined) {
+      actors[i]!.y = (messages[createdAt]?.y ?? messageY) - seq.actorHeight / 2
+    }
+  }
 
-  // 8. Calculate diagram dimensions from the bounding box
+  // 8. Calculate final lifelines (after shift so X positions are correct)
+  const lifelines: Lifeline[] = diagram.actors.map((a, i) => {
+    const destroyedAt = a.destroyedAt
+    const lifeline: Lifeline = {
+      actorId: a.id,
+      x: actorCenterX[i]!,
+      topY: actors[i]!.y + seq.actorHeight,
+      bottomY:
+        destroyedAt === undefined
+          ? diagramBottom - seq.padding
+          : (messages[destroyedAt]?.y ?? messageY),
+    }
+    if (destroyedAt !== undefined) lifeline.destroyed = true
+    return lifeline
+  })
+
+  // 9. Calculate diagram dimensions from the bounding box
   const diagramWidth = globalMaxX + shiftX + seq.padding
   const diagramHeight = diagramBottom
 

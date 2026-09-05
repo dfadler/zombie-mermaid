@@ -1,4 +1,4 @@
-import type { SequenceDiagram, Message, Block } from './types.ts'
+import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
 import { normalizeBrTags } from '../multiline-utils.ts'
 
 /**
@@ -57,6 +57,9 @@ export function toBlockType(value: string): Block['type'] {
 //   A->>+B: Activate target
 //   A-->>-B: Deactivate source
 //   activate A / deactivate A   (standalone form of the +/- shorthand)
+//   create participant C [as Label] / create actor C [as Label]
+//                                 (on the line before C's first message)
+//   destroy C                     (on the line before C's last message)
 //   A<<->>B: Bidirectional solid arrow
 //   A<<-->>B: Bidirectional dashed arrow
 //   autonumber / autonumber <start> <step> / autonumber off
@@ -128,8 +131,54 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
   // block/divider lines don't advance the counter.
   const autonumber = { enabled: false, next: 1, step: 1 }
 
+  // `create participant X` / `destroy X` bind to the very next message —
+  // Mermaid's sequenceDb enforces that the next message's recipient is the
+  // created participant, and that the destroyed one is its sender or
+  // recipient, throwing otherwise. Mirrored here (same error text) rather
+  // than guessing which later message was meant. A directive with no
+  // message after it at all is left as a plain declaration.
+  let pendingCreate: string | undefined
+  let pendingDestroy: string | undefined
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!
+
+    // --- create participant / create actor ---
+    // "create participant C" / "create actor C as Label" — the line before
+    // C's first message. Same shape as a plain declaration, so the alias and
+    // the participant/actor kind are kept, not dropped with the keyword.
+    const createMatch = line.match(
+      /^create\s+(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/,
+    )
+    if (createMatch) {
+      const type: 'participant' | 'actor' =
+        createMatch[1] === 'actor' ? 'actor' : 'participant'
+      const id = createMatch[2]!
+      if (actorIds.has(id)) {
+        // Mermaid's own wording (sequenceDb `createParticipant`).
+        throw new Error(
+          "It is not possible to have actors with the same id, even if one is destroyed before the next is created. Use 'AS' aliases to simulate the behavior",
+        )
+      }
+      actorIds.add(id)
+      diagram.actors.push({
+        id,
+        label: normalizeBrTags(createMatch[3]?.trim() ?? id),
+        type,
+      })
+      pendingCreate = id
+      continue
+    }
+
+    // --- destroy ---
+    // "destroy C" — the line before C's last message.
+    const destroyMatch = line.match(/^destroy\s+(.+)$/)
+    if (destroyMatch) {
+      const id = destroyMatch[1]!.trim()
+      ensureActor(diagram, actorIds, id)
+      pendingDestroy = id
+      continue
+    }
 
     // --- autonumber directive ---
     const autonumberMatch = line.match(
@@ -303,11 +352,45 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         msgMatch[4]!,
         msgMatch[5]!,
       )
+      const msgIndex = diagram.messages.length - 1
+      const msg = diagram.messages[msgIndex]!
+      if (pendingCreate !== undefined) {
+        if (msg.to !== pendingCreate) {
+          throw new Error(
+            `The created participant ${pendingCreate} does not have an associated creating message after its declaration. Please check the sequence diagram.`,
+          )
+        }
+        findActor(diagram, pendingCreate).createdAt = msgIndex
+        pendingCreate = undefined
+      }
+      if (pendingDestroy !== undefined) {
+        if (msg.from !== pendingDestroy && msg.to !== pendingDestroy) {
+          throw new Error(
+            `The destroyed participant ${pendingDestroy} does not have an associated destroying message after its declaration. Please check the sequence diagram.`,
+          )
+        }
+        findActor(diagram, pendingDestroy).destroyedAt = msgIndex
+        pendingDestroy = undefined
+      }
       continue
     }
   }
 
   return diagram
+}
+
+/**
+ * Look up an actor the parser itself already registered (every caller
+ * passes an id that went through `ensureActor` or the create branch first,
+ * so the miss branch is a parser-invariant violation, not user error).
+ */
+function findActor(diagram: SequenceDiagram, id: string): Actor {
+  const actor = diagram.actors.find((a) => a.id === id)
+  if (actor === undefined) {
+    /* v8 ignore next */
+    throw new Error(`Sequence diagram: unknown actor "${id}"`)
+  }
+  return actor
 }
 
 /** Ensure an actor exists, creating a default participant if not */

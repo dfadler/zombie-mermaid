@@ -576,3 +576,103 @@ describe('parseSequenceDiagram – standalone activate/deactivate', () => {
     expect(d.messages[0]!.from).toBe('activate')
   })
 })
+
+// ============================================================================
+// create / destroy participant lifecycle (#419)
+// ============================================================================
+
+describe('parseSequenceDiagram – create/destroy', () => {
+  const mermaidExample = `sequenceDiagram
+    Alice->>Bob: Hello Bob, how are you ?
+    Bob->>Alice: Fine, thank you. And you?
+    create participant Carl
+    Alice->>Carl: Hi Carl!
+    create actor D as Donald
+    Carl->>D: Hi!
+    destroy Carl
+    Alice-xCarl: We are too many
+    destroy Bob
+    Bob->>Alice: I agree`
+
+  it("binds create/destroy to the next message's index (Mermaid's own example)", () => {
+    const d = parse(mermaidExample)
+    const byId = new Map(d.actors.map((a) => [a.id, a]))
+    expect(d.actors.map((a) => a.id)).toEqual(['Alice', 'Bob', 'Carl', 'D'])
+    expect(byId.get('Carl')!.createdAt).toBe(2)
+    expect(byId.get('D')!.createdAt).toBe(3)
+    expect(byId.get('Carl')!.destroyedAt).toBe(4)
+    expect(byId.get('Bob')!.destroyedAt).toBe(5)
+    expect(byId.get('Alice')!.createdAt).toBeUndefined()
+    expect(byId.get('Alice')!.destroyedAt).toBeUndefined()
+  })
+
+  it('keeps the alias and the actor kind on a created participant', () => {
+    const d = parse(mermaidExample)
+    const donald = d.actors.find((a) => a.id === 'D')!
+    expect(donald.label).toBe('Donald')
+    expect(donald.type).toBe('actor')
+    const carl = d.actors.find((a) => a.id === 'Carl')!
+    expect(carl.label).toBe('Carl')
+    expect(carl.type).toBe('participant')
+  })
+
+  it('does not record a create/destroy directive as a message or an actor', () => {
+    const d = parse(mermaidExample)
+    expect(d.messages).toHaveLength(6)
+    expect(d.actors.some((a) => a.id.startsWith('create'))).toBe(false)
+    expect(d.actors.some((a) => a.id.startsWith('destroy'))).toBe(false)
+  })
+
+  it('destroy auto-creates an undeclared participant, like a message would', () => {
+    const d = parse(`sequenceDiagram
+      destroy X
+      A->>X: bye`)
+    expect(d.actors.map((a) => a.id)).toEqual(['X', 'A'])
+    expect(d.actors[0]!.destroyedAt).toBe(0)
+  })
+
+  it('rejects a create whose next message does not target the created participant', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+      create participant C
+      C->>A: I sent this`),
+    ).toThrow(
+      'The created participant C does not have an associated creating message after its declaration',
+    )
+  })
+
+  it('rejects a destroy whose next message does not involve the destroyed participant', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+      destroy B
+      A->>C: unrelated`),
+    ).toThrow(
+      'The destroyed participant B does not have an associated destroying message after its declaration',
+    )
+  })
+
+  it('accepts a destroy whose next message has the destroyed participant as sender', () => {
+    const d = parse(`sequenceDiagram
+      destroy B
+      B->>A: last words`)
+    expect(d.actors.find((a) => a.id === 'B')!.destroyedAt).toBe(0)
+  })
+
+  it('rejects creating a participant id that already exists', () => {
+    expect(() =>
+      parse(`sequenceDiagram
+      participant A
+      create participant A`),
+    ).toThrow('It is not possible to have actors with the same id')
+  })
+
+  it('treats a trailing create/destroy with no message after it as a plain declaration', () => {
+    const d = parse(`sequenceDiagram
+      A->>B: x
+      destroy B
+      create participant C`)
+    expect(d.actors.map((a) => a.id)).toEqual(['A', 'B', 'C'])
+    expect(d.actors[1]!.destroyedAt).toBeUndefined()
+    expect(d.actors[2]!.createdAt).toBeUndefined()
+  })
+})

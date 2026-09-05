@@ -209,12 +209,26 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
  * Includes data-actor to link to its actor.
  */
 function renderLifeline(lifeline: Lifeline): string {
-  return (
+  const line =
     `<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
     `x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
     `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`
+  if (!lifeline.destroyed) return line
+  // `destroy X`: the lifeline ends at the destroying message's row, marked
+  // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
+  // lifeline pass (before messages), so the destroying arrow lands on top.
+  const { x, bottomY: y } = lifeline
+  const r = DESTROY_CROSS_HALF
+  return (
+    line +
+    `\n<path class="destroy" data-actor="${escapeAttr(lifeline.actorId)}" ` +
+    `d="M${x - r} ${y - r} L${x + r} ${y + r} M${x + r} ${y - r} L${x - r} ${y + r}" ` +
+    `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-linecap="round" />`
   )
 }
+
+/** Half-size of the `destroy` cross at the end of a lifeline, in px. */
+const DESTROY_CROSS_HALF = 8
 
 /**
  * Render an activation box (narrow filled rectangle on lifeline).

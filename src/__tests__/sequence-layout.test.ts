@@ -965,3 +965,70 @@ describe('sequence layout – standalone activate/deactivate', () => {
     )
   })
 })
+
+// ============================================================================
+// create / destroy participant lifecycle (#419)
+// ============================================================================
+
+describe('sequence layout – create/destroy', () => {
+  const source = `sequenceDiagram
+    A->>B: one
+    create participant C
+    A->>C: two
+    destroy B
+    A->>B: three`
+
+  it('centres a created participant box on the row of its creating message', () => {
+    const result = layout(source)
+    const c = result.actors.find((a) => a.id === 'C')!
+    const a = result.actors.find((a) => a.id === 'A')!
+    const creating = result.messages[1]!
+    expect(c.y).toBe(creating.y - c.height / 2)
+    // Untouched participants keep the header row
+    expect(a.y).toBe(30) // SEQ.padding
+  })
+
+  it("starts a created participant's lifeline under its box, not under the header", () => {
+    const result = layout(source)
+    const c = result.actors.find((a) => a.id === 'C')!
+    const cLine = result.lifelines.find((l) => l.actorId === 'C')!
+    expect(cLine.topY).toBe(c.y + c.height)
+    expect(cLine.destroyed).toBeUndefined()
+  })
+
+  it('stops the creating arrow at the near edge of the created box', () => {
+    const result = layout(source)
+    const c = result.actors.find((a) => a.id === 'C')!
+    const creating = result.messages[1]!
+    expect(creating.x2).toBe(c.x - c.width / 2)
+    // A plain message still reaches the lifeline centre
+    const b = result.actors.find((a) => a.id === 'B')!
+    expect(result.messages[0]!.x2).toBe(b.x)
+  })
+
+  it('stops the creating arrow at the right edge when the sender is to the right', () => {
+    const result = layout(`sequenceDiagram
+      create participant C
+      D->>C: hi`)
+    const c = result.actors.find((a) => a.id === 'C')!
+    expect(result.messages[0]!.x2).toBe(c.x + c.width / 2)
+  })
+
+  it('gives the row after a creating message room for the lower half of the box', () => {
+    const result = layout(source)
+    const gapPlain = result.messages[1]!.y - result.messages[0]!.y
+    const gapAfterCreate = result.messages[2]!.y - result.messages[1]!.y
+    expect(gapPlain).toBe(40) // SEQ.messageRowHeight
+    expect(gapAfterCreate).toBe(40 + 20) // + SEQ.actorHeight / 2
+  })
+
+  it("ends a destroyed participant's lifeline at its destroying message, flagged", () => {
+    const result = layout(source)
+    const bLine = result.lifelines.find((l) => l.actorId === 'B')!
+    expect(bLine.bottomY).toBe(result.messages[2]!.y)
+    expect(bLine.destroyed).toBe(true)
+    const aLine = result.lifelines.find((l) => l.actorId === 'A')!
+    expect(aLine.bottomY).toBeGreaterThan(result.messages[2]!.y)
+    expect(aLine.destroyed).toBeUndefined()
+  })
+})
