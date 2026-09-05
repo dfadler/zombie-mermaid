@@ -450,9 +450,7 @@ export function renderClassAscii(
         ...group.map((i) => {
           const label = diagram.relationships[i]!.label
           if (!label) return 3 // room for just a line/arrow
-          return (
-            Math.max(...splitLines(label).map((l) => displayWidth(l))) + 2
-          )
+          return Math.max(...splitLines(label).map((l) => displayWidth(l))) + 2
         }),
       )
       const step = widestLabel + 1 // +1 for a visual gap between labels
