@@ -10,23 +10,30 @@
 // ============================================================================
 
 /**
- * Exact advance widths for printable ASCII, measured from the real Inter font
- * (canvas measureText, headless Chrome, weight 400) and normalized so that
- * ratio × fontSize × baseRatio reproduces the measured pixel advance.
+ * Exact advance widths for every printable ASCII character (U+0020–U+007E),
+ * measured from the real Inter font (canvas measureText, headless Chrome,
+ * weight 400) and normalized so that ratio × fontSize × baseRatio reproduces
+ * the measured pixel advance. Completeness over this range is asserted by
+ * the `getCharWidth` "table completeness" test in text-metrics.test.ts.
  *
- * The coarse character-class buckets below remain as fallback for characters
- * not in this table. The buckets systematically underestimated Inter widths
- * (spaces, m/w, digits, punctuation), and the error grew with text length —
- * wide edge labels overflowed their 8px-padded background rects.
+ * The coarse character-class buckets below remain as fallback for
+ * non-ASCII characters not in this table. The buckets systematically
+ * underestimated Inter widths (spaces, m/w, digits, punctuation), and the
+ * error grew with text length — wide edge labels overflowed their
+ * 8px-padded background rects.
  */
 const INTER_ADVANCES: Record<string, number> = {
   ' ': 0.521,
   '!': 0.533,
   '"': 0.863,
+  '#': 1.173,
+  $: 1.188,
   '%': 1.818,
+  '&': 1.193,
   "'": 0.555,
   '(': 0.675,
   ')': 0.675,
+  '*': 0.928,
   '+': 1.225,
   ',': 0.534,
   '-': 0.852,
@@ -44,6 +51,10 @@ const INTER_ADVANCES: Record<string, number> = {
   '9': 1.148,
   ':': 0.534,
   ';': 0.559,
+  '<': 1.225,
+  '=': 1.225,
+  '>': 1.225,
+  '?': 0.947,
   '@': 1.789,
   A: 1.278,
   B: 1.212,
@@ -74,7 +85,9 @@ const INTER_ADVANCES: Record<string, number> = {
   '[': 0.675,
   '\\': 0.667,
   ']': 0.675,
+  '^': 0.873,
   _: 0.845,
+  '`': 0.598,
   a: 1.04,
   b: 1.134,
   c: 1.058,
@@ -104,6 +117,18 @@ const INTER_ADVANCES: Record<string, number> = {
   '{': 0.789,
   '|': 0.616,
   '}': 0.789,
+  '~': 1.225,
+}
+
+/**
+ * Whether `char` has an exact measured Inter advance in `INTER_ADVANCES`,
+ * as opposed to falling through to a coarse character-class bucket or the
+ * default width in `getCharWidth`. Exported only so tests can assert the
+ * table covers every printable ASCII character (U+0020–U+007E) — a gap
+ * here means a real character silently degrades to an approximate width.
+ */
+export function hasMeasuredAdvance(char: string): boolean {
+  return INTER_ADVANCES[char] !== undefined
 }
 
 /**

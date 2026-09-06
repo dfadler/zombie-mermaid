@@ -2,7 +2,12 @@
  * Tests for text-metrics module — variable-width character measurement.
  */
 import { describe, it, expect } from 'vitest'
-import { getCharWidth, measureTextWidth, isWideChar } from '../text-metrics'
+import {
+  getCharWidth,
+  measureTextWidth,
+  isWideChar,
+  hasMeasuredAdvance,
+} from '../text-metrics'
 
 // ============================================================================
 // Character width classification
@@ -67,6 +72,42 @@ describe('getCharWidth', () => {
     it('measures space at its real Inter advance (~0.52)', () => {
       // The old bucket value of 0.3 underestimated every word gap by ~1.3px
       expect(getCharWidth(' ')).toBeCloseTo(0.521, 3)
+    })
+  })
+
+  describe('previously-omitted punctuation (measured Inter advances)', () => {
+    // Real Inter advances (canvas measureText, headless Chrome, weight 400,
+    // same method as the rest of INTER_ADVANCES), measured at 100px and
+    // normalized by the weight-400 baseRatio (0.54): ratio = px / (100 * 0.54).
+    // Before this table entry existed, these characters fell through to the
+    // old coarse bucket (`) or the 1.0 default (all others), which could
+    // undersize labels with repeated occurrences of these characters.
+    it.each([
+      ['#', 1.173],
+      ['$', 1.188],
+      ['&', 1.193],
+      ['*', 0.928],
+      ['<', 1.225],
+      ['=', 1.225],
+      ['>', 1.225],
+      ['?', 0.947],
+      ['^', 0.873],
+      ['`', 0.598],
+      ['~', 1.225],
+    ])('measures %s at its real Inter advance', (ch, expected) => {
+      expect(getCharWidth(ch)).toBeCloseTo(expected, 3)
+    })
+  })
+
+  describe('table completeness', () => {
+    it('has an exact measured Inter advance for every printable ASCII character (U+0020–U+007E)', () => {
+      const missing: string[] = []
+      for (let code = 0x20; code <= 0x7e; code++) {
+        const ch = String.fromCharCode(code)
+        if (!hasMeasuredAdvance(ch))
+          missing.push(`U+${code.toString(16).padStart(4, '0')} (${ch})`)
+      }
+      expect(missing).toEqual([])
     })
   })
 
