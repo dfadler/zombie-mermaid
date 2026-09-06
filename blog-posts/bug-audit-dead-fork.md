@@ -7,7 +7,7 @@ description: On 2026-08-25, one evening of deliberate, format-by-format testing 
 Adopting an abandoned library is a bet. You are trading the certainty of
 "someone else maintains this" for the uncertainty of "we do, now." The
 usual way people talk themselves into that bet is vibes: the code looks
-clean, the last commit wasn't *that* long ago, how bad could it be. We
+clean, the last commit wasn't _that_ long ago, how bad could it be. We
 didn't want to find out the hard way six months in, so before doing
 anything else with this fork we spent one evening — 2026-08-25 — trying to
 break it on purpose.
