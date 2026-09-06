@@ -82,6 +82,13 @@ const DIST = resolve(ROOT, 'dist')
 // (and, transitively, the CLI's `mcp` subcommand, src/cli/mcp.ts) — kept
 // external here too so they never end up bundled into `dist/index.*` or
 // `dist/ascii.*`.
+//
+// `@resvg/resvg-js` is an `optionalDependency` (package.json) — a native
+// binary, dynamically `import()`ed only from the CLI's `--png` path
+// (src/cli/png.ts). It must stay external for two reasons: Rolldown can't
+// bundle a native `.node` addon at all, and bundling would defeat the whole
+// point of loading it lazily — a normal `--ascii`/`--svg`/`--html` build
+// would end up requiring it eagerly.
 function isExternal(id: string): boolean {
   return (
     id === 'elkjs' ||
@@ -91,7 +98,9 @@ function isExternal(id: string): boolean {
     id === '@modelcontextprotocol/sdk' ||
     id.startsWith('@modelcontextprotocol/sdk/') ||
     id === 'zod' ||
-    id.startsWith('zod/')
+    id.startsWith('zod/') ||
+    id === '@resvg/resvg-js' ||
+    id.startsWith('@resvg/resvg-js/')
   )
 }
 

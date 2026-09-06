@@ -88,6 +88,8 @@ zombie-mermaid render diagram.mmd --svg -o out.svg --theme tokyo-night --resolve
 
 The substitution uses the same mix percentages the `<style>` block declares (the `MIX` table in `src/theme.ts`), so it can't drift from what a browser would compute. The trade-off is that the output is now a fixed palette — setting `--bg`/`--fg` on it later does nothing — and a color you passed as a `var(--…)` reference can't be resolved (there's no host page to ask), so it's left untouched.
 
+The CLI's `render --png` (see [README](../README.md#cli)) does this resolution automatically — there's no separate `--resolve-colors --png` step to remember, since a rasterizer needs it unconditionally.
+
 ## Built-in Themes
 
 15 themes ship out of the box:

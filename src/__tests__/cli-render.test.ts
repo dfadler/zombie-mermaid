@@ -3,6 +3,9 @@ import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runRender } from '../cli/render.ts'
+import { renderPng } from '../cli/png.ts'
+import { renderMermaidSVG } from '../index.ts'
+import { THEMES } from '../theme.ts'
 import { displayWidth } from '../ascii/display-width.ts'
 import { createMockStdout, renderArgs } from './cli-test-helpers.ts'
 
@@ -781,6 +784,106 @@ describe('runRender – HTML viewer output', () => {
     await expect(
       runRender(
         renderArgs({ input: inputPath, html: true, output: outputPath }),
+      ),
+    ).rejects.toThrow(/Refusing to overwrite existing file/)
+
+    expect(await readFile(outputPath, 'utf-8')).toBe('existing content')
+  })
+})
+
+// ============================================================================
+// PNG output (issue #456, item 4) — a real rasterization via the optional
+// `@resvg/resvg-js` dependency, not a mock. It's genuinely installed here
+// (no `--no-optional` anywhere in this repo's dev setup or CI), so these
+// assertions on the actual PNG signature/dimensions catch a real
+// regression, not just "some bytes were written."
+// ============================================================================
+
+const PNG_SIGNATURE = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+])
+
+describe('runRender – PNG output', () => {
+  it('rasterizes to a real PNG file starting with the PNG signature', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.png')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({ input: inputPath, png: true, output: outputPath }),
+    )
+
+    const png = await readFile(outputPath)
+    expect(png.subarray(0, 8)).toEqual(PNG_SIGNATURE)
+    // A trivial/empty rasterization would be well under 1 KB; a real
+    // three-node flowchart is not.
+    expect(png.byteLength).toBeGreaterThan(1024)
+  })
+
+  it('writes PNG bytes to stdout for -o -, byte-identical to the file output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const filePath = join(tmpDir, 'out.png')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, png: true, output: '-' }),
+      mockStdout,
+    )
+    await runRender(
+      renderArgs({ input: inputPath, png: true, output: filePath }),
+    )
+
+    expect(mockStdout.buffer()).toEqual(await readFile(filePath))
+  })
+
+  it('forces color resolution even when --resolve-colors was not passed', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.png')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    // Deliberately no `resolveColors: true` in the args — `runRender`'s PNG
+    // path must resolve colors on its own (see src/cli/render.ts), since a
+    // rasterizer can't evaluate the var()/color-mix() a plain SVG render
+    // would otherwise leave in place (the exact regression issue #456
+    // describes). Prove it by rasterizing the same theme two other ways —
+    // once deliberately UNresolved (what a naive PNG path would produce)
+    // and once explicitly resolved — and asserting `runRender`'s output
+    // matches the resolved one, not the unresolved one.
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        png: true,
+        output: outputPath,
+        theme: 'tokyo-night',
+      }),
+    )
+    const viaRunRender = await readFile(outputPath)
+
+    const themeColors = THEMES['tokyo-night']
+    const unresolvedSvg = renderMermaidSVG(SIMPLE_FLOWCHART, themeColors)
+    const resolvedSvg = renderMermaidSVG(SIMPLE_FLOWCHART, {
+      ...themeColors,
+      resolveColors: true,
+    })
+    const [unresolvedPng, resolvedPng] = await Promise.all([
+      renderPng(unresolvedSvg),
+      renderPng(resolvedSvg),
+    ])
+
+    expect(viaRunRender).toEqual(resolvedPng)
+    expect(viaRunRender).not.toEqual(unresolvedPng)
+  })
+
+  it('refuses to overwrite an existing .png file without --force', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.png')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'existing content')
+
+    await expect(
+      runRender(
+        renderArgs({ input: inputPath, png: true, output: outputPath }),
       ),
     ).rejects.toThrow(/Refusing to overwrite existing file/)
 
