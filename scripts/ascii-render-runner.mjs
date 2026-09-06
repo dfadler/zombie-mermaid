@@ -6,7 +6,14 @@
  * needs a dynamic `import()` of a *ref-specific* `src/index.ts` (the working
  * tree's, or one extracted from a base ref into a scratch directory).
  *
- * Usage: tsx ascii-render-runner.mjs <path-to-src/index.ts> <sample-index-or-file>
+ * Usage: tsx ascii-render-runner.mjs [--size] <path-to-src/index.ts> <sample-index-or-file>
+ *   --size                    Instead of the rendered output, print the
+ *                             terminal size it needs as `<cols> <rows>` —
+ *                             the widest line's display width (wide CJK/
+ *                             emoji glyphs counted as two cells) and the
+ *                             line count. The capture script sizes its
+ *                             recording PTY from this so tall/wide samples
+ *                             aren't clipped (see issue #483).
  *   <path-to-src/index.ts>    Module to import renderMermaidASCII from —
  *                             either the working tree's own, or a base ref's
  *                             src/ extracted via `git archive <ref> src | tar -x -C <dir>`.
@@ -21,11 +28,14 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const [, , indexModulePath, sampleArg] = process.argv
+const args = process.argv.slice(2)
+const sizeOnly = args[0] === '--size'
+if (sizeOnly) args.shift()
+const [indexModulePath, sampleArg] = args
 
 if (!indexModulePath || !sampleArg) {
   console.error(
-    'usage: tsx ascii-render-runner.mjs <path-to-src/index.ts> <sample-index-or-file>',
+    'usage: tsx ascii-render-runner.mjs [--size] <path-to-src/index.ts> <sample-index-or-file>',
   )
   process.exit(2)
 }
@@ -54,4 +64,18 @@ const { renderMermaidASCII } = await import(
   pathToFileURL(resolve(indexModulePath)).href
 )
 
-process.stdout.write(renderMermaidASCII(source, { colorMode: 'auto' }))
+if (sizeOnly) {
+  // Measure with colors off so no ANSI escape bytes inflate the width. The
+  // width function comes from the *working tree* (like samples-data.ts
+  // above), not the ref under test: src/index.ts doesn't export it, and the
+  // size of the recording PTY is a property of this tooling, not of the
+  // renderer being compared.
+  const { displayWidth } = await import(
+    pathToFileURL(resolve('src/ascii/display-width.ts')).href
+  )
+  const lines = renderMermaidASCII(source, { colorMode: 'none' }).split('\n')
+  const cols = Math.max(0, ...lines.map((line) => displayWidth(line)))
+  process.stdout.write(`${cols} ${lines.length}\n`)
+} else {
+  process.stdout.write(renderMermaidASCII(source, { colorMode: 'auto' }))
+}

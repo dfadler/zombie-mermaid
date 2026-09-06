@@ -216,3 +216,97 @@ describe('renderMermaidSVG – sequence diagrams – embedSource', () => {
     expect(svg).not.toContain('data-src=')
   })
 })
+
+describe('renderMermaidSVG – standalone activate/deactivate (#419)', () => {
+  it('produces byte-identical SVG to the +/- shorthand', () => {
+    const standalone = renderMermaidSVG(`sequenceDiagram
+      Alice->>John: Hello John, how are you?
+      activate John
+      John-->>Alice: Great!
+      deactivate John`)
+    const shorthand = renderMermaidSVG(`sequenceDiagram
+      Alice->>+John: Hello John, how are you?
+      John-->>-Alice: Great!`)
+    expect(standalone).toContain('<rect class="activation" data-actor="John"')
+    expect(standalone).toBe(shorthand)
+  })
+})
+
+describe('renderMermaidSVG – create/destroy (#419)', () => {
+  it('draws a destroy cross on the destroyed lifeline and none elsewhere', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      A->>B: one
+      create participant C
+      A->>C: two
+      destroy B
+      A->>B: three`)
+    const crosses = svg.match(/<path class="destroy" data-actor="([^"]*)"/g)
+    expect(crosses).toEqual(['<path class="destroy" data-actor="B"'])
+    // The created participant still gets an actor box and a lifeline
+    expect(svg).toContain('<g class="actor" data-id="C"')
+    expect(svg).toContain('<line class="lifeline" data-actor="C"')
+    // Directive keywords never leak into the output as text
+    expect(svg).not.toContain('create participant')
+    expect(svg).not.toContain('destroy B')
+  })
+})
+
+describe('renderMermaidSVG – box...end (#419)', () => {
+  it('draws a labelled, coloured background behind the grouped actors', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    expect(svg).toContain(
+      '<g class="participant-box" data-label="Group 1" data-color="Aqua">',
+    )
+    expect(svg).toContain('color-mix(in srgb, Aqua 35%, var(--bg))')
+    expect(svg).toContain('>Group 1<')
+    // The box background is emitted before the actors/lifelines it groups
+    // (render order: backgrounds first, so it never paints over content)
+    const boxIdx = svg.indexOf('class="participant-box"')
+    const actorIdx = svg.indexOf('class="actor"')
+    expect(boxIdx).toBeGreaterThan(-1)
+    expect(boxIdx).toBeLessThan(actorIdx)
+  })
+
+  it('renders an unlabelled box without a data-label attribute or visible text', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Aqua
+      participant A
+      end
+      A->>A: hi`)
+    expect(svg).toContain('<g class="participant-box" data-color="Aqua">')
+  })
+
+  it('renders a colourless box with fill="none" and no data-color attribute', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(svg).toContain('<g class="participant-box" data-label="Group 1">')
+    expect(svg).not.toContain('data-color=')
+    expect(svg).toMatch(/participant-box[\s\S]*?fill="none"/)
+  })
+
+  it('does not render a background for a box with no members', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Empty
+      end
+      A->>B: hi`)
+    expect(svg).not.toContain('participant-box')
+  })
+
+  it('never leaks the box/end keywords into rendered text', () => {
+    const svg = renderMermaidSVG(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(svg).not.toContain('>box<')
+    expect(svg).not.toContain('>end<')
+  })
+})

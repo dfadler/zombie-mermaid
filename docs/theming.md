@@ -70,6 +70,24 @@ const svg = renderMermaidSVG(diagram, {
 // Theme switches apply automatically via CSS cascade — no re-render needed
 ```
 
+## Resolved Colors for Rasterizers
+
+Live switching works because browsers evaluate `var()` and `color-mix()`. Non-browser consumers — resvg, librsvg, Inkscape, ImageMagick, most PDF pipelines — don't, and render every derived color as black. For output headed to one of those, ask for the computed values instead:
+
+```typescript
+const svg = renderMermaidSVG(diagram, {
+  ...THEMES['tokyo-night'],
+  resolveColors: true,
+})
+// No var() or color-mix() left: every color is a concrete #rrggbb / rgba()
+```
+
+```bash
+zombie-mermaid render diagram.mmd --svg -o out.svg --theme tokyo-night --resolve-colors
+```
+
+The substitution uses the same mix percentages the `<style>` block declares (the `MIX` table in `src/theme.ts`), so it can't drift from what a browser would compute. The trade-off is that the output is now a fixed palette — setting `--bg`/`--fg` on it later does nothing — and a color you passed as a `var(--…)` reference can't be resolved (there's no host page to ask), so it's left untouched.
+
 ## Built-in Themes
 
 15 themes ship out of the box:

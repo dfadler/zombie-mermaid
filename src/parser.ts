@@ -17,6 +17,12 @@ import {
 import type { ExpandedNodeMeta } from './expanded-shapes.ts'
 import { extractInitConfig } from './init-directive.ts'
 import { applyClickStatement as applyClickStatementShared } from './click-directive.ts'
+import {
+  parseStyleProps,
+  tryApplyClassDef,
+  tryApplyClassAssignment,
+  tryApplyStyleStatement,
+} from './style-directives.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()
@@ -150,41 +156,11 @@ function parseFlowchart(lines: string[]): MermaidGraph {
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!
 
-    // --- classDef: `classDef name prop:val,prop:val` ---
-    const classDefMatch = line.match(/^classDef\s+(\w+)\s+(.+)$/)
-    if (classDefMatch) {
-      const name = classDefMatch[1]!
-      const propsStr = classDefMatch[2]!
-      const props = parseStyleProps(propsStr)
-      graph.classDefs.set(name, props)
-      continue
-    }
-
-    // --- class assignment: `class A,B className` ---
-    // Allow an optional trailing semicolon (`class A,B foo;`) — Mermaid treats
-    // it as valid/optional, and `classDef`/`style` already tolerate it via their
-    // `(.+)$` capture. Without this, the semicolon form fails to match here and
-    // falls through to node parsing, rendering a stray node labelled "class".
-    const classAssignMatch = line.match(/^class\s+([\w,-]+)\s+(\w+)\s*;?\s*$/)
-    if (classAssignMatch) {
-      const nodeIds = classAssignMatch[1]!.split(',').map((s) => s.trim())
-      const className = classAssignMatch[2]!
-      for (const id of nodeIds) {
-        graph.classAssignments.set(id, className)
-      }
-      continue
-    }
-
-    // --- style statement: `style A,B fill:#f00,stroke:#333` ---
-    const styleMatch = line.match(/^style\s+([\w,-]+)\s+(.+)$/)
-    if (styleMatch) {
-      const nodeIds = styleMatch[1]!.split(',').map((s) => s.trim())
-      const props = parseStyleProps(styleMatch[2]!)
-      for (const id of nodeIds) {
-        graph.nodeStyles.set(id, { ...graph.nodeStyles.get(id), ...props })
-      }
-      continue
-    }
+    // --- classDef / class assignment / style — shared with the class-diagram
+    // parser, see src/style-directives.ts ---
+    if (tryApplyClassDef(line, graph)) continue
+    if (tryApplyClassAssignment(line, graph)) continue
+    if (tryApplyStyleStatement(line, graph)) continue
 
     // --- click interaction: `click A "url" "tooltip" _blank` / `click A call fn()` ---
     if (/^click\s+/i.test(line)) {
@@ -510,28 +486,6 @@ function ensureStateNode(
       }
     }
   }
-}
-
-// ============================================================================
-// Shared utilities
-// ============================================================================
-
-/** Parse "fill:#f00,stroke:#333" style property strings into a Record */
-function parseStyleProps(propsStr: string): Record<string, string> {
-  // Strip trailing semicolons — Mermaid tolerates them (e.g. `stroke:#f00;`)
-  const cleaned = propsStr.replace(/;\s*$/, '')
-  const props: Record<string, string> = {}
-  for (const pair of cleaned.split(',')) {
-    const colonIdx = pair.indexOf(':')
-    if (colonIdx > 0) {
-      const key = pair.slice(0, colonIdx).trim()
-      const val = pair.slice(colonIdx + 1).trim()
-      if (key && val) {
-        props[key] = val
-      }
-    }
-  }
-  return props
 }
 
 // ============================================================================
