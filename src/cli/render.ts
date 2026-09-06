@@ -170,7 +170,10 @@ export async function runRender(
       asciiOpts.boxBorderPadding = args.borderPadding
     if (args.coords) asciiOpts.showCoords = true
     if (args.direction !== undefined) asciiOpts.direction = args.direction
-    if (args.hyperlinks) asciiOpts.hyperlinks = true
+    // Only for terminal output: a .txt file gets no escape codes regardless
+    // (same contract as the ANSI color guard above), so OSC 8 hyperlink
+    // sequences must never be written into a file target.
+    if (args.hyperlinks && asciiFile === undefined) asciiOpts.hyperlinks = true
     let ascii = renderMermaidASCII(text, asciiOpts)
 
     if (args.maxWidth !== undefined) {

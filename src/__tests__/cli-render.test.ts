@@ -13,6 +13,10 @@ import { createMockStdout, renderArgs } from './cli-test-helpers.ts'
 const SIMPLE_FLOWCHART = `graph LR
   A --> B --> C`
 
+const LINKED_FLOWCHART = `graph LR
+  A[Docs] --> B[Other]
+  click A "https://example.com" "Docs"`
+
 // ============================================================================
 // Temp directory lifecycle
 // ============================================================================
@@ -235,6 +239,40 @@ describe('runRender – output ergonomics', () => {
     )
 
     expect(await readFile(outputPath, 'utf-8')).not.toMatch(/\x1b\[/)
+  })
+
+  it('writes ASCII to a file without OSC 8 hyperlinks even when --hyperlinks is set', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.txt')
+    await writeFile(inputPath, LINKED_FLOWCHART)
+
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        ascii: true,
+        output: outputPath,
+        hyperlinks: true,
+      }),
+    )
+
+    const text = await readFile(outputPath, 'utf-8')
+    expect(text).not.toContain('\x1b]8;;')
+    // Sanity check the fixture actually declares a click href — otherwise
+    // this test would pass vacuously regardless of the guard being fixed.
+    expect(text).toContain('Docs')
+  })
+
+  it('still emits OSC 8 hyperlinks to stdout with --hyperlinks and no -o', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, LINKED_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, ascii: true, hyperlinks: true }),
+      mockStdout,
+    )
+
+    expect(mockStdout.output()).toContain('\x1b]8;;')
   })
 
   it('refuses to overwrite an existing ASCII output file too', async () => {

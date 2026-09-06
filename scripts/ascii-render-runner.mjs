@@ -97,23 +97,36 @@ if (rawOptions !== undefined && rawOptions !== '') {
 }
 
 if (sizeOnly) {
-  // Measure with colors off so no ANSI escape bytes inflate the width. The
+  // Measure with colors off so no SGR escape bytes inflate the width. The
   // width function comes from the *working tree* (like samples-data.ts
   // above), not the ref under test: src/index.ts doesn't export it, and the
   // size of the recording PTY is a property of this tooling, not of the
   // renderer being compared. extraOptions is still applied here (e.g.
-  // ASCII_RENDER_OPTIONS='{"hyperlinks":true}') so the PTY is sized to fit
-  // whatever the "after" render will actually contain, OSC 8 escape bytes
-  // included — see the ASCII_RENDER_OPTIONS doc comment above and
-  // scripts/ascii-terminal-capture.sh's own note that the PTY inherits it.
+  // ASCII_RENDER_OPTIONS='{"hyperlinks":true}') so a hyperlink-enabled
+  // render is sized correctly too — but OSC 8 sequences are zero-width on
+  // screen, so they (and any stray SGR codes extraOptions might reintroduce)
+  // are stripped before measuring, mirroring src/cli/render.ts's
+  // `maxLineWidth` helper. Counting the raw escape bytes as graphemes would
+  // overestimate `cols` and oversize the capture PTY (see issue #498).
   const { displayWidth } = await import(
     pathToFileURL(resolve('src/ascii/display-width.ts')).href
   )
+  const { stripOsc8 } = await import(
+    pathToFileURL(resolve('src/ascii/hyperlinks.ts')).href
+  )
+  // Matches SGR color escape sequences (`\x1b[...m`); same pattern as the
+  // ANSI_ESCAPE const in src/cli/render.ts and src/ascii/coords.ts.
+  const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
   const lines = renderMermaidASCII(source, {
     colorMode: 'none',
     ...extraOptions,
   }).split('\n')
-  const cols = Math.max(0, ...lines.map((line) => displayWidth(line)))
+  const cols = Math.max(
+    0,
+    ...lines.map((line) =>
+      displayWidth(stripOsc8(line.replace(ANSI_ESCAPE, ''))),
+    ),
+  )
   process.stdout.write(`${cols} ${lines.length}\n`)
 } else {
   process.stdout.write(
