@@ -9,7 +9,7 @@ import type {
   PositionedNote,
   PositionedParticipantBox,
 } from './types.ts'
-import type { RenderOptions } from '../types.ts'
+import type { RenderOptions, SequenceRenderOptions } from '../types.ts'
 import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
 
 // ============================================================================
@@ -102,7 +102,7 @@ function resolveSeqOptions(overrides?: RenderOptions['sequence']): SeqConfig {
  */
 export function layoutSequenceDiagram(
   diagram: SequenceDiagram,
-  options: RenderOptions = {},
+  options: SequenceRenderOptions = {},
 ): PositionedSequenceDiagram {
   if (diagram.actors.length === 0) {
     return {

@@ -499,3 +499,123 @@ export interface RenderOptions {
    */
   layoutCache?: LayoutCache
 }
+
+// ============================================================================
+// Per-diagram-type option subsets — issue #534
+//
+// `RenderOptions` above is one flat interface consumed by all five diagram
+// types (flowchart, sequence, class, ER, xychart — see `DiagramType` in
+// src/diagram-type.ts; state diagrams share the flowchart pipeline and so
+// share `FlowchartRenderOptions`), but most fields apply to only a subset.
+// Historically that applicability was discoverable only via the prose
+// comments above — passing `curve` to an ER render was silently ignored,
+// never rejected.
+//
+// These `Pick<RenderOptions, ...>` types make each diagram type's actual
+// option surface structural rather than prose-only, confirmed field-by-field
+// against real consumption (grepped across src/renderer.ts,
+// src/sequence/renderer.ts, src/class/renderer.ts, src/er/renderer.ts,
+// src/xychart/renderer.ts, and the layout modules each render path calls
+// through — src/layout-engine.ts, src/sequence/layout.ts,
+// src/class/layout.ts, src/er/layout.ts, src/xychart/layout.ts).
+//
+// IMPORTANT — this does not narrow `renderMermaidSVG(text, options)` itself.
+// That entry point detects the diagram type from `text` *inside* the
+// function, so the type checker cannot know which per-type subset applies
+// at the call site — `options` there necessarily stays the full flat
+// `RenderOptions` for backwards compatibility. These types exist for:
+//   (a) callers who already know their diagram type and want the narrower,
+//       self-documenting shape for a local variable or helper signature,
+//       and
+//   (b) internal module signatures (the `layout*Sync`/`layoutXYChart`
+//       functions) that used to accept the full `RenderOptions` and
+//       cherry-pick a handful of fields — now typed to only the fields that
+//       diagram type actually reads.
+// A structural, compile-time-enforced union at the `renderMermaidSVG` call
+// site itself would need a breaking API change (see the design doc from
+// issue #534's scoping pass) and is out of scope here.
+// ============================================================================
+
+/**
+ * Options every diagram type honors: theming (colors, font), the shared
+ * strict-CSP/accessibility/output controls, and the post-render
+ * `resolveColors` pass. Every other `RenderOptions` field applies to only a
+ * subset of diagram types — see the per-type types below.
+ */
+export type CommonRenderOptions = Pick<
+  RenderOptions,
+  | 'bg'
+  | 'fg'
+  | 'line'
+  | 'accent'
+  | 'muted'
+  | 'surface'
+  | 'border'
+  | 'font'
+  | 'transparent'
+  | 'embedSource'
+  | 'resolveColors'
+  | 'nonce'
+  | 'styleAttribute'
+  | 'title'
+  | 'decorative'
+>
+
+/**
+ * Options applicable to flowchart (`graph` / `flowchart`) and state
+ * (`stateDiagram-v2`) diagrams — both share `DiagramType: 'flowchart'` and
+ * the same layout/render pipeline (src/layout-engine.ts, src/renderer.ts),
+ * so they share one option shape. `componentSpacing` is currently a no-op
+ * everywhere (accepted for forward compatibility only) but grouped here
+ * since it's spacing-shaped like `padding`/`nodeSpacing`/`layerSpacing`.
+ */
+export type FlowchartRenderOptions = CommonRenderOptions &
+  Pick<
+    RenderOptions,
+    | 'padding'
+    | 'nodeSpacing'
+    | 'layerSpacing'
+    | 'componentSpacing'
+    | 'mergeEdges'
+    | 'direction'
+    | 'curve'
+    | 'fontSizes'
+    | 'interactivity'
+    | 'layoutCache'
+  >
+
+/**
+ * Options applicable to sequence diagrams (`sequenceDiagram`). Sequence
+ * diagrams ignore `direction`, `curve`, spacing/`layoutCache` (a
+ * non-ELK layout), and `interactivity` (no animated edges or `click` links
+ * in this renderer's sequence support).
+ */
+export type SequenceRenderOptions = CommonRenderOptions &
+  Pick<RenderOptions, 'fontSizes' | 'sequence'>
+
+/**
+ * Options applicable to class diagrams (`classDiagram`). Class diagrams use
+ * fixed internal padding/spacing (not `padding`/`nodeSpacing`/
+ * `layerSpacing`) and have no `direction` or `curve` concept; `interactivity`
+ * gates `click`-based links only — there's no edge-animation concept to gate.
+ */
+export type ClassRenderOptions = CommonRenderOptions &
+  Pick<RenderOptions, 'fontSizes' | 'interactivity' | 'layoutCache'>
+
+/**
+ * Options applicable to ER diagrams (`erDiagram`). ER diagrams use fixed
+ * internal padding/spacing and ignore `curve` and `interactivity` (no
+ * animated edges or `click` links in this renderer's ER support), but do
+ * honor `direction` (applied before layout via `withDirectionOverride`).
+ */
+export type ErRenderOptions = CommonRenderOptions &
+  Pick<RenderOptions, 'direction' | 'fontSizes' | 'layoutCache'>
+
+/**
+ * Options applicable to XY charts (`xychart-beta`). XY charts have no
+ * spacing/`direction`/`curve`/`fontSizes`/`layoutCache` concept (layout is
+ * a fixed pixel computation, not ELK-based); `interactivity` (preferred) and
+ * the deprecated `interactive` boolean both gate hover tooltips only.
+ */
+export type XyChartRenderOptions = CommonRenderOptions &
+  Pick<RenderOptions, 'interactivity' | 'interactive'>
