@@ -177,10 +177,14 @@ const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
  * (see `xychartModule`/`erModule` above, which are fully typed); the map
  * just needs one consistent shape to hold heterogeneous entries in.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above; each entry is fully typed at its own definition site.
-export const diagramRegistry: Partial<
-  Record<DiagramType, DiagramModule<any, any>>
-> = {
+type AnyDiagramModule = DiagramModule<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above; each entry is fully typed at its own definition site.
+  any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above; each entry is fully typed at its own definition site.
+  any
+>
+
+export const diagramRegistry: Partial<Record<DiagramType, AnyDiagramModule>> = {
   xychart: xychartModule,
   er: erModule,
 }
