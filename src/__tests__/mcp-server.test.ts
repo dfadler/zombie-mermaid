@@ -34,13 +34,17 @@ afterAll(async () => {
 })
 
 describe('createMcpServer', () => {
-  it('advertises both render tools', async () => {
+  it('advertises all registered tools', async () => {
     const { tools } = await client.listTools()
     const names = tools.map((t) => t.name).sort()
-    expect(names).toEqual(['render_mermaid_ascii', 'render_mermaid_svg'])
+    expect(names).toEqual([
+      'check_mermaid_sequence_activations',
+      'render_mermaid_ascii',
+      'render_mermaid_svg',
+    ])
   })
 
-  it('marks both tools as read-only and non-destructive', async () => {
+  it('marks every tool as read-only and non-destructive', async () => {
     const { tools } = await client.listTools()
     for (const tool of tools) {
       expect(tool.annotations?.readOnlyHint).toBe(true)
@@ -100,5 +104,31 @@ describe('createMcpServer', () => {
       arguments: {},
     })
     expect(result.isError).toBe(true)
+  })
+
+  it('checks sequence diagram activation balance via a real tool call', async () => {
+    const result = await client.callTool({
+      name: 'check_mermaid_sequence_activations',
+      arguments: {
+        diagram: 'sequenceDiagram\n  activate A\n  A->>B: hello',
+      },
+    })
+    expect(result.isError).toBeFalsy()
+    const content = result.content
+    if (
+      !Array.isArray(content) ||
+      content[0]?.type !== 'text' ||
+      typeof content[0].text !== 'string'
+    ) {
+      throw new Error('Expected text content')
+    }
+    const report = JSON.parse(content[0].text) as {
+      ok: boolean
+      issues: unknown[]
+    }
+    expect(report.ok).toBe(false)
+    expect(report.issues).toEqual([
+      expect.objectContaining({ code: 'DANGLING_ACTIVATION', actorId: 'A' }),
+    ])
   })
 })
