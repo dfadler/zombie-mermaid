@@ -55,6 +55,15 @@ export default tseslint.config(
       '__tests__/**/*.ts',
     ],
     extends: [tseslint.configs.recommended],
+    linterOptions: {
+      // A stale `eslint-disable` comment (one whose rule no longer fires on
+      // that line) is an error, not the default warning: CI runs plain
+      // `eslint .` with no --max-warnings, so a warning would never fail the
+      // build and perf exceptions to the mutation rules below could outlive
+      // the code they were written for. See "Mutation and reassignment" in
+      // CONTRIBUTING.md.
+      reportUnusedDisableDirectives: 'error',
+    },
     rules: {
       // Allow leading-underscore names to signal an intentionally unused
       // variable/argument (common pattern for destructuring or callback
@@ -67,6 +76,19 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // Mutation and reassignment (#481). `prefer-const` and `no-var` are
+      // already errors via typescript-eslint's bundled `eslint-recommended`
+      // overrides; they're restated here so the whole policy is readable in
+      // one place. `no-param-reassign` is deliberately `props: false` —
+      // reassigning the parameter *binding* is banned, but writing into an
+      // object a parameter points at (a Canvas, a Grid, an edge record) is
+      // how the ASCII renderer's in-place layout passes work, and is the
+      // performance exception the issue carves out. Anything stricter
+      // (`props: true`, eslint-plugin-functional) was measured at hundreds
+      // of hits in src/ascii/** and is tracked on #481, not enabled here.
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'no-param-reassign': ['error', { props: false }],
     },
   },
   // Must be last: disables ESLint rules that conflict with Prettier's
