@@ -438,6 +438,20 @@ function drawCorners(graph: AsciiGraph, path: GridCoord[]): Canvas {
   return canvas
 }
 
+/**
+ * True when `edge` has a sibling edge connecting the exact same two nodes in
+ * the opposite direction (`A --> B` alongside `B --> A`) — a "reciprocal
+ * pair". Node identity is compared by reference: `converter.ts` resolves
+ * every edge's `from`/`to` from the same shared node map, so the same
+ * logical node is always the same object across edges.
+ */
+function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  return graph.edges.some(
+    (other) =>
+      other !== edge && other.from === edge.to && other.to === edge.from,
+  )
+}
+
 /** Draw edge label text centered on the widest path segment. */
 function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
   const canvas = copyCanvas(graph.canvas)
@@ -460,7 +474,13 @@ function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
     // If endY === startY, it's horizontal, leave isUpwardEdge undefined
   }
 
-  drawTextOnLine(canvas, drawingLine, edge.text, isUpwardEdge)
+  // Only a genuine reciprocal pair (A-->B alongside B-->A) needs its label
+  // pulled toward its own target instead of its own source — see #530 and
+  // drawTextOnLine's doc comment below. A lone vertical edge keeps the
+  // original "precede the arrow, near the source" placement.
+  const pullTowardTarget = hasReciprocalPartner(graph, edge)
+
+  drawTextOnLine(canvas, drawingLine, edge.text, isUpwardEdge, pullTowardTarget)
   return canvas
 }
 
@@ -470,15 +490,30 @@ function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
  *
  * When isUpwardEdge is provided, offsets the label vertically to prevent
  * overlapping with labels from edges going the opposite direction:
- * - Upward edges: label placed in lower portion of segment
+ * - Upward edges: label placed in lower portion of segment (near its own
+ *   source), unless `pullTowardTarget` is set — see below.
  * - Downward edges (isUpwardEdge=false): label placed in upper portion
+ *   (near its own source), unless `pullTowardTarget` is set.
  * - No direction (isUpwardEdge=undefined): label centered (default)
+ *
+ * `pullTowardTarget` inverts both of the above, pulling the label toward
+ * its own arrowhead (the edge's target end) instead of its source. This
+ * only makes a visible difference for a genuine reciprocal pair sharing one
+ * vertical channel (`A --> B` alongside `B --> A`, both routed through the
+ * same column): pulling each label toward its own *source* there pulls it
+ * right next to the *other* edge's arrowhead instead, since in a two-node
+ * cycle one edge's source is the other edge's target. #530 is exactly that
+ * bug — a same-pair bidirectional edge's two labels rendered swapped
+ * relative to the arrowheads they sit beside. A lone edge (no reciprocal
+ * partner) keeps the original near-source placement so its label still
+ * reads as "preceding" its own arrow rather than crowding the arrowhead.
  */
 function drawTextOnLine(
   canvas: Canvas,
   line: DrawingCoord[],
   label: string,
   isUpwardEdge?: boolean,
+  pullTowardTarget = false,
 ): void {
   if (line.length < 2) return
   const minX = Math.min(line[0]!.x, line[1]!.x)
@@ -493,12 +528,12 @@ function drawTextOnLine(
   if (isUpwardEdge !== undefined && minX === maxX) {
     const segmentHeight = maxY - minY
     const offset = Math.max(1, Math.floor(segmentHeight / 4))
-    if (isUpwardEdge) {
-      // Upward edge: place label in lower portion
-      middleY = middleY + offset
-    } else {
-      // Downward edge: place label in upper portion
+    // XOR: pullTowardTarget flips which portion each direction lands in.
+    const towardMinY = pullTowardTarget ? isUpwardEdge : !isUpwardEdge
+    if (towardMinY) {
       middleY = middleY - offset
+    } else {
+      middleY = middleY + offset
     }
   }
 
