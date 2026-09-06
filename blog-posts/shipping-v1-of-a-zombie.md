@@ -69,6 +69,26 @@ was whether the site should keep presenting itself as a Craft product with
 a fork footnote, or become `zombie-mermaid`'s own site outright. The closing
 PR ([#190](https://github.com/dfadler/zombie-mermaid/pull/190), "Rebrand
 demo site as zombie-mermaid, fix stale links") went with the second option.
+
+Here is what that actually looked like. Both of these are the demo site's
+own `pnpm run samples` output — `index.ts` rendered at the two commits
+either side of #190's merge, screenshotted in the same headless browser at
+the same viewport. The only file that differs between them is `index.ts`.
+
+Before (`709cfa6`, the commit #190 branched from):
+
+![Demo site header and hero before the rebrand: a badge reading "Beautiful Mermaid by Craft" with the Craft logo, a hero titled "Beautiful Mermaid", a description line ending "Built by the team at Craft — because diagrams deserve great design too", and a black "Use in Craft Agents" primary button ahead of Editor and GitHub](../shipping-v1-screenshots/demo-site-before.png)
+
+After (`f9c3e36`, the merge commit):
+
+![The same header and hero after the rebrand: the badge now reads "Zombie Mermaid" with no logo and links to the GitHub repo, the hero title is "Zombie Mermaid", the Craft attribution line is gone, and Editor is the primary button with the Craft Agents call-to-action removed entirely](../shipping-v1-screenshots/demo-site-after.png)
+
+Four separate pieces of Craft chrome came out of one screen: the badge and
+its dropdown, the hero title, the "built by the team at Craft" line, and the
+primary call-to-action. The layout underneath didn't change at all — same
+theme pills, same Contents menu, same sample count. That's the shape of a
+rebrand that's really just a rebrand.
+
 The README's own "Why This Fork Exists" section states the same call in
 prose: "Craft and Craft Agents aren't part of this project's process going
 forward; this is an independently maintained continuation" — while keeping
