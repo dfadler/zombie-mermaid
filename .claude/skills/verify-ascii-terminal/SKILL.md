@@ -106,6 +106,22 @@ artifact — the recorded `.cast`/`.txt`
 output is unaffected, only the rasterized `.png` looks wrong. Install
 JetBrains Mono before capturing, not after noticing a screenshot looks off.
 
+**Alternative: `ASCII_AGG_RUNTIME=docker`.** Set this env var (needs `docker`
+on PATH and a running daemon; no local `agg` binary or font install needed)
+to run the `.cast` → `.gif` rasterization step inside agg's own
+maintainer-published image (`ghcr.io/asciinema/agg`, built from
+[agg's Dockerfile](https://github.com/asciinema/agg/blob/main/Dockerfile))
+instead of a local `agg`. That image installs JetBrains Mono directly via
+Debian's `fonts-jetbrains-mono` package — not a host bind-mount — so it
+cannot hit the fallback described above at all. Verified in issue #552:
+a docker-rasterized `.png` came out byte-identical (same MD5) to a
+correctly-configured local-agg render of the same `.cast`, while a
+deliberately font-incomplete render (font list missing JetBrains Mono)
+reproduced the same notch artifact, confirming the containerized path
+closes the failure mode rather than just moving it. `asciinema record`
+itself still runs locally either way — it drives the real PTY this
+script's own process is attached to, which a container can't do.
+
 ## Procedure
 
 1. **Pick a sample.** Reuse an existing entry from `samples-data.ts` if one
