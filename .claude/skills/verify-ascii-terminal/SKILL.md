@@ -20,7 +20,7 @@ description: |
   approximation's chrome), and a GUI window steals focus. Only this skill's
   headless real-PTY capture satisfies the requirement.
 metadata:
-  version: '2.0.0'
+  version: '2.1.0'
 ---
 
 # Verify ASCII output in a real terminal — and screenshot that, not the browser mockup
@@ -149,6 +149,24 @@ JetBrains Mono before capturing, not after noticing a screenshot looks off.
    Each invocation writes `<prefix>.cast` (the raw recording), `<prefix>.txt`
    (a plain-text export, for diffing), and `<prefix>.png` (a real-terminal
    screenshot, auto-cropped to content).
+
+   The recording terminal is sized to fit automatically: each of the
+   optional `[cols] [rows]` arguments defaults to the larger of `100x40`
+   and the size the sample actually renders at (measured through the same
+   renderer first, plus a 2-cell margin), so a tall sequence or state
+   diagram isn't clipped by a fixed default - 39 of the 90 catalog samples
+   exceed a stock 80x24 terminal, and several exceed 100x40. Pass explicit
+   `[cols] [rows]` only to force a size; a value smaller than the rendered
+   output prints a clipping warning. After recording, the script reads the
+   `.cast` header's own terminal size back and exits 4 if it doesn't match
+   what was requested: `asciinema` silently ignores a size flag it doesn't
+   recognize (it renamed `--cols`/`--rows` to `--window-size` in 3.x)
+   rather than erroring, and three PRs shipped screenshots clipped to
+   80x24 that way before this guard existed (see
+   [#483](https://github.com/dfadler/zombie-mermaid/issues/483)). If the
+   script reports a size mismatch, fix its flag detection rather than
+   working around it by invoking `asciinema` by hand (the workaround two
+   of those PRs used) - that leaves the next capture just as exposed.
 
 4. **Diff `/tmp/before.txt` vs `/tmp/after.txt`.** Confirm the change is
    exactly what's intended — no incidental column-width, wrapping, or color
