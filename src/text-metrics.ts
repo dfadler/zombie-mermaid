@@ -128,7 +128,7 @@ const INTER_ADVANCES: Record<string, number> = {
  * here means a real character silently degrades to an approximate width.
  */
 export function hasMeasuredAdvance(char: string): boolean {
-  return INTER_ADVANCES[char] !== undefined
+  return Object.hasOwn(INTER_ADVANCES, char)
 }
 
 /**
@@ -314,9 +314,14 @@ export function getCharWidth(char: string): number {
   const code = char.codePointAt(0)
   if (code === undefined) return 0
 
-  // Exact measured advance for printable ASCII (Inter)
-  const measured = INTER_ADVANCES[char]
-  if (measured !== undefined) return measured
+  // Exact measured advance for printable ASCII (Inter). The own-property
+  // check must come first: without it, bracket access on a plain object
+  // literal also resolves inherited Object.prototype properties (e.g.
+  // `INTER_ADVANCES['toString']` is a function, not undefined).
+  if (Object.hasOwn(INTER_ADVANCES, char)) {
+    const measured = INTER_ADVANCES[char]
+    if (measured !== undefined) return measured
+  }
 
   // Zero-width: combining diacritical marks
   if (isCombiningMark(code)) return 0

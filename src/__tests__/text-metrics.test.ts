@@ -111,6 +111,33 @@ describe('getCharWidth', () => {
     })
   })
 
+  describe('inherited Object.prototype keys', () => {
+    // INTER_ADVANCES is a plain object literal, so bracket access with
+    // `!== undefined` also matches inherited Object.prototype properties
+    // like 'toString' and 'constructor' — they are not real table entries,
+    // but a naive `obj[key] !== undefined` check can't tell the difference.
+    it.each(['toString', 'constructor', 'hasOwnProperty', '__proto__'])(
+      'hasMeasuredAdvance(%s) is false — not an own property of the table',
+      (key) => {
+        expect(hasMeasuredAdvance(key)).toBe(false)
+      },
+    )
+
+    it('getCharWidth never returns an inherited property instead of a measured width', () => {
+      // Without an own-property check, `INTER_ADVANCES['toString'] !== undefined`
+      // is true (it resolves Object.prototype.toString), so getCharWidth('toString')
+      // would return that function instead of a number. With the own-property
+      // check in place, the direct-table lookup correctly misses, and the
+      // multi-character string instead falls through to the (unrelated,
+      // NFD-based) accented-Latin branch, which matches on its first
+      // normalized character ('t') — still a real measured number, never a
+      // function.
+      const result = getCharWidth('toString')
+      expect(typeof result).toBe('number')
+      expect(result).toBe(getCharWidth('t'))
+    })
+  })
+
   describe('combining marks (zero-width)', () => {
     it('returns 0 for combining diacritical marks', () => {
       // U+0301 = combining acute accent
