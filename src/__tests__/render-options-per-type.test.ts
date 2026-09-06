@@ -53,10 +53,7 @@ describe('per-diagram-type RenderOptions subsets — additive, not breaking', ()
 
   it('a SequenceRenderOptions value still renders through renderMermaidSVG', () => {
     const opts: SequenceRenderOptions = { sequence: { actorHeight: 60 } }
-    const svg = renderMermaidSVG(
-      'sequenceDiagram\n  Alice->>Bob: Hi',
-      opts,
-    )
+    const svg = renderMermaidSVG('sequenceDiagram\n  Alice->>Bob: Hi', opts)
     expect(svg).toContain('<svg')
   })
 
@@ -162,9 +159,7 @@ describe('internal layout functions narrowed to their per-type option subset', (
   })
 
   it('layoutErDiagramSync still honors direction', () => {
-    const lines = splitStatements(
-      'erDiagram\n  CUSTOMER ||--o{ ORDER : places',
-    )
+    const lines = splitStatements('erDiagram\n  CUSTOMER ||--o{ ORDER : places')
     const diagram = parseErDiagram(lines)
     const positioned = layoutErDiagramSync(diagram, { direction: 'LR' })
     expect(positioned.entities.length).toBe(2)
