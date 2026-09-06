@@ -449,3 +449,191 @@ describe('ASCII class diagram — column reservation composes with detour routin
     expect(ascii).toContain('a moderately long label too')
   })
 })
+
+// ----------------------------------------------------------------------------
+// Precise patch-coverage gaps identified from PR #512's codecov report: the
+// 8 tests above are legitimate but happen not to execute several specific
+// lines/branches codecov tracks as new-in-this-diff. Each test below targets
+// one exact gap (see the codecov `patch` DA:/BRDA: cross-reference against
+// `git diff main...HEAD -- src/ascii/class-diagram.ts`), not a generic
+// "more coverage" addition.
+// ----------------------------------------------------------------------------
+
+describe('ASCII class diagram — plain-ASCII jog rendering (drawJog useAscii branch)', () => {
+  it('draws the fanned-lane jog with ASCII dashes/pipes, not box-drawing corners, under useAscii', () => {
+    // `drawJog`'s `useAscii` branch (setJogCell with the ASCII line glyph on
+    // both the anchor and the lane column, then an early return before the
+    // corner-glyph arithmetic) is only reachable when a jog is actually
+    // drawn (a fanned-out lane, same #489 shape as FOUR_BETWEEN_NARROW_PAIR)
+    // *and* rendering in ASCII mode. Every existing jog test renders in the
+    // default Unicode mode, so this branch — and the plain-ASCII jog cells
+    // it writes — went untested.
+    const ascii = renderMermaidASCII(FOUR_BETWEEN_NARROW_PAIR, {
+      colorMode: 'none',
+      useAscii: true,
+    })
+    expect(ascii).not.toContain('…')
+    // Plain-ASCII jog cells use '-' (horizontal) — not the Unicode box
+    // corners ('┌','┐','┴', etc.) the default-mode jog draws instead.
+    expect(ascii).toMatch(/-{2,}/)
+    expect(ascii).not.toMatch(/[┌┐└┘┬┴┼]/)
+    for (const label of ['one', 'two', 'three', 'four']) {
+      expect(ascii).toContain(label)
+    }
+  })
+})
+
+describe('ASCII class diagram — a detour that clears to the left of its source column', () => {
+  // `findClearColumn` tries the column to the right of the source lane
+  // before the one to the left, so every existing detour test (including
+  // the #514-interaction suite above) happens to clear on the right —
+  // `clearSide: 'left'` and the mirrored exit/entry corner-glyph branches it
+  // feeds are never exercised. Shifting B's box one column right of A/C's
+  // shared connection column (via an asymmetric-width label on B --> C)
+  // makes the space immediately right of A's lane blocked for longer than
+  // the space immediately left of it, so the search finds its clearance on
+  // the left instead — confirmed by rendering and reading the actual
+  // routed column positions before writing this test.
+  const SOURCE = `classDiagram
+  class A
+  class B
+  class C
+  A --> B : a moderately long label here
+  A --> C : a moderately long label there
+  B --> C : a moderately long label tooXXX`
+
+  it('routes the detour trunk left of the source lane and still renders every label intact', () => {
+    const ascii = renderMermaidASCII(SOURCE, { colorMode: 'none' })
+    const lines = ascii.split('\n')
+    expect(ascii).not.toContain('…')
+    expect(ascii).toContain('a moderately long label here')
+    expect(ascii).toContain('a moderately long label there')
+    expect(ascii).toContain('a moderately long label tooXXX')
+
+    // A's own lane column (its box center).
+    const aRow = lines.find((l) => l.includes('│ A │'))!
+    const fromCX = aRow.indexOf('A')
+
+    // The row directly above B's top border carries the detour's vertical
+    // trunk segment (a lone '│' at the route column, undisturbed by any
+    // label text): with a left detour that column sits left of fromCX,
+    // never on or right of it (a right detour, the only case the existing
+    // #514-interaction suite covers, would put it right of fromCX instead).
+    const bTopRow = lines.findIndex(
+      (l, i) =>
+        l.includes('┌───┐') && (lines[i + 1]?.includes('│ B │') ?? false),
+    )
+    expect(bTopRow).toBeGreaterThan(0)
+    const trunkRow = lines[bTopRow - 1]!
+    const trunkCol = trunkRow.indexOf('│')
+    expect(trunkCol).toBeGreaterThanOrEqual(0)
+    expect(trunkCol).toBeLessThan(fromCX)
+  })
+
+  it('joins the trunk to C with a rightward entry jog, since the trunk lands left of C too', () => {
+    // Exercises the entry-jog's `routeX < toAnchorX` branch (the trunk is
+    // left of where it must enter C, so the jog runs rightward into C) —
+    // every existing detour test's trunk lands at or right of its target
+    // anchor instead, taking the opposite branch.
+    const ascii = renderMermaidASCII(SOURCE, { colorMode: 'none' })
+    const lines = ascii.split('\n')
+
+    const cTopRow = lines.findIndex(
+      (l, i) =>
+        l.includes('┌───┐') && (lines[i + 1]?.includes('│ C │') ?? false),
+    )
+    expect(cTopRow).toBeGreaterThan(0)
+    const entryRow = lines[cTopRow - 1]!
+    // `routeX < toAnchorX` draws '└' at the trunk column and '┐' at the
+    // anchor (jogging right into C); the mirrored `else` branch (every
+    // other detour test's case) draws '┘' at the trunk column instead — so
+    // the corner glyph itself, not just "something precedes the arrow",
+    // distinguishes the two branches.
+    expect(entryRow).toContain('└')
+    expect(entryRow).not.toContain('┘')
+    const arrowCol = entryRow.indexOf('▼')
+    expect(arrowCol).toBeGreaterThanOrEqual(0)
+    expect(entryRow.indexOf('└')).toBeLessThan(arrowCol)
+  })
+})
+
+describe('ASCII class diagram — a fanned-out group routed upward (target above source)', () => {
+  // The "target is above source" routing branch (a reciprocal-style edge
+  // whose "to" class was already leveled shallower than its "from" class)
+  // exists and is already covered elsewhere in the suite, but never
+  // together with a *fanned* group needing its own jog on that branch —
+  // `drawJog`'s call sites there (fromJogs/toJogs) were always false.
+  // A -> B -> C -> D is a plain chain (so B/C/D each get a genuine,
+  // strictly-deeper level), and D -> B (four relationships, forcing a fan)
+  // is a back-edge the cycle-guard rejects for relevelling B — so B stays
+  // above D, and D's fanned relationships into it draw upward.
+  const SOURCE = `classDiagram
+  class A
+  class B
+  class C
+  class D
+  A --> B : down1
+  B --> C : down2
+  C --> D : down3
+  D --> B : one
+  D --> B : two
+  D --> B : three
+  D --> B : four`
+
+  it('renders all four upward relationships with distinct arrowheads into B, labels intact', () => {
+    const ascii = renderMermaidASCII(SOURCE, { colorMode: 'none' })
+    expect(ascii).not.toContain('…')
+    for (const label of [
+      'down1',
+      'down2',
+      'down3',
+      'one',
+      'two',
+      'three',
+      'four',
+    ]) {
+      expect(ascii).toContain(label)
+    }
+
+    // B sits above D in the render (the back-edge did not push B deeper).
+    const lines = ascii.split('\n')
+    const bRow = lines.findIndex((l) => l.includes('│ B │'))
+    const dRow = lines.findIndex((l) => l.includes('│ D │'))
+    expect(bRow).toBeGreaterThanOrEqual(0)
+    expect(dRow).toBeGreaterThan(bRow)
+
+    // Four upward arrowheads land on the row just below B's bottom border
+    // (B's content row + 2: content, bottom border, then the fanned jog/
+    // arrow row), one per relationship. This row's outer trunk corners
+    // ('┬'/'┴' merged with the box-border tee) come from `drawJog`'s
+    // `toJogs` side (line 1008/1005's loop) — B is the *target* of these
+    // upward relationships.
+    const arrowRow = bRow + 2
+    const arrowCols = [...lines[arrowRow]!].flatMap((ch, i) =>
+      ch === '▲' ? [i] : [],
+    )
+    expect(arrowCols.length).toBeGreaterThanOrEqual(4)
+    // The outer ends of this row merge the fan's jog into B's own border
+    // as clean corners ('┌' left, '┐' right) because `toJogs` pulls the
+    // trunk's vertical run back by one row first — without that pullback
+    // the merge instead produces a T-junction ('├'/'┤') against the box
+    // border one row too early.
+    expect(lines[arrowRow]).toContain('┌')
+    expect(lines[arrowRow]).toContain('┐')
+    expect(lines[arrowRow]).not.toMatch(/[├┤]/)
+
+    // D is the *source* of these upward relationships — the row directly
+    // above D's top border carries the mirrored `fromJogs` trunk (line
+    // 989's loop): its outer edges are square corners ('└' left, '┘'
+    // right) merged with the fan's horizontal run, not bare '│'s (which is
+    // what an unadjusted/un-jogged trunk row would show instead).
+    const dTopRow = lines.findIndex(
+      (l, i) =>
+        l.includes('┌───┐') && (lines[i + 1]?.includes('│ D │') ?? false),
+    )
+    expect(dTopRow).toBeGreaterThan(0)
+    const dJogRow = lines[dTopRow - 1]!
+    expect(dJogRow).toContain('└')
+    expect(dJogRow).toContain('┘')
+  })
+})
