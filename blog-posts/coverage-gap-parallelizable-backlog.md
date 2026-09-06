@@ -123,7 +123,7 @@ PRs and assume the whole was better than the sum of its parts.
 None of the individual test files here are interesting on their own — a
 `Canvas`-based smoke test for `drawMultilineTextCentered`, a handful of
 edge cases for `src/ascii/ansi.ts`'s color codes. What's reusable is the
-backlog shape: an umbrella issue that does the *reviewing* (what's low,
+backlog shape: an umbrella issue that does the _reviewing_ (what's low,
 what's worth fixing, what's acceptable to exclude) and stops there, plus
 one child issue per unit of work small enough that two people picking up
 two different children can never step on each other. That's the same
