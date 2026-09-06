@@ -82,6 +82,7 @@ Usage:
   zombie-mermaid render <file> -o out.svg           Format inferred from the extension
   zombie-mermaid render <file> --svg -o -           Write SVG to stdout
   zombie-mermaid render <file> --ascii --svg -o <out.svg>   Both (ASCII to terminal)
+  zombie-mermaid render <file> --html               Self-contained pan/zoom HTML viewer
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
@@ -99,12 +100,16 @@ Options:
                        consumers (resvg, librsvg, Inkscape) that don't
                        evaluate them. The default output stays a live function
                        of its CSS variables. Requires --svg.
-  -o, --output <path>  Output file for the SVG (or for ASCII when --svg is
-                       not given). '-' writes to stdout. A .svg or .txt
-                       extension selects the format when no --svg/--ascii
-                       flag is given; one that contradicts the flags is an
-                       error. Existing files are never overwritten without
-                       --force.
+  --html               Render a self-contained HTML pan/zoom viewer to -o
+                       <path> (default: <input stem>.html). Embeds the SVG;
+                       no server, no network, opens from disk. Cannot be
+                       combined with --svg (different content, same slot).
+  -o, --output <path>  Output file for the SVG/HTML (or for ASCII when
+                       neither is given). '-' writes to stdout. A .svg,
+                       .html, or .txt extension selects the format when no
+                       --svg/--html/--ascii flag is given; one that
+                       contradicts the flags is an error. Existing files
+                       are never overwritten without --force.
   -f, --force          Overwrite an existing output file
   --theme <name>       Apply a built-in theme (see 'themes' command)
   --direction <dir>    Override the diagram's layout direction: TD, TB, BT, LR, or RL
