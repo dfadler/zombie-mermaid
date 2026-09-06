@@ -33,7 +33,7 @@ entire history; nothing in this repository's PR list predates the rebrand
 commit that [day zero](https://github.com/dfadler/zombie-mermaid/issues/518)
 describes. Thirteen of the fourteen daily counts match the tracking issue's
 claim exactly. The fourteenth doesn't, and the reason is more interesting
-than a transcription error: 2026-09-06 is *today*. The tracking issue was
+than a transcription error: 2026-09-06 is _today_. The tracking issue was
 drafted at 03:04 UTC, when four PRs had merged so far that day. This post is
 being written as part of the same oldest-first backlog sweep that's still
 producing those merges, so by 17:04 UTC the day-14 count had already climbed
@@ -53,22 +53,22 @@ floor, not a total.
 
 ## The verified histogram
 
-| Date (2026) | Merged PRs |
-| ----------- | ---------: |
-| Aug 24      |          5 |
-| Aug 25      |         28 |
-| Aug 26      |     **64** |
-| Aug 27      |         19 |
-| Aug 28      |         23 |
-| Aug 29      |          9 |
-| Aug 30      |         21 |
-| Aug 31      |          9 |
-| Sep 1       |         30 |
-| Sep 2       |         15 |
-| Sep 3       |         18 |
-| Sep 4       |         17 |
-| Sep 5       |         22 |
-| Sep 6       |    14, and still climbing at the time of writing |
+| Date (2026) |                                    Merged PRs |
+| ----------- | --------------------------------------------: |
+| Aug 24      |                                             5 |
+| Aug 25      |                                            28 |
+| Aug 26      |                                        **64** |
+| Aug 27      |                                            19 |
+| Aug 28      |                                            23 |
+| Aug 29      |                                             9 |
+| Aug 30      |                                            21 |
+| Aug 31      |                                             9 |
+| Sep 1       |                                            30 |
+| Sep 2       |                                            15 |
+| Sep 3       |                                            18 |
+| Sep 4       |                                            17 |
+| Sep 5       |                                            22 |
+| Sep 6       | 14, and still climbing at the time of writing |
 
 That is not a clean staircase, and it shouldn't be presented as one. It's a
 rhythm of pushes and lulls: two single-digit days (Aug 29, Aug 31) sitting
@@ -114,7 +114,7 @@ non-conflicting, independently-scoped tickets got worked at once.
 **Aug 27 — 19 merges.** The architecture refactors this series' fifth post
 covers — unifying diagram-type detection, one shared box-drawing seam, one
 edge-routing seam, a bounds-checked ASCII canvas primitive — land here,
-deliberately *after* the audit and the recurring bug pattern had already
+deliberately _after_ the audit and the recurring bug pattern had already
 shown which abstractions were missing. The same day, release prep starts:
 rebranding the demo site, deciding on `package.json` authorship, moving
 hosting to GitHub Pages. Refactor and release-prep overlapping on one day
@@ -178,7 +178,7 @@ overlapping release-prep (Aug 27) → release and early accessibility (Aug 28)
 → release-and-promotion convergence (Sep 1, the second peak) → a steadier
 recursive-QA-and-bugfix tail (Sep 2 onward). The lulls are not a weakness in
 the data or a sign velocity was fake on those days — they're what a day
-without a ready-made parallel batch looks like, next to what a day *with*
+without a ready-made parallel batch looks like, next to what a day _with_
 one looks like. The difference between 9 and 64 isn't effort. It's whether
 that day had a backlog shaped so many agents could work it at once.
 
@@ -212,7 +212,7 @@ claim this project doesn't actually want to make:
   decision about where false positives are worse than false negatives. An
   agent didn't arrive at that trade-off by running more PRs faster.
 
-The mechanical, parallelizable work is genuinely most of the *count* in this
+The mechanical, parallelizable work is genuinely most of the _count_ in this
 histogram. The audit, the branding, the accessibility priorities, and the
 judge's rubric are most of what makes the count worth anything. Both halves
 are true at once, and a post that only reported the first would be the vibes
