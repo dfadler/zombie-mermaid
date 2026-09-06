@@ -131,6 +131,28 @@ describe('getCharWidth', () => {
       expect(getCharWidth('ç')).toBe(getCharWidth('c')) // U+00E7
       expect(getCharWidth('ö')).toBe(getCharWidth('o')) // U+00F6
     })
+
+    it('falls through to the default character-class logic when the NFD base is not itself a measured ASCII letter', () => {
+      // U+0439 (й, Cyrillic "short i") NFD-decomposes to U+0438 (и) + a
+      // combining breve. The base "и" differs from the char, but it is a
+      // Cyrillic letter, not one of the printable-ASCII keys in
+      // INTER_ADVANCES — so the lookup misses and getCharWidth must fall
+      // through to the coarse character-class buckets below instead of
+      // returning `undefined`-derived garbage.
+      const char = 'й'
+      const base = char.normalize('NFD')[0]
+      if (base === undefined)
+        throw new Error(
+          'unreachable: normalize() of a non-empty string always has index 0',
+        )
+      expect(base).not.toBe(char) // sanity: this char does decompose
+      expect(hasMeasuredAdvance(base)).toBe(false) // sanity: base has no exact advance
+
+      // None of the ASCII character-class buckets match a Cyrillic letter,
+      // and its code point (0x0439) is outside both the A-Z and 0-9 ranges,
+      // so it lands on the final default width.
+      expect(getCharWidth(char)).toBe(1.0)
+    })
   })
 
   describe('CJK characters (fullwidth)', () => {
