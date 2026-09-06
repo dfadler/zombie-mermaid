@@ -246,6 +246,32 @@ async function renderPostBody(
         }
         return highlightedHtml
       },
+      // marked emits a bare <table> with no wrapper, so a wide GFM table
+      // (see blog-posts/for-mermaid-ascii-users.md's comparison tables)
+      // would force the whole page to scroll horizontally. Rebuild the
+      // default table markup (via the inherited tablerow/tablecell) and
+      // wrap it in a scroll container that demo/blog.css's .table-scroll
+      // rule targets, rather than reaching for `display: block` on
+      // <table> itself, which breaks column-width layout.
+      table(token) {
+        let headerHtml = ''
+        for (const cell of token.header) {
+          headerHtml += this.tablecell(cell)
+        }
+        const headerRow = this.tablerow({ text: headerHtml })
+
+        let bodyHtml = ''
+        for (const row of token.rows) {
+          let rowHtml = ''
+          for (const cell of row) {
+            rowHtml += this.tablecell(cell)
+          }
+          bodyHtml += this.tablerow({ text: rowHtml })
+        }
+        if (bodyHtml) bodyHtml = `<tbody>${bodyHtml}</tbody>`
+
+        return `<div class="table-scroll"><table>\n<thead>\n${headerRow}</thead>\n${bodyHtml}</table>\n</div>\n`
+      },
     },
   })
   return await marked.parse(bodyMarkdown, { async: true })
