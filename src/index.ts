@@ -29,6 +29,7 @@ export type {
 export type { DiagramColors, ThemeName } from './theme.ts'
 export { fromShikiTheme, THEMES, DEFAULTS } from './theme.ts'
 export { parseMermaid } from './parser.ts'
+import { resolveCssColors } from './resolve-colors.ts'
 export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
 export type { AsciiRenderOptions } from './ascii/index.ts'
 export { createLayoutCache } from './elk-instance.ts'
@@ -215,6 +216,14 @@ export function renderMermaidSVG(
   text: string,
   options: RenderOptions = {},
 ): string {
+  const svg = renderMermaidSVGRaw(text, options)
+  return options.resolveColors
+    ? resolveCssColors(svg, buildColors(options))
+    : svg
+}
+
+/** The renderer proper — `renderMermaidSVG` minus the optional `resolveColors` post-pass. */
+function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
   // `text` itself is left untouched so `embedSource` below stamps the exact

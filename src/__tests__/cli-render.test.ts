@@ -78,6 +78,64 @@ describe('runRender – SVG to file', () => {
   })
 })
 
+describe('runRender – --resolve-colors', () => {
+  it('writes an SVG with no var()/color-mix() when resolveColors is set', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        svg: true,
+        output: outputPath,
+        resolveColors: true,
+        theme: 'tokyo-night',
+      }),
+    )
+
+    const svg = await readFile(outputPath, 'utf-8')
+    expect(svg).toContain('<svg')
+    expect(svg).not.toMatch(/\b(?:var|color-mix)\(/)
+    // tokyo-night's explicit --line wins over the color-mix fallback.
+    expect(svg).toContain('--_line:          #3d59a1')
+  })
+
+  it('keeps var()/color-mix() in the SVG when resolveColors is not set', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({ input: inputPath, svg: true, output: outputPath }),
+    )
+
+    expect(await readFile(outputPath, 'utf-8')).toMatch(/\bvar\(/)
+  })
+
+  it('resolves colors on the -o - (stdout) path too, not just file output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        svg: true,
+        output: '-',
+        resolveColors: true,
+        theme: 'tokyo-night',
+      }),
+      mockStdout,
+    )
+
+    const svg = mockStdout.output()
+    expect(svg).toMatch(/^<svg[\s\S]*<\/svg>$/)
+    expect(svg).not.toMatch(/\b(?:var|color-mix)\(/)
+    expect(svg).toContain('--_line:          #3d59a1')
+  })
+})
+
 // ============================================================================
 // Output ergonomics (#456)
 // ============================================================================

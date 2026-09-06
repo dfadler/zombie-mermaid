@@ -95,6 +95,11 @@ Options:
                        when it is the only format
   --svg                Render SVG to -o <path> (default: <input stem>.svg;
                        stdin input must give -o)
+  --resolve-colors     Replace CSS var()/color-mix() in the SVG with computed
+                       sRGB values, for rasterizers and other non-browser SVG
+                       consumers (resvg, librsvg, Inkscape) that don't
+                       evaluate them. The default output stays a live function
+                       of its CSS variables. Requires --svg.
   --html               Render a self-contained HTML pan/zoom viewer to -o
                        <path> (default: <input stem>.html). Embeds the SVG;
                        no server, no network, opens from disk. Cannot be
