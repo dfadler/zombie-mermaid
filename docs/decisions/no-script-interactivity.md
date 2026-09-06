@@ -138,3 +138,54 @@ as the supported path (see `docs/diagrams.md`); the node's existing
 The decision itself is unchanged. Tier 3 is still parsed and exposed as
 data, and still executed by nobody but a host that chooses to. Removing the
 attribute only removed a second, worse copy of that data from the markup.
+
+## Amendment (2026-09-06)
+
+[#236](https://github.com/dfadler/zombie-mermaid/issues/236) asked whether
+an opt-in, clearly-separate client-side runtime could unlock tier 3 (`click
+... call fn()` execution, live diagram updates) for consumers who
+explicitly want it, without touching the zero-script guarantee for
+everyone else. Evaluated against the codebase as it stands today:
+
+- **"Never activates unless explicitly imported" is achievable in
+  principle** — a separate package or entry point that the default
+  `zombie-mermaid` import never touches would satisfy this trivially, the
+  same way the CLI's `--html` viewer (`src/cli/html-viewer-client.js`, see
+  Consequences above) is already a separate artifact the core render path
+  never produces on its own.
+- **"Doesn't compromise the static-output path" is also achievable** for
+  the same reason — an opt-in runtime that never modifies what
+  `renderMermaidSVG` etc. emit leaves the static path exactly as inlinable
+  as it is now.
+- **The maintenance-cost question is where this stops being worth
+  building.** A runtime's only two candidate features are (a) dispatching
+  `interactions.callback` bindings to host-supplied handlers, and (b)
+  re-rendering on diagram-source changes. (b) needs nothing new: it is
+  just calling `renderMermaidSVG` again, which any host can already do
+  today with no library change. (a) is already fully solved by the
+  documented pattern in `docs/diagrams.md`'s "Interactions" section — a
+  ~10-line loop over `parseMermaid(source).interactions` keyed by
+  `data-id` — and a runtime wrapping that loop would only be sugar over
+  code a host can already copy-paste; it would not unlock a capability
+  that doesn't exist today. The one thing that _would_ be a new
+  capability — evaluating the `callback` expression text as code
+  (`new Function(callback)()` or similar) instead of mapping it to a
+  host-supplied handler — is not made safe by opt-in packaging. The risk
+  tier 3's design explicitly calls out above ("only the host knows
+  whether its diagram source is trusted") is a property of the diagram
+  *source*, not of how the runtime is distributed — an opt-in package
+  executing untrusted diagram text is exactly as unsafe as the default
+  import doing it. So the only genuinely new capability a runtime package
+  could add is one this ADR already forecloses for a different,
+  non-packaging reason.
+
+**Recommendation: stay a placeholder.** The existing
+`interactions`-map-plus-host-binding approach, already shipped and
+documented, serves every use case identified so far, including the ones
+#236 raised. This issue should be revisited only if a concrete consumer
+shows up with a use case the map-plus-binding pattern genuinely can't
+serve — not "the host has to write a small binding loop themselves,"
+which is by design (see tier 3's rationale above), but something that
+loop structurally cannot express. No such case has surfaced. This
+amendment does not close #236; it records why no runtime has been built
+in response to it.
