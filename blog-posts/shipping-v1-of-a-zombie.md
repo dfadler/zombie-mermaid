@@ -9,8 +9,7 @@ Unicode fix pattern, and a coverage backlog. None of that makes a package
 installable. What was still true that morning: the demo site deployed to a
 Cloudflare Pages project named `craft-agents-mermaid`, `package.json` listed
 `Craft Docs` as the author, the live demo still said "Beautiful Mermaid by
-Craft" in the header, and `registry.npmjs.org/zombie-mermaid` returned a
-404. Fixing rendering bugs doesn't touch any of that. This post is about the
+Craft" in the header, and `registry.npmjs.org/zombie-mermaid` returned a 404. Fixing rendering bugs doesn't touch any of that. This post is about the
 nine issues that did, filed and closed inside a single day, and what they
 actually decided rather than what they proposed.
 
