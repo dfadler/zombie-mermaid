@@ -47,6 +47,17 @@ shallow ones scattered across every subsystem.
 
 ## What was actually broken
 
+Four of the ten below carry a before/after pair. Every one of those images
+is real output, not an illustration: each "before" comes from checking out
+the tree at the fix commit's parent (`git archive <fixCommit>^ src`) and
+running the same Mermaid source through it that the "after" gets run
+through on current `main`. The SVG pairs are the renderer's own
+`renderMermaidSVG` output, embedded as SVG. The ASCII pairs are real
+terminal captures — `asciinema` recording an actual PTY, rasterized by
+`agg` — not a browser's HTML approximation of a terminal, which is a
+distinction this project has already been bitten by. The exact source for
+each pair is printed above it, so you can re-run any of them yourself.
+
 **SVG output lied about direction.** [#54](https://github.com/dfadler/zombie-mermaid/issues/54)
 found that every `marker-start` arrowhead was double-reversed, so a
 bidirectional edge (`<-->`) rendered with only its end arrowhead, and a
@@ -65,6 +76,26 @@ text painted in the theme's foreground color — meaning a light pastel fill
 under a dark theme (`fg: '#FAFAFA'`) rendered white text on a light-red
 background. The renderer knew the node's custom color. It just never
 asked whether that color needed light or dark text on top of it.
+
+```mermaid
+graph LR
+  classDef external fill:#FF6B6B
+  classDef api fill:#90EE90
+  A[External User]
+  B[API Gateway]
+  A --> B
+  class A external
+  class B api
+```
+
+| Before ([`566b195`](https://github.com/dfadler/zombie-mermaid/commit/566b1955cb06a9e576285ced31ce92382bb719aa)^)                                 | After (current `main`)                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Dark-mode SVG render with white label text on light pastel node fills, barely legible](../bug-audit-screenshots/55-dark-mode-label-before.svg) | ![The same SVG render with black label text on the same pastel fills, clearly legible](../bug-audit-screenshots/55-dark-mode-label-after.svg) |
+
+_Before/after `renderMermaidSVG(source, { bg: '#18181B', fg: '#FAFAFA' })`.
+Same fills, same labels — the only thing that changes is the text color,
+which the fix now derives from the fill's own luminance instead of the
+ambient theme foreground._
 
 **SVG output silently dropped styling hooks.** [#56](https://github.com/dfadler/zombie-mermaid/issues/56)
 found that `:::className` shorthand correctly resolved `classDef` fill and
@@ -101,6 +132,20 @@ inside a quoted label corrupted the label text. Neither bug depended on
 the other; they'd just never been noticed because most hand-written
 Mermaid puts spaces around arrows.
 
+```mermaid
+flowchart LR
+  A-->B
+  B-->C
+```
+
+| Before ([`37264a5`](https://github.com/dfadler/zombie-mermaid/commit/37264a5)^)                                                                       | After (current `main`)                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| ![SVG render showing two disconnected boxes labelled A-- and B--, with no arrows between them](../bug-audit-screenshots/61-no-space-arrow-before.svg) | ![SVG render showing three boxes A, B and C connected by two arrows](../bug-audit-screenshots/61-no-space-arrow-after.svg) |
+
+_Two boxes named after the arrow that got eaten, and zero edges — from a
+three-node, two-edge diagram. No error, no warning; the render just
+quietly disagreed with the source._
+
 **The ASCII layout engine crashed outright.**
 [#64](https://github.com/dfadler/zombie-mermaid/issues/64) found that
 `src/ascii/grid.ts` and its pathfinding and edge-bundling helpers threw a
@@ -118,12 +163,43 @@ rendered only the source box. `A --o B` printed `A` and silently dropped
 suggest anything was missing. Every other edge variant (`-->`, `---`,
 `==>`, `-.->` , labeled edges) rendered both ends correctly.
 
+```mermaid
+flowchart LR
+  A --o B
+  B --x C
+```
+
+| Before ([`77b5e3d`](https://github.com/dfadler/zombie-mermaid/commit/77b5e3d)^)                                                                                        | After (current `main`)                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Real terminal capture showing only the A and B boxes stacked with no edges between them, C absent entirely](../fork-fixes-screenshots/circle-cross-edges-before.png) | ![Real terminal capture showing A, B and C boxes connected left to right by two edges](../fork-fixes-screenshots/circle-cross-edges-after.png) |
+
+_Real PTY captures, reused as-is from the pair `fork-fixes.html` already
+publishes for this fix. Two edges and one whole node went missing; what
+survived was laid out as if the source had only ever named two unrelated
+boxes._
+
 **A self-arrow corrupted the whole canvas.**
 [#68](https://github.com/dfadler/zombie-mermaid/issues/68) found that a
 sequence diagram self-arrow (`A->>A: ...`) with a `<br/>` in its label
 didn't just render badly — it corrupted unrelated parts of the ASCII
 canvas, and self-arrows generally could render outside their enclosing
 `alt`/`loop`/`opt` block instead of inside it.
+
+```mermaid
+sequenceDiagram
+  participant A
+  participant B
+  A->>A: line one<br/>line two
+```
+
+| Before ([`d35d921`](https://github.com/dfadler/zombie-mermaid/commit/d35d921)^)                                                                                                                  | After (current `main`)                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Real terminal capture of a sequence diagram where the second label line starts at column zero and shoves the lifelines out of alignment](../bug-audit-screenshots/68-self-arrow-br-before.png) | ![Real terminal capture of the same sequence diagram with both label lines aligned to the right of intact lifelines](../bug-audit-screenshots/68-self-arrow-br-after.png) |
+
+_Real PTY captures. `line two` lands at column zero because the self-arrow
+label was written character-by-character at a single y-coordinate with no
+`<br/>` handling — so the newline inside it displaces everything to its
+right, including B's lifeline, which has nothing to do with the message._
 
 **Nested subgraphs ignored their own direction.**
 [#73](https://github.com/dfadler/zombie-mermaid/issues/73) found that
@@ -163,7 +239,9 @@ Both things were true, for different bugs, for legible reasons.
 None of this is an argument by adjective. It's not "this fork is well
 maintained" or "we care about quality." It's ten dated, numbered,
 independently reproducible defects, each with a file and line number, each
-closed by a commit that a skeptical reader can go read right now. That's
+closed by a commit that a skeptical reader can go read right now — and
+four of them shown above in the renderer's own output on both sides of
+that commit. That's
 what de-risking a bet on an abandoned library actually looks like in
 practice: not a promise, a list. If the list is short and vague, the fork
 probably isn't being tested hard. If it's this specific — arrowhead
