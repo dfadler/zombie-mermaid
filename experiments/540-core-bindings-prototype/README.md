@@ -25,7 +25,7 @@ relevant:
 
 - [`docs/research/443-multilang-ascii-renderer.md`](../../docs/research/443-multilang-ascii-renderer.md)
   (research for #443): a Rust→WASM ASCII-renderer build would plausibly cost
-  more, gzipped, than the *entire* current ASCII-only bundle budget
+  more, gzipped, than the _entire_ current ASCII-only bundle budget
   (66,560 bytes), before JS glue/loader code.
 - [`docs/research/issue-495-go-rewrite-motivation.md`](../../docs/research/issue-495-go-rewrite-motivation.md)
   (research for #495): measured the real current bundle sizes (76.3 KB gzip
@@ -91,13 +91,13 @@ Expected output: all four fixtures print `MATCH`, and the script exits 0.
 
 Getting the branch/merge fixtures to match exactly required reverse-
 engineering an undocumented detail of the real renderer's box-drawing: a
-box's *exit*-side border (bottom edge for a TD flow, right edge for LR) is
+box's _exit_-side border (bottom edge for a TD flow, right edge for LR) is
 only redrawn with a `+` junction character when that node has **exactly one**
 outgoing edge in total. A true fan-out source (e.g. `branch.mmd`'s `A`, with
 two outgoing edges) keeps a plain, unbroken border — the fork happens
 entirely in the routing gap below it, never at the border itself — while
 each individual source in a fan-in (e.g. `merge.mmd`'s `A` and `B`, each with
-exactly one outgoing edge to the same target) *does* get the junction
+exactly one outgoing edge to the same target) _does_ get the junction
 character. Entry-side borders (top for TD, left for LR) are never modified
 either way, regardless of in-degree. This rule isn't written down anywhere
 in the codebase or its docs — it was found by diffing actual output byte by
@@ -112,7 +112,7 @@ would take" below.
   Node.js, Deno, a CLI. It cannot run in a browser at all, so this shape only
   ever covers the `zombie-mermaid/cli` / Node consumer, never the
   browser-facing `dist/index.js` / `dist/ascii.js` bundles the size research
-  above is about. If multi-language support is ever wanted for the *browser*
+  above is about. If multi-language support is ever wanted for the _browser_
   target specifically, WASM (or an equivalent) is unavoidable, and the
   bundle-size/sync-rendering objections from #443/#495 still apply there,
   undiminished by anything in this prototype.
@@ -125,9 +125,9 @@ would take" below.
   with a persistent stdin/stdout (or socket) protocol, not spawn-per-call.
   That's a meaningfully bigger binding than the one built here.
 - **Not evidence this generalizes past these four fixtures.** The Go core
-  handles, and *only* handles: a `graph`/`flowchart` header with `TD` or
+  handles, and _only_ handles: a `graph`/`flowchart` header with `TD` or
   `LR`; bare-identifier or `ID[Label]` edge chains (`A --> B --> C`); ranks
-  computed as longest-path-from-roots; at most one fan-out group *or* one
+  computed as longest-path-from-roots; at most one fan-out group _or_ one
   fan-in group per rank-transition gap (not both at once, not a genuine
   many-to-many crossing); and only simple 1-to-1 edges in the `LR` family
   (no fan-out/fan-in there at all). It has no support for subgraphs, node
@@ -158,7 +158,7 @@ The built binary itself: 2.25 MB unstripped, 1.76 MB stripped
 matches the #495 research's finding that Go/TinyGo binaries carry a
 non-trivial baseline size independent of program complexity — irrelevant to
 a subprocess-only distribution (nothing here ships to a browser), but a real
-cost for *distributing* a native binary at all (cross-compiling for
+cost for _distributing_ a native binary at all (cross-compiling for
 macOS/Linux/Windows × x64/arm64, or requiring a Go toolchain on the
 consumer's machine, is real added packaging complexity a pure-TS npm
 package doesn't have today).
@@ -168,14 +168,14 @@ package doesn't have today).
 Scoped to "flowchart-only ASCII, faithfully, Node/CLI-only" — not the full
 six-diagram-type, SVG+ASCII surface:
 
-| Piece | Real source | Estimate | Why |
-|---|---|---|---|
-| Parser (flowchart subset) | `src/parser.ts` (1,142 lines, all 6 diagram types) | 1–2 weeks | Porting just the flowchart grammar faithfully — shapes, subgraphs, `click`, styles, comments, error recovery other tests rely on. |
-| Grid layout + A* pathfinding + edge bundling | `src/ascii/converter.ts`, `grid.ts`, `pathfinder.ts`, `grid-occupancy.ts`, `edge-routing.ts`, `edge-bundling.ts`, `draw-bundles.ts`, `draw-arrows.ts`, `draw-boxes.ts`, `draw-lines.ts`, `draw-subgraphs.ts`, `draw.ts` | 3–6 weeks | The bulk of the real complexity (per #443's research: ~15,300 lines across `src/ascii/**`). This prototype's border-junction discovery above is a small taste of the behavioral archaeology a faithful port needs to do exhaustively, not just for three hand-picked cases. |
-| Unicode display width | `src/ascii/display-width.ts` + CJK/combining-mark test fixtures | 3–5 days | #443's research already flags this as the one porting cost its "friendly subset" analysis doesn't reduce — a Go/Rust port needs its own width table matching JS's UTF-16-code-unit semantics exactly. |
-| Regex (5 files) | `draw.ts`, `hyperlinks.ts`, `canvas.ts`, `draw-boxes.ts`, `ansi.ts` | ~0.5 day | Per #443's research, all are simple static character-class tests — trivially rewritable. |
-| Production-viable binding | n/a (this PoC's `binding/render.ts` is spawn-per-call, ~91 ms/call — too slow) | 1–2 weeks | A persistent worker process with a real IPC protocol (or a native addon — Node N-API/napi-rs for Rust, cgo for Go), still Node/CLI-only; the browser target needs a wholly separate WASM effort already discouraged by #443/#495. |
-| Shared conformance corpus (#443's Q5) | Extract `src/__tests__/ascii-*.test.ts` fixtures into language-neutral files | 2–3 days upfront, ongoing after | The only piece of #443 recommended as worth doing regardless of which direction wins — do it alongside a real port, not before. |
+| Piece                                        | Real source                                                                                                                                                                                                             | Estimate                        | Why                                                                                                                                                                                                                                                                         |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parser (flowchart subset)                    | `src/parser.ts` (1,142 lines, all 6 diagram types)                                                                                                                                                                      | 1–2 weeks                       | Porting just the flowchart grammar faithfully — shapes, subgraphs, `click`, styles, comments, error recovery other tests rely on.                                                                                                                                           |
+| Grid layout + A* pathfinding + edge bundling | `src/ascii/converter.ts`, `grid.ts`, `pathfinder.ts`, `grid-occupancy.ts`, `edge-routing.ts`, `edge-bundling.ts`, `draw-bundles.ts`, `draw-arrows.ts`, `draw-boxes.ts`, `draw-lines.ts`, `draw-subgraphs.ts`, `draw.ts` | 3–6 weeks                       | The bulk of the real complexity (per #443's research: ~15,300 lines across `src/ascii/**`). This prototype's border-junction discovery above is a small taste of the behavioral archaeology a faithful port needs to do exhaustively, not just for three hand-picked cases. |
+| Unicode display width                        | `src/ascii/display-width.ts` + CJK/combining-mark test fixtures                                                                                                                                                         | 3–5 days                        | #443's research already flags this as the one porting cost its "friendly subset" analysis doesn't reduce — a Go/Rust port needs its own width table matching JS's UTF-16-code-unit semantics exactly.                                                                       |
+| Regex (5 files)                              | `draw.ts`, `hyperlinks.ts`, `canvas.ts`, `draw-boxes.ts`, `ansi.ts`                                                                                                                                                     | ~0.5 day                        | Per #443's research, all are simple static character-class tests — trivially rewritable.                                                                                                                                                                                    |
+| Production-viable binding                    | n/a (this PoC's `binding/render.ts` is spawn-per-call, ~91 ms/call — too slow)                                                                                                                                          | 1–2 weeks                       | A persistent worker process with a real IPC protocol (or a native addon — Node N-API/napi-rs for Rust, cgo for Go), still Node/CLI-only; the browser target needs a wholly separate WASM effort already discouraged by #443/#495.                                           |
+| Shared conformance corpus (#443's Q5)        | Extract `src/__tests__/ascii-*.test.ts` fixtures into language-neutral files                                                                                                                                            | 2–3 days upfront, ongoing after | The only piece of #443 recommended as worth doing regardless of which direction wins — do it alongside a real port, not before.                                                                                                                                             |
 
 **Rough total: 6–10 person-weeks** for flowchart-only, Node/CLI-only, before
 touching the other five diagram types or the SVG renderer. This doesn't

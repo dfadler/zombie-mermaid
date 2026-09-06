@@ -46,5 +46,7 @@ for (const file of fixtureFiles) {
   }
 }
 
-console.log(`\n${allMatch ? 'All fixtures match byte-for-byte.' : 'Some fixtures differ — see above.'}`)
+console.log(
+  `\n${allMatch ? 'All fixtures match byte-for-byte.' : 'Some fixtures differ — see above.'}`,
+)
 process.exit(allMatch ? 0 : 1)

@@ -47,9 +47,7 @@ export function renderViaCore(mermaidSource: string): CoreRenderResult {
   }
 
   if (result.status !== 0) {
-    throw new Error(
-      `core binary exited ${result.status}: ${result.stderr}`,
-    )
+    throw new Error(`core binary exited ${result.status}: ${result.stderr}`)
   }
 
   return {
