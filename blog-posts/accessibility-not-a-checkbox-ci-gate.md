@@ -113,7 +113,7 @@ type always gets a `role`-correct, nameable root `<svg>`." And the
 conformance statement is equally clear about the boundary of that claim.
 The demo site's keyboard and focus behavior — the skip link, the dialog
 semantics, the disclosure widget's `aria-expanded` — is documented as
-*implemented*, each one landed as its own targeted PR, each one read
+_implemented_, each one landed as its own targeted PR, each one read
 directly from current source as part of writing the statement. But it is
 explicitly marked as not automated: no `axe-core` or `pa11y` run in CI
 against the demo site, no automated keyboard-navigation test. The document
