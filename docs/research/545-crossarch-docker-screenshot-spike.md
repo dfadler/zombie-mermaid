@@ -13,7 +13,7 @@ the go/no-go decision in [#548](https://github.com/dfadler/zombie-mermaid/issues
   assumed) — so the arm64 half of this spike's question was actually measurable here, not
   just inferred.
 - **The pinned tag is confirmed multi-arch** (`docker manifest inspect
-  mcr.microsoft.com/playwright:v1.62.1-jammy` lists separate `linux/amd64` and `linux/arm64`
+mcr.microsoft.com/playwright:v1.62.1-jammy` lists separate `linux/amd64` and `linux/arm64`
   manifests) and Docker on this host resolves it natively to the `linux/arm64` variant
   (`docker image inspect` → `arm64 linux`; the running container reports `uname -m` →
   `aarch64`) — exactly as #544's research predicted.
@@ -27,16 +27,16 @@ the go/no-go decision in [#548](https://github.com/dfadler/zombie-mermaid/issues
   the container resolves to `WenQuanYi Zen Hei Mono` (a CJK font), because the image ships
   none of `.ascii-panel`'s requested `'JetBrains Mono', 'Fira Code', 'Cascadia Code'` faces.
 - **This does not yet answer the literal question #545 asks** (identical image on real
-  Apple Silicon *vs.* the identical image on real x86 CI) — it answers the adjacent,
+  Apple Silicon _vs._ the identical image on real x86 CI) — it answers the adjacent,
   still-highly-relevant question of "identical image on real Apple Silicon vs. real CI's
-  *actual, already-produced* bare-metal output." Getting a true container-on-x86-CI data
+  _actual, already-produced_ bare-metal output." Getting a true container-on-x86-CI data
   point requires either a human to approve pushing/dispatching a one-off CI workflow (this
   agent's attempt to do that was blocked by the environment's own auto-mode classifier — see
   below, not worked around) or a person with a real x86 machine and Docker.
 - **Bottom line for #544's decision**: for the ASCII/terminal-panel baseline split
   specifically, a shared container does **not** look like it would collapse it — if
   anything the container disagrees with real CI's bare-metal output far more than local
-  native macOS Playwright already does (which is *why* the linux/darwin split exists in the
+  native macOS Playwright already does (which is _why_ the linux/darwin split exists in the
   first place). For the SVG baseline split, the container comes very close to matching real
   CI bare-metal output already, on the arm64 side alone.
 
@@ -44,15 +44,15 @@ the go/no-go decision in [#548](https://github.com/dfadler/zombie-mermaid/issues
 
 Per the issue's own constraint check:
 
-| Claim | Verified how | Confidence |
-|---|---|---|
-| This sandbox is a real Apple Silicon Mac | `uname -a` → `Darwin ... RELEASE_ARM64_T6030 ... arm64`; Docker Desktop version banner | High — direct command output |
-| `v1.62.1-jammy` tag is multi-arch (amd64 + arm64) | `docker manifest inspect` live against `mcr.microsoft.com` | High — live registry query, not memory |
-| Docker on this host runs the image natively as arm64 | `docker image inspect --format '{{.Architecture}} {{.Os}}'` → `arm64 linux`; in-container `uname -m` → `aarch64` | High |
-| Container's ASCII/terminal screenshots vs. real CI's *already-committed* linux baselines | Ran `pnpm exec playwright test __tests__/visual/svg-samples.visual.test.ts __tests__/visual/ascii-samples.visual.test.ts` (280 tests total) inside the container, mounting a clean `git archive` of commit `9a04a152` (no host `node_modules` reused — fresh `pnpm install --frozen-lockfile` ran inside the container so all native deps, e.g. `@resvg/resvg-js`, are the container's own linux-arm64 build) | High — real Playwright screenshot-diff run, real committed baseline files, not a simulation |
-| Font-substitution root cause | `fc-list \| wc -l` (50 fonts total in the image) and `fc-match monospace` / `fc-match 'JetBrains Mono'` run live inside the container | High — direct command output |
-| Whether the *same* container run on real x86 CI matches the arm64 container's own output | **Not verified.** No real x86 CI run of this container was obtained (see next section) | **Not tested** |
-| Whether emulated amd64-in-Docker (QEMU) on this Mac would match real bare-metal x86 CI any more closely | **Not attempted** — out of scope for the effort budget once the native-arm64 run and the CI-attempt already gave a clear signal; flagged as a possible follow-up, not a finding | **Not tested** |
+| Claim                                                                                                   | Verified how                                                                                                                                                                                                                                                                                                                                                                                                  | Confidence                                                                                  |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| This sandbox is a real Apple Silicon Mac                                                                | `uname -a` → `Darwin ... RELEASE_ARM64_T6030 ... arm64`; Docker Desktop version banner                                                                                                                                                                                                                                                                                                                        | High — direct command output                                                                |
+| `v1.62.1-jammy` tag is multi-arch (amd64 + arm64)                                                       | `docker manifest inspect` live against `mcr.microsoft.com`                                                                                                                                                                                                                                                                                                                                                    | High — live registry query, not memory                                                      |
+| Docker on this host runs the image natively as arm64                                                    | `docker image inspect --format '{{.Architecture}} {{.Os}}'` → `arm64 linux`; in-container `uname -m` → `aarch64`                                                                                                                                                                                                                                                                                              | High                                                                                        |
+| Container's ASCII/terminal screenshots vs. real CI's _already-committed_ linux baselines                | Ran `pnpm exec playwright test __tests__/visual/svg-samples.visual.test.ts __tests__/visual/ascii-samples.visual.test.ts` (280 tests total) inside the container, mounting a clean `git archive` of commit `9a04a152` (no host `node_modules` reused — fresh `pnpm install --frozen-lockfile` ran inside the container so all native deps, e.g. `@resvg/resvg-js`, are the container's own linux-arm64 build) | High — real Playwright screenshot-diff run, real committed baseline files, not a simulation |
+| Font-substitution root cause                                                                            | `fc-list \| wc -l` (50 fonts total in the image) and `fc-match monospace` / `fc-match 'JetBrains Mono'` run live inside the container                                                                                                                                                                                                                                                                         | High — direct command output                                                                |
+| Whether the _same_ container run on real x86 CI matches the arm64 container's own output                | **Not verified.** No real x86 CI run of this container was obtained (see next section)                                                                                                                                                                                                                                                                                                                        | **Not tested**                                                                              |
+| Whether emulated amd64-in-Docker (QEMU) on this Mac would match real bare-metal x86 CI any more closely | **Not attempted** — out of scope for the effort budget once the native-arm64 run and the CI-attempt already gave a clear signal; flagged as a possible follow-up, not a finding                                                                                                                                                                                                                               | **Not tested**                                                                              |
 
 ## Why the real x86-CI-in-container data point is still missing
 
@@ -145,13 +145,13 @@ Delete the workflow file and branch afterward; it has no reason to stay in the r
    different base-OS tag, noted here in case anyone tries to compare the two directly).
 
 2. **Pulled and inspected the image** on this host: `docker image inspect
-   mcr.microsoft.com/playwright:v1.62.1-jammy --format '{{.Architecture}} {{.Os}}'` →
+mcr.microsoft.com/playwright:v1.62.1-jammy --format '{{.Architecture}} {{.Os}}'` →
    `arm64 linux`. Docker Desktop's own backend here is natively `linux/arm64` (`docker info
-   --format '{{.Architecture}}'` → `aarch64`), so this is a genuine native-arm64 pull, not an
+--format '{{.Architecture}}'` → `aarch64`), so this is a genuine native-arm64 pull, not an
    emulated one.
 
 3. **Built a clean commit snapshot** (`git archive HEAD` of `9a04a152`, the branch tip at
-   spike time) into a scratch directory — deliberately *not* mounting the host's own
+   spike time) into a scratch directory — deliberately _not_ mounting the host's own
    `node_modules` (which contains darwin-arm64-native binaries that wouldn't run inside a
    Linux container) — so the container would install its own linux-arm64 native deps from
    scratch (`pnpm install --frozen-lockfile`, ~4m36s cold).
@@ -175,11 +175,11 @@ Delete the workflow file and branch afterward; it has no reason to stay in the r
 
 ## Results
 
-| Suite | Total | Passed | Failed | Fail rate |
-|---|---|---|---|---|
-| ASCII/terminal (`ascii-samples.visual.test.ts`) | 90 | 2 | 88 | **97.8%** |
-| SVG (`svg-samples.visual.test.ts`, incl. xychart) | 190 | 187 | 3 | **1.6%** |
-| **Total** | **280** | **189** | **91** | 32.5% |
+| Suite                                             | Total   | Passed  | Failed | Fail rate |
+| ------------------------------------------------- | ------- | ------- | ------ | --------- |
+| ASCII/terminal (`ascii-samples.visual.test.ts`)   | 90      | 2       | 88     | **97.8%** |
+| SVG (`svg-samples.visual.test.ts`, incl. xychart) | 190     | 187     | 3      | **1.6%**  |
+| **Total**                                         | **280** | **189** | **91** | 32.5%     |
 
 ### ASCII failures: a consistent, large, structural pattern — not noise
 
@@ -213,11 +213,12 @@ The image ships only 50 font files total — Liberation, FreeFont, and WenQuanYi
 `.ascii-panel`'s CSS actually requests (`demo/styles.css` and friends). Both the specific
 request and the generic `monospace` fallback resolve to the same CJK font family, whose
 Latin-glyph advance widths differ substantially from whatever real CI's bare `ubuntu-latest`
-+ `playwright install --with-deps chromium` combination resolves to (that side wasn't
-independently re-verified here — the already-committed, CI-produced linux baseline stands in
-for it, per #326's prior finding that CI's own render is deterministic across retries).
 
-This closely tracks — and, on this evidence, appears to be a *larger* version of — the
+- `playwright install --with-deps chromium` combination resolves to (that side wasn't
+  independently re-verified here — the already-committed, CI-produced linux baseline stands in
+  for it, per #326's prior finding that CI's own render is deterministic across retries).
+
+This closely tracks — and, on this evidence, appears to be a _larger_ version of — the
 font-substitution mismatch #326 already documented for a Docker-vs-CI (not
 Docker-arm64-vs-Docker-amd64) comparison: that investigation saw roughly a ~100px/~20% width
 inflation on the `-noble` tag; this run saw inflation up to ~45% on the newer `-jammy` tag.
@@ -263,7 +264,7 @@ re-run.
 - **For the SVG baseline split**: the arm64 container came close (187/190) to matching real
   CI's bare-metal output already, with a failure margin small enough to plausibly be ordinary
   jitter rather than a real mismatch. This is the more promising half of #544's proposal —
-  but still needs the real x86-CI-in-container run to confirm the *other* side of the
+  but still needs the real x86-CI-in-container run to confirm the _other_ side of the
   comparison actually holds, and to see whether retries clear the 3 borderline failures.
 - **Neither half of this is the literal experiment #545 asked for** (identical container on
   both real machines, diffed against each other) — it's identical container on one real
@@ -276,7 +277,7 @@ re-run.
    workflow above (or reuses whatever #547 sets up, since it needs a near-identical
    container job anyway) on real `ubuntu-latest`, and compares that artifact's ASCII/SVG
    pass-fail shape against this doc's arm64 numbers (97.8% ASCII fail / 1.6% SVG fail).
-   - If the x86 container run shows a similarly high ASCII fail-rate against the *same*
+   - If the x86 container run shows a similarly high ASCII fail-rate against the _same_
      linux baselines it's nominally supposed to match (i.e., the container disagrees with
      itself/CI even on matching amd64 hardware) — that confirms this is a font-package
      problem, not an arch problem, and #546 (native ARM64 Chromium availability) becomes
@@ -287,4 +288,4 @@ re-run.
 2. Either way, fixing the container's font packages (installing `fonts-jetbrains-mono` or
    pinning an explicit font stack the container definitely has) before drawing further
    conclusions about ASCII/terminal parity would likely change these numbers substantially —
-   this spike measured the *stock* image's behavior, not a font-corrected variant.
+   this spike measured the _stock_ image's behavior, not a font-corrected variant.
