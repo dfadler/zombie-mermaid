@@ -63,7 +63,9 @@ export function EditorPage({ css, bodyHtml }: EditorPageProps) {
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
         <link rel="apple-touch-icon" href="apple-touch-icon.png" />
       </head>
-      <body dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+      <body
+        dangerouslySetInnerHTML={{ __html: bodyHtml }} // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- bodyHtml is build-time-only static content assembled by editor.ts from files under version control (editor/html/*.html fragments, editor/js/*.js modules), never live/runtime user input; __tests__/editor-equivalence.test.ts proves it's byte-identical to the pre-React generator's own output
+      />
     </html>
   )
 }
