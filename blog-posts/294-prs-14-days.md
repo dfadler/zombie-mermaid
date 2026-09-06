@@ -70,6 +70,21 @@ floor, not a total.
 | Sep 5       |                                            22 |
 | Sep 6       | 14, and still climbing at the time of writing |
 
+![Bar chart of merged pull requests per day from 2026-08-24 to 2026-09-06, peaking at 64 on Aug 26, with single-digit lulls on Aug 29 and Aug 31 and a second peak of 30 on Sep 1](../throughput-capstone-screenshots/merge-histogram.svg)
+
+That chart is the table above, rendered by this repository's own
+`renderMermaidSVG` from an `xychart-beta` source — the same code path the
+other nine posts have been fixing bugs in for two weeks, pointed at this
+post's own evidence:
+
+```mermaid
+xychart-beta
+    title "Merged PRs per day, 2026-08-24 to 2026-09-06"
+    x-axis [Aug24, Aug25, Aug26, Aug27, Aug28, Aug29, Aug30, Aug31, Sep1, Sep2, Sep3, Sep4, Sep5, Sep6]
+    y-axis "PRs merged" 0 --> 70
+    bar [5, 28, 64, 19, 23, 9, 21, 9, 30, 15, 18, 17, 22, 14]
+```
+
 That is not a clean staircase, and it shouldn't be presented as one. It's a
 rhythm of pushes and lulls: two single-digit days (Aug 29, Aug 31) sitting
 right next to two of the four highest days (Aug 26 at 64, Sep 1 at 30). The
