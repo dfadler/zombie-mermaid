@@ -33,7 +33,7 @@ import { gridKey } from './types.ts'
  * can ever touch the underlying `Set`.
  */
 export class Grid {
-  #cells = new Set<string>()
+  readonly #cells = new Set<string>()
 
   /** Whether a single cell is already reserved. */
   has(key: string): boolean {

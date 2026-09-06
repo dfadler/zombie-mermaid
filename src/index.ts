@@ -215,14 +215,12 @@ export function renderMermaidSVG(
   text: string,
   options: RenderOptions = {},
 ): string {
-  // Captured before decodeXML() below so `embedSource` stamps the exact
-  // string the caller passed in, not the entity-decoded version used
-  // internally for parsing.
-  const originalText = text
-
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
-  text = decodeXML(text)
+  // `text` itself is left untouched so `embedSource` below stamps the exact
+  // string the caller passed in, not this entity-decoded copy used
+  // internally for parsing.
+  const decoded = decodeXML(text)
 
   const colors = buildColors(options)
   const font = options.font ?? 'Inter'
@@ -230,13 +228,13 @@ export function renderMermaidSVG(
   setMonospaceMetrics(isMonospaceFont(font))
   const transparent = options.transparent ?? false
   const fontSizes = resolveFontSizes(options.fontSizes)
-  const diagramType: DiagramType = detectDiagramType(text)
-  const embedSource = options.embedSource ? originalText : undefined
+  const diagramType: DiagramType = detectDiagramType(decoded)
+  const embedSource = options.embedSource ? text : undefined
   const title = options.title
   const decorative = options.decorative
   const emit = resolveSvgEmit(options)
 
-  const lines = splitStatements(text)
+  const lines = splitStatements(decoded)
 
   switch (diagramType) {
     case 'sequence': {
@@ -307,7 +305,7 @@ export function renderMermaidSVG(
     }
     case 'flowchart':
     default: {
-      const parsed = parseMermaid(text)
+      const parsed = parseMermaid(decoded)
       // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
       // render option always wins. See src/init-directive.ts.
       const effective = parsed.initConfig
