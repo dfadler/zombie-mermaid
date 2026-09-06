@@ -27,6 +27,36 @@ from decoration. PRs #234 and #235 fixed it by giving the root `<svg>` a
 `role="img"` and, when the caller supplies one, an `aria-labelledby`
 pointing at a real `<title>` element.
 
+There's no screenshot for this one, and that's the point: a sighted reader
+sees the identical diagram before and after. The entire fix lives in
+markup nobody looks at. Here's the actual root tag `renderMermaidSVG`
+emits for the same three-node flowchart, rendered through the pre-fix tree
+(the commit before `3c3b04f`) and through current `main` — namespace and
+geometry attributes elided, everything else verbatim:
+
+```xml
+<!-- before -->
+<svg xmlns="…" viewBox="…" width="…" height="…"
+     style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+
+<!-- after — renderMermaidSVG(source) -->
+<svg xmlns="…" viewBox="…" width="…" height="…"
+     role="img"
+     style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+
+<!-- after — renderMermaidSVG(source, { title: 'Release readiness loop' }) -->
+<svg xmlns="…" viewBox="…" width="…" height="…"
+     role="img" aria-labelledby="zm-title-1"
+     style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+  <title id="zm-title-1">Release readiness loop</title>
+```
+
+The middle case is the one worth noticing. No `title` supplied means
+`role="img"` and nothing else — no fabricated "flowchart with three nodes"
+summary. That's deliberate: an unnamed image is an honest unnamed image,
+and a generated name would be worse than none, because it would look like
+someone had thought about it.
+
 [#239](https://github.com/dfadler/zombie-mermaid/issues/239), closed the
 same day, is the more interesting bug, because it's what happens when two
 correct-in-isolation fixes meet each other for the first time. `role="img"`
@@ -68,6 +98,23 @@ ring across every interactive control, replacing whatever each browser's
 default outline happened to look like.
 [#285](https://github.com/dfadler/zombie-mermaid/issues/285), closed the
 next day, fixed undersized touch targets on mobile.
+
+Two of those are worth actually looking at, because contrast numbers don't
+land the way pixels do. This is one sample card on the demo site's home
+page, rendered from `main` immediately before the description-contrast fix
+merged and again immediately after the Edit-link fix merged — the only
+difference between the two builds is `demo/styles.css`:
+
+| Before (#278, #279 open)                                                                                                                                                                                                                                              | After                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Sample card headed "Simple Flow" with grey description text below it and, at the bottom of the source panel, the word "Edit" in text so faint it is barely distinguishable from the panel background](../accessibility-screenshots/sample-card-contrast-before.png) | ![The same sample card with visibly darker description text and the Edit control redrawn as a bordered button with legible dark label text](../accessibility-screenshots/sample-card-contrast-after.png) |
+
+The description text is the easy one to argue about — grey-on-white body
+copy looks fine to most people, which is exactly why it survived that long.
+The Edit link is not arguable. It's the entry point to the site's core
+feature and, in the "before" build, it's a ghost. Note also that #279's fix
+wasn't just "darken the text": the control was promoted to a bordered
+button, so it reads as interactive without depending on color at all.
 
 That's a lot of individually small fixes. None of them, on their own,
 would be worth a blog post. What makes them worth revisiting together is
@@ -130,16 +177,34 @@ follow-up finding on PR #316 — the same PR that shipped #283's focus-visible
 ring, filed 23 minutes after that PR was opened, while it was still under
 review and being visually verified rather than after the fact. The new
 ring applied correctly almost everywhere, but on the sample sidebar's
-plain links, `.sidebar-list li` carries `overflow: hidden` for
-text-truncation ellipsis on long titles, and the ring's `outline`
-property draws outside the link's border box — so the same `overflow`
-rule that keeps long titles tidy clipped the ring down to a two-pixel
-sliver on the left edge. Confirmed by computed-style inspection, not
-guesswork: the outline itself was correctly `rgb(189, 147, 249) solid 2px`
-under Dracula; its immediate `<li>` ancestor was what clipped it. A
-keyboard user tabbing through the sample sidebar got little to no visible
-focus indication — the exact gap #283 had just closed everywhere else,
-relocated to one specific control.
+plain links, `.sidebar-list li` carried `overflow: hidden` (plus a
+`text-overflow: ellipsis` that had never done anything, because no
+`white-space: nowrap` was ever paired with it), and the ring's `outline`
+property draws outside the link's border box. So a rule that was truncating
+exactly nothing clipped the ring down to a single vertical tick. Confirmed
+by computed-style inspection, not guesswork: the outline itself was
+correctly `2px solid` in the theme accent; its immediate `<li>` ancestor
+was what clipped it. A keyboard user tabbing through the sample sidebar got
+little to no visible focus indication — the exact gap #283 had just closed
+everywhere else, relocated to one specific control.
+
+This one is worth a picture, because "almost invisible" is a claim a
+screenshot can settle. Both frames are the real built demo site, tabbed
+into with actual `Tab` keypresses, built from the fix commit and from its
+parent:
+
+| Before (#325 open)                                                                                                                                                                                                                          | After                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ![Sidebar sample list with the "Simple Flow" link keyboard-focused, showing only a single two-pixel blue vertical tick at the end of the link text instead of a ring around it](../accessibility-screenshots/sidebar-focus-ring-before.png) | ![The same keyboard-focused sidebar link showing a complete blue rectangular focus ring drawn around all four sides of the link text](../accessibility-screenshots/sidebar-focus-ring-after.png) |
+
+Worth flagging, since this post is otherwise about being precise: #325's
+own write-up says the surviving sliver was on the _left_ edge. Rendering
+both builds says otherwise — the `<li>` starts at the link's left edge and
+runs well past its right, so the left and top strokes are the ones that get
+clipped away and the right stroke is the one that survives. The bug was
+real and the diagnosis of the cause was right; the direction in the issue
+text was not, and nobody caught it because prose describing a screenshot is
+not a screenshot.
 
 The fix, PR #377, merged 2026-09-01 at 23:30 UTC — about eight hours
 after PR #373 merged the conformance statement and CI check at 15:44 that
