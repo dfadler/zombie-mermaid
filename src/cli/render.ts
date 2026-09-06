@@ -16,6 +16,7 @@ import type { RenderOptions } from '../types.ts'
 import { THEMES } from '../theme.ts'
 import type { DiagramColors } from '../theme.ts'
 import { buildHtmlViewer } from './html-viewer.ts'
+import { renderPng } from './png.ts'
 import type { RenderArgs } from './parse-args.ts'
 import { STDOUT_OUTPUT } from './parse-args.ts'
 import { parse as parsePath } from 'node:path'
@@ -25,7 +26,7 @@ import { parse as parsePath } from 'node:path'
 // ============================================================================
 
 export interface Writable {
-  write: (s: string) => void
+  write: (s: string | Uint8Array) => void
 }
 
 /** Fallback target width when `--max-width auto` can't detect a real terminal column count. */
@@ -134,25 +135,29 @@ export async function runRender(
   }
 
   // Where each format goes (see RenderArgs.output). ASCII prints to stdout
-  // unless it is the only format and -o names a file; SVG/HTML go to -o,
-  // which may be stdout (`-`). parse-args guarantees --svg and --html are
-  // never both set, and that ASCII never shares stdout with either.
+  // unless it is the only format and -o names a file; SVG/HTML/PNG go to -o,
+  // which may be stdout (`-`). parse-args guarantees --svg/--html/--png are
+  // never set more than one at a time, and that ASCII never shares stdout
+  // with any of them.
   const svgToStdout = args.svg && args.output === STDOUT_OUTPUT
   const htmlToStdout = args.html && args.output === STDOUT_OUTPUT
+  const pngToStdout = args.png && args.output === STDOUT_OUTPUT
   const asciiFile =
     args.ascii &&
     !args.svg &&
     !args.html &&
+    !args.png &&
     args.output !== undefined &&
     args.output !== STDOUT_OUTPUT
       ? args.output
       : undefined
   const svgFile = args.svg && !svgToStdout ? args.output : undefined
   const htmlFile = args.html && !htmlToStdout ? args.output : undefined
+  const pngFile = args.png && !pngToStdout ? args.output : undefined
 
   // Refuse to clobber before doing any work, so a refused run leaves
   // stdout untouched too (no half-printed ASCII ahead of the error).
-  for (const path of [asciiFile, svgFile, htmlFile]) {
+  for (const path of [asciiFile, svgFile, htmlFile, pngFile]) {
     if (path !== undefined) await assertNotExisting(path, args.force)
   }
 
@@ -276,6 +281,22 @@ export async function runRender(
       await writeOutputFile(htmlFile, html, args.force)
     }
   }
+
+  if (args.png) {
+    // Rasterizers can't evaluate CSS var()/color-mix(), so PNG always
+    // resolves colors first — the equivalent of always passing
+    // --resolve-colors — rather than requiring the user to remember it
+    // (see issue #456's item 1, which this consumes automatically).
+    const svgOpts: RenderOptions = { ...themeColors, resolveColors: true }
+    if (args.direction !== undefined) svgOpts.direction = args.direction
+    const svg = renderMermaidSVG(text, svgOpts)
+    const png = await renderPng(svg)
+    if (pngToStdout) {
+      out.write(png)
+    } else if (pngFile !== undefined) {
+      await writeOutputFile(pngFile, png, args.force)
+    }
+  }
 }
 
 // ============================================================================
@@ -308,11 +329,13 @@ async function assertNotExisting(path: string, force: boolean): Promise<void> {
  */
 async function writeOutputFile(
   path: string,
-  content: string,
+  content: string | Uint8Array,
   force: boolean,
 ): Promise<void> {
   try {
     await writeFile(path, content, {
+      // Ignored by Node when `content` is binary (PNG) — only applies to
+      // the string (SVG/HTML/ASCII) case.
       encoding: 'utf-8',
       flag: force ? 'w' : 'wx',
     })

@@ -16,6 +16,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -44,6 +45,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       html: false,
+      png: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -73,6 +75,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       html: false,
+      png: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -103,6 +106,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       html: false,
+      png: false,
       output: 'out.svg',
       force: false,
       theme: 'tokyo-night',
@@ -125,6 +129,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -147,6 +152,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       html: false,
+      png: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -175,6 +181,7 @@ describe('parseArgs – render happy paths', () => {
       svg: true,
       resolveColors: false,
       html: false,
+      png: false,
       output: 'out.svg',
       force: false,
       theme: undefined,
@@ -207,6 +214,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -239,6 +247,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -261,6 +270,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -288,6 +298,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -310,6 +321,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -338,6 +350,7 @@ describe('parseArgs – render happy paths', () => {
       svg: false,
       resolveColors: false,
       html: false,
+      png: false,
       output: undefined,
       force: false,
       theme: undefined,
@@ -603,7 +616,7 @@ describe('parseArgs – validation errors', () => {
 
   it('throws when render has no output flags', () => {
     expect(() => parseArgs(['render', 'diagram.mmd'])).toThrow(
-      'Specify --ascii, --svg, and/or --html',
+      'Specify --ascii, --svg, --html, and/or --png',
     )
   })
 
@@ -827,6 +840,110 @@ describe('parseArgs – --html', () => {
 })
 
 // ============================================================================
+// --png
+// ============================================================================
+
+describe('parseArgs – --png', () => {
+  it('parses --png with an explicit -o path', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--png',
+      '-o',
+      'out.png',
+    ]) as RenderArgs
+    expect(result.png).toBe(true)
+    expect(result.svg).toBe(false)
+    expect(result.html).toBe(false)
+    expect(result.output).toBe('out.png')
+  })
+
+  it('derives <input stem>.png when --png is given with no -o', () => {
+    const result = parseArgs(['render', 'diagram.mmd', '--png']) as RenderArgs
+    expect(result.png).toBe(true)
+    expect(result.output).toBe('diagram.png')
+  })
+
+  it('infers --png from a .png extension with no flag', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '-o',
+      'out.png',
+    ]) as RenderArgs
+    expect(result.png).toBe(true)
+    expect(result.svg).toBe(false)
+  })
+
+  it('allows --png -o - to write to stdout', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--png',
+      '-o',
+      '-',
+    ]) as RenderArgs
+    expect(result.png).toBe(true)
+    expect(result.output).toBe('-')
+  })
+
+  it('allows --ascii with --png (ascii to stdout, png to file)', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--ascii',
+      '--png',
+      '-o',
+      'out.png',
+    ]) as RenderArgs
+    expect(result.ascii).toBe(true)
+    expect(result.png).toBe(true)
+  })
+
+  it('throws when --svg and --png are both set', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--svg', '--png']),
+    ).toThrow('--svg and --png cannot both be set')
+  })
+
+  it('throws when --html and --png are both set', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--html', '--png']),
+    ).toThrow('--html and --png cannot both be set')
+  })
+
+  it('throws when -o has a .svg extension but --png was requested', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--png', '-o', 'out.svg']),
+    ).toThrow('but --png output would be written to it')
+  })
+
+  it('throws when -o has a .png extension but --svg was requested', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--svg', '-o', 'out.png']),
+    ).toThrow('but --svg output would be written to it')
+  })
+
+  it('throws when -o has a .txt extension but --png was requested', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--png', '-o', 'out.txt']),
+    ).toThrow('but --png output would be written to it')
+  })
+
+  it('throws when -o - would send both ASCII and PNG to stdout', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--png', '-o', '-']),
+    ).toThrow('-o - would send both ASCII and PNG to stdout')
+  })
+
+  it('throws when --png is given for stdin input with no -o', () => {
+    expect(() => parseArgs(['render', '--png'])).toThrow(
+      '--png needs -o <path> (or -o - for stdout) when reading from stdin',
+    )
+  })
+})
+
+// ============================================================================
 // --direction (issue #276)
 // ============================================================================
 
@@ -845,6 +962,7 @@ describe('parseArgs – --direction', () => {
       ascii: true,
       svg: false,
       html: false,
+      png: false,
       output: undefined,
       resolveColors: false,
       force: false,

@@ -29,12 +29,22 @@ export interface RenderArgs {
    */
   html: boolean
   /**
-   * Destination for the invocation's *file* output (SVG or HTML when
-   * `--svg`/`--html` is set, otherwise ASCII): a path, or `STDOUT_OUTPUT`
-   * (`-`) for stdout. `undefined` means "nothing goes to a file" — only
-   * possible for ASCII-only runs, since `--svg`/`--html` without `-o`
-   * derives a path from the input file name at parse time (see
-   * `parseRender`).
+   * `--png`: rasterize to PNG via the optional `@resvg/resvg-js` native
+   * dependency (see `src/cli/png.ts`), at the SVG's own declared pixel
+   * dimensions — no scaling. Colors are always resolved first (as if
+   * `--resolve-colors` were passed): a rasterizer can't evaluate CSS
+   * `var()`/`color-mix()`, so skipping that step would render the whole
+   * theme black (GitHub issue #456). Mutually exclusive with `--svg`/
+   * `--html` — all three want the same file-output slot.
+   */
+  png: boolean
+  /**
+   * Destination for the invocation's *file* output (SVG, HTML, or PNG when
+   * `--svg`/`--html`/`--png` is set, otherwise ASCII): a path, or
+   * `STDOUT_OUTPUT` (`-`) for stdout. `undefined` means "nothing goes to a
+   * file" — only possible for ASCII-only runs, since `--svg`/`--html`/
+   * `--png` without `-o` derives a path from the input file name at parse
+   * time (see `parseRender`).
    */
   output: string | undefined
   /** `--force`/`-f`: overwrite an existing output file instead of refusing. */
@@ -97,21 +107,60 @@ export const STDOUT_OUTPUT = '-'
  *   alone: `--svg -o diagram.xml` writes SVG to `diagram.xml`.
  */
 export const OUTPUT_EXTENSIONS: Readonly<
-  Record<string, 'svg' | 'ascii' | 'html'>
+  Record<string, 'svg' | 'ascii' | 'html' | 'png'>
 > = {
   '.svg': 'svg',
   '.txt': 'ascii',
   '.html': 'html',
   '.htm': 'html',
+  '.png': 'png',
 }
 
 /** Format implied by `output`'s extension, or undefined when unrecognised (or stdout). */
 export function inferOutputFormat(
   output: string | undefined,
-): 'svg' | 'ascii' | 'html' | undefined {
+): 'svg' | 'ascii' | 'html' | 'png' | undefined {
   if (output === undefined || output === STDOUT_OUTPUT) return undefined
   return OUTPUT_EXTENSIONS[extname(output).toLowerCase()]
 }
+
+/**
+ * The three artifact formats that share the single `-o` file-output slot
+ * (as opposed to `ascii`, which prints to the terminal and can coexist with
+ * any one of these). Centralizing flag/extension/label here is what lets
+ * `parseRender`'s exclusivity and inference checks below stay one small
+ * loop instead of growing a new hand-written pairwise `if` for every format
+ * this CLI adds.
+ */
+const FILE_FORMATS = {
+  svg: {
+    flag: '--svg',
+    ext: '.svg',
+    article: 'a',
+    display: 'SVG',
+    label: 'raw SVG output',
+  },
+  html: {
+    flag: '--html',
+    ext: '.html',
+    article: 'an',
+    display: 'HTML',
+    label: 'the HTML viewer',
+  },
+  png: {
+    flag: '--png',
+    ext: '.png',
+    article: 'a',
+    display: 'PNG',
+    label: 'the PNG rasterization',
+  },
+} as const satisfies Record<
+  'svg' | 'html' | 'png',
+  { flag: string; ext: string; article: string; display: string; label: string }
+>
+
+type FileFormat = keyof typeof FILE_FORMATS
+const FILE_FORMAT_KEYS = Object.keys(FILE_FORMATS) as FileFormat[]
 
 /**
  * Default output path for a file format when `-o` is omitted: the input
@@ -239,6 +288,7 @@ function parseRender(args: string[]): RenderArgs {
   let svg = false
   let resolveColors = false
   let html = false
+  let png = false
   let output: string | undefined
   let force = false
   let theme: string | undefined
@@ -273,6 +323,9 @@ function parseRender(args: string[]): RenderArgs {
       i++
     } else if (arg === '--html') {
       html = true
+      i++
+    } else if (arg === '--png') {
+      png = true
       i++
     } else if (arg === '-o' || arg === '--output') {
       if (i + 1 >= args.length) {
@@ -330,76 +383,85 @@ function parseRender(args: string[]): RenderArgs {
 
   // ---- Output resolution (see OUTPUT_EXTENSIONS and STDOUT_OUTPUT) ----
 
-  // 0. --svg and --html both want the single file-output slot below but
-  //    produce different artifacts (raw SVG vs. the wrapped viewer) — no
-  //    single -o path can hold both, so this is a parse error rather than
-  //    a silent pick. Run the command twice (with different -o paths) for
-  //    both outputs from one input.
-  if (svg && html) {
+  const fileFlags: Record<FileFormat, boolean> = { svg, html, png }
+
+  // 0. --svg/--html/--png all want the single file-output slot below but
+  //    produce different artifacts — no single -o path can hold more than
+  //    one, so setting two is a parse error rather than a silent pick. Run
+  //    the command twice (with different -o paths) for multiple outputs
+  //    from one input.
+  const explicitlySet = FILE_FORMAT_KEYS.filter((key) => fileFlags[key])
+  if (explicitlySet.length > 1) {
+    const [a, b] = explicitlySet as [FileFormat, FileFormat]
     throw new Error(
-      '--svg and --html cannot both be set — they would write different content to the same output path. Run the command twice with different -o paths for both.',
+      `${FILE_FORMATS[a].flag} and ${FILE_FORMATS[b].flag} cannot both be set — they would write different content to the same output path. Run the command twice with different -o paths for each.`,
     )
   }
 
   // 1. A recognised `-o` extension is additive: `-o out.svg` implies --svg,
-  //    `-o out.html` implies --html. `.txt` implies --ascii, but only when
-  //    SVG/HTML isn't also headed for that same path — that combination is
-  //    a conflict, not an inference.
+  //    `-o out.png` implies --png, etc. `.txt` implies --ascii, but only
+  //    when svg/html/png isn't also headed for that same path — that
+  //    combination is a conflict, not an inference.
   const inferred = inferOutputFormat(output)
-  if (inferred === 'svg') {
-    if (html) {
+  if (inferred !== undefined && inferred !== 'ascii') {
+    const conflictingKey = FILE_FORMAT_KEYS.find(
+      (key) => key !== inferred && fileFlags[key],
+    )
+    if (conflictingKey !== undefined) {
+      const wanted = FILE_FORMATS[inferred]
+      const conflicting = FILE_FORMATS[conflictingKey]
       throw new Error(
-        `-o ${output} has a .svg extension, but --html output would be written to it. ` +
-          `Use a .html path (or -o - for stdout) for the HTML viewer.`,
+        `-o ${output} has ${wanted.article} ${wanted.ext} extension, but ${conflicting.flag} output would be written to it. ` +
+          `Use a ${conflicting.ext} path (or -o - for stdout) for ${conflicting.label}.`,
       )
     }
-    svg = true
-  } else if (inferred === 'html') {
-    if (svg) {
-      throw new Error(
-        `-o ${output} has an .html extension, but --svg output would be written to it. ` +
-          `Use a .svg path (or -o - for stdout) for raw SVG output.`,
-      )
-    }
-    html = true
+    if (inferred === 'svg') svg = true
+    else if (inferred === 'html') html = true
+    else png = true
   } else if (inferred === 'ascii') {
-    if (svg || html) {
+    const conflictingKey = FILE_FORMAT_KEYS.find((key) => fileFlags[key])
+    if (conflictingKey !== undefined) {
+      const conflicting = FILE_FORMATS[conflictingKey]
       throw new Error(
-        `-o ${output} has a .txt extension, but ${svg ? '--svg' : '--html'} output would be written to it. ` +
-          `Use a ${svg ? '.svg' : '.html'} path (or -o - for stdout) instead.`,
+        `-o ${output} has a .txt extension, but ${conflicting.flag} output would be written to it. ` +
+          `Use a ${conflicting.ext} path (or -o - for stdout) instead.`,
       )
     }
     ascii = true
   }
 
   // 2. Something must be produced.
-  if (!ascii && !svg && !html) {
+  if (!ascii && !svg && !html && !png) {
     if (output !== undefined && output !== STDOUT_OUTPUT) {
       const known = Object.keys(OUTPUT_EXTENSIONS).join(', ')
       throw new Error(
-        `Cannot infer an output format from "${output}" — pass --ascii, --svg, or --html, ` +
+        `Cannot infer an output format from "${output}" — pass --ascii, --svg, --html, or --png, ` +
           `or use a recognised extension (${known})`,
       )
     }
     throw new Error(
-      'Specify --ascii, --svg, and/or --html (or -o <path> with a .svg/.txt/.html extension)',
+      'Specify --ascii, --svg, --html, and/or --png (or -o <path> with a .svg/.txt/.html/.png extension)',
     )
   }
 
   // 3. stdout can carry one stream. ASCII always prints there unless it is
   //    the sole format and -o names a file, so `--ascii --svg -o -` (or
-  //    `--ascii --html -o -`) would interleave two documents.
-  if (output === STDOUT_OUTPUT && ascii && (svg || html)) {
+  //    `--ascii --html -o -`/`--ascii --png -o -`) would interleave two
+  //    documents.
+  const resolvedFileFlags: Record<FileFormat, boolean> = { svg, html, png }
+  const fileFormat = FILE_FORMAT_KEYS.find((key) => resolvedFileFlags[key])
+  if (output === STDOUT_OUTPUT && ascii && fileFormat !== undefined) {
+    const display = FILE_FORMATS[fileFormat].display
     throw new Error(
-      `-o - would send both ASCII and ${svg ? 'SVG' : 'HTML'} to stdout; drop --ascii, or write the ${svg ? 'SVG' : 'HTML'} to a file path`,
+      `-o - would send both ASCII and ${display} to stdout; drop --ascii, or write the ${display} to a file path`,
     )
   }
 
-  // 4. --svg/--html without -o: derive <input stem>.svg/.html. Stdin has
-  //    no name to derive from, so that case must say where output goes.
-  if ((svg || html) && output === undefined) {
-    const flag = svg ? '--svg' : '--html'
-    const ext = svg ? '.svg' : '.html'
+  // 4. --svg/--html/--png without -o: derive <input stem>.svg/.html/.png.
+  //    Stdin has no name to derive from, so that case must say where
+  //    output goes.
+  if (fileFormat !== undefined && output === undefined) {
+    const { flag, ext } = FILE_FORMATS[fileFormat]
     if (input === undefined) {
       throw new Error(
         `${flag} needs -o <path> (or -o - for stdout) when reading from stdin — there is no input file name to derive an output name from`,
@@ -427,6 +489,7 @@ function parseRender(args: string[]): RenderArgs {
     svg,
     resolveColors,
     html,
+    png,
     output,
     force,
     theme,

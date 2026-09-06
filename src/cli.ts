@@ -83,6 +83,7 @@ Usage:
   zombie-mermaid render <file> --svg -o -           Write SVG to stdout
   zombie-mermaid render <file> --ascii --svg -o <out.svg>   Both (ASCII to terminal)
   zombie-mermaid render <file> --html               Self-contained pan/zoom HTML viewer
+  zombie-mermaid render <file> --png                Rasterize to <file stem>.png
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
@@ -103,13 +104,22 @@ Options:
   --html               Render a self-contained HTML pan/zoom viewer to -o
                        <path> (default: <input stem>.html). Embeds the SVG;
                        no server, no network, opens from disk. Cannot be
-                       combined with --svg (different content, same slot).
-  -o, --output <path>  Output file for the SVG/HTML (or for ASCII when
-                       neither is given). '-' writes to stdout. A .svg,
-                       .html, or .txt extension selects the format when no
-                       --svg/--html/--ascii flag is given; one that
-                       contradicts the flags is an error. Existing files
-                       are never overwritten without --force.
+                       combined with --svg/--png (different content, same
+                       slot).
+  --png                Rasterize to PNG at -o <path> (default: <input
+                       stem>.png), via the optional @resvg/resvg-js native
+                       dependency — install it with \`pnpm add
+                       @resvg/resvg-js\` if it's missing. Always resolves
+                       CSS var()/color-mix() first (as --resolve-colors
+                       does for --svg), since a rasterizer can't evaluate
+                       them. 1:1 with the SVG's own pixel size, no scaling.
+                       Cannot be combined with --svg/--html.
+  -o, --output <path>  Output file for the SVG/HTML/PNG (or for ASCII when
+                       none of those is given). '-' writes to stdout. A
+                       .svg, .html, .txt, or .png extension selects the
+                       format when no --svg/--html/--png/--ascii flag is
+                       given; one that contradicts the flags is an error.
+                       Existing files are never overwritten without --force.
   -f, --force          Overwrite an existing output file
   --theme <name>       Apply a built-in theme (see 'themes' command)
   --direction <dir>    Override the diagram's layout direction: TD, TB, BT, LR, or RL
