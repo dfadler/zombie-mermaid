@@ -14,6 +14,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -41,6 +42,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      resolveColors: false,
       html: false,
       output: 'out.svg',
       force: false,
@@ -69,6 +71,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: true,
+      resolveColors: false,
       html: false,
       output: 'out.svg',
       force: false,
@@ -98,6 +101,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      resolveColors: false,
       html: false,
       output: 'out.svg',
       force: false,
@@ -119,6 +123,7 @@ describe('parseArgs – render happy paths', () => {
       input: undefined,
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -140,6 +145,7 @@ describe('parseArgs – render happy paths', () => {
       input: undefined,
       ascii: false,
       svg: true,
+      resolveColors: false,
       html: false,
       output: 'out.svg',
       force: false,
@@ -167,6 +173,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: false,
       svg: true,
+      resolveColors: false,
       html: false,
       output: 'out.svg',
       force: false,
@@ -198,6 +205,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -229,6 +237,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -250,6 +259,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -276,6 +286,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -297,6 +308,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -324,6 +336,7 @@ describe('parseArgs – render happy paths', () => {
       input: 'diagram.mmd',
       ascii: true,
       svg: false,
+      resolveColors: false,
       html: false,
       output: undefined,
       force: false,
@@ -342,6 +355,74 @@ describe('parseArgs – render happy paths', () => {
 // ============================================================================
 // simple commands
 // ============================================================================
+
+describe('parseArgs – --resolve-colors', () => {
+  it('parses render <file> --svg -o out.svg --resolve-colors', () => {
+    const args = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--svg',
+      '-o',
+      'out.svg',
+      '--resolve-colors',
+    ])
+    expect(args.command).toBe('render')
+    if (args.command !== 'render') throw new Error('expected render')
+    expect(args.resolveColors).toBe(true)
+    expect(args.svg).toBe(true)
+    expect(args.output).toBe('out.svg')
+  })
+
+  it('defaults resolveColors to false', () => {
+    const args = parseArgs(['render', 'diagram.mmd', '--svg', '-o', 'out.svg'])
+    if (args.command !== 'render') throw new Error('expected render')
+    expect(args.resolveColors).toBe(false)
+  })
+
+  it('throws when --resolve-colors is given without --svg', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--ascii', '--resolve-colors']),
+    ).toThrow('--resolve-colors requires --svg')
+  })
+
+  it('throws when --resolve-colors is combined with --html but not --svg', () => {
+    expect(() =>
+      parseArgs(['render', 'diagram.mmd', '--html', '--resolve-colors']),
+    ).toThrow('--resolve-colors requires --svg')
+  })
+
+  // `--resolve-colors` is a boolean flag (i++), not a valued one (i += 2) —
+  // the existing happy-path test above only ever places it last, so it can't
+  // tell a correct `i++` apart from an `i += 2` that swallows the next
+  // argument. This is exactly the shape of bug this PR already shipped once
+  // for `--html` (a missing `i++` there caused an infinite loop, caught only
+  // incidentally by a hang). Assert the following flag/positional survive.
+  it('does not consume the flag that follows it', () => {
+    const args = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--resolve-colors',
+      '--svg',
+    ])
+    if (args.command !== 'render') throw new Error('expected render')
+    expect(args.resolveColors).toBe(true)
+    expect(args.svg).toBe(true)
+    expect(args.input).toBe('diagram.mmd')
+  })
+
+  it('does not consume the positional input argument that follows it', () => {
+    const args = parseArgs([
+      'render',
+      '--svg',
+      '--resolve-colors',
+      'diagram.mmd',
+    ])
+    if (args.command !== 'render') throw new Error('expected render')
+    expect(args.resolveColors).toBe(true)
+    expect(args.svg).toBe(true)
+    expect(args.input).toBe('diagram.mmd')
+  })
+})
 
 // ============================================================================
 // Output ergonomics (#456): -o -, extension inference, default names, --force
@@ -765,6 +846,7 @@ describe('parseArgs – --direction', () => {
       svg: false,
       html: false,
       output: undefined,
+      resolveColors: false,
       force: false,
       theme: undefined,
       paddingX: undefined,

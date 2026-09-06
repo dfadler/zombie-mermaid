@@ -18,6 +18,8 @@ export interface RenderArgs {
   input: string | undefined
   ascii: boolean
   svg: boolean
+  /** `--resolve-colors`: substitute computed sRGB values for CSS var()/color-mix() in SVG output. */
+  resolveColors: boolean
   /**
    * `--html`: write a self-contained HTML pan/zoom viewer (see
    * `src/cli/html-viewer.ts`) instead of raw SVG markup. Mutually exclusive
@@ -235,6 +237,7 @@ function parseRender(args: string[]): RenderArgs {
   let input: string | undefined
   let ascii = false
   let svg = false
+  let resolveColors = false
   let html = false
   let output: string | undefined
   let force = false
@@ -264,6 +267,9 @@ function parseRender(args: string[]): RenderArgs {
       i++
     } else if (arg === '--svg') {
       svg = true
+      i++
+    } else if (arg === '--resolve-colors') {
+      resolveColors = true
       i++
     } else if (arg === '--html') {
       html = true
@@ -410,11 +416,16 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('--hyperlinks requires --ascii')
   }
 
+  if (resolveColors && !svg) {
+    throw new Error('--resolve-colors requires --svg')
+  }
+
   return {
     command: 'render',
     input,
     ascii,
     svg,
+    resolveColors,
     html,
     output,
     force,

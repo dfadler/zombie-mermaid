@@ -287,6 +287,21 @@ describe('getAnsiColor', () => {
     expect(getAnsiColor('text', theme, 'html')).toBe('')
   })
 
+  it('accepts a bare hex digit string with no leading # (backward compatibility)', () => {
+    expect(getAnsiColor('text', { ...theme, fg: 'ff0000' }, 'truecolor')).toBe(
+      '\x1b[38;2;255;0;0m',
+    )
+  })
+
+  it('falls back to black for a color that is neither a valid hex nor #-prefixed', () => {
+    // parseHex accepts a bare hex digit string for backward compatibility
+    // (prepending '#' itself), but something that isn't valid hex either
+    // way must fall back to black rather than emit a NaN escape sequence.
+    expect(getAnsiColor('text', { ...theme, fg: 'zzzzzz' }, 'truecolor')).toBe(
+      '\x1b[38;2;0;0;0m',
+    )
+  })
+
   it('falls back to line/border for corner/junction roles when unset', () => {
     const noCornerJunction: AsciiTheme = {
       fg: '#27272a',
