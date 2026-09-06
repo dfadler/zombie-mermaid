@@ -16,6 +16,8 @@
 // visible on screen, so its indices are what's useful to overlay.
 // ============================================================================
 
+import { stripOsc8 } from './hyperlinks.ts'
+
 /**
  * Add a column-index ruler (two rows: tens digit, ones digit) above the
  * diagram and a row-index gutter to the left of each line.
@@ -24,14 +26,16 @@
  * apply regardless of diagram type, color mode, or Unicode/ASCII mode.
  */
 // Matches SGR color escape sequences (`\x1b[...m`) produced by ansi.ts's
-// ansi16/ansi256/truecolor modes. Stripped only for width MEASUREMENT below
-// — the original lines (with codes intact) are still what gets printed.
+// ansi16/ansi256/truecolor modes. Stripped — along with any OSC 8
+// hyperlink sequences (hyperlinks.ts) — only for width MEASUREMENT below;
+// the original lines (with codes intact) are still what gets printed.
 const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
 
 export function addCoordsOverlay(rendered: string): string {
   const lines = rendered.split('\n')
   const width = lines.reduce(
-    (max, line) => Math.max(max, line.replace(ANSI_ESCAPE, '').length),
+    (max, line) =>
+      Math.max(max, stripOsc8(line.replace(ANSI_ESCAPE, '')).length),
     0,
   )
   const rowGutterWidth = String(Math.max(0, lines.length - 1)).length

@@ -23,6 +23,17 @@
  *                             renderer — see scripts/visual-diff.ts's own
  *                             comment on why), or a path to a .mmd file for
  *                             a one-off diagram not in the catalog.
+ *
+ * Environment:
+ *   ASCII_RENDER_OPTIONS      Optional JSON object of extra renderMermaidASCII
+ *                             options merged over the default
+ *                             `{ colorMode: 'auto' }` — e.g.
+ *                             `'{"hyperlinks":true}'` to capture an opt-in
+ *                             feature on the "after" side of a comparison.
+ *                             Passed through the environment (which the PTY
+ *                             asciinema spawns inherits) rather than argv so
+ *                             scripts/ascii-terminal-capture.sh's positional
+ *                             interface stays unchanged.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -64,18 +75,61 @@ const { renderMermaidASCII } = await import(
   pathToFileURL(resolve(indexModulePath)).href
 )
 
+let extraOptions = {}
+const rawOptions = process.env.ASCII_RENDER_OPTIONS
+if (rawOptions !== undefined && rawOptions !== '') {
+  let parsed
+  try {
+    parsed = JSON.parse(rawOptions)
+  } catch {
+    console.error(
+      `usage: ASCII_RENDER_OPTIONS is not valid JSON: ${rawOptions}`,
+    )
+    process.exit(2)
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(
+      `usage: ASCII_RENDER_OPTIONS must be a JSON object, got: ${rawOptions}`,
+    )
+    process.exit(2)
+  }
+  extraOptions = parsed
+}
+
 if (sizeOnly) {
-  // Measure with colors off so no ANSI escape bytes inflate the width. The
+  // Measure with colors off so no SGR escape bytes inflate the width. The
   // width function comes from the *working tree* (like samples-data.ts
   // above), not the ref under test: src/index.ts doesn't export it, and the
   // size of the recording PTY is a property of this tooling, not of the
-  // renderer being compared.
+  // renderer being compared. extraOptions is still applied here (e.g.
+  // ASCII_RENDER_OPTIONS='{"hyperlinks":true}') so a hyperlink-enabled
+  // render is sized correctly too — but OSC 8 sequences are zero-width on
+  // screen, so they (and any stray SGR codes extraOptions might reintroduce)
+  // are stripped before measuring, mirroring src/cli/render.ts's
+  // `maxLineWidth` helper. Counting the raw escape bytes as graphemes would
+  // overestimate `cols` and oversize the capture PTY (see issue #498).
   const { displayWidth } = await import(
     pathToFileURL(resolve('src/ascii/display-width.ts')).href
   )
-  const lines = renderMermaidASCII(source, { colorMode: 'none' }).split('\n')
-  const cols = Math.max(0, ...lines.map((line) => displayWidth(line)))
+  const { stripOsc8 } = await import(
+    pathToFileURL(resolve('src/ascii/hyperlinks.ts')).href
+  )
+  // Matches SGR color escape sequences (`\x1b[...m`); same pattern as the
+  // ANSI_ESCAPE const in src/cli/render.ts and src/ascii/coords.ts.
+  const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
+  const lines = renderMermaidASCII(source, {
+    colorMode: 'none',
+    ...extraOptions,
+  }).split('\n')
+  const cols = Math.max(
+    0,
+    ...lines.map((line) =>
+      displayWidth(stripOsc8(line.replace(ANSI_ESCAPE, ''))),
+    ),
+  )
   process.stdout.write(`${cols} ${lines.length}\n`)
 } else {
-  process.stdout.write(renderMermaidASCII(source, { colorMode: 'auto' }))
+  process.stdout.write(
+    renderMermaidASCII(source, { colorMode: 'auto', ...extraOptions }),
+  )
 }

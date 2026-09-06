@@ -16,6 +16,8 @@ import type {
 } from './types.ts'
 import { colorizeLine, DEFAULT_ASCII_THEME } from './ansi.ts'
 import { toDisplayCells } from './display-width.ts'
+import { joinWithLinks } from './hyperlinks.ts'
+import type { LinkCanvas } from './hyperlinks.ts'
 
 /**
  * Create a blank canvas filled with spaces.
@@ -459,11 +461,18 @@ export interface CanvasToStringOptions {
   colorMode?: ColorMode
   /** Theme colors for ASCII output. Uses default theme if not provided. */
   theme?: AsciiTheme
+  /**
+   * Link canvas (see hyperlinks.ts) — each run of cells carrying an href is
+   * wrapped in an OSC 8 terminal-hyperlink escape pair. Ignored in 'html'
+   * color mode, which is rendered by a browser, not a terminal.
+   */
+  linkCanvas?: LinkCanvas
 }
 
 /**
  * Convert the canvas to a multi-line string (row by row, left to right).
- * Optionally applies ANSI color codes based on character roles.
+ * Optionally applies ANSI color codes based on character roles, and OSC 8
+ * hyperlink escapes based on the link canvas.
  */
 export function canvasToString(
   canvas: Canvas,
@@ -475,24 +484,40 @@ export function canvasToString(
   const roleCanvas = options?.roleCanvas
   const colorMode = options?.colorMode ?? 'none'
   const theme = options?.theme ?? DEFAULT_ASCII_THEME
+  const linkCanvas = colorMode === 'html' ? undefined : options?.linkCanvas
 
   for (let y = 0; y <= maxY; y++) {
     if (colorMode === 'none' || !roleCanvas) {
       // Plain text output — no colors
-      let line = ''
+      const chars: string[] = []
       for (let x = 0; x <= maxX; x++) {
-        line += canvas[x]![y]!
+        chars.push(canvas[x]![y]!)
       }
-      lines.push(line)
+      if (linkCanvas) {
+        const links = chars.map((_, x) => linkCanvas[x]?.[y] ?? null)
+        lines.push(joinWithLinks(chars, links))
+      } else {
+        lines.push(chars.join(''))
+      }
     } else {
-      // Colored output — collect chars and roles for this row
+      // Colored output — collect chars, roles, and links for this row
       const chars: string[] = []
       const roles: (CharRole | null)[] = []
+      const links: (string | null)[] = []
       for (let x = 0; x <= maxX; x++) {
         chars.push(canvas[x]![y]!)
         roles.push(roleCanvas[x]?.[y] ?? null)
+        links.push(linkCanvas?.[x]?.[y] ?? null)
       }
-      lines.push(colorizeLine(chars, roles, theme, colorMode))
+      lines.push(
+        colorizeLine(
+          chars,
+          roles,
+          theme,
+          colorMode,
+          linkCanvas ? links : undefined,
+        ),
+      )
     }
   }
 

@@ -23,6 +23,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -50,6 +51,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -78,6 +80,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -107,6 +110,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -128,6 +132,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -149,6 +154,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -176,6 +182,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -207,6 +214,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: 3,
       borderPadding: 2,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -238,6 +246,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: 9,
       borderPadding: 0,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -259,6 +268,34 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: true,
+      hyperlinks: false,
+      maxWidth: undefined,
+      direction: undefined,
+    } satisfies RenderArgs)
+  })
+
+  it('parses --hyperlinks', () => {
+    const result = parseArgs([
+      'render',
+      'diagram.mmd',
+      '--ascii',
+      '--hyperlinks',
+    ])
+    expect(result).toEqual({
+      command: 'render',
+      input: 'diagram.mmd',
+      ascii: true,
+      svg: false,
+      resolveColors: false,
+      html: false,
+      output: undefined,
+      force: false,
+      theme: undefined,
+      paddingX: undefined,
+      paddingY: undefined,
+      borderPadding: undefined,
+      coords: false,
+      hyperlinks: true,
       maxWidth: undefined,
       direction: undefined,
     } satisfies RenderArgs)
@@ -280,6 +317,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: 40,
       direction: undefined,
     } satisfies RenderArgs)
@@ -307,6 +345,7 @@ describe('parseArgs – render happy paths', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: 'auto',
       direction: undefined,
     } satisfies RenderArgs)
@@ -665,6 +704,19 @@ describe('parseArgs – validation errors', () => {
       ]),
     ).toThrow('-w/--max-width requires --ascii')
   })
+
+  it('throws when --hyperlinks is given without --ascii', () => {
+    expect(() =>
+      parseArgs([
+        'render',
+        'diagram.mmd',
+        '--svg',
+        '-o',
+        'out.svg',
+        '--hyperlinks',
+      ]),
+    ).toThrow('--hyperlinks requires --ascii')
+  })
 })
 
 // ============================================================================
@@ -801,6 +853,7 @@ describe('parseArgs – --direction', () => {
       paddingY: undefined,
       borderPadding: undefined,
       coords: false,
+      hyperlinks: false,
       maxWidth: undefined,
       direction: 'TB',
     } satisfies RenderArgs)

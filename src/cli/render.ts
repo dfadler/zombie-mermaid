@@ -5,6 +5,7 @@ import {
 } from '../ascii/index.ts'
 import type { AsciiRenderOptions } from '../ascii/index.ts'
 import { displayWidth } from '../ascii/display-width.ts'
+import { stripOsc8 } from '../ascii/hyperlinks.ts'
 import {
   DEFAULT_PADDING_X,
   DEFAULT_PADDING_Y,
@@ -50,16 +51,18 @@ const COMPACT_PADDING_Y = 1
 const COMPACT_BOX_BORDER_PADDING = 0
 
 // Matches SGR color escape sequences (`\x1b[...m`) produced by ansi.ts's
-// ansi16/ansi256/truecolor modes. Stripped only for width MEASUREMENT below —
-// mirrors the same approach coords.ts uses for its ruler overlay.
+// ansi16/ansi256/truecolor modes. Stripped — along with any OSC 8 hyperlink
+// sequences from `--hyperlinks` — only for width MEASUREMENT below; mirrors
+// the same approach coords.ts uses for its ruler overlay.
 const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
 
-/** Widest line in already-rendered ASCII/Unicode output, ignoring ANSI color codes. */
+/** Widest line in already-rendered ASCII/Unicode output, ignoring ANSI color codes and OSC 8 hyperlinks. */
 function maxLineWidth(rendered: string): number {
   return rendered
     .split('\n')
     .reduce(
-      (max, line) => Math.max(max, displayWidth(line.replace(ANSI_ESCAPE, ''))),
+      (max, line) =>
+        Math.max(max, displayWidth(stripOsc8(line.replace(ANSI_ESCAPE, '')))),
       0,
     )
 }
@@ -167,6 +170,10 @@ export async function runRender(
       asciiOpts.boxBorderPadding = args.borderPadding
     if (args.coords) asciiOpts.showCoords = true
     if (args.direction !== undefined) asciiOpts.direction = args.direction
+    // Only for terminal output: a .txt file gets no escape codes regardless
+    // (same contract as the ANSI color guard above), so OSC 8 hyperlink
+    // sequences must never be written into a file target.
+    if (args.hyperlinks && asciiFile === undefined) asciiOpts.hyperlinks = true
     let ascii = renderMermaidASCII(text, asciiOpts)
 
     if (args.maxWidth !== undefined) {

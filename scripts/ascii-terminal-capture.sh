@@ -59,6 +59,10 @@ Exit codes: 0 ok; 1 the sample failed to render; 2 usage error; 4 a missing
 or misbehaving dependency (asciinema, agg, python3, tsx, or a recorded
 terminal size that doesn't match the requested one).
 
+Set ASCII_RENDER_OPTIONS='{"hyperlinks":true}' (any JSON object of
+renderMermaidASCII options) in the environment to capture an opt-in render
+option; the PTY inherits it. See scripts/ascii-render-runner.mjs.
+
 Example (before/after a change, comparing against main):
   mkdir -p tmp-base-ref
   git archive main src | tar -x -C tmp-base-ref

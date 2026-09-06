@@ -36,6 +36,9 @@ import {
   mergeJunctions,
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
+import { markBoxLabelLinks, mkLinkCanvas } from './hyperlinks.ts'
+import type { LinkCanvas } from './hyperlinks.ts'
+import { safeHref } from '../click-directive.ts'
 import { getCorners } from './shapes/corners.ts'
 import { splitLines } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
@@ -236,6 +239,12 @@ interface PlacedClass {
   height: number
 }
 
+/** Per-render switches that aren't layout config (see `AsciiRenderOptions`). */
+export interface ClassAsciiOptions {
+  /** Wrap each `click`-linked class's name in an OSC 8 hyperlink pair. */
+  hyperlinks?: boolean
+}
+
 /**
  * Render a Mermaid class diagram to ASCII/Unicode text.
  *
@@ -246,6 +255,7 @@ export function renderClassAscii(
   config: AsciiConfig,
   colorMode?: ColorMode,
   theme?: AsciiTheme,
+  options: ClassAsciiOptions = {},
 ): string {
   const lines = splitStatements(text)
   // Notes ride through the layout as pseudo-classes — see withNotePseudoClasses.
@@ -515,6 +525,13 @@ export function renderClassAscii(
     write(canvas, x, y, ch, { role, roleCanvas: rc })
   }
 
+  // Opt-in OSC 8 hyperlinks (see hyperlinks.ts): the link canvas is sized to
+  // the main canvas, so a cell clipped by the `cx < totalW` guard below is
+  // clipped here too.
+  const linkCanvas: LinkCanvas | undefined = options.hyperlinks
+    ? mkLinkCanvas(totalW - 1, totalH - 1)
+    : undefined
+
   // --- Draw class boxes ---
   for (const p of placed.values()) {
     const boxCanvas = drawMultiBox(
@@ -533,6 +550,23 @@ export function renderClassAscii(
             setC(cx, cy, ch, classifyBoxChar(ch))
           }
         }
+      }
+    }
+
+    // A `click` href links the class-name line(s) of the header section —
+    // box row 1 is the first header line, which is the `<<annotation>>`
+    // when there is one, so the name starts on the row after it. The SVG
+    // renderer wraps the whole class box in an <a>; in a terminal, the name
+    // is the natural analog of "the label".
+    if (linkCanvas) {
+      const href = safeHref(diagram.interactions.get(p.cls.id)?.href)
+      const header = p.sections[0]
+      if (href !== undefined && header !== undefined) {
+        const nameRowStart = 1 + (p.cls.annotation ? 1 : 0)
+        markBoxLabelLinks(linkCanvas, boxCanvas, { x: p.x, y: p.y }, href, {
+          from: nameRowStart,
+          to: header.length,
+        })
       }
     }
   }
@@ -1441,7 +1475,12 @@ export function renderClassAscii(
   // top of a relationship line or label.
   decorateAsciiNotes(notesById, placed, canvas, useAscii, setC)
 
-  return canvasToString(canvas, { roleCanvas: rc, colorMode, theme })
+  return canvasToString(canvas, {
+    roleCanvas: rc,
+    colorMode,
+    theme,
+    linkCanvas,
+  })
 }
 
 // ============================================================================

@@ -45,6 +45,12 @@ export interface RenderArgs {
   borderPadding: number | undefined
   coords: boolean
   /**
+   * `--hyperlinks`: emit OSC 8 terminal hyperlinks for `click` hrefs in
+   * ASCII output (see `AsciiRenderOptions.hyperlinks`). Off by default —
+   * the flag is the explicit opt-in; no terminal capability detection.
+   */
+  hyperlinks: boolean
+  /**
    * Target width (terminal columns) to check ASCII output against.
    * `'auto'` resolves to the current terminal's column count at render time
    * (falling back to a fixed default when not running in a TTY).
@@ -240,6 +246,7 @@ function parseRender(args: string[]): RenderArgs {
   let paddingY: number | undefined
   let borderPadding: number | undefined
   let coords = false
+  let hyperlinks = false
   let maxWidth: number | 'auto' | undefined
   let direction: Direction | undefined
 
@@ -291,6 +298,9 @@ function parseRender(args: string[]): RenderArgs {
       i += 2
     } else if (arg === '--coords') {
       coords = true
+      i++
+    } else if (arg === '--hyperlinks') {
+      hyperlinks = true
       i++
     } else if (arg === '-w' || arg === '--max-width') {
       maxWidth = parseMaxWidthFlag(args, i, arg)
@@ -402,6 +412,10 @@ function parseRender(args: string[]): RenderArgs {
     throw new Error('-w/--max-width requires --ascii')
   }
 
+  if (hyperlinks && !ascii) {
+    throw new Error('--hyperlinks requires --ascii')
+  }
+
   if (resolveColors && !svg) {
     throw new Error('--resolve-colors requires --svg')
   }
@@ -420,6 +434,7 @@ function parseRender(args: string[]): RenderArgs {
     paddingY,
     borderPadding,
     coords,
+    hyperlinks,
     maxWidth,
     direction,
   }
