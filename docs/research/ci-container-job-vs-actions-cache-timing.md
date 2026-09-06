@@ -34,7 +34,7 @@ file, not from the issue's summary of it):
 
 - Matrix: 4 shards (`--shard=N/4`), `fail-fast: false`.
 - `actions/cache@v4.2.4` keyed on `playwright-chromium-${{ runner.os }}-${{
-  hashFiles('pnpm-lock.yaml') }}`, caching `~/.cache/ms-playwright`.
+hashFiles('pnpm-lock.yaml') }}`, caching `~/.cache/ms-playwright`.
 - On cache hit: runs `pnpm exec playwright install-deps chromium` (system apt
   packages only — these live outside the cached path and always have to be
   (re)installed regardless of cache state).
@@ -47,16 +47,16 @@ Per-shard job timing pulled from 8 recent real runs (`gh run list --workflow=ci.
 --limit 20 --json databaseId,conclusion,createdAt`, then `gh run view <id> --json
 jobs` for shard 1's step timestamps in each), covering both cache states:
 
-| Run ID | Event | Cache state | Install step (`Cache Playwright...` → install step end) | Total shard job (`Set up job` → `Complete job`) |
-|---|---|---|---|---|
-| 34047581209 | pull_request | **miss** | 21s | 55s |
-| 34046147560 | pull_request | **miss** | 26s | 60s |
-| 34047479916 | pull_request | hit | 12s | 46s |
-| 34043536545 | push (main) | hit | 12s | 43s |
-| 34043024628 | push (main) | hit | 12s | 44s |
-| 34042546613 | push (main) | hit | 28s | 67s |
-| 34048115474 | pull_request | hit | 12s | 42s |
-| 34041904701 | pull_request | hit | 12s | 40s |
+| Run ID      | Event        | Cache state | Install step (`Cache Playwright...` → install step end) | Total shard job (`Set up job` → `Complete job`) |
+| ----------- | ------------ | ----------- | ------------------------------------------------------- | ----------------------------------------------- |
+| 34047581209 | pull_request | **miss**    | 21s                                                     | 55s                                             |
+| 34046147560 | pull_request | **miss**    | 26s                                                     | 60s                                             |
+| 34047479916 | pull_request | hit         | 12s                                                     | 46s                                             |
+| 34043536545 | push (main)  | hit         | 12s                                                     | 43s                                             |
+| 34043024628 | push (main)  | hit         | 12s                                                     | 44s                                             |
+| 34042546613 | push (main)  | hit         | 28s                                                     | 67s                                             |
+| 34048115474 | pull_request | hit         | 12s                                                     | 42s                                             |
+| 34041904701 | pull_request | hit         | 12s                                                     | 40s                                             |
 
 Aggregates (small sample, shared noisy runners — treat as indicative, not exact):
 
@@ -66,7 +66,7 @@ Aggregates (small sample, shared noisy runners — treat as indicative, not exac
   (avg ~57.5s).
 - Cache hit/miss delta observed here is modest: roughly **+9s** to the install step
   and **+10s** to total job time on a miss, not the large penalty a cold Chromium
-  download might suggest — because the dominant, *uncacheable* cost on both paths is
+  download might suggest — because the dominant, _uncacheable_ cost on both paths is
   the `apt install --with-deps` system-package step, which runs either way.
 - All 4 shards start within ~1–2s of each other (no queuing delay observed across
   this sample), so per-shard time is a reasonable proxy for the job's contribution
@@ -84,11 +84,12 @@ Playwright version bump), which is infrequent in this repo's recent history.
 ```
 $ docker manifest inspect mcr.microsoft.com/playwright:v1.62.1-jammy
 ```
+
 resolves to a multi-arch index; the `linux/amd64` manifest (the one `ubuntu-latest`
 runners would actually pull) has 7 layers summing to:
 
 **896,931,706 bytes ≈ 897 MB compressed** (this part is a real, live measurement —
-just not a CI *timing* measurement).
+just not a CI _timing_ measurement).
 
 That is **~1.45×** the 618 MB image benchmarked in the blog post cited by #544's
 research and by issue #547 itself
@@ -102,7 +103,7 @@ Re-reading the post directly (not just the one number #547 already quoted):
 
 - Caching the container image via `actions/cache` + `docker load`: cache restore
   **17s+**, then `docker load` unpack **+33s**, then container start + test run
-  **+17s** — a *slower* path overall than expected.
+  **+17s** — a _slower_ path overall than expected.
 - Pulling the image directly (`docker pull` from ghcr.io, no cache) each run: **62s
   total, of which 47s was actual test execution** — implying roughly **~15s** of
   pull + container-start overhead for their 618 MB image.
@@ -122,7 +123,7 @@ Two official-docs facts bound this estimate:
   so registry throttling isn't a factor for either MCR (this repo's registry) or
   ghcr.io (the blog's).
 - GitHub does **not** publish an actual network-bandwidth figure for hosted
-  runners — only a *minimum* requirement of "at least 70 kilobits per second
+  runners — only a _minimum_ requirement of "at least 70 kilobits per second
   upload and download" ([GitHub Actions docs: about GitHub-hosted
   runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners)),
   which is far below real-world observed throughput and not usable for an estimate.
@@ -153,16 +154,16 @@ apples-to-apples per-shard comparison, not a one-time amortized cost.
 
 ## 3. Comparison
 
-| | Current (`actions/cache` + install) | Container job (estimated) |
-|---|---|---|
-| Per-shard overhead before tests run | 12–28s (measured: ~14.7s hit avg, ~23.5s miss avg) | ~22s (estimated, ±unknown margin) |
-| Data source | Real, this repo's own CI history (8 runs) | Estimated: scaled from one third-party blog benchmark on a different, smaller (618 MB vs. 897 MB) image, pulled from a different registry (ghcr.io vs. mcr.microsoft.com) |
-| Confidence | High (direct measurement) | Low — single external data point, linear-scaling assumption, different registry, no cold/warm split measured for *this* image |
+|                                     | Current (`actions/cache` + install)                | Container job (estimated)                                                                                                                                                 |
+| ----------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Per-shard overhead before tests run | 12–28s (measured: ~14.7s hit avg, ~23.5s miss avg) | ~22s (estimated, ±unknown margin)                                                                                                                                         |
+| Data source                         | Real, this repo's own CI history (8 runs)          | Estimated: scaled from one third-party blog benchmark on a different, smaller (618 MB vs. 897 MB) image, pulled from a different registry (ghcr.io vs. mcr.microsoft.com) |
+| Confidence                          | High (direct measurement)                          | Low — single external data point, linear-scaling assumption, different registry, no cold/warm split measured for _this_ image                                             |
 
 **Bottom line: the estimated container-job overhead (~22s) lands within the same
 range as the current approach's already-measured overhead (12–28s), not clearly
 better or worse.** The blog post's own conclusion — that caching the image
-tarball was *slower* than a plain uncached pull, and that the plain pull was
+tarball was _slower_ than a plain uncached pull, and that the plain pull was
 roughly on par with a non-containerized install — is consistent with what this
 estimate finds for this repo's larger image: no strong time-cost argument in
 either direction from this spike's data alone.
@@ -170,7 +171,7 @@ either direction from this spike's data alone.
 This means #548's decision should weigh other factors from the tracking issue
 (cross-platform baseline consistency being the primary motivation — see #544 — not
 CI speed) rather than expecting a container job to be a clear speed win. If #548
-wants a confident *measured* number rather than this estimate, the concrete next
+wants a confident _measured_ number rather than this estimate, the concrete next
 step is the real trial #547 originally described: a scoped, temporary
 `workflow_dispatch`-only workflow file testing the `container:` approach against
 this exact image and job, run a few times cold and warm, with explicit human
