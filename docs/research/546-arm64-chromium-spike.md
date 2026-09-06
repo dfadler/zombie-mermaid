@@ -27,7 +27,7 @@ one data point, not a full measurement — whether this holds across the whole
 ~280-sample suite, especially text-dense samples where this repo's own
 `playwright.config.ts` comments already flag the most rasterization jitter, is
 the fuller question [#545](https://github.com/dfadler/zombie-mermaid/issues/545)
-is scoped to answer. This spike only guarantees Chromium *launches and renders*
+is scoped to answer. This spike only guarantees Chromium _launches and renders_
 natively on arm64 and gives one encouraging data point on pixel parity — it is
 not a substitute for #545's broader measurement.
 
@@ -44,6 +44,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
    ```
    $ docker manifest inspect mcr.microsoft.com/playwright:v1.62.1-jammy
    ```
+
    returned two platform manifests — `linux/amd64` and `linux/arm64` — each
    with its own digest.
 
@@ -77,6 +78,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
     7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00
     03 00 b7 00
    ```
+
    Bytes 18–19 (`e_machine`, little-endian) are `b7 00` = `0x00b7` = 183 =
    `EM_AARCH64`. (For comparison, x86-64 would read `3e 00`.) This is
    unambiguous: the shipped binary is compiled for AArch64, not amd64 running
@@ -84,7 +86,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
 
 5. **This repo's own dependency tree installs cleanly on real arm64 Linux**:
    ran `corepack enable && corepack prepare pnpm@11.13.0 --activate && pnpm
-   install --frozen-lockfile` against this repo's actual `pnpm-lock.yaml`
+install --frozen-lockfile` against this repo's actual `pnpm-lock.yaml`
    inside the container (bind-mounted worktree, `--platform linux/arm64`).
    Completed in 2m35s with no native-binding/architecture errors (this repo
    has no `sharp`/`canvas`-style native dependency, so this was expected, but
@@ -103,6 +105,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
    [1/1] [chromium] › svg-samples.visual.test.ts:51:5 › gallery samples (samples-data.ts) › renders Flowchart / Simple Flow
      1 passed (23.2s)
    ```
+
    This ran the repo's real `renderMermaidSVG` output through a real Chromium
    page (`page.setContent` + the harness script), took a real
    `toHaveScreenshot` screenshot, and diffed it against the already-committed
@@ -124,7 +127,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
   (x86-64 or arm64)" as supported Linux targets — arm64 is a first-class,
   documented target, not an unsupported side path.
 - **Playwright 1.57.0 release notes** (fetched via `gh api
-  repos/microsoft/playwright/releases/tags/v1.57.0`, published 2025-11-25) are
+repos/microsoft/playwright/releases/tags/v1.57.0`, published 2025-11-25) are
   the single most decisive source found:
 
   > Starting with this release, Playwright switches from Chromium, to using
@@ -137,6 +140,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
   evidence against the "no arm64 Chromium build" claim, and current as of a
   release two minor versions after this repo's pin (1.57 → this repo pins
   1.62.1).
+
 - No Playwright release note between 1.57 and 1.62.1 was found reverting or
   qualifying that arm64-Chromium statement (checked via
   `playwright.dev/docs/release-notes`, general web search for
@@ -144,7 +148,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
   release list) — search results independently describe arm64 Linux
   continuing to use a Chromium build model matching the 1.57 announcement.
 - `microsoft/playwright#11150` (2022) itself is closed; the original report
-  (no Chrome/Chromium build for Ubuntu arm64) reflects the *pre-1.57*, and in
+  (no Chrome/Chromium build for Ubuntu arm64) reflects the _pre-1.57_, and in
   fact pre-dates-by-years, landscape. No content in the issue thread itself
   was fetchable beyond the opening post via WebFetch (GitHub comment threads
   render via JS), so its resolution comments could not be quoted directly —
@@ -159,7 +163,7 @@ Ran directly on this repo's pinned Playwright version, `1.62.1` (`package.json`
   establish that all ~280 samples would, particularly the text-dense ones
   this repo's own config comments flag as most jitter-prone. Do not read this
   spike's single passing test as resolving #545.
-- This spike used the *default* Chrome for Testing / Chromium switch behavior
+- This spike used the _default_ Chrome for Testing / Chromium switch behavior
   documented for 1.57. It did not audit Firefox or WebKit arm64 support (out
   of scope — this repo's visual suite is Chromium-only per
   `playwright.config.ts`'s single `chromium` project).
