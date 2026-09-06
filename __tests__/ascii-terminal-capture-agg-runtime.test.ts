@@ -25,7 +25,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { mkdtemp, writeFile, chmod, rm } from 'node:fs/promises'
+import { mkdtemp, writeFile, chmod, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -53,6 +53,52 @@ async function makeShimDir(names: string[]): Promise<string> {
   return dir
 }
 
+/** Commands `scripts/ascii-terminal-capture.sh` needs just to *start
+ * running*, independent of whichever dependency the current test means to
+ * simulate as absent: `bash` itself (the script's `#!/usr/bin/env bash`
+ * shebang means `env` has to resolve `bash` via PATH — without it the
+ * script never even begins executing, failing with a generic "bash: No
+ * such file or directory" rather than the script's own error handling),
+ * plus the coreutils it shells out to directly (not just probes with
+ * `command -v`): cat, grep, rm, dirname, basename, mkdir. A test that
+ * needs to simulate a command being genuinely absent (see
+ * `makeIsolatedPath` below) can't just append the real `/usr/bin:/bin` to
+ * PATH for these, because GitHub Actions' hosted runners ship Docker
+ * pre-installed with a running daemon — appending real system directories
+ * would make a real `docker` resolve too, defeating the simulation. */
+const REQUIRED_COREUTILS = [
+  'bash',
+  'cat',
+  'grep',
+  'rm',
+  'dirname',
+  'basename',
+  'mkdir',
+]
+
+/** Builds a PATH entry containing no-op shims for `shimNames` (so
+ * `command -v` succeeds for them without the real tool installed) plus
+ * real symlinks to this machine's actual coreutils binaries (resolved via
+ * `command -v` against the *ambient* PATH, not hardcoded to /usr/bin) —
+ * and nothing else. Unlike `makeShimDir`, this is deliberately NOT chained
+ * ahead of a plain system PATH: the whole point is that a command absent
+ * from `shimNames` (e.g. `docker`) must be genuinely unresolvable, which a
+ * fallback to real `/usr/bin:/bin` would silently undermine on any runner
+ * that happens to have that command installed. */
+async function makeIsolatedPath(shimNames: string[]): Promise<string> {
+  const dir = await makeShimDir(shimNames)
+  for (const name of REQUIRED_COREUTILS) {
+    const { stdout } = await execFileAsync('command', ['-v', name], {
+      shell: '/bin/sh',
+    })
+    const realPath = stdout.trim()
+    if (realPath) {
+      await symlink(realPath, join(dir, name))
+    }
+  }
+  return dir
+}
+
 interface RunResult {
   code: number
   stdout: string
@@ -70,18 +116,25 @@ async function runScript(
     return { code: 0, stdout, stderr }
   } catch (err) {
     const e = err as { code?: number; stdout?: string; stderr?: string }
-    return { code: e.code ?? -1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' }
+    return {
+      code: e.code ?? -1,
+      stdout: e.stdout ?? '',
+      stderr: e.stderr ?? '',
+    }
   }
 }
 
 let shimDir: string
+let isolatedDir: string
 
 beforeAll(async () => {
   shimDir = await makeShimDir(['asciinema', 'python3'])
+  isolatedDir = await makeIsolatedPath(['asciinema', 'python3'])
 }, 30_000)
 
 afterAll(async () => {
   await rm(shimDir, { recursive: true, force: true })
+  await rm(isolatedDir, { recursive: true, force: true })
 })
 
 describe('ascii-terminal-capture.sh ASCII_AGG_RUNTIME', () => {
@@ -105,11 +158,20 @@ describe('ascii-terminal-capture.sh ASCII_AGG_RUNTIME', () => {
   })
 
   it('ASCII_AGG_RUNTIME=docker requires docker, not a local agg binary', async () => {
+    // Deliberately uses the fully isolated PATH, not `${shimDir}:/usr/bin:/bin`
+    // like the other tests in this file: GitHub Actions' hosted runners ship
+    // Docker pre-installed with a running daemon, so appending real
+    // system directories here would make a real `docker` resolve and this
+    // test would pass for the wrong reason — or rather, fail differently,
+    // by falling through to the (also-real) `docker info` check, then into
+    // the always-local asciinema-version probe, which errors on the fake
+    // asciinema shim instead of ever reaching the "missing dependency:
+    // docker" branch this test means to exercise.
     const result = await runScript(
       ['./src/index.ts', '12', '/tmp/does-not-matter'],
       {
         ASCII_AGG_RUNTIME: 'docker',
-        PATH: `${shimDir}:/usr/bin:/bin`,
+        PATH: isolatedDir,
       },
     )
     expect(result.code).toBe(EXIT_DEPENDENCY)
