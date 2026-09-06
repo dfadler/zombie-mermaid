@@ -1,0 +1,4 @@
+# Build artifact — rebuild with:
+#   cd core && GO111MODULE=off go build -o core main.go
+core/core
+core/core-stripped
