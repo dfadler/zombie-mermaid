@@ -32,6 +32,8 @@ import {
   increaseSize,
   increaseRoleCanvasSize,
   write,
+  isJunctionChar,
+  mergeJunctions,
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { getCorners } from './shapes/corners.ts'
@@ -209,6 +211,17 @@ function fitLabelToAvailableWidth(
   return { start, cells }
 }
 
+/**
+ * Display width of a relationship label as it is actually drawn: its widest
+ * line plus one padding space on each side. Every pass that needs to know
+ * how much horizontal room a label takes (column reservation, per-pair
+ * column spacing, territory precomputation, drawing) must measure it the
+ * same way, or the room reserved up front won't match what gets drawn.
+ */
+function labelCellWidth(label: string): number {
+  return Math.max(...splitLines(label).map((l) => displayWidth(l))) + 2
+}
+
 // ============================================================================
 // Layout and rendering
 // ============================================================================
@@ -349,9 +362,97 @@ export function renderClassAscii(
     levelGroups[level.get(cls.id)!]!.push(cls.id)
   }
 
+  // When more than one relationship connects the same pair of classes —
+  // most commonly a pair going in opposite directions, e.g. both
+  // `View --> Model` and `Model ..> View` — every relationship's connection
+  // point defaults to the exact same box-center column. Left alone, that
+  // means their lines, arrowheads, and labels all land on the same cells:
+  // whichever relationship draws last silently overwrites the other's, so
+  // it appears to vanish from the ASCII output entirely (issue #448). Give
+  // each relationship in such a group its own column, spread symmetrically
+  // around the box center, so their routes never start from the same point.
+  // Spacing is sized to the widest label in the group (not a fixed
+  // constant) so long labels still clear each other horizontally.
+  //
+  // Computed before positions are assigned (it depends only on the
+  // relationship list) because the column reservation below needs to know
+  // how far each group fans out from its boxes' centers.
+  const relColumnOffset = new Map<number, number>()
+  /** Distance between a group's outermost lanes, keyed by member — see `anchorOffset`. */
+  const relGroupSpread = new Map<number, number>()
+  {
+    const pairGroups = new Map<string, number[]>()
+    diagram.relationships.forEach((rel, i) => {
+      const pairKey = [rel.from, rel.to].sort().join('::')
+      const group = pairGroups.get(pairKey) ?? []
+      group.push(i)
+      pairGroups.set(pairKey, group)
+    })
+    for (const group of pairGroups.values()) {
+      if (group.length < 2) continue
+      const n = group.length
+      const widestLabel = Math.max(
+        ...group.map((i) => {
+          const label = diagram.relationships[i]!.label
+          if (!label) return 3 // room for just a line/arrow
+          return labelCellWidth(label)
+        }),
+      )
+      const step = widestLabel + 1 // +1 for a visual gap between labels
+      group.forEach((relIndex, pos) => {
+        relColumnOffset.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
+        relGroupSpread.set(relIndex, (n - 1) * step)
+      })
+    }
+  }
+
+  // --- Reserve column room for relationship labels and fanned-out groups ---
+  // A class's horizontal slot used to be exactly its box's content width, so
+  // a narrow box (a single-letter class with no members) whose relationship
+  // carries a long label had nowhere to put that label: neighbouring labels
+  // fought over the same cells and the territory pass below truncated them
+  // all to `…` even though the diagram could simply have spread the columns
+  // further apart (issue #488). The same shortfall broke multi-relationship
+  // groups: the per-pair offsets above can fan out well past a narrow box's
+  // edges, and clamping them back inside the box collapsed distinct
+  // relationships onto one connection point (issue #489).
+  //
+  // So each class's column *slot* is its box plus whatever its
+  // relationships overhang past the box's edges: for every relationship,
+  // the label (or bare line) centered on that relationship's lane reaches
+  // some distance left and right of the box's center column, and the slot
+  // is padded by however much of that reach falls outside the box. The box
+  // itself keeps its content width; only the gap around it grows, and only
+  // on the side and by the amount a label or group actually needs — a
+  // right-side overhang on the last class of a level, say, moves nothing.
+  // Every relationship reserves at *both* of its endpoints so a vertical
+  // pair (A above B) is padded identically and B stays directly under A.
+  const columnReach = new Map<string, { left: number; right: number }>()
+  for (const cls of diagram.classes) {
+    columnReach.set(cls.id, { left: 0, right: 0 })
+  }
+  diagram.relationships.forEach((rel, relIndex) => {
+    if (!classById.has(rel.from) || !classById.has(rel.to)) return
+    // Mirror the draw pass: a label of `cellW` cells centered on its lane
+    // starts `floor(cellW / 2)` cells left of the lane; a bare line/arrow
+    // is a single cell on the lane itself.
+    const cellW = rel.label ? labelCellWidth(rel.label) : 1
+    const offset = relColumnOffset.get(relIndex) ?? 0
+    const left = Math.floor(cellW / 2) - offset
+    const right = offset + cellW - 1 - Math.floor(cellW / 2)
+    for (const id of [rel.from, rel.to]) {
+      const reach = columnReach.get(id)!
+      reach.left = Math.max(reach.left, left)
+      reach.right = Math.max(reach.right, right)
+    }
+  })
+
   // Compute positions: each level is a row, classes in a row are spaced horizontally
   const placed = new Map<string, PlacedClass>()
   let currentY = 0
+  // Right edge of the widest level's last slot — a slot can be wider than
+  // its box, so the canvas has to cover the slot, not just the box.
+  let maxSlotEnd = 0
 
   for (let lv = 0; lv <= maxLevel; lv++) {
     const group = levelGroups[lv]!
@@ -364,15 +465,25 @@ export function renderClassAscii(
       const cls = classById.get(id)!
       const w = classBoxW.get(id)!
       const h = classBoxH.get(id)!
+      // The box's center column sits `floor(w / 2)` cells from its left
+      // edge (the same arithmetic `connectionColumns` uses), so anything
+      // reaching further than that past the center overhangs the box.
+      const reach = columnReach.get(id)!
+      const leftPad = Math.max(0, reach.left - Math.floor(w / 2))
+      const rightPad = Math.max(0, reach.right - (w - 1 - Math.floor(w / 2)))
       placed.set(id, {
         cls,
         sections: classSections.get(id)!,
-        x: currentX,
+        // Shifted right only by the left overhang, so a box with nothing
+        // reaching past its left edge lands exactly where it always has.
+        x: currentX + leftPad,
         y: currentY,
         width: w,
         height: h,
       })
-      currentX += w + hGap
+      const slotWidth = leftPad + w + rightPad
+      maxSlotEnd = Math.max(maxSlotEnd, currentX + slotWidth)
+      currentX += slotWidth + hGap
       maxH = Math.max(maxH, h)
     }
 
@@ -380,7 +491,7 @@ export function renderClassAscii(
   }
 
   // --- Create canvas ---
-  let totalW = 0
+  let totalW = maxSlotEnd
   let totalH = 0
   for (const p of placed.values()) {
     totalW = Math.max(totalW, p.x + p.width)
@@ -512,78 +623,183 @@ export function renderClassAscii(
   const dashH = useAscii ? '.' : '╌'
   const dashV = useAscii ? ':' : '┊'
 
-  // When more than one relationship connects the same pair of classes —
-  // most commonly a pair going in opposite directions, e.g. both
-  // `View --> Model` and `Model ..> View` — every relationship's connection
-  // point defaults to the exact same box-center column. Left alone, that
-  // means their lines, arrowheads, and labels all land on the same cells:
-  // whichever relationship draws last silently overwrites the other's, so
-  // it appears to vanish from the ASCII output entirely (issue #448). Give
-  // each relationship in such a group its own column, spread symmetrically
-  // around the box center, so their routes never start from the same point.
-  // Spacing is sized to the widest label in the group (not a fixed
-  // constant) so long labels still clear each other horizontally.
-  const relColumnOffset = new Map<number, number>()
-  {
-    const pairGroups = new Map<string, number[]>()
-    diagram.relationships.forEach((rel, i) => {
-      const pairKey = [rel.from, rel.to].sort().join('::')
-      const group = pairGroups.get(pairKey) ?? []
-      group.push(i)
-      pairGroups.set(pairKey, group)
-    })
-    for (const group of pairGroups.values()) {
-      if (group.length < 2) continue
-      const n = group.length
-      const widestLabel = Math.max(
-        ...group.map((i) => {
-          const label = diagram.relationships[i]!.label
-          if (!label) return 3 // room for just a line/arrow
-          return Math.max(...splitLines(label).map((l) => displayWidth(l))) + 2
-        }),
-      )
-      const step = widestLabel + 1 // +1 for a visual gap between labels
-      group.forEach((relIndex, pos) => {
-        relColumnOffset.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
-      })
-    }
-  }
-
-  /** Keep an offset connection point within the box's own width. */
-  function clampToBoxWidth(offset: number, boxWidth: number): number {
-    const maxOffset = Math.max(0, Math.floor((boxWidth - 2) / 2))
-    return Math.max(-maxOffset, Math.min(maxOffset, offset))
+  /**
+   * Offset from a box's center column to the *anchor* where one
+   * relationship's line touches that box's border — always within the
+   * box's own width, so a line visibly leaves from (or arrives at) the box
+   * rather than from empty space beside it. This is the only place the
+   * per-pair offset is reined in: the *lane* the line then runs along
+   * keeps the full offset (see `connectionColumns`), which the column
+   * reservation in the layout pass guarantees room for.
+   *
+   * A group whose lanes fan out wider than the box has its anchors spread
+   * evenly across the box's full width (corner columns included) by
+   * scaling the whole group down by one factor, so as many relationships
+   * as the box has columns keep a distinct border cell — and so a distinct
+   * arrowhead. Clamping each lane on its own instead collapsed every outer
+   * lane onto the same edge column, which is exactly how #489's four
+   * relationships ended up sharing two connection points. Only a group
+   * with more members than the box has columns still has to share.
+   */
+  function anchorOffset(relIndex: number, boxWidth: number): number {
+    const offset = relColumnOffset.get(relIndex) ?? 0
+    const spread = relGroupSpread.get(relIndex) ?? 0
+    // Columns available on each side of the center — the center itself is
+    // `floor(boxWidth / 2)` in from the left edge, matching `connectionColumns`.
+    const left = Math.floor(boxWidth / 2)
+    const right = boxWidth - 1 - left
+    const scale = spread > left + right ? (left + right) / spread : 1
+    return Math.max(-left, Math.min(right, Math.round(offset * scale)))
   }
 
   /**
-   * A relationship's connection columns: center-bottom of its source and
-   * center-top of its target, each shifted by the relationship's group
-   * offset (see `relColumnOffset` above). Every pass that positions
-   * something relative to a relationship's route — the line-drawing loop,
-   * the label-territory precompute, and the label-drawing pass — must go
-   * through this one helper. When the line pass alone applied the offset,
-   * a reciprocal pair's labels were still measured and drawn against the
-   * shared box center: the territory pass saw two labels with identical
-   * midpoints and split the column between them, truncating both to a
-   * single mashed `rea……ies` while their lines sat on separate columns.
+   * Connection columns for one relationship, shifted by its per-pair offset.
+   *
+   * `fromCX`/`toCX` are the *lanes*: the columns the line's vertical run,
+   * arrowhead-side jog, and label all sit on. They carry the full offset,
+   * so relationships in a group never share a lane. Every pass that
+   * positions something relative to a relationship's route — the
+   * line-drawing loop, the label-territory precompute, and the
+   * label-drawing pass — must go through this one helper and use these
+   * lanes, so the label ends up on the same column the line actually runs
+   * along. When only the line pass applied the offset (an earlier version
+   * of this fix), a reciprocal pair's labels were still measured and drawn
+   * against the shared box center: the territory pass saw two labels with
+   * identical midpoints and split the column between them, truncating both
+   * to a single mashed `rea……ies` while their lines sat on separate columns
+   * (issue #448).
+   *
+   * `fromAnchorX`/`toAnchorX` are where the line meets each box border —
+   * the lane pulled back inside the box (see `anchorOffset`). When a group
+   * fans out wider than a narrow box (issue #489: four relationships
+   * between two single-letter classes), a lane can sit well outside the
+   * box; the line then jogs horizontally along the row adjacent to the box
+   * from the anchor out to its lane (see `drawJog`) instead of the lanes
+   * being collapsed onto the few columns the box has, which made distinct
+   * relationships overwrite one another. Relationships may end up sharing
+   * an anchor when a group outnumbers the box's columns — that's fine,
+   * their jogs merge into a small trunk at the border — but never a lane.
+   * Labels always use the lane, never the anchor: only the line's
+   * box-border touchpoint needs pulling back inside the box.
    */
   function connectionColumns(
     relIndex: number,
     fromP: PlacedClass,
     toP: PlacedClass,
-  ): { fromCX: number; toCX: number } {
+  ): {
+    fromCX: number
+    toCX: number
+    fromAnchorX: number
+    toAnchorX: number
+  } {
     const rawOffset = relColumnOffset.get(relIndex) ?? 0
+    const fromCenter = fromP.x + Math.floor(fromP.width / 2)
+    const toCenter = toP.x + Math.floor(toP.width / 2)
     return {
-      fromCX:
-        fromP.x +
-        Math.floor(fromP.width / 2) +
-        clampToBoxWidth(rawOffset, fromP.width),
-      toCX:
-        toP.x +
-        Math.floor(toP.width / 2) +
-        clampToBoxWidth(rawOffset, toP.width),
+      fromCX: fromCenter + rawOffset,
+      toCX: toCenter + rawOffset,
+      fromAnchorX: fromCenter + anchorOffset(relIndex, fromP.width),
+      toAnchorX: toCenter + anchorOffset(relIndex, toP.width),
     }
   }
+
+  /**
+   * Write one cell of a jog, merging with whatever another relationship's
+   * jog already drew there. Jogs of one group all run along the same row
+   * next to the box, so they routinely overlap: two relationships sharing
+   * an anchor stack their corners on one cell, and an outer relationship's
+   * jog passes straight through an inner one's lane corner. Compositing
+   * box-drawing glyphs (`─` over `┌` → `┬`, `┘` over `┘` → `┘`) turns those
+   * overlaps into a readable trunk instead of the last write winning. A
+   * marker glyph already placed by an earlier relationship is left alone —
+   * an arrowhead at a shared anchor doubles as the junction.
+   */
+  function setJogCell(x: number, y: number, ch: string, role: CharRole): void {
+    if (rc[x]?.[y] === 'arrow') return
+    const existing = canvas[x]?.[y]
+    if (
+      !useAscii &&
+      existing !== undefined &&
+      isJunctionChar(existing) &&
+      isJunctionChar(ch)
+    ) {
+      const merged = mergeJunctions(existing, ch)
+      setC(x, y, merged, merged === ch ? role : 'junction')
+      return
+    }
+    setC(x, y, ch, role)
+  }
+
+  /**
+   * Draw the short horizontal jog that joins a relationship's anchor on a
+   * box border to the lane its line runs along, on the row directly
+   * adjacent to that border. `boxIsAbove` says which side of the row the
+   * box sits on: the anchor's corner opens toward the box, the lane's
+   * corner opens the other way, toward the vertical run. A relationship
+   * whose lane already sits inside its box needs no jog at all, which keeps
+   * every pre-existing (unfanned) layout byte-identical.
+   */
+  function drawJog(
+    row: number,
+    anchorX: number,
+    laneX: number,
+    lineH: string,
+    boxIsAbove: boolean,
+  ): void {
+    if (anchorX === laneX) return
+    const lx = Math.min(anchorX, laneX)
+    const rx = Math.max(anchorX, laneX)
+    // Interior cells only — the two ends are corners (or, in plain-ASCII
+    // mode, the same line glyph), written separately so a second jog
+    // sharing this anchor merges with the corner instead of flattening it.
+    for (let x = lx + 1; x < rx; x++) {
+      setJogCell(x, row, lineH, 'line')
+    }
+    if (useAscii) {
+      setJogCell(anchorX, row, lineH, 'line')
+      setJogCell(laneX, row, lineH, 'line')
+      return
+    }
+    const laneIsRight = laneX > anchorX
+    const anchorCorner = boxIsAbove
+      ? laneIsRight
+        ? '└'
+        : '┘'
+      : laneIsRight
+        ? '┌'
+        : '┐'
+    const laneCorner = boxIsAbove
+      ? laneIsRight
+        ? '┐'
+        : '┌'
+      : laneIsRight
+        ? '┘'
+        : '└'
+    setJogCell(anchorX, row, anchorCorner, 'corner')
+    setJogCell(laneX, row, laneCorner, 'corner')
+  }
+
+  // A detoured relationship's actual routed path — the far column its
+  // vertical trunk runs along, and the rows its horizontal jogs sit on —
+  // keyed by relationship index. The line-drawing pass below is the only
+  // place that decides whether (and where) a relationship detours, but the
+  // label-territory precompute and label-drawing passes further down need
+  // that same decision too, so they can anchor a detoured relationship's
+  // label on its real path instead of the straight-line source/target
+  // midpoint (issue #487). Populated only for the "target below source,
+  // needs a detour around an intermediate box" case — the only routing
+  // branch that currently detours at all.
+  const detourRoutes = new Map<
+    number,
+    {
+      routeX: number
+      exitY: number
+      entryY: number
+      fromAnchorX: number
+      toAnchorX: number
+      clearSide: 'left' | 'right'
+    }
+  >()
 
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
@@ -597,8 +813,14 @@ export function renderClassAscii(
     // Exclude source and target boxes from collision detection
     const excludeIds = new Set([rel.from, rel.to])
 
-    // Connection points: center-bottom of source → center-top of target
-    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
+    // Connection points: the lanes the line runs along (`fromCX`/`toCX`)
+    // and the anchors where it touches each box border — see
+    // `connectionColumns` for why those can differ.
+    const { fromCX, toCX, fromAnchorX, toAnchorX } = connectionColumns(
+      relIndex,
+      fromP,
+      toP,
+    )
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -618,23 +840,41 @@ export function renderClassAscii(
 
       if (needsDetour) {
         // COLLISION CASE: Route around intermediate boxes
-        // Path: source center → horizontal to routeX → vertical to entry → horizontal to target center
+        // Path: source anchor → horizontal to routeX → vertical to entry → horizontal to target anchor
+        // The horizontals start/end at the *anchors* (on the box borders),
+        // so a fanned-out lane needs no separate jog here — the detour's
+        // own horizontal already runs along the jog row.
 
         const exitY = fromBY + 1
         const entryY = toTY - 1
+        detourRoutes.set(relIndex, {
+          routeX,
+          exitY,
+          entryY,
+          fromAnchorX,
+          toAnchorX,
+          // `findClearColumn` starts its search at `fromCX` and only
+          // returns a different column when that one collided with a box
+          // over the route's full y-range — so whichever side it moved
+          // toward is the side with clearance, and the box it moved away
+          // from sits on the other side of `routeX`. The label-anchor pass
+          // uses this to keep a detour label's whole width clear of that
+          // box, not just the single column `routeX` itself.
+          clearSide: routeX > fromCX ? 'right' : 'left',
+        })
 
-        // 1. Horizontal from source center to route column
-        const lx1 = Math.min(fromCX, routeX)
-        const rx1 = Math.max(fromCX, routeX)
+        // 1. Horizontal from source anchor to route column
+        const lx1 = Math.min(fromAnchorX, routeX)
+        const rx1 = Math.max(fromAnchorX, routeX)
         for (let x = lx1; x <= rx1; x++) {
           setC(x, exitY, lineH, 'line')
         }
         if (!useAscii && exitY < (canvas[0]?.length ?? 0)) {
-          if (fromCX < routeX) {
-            setC(fromCX, exitY, '└', 'corner')
+          if (fromAnchorX < routeX) {
+            setC(fromAnchorX, exitY, '└', 'corner')
             setC(routeX, exitY, '┐', 'corner')
           } else {
-            setC(fromCX, exitY, '┘', 'corner')
+            setC(fromAnchorX, exitY, '┘', 'corner')
             setC(routeX, exitY, '┌', 'corner')
           }
         }
@@ -644,20 +884,20 @@ export function renderClassAscii(
           setC(routeX, y, lineV, 'line')
         }
 
-        // 3. Horizontal from routeX to target center at entry
-        if (routeX !== toCX) {
-          const lx2 = Math.min(routeX, toCX)
-          const rx2 = Math.max(routeX, toCX)
+        // 3. Horizontal from routeX to target anchor at entry
+        if (routeX !== toAnchorX) {
+          const lx2 = Math.min(routeX, toAnchorX)
+          const rx2 = Math.max(routeX, toAnchorX)
           for (let x = lx2; x <= rx2; x++) {
             setC(x, entryY, lineH, 'line')
           }
           if (!useAscii && entryY < (canvas[0]?.length ?? 0)) {
-            if (routeX < toCX) {
+            if (routeX < toAnchorX) {
               setC(routeX, entryY, '└', 'corner')
-              setC(toCX, entryY, '┐', 'corner')
+              setC(toAnchorX, entryY, '┐', 'corner')
             } else {
               setC(routeX, entryY, '┘', 'corner')
-              setC(toCX, entryY, '┌', 'corner')
+              setC(toAnchorX, entryY, '┌', 'corner')
             }
           }
         }
@@ -678,20 +918,31 @@ export function renderClassAscii(
             useAscii,
             isHierarchical ? 'up' : 'down',
           )
-          setC(toCX, entryY, markerChar, 'arrow')
+          setC(toAnchorX, entryY, markerChar, 'arrow')
         }
         if (marker.markerAt === 'from') {
           const markerChar = getMarkerShape(marker.type, useAscii, 'down')
-          setC(fromCX, fromBY + 1, markerChar, 'arrow')
+          setC(fromAnchorX, fromBY + 1, markerChar, 'arrow')
         }
       } else {
         // NO COLLISION CASE: Use original midpoint-based routing
-        // Path: source center → vertical to midY → horizontal at midY → vertical to target
+        // Path: source anchor → (jog to lane) → vertical to midY → horizontal at midY → vertical → (jog to anchor) → target
+        //
+        // The jogs only exist when a lane sits outside its box; otherwise
+        // anchor and lane coincide and the path is the plain three-segment
+        // route. With the default vertical gap the from-jog row, midY, and
+        // the to-jog row are the three rows between the boxes, so a fanned
+        // group reads as a trunk under the source, labels on the lanes,
+        // and a trunk gathering back into the target.
 
         const midY = fromBY + Math.floor((toTY - fromBY) / 2)
+        const fromJogs = fromCX !== fromAnchorX
+        const toJogs = toCX !== toAnchorX
 
-        // 1. Vertical from source bottom to midY
-        for (let y = fromBY + 1; y <= midY; y++) {
+        // 1. Jog from the source anchor out to the lane, then vertical from
+        //    the source bottom (or from below the jog) to midY
+        drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
+        for (let y = fromBY + (fromJogs ? 2 : 1); y <= midY; y++) {
           setC(fromCX, y, lineV, 'line')
         }
 
@@ -708,10 +959,12 @@ export function renderClassAscii(
           }
         }
 
-        // 3. Vertical from midY to target top
-        for (let y = midY + 1; y < toTY; y++) {
+        // 3. Vertical from midY to the target top (or to above the jog),
+        //    then jog from the lane back in to the target anchor
+        for (let y = midY + 1; y < toTY - (toJogs ? 1 : 0); y++) {
           setC(toCX, y, lineV, 'line')
         }
+        drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
         // Markers for no-collision case
         if (marker.markerAt === 'to') {
@@ -721,7 +974,7 @@ export function renderClassAscii(
           const isHierarchical =
             marker.type === 'inheritance' || marker.type === 'realization'
           setC(
-            toCX,
+            toAnchorX,
             toTY - 1,
             getMarkerShape(
               marker.type,
@@ -733,7 +986,7 @@ export function renderClassAscii(
         }
         if (marker.markerAt === 'from') {
           setC(
-            fromCX,
+            fromAnchorX,
             fromBY + 1,
             getMarkerShape(marker.type, useAscii, 'down'),
             'arrow',
@@ -745,8 +998,13 @@ export function renderClassAscii(
       const fromTY = fromP.y
       const toBY = toP.y + toP.height - 1
       const midY = toBY + Math.floor((fromTY - toBY) / 2)
+      const fromJogs = fromCX !== fromAnchorX
+      const toJogs = toCX !== toAnchorX
 
-      for (let y = fromTY - 1; y >= midY; y--) {
+      // Jog along the row above the source from its anchor out to the lane
+      // (mirror of the downward case), then vertical up to midY
+      drawJog(fromTY - 1, fromAnchorX, fromCX, lineH, false)
+      for (let y = fromTY - (fromJogs ? 2 : 1); y >= midY; y--) {
         setC(fromCX, y, lineV, 'line')
       }
 
@@ -762,9 +1020,10 @@ export function renderClassAscii(
         }
       }
 
-      for (let y = midY - 1; y > toBY; y--) {
+      for (let y = midY - 1; y > toBY + (toJogs ? 1 : 0); y--) {
         setC(toCX, y, lineV, 'line')
       }
+      drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - arrows point in the direction of the vertical segment (upward)
       if (marker.markerAt === 'from') {
@@ -772,7 +1031,7 @@ export function renderClassAscii(
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
           setC(
-            fromCX - Math.floor(markerChar.length / 2) + i,
+            fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
             'arrow',
@@ -787,7 +1046,7 @@ export function renderClassAscii(
         const my = toBY + 1
         for (let i = 0; i < markerChar.length; i++) {
           setC(
-            toCX - Math.floor(markerChar.length / 2) + i,
+            toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
             'arrow',
@@ -796,12 +1055,16 @@ export function renderClassAscii(
       }
     } else {
       // Same level — draw horizontal line with a detour below both boxes
-      const detourY = Math.max(fromBY, toP.y + toP.height - 1) + 2
+      const toBY = toP.y + toP.height - 1
+      const detourY = Math.max(fromBY, toBY) + 2
       increaseSize(canvas, totalW, detourY + 1)
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
+      const fromJogs = fromCX !== fromAnchorX
+      const toJogs = toCX !== toAnchorX
 
-      // Vertical down from source
-      for (let y = fromBY + 1; y <= detourY; y++) {
+      // Jog out to the lane under the source, then vertical down from it
+      drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
+      for (let y = fromBY + (fromJogs ? 2 : 1); y <= detourY; y++) {
         setC(fromCX, y, lineV, 'line')
       }
       // Horizontal
@@ -810,10 +1073,11 @@ export function renderClassAscii(
       for (let x = lx; x <= rx; x++) {
         setC(x, detourY, lineH, 'line')
       }
-      // Vertical up to target
-      for (let y = detourY - 1; y >= toP.y + toP.height; y--) {
+      // Vertical up to target, then jog back in to its anchor
+      for (let y = detourY - 1; y >= toBY + (toJogs ? 2 : 1); y--) {
         setC(toCX, y, lineV, 'line')
       }
+      drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
       // Draw markers - same-level routing uses vertical segments at both ends
       if (marker.markerAt === 'from') {
@@ -821,7 +1085,7 @@ export function renderClassAscii(
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
           setC(
-            fromCX - Math.floor(markerChar.length / 2) + i,
+            fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
             'arrow',
@@ -842,7 +1106,7 @@ export function renderClassAscii(
         const my = toP.y + toP.height
         for (let i = 0; i < markerChar.length; i++) {
           setC(
-            toCX - Math.floor(markerChar.length / 2) + i,
+            toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
             'arrow',
@@ -851,6 +1115,99 @@ export function renderClassAscii(
       }
     }
   })
+
+  /**
+   * Where a relationship's label should ideally center — the column and row
+   * the territory precompute and label-drawing passes below both anchor on.
+   *
+   * For the common case (no detour), this is the straight-line midpoint
+   * between the source and target connection columns/rows, same as before.
+   *
+   * For a relationship whose line detours around an intermediate box (see
+   * `detourRoutes` above), the label instead anchors on the *actual routed
+   * path*: beside the midpoint of the detour's vertical trunk (the longest
+   * segment in the common case), or — when the boxes are close enough
+   * together that the trunk has no vertical room at all — the midpoint of
+   * whichever horizontal jog is longer. Anchoring at the straight-line
+   * midpoint ignored the detour entirely, so a detoured relationship's
+   * label could land in the same column (and even the same row) as an
+   * unrelated relationship's straight-line label, reading as though both
+   * terminated at the same box (issue #487).
+   *
+   * `labelWidth` (the padded display width the caller is about to draw)
+   * matters for the vertical-trunk case specifically: `findClearColumn`
+   * only guarantees the single column `routeX` is clear of boxes over the
+   * trunk's row range, not a whole label-width window centered on it. A
+   * label centered directly on `routeX` routinely re-overlapped the very
+   * box the trunk was routed around to avoid — visible as the label
+   * appearing to collide with (or get shoved off) the box the trunk hugs.
+   * `detour.clearSide` says which side of `routeX` is the side
+   * `findClearColumn` actually found clear (see its call site), so the
+   * label is anchored flush against the trunk on that side instead of
+   * straddling it.
+   */
+  function computeLabelAnchor(
+    relIndex: number,
+    fromP: PlacedClass,
+    toP: PlacedClass,
+    labelWidth: number,
+  ): { idealMidX: number; baseMidY: number } {
+    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
+    const fromBY = fromP.y + fromP.height - 1
+    const toTY = toP.y
+
+    if (fromBY < toTY) {
+      const detour = detourRoutes.get(relIndex)
+      if (detour) {
+        const trunkTop = detour.exitY + 1
+        const trunkBottom = detour.entryY
+        if (trunkBottom >= trunkTop) {
+          // Vertical trunk has room — it's the longest segment of the
+          // route in the common case, so anchor there. The label sits
+          // flush against the trunk on its clear side (see doc comment)
+          // rather than centered on it, with a 1-column gap for legibility.
+          const gap = 1
+          const idealMidX =
+            detour.clearSide === 'right'
+              ? detour.routeX + gap + Math.floor(labelWidth / 2)
+              : detour.routeX - gap - Math.ceil(labelWidth / 2)
+          return {
+            idealMidX,
+            baseMidY: Math.floor((trunkTop + trunkBottom) / 2),
+          }
+        }
+        // Boxes are close enough together that the trunk has no vertical
+        // room (exit and entry jogs sit on the same or adjacent rows) —
+        // anchor on whichever horizontal jog is longer instead.
+        const exitWidth = Math.abs(detour.routeX - detour.fromAnchorX)
+        const entryWidth = Math.abs(detour.toAnchorX - detour.routeX)
+        return entryWidth >= exitWidth
+          ? {
+              idealMidX: Math.floor((detour.routeX + detour.toAnchorX) / 2),
+              baseMidY: detour.entryY,
+            }
+          : {
+              idealMidX: Math.floor((detour.fromAnchorX + detour.routeX) / 2),
+              baseMidY: detour.exitY,
+            }
+      }
+      return {
+        idealMidX: Math.floor((fromCX + toCX) / 2),
+        baseMidY: Math.floor((fromBY + 1 + toTY - 1) / 2),
+      }
+    }
+    if (toP.y + toP.height - 1 < fromP.y) {
+      const toBY = toP.y + toP.height - 1
+      return {
+        idealMidX: Math.floor((fromCX + toCX) / 2),
+        baseMidY: Math.floor((toBY + 1 + fromP.y - 1) / 2),
+      }
+    }
+    return {
+      idealMidX: Math.floor((fromCX + toCX) / 2),
+      baseMidY: Math.max(fromBY, toP.y + toP.height - 1) + 2,
+    }
+  }
 
   // --- Precompute each label's horizontal territory ---
   // A label's left/right bound is derived purely from connection-point
@@ -887,31 +1244,24 @@ export function renderClassAscii(
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
     if (!fromP || !toP) continue
-    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
-    const fromBY = fromP.y + fromP.height - 1
-    const toTY = toP.y
-    const idealMidX = Math.floor((fromCX + toCX) / 2)
 
-    // Same baseMidY branch the draw pass below uses — needed so territory
-    // splitting only ever kicks in between labels that could actually land
-    // on overlapping rows. Two relationships can share a similar idealMidX
+    // Same anchor the draw pass below uses — needed so territory splitting
+    // only ever kicks in between labels that could actually land on
+    // overlapping rows. Two relationships can share a similar idealMidX
     // while being drawn many rows apart (e.g. one class's two separate
     // outgoing edges to two different targets at different heights) —
     // splitting their X territory in that case truncates both for no
     // reason, since they never actually collide.
     const lines = splitLines(rel.label)
     const halfHeight = Math.floor(lines.length / 2)
-    let baseMidY: number
-    if (fromBY < toTY) {
-      baseMidY = Math.floor((fromBY + 1 + toTY - 1) / 2)
-    } else if (toP.y + toP.height - 1 < fromP.y) {
-      const toBY = toP.y + toP.height - 1
-      baseMidY = Math.floor((toBY + 1 + fromP.y - 1) / 2)
-    } else {
-      baseMidY = Math.max(fromBY, toP.y + toP.height - 1) + 2
-    }
 
     const width = Math.max(...lines.map(displayWidth)) + 2 // +2 for padding
+    const { idealMidX, baseMidY } = computeLabelAnchor(
+      relIndex,
+      fromP,
+      toP,
+      width,
+    )
     // Clamped the same way the draw loop below clamps it (never negative —
     // a label can't render left of the canvas edge) so this overlap check
     // reflects what will actually be drawn. Using the *unclamped* value
@@ -973,9 +1323,6 @@ export function renderClassAscii(
 
     // Exclude source and target boxes from collision detection
     const excludeIds = new Set([rel.from, rel.to])
-
-    // Connection points: center-bottom of source → center-top of target
-    const { fromCX, toCX } = connectionColumns(relIndex, fromP, toP)
     const fromBY = fromP.y + fromP.height - 1
     const toTY = toP.y
 
@@ -985,24 +1332,15 @@ export function renderClassAscii(
       const lines = splitLines(rel.label)
       const maxLabelWidth = Math.max(...lines.map((l) => displayWidth(l))) + 2 // +2 for padding
 
-      // Calculate ideal label position based on routing direction
-      let baseMidY: number
-      let idealMidX: number
-
-      if (fromBY < toTY) {
-        // Target below source: place in gap between source bottom and target top
-        baseMidY = Math.floor((fromBY + 1 + toTY - 1) / 2)
-        idealMidX = Math.floor((fromCX + toCX) / 2)
-      } else if (toP.y + toP.height - 1 < fromP.y) {
-        // Target above source: place in gap between target bottom and source top
-        const toBY = toP.y + toP.height - 1
-        baseMidY = Math.floor((toBY + 1 + fromP.y - 1) / 2)
-        idealMidX = Math.floor((fromCX + toCX) / 2)
-      } else {
-        // Same level: place label at midpoint of the detour line
-        baseMidY = Math.max(fromBY, toP.y + toP.height - 1) + 2
-        idealMidX = Math.floor((fromCX + toCX) / 2)
-      }
+      // Calculate ideal label position based on routing direction (and, for
+      // a detoured relationship, its actual routed path — see
+      // `computeLabelAnchor`).
+      const { idealMidX, baseMidY } = computeLabelAnchor(
+        relIndex,
+        fromP,
+        toP,
+        maxLabelWidth,
+      )
 
       // Find a clear vertical position for the label (not inside any box)
       let labelY = baseMidY
