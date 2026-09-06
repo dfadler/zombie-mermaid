@@ -90,18 +90,18 @@ mode," zero DOM dependencies, and a CLI (`zombie-mermaid render` with
 
 ### Side-by-side
 
-| | zombie-mermaid (actual, today) | agentic-mermaid (actual, today) |
-|---|---|---|
-| Relationship to beautiful-mermaid | Fork ("the fork that won't stay buried") | Fork, same upstream |
-| Diagram types | 6: flowchart, state, sequence, class, ER, XY chart | "Registry-backed subset" per its own capabilities command — not confirmed to be a superset or subset of the same 6; explicitly does **not** cover mindmap/gitgraph (inherited `mermaid-ascii` limitation) |
-| Output formats | SVG, ASCII/Unicode | SVG, PNG (offline resvg), ASCII/Unicode, JSON layout |
-| Rendering model | Synchronous, zero-DOM | Synchronous, zero-DOM (same lineage) |
-| Theming | 15 built-in themes, 2-color foundation, Shiki-compatible, mono mode, live CSS-var switching | Same 2-color/Shiki foundation, **plus** a Style+Palette layer of named "looks" (watercolor, blueprint, hand-drawn, etc.) stacked over palettes |
-| Typed edit/mutation API | **None** — render-only | **Yes** — `parseRegisteredMermaid`/narrowers/`mutate`/`verifyMermaid`/`serializeMermaid`, lossless round-trip, CI-gated byte-identical determinism |
-| MCP tool surface | 2 tools: `render_mermaid_svg`, `render_mermaid_ascii` (explicitly labeled experimental/first-cut in the README) | Self-hosted: `execute` (sandboxed Code Mode), `describe_sdk`, `render_png`, `describe`. Hosted endpoint adds `render_svg`, `render_ascii`, `verify`, `mutate`, `build` |
-| CLI | `zombie-mermaid render/themes` | `am` with `capabilities --json`, JSONL batch, `mutate --op`, `preview --open` |
-| Module format | ESM + CJS (`"type":"module"`, CJS `main`, `exports` map) | ESM-only, Node ≥ 22 |
-| Attribution/license | MIT, credits beautiful-mermaid + ASCII-engine origins | MIT, credits beautiful-mermaid + `mermaid-ascii` (Alexander Grooff) |
+|                                   | zombie-mermaid (actual, today)                                                                                  | agentic-mermaid (actual, today)                                                                                                                                                                           |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Relationship to beautiful-mermaid | Fork ("the fork that won't stay buried")                                                                        | Fork, same upstream                                                                                                                                                                                       |
+| Diagram types                     | 6: flowchart, state, sequence, class, ER, XY chart                                                              | "Registry-backed subset" per its own capabilities command — not confirmed to be a superset or subset of the same 6; explicitly does **not** cover mindmap/gitgraph (inherited `mermaid-ascii` limitation) |
+| Output formats                    | SVG, ASCII/Unicode                                                                                              | SVG, PNG (offline resvg), ASCII/Unicode, JSON layout                                                                                                                                                      |
+| Rendering model                   | Synchronous, zero-DOM                                                                                           | Synchronous, zero-DOM (same lineage)                                                                                                                                                                      |
+| Theming                           | 15 built-in themes, 2-color foundation, Shiki-compatible, mono mode, live CSS-var switching                     | Same 2-color/Shiki foundation, **plus** a Style+Palette layer of named "looks" (watercolor, blueprint, hand-drawn, etc.) stacked over palettes                                                            |
+| Typed edit/mutation API           | **None** — render-only                                                                                          | **Yes** — `parseRegisteredMermaid`/narrowers/`mutate`/`verifyMermaid`/`serializeMermaid`, lossless round-trip, CI-gated byte-identical determinism                                                        |
+| MCP tool surface                  | 2 tools: `render_mermaid_svg`, `render_mermaid_ascii` (explicitly labeled experimental/first-cut in the README) | Self-hosted: `execute` (sandboxed Code Mode), `describe_sdk`, `render_png`, `describe`. Hosted endpoint adds `render_svg`, `render_ascii`, `verify`, `mutate`, `build`                                    |
+| CLI                               | `zombie-mermaid render/themes`                                                                                  | `am` with `capabilities --json`, JSONL batch, `mutate --op`, `preview --open`                                                                                                                             |
+| Module format                     | ESM + CJS (`"type":"module"`, CJS `main`, `exports` map)                                                        | ESM-only, Node ≥ 22                                                                                                                                                                                       |
+| Attribution/license               | MIT, credits beautiful-mermaid + ASCII-engine origins                                                           | MIT, credits beautiful-mermaid + `mermaid-ascii` (Alexander Grooff)                                                                                                                                       |
 
 ### The #539 overlap — confirmed, not speculative
 
@@ -130,11 +130,11 @@ scope not worth duplicating.
 Fetched each repository's actual `LICENSE` file via `gh api …/contents/LICENSE`
 (not inferred from a badge or README claim):
 
-| Repo | License | Copyright holder | Copyleft/share-alike? |
-|---|---|---|---|
-| `lukilabs/beautiful-mermaid` | MIT | Craft Docs, 2026 | None |
-| `adewale/agentic-mermaid` | MIT | Craft Docs, 2026 (unchanged from upstream — the fork did not add its own copyright line) | None |
-| `timk75/obsidian-beautiful-mermaid` | MIT | Tim Kaiser, 2026 (independent copyright, not a GitHub-recorded fork) | None |
+| Repo                                | License | Copyright holder                                                                         | Copyleft/share-alike? |
+| ----------------------------------- | ------- | ---------------------------------------------------------------------------------------- | --------------------- |
+| `lukilabs/beautiful-mermaid`        | MIT     | Craft Docs, 2026                                                                         | None                  |
+| `adewale/agentic-mermaid`           | MIT     | Craft Docs, 2026 (unchanged from upstream — the fork did not add its own copyright line) | None                  |
+| `timk75/obsidian-beautiful-mermaid` | MIT     | Tim Kaiser, 2026 (independent copyright, not a GitHub-recorded fork)                     | None                  |
 
 All three are the standard MIT template: permission to use/copy/modify/merge/
 publish/distribute/sublicense/sell, conditioned only on preserving "the above
@@ -149,7 +149,7 @@ or beautiful-mermaid does, that convergence carries **zero license
 obligation** — MIT restricts only the redistribution of the licensed code
 itself, not independent reimplementation of the same idea. The only
 obligation MIT actually imposes — preserving the copyright/permission notice
-on code that *is* copied — is already discharged for the code zombie-mermaid
+on code that _is_ copied — is already discharged for the code zombie-mermaid
 already inherited: its README's existing "Attribution" section credits both
 `beautiful-mermaid` and the ASCII rendering engine's origins, and its own
 `LICENSE` is MIT. No new action is needed unless a future change literally
@@ -206,7 +206,7 @@ public Socket/Snyk "Warn" flags that a project takes on by shipping code
 through a scanner-audited channel. zombie-mermaid does not need to repeat
 that shape: it already publishes a working CLI (`zombie-mermaid render`) and
 an MCP server via npm, so a skill wrapper can be a thin `SKILL.md` plus a
-couple of example invocations of the *existing* published binary/MCP server,
+couple of example invocations of the _existing_ published binary/MCP server,
 not a parallel bundled implementation. That keeps the marginal engineering
 cost low (no new rendering code, no second maintenance surface) while still
 buying presence in a channel zombie-mermaid currently has zero visibility
