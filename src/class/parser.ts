@@ -229,7 +229,8 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
   ): string {
     const { id: rawId, className } = splitClassShorthand(token)
     let id = rawId
-    if (!generic) {
+    let resolvedGeneric = generic
+    if (!resolvedGeneric) {
       // The declaration regexes only split a `~T~` generic off the bare id
       // when nothing else trails it. When the `:::style` shorthand trails
       // the generic instead (`Foo~T~:::hot`), the generic gets swallowed
@@ -239,12 +240,12 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
       const genericMatch = rawId.match(/^(.+?)~(\w+)~$/)
       if (genericMatch) {
         id = genericMatch[1]!
-        generic = genericMatch[2]!
+        resolvedGeneric = genericMatch[2]!
       }
     }
     const cls = ensureClass(classMap, id)
-    if (generic) {
-      cls.label = `${id}<${generic}>`
+    if (resolvedGeneric) {
+      cls.label = `${id}<${resolvedGeneric}>`
     }
     if (className) {
       diagram.classAssignments.set(id, className)
