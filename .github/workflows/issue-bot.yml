@@ -13,4 +13,4 @@ jobs:
       issues: write
       pull-requests: read
     steps:
-      - uses: dfadler/issue-bot@e66038db719cdb9b17f12e6918c5beb239c3abf8 # v1.1.0
+      - uses: dfadler/issue-bot@0f14bb71f02ee14abf9f2f332bfe97d2ee11a272 # v1.2.0
