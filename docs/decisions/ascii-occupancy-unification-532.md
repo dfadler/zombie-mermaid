@@ -52,7 +52,7 @@ scan the **already-rendered character canvas** (`Canvas`, a column-major
 comment at `er-diagram.ts:213-226`, which explicitly documents this as
 load-bearing: labels routinely land past the initial canvas bounds and grow it on
 write). There is no `Set<"x,y">` anywhere in this file's collision logic; the
-canvas itself *is* the occupancy map, and it is always in sync with what's drawn
+canvas itself _is_ the occupancy map, and it is always in sync with what's drawn
 because it's the same object.
 
 Retrofitting this onto `Grid` would mean maintaining a **second, independent**
@@ -63,9 +63,9 @@ across the whole file — box borders, jogs, labels, everything `setC`/
 - It's a materially larger diff than "swap `isRowFree` for `grid.isFree`" — every
   draw call site needs a matching reservation call, in the same order the canvas
   writes happen (since `chooseFreeRow`'s search depends on what's been drawn
-  *so far*, not the final picture).
-  Exact-string-equality tests would catch a *behavior* regression, but not the
-  *architectural* regression of now having two sources of truth that could drift
+  _so far_, not the final picture).
+  Exact-string-equality tests would catch a _behavior_ regression, but not the
+  _architectural_ regression of now having two sources of truth that could drift
   on a future edit — a bug class this file structurally cannot have today (there
   is only one canvas, so "free" and "drawn" can never disagree).
 - `Grid`'s coordinate space (`GridCoord`, reserved via `NODE_BLOCK_SIZE`-sized
@@ -74,7 +74,7 @@ across the whole file — box borders, jogs, labels, everything `setC`/
   coordinates are real character cells. `Grid`'s primitives (`isFree`,
   `isBlockFree`, `placeBlock`) are granularity-agnostic (`size` defaults to 3 but
   is a parameter), so using `Grid` at `size=1` for raw canvas cells is
-  *mechanically* possible — but it's then just a same-shaped `Set<string>`
+  _mechanically_ possible — but it's then just a same-shaped `Set<string>`
   duplicating what the canvas already tells you for free, for no behavior gain.
 
 **Assessment: retrofittable, but not favorably.** The migration is safe to attempt
@@ -102,7 +102,7 @@ closer to an interval-scheduling problem than an occupancy-map problem.
 
 Migrating `isInsideBox`/`findClearColumn` to `Grid` faces the same granularity
 mismatch as ER (rectangles in real canvas-pixel space vs. `Grid`'s logical
-node-block space), but *unlike* ER, class-diagram's box list is small (one entry
+node-block space), but _unlike_ ER, class-diagram's box list is small (one entry
 per class) and static once placement finishes — so representing it as reserved
 `Grid` cells (`size=1`, one `placeBlock`-equivalent call per box's full rectangle
 at layout time) is more plausible than ER's "occupancy tracks a canvas that's still
@@ -123,7 +123,7 @@ shared module before it's even fixed.
 ### `sequence.ts` — no occupancy structure; correct by construction
 
 This file's own header comment already says it plainly (`sequence.ts:8-9`):
-*"Layout is fundamentally different from flowcharts — no grid or A* pathfinding.
+_"Layout is fundamentally different from flowcharts — no grid or A_ pathfinding.
 Instead: actors → columns, messages → rows, all positioned linearly."*
 
 There is no search-for-a-free-slot logic here at all, self-loop included. `curY`
@@ -138,7 +138,7 @@ row" or `findClearColumn`'s "scan sideways for a free column" to extract.
 **Assessment: not retrofittable, because there's nothing to retrofit.** The issue's
 own description ("sidesteps via strict sequential curY advancement... a third
 independent positioning model") is accurate, but "sidesteps" undersells it: this
-isn't a third occupancy *implementation* solving the same problem in a different
+isn't a third occupancy _implementation_ solving the same problem in a different
 shape, it's a different problem (no lane contention exists in the first place,
 by design). Folding sequence.ts into a shared occupancy interface would mean
 inventing a collision scenario for it to guard against that the current design
@@ -186,16 +186,22 @@ function findFreeLane(
  */
 function allocateTerritory<T>(
   items: readonly T[],
-  geometry: (item: T) => { idealMid: number; start: number; end: number; rowStart: number; rowEnd: number },
+  geometry: (item: T) => {
+    idealMid: number
+    start: number
+    end: number
+    rowStart: number
+    rowEnd: number
+  },
 ): Map<T, { left: number; right: number }>
 ```
 
-Each renderer would keep its own occupancy *check* (ER: canvas scan; class:
+Each renderer would keep its own occupancy _check_ (ER: canvas scan; class:
 box-rectangle test; flowchart/state: `Grid.isFree`) and pass it as the `isFree`
 callback — no renderer is forced onto `Grid`'s coordinate space or storage model.
-This unifies the *algorithm* (and gets it one shared, well-tested implementation
+This unifies the _algorithm_ (and gets it one shared, well-tested implementation
 and one shared regression-test suite instead of three near-duplicates) without
-unifying the *storage*, which is what the per-renderer feasibility section above
+unifying the _storage_, which is what the per-renderer feasibility section above
 shows is the actually-hard, actually-risky part of the issue's proposed direction.
 
 Sequence.ts would not become a caller of either function — see its assessment
@@ -209,7 +215,7 @@ above.
   today-impossible bug class (occupancy/reality drift) with a real one, for a
   refactor that doesn't reduce risk anywhere it matters. Sequence.ts has nothing
   to unify at all.
-- **The narrower, safer win is extracting the search *algorithm*** (`findFreeLane`
+- **The narrower, safer win is extracting the search _algorithm_** (`findFreeLane`
   generalizing `chooseFreeRow`/`findClearColumn`) as sketched above — genuinely
   storage-agnostic, genuinely testable in isolation, and it directly targets the
   issue's own deletion test (the algorithm, not the backing array, is what
@@ -234,7 +240,7 @@ partial attempt if that migration isn't confidently safe. Per the ER assessment
 above, a `Grid`-backed migration for ER is mechanically achievable but trades one
 bug class for another (dual-source-of-truth risk) without a real payoff, so it
 does not clear the "confidently safe and worth doing" bar this task set — the
-byte-identical-output test bar only proves the *output* didn't change today, not
+byte-identical-output test bar only proves the _output_ didn't change today, not
 that the new redundant bookkeeping is safe against future edits. The
 algorithm-only extraction (`findFreeLane`) sketched above is the safer path, but
 touches search logic embedded deep in both `er-diagram.ts`'s relationship-drawing
