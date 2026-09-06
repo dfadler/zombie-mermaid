@@ -386,7 +386,7 @@ currently reachable from outside the library.
 
 ### Styling
 
-```
+```mermaid
 classDiagram
   class Animal:::highlight {
     +int age
@@ -425,7 +425,7 @@ and the `:::` shorthand is stripped from the class name.
 
 ### Notes
 
-```
+```mermaid
 classDiagram
   note "This is a general note"
   note for Dog "Best friend\nof humans"
@@ -451,7 +451,7 @@ same row, drawn with rounded corners (`╭ ╮ ╰ ╯`, or `. . ' '` in pure-AS
 mode) so it can't be mistaken for a class box, and joined by a short dashed
 connector; a free note goes on the top row after the classes.
 
-```
+```text
 ┌─────┐    ╭─────────────╮
 │ Dog │╌╌╌╌│ Best friend │
 └─────┘    │ of humans   │

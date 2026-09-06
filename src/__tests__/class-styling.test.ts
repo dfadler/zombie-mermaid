@@ -135,6 +135,23 @@ describe('parseClassDiagram – classDef / style / cssClass / class assignment',
     expect(d.classes.map((c) => c.id)).toEqual(['Animal', 'Box'])
     expect(d.classes[1]!.label).toBe('Box<T>')
   })
+
+  it('accepts a hyphenated class name in classDef, class assignment, and cssClass (#506)', () => {
+    // splitClassShorthand/sanitizeClassName already allow a leading word
+    // character followed by word characters or hyphens, but the
+    // classDef/class/cssClass directive regexes required a bare word-only
+    // name, so classDef hot-class, class Animal hot-class, and
+    // cssClass "Animal" hot-class all silently failed to match.
+    const d = parse(`classDiagram
+      class Animal
+      class Mineral
+      classDef hot-class fill:#f00
+      class Animal hot-class
+      cssClass "Mineral" hot-class`)
+    expect(d.classDefs.get('hot-class')).toEqual({ fill: '#f00' })
+    expect(d.classAssignments.get('Animal')).toBe('hot-class')
+    expect(d.classAssignments.get('Mineral')).toBe('hot-class')
+  })
 })
 
 describe('parseClassDiagram – `:::` shorthand', () => {
@@ -145,6 +162,20 @@ describe('parseClassDiagram – `:::` shorthand', () => {
     expect(d.classes.map((c) => c.id)).toEqual(['Animal'])
     expect(d.classes[0]!.label).toBe('Animal')
     expect(d.classAssignments.get('Animal')).toBe('someclass')
+  })
+
+  it('strips a trailing generic before the id when combined with the shorthand (#506)', () => {
+    // `class Foo~T~:::hot` previously reached ensureClass with the whole
+    // `Foo~T~` string as the id (splitClassShorthand only strips `:::hot`,
+    // not the generic), so a relationship referencing `Foo` minted a
+    // second, distinct class and the generic label was lost.
+    const d = parse(`classDiagram
+      class Foo~T~:::hot
+      classDef hot fill:#f00
+      Foo <|-- Bar`)
+    expect(d.classes.map((c) => c.id)).toEqual(['Foo', 'Bar'])
+    expect(d.classes[0]!.label).toBe('Foo<T>')
+    expect(d.classAssignments.get('Foo')).toBe('hot')
   })
 
   it('handles the shorthand on a multi-line class body', () => {

@@ -55,7 +55,7 @@ export function tryApplyClassDef(
   line: string,
   target: StyleDirectives,
 ): boolean {
-  const match = line.match(/^classDef\s+([\w,]+)\s+(.+)$/)
+  const match = line.match(/^classDef\s+([\w,-]+)\s+(.+)$/)
   if (!match) return false
   const props = parseStyleProps(match[2]!)
   for (const name of match[1]!.split(',')) {
@@ -79,7 +79,7 @@ export function tryApplyClassAssignment(
   line: string,
   target: StyleDirectives,
 ): boolean {
-  const match = line.match(/^class\s+([\w,-]+)\s+(\w+)\s*;?\s*$/)
+  const match = line.match(/^class\s+([\w,-]+)\s+([\w-]+)\s*;?\s*$/)
   if (!match) return false
   const className = match[2]!
   for (const id of match[1]!.split(',')) {
@@ -99,7 +99,7 @@ export function tryApplyCssClass(
   line: string,
   target: StyleDirectives,
 ): boolean {
-  const match = line.match(/^cssClass\s+"([^"]*)"\s+(\w+)\s*;?\s*$/)
+  const match = line.match(/^cssClass\s+"([^"]*)"\s+([\w-]+)\s*;?\s*$/)
   if (!match) return false
   const className = match[2]!
   for (const id of match[1]!.split(',')) {
