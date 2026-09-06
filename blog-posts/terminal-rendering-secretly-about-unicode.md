@@ -46,6 +46,19 @@ Every row of that box reports `.length === 10` in JavaScript. But `日本語テ�
 
 The root cause, per the issue and confirmed in the code (`src/ascii/multiline-utils.ts` at the time): box width was computed as `Math.max(...lines.map(l => l.length))`, a code-unit count. The fix, landed in PR #94, introduced `src/ascii/display-width.ts` with a `displayWidth()` function that classifies each character as wide or narrow (via `isWideChar()` in `src/text-metrics.ts`, which already existed for measuring SVG text) and counts wide characters as 2. The single-box drawing path, `drawBoxWithGridDimensions` in `src/ascii/draw-boxes.ts`, was updated to measure and write text through this new helper instead of raw `.length` indexing.
 
+Here is that same repro run through a real terminal on either side of the fix — an `asciinema` recording of the actual CLI, rasterized by `agg`, not a browser's approximation of a terminal (the distinction matters enough in this repo that it's a written rule; an HTML mock of a terminal is exactly the wrong instrument for measuring whether a terminal lines up):
+
+```mermaid
+flowchart TD
+    A[日本語テスト] --> B[終了]
+```
+
+| Before (`1c5f215^`)                                                                                                                                                                              | After (PR #94, `1c5f215`)                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Real-terminal capture of the CJK flowchart before the fix: the right border of each box is punched through by the label it should enclose](../fork-fixes-screenshots/cjk-box-width-before.png) | ![Real-terminal capture of the same flowchart after the fix: both boxes are closed rectangles with the label fully inside](../fork-fixes-screenshots/cjk-box-width-after.png) |
+
+_Look at the right-hand border. Before, it's a detached `│` floating out past a box that never closes; after, the box is a rectangle again._
+
 That should have been the end of the CJK-width story. It wasn't, because "the ASCII renderer" is not one code path. It's several, and the fix touched exactly one of them.
 
 ## Case 2: the same bug, in the box the first fix didn't reach (#182)
@@ -62,6 +75,21 @@ The issue was found during review of an unrelated PR (#180, a canvas `write()` p
 I went back and checked this claim against the actual code, rather than taking the issue's word for it, because it's the load-bearing claim of this whole post. It holds up. PR #94 (the #66 fix) touched `src/ascii/draw-boxes.ts`, but only the code path serving `drawBoxWithGridDimensions`: single, uniform boxes, used by flowchart/state/other simple node shapes. `drawMultiBox`, a separate function in the same file for the multi-compartment boxes class and ER diagrams need, was untouched. Its own `.length`-based width math kept working right through #94's merge, because nothing in that PR's diff or tests ever exercised it. `drawMultiBox` isn't reachable from a flowchart. The bug wasn't _reintroduced_; it had simply never been fixed, because the class of input that would trigger it (a class or ER diagram with a wide-character label) was never part of #66's repro or test suite.
 
 That's the hook this whole post is built around: a fix that is completely correct for the code path it touches can still leave the identical bug alive one file away, because "the renderer" is a plural noun. The fix for #182 (PR #203) had to update `drawMultiBox` itself _and_ the two callers that pre-compute box dimensions before calling it (`class-diagram.ts`'s `classBoxW`/`classBoxH`, `er-diagram.ts`'s equivalent), because those callers had also each written their own copy of the same `.length`-based sizing arithmetic. Fixing only `drawMultiBox` would have desynced the space reserved for a box from the box actually drawn into it, producing a different kind of misalignment than the one being fixed.
+
+The same real-terminal treatment, this time on the class-diagram path #94 never reached. (The issue's one-liner, `class A { +名前 x }`, uses an inline-brace form the class parser only learned later, so this is the identical declaration written in the block form the pre-fix release could actually parse — the single-line version renders as an empty string at `571fb9a^`, which would have made for a very boring screenshot.)
+
+```mermaid
+classDiagram
+  class A {
+    +名前 x
+  }
+```
+
+| Before (`571fb9a^`)                                                                                                                                                                                                             | After (PR #203, `571fb9a`)                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Real-terminal capture of the class box before the fix: the attribute row 名前 pushes past the right border, which is broken into a gap and a stray vertical bar](../unicode-terminal-screenshots/182-multibox-cjk-before.png) | ![Real-terminal capture of the same class box after the fix: a closed two-compartment box with the attribute row fully inside it](../unicode-terminal-screenshots/182-multibox-cjk-after.png) |
+
+_Same symptom as #66, one file over: the border is sized for the six code units in `+x: 名前`, but that row takes eight terminal columns, so it overruns the box by exactly the two extra columns 名前 costs._
 
 `src/ascii/draw-boxes.ts` today shows the aftermath of that lesson directly: `measureMultiBox()` exists as one function both `class-diagram.ts` and `er-diagram.ts` call to reserve layout space, instead of each diagram type recomputing the same math independently. Its doc comment says exactly why:
 
@@ -103,6 +131,8 @@ That single change is why `src/ascii/display-width.ts` today measures in graphem
 
 There's a fifth wrinkle buried in the same module that's worth naming, because it shows the boundary of what "wide" even means: U+FE0F VARIATION SELECTOR-16 explicitly requests emoji presentation for the character before it, overriding that character's own default. ▶ (U+25B6) is a narrow, single-column glyph on its own (it's in the same Geometric Shapes block this renderer uses for arrowheads in sequence diagrams), but ▶️ (▶ followed by VS16) renders as a wide emoji. `isWideChar()`, shared with the SVG text-measurement path, only ever looks at one isolated code point and has no way to know a VS16 is coming next. Only cluster-level code can see that, which is exactly why this had to be handled in `display-width.ts` rather than pushed down into the single-code-point helper it reuses.
 
+Unlike #66 above, neither of these two cases gets a before/after terminal screenshot in this post, and the reason is worth stating rather than hiding. I tried. The capture pipeline this repo uses for that (`asciinema` recording a real PTY, `agg` rasterizing it) renders a decomposed `é` as two cells, not one, and splits 👨‍👩‍👧 back into three emoji plus its joiners — so a "before" capture of #205 or #214 shows the _buggy_ widths lining up perfectly and the _fixed_ widths overflowing. That's not a flaw in the capture; it's the same disagreement the fix itself has to live with. `Intl.Segmenter` describes what a grapheme cluster is; it can't make every terminal agree to draw one in two columns. #66, #182 and #334 are unambiguous because every terminal agrees a CJK glyph is two columns wide. Combining marks and ZWJ sequences are a choice among terminals, and the fix picks the common case.
+
 ## Case 5: the same root cause, a third renderer (#334)
 
 By this point the pattern should be obvious, and sure enough it reappeared exactly where the earlier fixes hadn't reached: sequence diagrams. [#334](https://github.com/dfadler/zombie-mermaid/issues/334), filed a few days after the display-width fixes, reported that participant boxes and message labels misaligned with CJK names:
@@ -122,6 +152,21 @@ sequenceDiagram
 
 Measured directly: the border line is 28 terminal columns wide; the content line, once each katakana character is counted at its real width of 2, is 33, a 5-column gap. The issue's own diagnosis, confirmed by grepping the file, was that `src/sequence/renderer.ts` and `src/sequence/layout.ts` never referenced the display-width helpers at all. They had their own independent string-length/padding logic that had simply never been touched by any of the three fixes above, for the same structural reason #182 had been missed: sequence diagrams are a separate code path, with their own layout module, that nothing in #66/#182/#205/#214 happened to exercise. The fix (PR #379) routed `src/ascii/sequence.ts`'s box and label sizing through the same `displayWidth`/`toDisplayCells` functions everywhere else already used.
 
+Through a real terminal, before and after that fix:
+
+```mermaid
+sequenceDiagram
+  participant A as アリス
+  participant B as ボブ
+  A->>B: こんにちは
+```
+
+| Before (`008f392^`)                                                                                                                                                                                                                        | After (PR #379, `008f392`)                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Real-terminal capture of the CJK sequence diagram before the fix: all four participant boxes are split open on the right, with detached vertical bars sitting outside them](../unicode-terminal-screenshots/334-sequence-cjk-before.png) | ![Real-terminal capture of the same sequence diagram after the fix: four closed participant boxes with the katakana names inside them](../unicode-terminal-screenshots/334-sequence-cjk-after.png) |
+
+_Four boxes, all broken the same way, plus a message label that no longer sits where the lifelines think it does. The stray `│` marks are where each border should have been if アリス had cost the three columns the code counted instead of the six it actually draws._
+
 Four fixes in, the shape of the actual problem was no longer "a Unicode width edge case." It was: this codebase has multiple independent places that draw a box around text, and a correct width function sitting in one file protects nothing until every one of those places is calling it.
 
 ## The twist: not every disguise is the same bug
@@ -130,7 +175,7 @@ There's a sixth issue in this family worth walking through precisely because it 
 
 That's a real, measurable fact about font metrics. But when this got investigated, it turned out the alignment problem it predicts had _already_ been fixed, by a commit that landed on `main` (06b15a0, "Give wide glyphs their terminal width in browser-rendered ASCII") four days before the issue was even filed. And the fix wasn't a variation on `displayWidth()` at all. It couldn't be: `displayWidth()` computes a number of terminal columns for a _string_; it has no way to reach into how a browser lays out a _font_. The actual fix, in `demo/client.ts`'s `applyWideCharWidths()`, walks the rendered DOM after the ASCII string is generated and wraps every wide grapheme cluster in a `<span class="ascii-wide" style="width: 2ch">`, forcing the layout box to be exactly two character widths regardless of what the substituted font's own glyph metrics happen to be. Measured directly in a real browser: the raw CJK glyph's own bounding box is 11.2px against a 6.75px Latin baseline (the 1.66x the issue reported, still true and still unavoidable as a font fact), but the `.ascii-wide` span wrapped around it measures 13.48px, within rounding of the true 2x target. The font never got fixed; the layout stopped depending on the font.
 
-Two things are true at once here, and the post would be lying by omission to collapse them into one: the _symptom_, "CJK text misaligns in this renderer, same as everywhere else," really was the same shape as #66/#182/#334. But the _fix_ wasn't another display-width patch, because this renderer's failure mode lived one layer up, in font substitution the string-width math can't see at all. Same disease, different organ. The general lesson below still applies (this was still a case of one renderer's box-drawing having its own, previously-unverified width-correctness story), but "test every renderer" doesn't mean "apply the same patch everywhere." It means checking, per renderer, what actually determines its column width, and #344 is proof that isn't always the same answer.
+Two things are true at once here, and the post would be lying by omission to collapse them into one: the _symptom_, "CJK text misaligns in this renderer, same as everywhere else," really was the same shape as #66/#182/#334. But the _fix_ wasn't another display-width patch, because this renderer's failure mode lived one layer up, in font substitution the string-width math can't see at all. Same disease, different organ. It's also the one case here that a terminal screenshot is the wrong instrument for: the ASCII string #344 complains about is byte-for-byte correct, and a real-PTY capture of it looks fine, because the misalignment only comes into existence once a browser picks a fallback font. The general lesson below still applies (this was still a case of one renderer's box-drawing having its own, previously-unverified width-correctness story), but "test every renderer" doesn't mean "apply the same patch everywhere." It means checking, per renderer, what actually determines its column width, and #344 is proof that isn't always the same answer.
 
 ## The lesson
 
