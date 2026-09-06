@@ -884,3 +884,223 @@ describe('sequence layout – bidirectional arrows and autonumber pass-through',
     expect(result.messages[0]!.seqNumber).toBeUndefined()
   })
 })
+
+// ============================================================================
+// Standalone activate / deactivate (#419) — must match the +/- shorthand
+// ============================================================================
+
+describe('sequence layout – standalone activate/deactivate', () => {
+  it('renders the same activation box as the +/- shorthand', () => {
+    const standalone = layout(`sequenceDiagram
+      Alice->>John: Hello John, how are you?
+      activate John
+      John-->>Alice: Great!
+      deactivate John`)
+    const shorthand = layout(`sequenceDiagram
+      Alice->>+John: Hello John, how are you?
+      John-->>-Alice: Great!`)
+    expect(standalone.activations).toHaveLength(1)
+    expect(standalone.activations).toEqual(shorthand.activations)
+    expect(standalone.messages.map((m) => m.y)).toEqual(
+      shorthand.messages.map((m) => m.y),
+    )
+  })
+
+  it('stacks nested standalone activations exactly like nested shorthand ones', () => {
+    const standalone = layout(`sequenceDiagram
+      Alice->>John: one
+      activate John
+      Alice->>John: two
+      activate John
+      John-->>Alice: three
+      deactivate John
+      John-->>Alice: four
+      deactivate John`)
+    const shorthand = layout(`sequenceDiagram
+      Alice->>+John: one
+      Alice->>+John: two
+      John-->>-Alice: three
+      John-->>-Alice: four`)
+    expect(standalone.activations).toHaveLength(2)
+    expect(standalone.activations).toEqual(shorthand.activations)
+  })
+
+  it('mixes the two spellings on one actor (shorthand start, standalone end)', () => {
+    const result = layout(`sequenceDiagram
+      Alice->>+John: Hello
+      John-->>Alice: Great!
+      deactivate John`)
+    expect(result.activations).toHaveLength(1)
+    expect(result.activations[0]!.topY).toBe(result.messages[0]!.y)
+    expect(result.activations[0]!.bottomY).toBe(result.messages[1]!.y)
+  })
+
+  it('an activate before the first message opens at the first message row', () => {
+    const result = layout(`sequenceDiagram
+      activate Server
+      Client->>Server: ping
+      Server-->>Client: pong
+      deactivate Server`)
+    expect(result.activations).toHaveLength(1)
+    expect(result.activations[0]!.topY).toBe(result.messages[0]!.y)
+    expect(result.activations[0]!.bottomY).toBe(result.messages[1]!.y)
+  })
+
+  it('a standalone deactivate with nothing open is ignored, like a stray "-"', () => {
+    const result = layout(`sequenceDiagram
+      A->>B: x
+      deactivate B`)
+    expect(result.activations).toHaveLength(0)
+  })
+
+  it('an unclosed standalone activate runs to the bottom of the diagram', () => {
+    const result = layout(`sequenceDiagram
+      A->>B: x
+      activate B
+      B->>A: y`)
+    expect(result.activations).toHaveLength(1)
+    expect(result.activations[0]!.topY).toBe(result.messages[0]!.y)
+    expect(result.activations[0]!.bottomY).toBeGreaterThan(
+      result.messages[1]!.y,
+    )
+  })
+})
+
+// ============================================================================
+// create / destroy participant lifecycle (#419)
+// ============================================================================
+
+describe('sequence layout – create/destroy', () => {
+  const source = `sequenceDiagram
+    A->>B: one
+    create participant C
+    A->>C: two
+    destroy B
+    A->>B: three`
+
+  it('centres a created participant box on the row of its creating message', () => {
+    const result = layout(source)
+    const c = result.actors.find((a) => a.id === 'C')!
+    const a = result.actors.find((a) => a.id === 'A')!
+    const creating = result.messages[1]!
+    expect(c.y).toBe(creating.y - c.height / 2)
+    // Untouched participants keep the header row
+    expect(a.y).toBe(30) // SEQ.padding
+  })
+
+  it("starts a created participant's lifeline under its box, not under the header", () => {
+    const result = layout(source)
+    const c = result.actors.find((a) => a.id === 'C')!
+    const cLine = result.lifelines.find((l) => l.actorId === 'C')!
+    expect(cLine.topY).toBe(c.y + c.height)
+    expect(cLine.destroyed).toBeUndefined()
+  })
+
+  it('stops the creating arrow at the near edge of the created box', () => {
+    const result = layout(source)
+    const c = result.actors.find((a) => a.id === 'C')!
+    const creating = result.messages[1]!
+    expect(creating.x2).toBe(c.x - c.width / 2)
+    // A plain message still reaches the lifeline centre
+    const b = result.actors.find((a) => a.id === 'B')!
+    expect(result.messages[0]!.x2).toBe(b.x)
+  })
+
+  it('stops the creating arrow at the right edge when the sender is to the right', () => {
+    const result = layout(`sequenceDiagram
+      create participant C
+      D->>C: hi`)
+    const c = result.actors.find((a) => a.id === 'C')!
+    expect(result.messages[0]!.x2).toBe(c.x + c.width / 2)
+  })
+
+  it('gives the row after a creating message room for the lower half of the box', () => {
+    const result = layout(source)
+    const gapPlain = result.messages[1]!.y - result.messages[0]!.y
+    const gapAfterCreate = result.messages[2]!.y - result.messages[1]!.y
+    expect(gapPlain).toBe(40) // SEQ.messageRowHeight
+    expect(gapAfterCreate).toBe(40 + 20) // + SEQ.actorHeight / 2
+  })
+
+  it("ends a destroyed participant's lifeline at its destroying message, flagged", () => {
+    const result = layout(source)
+    const bLine = result.lifelines.find((l) => l.actorId === 'B')!
+    expect(bLine.bottomY).toBe(result.messages[2]!.y)
+    expect(bLine.destroyed).toBe(true)
+    const aLine = result.lifelines.find((l) => l.actorId === 'A')!
+    expect(aLine.bottomY).toBeGreaterThan(result.messages[2]!.y)
+    expect(aLine.destroyed).toBeUndefined()
+  })
+})
+
+// ============================================================================
+// box ... end participant grouping (#419)
+// ============================================================================
+
+describe('sequence layout – box...end', () => {
+  it('spans a box background from the leftmost to the rightmost member', () => {
+    const result = layout(`sequenceDiagram
+      box Aqua Group 1
+      participant A
+      participant B
+      end
+      participant C
+      A->>B: hi
+      B->>C: yo`)
+
+    expect(result.boxes).toHaveLength(1)
+    const box = result.boxes[0]!
+    expect(box.label).toBe('Group 1')
+    expect(box.color).toBe('Aqua')
+    const a = result.actors.find((x) => x.id === 'A')!
+    const b = result.actors.find((x) => x.id === 'B')!
+    const c = result.actors.find((x) => x.id === 'C')!
+    // The box covers A and B but not C
+    expect(box.x).toBeLessThan(a.x - a.width / 2)
+    expect(box.x + box.width).toBeGreaterThan(b.x + b.width / 2)
+    expect(box.x + box.width).toBeLessThan(c.x - c.width / 2)
+  })
+
+  it('reserves a label band above the actor row when any box has a label', () => {
+    const withLabel = layout(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    const withoutLabel = layout(`sequenceDiagram
+      participant A
+      A->>A: hi`)
+    const aWith = withLabel.actors.find((x) => x.id === 'A')!
+    const aWithout = withoutLabel.actors.find((x) => x.id === 'A')!
+    expect(aWith.y).toBeGreaterThan(aWithout.y)
+  })
+
+  it('does not render a box with no members', () => {
+    const result = layout(`sequenceDiagram
+      box Empty
+      end
+      A->>B: hi`)
+    expect(result.boxes).toHaveLength(0)
+  })
+
+  it('extends the box background down to the lifeline bottoms', () => {
+    const result = layout(`sequenceDiagram
+      box Group 1
+      participant A
+      participant B
+      end
+      A->>B: hi`)
+    const box = result.boxes[0]!
+    const aLine = result.lifelines.find((l) => l.actorId === 'A')!
+    expect(box.y + box.height).toBeGreaterThanOrEqual(aLine.bottomY)
+  })
+
+  it('omits color when the box has none', () => {
+    const result = layout(`sequenceDiagram
+      box Group 1
+      participant A
+      end
+      A->>A: hi`)
+    expect(result.boxes[0]!.color).toBeUndefined()
+  })
+})
