@@ -56,12 +56,8 @@ import { renderSequenceSvg } from './sequence/renderer.ts'
 import { parseClassDiagram } from './class/parser.ts'
 import { layoutClassDiagramSync } from './class/layout.ts'
 import { renderClassSvg } from './class/renderer.ts'
-import { parseErDiagram } from './er/parser.ts'
-import { layoutErDiagramSync } from './er/layout.ts'
-import { renderErSvg } from './er/renderer.ts'
-import { parseXYChart } from './xychart/parser.ts'
-import { layoutXYChart } from './xychart/layout.ts'
-import { renderXYChartSvg } from './xychart/renderer.ts'
+import { diagramRegistry } from './diagram-registry.ts'
+import type { SvgRenderContext } from './diagram-registry.ts'
 
 /**
  * Build a DiagramColors object from render options.
@@ -153,20 +149,11 @@ function resolveLinksEnabled(options: RenderOptions): boolean {
   return resolveInteractivity(options) !== 'none'
 }
 
-/**
- * Whether xychart hover tooltips should render.
- *
- * `interactivity` takes precedence over the deprecated `interactive`
- * boolean when both are set. When only the deprecated boolean is set, it
- * keeps controlling this exactly as before — `true` enables tooltips,
- * `false`/unset does not — so existing callers see no behavior change.
- */
-function resolveXYChartInteractive(options: RenderOptions): boolean {
-  if (options.interactivity !== undefined) {
-    return options.interactivity === 'full'
-  }
-  return options.interactive ?? false
-}
+// Whether xychart hover tooltips should render (`interactivity` wins over
+// the deprecated `interactive` boolean when both are set) now lives next to
+// the xychart registry entry in src/diagram-registry.ts, since xychart's
+// SVG dispatch is fully handled by the registry lookup below — there is no
+// remaining switch case here for it to serve.
 
 /**
  * Render Mermaid diagram text to an SVG string — synchronously.
@@ -245,6 +232,28 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
 
   const lines = splitStatements(decoded)
 
+  // Registry lookup first (see src/diagram-registry.ts — issue #533):
+  // 'xychart' and 'er' are registered there and handled identically to how
+  // their switch cases below used to read, just via the shared adapter
+  // shape instead. Anything not registered (currently 'sequence', 'class',
+  // 'flowchart') falls through to the switch, unchanged.
+  const registered = diagramRegistry[diagramType]
+  if (registered) {
+    const diagram = registered.parse(lines)
+    const positioned = registered.layoutForSvg(diagram, options)
+    const ctx: SvgRenderContext = {
+      colors,
+      font,
+      transparent,
+      fontSizes,
+      embedSource,
+      title,
+      decorative,
+      emit,
+    }
+    return registered.renderSvg(positioned, ctx, options)
+  }
+
   switch (diagramType) {
     case 'sequence': {
       const diagram = parseSequenceDiagram(lines)
@@ -274,41 +283,6 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
         title,
         decorative,
         resolveLinksEnabled(options),
-        emit,
-      )
-    }
-    case 'er': {
-      // `options.direction` replaces the diagram's own top-level `direction`
-      // line, if any, before layout. See src/direction-override.ts.
-      const diagram = withDirectionOverride(
-        parseErDiagram(lines),
-        options.direction,
-      )
-      const positioned = layoutErDiagramSync(diagram, options)
-      return renderErSvg(
-        positioned,
-        colors,
-        font,
-        transparent,
-        fontSizes,
-        embedSource,
-        title,
-        decorative,
-        emit,
-      )
-    }
-    case 'xychart': {
-      const chart = parseXYChart(lines)
-      const positioned = layoutXYChart(chart, options)
-      return renderXYChartSvg(
-        positioned,
-        colors,
-        font,
-        transparent,
-        resolveXYChartInteractive(options),
-        embedSource,
-        title,
-        decorative,
         emit,
       )
     }
