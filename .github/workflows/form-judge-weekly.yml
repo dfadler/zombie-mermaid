@@ -152,45 +152,63 @@ jobs:
 
       - name: Judge this category
         if: steps.prep.outputs.has_work == 'true'
-        uses: anthropics/claude-code-base-action@e8132bc5e637a42c27763fc757faa37e1ee43b34 # v0.0.63
+        # The action's own internal Claude-process timeout (the old
+        # `timeout_minutes` input, see below) no longer exists as of the
+        # pinned SHA below — replaced here by this step-level
+        # `timeout-minutes`, GitHub Actions' own native mechanism. Same
+        # 15-minute rationale as before: Flowchart (24 samples, the most
+        # of any category) measured at ~10m11s and got killed right at
+        # the old 10-minute default, ~11s over — 15 minutes gives ~50%
+        # headroom without gutting this as a real safety net: a genuinely
+        # hung run should still fail well short of the 45-minute job cap
+        # above rather than burn the full budget silently. If a future
+        # category's sample count pushes past this, raise it again from a
+        # measured run, not preemptively.
+        timeout-minutes: 15
+        # Pinned to main's HEAD as of 2026-09-06, not a tagged release —
+        # anthropics/claude-code-base-action has no tag newer than v0.0.63
+        # (2025-08-22, the previous pin here), only untagged daily "sync
+        # from claude-code-action" commits on main. Between those two
+        # points the action dropped `allowed_tools`/`disallowed_tools`,
+        # `max_turns`, `model`, `mcp_config`, and `timeout_minutes` as
+        # separate top-level inputs entirely, folding the CLI-flag ones
+        # into `claude_args` (verified against this SHA's own
+        # src/parse-sdk-options.ts) — there is no intermediate version
+        # where both the old and new input styles work, so this pin bump
+        # and the claude_args migration below had to land together. Bumps
+        # from here on should go through the same source-level check
+        # (parse-sdk-options.ts, action.yml) rather than assuming another
+        # year-plus gap behaves the same way.
+        uses: anthropics/claude-code-base-action@646b4a772085257c35182cd167bdd6b3b1017675 # main HEAD as of 2026-09-06, no newer tag exists
         with:
           prompt_file: ${{ steps.prep.outputs.prompt_path }}
-          max_turns: '150'
-          # `allowed_tools` (--allowedTools) only pre-approves these two —
-          # it does NOT restrict which tools are available, confirmed
-          # against the CLI docs (code.claude.com/docs/en/cli-reference)
-          # and empirically: a real run's session-init event still listed
-          # the full default toolset, and the judge actually called Bash
-          # repeatedly (e.g. spinning up ad hoc python3 heredocs to
-          # manually re-derive facts already in its own prompt input,
-          # which is also most of why some categories run long). The
-          # actual restriction mechanism is `disallowed_tools`
-          # (--disallowedTools), which removes tools from context
-          # entirely — every default tool other than Read/Write is denied
-          # below. This matters beyond performance: the earlier security
-          # review of this workflow (see PR #408) assumed the judge job
-          # never gets Bash/WebFetch/WebSearch to bound the blast radius
-          # of a successful prompt-injection attempt via a sample's own
-          # content — that assumption only holds now that these are
-          # actually denied, not just left un-pre-approved.
-          allowed_tools: 'Read,Write'
-          disallowed_tools: 'Task,Bash,Glob,Grep,LS,ExitPlanMode,Edit,MultiEdit,NotebookEdit,WebFetch,TodoWrite,WebSearch,BashOutput,KillBash'
-          # Pinned explicitly: this action version's own default
-          # (claude-sonnet-4-20250514) is a dated snapshot that has since
-          # been retired (404 not_found_error), so leaving `model` unset
-          # is not a safe default for an unattended weekly job.
-          model: 'claude-sonnet-5'
-          # The action's own internal Claude-process timeout defaults to
-          # 10 minutes — separate from this job's 45-minute timeout-minutes
-          # above, and too tight for the largest category: Flowchart (24
-          # samples, the most of any category) measured at ~10m11s and got
-          # killed right at the 10-minute mark — only ~11s over. 15 minutes
-          # gives that ~50% headroom without gutting the timeout as a real
-          # safety net: a genuinely hung run should still fail well short of
-          # the 45-minute job cap rather than burn the full budget silently.
-          # If a future category's sample count pushes past this, raise it
-          # again from a measured run, not preemptively.
-          timeout_minutes: '15'
+          # `--allowedTools` only pre-approves these two — it does NOT
+          # restrict which tools are available, confirmed against the CLI
+          # docs (code.claude.com/docs/en/cli-reference) and empirically:
+          # a real run's session-init event still listed the full default
+          # toolset, and the judge actually called Bash repeatedly (e.g.
+          # spinning up ad hoc python3 heredocs to manually re-derive
+          # facts already in its own prompt input, which is also most of
+          # why some categories run long). The actual restriction
+          # mechanism is `--disallowedTools`, which removes tools from
+          # context entirely — every default tool other than Read/Write is
+          # denied below. This matters beyond performance: the earlier
+          # security review of this workflow (see PR #408) assumed the
+          # judge job never gets Bash/WebFetch/WebSearch to bound the
+          # blast radius of a successful prompt-injection attempt via a
+          # judged sample's own content — that assumption only holds
+          # because these are actually denied, not just left
+          # un-pre-approved.
+          #
+          # `--model` is pinned explicitly: this action version's own
+          # default (claude-sonnet-4-20250514) is a dated snapshot that
+          # has since been retired (404 not_found_error), so leaving it
+          # unset is not a safe default for an unattended weekly job.
+          claude_args: |
+            --allowedTools "Read,Write"
+            --disallowedTools "Task,Bash,Glob,Grep,LS,ExitPlanMode,Edit,MultiEdit,NotebookEdit,WebFetch,TodoWrite,WebSearch,BashOutput,KillBash"
+            --max-turns 150
+            --model claude-sonnet-5
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Restore Node.js for pnpm (after the judge step)
@@ -366,24 +384,53 @@ jobs:
             BODY_FILE="$SCRUBBED_FILE"
           fi
 
+          # "workflow-managed — do not apply manually" is enforced by the
+          # title check below, not by this description alone: it's belt-
+          # and-suspenders documentation for a human glancing at the label
+          # on GitHub, in case they're tempted to hand-apply it to an
+          # unrelated issue (see the title-match reasoning below for why
+          # that would otherwise get silently clobbered). `|| gh label
+          # edit` covers the case where the label already exists from
+          # before this description was added — `label create` only sets
+          # the description on first creation, so without the edit
+          # fallback a pre-existing label would keep the old, shorter text
+          # forever.
+          LABEL_DESCRIPTION="Weekly ASCII-vs-real-mermaid structural fidelity audit (workflow-managed — do not apply manually)"
           gh label create "form-judge-report" \
             --repo "$REPO" \
             --color "5319E7" \
-            --description "Weekly ASCII-vs-real-mermaid structural fidelity audit" \
+            --description "$LABEL_DESCRIPTION" \
+            2>/dev/null || \
+          gh label edit "form-judge-report" \
+            --repo "$REPO" \
+            --description "$LABEL_DESCRIPTION" \
             2>/dev/null || true
+
+          # The label alone doesn't prove an issue is *this workflow's*
+          # report holder — a human can apply `form-judge-report` to an
+          # unrelated issue (this happened for real: issue #436 was
+          # created with this label plus `enhancement` for an unrelated
+          # proposal, and a label-only search picked it as "the" report
+          # issue and overwrote its body with an audit report, with no
+          # recoverable edit history). Requiring the exact title too means
+          # a mislabeled issue is simply not treated as the report holder
+          # — worst case this creates a duplicate report issue, which is
+          # recoverable, instead of destroying unrelated content, which
+          # isn't.
+          REPORT_TITLE="Form-judge report: ASCII vs. real mermaid.js"
 
           ISSUE_NUMBER="$(gh issue list \
             --repo "$REPO" \
             --label form-judge-report \
             --state open \
-            --limit 1 \
-            --json number \
-            --jq '.[0].number // empty')"
+            --json number,title \
+            | jq -r --arg title "$REPORT_TITLE" \
+                '[.[] | select(.title == $title)] | .[0].number // empty')"
 
           if [ -z "$ISSUE_NUMBER" ]; then
             ISSUE_URL="$(gh issue create \
               --repo "$REPO" \
-              --title "Form-judge report: ASCII vs. real mermaid.js" \
+              --title "$REPORT_TITLE" \
               --label form-judge-report \
               --body-file "$BODY_FILE")"
             echo "Created tracking issue: ${ISSUE_URL}"
