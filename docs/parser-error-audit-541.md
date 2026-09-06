@@ -16,7 +16,7 @@ Every parser in this codebase currently falls into one of two buckets, and
 neither is good:
 
 1. **Throws, but with no line/column position, ever.** Every `throw new
-   Error(...)` across all five parsers (`src/parser.ts`,
+Error(...)` across all five parsers (`src/parser.ts`,
    `src/sequence/parser.ts`) is a bare message string with no position
    information. Zero occurrences of line/column in any thrown error.
 2. **Doesn't throw at all — silently drops the malformed line and keeps
@@ -32,7 +32,7 @@ On top of that, there's a third, cross-cutting gap that surfaced during the
 audit and turned out to be the single most concrete, highest-value one: the
 **diagram-type routing layer itself** (`detectDiagramType` in
 `src/diagram-type.ts`) silently misroutes a typo'd or malformed header for
-sequence/class/ER/xychart diagrams into the *flowchart* parser as a
+sequence/class/ER/xychart diagrams into the _flowchart_ parser as a
 fallback default, which then throws a flowchart-specific error message that
 never even mentions the other four diagram types exist. This was the "worst
 gap" fixed directly in this pass (see below).
@@ -78,7 +78,7 @@ THREW: Invalid mermaid header: "stateDiagramm-v2". Expected "graph TD", "flowcha
 ### Sequence diagrams (`src/sequence/parser.ts`)
 
 8 `throw` sites, more than any other non-flowchart parser — but every one
-mirrors a *semantic* Mermaid.js error (duplicate actor id, box nesting,
+mirrors a _semantic_ Mermaid.js error (duplicate actor id, box nesting,
 create/destroy mismatch, unknown actor) copied verbatim for compatibility;
 none carry a line number. Syntactic errors (bad arrow, unmatched
 block/`end`, unknown actor referenced in a plain message) are not detected
@@ -164,8 +164,8 @@ NO ERROR THROWN.
 
 ### XY charts (`src/xychart/parser.ts`)
 
-**Zero `throw`/`Error` statements in the entire file.** Worst *silent data
-corruption* of the five: a non-numeric value inside a numeric data series
+**Zero `throw`/`Error` statements in the entire file.** Worst _silent data
+corruption_ of the five: a non-numeric value inside a numeric data series
 is coerced to `null` rather than rejected, which can propagate into layout
 math silently.
 
@@ -192,7 +192,7 @@ Every one of the four non-flowchart diagram types is only ever reached
 through `detectDiagramType` (`src/diagram-type.ts`), which requires an
 **exact** (trimmed, case-insensitive) match against
 `sequencediagram`, `classdiagram`, `erdiagram`, or `xychart(-beta)?` as the
-*entire* first statement. Anything that doesn't match exactly — a typo, a
+_entire_ first statement. Anything that doesn't match exactly — a typo, a
 trailing word, wrong punctuation — silently falls through to the
 `'flowchart'` default and gets handed to `src/parser.ts`'s flowchart
 parser, which then throws:
@@ -240,9 +240,9 @@ parsers, and needed no changes to `detectDiagramType` itself.
 - Split the invalid-header throw into two cases:
   - Header starts with `graph`/`flowchart` but has a bad/missing direction
     token → a direction-specific message (`Invalid direction "XYZ" in
-    header "graph XYZ". Expected one of: TD, TB, LR, BT, RL.` /
+header "graph XYZ". Expected one of: TD, TB, LR, BT, RL.` /
     `Missing direction in header "graph". Expected e.g. "graph TD" or
-    "flowchart LR" — one of: TD, TB, LR, BT, RL.`).
+"flowchart LR" — one of: TD, TB, LR, BT, RL.`).
   - Anything else → the generic message now lists **all six** supported
     header forms (previously only three, and worded as "graph TD",
     "flowchart LR", "stateDiagram-v2", "etc." with no real enumeration of
@@ -316,7 +316,7 @@ they are **not filed** — filing needs separate explicit permission.
    with no signal anything went wrong.
 
 3. **`xychart` silently coerces non-numeric series data to `null`** instead
-   of rejecting it, which is silent *data corruption* rather than just a
+   of rejecting it, which is silent _data corruption_ rather than just a
    dropped line, and needs its own scoped fix (validate each data point,
    throw or collect a diagnostic on a non-numeric value) rather than being
    folded into the broader silent-drop problem in (2).
