@@ -36,6 +36,17 @@ generator renders it once against `fixCommit^` and once against the working
 tree, so 28 entries means 56 real renders checked on every build, not 28
 screenshots taken once and committed.
 
+Here is the page itself, as a reader lands on it — `pnpm run fork-fixes`
+output, opened in a browser:
+
+![The fork-fixes page open in a browser. Header reads "What this fork fixes", followed by the note that every pair is rendered by the project's own renderer and that the generator fails the build if any pair renders identically. Below it, the first entry — "Arrows with no surrounding space dropped the edge" — shows its PR, fix commit and upstream issue, the Mermaid source `flowchart LR / A-->B / B-->C`, and a BEFORE panel with two stray boxes labelled A-- and B-- next to an AFTER panel with three boxes A, B, C joined by two arrows.](../evidence-marketing-screenshots/fork-fixes-page.png)
+
+Everything a reader needs to check the claim is on the page: the exact
+Mermaid source, which commit fixed it, which PR carried it, which upstream
+issue it traces to, and both renders. The "before" panel isn't a description
+of a parser bug — it's what the parser at `37264a5^` actually produced from
+those three lines.
+
 One entry is worth calling out on its own, because it shows the project
 distrusting its own evidence a full week before that became a repo-wide rule.
 The `start-arrow-markers` fix, a double-reversed SVG marker that pointed
