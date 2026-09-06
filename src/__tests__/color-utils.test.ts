@@ -60,6 +60,16 @@ describe('parseCssColor', () => {
     expect(parseCssColor('color-mix(in srgb, #000, #fff)')).toBeNull()
     expect(parseCssColor('')).toBeNull()
   })
+
+  it('returns null when a channel matches the token pattern but is not a valid number', () => {
+    // RGB_FUNC_RE's channel class (`[\d.]+%?`) accepts any run of digits
+    // and dots, including a malformed one like "1.2.3" — it isn't trying
+    // to fully validate number syntax, just to find the token boundaries.
+    // Number("1.2.3") is NaN, so this must be rejected downstream rather
+    // than producing a color with a NaN channel.
+    expect(parseCssColor('rgb(1.2.3, 0, 0)')).toBeNull()
+    expect(parseCssColor('rgba(0, 0, 0, 1.2.3)')).toBeNull()
+  })
 })
 
 describe('parseHexColor', () => {
@@ -127,6 +137,20 @@ describe('mixSrgb', () => {
 
   it('returns null when both percentages are zero (invalid per spec)', () => {
     expect(mixSrgb(black, white, 0, 0)).toBeNull()
+  })
+
+  it('mixes two fully-transparent colors without dividing by zero alpha', () => {
+    // Both inputs have alpha 0, so the result's premultiplied alpha is also
+    // 0 — premul's `alpha === 0 ? 0 : …` guard must short-circuit rather
+    // than compute `0/0` (NaN) for each channel.
+    const transparentRed = { r: 255, g: 0, b: 0, a: 0 }
+    const transparentBlue = { r: 0, g: 0, b: 255, a: 0 }
+    expect(mixSrgb(transparentRed, transparentBlue, 50, 50)).toEqual({
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 0,
+    })
   })
 })
 

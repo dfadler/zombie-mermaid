@@ -193,6 +193,58 @@ describe('evaluateCssColorValue', () => {
       evaluateCssColorValue('color-mix(in srgb, var(--fg) 50%)', base),
     ).toBe('color-mix(in srgb, #000000 50%)')
   })
+
+  it('leaves an unclosed var()/color-mix() call untouched instead of throwing', () => {
+    // No matching `)` — matchingParen runs off the end of the string and
+    // reports "unbalanced" (-1). That aborts the whole scan (there's no
+    // point looking for further calls once one can't be closed), so the
+    // text — including any nested var() it contains — is left verbatim
+    // rather than guessed at.
+    expect(evaluateCssColorValue('var(--fg', base)).toBe('var(--fg')
+    expect(
+      evaluateCssColorValue(
+        'color-mix(in srgb, var(--fg) 50%, var(--bg)',
+        base,
+      ),
+    ).toBe('color-mix(in srgb, var(--fg) 50%, var(--bg)')
+  })
+
+  it('leaves a color-mix() operand carrying two percentages untouched', () => {
+    // "10% 20%" isn't a valid `<color> [<percentage>]` operand — two
+    // percentage tokens for one color is malformed, so the whole
+    // expression is left as-is.
+    expect(
+      evaluateCssColorValue(
+        'color-mix(in srgb, #ff0000 10% 20%, var(--bg))',
+        base,
+      ),
+    ).toBe('color-mix(in srgb, #ff0000 10% 20%, #ffffff)')
+  })
+
+  it('leaves a color-mix() operand carrying two colors untouched', () => {
+    // "#ff0000 #00ff00" isn't a valid operand either — one color per
+    // operand, at most one percentage.
+    expect(
+      evaluateCssColorValue(
+        'color-mix(in srgb, #ff0000 #00ff00, var(--bg))',
+        base,
+      ),
+    ).toBe('color-mix(in srgb, #ff0000 #00ff00, #ffffff)')
+  })
+
+  it('leaves a color-mix() operand carrying only a percentage (no color) untouched', () => {
+    expect(
+      evaluateCssColorValue('color-mix(in srgb, 50%, var(--bg))', base),
+    ).toBe('color-mix(in srgb, 50%, #ffffff)')
+  })
+
+  it('leaves a color-mix() whose percentages both mix to zero untouched (invalid per spec)', () => {
+    // mixSrgb() returns null when both percentages are zero; evaluateColorMix
+    // must not substitute anything for it in that case.
+    expect(
+      evaluateCssColorValue('color-mix(in srgb, #ff0000 0%, #0000ff 0%)', base),
+    ).toBe('color-mix(in srgb, #ff0000 0%, #0000ff 0%)')
+  })
 })
 
 // ============================================================================
@@ -238,6 +290,40 @@ describe('resolveCssColors', () => {
   it('leaves an SVG with zero var()/color-mix() occurrences byte-identical', () => {
     const svg =
       '<svg><rect fill="#ff0000" stroke="rgb(1, 2, 3)"/><text>plain text</text></svg>'
+    expect(resolveCssColors(svg, { bg: '#fff', fg: '#000' })).toBe(svg)
+  })
+
+  it('seeds --surface and --border custom properties when the caller supplies them', () => {
+    const svg =
+      '<svg><rect fill="var(--surface)" stroke="var(--border)"/></svg>'
+    const out = resolveCssColors(svg, {
+      bg: '#fff',
+      fg: '#000',
+      surface: '#eeeeee',
+      border: '#cccccc',
+    })
+    expect(out).toContain('<rect fill="#eeeeee" stroke="#cccccc"/>')
+  })
+
+  it('preserves trailing text after the last tag instead of dropping it', () => {
+    const svg = '<svg><rect fill="var(--fg)"/></svg>\ntrailing'
+    expect(resolveCssColors(svg, { bg: '#fff', fg: '#000' })).toBe(
+      '<svg><rect fill="#000"/></svg>\ntrailing',
+    )
+  })
+
+  it('stops rewriting at an unterminated <style> block instead of throwing', () => {
+    const svg = '<svg><style>svg { --x: var(--fg); }'
+    expect(resolveCssColors(svg, { bg: '#fff', fg: '#000' })).toBe(svg)
+  })
+
+  it('stops rewriting at an unterminated <style> start tag instead of throwing', () => {
+    const svg = '<svg><style'
+    expect(resolveCssColors(svg, { bg: '#fff', fg: '#000' })).toBe(svg)
+  })
+
+  it('stops rewriting at an unterminated element start tag instead of throwing', () => {
+    const svg = '<svg><rect fill="var(--fg)"'
     expect(resolveCssColors(svg, { bg: '#fff', fg: '#000' })).toBe(svg)
   })
 })
