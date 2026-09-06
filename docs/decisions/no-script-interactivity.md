@@ -62,6 +62,9 @@ PNG/JPEG, and ASCII/terminal text):
   terminal-hyperlink escapes, still declarative and still zero script, so a
   link is the one tier-2 mechanism that can survive ASCII/terminal output
   when the caller asks for it ([#216](https://github.com/dfadler/zombie-mermaid/issues/216)).
+  Survival is terminal-dependent, not universal — see
+  [ASCII terminal hyperlinks' Known limitations](../diagrams.md#ascii-terminal-hyperlinks)
+  for which emulators actually honor it.
 - **Tier 3** is the one this library refuses to implement, at any render
   option, for any diagram. `click A call fn()` is parsed and exposed as data
   (`NodeInteraction.callback`, and the `interactions` map from

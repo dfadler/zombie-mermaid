@@ -795,6 +795,18 @@ needs `-R` and a recent version), so the caller decides. The option is
 ignored in `colorMode: 'html'`, which is rendered by a browser rather than a
 terminal. From the CLI, pass `--hyperlinks` alongside `--ascii`.
 
+**Known limitations.** macOS's built-in Terminal.app has never implemented
+OSC 8 — it silently swallows the escape sequences rather than rendering a
+link, so a hyperlinked label looks identical to a plain one and clicking it
+does nothing (verified against Terminal.app on macOS 26). It is not on the
+list above; if links aren't clickable, check which terminal is actually in
+use before assuming the renderer is broken. IDE-integrated terminals (VS
+Code, and others built on the same terminal component) do support OSC 8, but
+only for `http`/`https` hrefs — a `mailto:` or relative link may render with
+link styling there without actually being clickable. See
+[egmontkob's terminal-hyperlink support matrix](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda)
+for the current state across emulators.
+
 ### ASCII XY Charts
 
 XY charts render to ASCII with dedicated chart-drawing characters:
