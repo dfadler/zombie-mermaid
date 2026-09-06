@@ -2,7 +2,12 @@
  * Tests for text-metrics module — variable-width character measurement.
  */
 import { describe, it, expect } from 'vitest'
-import { getCharWidth, measureTextWidth, isWideChar } from '../text-metrics'
+import {
+  getCharWidth,
+  measureTextWidth,
+  isWideChar,
+  hasMeasuredAdvance,
+} from '../text-metrics'
 
 // ============================================================================
 // Character width classification
@@ -10,69 +15,126 @@ import { getCharWidth, measureTextWidth, isWideChar } from '../text-metrics'
 
 describe('getCharWidth', () => {
   describe('narrow characters', () => {
-    it('returns 0.4 for thin letters (i, l, t, f, j, I)', () => {
-      expect(getCharWidth('i')).toBe(0.4)
-      expect(getCharWidth('l')).toBe(0.4)
-      expect(getCharWidth('t')).toBe(0.4)
-      expect(getCharWidth('f')).toBe(0.4)
-      expect(getCharWidth('j')).toBe(0.4)
-      expect(getCharWidth('I')).toBe(0.4)
+    it('measures thin letters as narrow (i, l, t, f, j, I)', () => {
+      for (const ch of ['i', 'l', 't', 'f', 'j', 'I']) {
+        expect(getCharWidth(ch), ch).toBeLessThan(0.7)
+      }
     })
 
-    it('returns 0.4 for thin punctuation', () => {
-      expect(getCharWidth('!')).toBe(0.4)
-      expect(getCharWidth('|')).toBe(0.4)
-      expect(getCharWidth('.')).toBe(0.4)
-      expect(getCharWidth(',')).toBe(0.4)
-      expect(getCharWidth(':')).toBe(0.4)
-      expect(getCharWidth(';')).toBe(0.4)
-      expect(getCharWidth("'")).toBe(0.4)
-      expect(getCharWidth('1')).toBe(0.4)
+    it('measures thin punctuation as narrow', () => {
+      for (const ch of ['!', '|', '.', ',', ':', ';', "'", '1']) {
+        expect(getCharWidth(ch), ch).toBeLessThan(0.8)
+      }
     })
 
-    it('returns 0.8 for semi-narrow r', () => {
-      expect(getCharWidth('r')).toBe(0.8)
+    it('measures r as semi-narrow', () => {
+      expect(getCharWidth('r')).toBeGreaterThan(getCharWidth('i'))
+      expect(getCharWidth('r')).toBeLessThan(getCharWidth('a'))
     })
   })
 
   describe('normal characters', () => {
-    it('returns 1.0 for average lowercase letters', () => {
-      expect(getCharWidth('a')).toBe(1.0)
-      expect(getCharWidth('e')).toBe(1.0)
-      expect(getCharWidth('o')).toBe(1.0)
-      expect(getCharWidth('n')).toBe(1.0)
-      expect(getCharWidth('s')).toBe(1.0)
+    it('measures average lowercase letters near 1.0', () => {
+      for (const ch of ['a', 'e', 'o', 'n', 's']) {
+        expect(getCharWidth(ch), ch).toBeGreaterThan(0.9)
+        expect(getCharWidth(ch), ch).toBeLessThan(1.15)
+      }
     })
 
-    it('returns 1.0 for digits', () => {
-      expect(getCharWidth('0')).toBe(1.0)
-      expect(getCharWidth('2')).toBe(1.0)
-      expect(getCharWidth('9')).toBe(1.0)
+    it('measures digits near 1.0-1.2 (tabular width)', () => {
+      for (const ch of ['0', '2', '9']) {
+        expect(getCharWidth(ch), ch).toBeGreaterThan(1.0)
+        expect(getCharWidth(ch), ch).toBeLessThan(1.2)
+      }
     })
   })
 
   describe('wide characters', () => {
-    it('returns 1.2 for uppercase letters (except I)', () => {
-      expect(getCharWidth('A')).toBe(1.2)
-      expect(getCharWidth('B')).toBe(1.2)
-      expect(getCharWidth('N')).toBe(1.2)
-      expect(getCharWidth('Z')).toBe(1.2)
+    it('measures uppercase letters wider than lowercase (except I)', () => {
+      for (const ch of ['A', 'B', 'N', 'Z']) {
+        expect(getCharWidth(ch), ch).toBeGreaterThan(1.1)
+        expect(getCharWidth(ch), ch).toBeLessThan(1.45)
+      }
     })
 
-    it('returns 1.2 for wide lowercase (w, m)', () => {
-      expect(getCharWidth('w')).toBe(1.2)
-      expect(getCharWidth('m')).toBe(1.2)
+    it('measures wide lowercase (w, m) above 1.4', () => {
+      expect(getCharWidth('w')).toBeGreaterThan(1.4)
+      expect(getCharWidth('m')).toBeGreaterThan(1.4)
     })
 
-    it('returns 1.5 for very wide characters (W, M)', () => {
-      expect(getCharWidth('W')).toBe(1.5)
-      expect(getCharWidth('M')).toBe(1.5)
+    it('measures very wide characters (W, M) above 1.6', () => {
+      expect(getCharWidth('W')).toBeGreaterThan(1.6)
+      expect(getCharWidth('M')).toBeGreaterThan(1.6)
     })
   })
 
   describe('space', () => {
-    it('returns 0.3 for space character', () => {
-      expect(getCharWidth(' ')).toBe(0.3)
+    it('measures space at its real Inter advance (~0.52)', () => {
+      // The old bucket value of 0.3 underestimated every word gap by ~1.3px
+      expect(getCharWidth(' ')).toBeCloseTo(0.521, 3)
+    })
+  })
+
+  describe('previously-omitted punctuation (measured Inter advances)', () => {
+    // Real Inter advances (canvas measureText, headless Chrome, weight 400,
+    // same method as the rest of INTER_ADVANCES), measured at 100px and
+    // normalized by the weight-400 baseRatio (0.54): ratio = px / (100 * 0.54).
+    // Before this table entry existed, these characters fell through to the
+    // old coarse bucket (`) or the 1.0 default (all others), which could
+    // undersize labels with repeated occurrences of these characters.
+    it.each([
+      ['#', 1.173],
+      ['$', 1.188],
+      ['&', 1.193],
+      ['*', 0.928],
+      ['<', 1.225],
+      ['=', 1.225],
+      ['>', 1.225],
+      ['?', 0.947],
+      ['^', 0.873],
+      ['`', 0.598],
+      ['~', 1.225],
+    ])('measures %s at its real Inter advance', (ch, expected) => {
+      expect(getCharWidth(ch)).toBeCloseTo(expected, 3)
+    })
+  })
+
+  describe('table completeness', () => {
+    it('has an exact measured Inter advance for every printable ASCII character (U+0020–U+007E)', () => {
+      const missing: string[] = []
+      for (let code = 0x20; code <= 0x7e; code++) {
+        const ch = String.fromCharCode(code)
+        if (!hasMeasuredAdvance(ch))
+          missing.push(`U+${code.toString(16).padStart(4, '0')} (${ch})`)
+      }
+      expect(missing).toEqual([])
+    })
+  })
+
+  describe('inherited Object.prototype keys', () => {
+    // INTER_ADVANCES is a plain object literal, so bracket access with
+    // `!== undefined` also matches inherited Object.prototype properties
+    // like 'toString' and 'constructor' — they are not real table entries,
+    // but a naive `obj[key] !== undefined` check can't tell the difference.
+    it.each(['toString', 'constructor', 'hasOwnProperty', '__proto__'])(
+      'hasMeasuredAdvance(%s) is false — not an own property of the table',
+      (key) => {
+        expect(hasMeasuredAdvance(key)).toBe(false)
+      },
+    )
+
+    it('getCharWidth never returns an inherited property instead of a measured width', () => {
+      // Without an own-property check, `INTER_ADVANCES['toString'] !== undefined`
+      // is true (it resolves Object.prototype.toString), so getCharWidth('toString')
+      // would return that function instead of a number. With the own-property
+      // check in place, the direct-table lookup correctly misses, and the
+      // multi-character string instead falls through to the (unrelated,
+      // NFD-based) accented-Latin branch, which matches on its first
+      // normalized character ('t') — still a real measured number, never a
+      // function.
+      const result = getCharWidth('toString')
+      expect(typeof result).toBe('number')
+      expect(result).toBe(getCharWidth('t'))
     })
   })
 
@@ -88,13 +150,35 @@ describe('getCharWidth', () => {
   })
 
   describe('accented characters (precomposed)', () => {
-    it('returns normal width for precomposed accented letters', () => {
-      // These are single code points, treated as normal letters
-      expect(getCharWidth('é')).toBe(1.0) // U+00E9
-      expect(getCharWidth('ñ')).toBe(1.0) // U+00F1
-      expect(getCharWidth('ü')).toBe(1.0) // U+00FC
-      expect(getCharWidth('ç')).toBe(1.0) // U+00E7
-      expect(getCharWidth('ö')).toBe(1.0) // U+00F6
+    it('returns the base letter width for precomposed accented letters', () => {
+      // Accents don't change the advance — é measures the same as e
+      expect(getCharWidth('é')).toBe(getCharWidth('e')) // U+00E9
+      expect(getCharWidth('ñ')).toBe(getCharWidth('n')) // U+00F1
+      expect(getCharWidth('ü')).toBe(getCharWidth('u')) // U+00FC
+      expect(getCharWidth('ç')).toBe(getCharWidth('c')) // U+00E7
+      expect(getCharWidth('ö')).toBe(getCharWidth('o')) // U+00F6
+    })
+
+    it('falls through to the default character-class logic when the NFD base is not itself a measured ASCII letter', () => {
+      // U+0439 (й, Cyrillic "short i") NFD-decomposes to U+0438 (и) + a
+      // combining breve. The base "и" differs from the char, but it is a
+      // Cyrillic letter, not one of the printable-ASCII keys in
+      // INTER_ADVANCES — so the lookup misses and getCharWidth must fall
+      // through to the coarse character-class buckets below instead of
+      // returning `undefined`-derived garbage.
+      const char = 'й'
+      const base = char.normalize('NFD')[0]
+      if (base === undefined)
+        throw new Error(
+          'unreachable: normalize() of a non-empty string always has index 0',
+        )
+      expect(base).not.toBe(char) // sanity: this char does decompose
+      expect(hasMeasuredAdvance(base)).toBe(false) // sanity: base has no exact advance
+
+      // None of the ASCII character-class buckets match a Cyrillic letter,
+      // and its code point (0x0439) is outside both the A-Z and 0-9 ranges,
+      // so it lands on the final default width.
+      expect(getCharWidth(char)).toBe(1.0)
     })
   })
 
@@ -149,10 +233,16 @@ describe('measureTextWidth', () => {
     )
   })
 
+  // Sum of per-char ratios — verifies the formula without pinning calibration
+  const ratioSum = (text: string) =>
+    [...text].reduce((s, ch) => s + getCharWidth(ch), 0)
+
   it('handles lowercase text with narrow letters', () => {
-    // "hello" = h(1.0) + e(1.0) + l(0.4) + l(0.4) + o(1.0) = 3.8
     const width = measureTextWidth('hello', fontSize, fontWeight)
-    expect(width).toBeCloseTo(3.8 * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('hello') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('narrow text is narrower than uniform estimate', () => {
@@ -170,15 +260,19 @@ describe('measureTextWidth', () => {
   })
 
   it('handles mixed Latin text', () => {
-    // "Will" = W(1.5) + i(0.4) + l(0.4) + l(0.4) = 2.7
     const width = measureTextWidth('Will', fontSize, fontWeight)
-    expect(width).toBeCloseTo(2.7 * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('Will') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('handles spaces correctly', () => {
-    // "a b" = a(1.0) + space(0.3) + b(1.0) = 2.3
     const width = measureTextWidth('a b', fontSize, fontWeight)
-    expect(width).toBeCloseTo(2.3 * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('a b') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('handles decomposed accents (base + combining mark)', () => {
@@ -198,9 +292,11 @@ describe('measureTextWidth', () => {
   })
 
   it('handles mixed Latin and CJK', () => {
-    // "Hello中国" = H(1.2) + e(1.0) + l(0.4) + l(0.4) + o(1.0) + 中(2.0) + 国(2.0) = 8.0
     const width = measureTextWidth('Hello中国', fontSize, fontWeight)
-    expect(width).toBeCloseTo(8.0 * fontSize * baseRatio + minPadding, 1)
+    expect(width).toBeCloseTo(
+      ratioSum('Hello中国') * fontSize * baseRatio + minPadding,
+      1,
+    )
   })
 
   it('heavier weights produce wider estimates', () => {
@@ -218,6 +314,64 @@ describe('measureTextWidth', () => {
 
     expect(large).toBeGreaterThan(small)
     expect(large / small).toBeCloseTo(16 / 11, 1)
+  })
+})
+
+// ============================================================================
+// Calibration against real Inter metrics
+// ============================================================================
+//
+// Fixtures measured with canvas measureText in headless Chrome 138 with the
+// real Inter font loaded (400 weight, 11px — the edge-label spec). If the
+// estimator underestimates these, edge-label text overflows its 8px-padded
+// background rect; if it grossly overestimates, layout gets bloated.
+
+describe('calibration against real Inter widths (11px, weight 400)', () => {
+  const REAL_INTER_WIDTHS: Record<string, number> = {
+    yes: 18.19,
+    no: 13.09,
+    'on failure': 48.47,
+    'validates credentials': 106.56,
+    'sends confirmation email': 130.6,
+    'asynchronous message processing': 184.1,
+    'returns HTTP 401 Unauthorized response': 215.65,
+    'WRITES TO DATABASE': 119.44,
+    'user_id + session_token validation': 177.51,
+    'retry with exponential backoff (max 5)': 197.49,
+  }
+
+  it('never underestimates real width by more than 3%', () => {
+    for (const [text, real] of Object.entries(REAL_INTER_WIDTHS)) {
+      const est = measureTextWidth(text, 11, 400)
+      expect(
+        est,
+        `"${text}" est ${est.toFixed(1)} vs real ${real}`,
+      ).toBeGreaterThanOrEqual(real * 0.97)
+    }
+  })
+
+  it('never overestimates real width by more than 12% + 3px', () => {
+    for (const [text, real] of Object.entries(REAL_INTER_WIDTHS)) {
+      const est = measureTextWidth(text, 11, 400)
+      expect(
+        est,
+        `"${text}" est ${est.toFixed(1)} vs real ${real}`,
+      ).toBeLessThanOrEqual(real * 1.12 + 3)
+    }
+  })
+
+  it('preserves at least 6px of the nominal 8px edge-label padding per side', () => {
+    // Edge-label background rect = estimated width + 8px padding each side.
+    // The visible gap between glyphs and rect wall must stay close to 8px.
+    const EDGE_LABEL_PADDING = 8
+    for (const [text, real] of Object.entries(REAL_INTER_WIDTHS)) {
+      const est = measureTextWidth(text, 11, 400)
+      const gapPerSide = (est + EDGE_LABEL_PADDING * 2 - real) / 2
+      expect(
+        gapPerSide,
+        `"${text}" gap ${gapPerSide.toFixed(1)}px`,
+      ).toBeGreaterThanOrEqual(6)
+    }
   })
 })
 

@@ -10,6 +10,128 @@
 // ============================================================================
 
 /**
+ * Exact advance widths for every printable ASCII character (U+0020–U+007E),
+ * measured from the real Inter font (canvas measureText, headless Chrome,
+ * weight 400) and normalized so that ratio × fontSize × baseRatio reproduces
+ * the measured pixel advance. Completeness over this range is asserted by
+ * the `getCharWidth` "table completeness" test in text-metrics.test.ts.
+ *
+ * The coarse character-class buckets below remain as fallback for
+ * non-ASCII characters not in this table. The buckets systematically
+ * underestimated Inter widths (spaces, m/w, digits, punctuation), and the
+ * error grew with text length — wide edge labels overflowed their
+ * 8px-padded background rects.
+ */
+const INTER_ADVANCES: Record<string, number> = {
+  ' ': 0.521,
+  '!': 0.533,
+  '"': 0.863,
+  '#': 1.173,
+  $: 1.188,
+  '%': 1.818,
+  '&': 1.193,
+  "'": 0.555,
+  '(': 0.675,
+  ')': 0.675,
+  '*': 0.928,
+  '+': 1.225,
+  ',': 0.534,
+  '-': 0.852,
+  '.': 0.534,
+  '/': 0.667,
+  '0': 1.168,
+  '1': 0.753,
+  '2': 1.129,
+  '3': 1.144,
+  '4': 1.196,
+  '5': 1.099,
+  '6': 1.148,
+  '7': 1.048,
+  '8': 1.146,
+  '9': 1.148,
+  ':': 0.534,
+  ';': 0.559,
+  '<': 1.225,
+  '=': 1.225,
+  '>': 1.225,
+  '?': 0.947,
+  '@': 1.789,
+  A: 1.278,
+  B: 1.212,
+  C: 1.353,
+  D: 1.336,
+  E: 1.113,
+  F: 1.093,
+  G: 1.382,
+  H: 1.376,
+  I: 0.497,
+  J: 1.057,
+  K: 1.244,
+  L: 1.047,
+  M: 1.673,
+  N: 1.395,
+  O: 1.416,
+  P: 1.183,
+  Q: 1.416,
+  R: 1.192,
+  S: 1.188,
+  T: 1.195,
+  U: 1.378,
+  V: 1.278,
+  W: 1.825,
+  X: 1.263,
+  Y: 1.257,
+  Z: 1.165,
+  '[': 0.675,
+  '\\': 0.667,
+  ']': 0.675,
+  '^': 0.873,
+  _: 0.845,
+  '`': 0.598,
+  a: 1.04,
+  b: 1.134,
+  c: 1.058,
+  d: 1.134,
+  e: 1.08,
+  f: 0.685,
+  g: 1.136,
+  h: 1.095,
+  i: 0.448,
+  j: 0.448,
+  k: 1.016,
+  l: 0.448,
+  m: 1.622,
+  n: 1.094,
+  o: 1.11,
+  p: 1.134,
+  q: 1.134,
+  r: 0.697,
+  s: 0.977,
+  t: 0.606,
+  u: 1.095,
+  v: 1.041,
+  w: 1.515,
+  x: 1.011,
+  y: 1.041,
+  z: 1.023,
+  '{': 0.789,
+  '|': 0.616,
+  '}': 0.789,
+  '~': 1.225,
+}
+
+/**
+ * Whether `char` has an exact measured Inter advance in `INTER_ADVANCES`,
+ * as opposed to falling through to a coarse character-class bucket or the
+ * default width in `getCharWidth`. Exported only so tests can assert the
+ * table covers every printable ASCII character (U+0020–U+007E) — a gap
+ * here means a real character silently degrades to an approximate width.
+ */
+export function hasMeasuredAdvance(char: string): boolean {
+  return Object.hasOwn(INTER_ADVANCES, char)
+}
+
+/**
  * Narrow characters - visually thin glyphs.
  * Note: '1' is included because in proportional fonts (like Inter), it's
  * significantly narrower than other digits which use tabular/uniform width.
@@ -192,11 +314,35 @@ export function getCharWidth(char: string): number {
   const code = char.codePointAt(0)
   if (code === undefined) return 0
 
+  // Exact measured advance for printable ASCII (Inter). The own-property
+  // check must come first: without it, bracket access on a plain object
+  // literal also resolves inherited Object.prototype properties (e.g.
+  // `INTER_ADVANCES['toString']` is a function, not undefined).
+  if (Object.hasOwn(INTER_ADVANCES, char)) {
+    const measured = INTER_ADVANCES[char]
+    // The `undefined` case is unreachable: INTER_ADVANCES is a `Record<string,
+    // number>` object literal whose every value is a numeric literal, and
+    // `noUncheckedIndexedAccess` is what forces this check's type, not any
+    // real possibility that an own property here holds `undefined`. Given
+    // `Object.hasOwn` is already true, `measured` is always a defined
+    // number — kept (not simplified to a bare `return measured`) so the
+    // check still holds if a future entry's value type ever widens.
+    /* v8 ignore else */
+    if (measured !== undefined) return measured
+  }
+
   // Zero-width: combining diacritical marks
   if (isCombiningMark(code)) return 0
 
   // Fullwidth: CJK, emoji
   if (isFullwidth(code) || isEmoji(char)) return 2.0
+
+  // Accented Latin: use the base letter's measured advance (é → e, Ü → U)
+  const base = char.normalize('NFD')[0]
+  if (base !== undefined && base !== char) {
+    const baseMeasured = INTER_ADVANCES[base]
+    if (baseMeasured !== undefined) return baseMeasured
+  }
 
   // Space
   if (char === ' ') return 0.3
