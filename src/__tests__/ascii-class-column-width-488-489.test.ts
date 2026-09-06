@@ -22,6 +22,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '../ascii/index.ts'
+import { assertUniformDisplayWidth } from './helpers/terminal-display-width.ts'
 
 /** Same source as the "Class: All 6 Relationship Types" sample (samples-data.ts). */
 const ALL_SIX = `classDiagram
@@ -182,5 +183,269 @@ describe('ASCII class diagram — more than two relationships between a narrow p
     expect(ascii).toContain('notifies')
     expect(ascii).toContain('reads')
     expect(ascii).not.toMatch(/[┬┴┼]/)
+  })
+})
+
+// ----------------------------------------------------------------------------
+// Additional coverage identified in review of PR #512 — real gaps the tests
+// above don't exercise: a true zero-relationship baseline, a single (non-
+// grouped) relationship's own reservation, a group whose members' labels are
+// wildly different lengths, two independent multi-relationship groups in one
+// diagram, double-width (CJK) label characters, one class's reach across
+// several *unrelated* relationships (max, not sum), and the interaction with
+// PR #514's detour routing.
+// ----------------------------------------------------------------------------
+
+describe('ASCII class diagram — column reservation baseline and single-relationship cases', () => {
+  it('adds no extra width for classes with zero relationships (default gap only)', () => {
+    // No relationships at all means `columnReach` never gets a nonzero left
+    // or right for either class — the slot must stay exactly the box width,
+    // same as if the reservation feature didn't exist.
+    const ascii = renderMermaidASCII(
+      `classDiagram
+  class Foo
+  class Bar`,
+      { colorMode: 'none' },
+    )
+    const topBorder = ascii.split('\n')[0]!
+    expect(topBorder).toMatch(/^┌─+┐ {4}┌─+┐\s*$/)
+  })
+
+  it('reserves room for a single (ungrouped) relationship label on a narrow box', () => {
+    // Group size 1 — `relColumnOffset`/`relGroupSpread` are never populated
+    // for this pair (the pair-grouping pass only fires for `group.length >=
+    // 2`), so any extra room here must come from `columnReach` alone, not
+    // from the fan-out logic #489 added. A single letter box is 5 cells wide
+    // ("┌───┐"); a label many times that width has nowhere to go without
+    // the slot growing past the box on at least one side.
+    const ascii = renderMermaidASCII(
+      `classDiagram
+  class A
+  class B
+  A --> B : a label far wider than either narrow box`,
+      { colorMode: 'none' },
+    )
+    const lines = ascii.split('\n')
+    expect(ascii).not.toContain('…')
+    expect(ascii).toContain('a label far wider than either narrow box')
+
+    // The label's lane must carry zero fan offset (no group to fan within):
+    // it sits centered under column 0 relative to both boxes, i.e. the same
+    // column A and B's own centers occupy.
+    const aTop = lines.find((l) => l.includes('┌───┐'))!
+    const labelRow = lines.find((l) => l.includes('a label far wider'))!
+    const aCenter = aTop.indexOf('┌') + 2 // "┌───┐" is 5 wide, center at +2
+    const labelText = 'a label far wider than either narrow box'
+    const labelStart = labelRow.indexOf(labelText)
+    const labelCenter = labelStart + Math.floor(labelText.length / 2)
+    expect(Math.abs(labelCenter - aCenter)).toBeLessThanOrEqual(1)
+  })
+})
+
+describe('ASCII class diagram — a group whose members have wildly different label lengths', () => {
+  const SOURCE = `classDiagram
+  class A
+  class B
+  A --> B : hi
+  B --> A : this is a much much longer label than the other one`
+
+  it('renders both labels in full — the group spacing must key off the widest member', () => {
+    // If the fan-out step were sized off the shortest label (or an average)
+    // instead of the group's widest, the long label would overlap `hi`'s
+    // lane (or the boxes) and the territory pass would truncate one or both
+    // to an ellipsis.
+    const ascii = renderMermaidASCII(SOURCE, { colorMode: 'none' })
+    expect(ascii).not.toContain('…')
+    expect(ascii).toContain('hi')
+    expect(ascii).toContain(
+      'this is a much much longer label than the other one',
+    )
+  })
+
+  it('keeps the two labels non-overlapping on their shared row', () => {
+    const lines = renderMermaidASCII(SOURCE, { colorMode: 'none' }).split('\n')
+    const row = lines.find((l) => l.includes('hi'))!
+    expect(row).toContain('this is a much much longer label than the other one')
+    const hiStart = row.indexOf('hi')
+    const hiEnd = hiStart + 1
+    const longStart = row.indexOf(
+      'this is a much much longer label than the other one',
+    )
+    const longEnd =
+      longStart +
+      'this is a much much longer label than the other one'.length -
+      1
+    const overlaps = hiStart <= longEnd && longStart <= hiEnd
+    expect(overlaps).toBe(false)
+  })
+})
+
+describe('ASCII class diagram — two independent multi-relationship groups in one diagram', () => {
+  it("does not let one group's wide labels leak into a separate pair's spacing", () => {
+    // A<->B carries a much wider label pair than C<->D. If group state leaked
+    // (e.g. a shared "widest label seen so far" instead of one keyed per
+    // pair), C/D would be pushed further apart than they need to be on their
+    // own — this compares the actual C-D spacing against an isolated C/D-only
+    // rendering with identical C/D relationships and nothing else.
+    const combined = renderMermaidASCII(
+      `classDiagram
+  class A
+  class B
+  class C
+  class D
+  A --> B : short
+  B --> A : another short one that is somewhat longer than short
+  C --> D : x
+  D --> C : y`,
+      { colorMode: 'none' },
+    ).split('\n')
+    const isolated = renderMermaidASCII(
+      `classDiagram
+  class C
+  class D
+  C --> D : x
+  D --> C : y`,
+      { colorMode: 'none' },
+    ).split('\n')
+
+    const cRowCombined = combined.find((l) => l.includes('│ C │'))!
+    const cRowIsolated = isolated.find((l) => l.includes('│ C │'))!
+    const distanceCombined =
+      cRowCombined.indexOf('D') - cRowCombined.indexOf('C')
+    const distanceIsolated =
+      cRowIsolated.indexOf('D') - cRowIsolated.indexOf('C')
+    expect(distanceCombined).toBe(distanceIsolated)
+  })
+})
+
+describe('ASCII class diagram — double-width (CJK) relationship labels', () => {
+  it('measures column reservation by display width, not UTF-16 length', () => {
+    // Each CJK character here is 2 terminal columns wide but 1 UTF-16 code
+    // unit — if `labelCellWidth` measured `.length` instead of `displayWidth`
+    // (the same class of bug already fixed for box content in #182 and for
+    // sequence-diagram labels in #334), X/Y's reserved slot would come out
+    // roughly half what the label actually needs. A sibling pair (W -> Z)
+    // beside X -> Y gives that under-reservation somewhere to collide with:
+    // with the bug, the CJK label runs into W/Z's column and the territory
+    // pass truncates it to an ellipsis; with correct display-width
+    // measurement, both labels render in full, each in its own lane.
+    const ascii = renderMermaidASCII(
+      `classDiagram
+  class X
+  class W
+  class Y
+  class Z
+  X --> Y : 图表关系测试标签更多字
+  W --> Z : short`,
+      { colorMode: 'none' },
+    )
+    expect(ascii).not.toContain('…')
+    expect(ascii).toContain('图表关系测试标签更多字')
+    expect(ascii).toContain('short')
+    assertUniformDisplayWidth(ascii)
+  })
+})
+
+describe('ASCII class diagram — one class spanning several unrelated relationships (max, not sum)', () => {
+  it("reserves room for a class's widest relationship only once, not once per relationship", () => {
+    // A appears as the "to" of one long-labeled relationship and the "from"
+    // of a second, short-labeled one to a different class entirely (not a
+    // fan-out group — these are two distinct pairs, `P::A` and `A::Q`).
+    // `columnReach` folds every relationship touching a class together with
+    // `Math.max`; if that were `+=` instead, A's reserved slot would grow
+    // with the *count* of its relationships rather than staying pinned to
+    // the single widest one, and A's column would drift right of where it
+    // sits when the long relationship is the only one touching it at all.
+    const combined = renderMermaidASCII(
+      `classDiagram
+  class P
+  class A
+  class Q
+  class R
+  P --> A : the long label that needs a lot of horizontal room
+  A --> Q : short
+  Q --> R : also short`,
+      { colorMode: 'none' },
+    ).split('\n')
+    const isolated = renderMermaidASCII(
+      `classDiagram
+  class P
+  class A
+  P --> A : the long label that needs a lot of horizontal room`,
+      { colorMode: 'none' },
+    ).split('\n')
+
+    const aRowCombined = combined.find((l) => l.includes('│ A │'))!
+    const aRowIsolated = isolated.find((l) => l.includes('│ A │'))!
+    expect(aRowCombined.indexOf('A')).toBe(aRowIsolated.indexOf('A'))
+  })
+})
+
+describe('ASCII class diagram — column reservation composes with detour routing (issue #514 interaction)', () => {
+  // A -> B -> C is a straight chain, but A -> C also exists and — with
+  // matching label lengths on all three relationships — A, B, and C end up
+  // column-aligned, so A -> C's straight vertical path collides with B and
+  // must detour (the same shape as the #487 MVC repro, but with narrow,
+  // single-word boxes that also need `columnReach` to grow their slots for
+  // these labels). D -> E is an unrelated, short-labeled pair placed beside
+  // A/B/C by the layout — if A/B/C's slots were NOT widened for their long
+  // labels, D/E would land close enough to collide with them. This is the
+  // composition PR #512's column-width pass and PR #514's label-aware
+  // detour routing must both get right at once.
+  const SOURCE = `classDiagram
+  class A
+  class B
+  class C
+  class D
+  class E
+  A --> B : a moderately long label here
+  A --> C : a moderately long label there
+  B --> C : a moderately long label too
+  D --> E : x`
+
+  it('reserves room for every label while one relationship detours around the middle class', () => {
+    const ascii = renderMermaidASCII(SOURCE, { colorMode: 'none' })
+    const lines = ascii.split('\n')
+    expect(ascii).not.toContain('…')
+    for (const label of [
+      'a moderately long label here',
+      'a moderately long label there',
+      'a moderately long label too',
+      'x',
+    ]) {
+      expect(ascii).toContain(label)
+    }
+
+    // B's box borders give its column footprint; the detoured relationship's
+    // label ("...there") must land clear of B's footprint, not overlapping
+    // or truncated by it — the same "past the border, not inside it" check
+    // the #487 suite uses for the MVC repro.
+    const bTopRow = lines.findIndex(
+      (l, i) =>
+        l.includes('┌───┐') && (lines[i + 1]?.includes('│ B │') ?? false),
+    )
+    expect(bTopRow).toBeGreaterThanOrEqual(0)
+    const bRightBorder = lines[bTopRow]!.indexOf('┐')
+
+    const thereRow = lines.findIndex((l) =>
+      l.includes('a moderately long label there'),
+    )
+    expect(thereRow).toBeGreaterThanOrEqual(0)
+    const thereStart = lines[thereRow]!.indexOf('a moderately long label there')
+    expect(thereStart).toBeGreaterThan(bRightBorder)
+  })
+
+  it("does not let D/E's short-labeled pair collide with A/B/C's reserved columns", () => {
+    // If A/B/C's own slots weren't widened for their long labels, D -> E's
+    // short "x" would land inside the space one of A/B/C's long labels
+    // needs, corrupting it mid-string (this is exactly what a broken
+    // reservation produces: e.g. "a moderat x  long label here" instead of
+    // "a moderately long label here") rather than a clean ellipsis
+    // truncation — so this checks the label text is byte-for-byte intact,
+    // not just present as a substring.
+    const ascii = renderMermaidASCII(SOURCE, { colorMode: 'none' })
+    expect(ascii).toContain('a moderately long label here')
+    expect(ascii).toContain('a moderately long label there')
+    expect(ascii).toContain('a moderately long label too')
   })
 })
