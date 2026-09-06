@@ -112,6 +112,28 @@ describe('runRender – --resolve-colors', () => {
 
     expect(await readFile(outputPath, 'utf-8')).toMatch(/\bvar\(/)
   })
+
+  it('resolves colors on the -o - (stdout) path too, not just file output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        svg: true,
+        output: '-',
+        resolveColors: true,
+        theme: 'tokyo-night',
+      }),
+      mockStdout,
+    )
+
+    const svg = mockStdout.output()
+    expect(svg).toMatch(/^<svg[\s\S]*<\/svg>$/)
+    expect(svg).not.toMatch(/\b(?:var|color-mix)\(/)
+    expect(svg).toContain('--_line:          #3d59a1')
+  })
 })
 
 // ============================================================================

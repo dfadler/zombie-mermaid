@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { renderMermaidSVG } from '../index.ts'
+import { renderMermaidSVG, renderMermaidSVGAsync } from '../index.ts'
 import { THEMES, MIX, DEFAULTS } from '../theme.ts'
 import { evaluateCssColorValue, resolveCssColors } from '../resolve-colors.ts'
 import { mixHexColors } from '../color-utils.ts'
@@ -172,6 +172,27 @@ describe('evaluateCssColorValue', () => {
       'url(#myvar(--fg))',
     )
   })
+
+  it('evaluates a color-mix() nested inside another color-mix() operand', () => {
+    // Inner: mix(black, white, 50%) = #808080. Outer: mix(#808080, white, 50%)
+    // = (128+255)/2 = 191.5 → rounds to 192 = #c0c0c0.
+    expect(
+      evaluateCssColorValue(
+        'color-mix(in srgb, color-mix(in srgb, var(--fg) 50%, var(--bg)) 50%, var(--bg))',
+        base,
+      ),
+    ).toBe('#c0c0c0')
+  })
+
+  it('leaves a color-mix() with the wrong number of operands untouched', () => {
+    // Only one color operand — not the two `color-mix()` requires. The
+    // inner var() is still evaluated (the fallback keeps as much resolved
+    // as possible), but the malformed color-mix() itself is left in place
+    // rather than guessed at.
+    expect(
+      evaluateCssColorValue('color-mix(in srgb, var(--fg) 50%)', base),
+    ).toBe('color-mix(in srgb, #000000 50%)')
+  })
 })
 
 // ============================================================================
@@ -208,6 +229,16 @@ describe('resolveCssColors', () => {
     expect(resolveCssColors(svg, { bg: '#fff', fg: '#000' })).toContain(
       '<rect fill="#abcdef"/>',
     )
+  })
+
+  it('returns an empty string unchanged for empty input', () => {
+    expect(resolveCssColors('', { bg: '#fff', fg: '#000' })).toBe('')
+  })
+
+  it('leaves an SVG with zero var()/color-mix() occurrences byte-identical', () => {
+    const svg =
+      '<svg><rect fill="#ff0000" stroke="rgb(1, 2, 3)"/><text>plain text</text></svg>'
+    expect(resolveCssColors(svg, { bg: '#fff', fg: '#000' })).toBe(svg)
   })
 })
 
@@ -317,5 +348,13 @@ describe('renderMermaidSVG({ resolveColors: true })', () => {
     expect(svg).toContain('--bg:var(--background)')
     // Mixes against it can't be evaluated, so their fallbacks stay put too.
     expect(svg).toMatch(CSS_FUNCTION_RE)
+  })
+
+  it('resolves colors through renderMermaidSVGAsync too, not just the sync entry point', async () => {
+    const svg = await renderMermaidSVGAsync(DIAGRAMS.flowchart ?? '', {
+      resolveColors: true,
+    })
+    expect(svg).not.toMatch(CSS_FUNCTION_RE)
+    expect(svg).toContain('<svg')
   })
 })
