@@ -1,32 +1,37 @@
 import { describe, it, expect } from 'vitest'
 import {
-  escapeHtml,
+  createElement,
+  type ComponentProps,
+  type FunctionComponent,
+} from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import {
   daysSince,
   formatDate,
   formatDateTime,
   pluralDays,
-  renderCompareTable,
-  renderStatCards,
-  renderIssueList,
-  renderResponseTime,
   generate,
+  renderDashboardHtml,
   type RepoStats,
   type RescuedIssue,
   type DashboardData,
 } from '../dashboard.ts'
+import {
+  CompareTable,
+  StatCards,
+  IssueList,
+  ResponseTime,
+} from '../demo/components/dashboard-page.tsx'
+import { parseDashboardData } from '../demo/dashboard-model.ts'
 import dashboardData from '../demo/dashboard-data.json' with { type: 'json' }
 
-describe('escapeHtml', () => {
-  it('escapes the five HTML-significant characters', () => {
-    expect(escapeHtml(`<a href="x">A & B</a>`)).toBe(
-      '&lt;a href=&quot;x&quot;&gt;A &amp; B&lt;/a&gt;',
-    )
-  })
-
-  it('leaves plain text untouched', () => {
-    expect(escapeHtml('nothing special here')).toBe('nothing special here')
-  })
-})
+/** Renders one component to its static markup, the way dashboard.ts renders the page. */
+function render<P extends object>(
+  component: FunctionComponent<P>,
+  props: ComponentProps<FunctionComponent<P>>,
+): string {
+  return renderToStaticMarkup(createElement(component, props))
+}
 
 describe('daysSince', () => {
   it('floors a fractional day gap down', () => {
@@ -36,12 +41,6 @@ describe('daysSince', () => {
 
   it('returns 0 for the same instant', () => {
     expect(daysSince('2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')).toBe(0)
-  })
-
-  it('uses the module-level snapshot generatedAt when referenceIso is omitted', () => {
-    const iso = '2020-01-01T00:00:00Z'
-    const expected = daysSince(iso, dashboardData.generatedAt)
-    expect(daysSince(iso)).toBe(expected)
   })
 })
 
@@ -97,28 +96,46 @@ const upstreamStats: RepoStats = {
   latestRelease: null,
 }
 
-describe('renderCompareTable', () => {
+const referenceIso = '2026-08-03T00:00:00Z'
+
+describe('CompareTable', () => {
   it("renders both repos' stats and escapes the release tag", () => {
-    const html = renderCompareTable(
-      {
+    const html = render(CompareTable, {
+      fork: {
         ...forkStats,
         latestRelease: { tag: '<v1>', publishedAt: forkStats.lastPushedAt },
       },
-      upstreamStats,
-    )
+      upstream: upstreamStats,
+      referenceIso,
+    })
 
     expect(html).toContain('3') // fork open issues
     expect(html).toContain('50') // upstream open issues
     expect(html).toContain('&lt;v1&gt;')
+    expect(html).not.toContain('<v1>')
+  })
+
+  it('measures "days ago" from the snapshot instant it is given', () => {
+    const html = render(CompareTable, {
+      fork: forkStats,
+      upstream: upstreamStats,
+      referenceIso,
+    })
+    expect(html).toContain('2 days ago') // fork: Aug 1 → Aug 3
+    expect(html).toContain('94 days ago') // upstream: May 1 → Aug 3
   })
 
   it('renders an em-dash for a repo with no releases', () => {
-    const html = renderCompareTable(forkStats, upstreamStats)
+    const html = render(CompareTable, {
+      fork: forkStats,
+      upstream: upstreamStats,
+      referenceIso,
+    })
     expect(html).toContain('—')
   })
 })
 
-describe('renderStatCards', () => {
+describe('StatCards', () => {
   const rescued: DashboardData['rescued'] = {
     totalFixes: 7,
     upstreamIssuesReferenced: 5,
@@ -128,15 +145,21 @@ describe('renderStatCards', () => {
   }
 
   it('renders each count as its own stat card value', () => {
-    const html = renderStatCards(rescued)
+    const html = render(StatCards, { rescued })
     expect(html).toContain('>7<')
     expect(html).toContain('>5<')
     expect(html).toContain('>3<')
     expect(html).toContain('>2<')
   })
+
+  it('accents the fixed and still-open counts only', () => {
+    const html = render(StatCards, { rescued })
+    expect(html).toContain('class="dash-stat-value dash-accent">7<')
+    expect(html).toContain('class="dash-stat-value">5<')
+  })
 })
 
-describe('renderIssueList', () => {
+describe('IssueList', () => {
   const openIssue: RescuedIssue = {
     number: 10,
     state: 'open',
@@ -152,47 +175,83 @@ describe('renderIssueList', () => {
     forkPr: 101,
   }
 
-  it('escapes the fix title and links to the upstream issue and the fork PR', () => {
-    const html = renderIssueList([openIssue])
+  it('escapes the fix title and links to the upstream issue, the fork PR, and the fork-fixes anchor', () => {
+    const html = render(IssueList, { issues: [openIssue] })
     expect(html).toContain('Fix &lt;A&gt;')
     expect(html).toContain(
       'https://github.com/lukilabs/beautiful-mermaid/issues/10',
     )
     expect(html).toContain('https://github.com/dfadler/zombie-mermaid/pull/100')
+    expect(html).toContain('href="fork-fixes.html#fix-a"')
   })
 
   it('badges an open issue as still open and a closed one as closed upstream', () => {
-    const html = renderIssueList([openIssue, closedIssue])
-    expect(html).toContain('still open upstream')
-    expect(html).toContain('closed upstream')
+    const html = render(IssueList, { issues: [openIssue, closedIssue] })
+    expect(html).toContain('dash-open">still open upstream')
+    expect(html).toContain('dash-closed">closed upstream')
   })
 })
 
-describe('renderResponseTime', () => {
+describe('ResponseTime', () => {
   it('renders a fallback note when there is no sample', () => {
-    const html = renderResponseTime(null)
+    const html = render(ResponseTime, { responseTime: null })
     expect(html).toContain('No recent issue')
   })
 
   it('renders "<1h" for a sub-hour median instead of a fraction', () => {
-    const html = renderResponseTime({
-      sampleSize: 4,
-      medianHours: 0.3,
-      note: 'a note',
+    const html = render(ResponseTime, {
+      responseTime: { sampleSize: 4, medianHours: 0.3, note: 'a note' },
     })
-    expect(html).toContain('<1h')
+    // The template-literal generator emitted a raw `<1h`; React escapes the
+    // `<`. Both parse to the same text node.
+    expect(html).toContain('&lt;1h')
     expect(html).not.toContain('0.3h')
   })
 
   it('renders the numeric hour value and escapes the note', () => {
-    const html = renderResponseTime({
-      sampleSize: 4,
-      medianHours: 5.5,
-      note: 'caveat <em>text</em>',
+    const html = render(ResponseTime, {
+      responseTime: {
+        sampleSize: 4,
+        medianHours: 5.5,
+        note: 'caveat <em>text</em>',
+      },
     })
     expect(html).toContain('5.5h')
     expect(html).toContain('n=4')
     expect(html).toContain('caveat &lt;em&gt;text&lt;/em&gt;')
+  })
+})
+
+describe('parseDashboardData', () => {
+  it('accepts the committed snapshot', () => {
+    expect(() => parseDashboardData(dashboardData)).not.toThrow()
+  })
+
+  it('rejects a snapshot whose shape the page cannot render', () => {
+    const broken = {
+      ...dashboardData,
+      rescued: {
+        ...dashboardData.rescued,
+        issues: [{ ...dashboardData.rescued.issues[0], state: 'merged' }],
+      },
+    }
+    expect(() => parseDashboardData(broken)).toThrow(/state/)
+  })
+})
+
+describe('renderDashboardHtml', () => {
+  const data = parseDashboardData(dashboardData)
+
+  it('produces a complete document with the doctype React omits', () => {
+    const html = renderDashboardHtml(data, '')
+    expect(html.startsWith('<!DOCTYPE html>\n<html lang="en">')).toBe(true)
+    expect(html.endsWith('</html>')).toBe(true)
+  })
+
+  it('inlines the stylesheet verbatim — no HTML escaping inside <style>', () => {
+    const css = '.a > .b::before { content: "x & y"; }'
+    const html = renderDashboardHtml(data, css)
+    expect(html).toContain(`<style>${css}</style>`)
   })
 })
 
@@ -201,6 +260,7 @@ describe('generate', () => {
     const html = await generate()
     expect(html).toContain('<!DOCTYPE html>')
     expect(html).toContain('Maintenance dashboard')
+    expect(html).toContain(formatDateTime(dashboardData.generatedAt))
     expect(html).toContain('</html>')
   })
 })

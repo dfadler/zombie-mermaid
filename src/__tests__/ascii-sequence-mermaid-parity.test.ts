@@ -196,3 +196,24 @@ describe('ASCII sequence diagrams – multi-word inline actor names', () => {
     expect(result).toContain('Bob')
   })
 })
+
+describe('ASCII sequence diagrams – standalone activate/deactivate (#419)', () => {
+  it('renders identically to the +/- shorthand, and does not leak the keyword as text', () => {
+    const standalone = renderMermaidASCII(
+      `sequenceDiagram
+      Alice->>John: Hello John, how are you?
+      activate John
+      John-->>Alice: Great!
+      deactivate John`,
+      { useAscii: false },
+    )
+    const shorthand = renderMermaidASCII(
+      `sequenceDiagram
+      Alice->>+John: Hello John, how are you?
+      John-->>-Alice: Great!`,
+      { useAscii: false },
+    )
+    expect(standalone).toBe(shorthand)
+    expect(standalone).not.toContain('activate')
+  })
+})
