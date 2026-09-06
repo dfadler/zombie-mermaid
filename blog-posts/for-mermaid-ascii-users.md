@@ -61,25 +61,14 @@ B --> C & D
 D --> C
 ```
 
-Both tools print exactly this (trailing whitespace aside):
+Both tools print exactly this (trailing whitespace aside). These are real
+terminal captures (`asciinema` + `agg` against an actual PTY), not a
+browser's approximation of one — see "How this was checked" for why that
+distinction matters for the sections below with wide characters.
 
-```text
-┌───┐     ┌───┐     ┌───┐
-│   │     │   │     │   │
-│ A ├────►│ B ├──┬─►┤ D │
-│   │     │   │  │  │   │
-└─┬─┘     └─┬─┘  │  └───┘
-  │         │    │
-  │         │    │
-  │         ├────┘
-  │         │
-  │         ▼
-  │       ┌───┐
-  │       │   │
-  └──────►│ C │
-          │   │
-          └───┘
-```
+| mermaid-ascii                                                                                                             | zombie-mermaid                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| ![mermaid-ascii terminal output of the A/B/C/D flowchart](../mermaid-ascii-comparison-screenshots/basic-flowchart-ma.png) | ![zombie-mermaid terminal output of the A/B/C/D flowchart](../mermaid-ascii-comparison-screenshots/basic-flowchart-zm.png) |
 
 Same box style, same `-x`/`-y`/`-p` spacing flags with the same defaults,
 same edge routing. If your existing diagrams are simple flowcharts, expect
@@ -99,15 +88,11 @@ flowchart LR
   A["开始"] --> B["处理数据"] --> C["结束"]
 ```
 
-Both tools:
+Both tools, captured from a real terminal:
 
-```text
-┌──────┐     ┌──────────┐     ┌──────┐
-│      │     │          │     │      │
-│ 开始 ├────►│ 处理数据 ├────►│ 结束 │
-│      │     │          │     │      │
-└──────┘     └──────────┘     └──────┘
-```
+| mermaid-ascii                                                                                                                | zombie-mermaid                                                                                                                |
+| ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ![mermaid-ascii terminal output of the CJK-labelled flowchart](../mermaid-ascii-comparison-screenshots/cjk-flowchart-ma.png) | ![zombie-mermaid terminal output of the CJK-labelled flowchart](../mermaid-ascii-comparison-screenshots/cjk-flowchart-zm.png) |
 
 Bare CJK node IDs (`开始 --> 结束`, no brackets) also render correctly in
 both. zombie-mermaid had its own bug there until 1.7.0
@@ -124,31 +109,12 @@ flowchart LR
   A["First<br/>Second"] --> B["Line 1<br>Line 2<br>Line 3"]
 ```
 
-mermaid-ascii 1.5.0 puts a blank row between each line:
+mermaid-ascii 1.5.0 puts a blank row between each line; zombie-mermaid
+keeps them adjacent. Both captured from a real terminal:
 
-```text
-┌────────┐     ┌────────┐
-│        │     │        │
-│        │     │ Line 1 │
-│ First  │     │        │
-│        ├────►│ Line 2 │
-│ Second │     │        │
-│        │     │ Line 3 │
-│        │     │        │
-└────────┘     └────────┘
-```
-
-zombie-mermaid keeps them adjacent:
-
-```text
-┌────────┐     ┌────────┐
-│        │     │        │
-│        │     │ Line 1 │
-│ First  ├────►│ Line 2 │
-│ Second │     │ Line 3 │
-│        │     │        │
-└────────┘     └────────┘
-```
+| mermaid-ascii (blank row between lines)                                                                                      | zombie-mermaid (adjacent lines)                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ![mermaid-ascii terminal output of the multi-line-label flowchart](../mermaid-ascii-comparison-screenshots/multiline-ma.png) | ![zombie-mermaid terminal output of the multi-line-label flowchart](../mermaid-ascii-comparison-screenshots/multiline-zm.png) |
 
 That is a spacing preference, not a capability gap.
 
@@ -177,38 +143,16 @@ sequenceDiagram
   服务器-->>客户端: 返回结果
 ```
 
-mermaid-ascii 1.5.0:
+A plain-text code block can't actually show this bug — a proportional or
+approximated rendering can hide exactly the column-drift that's being
+claimed here — so both sides below are real terminal captures
+(`asciinema` + `agg` against a genuine PTY), not a browser mockup. Look at
+where the right-hand box and the arrowheads land relative to the left
+column:
 
-```text
-┌────────┐     ┌────────┐
-│ 客户端 │        │ 服务器 │
-└────┬───┘     └────┬───┘
-     │              │
-     │ 请求数据         │
-     ├─────────────►│
-     │              │
-     │ 返回结果         │
-     │◄┈┈┈┈┈┈┈┈┈┈┈┈┈┤
-     │              │
-```
-
-zombie-mermaid:
-
-```text
-┌────────┐    ┌────────┐
-│ 客户端 │    │ 服务器 │
-└────┬───┘    └────┬───┘
-     │             │
-     │  请求数据   │
-     │─────────────▶
-     │             │
-     │  返回结果   │
-     ◀╌╌╌╌╌╌╌╌╌╌╌╌╌│
-     │             │
-┌────┴───┐    ┌────┴───┐
-│ 客户端 │    │ 服务器 │
-└────────┘    └────────┘
-```
+| mermaid-ascii (drifts right)                                                                                                                                           | zombie-mermaid (stays aligned)                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ![mermaid-ascii terminal output of the CJK sequence diagram, showing the right column drifting rightward](../mermaid-ascii-comparison-screenshots/sequence-cjk-ma.png) | ![zombie-mermaid terminal output of the same CJK sequence diagram, staying aligned](../mermaid-ascii-comparison-screenshots/sequence-cjk-zm.png) |
 
 Measured by display width (East Asian Wide characters counted as two
 columns), mermaid-ascii's lines come out at 25, 28, 25, 21, 25, 21, 21, 25,
@@ -241,65 +185,12 @@ flowchart TB
 ```
 
 mermaid-ascii 1.5.0 merges the two frames, overwrites one title with the
-other, and draws `worker pool` in the frontend column:
+other ("FrontenApplication tier"), and draws `worker pool` in the frontend
+column. Real terminal captures:
 
-```text
-┌───────────────────┬──────────────────┐
-│   FrontenApplication tier            │
-│                   │                  │
-│                   │                  │
-│ ┌───────────────┐ │   ┌────────────┐ │
-│ │               │ │   │            │ │
-│ │ load balancer │ │   │ api server │ │
-│ │               │ │   │            │ │
-│ └───────┬───────┘ │   └────────────┘ │
-│         │         │                  │
-├─────────┼─────────┘                  │
-│         │                            │
-│         │                            │
-│         │                            │
-│         │                            │
-│         │                            │
-│         │                            │
-│         ▼                            │
-│ ┌───────────────┐                    │
-│ │               │                    │
-│ │  worker pool  │                    │
-│ │               │                    │
-│ └───────────────┘                    │
-│                                      │
-└──────────────────────────────────────┘
-```
-
-zombie-mermaid:
-
-```text
-┌───────────────────┐
-│   Frontend tier   │
-│                   │
-│                   │
-│ ┌───────────────┐ │
-│ │               │ │
-│ │ load balancer │ │
-│ │               │ │
-│ └───────┬───────┘ │
-│         │         │
-└─────────┼─────────┘
-          │
-          │
-          │
-┌─────────┼────────────────────────────┐
-│         │ Application tier           │
-│         │                            │
-│         ▼                            │
-│ ┌───────────────┐     ┌────────────┐ │
-│ │               │     │            │ │
-│ │  worker pool  │     │ api server │ │
-│ │               │     │            │ │
-│ └───────────────┘     └────────────┘ │
-│                                      │
-└──────────────────────────────────────┘
-```
+| mermaid-ascii (frames merged, title overwritten)                                                                                                                                                              | zombie-mermaid (two clean frames)                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![mermaid-ascii terminal output of the edge-less-subgraph-node flowchart, showing the two subgraph titles merged into one corrupted string](../mermaid-ascii-comparison-screenshots/subgraph-edgeless-ma.png) | ![zombie-mermaid terminal output of the same flowchart, showing two distinct subgraph frames](../mermaid-ascii-comparison-screenshots/subgraph-edgeless-zm.png) |
 
 ### Three labelled edges out of one node, top-down
 
@@ -313,46 +204,13 @@ flowchart TB
     A -->|gamma| D
 ```
 
-mermaid-ascii 1.5.0 (no `beta`):
+mermaid-ascii 1.5.0 drops `beta`; zombie-mermaid keeps all three (`beta`
+and `gamma` share the horizontal run out of `A`, which is cramped but
+complete). Real terminal captures:
 
-```text
-┌────────┐
-│        │
-│   A    ├─gamma──┬─┐
-│        │        │ │
-└────┬───┘        └─┼─────────┐
-     │              │         │
-     │              │         │
-   alpha            │         │
-     │              │         │
-     ▼              ▼         ▼
-┌────────┐        ┌───┐     ┌───┐
-│        │        │   │     │   │
-│   B    │        │ C │     │ D │
-│        │        │   │     │   │
-└────────┘        └───┘     └───┘
-```
-
-zombie-mermaid keeps all three. `beta` and `gamma` share the horizontal run
-out of `A`, which is cramped but complete:
-
-```text
-┌───────┐
-│       │
-│   A   ├─beta──gamma────────┐
-│       │        │           │
-└───┬───┘        │           │
-    │            │           │
-  alpha          │           │
-    │            │           │
-    │            │           │
-    ▼            ▼           ▼
-┌───────┐      ┌───┐       ┌───┐
-│       │      │   │       │   │
-│   B   │      │ C │       │ D │
-│       │      │   │       │   │
-└───────┘      └───┘       └───┘
-```
+| mermaid-ascii (no `beta`)                                                                                                                                     | zombie-mermaid (all three labels)                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![mermaid-ascii terminal output of the three-labelled-edge flowchart, missing the beta label](../mermaid-ascii-comparison-screenshots/tb-three-labels-ma.png) | ![zombie-mermaid terminal output of the same flowchart, showing all three labels](../mermaid-ascii-comparison-screenshots/tb-three-labels-zm.png) |
 
 ### Node shapes, and labels that aren't IDs
 
@@ -371,56 +229,13 @@ graph TD
 ```
 
 mermaid-ascii 1.5.0 renders four nodes for a three-node graph, with the
-brace and parenthesis syntax printed verbatim:
-
-```text
-┌──────────────┐     ┌─────────┐
-│              │     │         │
-│    Start     │◄no──┤    B    │
-│              │     │         │
-└───────┬──────┘     └────┬────┘
-        │                 │
-        │                 │
-        │                yes
-        │                 │
-        ▼                 ▼
-┌──────────────┐     ┌─────────┐
-│              │     │         │
-│ B{Decision?} │     │ C(Done) │
-│              │     │         │
-└──────────────┘     └─────────┘
-```
-
+brace and parenthesis syntax printed verbatim (`B{Decision?}`, `C(Done)`).
 zombie-mermaid renders three nodes, with the diamond and the rounded box
-marked as such:
+marked as such. Real terminal captures:
 
-```text
-┌───────────┐
-│           │
-│   Start   │
-│           │
-└─────┬─────┘
-      ▲
-      │
-      │
-     no
-      ▼
-◇─────┴─────◇
-│           │
-│ Decision? │
-│           │
-◇─────┬─────◇
-      │
-     yes
-      │
-      │
-      ▼
-╭───────────╮
-│           │
-│    Done   │
-│           │
-╰───────────╯
-```
+| mermaid-ascii (four nodes, literal `{}`/`()`)                                                                                                                                                  | zombie-mermaid (three nodes, real shapes)                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ![mermaid-ascii terminal output of the label-vs-ID flowchart, showing B{Decision?} and C(Done) printed literally as a fourth node](../mermaid-ascii-comparison-screenshots/label-vs-id-ma.png) | ![zombie-mermaid terminal output of the same flowchart, rendering a diamond decision shape and a rounded Done box](../mermaid-ascii-comparison-screenshots/label-vs-id-zm.png) |
 
 ### Diagram types beyond flowchart, sequence and ER
 
@@ -444,39 +259,10 @@ stateDiagram-v2
     Running --> [*]
 ```
 
-```text
-●─────────●
-│         │
-●─────────●
-     │
-     │
-     │
-     │
-     ▼
-╭─────────╮
-│         │
-│   Idle  │
-│         │
-╰────┬────╯
-     ▲
-   start
-     │
-   stop
-     ▼
-╭────┴────╮
-│         │
-│ Running │
-│         │
-╰────┬────╯
-     │
-     │
-     │
-     │
-     ▼
-╔═════════╗
-║         ║
-╚═════════╝
-```
+zombie-mermaid, captured from a real terminal (mermaid-ascii can't render
+this diagram type at all, per the error above):
+
+![zombie-mermaid terminal output of the stateDiagram-v2 example, showing the start/end markers and two labelled states](../mermaid-ascii-comparison-screenshots/state-diagram-zm.png)
 
 ### Fitting a terminal width
 
@@ -491,14 +277,10 @@ flowchart LR
   A[Parse] --> B[Layout] --> C[Route edges] --> D[Draw boxes] --> E[Draw edges] --> F[Print]
 ```
 
-`zombie-mermaid render chain.mmd --ascii --max-width 70`:
+`zombie-mermaid render chain.mmd --ascii --max-width 70`, captured from a
+real terminal:
 
-```text
-Note: ASCII output exceeded 70 columns at the requested spacing; applied compact spacing automatically (-x 1 -y 1 -p 0) to fit.
-┌─────┐ ┌──────┐ ┌───────────┐ ┌──────────┐ ┌──────────┐ ┌─────┐
-│Parse├►│Layout├►│Route edges├►│Draw boxes├►│Draw edges├►│Print│
-└─────┘ └──────┘ └───────────┘ └──────────┘ └──────────┘ └─────┘
-```
+![zombie-mermaid terminal output of the six-node chain flowchart at --max-width 70, showing the compact-spacing note and the resulting narrower diagram](../mermaid-ascii-comparison-screenshots/max-width-zm.png)
 
 `auto` reads the terminal's width. Be clear about the limit, though: compact
 spacing is the only strategy. If the diagram still doesn't fit (this one is
@@ -535,33 +317,11 @@ mermaid-ascii also has.
       ORDER ||--|{ LINE_ITEM : contains
   ```
 
-  mermaid-ascii 1.5.0:
+  Real terminal captures, for the same two claims above:
 
-  ```text
-  ┌──────────┐                ┌───────┐
-  │ CUSTOMER │                │ ORDER │
-  └─────┬────┘                └─┬───┬─┘
-        └||──────places───────o{┘   │
-         ┌}|───────contains───────||┘
-  ┌──────┴────┐
-  │ LINE_ITEM │
-  └───────────┘
-  ```
-
-  zombie-mermaid:
-
-  ```text
-  ┌──────────┐        ┌───────┐
-  │ CUSTOMER │─│────○╟│ ORDER │
-  └──────────┘ places └───────┘
-                          ┼
-        ┌ contains ───────┘
-        │
-        ╟
-  ┌───────────┐
-  │ LINE_ITEM │
-  └───────────┘
-  ```
+  | mermaid-ascii                                                                                                                                                                                          | zombie-mermaid                                                                                                      |
+  | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+  | ![mermaid-ascii terminal output of the CUSTOMER/ORDER/LINE_ITEM ER diagram, with dedicated crow's-foot routing lanes for each relationship](../mermaid-ascii-comparison-screenshots/er-diagram-ma.png) | ![zombie-mermaid terminal output of the same ER diagram](../mermaid-ascii-comparison-screenshots/er-diagram-zm.png) |
 
 - **A plain-ASCII charset switch on the CLI.** `mermaid-ascii --ascii`
   swaps box-drawing characters for `+`, `-`, `|` and `>`. zombie-mermaid
