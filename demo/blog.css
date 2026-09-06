@@ -257,6 +257,38 @@ h1 {
   line-height: 1.6;
 }
 
+/* GFM tables: marked's `table` renderer (blog.ts) wraps the raw <table> in
+   this div so a wide table scrolls in its own box, matching .prose pre's
+   overflow-x handling above instead of widening the page body. */
+.prose .table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--t-border);
+  border-radius: 8px;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.prose th,
+.prose td {
+  padding: 0.5rem 0.875rem;
+  text-align: left;
+  border-bottom: 1px solid var(--t-border);
+}
+
+.prose th {
+  font-weight: 600;
+  color: var(--t-fg);
+  background: color-mix(in srgb, var(--t-fg) 6%, var(--t-bg));
+}
+
+.prose tr:last-child td {
+  border-bottom: none;
+}
+
 /* -- CTA row (reused on the empty-state / post footer) -- */
 .cta-row {
   display: flex;
