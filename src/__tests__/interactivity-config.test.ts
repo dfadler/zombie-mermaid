@@ -450,13 +450,37 @@ describe('click interactions (#198 row 10)', () => {
     })
   })
 
-  it('records a callback as data but never emits executable script', () => {
-    const svg = renderMermaidSVG(
-      'flowchart TD\n  A --> B\n  click A call handler()',
-    )
-    expect(svg).toContain('data-click-callback="handler()"')
-    expect(svg).not.toContain('<script')
-    expect(svg).not.toContain('onclick')
+  describe('a call/callback binding (#216)', () => {
+    const WITH_CALLBACK = 'flowchart TD\n  A --> B\n  click A call handler()'
+
+    it('surfaces only through parseMermaid().interactions', () => {
+      expect(parseMermaid(WITH_CALLBACK).interactions.get('A')).toEqual({
+        callback: 'handler()',
+      })
+    })
+
+    it('leaves no trace of the callback in the SVG', () => {
+      const svg = renderMermaidSVG(WITH_CALLBACK)
+      // The inert `data-click-callback` attribute was removed in #216: a host
+      // reads the interactions map instead of scraping a string off the DOM.
+      expect(svg).not.toContain('data-click-callback')
+      expect(svg).not.toContain('handler()')
+      expect(svg).not.toContain('<script')
+      expect(svg).not.toContain('onclick')
+    })
+
+    it('keeps the data-id hook a host binds the callback to', () => {
+      expect(renderMermaidSVG(WITH_CALLBACK)).toContain('data-id="A"')
+    })
+
+    it('still renders the href link and <title> tooltip alongside it', () => {
+      const svg = renderMermaidSVG(
+        'flowchart TD\n  A --> B\n  click A "https://example.com" "Tip"\n  click B call handler()',
+      )
+      expect(svg).toContain('<a href="https://example.com">')
+      expect(svg).toContain('<title>Tip</title>')
+      expect(svg).not.toContain('data-click-callback')
+    })
   })
 
   it('leaves nodes without a click statement untouched', () => {
@@ -491,12 +515,13 @@ describe('click interactions (#198 row 10)', () => {
       expect(svg).toContain('>A<')
     })
 
-    it('still records a click callback as data (unaffected — never a link/tooltip)', () => {
+    it('emits nothing for a click callback at any level (never a link/tooltip, never an attribute)', () => {
       const svg = renderMermaidSVG(
         'flowchart TD\n  A --> B\n  click A call handler()',
         { interactivity: 'none' },
       )
-      expect(svg).toContain('data-click-callback="handler()"')
+      expect(svg).not.toContain('data-click-callback')
+      expect(svg).not.toContain('handler()')
     })
 
     it.each(['static', 'full'] as const)(

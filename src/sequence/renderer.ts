@@ -9,6 +9,7 @@ import type {
 } from './types.ts'
 import type { DiagramColors } from '../theme.ts'
 import { svgOpenTag, buildStyleBlock } from '../theme.ts'
+import type { SvgEmitOptions } from '../theme.ts'
 import { withDataSrc } from '../renderer.ts'
 import type { FontSizes } from '../styles.ts'
 import {
@@ -46,6 +47,9 @@ import { renderMultilineText, escapeAttr } from '../multiline-utils.ts'
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
  *                src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
+ * @param emit - Strict-CSP controls (from `options.nonce` /
+ *               `options.styleAttribute`, see #216). Default: no nonce,
+ *               root `style` attribute on.
  */
 export function renderSequenceSvg(
   diagram: PositionedSequenceDiagram,
@@ -56,6 +60,7 @@ export function renderSequenceSvg(
   embedSource?: string,
   title?: string,
   decorative?: boolean,
+  emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
 
@@ -69,11 +74,13 @@ export function renderSequenceSvg(
         transparent,
         title,
         decorative,
+        undefined,
+        emit.styleAttribute,
       ),
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false))
+  parts.push(buildStyleBlock(font, false, emit.nonce))
   parts.push('<defs>')
 
   // Arrow marker definitions

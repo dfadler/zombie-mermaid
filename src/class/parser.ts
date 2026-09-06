@@ -202,6 +202,76 @@ function ensureClass(classMap: Map<string, ClassNode>, id: string): ClassNode {
   return cls
 }
 
+/** Count occurrences of `needle` in `input`. */
+function countOccurrence(input: string, needle: string): number {
+  return Math.max(0, input.split(needle).length - 1)
+}
+
+/**
+ * Convert one comma-free (or already re-joined) segment's `~`-delimited
+ * generics to angle brackets, pairing the outermost `~`s first so nested
+ * generics like `List~List~T~~` become `List<List<T>>`. A segment with a
+ * single `~` is left alone — there's nothing to pair it with — and an odd
+ * count with a leading `~` keeps that leading one as-is (mermaid treats it
+ * as literal text, not a delimiter). Mirrors mermaid's `processSet`.
+ */
+function convertGenericSegment(input: string): string {
+  const tildeCount = countOccurrence(input, '~')
+  if (tildeCount <= 1) return input
+
+  let text = input
+  let keepLeadingTilde = false
+  if (tildeCount % 2 !== 0 && text.startsWith('~')) {
+    text = text.slice(1)
+    keepLeadingTilde = true
+  }
+
+  const chars = [...text]
+  let open = chars.indexOf('~')
+  let close = chars.lastIndexOf('~')
+  while (open !== -1 && close !== -1 && open !== close) {
+    chars[open] = '<'
+    chars[close] = '>'
+    open = chars.indexOf('~')
+    close = chars.lastIndexOf('~')
+  }
+  if (keepLeadingTilde) chars.unshift('~')
+  return chars.join('')
+}
+
+/**
+ * Convert mermaid's `~T~` generic syntax to the `<T>` form mermaid itself
+ * renders — `List~Observer~` → `List<Observer>`, `Map~K,V~` → `Map<K,V>`,
+ * `List~List~T~~` → `List<List<T>>`.
+ *
+ * Port of mermaid's `parseGenericTypes` (packages/mermaid/src/diagrams/
+ * common/common.ts): the text is split on commas so a comma *inside* a
+ * generic (`Map~K,V~`) can be re-joined with its neighbors — two adjacent
+ * comma-separated pieces that each carry exactly one `~` are the two halves
+ * of one generic — before each piece's `~` pairs are converted outermost-first.
+ */
+export function parseGenericTypes(input: string): string {
+  const pieces = input.split(/(,)/)
+  const output: string[] = []
+  for (let i = 0; i < pieces.length; i++) {
+    let piece = pieces[i]!
+    if (piece === ',' && i > 0 && i + 1 < pieces.length) {
+      const previous = pieces[i - 1]!
+      const next = pieces[i + 1]!
+      if (
+        countOccurrence(previous, '~') === 1 &&
+        countOccurrence(next, '~') === 1
+      ) {
+        piece = `${previous},${next}`
+        i++
+        output.pop()
+      }
+    }
+    output.push(convertGenericSegment(piece))
+  }
+  return output.join('')
+}
+
 /** Parse a class member line (attribute or method) */
 function parseMember(
   line: string,
@@ -223,12 +293,22 @@ function parseMember(
     rest = rest.slice(1).trim()
   }
 
+  // Mermaid renders `List~Observer~` as `List<Observer>` (its own
+  // `parseGenericTypes`). It's applied per field below — name, params and
+  // return type separately, the way mermaid's ClassMember does — rather
+  // than to the whole line, since the comma re-join inside
+  // parseGenericTypes would otherwise pair a `~` in the params with one in
+  // the return type. Doing it after the visibility prefix is stripped also
+  // keeps a package-visibility `~` from pairing with a generic's.
+
   // Check if it's a method (has parentheses)
   const methodMatch = rest.match(/^(.+?)\(([^)]*)\)(?:\s*(.+))?$/)
   if (methodMatch) {
-    const name = methodMatch[1]!.trim()
-    const params = methodMatch[2]?.trim() || undefined // Store the parameter string
-    const type = methodMatch[3]?.trim()
+    const name = parseGenericTypes(methodMatch[1]!.trim())
+    const rawParams = methodMatch[2]?.trim()
+    const params = rawParams ? parseGenericTypes(rawParams) : undefined // Store the parameter string
+    const rawType = methodMatch[3]?.trim()
+    const type = rawType ? parseGenericTypes(rawType) : undefined
     // Check for static ($) or abstract (*) markers
     const isStatic = name.endsWith('$') || rest.includes('$')
     const isAbstract = name.endsWith('*') || rest.includes('*')
@@ -248,7 +328,7 @@ function parseMember(
 
   // It's an attribute: [Type] name or name Type
   // Common patterns: "String name", "+int age", "name"
-  const parts = rest.split(/\s+/)
+  const parts = parseGenericTypes(rest).split(/\s+/)
   let name: string
   let type: string | undefined
 

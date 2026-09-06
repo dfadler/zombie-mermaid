@@ -44,6 +44,7 @@ export default tseslint.config(
       'demo/**/*.ts',
       'editor.ts',
       'vite.config.ts',
+      'vite.config.lib.ts',
       'index.ts',
       'fork-fixes.ts',
       'ascii-html.ts',

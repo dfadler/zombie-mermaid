@@ -19,7 +19,13 @@
 //   const svg = renderMermaidSVG('graph TD\n  A --> B')
 // ============================================================================
 
-export type { RenderOptions, MermaidGraph, PositionedGraph } from './types.ts'
+export type {
+  RenderOptions,
+  MermaidGraph,
+  NodeInteraction,
+  PositionedGraph,
+  Direction,
+} from './types.ts'
 export type { DiagramColors, ThemeName } from './theme.ts'
 export { fromShikiTheme, THEMES, DEFAULTS } from './theme.ts'
 export { parseMermaid } from './parser.ts'
@@ -33,13 +39,14 @@ import { parseMermaid } from './parser.ts'
 import { layoutGraphSync } from './layout.ts'
 import { renderSvg } from './renderer.ts'
 import type { RenderOptions } from './types.ts'
-import type { DiagramColors } from './theme.ts'
-import { DEFAULTS } from './theme.ts'
+import type { DiagramColors, SvgEmitOptions } from './theme.ts'
+import { DEFAULTS, themeStyleDeclarations } from './theme.ts'
 import { resolveFontSizes } from './styles.ts'
 import { isMonospaceFont, setMonospaceMetrics } from './text-metrics.ts'
 import { detectDiagramType } from './diagram-type.ts'
 import type { DiagramType } from './diagram-type.ts'
 import { applyInitConfig } from './init-directive.ts'
+import { withDirectionOverride } from './direction-override.ts'
 import { splitStatements } from './statements.ts'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
@@ -69,6 +76,48 @@ function buildColors(options: RenderOptions): DiagramColors {
     muted: options.muted,
     surface: options.surface,
     border: options.border,
+  }
+}
+
+/**
+ * The exact CSS declaration list the root `<svg style="…">` attribute would
+ * carry for these options — `--bg`, `--fg`, whichever enrichment colours
+ * were given, and (unless `transparent`) `background: var(--bg)`.
+ *
+ * For hosts with a strict `Content-Security-Policy`: a `style=` attribute
+ * can't be nonced, so a `style-src` without `'unsafe-inline'` drops it and
+ * the diagram loses its colours. Render with `styleAttribute: false` and
+ * put this string in your own stylesheet on the SVG (or any ancestor —
+ * custom properties inherit) instead. Pass the same options object to both
+ * calls so the declarations match what the render expects. See
+ * `RenderOptions.styleAttribute` / `RenderOptions.nonce` and issue #216.
+ *
+ * Built by the same function that fills the attribute in normal renders,
+ * so there is one variable list to keep in sync. The string is compact
+ * (`--bg:#fff;--fg:#000;background:var(--bg)`) — valid inside any rule
+ * block — and the colour values are yours, unescaped, exactly as the
+ * attribute has always carried them.
+ *
+ * @example
+ * ```ts
+ * const opts = { bg: '#1a1b26', fg: '#a9b1d6', nonce, styleAttribute: false }
+ * const svg = renderMermaidSVG('graph TD\n  A --> B', opts)
+ * const css = `.diagram svg { ${themeCssVariables(opts)} }`
+ * ```
+ */
+export function themeCssVariables(options: RenderOptions = {}): string {
+  return themeStyleDeclarations(buildColors(options), options.transparent)
+}
+
+/**
+ * Resolve the effective strict-CSP emission controls from the public
+ * options. Kept as one object so every renderer takes it as a single
+ * trailing parameter — see `SvgEmitOptions` in src/theme.ts.
+ */
+function resolveSvgEmit(options: RenderOptions): SvgEmitOptions {
+  return {
+    nonce: options.nonce,
+    styleAttribute: options.styleAttribute,
   }
 }
 
@@ -185,6 +234,7 @@ export function renderMermaidSVG(
   const embedSource = options.embedSource ? originalText : undefined
   const title = options.title
   const decorative = options.decorative
+  const emit = resolveSvgEmit(options)
 
   const lines = splitStatements(text)
 
@@ -201,6 +251,7 @@ export function renderMermaidSVG(
         embedSource,
         title,
         decorative,
+        emit,
       )
     }
     case 'class': {
@@ -216,10 +267,16 @@ export function renderMermaidSVG(
         title,
         decorative,
         resolveLinksEnabled(options),
+        emit,
       )
     }
     case 'er': {
-      const diagram = parseErDiagram(lines)
+      // `options.direction` replaces the diagram's own top-level `direction`
+      // line, if any, before layout. See src/direction-override.ts.
+      const diagram = withDirectionOverride(
+        parseErDiagram(lines),
+        options.direction,
+      )
       const positioned = layoutErDiagramSync(diagram, options)
       return renderErSvg(
         positioned,
@@ -230,6 +287,7 @@ export function renderMermaidSVG(
         embedSource,
         title,
         decorative,
+        emit,
       )
     }
     case 'xychart': {
@@ -244,16 +302,22 @@ export function renderMermaidSVG(
         embedSource,
         title,
         decorative,
+        emit,
       )
     }
     case 'flowchart':
     default: {
-      const graph = parseMermaid(text)
+      const parsed = parseMermaid(text)
       // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
       // render option always wins. See src/init-directive.ts.
-      const effective = graph.initConfig
-        ? applyInitConfig(options, graph.initConfig)
+      const effective = parsed.initConfig
+        ? applyInitConfig(options, parsed.initConfig)
         : options
+      // `direction` replaces the header's (or a state diagram's top-level
+      // `direction` line's) direction before layout; nested subgraph /
+      // composite-state directions live on the subgraph objects and still
+      // apply on top of it. See src/direction-override.ts.
+      const graph = withDirectionOverride(parsed, effective.direction)
       const positioned = layoutGraphSync(graph, effective)
       return renderSvg(
         positioned,
@@ -267,6 +331,7 @@ export function renderMermaidSVG(
         resolveLinksEnabled(options),
         title,
         decorative,
+        emit,
       )
     }
   }

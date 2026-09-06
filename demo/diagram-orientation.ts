@@ -7,7 +7,24 @@
  * alternate live in the browser) and pages.ts (the per-diagram-type SEO
  * pages, which pre-render both variants at build time) import from here
  * instead of duplicating this logic.
+ *
+ * The narrow *render* itself no longer goes through `withNarrowDirection`:
+ * since issue #276 the library takes the override directly as
+ * `RenderOptions.direction` / `AsciiRenderOptions.direction` (set to
+ * `NARROW_DIRECTION`), which replaces the parsed top-level direction
+ * before layout — the same result as rewriting the header, without the
+ * source-text round-trip. `withNarrowDirection` remains for the one place
+ * that genuinely needs the rewritten *text*: the source-code panel shown
+ * next to the narrow variant.
  */
+
+/**
+ * The direction every narrow-viewport alternate is rendered in. Always
+ * `TD` rather than the literal opposite of whatever's declared (`BT`
+ * staying `BT`, say) because the goal is specifically "narrow enough for
+ * a small screen," not "rotate 180°."
+ */
+export const NARROW_DIRECTION = 'TD'
 
 /**
  * The line (0-indexed into `source.split('\n')`) whose declared direction
@@ -63,16 +80,19 @@ export function wideDiagramDirectionLine(source: string): number | null {
 
 /**
  * Rewrite the direction word on `lineIndex` (as found by
- * `wideDiagramDirectionLine`) to `TD`, leaving the rest of the source
- * untouched. `TD` is always the target rather than the literal opposite of
- * whatever's declared (`BT` staying `BT`, say) because the goal is
- * specifically "narrow enough for a small screen," not "rotate 180°."
+ * `wideDiagramDirectionLine`) to `NARROW_DIRECTION`, leaving the rest of
+ * the source untouched. Used for the *displayed* source text of a narrow
+ * variant; the render itself passes `NARROW_DIRECTION` as the library's
+ * `direction` option instead (see the module comment above).
  */
 export function withNarrowDirection(source: string, lineIndex: number): string {
   const lines = source.split('\n')
   const target = lines[lineIndex]
   if (target === undefined) return source
-  lines[lineIndex] = target.replace(/(TD|TB|LR|BT|RL)(\s*)$/i, 'TD$2')
+  lines[lineIndex] = target.replace(
+    /(TD|TB|LR|BT|RL)(\s*)$/i,
+    `${NARROW_DIRECTION}$2`,
+  )
   return lines.join('\n')
 }
 

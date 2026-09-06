@@ -112,8 +112,9 @@ export interface MermaidEdge {
  * An interaction attached to a node by a `click` statement.
  *
  * This renderer emits static SVG and never executes diagram-supplied script,
- * so a `call`/callback binding is recorded but not invoked — see
- * docs/diagrams.md. An `href` becomes a real SVG link.
+ * so a `call`/callback binding is parsed but not invoked — see
+ * docs/diagrams.md and docs/decisions/no-script-interactivity.md. An `href`
+ * becomes a real SVG link and a tooltip becomes a `<title>`.
  */
 export interface NodeInteraction {
   /** `click A "https://..."` — rendered as an <a> wrapper */
@@ -122,7 +123,22 @@ export interface NodeInteraction {
   target?: string
   /** Tooltip text — rendered as a <title> child */
   tooltip?: string
-  /** `click A call fn()` — recorded as a data attribute, never executed */
+  /**
+   * `click A call fn()` — the raw expression text (`fn()`), exposed as data
+   * only. Nothing in the rendered SVG carries it and the library never
+   * evaluates it; a host that trusts its diagram source reads it from
+   * `parseMermaid(source).interactions` and binds behaviour to the node's
+   * `data-id` attribute itself:
+   *
+   * ```ts
+   * for (const [id, { callback }] of parseMermaid(source).interactions) {
+   *   if (callback === 'showDetail()') {
+   *     svgRoot.querySelector(`[data-id="${id}"]`)
+   *       ?.addEventListener('click', () => showDetail(id))
+   *   }
+   * }
+   * ```
+   */
   callback?: string
 }
 
@@ -244,6 +260,27 @@ export interface RenderOptions {
   componentSpacing?: number
   /** Whether to bundle overlapping fan-out/fan-in edge paths into shared trunks to reduce visual clutter. Default: true */
   mergeEdges?: boolean
+  /**
+   * Force the diagram's layout direction, overriding the one its source
+   * declares — a flowchart's `graph LR` / `flowchart TD` header, or a state
+   * diagram's / ER diagram's top-level `direction LR` line. Applied after
+   * parsing and before layout, so the source text is never rewritten and
+   * `parseMermaid()` output is unaffected.
+   *
+   * Replaces only the *top-level* direction. A nested subgraph's or
+   * composite state's own `direction` line still applies on top of this
+   * override, exactly as it does on top of the diagram's own header — the
+   * override behaves as if the caller had written that direction in the
+   * source header, nothing more.
+   *
+   * Flowchart, state, and ER diagrams only — the three diagram types that
+   * have a direction concept to override. Sequence, class, and XY-chart
+   * diagrams ignore it (no error; output is identical with or without it).
+   *
+   * Unset (the default) keeps the source's direction, so existing output is
+   * unchanged. See issue #276.
+   */
+  direction?: Direction
   /** Render with transparent background (no background style on SVG). Default: false */
   transparent?: boolean
   /**
@@ -285,6 +322,69 @@ export interface RenderOptions {
   interactive?: boolean
   /** Stamp the original diagram source onto the root `<svg>` as a `data-src` attribute (HTML-escaped). Default: false */
   embedSource?: boolean
+
+  /**
+   * CSP nonce to stamp on every `<style>` element in the output (see GitHub
+   * issue #216).
+   *
+   * The renderer styles its SVG with an inline `<style>` element (the theme
+   * block; flowcharts with `e1@{ animate: true }` edges and xycharts add a
+   * second one). A host page whose `Content-Security-Policy` has a
+   * `style-src` without `'unsafe-inline'` blocks those, and the diagram
+   * silently renders unstyled. The standard fix is a per-response nonce:
+   * the host generates one, lists it as `style-src 'nonce-<value>'`, and
+   * puts `nonce="<value>"` on each element it wants to allow. Pass that
+   * value here and every emitted `<style>` gets it — one `<style>` left
+   * un-nonced is enough to lose the whole diagram's styling, so this is
+   * applied at the single shared emission point rather than per diagram
+   * type.
+   *
+   * The value is attribute-escaped on output. An empty string is treated as
+   * unset. Default: undefined (no `nonce` attribute).
+   *
+   * A nonce only authorises `<style>` *elements* — it cannot authorise a
+   * `style="…"` *attribute* (browsers apply nonces to elements only), so the
+   * root `<svg style="--bg: …">` attribute stays blocked under the same
+   * policy. Pair this with `styleAttribute: false` and put the theme
+   * variables in your own stylesheet; see that option.
+   */
+  nonce?: string
+
+  /**
+   * Emit the root `<svg style="--bg: …; --fg: …; background: var(--bg)">`
+   * attribute. Default: true.
+   *
+   * That attribute is how the theme colours reach the SVG: every rule in
+   * the embedded `<style>` block resolves against the `--bg`/`--fg`/…
+   * custom properties it sets. Under a strict `Content-Security-Policy`
+   * (`style-src` without `'unsafe-inline'`) the browser drops it, and no
+   * `nonce` can rescue it — nonces apply to elements, never attributes —
+   * so the diagram loses its colours even when the `<style>` element itself
+   * is allowed (see GitHub issue #216).
+   *
+   * Set this to `false` to leave the attribute out entirely. The host must
+   * then define the same custom properties on the SVG or an ancestor from
+   * its own (nonced or external) stylesheet; `themeCssVariables(options)`
+   * returns the exact declaration list the attribute would have carried,
+   * so the two can't drift:
+   *
+   * ```ts
+   * const opts = { bg: '#fff', fg: '#000', nonce, styleAttribute: false }
+   * const svg = renderMermaidSVG(code, opts)
+   * const css = `.diagram svg { ${themeCssVariables(opts)} }`
+   * // `<style nonce="…">${css}</style>` + `<div class="diagram">${svg}</div>`
+   * ```
+   *
+   * With the attribute gone, the SVG has no inline `background` either; the
+   * declarations from `themeCssVariables()` include it (unless
+   * `transparent`) so the host's rule restores it. Only the *root* `style`
+   * attribute is affected: a per-node `style A font-family:…` override
+   * still renders as that node's own `style` attribute, since it's diagram
+   * content rather than theming, and under such a CSP it is simply ignored
+   * by the browser. `nonce` and this option are independent — a host using
+   * hashes rather than nonces may want only this one.
+   */
+  styleAttribute?: boolean
 
   /**
    * Accessible name for the rendered SVG (see GitHub issue #215). Rendered

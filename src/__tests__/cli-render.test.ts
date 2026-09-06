@@ -79,6 +79,143 @@ describe('runRender – SVG to file', () => {
 })
 
 // ============================================================================
+// Output ergonomics (#456)
+// ============================================================================
+
+describe('runRender – output ergonomics', () => {
+  it('writes the SVG to stdout for -o -, byte-identical to the file output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const filePath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, svg: true, output: '-' }),
+      mockStdout,
+    )
+    await runRender(
+      renderArgs({ input: inputPath, svg: true, output: filePath }),
+    )
+
+    expect(mockStdout.output()).toMatch(/^<svg[\s\S]*<\/svg>$/)
+    expect(mockStdout.output()).toBe(await readFile(filePath, 'utf-8'))
+  })
+
+  it('refuses to overwrite an existing output file, naming the file and --force', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'ORIGINAL')
+
+    const mockStdout = createMockStdout()
+    await expect(
+      runRender(
+        renderArgs({
+          input: inputPath,
+          ascii: true,
+          svg: true,
+          output: outputPath,
+        }),
+        mockStdout,
+      ),
+    ).rejects.toThrow(
+      `Refusing to overwrite existing file "${outputPath}" — pass --force to replace it`,
+    )
+    expect(await readFile(outputPath, 'utf-8')).toBe('ORIGINAL')
+    // Refused before any work: nothing was printed ahead of the error.
+    expect(mockStdout.output()).toBe('')
+  })
+
+  it('overwrites an existing output file with force', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'ORIGINAL')
+
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        svg: true,
+        output: outputPath,
+        force: true,
+      }),
+    )
+
+    expect(await readFile(outputPath, 'utf-8')).toContain('<svg')
+  })
+
+  it('writes ASCII to a file when it is the only format and -o names one', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.txt')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, ascii: true, output: outputPath }),
+      mockStdout,
+    )
+
+    const text = await readFile(outputPath, 'utf-8')
+    expect(text).toContain('A')
+    expect(text).toContain('C')
+    expect(text.endsWith('\n')).toBe(true)
+    expect(mockStdout.output()).toBe('')
+  })
+
+  it('writes ASCII to a file without ANSI escapes even when a theme is set', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.txt')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        ascii: true,
+        output: outputPath,
+        theme: 'tokyo-night',
+      }),
+    )
+
+    expect(await readFile(outputPath, 'utf-8')).not.toMatch(/\x1b\[/)
+  })
+
+  it('refuses to overwrite an existing ASCII output file too', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.txt')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'ORIGINAL')
+
+    await expect(
+      runRender(
+        renderArgs({ input: inputPath, ascii: true, output: outputPath }),
+      ),
+    ).rejects.toThrow('Refusing to overwrite existing file')
+    expect(await readFile(outputPath, 'utf-8')).toBe('ORIGINAL')
+  })
+
+  it('still prints ASCII to stdout when both formats are requested with a file -o', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.svg')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        ascii: true,
+        svg: true,
+        output: outputPath,
+      }),
+      mockStdout,
+    )
+
+    expect(mockStdout.output()).toContain('A')
+    expect(mockStdout.output()).not.toContain('<svg')
+    expect(await readFile(outputPath, 'utf-8')).toContain('<svg')
+  })
+})
+
+// ============================================================================
 // Both ASCII + SVG
 // ============================================================================
 
@@ -475,5 +612,146 @@ describe('runRender – errors', () => {
         'this is not valid mermaid',
       ),
     ).rejects.toThrow()
+  })
+})
+
+// ============================================================================
+// HTML viewer output (#456)
+// ============================================================================
+
+describe('runRender – HTML viewer output', () => {
+  it('renders a self-contained HTML file embedding the SVG', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: outputPath }),
+    )
+
+    const html = await readFile(outputPath, 'utf-8')
+    expect(html).toMatch(/^<!doctype html>/)
+    expect(html).toContain('<svg')
+    expect(html).toContain('</svg>')
+    expect(html).toContain('id="stage"')
+    expect(html).toContain('id="diagram"')
+    expect(html).toContain('<script>')
+    // No externally-loaded assets — a single file that opens from disk
+    // with no network, per the issue's requirement. (The SVG's own
+    // `xmlns="http://www.w3.org/2000/svg"` is a namespace URI, not a
+    // fetched resource, so it's deliberately not what this checks.)
+    expect(html).not.toMatch(/<script[^>]+src=/)
+    expect(html).not.toMatch(/<link[^>]+href=/)
+    expect(html).not.toMatch(/\bfetch\(/)
+  })
+
+  it('writes HTML to stdout for -o -, byte-identical to the file output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const filePath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: '-' }),
+      mockStdout,
+    )
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: filePath }),
+    )
+
+    const fileContent = await readFile(filePath, 'utf-8')
+    expect(mockStdout.output()).toBe(fileContent)
+  })
+
+  it('titles the page from the input file stem', async () => {
+    const inputPath = join(tmpDir, 'my-cool-diagram.mmd')
+    const outputPath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    await runRender(
+      renderArgs({ input: inputPath, html: true, output: outputPath }),
+    )
+
+    const html = await readFile(outputPath, 'utf-8')
+    expect(html).toContain('<title>my-cool-diagram</title>')
+  })
+
+  it('refuses to overwrite an existing .html file without --force', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    const outputPath = join(tmpDir, 'out.html')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    await writeFile(outputPath, 'existing content')
+
+    await expect(
+      runRender(
+        renderArgs({ input: inputPath, html: true, output: outputPath }),
+      ),
+    ).rejects.toThrow(/Refusing to overwrite existing file/)
+
+    expect(await readFile(outputPath, 'utf-8')).toBe('existing content')
+  })
+})
+
+// ============================================================================
+// --direction (issue #276)
+// ============================================================================
+
+describe('runRender – --direction', () => {
+  /** Line index (0-based) of the first output line containing `label`. */
+  const rowOf = (text: string, label: string): number =>
+    text.split('\n').findIndex((line) => line.includes(label))
+
+  it('re-lays ASCII output out along the overridden axis', async () => {
+    const plain = createMockStdout()
+    await runRender(renderArgs({ ascii: true }), plain, SIMPLE_FLOWCHART)
+    // graph LR: every node on the same row.
+    expect(rowOf(plain.output(), 'A')).toBe(rowOf(plain.output(), 'C'))
+
+    const overridden = createMockStdout()
+    await runRender(
+      renderArgs({ ascii: true, direction: 'TB' }),
+      overridden,
+      SIMPLE_FLOWCHART,
+    )
+    // --direction TB: nodes stack top-down.
+    expect(rowOf(overridden.output(), 'C')).toBeGreaterThan(
+      rowOf(overridden.output(), 'A'),
+    )
+    expect(overridden.output()).not.toBe(plain.output())
+  })
+
+  it('applies the override to SVG output', async () => {
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+    const plainPath = join(tmpDir, 'plain.svg')
+    const overriddenPath = join(tmpDir, 'overridden.svg')
+
+    await runRender(
+      renderArgs({ input: inputPath, svg: true, output: plainPath }),
+    )
+    await runRender(
+      renderArgs({
+        input: inputPath,
+        svg: true,
+        output: overriddenPath,
+        direction: 'TB',
+      }),
+    )
+
+    const plain = await readFile(plainPath, 'utf-8')
+    const overridden = await readFile(overriddenPath, 'utf-8')
+    expect(overridden).not.toBe(plain)
+
+    // Same result as if the source had said `graph TB`.
+    const rewrittenPath = join(tmpDir, 'rewritten.mmd')
+    await writeFile(
+      rewrittenPath,
+      SIMPLE_FLOWCHART.replace('graph LR', 'graph TB'),
+    )
+    const rewrittenOut = join(tmpDir, 'rewritten.svg')
+    await runRender(
+      renderArgs({ input: rewrittenPath, svg: true, output: rewrittenOut }),
+    )
+    expect(overridden).toBe(await readFile(rewrittenOut, 'utf-8'))
   })
 })

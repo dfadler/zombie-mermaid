@@ -5,6 +5,10 @@
 // "no external dependencies" philosophy.
 // ============================================================================
 
+import { extname, format as formatPath, parse as parsePath } from 'node:path'
+import { isDirection } from '../parser.ts'
+import type { Direction } from '../types.ts'
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -14,7 +18,25 @@ export interface RenderArgs {
   input: string | undefined
   ascii: boolean
   svg: boolean
+  /**
+   * `--html`: write a self-contained HTML pan/zoom viewer (see
+   * `src/cli/html-viewer.ts`) instead of raw SVG markup. Mutually exclusive
+   * with `--svg` in the same invocation — both want the same file-output
+   * slot but produce different artifacts, so combining them is a parse
+   * error rather than a silent pick.
+   */
+  html: boolean
+  /**
+   * Destination for the invocation's *file* output (SVG or HTML when
+   * `--svg`/`--html` is set, otherwise ASCII): a path, or `STDOUT_OUTPUT`
+   * (`-`) for stdout. `undefined` means "nothing goes to a file" — only
+   * possible for ASCII-only runs, since `--svg`/`--html` without `-o`
+   * derives a path from the input file name at parse time (see
+   * `parseRender`).
+   */
   output: string | undefined
+  /** `--force`/`-f`: overwrite an existing output file instead of refusing. */
+  force: boolean
   theme: string | undefined
   paddingX: number | undefined
   paddingY: number | undefined
@@ -28,6 +50,13 @@ export interface RenderArgs {
    * width check is performed.
    */
   maxWidth: number | 'auto' | undefined
+  /**
+   * Layout direction override (`--direction`), already upper-cased and
+   * validated. Passed straight through as `RenderOptions.direction` /
+   * `AsciiRenderOptions.direction`; `undefined` (the default) keeps the
+   * diagram's own direction.
+   */
+  direction: Direction | undefined
 }
 
 export interface SimpleCommand {
@@ -43,6 +72,48 @@ export type CliArgs = RenderArgs | SimpleCommand | WebArgs
 
 /** Default port for `zombie-mermaid web` when `--port` isn't given. */
 export const DEFAULT_WEB_PORT = 3000
+
+/** The `-o` value that means "write to stdout instead of a file". */
+export const STDOUT_OUTPUT = '-'
+
+/**
+ * Output file extensions the `render` command recognises, and the format
+ * each implies. Used two ways (see `parseRender`):
+ *
+ * - **Inference** — `-o out.svg` with no `--svg` flag turns `--svg` on, so
+ *   the extension alone is enough to pick a format.
+ * - **Conflict detection** — an extension that names a format *other* than
+ *   the one `-o` is about to receive is almost certainly a mistake
+ *   (`--svg -o out.txt` would write SVG markup into a `.txt`), so it's an
+ *   error rather than silently honoured. Unrecognised extensions are left
+ *   alone: `--svg -o diagram.xml` writes SVG to `diagram.xml`.
+ */
+export const OUTPUT_EXTENSIONS: Readonly<
+  Record<string, 'svg' | 'ascii' | 'html'>
+> = {
+  '.svg': 'svg',
+  '.txt': 'ascii',
+  '.html': 'html',
+  '.htm': 'html',
+}
+
+/** Format implied by `output`'s extension, or undefined when unrecognised (or stdout). */
+export function inferOutputFormat(
+  output: string | undefined,
+): 'svg' | 'ascii' | 'html' | undefined {
+  if (output === undefined || output === STDOUT_OUTPUT) return undefined
+  return OUTPUT_EXTENSIONS[extname(output).toLowerCase()]
+}
+
+/**
+ * Default output path for a file format when `-o` is omitted: the input
+ * path with its extension swapped (`docs/flow.mmd` → `docs/flow.svg`; an
+ * extensionless `flow` → `flow.svg`).
+ */
+export function defaultOutputPath(input: string, ext: string): string {
+  const parsed = parsePath(input)
+  return formatPath({ dir: parsed.dir, name: parsed.name, ext })
+}
 
 // ============================================================================
 // Parser
@@ -133,17 +204,41 @@ function parseMaxWidthFlag(
   return value
 }
 
+/**
+ * Parse `--direction`'s value: one of the Mermaid direction tokens, accepted
+ * case-insensitively (the same leniency a `graph lr` header gets from the
+ * parser) and normalized to the upper-case `Direction` the renderers take.
+ */
+function parseDirectionFlag(
+  args: string[],
+  i: number,
+  flag: string,
+): Direction {
+  const raw = args[i + 1]
+  if (i + 1 >= args.length || raw === undefined) {
+    throw new Error(`${flag} requires a value (one of TD, TB, BT, LR, RL)`)
+  }
+  const upper = raw.toUpperCase()
+  if (!isDirection(upper)) {
+    throw new Error(`${flag} requires one of TD, TB, BT, LR, RL, got: "${raw}"`)
+  }
+  return upper
+}
+
 function parseRender(args: string[]): RenderArgs {
   let input: string | undefined
   let ascii = false
   let svg = false
+  let html = false
   let output: string | undefined
+  let force = false
   let theme: string | undefined
   let paddingX: number | undefined
   let paddingY: number | undefined
   let borderPadding: number | undefined
   let coords = false
   let maxWidth: number | 'auto' | undefined
+  let direction: Direction | undefined
 
   let i = 0
   while (i < args.length) {
@@ -163,10 +258,18 @@ function parseRender(args: string[]): RenderArgs {
     } else if (arg === '--svg') {
       svg = true
       i++
+    } else if (arg === '--html') {
+      html = true
+      i++
     } else if (arg === '-o' || arg === '--output') {
-      if (i + 1 >= args.length) throw new Error('-o requires a file path')
+      if (i + 1 >= args.length) {
+        throw new Error('-o requires a file path (or - for stdout)')
+      }
       output = args[i + 1]
       i += 2
+    } else if (arg === '-f' || arg === '--force') {
+      force = true
+      i++
     } else if (arg === '--theme') {
       if (i + 1 >= args.length) throw new Error('--theme requires a theme name')
       theme = args[i + 1]
@@ -186,8 +289,17 @@ function parseRender(args: string[]): RenderArgs {
     } else if (arg === '-w' || arg === '--max-width') {
       maxWidth = parseMaxWidthFlag(args, i, arg)
       i += 2
-    } else if (!arg.startsWith('-')) {
-      // Positional argument = input file
+    } else if (arg === '--direction') {
+      direction = parseDirectionFlag(args, i, arg)
+      i += 2
+    } else if (!arg.startsWith('-') || arg === STDOUT_OUTPUT) {
+      // Positional argument = input file. A bare `-` here is *not* stdin
+      // (stdin is the no-file default) — reject it like any other stray.
+      if (arg === STDOUT_OUTPUT) {
+        throw new Error(
+          `Unexpected argument: - (use -o - to write output to stdout; omit the input file to read stdin)`,
+        )
+      }
       if (input !== undefined) {
         throw new Error(
           `Unexpected argument: ${arg} (input file already set to "${input}")`,
@@ -200,13 +312,84 @@ function parseRender(args: string[]): RenderArgs {
     }
   }
 
-  // Validation
-  if (!ascii && !svg) {
-    throw new Error('Specify --ascii and/or --svg -o <path>')
+  // ---- Output resolution (see OUTPUT_EXTENSIONS and STDOUT_OUTPUT) ----
+
+  // 0. --svg and --html both want the single file-output slot below but
+  //    produce different artifacts (raw SVG vs. the wrapped viewer) — no
+  //    single -o path can hold both, so this is a parse error rather than
+  //    a silent pick. Run the command twice (with different -o paths) for
+  //    both outputs from one input.
+  if (svg && html) {
+    throw new Error(
+      '--svg and --html cannot both be set — they would write different content to the same output path. Run the command twice with different -o paths for both.',
+    )
   }
 
-  if (svg && output === undefined) {
-    throw new Error('--svg requires -o <path>')
+  // 1. A recognised `-o` extension is additive: `-o out.svg` implies --svg,
+  //    `-o out.html` implies --html. `.txt` implies --ascii, but only when
+  //    SVG/HTML isn't also headed for that same path — that combination is
+  //    a conflict, not an inference.
+  const inferred = inferOutputFormat(output)
+  if (inferred === 'svg') {
+    if (html) {
+      throw new Error(
+        `-o ${output} has a .svg extension, but --html output would be written to it. ` +
+          `Use a .html path (or -o - for stdout) for the HTML viewer.`,
+      )
+    }
+    svg = true
+  } else if (inferred === 'html') {
+    if (svg) {
+      throw new Error(
+        `-o ${output} has an .html extension, but --svg output would be written to it. ` +
+          `Use a .svg path (or -o - for stdout) for raw SVG output.`,
+      )
+    }
+    html = true
+  } else if (inferred === 'ascii') {
+    if (svg || html) {
+      throw new Error(
+        `-o ${output} has a .txt extension, but ${svg ? '--svg' : '--html'} output would be written to it. ` +
+          `Use a ${svg ? '.svg' : '.html'} path (or -o - for stdout) instead.`,
+      )
+    }
+    ascii = true
+  }
+
+  // 2. Something must be produced.
+  if (!ascii && !svg && !html) {
+    if (output !== undefined && output !== STDOUT_OUTPUT) {
+      const known = Object.keys(OUTPUT_EXTENSIONS).join(', ')
+      throw new Error(
+        `Cannot infer an output format from "${output}" — pass --ascii, --svg, or --html, ` +
+          `or use a recognised extension (${known})`,
+      )
+    }
+    throw new Error(
+      'Specify --ascii, --svg, and/or --html (or -o <path> with a .svg/.txt/.html extension)',
+    )
+  }
+
+  // 3. stdout can carry one stream. ASCII always prints there unless it is
+  //    the sole format and -o names a file, so `--ascii --svg -o -` (or
+  //    `--ascii --html -o -`) would interleave two documents.
+  if (output === STDOUT_OUTPUT && ascii && (svg || html)) {
+    throw new Error(
+      `-o - would send both ASCII and ${svg ? 'SVG' : 'HTML'} to stdout; drop --ascii, or write the ${svg ? 'SVG' : 'HTML'} to a file path`,
+    )
+  }
+
+  // 4. --svg/--html without -o: derive <input stem>.svg/.html. Stdin has
+  //    no name to derive from, so that case must say where output goes.
+  if ((svg || html) && output === undefined) {
+    const flag = svg ? '--svg' : '--html'
+    const ext = svg ? '.svg' : '.html'
+    if (input === undefined) {
+      throw new Error(
+        `${flag} needs -o <path> (or -o - for stdout) when reading from stdin — there is no input file name to derive an output name from`,
+      )
+    }
+    output = defaultOutputPath(input, ext)
   }
 
   if (maxWidth !== undefined && !ascii) {
@@ -218,13 +401,16 @@ function parseRender(args: string[]): RenderArgs {
     input,
     ascii,
     svg,
+    html,
     output,
+    force,
     theme,
     paddingX,
     paddingY,
     borderPadding,
     coords,
     maxWidth,
+    direction,
   }
 }
 
