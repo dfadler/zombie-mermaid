@@ -51,7 +51,8 @@ class MinHeap {
     return top
   }
 
-  private bubbleUp(i: number): void {
+  private bubbleUp(start: number): void {
+    let i = start
     while (i > 0) {
       const parent = (i - 1) >> 1
       if (this.items[i]!.priority < this.items[parent]!.priority) {
@@ -66,8 +67,9 @@ class MinHeap {
     }
   }
 
-  private sinkDown(i: number): void {
+  private sinkDown(start: number): void {
     const n = this.items.length
+    let i = start
     while (true) {
       let smallest = i
       const left = 2 * i + 1

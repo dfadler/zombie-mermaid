@@ -75,6 +75,18 @@ Run those locally first, along with `pnpm run lint` and `pnpm run format:check` 
 
 CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account/token involved) that fails the build on findings. If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why — don't disable the rule repo-wide.
 
+### Mutation and reassignment
+
+`eslint.config.js` enforces a small, deliberately narrow set of rules against reassignment ([#481](https://github.com/dfadler/zombie-mermaid/issues/481)): [`prefer-const`](https://eslint.org/docs/latest/rules/prefer-const), [`no-var`](https://eslint.org/docs/latest/rules/no-var), and [`no-param-reassign`](https://eslint.org/docs/latest/rules/no-param-reassign) with `props: false`. The line is drawn at the _binding_: a `let` that's never reassigned, a `var`, or a function that overwrites its own parameter (`padding = Math.max(0, padding)` — bind a new `const` instead) is an error. Writing _into_ an object a parameter points at (`canvas[y][x] = ch`, `edge.path = route`, `grid.add(key)`) is not: the ASCII renderer's grid, pathfinding, and layout passes are in-place by design, and rebuilding a canvas or an edge list per step to satisfy a lint rule would cost real time on large diagrams. That in-place work is the performance exception #481 carves out, which is why the stricter variants (`no-param-reassign` with `props: true`, `eslint-plugin-functional`'s `immutable-data`/`no-let`/`no-loop-statements`) are measured and tracked on the issue rather than enabled — each would flag hundreds of lines under `src/ascii/**`.
+
+If you do need to reassign a binding for performance, suppress the rule on that line only, and say why, using ESLint's [`-- description`](https://eslint.org/docs/latest/use/configure/rules#comment-descriptions) form with a `perf:` prefix:
+
+```ts
+// eslint-disable-next-line no-param-reassign -- perf: hot loop, avoids a per-cell allocation
+```
+
+A reviewer should be able to read the reason without opening the issue. The description isn't optional decoration: [`linterOptions.reportUnusedDisableDirectives`](https://eslint.org/docs/latest/use/configure/rules#report-unused-eslint-disable-comments) is set to `error` (ESLint's default is only `warn`, and CI runs `eslint .` without `--max-warnings`, so a warning would never fail the build), so a suppression whose rule no longer fires on that line — because the code under it was later rewritten — fails lint until it's removed. That keeps the list of exceptions honest over time instead of accreting.
+
 ### Test coverage
 
 CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-26 the baseline is **78.74% statements / 67.91% branches / 83.22% functions / 80.58% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, kept a bit under the measured baseline as headroom) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
