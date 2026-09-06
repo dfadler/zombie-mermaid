@@ -173,7 +173,7 @@ everyone else. Evaluated against the codebase as it stands today:
   host-supplied handler — is not made safe by opt-in packaging. The risk
   tier 3's design explicitly calls out above ("only the host knows
   whether its diagram source is trusted") is a property of the diagram
-  *source*, not of how the runtime is distributed — an opt-in package
+  _source_, not of how the runtime is distributed — an opt-in package
   executing untrusted diagram text is exactly as unsafe as the default
   import doing it. So the only genuinely new capability a runtime package
   could add is one this ADR already forecloses for a different,
