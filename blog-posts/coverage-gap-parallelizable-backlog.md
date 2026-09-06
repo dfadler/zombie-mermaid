@@ -155,13 +155,15 @@ functions, 6182 lines at both ends. Nineteen PRs that only added tests
 changed nothing about how much code there was to cover; they changed how
 much of it the suite actually walked through.
 
-The two files #102 singled out as worst went the whole distance:
+The three worst entries on #102's review table went the whole distance:
 `src/browser.ts` from 0% statements to 100%, `src/ascii/ansi.ts` from
-5.2% to 100%. So did `src/ascii/shapes/` as a directory — 15.53% to
-99.15%, the remaining sliver being `corners.ts` and `index.ts`, the two
-files in there that nobody filed a ticket for because neither was low
-enough to make the review table. (#102's own table says 13.14% for that
-directory; it was generated at `043af31`, a few merges earlier.)
+5.2% to 100%, and `src/ascii/shapes/` as a directory from 15.53% to
+99.15%. The sliver left in `shapes/` is `corners.ts` and `index.ts` —
+the two files in there the review table never listed, and so the two
+nobody filed a ticket for. (#102's own table says 13.14% for that
+directory; it was generated at `043af31`, a few merges earlier, which
+still reproduces its cited aggregate of 78.74/67.91/83.22/80.58
+exactly.)
 
 That ordering isn't incidental. The per-file tickets were
 deliberately scoped so that finishing all of them didn't automatically
