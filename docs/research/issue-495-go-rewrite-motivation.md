@@ -29,7 +29,7 @@ downgrade #495 to "explored, not pursued" (mirroring #443's own
 research-spike framing), citing this document. If a non-JS-host or
 distribution motivation independent of bundle size/sync-rendering ever gets
 articulated concretely, it would need to overcome both of the findings below
-on its own merits — this document does not rule out *ever* revisiting it,
+on its own merits — this document does not rule out _ever_ revisiting it,
 only rules out proceeding on the motivation as currently (un)stated.
 
 ---
@@ -42,13 +42,13 @@ Built via `pnpm run build` (`vite build --app --config vite.config.lib.ts`)
 and measured via `pnpm run check:bundle-size`
 (`scripts/check-bundle-size.ts`, gzip over `node:zlib`) on 2026-09-06:
 
-| File | Raw | Gzip | Budget (gzip) | Headroom |
-|---|---|---|---|---|
-| `dist/index.js` (SVG + ASCII, ELK.js included) | 289.4 KB | **76.3 KB** | 110.0 KB | −30.6% |
-| `dist/index.cjs` | 218.8 KB | 68.5 KB | 110.0 KB | −37.7% |
-| `dist/ascii.js` (ASCII-only, no ELK.js) | 173.0 KB | **46.5 KB** | 65.0 KB | −28.5% |
-| `dist/ascii.cjs` | 125.7 KB | 41.3 KB | 65.0 KB | −36.5% |
-| `dist/cli.js` | 347.4 KB | 92.5 KB | 116.0 KB | −20.2% |
+| File                                           | Raw      | Gzip        | Budget (gzip) | Headroom |
+| ---------------------------------------------- | -------- | ----------- | ------------- | -------- |
+| `dist/index.js` (SVG + ASCII, ELK.js included) | 289.4 KB | **76.3 KB** | 110.0 KB      | −30.6%   |
+| `dist/index.cjs`                               | 218.8 KB | 68.5 KB     | 110.0 KB      | −37.7%   |
+| `dist/ascii.js` (ASCII-only, no ELK.js)        | 173.0 KB | **46.5 KB** | 65.0 KB       | −28.5%   |
+| `dist/ascii.cjs`                               | 125.7 KB | 41.3 KB     | 65.0 KB       | −36.5%   |
+| `dist/cli.js`                                  | 347.4 KB | 92.5 KB     | 116.0 KB      | −20.2%   |
 
 All budgets are comfortably met today. These are the numbers a Go/WASM core
 would need to beat (or at least approach) to be size-neutral, per the
@@ -112,15 +112,15 @@ doesn't have code-splitting equivalent to "import a different subpath."
 
 ### Confirmed: sync rendering is load-bearing today, not incidental
 
-- README: *"Synchronous rendering — No async, no flash. Works with React
-  `useMemo()`"* (Features list) and *"Rendering is **fully synchronous** —
+- README: _"Synchronous rendering — No async, no flash. Works with React
+  `useMemo()`"_ (Features list) and _"Rendering is **fully synchronous** —
   no `await`, no promises. The ELK.js layout engine runs synchronously via a
-  FakeWorker bypass"* (Quick Start).
-- `docs/react-integration.md` states the mechanism explicitly: *"Because
+  FakeWorker bypass"_ (Quick Start).
+- `docs/react-integration.md` states the mechanism explicitly: _"Because
   rendering is synchronous, you can call `renderMermaidSVG()` directly in
-  the render body — no `useEffect` round trip, no flash,"* and gives the
+  the render body — no `useEffect` round trip, no flash,"_ and gives the
   `useMemo()`-wrapped pattern as the primary recommended integration, with a
-  React-Compiler note that only the *manual* `useMemo()` becomes redundant
+  React-Compiler note that only the _manual_ `useMemo()` becomes redundant
   under the compiler — the synchronous, no-`useEffect` part "still matters
   either way." This confirms the issue's characterization precisely: sync
   rendering isn't just a nice-to-have, it's the property that makes
@@ -167,7 +167,7 @@ are real, callable synchronously. But:
 - A common WASM-in-JS pattern sidesteps this by pre-instantiating the
   module once at module-load time (e.g., a top-level `await` or an
   async init the consuming app awaits before mounting), then exposing a
-  synchronous *call* into the already-instantiated module for each render.
+  synchronous _call_ into the already-instantiated module for each render.
   That does preserve "synchronous per-render call," but it does not
   preserve "synchronous end-to-end with no async step anywhere in the
   consumer's code" — it relocates the async boundary from "every render" to
@@ -181,7 +181,7 @@ are real, callable synchronously. But:
 
 The issue's characterization is correct and, if anything, understated: this
 is not merely "could force a breaking API change," it is close to
-unavoidable for a *main-thread-callable-with-zero-async-anywhere* API once
+unavoidable for a _main-thread-callable-with-zero-async-anywhere_ API once
 the core is large enough to need WASM — which, per the size research above,
 it will be. The best realistic outcome is "async once at startup, sync per
 render," which is still a breaking change to the README's current contract
@@ -206,12 +206,12 @@ covers adjacent but distinct ground:
   rewrite of the source of truth, not a TS-stays-canonical-with-alternate-
   targets model.
 - #443 explicitly flags the same open question this document answers as
-  unresolved: *"For the WASM-outward direction (Rust/Go core → JS via
+  unresolved: _"For the WASM-outward direction (Rust/Go core → JS via
   WASM), what would npm bundle size / cold-start cost look like in practice
-  for this specific renderer, versus the current pure-TS implementation?"*
+  for this specific renderer, versus the current pure-TS implementation?"_
   — this document's bundle-size section is a direct, evidence-based answer
   to that open question (see §1), reusable by #443 as well as #495.
-- #443 also raises, independently, whether there's *any actual user demand*
+- #443 also raises, independently, whether there's _any actual user demand_
   for a Rust/Go native package at all ("No existing issue/discussion
   currently asks for one") — the same absence-of-demand concern applies to
   #495's motivation gap, and neither issue has since had that gap filled by
@@ -235,7 +235,7 @@ re-investigated from scratch.
 ## Appendix: how these numbers were produced
 
 - Bundle sizes: `pnpm run build` (`vite build --app --config
-  vite.config.lib.ts`) followed by `pnpm run check:bundle-size`
+vite.config.lib.ts`) followed by `pnpm run check:bundle-size`
   (`scripts/check-bundle-size.ts`), both run unmodified from this repo's
   existing tooling, on 2026-09-06, commit `ec652b6` (branch
   `bump-issue-bot-v1-2-0` at the time of measurement). No `src/**` changes
