@@ -10,12 +10,12 @@ below are grounded in reading the current implementation, not a prototype.
 
 - **Engine-swapping is not retrofittable today without touching three
   independent call sites.** ELK is not isolated behind one seam — it's
-  threaded through *three* separate, hand-rolled graph-construction paths
+  threaded through _three_ separate, hand-rolled graph-construction paths
   (`layout-engine/to-elk.ts` for flowchart/state, `class/layout.ts`, and
   `er/layout.ts`), each of which builds ELK's typed JSON format (`ElkNode`,
   `ElkExtendedEdge`, `elk.*` layout-option strings) directly against the
   diagram's own domain model. There is no engine-neutral intermediate graph
-  representation to swap ELK out from under — the ELK format itself *is* the
+  representation to swap ELK out from under — the ELK format itself _is_ the
   intermediate representation, in triplicate.
 - **The ASCII renderers don't touch ELK at all.** Every ASCII diagram type
   (flowchart, class, ER, sequence) has its own from-scratch, character-grid
@@ -51,7 +51,7 @@ MermaidGraph --[to-elk.ts: mermaidToElk()]--> ElkNode (ELK JSON)
 
 This looks like a clean seam — `mermaidToElk` / `elkToPositioned` bookend a
 pure `elkLayoutSync(graph)` call — but the seam is at the wrong altitude for
-swapping the *engine*: `mermaidToElk` returns an `ElkNode`, not a neutral
+swapping the _engine_: `mermaidToElk` returns an `ElkNode`, not a neutral
 graph. Its 700+ lines are almost entirely ELK-specific: `elk.algorithm`,
 `elk.direction`, `elk.hierarchyHandling` (`SEPARATE` vs `INCLUDE_CHILDREN`),
 hand-built hierarchical ports and hop/bridge edges to route cross-subgraph
@@ -78,19 +78,19 @@ Worse, `class/layout.ts` and `er/layout.ts` **do not go through
 
 The only code shared across all three ELK call sites is
 `src/layout-engine/elk-adapter-utils.ts`, whose own header comment states the
-problem plainly: *"`from-elk.ts` (flowchart/state), `src/class/layout.ts`,
+problem plainly: _"`from-elk.ts` (flowchart/state), `src/class/layout.ts`,
 and `src/er/layout.ts` each independently walk an ELK edge's
 `section.startPoint → bendPoints → endPoint` into a `Point[]`... This module
-is the single place that logic lives, so the three call sites can't drift."*
-That module only covers point/label extraction from ELK's *output* — none of
-the graph-*construction* logic is shared. Three separate teams of code build
+is the single place that logic lives, so the three call sites can't drift."_
+That module only covers point/label extraction from ELK's _output_ — none of
+the graph-_construction_ logic is shared. Three separate teams of code build
 three separate `ElkNode` graphs, using ELK-specific vocabulary throughout.
 
 **What a real engine-swap seam would need**: an engine-neutral intermediate
 graph type (nodes with size/shape metadata, edges with optional labels,
 compound/subgraph nesting, a requested direction) that all three diagram
 types build once, plus a per-engine adapter (`toElk(graph)`, `toDagre(graph)`,
-etc.) that translates *that* into the target engine's format, mirroring what
+etc.) that translates _that_ into the target engine's format, mirroring what
 D2 does (see [D2 comparison](#d2s-layout-abstraction) below: D2 keeps one
 graph model and per-engine "shims" for the handful of features an engine
 can't express, e.g. container width/height only working on ELK/TALA). That's
@@ -103,8 +103,8 @@ decomposition, hierarchical ports) exists purely to satisfy ELK's own
 ### SVG side: two diagram types that don't use graph layout at all
 
 - `src/sequence/layout.ts` never touches ELK. Its header comment says so
-  explicitly: *"Custom timeline-based layout (no ELK — sequence diagrams
-  aren't graphs)."* Actors get fixed X positions by declaration order;
+  explicitly: _"Custom timeline-based layout (no ELK — sequence diagrams
+  aren't graphs)."_ Actors get fixed X positions by declaration order;
   messages are stacked at `messageY` strictly in **source/chronological
   order** (`layoutSequenceDiagram`, `src/sequence/layout.ts:351-478` — the
   main loop advances `messageY` monotonically per message, block, and note,
@@ -178,7 +178,7 @@ order top-to-bottom by construction, because the layout was never written as
 a general graph algorithm in the first place (`sequence/layout.ts`'s own
 header: "Custom timeline-based layout (no ELK — sequence diagrams aren't
 graphs)"). This wasn't a deliberate response to order-preservation research —
-it's the natural shape of a sequence diagram's semantics (messages *are* a
+it's the natural shape of a sequence diagram's semantics (messages _are_ a
 timeline) — but it validates the same idea the VEIL paper
 (arXiv:2511.05066) argues for CFGs: skip generic layered/Sugiyama layout
 entirely when the diagram already carries an intrinsic order, and position
@@ -187,7 +187,7 @@ to (hopefully) preserve it as a side effect.
 
 Flowcharts get a much weaker version of the same idea:
 `to-elk.ts:294`'s `'elk.layered.considerModelOrder.strategy':
-'NODES_AND_EDGES'` asks ELK to use declaration order as a *tie-break* during
+'NODES_AND_EDGES'` asks ELK to use declaration order as a _tie-break_ during
 crossing minimization (confirmed load-bearing by the sibling-subgraph
 reversal logic just above it, `to-elk.ts:425-448`, needed specifically
 because "ELK's `considerModelOrder` uses [model order] as a tie-break during
@@ -220,7 +220,7 @@ suite), not a smaller, separable one.
    edges with optional labels, compound/nesting, requested direction) —
    informed by, but not copied from, `MermaidGraph` (which is closer to the
    parser's AST than a layout-ready graph) and ELK's own `ElkNode` shape
-   (which is the right *shape* but the wrong *vocabulary* to keep neutral).
+   (which is the right _shape_ but the wrong _vocabulary_ to keep neutral).
 2. Rewrite `to-elk.ts`, `class/layout.ts`'s graph-building half, and
    `er/layout.ts`'s graph-building half to each build the neutral IR once,
    sharing that construction code instead of duplicating it (this alone —
