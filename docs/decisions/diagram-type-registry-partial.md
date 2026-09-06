@@ -69,12 +69,12 @@ its own parse+layout+render internally exactly as it does today.
   the risk bounded, per the issue's own ask to migrate "one or two...types
   to prove the pattern, not all five at once."
 - `flowchart`: not migrated in this pass, and non-trivially so. Unlike
-  every other type, flowchart's *ASCII* path has no per-type wrapper
+  every other type, flowchart's _ASCII_ path has no per-type wrapper
   function at all today — `src/ascii/index.ts`'s `'flowchart'` case inlines
   five separate calls (`parseMermaid`, `convertToAsciiGraph`,
   `createMapping`, `drawGraph`, `canvasToString`) directly in the switch,
   where every other ASCII type has a single `renderXxxAscii(text, config,
-  colorMode, theme)` entry point. Registering flowchart would first require
+colorMode, theme)` entry point. Registering flowchart would first require
   extracting that inline sequence into its own `renderFlowchartAscii`
   function — a pure, behavior-preserving extraction, but a separate, real
   piece of work, not something to fold silently into this registry PR.
@@ -120,7 +120,9 @@ export interface DiagramModule<TDiagram = unknown, TPositioned = unknown> {
   ): string
 }
 
-export const diagramRegistry: Partial<Record<DiagramType, DiagramModule<any, any>>>
+export const diagramRegistry: Partial<
+  Record<DiagramType, DiagramModule<any, any>>
+>
 ```
 
 Both front doors look the current `diagramType` up in `diagramRegistry`

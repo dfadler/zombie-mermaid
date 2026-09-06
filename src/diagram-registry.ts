@@ -178,7 +178,9 @@ const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
  * just needs one consistent shape to hold heterogeneous entries in.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above; each entry is fully typed at its own definition site.
-export const diagramRegistry: Partial<Record<DiagramType, DiagramModule<any, any>>> = {
+export const diagramRegistry: Partial<
+  Record<DiagramType, DiagramModule<any, any>>
+> = {
   xychart: xychartModule,
   er: erModule,
 }
