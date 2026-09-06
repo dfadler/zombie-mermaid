@@ -129,10 +129,22 @@ byte-identical (`.`, `./ascii`, `./mcp`), and its version stream (per the
 locked-versioning recommendation above). Internally, `dist/index.js`,
 `dist/ascii.js`, and `dist/mcp.js` become thin re-exports of
 `@zombie-mermaid/svg-renderer`, `@zombie-mermaid/ascii-renderer`, and
-`@zombie-mermaid/mcp` (naming TBD — could stay unscoped internal package
-names since they're never published) declared as real `dependencies` in the
-umbrella's `package.json`, resolved via the pnpm workspace during
-development and as ordinary version-locked deps once published.
+`@zombie-mermaid/mcp`, declared as real `dependencies` in the umbrella's
+`package.json`, resolved via the pnpm workspace during development.
+
+These must actually be published under the org-controlled `@zombie-mermaid/`
+scope, not left unscoped — an unscoped internal package name is claimable by
+anyone on the public registry, letting a third party's code run during
+install or import of `zombie-mermaid` itself. They must also genuinely be
+published (version-locked alongside the umbrella via the changesets `fixed`
+array from the locked-versioning recommendation above), not merely built
+and left private: a published `zombie-mermaid` that declares an unpublished
+private workspace package as a runtime `dependency` would fail to install
+outside the workspace, since npm has nothing to resolve that name to. Both
+constraints together mean the sub-packages are real, publicly-published,
+scope-protected packages — invisible to consumers only in the sense that
+nothing but the umbrella imports them directly, not in the sense of being
+absent from the registry.
 
 Zero breaking change for current consumers: same import specifiers
 (`zombie-mermaid`, `zombie-mermaid/ascii`, `zombie-mermaid/mcp`), same
@@ -168,10 +180,10 @@ and `renderer.ts`/`index.ts`/`parser.ts` splits it cleanly into two groups:
 
 ## Sanity-check against the actual import graph: two boundaries are less clean than #416 assumes
 
-#416 groups `class/`, `er/`, `sequence/`, `xychart/` under `mermaid-parser`
+`#416` groups `class/`, `er/`, `sequence/`, `xychart/` under `mermaid-parser`
 wholesale ("the per-diagram-type folders"), and implies both renderers only
 ever touch a shared model produced by the parser. Grepping the actual
-imports shows two things #416 doesn't account for:
+imports shows two things `#416` doesn't account for:
 
 **Finding 1 — the per-diagram-type directories are not single-package
 units.** Each of `src/class/`, `src/er/`, `src/sequence/`, `src/xychart/`
