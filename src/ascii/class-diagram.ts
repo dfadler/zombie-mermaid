@@ -571,18 +571,6 @@ export function renderClassAscii(
     }
   }
 
-  // --- Build occupancy map for collision avoidance ---
-  // Track which x positions are occupied at each y level (to avoid routing through boxes)
-  const boxOccupancy: { x1: number; x2: number; y1: number; y2: number }[] = []
-  for (const p of placed.values()) {
-    boxOccupancy.push({
-      x1: p.x,
-      x2: p.x + p.width - 1,
-      y1: p.y,
-      y2: p.y + p.height - 1,
-    })
-  }
-
   /** Check if a point (x, y) is inside any class box */
   function isInsideBox(
     x: number,
