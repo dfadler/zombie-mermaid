@@ -803,77 +803,94 @@ const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ])
 
+// A real `@resvg/resvg-js` rasterization per test below, not a mock —
+// slower than vitest's 5s default under CI/parallel-test contention. Same
+// pattern as the ASCII stress tests in ascii-edge-routing-fixes.test.ts.
+const REAL_RASTERIZATION_TIMEOUT = 20000
+
 describe('runRender – PNG output', () => {
-  it('rasterizes to a real PNG file starting with the PNG signature', async () => {
-    const inputPath = join(tmpDir, 'diagram.mmd')
-    const outputPath = join(tmpDir, 'out.png')
-    await writeFile(inputPath, SIMPLE_FLOWCHART)
+  it(
+    'rasterizes to a real PNG file starting with the PNG signature',
+    async () => {
+      const inputPath = join(tmpDir, 'diagram.mmd')
+      const outputPath = join(tmpDir, 'out.png')
+      await writeFile(inputPath, SIMPLE_FLOWCHART)
 
-    await runRender(
-      renderArgs({ input: inputPath, png: true, output: outputPath }),
-    )
+      await runRender(
+        renderArgs({ input: inputPath, png: true, output: outputPath }),
+      )
 
-    const png = await readFile(outputPath)
-    expect(png.subarray(0, 8)).toEqual(PNG_SIGNATURE)
-    // A trivial/empty rasterization would be well under 1 KB; a real
-    // three-node flowchart is not.
-    expect(png.byteLength).toBeGreaterThan(1024)
-  })
+      const png = await readFile(outputPath)
+      expect(png.subarray(0, 8)).toEqual(PNG_SIGNATURE)
+      // A trivial/empty rasterization would be well under 1 KB; a real
+      // three-node flowchart is not.
+      expect(png.byteLength).toBeGreaterThan(1024)
+    },
+    REAL_RASTERIZATION_TIMEOUT,
+  )
 
-  it('writes PNG bytes to stdout for -o -, byte-identical to the file output', async () => {
-    const inputPath = join(tmpDir, 'diagram.mmd')
-    const filePath = join(tmpDir, 'out.png')
-    await writeFile(inputPath, SIMPLE_FLOWCHART)
+  it(
+    'writes PNG bytes to stdout for -o -, byte-identical to the file output',
+    async () => {
+      const inputPath = join(tmpDir, 'diagram.mmd')
+      const filePath = join(tmpDir, 'out.png')
+      await writeFile(inputPath, SIMPLE_FLOWCHART)
 
-    const mockStdout = createMockStdout()
-    await runRender(
-      renderArgs({ input: inputPath, png: true, output: '-' }),
-      mockStdout,
-    )
-    await runRender(
-      renderArgs({ input: inputPath, png: true, output: filePath }),
-    )
+      const mockStdout = createMockStdout()
+      await runRender(
+        renderArgs({ input: inputPath, png: true, output: '-' }),
+        mockStdout,
+      )
+      await runRender(
+        renderArgs({ input: inputPath, png: true, output: filePath }),
+      )
 
-    expect(mockStdout.buffer()).toEqual(await readFile(filePath))
-  })
+      expect(mockStdout.buffer()).toEqual(await readFile(filePath))
+    },
+    REAL_RASTERIZATION_TIMEOUT,
+  )
 
-  it('forces color resolution even when --resolve-colors was not passed', async () => {
-    const inputPath = join(tmpDir, 'diagram.mmd')
-    const outputPath = join(tmpDir, 'out.png')
-    await writeFile(inputPath, SIMPLE_FLOWCHART)
+  it(
+    'forces color resolution even when --resolve-colors was not passed',
+    async () => {
+      const inputPath = join(tmpDir, 'diagram.mmd')
+      const outputPath = join(tmpDir, 'out.png')
+      await writeFile(inputPath, SIMPLE_FLOWCHART)
 
-    // Deliberately no `resolveColors: true` in the args — `runRender`'s PNG
-    // path must resolve colors on its own (see src/cli/render.ts), since a
-    // rasterizer can't evaluate the var()/color-mix() a plain SVG render
-    // would otherwise leave in place (the exact regression issue #456
-    // describes). Prove it by rasterizing the same theme two other ways —
-    // once deliberately UNresolved (what a naive PNG path would produce)
-    // and once explicitly resolved — and asserting `runRender`'s output
-    // matches the resolved one, not the unresolved one.
-    await runRender(
-      renderArgs({
-        input: inputPath,
-        png: true,
-        output: outputPath,
-        theme: 'tokyo-night',
-      }),
-    )
-    const viaRunRender = await readFile(outputPath)
+      // Deliberately no `resolveColors: true` in the args — `runRender`'s PNG
+      // path must resolve colors on its own (see src/cli/render.ts), since a
+      // rasterizer can't evaluate the var()/color-mix() a plain SVG render
+      // would otherwise leave in place (the exact regression issue #456
+      // describes). Prove it by rasterizing the same theme two other ways —
+      // once deliberately UNresolved (what a naive PNG path would produce)
+      // and once explicitly resolved — and asserting `runRender`'s output
+      // matches the resolved one, not the unresolved one.
+      await runRender(
+        renderArgs({
+          input: inputPath,
+          png: true,
+          output: outputPath,
+          theme: 'tokyo-night',
+        }),
+      )
+      const viaRunRender = await readFile(outputPath)
 
-    const themeColors = THEMES['tokyo-night']
-    const unresolvedSvg = renderMermaidSVG(SIMPLE_FLOWCHART, themeColors)
-    const resolvedSvg = renderMermaidSVG(SIMPLE_FLOWCHART, {
-      ...themeColors,
-      resolveColors: true,
-    })
-    const [unresolvedPng, resolvedPng] = await Promise.all([
-      renderPng(unresolvedSvg),
-      renderPng(resolvedSvg),
-    ])
+      const themeColors = THEMES['tokyo-night']
+      const unresolvedSvg = renderMermaidSVG(SIMPLE_FLOWCHART, themeColors)
+      const resolvedSvg = renderMermaidSVG(SIMPLE_FLOWCHART, {
+        ...themeColors,
+        resolveColors: true,
+      })
+      const [unresolvedPng, resolvedPng] = await Promise.all([
+        renderPng(unresolvedSvg),
+        renderPng(resolvedSvg),
+      ])
 
-    expect(viaRunRender).toEqual(resolvedPng)
-    expect(viaRunRender).not.toEqual(unresolvedPng)
-  })
+      expect(viaRunRender).toEqual(resolvedPng)
+      expect(viaRunRender).not.toEqual(unresolvedPng)
+    },
+    REAL_RASTERIZATION_TIMEOUT,
+  )
 
   it('refuses to overwrite an existing .png file without --force', async () => {
     const inputPath = join(tmpDir, 'diagram.mmd')
