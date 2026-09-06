@@ -12,7 +12,7 @@ two open questions that would have to justify the cost — real user demand,
 and an efficient compile-outward path — land weaker than the issue's framing
 assumed:
 
-- User demand *does* exist, but it surfaced **after** #443 was filed, as a
+- User demand _does_ exist, but it surfaced **after** #443 was filed, as a
   separate, non-AI-authored proposal (#495) plus two AI-assisted follow-ups
   (#536, #540) — see [Q4](#q4-is-there-actual-user-demand). Those three issues
   already converge on a **different, better-precedented architecture** (Go/Rust
@@ -20,17 +20,17 @@ assumed:
   #443 poses (compile the whole core outward, or transpile TS source itself).
   That makes most of #443's framing moot rather than answered — see the
   recommendation detail below.
-- The "compile TS outward to Rust/Go *source*" direction has real prior art
+- The "compile TS outward to Rust/Go _source_" direction has real prior art
   (CCXT's `ast-transpiler`, in production for years) — stronger precedent than
   the issue assumed — but CCXT's own experience shows it demands a
-  cross-language-compatible *style discipline* on the source the whole team
+  cross-language-compatible _style discipline_ on the source the whole team
   writes in, not just a subset-checker run once. That is a standing tax, not a
   one-time migration cost.
 - The "compile core outward via WASM" direction is bundle-size-negative for
   this specific package: a Rust→WASM binary alone typically lands at
   50–300 KB before gzip ([nickb.dev](https://nickb.dev/blog/results-of-authoring-a-js-library-with-rust-and-wasm/),
   [dev.to WASM 2026 deep dive](https://dev.to/dataformathub/rust-wasm-in-2026-a-deep-dive-into-high-performance-web-apps-20c6)),
-  against the current pure-TS ASCII entry point's **66,560-byte *gzip* budget**
+  against the current pure-TS ASCII entry point's **66,560-byte _gzip_ budget**
   (`bundle-size-budget.json`, `dist/ascii.js`/`dist/ascii.cjs`) — i.e. the
   uncompressed WASM payload alone can exceed today's entire compressed budget,
   before JS glue, before the loader, before any C-ABI/native-binding surface
@@ -39,7 +39,7 @@ assumed:
   expected** — the algorithmic core is unusually restricted-dialect-friendly
   already (zero `any`, zero async, `strict: true`, no generators, minimal
   regex, only 3 trivial classes) — but that finding argues for the
-  *shared-assertion-corpus* piece of #443 independent of any compile decision,
+  _shared-assertion-corpus_ piece of #443 independent of any compile decision,
   not for building a transpiler.
 
 If anything from this spike is worth doing next, it's the low-cost, direction-
@@ -68,7 +68,7 @@ caveat about what "prior art" buys you.**
     that untyped/ambiguous numeric code causes int/float ambiguity across
     targets, that some comments are lost, and that import/export statements
     aren't touched by the tool (handled by a separate build step). This is a
-    *style discipline the whole team lives under continuously*, not a
+    _style discipline the whole team lives under continuously_, not a
     subset-checker run once at project start — much closer in spirit to
     AssemblyScript's restricted dialect than to "write normal TS and get Go
     out."
@@ -88,7 +88,7 @@ caveat about what "prior art" buys you.**
   ([morello.dev](https://morello.dev/blog/typescript-7-is-here)). This is
   the strongest real-world evidence for **Q5** (a shared-assertion corpus is a
   proven, load-bearing technique for verifying cross-language identity) — but
-  it argues for *manual porting plus a shared test corpus*, not for building a
+  it argues for _manual porting plus a shared test corpus_, not for building a
   transpiler.
 - **The "core + thin per-language bindings" pattern** (what #495/#536/#540
   actually propose, independent of #443) has its own strong precedent:
@@ -97,7 +97,7 @@ caveat about what "prior art" buys you.**
   [Oso](https://www.osohq.com/post/cross-platform-rust-libraries), a Rust core
   shipping idiomatic Python/Ruby/Java/JS/Go/Rust libraries. This is the
   well-trodden path; it's a different shape of problem than #443's two
-  directions (it doesn't require a TS→native transpiler *or* a WASM-outward
+  directions (it doesn't require a TS→native transpiler _or_ a WASM-outward
   build — the core is written once in the systems language and each language
   gets a hand-written idiomatic wrapper over an FFI/WASM boundary).
 
@@ -120,22 +120,22 @@ pursued further — see Q2 recommendation).
 
 Findings:
 
-| Construct | Result |
-|---|---|
-| `any` (real usage, not in comments) | **0** — both grep hits were inside prose comments |
-| `strict` mode | `true` in `tsconfig.json` already |
-| `async`/`await`/`Promise` | **0** real usage — the only hit was a comment ("Synchronous — no async layout engine needed") |
-| Classes | **3** files (`hyperlinks.ts`'s `LinkRunTracker`, `pathfinder.ts`'s `MinHeap`, `grid-occupancy.ts`'s `Grid`) — all small, no inheritance, no decorators |
-| `extends` (inheritance) | **0** — the only grep hits were in prose comments |
-| Generators (`function*`/`yield`) | **0** |
-| ES2022 private fields (`#field`) | **1** (`Grid.#cells`) — used deliberately over TS `private` to get true runtime privacy (see the file's own comment); would need to become plain TS `private` for a dialect without JS-native private-field support |
-| Regex | **5** files (`draw.ts`, `hyperlinks.ts`, `canvas.ts`, `draw-boxes.ts`, `ansi.ts`) — all simple, static character-class tests (e.g. `/^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)`), no dynamic pattern construction, no backreferences/lookaround |
-| Complex/mapped/conditional generics (`[K in ...]`, `extends infer`, `keyof`) | **0** |
-| Interfaces vs. classes | 28 interfaces vs. 3 classes — the codebase is data/function-oriented, not OO |
-| `Map`/`Set`/`Record` | Used across ~12 files — idiomatic, not exotic (all `Map<K,V>`/`Set<T>` with concrete key/value types) |
-| Exotic string methods (`padStart`, `repeat`, `normalize`, `codePointAt`, `matchAll`, `localeCompare`) | Only `padStart` (1 file) and `repeat` (1 file) — both supported by AssemblyScript's stdlib |
-| Object destructuring / spread | 9 destructuring sites, 61 spread sites — common, would need per-site review under a real restricted dialect but nothing algorithmically unusual |
-| `for...of` over `Map`/`Set` | 162 sites — heavy reliance on this idiom |
+| Construct                                                                                             | Result                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `any` (real usage, not in comments)                                                                   | **0** — both grep hits were inside prose comments                                                                                                                                                                   |
+| `strict` mode                                                                                         | `true` in `tsconfig.json` already                                                                                                                                                                                   |
+| `async`/`await`/`Promise`                                                                             | **0** real usage — the only hit was a comment ("Synchronous — no async layout engine needed")                                                                                                                       |
+| Classes                                                                                               | **3** files (`hyperlinks.ts`'s `LinkRunTracker`, `pathfinder.ts`'s `MinHeap`, `grid-occupancy.ts`'s `Grid`) — all small, no inheritance, no decorators                                                              |
+| `extends` (inheritance)                                                                               | **0** — the only grep hits were in prose comments                                                                                                                                                                   |
+| Generators (`function*`/`yield`)                                                                      | **0**                                                                                                                                                                                                               |
+| ES2022 private fields (`#field`)                                                                      | **1** (`Grid.#cells`) — used deliberately over TS `private` to get true runtime privacy (see the file's own comment); would need to become plain TS `private` for a dialect without JS-native private-field support |
+| Regex                                                                                                 | **5** files (`draw.ts`, `hyperlinks.ts`, `canvas.ts`, `draw-boxes.ts`, `ansi.ts`) — all simple, static character-class tests (e.g. `/^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-                                                           | .':]$/.test(c)`), no dynamic pattern construction, no backreferences/lookaround |
+| Complex/mapped/conditional generics (`[K in ...]`, `extends infer`, `keyof`)                          | **0**                                                                                                                                                                                                               |
+| Interfaces vs. classes                                                                                | 28 interfaces vs. 3 classes — the codebase is data/function-oriented, not OO                                                                                                                                        |
+| `Map`/`Set`/`Record`                                                                                  | Used across ~12 files — idiomatic, not exotic (all `Map<K,V>`/`Set<T>` with concrete key/value types)                                                                                                               |
+| Exotic string methods (`padStart`, `repeat`, `normalize`, `codePointAt`, `matchAll`, `localeCompare`) | Only `padStart` (1 file) and `repeat` (1 file) — both supported by AssemblyScript's stdlib                                                                                                                          |
+| Object destructuring / spread                                                                         | 9 destructuring sites, 61 spread sites — common, would need per-site review under a real restricted dialect but nothing algorithmically unusual                                                                     |
+| `for...of` over `Map`/`Set`                                                                           | 162 sites — heavy reliance on this idiom                                                                                                                                                                            |
 
 **Estimate: roughly 90–95% of `src/ascii/**` by line count looks compatible
 with an AssemblyScript-like restricted TS dialect with only mechanical
@@ -150,7 +150,7 @@ changes**, concentrated almost entirely in two places:
 2. **The 3 class files** — trivial rewrites (drop the one `#`-private field
    to `private`; the classes have no inheritance to reconcile).
 
-**What the spike does *not* resolve** — and what the issue itself already
+**What the spike does _not_ resolve** — and what the issue itself already
 flags as the real hard spot, independent of "subset friendliness": Unicode
 width handling (`display-width.ts` and the CJK/combining-mark test files).
 This isn't a restricted-dialect problem — even a hand-written, non-transpiled
@@ -189,8 +189,8 @@ direct benchmark.
   compress less well than equivalent minified JS because they're already
   denser binary encoding, not text.
 - **Read-through for this project**: a Rust-core WASM build of just the ASCII
-  renderer would plausibly land somewhere in the same 50–300 KB range *before*
-  compression and *before* the JS glue/loader code `wasm-bindgen` generates —
+  renderer would plausibly land somewhere in the same 50–300 KB range _before_
+  compression and _before_ the JS glue/loader code `wasm-bindgen` generates —
   i.e. plausibly at-or-above the entire current 65 KB **gzipped** budget for
   the whole ASCII feature, once glue and instantiation code are counted. This
   is a real risk to the "Zero DOM dependencies" / bundle-size-conscious
@@ -212,7 +212,7 @@ direct benchmark.
 
 **#443 itself says no ("No existing issue/discussion currently asks for
 one") — that was true at the time #443 was filed (2026-09-03), but is no
-longer true.** Three related issues now exist, all filed *after* #443:
+longer true.** Three related issues now exist, all filed _after_ #443:
 
 - **[#495](https://github.com/dfadler/zombie-mermaid/issues/495) — "Proposal:
   rewrite core renderer in Go with TypeScript bindings"** (2026-09-05,
@@ -235,8 +235,8 @@ longer true.** Three related issues now exist, all filed *after* #443:
   AI-drafted, split from #536). A concrete, scoped task: pick Rust or Go,
   prototype one diagram type's parse+layout in that language, wrap it with a
   thin TypeScript binding, and produce output equivalent to the current
-  pure-TS path for that one diagram type. Also notes real prior art *in this
-  exact niche*: `mermaid-ascii` (Go) and `mermaid-ascii-diagrams` (Python)
+  pure-TS path for that one diagram type. Also notes real prior art _in this
+  exact niche_: `mermaid-ascii` (Go) and `mermaid-ascii-diagrams` (Python)
   already reach non-JS ecosystems — "Competitors reached multi-language
   before zombie-mermaid did, albeit in a narrower scope."
 
@@ -245,7 +245,7 @@ longer true.** Three related issues now exist, all filed *after* #443:
 per-language bindings via FFI/WASM" (the Temporal/Oso pattern) — not
 "transpile the TS core outward to Rust/Go source" (#443's direction 2, the
 CCXT-shaped path) and not "compile a Rust/Go core to a WASM+native-bindings
-bundle that's still meant to be the *only* implementation" in quite the way
+bundle that's still meant to be the _only_ implementation" in quite the way
 #443's direction 1 frames it either, since #495 explicitly wants a Go-native
 idiomatic API as a first-class target, not just an FFI wrapper around a
 foreign-feeling core.
@@ -270,7 +270,7 @@ This is the one piece of #443 that stands on its own regardless of what
   input source + options + expected output string) is mechanical — a script
   that walks the existing `.test.ts` files and serializes each case's
   input/expected pair, not a rewrite of the tests themselves.
-- **Precedent for the *shape* of this approach**: Test262 (ECMAScript),
+- **Precedent for the _shape_ of this approach**: Test262 (ECMAScript),
   the WASM spec's `.wast` test corpus, SQLite's SQL logic tests, and — most
   relevantly — TypeScript's own ~20,000-case conformance suite that Microsoft
   reused to verify the Go port's behavior matched the JS checker
@@ -279,12 +279,12 @@ This is the one piece of #443 that stands on its own regardless of what
   runner/comparator.
 - **Cost estimate**: low, and decomposable into two independently-shippable
   pieces:
-  1. *Extraction* — write the fixtures out once, keep existing `.test.ts`
+  1. _Extraction_ — write the fixtures out once, keep existing `.test.ts`
      files as the "TS reference" consumer of the same corpus (so nothing
      about today's CI changes). This is the low-risk, low-cost half — likely
      a small script plus a follow-up PR reorganizing the existing ASCII test
      files to read from the extracted corpus instead of inline literals.
-  2. *A second consumer* — only relevant once a second implementation (WASM
+  2. _A second consumer_ — only relevant once a second implementation (WASM
      build, native binary, or otherwise) exists to test against; this half's
      cost is entirely dependent on what #540's prototype produces (shelling
      out to a binary and diffing stdout, per the issue's own suggestion, is
@@ -295,7 +295,7 @@ This is the one piece of #443 that stands on its own regardless of what
   there's an actual second consumer to run it against (#540's prototype, if
   it proceeds) — extracting a shared corpus with no second implementation to
   compare against is process for its own sake. Doing it opportunistically
-  *alongside* #540's prototype (extract the fixtures for whichever one
+  _alongside_ #540's prototype (extract the fixtures for whichever one
   diagram type #540 targets, rather than all six up front) is the
   right-sized version of this work.
 
