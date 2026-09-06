@@ -85,8 +85,24 @@ the coverage numbers cited in #108's own table (29.41% statements, 100%
 branch, 66.66% functions) matched `src/ascii/multiline-utils.ts` exactly,
 and documented that match explicitly in the PR description rather than
 silently retitling the issue or guessing. The likeliest explanation is a
-truncation artifact from however the coverage table got assembled — both
-names end the same way. Because the ticket was scoped to one file's worth
+truncation artifact in the coverage table itself. Vitest's text reporter
+clips long filenames from the left, and re-running
+`pnpm run test:coverage` at `f240616` — the commit the whole batch
+branched from — still emits _two_ rows rendered as the same string, in
+two different directory groups:
+
+```text
+ src               |   92.76 |    87.61 |   95.23 |   94.48 |
+  ...line-utils.ts |   95.77 |    93.61 |    90.9 |     100 | 101,130,136
+ src/ascii         |   79.12 |    63.08 |   87.07 |   80.67 |
+  ...line-utils.ts |   29.41 |      100 |   66.66 |   28.57 | 54-81
+```
+
+The first is `src/multiline-utils.ts`; the second is
+`src/ascii/multiline-utils.ts`, and its 29.41/100/66.66 is exactly the
+row #108 quoted. Read the group header plus the clipped cell as one path
+and you get `src/ascii/line-utils.ts` — a file that has never existed.
+Because the ticket was scoped to one file's worth
 of numbers instead of a paragraph of prose about "the ascii utilities,"
 the mismatch was checkable in one command (`pnpm run test:coverage`) and
 fixable without anyone needing to first untangle which of several
@@ -112,7 +128,42 @@ more step none of the individual file-level PRs owned: re-running
 `pnpm run test:coverage` against the new baseline and raising the
 repository-wide thresholds in `vitest.config.ts` to match, which happened
 in [#144](https://github.com/dfadler/zombie-mermaid/pull/144), merged at
-18:30:50. That ordering isn't incidental. The per-file tickets were
+18:30:50.
+
+That aggregate is the one number no individual ticket was accountable
+for, so it's worth showing what it actually did. Checking out both ends
+of the batch — `f240616`, the last commit before the first coverage PR
+merged, and `f2a234b`, the merge of the last one, with nothing but those
+nineteen merges in between — and running `pnpm run test:coverage` at each:
+
+```text
+f240616 — the last commit before the first coverage PR merged
+Statements   : 78.86% ( 5529/7011 )
+Branches     : 67.92% ( 2736/4028 )
+Functions    : 83.66% ( 502/600 )
+Lines        : 80.71% ( 4990/6182 )
+
+f2a234b — the merge of the nineteenth
+Statements   : 90.41% ( 6339/7011 )
+Branches     : 80.26% ( 3233/4028 )
+Functions    : 95.16% ( 571/600 )
+Lines        : 92.08% ( 5693/6182 )
+```
+
+The denominators don't move — 7011 statements, 4028 branches, 600
+functions, 6182 lines at both ends. Nineteen PRs that only added tests
+changed nothing about how much code there was to cover; they changed how
+much of it the suite actually walked through.
+
+The two files #102 singled out as worst went the whole distance:
+`src/browser.ts` from 0% statements to 100%, `src/ascii/ansi.ts` from
+5.2% to 100%. So did `src/ascii/shapes/` as a directory — 15.53% to
+99.15%, the remaining sliver being `corners.ts` and `index.ts`, the two
+files in there that nobody filed a ticket for because neither was low
+enough to make the review table. (#102's own table says 13.14% for that
+directory; it was generated at `043af31`, a few merges earlier.)
+
+That ordering isn't incidental. The per-file tickets were
 deliberately scoped so that finishing all of them didn't automatically
 finish the umbrella — someone still had to look at the aggregate result and
 decide the new floor was real, not just eyeball nineteen individually green
