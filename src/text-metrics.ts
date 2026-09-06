@@ -320,6 +320,14 @@ export function getCharWidth(char: string): number {
   // `INTER_ADVANCES['toString']` is a function, not undefined).
   if (Object.hasOwn(INTER_ADVANCES, char)) {
     const measured = INTER_ADVANCES[char]
+    // The `undefined` case is unreachable: INTER_ADVANCES is a `Record<string,
+    // number>` object literal whose every value is a numeric literal, and
+    // `noUncheckedIndexedAccess` is what forces this check's type, not any
+    // real possibility that an own property here holds `undefined`. Given
+    // `Object.hasOwn` is already true, `measured` is always a defined
+    // number — kept (not simplified to a bare `return measured`) so the
+    // check still holds if a future entry's value type ever widens.
+    /* v8 ignore else */
     if (measured !== undefined) return measured
   }
 
