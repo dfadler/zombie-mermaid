@@ -5,8 +5,13 @@ import type {
   PositionedGroup,
   Point,
 } from './types.ts'
-import type { DiagramColors } from './theme.ts'
-import { svgOpenTag, buildStyleBlock, getReadableTextColor } from './theme.ts'
+import type { DiagramColors, SvgEmitOptions } from './theme.ts'
+import {
+  svgOpenTag,
+  buildStyleBlock,
+  styleOpenTag,
+  getReadableTextColor,
+} from './theme.ts'
 import type { FontSizes } from './styles.ts'
 import {
   FONT_SIZES,
@@ -24,6 +29,7 @@ import {
 import { pointsToPath } from './edge-curves.ts'
 import type { CurveStyle } from './init-directive.ts'
 import { safeHref } from './click-directive.ts'
+import { sanitizeClassName } from './style-directives.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -68,6 +74,10 @@ import { safeHref } from './click-directive.ts'
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
  *                src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
+ * @param emit - Strict-CSP controls (from `options.nonce` /
+ *               `options.styleAttribute`, see #216): a `nonce` for every
+ *               `<style>` element, and whether the root `style="…"`
+ *               attribute is emitted at all. Default: no nonce, attribute on.
  */
 export function renderSvg(
   graph: PositionedGraph,
@@ -81,6 +91,7 @@ export function renderSvg(
   linksEnabled: boolean = true,
   title?: string,
   decorative?: boolean,
+  emit: SvgEmitOptions = {},
 ): string {
   const parts: string[] = []
 
@@ -107,16 +118,17 @@ export function renderSvg(
         title,
         decorative,
         hasInteractiveLinks,
+        emit.styleAttribute,
       ),
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, false))
+  parts.push(buildStyleBlock(font, false, emit.nonce))
   // Keyframes for animated edges (`e1@{ animate: true }`). Emitted only when
   // an animated edge exists and animation is enabled, so an ordinary diagram
   // (or one rendered with `interactivity: 'none'`) gains no extra markup.
   if (animationEnabled && graph.edges.some((e) => e.animate)) {
-    parts.push(edgeAnimationStyle())
+    parts.push(edgeAnimationStyle(emit.nonce))
   }
   parts.push('<defs>')
   parts.push(arrowMarkerDefs())
@@ -173,10 +185,14 @@ export function renderSvg(
  * ignored by static rasterizers, which render the first frame. The
  * `prefers-reduced-motion` guard stops the animation for users who have asked
  * the system for less movement — the edge still renders, just still.
+ *
+ * A second `<style>` element, so it takes the same `nonce` as the theme
+ * block (see `styleOpenTag`) — under a nonce-based CSP it would otherwise be
+ * the one un-nonced element on the page and get silently dropped.
  */
-function edgeAnimationStyle(): string {
+function edgeAnimationStyle(nonce?: string): string {
   return [
-    '<style>',
+    styleOpenTag(nonce),
     '  @keyframes zm-edge-dash { to { stroke-dashoffset: -28; } }',
     '  .edge-animated { animation: zm-edge-dash 1s linear infinite; }',
     '  @media (prefers-reduced-motion: reduce) {',
@@ -532,17 +548,16 @@ function renderNode(
     `data-label="${escapeAttr(node.label)}"`,
     `data-shape="${node.shape}"`,
   ]
-  if (interaction?.callback) {
-    /*
-     * `click A call fn()` is recorded, never invoked. This renderer produces
-     * a static SVG string and executes nothing a diagram supplies — running
-     * diagram-authored script would make every rendered diagram an execution
-     * vector. The binding is exposed as data so a host application can wire
-     * it up itself if it chooses to trust the source.
-     */
-    groupAttrs.push(`data-click-callback="${escapeAttr(interaction.callback)}"`)
-  }
-
+  /*
+   * `click A call fn()` is deliberately absent from the markup. This renderer
+   * produces a static SVG string and executes nothing a diagram supplies —
+   * running diagram-authored script would make every rendered diagram an
+   * execution vector. The binding is exposed as data instead, on the
+   * `interactions` map `parseMermaid()` returns, and the `data-id` attribute
+   * above is the hook a host binds it to. The inert `data-click-callback`
+   * attribute once emitted here was removed in #216 — see
+   * docs/decisions/no-script-interactivity.md.
+   */
   parts.push(`<g ${groupAttrs.join(' ')}>`)
 
   // An href becomes a real SVG link, which needs no script to work.
@@ -1466,22 +1481,4 @@ export function withDataSrc(
     '<svg ',
     `<svg data-src="${escapeMultilineAttr(source)}" `,
   )
-}
-
-/**
- * Validate a user-authored class name (from `:::className` or
- * `class A className`) before it's emitted into the SVG `class` attribute.
- *
- * The parser already constrains class names to word characters and hyphens
- * (see CLASS_SHORTHAND_REGEX / the `class` statement regex in parser.ts), so
- * this is a defense-in-depth allowlist rather than an escaping step — a
- * class name can't be made "safe" by escaping since any character other than
- * a valid CSS identifier character would break the class token itself, not
- * just the surrounding attribute quotes. Anything that doesn't match a valid
- * CSS identifier (letters, digits, underscore, hyphen; not starting with a
- * digit or a hyphen+digit) is dropped rather than emitted.
- */
-function sanitizeClassName(className: string | undefined): string | undefined {
-  if (!className) return undefined
-  return /^-?[a-zA-Z_][a-zA-Z0-9_-]*$/.test(className) ? className : undefined
 }

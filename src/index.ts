@@ -22,6 +22,7 @@
 export type {
   RenderOptions,
   MermaidGraph,
+  NodeInteraction,
   PositionedGraph,
   Direction,
 } from './types.ts'
@@ -38,8 +39,8 @@ import { parseMermaid } from './parser.ts'
 import { layoutGraphSync } from './layout.ts'
 import { renderSvg } from './renderer.ts'
 import type { RenderOptions } from './types.ts'
-import type { DiagramColors } from './theme.ts'
-import { DEFAULTS } from './theme.ts'
+import type { DiagramColors, SvgEmitOptions } from './theme.ts'
+import { DEFAULTS, themeStyleDeclarations } from './theme.ts'
 import { resolveFontSizes } from './styles.ts'
 import { isMonospaceFont, setMonospaceMetrics } from './text-metrics.ts'
 import { detectDiagramType } from './diagram-type.ts'
@@ -75,6 +76,48 @@ function buildColors(options: RenderOptions): DiagramColors {
     muted: options.muted,
     surface: options.surface,
     border: options.border,
+  }
+}
+
+/**
+ * The exact CSS declaration list the root `<svg style="…">` attribute would
+ * carry for these options — `--bg`, `--fg`, whichever enrichment colours
+ * were given, and (unless `transparent`) `background: var(--bg)`.
+ *
+ * For hosts with a strict `Content-Security-Policy`: a `style=` attribute
+ * can't be nonced, so a `style-src` without `'unsafe-inline'` drops it and
+ * the diagram loses its colours. Render with `styleAttribute: false` and
+ * put this string in your own stylesheet on the SVG (or any ancestor —
+ * custom properties inherit) instead. Pass the same options object to both
+ * calls so the declarations match what the render expects. See
+ * `RenderOptions.styleAttribute` / `RenderOptions.nonce` and issue #216.
+ *
+ * Built by the same function that fills the attribute in normal renders,
+ * so there is one variable list to keep in sync. The string is compact
+ * (`--bg:#fff;--fg:#000;background:var(--bg)`) — valid inside any rule
+ * block — and the colour values are yours, unescaped, exactly as the
+ * attribute has always carried them.
+ *
+ * @example
+ * ```ts
+ * const opts = { bg: '#1a1b26', fg: '#a9b1d6', nonce, styleAttribute: false }
+ * const svg = renderMermaidSVG('graph TD\n  A --> B', opts)
+ * const css = `.diagram svg { ${themeCssVariables(opts)} }`
+ * ```
+ */
+export function themeCssVariables(options: RenderOptions = {}): string {
+  return themeStyleDeclarations(buildColors(options), options.transparent)
+}
+
+/**
+ * Resolve the effective strict-CSP emission controls from the public
+ * options. Kept as one object so every renderer takes it as a single
+ * trailing parameter — see `SvgEmitOptions` in src/theme.ts.
+ */
+function resolveSvgEmit(options: RenderOptions): SvgEmitOptions {
+  return {
+    nonce: options.nonce,
+    styleAttribute: options.styleAttribute,
   }
 }
 
@@ -172,14 +215,12 @@ export function renderMermaidSVG(
   text: string,
   options: RenderOptions = {},
 ): string {
-  // Captured before decodeXML() below so `embedSource` stamps the exact
-  // string the caller passed in, not the entity-decoded version used
-  // internally for parsing.
-  const originalText = text
-
   // Decode XML entities that may leak from markdown parsers (e.g. rehype-raw).
   // Without this, escapeXml() double-encodes them: &lt; → &amp;lt; → literal "&lt;" in SVG.
-  text = decodeXML(text)
+  // `text` itself is left untouched so `embedSource` below stamps the exact
+  // string the caller passed in, not this entity-decoded copy used
+  // internally for parsing.
+  const decoded = decodeXML(text)
 
   const colors = buildColors(options)
   const font = options.font ?? 'Inter'
@@ -187,12 +228,13 @@ export function renderMermaidSVG(
   setMonospaceMetrics(isMonospaceFont(font))
   const transparent = options.transparent ?? false
   const fontSizes = resolveFontSizes(options.fontSizes)
-  const diagramType: DiagramType = detectDiagramType(text)
-  const embedSource = options.embedSource ? originalText : undefined
+  const diagramType: DiagramType = detectDiagramType(decoded)
+  const embedSource = options.embedSource ? text : undefined
   const title = options.title
   const decorative = options.decorative
+  const emit = resolveSvgEmit(options)
 
-  const lines = splitStatements(text)
+  const lines = splitStatements(decoded)
 
   switch (diagramType) {
     case 'sequence': {
@@ -207,6 +249,7 @@ export function renderMermaidSVG(
         embedSource,
         title,
         decorative,
+        emit,
       )
     }
     case 'class': {
@@ -222,6 +265,7 @@ export function renderMermaidSVG(
         title,
         decorative,
         resolveLinksEnabled(options),
+        emit,
       )
     }
     case 'er': {
@@ -241,6 +285,7 @@ export function renderMermaidSVG(
         embedSource,
         title,
         decorative,
+        emit,
       )
     }
     case 'xychart': {
@@ -255,11 +300,12 @@ export function renderMermaidSVG(
         embedSource,
         title,
         decorative,
+        emit,
       )
     }
     case 'flowchart':
     default: {
-      const parsed = parseMermaid(text)
+      const parsed = parseMermaid(decoded)
       // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
       // render option always wins. See src/init-directive.ts.
       const effective = parsed.initConfig
@@ -283,6 +329,7 @@ export function renderMermaidSVG(
         resolveLinksEnabled(options),
         title,
         decorative,
+        emit,
       )
     }
   }
