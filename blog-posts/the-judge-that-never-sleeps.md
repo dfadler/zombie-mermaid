@@ -48,6 +48,38 @@ The clearest evidence for how this actually behaves is one real run. On 2026-09-
 
 Every one of those six is closed as of today, fixed within one to two days of filing. That confirms what earlier work in this same sweep (issues #436 and #530) had already found: none of these are open wounds anymore. They're a closed loop — filed by the automated judge, fixed by a person (or an agent) reading the issue, verified, merged.
 
+### What one of those findings actually looked like
+
+Abstract claims about an LLM catching "structural mismatches" are easy to wave at, so here is the whole of #444, end to end. The sample is a nested-subgraph flowchart from the catalog:
+
+```mermaid
+graph TD
+  subgraph Cloud
+    subgraph us-east [US East Region]
+      A[Web Server] --> B[App Server]
+    end
+    subgraph us-west [US West Region]
+      C[Web Server] --> D[App Server]
+    end
+  end
+  E[Load Balancer] --> A
+  E --> C
+```
+
+Real mermaid.js — the actual upstream library, rendered headlessly through Playwright, which is the `trimmedSvg` the judge reads as ground truth — puts **US West on the left and US East on the right**, even though `us-east` is declared first in the source:
+
+![Real mermaid.js SVG of the nested-subgraph flowchart, with US West Region on the left and US East Region on the right](../recursive-qa-screenshots/nested-subgraph-order-mermaid-js.png)
+
+This renderer had them backwards. Below are real-terminal captures (via `asciinema` + `agg` through a PTY, per this repo's `verify-ascii-terminal` rule) of the same source at the commit immediately before the fix, and at the commit after it:
+
+| Before (pre-fix, wrong)                                                                                                                                                                                     | After (post-fix, matches mermaid.js)                                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Pre-fix terminal capture, showing US East Region on the left and a "US West│Region" title with an edge line struck through it on the right](../recursive-qa-screenshots/nested-subgraph-order-before.png) | ![Post-fix terminal capture, showing US West Region on the left and US East Region on the right, matching mermaid.js](../recursive-qa-screenshots/nested-subgraph-order-after.png) |
+
+Look at the two subgraph titles: they swap. The "before" capture also shows a second, smaller symptom the sibling ordering was dragging along with it — the right-hand title reads `US West│Region`, with the Load Balancer's edge running straight through the space in the label. The fix (PR #478, touching `src/layout-engine/to-elk.ts` and `src/ascii/grid.ts`) reversed the sibling-subgraph ordering handed to ELK so it matches what mermaid.js's own layout produces, and cleared both symptoms at once.
+
+That is the entire value proposition of the judge in one picture. Nobody was going to notice, by eye, that two co-equal region boxes in a sample deep in a 90-diagram catalog had traded places relative to a library nobody re-renders by hand every week. A diff of the ASCII output against last week's ASCII output wouldn't have caught it either — the renderer was stably, reproducibly wrong. Only a comparison against an independently rendered ground truth surfaces it, and only something that runs on a schedule bothers to do that comparison at all.
+
 What's more interesting than the fixes is what the issues themselves reveal about how this system checks its own work before asking a human to trust it. Each finding is filed by a follow-up Claude session (not the locked-down judge itself, which only has Read/Write) that reads the judge's raw verdict and decides how much independent verification to add before posting. #444 and #446 say plainly: "I independently re-rendered both sides (real mermaid.js via Playwright, and this repo's ASCII renderer via a real-PTY capture per `verify-ascii-terminal`) and visually confirmed it below — this is a real bug, not a judge hallucination." #445, #448, and #449 are more cautious: "written by an LLM judge... not yet independently re-verified visually, so treat the quoted evidence as a strong lead rather than confirmed ground truth until reproduced." And #453 goes a step further into the judge's own uncertainty: the judge itself marked that sample "noted" rather than "not faithful" — its own lower-confidence bucket — and the filed issue says so explicitly, flagging that it "may be a genuine minor legibility issue or may turn out to be a non-issue on closer inspection." Three distinct confidence levels, stated out loud, in the artifact a human actually reads. Nothing here asks for blind trust in the model's output; the system is built to say exactly how sure it is.
 
 ## The simpler half: no comment gets lost
