@@ -104,6 +104,14 @@ flagging it here rather than picking an answer.
 | `cli`            | Defer                            | Recommend keeping as an app, not a published workspace package, in this first pass — see below.                                                                                                                                                                                                                                                                           |
 | `demo`           | Defer                            | Same as `cli`.                                                                                                                                                                                                                                                                                                                                                            |
 
+> **Superseded in part.** The two "Yes, mechanically" rows mean _no
+> directory-splitting prerequisite_, not _no dependency prerequisite_ —
+> attempting the extraction under #623 showed neither package can be
+> extracted before `core` and `mermaid-parser` exist. See
+> [the #623 addendum](#addendum-623--what-attempting-the-extraction-found)
+> at the end of this doc, which also corrects three file classifications
+> below.
+
 Cross-cutting prep item, not package-specific: all 140 test files currently
 live under `src/__tests__/`, not colocated with the source they test (zero
 `.test.ts` files exist under `src/ascii/` or `src/mcp/` themselves, despite
@@ -246,3 +254,96 @@ each can be picked up and closed independently:
 
 Recommended order: #623 first, then #624 before #625, #622/#621 for
 workspace/publish plumbing, #626/#627 as needed.
+
+**This order is wrong — see the addendum below.** #623 was attempted first,
+per this line, and cannot complete before #625 and #624.
+
+## Addendum (#623) — what attempting the extraction found
+
+Written while working #623, against the tree at that point rather than the
+tree this doc was written against. Three corrections, in descending order of
+how much they change the plan.
+
+### Correction 1: #623 cannot run first — the order is #625, #624, then #623
+
+The readiness table's "Yes, mechanically" for `ascii-renderer` and `mcp` is a
+statement about _directory shape_: neither needs a directory split first, the
+way `class/`/`er/`/`sequence/`/`xychart/` do. It is not a statement about
+_dependencies_, and the recommended order reads it as one.
+
+Walking the real module graph from `src/ascii/index.ts` (now enforced as a
+test — `src/__tests__/ascii-package-boundary.test.ts`) shows the ASCII entry
+reaching 19 modules outside `src/ascii/` at runtime and 6 more at build time
+through `import type`. Every one of them belongs to `core` (#625) or
+`mermaid-parser` (#624). So a `@zombie-mermaid/ascii-renderer` extracted
+today has nothing to declare a dependency on, and only three ways to resolve
+those imports, all bad:
+
+- reach back into the umbrella with `../../../src/…` — a directory with a
+  `package.json`, not a package: unresolvable outside this repo, and it moves
+  every one of those paths twice as #624/#625 land;
+- depend on `zombie-mermaid` and import its internals — which requires adding
+  ~19 public subpath exports to the umbrella, directly contradicting
+  recommendation 4's "`exports` map byte-identical"; or
+- create `core` and `mermaid-parser` first — i.e. do #625 and #624 first.
+
+`mcp` is in the same position and worse: `src/mcp/tools/check-sequence-activations.ts`
+imports `src/sequence/activation-check.ts` and `src/sequence/parser.ts`,
+neither of which `src/index.ts` re-exports, so `mcp` cannot get them from
+`zombie-mermaid`'s public API even in principle. It also imports
+`renderMermaidSVG` from `src/index.ts` — the umbrella's own main entry, i.e.
+what becomes `svg-renderer` (#625).
+
+Revised order: **#625 (`core` + `svg-renderer`) → #624 (`mermaid-parser`) →
+#623 (`ascii-renderer` + `mcp`) → #621/#622 → #626/#627.** #623 keeps its
+"no prerequisite restructuring" property — it stays a move, not a
+redesign — but it is the _last_ package extraction, not the first.
+
+### Correction 2: `src/diagram-registry.ts` was an import cycle (fixed under #623)
+
+`src/diagram-registry.ts` (#533) landed after this doc's grep and is on
+neither the `core` list nor the `svg-renderer`-only list in recommendation 5.
+It held both renderers' entries in one `DiagramModule`, so it imported
+`renderXYChartAscii`/`renderErAscii` out of `src/ascii/` while
+`src/ascii/index.ts` imported `diagramRegistry` back out of `src/` — a cycle,
+benign inside one package and fatal across a package boundary.
+
+It also had a cost already shipping: `dist/ascii.js` began with
+`import "elkjs/lib/elk.bundled.js"`, because the registry dragged
+`src/er/layout.ts` → `src/elk-instance.ts` into the ASCII entry's graph. That
+is exactly what the `./ascii` subpath export (#300) exists to prevent, and
+nothing caught it.
+
+#623 split the table by renderer: `src/ascii/registry.ts` owns the ASCII half,
+`src/diagram-registry.ts` keeps the SVG half and no longer names anything
+under `src/ascii/`. Both directions are one-way now, `dist/ascii.js` has no
+`elkjs` import, and `src/__tests__/ascii-package-boundary.test.ts` fails if
+either edge comes back. This part of `ascii-renderer`'s prerequisites is
+done regardless of what order the rest runs in.
+
+### Correction 3: three file classifications in recommendation 5 / finding 1
+
+Both lists in recommendation 5 were built from _direct_ `src/ascii/**`
+imports. Transitively:
+
+- **`expanded-shapes.ts`, `init-directive.ts`, `style-directives.ts` are not
+  `svg-renderer`-only.** All three are imported by `src/parser.ts` — the
+  flowchart parser _both_ front doors call — so the ASCII entry reaches them
+  and they are in `dist/ascii.js` today. They belong with `mermaid-parser`.
+  Left on the `svg-renderer` list, #625 would make `svg-renderer` a
+  dependency of `ascii-renderer`.
+- **Finding 1's per-type split is per-file, not per-half-pair.**
+  `class/format.ts`, `xychart/colors.ts` and `sequence/box-color.ts` are in
+  neither the `parser.ts`+`types.ts` half nor the `layout.ts`+`renderer.ts`
+  half, and the ASCII side needs all three. `sequence/activation-check.ts`
+  is a fourth such file, needed by `mcp`.
+- **`core` is not type-clean.** `src/types.ts` (on the `core` list) carries
+  `import type { LayoutCache } from './elk-instance.ts'`, and
+  `elk-instance.ts` is on the `svg-renderer`-only list. Erased at compile
+  time, so it costs the ASCII bundle nothing, but a `core` package that
+  type-references `svg-renderer` is still a cycle in the type graph. #625
+  has to move `LayoutCache`, re-home the field that uses it, or take the
+  edge deliberately.
+
+The boundary test carries all three as explicit, commented lists, so #624 and
+#625 get a failing assertion rather than a rediscovery.
