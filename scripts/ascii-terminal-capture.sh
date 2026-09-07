@@ -11,6 +11,15 @@
 # that skill for why the distinction matters and this repo's CLAUDE.md for
 # when to invoke it.
 #
+# The `agg` rasterization step (.cast -> .gif) can run either against a
+# local `agg` binary + font install (the default, see --help), or inside
+# agg's own maintainer-published Docker image via ASCII_AGG_RUNTIME=docker
+# (see --help) - that image bundles JetBrains Mono directly, so it can't hit
+# the font-substitution failure mode described below at all. `asciinema`
+# recording itself is not containerized: it has to drive the real PTY this
+# script's own process is attached to, which a container can't do without
+# losing the `--select` terminal it's recording (see issue #552).
+#
 # Usage: scripts/ascii-terminal-capture.sh <index-module-path> <sample-index-or-file> <output-prefix> [cols] [rows]
 set -euo pipefail
 
@@ -18,6 +27,11 @@ EXIT_OK=0
 EXIT_FAILURE=1
 EXIT_USAGE=2
 EXIT_DEPENDENCY=4
+
+# agg rasterization runtime: "local" (default) uses the `agg` binary on
+# PATH; "docker" runs agg's own maintainer image instead (see --help).
+ASCII_AGG_RUNTIME="${ASCII_AGG_RUNTIME:-local}"
+ASCII_AGG_DOCKER_IMAGE="${ASCII_AGG_DOCKER_IMAGE:-ghcr.io/asciinema/agg:latest}"
 
 # Floor for the recording PTY when [cols]/[rows] aren't given. The actual
 # default is max(floor, the size this sample renders at + SIZE_MARGIN), so a
@@ -56,12 +70,28 @@ PR screenshots clipped to 80x24 (issue #483). The flag form is detected from
 `asciinema record --help` before recording, so both versions work.
 
 Exit codes: 0 ok; 1 the sample failed to render; 2 usage error; 4 a missing
-or misbehaving dependency (asciinema, agg, python3, tsx, or a recorded
-terminal size that doesn't match the requested one).
+or misbehaving dependency (asciinema, agg or docker, python3, tsx, or a
+recorded terminal size that doesn't match the requested one).
 
 Set ASCII_RENDER_OPTIONS='{"hyperlinks":true}' (any JSON object of
 renderMermaidASCII options) in the environment to capture an opt-in render
 option; the PTY inherits it. See scripts/ascii-render-runner.mjs.
+
+Set ASCII_AGG_RUNTIME=docker to rasterize the .cast through agg's own
+maintainer-published Docker image (ghcr.io/asciinema/agg, built from
+github.com/asciinema/agg's Dockerfile) instead of a local `agg` binary.
+That image installs JetBrains Mono directly (Debian's fonts-jetbrains-mono
+package, not a host bind-mount), so it cannot hit the font-substitution
+failure mode described below at all - verified in issue #552 by diffing a
+docker-rasterized .png against a correctly-configured local-agg one
+(byte-identical) and against a deliberately font-incomplete render (visibly
+different, confirming the check is sensitive). Only the `agg` step is
+containerized; `asciinema record` still runs locally, since it has to drive
+the real PTY this script's own process is attached to. Override the image
+with ASCII_AGG_DOCKER_IMAGE (e.g. to pin a digest). Requires `docker` on
+PATH and a reachable daemon instead of a local `agg` install; python3 and
+the font install are still required either way (the crop step runs
+locally).
 
 Example (before/after a change, comparing against main):
   mkdir -p tmp-base-ref
@@ -75,7 +105,9 @@ Also install the first font in the --font-family list below (e.g.
 brew install --cask font-jetbrains-mono) - a missing font falls back
 silently to the next one with no error, and can produce subtle
 box-drawing glyph artifacts (e.g. a notched "┬") rather than an
-obvious failure.
+obvious failure. Or set ASCII_AGG_RUNTIME=docker (see above) to skip
+installing `agg` and the font locally - only `docker` is then required for
+the rasterization step.
 EOF
 }
 
@@ -104,12 +136,33 @@ for dim in "$cols_arg" "$rows_arg"; do
   fi
 done
 
-for cmd in asciinema agg python3; do
+case "$ASCII_AGG_RUNTIME" in
+local | docker) ;;
+*)
+  echo "invalid ASCII_AGG_RUNTIME '$ASCII_AGG_RUNTIME': must be 'local' or 'docker'" >&2
+  exit "$EXIT_USAGE"
+  ;;
+esac
+
+# agg itself is only required locally in "local" mode; in "docker" mode its
+# rasterization runs inside ASCII_AGG_DOCKER_IMAGE instead, so `docker` (and
+# a reachable daemon) is required in its place.
+agg_deps=(asciinema python3)
+if [ "$ASCII_AGG_RUNTIME" = local ]; then
+  agg_deps+=(agg)
+else
+  agg_deps+=(docker)
+fi
+for cmd in "${agg_deps[@]}"; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "missing dependency: $cmd (see --help for install instructions)" >&2
     exit "$EXIT_DEPENDENCY"
   fi
 done
+if [ "$ASCII_AGG_RUNTIME" = docker ] && ! docker info >/dev/null 2>&1; then
+  echo "docker is on PATH but its daemon isn't reachable (ASCII_AGG_RUNTIME=docker needs a running Docker daemon)" >&2
+  exit "$EXIT_DEPENDENCY"
+fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 runner="$script_dir/ascii-render-runner.mjs"
@@ -235,11 +288,32 @@ asciinema convert --overwrite --quiet "${out_prefix}.cast" "${out_prefix}.txt"
 # render box-drawing junction glyphs (e.g. "┬") with a visible notch
 # artifact under agg's swash rendering backend. See --help / this script's
 # header comment.
-agg --quiet \
-  --font-family "JetBrains Mono,Menlo,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono" \
-  --theme github-dark \
-  --select 100% \
-  "${out_prefix}.cast" "${out_prefix}.gif"
+#
+# In ASCII_AGG_RUNTIME=docker mode, that same font list is passed to agg's
+# maintainer-published Docker image instead of the local binary - the image
+# installs JetBrains Mono itself (Debian's fonts-jetbrains-mono package), so
+# the fallback this comment warns about can't happen there; the list is
+# still passed as-is so a docker run behaves identically to a fully correct
+# local install (verified byte-identical in issue #552).
+agg_font_family="JetBrains Mono,Menlo,SF Mono,Consolas,DejaVu Sans Mono,Liberation Mono"
+if [ "$ASCII_AGG_RUNTIME" = docker ]; then
+  # agg only reads/writes inside the mounted directory, addressed by
+  # basename - resolve out_prefix's directory to an absolute path first
+  # since a relative bind-mount source is rejected by `docker run -v`.
+  out_abs_dir="$(cd "$(dirname "$out_prefix")" && pwd)"
+  out_base="$(basename "$out_prefix")"
+  docker run --rm -v "${out_abs_dir}:/data" "$ASCII_AGG_DOCKER_IMAGE" \
+    --font-family "$agg_font_family" \
+    --theme github-dark \
+    --select 100% \
+    "/data/${out_base}.cast" "/data/${out_base}.gif"
+else
+  agg --quiet \
+    --font-family "$agg_font_family" \
+    --theme github-dark \
+    --select 100% \
+    "${out_prefix}.cast" "${out_prefix}.gif"
+fi
 
 # The recording's only frame, cropped to content: sample the background from
 # a corner pixel (the theme is dark, not white, so a fixed white-background
@@ -269,4 +343,4 @@ img.save(f"{prefix}.png")
 PY
 
 rm -f "${out_prefix}.gif"
-echo "wrote ${out_prefix}.cast ${out_prefix}.txt ${out_prefix}.png (${cols}x${rows} terminal)"
+echo "wrote ${out_prefix}.cast ${out_prefix}.txt ${out_prefix}.png (${cols}x${rows} terminal, agg via ${ASCII_AGG_RUNTIME})"
