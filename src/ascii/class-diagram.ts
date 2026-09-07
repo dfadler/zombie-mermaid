@@ -36,6 +36,8 @@ import {
   mergeJunctions,
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
+import { allocateTerritory } from './territory.ts'
+import type { Territory } from './territory.ts'
 import { markBoxLabelLinks, mkLinkCanvas } from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
 import { safeHref } from '../click-directive.ts'
@@ -1328,6 +1330,13 @@ export function renderClassAscii(
   // one's label (issue #531). Resolving here, once, up front — and reusing
   // the result in the draw pass below via `finalLabelYByRel` — guarantees
   // territory and drawing always agree on the same row per relationship.
+  //
+  // The allocation itself — splitting contested columns at the midpoint
+  // between two competing labels' idealMidX values — lives in
+  // `allocateTerritory` (`territory.ts`), which is storage-agnostic and
+  // knows nothing about relationships; this pass only supplies the geometry
+  // (issue #618). Its doc comments carry the full rationale summarised
+  // above.
   interface LabelGeometry {
     rel: (typeof diagram.relationships)[number]
     idealMidX: number
@@ -1392,56 +1401,20 @@ export function renderClassAscii(
       rowEnd: labelY + halfHeight,
     })
   }
-  labelGeometry.sort((a, b) => a.idealMidX - b.idealMidX)
-
-  /** Whether two labels' row spans actually intersect — see LabelGeometry's rowStart/rowEnd comment. */
-  function rowsOverlap(a: LabelGeometry, b: LabelGeometry): boolean {
-    return a.rowStart <= b.rowEnd && b.rowStart <= a.rowEnd
-  }
-
-  /**
-   * The nearest entry in `dir` (-1 left, +1 right) from `idx`, by idealMidX
-   * order, whose row actually overlaps `labelGeometry[idx]`'s — skipping
-   * over any immediately-adjacent (in idealMidX order) entries that don't,
-   * rather than only ever considering the one entry directly next to `idx`.
-   *
-   * A row-resolved fallback (see `resolveLabelFinalY`) can leave two labels
-   * with very different idealMidX values sharing a row, while a *third*
-   * label with an idealMidX between theirs sits on an entirely different,
-   * non-colliding row. Stopping at the immediate neighbor missed exactly
-   * that case — the label whose row genuinely collides was one hop further
-   * away, so it never got a territory split from the label it actually
-   * collided with, and the two silently overwrote each other (issue #531).
-   */
-  function nearestRowOverlapping(
-    idx: number,
-    dir: -1 | 1,
-  ): LabelGeometry | undefined {
-    const g = labelGeometry[idx]!
-    for (let j = idx + dir; j >= 0 && j < labelGeometry.length; j += dir) {
-      const candidate = labelGeometry[j]!
-      if (rowsOverlap(candidate, g)) return candidate
-    }
-    return undefined
-  }
-
+  const territoryByGeometry = allocateTerritory(labelGeometry, (g) => ({
+    idealMid: g.idealMidX,
+    start: g.naturalStart,
+    end: g.naturalEnd,
+    rowStart: g.rowStart,
+    rowEnd: g.rowEnd,
+  }))
   const territoryByRel = new Map<
     (typeof diagram.relationships)[number],
-    { left: number; right: number }
+    Territory
   >()
-  for (let i = 0; i < labelGeometry.length; i++) {
-    const g = labelGeometry[i]!
-    const prev = nearestRowOverlapping(i, -1)
-    const next = nearestRowOverlapping(i, 1)
-    const left =
-      prev && prev.naturalEnd >= g.naturalStart
-        ? Math.floor((prev.idealMidX + g.idealMidX) / 2) + 1
-        : -Infinity
-    const right =
-      next && g.naturalEnd >= next.naturalStart
-        ? Math.floor((g.idealMidX + next.idealMidX) / 2)
-        : Infinity
-    territoryByRel.set(g.rel, { left, right })
+  for (const g of labelGeometry) {
+    const territory = territoryByGeometry.get(g)
+    if (territory) territoryByRel.set(g.rel, territory)
   }
 
   // --- Draw relationship labels ---
