@@ -21,10 +21,15 @@ import {
   FONT_WEIGHTS,
   resolveFontSizes,
 } from '../styles.ts'
-import { measureMultilineText } from '../text-metrics.ts'
 import { elkLayoutSync } from '../elk-instance.ts'
 import { extractEdgePoints } from '../layout-engine/elk-adapter-utils.ts'
-import type { Direction } from '../types.ts'
+import {
+  ELK_DIRECTION_FALLBACK,
+  baseElkLayoutOptions,
+  buildElkEdge,
+  buildElkLeafNode,
+  directionToElk,
+} from '../layout-engine/elk-graph-builder.ts'
 
 /** Layout constants for ER diagrams */
 const ER = {
@@ -40,27 +45,6 @@ const ER = {
 } as const
 
 type EntitySizeMap = Map<string, { width: number; height: number }>
-
-/**
- * Convert a Mermaid direction to an ELK layout direction.
- * ER diagrams default to left-to-right (`RIGHT`) when no `direction`
- * statement is present, matching this renderer's historical default —
- * unlike flowcharts, which default to top-down.
- */
-function directionToElk(dir: Direction | undefined): string {
-  switch (dir) {
-    case 'TD':
-    case 'TB':
-      return 'DOWN'
-    case 'BT':
-      return 'UP'
-    case 'RL':
-      return 'LEFT'
-    case 'LR':
-    default:
-      return 'RIGHT'
-  }
-}
 
 /** Build ELK graph and size map from an ER diagram. */
 function buildErElkGraph(
@@ -97,42 +81,38 @@ function buildErElkGraph(
   // assertion or invariant check for a lookup that can't actually miss.
   const children: ElkNode[] = []
   for (const [id, size] of entitySizes) {
-    children.push({ id, width: size.width, height: size.height })
+    children.push(buildElkLeafNode(id, size))
   }
+
+  // ER edge labels carry no per-label layout options — placement is set
+  // once on the root graph below (`elk.edgeLabels.placement: CENTER`).
+  const labelStyle = { fontSize: fontSizes.edgeLabel }
 
   const edges: ElkExtendedEdge[] = []
   for (const [i, rel] of diagram.relationships.entries()) {
-    const metrics = measureMultilineText(
-      rel.label,
-      fontSizes.edgeLabel,
-      FONT_WEIGHTS.edgeLabel,
+    edges.push(
+      buildElkEdge({
+        id: `e${i}`,
+        source: rel.entity1,
+        target: rel.entity2,
+        label: rel.label,
+        labelStyle,
+      }),
     )
-    const edge: ElkExtendedEdge = {
-      id: `e${i}`,
-      sources: [rel.entity1],
-      targets: [rel.entity2],
-    }
-    if (rel.label) {
-      edge.labels = [
-        {
-          text: rel.label,
-          width: metrics.width + 8,
-          height: metrics.height + 6,
-        },
-      ]
-    }
-    edges.push(edge)
   }
 
   const elkGraph: ElkNode = {
     id: 'root',
     layoutOptions: {
-      'elk.algorithm': 'layered',
-      'elk.direction': directionToElk(diagram.direction),
-      'elk.spacing.nodeNode': String(ER.nodeSpacing),
-      'elk.layered.spacing.nodeNodeBetweenLayers': String(ER.layerSpacing),
-      'elk.padding': `[top=${ER.padding},left=${ER.padding},bottom=${ER.padding},right=${ER.padding}]`,
-      'elk.edgeRouting': 'ORTHOGONAL',
+      ...baseElkLayoutOptions({
+        // A source with no `direction` statement lays out left-to-right —
+        // ER's own default, unlike flowchart/class's DOWN. See
+        // ELK_DIRECTION_FALLBACK.
+        direction: directionToElk(diagram.direction, ELK_DIRECTION_FALLBACK.er),
+        nodeSpacing: ER.nodeSpacing,
+        layerSpacing: ER.layerSpacing,
+        padding: ER.padding,
+      }),
       'elk.edgeLabels.placement': 'CENTER',
     },
     children,

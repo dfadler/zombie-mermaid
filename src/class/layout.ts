@@ -32,6 +32,13 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from '../layout-engine/elk-adapter-utils.ts'
+import {
+  ELK_DIRECTION_FALLBACK,
+  baseElkLayoutOptions,
+  buildElkEdge,
+  buildElkLeafNode,
+  directionToElk,
+} from '../layout-engine/elk-graph-builder.ts'
 
 /** Layout constants for class diagrams */
 export const CLS = {
@@ -133,31 +140,24 @@ function buildClassElkGraph(
   // assertion or invariant check for a lookup that can't actually miss.
   const children: ElkNode[] = []
   for (const [id, size] of classSizes) {
-    children.push({ id, width: size.width, height: size.height })
+    children.push(buildElkLeafNode(id, size))
   }
+
+  // Class edge labels carry no per-label layout options — placement is set
+  // once on the root graph below (`elk.edgeLabels.placement: CENTER`).
+  const labelStyle = { fontSize: fontSizes.edgeLabel }
 
   const edges: ElkExtendedEdge[] = []
   for (const [i, rel] of diagram.relationships.entries()) {
-    const edge: ElkExtendedEdge = {
-      id: `e${i}`,
-      sources: [rel.from],
-      targets: [rel.to],
-    }
-    if (rel.label) {
-      const metrics = measureMultilineText(
-        rel.label,
-        fontSizes.edgeLabel,
-        FONT_WEIGHTS.edgeLabel,
-      )
-      edge.labels = [
-        {
-          text: rel.label,
-          width: metrics.width + 8,
-          height: metrics.height + 6,
-        },
-      ]
-    }
-    edges.push(edge)
+    edges.push(
+      buildElkEdge({
+        id: `e${i}`,
+        source: rel.from,
+        target: rel.to,
+        label: rel.label,
+        labelStyle,
+      }),
+    )
   }
 
   // Notes. Mirrors Mermaid's classDb.getData(): every note is a node of its
@@ -178,25 +178,31 @@ function buildClassElkGraph(
       height: metrics.height + CLS.notePadY * 2,
     }
     noteSizes.set(id, size)
-    children.push({ id, width: size.width, height: size.height })
+    children.push(buildElkLeafNode(id, size))
     if (note.forClass !== undefined && classIds.has(note.forClass)) {
-      edges.push({
-        id: classNoteLinkId(id),
-        sources: [id],
-        targets: [note.forClass],
-      })
+      edges.push(
+        buildElkEdge({
+          id: classNoteLinkId(id),
+          source: id,
+          target: note.forClass,
+          labelStyle,
+        }),
+      )
     }
   }
 
   const elkGraph: ElkNode = {
     id: 'root',
     layoutOptions: {
-      'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
-      'elk.spacing.nodeNode': String(CLS.nodeSpacing),
-      'elk.layered.spacing.nodeNodeBetweenLayers': String(CLS.layerSpacing),
-      'elk.padding': `[top=${CLS.padding},left=${CLS.padding},bottom=${CLS.padding},right=${CLS.padding}]`,
-      'elk.edgeRouting': 'ORTHOGONAL',
+      ...baseElkLayoutOptions({
+        // Class diagrams have no `direction` concept — they always lay out
+        // top-down. See ELK_DIRECTION_FALLBACK for why that default is
+        // per-diagram-type rather than shared with ER's.
+        direction: directionToElk(undefined, ELK_DIRECTION_FALLBACK.class),
+        nodeSpacing: CLS.nodeSpacing,
+        layerSpacing: CLS.layerSpacing,
+        padding: CLS.padding,
+      }),
       'elk.edgeLabels.placement': 'CENTER',
     },
     children,
