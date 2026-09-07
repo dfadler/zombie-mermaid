@@ -301,7 +301,7 @@ export function FitToViewIcon(props: IconProps) {
   return (
     <StrokeIcon {...props} defaultColor="--text-dim">
       <path d="M4 9V5a1 1 0 0 1 1-1h4" />
-      <path d="M20 9V5a1 1 0 0 1-1-1h-4" />
+      <path d="M20 9V5a1 1 0 0 0-1-1h-4" />
       <path d="M4 15v4a1 1 0 0 0 1 1h4" />
       <path d="M20 15v4a1 1 0 0 1-1 1h-4" />
     </StrokeIcon>
@@ -442,7 +442,8 @@ export function PullRequestIcon(props: IconProps) {
     <StrokeIcon {...props} defaultColor="--violet">
       <circle cx="6" cy="6" r="3" />
       <circle cx="6" cy="18" r="3" />
-      <path d="M6 9v6M18 6a4 4 0 0 1-4 4H9" />
+      <circle cx="18" cy="6" r="3" />
+      <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9" />
     </StrokeIcon>
   )
 }
