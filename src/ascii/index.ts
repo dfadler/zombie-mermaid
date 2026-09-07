@@ -31,7 +31,7 @@ import {
 } from './canvas.ts'
 import { renderSequenceAscii } from './sequence.ts'
 import { renderClassAscii } from './class-diagram.ts'
-import { diagramRegistry } from '../diagram-registry.ts'
+import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
 import { buildNodeLinkCanvas, flipLinkCanvasVertically } from './hyperlinks.ts'
 import {
@@ -160,15 +160,15 @@ export function renderMermaidASCII(
 
   let result: string
 
-  // Registry lookup first (see src/diagram-registry.ts — issue #533):
+  // Registry lookup first (see src/ascii/registry.ts — issue #533):
   // 'xychart' and 'er' are registered there and dispatch to the exact same
   // renderer calls their switch cases below used to make. Anything not
   // registered (currently 'sequence', 'class', 'flowchart') falls through
   // to the switch, unchanged.
-  const registered = diagramRegistry[diagramType]
+  const registered = asciiRegistry[diagramType]
 
   if (registered) {
-    result = registered.renderAscii(text, config, colorMode, theme, {})
+    result = registered(text, config, colorMode, theme, {})
     return options.showCoords ? addCoordsOverlay(result) : result
   }
 
