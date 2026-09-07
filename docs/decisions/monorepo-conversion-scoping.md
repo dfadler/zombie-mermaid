@@ -7,7 +7,8 @@ technical recommendation ready to drive a follow-up implementation plan.
 
 Out of scope: performing the split. This is scoping only, matching #416's
 own "out of scope" note — see that issue for the original proposed package
-list and open questions this doc answers.
+list and open questions this doc answers. Execution is tracked in the
+follow-up plan at #620, broken into sub-issues #621-#627.
 
 ## Context
 
@@ -227,23 +228,21 @@ existing boundaries" concretely require, worth folding into whatever
 follow-up plan actually performs the conversion so that plan doesn't
 rediscover them mid-implementation.
 
-## Summary for a follow-up plan
+## Follow-up plan
 
-1. Add `packages:` to the existing `pnpm-workspace.yaml`; no Turborepo/Nx.
-2. Populate changesets' `fixed` array; keep one published npm package
-   (`zombie-mermaid`) as an umbrella re-export; internal packages stay
-   private. Confirm with the repo owner whether `mcp` also gets its own
-   published name.
-3. Extract `ascii-renderer` and `mcp` first — both are mechanically ready
-   today with no directory-splitting prerequisite.
-4. Before extracting `mermaid-parser`/`svg-renderer`, split each of
-   `class/`, `er/`, `sequence/`, `xychart/` into a parser half and a
-   renderer half (finding 1); scope `mermaid-parser`'s public API to
-   include every per-type parse function and type, not just `parseMermaid()`
-   (finding 2).
-5. Move `layout-engine/`, `elk-instance.ts`, and the nine `core` files
-   listed above without further investigation — their boundaries are
-   already grep-confirmed clean.
-6. Leave `cli` and `demo` as apps, not packages, in this pass.
-7. Decide, alongside step 4, whether tests move to per-package directories
-   or stay in a shared top-level tree.
+Tracked as umbrella issue #620, split into one sub-issue per work item so
+each can be picked up and closed independently:
+
+- #621 — workspace tooling (recommendation 1)
+- #622 — publish strategy (recommendation 2)
+- #623 — extract `ascii-renderer` and `mcp` first, no prerequisites
+  (recommendation 3)
+- #624 — split `class/`/`er/`/`sequence/`/`xychart/` into parser/renderer
+  halves and scope `mermaid-parser`'s public API (findings 1-2)
+- #625 — move `layout-engine/`, `elk-instance.ts`, and the `core` files
+  (recommendation 5)
+- #626 — leave `cli`/`demo` as apps (recommendation 3 table)
+- #627 — decide test layout (per-package vs. shared)
+
+Recommended order: #623 first, then #624 before #625, #622/#621 for
+workspace/publish plumbing, #626/#627 as needed.
