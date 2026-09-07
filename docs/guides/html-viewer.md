@@ -16,13 +16,14 @@ would served over HTTP, and survives being emailed as a single attachment.
 
 ## Controls
 
-| Action                   | Mouse / trackpad                                | Keyboard                                                  | Touch                                   |
-| ------------------------ | ----------------------------------------------- | --------------------------------------------------------- | --------------------------------------- |
-| Pan                      | Click-drag                                      | Arrow keys (hold Shift to pan faster)                     | One-finger drag                         |
-| Zoom in/out              | Scroll wheel + Ctrl/Cmd, or the `−`/`+` buttons | `+`/`=` and `-`/`_`                                       | Pinch                                   |
-| Zoom toward a point      | Ctrl/Cmd-scroll zooms under the cursor          | —                                                         | Pinch zooms around the two touch points |
-| Reset zoom               | Double-click (toggles between fit and 2×)       | `0` fits the diagram to the window, `1` sets exactly 100% | —                                       |
-| Toggle light/dark chrome | The theme button in the toolbar                 | `T`                                                       | Tap the theme button                    |
+| Action                   | Mouse / trackpad                                                                     | Keyboard                                                  | Touch                                   |
+| ------------------------ | ------------------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------- |
+| Pan                      | Click-drag                                                                           | Arrow keys (hold Shift to pan faster)                     | One-finger drag                         |
+| Zoom in/out              | Scroll wheel + Ctrl/Cmd, or the `−`/`+` buttons                                      | `+`/`=` and `-`/`_`                                       | Pinch                                   |
+| Zoom toward a point      | Ctrl/Cmd-scroll zooms under the cursor                                               | —                                                         | Pinch zooms around the two touch points |
+| Fit / actual size        | —                                                                                    | `0` fits the diagram to the window, `1` sets exactly 100% | —                                       |
+| Double-click zoom        | Doubles the zoom around the pointer; returns to 100% instead when already below 100% | —                                                         | —                                       |
+| Toggle light/dark chrome | The theme button in the toolbar                                                      | `T`                                                       | Tap the theme button                    |
 
 A plain scroll (no modifier) pans instead of scrolling the page — the whole
 window is the viewer, so there's nothing else to scroll. Keyboard shortcuts
