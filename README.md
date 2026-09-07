@@ -150,7 +150,7 @@ hyperlinks — off by default, since terminal and pager support varies (see
 
 **Output rules.** `-o` is the destination for the run's _file_ output — SVG, HTML, or PNG when `--svg`/`--html`/`--png` is given, otherwise the ASCII rendering — and `-o -` sends it to stdout instead. A recognised extension (`.svg`, `.html`/`.htm`, `.txt`, `.png`) picks the format on its own, so the flag can be dropped; an extension that contradicts an explicit flag (`--svg -o out.txt`) is an error, while unrecognised ones are simply used as given. `--svg`/`--html`/`--png` with no `-o` writes `<input stem>.svg`/`.html`/`.png` beside the input (stdin input has no name to derive from, so it must pass `-o`). Only one of `--svg`/`--html`/`--png` can be set at a time — run the command twice for more than one. ASCII always prints to the terminal when one of them is also requested (`--ascii --svg -o out.svg`), and never carries ANSI colour codes when written to a file. **An existing output file is never overwritten unless you pass `--force`/`-f`.**
 
-**`--html`** wraps the rendered SVG in a self-contained pan/zoom viewer — one file, no server, no network — with drag/scroll pan, ctrl/cmd+scroll and pinch to zoom, fit/1:1 buttons, a light/dark toggle that follows `prefers-color-scheme`, and keyboard controls. It opens straight from disk and survives being emailed as a single attachment. This is the one place in the project that ships client-side JavaScript, and deliberately so — see [`docs/decisions/no-script-interactivity.md`](docs/decisions/no-script-interactivity.md): the library's own SVG output stays permanently script-free, and this viewer is a separate CLI artifact wrapping that output, never part of it.
+**`--html`** wraps the rendered SVG in a self-contained pan/zoom viewer — one file, no server, no network — with drag/scroll pan, ctrl/cmd+scroll and pinch to zoom, fit/1:1 buttons, a light/dark toggle that follows `prefers-color-scheme`, and keyboard controls. It opens straight from disk (including over `file://`, no server needed) and survives being emailed as a single attachment — see [Using the self-contained HTML viewer](docs/guides/html-viewer.md) for the full controls reference. This is the one place in the project that ships client-side JavaScript, and deliberately so — see [`docs/decisions/no-script-interactivity.md`](docs/decisions/no-script-interactivity.md): the library's own SVG output stays permanently script-free, and this viewer is a separate CLI artifact wrapping that output, never part of it.
 
 **`--png`** rasterizes the diagram for anywhere SVG isn't accepted — issue trackers, Slack, docs tools, email — at the SVG's own pixel dimensions (1:1, no scaling). It always resolves CSS colors first, automatically, the same substitution `--resolve-colors` does for `--svg` — a rasterizer can't evaluate `var()`/`color-mix()`, so skipping this would render the whole theme black. Rasterization is via [`@resvg/resvg-js`](https://github.com/thx/resvg-js), listed as an `optionalDependency`: a normal install pulls its native binary like any other dependency, but a platform it has no prebuilt binary for, or an install run with `--no-optional`, simply skips it — `--png` then fails with a clear error telling you how to install it explicitly, rather than breaking the rest of the CLI.
 
@@ -160,7 +160,7 @@ hyperlinks — off by default, since terminal and pager support varies (see
 
 > 🧪 **Experimental — shipped to gauge interest, not a finished or best-effort implementation.** This is a first cut covering the common case; the tool surface may change based on feedback. Try it and [open an issue](https://github.com/dfadler/zombie-mermaid/issues/new) with what you'd want from it.
 
-`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as two tools: `render_mermaid_svg` and `render_mermaid_ascii`. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
+`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as three tools: `render_mermaid_svg`, `render_mermaid_ascii`, and `check_mermaid_sequence_activations`. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
 
 Example Claude Desktop / Claude Code MCP server config:
 
@@ -175,7 +175,9 @@ Example Claude Desktop / Claude Code MCP server config:
 }
 ```
 
-Both tools accept a `diagram` string plus a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
+All three tools accept a `diagram` string. The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
+
+`check_mermaid_sequence_activations` is a mechanical, deterministic check — no LLM judgment involved — for a specific gap in existing Mermaid validators: every `activate X` (or `+` arrow shorthand) in a `sequenceDiagram` must be closed by a matching `deactivate X` (`-` shorthand) before the diagram ends. It returns a JSON report (`{ ok, issues }`) rather than rendering anything, and errors (`isError: true`) if given a non-sequence diagram.
 
 To embed the server in your own process instead of running it as a subcommand, import `zombie-mermaid/mcp` and connect it to any [MCP `Transport`](https://modelcontextprotocol.io/) yourself:
 
@@ -191,7 +193,7 @@ await server.connect(new StdioServerTransport())
 
 ## Docs
 
-- [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md)
+- [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md), [using the HTML viewer](docs/guides/html-viewer.md)
 - [Accessibility](docs/accessibility.md) — conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
 - [Theming](docs/theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
 - [Supported Diagrams](docs/diagrams.md) — syntax for every diagram type, XY chart styling, and ASCII rendering options

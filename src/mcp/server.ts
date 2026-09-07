@@ -1,10 +1,11 @@
 // ============================================================================
 // zombie-mermaid MCP server
 //
-// Wires the library's existing SVG/ASCII rendering functions up as Model
-// Context Protocol tools. No rendering logic lives here — see
-// src/mcp/tools/*.ts for the thin per-tool adapters, and src/index.ts /
-// src/ascii/index.ts for the actual renderers.
+// Wires the library's existing SVG/ASCII rendering functions, plus a
+// mechanical sequence-diagram semantic check, up as Model Context Protocol
+// tools. No rendering or checking logic lives here — see src/mcp/tools/*.ts
+// for the thin per-tool adapters, src/index.ts / src/ascii/index.ts for the
+// actual renderers, and src/sequence/activation-check.ts for the check.
 // ============================================================================
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -14,10 +15,14 @@ import {
   renderAsciiInputShape,
   renderAsciiHandler,
 } from './tools/render-ascii.ts'
+import {
+  checkSequenceActivationsInputShape,
+  checkSequenceActivationsHandler,
+} from './tools/check-sequence-activations.ts'
 
 /**
- * Build a zombie-mermaid MCP server exposing `render_mermaid_svg` and
- * `render_mermaid_ascii` tools.
+ * Build a zombie-mermaid MCP server exposing `render_mermaid_svg`,
+ * `render_mermaid_ascii`, and `check_mermaid_sequence_activations` tools.
  *
  * Not connected to any transport — callers wire it up. See
  * src/cli/mcp.ts for the stdio entry point used by `zombie-mermaid mcp`,
@@ -69,6 +74,29 @@ export function createMcpServer(): McpServer {
       },
     },
     renderAsciiHandler,
+  )
+
+  server.registerTool(
+    'check_mermaid_sequence_activations',
+    {
+      title: 'Check Mermaid sequence diagram activation balance',
+      description:
+        'Check a Mermaid sequence diagram for activation/deactivation ' +
+        'imbalance: every "activate X" (or "+" arrow shorthand) must be ' +
+        'closed by a matching "deactivate X" ("-" shorthand). Returns a ' +
+        'JSON report ({ ok, issues }) rather than rendering anything. ' +
+        'Mechanical and deterministic — no LLM judgment involved. Only ' +
+        'sequence diagrams are supported.',
+      inputSchema: checkSequenceActivationsInputShape,
+      annotations: {
+        title: 'Check Mermaid sequence diagram activation balance',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    checkSequenceActivationsHandler,
   )
 
   return server

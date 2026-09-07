@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0
+
+### Minor Changes
+
+- [#543](https://github.com/dfadler/zombie-mermaid/pull/543) [`bf17be4`](https://github.com/dfadler/zombie-mermaid/commit/bf17be44a3e49ea70a06449cf8a53c5afd2bcd32) Thanks [@dfadler](https://github.com/dfadler)! - Add `--png` to the CLI's `render` command: rasterizes to PNG at the SVG's own pixel dimensions (1:1, no scaling) via the optional `@resvg/resvg-js` native dependency. The dependency is loaded lazily at runtime, but a normal `pnpm install` may still download and install it. Colors are always resolved first (as `--resolve-colors` does for `--svg`), since a rasterizer can't evaluate CSS `var()`/`color-mix()` — skipping that would render the whole theme black. If the optional dependency isn't installed (skipped build, `--no-optional`), `--png` fails with a clear, actionable error instead of a raw stack trace. Refs [#456](https://github.com/dfadler/zombie-mermaid/issues/456).
+
 ## 2.0.0
 
 ### Major Changes

@@ -18,7 +18,7 @@ import type {
   PositionedClassRelationship,
 } from './types.ts'
 import { formatClassMember } from './format.ts'
-import type { RenderOptions } from '../types.ts'
+import type { ClassRenderOptions } from '../types.ts'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
@@ -83,7 +83,7 @@ type NoteSizeMap = Map<string, { width: number; height: number }>
 /** Build ELK graph and size map from a class diagram. */
 function buildClassElkGraph(
   diagram: ClassDiagram,
-  options: RenderOptions,
+  options: ClassRenderOptions,
 ): { elkGraph: ElkNode; classSizes: ClassSizeMap; noteSizes: NoteSizeMap } {
   const classSizes: ClassSizeMap = new Map()
   const noteSizes: NoteSizeMap = new Map()
@@ -328,7 +328,7 @@ function extractClassLayout(
  */
 export function layoutClassDiagramSync(
   diagram: ClassDiagram,
-  options: RenderOptions = {},
+  options: ClassRenderOptions = {},
 ): PositionedClassDiagram {
   if (diagram.classes.length === 0 && diagram.notes.length === 0) {
     return { width: 0, height: 0, classes: [], relationships: [], notes: [] }
