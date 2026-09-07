@@ -1231,6 +1231,69 @@ export function renderClassAscii(
     }
   }
 
+  /**
+   * Resolve a label's actual drawn row, starting from `computeLabelAnchor`'s
+   * `baseMidY` and nudging it to the nearest box-free row in the from/to gap
+   * when the ideal row would land inside an intervening box. Shared by the
+   * territory precompute below and the draw pass further down so both agree
+   * on the *same* final row for a given relationship — see the doc comment
+   * on the territory precompute for why that agreement matters (issue #531).
+   */
+  function resolveLabelFinalY(
+    fromP: PlacedClass,
+    toP: PlacedClass,
+    idealMidX: number,
+    baseMidY: number,
+    maxLabelWidth: number,
+    lineCount: number,
+    excludeIds: Set<string>,
+  ): number {
+    let labelY = baseMidY
+    const halfHeight = Math.floor(lineCount / 2)
+    const fromBY = fromP.y + fromP.height - 1
+    const toTY = toP.y
+
+    // Check if any label line would be inside a box
+    let labelInBox = false
+    for (let i = 0; i < lineCount; i++) {
+      const y = labelY - halfHeight + i
+      const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
+      const labelStart = Math.max(0, idealLabelStart)
+      for (let x = labelStart; x < labelStart + maxLabelWidth; x++) {
+        if (isInsideBox(x, y, excludeIds)) {
+          labelInBox = true
+          break
+        }
+      }
+      if (labelInBox) break
+    }
+
+    // If label is inside a box, find the gap between boxes
+    if (labelInBox) {
+      const gapTop = fromBY + 1
+      const gapBottom = toTY - 1
+
+      // Place label in the middle of the gap, outside any intermediate box
+      for (let y = gapTop; y <= gapBottom; y++) {
+        let clearRow = true
+        const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
+        const labelStart = Math.max(0, idealLabelStart)
+        for (let x = labelStart; x < labelStart + maxLabelWidth; x++) {
+          if (isInsideBox(x, y, excludeIds)) {
+            clearRow = false
+            break
+          }
+        }
+        if (clearRow) {
+          labelY = y
+          break
+        }
+      }
+    }
+
+    return labelY
+  }
+
   // --- Precompute each label's horizontal territory ---
   // A label's left/right bound is derived purely from connection-point
   // geometry — never from draw order or from what another relationship's
@@ -1252,6 +1315,19 @@ export function renderClassAscii(
   // insufficient column width (e.g. six same-row relationships spaced
   // closer together than their labels are wide) truncates *all* of them
   // consistently instead of destroying an arbitrary subset. See issue #447.
+  //
+  // rowStart/rowEnd are derived from `resolveLabelFinalY`'s result, *not*
+  // `computeLabelAnchor`'s raw `baseMidY` — the same "clear box gap" runtime
+  // fallback the draw pass applies can move a label to a row far from its
+  // ideal one (e.g. a detoured relationship whose ideal row lands inside the
+  // box it detoured around). Territories computed from the pre-fallback row
+  // used to miss exactly the overlaps that fallback creates: two
+  // relationships whose *ideal* rows didn't overlap could still both
+  // resolve to the *same actual* row, and with no territory split between
+  // them the later one's unconditional draw silently overwrote the earlier
+  // one's label (issue #531). Resolving here, once, up front — and reusing
+  // the result in the draw pass below via `finalLabelYByRel` — guarantees
+  // territory and drawing always agree on the same row per relationship.
   interface LabelGeometry {
     rel: (typeof diagram.relationships)[number]
     idealMidX: number
@@ -1260,6 +1336,10 @@ export function renderClassAscii(
     rowStart: number
     rowEnd: number
   }
+  const finalLabelYByRel = new Map<
+    (typeof diagram.relationships)[number],
+    number
+  >()
   const labelGeometry: LabelGeometry[] = []
   for (const [relIndex, rel] of diagram.relationships.entries()) {
     if (!rel.label) continue
@@ -1284,6 +1364,17 @@ export function renderClassAscii(
       toP,
       width,
     )
+    const excludeIds = new Set([rel.from, rel.to])
+    const labelY = resolveLabelFinalY(
+      fromP,
+      toP,
+      idealMidX,
+      baseMidY,
+      width,
+      lines.length,
+      excludeIds,
+    )
+    finalLabelYByRel.set(rel, labelY)
     // Clamped the same way the draw loop below clamps it (never negative —
     // a label can't render left of the canvas edge) so this overlap check
     // reflects what will actually be drawn. Using the *unclamped* value
@@ -1297,8 +1388,8 @@ export function renderClassAscii(
       idealMidX,
       naturalStart,
       naturalEnd: naturalStart + width - 1,
-      rowStart: baseMidY - halfHeight,
-      rowEnd: baseMidY + halfHeight,
+      rowStart: labelY - halfHeight,
+      rowEnd: labelY + halfHeight,
     })
   }
   labelGeometry.sort((a, b) => a.idealMidX - b.idealMidX)
@@ -1308,20 +1399,46 @@ export function renderClassAscii(
     return a.rowStart <= b.rowEnd && b.rowStart <= a.rowEnd
   }
 
+  /**
+   * The nearest entry in `dir` (-1 left, +1 right) from `idx`, by idealMidX
+   * order, whose row actually overlaps `labelGeometry[idx]`'s — skipping
+   * over any immediately-adjacent (in idealMidX order) entries that don't,
+   * rather than only ever considering the one entry directly next to `idx`.
+   *
+   * A row-resolved fallback (see `resolveLabelFinalY`) can leave two labels
+   * with very different idealMidX values sharing a row, while a *third*
+   * label with an idealMidX between theirs sits on an entirely different,
+   * non-colliding row. Stopping at the immediate neighbor missed exactly
+   * that case — the label whose row genuinely collides was one hop further
+   * away, so it never got a territory split from the label it actually
+   * collided with, and the two silently overwrote each other (issue #531).
+   */
+  function nearestRowOverlapping(
+    idx: number,
+    dir: -1 | 1,
+  ): LabelGeometry | undefined {
+    const g = labelGeometry[idx]!
+    for (let j = idx + dir; j >= 0 && j < labelGeometry.length; j += dir) {
+      const candidate = labelGeometry[j]!
+      if (rowsOverlap(candidate, g)) return candidate
+    }
+    return undefined
+  }
+
   const territoryByRel = new Map<
     (typeof diagram.relationships)[number],
     { left: number; right: number }
   >()
   for (let i = 0; i < labelGeometry.length; i++) {
     const g = labelGeometry[i]!
-    const prev = labelGeometry[i - 1]
-    const next = labelGeometry[i + 1]
+    const prev = nearestRowOverlapping(i, -1)
+    const next = nearestRowOverlapping(i, 1)
     const left =
-      prev && prev.naturalEnd >= g.naturalStart && rowsOverlap(prev, g)
+      prev && prev.naturalEnd >= g.naturalStart
         ? Math.floor((prev.idealMidX + g.idealMidX) / 2) + 1
         : -Infinity
     const right =
-      next && g.naturalEnd >= next.naturalStart && rowsOverlap(g, next)
+      next && g.naturalEnd >= next.naturalStart
         ? Math.floor((g.idealMidX + next.idealMidX) / 2)
         : Infinity
     territoryByRel.set(g.rel, { left, right })
@@ -1343,11 +1460,6 @@ export function renderClassAscii(
     if (!fromP || !toP) continue
     if (!rel.label) continue
 
-    // Exclude source and target boxes from collision detection
-    const excludeIds = new Set([rel.from, rel.to])
-    const fromBY = fromP.y + fromP.height - 1
-    const toTY = toP.y
-
     // Draw relationship label at midpoint (supports multi-line)
     // Add padding around the label for readability
     {
@@ -1357,56 +1469,20 @@ export function renderClassAscii(
       // Calculate ideal label position based on routing direction (and, for
       // a detoured relationship, its actual routed path — see
       // `computeLabelAnchor`).
-      const { idealMidX, baseMidY } = computeLabelAnchor(
+      const { idealMidX } = computeLabelAnchor(
         relIndex,
         fromP,
         toP,
         maxLabelWidth,
       )
 
-      // Find a clear vertical position for the label (not inside any box)
-      let labelY = baseMidY
+      // The row to draw on: resolved once, up front, by the territory
+      // precompute above (via `resolveLabelFinalY`) — reused here rather
+      // than re-resolved so this pass and the territory it reads from
+      // (`territoryByRel`, just below) always agree on the same row for
+      // this relationship. See the precompute's doc comment (issue #531).
+      const labelY = finalLabelYByRel.get(rel)!
       const halfHeight = Math.floor(lines.length / 2)
-
-      // Check if any label line would be inside a box
-      let labelInBox = false
-      for (let i = 0; i < lines.length; i++) {
-        const y = labelY - halfHeight + i
-        const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
-        const labelStart = Math.max(0, idealLabelStart)
-        // Check if this line overlaps any box
-        for (let x = labelStart; x < labelStart + maxLabelWidth; x++) {
-          if (isInsideBox(x, y, excludeIds)) {
-            labelInBox = true
-            break
-          }
-        }
-        if (labelInBox) break
-      }
-
-      // If label is inside a box, find the gap between boxes
-      if (labelInBox) {
-        // Find the gap between source and target boxes
-        const gapTop = fromBY + 1
-        const gapBottom = toTY - 1
-
-        // Place label in the middle of the gap, outside any intermediate box
-        for (let y = gapTop; y <= gapBottom; y++) {
-          let clearRow = true
-          const idealLabelStart = idealMidX - Math.floor(maxLabelWidth / 2)
-          const labelStart = Math.max(0, idealLabelStart)
-          for (let x = labelStart; x < labelStart + maxLabelWidth; x++) {
-            if (isInsideBox(x, y, excludeIds)) {
-              clearRow = false
-              break
-            }
-          }
-          if (clearRow) {
-            labelY = y
-            break
-          }
-        }
-      }
 
       // Center lines vertically around labelY
       const startY = labelY - halfHeight
