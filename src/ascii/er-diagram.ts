@@ -35,6 +35,7 @@ import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines, maxLineWidth } from './multiline-utils.ts'
 import { splitStatements } from '../statements.ts'
 import { toDisplayCells } from './display-width.ts'
+import { findFreeLane } from './lane-search.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // ============================================================================
@@ -276,20 +277,16 @@ export function chooseFreeRow(
   skipX: number,
 ): number {
   const preferred = Math.floor((startY + endY) / 2)
-  if (isRowFree(canvas, preferred, xStart, xEnd, skipX)) return preferred
-
-  const maxOffset = endY - startY
-  for (let d = 1; d <= maxOffset; d++) {
-    const below = preferred + d
-    if (below < endY && isRowFree(canvas, below, xStart, xEnd, skipX)) {
-      return below
-    }
-    const above = preferred - d
-    if (above > startY && isRowFree(canvas, above, xStart, xEnd, skipX)) {
-      return above
-    }
-  }
-  return preferred
+  // Candidates are the open interval (startY, endY) — `findFreeLane`'s
+  // bounds are inclusive, so they're the endpoints stepped one row inward.
+  // `preferred` itself is exempt from those bounds by design (see
+  // `findFreeLane`), which is what keeps the plain-midpoint fallback below
+  // reachable for a gap too narrow to hold any candidate at all.
+  return (
+    findFreeLane(preferred, startY + 1, endY - 1, (row) =>
+      isRowFree(canvas, row, xStart, xEnd, skipX),
+    ) ?? preferred
+  )
 }
 
 /**
