@@ -19,10 +19,23 @@
  * rather than through the published package — a deliberate, accepted
  * pattern here, not a gap to fix. See
  * docs/decisions/editor-in-repo-module.md.
+ *
+ * The document shell (doctype, `<head>`, `<body>`) is rendered through
+ * demo/components/editor-page.tsx via react-dom/server's
+ * `renderToStaticMarkup` — step two of the #423 site-generator migration,
+ * after the dashboard.ts pilot. See
+ * docs/decisions/react-site-migration-plan.md and the component's own
+ * header comment for what this step does and does not cover: the body's
+ * content (topbar/panels/toast/inline bundle script) is still assembled
+ * as a raw string exactly as before and spliced in via
+ * `dangerouslySetInnerHTML`, not yet its own component tree.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
+import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { EditorPage } from './demo/components/editor-page.tsx'
+import { renderHtmlDocument } from './demo/render-html.ts'
 import { THEMES } from './src/theme.ts'
 
 const THEME_LABELS: Record<string, string> = {
@@ -160,24 +173,10 @@ async function generateEditorHtml(): Promise<string> {
     readHtmlPartials(themeItems),
   ])
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>zombie-mermaid — Live Editor</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="icon" type="image/x-icon" href="favicon.ico" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-${css}
-  </style>
-</head>
-<body>
-
+  // Unchanged from the pre-React generator: the body's content is not yet
+  // component-shaped (see demo/components/editor-page.tsx's header), so it
+  // is assembled the same way it always was and spliced in raw.
+  const bodyHtml = `
 <!-- Top bar -->
 ${html.topbar}
 
@@ -204,8 +203,9 @@ ${bundleJs}
 ${appJs}
 
 </script>
-</body>
-</html>`
+`
+
+  return renderHtmlDocument(createElement(EditorPage, { css, bodyHtml }))
 }
 
 const result = await generateEditorHtml()
