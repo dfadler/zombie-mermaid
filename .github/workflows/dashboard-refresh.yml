@@ -7,9 +7,51 @@
 # data.ts's own header comment already pointed at.
 #
 # Same shape as upstream-check.yml (weekly cron + workflow_dispatch, fork
-# guard) but this one commits data instead of opening an issue — same
-# commit-if-changed pattern publish.yml already uses for
-# badges/bundle-size.json.
+# guard) but this one commits data instead of opening an issue.
+#
+# Opens a PR instead of pushing straight to main (as this workflow used to)
+# because main's branch protection now requires a PR plus 4 passing status
+# checks ("test", "Build site generator check", "Semgrep SAST scan",
+# "Changeset present") — a direct `git push ... HEAD:main` gets rejected
+# with GH006 regardless of token scope. See the failed run this broke on:
+# https://github.com/dfadler/zombie-mermaid/actions/runs/34150290160
+#
+# Split into two jobs (generate-snapshot, open-pr) rather than one, so the
+# repo-writing DASHBOARD_REFRESH_PAT is never present in the same job that
+# runs `pnpm install` (i.e. arbitrary dependency lifecycle scripts —
+# pnpm-workspace.yaml allows esbuild's). `persist-credentials: false` only
+# keeps a token out of git config; it does nothing to stop a lifecycle
+# script from planting a git hook (e.g. `.git/hooks/pre-commit`) that reads
+# the token straight out of the process environment the next time a git
+# command runs a hook in that same job. Demonstrated in review on this
+# change: https://github.com/dfadler/zombie-mermaid/pull/631#discussion_r3951949529
+# open-pr's checkout never runs `pnpm install` (or anything else that
+# executes third-party code) at all, so there's nothing there to plant a
+# hook in the first place.
+#
+# Requires a `DASHBOARD_REFRESH_PAT` repo secret (fine-grained PAT scoped to
+# this repo, Contents: Read and write + Pull requests: Read and write) —
+# the default GITHUB_TOKEN cannot be used for the push/PR-create step below.
+# GitHub does not run `pull_request`-triggered workflows (ci.yml, and thus
+# the required status checks above) for a PR whose commits/creation were
+# authenticated with the default GITHUB_TOKEN — this is deliberate,
+# loop-prevention behavior, not a bug:
+# https://github.com/peter-evans/create-pull-request/blob/main/docs/concepts-guidelines.md#triggering-further-workflow-runs
+# A PAT is treated as a normal user for this purpose, so it doesn't hit that
+# suppression. Add the secret with (never paste the token value into a chat
+# session with an agent — run this yourself):
+#   gh secret set DASHBOARD_REFRESH_PAT --repo dfadler/zombie-mermaid
+#
+# Without that secret the open-pr job fails loudly at the push step rather
+# than silently producing a PR stuck on pending checks forever.
+#
+# Merging is manual by design: required_approving_review_count is 0 (checks
+# are the only gate), so once CI goes green on the PR, `gh pr merge` (or the
+# UI) is enough — no repo-wide "Allow auto-merge" setting needed. A human
+# merge is a normal push to main, which pages.yml's existing `on: push`
+# trigger already redeploys from — no explicit `gh workflow run pages.yml`
+# dispatch needed (that only mattered for the old direct-push design, where
+# the "push" was GITHUB_TOKEN-authored and so was itself suppressed).
 name: Dashboard data refresh
 
 on:
@@ -20,35 +62,26 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
-  # Needed for the explicit `gh workflow run pages.yml` dispatch below — a
-  # GITHUB_TOKEN-authored push does not itself trigger pages.yml's `push`
-  # trigger (GitHub suppresses event cascades from the token, to prevent
-  # infinite workflow loops), so the live dashboard.html would otherwise
-  # keep serving the prior snapshot until some unrelated push to main
-  # happened to redeploy it. workflow_dispatch is an explicit exception to
-  # that suppression: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
-  actions: write
+  contents: read
 
 jobs:
-  refresh-dashboard-data:
+  generate-snapshot:
+    name: Generate snapshot
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Same fork-of-this-fork guard used elsewhere (see ci.yml's `test` job
     # for the full reasoning) — without it, workflow_dispatch run manually
-    # in a downstream fork would commit that fork's own stats to its main,
-    # which is harmless but pointless noise for the fork owner.
+    # in a downstream fork would open a PR with that fork's own stats
+    # against its main, which is harmless but pointless noise for the fork
+    # owner.
     if: github.repository == 'dfadler/zombie-mermaid'
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          # Don't leave GITHUB_TOKEN in local git config while `pnpm install`
-          # runs untrusted dependency lifecycle scripts (pnpm-workspace.yaml
-          # allows esbuild's) — a compromised dependency could otherwise read
-          # it and push with `contents: write`. Authenticate explicitly, and
-          # only immediately before the push that actually needs it.
           persist-credentials: false
 
       - name: Setup pnpm
@@ -65,39 +98,107 @@ jobs:
 
       - name: Refresh dashboard data
         env:
+          # Read-only GitHub API calls inside generate-dashboard-data.ts —
+          # the default token is fine here; no privileged token is ever
+          # present in this job (see the header comment on why).
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm run dashboard:data
 
-      - name: Commit and push if changed
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check for substantive change
+        id: diff
         run: |
           set -euo pipefail
 
           # generate-dashboard-data.ts always stamps a fresh `generatedAt`,
           # so a plain `git diff` is non-empty on every run even when every
           # actual metric is identical. Compare with that one field excluded
-          # so a no-op week doesn't produce a no-op commit every week.
+          # so a no-op week doesn't produce a no-op PR every week.
           if git show HEAD:demo/dashboard-data.json 2>/dev/null \
               | jq 'del(.generatedAt)' > /tmp/old-data.json \
             && jq 'del(.generatedAt)' demo/dashboard-data.json > /tmp/new-data.json \
             && diff -q /tmp/old-data.json /tmp/new-data.json > /dev/null; then
-            echo "No substantive change (only generatedAt differs) — reverting and skipping commit."
-            git checkout -- demo/dashboard-data.json
+            echo "No substantive change (only generatedAt differs) — skipping PR."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload snapshot
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dashboard-data-snapshot
+          path: demo/dashboard-data.json
+          retention-days: 1
+
+  open-pr:
+    name: Open PR
+    needs: generate-snapshot
+    if: needs.generate-snapshot.outputs.changed == 'true' && github.repository == 'dfadler/zombie-mermaid'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      # Deliberately no `pnpm install` (or any other step that executes
+      # third-party code) in this job — see the header comment. The empty
+      # changeset below is written by hand instead of via `pnpm changeset
+      # add --empty` for the same reason: that command needs the
+      # changesets CLI installed, which would mean running `pnpm install`
+      # here too.
+      - name: Download snapshot
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dashboard-data-snapshot
+          path: demo
+
+      - name: Commit, push, and open PR
+        env:
+          GH_TOKEN: ${{ secrets.DASHBOARD_REFRESH_PAT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::DASHBOARD_REFRESH_PAT secret is not set — see this workflow's header comment for why the default GITHUB_TOKEN can't be used here."
+            exit 1
+          fi
+
+          # Empty changeset satisfies the "Changeset present" required
+          # check without claiming a version bump — a data-snapshot refresh
+          # isn't a release-worthy change. Same pattern already used by
+          # several other non-release PRs in .changeset/. Hand-written to
+          # match `pnpm changeset add --empty`'s own output exactly, since
+          # this job has no changesets CLI installed (see step comment
+          # above).
+          mkdir -p .changeset
+          printf -- '---\n---\n' > ".changeset/dashboard-data-refresh-${GITHUB_RUN_ID}.md"
+
+          # Suffixed with the run id (not just the date) so two runs on the
+          # same UTC day — e.g. a manual workflow_dispatch alongside the
+          # weekly cron, or a rerun — never collide on branch name and
+          # reject the push as non-fast-forward against an already-open
+          # refresh PR's branch.
+          BRANCH="chore/dashboard-data-refresh-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add demo/dashboard-data.json
+          git checkout -b "$BRANCH"
+          git add demo/dashboard-data.json .changeset
           git commit -m 'chore: refresh dashboard data snapshot'
 
           # Authenticate only for this push, right before it — see the
-          # persist-credentials note on the checkout step above.
-          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+          # persist-credentials note on the checkout step above. Pushing
+          # a new branch (not main directly) is unaffected by main's
+          # branch protection.
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
 
-          # A GITHUB_TOKEN-authored push doesn't trigger pages.yml's own
-          # `push` trigger (see the `actions: write` permission comment
-          # above) — dispatch it explicitly so the live dashboard.html
-          # actually picks up this refreshed snapshot.
-          gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$BRANCH" \
+            --title 'chore: refresh dashboard data snapshot' \
+            --body 'Automated weekly refresh of demo/dashboard-data.json (dashboard-refresh.yml). Includes an empty changeset — this is a data snapshot, not a release-worthy change. Merge once checks pass to redeploy the live dashboard.'
