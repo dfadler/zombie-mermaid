@@ -25,7 +25,7 @@ safe enough to attempt as a mechanical refactor:
   collision-proof by construction. Nothing to retrofit; excluded from any
   future unification.
 
-The narrower, safer win — extracting the shared *search algorithm*
+The narrower, safer win — extracting the shared _search algorithm_
 (`findFreeLane`/`allocateTerritory`) rather than unifying storage, each
 renderer keeping its own occupancy check as a callback — is scoped out as
 follow-up issues:
