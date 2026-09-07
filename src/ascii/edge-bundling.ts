@@ -186,6 +186,24 @@ function canBundle(edges: AsciiEdge[], graph: AsciiGraph): boolean {
     : edges.map((e) => e.to)
   if (new Set(otherEndpoints).size !== otherEndpoints.length) return false
 
+  // The duplicate check above only catches an *ordered*-pair duplicate. A
+  // reverse-direction sibling (`B --> A` alongside `A --> B`, #629) reaches
+  // a fan-in/fan-out group with a *distinct* other endpoint and slips past
+  // it, even though assignParallelEdgeLanes has already committed that pair
+  // to two distinct lanes — and a lane is a fixed offset from the pair's
+  // own center path, not from wherever a trunk would have moved its sibling
+  // to. So no edge assigned to a lane group ever gets bundled.
+  //
+  // Defensive: currently unreachable, and deliberately kept anyway. A
+  // reverse-direction lane is only assigned when the pair sits side by side
+  // on one grid row (edge-routing.ts's sharesHorizontalChannel), which is
+  // exactly what the rank-ordering check below already rejects — every
+  // source must be strictly above the shared target (or every target
+  // strictly below the shared source). Those two conditions happen to be
+  // complementary today; nothing structural keeps them that way.
+  /* v8 ignore next */
+  if (edges.some((e) => e.parallelLane)) return false
+
   // Bundling assumes every source sits strictly before the shared target
   // along the graph-direction axis for fan-in (TD: above it; LR: left of
   // it), or every target sits strictly after the shared source for
