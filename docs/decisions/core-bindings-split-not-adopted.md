@@ -21,7 +21,7 @@ Two prior research spikes fed directly into this:
 
 Both independently concluded a WASM-outward core would likely regress
 bundle size and break zombie-mermaid's synchronous-rendering guarantee. The
-#540 prototype (built on `issue-540-core-bindings-prototype`, PR
+prototype for #540 (built on `issue-540-core-bindings-prototype`, PR
 [#580](https://github.com/dfadler/zombie-mermaid/pull/580)) deliberately
 avoided WASM and instead tested the other lowest-risk option: a native Go
 binary invoked from TypeScript over a subprocess boundary — a flowchart-only
