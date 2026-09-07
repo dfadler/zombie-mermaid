@@ -111,7 +111,12 @@ live under `src/__tests__/`, not colocated with the source they test (zero
 workspace split conventionally wants each package to own its own tests.
 Deciding whether to move tests alongside their package or keep a shared
 top-level test tree is real prep work for the follow-up plan, not something
-this scoping pass resolves.
+this scoping pass resolves. **Resolved since, in
+[`monorepo-test-layout-627.md`](./monorepo-test-layout-627.md)** (#627):
+tests move with their package into `<package>/src/__tests__/`, discovered by
+one root `vitest.config.ts`, with coverage staying a single run against a
+single threshold set — and each extraction issue moves its own tests in the
+same commit as its source rather than deferring to a separate sweep.
 
 **Recommend deferring `cli` and `demo`** to real workspace packages in this
 first pass, following the precedent #398 already set for the editor
@@ -242,7 +247,14 @@ each can be picked up and closed independently:
 - #625 — move `layout-engine/`, `elk-instance.ts`, and the `core` files
   (recommendation 5)
 - #626 — leave `cli`/`demo` as apps (recommendation 3 table)
-- #627 — decide test layout (per-package vs. shared)
+- #627 — decide test layout (per-package vs. shared) — **decided**, see
+  [`monorepo-test-layout-627.md`](./monorepo-test-layout-627.md)
 
 Recommended order: #623 first, then #624 before #625, #622/#621 for
-workspace/publish plumbing, #626/#627 as needed.
+workspace/publish plumbing, #626 as needed. #627 was originally listed here
+as "as needed" but its decision turned out to be a precondition on #623
+rather than a follow-up to it — #623 moves `src/ascii/**`, which breaks all
+88 `from '../ascii/…'` specifiers in `src/__tests__/` whether or not the
+tests themselves move, so where those tests land has to be settled before
+#623 rewrites them. It is settled now (link above); nothing blocks #623 on
+this axis.
