@@ -25,6 +25,12 @@ export type {
   NodeInteraction,
   PositionedGraph,
   Direction,
+  CommonRenderOptions,
+  FlowchartRenderOptions,
+  SequenceRenderOptions,
+  ClassRenderOptions,
+  ErRenderOptions,
+  XyChartRenderOptions,
 } from './types.ts'
 export type { DiagramColors, ThemeName } from './theme.ts'
 export { fromShikiTheme, THEMES, DEFAULTS } from './theme.ts'

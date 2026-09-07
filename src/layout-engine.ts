@@ -25,7 +25,11 @@
  */
 
 import type { ElkNode } from 'elkjs'
-import type { MermaidGraph, PositionedGraph, RenderOptions } from './types.ts'
+import type {
+  MermaidGraph,
+  PositionedGraph,
+  FlowchartRenderOptions,
+} from './types.ts'
 import { elkLayoutSync } from './elk-instance.ts'
 import { resolveFontSizes } from './styles.ts'
 import { DEFAULTS } from './layout-engine/constants.ts'
@@ -42,7 +46,7 @@ import { elkToPositioned } from './layout-engine/from-elk.ts'
  */
 export function layoutGraphSync(
   graph: MermaidGraph,
-  options: RenderOptions = {},
+  options: FlowchartRenderOptions = {},
 ): PositionedGraph {
   const opts = {
     ...DEFAULTS,
@@ -59,7 +63,7 @@ export function layoutGraphSync(
  */
 export function convertToElkFormat(
   graph: MermaidGraph,
-  options: RenderOptions = {},
+  options: FlowchartRenderOptions = {},
 ): ElkNode {
   const opts = {
     ...DEFAULTS,

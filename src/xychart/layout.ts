@@ -9,7 +9,7 @@ import type {
   PlotArea,
   LegendItem,
 } from './types.ts'
-import type { RenderOptions } from '../types.ts'
+import type { XyChartRenderOptions } from '../types.ts'
 import { estimateTextWidth } from '../styles.ts'
 
 // ============================================================================
@@ -53,7 +53,7 @@ const XY = {
  */
 export function layoutXYChart(
   chart: XYChart,
-  _options: RenderOptions = {},
+  _options: XyChartRenderOptions = {},
 ): PositionedXYChart {
   if (chart.horizontal) return layoutHorizontal(chart)
   return layoutVertical(chart)

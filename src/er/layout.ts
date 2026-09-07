@@ -14,7 +14,7 @@ import type {
   PositionedErEntity,
   PositionedErRelationship,
 } from './types.ts'
-import type { RenderOptions } from '../types.ts'
+import type { ErRenderOptions } from '../types.ts'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
@@ -65,7 +65,7 @@ function directionToElk(dir: Direction | undefined): string {
 /** Build ELK graph and size map from an ER diagram. */
 function buildErElkGraph(
   diagram: ErDiagram,
-  options: RenderOptions,
+  options: ErRenderOptions,
 ): { elkGraph: ElkNode; entitySizes: EntitySizeMap } {
   const entitySizes: EntitySizeMap = new Map()
   const fontSizes = resolveFontSizes(options.fontSizes)
@@ -208,7 +208,7 @@ function extractErLayout(
  */
 export function layoutErDiagramSync(
   diagram: ErDiagram,
-  options: RenderOptions = {},
+  options: ErRenderOptions = {},
 ): PositionedErDiagram {
   if (diagram.entities.length === 0) {
     return { width: 0, height: 0, entities: [], relationships: [] }
