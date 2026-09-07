@@ -565,6 +565,11 @@ connector; a free note goes on the top row after the classes.
            ╰─────────────╯
 ```
 
+### Known limitations
+
+None currently — `note`/`note for` and `classDef`/`style`/`class`/`:::`
+styling are all recognized (see above).
+
 ## ER Diagrams
 
 ```
