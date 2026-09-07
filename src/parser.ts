@@ -81,6 +81,40 @@ export function toDirection(raw: string | undefined): Direction {
 }
 
 /**
+ * All diagram-type headers this library recognizes, for the "supported
+ * headers" list in the invalid-header error below. Kept in one place so a
+ * newly-added diagram type doesn't get forgotten in the error message the
+ * way sequence/class/ER/xychart were before issue #541.
+ */
+const SUPPORTED_HEADERS =
+  '"graph <dir>"/"flowchart <dir>" (dir: TD, TB, LR, BT, RL), "stateDiagram-v2", "sequenceDiagram", "classDiagram", "erDiagram", "xychart-beta"'
+
+/**
+ * Best-guess canonical header for a header line that looks like an attempt
+ * at one of the *other* diagram types this library supports, but didn't
+ * match `detectDiagramType`'s exact-match regex (a typo, extra trailing
+ * text, wrong case pattern, etc.) and so fell through to this flowchart
+ * parser as the default. Returns undefined when `header` doesn't look like
+ * any of those — in which case the generic "supported headers" list in the
+ * thrown error is the best we can do.
+ *
+ * This only recognizes the four *other* multi-word headers
+ * (sequenceDiagram/classDiagram/erDiagram/xychart-beta/stateDiagram-v2);
+ * "graph"/"flowchart" typos are handled by the direction-specific message
+ * below instead, since those already matched the diagram-type keyword and
+ * just have a bad or missing direction token.
+ */
+function suggestedHeaderFor(header: string): string | undefined {
+  const lower = header.trim().toLowerCase()
+  if (/^sequence/.test(lower)) return 'sequenceDiagram'
+  if (/^class/.test(lower)) return 'classDiagram'
+  if (/^er/.test(lower)) return 'erDiagram'
+  if (/^xychart/.test(lower)) return 'xychart-beta'
+  if (/^state/.test(lower)) return 'stateDiagram-v2'
+  return undefined
+}
+
+/**
  * Parse Mermaid text into a logical graph structure.
  * Auto-detects diagram type (flowchart or state diagram).
  * Throws on invalid/unsupported input.
@@ -131,8 +165,31 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
   )
   if (!headerMatch) {
+    // A header that starts with "graph"/"flowchart" but has a bad or
+    // missing direction gets a targeted message about the direction token
+    // specifically — it already picked the right diagram type.
+    const partialFlowchartMatch = header.match(
+      /^(?:graph|flowchart)\b\s*(.*)$/i,
+    )
+    if (partialFlowchartMatch) {
+      const rest = partialFlowchartMatch[1]!.trim()
+      throw new Error(
+        rest.length > 0
+          ? `Invalid direction "${rest}" in header "${header}". Expected one of: TD, TB, LR, BT, RL.`
+          : `Missing direction in header "${header}". Expected e.g. "graph TD" or "flowchart LR" — one of: TD, TB, LR, BT, RL.`,
+      )
+    }
+
+    // Otherwise this header didn't match any recognized diagram-type
+    // keyword at all (typo, extra text, or genuinely unsupported syntax) —
+    // point at the closest known diagram type when the text resembles one.
+    const suggestion = suggestedHeaderFor(header)
+    const hint =
+      suggestion && suggestion.toLowerCase() !== header.trim().toLowerCase()
+        ? ` Did you mean "${suggestion}"?`
+        : ''
     throw new Error(
-      `Invalid mermaid header: "${header}". Expected "graph TD", "flowchart LR", "stateDiagram-v2", etc.`,
+      `Invalid mermaid header: "${header}".${hint} Supported headers: ${SUPPORTED_HEADERS}.`,
     )
   }
 

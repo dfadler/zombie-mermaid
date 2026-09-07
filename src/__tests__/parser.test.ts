@@ -52,8 +52,58 @@ describe('parseMermaid – graph header', () => {
 
   it('throws on header without direction', () => {
     expect(() => parseMermaid('graph\n  A --> B')).toThrow(
-      'Invalid mermaid header',
+      'Missing direction in header "graph"',
     )
+  })
+
+  it('throws a direction-specific error for a bad direction token', () => {
+    expect(() => parseMermaid('graph XYZ\n  A --> B')).toThrow(
+      'Invalid direction "XYZ" in header "graph XYZ". Expected one of: TD, TB, LR, BT, RL.',
+    )
+  })
+
+  it("suggests the correct header for a typo'd classDiagram keyword", () => {
+    expect(() => parseMermaid('classDiagrm\n  class Animal')).toThrow(
+      'Did you mean "classDiagram"?',
+    )
+  })
+
+  it("suggests the correct header for a typo'd erDiagram keyword", () => {
+    expect(() =>
+      parseMermaid('erDiagrm\n  CUSTOMER ||--o{ ORDER : places'),
+    ).toThrow('Did you mean "erDiagram"?')
+  })
+
+  it("suggests the correct header for a typo'd xychart-beta keyword", () => {
+    expect(() =>
+      parseMermaid('xychart-bta\n  x-axis [a, b, c]\n  bar [1, 2, 3]'),
+    ).toThrow('Did you mean "xychart-beta"?')
+  })
+
+  it('suggests the correct header for a sequenceDiagram header with trailing text', () => {
+    expect(() =>
+      parseMermaid('sequenceDiagram foo\n  Alice->>Bob: Hi'),
+    ).toThrow('Did you mean "sequenceDiagram"?')
+  })
+
+  it('lists all supported diagram headers for a totally unrecognized header', () => {
+    expect(() => parseMermaid('this is not mermaid at all')).toThrow(
+      /"stateDiagram-v2".*"sequenceDiagram".*"classDiagram".*"erDiagram".*"xychart-beta"/,
+    )
+  })
+
+  it('does not suggest a tautological header when the header already is that keyword', () => {
+    // parseMermaid is the flowchart/state-only entry point, so feeding it an
+    // exact (non-typo'd) sequenceDiagram header directly — bypassing the
+    // top-level renderer's own type routing — shouldn't produce a nonsensical
+    // "Did you mean sequenceDiagram?" hint on text that already says that.
+    let message = ''
+    try {
+      parseMermaid('sequenceDiagram\n  A ->> B')
+    } catch (e) {
+      message = (e as Error).message
+    }
+    expect(message).not.toContain('Did you mean')
   })
 })
 
