@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSync, parseMermaid } from '../index.ts'
-import { layoutGraphSync } from '../layout.ts'
+import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 
 // ============================================================================
 // Test helpers

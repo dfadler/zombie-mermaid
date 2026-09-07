@@ -1,3 +1,11 @@
+# Workspace packages (zombie-mermaid#620's monorepo conversion). The repo
+# root itself is always a workspace package for pnpm and is not listed here.
+# `packages/*` are `"private": true` and bundled into the umbrella's `dist/`
+# by `vite.config.lib.ts`, so they are never published and never appear in
+# the published `zombie-mermaid`'s runtime dependency tree — see #625.
+packages:
+  - 'packages/*'
+
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:

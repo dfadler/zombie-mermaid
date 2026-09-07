@@ -10,7 +10,7 @@
  * one diagram with no per-sample baked-in colors to fall back to.
  */
 import { escapeHtml } from './demo/format.ts'
-import { THEMES } from './src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { THEME_LABELS, THEME_DESCRIPTIONS } from './demo/theme-labels.ts'
 
 /** Themes shown as inline pills; the rest live in the "More" dropdown. */

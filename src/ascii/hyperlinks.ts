@@ -27,8 +27,8 @@
 // ============================================================================
 
 import type { Canvas, DrawingCoord, AsciiGraph } from './types.ts'
-import type { NodeInteraction } from '../types.ts'
-import { safeHref } from '../click-directive.ts'
+import type { NodeInteraction } from '@zombie-mermaid/core'
+import { safeHref } from '@zombie-mermaid/core'
 
 /**
  * [maxX, maxY] of a canvas — the same arithmetic as canvas.ts's

@@ -9,8 +9,7 @@
 // changes where an edge goes — only how it looks getting there.
 // ============================================================================
 
-import type { Point } from './types.ts'
-import type { CurveStyle } from './init-directive.ts'
+import type { Point, CurveStyle } from '@zombie-mermaid/core'
 
 /** `M x y` for the first point. */
 function moveTo(p: Point): string {

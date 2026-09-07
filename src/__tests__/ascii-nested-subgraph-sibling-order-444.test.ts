@@ -21,7 +21,7 @@
  * on the right. Real mermaid.js (verified against its bundled
  * flowDb.getData() — see the comment on `compareBySiblingSubgraphOrder` in
  * src/ascii/grid.ts, and the matching comment in
- * src/layout-engine/to-elk.ts's `mermaidToElk`) instead orders sibling
+ * packages/svg-renderer/src/layout-engine/to-elk.ts's `mermaidToElk`) instead orders sibling
  * subgraphs in *reversed declaration order*, independent of which one a
  * shared parent's edges happen to target first — putting `us-west` (the
  * second-declared sibling) on the left and `us-east` on the right.

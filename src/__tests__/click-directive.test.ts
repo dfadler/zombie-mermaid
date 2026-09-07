@@ -1,5 +1,5 @@
 /**
- * Unit tests for the shared `click`-directive helpers (src/click-directive.ts).
+ * Unit tests for the shared `click`-directive helpers (packages/core/src/click-directive.ts).
  *
  * The flowchart/state and class-diagram integration suites
  * (interactivity-config.test.ts, class-click-interactions.test.ts) already
@@ -12,8 +12,8 @@
  * a shared module, not just incidentally through callers.
  */
 import { describe, it, expect } from 'vitest'
-import type { NodeInteraction } from '../types.ts'
-import { applyClickStatement, safeHref } from '../click-directive.ts'
+import type { NodeInteraction } from '@zombie-mermaid/core'
+import { applyClickStatement, safeHref } from '@zombie-mermaid/core'
 
 describe('applyClickStatement', () => {
   it('is a no-op for a line that starts with "click " but has no target', () => {

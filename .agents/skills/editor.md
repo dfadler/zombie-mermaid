@@ -12,19 +12,19 @@ description: >-
 
 The editor's actual UI/CSS/JS source lives under `editor/` as modular partials; `editor.ts` just concatenates them (in a fixed order) into one self-contained HTML file. Edit the partials, not `editor.ts`, for UI/CSS/JS changes.
 
-| File                 | Role                                                                                                                 |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `editor.ts`          | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`                    |
-| `editor/css/*.css`   | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (editor.ts)                                |
-| `editor/js/*.js`     | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (editor.ts)                              |
-| `editor/html/*.html` | HTML partials: `topbar.html`, `left-panel.html` (source editor + Config panel), `right-panel.html` (preview)         |
-| `editor/__tests__/`  | Vitest tests for the editor JS modules (jsdom environment) — see `state.ts`/`config.test.ts` etc.                    |
-| `editor.html`        | Generated output — never edit directly                                                                               |
-| `vite.config.ts`     | Dev server (Vite); rebuilds both `editor.html` and `index.html` on change, serves `/` → showcase, `/editor` → editor |
-| `src/browser.ts`     | Bundles the renderer for the browser as `window.__mermaid`                                                           |
-| `src/types.ts`       | `RenderOptions` — all supported render options                                                                       |
-| `src/theme.ts`       | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                      |
-| `src/styles.ts`      | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                  |
+| File                                  | Role                                                                                                                 |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `editor.ts`                           | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`                    |
+| `editor/css/*.css`                    | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (editor.ts)                                |
+| `editor/js/*.js`                      | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (editor.ts)                              |
+| `editor/html/*.html`                  | HTML partials: `topbar.html`, `left-panel.html` (source editor + Config panel), `right-panel.html` (preview)         |
+| `editor/__tests__/`                   | Vitest tests for the editor JS modules (jsdom environment) — see `state.ts`/`config.test.ts` etc.                    |
+| `editor.html`                         | Generated output — never edit directly                                                                               |
+| `vite.config.ts`                      | Dev server (Vite); rebuilds both `editor.html` and `index.html` on change, serves `/` → showcase, `/editor` → editor |
+| `src/browser.ts`                      | Bundles the renderer for the browser as `window.__mermaid`                                                           |
+| `packages/core/src/types.ts`          | `RenderOptions` — all supported render options                                                                       |
+| `packages/core/src/theme.ts`          | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                      |
+| `packages/svg-renderer/src/styles.ts` | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                  |
 
 Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples-data.ts` only feeds the separate showcase page (`index.ts` → `index.html`, served at `/` by `vite.config.ts`).
 
@@ -125,7 +125,7 @@ Call your override function in:
 
 ### Case C: Requires renderer support
 
-Add to `RenderOptions` in `src/types.ts`, thread through `buildColors`/`svgOpenTag` in `src/theme.ts`, and use via CSS variable in `buildStyleBlock`.
+Add to `RenderOptions` in `packages/core/src/types.ts`, thread through `buildColors`/`svgOpenTag` in `packages/core/src/theme.ts`, and use via CSS variable in `buildStyleBlock`.
 
 ---
 

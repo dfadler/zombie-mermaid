@@ -5,7 +5,7 @@
 // ER diagrams show database entities, their attributes, and relationships.
 // ============================================================================
 
-import type { Direction } from '../types.ts'
+import type { Direction } from '@zombie-mermaid/core'
 
 /** Parsed ER diagram — logical structure from mermaid text */
 export interface ErDiagram {

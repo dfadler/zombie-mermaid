@@ -12,9 +12,8 @@ import {
   DEFAULT_BOX_BORDER_PADDING,
 } from '../ascii/types.ts'
 import { renderMermaidSVG } from '../index.ts'
-import type { RenderOptions } from '../types.ts'
-import { THEMES } from '../theme.ts'
-import type { DiagramColors } from '../theme.ts'
+import type { RenderOptions, DiagramColors } from '@zombie-mermaid/core'
+import { THEMES } from '@zombie-mermaid/core'
 import { buildHtmlViewer } from './html-viewer.ts'
 import { renderPng } from './png.ts'
 import type { RenderArgs } from './parse-args.ts'

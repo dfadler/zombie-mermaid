@@ -7,7 +7,7 @@
  * and the Vitest visual-regression suite).
  *
  * Lives at the repo root rather than under demo/: demo/tsconfig.json's
- * `rootDir` is scoped to demo/ itself, and this needs `src/text-metrics.ts`.
+ * `rootDir` is scoped to demo/ itself, and this needs `packages/core/src/text-metrics.ts`.
  *
  * A terminal gives every wide (CJK/fullwidth/emoji) glyph exactly two
  * columns — that rule is what the ASCII renderer's box math is built on. A
@@ -16,7 +16,7 @@
  * it, reproducing the terminal's geometry. See src/ascii/display-width.ts
  * for the canonical column-counting rules this mirrors.
  */
-import { isWideChar } from './src/text-metrics.ts'
+import { isWideChar } from '@zombie-mermaid/core'
 import { escapeHtml } from './demo/format.ts'
 
 const COMBINING_MARK_REGEX = /\p{Mn}|\p{Me}/u

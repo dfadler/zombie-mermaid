@@ -12,7 +12,7 @@
 import { writeFile } from 'node:fs/promises'
 import * as esbuild from 'esbuild'
 import { xychartSamples } from './xychart-samples-data.ts'
-import { THEMES } from './src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { createHighlighter } from 'shiki'
 
 function escapeHtml(text: string): string {

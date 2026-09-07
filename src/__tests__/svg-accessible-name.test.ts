@@ -24,8 +24,11 @@
  *    levels of an SVG document is valid per the SVG spec.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { svgOpenTag, __resetSvgTitleIdCounterForTests } from '../theme.ts'
-import type { DiagramColors } from '../theme.ts'
+import {
+  svgOpenTag,
+  __resetSvgTitleIdCounterForTests,
+} from '@zombie-mermaid/core'
+import type { DiagramColors } from '@zombie-mermaid/core'
 import { renderMermaidSVG } from '../index.ts'
 
 const colors: DiagramColors = { bg: '#FFFFFF', fg: '#27272A' }
@@ -378,7 +381,7 @@ describe('renderMermaidSVG – accessible name alongside click/tooltip <title> e
 
   it('a rejected href scheme does not suppress role/aria-hidden, since no <a> is actually rendered', () => {
     // The parser records the raw href unconditionally; safeHref() (in
-    // src/renderer.ts) is what filters it at render time, so a disallowed
+    // packages/svg-renderer/src/renderer.ts) is what filters it at render time, so a disallowed
     // scheme like javascript: never becomes an <a> — the diagram has no real
     // link, and hasInteractiveLinks must not treat it as one.
     const svg = renderMermaidSVG(

@@ -10,7 +10,7 @@ import type {
   PositionedGroup,
   Direction,
   Point,
-} from '../types.ts'
+} from '@zombie-mermaid/core'
 
 /*
  * Shrink applied to a node box before testing it against a bundled path, in px.

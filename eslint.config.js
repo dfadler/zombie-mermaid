@@ -39,6 +39,9 @@ export default tseslint.config(
     files: [
       'src/**/*.ts',
       'src/**/*.tsx',
+      // The workspace packages carved out of src/ by zombie-mermaid#625
+      // (umbrella #620) — same source surface, same rules.
+      'packages/*/src/**/*.ts',
       // The demo page's own client-side code. It used to be a template
       // literal inside index.ts, which no linter could see.
       'demo/**/*.ts',

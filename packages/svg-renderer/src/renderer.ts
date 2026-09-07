@@ -4,14 +4,23 @@ import type {
   PositionedEdge,
   PositionedGroup,
   Point,
-} from './types.ts'
-import type { DiagramColors, SvgEmitOptions } from './theme.ts'
+  DiagramColors,
+  SvgEmitOptions,
+  CurveStyle,
+} from '@zombie-mermaid/core'
 import {
   svgOpenTag,
   buildStyleBlock,
   styleOpenTag,
   getReadableTextColor,
-} from './theme.ts'
+  measureMultilineText,
+  renderMultilineText,
+  renderMultilineTextWithBackground,
+  escapeXml,
+  escapeAttr,
+  safeHref,
+  sanitizeClassName,
+} from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
 import {
   FONT_SIZES,
@@ -19,17 +28,7 @@ import {
   STROKE_WIDTHS,
   ARROW_HEAD,
 } from './styles.ts'
-import { measureMultilineText } from './text-metrics.ts'
-import {
-  renderMultilineText,
-  renderMultilineTextWithBackground,
-  escapeXml,
-  escapeAttr,
-} from './multiline-utils.ts'
 import { pointsToPath } from './edge-curves.ts'
-import type { CurveStyle } from './init-directive.ts'
-import { safeHref } from './click-directive.ts'
-import { sanitizeClassName } from './style-directives.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -40,7 +39,7 @@ import { sanitizeClassName } from './style-directives.ts'
 // All colors are referenced via CSS custom properties (var(--_xxx)) defined
 // in the <style> block. The caller provides bg/fg (+ optional enrichment
 // colors) via DiagramColors, which are set as inline CSS variables on the
-// <svg> tag. See src/theme.ts for the full variable system.
+// <svg> tag. See packages/core/src/theme.ts for the full variable system.
 //
 // Style spec:
 // - All corners rx=0 ry=0 (sharp)
@@ -72,7 +71,7 @@ import { sanitizeClassName } from './style-directives.ts'
  *                       — preserves the previously-ungated behavior for
  *                       callers who don't pass it.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
- *                src/theme.ts.
+ *                packages/core/src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
  * @param emit - Strict-CSP controls (from `options.nonce` /
  *               `options.styleAttribute`, see #216): a `nonce` for every

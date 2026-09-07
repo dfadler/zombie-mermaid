@@ -19,7 +19,7 @@
 import { readFileSync } from 'node:fs'
 import { JSDOM } from 'jsdom'
 import { vi } from 'vitest'
-import { THEMES } from '../../../src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 
 const EDITOR_DIR = new URL('../../', import.meta.url)
 

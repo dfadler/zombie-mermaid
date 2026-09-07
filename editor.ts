@@ -15,7 +15,7 @@
  *   - editor/js/   — modular JS modules
  *   - editor/html/ — HTML partials (topbar, left-panel, right-panel)
  *
- * This imports src/theme.ts (and bundles src/browser.ts) by relative path
+ * This imports packages/core/src/theme.ts (and bundles src/browser.ts) by relative path
  * rather than through the published package — a deliberate, accepted
  * pattern here, not a gap to fix. See
  * docs/decisions/editor-in-repo-module.md.
@@ -36,7 +36,7 @@ import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { EditorPage } from './demo/components/editor-page.tsx'
 import { renderHtmlDocument } from './demo/render-html.ts'
-import { THEMES } from './src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 
 const THEME_LABELS: Record<string, string> = {
   'zinc-light': 'Zinc Light',
@@ -56,7 +56,7 @@ const THEME_LABELS: Record<string, string> = {
   'one-dark': 'One Dark',
 }
 
-// THEME_LABELS manually shadows THEMES' keys (src/theme.ts) so the dropdown
+// THEME_LABELS manually shadows THEMES' keys (packages/core/src/theme.ts) so the dropdown
 // can show a human-friendly name instead of a raw slug. Adding a theme to
 // THEMES without adding a matching entry here doesn't break the build — the
 // dropdown markup below falls back to `THEME_LABELS[key] ?? key`, silently

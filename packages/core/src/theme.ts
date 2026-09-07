@@ -23,7 +23,7 @@ import { parseHexColor } from './color-utils.ts'
  * element(s) and the root `<svg style="--bg: …">` attribute. Both exist so a
  * host page with a strict `Content-Security-Policy` (`style-src` without
  * `'unsafe-inline'`) can still render diagrams with their colours intact;
- * see `RenderOptions.nonce` / `RenderOptions.styleAttribute` in src/types.ts
+ * see `RenderOptions.nonce` / `RenderOptions.styleAttribute` in packages/core/src/types.ts
  * and GitHub issue #216. Threaded as one object through every diagram
  * renderer so the two options can't drift apart per diagram type.
  */
@@ -525,7 +525,7 @@ export function getReadableTextColor(
 /**
  * Page-unique suffix generator for the root accessible-name `<title>` id.
  *
- * Mirrors `markerSuffix()` in src/renderer.ts, which solves the same
+ * Mirrors `markerSuffix()` in packages/svg-renderer/src/renderer.ts, which solves the same
  * "multiple SVGs inlined into one HTML page share a single id namespace"
  * problem for arrow-marker ids — a marker's id is sanitized from its stroke
  * color, since two markers with the same color are meant to share one
@@ -605,7 +605,7 @@ export function themeStyleDeclarations(
  * on afterwards (`data-src`, `data-xychart-colors`) — is unaffected.
  *
  * Also handles the SVG's accessible name (see `RenderOptions.title` /
- * `RenderOptions.decorative` in src/types.ts, and GitHub issue #215):
+ * `RenderOptions.decorative` in packages/core/src/types.ts, and GitHub issue #215):
  *
  * - `decorative: true` → `aria-hidden="true"` on the root, no `role` or
  *   name. Use for a diagram already described in surrounding prose; `title`

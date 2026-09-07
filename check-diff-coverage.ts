@@ -13,8 +13,10 @@ import { readFileSync, existsSync } from 'node:fs'
 
 const DIFF_THRESHOLD = 90
 const LCOV_PATH = 'coverage/lcov.info'
-// Mirrors vitest.config.ts's coverage.include/exclude.
-const INCLUDE_DIR = 'src/'
+// Mirrors vitest.config.ts's coverage.include/exclude. `packages/` covers
+// the workspace packages carved out of src/ by zombie-mermaid#625 — without
+// it, moving a file into one would quietly drop it out of this gate.
+const INCLUDE_DIRS = ['src/', 'packages/']
 const EXCLUDE_PREFIX = 'src/__tests__/'
 
 function git(args: string[]): string {
@@ -48,7 +50,7 @@ export function resolveBaseRef(): string | null {
 
 export function isTrackedTsFile(path: string): boolean {
   return (
-    path.startsWith(INCLUDE_DIR) &&
+    INCLUDE_DIRS.some((dir) => path.startsWith(dir)) &&
     path.endsWith('.ts') &&
     !path.startsWith(EXCLUDE_PREFIX)
   )
@@ -95,12 +97,18 @@ export function parseChangedLinesFromDiff(
 
 /** Maps each changed file to the set of line numbers added/modified in the diff (new-file line numbers). */
 function getChangedLines(baseRef: string): Map<string, Set<number>> {
-  // Widened to the whole src/ tree and filtered in JS via isTrackedTsFile()
-  // below — git's default pathspec matching treats `**` as two directory-
-  // bound `*`s (not a true globstar) without `:(glob)` magic, so
-  // `src/**/*.ts` silently misses files directly under src/ with no
-  // subdirectory.
-  const diff = git(['diff', '--unified=0', `${baseRef}...HEAD`, '--', 'src/'])
+  // Widened to the whole src/ and packages/ trees and filtered in JS via
+  // isTrackedTsFile() below — git's default pathspec matching treats `**`
+  // as two directory-bound `*`s (not a true globstar) without `:(glob)`
+  // magic, so `src/**/*.ts` silently misses files directly under src/ with
+  // no subdirectory.
+  const diff = git([
+    'diff',
+    '--unified=0',
+    `${baseRef}...HEAD`,
+    '--',
+    ...INCLUDE_DIRS,
+  ])
   return parseChangedLinesFromDiff(diff)
 }
 
