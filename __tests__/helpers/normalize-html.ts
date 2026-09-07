@@ -11,7 +11,10 @@
  * - Attribute order (sorted by name) and quoting/escaping style
  *   (`&#x27;` vs `'`, `crossorigin` vs `crossorigin=""`) — compared as
  *   parsed DOM values, and `style` through the CSSOM (`style.cssText`), so
- *   `min-width: 11rem;` and `min-width:11rem` agree.
+ *   `min-width: 11rem;` and `min-width:11rem` agree. That applies to SVG
+ *   elements too, not just HTML ones: React serialises a style object as
+ *   `display:none` where a hand-written template wrote `display: none`, and
+ *   an inline `<svg>`'s style attribute is as prone to that as a `<div>`'s.
  * - Whitespace: runs collapse to one space, a block element's leading/
  *   trailing text whitespace is trimmed, and whitespace-only text nodes
  *   are dropped. Note the last point means whitespace *between* inline
@@ -98,12 +101,12 @@ function serializeElement(
 ): void {
   const tag = el.tagName.toLowerCase()
   const indent = '  '.repeat(depth)
+  const styled = el as Element & { style?: CSSStyleDeclaration }
   const attrs = [...el.attributes]
     .map((attr): [string, string] => [
       attr.name,
-      attr.name === 'style' &&
-      el instanceof el.ownerDocument.defaultView!.HTMLElement
-        ? el.style.cssText
+      attr.name === 'style' && styled.style !== undefined
+        ? styled.style.cssText
         : attr.value,
     ])
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
