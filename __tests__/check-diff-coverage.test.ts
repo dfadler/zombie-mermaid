@@ -12,22 +12,32 @@ describe('isTrackedTsFile', () => {
   })
 
   it('accepts a .ts file nested under src/', () => {
-    expect(isTrackedTsFile('src/layout-engine/to-elk.ts')).toBe(true)
+    expect(isTrackedTsFile('src/ascii/converter.ts')).toBe(true)
+  })
+
+  // The workspace packages carved out of src/ by #625 are library source
+  // too — the gate has to keep seeing them.
+  it('accepts a .ts file under a workspace package', () => {
+    expect(isTrackedTsFile('packages/core/src/theme.ts')).toBe(true)
+    expect(
+      isTrackedTsFile('packages/svg-renderer/src/layout-engine/to-elk.ts'),
+    ).toBe(true)
   })
 
   it('rejects files under src/__tests__/', () => {
     expect(isTrackedTsFile('src/__tests__/foo.test.ts')).toBe(false)
   })
 
-  it('rejects files outside src/', () => {
+  it('rejects files outside src/ and packages/', () => {
     expect(isTrackedTsFile('editor/js/state.js')).toBe(false)
     expect(isTrackedTsFile('README.md')).toBe(false)
     expect(isTrackedTsFile('check-diff-coverage.ts')).toBe(false)
   })
 
-  it('rejects non-.ts files under src/', () => {
+  it('rejects non-.ts files under src/ and packages/', () => {
     expect(isTrackedTsFile('src/foo.js')).toBe(false)
     expect(isTrackedTsFile('src/foo.tsx')).toBe(false)
+    expect(isTrackedTsFile('packages/core/package.json')).toBe(false)
   })
 })
 

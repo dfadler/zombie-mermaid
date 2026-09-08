@@ -485,7 +485,7 @@ flowchart/state [Interactions](#interactions) above — a `click` on a class
 wraps its box in a real `<a>` link, a tooltip becomes a `<title>`, and a
 `call`/`callback` binding is parsed but never invoked and never written into
 the SVG (a class box's `<g class="class-node">` carries the same `data-id`
-hook). Both parsers share the implementation (`src/click-directive.ts`), so
+hook). Both parsers share the implementation (`packages/core/src/click-directive.ts`), so
 see that section for the full details. One gap: `parseMermaid()` handles
 flowchart and state sources only, and the class-diagram parser isn't part of
 the public API yet, so a class diagram's parsed `interactions` map isn't
@@ -507,7 +507,7 @@ classDiagram
 ```
 
 The same grammar as flowchart [Styling](#styling) above, sharing one
-implementation (`src/style-directives.ts`) and one cascade: `classDef
+implementation (`packages/core/src/style-directives.ts`) and one cascade: `classDef
 default` is the base for every class, a class's own style class (attached
 with `cssClass "A,B" name`, `class A,B name`, or the `:::name` shorthand on a
 declaration or either end of a relationship) overrides it property by

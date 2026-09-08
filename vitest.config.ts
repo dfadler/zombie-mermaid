@@ -19,7 +19,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      include: ['src/**/*.ts'],
+      // packages/*/src is the same library source, carved out of src/ by
+      // zombie-mermaid#625 — it has to stay in the denominator or the
+      // thresholds below would measure a strictly smaller file set than
+      // they were calibrated against.
+      include: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
       exclude: ['src/__tests__/**'],
       thresholds: {
         statements: 88,
