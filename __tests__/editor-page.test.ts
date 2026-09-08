@@ -70,23 +70,35 @@ describe('EditorPage', () => {
     expect(html).toContain(`<script type="module">${scriptJs}</script>`)
   })
 
-  it('keeps the layout-critical elements as direct children of <body>', () => {
+  it('keeps the layout-critical elements as direct children of .editor-tool-shell', () => {
     // editor/css/variables.css lays `body` out as a flex column and gives
-    // `.main` `flex: 1`, so any extra wrapper element would become the flex
-    // item instead and visibly break the page. That hazard is exactly why
-    // the HTML partials had to become real components rather than
-    // per-fragment `dangerouslySetInnerHTML` splices — assert the resulting
-    // shape rather than trusting a reviewer to spot a stray <div>.
+    // `.main` `flex: 1`; #609 reproduces that same contract one level down,
+    // on `.editor-tool-shell` (see editor-page.tsx's module doc comment),
+    // since `body` itself now also carries the shared nav/hero/footer chrome
+    // above and below the tool. `<EditorChrome>` still renders a fragment,
+    // so `.topbar`/`.main`/the toast land as `.editor-tool-shell`'s direct
+    // children with no wrapper `<div>` in between — assert the resulting
+    // shape rather than trusting a reviewer to spot a stray one.
     const html = render('')
-    const body = html.slice(html.indexOf('<body>'))
-    expect(body).toMatch(/^<body><div class="topbar">/)
-    expect(body).toMatch(/<div class="main"><div class="panel-left"/)
-    expect(body).toMatch(
+    const shellStart = html.indexOf('<div class="editor-tool-shell">')
+    expect(shellStart).toBeGreaterThan(-1)
+    const shell = html.slice(shellStart)
+    expect(shell).toMatch(
+      /^<div class="editor-tool-shell"><div class="topbar">/,
+    )
+    expect(shell).toMatch(/<div class="main"><div class="panel-left"/)
+    expect(shell).toMatch(
       /<div class="resize-handle" id="resize-handle"><\/div><div class="panel-right"/,
     )
-    expect(body).toMatch(
-      /<\/div><div class="toast" id="toast"><\/div><script type="module">/,
-    )
+    expect(shell).toMatch(/<\/div><div class="toast" id="toast"><\/div><\/div>/)
+  })
+
+  it('renders the shared Nav and Footer around the tool', () => {
+    const html = render('')
+    expect(html).toContain('class="nav-bar"')
+    expect(html).toContain('aria-current="page"')
+    expect(html).toContain('>Editor</a>')
+    expect(html).toContain('<footer class="section-px"')
   })
 
   it('renders the same chrome the editor test harness mounts', () => {
