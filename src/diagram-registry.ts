@@ -1,18 +1,23 @@
 // ============================================================================
-// zombie-mermaid — diagram-type registry (partial; see issue #533)
+// zombie-mermaid — SVG diagram-type registry (partial; see issue #533)
 //
-// A single per-type registration table that both front doors
-// (`renderMermaidSVGRaw` in src/index.ts, `renderMermaidASCII` in
-// src/ascii/index.ts) can look up instead of each hand-maintaining its own
-// `switch (diagramType)` over the same `DiagramType`.
+// A per-type registration table `renderMermaidSVGRaw` (src/index.ts) looks
+// up instead of hand-maintaining its own `switch (diagramType)` over the
+// same `DiagramType`. The ASCII front door has the matching table of its
+// own in src/ascii/registry.ts — see that file's header for why the two
+// halves are separate modules rather than one shared `DiagramModule` with
+// both a `renderSvg` and a `renderAscii` method (short version: one table
+// made this module import out of src/ascii/ while src/ascii/index.ts
+// imported back out of here, a cycle that blocks the monorepo split and
+// already dragged `elkjs` into `dist/ascii.js`).
 //
 // Only 'xychart' and 'er' are registered here. Those two are the only
 // diagram types whose existing renderer signatures adapt to a shared shape
 // with zero behavior change — see the issue-533 scoping doc (in the PR/
 // issue body) for why 'sequence', 'class', and 'flowchart' are NOT
-// registered yet and what would need to change first. Both front doors
-// check this table first; anything absent falls through to that front
-// door's own switch, completely unchanged.
+// registered yet and what would need to change first. The front door
+// checks this table first; anything absent falls through to its own
+// switch, completely unchanged.
 //
 // `packages/core/src/diagram-type.ts` (the `DiagramType` union + `detectDiagramType`)
 // stays exactly as-is and is what the front doors use to key into this
@@ -26,19 +31,16 @@ import type {
   SvgEmitOptions,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from '@zombie-mermaid/svg-renderer'
-import type { AsciiConfig, AsciiTheme, ColorMode } from './ascii/types.ts'
 import { withDirectionOverride } from '@zombie-mermaid/core'
 
 import { parseXYChart } from './xychart/parser.ts'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
-import { renderXYChartAscii } from './ascii/xychart.ts'
 import type { XYChart, PositionedXYChart } from './xychart/types.ts'
 
 import { parseErDiagram } from './er/parser.ts'
 import { layoutErDiagramSync } from './er/layout.ts'
 import { renderErSvg } from './er/renderer.ts'
-import { renderErAscii } from './ascii/er-diagram.ts'
 import type { ErDiagram, PositionedErDiagram } from './er/types.ts'
 
 /**
@@ -67,33 +69,22 @@ export interface SvgRenderContext {
 }
 
 /**
- * Small, closed set of ASCII-only extras not every type needs — today only
- * `class` reads `hyperlinks` (see `ClassAsciiOptions` in
- * src/ascii/class-diagram.ts). Kept as its own type here, rather than
- * importing `AsciiRenderOptions` from src/ascii/index.ts, to avoid a
- * type-only import cycle between that module and this one (ascii/index.ts
- * would need to import `DiagramModule` from here).
- */
-export interface AsciiRenderExtras {
-  hyperlinks?: boolean
-}
-
-/**
  * One diagram type's full registration.
  *
- * `layoutForSvg` is deliberately SVG-only — it is NOT shared with
- * `renderAscii`, unlike the issue's original `{ detect, parse, layout,
- * renderSvg, renderAscii }` sketch. Reading every ASCII per-type module
- * confirmed why a single shared `layout` step would be fiction, not
- * simplification, for this codebase: SVG layout produces pixel coordinates
- * (`PositionedXYChart`, `PositionedErDiagram`, …), while every ASCII
- * renderer does its own, unrelated grid/canvas layout internally — see
- * e.g. src/ascii/xychart.ts's file header: "Uses the parsed XYChart type
- * directly (not PositionedXYChart) since pixel coordinates don't map to
- * character grids." `parse` genuinely is shared (both front doors already
- * import the same `parseXYChart`/`parseErDiagram`/etc.), which is why it
- * stays a real interface method here; `renderAscii` instead reruns its own
- * parse+layout+render internally from raw text, exactly as it does today.
+ * `layoutForSvg` is deliberately SVG-only — it is NOT shared with the ASCII
+ * side, unlike the issue's original `{ detect, parse, layout, renderSvg,
+ * renderAscii }` sketch. Reading every ASCII per-type module confirmed why a
+ * single shared `layout` step would be fiction, not simplification, for this
+ * codebase: SVG layout produces pixel coordinates (`PositionedXYChart`,
+ * `PositionedErDiagram`, …), while every ASCII renderer does its own,
+ * unrelated grid/canvas layout internally — see e.g. src/ascii/xychart.ts's
+ * file header: "Uses the parsed XYChart type directly (not
+ * PositionedXYChart) since pixel coordinates don't map to character grids."
+ * `parse` genuinely is shared in the sense that both front doors call the
+ * same `parseXYChart`/`parseErDiagram`, but each ASCII renderer reruns that
+ * parse itself from raw text — which is why the ASCII entries live in
+ * src/ascii/registry.ts as plain `(text, …) => string` functions instead of
+ * a `renderAscii` method on this interface.
  */
 export interface DiagramModule<TDiagram = unknown, TPositioned = unknown> {
   readonly type: DiagramType
@@ -103,13 +94,6 @@ export interface DiagramModule<TDiagram = unknown, TPositioned = unknown> {
     positioned: TPositioned,
     ctx: SvgRenderContext,
     options: RenderOptions,
-  ): string
-  renderAscii(
-    text: string,
-    config: AsciiConfig,
-    colorMode: ColorMode,
-    theme: AsciiTheme,
-    extras: AsciiRenderExtras,
   ): string
 }
 
@@ -137,8 +121,6 @@ const xychartModule: DiagramModule<XYChart, PositionedXYChart> = {
       ctx.emit,
     )
   },
-  renderAscii: (text, config, colorMode, theme) =>
-    renderXYChartAscii(text, config, colorMode, theme),
 }
 
 const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
@@ -166,14 +148,14 @@ const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
       ctx.emit,
     )
   },
-  renderAscii: (text, config, colorMode, theme) =>
-    renderErAscii(text, config, colorMode, theme),
 }
 
 /**
  * The registry proper. Only diagram types listed here are looked up by the
- * two front doors; anything absent (currently 'sequence', 'class',
+ * SVG front door; anything absent (currently 'sequence', 'class',
  * 'flowchart') falls through to that front door's own switch, unchanged.
+ * The ASCII front door's equivalent table is `asciiRegistry` in
+ * src/ascii/registry.ts.
  *
  * Typed with `any` type parameters at the map level: each entry's own
  * `TDiagram`/`TPositioned` are only known inside that entry's own closure
