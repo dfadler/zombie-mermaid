@@ -28,84 +28,220 @@
     </link>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
     </link>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     </link>
     <link href="assets/blog.css" rel="stylesheet">
     </link>
   </head>
-  <body>
-    <div class="site-header">
-      <a class="brand-badge" href="../">
-        <strong>
-          "Zombie Mermaid"
-        </strong>
-      </a>
-      <nav class="header-links">
-        <a href="../">
-          "Samples"
+  <body style="background: var(--bg);">
+    <div style="background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 40%, var(--bg) 100%);">
+      <header class="nav-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 22px 80px; border-bottom: 1px solid var(--border); background: rgba(10, 13, 22, 0.85); position: relative; z-index: 10;">
+        <a href="../" style="display: flex; align-items: center; gap: 12px; color: var(--text);">
+          <svg aria-hidden="true" fill="none" height="30" viewBox="0 0 24 24" width="30">
+            <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
+            </rect>
+            <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
+            </rect>
+            <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
+            </path>
+          </svg>
+          <span class="display" style="font-size: 20px; letter-spacing: -0.01em;">
+            "zombie-mermaid"
+          </span>
         </a>
-        <a href="../editor">
-          "Editor"
-        </a>
-        <a href="../blog/">
-          "Blog"
-        </a>
-        <a href="https://github.com/dfadler/zombie-mermaid" rel="noopener" target="_blank">
-          "GitHub"
-        </a>
-      </nav>
-    </div>
-    <div class="content-wrapper">
-      <div class="breadcrumb">
-        <a href="../">
-          "Home"
-        </a>
-        <span class="sep">
-          "/"
+        <nav aria-label="Main" class="nav-links" style="display: flex; align-items: center; gap: 36px;">
+          <a href="../diagrams/" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+            "Diagrams"
+          </a>
+          <a href="../editor" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+            "Editor"
+          </a>
+          <a href="../fork-fixes" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+            "Fork fixes"
+          </a>
+          <a aria-current="page" href="./" style="font-size: 15px; font-weight: 600; color: var(--text);">
+            "Blog"
+          </a>
+          <a href="https://github.com/dfadler/zombie-mermaid" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+            "GitHub"
+          </a>
+        </nav>
+        <span class="pill mono" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); flex-shrink: 0;">
+          <span class="nav-npm-text">
+            "npm install zombie-mermaid"
+          </span>
+          <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
+            <rect height="12" rx="2" width="12" x="9" y="9">
+            </rect>
+            <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
+            </path>
+          </svg>
         </span>
-        "Blog"
-      </div>
-      <h1>
-        "Blog"
-      </h1>
-      <p class="lede">
-        "Updates on zombie-mermaid, and notes on what it's like maintaining it."
-      </p>
-      <div class="post-list">
-        <article class="post-card">
-          <h2>
-            <a href="shipping-v1.html">
-              "Shipping v1 of a <zombie>"
+      </header>
+      <div class="section-px" style="padding: 96px 80px 64px; position: relative; z-index: 1;">
+        <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 20px;">
+          <div class="mono" style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 14px; font-weight: 600; color: var(--text-faint);">
+            <a href="../">
+              "Home"
             </a>
-          </h2>
-          <p class="post-meta">
-            "March 4, 2026"
+            <span>
+              "/"
+            </span>
+            <span aria-current="page" style="color: var(--text-dim);">
+              "Blog"
+            </span>
+          </div>
+          <h1 class="page-h1" style="line-height: 1.08; letter-spacing: -0.02em;">
+            "Blog"
+          </h1>
+          <p style="font-size: 18px; line-height: 1.6; color: var(--text-dim); max-width: 620px;">
+            "Updates on zombie-mermaid, and notes on what it's like maintaining it."
           </p>
-          <p>
-            "What it took, & what broke."
-          </p>
-        </article>
-        <article class="post-card">
-          <h2>
-            <a href="day-zero.html">
-              "Day zero of the toolchain"
-            </a>
-          </h2>
-          <p class="post-meta">
-            "February 1, 2026"
-          </p>
-          <p>
-            "Setting things up."
-          </p>
-        </article>
+        </div>
       </div>
-      <footer class="site-footer">
-        <span>
-          "© 2026 zombie-mermaid"
-        </span>
-        <a href="https://github.com/dfadler/zombie-mermaid" rel="noopener noreferrer" target="_blank">
-          "GitHub"
-        </a>
+      <div class="section-px" style="padding: 0px 80px 88px; position: relative; z-index: 1;">
+        <div style="max-width: 1280px; margin: 0px auto;">
+          <div class="section-eyebrow" style="margin-bottom: 16px;">
+            "Latest post"
+          </div>
+          <div class="card featured-card" style="border-color: var(--cyan); padding: 48px; display: flex; align-items: center; justify-content: space-between; gap: 40px;">
+            <div style="flex: 1 1 auto; min-width: 0px; display: flex; flex-direction: column; gap: 20px;">
+              <span class="pill mono" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-faint); align-self: flex-start; font-size: 13px; padding: 8px 16px;">
+                "March 4, 2026"
+              </span>
+              <h2 style="font-size: 32px; line-height: 1.2; letter-spacing: -0.01em;">
+                <a href="shipping-v1.html" style="color: inherit;">
+                  "Shipping v1 of a <zombie>"
+                </a>
+              </h2>
+              <p style="font-size: 16.5px; line-height: 1.6; color: var(--text-dim); max-width: 640px;">
+                "What it took, & what broke."
+              </p>
+              <a href="shipping-v1.html" style="display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; white-space: nowrap; margin-top: 8px;">
+                "Read the post"
+                <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="14">
+                  <path d="M5 12h14M13 6l6 6-6 6">
+                  </path>
+                </svg>
+              </a>
+            </div>
+            <div class="featured-visual float-anim" style="flex: 0 0 220px; max-width: 100%;">
+              <div class="card" style="border-color: var(--cyan); background: radial-gradient(circle at 50% 45%, rgba(56,224,208,0.16) 0%, var(--panel) 68%); width: 220px; height: 220px; display: flex; align-items: center; justify-content: center;">
+                <svg aria-hidden="true" fill="none" height="96" viewBox="0 0 24 24" width="96">
+                  <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
+                  </rect>
+                  <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
+                  </rect>
+                  <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
+                  </path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section-px" style="padding: 0px 80px 140px; position: relative; z-index: 1;">
+        <div style="max-width: 1280px; margin: 0px auto;">
+          <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 48px;">
+            <div class="section-eyebrow">
+              "From the archive"
+            </div>
+            <h2 style="font-size: 30px; letter-spacing: -0.01em;">
+              "Earlier posts"
+            </h2>
+          </div>
+          <div class="archive-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;">
+            <div class="card" style="padding: 30px; display: flex; flex-direction: column; gap: 16px;">
+              <span class="mono" style="font-size: 12.5px; color: var(--text-faint);">
+                "February 1, 2026"
+              </span>
+              <h3 style="font-size: 20px; line-height: 1.3;">
+                <a href="day-zero.html" style="color: inherit;">
+                  "Day zero of the toolchain"
+                </a>
+              </h3>
+              <p style="font-size: 14px; color: var(--text-dim); line-height: 1.55;">
+                "Setting things up."
+              </p>
+              <a href="day-zero.html" style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; white-space: nowrap; margin-top: 4px;">
+                "Read more"
+                <svg aria-hidden="true" fill="none" height="12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="12">
+                  <path d="M5 12h14M13 6l6 6-6 6">
+                  </path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="section-px" style="padding: 64px 80px 48px; border-top: 1px solid var(--border); background: var(--bg-soft);">
+        <div class="footer-grid" style="max-width: 1280px; margin: 0px auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <svg aria-hidden="true" fill="none" height="22" viewBox="0 0 24 24" width="22">
+                <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
+                </rect>
+                <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
+                </rect>
+                <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
+                </path>
+              </svg>
+              <span class="display" style="font-size: 17px;">
+                "zombie-mermaid"
+              </span>
+            </div>
+            <p style="font-size: 14px; color: var(--text-dim); max-width: 320px; line-height: 1.6;">
+              "An open source library for rendering Mermaid diagrams, designed for the age of AI."
+            </p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-size: 13px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em;">
+              "Product"
+            </p>
+            <a href="../diagrams/" style="font-size: 14.5px; color: var(--text-dim);">
+              "Diagrams"
+            </a>
+            <a href="../editor" style="font-size: 14.5px; color: var(--text-dim);">
+              "Editor"
+            </a>
+            <a href="../fork-fixes" style="font-size: 14.5px; color: var(--text-dim);">
+              "Fork fixes"
+            </a>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-size: 13px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em;">
+              "Resources"
+            </p>
+            <a href="./" style="font-size: 14.5px; color: var(--text-dim);">
+              "Blog"
+            </a>
+            <a href="https://github.com/dfadler/zombie-mermaid" style="font-size: 14.5px; color: var(--text-dim);">
+              "GitHub"
+            </a>
+            <a href="https://www.npmjs.com/package/zombie-mermaid" style="font-size: 14.5px; color: var(--text-dim);">
+              "npm package"
+            </a>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="font-size: 13px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em;">
+              "Project"
+            </p>
+            <span style="font-size: 14.5px; color: var(--text-dim);">
+              "MIT Licensed"
+            </span>
+            <a href="https://github.com/dfadler/zombie-mermaid" style="font-size: 14.5px; color: var(--text-dim);">
+              "dfadler/zombie-mermaid"
+            </a>
+          </div>
+        </div>
+        <div class="footer-bottom-row" style="max-width: 1280px; margin: 40px auto 0px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+          <p style="font-size: 13px; color: var(--text-faint);">
+            "© 2026 zombie-mermaid contributors. MIT licensed."
+          </p>
+          <p style="font-size: 13px; color: var(--text-faint);">
+            "Actively maintained fork of beautiful-mermaid."
+          </p>
+        </div>
       </footer>
     </div>
   </body>

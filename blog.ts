@@ -10,9 +10,9 @@
  *
  * Posts are plain Markdown with a small frontmatter block (title, date,
  * description, optional slug) — see blog-posts/README.md for the format.
- * Rendered via the same `<PageShell>`/`<StaticPage>` React chrome as
- * pages.ts's per-diagram-type pages (demo/components/site-chrome.tsx), so
- * blog pages share the rest of the site's header/breadcrumb/footer chrome.
+ * Rendered through the site redesign's shared Nav/Footer and design
+ * tokens (#607, part of #590/#591) — see demo/components/blog-page.tsx's
+ * header comment for the layout itself.
  *
  * Post sources live in blog-posts/, a sibling of the generated blog/
  * output directory, not inside it — build:site's `mv blog site/blog`
@@ -37,6 +37,22 @@ import {
   BlogIndexPage,
   BlogPostPage,
 } from './demo/components/blog-page.tsx'
+import { footerCss } from './demo/components/footer.tsx'
+import { navCss } from './demo/components/nav.tsx'
+import { primitivesCss } from './demo/components/primitives.tsx'
+import { designBaseCss } from './demo/components/tokens.tsx'
+
+/**
+ * The shiki theme fenced code blocks highlight with.
+ *
+ * 'github-dark' rather than the pre-redesign 'github-light': the redesign
+ * (#590) is a dark palette (tokens.tsx's `--bg` is `#0a0d16`), and a
+ * light-background code block would clash badly rather than read as an
+ * intentional "printed page" accent. github-dark's own background
+ * (`#0d1117`) sits close enough to `--bg` that demo/blog.css's `.prose
+ * pre` border/radius wrap it without a visible seam.
+ */
+const CODE_THEME = 'github-dark'
 
 /** The live site's base URL — matches pages.ts's SITE_URL (see that file's header comment). */
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
@@ -209,10 +225,10 @@ async function highlightCode(
   try {
     return highlighter.codeToHtml(code, {
       lang: effective,
-      theme: 'github-light',
+      theme: CODE_THEME,
     })
   } catch {
-    return highlighter.codeToHtml(code, { lang: 'text', theme: 'github-light' })
+    return highlighter.codeToHtml(code, { lang: 'text', theme: CODE_THEME })
   }
 }
 
@@ -304,19 +320,29 @@ async function main(): Promise<void> {
   await rm(OUT_DIR, { recursive: true, force: true })
   await mkdir(new URL('./assets/', OUT_DIR), { recursive: true })
 
-  const [demoCss, blogCss] = await Promise.all([
-    readFile(new URL('./demo/styles.css', import.meta.url), 'utf8'),
-    readFile(new URL('./demo/blog.css', import.meta.url), 'utf8'),
-  ])
+  // The redesign's shared CSS (#590/#591) — palette/base elements, the
+  // .card/.pill/.section-eyebrow primitives, and the Nav/Footer responsive
+  // rules — followed by demo/blog.css's own page-specific layout and
+  // .prose typography. Unlike the pre-redesign version, this no longer
+  // concatenates demo/styles.css: that file's --t-*-themed classes
+  // (.site-header, .post-card, .cta-btn, …) belonged to site-chrome.tsx's
+  // chrome, which blog-page.tsx no longer renders now that it uses the
+  // shared Nav/Footer instead.
+  const blogCss = await readFile(
+    new URL('./demo/blog.css', import.meta.url),
+    'utf8',
+  )
   await writeFile(
     new URL('./assets/blog.css', OUT_DIR),
-    `${demoCss}\n${blogCss}`,
+    [designBaseCss(), primitivesCss(), navCss(), footerCss(), blogCss].join(
+      '\n\n',
+    ),
   )
 
   const posts = await loadPosts()
   const highlighter = await createHighlighter({
     langs: [],
-    themes: ['github-light'],
+    themes: [CODE_THEME],
   })
 
   const sitemapUrls: string[] = [`${SITE_URL}/blog/`]

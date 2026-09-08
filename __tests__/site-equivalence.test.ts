@@ -381,9 +381,9 @@ describe('blog.ts → blog/*.html', () => {
         posts: [],
       }),
     )
-    expect(html).toContain(
-      '<p class="empty-state">No posts yet — check back soon.</p>',
-    )
-    expect(html).not.toContain('post-list')
+    expect(html).toContain('<p class="empty-state"')
+    expect(html).toContain('No posts yet — check back soon.')
+    expect(html).not.toContain('featured-card')
+    expect(html).not.toContain('archive-grid')
   })
 })
