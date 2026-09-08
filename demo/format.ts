@@ -34,6 +34,26 @@ export function formatDescription(text: string): string {
 }
 
 /**
+ * Render a prose field: escape it, then turn backtick spans into `<code>`
+ * and asterisk spans into `<em>`.
+ *
+ * Escaping first means the data file can contain `<`, `>`, or `&` — several
+ * fork-fixes symptoms quote Mermaid arrow tokens and regex fragments —
+ * without either breaking the page or being interpolated as live markup.
+ *
+ * Returns a string rather than React nodes, and is spliced in with
+ * `dangerouslySetInnerHTML` by demo/components/fork-fixes-page.tsx: the two
+ * replacements run in sequence over one already-escaped string, so an
+ * asterisk inside a backtick span is handled exactly as it always was.
+ * Re-expressing that as a node tree would quietly change which spans win.
+ */
+export function formatProse(text: string): string {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+}
+
+/**
  * Make a JSON payload safe to embed in a `<script>` element.
  *
  * An HTML parser ends a script element at the first `</script`, wherever it

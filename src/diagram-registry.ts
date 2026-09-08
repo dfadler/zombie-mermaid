@@ -14,17 +14,20 @@
 // check this table first; anything absent falls through to that front
 // door's own switch, completely unchanged.
 //
-// `src/diagram-type.ts` (the `DiagramType` union + `detectDiagramType`)
+// `packages/core/src/diagram-type.ts` (the `DiagramType` union + `detectDiagramType`)
 // stays exactly as-is and is what the front doors use to key into this
 // table — this module doesn't touch detection.
 // ============================================================================
 
-import type { DiagramType } from './diagram-type.ts'
-import type { RenderOptions } from './types.ts'
-import type { DiagramColors, SvgEmitOptions } from './theme.ts'
-import type { FontSizes } from './styles.ts'
+import type {
+  DiagramType,
+  RenderOptions,
+  DiagramColors,
+  SvgEmitOptions,
+} from '@zombie-mermaid/core'
+import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './ascii/types.ts'
-import { withDirectionOverride } from './direction-override.ts'
+import { withDirectionOverride } from '@zombie-mermaid/core'
 
 import { parseXYChart } from './xychart/parser.ts'
 import { layoutXYChart } from './xychart/layout.ts'

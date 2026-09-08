@@ -6,15 +6,15 @@ import type {
   RelationshipType,
   ClassNamespace,
 } from './types.ts'
-import { normalizeBrTags } from '../multiline-utils.ts'
-import { applyClickStatement } from '../click-directive.ts'
 import {
+  normalizeBrTags,
+  applyClickStatement,
   splitClassShorthand,
   tryApplyClassAssignment,
   tryApplyClassDef,
   tryApplyCssClass,
   tryApplyStyleStatement,
-} from '../style-directives.ts'
+} from '@zombie-mermaid/core'
 
 // ============================================================================
 // Class diagram parser
@@ -123,7 +123,7 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
     }
 
     // --- Styling: `classDef`, `style`, `cssClass "A,B" name`, `class A,B name` ---
-    // Shared with the flowchart parser (src/style-directives.ts). The
+    // Shared with the flowchart parser (packages/core/src/style-directives.ts). The
     // `class A,B name` assignment form is checked before the declaration
     // regexes below: a declaration never has a second bare-word token after
     // the class id (`class Animal`, `class Animal~T~`, `class Animal {`), so

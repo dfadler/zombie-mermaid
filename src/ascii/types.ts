@@ -6,7 +6,7 @@
 // and graph structures used by the ASCII/Unicode renderer.
 // ============================================================================
 
-import type { NodeShape } from '../types.ts'
+import type { NodeShape } from '@zombie-mermaid/core'
 import type { Grid } from './grid-occupancy.ts'
 
 // Re-export NodeShape for convenience
@@ -189,10 +189,13 @@ export interface AsciiEdge {
    */
   pathToJunction?: GridCoord[]
   /**
-   * Set when this edge shares both its source AND target with one or more
-   * sibling edges (true parallel/multi-edges, e.g. `A -->|One| B` and
-   * `A -->|Two| B`) — as opposed to edges that merely share one endpoint,
-   * which `bundle` above already handles via fan-in/fan-out junctions.
+   * Set when this edge connects the same *pair* of nodes as one or more
+   * sibling edges — either in the same direction (`A -->|One| B` and
+   * `A -->|Two| B`) or, for a pair laid out side by side, in opposite
+   * directions (`A -->|req| B` and `B -->|res| A`). See
+   * `parallelGroupKey` in edge-routing.ts for the exact rule. This is as
+   * opposed to edges that merely share one endpoint, which `bundle` above
+   * already handles via fan-in/fan-out junctions.
    *
    * `index` is this edge's 0-based position within the group (declaration
    * order); `total` is the group's size. `index === 0` keeps the ordinary
@@ -201,7 +204,7 @@ export interface AsciiEdge {
    * before this field existed. `index > 0` routes through an offset lane
    * instead — see determinePath in edge-routing.ts — so sibling edges never
    * compute the identical path (and therefore identically-positioned,
-   * mutually-corrupting labels; see #329).
+   * mutually-corrupting labels; see #329 and #629).
    *
    * `usedOffsets` is the *same* Set object, by reference, on every edge in
    * the group (assigned once in assignParallelEdgeLanes) — the lane-offset

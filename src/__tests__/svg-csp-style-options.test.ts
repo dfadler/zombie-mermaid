@@ -27,10 +27,9 @@ import {
   buildStyleBlock,
   themeStyleDeclarations,
   THEMES,
-} from '../theme.ts'
-import type { DiagramColors } from '../theme.ts'
+} from '@zombie-mermaid/core'
+import type { DiagramColors, RenderOptions } from '@zombie-mermaid/core'
 import { renderMermaidSVG, themeCssVariables } from '../index.ts'
-import type { RenderOptions } from '../types.ts'
 
 const colors: DiagramColors = { bg: '#FFFFFF', fg: '#27272A' }
 

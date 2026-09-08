@@ -21,6 +21,11 @@ description: |
   headless real-PTY capture satisfies the requirement.
 metadata:
   version: '2.1.0'
+  # Hidden from `npx skills add dfadler/zombie-mermaid`, which walks
+  # `.claude/skills/` alongside the publishable `skills/` container. This is a
+  # repo-internal dev workflow (it drives scripts/ascii-terminal-capture.sh and
+  # assumes this checkout), not something to hand a skills.sh installer.
+  internal: true
 ---
 
 # Verify ASCII output in a real terminal — and screenshot that, not the browser mockup

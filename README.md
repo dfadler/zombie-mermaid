@@ -191,6 +191,22 @@ await server.connect(new StdioServerTransport())
 
 ---
 
+## Agent Skill
+
+[`skills/zombie-mermaid/SKILL.md`](skills/zombie-mermaid/SKILL.md) packages the
+CLI and MCP server above as an [Agent Skill](https://skills.sh), for agents that
+discover capabilities that way:
+
+```bash
+npx skills add dfadler/zombie-mermaid
+```
+
+It is a thin wrapper — instructions and example invocations only. No renderer is
+vendored into it, so there is no second copy of the pipeline to keep in sync with
+the package.
+
+---
+
 ## Docs
 
 - [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md), [using the HTML viewer](docs/guides/html-viewer.md)

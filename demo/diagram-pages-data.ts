@@ -4,7 +4,7 @@
  * Each entry pairs one of the 6 diagram types this library renders with a
  * small, representative Mermaid source and a short, concrete intro
  * paragraph. `pages.ts` crosses this list with every key in `THEMES` (see
- * `src/theme.ts`) to generate one page per (diagram type × theme)
+ * `packages/core/src/theme.ts`) to generate one page per (diagram type × theme)
  * combination.
  *
  * `source` is looked up from `samples-data.ts` by title (via `sampleSource`

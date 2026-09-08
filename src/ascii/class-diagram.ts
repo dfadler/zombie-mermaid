@@ -40,11 +40,11 @@ import { allocateTerritory } from './territory.ts'
 import type { Territory } from './territory.ts'
 import { markBoxLabelLinks, mkLinkCanvas } from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
-import { safeHref } from '../click-directive.ts'
+import { safeHref, splitStatements } from '@zombie-mermaid/core'
 import { getCorners } from './shapes/corners.ts'
 import { splitLines } from './multiline-utils.ts'
-import { splitStatements } from '../statements.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
+import { findFreeLane } from './lane-search.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 /** Build the text sections for a class box: [header], [attributes], [methods] */
@@ -600,45 +600,21 @@ export function renderClassAscii(
     y2: number,
     excludeIds: Set<string>,
   ): number {
-    // Try the original column first
-    let clear = true
-    for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
-      if (isInsideBox(startX, y, excludeIds)) {
-        clear = false
-        break
-      }
-    }
-    if (clear) return startX
-
-    // Try columns to the left and right, alternating
-    for (let offset = 1; offset < totalW + 10; offset++) {
-      // Try right
-      const rightX = startX + offset
-      clear = true
+    const columnIsClear = (x: number): boolean => {
       for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
-        if (isInsideBox(rightX, y, excludeIds)) {
-          clear = false
-          break
-        }
+        if (isInsideBox(x, y, excludeIds)) return false
       }
-      if (clear) return rightX
-
-      // Try left
-      const leftX = startX - offset
-      if (leftX >= 0) {
-        clear = true
-        for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
-          if (isInsideBox(leftX, y, excludeIds)) {
-            clear = false
-            break
-          }
-        }
-        if (clear) return leftX
-      }
+      return true
     }
 
-    // Fallback to right edge of canvas + some extra space
-    return totalW + 2
+    // Scan outward from `startX`, right before left at each distance, never
+    // off the left edge of the canvas. The right bound reaches far enough
+    // past the widest box that a column clear of every box is always found
+    // in practice — but the caller-side fallback below stays as a backstop
+    // rather than being asserted away.
+    return (
+      findFreeLane(startX, 0, startX + totalW + 9, columnIsClear) ?? totalW + 2
+    )
   }
 
   // --- Draw relationship lines ---
