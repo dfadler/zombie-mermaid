@@ -1,5 +1,10 @@
 # Shared Playwright Docker image for visual regression: no adopt yet
 
+> **Superseded in part.** The "no adopt — yet" call below was the 2026-09-06
+> decision and is kept as written. Both gaps it named have since been measured;
+> see [Amendment (2026-09-07)](#amendment-2026-09-07) for the current position
+> and for what #549/#550/#551 should do.
+
 ## Context
 
 [#544](https://github.com/dfadler/zombie-mermaid/issues/544) asked whether running
@@ -150,3 +155,41 @@ becomes the settled answer, not just the current default.
   conclusive answer; recording the gap explicitly here is what lets a future
   pass close it in one step instead of re-deriving it from the three spike docs
   again.
+
+## Amendment (2026-09-07)
+
+**Gap 2 closed, gap 1 narrowed, and the two halves of the suite swap places.**
+Two follow-up spikes — [#614](https://github.com/dfadler/zombie-mermaid/issues/614)
+(font layer, gap 2) and [#615](https://github.com/dfadler/zombie-mermaid/issues/615)
+(x86-vs-CI for SVG, gap 1) — move this decision off "no adopt — yet," and invert
+its original expectation: **ASCII is now the proven half** (a one-package font
+fix collapses its fail rate to 0/90, architecture ruled out as a factor), while
+**SVG is the half still resting on a proxy** (0/570 mismatches under an
+amd64-on-Rosetta proxy for real x86 CI, but real bare-metal x86 remains
+untested, and native arm64 rendering turns out to be intermittently unstable
+against the shared baselines).
+
+**Updated decision: partial adopt, CI-side, sequenced.** Moving off "no adopt —
+yet", but not to unconditional adoption:
+
+- Adopt the font-corrected image (`docker/visual-regression.Dockerfile`'s
+  resolution) as the container of record for any work under #544 — the stock
+  tag is now a known-bad configuration for this repo.
+- The remaining SVG uncertainty is closeable only in CI. [#549](https://github.com/dfadler/zombie-mermaid/issues/549)
+  proceeds as that experiment, scoped with a declared abort condition: the full
+  suite must pass inside the container job against **unchanged** baselines, or
+  revert and re-decide here.
+- No baseline regeneration is authorized by this amendment — the committed
+  baseline sets are the measuring instrument, and regenerating them to force a
+  green run destroys the data point.
+- [#550](https://github.com/dfadler/zombie-mermaid/issues/550) can proceed for
+  ASCII now (CI-identical at native arch); SVG stays blocked on #549.
+  [#551](https://github.com/dfadler/zombie-mermaid/issues/551) stays blocked
+  and needs re-scoping — its two proposed branches are both falsified by #615's
+  results.
+
+The full measurements, the per-issue guidance for #549/#550/#551, and the
+remaining open questions (real bare-metal x86, a flag-matched comparison, QEMU
+vs. Rosetta, native Linux arm64) are recorded in
+[a comment on this issue](https://github.com/dfadler/zombie-mermaid/issues/548#issuecomment-5591525595)
+rather than duplicated here.
