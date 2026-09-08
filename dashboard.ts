@@ -70,9 +70,13 @@ export async function generate(): Promise<string> {
     new URL('./demo/dashboard.css', import.meta.url),
     'utf8',
   )
-  const css = [designBaseCss(), primitivesCss(), navCss(), footerCss(), pageCss].join(
-    '\n\n',
-  )
+  const css = [
+    designBaseCss(),
+    primitivesCss(),
+    navCss(),
+    footerCss(),
+    pageCss,
+  ].join('\n\n')
   return renderDashboardHtml(parseDashboardData(dashboardData), css)
 }
 

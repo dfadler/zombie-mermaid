@@ -36,7 +36,12 @@ import {
   type RepoStats,
 } from '../dashboard-model.ts'
 import { Footer } from './footer.tsx'
-import { ActivityIcon, CheckIcon, ChevronRightIcon, ClockIcon } from './icons.tsx'
+import {
+  ActivityIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  ClockIcon,
+} from './icons.tsx'
 import { Nav } from './nav.tsx'
 import { Card, CTA, SectionEyebrow, accentVar } from './primitives.tsx'
 import {
@@ -234,8 +239,8 @@ export function MetricsSection({
             maxWidth: '640px',
           }}
         >
-          Same metrics, same source, no cherry-picking — this fork simply
-          moves and upstream mostly doesn't.
+          Same metrics, same source, no cherry-picking — this fork simply moves
+          and upstream mostly doesn't.
         </p>
       </div>
 
@@ -333,8 +338,7 @@ export function RescuedTeaser() {
             >
               Some bugs reported against upstream beautiful-mermaid never got
               fixed there. A number of them are already fixed in this fork —
-              each one documented before/after on the fork-fixes evidence
-              page.
+              each one documented before/after on the fork-fixes evidence page.
             </p>
           </div>
         </div>
@@ -509,7 +513,10 @@ export function DashboardPage({ data, css }: DashboardPageProps) {
                   color: colorVar('--text-faint'),
                 }}
               >
-                <a href={ROUTES.home} style={{ color: colorVar('--text-faint') }}>
+                <a
+                  href={ROUTES.home}
+                  style={{ color: colorVar('--text-faint') }}
+                >
                   Home
                 </a>
                 <ChevronRightIcon size={12} strokeWidth={2.4} />
@@ -547,10 +554,9 @@ export function DashboardPage({ data, css }: DashboardPageProps) {
                 >
                   A factual comparison of this fork's maintenance activity
                   against <a href={UPSTREAM_URL}>upstream beautiful-mermaid</a>{' '}
-                  — commit recency, issue and PR throughput, and bugs fixed
-                  here that are still open upstream. Every number below is
-                  pulled straight from each repo's GitHub API, not
-                  hand-tallied.
+                  — commit recency, issue and PR throughput, and bugs fixed here
+                  that are still open upstream. Every number below is pulled
+                  straight from each repo's GitHub API, not hand-tallied.
                 </p>
               </div>
 
@@ -566,8 +572,8 @@ export function DashboardPage({ data, css }: DashboardPageProps) {
               >
                 <ClockIcon size={13} strokeWidth={2} />
                 <span>
-                  Snapshot as of {formatDateTime(data.generatedAt)} —
-                  refreshed periodically, not live. See{' '}
+                  Snapshot as of {formatDateTime(data.generatedAt)} — refreshed
+                  periodically, not live. See{' '}
                   <a
                     href={`${FORK_URL}/blob/main/scripts/generate-dashboard-data.ts`}
                   >
