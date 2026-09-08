@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.1
+
+### Patch Changes
+
+- [#644](https://github.com/dfadler/zombie-mermaid/pull/644) [`9128c93`](https://github.com/dfadler/zombie-mermaid/commit/9128c93ff43adaeb0abc3d706d9e9f3277cd8f02) Thanks [@dfadler](https://github.com/dfadler)! - `zombie-mermaid/ascii` no longer pulls `elkjs` into its bundle. The shared per-diagram-type registry added in [#533](https://github.com/dfadler/zombie-mermaid/issues/533) held both renderers' entries in one module, so importing it from the ASCII front door dragged `src/er/layout.ts` → `src/elk-instance.ts` → `elkjs` into the `./ascii` entry's module graph — defeating the reason that subpath export exists ([#300](https://github.com/dfadler/zombie-mermaid/issues/300)). The registry is now split by renderer (`src/ascii/registry.ts` owns the ASCII half), which removes the import cycle between `src/ascii/**` and the umbrella and drops `import "elkjs/lib/elk.bundled.js"` from `dist/ascii.js`: 218.9 KB → 178.3 KB raw, 56 KB → 47 KB gzipped, and the entry now loads with no `elkjs` on disk at all. No API change — every export, and every byte of rendered ASCII and SVG output, is identical. Refs [#623](https://github.com/dfadler/zombie-mermaid/issues/623).
+
+- [#648](https://github.com/dfadler/zombie-mermaid/pull/648) [`3533b6a`](https://github.com/dfadler/zombie-mermaid/commit/3533b6a4a9ce8222ad0fe4e078d1c85de31d349a) Thanks [@dfadler](https://github.com/dfadler)! - Fix two ASCII edges running in opposite directions between the same pair of side-by-side nodes (`A -- req --> B` alongside `B -- res --> A`) compositing their labels onto one line and dropping an arrowhead. They now get separate lanes, the same treatment same-direction parallel edges already got. Refs [#629](https://github.com/dfadler/zombie-mermaid/issues/629).
+
+- [#637](https://github.com/dfadler/zombie-mermaid/pull/637) [`cb977a4`](https://github.com/dfadler/zombie-mermaid/commit/cb977a4bdfd5d99041cbf688b6a7db5ed4edf6cb) Thanks [@dfadler](https://github.com/dfadler)! - Add the redesign's stroke icon set to the demo. Refs [#596](https://github.com/dfadler/zombie-mermaid/issues/596).
+
 ## 2.2.0
 
 ### Minor Changes
