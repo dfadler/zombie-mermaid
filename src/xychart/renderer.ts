@@ -1,9 +1,11 @@
 import type { PositionedXYChart } from './types.ts'
-import type { DiagramColors } from '../theme.ts'
-import { svgOpenTag, buildStyleBlock, styleOpenTag } from '../theme.ts'
-import type { SvgEmitOptions } from '../theme.ts'
-import { withDataSrc } from '../renderer.ts'
-import { TEXT_BASELINE_SHIFT, estimateTextWidth } from '../styles.ts'
+import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
+import { svgOpenTag, buildStyleBlock, styleOpenTag } from '@zombie-mermaid/core'
+import {
+  withDataSrc,
+  TEXT_BASELINE_SHIFT,
+  estimateTextWidth,
+} from '@zombie-mermaid/svg-renderer'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './colors.ts'
 
 // ============================================================================
@@ -61,7 +63,7 @@ const TIP = {
  *                       `<svg>` as `data-src` (from `options.embedSource`).
  *                       Omitted when the option is off.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
- *                src/theme.ts.
+ *                packages/core/src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
  * @param emit - Strict-CSP controls (from `options.nonce` /
  *               `options.styleAttribute`, see #216). Default: no nonce,

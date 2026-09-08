@@ -100,7 +100,7 @@ export function withNarrowDirection(source: string, lineIndex: number): string {
  * Give every real `id="…"` in a rendered SVG string a unique prefix, and
  * rewrite the `url(#…)` references (e.g. `marker-end`) that point at them
  * to match. Both an orientation pair's SVGs define the same fixed marker
- * ids (e.g. `arrowhead`, see src/renderer.ts), and IDs must be unique per
+ * ids (e.g. `arrowhead`, see packages/svg-renderer/src/renderer.ts), and IDs must be unique per
  * document; an unprefixed pair would be invalid markup and, per SVG's
  * `url(#id)` resolution rules, fragile if the two definitions ever diverge
  * (a *different* diagram's same-named marker elsewhere on the page is a

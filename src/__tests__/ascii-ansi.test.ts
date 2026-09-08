@@ -13,7 +13,7 @@ import {
   colorizeText,
 } from '../ascii/ansi.ts'
 import type { CharRole, AsciiTheme, ColorMode } from '../ascii/types.ts'
-import type { DiagramColors } from '../theme.ts'
+import type { DiagramColors } from '@zombie-mermaid/core'
 
 const RESET = '\x1b[0m'
 

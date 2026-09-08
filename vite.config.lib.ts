@@ -72,7 +72,7 @@ const DIST = resolve(ROOT, 'dist')
 // Both are real npm dependencies (see package.json) kept external rather
 // than bundled. Unlike esbuild (which tsup used), Rolldown's `external`
 // only matches an exact import specifier, not a package-name prefix —
-// `external: ['elkjs']` would NOT cover `src/elk-instance.ts`'s
+// `external: ['elkjs']` would NOT cover `packages/svg-renderer/src/elk-instance.ts`'s
 // `import ELKBundled from 'elkjs/lib/elk.bundled.js'`, silently inlining
 // elkjs's entire (huge) UMD bundle into `dist/index.js`/`dist/index.cjs`.
 // A prefix-matching function closes that gap for any current or future
@@ -124,6 +124,17 @@ const RELATIVE_IMPORT_RE =
   /^(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]\.\.?\//m
 
 /**
+ * A rolled-up declaration must never name a `@zombie-mermaid/*` workspace
+ * package: those are `"private": true`, bundled into this package's JS, and
+ * therefore unresolvable for any consumer. api-extractor's `bundledPackages`
+ * (see the `dts` plugin options) is what inlines them; this guard fails the
+ * build if that ever stops working, since — unlike a relative import — a
+ * bare specifier would otherwise sail past `RELATIVE_IMPORT_RE` and ship
+ * broken types.
+ */
+const WORKSPACE_IMPORT_RE = /from\s*['"]@zombie-mermaid\//
+
+/**
  * Writes `index.d.cts`, `ascii.d.cts`, and `mcp.d.cts` as byte-for-byte
  * copies of the bundled `.d.ts` files unplugin-dts just emitted (its own
  * per-format `.d.cts` output only kicks in when each format gets its own
@@ -158,6 +169,13 @@ async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
             `as its .d.cts twin. Update writeDctsTwins() to handle that.`,
         )
       }
+      if (WORKSPACE_IMPORT_RE.test(content)) {
+        throw new Error(
+          `${basename(file)} imports from a @zombie-mermaid/* workspace package, which is private and ` +
+            `never published — api-extractor's bundledPackages should have inlined it. See the dts ` +
+            `plugin options in this file.`,
+        )
+      }
       return writeFile(file.replace(/\.d\.ts$/, '.d.cts'), content)
     }),
   )
@@ -183,7 +201,54 @@ export default defineConfig({
         // Roll each entry's declarations into a single bundled `.d.ts`
         // (via @microsoft/api-extractor), matching tsup's dts output —
         // one file per public entry point, not one per source module.
-        bundleTypes: true,
+        //
+        // The two `@zombie-mermaid/*` workspace packages (zombie-mermaid#625,
+        // umbrella #620) are `"private": true` and bundled into this
+        // package's JS — they're absent from `isExternal` below — so a
+        // `from '@zombie-mermaid/core'` surviving into a rolled-up `.d.ts`
+        // would name something no consumer can resolve. Two settings are
+        // needed to inline them, and only together:
+        //
+        // - `bundledPackages` tells api-extractor to emit their
+        //   declarations inline rather than re-export them.
+        // - The `paths` override tells it where to *find* those
+        //   declarations. Left alone, api-extractor resolves
+        //   `@zombie-mermaid/core` through node_modules to the package's
+        //   own `types` field, which points at TypeScript *source*
+        //   (`packages/core/src/index.ts`) because nothing builds these
+        //   packages yet. api-extractor only analyses `.d.ts` input and
+        //   dies on the `.ts` with `Unable to follow symbol for "const"`.
+        //   By then this plugin has already emitted each package's
+        //   per-file declarations under `dist/packages/<name>/src/`
+        //   (tsconfig's `include` covers them), so pointing `paths` at
+        //   those files gives api-extractor real `.d.ts` input.
+        //
+        // Retire the `paths` half once #621/#622 give each package its own
+        // build and a `types` field pointing at emitted declarations.
+        // `writeDctsTwins`'s WORKSPACE_IMPORT_RE guard fails the build if
+        // this ever silently stops inlining.
+        bundleTypes: {
+          bundledPackages: [
+            '@zombie-mermaid/core',
+            '@zombie-mermaid/svg-renderer',
+          ],
+          extractorConfig: {
+            compiler: {
+              overrideTsconfig: {
+                compilerOptions: {
+                  paths: {
+                    '@zombie-mermaid/core': [
+                      resolve(DIST, 'packages/core/src/index.d.ts'),
+                    ],
+                    '@zombie-mermaid/svg-renderer': [
+                      resolve(DIST, 'packages/svg-renderer/src/index.d.ts'),
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
         // Drop the `types` environment's JS from its bundle before it's
         // written: that JS is a multi-entry build with shared chunks (see
         // the header), never the real output — and it would land on the

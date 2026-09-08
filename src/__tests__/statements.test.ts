@@ -12,8 +12,7 @@
  * shared by the detector and all five parser entry points.
  */
 import { describe, it, expect } from 'vitest'
-import { splitStatements } from '../statements.ts'
-import { detectDiagramType } from '../diagram-type.ts'
+import { splitStatements, detectDiagramType } from '@zombie-mermaid/core'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
 describe('splitStatements (issue #181)', () => {

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    </meta>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    </meta>
+    <title>
+      "Shipping v1 of a <zombie> | Zombie Mermaid Blog"
+    </title>
+    <meta content="What it took, & what broke." name="description">
+    </meta>
+    <link href="https://example.test/blog/shipping-v1.html" rel="canonical">
+    </link>
+    <meta content="Shipping v1 of a <zombie> | Zombie Mermaid Blog" property="og:title">
+    </meta>
+    <meta content="What it took, & what broke." property="og:description">
+    </meta>
+    <meta content="article" property="og:type">
+    </meta>
+    <meta content="https://example.test/blog/shipping-v1.html" property="og:url">
+    </meta>
+    <meta content="2026-03-04" property="article:published_time">
+    </meta>
+    <meta content="summary" name="twitter:card">
+    </meta>
+    <link href="../favicon.svg" rel="icon" type="image/svg+xml">
+    </link>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    </link>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    </link>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    </link>
+    <link href="assets/blog.css" rel="stylesheet">
+    </link>
+  </head>
+  <body>
+    <div class="site-header">
+      <a class="brand-badge" href="../">
+        <strong>
+          "Zombie Mermaid"
+        </strong>
+      </a>
+      <nav class="header-links">
+        <a href="../">
+          "Samples"
+        </a>
+        <a href="../editor">
+          "Editor"
+        </a>
+        <a href="../blog/">
+          "Blog"
+        </a>
+        <a href="https://github.com/dfadler/zombie-mermaid" rel="noopener" target="_blank">
+          "GitHub"
+        </a>
+      </nav>
+    </div>
+    <div class="content-wrapper">
+      <div class="breadcrumb">
+        <a href="../">
+          "Home"
+        </a>
+        <span class="sep">
+          "/"
+        </span>
+        <a href="./">
+          "Blog"
+        </a>
+        <span class="sep">
+          "/"
+        </span>
+        "Shipping v1 of a <zombie>"
+      </div>
+      <h1>
+        "Shipping v1 of a <zombie>"
+      </h1>
+      <p class="post-meta">
+        "March 4, 2026"
+      </p>
+      <div class="prose">
+        <p>
+          "Body "
+          <em>
+            "markup"
+          </em>
+          " from marked."
+        </p>
+      </div>
+      <div class="cta-row">
+        <a class="cta-btn" href="./">
+          "More posts"
+        </a>
+      </div>
+      <footer class="site-footer">
+        <span>
+          "© 2026 zombie-mermaid"
+        </span>
+        <a href="https://github.com/dfadler/zombie-mermaid" rel="noopener noreferrer" target="_blank">
+          "GitHub"
+        </a>
+      </footer>
+    </div>
+  </body>
+</html>

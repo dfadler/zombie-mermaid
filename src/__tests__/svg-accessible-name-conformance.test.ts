@@ -14,12 +14,12 @@
  * Two things make that "standing" rather than "current":
  *
  *  1. `assertAccessibleRoot()` encodes the full accessible-name contract
- *     from `svgOpenTag()` (src/theme.ts) in one place, so every diagram
+ *     from `svgOpenTag()` (packages/core/src/theme.ts) in one place, so every diagram
  *     type/option combination below is checked against the *same* rule
  *     instead of duplicated ad hoc expectations that could quietly drift
  *     apart per diagram type.
  *  2. `SAMPLE_BY_TYPE` is typed `Record<DiagramType, string>`. `DiagramType`
- *     (src/diagram-type.ts) is a closed union, so TypeScript's missing-
+ *     (packages/core/src/diagram-type.ts) is a closed union, so TypeScript's missing-
  *     property checking means adding a 6th diagram type without adding a
  *     sample here fails `tsc --noEmit` (the `typecheck` CI job, which also
  *     runs in the `test`/lint pipeline before publish) — this test cannot
@@ -46,10 +46,11 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
-import { __resetSvgTitleIdCounterForTests } from '../theme.ts'
-import { detectDiagramType } from '../diagram-type.ts'
-import type { DiagramType } from '../diagram-type.ts'
-import type { RenderOptions } from '../types.ts'
+import {
+  __resetSvgTitleIdCounterForTests,
+  detectDiagramType,
+} from '@zombie-mermaid/core'
+import type { DiagramType, RenderOptions } from '@zombie-mermaid/core'
 
 beforeEach(() => {
   __resetSvgTitleIdCounterForTests()
@@ -114,7 +115,7 @@ const OPTION_SETS: Array<{ name: string; options: RenderOptions }> = [
   { name: 'with a title', options: { title: 'A diagram' } },
   { name: 'decorative', options: { decorative: true } },
   // `title` is documented as ignored when `decorative: true` (svgOpenTag()'s
-  // TSDoc, src/theme.ts) — this combination exercises that precedence
+  // TSDoc, packages/core/src/theme.ts) — this combination exercises that precedence
   // instead of leaving it asserted only in prose.
   {
     name: 'title + decorative (title should be ignored)',
@@ -130,7 +131,7 @@ interface AccessibilityExpectation {
 
 /**
  * Encodes the full accessible-name contract from `svgOpenTag()`
- * (src/theme.ts) as a single reusable assertion — see the file header for
+ * (packages/core/src/theme.ts) as a single reusable assertion — see the file header for
  * the prose version. Keep the two in sync if either changes.
  */
 function assertAccessibleRoot(

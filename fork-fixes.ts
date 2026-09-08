@@ -12,14 +12,28 @@
  * both halves look the same is worse than no showcase at all — it silently
  * claims a fix that the page does not actually demonstrate. See #189 and this
  * repo's visual-verification convention.
+ *
+ * The markup comes from React components
+ * (demo/components/fork-fixes-page.tsx) rendered with react-dom/server's
+ * `renderToStaticMarkup` — part of #589, which moved every site generator
+ * off template-literal HTML. This file keeps everything that needs I/O or a
+ * renderer; the component only decides what element each result becomes.
  */
 
 import { execFile } from 'node:child_process'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
+import { createElement } from 'react'
 import { forkFixes, type ForkFix } from './demo/fork-fixes-data.ts'
 import { asciiToHtml } from './ascii-html.ts'
+import { formatProse } from './demo/format.ts'
+import { renderHtmlDocument } from './demo/render-html.ts'
+import {
+  ForkFixesPage,
+  type FixSectionProps,
+  type PanelContent,
+} from './demo/components/fork-fixes-page.tsx'
 
 const exec = promisify(execFile)
 
@@ -151,52 +165,32 @@ async function renderFix(fix: ForkFix): Promise<RenderPair> {
   return pair
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
 /**
- * Render a prose field: escape it, then turn backtick spans into `<code>`.
+ * Decide what one side of a pair shows: a real-terminal screenshot, the
+ * diagram, an excerpt of its markup, the error it threw, or an explicit
+ * note that it produced nothing.
  *
- * Escaping first means the data file can contain `<`, `>`, or `&` — several
- * symptoms quote Mermaid arrow tokens and regex fragments — without either
- * breaking the page or being interpolated as live markup.
+ * Returns the choice as data; demo/components/fork-fixes-page.tsx's
+ * `<FixPanel>` turns it into markup. The two halves are split that way
+ * because only this one needs the filesystem (to see whether a committed
+ * screenshot exists) and ascii-html.ts.
  */
-function formatProse(text: string): string {
-  return escapeHtml(text)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-}
-
-/**
- * Render one side of a pair: a real-terminal screenshot, the diagram, an
- * excerpt of its markup, the error it threw, or an explicit note that it
- * produced nothing.
- */
-function renderPanel(
+function panelContent(
   fixId: string,
   side: 'before' | 'after',
   output: string,
   error: string | undefined,
   mode: 'svg' | 'ascii',
   excerpt?: { from: string; to: string },
-): string {
-  if (error) {
-    return `<div class="fix-error"><strong>Threw:</strong> ${escapeHtml(error)}</div>`
-  }
+): PanelContent {
+  if (error) return { kind: 'error', message: error }
 
   /*
    * Some "before" states produced no output at all — the parser dropped the
    * whole diagram. Say so explicitly: a blank panel is indistinguishable from
    * a broken page, and "it rendered nothing" is the actual result.
    */
-  if (output.trim() === '') {
-    return `<div class="fix-empty">Rendered nothing — the diagram was dropped entirely.</div>`
-  }
+  if (output.trim() === '') return { kind: 'empty' }
 
   if (excerpt) {
     // Literal indexOf bounds rather than a constructed regex: every excerpt
@@ -214,63 +208,52 @@ function renderPanel(
       )
     }
     const slice = output.slice(start, end + excerpt.to.length)
-    return `<pre class="fix-ascii">${escapeHtml(slice.trim())}</pre>`
+    return { kind: 'excerpt', text: slice.trim() }
   }
 
   if (mode === 'ascii') {
     const screenshotFile = `${fixId}-${side}.png`
     if (existsSync(`${SCREENSHOTS_DIR}${screenshotFile}`)) {
-      return `<div class="fix-screenshot"><img src="fork-fixes-screenshots/${screenshotFile}" alt="${side} terminal output of \`zombie-mermaid render ${escapeHtml(fixId)}.mmd --ascii\`" loading="lazy" /></div>`
+      return { kind: 'screenshot', file: screenshotFile, side, fixId }
     }
-    return `<pre class="fix-ascii">${asciiToHtml(output.replace(/[ \t]+$/gm, ''))}</pre>`
+    return {
+      kind: 'ascii',
+      html: asciiToHtml(output.replace(/[ \t]+$/gm, '')),
+    }
   }
-  return `<div class="fix-svg">${output}</div>`
+  return { kind: 'svg', html: output }
 }
 
-/**
- * Link(s) to the upstream `lukilabs/beautiful-mermaid` issue(s) this fix
- * resolves, when known. Several fork PRs address more than one upstream
- * report, and one upstream report is sometimes split across two entries
- * (each fixing a different symptom of it) — hence a joined list rather than
- * a single link.
- */
-function renderUpstreamIssues(upstreamIssues: number[] | undefined): string {
-  if (!upstreamIssues || upstreamIssues.length === 0) return ''
-  const links = upstreamIssues
-    .map(
-      (n) =>
-        `<a href="https://github.com/lukilabs/beautiful-mermaid/issues/${n}">upstream #${n}</a>`,
-    )
-    .join(', ')
-  return `<span class="fix-upstream">${links}</span>`
-}
-
-function renderFixSection(pair: RenderPair): string {
+/** One rendered pair as the props `<FixSection>` needs. */
+function fixSectionProps(pair: RenderPair): FixSectionProps {
   const { fix } = pair
-  const prUrl = `https://github.com/dfadler/zombie-mermaid/pull/${fix.pr}`
-  return `
-      <section class="fix" id="${fix.id}">
-        <h2><a class="fix-anchor" href="#${fix.id}">${escapeHtml(fix.title)}</a></h2>
-        <p class="fix-symptom">${formatProse(fix.symptom)}</p>
-        <p class="fix-meta">
-          <a href="${prUrl}">PR #${fix.pr}</a>
-          <span class="fix-commit">fixed in <code>${escapeHtml(fix.fixCommit)}</code></span>
-          <span class="fix-mode">${fix.render === 'svg' ? 'SVG' : 'ASCII'} output</span>
-          ${renderUpstreamIssues(fix.upstreamIssues)}
-        </p>
-        <pre class="fix-source">${escapeHtml(fix.source)}</pre>
-        <div class="fix-pair">
-          <div class="fix-side">
-            <h3 class="fix-side-title fix-side-before">Before</h3>
-            ${renderPanel(fix.id, 'before', pair.before, pair.beforeError, fix.render, fix.excerpt)}
-          </div>
-          <div class="fix-side">
-            <h3 class="fix-side-title fix-side-after">After</h3>
-            ${renderPanel(fix.id, 'after', pair.after, pair.afterError, fix.render, fix.excerpt)}
-          </div>
-        </div>
-        <p class="fix-lookfor">${formatProse(fix.lookFor)}</p>
-      </section>`
+  return {
+    id: fix.id,
+    title: fix.title,
+    symptomHtml: formatProse(fix.symptom),
+    lookForHtml: formatProse(fix.lookFor),
+    pr: fix.pr,
+    fixCommit: fix.fixCommit,
+    render: fix.render,
+    upstreamIssues: fix.upstreamIssues,
+    source: fix.source,
+    before: panelContent(
+      fix.id,
+      'before',
+      pair.before,
+      pair.beforeError,
+      fix.render,
+      fix.excerpt,
+    ),
+    after: panelContent(
+      fix.id,
+      'after',
+      pair.after,
+      pair.afterError,
+      fix.render,
+      fix.excerpt,
+    ),
+  }
 }
 
 async function generate(): Promise<string> {
@@ -312,51 +295,12 @@ async function generate(): Promise<string> {
     'utf8',
   )
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>What this fork fixes — zombie-mermaid</title>
-  <meta name="description" content="Before/after renders of bugs zombie-mermaid fixes over upstream beautiful-mermaid." />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-${styles}
-${extra}
-  </style>
-</head>
-<body>
-  <div class="content-wrapper">
-    <header class="fix-header">
-      <p class="fix-breadcrumb"><a href="index.html">← Back to the gallery</a></p>
-      <h1>What this fork fixes</h1>
-      <p class="fix-intro">
-        Every pair below is rendered by this project's own renderer. The
-        <strong>before</strong> side runs the code as it existed immediately
-        before the fix landed — the tree at that commit's parent — so nothing
-        here is hand-drawn or reconstructed. The generator fails the build if
-        any pair renders identically, because a before/after that looks the
-        same would claim a fix it does not demonstrate.
-      </p>
-      <p class="fix-intro">
-        ${forkFixes.length} fixes shown. Many more ship in the
-        <a href="https://github.com/dfadler/zombie-mermaid/blob/main/CHANGELOG.md">changelog</a>.
-      </p>
-    </header>
-${pairs.map(renderFixSection).join('\n')}
-    <footer class="fix-footer">
-      <p>
-        <a href="https://github.com/dfadler/zombie-mermaid">zombie-mermaid</a>
-        — a fork of
-        <a href="https://github.com/lukilabs/beautiful-mermaid">beautiful-mermaid</a>.
-      </p>
-    </footer>
-  </div>
-</body>
-</html>`
+  return renderHtmlDocument(
+    createElement(ForkFixesPage, {
+      css: `${styles}\n${extra}`,
+      fixes: pairs.map(fixSectionProps),
+    }),
+  )
 }
 
 console.log(`Rendering ${forkFixes.length} before/after pairs…`)
