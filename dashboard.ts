@@ -16,14 +16,22 @@
  * The markup comes from React components (demo/components/dashboard-
  * page.tsx) rendered with react-dom/server's `renderToStaticMarkup` — the
  * pilot for #423, which is migrating every site generator off
- * template-literal HTML. This file is deliberately just the I/O shell:
- * read the snapshot and stylesheet, render, write. The data model and
- * formatting helpers live in demo/dashboard-model.ts (re-exported here
- * for callers that already import them from this module).
+ * template-literal HTML, and (#610) rebuilt in the #590 shared visual
+ * system. This file is deliberately just the I/O shell: read the snapshot
+ * and stylesheet, render, write. The data model and formatting helpers
+ * live in demo/dashboard-model.ts (re-exported here for callers that
+ * already import them from this module).
  *
- * Addresses zombie-mermaid#265. See also #259 ("state of the fork" report)
- * for a complementary, narrative write-up of similar underlying data — this
- * page is the always-current rendered artifact, not a periodic post.
+ * The stylesheet is assembled from the shared component library's own CSS
+ * functions — tokens.tsx's `designBaseCss()`, primitives.tsx's
+ * `primitivesCss()`, nav.tsx's `navCss()`, footer.tsx's `footerCss()` — plus
+ * this page's own demo/dashboard.css, rather than demo/styles.css's older
+ * `--t-*` theme those shared modules do not use.
+ *
+ * Addresses zombie-mermaid#265 and #610. See also #259 ("state of the fork"
+ * report) for a complementary, narrative write-up of similar underlying
+ * data — this page is the always-current rendered artifact, not a periodic
+ * post.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
@@ -31,6 +39,10 @@ import { fileURLToPath } from 'node:url'
 import { createElement } from 'react'
 import dashboardData from './demo/dashboard-data.json' with { type: 'json' }
 import { DashboardPage } from './demo/components/dashboard-page.tsx'
+import { footerCss } from './demo/components/footer.tsx'
+import { navCss } from './demo/components/nav.tsx'
+import { primitivesCss } from './demo/components/primitives.tsx'
+import { designBaseCss } from './demo/components/tokens.tsx'
 import {
   parseDashboardData,
   type DashboardData,
@@ -52,16 +64,20 @@ export function renderDashboardHtml(data: DashboardData, css: string): string {
   return renderHtmlDocument(createElement(DashboardPage, { data, css }))
 }
 
-/** Renders the committed snapshot (demo/dashboard-data.json) with the site stylesheet. */
+/** Renders the committed snapshot (demo/dashboard-data.json) with the page's assembled stylesheet. */
 export async function generate(): Promise<string> {
-  const [styles, extra] = await Promise.all([
-    readFile(new URL('./demo/styles.css', import.meta.url), 'utf8'),
-    readFile(new URL('./demo/dashboard.css', import.meta.url), 'utf8'),
-  ])
-  return renderDashboardHtml(
-    parseDashboardData(dashboardData),
-    `${styles}\n${extra}`,
+  const pageCss = await readFile(
+    new URL('./demo/dashboard.css', import.meta.url),
+    'utf8',
   )
+  const css = [
+    designBaseCss(),
+    primitivesCss(),
+    navCss(),
+    footerCss(),
+    pageCss,
+  ].join('\n\n')
+  return renderDashboardHtml(parseDashboardData(dashboardData), css)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
