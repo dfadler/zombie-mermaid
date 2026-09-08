@@ -159,158 +159,37 @@ becomes the settled answer, not just the current default.
 ## Amendment (2026-09-07)
 
 **Gap 2 closed, gap 1 narrowed, and the two halves of the suite swap places.**
+Two follow-up spikes — [#614](https://github.com/dfadler/zombie-mermaid/issues/614)
+(font layer, gap 2) and [#615](https://github.com/dfadler/zombie-mermaid/issues/615)
+(x86-vs-CI for SVG, gap 1) — move this decision off "no adopt — yet," and invert
+its original expectation: **ASCII is now the proven half** (a one-package font
+fix collapses its fail rate to 0/90, architecture ruled out as a factor), while
+**SVG is the half still resting on a proxy** (0/570 mismatches under an
+amd64-on-Rosetta proxy for real x86 CI, but real bare-metal x86 remains
+untested, and native arm64 rendering turns out to be intermittently unstable
+against the shared baselines).
 
-Two follow-up spikes ran against the two gaps named above, and between them they
-move this decision off "no adopt — yet." Full measurements live in their own
-research docs, linked below — this amendment summarizes only what they found and
-what it means for the decision.
+**Updated decision: partial adopt, CI-side, sequenced.** Moving off "no adopt —
+yet", but not to unconditional adoption:
 
-- [#614](https://github.com/dfadler/zombie-mermaid/issues/614) —
-  `docs/research/614-docker-font-parity.md`, on `issue-614-docker-font-fix`.
-  Targets gap (2).
-- [#615](https://github.com/dfadler/zombie-mermaid/issues/615) —
-  `docs/research/615-emulated-amd64-vs-native-arm64-spike.md`, on
-  `issue-615-qemu-arm64-spike`. Targets gap (1).
+- Adopt the font-corrected image (`docker/visual-regression.Dockerfile`'s
+  resolution) as the container of record for any work under #544 — the stock
+  tag is now a known-bad configuration for this repo.
+- The remaining SVG uncertainty is closeable only in CI. [#549](https://github.com/dfadler/zombie-mermaid/issues/549)
+  proceeds as that experiment, scoped with a declared abort condition: the full
+  suite must pass inside the container job against **unchanged** baselines, or
+  revert and re-decide here.
+- No baseline regeneration is authorized by this amendment — the committed
+  baseline sets are the measuring instrument, and regenerating them to force a
+  green run destroys the data point.
+- [#550](https://github.com/dfadler/zombie-mermaid/issues/550) can proceed for
+  ASCII now (CI-identical at native arch); SVG stays blocked on #549.
+  [#551](https://github.com/dfadler/zombie-mermaid/issues/551) stays blocked
+  and needs re-scoping — its two proposed branches are both falsified by #615's
+  results.
 
-### Gap (2) — the font layer: closed
-
-`fonts-dejavu-core` (not the originally-guessed JetBrains-Mono-family stack,
-which made the fail rate worse) takes `ascii-samples.visual.test.ts` from
-88/90 failing to **0/90** against the unchanged, committed Linux baselines. The
-ASCII panel's `<code>` element resolves fonts through fontconfig's generic
-`monospace` alias regardless of what its own CSS requests, so the fix points
-that alias at the font CI already uses rather than installing the requested
-faces. Four independent checks — direct mechanism measurement, 3× reproduction,
-a least-squares fit against real CI baselines that lands on the installed font,
-and an arm64-vs-amd64 diff ruling out architecture as a factor — back this; see
-`docs/research/614-docker-font-parity.md` for the full measurement.
-`docker/visual-regression.Dockerfile` now asserts the resolution at build time
-so a future base-tag bump can't silently regress it.
-
-### Gap (1) — x86-vs-CI for SVG: narrowed, not closed
-
-#615 ran the suite under `--platform linux/amd64` on Apple Silicon (a
-same-architecture Rosetta proxy for real x86 CI, not QEMU) against the same
-committed Linux baselines #545 used, with a same-session native-arm64 control:
-
-| Platform       | SVG pixel mismatches (of 570)                           |
-| -------------- | -------------------------------------------------------- |
-| emulated amd64 | **0**                                                    |
-| native arm64   | 30 (5.3%, intermittent — empty run-to-run intersection)  |
-
-Discriminating, but still a proxy for the container's *host*, not the literal
-experiment: no run has been flag-matched to CI (`--disable-gpu`, `retries: 2`),
-and real bare-metal x86 remains untested. See
-`docs/research/615-emulated-amd64-vs-native-arm64-spike.md` for the full
-measurement, including why native arm64 SVG rendering is newly unstable against
-the shared baselines.
-
-### The original expectation is inverted
-
-This decision anticipated landing on "partial adopt for SVG samples only … ASCII/
-terminal keeps its own resolution path." The evidence says the opposite. **ASCII
-is now the proven half** — deterministic one-package fix, mechanism understood,
-zero failures reproduced three times, architecture ruled out. **SVG is the half
-still resting on a proxy**, and it has picked up a problem it didn't have before:
-native arm64 rendering is genuinely unstable against x86 baselines.
-
-### Updated decision: partial adopt, CI-side, sequenced — ASCII proven, SVG on trial
-
-Moving off "no adopt — yet", but not to unconditional adoption:
-
-- **Adopt the font-corrected image as the container of record.** Any container
-  work under #544 uses `docker/visual-regression.Dockerfile`'s resolution (or its
-  CI-step equivalent), never the stock tag. The stock tag is now a known-bad
-  configuration for this repo, not a neutral default.
-- **The remaining SVG uncertainty is closeable only in CI, and #549 is that
-  experiment.** There is a circularity in leaving #549 gated on a data point that
-  only #549 can produce. The resolution is to let it proceed _as an experiment
-  with a declared abort condition_, which is materially different from adopting on
-  faith — see the acceptance bar below.
-- **No baseline regeneration is authorized by this amendment.** The committed
-  `-chromium-linux.png` / `-chromium-darwin.png` sets are the measuring
-  instrument for everything above; regenerating them to make a container run green
-  destroys the data point permanently and converts the experiment back into an
-  assumption.
-- **#547's timing wash still stands**, and a new cost appears: the container is no
-  longer a plain public tag but one needing a font layer, so #549 has to either
-  publish an image or install the font as a job step. That was not in #547's
-  estimate.
-
-### What #549 / #550 / #551 should do now
-
-**[#549](https://github.com/dfadler/zombie-mermaid/issues/549) (migrate CI to a
-container image) — proceed, scoped as the gap-(1) experiment.**
-
-- Acceptance bar: the full visual suite passes inside the container job against
-  **unchanged** committed baselines. If it doesn't, revert and re-decide here —
-  do not regenerate baselines to close the gap.
-- Implementation note, not measured by either spike: GitHub Actions' `container:`
-  key takes an image reference, not a Dockerfile, so #549 can't consume
-  `docker/visual-regression.Dockerfile` directly at the job level. The cheaper
-  path is `container: mcr.microsoft.com/playwright:v1.62.1-jammy` plus a first
-  step installing `fonts-dejavu-core`, carrying the Dockerfile's `fc-match`
-  assertion over as a post-install check (`fc-match monospace` must resolve to
-  DejaVu Sans Mono, fail the job otherwise). Publishing to GHCR is the
-  alternative and adds a registry and a second pin to keep in sync.
-- Its run is also the first flag-matched comparison (`CI` set, so `--disable-gpu`
-  and `retries: 2`), which no spike has done.
-
-**[#550](https://github.com/dfadler/zombie-mermaid/issues/550) (local Docker
-wrapper) — partially proceed: ASCII now, SVG blocked on #549.**
-
-- The ASCII half is shippable today and needs nothing further: #614's 0/90 was
-  measured on native arm64 against the committed Linux baselines, and #615
-  showed architecture is irrelevant to ASCII, so a Mac contributor running the
-  font-fixed container at native speed gets CI-identical ASCII output right now.
-- The SVG half has a problem #548 didn't know about. A contributor on native
-  arm64 hits ~5% intermittent SVG failures against shared x86 baselines, with
-  different samples each run. `--platform linux/amd64` avoids it entirely but
-  costs ~11× wall clock (24.4m vs 2.2m for the full suite) on a Rosetta-enabled
-  host, and more on one without. The wrapper should not claim SVG parity until
-  #549 settles what the shared target even is.
-- CONTRIBUTING.md's #326 caveat can be narrowed for ASCII, but **not retired for
-  SVG**.
-
-**[#551](https://github.com/dfadler/zombie-mermaid/issues/551) (baseline
-consolidation) — stays blocked, and needs re-scoping before it can be worked.**
-
-- Both branches its task description offers are now falsified for SVG. Branch A
-  ("no meaningful arch difference → consolidate") is contradicted by #615's
-  0/570-vs-30/570. Branch B ("real arch difference → rename the split to
-  `-amd64`/`-arm64`") assumes the per-arch output is stable enough to baseline,
-  and #615 shows arm64's SVG output is intermittent, not systematically
-  different — a nondeterministic renderer can't be given its own baseline set
-  either.
-- An ASCII-only slice is more promising. #614 observed the `-chromium-darwin.png`
-  ASCII baselines have identical widths to the Linux set on every sample
-  checked, and the container now reproduces the Linux set exactly. Identical
-  widths is not identical bytes, so the cheap precondition is a direct `cmp`
-  over the 90 pairs before anyone claims the ASCII baselines can collapse.
-
-**[#552](https://github.com/dfadler/zombie-mermaid/issues/552) is still
-unaffected**, and #614 retroactively confirms it was fixed with the right
-technique.
-
-### What is still not known
-
-- **Real bare-metal x86, container vs. CI.** Only #549 closes this. Everything
-  above is Rosetta-hosted.
-- **A flag-matched comparison.** No run has used `--disable-gpu` with
-  `retries: 2` against CI's own invocation.
-- **QEMU rather than Rosetta.** Untested, and it matters for any contributor
-  whose Docker Desktop doesn't have Rosetta enabled.
-- **Native Linux arm64 contributors** (as opposed to macOS arm64) — never
-  measured at all.
-- **`sidebar-focus.visual.test.ts`.** Every spike measured 280 tests (190 SVG +
-  90 ASCII); this one-test file, which has both `-linux` and `-darwin` baselines,
-  was in none of them.
-- **Whether the darwin and linux ASCII baselines are byte-identical**, per the
-  #551 note above.
-
-One incidental finding from #614 is tracked separately and does not bear on this
-decision: because the `<code>` child resets to generic `monospace`, the live
-demo's ASCII panel doesn't render in JetBrains Mono either, despite
-`demo/styles.css` requesting it and `demo/site-shell.ts` loading the web font.
-That is a real rendering bug in the demo, with the same root cause as the
-container's font substitution.
+The full measurements, the per-issue guidance for #549/#550/#551, and the
+remaining open questions (real bare-metal x86, a flag-matched comparison, QEMU
+vs. Rosetta, native Linux arm64) are recorded in
+[a comment on this issue](https://github.com/dfadler/zombie-mermaid/issues/548#issuecomment-5591525595)
+rather than duplicated here.
