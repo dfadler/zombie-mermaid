@@ -53,6 +53,7 @@ import type { CSSProperties } from 'react'
 import { CopyIcon, LogoMark } from './icons.tsx'
 import { Pill } from './primitives.tsx'
 import {
+  BREAKPOINTS,
   COLORS,
   FONT_SIZE,
   FONT_WEIGHT,
@@ -159,6 +160,27 @@ const NAV_BG_ALPHA = 0.85
 const NAV_Z_INDEX = 10
 
 /**
+ * Upper bound, in px, of a dead zone the canvas doesn't cover: just above
+ * {@link BREAKPOINTS}.tablet, the five links (still shown) plus the
+ * install pill (rigid — the canvas's own `flex-shrink:0`, not ours to
+ * loosen) need more width than the row has, and the browser's only escape
+ * hatch is wrapping "Fork fixes" (and, tighter still, the wordmark) onto a
+ * second line with zero breathing room before the pill — the same
+ * fixed-size-flex-child dead-zone shape the hero row had (#669), just
+ * without a shrinkable child available to fix it the same way.
+ *
+ * {@link navCss} closes the gap by dropping the pill to its icon-only
+ * mobile form a bit early, freeing enough width that nothing wraps.
+ * Confirmed wrapping onset between 1070px (wraps) and 1080px (doesn't) on
+ * the unpatched bar; this adds a margin above that measured value rather
+ * than shipping the exact edge. Verified zero wrapping and zero
+ * nav-links/pill overlap at 375, 600, 700, 900, 901 (the tightest point),
+ * 950, 1000, 1024, 1050, 1074, and 1100, with the pill back to full text
+ * at 1101 and above (through 1150, 1280, and 1440).
+ */
+const NAV_CRAMPED_MAX = 1100
+
+/**
  * `--bg` as an `rgba()` at the given alpha.
  *
  * The canvas spells the bar's fill out as the literal
@@ -202,6 +224,10 @@ export function navCss(): string {
 
 ${MEDIA.mobile} {
   .nav-bar { padding: ${NAV_PAD_Y.mobile}px ${NAV_PAD_X.mobile}px !important; }
+  .nav-npm-text { display: none !important; }
+}
+
+@media (min-width: ${BREAKPOINTS.tablet + 1}px) and (max-width: ${NAV_CRAMPED_MAX}px) {
   .nav-npm-text { display: none !important; }
 }`
 }

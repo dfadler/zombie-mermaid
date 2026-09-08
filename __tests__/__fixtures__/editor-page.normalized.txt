@@ -27,7 +27,7 @@
       ".card {\n  background: var(--panel);\n  border: 1px solid var(--border);\n  border-radius: 20px;\n}\n\n.pill {\n  display: inline-flex;\n  align-items: center;\n  gap: 10px;\n  border-radius: 999px;\n  padding: 12px 22px;\n  font-size: 15px;\n  font-weight: 600;\n}\n\n.section-eyebrow {\n  text-transform: uppercase;\n  letter-spacing: 0.14em;\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--cyan);\n}\n\n.mono {\n  font-family: var(--font-mono);\n}"
     </style>
     <style>
-      "@media (max-width: 900px) {\n  .nav-bar { padding: 16px 24px !important; }\n  .nav-links { display: none !important; }\n}\n\n@media (max-width: 600px) {\n  .nav-bar { padding: 14px 20px !important; }\n  .nav-npm-text { display: none !important; }\n}"
+      "@media (max-width: 900px) {\n  .nav-bar { padding: 16px 24px !important; }\n  .nav-links { display: none !important; }\n}\n\n@media (max-width: 600px) {\n  .nav-bar { padding: 14px 20px !important; }\n  .nav-npm-text { display: none !important; }\n}\n\n@media (min-width: 901px) and (max-width: 1100px) {\n  .nav-npm-text { display: none !important; }\n}"
     </style>
     <style>
       "@media (max-width: 900px) {\n  .section-px {\n    padding-left: 32px !important;\n    padding-right: 32px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr 1fr !important;\n  }\n}\n\n@media (max-width: 600px) {\n  .section-px {\n    padding-left: 20px !important;\n    padding-right: 20px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr !important;\n  }\n\n  .footer-bottom-row {\n    flex-direction: column !important;\n    align-items: flex-start !important;\n    gap: 8px !important;\n  }\n}"
