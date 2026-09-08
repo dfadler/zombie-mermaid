@@ -10,9 +10,9 @@
  *
  * Posts are plain Markdown with a small frontmatter block (title, date,
  * description, optional slug) — see blog-posts/README.md for the format.
- * Rendered via the same renderShell()/pageHtml() shell as pages.ts's
- * per-diagram-type pages (demo/site-shell.ts), so blog pages share the
- * rest of the site's header/breadcrumb/footer chrome.
+ * Rendered via the same `<PageShell>`/`<StaticPage>` React chrome as
+ * pages.ts's per-diagram-type pages (demo/components/site-chrome.tsx), so
+ * blog pages share the rest of the site's header/breadcrumb/footer chrome.
  *
  * Post sources live in blog-posts/, a sibling of the generated blog/
  * output directory, not inside it — build:site's `mv blog site/blog`
@@ -28,9 +28,15 @@
 
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { Marked, type Tokens } from 'marked'
+import { createElement } from 'react'
 import { createHighlighter, type Highlighter } from 'shiki'
 import { escapeHtml } from './demo/format.ts'
-import { renderShell, pageHtml } from './demo/site-shell.ts'
+import { renderHtmlDocument } from './demo/render-html.ts'
+import {
+  BLOG_DESCRIPTION,
+  BlogIndexPage,
+  BlogPostPage,
+} from './demo/components/blog-page.tsx'
 
 /** The live site's base URL — matches pages.ts's SITE_URL (see that file's header comment). */
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
@@ -320,71 +326,36 @@ async function main(): Promise<void> {
     const canonical = `${SITE_URL}/blog/${post.slug}.html`
     sitemapUrls.push(canonical)
 
-    const body = renderShell({
-      homeHref: '../',
-      breadcrumb: `<a href="../">Home</a><span class="sep">/</span><a href="./">Blog</a><span class="sep">/</span>${escapeHtml(post.title)}`,
-      body: `
-  <h1>${escapeHtml(post.title)}</h1>
-  <p class="post-meta">${formatDisplayDate(post.date)}</p>
-  <div class="prose">
-${bodyHtml}
-  </div>
-
-  <div class="cta-row">
-    <a class="cta-btn" href="./">More posts</a>
-  </div>
-`,
-    })
-
-    const html = pageHtml({
-      title: `${post.title} | Zombie Mermaid Blog`,
-      description: post.description,
-      canonical,
-      cssHref: 'assets/blog.css',
-      faviconHref: '../favicon.svg',
-      body,
-      ogType: 'article',
-      publishedTime: post.date,
-    })
+    const html = renderHtmlDocument(
+      createElement(BlogPostPage, {
+        title: post.title,
+        displayDate: formatDisplayDate(post.date),
+        description: post.description,
+        canonical,
+        cssHref: 'assets/blog.css',
+        faviconHref: '../favicon.svg',
+        publishedTime: post.date,
+        bodyHtml,
+      }),
+    )
 
     await writeFile(new URL(`./${post.slug}.html`, OUT_DIR), html)
   }
 
   // -- Index page --
-  const listMarkup =
-    posts.length === 0
-      ? `<p class="empty-state">No posts yet — check back soon.</p>`
-      : `<div class="post-list">
-${posts
-  .map(
-    (post) => `    <article class="post-card">
-      <h2><a href="${post.slug}.html">${escapeHtml(post.title)}</a></h2>
-      <p class="post-meta">${formatDisplayDate(post.date)}</p>
-      <p>${escapeHtml(post.description)}</p>
-    </article>`,
+  const indexHtml = renderHtmlDocument(
+    createElement(BlogIndexPage, {
+      canonical: `${SITE_URL}/blog/`,
+      cssHref: 'assets/blog.css',
+      faviconHref: '../favicon.svg',
+      posts: posts.map((post) => ({
+        slug: post.slug,
+        title: post.title,
+        displayDate: formatDisplayDate(post.date),
+        description: post.description,
+      })),
+    }),
   )
-  .join('\n')}
-  </div>`
-
-  const indexBody = renderShell({
-    homeHref: '../',
-    breadcrumb: `<a href="../">Home</a><span class="sep">/</span>Blog`,
-    body: `
-  <h1>Blog</h1>
-  <p class="lede">Updates on zombie-mermaid, and notes on what it's like maintaining it.</p>
-  ${listMarkup}
-`,
-  })
-
-  const indexHtml = pageHtml({
-    title: 'Blog | Zombie Mermaid',
-    description:
-      "Updates on zombie-mermaid, and notes on what it's like maintaining it.",
-    canonical: `${SITE_URL}/blog/`,
-    cssHref: 'assets/blog.css',
-    faviconHref: '../favicon.svg',
-    body: indexBody,
-  })
 
   await writeFile(new URL('./index.html', OUT_DIR), indexHtml)
 
@@ -406,7 +377,7 @@ ${posts
   <channel>
     <title>Zombie Mermaid Blog</title>
     <link>${SITE_URL}/blog/</link>
-    <description>${escapeHtml("Updates on zombie-mermaid, and notes on what it's like maintaining it.")}</description>
+    <description>${escapeHtml(BLOG_DESCRIPTION)}</description>
 ${feedItems}
   </channel>
 </rss>

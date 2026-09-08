@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    </meta>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    </meta>
+    <title>
+      "What this fork fixes — zombie-mermaid"
+    </title>
+    <meta content="Before/after renders of bugs zombie-mermaid fixes over upstream beautiful-mermaid." name="description">
+    </meta>
+    <link href="favicon.svg" rel="icon" type="image/svg+xml">
+    </link>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    </link>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    </link>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    </link>
+    <style>
+      "/* fixture stylesheet */\nbody > .content-wrapper { max-width: 60rem; }"
+    </style>
+  </head>
+  <body>
+    <div class="content-wrapper">
+      <header class="fix-header">
+        <p class="fix-breadcrumb">
+          <a href="index.html">
+            "← Back to the gallery"
+          </a>
+        </p>
+        <h1>
+          "What this fork fixes"
+        </h1>
+        <p class="fix-intro">
+          "Every pair below is rendered by this project's own renderer. The "
+          <strong>
+            "before"
+          </strong>
+          " side runs the code as it existed immediately before the fix landed — the tree at that commit's parent — so nothing here is hand-drawn or reconstructed. The generator fails the build if any pair renders identically, because a before/after that looks the same would claim a fix it does not demonstrate."
+        </p>
+        <p class="fix-intro">
+          "4 fixes shown. Many more ship in the "
+          <a href="https://github.com/dfadler/zombie-mermaid/blob/main/CHANGELOG.md">
+            "changelog"
+          </a>
+          "."
+        </p>
+      </header>
+      <section class="fix" id="svg-fix">
+        <h2>
+          <a class="fix-anchor" href="#svg-fix">
+            "Edge labels overlapped"
+          </a>
+        </h2>
+        <p class="fix-symptom">
+          "An edge label using "
+          <code>
+            "-->"
+          </code>
+          " collided."
+        </p>
+        <p class="fix-meta">
+          <a href="https://github.com/dfadler/zombie-mermaid/pull/42">
+            "PR #42"
+          </a>
+          <span class="fix-commit">
+            "fixed in "
+            <code>
+              "abc1234"
+            </code>
+          </span>
+          <span class="fix-mode">
+            "SVG output"
+          </span>
+          <span class="fix-upstream">
+            <a href="https://github.com/lukilabs/beautiful-mermaid/issues/7">
+              "upstream #7"
+            </a>
+            ", "
+            <a href="https://github.com/lukilabs/beautiful-mermaid/issues/9">
+              "upstream #9"
+            </a>
+          </span>
+        </p>
+        <pre class="fix-source">
+          "flowchart LR\n  A -->|label| B"
+        </pre>
+        <div class="fix-pair">
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-before">
+              "Before"
+            </h3>
+            <div class="fix-svg">
+              <svg data-before="1">
+              </svg>
+            </div>
+          </div>
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-after">
+              "After"
+            </h3>
+            <div class="fix-svg">
+              <svg data-after="1">
+              </svg>
+            </div>
+          </div>
+        </div>
+        <p class="fix-lookfor">
+          "Look at the "
+          <em>
+            "label"
+          </em>
+          " position."
+        </p>
+      </section>
+      <section class="fix" id="ascii-fix">
+        <h2>
+          <a class="fix-anchor" href="#ascii-fix">
+            "ASCII junctions"
+          </a>
+        </h2>
+        <p class="fix-symptom">
+          "Junction glyphs were wrong."
+        </p>
+        <p class="fix-meta">
+          <a href="https://github.com/dfadler/zombie-mermaid/pull/43">
+            "PR #43"
+          </a>
+          <span class="fix-commit">
+            "fixed in "
+            <code>
+              "def5678"
+            </code>
+          </span>
+          <span class="fix-mode">
+            "ASCII output"
+          </span>
+        </p>
+        <pre class="fix-source">
+          "flowchart TD\n  A --> B"
+        </pre>
+        <div class="fix-pair">
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-before">
+              "Before"
+            </h3>
+            <div class="fix-error">
+              <strong>
+                "Threw:"
+              </strong>
+              " Cannot read property \"x\" of undefined"
+            </div>
+          </div>
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-after">
+              "After"
+            </h3>
+            <pre class="fix-ascii">
+              "+--+"
+            </pre>
+          </div>
+        </div>
+        <p class="fix-lookfor">
+          "Compare the corners."
+        </p>
+      </section>
+      <section class="fix" id="excerpt-fix">
+        <h2>
+          <a class="fix-anchor" href="#excerpt-fix">
+            "Start-arrow marker"
+          </a>
+        </h2>
+        <p class="fix-symptom">
+          "The marker was degenerate."
+        </p>
+        <p class="fix-meta">
+          <a href="https://github.com/dfadler/zombie-mermaid/pull/44">
+            "PR #44"
+          </a>
+          <span class="fix-commit">
+            "fixed in "
+            <code>
+              "0123abc"
+            </code>
+          </span>
+          <span class="fix-mode">
+            "SVG output"
+          </span>
+        </p>
+        <pre class="fix-source">
+          "flowchart LR\n  A <--> B"
+        </pre>
+        <div class="fix-pair">
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-before">
+              "Before"
+            </h3>
+            <div class="fix-empty">
+              "Rendered nothing — the diagram was dropped entirely."
+            </div>
+          </div>
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-after">
+              "After"
+            </h3>
+            <pre class="fix-ascii">
+              "<marker id=\"arrow\"></marker>"
+            </pre>
+          </div>
+        </div>
+        <p class="fix-lookfor">
+          "Compare the "
+          <code>
+            "marker"
+          </code>
+          " element."
+        </p>
+      </section>
+      <section class="fix" id="screenshot-fix">
+        <h2>
+          <a class="fix-anchor" href="#screenshot-fix">
+            "Real-terminal capture"
+          </a>
+        </h2>
+        <p class="fix-symptom">
+          "Wide glyphs mis-measured."
+        </p>
+        <p class="fix-meta">
+          <a href="https://github.com/dfadler/zombie-mermaid/pull/45">
+            "PR #45"
+          </a>
+          <span class="fix-commit">
+            "fixed in "
+            <code>
+              "456def0"
+            </code>
+          </span>
+          <span class="fix-mode">
+            "ASCII output"
+          </span>
+        </p>
+        <pre class="fix-source">
+          "flowchart LR\n  A --> B"
+        </pre>
+        <div class="fix-pair">
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-before">
+              "Before"
+            </h3>
+            <div class="fix-screenshot">
+              <img alt="before terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`" loading="lazy" src="fork-fixes-screenshots/screenshot-fix-before.png">
+              </img>
+            </div>
+          </div>
+          <div class="fix-side">
+            <h3 class="fix-side-title fix-side-after">
+              "After"
+            </h3>
+            <div class="fix-screenshot">
+              <img alt="after terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`" loading="lazy" src="fork-fixes-screenshots/screenshot-fix-after.png">
+              </img>
+            </div>
+          </div>
+        </div>
+        <p class="fix-lookfor">
+          "Compare the column widths."
+        </p>
+      </section>
+      <footer class="fix-footer">
+        <p>
+          <a href="https://github.com/dfadler/zombie-mermaid">
+            "zombie-mermaid"
+          </a>
+          " — a fork of "
+          <a href="https://github.com/lukilabs/beautiful-mermaid">
+            "beautiful-mermaid"
+          </a>
+          "."
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
