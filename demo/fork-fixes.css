@@ -1,41 +1,39 @@
 /* ==========================================================================
-   "What this fork fixes" page — layered on top of demo/styles.css, which
-   supplies the page shell, typography, and theme variables.
+   "What this fork fixes" page (#608 redesign) — layered on top of the
+   shared design-system CSS fork-fixes.ts composes ahead of this file:
+   tokens.tsx's designBaseCss() (custom properties, body/heading/link base
+   rules), primitives.tsx's primitivesCss() (.card/.pill/.section-eyebrow),
+   nav.tsx's navCss(), and footer.tsx's footerCss() (which also defines the
+   `.section-px` gutter rule this page's <header>/<main> reuse). See
+   fork-fixes.ts's `generate()` for the exact composition order.
+
+   Everything that can vary per element (colour, padding, radius, gap) is
+   set inline in fork-fixes-page.tsx from tokens.tsx's scale, the same way
+   nav.tsx/footer.tsx/primitives.tsx are themselves built. What's left here
+   is exactly what an inline style can't express:
+     - the base reset (no shared module supplies one yet — see the comment
+       on it below);
+     - one selector that has to reach inside raw HTML this page injects via
+       `dangerouslySetInnerHTML` (ascii-html.ts's `.fix-wide` spans, and a
+       rendered SVG's own root element, neither of which fork-fixes-page.tsx
+       can style directly); and
+     - the breakpoint overrides, which must win over an inline style by
+       width alone, and so carry `!important` for the same reason
+       nav.tsx's/footer.tsx's own responsive rules do.
    ========================================================================== */
 
-.fix-header {
-  padding: 3rem 0 1.5rem;
-  max-width: 46rem;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.fix-breadcrumb {
-  font-size: 0.875rem;
-  margin-bottom: 1.5rem;
-}
-
-.fix-header h1 {
-  font-size: 2.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 1rem;
-}
-
-.fix-intro {
-  color: color-mix(in srgb, var(--t-fg) 70%, var(--t-bg));
-  line-height: 1.6;
-  margin-bottom: 0.75rem;
-}
-
-.fix {
-  padding: 2.5rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
-}
-
-.fix h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-bottom: 0.5rem;
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
 }
 
 .fix-anchor {
@@ -47,159 +45,47 @@
   text-decoration: underline;
 }
 
-.fix-symptom {
-  color: color-mix(in srgb, var(--t-fg) 70%, var(--t-bg));
-  line-height: 1.6;
-  max-width: 46rem;
-  margin-bottom: 0.75rem;
+/*
+ * A wide (CJK/fullwidth/emoji) glyph occupies exactly two terminal columns,
+ * the rule the ASCII renderer's box math is built on. ascii-html.ts's
+ * asciiToHtml() already inlines each wide grapheme's own `width:Nch`, but a
+ * bare <span> is inline and ignores an explicit width unless it's also
+ * made inline-block — that, plus centring the glyph in its cell, is what
+ * this rule supplies. fork-fixes-page.tsx has no other way to reach this
+ * span: it arrives inside the `dangerouslySetInnerHTML` blob, not as a
+ * React element this file renders itself.
+ */
+.fix-ascii .fix-wide {
+  display: inline-block;
+  text-align: center;
 }
 
-.fix-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
-  margin-bottom: 1rem;
-}
-
-.fix-source,
-.fix-ascii {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  /* Wide diagrams scroll inside their own box rather than widening the page. */
-  overflow-x: auto;
-  white-space: pre;
-  /*
-   * Ligatures off. JetBrains Mono renders `-->` as a single arrow glyph, which
-   * is pleasant in ordinary code and actively misleading here: several fixes
-   * on this page are about the exact characters in an arrow token, and one is
-   * specifically about `A-->B` having no surrounding space. The reader needs
-   * to see the characters that were actually typed.
-   */
-  font-variant-ligatures: none;
-  font-feature-settings:
-    'liga' 0,
-    'calt' 0;
-}
-
-.fix-source {
-  background: color-mix(in srgb, var(--t-fg) 4%, var(--t-bg));
-  border: 1px solid color-mix(in srgb, var(--t-fg) 10%, var(--t-bg));
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1.25rem;
-}
-
-/* Side-by-side on wide screens, stacked on narrow ones — a cramped pair is
-   harder to compare than a stacked one. */
-.fix-pair {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-@media (min-width: 900px) {
-  .fix-pair {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.fix-side {
-  border: 1px solid color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.fix-side-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--t-fg) 10%, var(--t-bg));
-}
-
-.fix-side-before {
-  background: color-mix(in srgb, #d9534f 12%, var(--t-bg));
-  color: color-mix(in srgb, #d9534f 80%, var(--t-fg));
-}
-
-.fix-side-after {
-  background: color-mix(in srgb, #3d9970 12%, var(--t-bg));
-  color: color-mix(in srgb, #3d9970 80%, var(--t-fg));
-}
-
-.fix-svg,
-.fix-ascii {
-  padding: 1rem;
-  margin: 0;
-}
-
+/*
+ * renderMermaidSVG's output carries its own pixel width/height attributes
+ * on the <svg> root. Without this, a wide diagram overflows its panel on a
+ * narrow viewport instead of scaling down with it — and, like `.fix-wide`
+ * above, that root arrives via `dangerouslySetInnerHTML`, so it can't be
+ * reached with an inline style from the wrapping `<div className="fix-svg">`.
+ */
 .fix-svg svg {
   max-width: 100%;
   height: auto;
 }
 
-/* Real-terminal screenshots (scripts/capture-fork-fixes-terminal.ts) carry
-   their own dark background, so — unlike .fix-svg/.fix-ascii — this panel
-   has no padding: a border around the terminal's own edge reads as a
-   window frame, not a mismatched inset. */
-.fix-screenshot {
-  display: flex;
+@media (max-width: 900px) {
+  .fix-card {
+    padding: 28px !important;
+  }
 }
 
-.fix-screenshot img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/*
- * A wide (CJK/fullwidth/emoji) glyph occupies exactly two terminal columns,
- * which is the rule the ASCII renderer's box math is built on. A browser
- * gives it whatever the fallback font's advance happens to be — measured at
- * 1.66x the Latin advance here, since JetBrains Mono has no CJK coverage.
- * fork-fixes.ts boxes each wide grapheme cluster to the column count the
- * renderer allocated for it, via an inline width, restoring the terminal's
- * geometry so the borders in these panels line up as they do in a real
- * terminal. The 2ch here is the single-glyph default, and a floor if that
- * inline width ever fails to apply.
- */
-.fix-ascii .fix-wide {
-  display: inline-block;
-  width: 2ch;
-  /* Centre the glyph across its cells; the substitute face is narrower than
-     the box, and left-aligning it would bunch the text toward the border. */
-  text-align: center;
-}
-
-.fix-empty {
-  padding: 1rem;
-  font-size: 0.875rem;
-  font-style: italic;
-  color: color-mix(in srgb, var(--t-fg) 55%, var(--t-bg));
-}
-
-.fix-error {
-  padding: 1rem;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: color-mix(in srgb, #d9534f 85%, var(--t-fg));
-}
-
-.fix-lookfor {
-  margin-top: 1rem;
-  font-size: 0.875rem;
-  color: color-mix(in srgb, var(--t-fg) 65%, var(--t-bg));
-  max-width: 46rem;
-}
-
-.fix-footer {
-  padding: 3rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--t-fg) 12%, var(--t-bg));
-  font-size: 0.875rem;
-  color: color-mix(in srgb, var(--t-fg) 60%, var(--t-bg));
+@media (max-width: 600px) {
+  .page-h1 {
+    font-size: 32px !important;
+  }
+  .fix-card {
+    padding: 22px !important;
+  }
+  .ba-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

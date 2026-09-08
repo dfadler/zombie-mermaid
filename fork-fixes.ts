@@ -29,6 +29,10 @@ import { forkFixes, type ForkFix } from './demo/fork-fixes-data.ts'
 import { asciiToHtml } from './ascii-html.ts'
 import { formatProse } from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
+import { designBaseCss } from './demo/components/tokens.tsx'
+import { primitivesCss } from './demo/components/primitives.tsx'
+import { navCss } from './demo/components/nav.tsx'
+import { footerCss } from './demo/components/footer.tsx'
 import {
   ForkFixesPage,
   type FixSectionProps,
@@ -286,18 +290,27 @@ async function generate(): Promise<string> {
     process.exit(1)
   }
 
-  const styles = await readFile(
-    new URL('./demo/styles.css', import.meta.url),
-    'utf8',
-  )
-  const extra = await readFile(
+  // The #608 redesign moved this page onto the shared design system
+  // (#591): tokens.tsx's custom properties and base rules, primitives.tsx's
+  // .card/.pill/.section-eyebrow, nav.tsx's and footer.tsx's own responsive
+  // rules, and finally this page's own small CSS file — see
+  // demo/fork-fixes.css's header for what's left in it and why. This page
+  // no longer loads demo/styles.css's `--t-*` theme system at all.
+  const pageCss = await readFile(
     new URL('./demo/fork-fixes.css', import.meta.url),
     'utf8',
   )
+  const styles = [
+    designBaseCss(),
+    primitivesCss(),
+    navCss(),
+    footerCss(),
+    pageCss,
+  ].join('\n\n')
 
   return renderHtmlDocument(
     createElement(ForkFixesPage, {
-      css: `${styles}\n${extra}`,
+      css: styles,
       fixes: pairs.map(fixSectionProps),
     }),
   )
