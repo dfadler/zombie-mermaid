@@ -128,9 +128,15 @@ async function main(): Promise<void> {
   const clientJs = await bundleDiagramPageClient()
   await writeFile(new URL('./assets/diagram-page-client.js', OUT_DIR), clientJs)
 
+  // 'github-dark', not the other generators' 'github-light': every type
+  // detail page (demo/components/diagram-page.tsx's `DiagramTypePage`) now
+  // renders on the #590 redesign's fixed dark palette, and the source
+  // panel's own CSS forces shiki's inline background transparent (see
+  // diagram-page.tsx's `pageCss`) so only its text-token colors show --
+  // those need to be the dark-theme set to read against a dark card.
   const highlighter = await createHighlighter({
     langs: ['mermaid'],
-    themes: ['github-light'],
+    themes: ['github-dark'],
   })
 
   // Include the '' (Default) pseudo-theme alongside the real THEMES entries
@@ -151,6 +157,7 @@ async function main(): Promise<void> {
   const typeLinks = DIAGRAM_TYPE_PROFILES.map((p) => ({
     slug: p.slug,
     label: p.label,
+    accent: p.accent,
   }))
 
   for (const profile of DIAGRAM_TYPE_PROFILES) {
@@ -171,7 +178,7 @@ async function main(): Promise<void> {
       const fenced = '```mermaid\n' + source.trim() + '\n```'
       const highlightedHtml = highlighter.codeToHtml(fenced, {
         lang: 'mermaid',
-        theme: 'github-light',
+        theme: 'github-dark',
       })
       return highlightedHtml
         .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1')
@@ -233,6 +240,9 @@ async function main(): Promise<void> {
         label: profile.label,
         slug: profile.slug,
         intro: profile.intro,
+        accent: profile.accent,
+        exampleHeading: profile.exampleHeading,
+        sourceFilename: profile.sourceFilename,
         title,
         description,
         canonical,

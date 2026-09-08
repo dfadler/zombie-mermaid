@@ -1,8 +1,30 @@
 /** @jsxRuntime automatic */
 /**
  * The per-diagram-type SEO pages and their hub page (pages.ts →
- * diagrams/*.html) as React components — part of #589's move of every site
- * generator off template-literal HTML.
+ * diagrams/*.html) as React components.
+ *
+ * `DiagramTypePage` is the reference instance of the shared per-type detail
+ * template (#601, part of #599, part of the #590 redesign): breadcrumb,
+ * description, syntax-highlighted source + rendered SVG side by side, a
+ * theme picker, and cross-links to the other five diagram types. Every
+ * structural choice, colour, and string not called out below was lifted
+ * from the design canvas's `FlowchartDetail` artboard
+ * (`https://claude.ai/code/artifact/2f623662-5eaf-42c4-9fd9-c21588e34993`,
+ * confirmed byte-identical to `FlowchartDetailMobile` — this page's
+ * responsive behaviour lives entirely in the `@media` blocks in
+ * {@link pageCss}, tokens.tsx's `MEDIA`, nav.tsx's `navCss`, and
+ * footer.tsx's `footerCss`, not in a second markup path), the same source
+ * nav.tsx/footer.tsx/tokens.tsx/primitives.tsx were built from. #602-606
+ * (State, Sequence, Class, ER, XY chart) apply this same template to their
+ * own type once this PR merges — see this file's own doc comments on
+ * {@link DiagramTypePageProps} and demo/diagram-pages-data.ts's
+ * `DiagramTypeProfile` for the seams a follow-on issue passes through.
+ *
+ * `DiagramHubPage` (diagrams/index.html) is deliberately *not* part of this
+ * redesign — #600 owns it, and it hasn't started (its own canvas artboard,
+ * `DiagramGallery`, is a separate follow-on) — so it keeps rendering
+ * through site-chrome.tsx's `StaticPage`/`PageShell`, unchanged from before
+ * this PR.
  *
  * Pure functions of already-computed data: pages.ts still owns the I/O and
  * the rendering work (renderMermaidSVG, shiki, esbuild), and hands the
@@ -14,8 +36,53 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { ReactNode } from 'react'
-import { BreadcrumbSep, PageShell, StaticPage } from './site-chrome.tsx'
+import type { CSSProperties, ReactNode } from 'react'
+import { BreadcrumbSep, FORK_URL, PageShell, StaticPage } from './site-chrome.tsx'
+import { Footer, footerCss, type FooterColumn } from './footer.tsx'
+import { Nav, navCss } from './nav.tsx'
+import {
+  Card,
+  CTA,
+  SectionEyebrow,
+  accentVar,
+  primitivesCss,
+  type Accent,
+} from './primitives.tsx'
+import {
+  DesignFontLinks,
+  FONT_SIZE,
+  FONT_WEIGHT,
+  LAYOUT,
+  LETTER_SPACING,
+  MEDIA,
+  SECTION_SPACE,
+  SPACE,
+  colorVar,
+  designBaseCss,
+} from './tokens.tsx'
+
+/**
+ * The site's npm package listing, linked from the footer's Resources
+ * column. Duplicated from demo/components/index-page.tsx's own
+ * module-private `NPM_URL` rather than importing it — that module doesn't
+ * export it, and this page owns its own footer link destinations.
+ */
+const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
+
+/**
+ * Real destinations for nav.tsx's `NAV_ITEMS`/footer.tsx's
+ * `FOOTER_COLUMNS`, relative to a page under `diagrams/`. Every generated
+ * type page lives at the same depth, so these are fixed rather than
+ * threaded through as props.
+ */
+const HOME_HREF = '../'
+const NAV_HREFS = {
+  diagrams: './',
+  editor: '../editor',
+  forkFixes: '../fork-fixes.html',
+  blog: '../blog/',
+  github: FORK_URL,
+} as const
 
 /**
  * A block that either has one rendering, or a wide/narrow pair swapped by
@@ -25,20 +92,26 @@ import { BreadcrumbSep, PageShell, StaticPage } from './site-chrome.tsx'
 export type OrientationVariants = { wide: string; narrow: string } | string
 
 function OrientationBlock({
-  className,
+  className = '',
+  style,
   html,
 }: {
-  className: string
+  className?: string
+  style?: CSSProperties
   html: OrientationVariants
 }) {
   if (typeof html === 'string') {
     // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG/shiki output, never user input (see the file header)
     return (
-      <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
+      <div
+        className={className}
+        style={style}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
     )
   }
   return (
-    <div className={className}>
+    <div className={className} style={style}>
       <div
         className="orientation-variant orientation-wide"
         // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG/shiki output, never user input (see the file header)
@@ -58,49 +131,504 @@ export interface DiagramTypeLink {
   label: string
 }
 
-/** The "Other diagram types" grid, with the page's own type marked current. */
+/* -----------------------------------------------------------------
+ * Per-type crosslink glyphs
+ *
+ * Six small animated SVGs, one per diagram type, transcribed from the
+ * FlowchartDetail artboard's "Keep exploring" cards (five of them — State,
+ * Sequence, Class, ER, XY chart) plus a sixth built here in the same visual
+ * language for Flowchart itself, since the artboard never draws Flowchart's
+ * own glyph (it's always the *current* page's type there, never a
+ * crosslink target). Each reuses the artboard's own animation classes
+ * ({@link pageCss}), so it double-checks against the "Source → render"
+ * section's animation on this same page: flowchart's edges there are
+ * `edge-anim` (marching ants), which is exactly what this file's
+ * `FlowchartGlyph` reuses.
+ *
+ * `stroke="currentColor"`/`fill="currentColor"` rather than a literal
+ * `var(--<accent>)` per shape, unlike the artboard: the containing
+ * {@link Card}'s `color` (set from that type's own {@link Accent} by
+ * {@link OtherTypesGrid}) already supplies the hue, so one glyph serves
+ * every accent instead of needing six colour-coded copies.
+ * ----------------------------------------------------------------- */
+
+function FlowchartGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="6"
+        y="10"
+        width="30"
+        height="20"
+        rx="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="64"
+        y="40"
+        width="30"
+        height="20"
+        rx="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M36 20 L64 50"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function StateGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <circle
+        cx="24"
+        cy="20"
+        r="14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="radar-ping"
+      />
+      <circle
+        cx="24"
+        cy="20"
+        r="14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="76"
+        cy="50"
+        r="14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path d="M36 28 L64 42" stroke="currentColor" strokeWidth="2" fill="none" />
+    </svg>
+  )
+}
+
+function SequenceGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <line x1="22" y1="8" x2="22" y2="62" stroke="currentColor" strokeWidth="2" />
+      <line x1="78" y1="8" x2="78" y2="62" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M22 24 H78"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="msg-flow-right"
+      />
+      <path
+        d="M78 44 H22"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="msg-flow-left"
+      />
+    </svg>
+  )
+}
+
+function ClassGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="22"
+        y="8"
+        width="56"
+        height="50"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <line
+        x1="22"
+        y1="26"
+        x2="78"
+        y2="26"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="draw-line"
+      />
+      <line
+        x1="22"
+        y1="42"
+        x2="78"
+        y2="42"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="draw-line"
+        style={{ animationDelay: '0.5s' }}
+      />
+    </svg>
+  )
+}
+
+function ErGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="4"
+        y="24"
+        width="30"
+        height="20"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="66"
+        y="24"
+        width="30"
+        height="20"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <polygon
+        points="50,20 60,34 50,48 40,34"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="relation-pulse"
+      />
+      <path
+        d="M34 34 H40 M60 34 H66"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="relation-pulse"
+      />
+    </svg>
+  )
+}
+
+function XyChartGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <line x1="10" y1="8" x2="10" y2="62" stroke="currentColor" strokeWidth="2" />
+      <line x1="10" y1="62" x2="94" y2="62" stroke="currentColor" strokeWidth="2" />
+      <rect
+        x="20"
+        y="40"
+        width="10"
+        height="22"
+        fill="currentColor"
+        className="bar-grow"
+      />
+      <rect
+        x="38"
+        y="28"
+        width="10"
+        height="34"
+        fill="currentColor"
+        className="bar-grow"
+        style={{ animationDelay: '0.2s' }}
+      />
+      <rect
+        x="56"
+        y="16"
+        width="10"
+        height="46"
+        fill="currentColor"
+        className="bar-grow"
+        style={{ animationDelay: '0.4s' }}
+      />
+      <path
+        d="M20 44 L46 30 L82 14"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/**
+ * Every diagram type's crosslink glyph, keyed by `DiagramTypeProfile.slug`
+ * (demo/diagram-pages-data.ts) — the same six slugs `DIAGRAM_TYPE_PROFILES`
+ * uses. A slug with no entry here renders no glyph (see
+ * {@link OtherTypesGrid}), rather than the page failing to build.
+ */
+const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
+  flowchart: FlowchartGlyph,
+  state: StateGlyph,
+  sequence: SequenceGlyph,
+  class: ClassGlyph,
+  er: ErGlyph,
+  'xy-chart': XyChartGlyph,
+}
+
+/** One crosslink target: the other type's own display data. */
+export interface DiagramCrosslink extends DiagramTypeLink {
+  /** Tints the card border and the glyph (via `color`). */
+  accent: Accent
+}
+
+/** The "Keep exploring" grid: every *other* diagram type as a glyph card. */
 export function OtherTypesGrid({
   types,
   currentSlug,
 }: {
-  types: readonly DiagramTypeLink[]
+  types: readonly DiagramCrosslink[]
   currentSlug: string
 }) {
   return (
-    <div className="link-grid">
-      {types.map((type) => (
-        <a
-          key={type.slug}
-          className={`link-grid-item${type.slug === currentSlug ? ' is-current' : ''}`}
-          href={`${type.slug}.html`}
-        >
-          {type.label}
-        </a>
-      ))}
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${SPACE['2xl']}px` }}>
+      {types
+        .filter((type) => type.slug !== currentSlug)
+        .map((type) => {
+          const Glyph = DIAGRAM_TYPE_GLYPHS[type.slug]
+          return (
+            <Card
+              key={type.slug}
+              href={`${type.slug}.html`}
+              accent={type.accent}
+              className="crosslink-card"
+              style={{
+                flex: '1 1 160px',
+                minWidth: '140px',
+                padding: `${SPACE['2xl']}px`,
+                color: accentVar(type.accent),
+              }}
+            >
+              {Glyph ? <Glyph /> : null}
+              <span
+                style={{
+                  fontSize: `${FONT_SIZE.bodySm}px`,
+                  fontWeight: FONT_WEIGHT.bold,
+                  color: colorVar('--text'),
+                }}
+              >
+                {type.label}
+              </span>
+            </Card>
+          )
+        })}
     </div>
   )
 }
 
+/* -----------------------------------------------------------------
+ * Page-specific CSS
+ * ----------------------------------------------------------------- */
+
+/**
+ * This template's own rules: the animated crosslink/render-panel glyphs
+ * (transcribed from the FlowchartDetail artboard's shared animation block —
+ * see this file's header), the breadcrumb, the crosslink card's hover/flex
+ * shape, and the two responsive overrides the artboard's own preamble
+ * declares for this page (`.detail-row`, `.page-h1`) that don't belong in
+ * any shared component's own CSS function.
+ *
+ * Also forces shiki's own inline `background-color` transparent: shiki
+ * paints that per-`<pre>`, at the highest specificity short of `!important`
+ * in an external rule, and the highlighter runs in the `github-dark` theme
+ * (see pages.ts's `highlightSource`) specifically so its own text-token
+ * colours already read correctly against this page's dark `.card` — only
+ * the opaque light-chip background it also paints needs suppressing.
+ *
+ * Emit once per page, after tokens.tsx's `designBaseCss()`,
+ * primitives.tsx's `primitivesCss()`, nav.tsx's `navCss()`, and
+ * footer.tsx's `footerCss()` — this reuses `.card`, `.pill`, and
+ * `.section-eyebrow`, and `.section-px`'s responsive gutter (declared once,
+ * generically, by `footerCss()`) rather than redeclaring them.
+ */
+function pageCss(): string {
+  return `@keyframes marchingAnts { to { stroke-dashoffset: -24; } }
+.edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }
+
+@keyframes radarPing {
+  0% { r: 14; opacity: 0.55; stroke-width: 2; }
+  100% { r: 27; opacity: 0; stroke-width: 0.5; }
+}
+.radar-ping { transform-origin: center; animation: radarPing 1.8s ease-out infinite; }
+
+@keyframes msgFlowRight { to { stroke-dashoffset: -16; } }
+@keyframes msgFlowLeft { to { stroke-dashoffset: 16; } }
+.msg-flow-right { stroke-dasharray: 4 4; animation: msgFlowRight 1.1s linear infinite; }
+.msg-flow-left { stroke-dasharray: 4 4; animation: msgFlowLeft 1.1s linear 0.55s infinite; }
+
+@keyframes drawLine {
+  0% { stroke-dashoffset: 56; }
+  55%, 100% { stroke-dashoffset: 0; }
+}
+.draw-line { stroke-dasharray: 56; animation: drawLine 2.8s ease-in-out infinite; }
+
+@keyframes relationPulse {
+  0%, 100% { opacity: 0.45; stroke-width: 2; }
+  50% { opacity: 1; stroke-width: 3; }
+}
+.relation-pulse { transform-origin: center; animation: relationPulse 1.8s ease-in-out infinite; }
+
+@keyframes barGrow {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.4); }
+}
+.bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }
+
+${MEDIA.reducedMotion} {
+  .edge-anim { animation: none; }
+  .radar-ping { animation: none; opacity: 0; }
+  .msg-flow-right { animation: none; }
+  .msg-flow-left { animation: none; }
+  .draw-line { animation: none; stroke-dashoffset: 0; }
+  .relation-pulse { animation: none; }
+  .bar-grow { animation: none; transform: scaleY(1); }
+}
+
+.breadcrumb {
+  font-size: ${FONT_SIZE.bodySm}px;
+  color: ${colorVar('--text-faint')};
+}
+.breadcrumb .sep {
+  margin: 0 ${SPACE.sm}px;
+  color: ${colorVar('--text-faint')};
+}
+
+.code-card { overflow: hidden; display: flex; flex-direction: column; }
+
+.crosslink-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${SPACE.md}px;
+  text-decoration: none;
+}
+.crosslink-card:hover { color: ${colorVar('--text')}; }
+
+.shiki { background: transparent !important; }
+
+${MEDIA.tablet} {
+  .detail-row { flex-direction: column !important; }
+}
+
+${MEDIA.mobile} {
+  .page-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
+}`
+}
+
+/** {@link pageCss} in a `<style>` element, for this page's `<head>`. */
+function PageStyle() {
+  return <style>{pageCss()}</style>
+}
+
+/* -----------------------------------------------------------------
+ * DiagramTypePage
+ * ----------------------------------------------------------------- */
+
 export interface DiagramTypePageProps {
   label: string
   slug: string
+  /** The type's one-paragraph description, under the page `h1`. */
   intro: string
+  /**
+   * Which of primitives.tsx's six accents this type owns — see
+   * demo/diagram-pages-data.ts's `DiagramTypeProfile.accent`. Colours the
+   * breadcrumb's current crumb, the "Source → render" cards' border/glow,
+   * and this type's own eyebrow.
+   */
+  accent: Accent
+  /** The "Source → render" section's h2 — see `DiagramTypeProfile.exampleHeading`. */
+  exampleHeading: string
+  /** The source panel's file-tab label — see `DiagramTypeProfile.sourceFilename`. */
+  sourceFilename: string
   title: string
   description: string
   canonical: string
-  cssHref: string
   faviconHref: string
+  /**
+   * The combined stylesheet pages.ts already writes to
+   * `diagrams/assets/diagram-page.css` (demo/styles.css + this page's own
+   * legacy demo/diagram-page.css) — still needed here for the theme
+   * picker's pill/dropdown styling, `.orientation-variant`'s responsive
+   * swap, and `.diagram-frame svg`, all of which
+   * demo/diagram-page-client.ts's selectors depend on. This template's own
+   * redesigned chrome (Nav, Footer, the section layout) is emitted inline
+   * instead — see {@link PageStyle} and the *Style components this
+   * function renders — so no second external stylesheet is needed.
+   */
+  cssHref: string
   /** shiki-highlighted Mermaid source, one or two orientation variants. */
   sourcePanelHtml: OrientationVariants
   /** The rendered SVG, one or two orientation variants. */
   diagramHtml: OrientationVariants
   /** `../editor#<base64 payload>` — see pages.ts's `editorHash`. */
   editorHref: string
-  types: readonly DiagramTypeLink[]
+  /** Every diagram type (including this page's own), for the crosslink grid. */
+  types: readonly DiagramCrosslink[]
   themePills: ReactNode
   /** The inline `<script>` seeding `window.__diagramPage*`, already escaped. */
   themeDataScript: string
   clientScriptSrc: string
+}
+
+/** The page's `<head>` — StaticPage's metadata shape, but with the redesign's own fonts and inline CSS instead of site-chrome.tsx's `FontLinks`/external stylesheet. */
+function DetailHead({
+  title,
+  description,
+  canonical,
+  faviconHref,
+  cssHref,
+}: Pick<
+  DiagramTypePageProps,
+  'title' | 'description' | 'canonical' | 'faviconHref' | 'cssHref'
+>) {
+  return (
+    <head>
+      <meta charSet="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <link rel="canonical" href={canonical} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content={canonical} />
+      <meta name="twitter:card" content="summary" />
+      <link rel="icon" type="image/svg+xml" href={faviconHref} />
+      <DesignFontLinks />
+      <link rel="stylesheet" href={cssHref} />
+      <style>{designBaseCss()}</style>
+      <style>{primitivesCss()}</style>
+      <style>{navCss()}</style>
+      <style>{footerCss()}</style>
+      <PageStyle />
+    </head>
+  )
+}
+
+/** The `Home / Diagrams / <Label>` crumb trail, the current type tinted with its accent. */
+function DetailBreadcrumb({
+  label,
+  accent,
+}: {
+  label: string
+  accent: Accent
+}) {
+  return (
+    <div className="breadcrumb mono">
+      <a href={HOME_HREF}>Home</a>
+      <span className="sep">/</span>
+      <a href={NAV_HREFS.diagrams}>Diagrams</a>
+      <span className="sep">/</span>
+      <span style={{ color: accentVar(accent) }}>{label}</span>
+    </div>
+  )
 }
 
 /** One diagram-type landing page, e.g. diagrams/flowchart.html. */
@@ -108,11 +636,14 @@ export function DiagramTypePage({
   label,
   slug,
   intro,
+  accent,
+  exampleHeading,
+  sourceFilename,
   title,
   description,
   canonical,
-  cssHref,
   faviconHref,
+  cssHref,
   sourcePanelHtml,
   diagramHtml,
   editorHref,
@@ -121,66 +652,317 @@ export function DiagramTypePage({
   themeDataScript,
   clientScriptSrc,
 }: DiagramTypePageProps) {
+  const footerColumns: readonly FooterColumn[] = [
+    {
+      title: 'Product',
+      links: [
+        { label: 'Diagrams', href: NAV_HREFS.diagrams },
+        { label: 'Editor', href: NAV_HREFS.editor },
+        { label: 'Fork fixes', href: NAV_HREFS.forkFixes },
+      ],
+    },
+    {
+      title: 'Resources',
+      links: [
+        { label: 'Blog', href: NAV_HREFS.blog },
+        { label: 'GitHub', href: NAV_HREFS.github },
+        { label: 'npm package', href: NPM_URL },
+      ],
+    },
+    {
+      title: 'Project',
+      links: [
+        { label: 'MIT Licensed' },
+        { label: 'dfadler/zombie-mermaid', href: NAV_HREFS.github },
+      ],
+    },
+  ]
+
   return (
-    <StaticPage
-      title={title}
-      description={description}
-      canonical={canonical}
-      cssHref={cssHref}
-      faviconHref={faviconHref}
-      bodyScript={
-        <>
-          <script
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from DIAGRAM_TYPE_PROFILES, escaped with escapeJsonForScriptTag; never user input
-            dangerouslySetInnerHTML={{ __html: themeDataScript }}
-          />
-          <script type="module" src={clientScriptSrc} />
-        </>
-      }
-    >
-      <PageShell
-        homeHref="../"
-        themePills={themePills}
-        breadcrumb={
-          <>
-            <a href="../">Home</a>
-            <BreadcrumbSep />
-            <a href="./">Diagrams</a>
-            <BreadcrumbSep />
-            {label}
-          </>
-        }
-      >
-        <h1>{label} examples</h1>
-        <p className="lede">{intro}</p>
+    <html lang="en">
+      <DetailHead
+        title={title}
+        description={description}
+        canonical={canonical}
+        faviconHref={faviconHref}
+        cssHref={cssHref}
+      />
+      <body>
+        <div
+          className="dc-root"
+          style={{
+            fontFamily: 'var(--font-body)',
+            color: colorVar('--text'),
+            width: '100%',
+            // 1440px in the artboard: LAYOUT.maxWidth (1280, the inner
+            // content column every section below centres) plus its own
+            // 80px gutter on each side -- the outer frame the artboard
+            // itself renders at, one level up from the content column.
+            maxWidth: `${LAYOUT.maxWidth + 2 * LAYOUT.gutter.desktop}px`,
+            margin: '0 auto',
+            background:
+              'linear-gradient(180deg, #0a0d16 0%, #0d1120 40%, #0a0d16 100%)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <Nav active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
 
-        <div className="diagram-layout">
-          <div className="source-column">
-            <h2 className="source-heading">Mermaid source</h2>
-            <OrientationBlock className="source-panel" html={sourcePanelHtml} />
+          {/* ============ BREADCRUMB + HEADER ============ */}
+          <div
+            className="section-px"
+            style={{
+              padding: `${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.default - 16}px ${LAYOUT.gutter.desktop}px`,
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            <div
+              style={{
+                maxWidth: `${LAYOUT.maxWidth}px`,
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${SPACE['3xl']}px`,
+              }}
+            >
+              <DetailBreadcrumb label={label} accent={accent} />
+              <h1
+                className="page-h1"
+                style={{
+                  fontSize: `${FONT_SIZE.display}px`,
+                  lineHeight: 1.08,
+                  letterSpacing: LETTER_SPACING.display,
+                  maxWidth: '820px',
+                }}
+              >
+                {label}
+              </h1>
+              <p
+                // 18px is off tokens.tsx's FONT_SIZE scale (17 lead / 20
+                // subhead are the neighbours) -- the artboard's own lede
+                // size, kept literal rather than rounded to either step.
+                style={{
+                  fontSize: '18px',
+                  lineHeight: 1.65,
+                  color: colorVar('--text-dim'),
+                  maxWidth: '720px',
+                }}
+              >
+                {intro}
+              </p>
+            </div>
           </div>
-          <div className="diagram-column">
-            <OrientationBlock className="diagram-frame" html={diagramHtml} />
+
+          {/* ============ SOURCE + RENDER ============ */}
+          <div
+            className="section-px"
+            style={{
+              padding: `${SECTION_SPACE.default - 16}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+              background: colorVar('--bg-soft'),
+              borderTop: `1px solid ${colorVar('--border')}`,
+              borderBottom: `1px solid ${colorVar('--border')}`,
+            }}
+          >
+            <div
+              style={{
+                maxWidth: `${LAYOUT.maxWidth}px`,
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${SPACE['5xl']}px`,
+              }}
+            >
+              <SectionEyebrow accent={accent}>Source → render</SectionEyebrow>
+              <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+                {exampleHeading}
+              </h2>
+
+              <div
+                className="detail-row"
+                style={{ display: 'flex', gap: `${SPACE['6xl']}px`, alignItems: 'stretch' }}
+              >
+                <Card
+                  accent={accent}
+                  className="code-card"
+                  style={{ flex: '1 1 0', minWidth: 0 }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: `${SPACE.xs}px`,
+                      padding: `${SPACE.xl}px ${SPACE['2xl']}px`,
+                      borderBottom: `1px solid ${colorVar('--border')}`,
+                      background: colorVar('--panel-2'),
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: '#ff6767',
+                        display: 'inline-block',
+                      }}
+                    />
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: '#ffc85c',
+                        display: 'inline-block',
+                      }}
+                    />
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: '#5ee08a',
+                        display: 'inline-block',
+                      }}
+                    />
+                    <span
+                      className="mono"
+                      style={{
+                        marginLeft: `${SPACE.sm}px`,
+                        fontSize: `${FONT_SIZE.caption}px`,
+                        color: colorVar('--text-faint'),
+                      }}
+                    >
+                      {sourceFilename}
+                    </span>
+                  </div>
+                  <OrientationBlock
+                    className="source-panel"
+                    // Cancels the old, still-loaded demo/styles.css's
+                    // `.source-panel` rules (built for index.ts's own
+                    // gallery cards, which this page's `cssHref` also
+                    // carries -- see that prop's doc comment): a
+                    // near-white `background` meant to sit under
+                    // github-light Shiki output, and a border/radius that
+                    // would otherwise nest a second, mismatched box inside
+                    // this card's own.
+                    style={{
+                      padding: `${SPACE['4xl']}px ${SPACE['3xl']}px`,
+                      fontSize: `${FONT_SIZE.bodySm}px`,
+                      overflowX: 'auto',
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: 0,
+                    }}
+                    html={sourcePanelHtml}
+                  />
+                </Card>
+
+                <Card
+                  accent={accent}
+                  tone="glow"
+                  className="diagram-frame"
+                  style={{
+                    flex: '1 1 0',
+                    minWidth: 0,
+                    padding: `${SPACE['5xl']}px`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <OrientationBlock html={diagramHtml} />
+                </Card>
+              </div>
+
+              <div style={{ display: 'flex', gap: `${SPACE.xl}px`, flexWrap: 'wrap' }}>
+                <CTA
+                  href={editorHref}
+                  accent={accent}
+                  className="cta-btn primary"
+                >
+                  Open in the live editor
+                </CTA>
+                <CTA
+                  href="../#samples-heading"
+                  accent={accent}
+                  variant="ghost"
+                  arrow={false}
+                >
+                  See all samples
+                </CTA>
+              </div>
+            </div>
           </div>
+
+          {/* ============ THEME PICKER ============ */}
+          <div className="section-px" style={{ padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px` }}>
+            <div
+              style={{
+                maxWidth: `${LAYOUT.maxWidth}px`,
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${SPACE['4xl']}px`,
+              }}
+            >
+              <SectionEyebrow>Pick a look</SectionEyebrow>
+              <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+                Live in every built-in theme.
+              </h2>
+              <div
+                className="theme-pills"
+                id="theme-pills"
+                style={{ display: 'flex', flexWrap: 'wrap', gap: `${SPACE.md}px`, alignItems: 'flex-start' }}
+              >
+                {themePills}
+              </div>
+            </div>
+          </div>
+
+          {/* ============ CROSS-LINKS ============ */}
+          <div
+            className="section-px"
+            style={{
+              padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+              background: colorVar('--bg-soft'),
+              borderTop: `1px solid ${colorVar('--border')}`,
+              borderBottom: `1px solid ${colorVar('--border')}`,
+            }}
+          >
+            <div
+              style={{
+                maxWidth: `${LAYOUT.maxWidth}px`,
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${SPACE['5xl']}px`,
+              }}
+            >
+              <SectionEyebrow>Keep exploring</SectionEyebrow>
+              <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+                Explore the other diagram types.
+              </h2>
+              <OtherTypesGrid types={types} currentSlug={slug} />
+            </div>
+          </div>
+
+          <Footer columns={footerColumns} />
         </div>
 
-        <div className="cta-row">
-          <a className="cta-btn primary" href={editorHref}>
-            Open in the live editor
-          </a>
-          <a className="cta-btn" href="../#samples-heading">
-            See all samples
-          </a>
-        </div>
-
-        <div className="section">
-          <h2>Other diagram types</h2>
-          <OtherTypesGrid types={types} currentSlug={slug} />
-        </div>
-      </PageShell>
-    </StaticPage>
+        <script
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from DIAGRAM_TYPE_PROFILES, escaped with escapeJsonForScriptTag; never user input
+          dangerouslySetInnerHTML={{ __html: themeDataScript }}
+        />
+        <script type="module" src={clientScriptSrc} />
+      </body>
+    </html>
   )
 }
+
+/* -----------------------------------------------------------------
+ * DiagramHubPage — unchanged by this PR; see the file header.
+ * ----------------------------------------------------------------- */
 
 export interface DiagramHubPageProps {
   title: string

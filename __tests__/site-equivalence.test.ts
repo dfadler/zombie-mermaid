@@ -237,8 +237,8 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
 
 describe('pages.ts → diagrams/*.html', () => {
   const types = [
-    { slug: 'flowchart', label: 'Flowchart' },
-    { slug: 'sequence', label: 'Sequence diagram' },
+    { slug: 'flowchart', label: 'Flowchart', accent: 'blue' as const },
+    { slug: 'sequence', label: 'Sequence diagram', accent: 'cyan' as const },
   ]
 
   it('renders a type page with one orientation', async () => {
@@ -247,6 +247,9 @@ describe('pages.ts → diagrams/*.html', () => {
         label: 'Sequence diagram',
         slug: 'sequence',
         intro: 'Sequence diagrams show messages between participants.',
+        accent: 'cyan',
+        exampleHeading: 'An API handshake, message by message.',
+        sourceFilename: 'handshake.mmd',
         title: 'Sequence diagram examples | Zombie Mermaid',
         description: 'Rendered live in any of 15 built-in themes.',
         canonical: 'https://example.test/diagrams/sequence.html',
@@ -274,6 +277,9 @@ describe('pages.ts → diagrams/*.html', () => {
         label: 'Flowchart',
         slug: 'flowchart',
         intro: 'Flowcharts show a process as boxes and arrows.',
+        accent: 'blue',
+        exampleHeading: 'A deploy pipeline, start to finish.',
+        sourceFilename: 'pipeline.mmd',
         title: 'Flowchart examples | Zombie Mermaid',
         description: 'Rendered live in any of 15 built-in themes.',
         canonical: 'https://example.test/diagrams/flowchart.html',

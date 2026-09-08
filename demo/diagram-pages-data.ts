@@ -18,6 +18,7 @@
  */
 
 import { samples } from '../samples-data.ts'
+import type { Accent } from './components/primitives.tsx'
 
 /**
  * The Mermaid source of the samples-data.ts sample titled `title` — the
@@ -50,6 +51,34 @@ export interface DiagramTypeProfile {
   source: string
   /** One-paragraph, type-specific intro — real content, not templated boilerplate. */
   intro: string
+  /**
+   * Which of primitives.tsx's six accents identifies this type across the
+   * redesign (#590) — the breadcrumb's current-page ink, the "Source →
+   * render" card border/glow, and this type's own crosslink icon on every
+   * *other* type's page. Fixed by the design canvas's FlowchartDetail
+   * artboard (`https://claude.ai/code/artifact/2f623662-5eaf-42c4-9fd9-c21588e34993`),
+   * whose "Keep exploring" crosslink cards assign violet/cyan/amber/pink/green
+   * to State/Sequence/Class/ER/XY chart respectively; flowchart itself (the
+   * current page there) is blue by elimination — the one accent no
+   * crosslink card uses.
+   */
+  accent: Accent
+  /**
+   * The "Source → render" section's h2, e.g. "A deploy pipeline, start to
+   * finish." — type-specific, one sentence, naming the concrete example
+   * `source` renders. Verbatim from the canvas for `flowchart`; the other
+   * five are placeholders in the same voice as `intro`, since #602-606 own
+   * dialing in that type's own reference example and haven't started yet
+   * (see #601's PR body's "Template contract" section) — #603 (Sequence)
+   * can pull the canvas's SequenceDetail artboard for its real copy the
+   * same way this file's `flowchart` entry pulls FlowchartDetail's.
+   */
+  exampleHeading: string
+  /**
+   * The source-panel's file-tab label, e.g. "pipeline.mmd" — cosmetic, but
+   * type-specific so every page doesn't show the same filename.
+   */
+  sourceFilename: string
 }
 
 export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
@@ -60,6 +89,9 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     source: sampleSource('Simple Flow'),
     intro:
       'Flowcharts map a process as boxes and arrows and are the most commonly used Mermaid diagram — CI pipelines, decision trees, onboarding steps. zombie-mermaid supports the full shape set (rounded, diamond, stadium, subroutine, cylinder, hexagon, and more), subgraphs, and both straight and curved edges.',
+    accent: 'blue',
+    exampleHeading: 'A deploy pipeline, start to finish.',
+    sourceFilename: 'pipeline.mmd',
   },
   {
     slug: 'state',
@@ -68,6 +100,9 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     source: sampleSource('Basic State Diagram'),
     intro:
       'State diagrams show every state a system can be in and the events that move it between them — useful for anything with a lifecycle: a connection, an order, a UI component. zombie-mermaid supports nested composite states, start/end pseudostates, and animated edge transitions.',
+    accent: 'violet',
+    exampleHeading: "A connection's full lifecycle, state by state.",
+    sourceFilename: 'connection.mmd',
   },
   {
     slug: 'sequence',
@@ -76,6 +111,9 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     source: sampleSource('Sequence: Basic Messages'),
     intro:
       'Sequence diagrams show the order messages pass between participants over time — the standard way to document an API call, an auth handshake, or a distributed-systems trace. zombie-mermaid supports actors, activation boxes, and every Mermaid arrow type.',
+    accent: 'cyan',
+    exampleHeading: 'An API handshake, message by message.',
+    sourceFilename: 'handshake.mmd',
   },
   {
     slug: 'class',
@@ -84,6 +122,9 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     source: sampleSource('Class: Basic Class'),
     intro:
       'Class diagrams document a type’s attributes, methods, and visibility in a compact, 3-compartment box — the standard UML notation for object-oriented design docs and API references. zombie-mermaid renders all four visibility markers and inheritance/composition relationships.',
+    accent: 'amber',
+    exampleHeading: "A type's shape, one compartment at a time.",
+    sourceFilename: 'shape.mmd',
   },
   {
     slug: 'er',
@@ -92,6 +133,9 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     source: sampleSource('ER: Basic Relationship'),
     intro:
       'Entity-relationship diagrams describe a database schema: entities, their attributes, and the cardinality of the relationships between them. zombie-mermaid renders the full crow’s-foot notation along with PK/FK/UK key badges on typed attributes.',
+    accent: 'pink',
+    exampleHeading: "A schema's entities, and how they relate.",
+    sourceFilename: 'schema.mmd',
   },
   {
     slug: 'xy-chart',
@@ -100,5 +144,8 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     source: sampleSource('XY: Simple Bar Chart'),
     intro:
       'XY charts plot bar and line series against a shared axis — the one Mermaid diagram type that’s a data chart rather than a graph of nodes and edges. zombie-mermaid renders both bar and line series, mixed on one chart if needed.',
+    accent: 'green',
+    exampleHeading: 'Two series, one shared axis.',
+    sourceFilename: 'chart.mmd',
   },
 ]
