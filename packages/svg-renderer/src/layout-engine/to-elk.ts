@@ -17,20 +17,58 @@ import type { FontSizes } from '../styles.ts'
 import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
 import { measureMultilineText } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
+import {
+  ELK_DIRECTION_FALLBACK,
+  INLINE_CENTERED_EDGE_LABEL,
+  baseElkLayoutOptions,
+  buildElkEdge,
+  buildElkLeafNode,
+  directionToElk as sharedDirectionToElk,
+  type ElkDirection,
+  type ElkEdgeLabelStyle,
+  type ElkPaddingSides,
+} from './elk-graph-builder.ts'
 
-/** Convert Mermaid direction to ELK direction */
-function directionToElk(dir: MermaidGraph['direction']): string {
-  switch (dir) {
-    case 'LR':
-      return 'RIGHT'
-    case 'RL':
-      return 'LEFT'
-    case 'BT':
-      return 'UP'
-    case 'TD':
-    case 'TB':
-    default:
-      return 'DOWN'
+/**
+ * Convert a Mermaid direction to an ELK direction, flowchart/state-style
+ * (no direction at all → `DOWN`; see `ELK_DIRECTION_FALLBACK`).
+ *
+ * `MermaidGraph.direction` is required, so the fallback is unreachable
+ * from this path in practice — it exists so every `Direction` maps through
+ * the one shared table.
+ */
+function directionToElk(dir: MermaidGraph['direction']): ElkDirection {
+  return sharedDirectionToElk(dir, ELK_DIRECTION_FALLBACK.flowchart)
+}
+
+/**
+ * The `elk.*` options the root graph and every subgraph container share.
+ * Both add `elk.direction`, `elk.padding` and their own extras on top.
+ */
+function containerLayoutOptions(spec: {
+  direction: ElkDirection
+  nodeSpacing: number
+  layerSpacing: number
+  padding: number | ElkPaddingSides
+}): LayoutOptions {
+  return {
+    ...baseElkLayoutOptions(spec),
+    'elk.spacing.edgeEdge': '12',
+    'elk.layered.spacing.edgeEdgeBetweenLayers': '12',
+    'elk.layered.spacing.edgeNodeBetweenLayers': '12',
+    'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+    'elk.contentAlignment': 'H_CENTER V_CENTER',
+  }
+}
+
+/**
+ * How flowchart/state edge labels are measured and placed: at the resolved
+ * edge-label font size, inline and centered on the edge.
+ */
+function edgeLabelStyle(opts: { fontSizes: FontSizes }): ElkEdgeLabelStyle {
+  return {
+    fontSize: opts.fontSizes.edgeLabel,
+    layoutOptions: INLINE_CENTERED_EDGE_LABEL,
   }
 }
 
@@ -275,17 +313,12 @@ export function mermaidToElk(
   // Build the root ELK graph's layout options up front — the graph object
   // itself is assembled at the end, once rootChildren/rootEdges are full.
   const rootLayoutOptions: LayoutOptions = {
-    'elk.algorithm': 'layered',
-    'elk.direction': directionToElk(graph.direction),
-    'elk.spacing.nodeNode': String(opts.nodeSpacing),
-    'elk.layered.spacing.nodeNodeBetweenLayers': String(opts.layerSpacing),
-    'elk.spacing.edgeEdge': '12',
-    'elk.layered.spacing.edgeEdgeBetweenLayers': '12',
-    'elk.layered.spacing.edgeNodeBetweenLayers': '12',
-    'elk.padding': `[top=${opts.padding},left=${opts.padding},bottom=${opts.padding},right=${opts.padding}]`,
-    'elk.edgeRouting': 'ORTHOGONAL',
-    'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
-    'elk.contentAlignment': 'H_CENTER V_CENTER',
+    ...containerLayoutOptions({
+      direction: directionToElk(graph.direction),
+      nodeSpacing: opts.nodeSpacing,
+      layerSpacing: opts.layerSpacing,
+      padding: opts.padding,
+    }),
     'elk.layered.thoroughness': String(DEFAULTS.thoroughness),
     'elk.layered.highDegreeNodes.treatment': 'true',
     'elk.layered.highDegreeNodes.threshold': '8',
@@ -377,30 +410,16 @@ export function mermaidToElk(
 
       const bridgeContainer =
         commonLen > 0 ? srcChain[commonLen - 1]! : ROOT_CONTAINER
-      const bridgeEdge: ElkExtendedEdge = {
-        id: `e${index}`,
-        sources: [sourceRef],
-        targets: [targetRef],
-      }
-      if (edge.label) {
-        const metrics = measureMultilineText(
-          edge.label,
-          opts.fontSizes.edgeLabel,
-          FONT_WEIGHTS.edgeLabel,
-        )
-        bridgeEdge.labels = [
-          {
-            text: edge.label,
-            width: metrics.width + 8,
-            height: metrics.height + 6,
-            layoutOptions: {
-              'elk.edgeLabels.inline': 'true',
-              'elk.edgeLabels.placement': 'CENTER',
-            },
-          },
-        ]
-      }
-      addHopEdge(bridgeContainer, bridgeEdge)
+      addHopEdge(
+        bridgeContainer,
+        buildElkEdge({
+          id: `e${index}`,
+          source: sourceRef,
+          target: targetRef,
+          label: edge.label,
+          labelStyle: edgeLabelStyle(opts),
+        }),
+      )
     }
   }
 
@@ -413,12 +432,7 @@ export function mermaidToElk(
         node.shape,
         opts.fontSizes.nodeLabel,
       )
-      rootChildren.push({
-        id,
-        width: size.width,
-        height: size.height,
-        labels: [{ text: node.label }],
-      })
+      rootChildren.push(buildElkLeafNode(id, size, node.label))
     }
   }
 
@@ -462,30 +476,15 @@ export function mermaidToElk(
 
   // Add root-level edges
   for (const { index, edge } of edgesBySubgraph.get(null)!) {
-    const elkEdge: ElkExtendedEdge = {
-      id: `e${index}`,
-      sources: [edge.source],
-      targets: [edge.target],
-    }
-    if (edge.label) {
-      const metrics = measureMultilineText(
-        edge.label,
-        opts.fontSizes.edgeLabel,
-        FONT_WEIGHTS.edgeLabel,
-      )
-      elkEdge.labels = [
-        {
-          text: edge.label,
-          width: metrics.width + 8,
-          height: metrics.height + 6,
-          layoutOptions: {
-            'elk.edgeLabels.inline': 'true',
-            'elk.edgeLabels.placement': 'CENTER',
-          },
-        },
-      ]
-    }
-    rootEdges.push(elkEdge)
+    rootEdges.push(
+      buildElkEdge({
+        id: `e${index}`,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        labelStyle: edgeLabelStyle(opts),
+      }),
+    )
   }
 
   if (hasDirectionOverride) {
@@ -500,30 +499,15 @@ export function mermaidToElk(
     // they're declared with their raw node IDs (no port decomposition
     // needed).
     for (const { index, edge } of crossHierarchyEdges) {
-      const elkEdge: ElkExtendedEdge = {
-        id: `e${index}`,
-        sources: [edge.source],
-        targets: [edge.target],
-      }
-      if (edge.label) {
-        const metrics = measureMultilineText(
-          edge.label,
-          opts.fontSizes.edgeLabel,
-          FONT_WEIGHTS.edgeLabel,
-        )
-        elkEdge.labels = [
-          {
-            text: edge.label,
-            width: metrics.width + 8,
-            height: metrics.height + 6,
-            layoutOptions: {
-              'elk.edgeLabels.inline': 'true',
-              'elk.edgeLabels.placement': 'CENTER',
-            },
-          },
-        ]
-      }
-      rootEdges.push(elkEdge)
+      rootEdges.push(
+        buildElkEdge({
+          id: `e${index}`,
+          source: edge.source,
+          target: edge.target,
+          label: edge.label,
+          labelStyle: edgeLabelStyle(opts),
+        }),
+      )
     }
   }
 
@@ -566,19 +550,6 @@ function subgraphToElk(
   hopEdgesByContainer: Map<string, ElkExtendedEdge[]>,
   inheritedDirection: MermaidGraph['direction'],
 ): ElkGraphNode {
-  const layoutOptions: LayoutOptions = {
-    'elk.algorithm': 'layered',
-    'elk.padding': '[top=44,left=16,bottom=16,right=16]', // Top = headerHeight(28) + gap(16) to match bottom padding
-    'elk.edgeRouting': 'ORTHOGONAL',
-    'elk.contentAlignment': 'H_CENTER V_CENTER',
-    'elk.spacing.edgeEdge': '12',
-    'elk.layered.spacing.edgeEdgeBetweenLayers': '12',
-    'elk.layered.spacing.edgeNodeBetweenLayers': '12',
-    'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
-    'elk.layered.spacing.nodeNodeBetweenLayers': String(opts.layerSpacing),
-    'elk.spacing.nodeNode': String(opts.nodeSpacing),
-  }
-
   // Apply this subgraph's own direction override only if it's actually
   // honored (no member node has an edge crossing the boundary); otherwise
   // fall back to the inherited (parent) direction, per mermaid.js's
@@ -587,7 +558,14 @@ function subgraphToElk(
     sg.direction !== undefined && subgraphDirectionIsHonored(sg, graph)
       ? sg.direction
       : inheritedDirection
-  layoutOptions['elk.direction'] = directionToElk(effectiveDirection)
+
+  const layoutOptions: LayoutOptions = containerLayoutOptions({
+    direction: directionToElk(effectiveDirection),
+    nodeSpacing: opts.nodeSpacing,
+    layerSpacing: opts.layerSpacing,
+    // Top = headerHeight(28) + gap(16) to match bottom padding
+    padding: { top: 44, left: 16, bottom: 16, right: 16 },
+  })
 
   // Ports, built before children/edges since they don't depend on them.
   let elkPorts: ElkNode['ports']
@@ -610,12 +588,7 @@ function subgraphToElk(
         node.shape,
         opts.fontSizes.nodeLabel,
       )
-      children.push({
-        id: nodeId,
-        width: size.width,
-        height: size.height,
-        labels: [{ text: node.label }],
-      })
+      children.push(buildElkLeafNode(nodeId, size, node.label))
     }
   }
 
@@ -642,30 +615,15 @@ function subgraphToElk(
   const edges: ElkExtendedEdge[] = []
   const internalEdges = edgesBySubgraph.get(sg.id) ?? []
   for (const { index, edge } of internalEdges) {
-    const elkEdge: ElkExtendedEdge = {
-      id: `e${index}`,
-      sources: [edge.source],
-      targets: [edge.target],
-    }
-    if (edge.label) {
-      const metrics = measureMultilineText(
-        edge.label,
-        opts.fontSizes.edgeLabel,
-        FONT_WEIGHTS.edgeLabel,
-      )
-      elkEdge.labels = [
-        {
-          text: edge.label,
-          width: metrics.width + 8,
-          height: metrics.height + 6,
-          layoutOptions: {
-            'elk.edgeLabels.inline': 'true',
-            'elk.edgeLabels.placement': 'CENTER',
-          },
-        },
-      ]
-    }
-    edges.push(elkEdge)
+    edges.push(
+      buildElkEdge({
+        id: `e${index}`,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        labelStyle: edgeLabelStyle(opts),
+      }),
+    )
   }
 
   // Add hop/bridge edges whose lowest common ancestor is this subgraph.

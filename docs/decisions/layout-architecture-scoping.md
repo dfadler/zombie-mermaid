@@ -45,8 +45,19 @@ layout assessment, and what a from-scratch path would look like — is posted
 on [#538](https://github.com/dfadler/zombie-mermaid/issues/538#issuecomment-5571620230)
 rather than duplicated here, to keep this decision record short. The one
 concrete, independently-actionable follow-up it identifies (deduping the
-three ELK graph-construction paths) is tracked as
-[#616](https://github.com/dfadler/zombie-mermaid/issues/616).
+three ELK graph-construction paths) was tracked as
+[#616](https://github.com/dfadler/zombie-mermaid/issues/616) and has since
+landed: the three paths now share
+`src/layout-engine/elk-graph-builder.ts` for the primitives they had each
+hand-rolled — one `directionToElk()`, one `elk.padding` formatter, one
+leaf-node shape, and one measured edge-label box — with the per-diagram-type
+no-`direction` fallbacks (`DOWN` for flowchart/state/class, `RIGHT` for ER)
+documented there as `ELK_DIRECTION_FALLBACK`.
+
+That does **not** change the TL;DR above. The dedup was deliberately scoped
+to shared primitives, not to an engine-neutral intermediate graph: each
+renderer still builds ELK's own typed JSON directly against its domain
+model, so engine-swapping remains the larger, separately-scoped work.
 
 This is scoping only — no estimate is given here for calendar cost, since
 the point of this note is the shape of the problem, not a commitment to do

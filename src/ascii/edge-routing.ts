@@ -261,30 +261,96 @@ function interiorCellsClearOfNodes(
 }
 
 /**
- * Group edges that share both their source AND target node — true
- * parallel/multi-edges, e.g. `A -->|One| B` and `A -->|Two| B` — and tag
- * each with its 0-based position in the group plus the group's size, via
- * `edge.parallelLane`. `determinePath` below reads this to route every
- * edge past the first through a distinct offset lane instead of the
- * identical center path every one of them would otherwise compute
- * independently (see #329: identical paths meant identically-positioned
- * labels drawn on top of each other, corrupting each other's text).
+ * Whether `edge`'s two nodes are laid out side by side on the same grid
+ * row — the layout in which every edge between them, in either direction,
+ * routes through one *horizontal* channel and so shares one label row.
+ *
+ * This is the discriminator for whether a reverse-direction sibling needs a
+ * lane of its own; see `parallelGroupKey` below for why.
+ *
+ * Deliberately symmetric in `from`/`to` (it only compares the two grid
+ * coordinates), so an edge and its reciprocal partner always agree on the
+ * answer and therefore on their group key. A node with no grid coordinate
+ * yet answers `false`, which just leaves that edge on the conservative
+ * ordered-pair grouping.
+ */
+function sharesHorizontalChannel(edge: AsciiEdge): boolean {
+  const from = edge.from.gridCoord
+  const to = edge.to.gridCoord
+  if (!from || !to) return false
+  return from.y === to.y && from.x !== to.x
+}
+
+/**
+ * Grouping key for `assignParallelEdgeLanes` below: two edges get separate
+ * lanes exactly when this returns the same key for both.
+ *
+ * The base case is the *ordered* pair (`A -->|One| B` twice, #329) — two
+ * edges in the same direction always compute the identical center path,
+ * whatever the layout.
+ *
+ * A *reverse*-direction sibling (`B --> A` alongside `A --> B`, #629) is a
+ * different edge with its own natural route, so it collides in one specific
+ * layout: when the two nodes sit side by side on the same grid row, both
+ * edges route through the same horizontal channel, which puts both labels
+ * on the same row and lets one edge's line overwrite the other's arrowhead.
+ * That is the case this key folds together, by ordering the two node names.
+ *
+ * When the pair is stacked vertically instead, `drawTextOnLine`
+ * (draw-arrows.ts) already de-collides the two labels by pulling each into
+ * its own half of the shared vertical segment — a mechanism built for
+ * exactly this shape (#530) that only applies to a vertical segment.
+ * Grouping those two edges would route one of them through a lane and take
+ * that mechanism out of play, so they stay in separate ordered groups.
+ *
+ * `JSON.stringify` over the name pair rather than a delimiter-joined
+ * string: a node name may itself contain the delimiter, and `["A B", "C"]`
+ * must not collide with `["A", "B C"]`.
+ */
+function parallelGroupKey(edge: AsciiEdge): string {
+  const from = edge.from.name
+  const to = edge.to.name
+  if (sharesHorizontalChannel(edge) && to < from) {
+    return JSON.stringify([to, from])
+  }
+  return JSON.stringify([from, to])
+}
+
+/**
+ * Group edges that connect the same pair of nodes — two edges in the same
+ * direction (`A -->|One| B` and `A -->|Two| B`), or, when the two nodes are
+ * laid out side by side, an edge and its reverse-direction partner
+ * (`A -->|req| B` and `B -->|res| A`) — and tag each with its 0-based
+ * position in the group plus the group's size, via `edge.parallelLane`.
+ * `parallelGroupKey` above defines exactly which pairs group together, and
+ * why a vertically-stacked reciprocal pair is deliberately left out.
+ *
+ * `determinePath` below reads this to route every edge past the first
+ * through a distinct offset lane instead of the shared center path they
+ * would otherwise all compute independently (see #329: identical paths
+ * meant identically-positioned labels drawn on top of each other,
+ * corrupting each other's text — and #629, the same defect between an edge
+ * and its reverse-direction partner).
  *
  * Self-loops are excluded (`edge.from === edge.to`): they're routed and
  * drawn as a dedicated loop shape, not a lane-offset line between two
  * distinct nodes, so they're out of scope here.
  *
  * Must run before `analyzeEdgeBundles` (edge-bundling.ts): that module's
- * `canBundle` also refuses to fold a true-parallel group into one shared
+ * `canBundle` also refuses to fold a lane-assigned group into one shared
  * fan-in/fan-out trunk (see its own doc comment), but the two checks are
  * independent — this function is the one that actually assigns lanes for
  * `determinePath` to use.
+ *
+ * Must also run after node placement: `sharesHorizontalChannel` reads both
+ * nodes' grid coordinates (grid.ts's call site satisfies this — it runs
+ * this immediately before bundling analysis, well after layout).
  */
 export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   const groups = new Map<string, AsciiEdge[]>()
   for (const edge of graph.edges) {
     if (edge.from === edge.to) continue // self-loop: not in scope here
-    const key = `${edge.from.name} ${edge.to.name}`
+    const key = parallelGroupKey(edge)
     const existing = groups.get(key)
     if (existing) existing.push(edge)
     else groups.set(key, [edge])
@@ -602,13 +668,33 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // re-derive that from the finished path alone). determineLabelLine
   // itself skips lane edges for exactly this reason — see its own guard.
   if (edge.parallelLane && edge.parallelLane.index > 0) {
-    edge.startDir = preferredDir
-    edge.endDir = preferredOppositeDir
+    // A reverse-direction sibling (`B --> A` alongside `A --> B`, #629) runs
+    // "backwards" relative to the graph direction, so determineStartAndEndDir
+    // hands back a degenerate *same-side* pair — Down/Down in LR, Right/Right
+    // in TD — describing a U-shaped detour that leaves and re-enters on the
+    // same face. buildParallelLanePath's offset math can't express that
+    // shape: it picks its offset axis from whether the *departure* is
+    // horizontal, which for a Down/Down U-shape is exactly inverted (it
+    // offsets by column when the lane actually travels horizontally and needs
+    // a row offset), landing the lane on the nodes' own border rows. Use the
+    // alternative (straight-through) pair for such an edge instead, making a
+    // reverse-direction lane the mirror image of a forward one — the shape
+    // #329's fix already produces for a same-direction sibling. A forward
+    // edge's preferred and alternative pairs are identical (see
+    // determineStartAndEndDir's default branch), so this never changes how an
+    // existing same-direction group routes.
+    const degenerateFace = dirEquals(preferredDir, preferredOppositeDir)
+    const laneDir = degenerateFace ? alternativeDir : preferredDir
+    const laneOppositeDir = degenerateFace
+      ? alternativeOppositeDir
+      : preferredOppositeDir
+    edge.startDir = laneDir
+    edge.endDir = laneOppositeDir
     const route = buildParallelLanePath(
       graph,
       edge,
-      preferredDir,
-      preferredOppositeDir,
+      laneDir,
+      laneOppositeDir,
       edge.parallelLane.index,
     )
     edge.path = route.path
