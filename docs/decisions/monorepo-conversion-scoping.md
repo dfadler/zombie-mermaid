@@ -249,10 +249,13 @@ workspace/publish plumbing, #626/#627 as needed.
 
 ## Addendum (#625) — what performing the `core` / `svg-renderer` move found
 
-Written while working #625, which created `packages/core/` and
-`packages/svg-renderer/` and moved the files there — split into two
-sequential PRs (core first, svg-renderer based on it) once #625's own PR
-grew large enough to review as one unit. Recommendation 5's two lists were
+Written while performing #625's `core`/`svg-renderer` move in #659 and #660
+(open as of this writing, not yet merged), which will create `packages/core/`
+and `packages/svg-renderer/` and move the files there — split into two
+sequential PRs (core first, svg-renderer based on it) since the original,
+combined attempt (#654) grew large enough to review as one unit. Neither
+package exists on this branch yet; the analysis and tables below describe
+the target state landing in #659/#660. Recommendation 5's two lists were
 built from _direct_ `src/ascii/**` imports; re-derived from the full module
 graph (both front doors, plus `src/parser.ts`, which both call), they need
 four corrections. #623's own addendum found three of them independently —
@@ -306,7 +309,7 @@ bind yet — it binds the moment the umbrella's entries become thin
 re-exports rather than bundles. Until then the umbrella declares them as
 `devDependencies`, and api-extractor is told to inline their declarations
 (`bundledPackages` plus a `paths` override pointing at the per-file `.d.ts`
-this build already emits, since nothing builds these packages yet). #621 and
-#622 are where that becomes real; `writeDctsTwins` fails the build if a
+this build already emits, since nothing builds these packages yet). Issues #621
+and #622 are where that becomes real; `writeDctsTwins` fails the build if a
 `@zombie-mermaid/*` specifier ever survives into a published `.d.ts` in the
 meantime.

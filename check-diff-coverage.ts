@@ -13,10 +13,12 @@ import { readFileSync, existsSync } from 'node:fs'
 
 const DIFF_THRESHOLD = 90
 const LCOV_PATH = 'coverage/lcov.info'
-// Mirrors vitest.config.ts's coverage.include/exclude. `packages/` covers
-// the workspace packages carved out of src/ by zombie-mermaid#625 — without
-// it, moving a file into one would quietly drop it out of this gate.
-const INCLUDE_DIRS = ['src/', 'packages/']
+// Broad git pathspec for the diff itself (see getChangedLines) — narrowed to
+// vitest.config.ts's actual coverage.include pattern by isTrackedTsFile()
+// below, so a package-root file outside <package>/src/ isn't counted here
+// when Vitest doesn't count it either.
+const DIFF_PATHS = ['src/', 'packages/']
+const PACKAGE_SRC_PREFIX = /^packages\/[^/]+\/src\//
 const EXCLUDE_PREFIX = 'src/__tests__/'
 
 function git(args: string[]): string {
@@ -50,7 +52,7 @@ export function resolveBaseRef(): string | null {
 
 export function isTrackedTsFile(path: string): boolean {
   return (
-    INCLUDE_DIRS.some((dir) => path.startsWith(dir)) &&
+    (path.startsWith('src/') || PACKAGE_SRC_PREFIX.test(path)) &&
     path.endsWith('.ts') &&
     !path.startsWith(EXCLUDE_PREFIX)
   )
@@ -107,7 +109,7 @@ function getChangedLines(baseRef: string): Map<string, Set<number>> {
     '--unified=0',
     `${baseRef}...HEAD`,
     '--',
-    ...INCLUDE_DIRS,
+    ...DIFF_PATHS,
   ])
   return parseChangedLinesFromDiff(diff)
 }

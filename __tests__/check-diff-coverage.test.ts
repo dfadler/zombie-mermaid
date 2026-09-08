@@ -28,6 +28,13 @@ describe('isTrackedTsFile', () => {
     expect(isTrackedTsFile('src/__tests__/foo.test.ts')).toBe(false)
   })
 
+  // vitest.config.ts's coverage.include only covers packages/*/src/**/*.ts —
+  // a package-root file outside that must not be tracked here either, or
+  // diff coverage and Vitest coverage disagree on what counts.
+  it('rejects a .ts file at a package root (outside <package>/src/)', () => {
+    expect(isTrackedTsFile('packages/core/config.ts')).toBe(false)
+  })
+
   it('rejects files outside src/ and packages/', () => {
     expect(isTrackedTsFile('editor/js/state.js')).toBe(false)
     expect(isTrackedTsFile('README.md')).toBe(false)
