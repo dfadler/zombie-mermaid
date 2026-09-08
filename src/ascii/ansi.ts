@@ -7,10 +7,13 @@
 // ============================================================================
 
 import type { CharRole, AsciiTheme, ColorMode } from './types.ts'
-import type { DiagramColors } from '../theme.ts'
-import { MIX } from '../theme.ts'
+import type { DiagramColors } from '@zombie-mermaid/core'
+import {
+  MIX,
+  mixHexColors as mixColors,
+  parseHexRgba,
+} from '@zombie-mermaid/core'
 import { joinWithLinks, LinkRunTracker } from './hyperlinks.ts'
-import { mixHexColors as mixColors, parseHexRgba } from '../color-utils.ts'
 
 declare const document: unknown
 

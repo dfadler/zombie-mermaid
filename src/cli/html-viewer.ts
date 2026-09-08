@@ -18,7 +18,7 @@
 // unchanged from what the library produced.
 // ============================================================================
 
-import { escapeXml } from '../multiline-utils.ts'
+import { escapeXml } from '@zombie-mermaid/core'
 import { HTML_VIEWER_CLIENT_JS } from './html-viewer-client-source.ts'
 
 /** Options controlling the generated viewer page. */

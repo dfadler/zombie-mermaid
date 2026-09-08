@@ -17,8 +17,8 @@ import {
   fromShikiTheme,
   buildStyleBlock,
   svgOpenTag,
-} from '../theme.ts'
-import type { DiagramColors } from '../theme.ts'
+} from '@zombie-mermaid/core'
+import type { DiagramColors } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Theme system (CSS custom properties)

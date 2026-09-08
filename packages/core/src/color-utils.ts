@@ -1,12 +1,12 @@
 // ============================================================================
 // CSS color primitives — parse, mix, and format sRGB colors.
 //
-// Shared by the SVG theme system (src/theme.ts), the ASCII renderer's
+// Shared by the SVG theme system (packages/core/src/theme.ts), the ASCII renderer's
 // DiagramColors → AsciiTheme bridge (src/ascii/ansi.ts), and the
-// `resolveColors` post-processor (src/resolve-colors.ts). All three need
+// `resolveColors` post-processor (packages/svg-renderer/src/resolve-colors.ts). All three need
 // the same answer to "what does `color-mix(in srgb, fg 50%, bg)` come out
 // to?", so the arithmetic lives here exactly once — the MIX percentages in
-// src/theme.ts stay the single source of truth for *which* percentages the
+// packages/core/src/theme.ts stay the single source of truth for *which* percentages the
 // renderer uses, and this module is the single source of truth for what a
 // percentage *means*.
 // ============================================================================
@@ -173,7 +173,7 @@ export function mixSrgb(
 
 /**
  * Mix `fg` into `bg` at `pct` percent — the shape every MIX entry in
- * src/theme.ts uses (`color-mix(in srgb, var(--fg) N%, var(--bg))`).
+ * packages/core/src/theme.ts uses (`color-mix(in srgb, var(--fg) N%, var(--bg))`).
  * Returns `fg` unchanged when either input isn't a concrete color this
  * module can parse (a `var(...)` reference, a named color).
  */

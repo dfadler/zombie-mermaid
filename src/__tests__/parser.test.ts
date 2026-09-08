@@ -10,7 +10,11 @@
  * - Comments and error cases
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid, isDirection, toDirection } from '../parser.ts'
+import { parseMermaid, toDirection } from '../parser.ts'
+// `isDirection` moved to @zombie-mermaid/core under #625 — `toDirection`
+// (still here) is its only in-parser caller, and core's
+// `direction-override.ts` needs the guard without importing the parser.
+import { isDirection } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Graph header parsing

@@ -22,7 +22,7 @@ import {
   write,
 } from './canvas.ts'
 import { splitLines, maxLineWidth, lineCount } from './multiline-utils.ts'
-import { splitStatements } from '../statements.ts'
+import { splitStatements } from '@zombie-mermaid/core'
 import {
   displayWidth,
   toDisplayCells,

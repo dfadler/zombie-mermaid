@@ -9,7 +9,7 @@
  * boundaries after ELK layout is complete.
  */
 
-import type { Point, PositionedNode } from './types.ts'
+import type { Point, PositionedNode } from '@zombie-mermaid/core'
 
 /**
  * Clip an edge endpoint to the actual shape boundary of a node.

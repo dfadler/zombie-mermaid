@@ -3,7 +3,7 @@ import type { CliArgs } from './cli/parse-args.ts'
 import { runRender } from './cli/render.ts'
 import { runWeb } from './cli/web.ts'
 import { runMcp } from './cli/mcp.ts'
-import { THEMES } from './theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { getPackageVersion } from './package-info.ts'
 
 const pkgVersion = getPackageVersion()

@@ -16,7 +16,7 @@ import type {
   PositionedEdge,
   PositionedGroup,
   Point,
-} from '../types.ts'
+} from '@zombie-mermaid/core'
 import { ARROW_HEAD } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
@@ -26,7 +26,7 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from './elk-adapter-utils.ts'
-import { resolveNodeStyle } from '../style-directives.ts'
+import { resolveNodeStyle } from '@zombie-mermaid/core'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {

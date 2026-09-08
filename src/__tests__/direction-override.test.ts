@@ -19,8 +19,8 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, renderMermaidASCII, parseMermaid } from '../index.ts'
-import { withDirectionOverride } from '../direction-override.ts'
-import type { Direction, RenderOptions } from '../types.ts'
+import { withDirectionOverride } from '@zombie-mermaid/core'
+import type { Direction, RenderOptions } from '@zombie-mermaid/core'
 import type { AsciiRenderOptions } from '../ascii/index.ts'
 
 /**

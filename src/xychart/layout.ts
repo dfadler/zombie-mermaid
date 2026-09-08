@@ -9,7 +9,7 @@ import type {
   PlotArea,
   LegendItem,
 } from './types.ts'
-import type { XyChartRenderOptions } from '../types.ts'
+import type { XyChartRenderOptions } from '@zombie-mermaid/core'
 import { estimateTextWidth } from '../styles.ts'
 
 // ============================================================================

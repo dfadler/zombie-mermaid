@@ -28,8 +28,8 @@
 //     are CSS, so only those are rewritten.
 // ============================================================================
 
-import type { DiagramColors } from './theme.ts'
-import { formatCssColor, mixSrgb, parseCssColor } from './color-utils.ts'
+import type { DiagramColors } from '@zombie-mermaid/core'
+import { formatCssColor, mixSrgb, parseCssColor } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Expression evaluation

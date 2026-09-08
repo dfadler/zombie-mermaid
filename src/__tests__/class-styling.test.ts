@@ -4,7 +4,7 @@
  * unsupported in #422).
  *
  * The parser feeds the same `StyleDirectives` cascade flowcharts use
- * (src/style-directives.ts); the SVG renderer applies the resolved style to
+ * (packages/core/src/style-directives.ts); the SVG renderer applies the resolved style to
  * the class box; the ASCII renderer parses and ignores it, exactly like the
  * flowchart ASCII renderer does.
  */
@@ -27,14 +27,14 @@ import { renderMermaidASCII } from '../ascii/index.ts'
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
-import { splitStatements } from '../statements.ts'
 import {
+  splitStatements,
   parseStyleProps,
   resolveNodeStyle,
   sanitizeClassName,
   splitClassShorthand,
-} from '../style-directives.ts'
-import type { StyleDirectives } from '../style-directives.ts'
+} from '@zombie-mermaid/core'
+import type { StyleDirectives } from '@zombie-mermaid/core'
 
 /** Parse through the same statement splitter index.ts uses. */
 function parse(text: string) {
@@ -229,7 +229,7 @@ describe('parseClassDiagram – `:::` shorthand', () => {
 })
 
 // ============================================================================
-// Shared helpers (src/style-directives.ts)
+// Shared helpers (packages/core/src/style-directives.ts)
 // ============================================================================
 
 describe('style-directives helpers', () => {

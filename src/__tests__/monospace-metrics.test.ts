@@ -4,7 +4,7 @@ import {
   isMonospaceFont,
   measureTextWidth,
   setMonospaceMetrics,
-} from '../text-metrics.ts'
+} from '@zombie-mermaid/core'
 
 afterEach(() => setMonospaceMetrics(false))
 
