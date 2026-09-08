@@ -25,7 +25,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
-import { layoutGraphSync } from '../layout-engine.ts'
+import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 import { layoutSequenceDiagram } from '../sequence/layout.ts'
 import { layoutClassDiagramSync } from '../class/layout.ts'
 import { layoutErDiagramSync } from '../er/layout.ts'

@@ -1,8 +1,5 @@
 // Architecture guard for the workspace packages carved out of `src/` by
 // #625 (umbrella #620; scoped in docs/decisions/monorepo-conversion-scoping.md).
-// #625 was split into two PRs — this one extracts `core` only.
-// `svg-renderer` (and this test's assertions about it) lands in a follow-up
-// PR, based on this one, once `core` is merged.
 //
 // The whole point of `@zombie-mermaid/core` is that it is a *sink*: both
 // renderers depend on it and it depends on neither, so extracting
@@ -17,10 +14,12 @@
 //
 // So: walk what the files actually import, and assert the shape.
 //
-//   core -> nothing in this repo, only `elkjs` (type-only)
+//   core          -> nothing in this repo, only `elkjs` (type-only)
+//   svg-renderer  -> `@zombie-mermaid/core` and `elkjs`, nothing else
 //
-// `core` may not reach back into `src/` by relative path or by importing
-// `zombie-mermaid` itself — the umbrella depends on it, never the reverse.
+// Neither may reach back into `src/` by relative path or by importing
+// `zombie-mermaid` itself — the umbrella depends on them, never the
+// reverse.
 
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -36,10 +35,10 @@ const PACKAGES = resolve(REPO_ROOT, 'packages')
  * Deliberately over-approximating: this test only ever asks *which module
  * is named*, never whether the edge survives compilation, so a type-only
  * import counts the same as a value one. That is the strict direction —
- * `core` may not even type-reference `svg-renderer` once it exists, since a
- * cycle in the type graph blocks per-package builds just as thoroughly as
- * one in the runtime graph (the reason `LayoutCache`'s shape is planned to
- * live in core's `types.ts` rather than in `elk-instance.ts`).
+ * `core` may not even type-reference `svg-renderer`, since a cycle in the
+ * type graph blocks per-package builds just as thoroughly as one in the
+ * runtime graph (the reason `LayoutCache`'s shape lives in core's
+ * `types.ts` rather than in `elk-instance.ts`).
  */
 const SPECIFIER_RE =
   /(?:^|\n)[ \t]*(?:import|export)\b[^'"\n]*?from[ \t]*['"]([^'"]+)['"]|(?:^|\n)[ \t]*import[ \t]*['"]([^'"]+)['"]|\bimport\([ \t]*['"]([^'"]+)['"]/g
@@ -80,7 +79,10 @@ function externalSpecifiers(pkg: string): string[] {
 
 /**
  * A relative specifier that climbs out of `packages/<name>/src` — i.e. a
- * reach-around into the umbrella's `src/` or into a sibling package.
+ * reach-around into the umbrella's `src/` or into a sibling package. The
+ * three legitimate `../` hops inside `svg-renderer` (`layout-engine/*.ts`
+ * importing `../styles.ts` and friends) stay within the package and are
+ * resolved, not pattern-matched, so this can't be fooled by depth.
  */
 function escapingRelativeImports(pkg: string): string[] {
   const packageSrc = resolve(PACKAGES, pkg, 'src')
@@ -113,13 +115,26 @@ describe('@zombie-mermaid/core is a workspace sink', () => {
   })
 })
 
+describe('@zombie-mermaid/svg-renderer depends only on core', () => {
+  it('imports no workspace package other than @zombie-mermaid/core', () => {
+    expect(externalSpecifiers('svg-renderer')).toEqual([
+      '@zombie-mermaid/core',
+      'elkjs',
+    ])
+  })
+
+  it('never reaches outside its own src/ by relative path', () => {
+    expect(escapingRelativeImports('svg-renderer')).toEqual([])
+  })
+})
+
 describe('workspace package manifests', () => {
-  // The umbrella bundles this package into its own `dist/` (it is absent
-  // from `isExternal` in vite.config.lib.ts), so nothing resolves this name
-  // at install time and publishing it would be misleading. Recommendation 2
-  // of the scoping doc; the umbrella declares it as a devDependency for the
-  // same reason.
-  it.each(['core'])('%s is private and unpublished', (pkg) => {
+  // The umbrella bundles both packages into its own `dist/` (they are
+  // absent from `isExternal` in vite.config.lib.ts), so nothing resolves
+  // these names at install time and publishing them would be misleading.
+  // Recommendation 2 of the scoping doc; the umbrella declares them as
+  // devDependencies for the same reason.
+  it.each(['core', 'svg-renderer'])('%s is private and unpublished', (pkg) => {
     const manifest = JSON.parse(
       readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
     ) as { name: string; private: boolean }
@@ -128,7 +143,7 @@ describe('workspace package manifests', () => {
   })
 
   it('declares every external specifier its source actually imports', () => {
-    for (const pkg of ['core'] as const) {
+    for (const pkg of ['core', 'svg-renderer'] as const) {
       const manifest = JSON.parse(
         readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
       ) as { dependencies?: Record<string, string> }

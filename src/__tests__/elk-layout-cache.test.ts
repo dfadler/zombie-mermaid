@@ -16,10 +16,14 @@ import { parseMermaid } from '../parser.ts'
 import { parseClassDiagram } from '../class/parser.ts'
 import { parseErDiagram } from '../er/parser.ts'
 import { splitStatements } from '@zombie-mermaid/core'
-import { convertToElkFormat, layoutGraphSync } from '../layout-engine.ts'
+import {
+  convertToElkFormat,
+  layoutGraphSync,
+  elkLayoutSync,
+  createLayoutCache,
+} from '@zombie-mermaid/svg-renderer'
 import { layoutClassDiagramSync } from '../class/layout.ts'
 import { layoutErDiagramSync } from '../er/layout.ts'
-import { elkLayoutSync, createLayoutCache } from '../elk-instance.ts'
 import { renderMermaidSVG } from '../index.ts'
 
 describe('elkLayoutSync layout cache', () => {

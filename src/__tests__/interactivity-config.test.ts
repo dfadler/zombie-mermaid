@@ -14,7 +14,7 @@ import {
   describeIgnored,
   isInitDirective,
 } from '@zombie-mermaid/core'
-import { pointsToPath } from '../edge-curves.ts'
+import { pointsToPath } from '@zombie-mermaid/svg-renderer'
 
 describe('%%{init: ...}%% directives (#198 row 17)', () => {
   it('recognizes both init and initialize spellings', () => {

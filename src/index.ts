@@ -35,26 +35,35 @@ export type {
 export type { DiagramColors, ThemeName } from '@zombie-mermaid/core'
 export { fromShikiTheme, THEMES, DEFAULTS } from '@zombie-mermaid/core'
 export { parseMermaid } from './parser.ts'
-import { resolveCssColors } from './resolve-colors.ts'
+import {
+  resolveCssColors,
+  layoutGraphSync,
+  renderSvg,
+  resolveFontSizes,
+} from '@zombie-mermaid/svg-renderer'
 export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
 export type { AsciiRenderOptions } from './ascii/index.ts'
-export { createLayoutCache } from './elk-instance.ts'
-export type { LayoutCache } from './elk-instance.ts'
+export { createLayoutCache } from '@zombie-mermaid/svg-renderer'
+export type { LayoutCache } from '@zombie-mermaid/svg-renderer'
 
 import { decodeXML } from 'entities'
 import { parseMermaid } from './parser.ts'
-import { layoutGraphSync } from './layout.ts'
-import { renderSvg } from './renderer.ts'
-import type { RenderOptions } from '@zombie-mermaid/core'
-import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
-import { DEFAULTS, themeStyleDeclarations } from '@zombie-mermaid/core'
-import { resolveFontSizes } from './styles.ts'
-import { isMonospaceFont, setMonospaceMetrics } from '@zombie-mermaid/core'
-import { detectDiagramType } from '@zombie-mermaid/core'
-import type { DiagramType } from '@zombie-mermaid/core'
-import { applyInitConfig } from '@zombie-mermaid/core'
-import { withDirectionOverride } from '@zombie-mermaid/core'
-import { splitStatements } from '@zombie-mermaid/core'
+import type {
+  RenderOptions,
+  DiagramColors,
+  SvgEmitOptions,
+  DiagramType,
+} from '@zombie-mermaid/core'
+import {
+  DEFAULTS,
+  themeStyleDeclarations,
+  isMonospaceFont,
+  setMonospaceMetrics,
+  detectDiagramType,
+  applyInitConfig,
+  withDirectionOverride,
+  splitStatements,
+} from '@zombie-mermaid/core'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
 import { layoutSequenceDiagram } from './sequence/layout.ts'

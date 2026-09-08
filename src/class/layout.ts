@@ -24,13 +24,11 @@ import {
   estimateMonoTextWidth,
   FONT_WEIGHTS,
   resolveFontSizes,
-} from '../styles.ts'
-import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
-import { elkLayoutSync } from '../elk-instance.ts'
-import {
+  elkLayoutSync,
   extractEdgePoints,
   extractEdgeLabelPosition,
-} from '../layout-engine/elk-adapter-utils.ts'
+} from '@zombie-mermaid/svg-renderer'
+import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 
 /** Layout constants for class diagrams */
 export const CLS = {

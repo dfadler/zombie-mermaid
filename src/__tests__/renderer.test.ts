@@ -5,7 +5,7 @@
  * depending on the layout engine.
  */
 import { describe, it, expect } from 'vitest'
-import { renderSvg } from '../renderer.ts'
+import { renderSvg } from '@zombie-mermaid/svg-renderer'
 import type {
   DiagramColors,
   PositionedGraph,

@@ -1,8 +1,11 @@
 import type { PositionedXYChart } from './types.ts'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import { svgOpenTag, buildStyleBlock, styleOpenTag } from '@zombie-mermaid/core'
-import { withDataSrc } from '../renderer.ts'
-import { TEXT_BASELINE_SHIFT, estimateTextWidth } from '../styles.ts'
+import {
+  withDataSrc,
+  TEXT_BASELINE_SHIFT,
+  estimateTextWidth,
+} from '@zombie-mermaid/svg-renderer'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './colors.ts'
 
 // ============================================================================

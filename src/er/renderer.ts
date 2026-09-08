@@ -14,15 +14,15 @@ import {
   escapeAttr,
   measureMultilineText,
 } from '@zombie-mermaid/core'
-import { withDataSrc } from '../renderer.ts'
-import type { FontSizes } from '../styles.ts'
 import {
+  withDataSrc,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
   estimateTextWidth,
   TEXT_BASELINE_SHIFT,
-} from '../styles.ts'
+} from '@zombie-mermaid/svg-renderer'
+import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 
 // ============================================================================
 // ER diagram SVG renderer

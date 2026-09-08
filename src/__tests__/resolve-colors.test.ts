@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, renderMermaidSVGAsync } from '../index.ts'
 import { THEMES, MIX, DEFAULTS, mixHexColors } from '@zombie-mermaid/core'
-import { evaluateCssColorValue, resolveCssColors } from '../resolve-colors.ts'
+import {
+  evaluateCssColorValue,
+  resolveCssColors,
+} from '@zombie-mermaid/svg-renderer'
 import { diagramColorsToAsciiTheme } from '../ascii/ansi.ts'
 
 /**
