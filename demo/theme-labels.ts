@@ -1,5 +1,5 @@
 /**
- * Human-readable metadata for the built-in themes in `src/theme.ts`.
+ * Human-readable metadata for the built-in themes in `packages/core/src/theme.ts`.
  *
  * Consumed by demo/components/theme-picker.tsx's `ThemePill` (pill labels, and each
  * pill's `title` tooltip) — shared by both index.ts's interactive gallery
