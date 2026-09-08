@@ -539,7 +539,8 @@ function Hero() {
       <div
         className="hero-copy"
         style={{
-          flex: '0 0 500px',
+          flex: '0 1 500px',
+          minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
           gap: `${SPACE['3xl']}px`,
@@ -598,7 +599,7 @@ function Hero() {
 
       <div
         className="hero-visual"
-        style={{ flex: '0 0 700px', maxWidth: '100%' }}
+        style={{ flex: '0 1 700px', minWidth: 0, maxWidth: '100%' }}
       >
         <HeroVisual />
       </div>

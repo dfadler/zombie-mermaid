@@ -112,7 +112,7 @@
     </header>
     <main id="main">
       <div class="hero-row" style="display: flex; align-items: center; justify-content: space-between; gap: 48px; padding: 120px 80px 140px; position: relative; z-index: 1;">
-        <div class="hero-copy" style="flex: 0 0 500px; display: flex; flex-direction: column; gap: 24px;">
+        <div class="hero-copy" style="flex: 0 1 500px; min-width: 0px; display: flex; flex-direction: column; gap: 24px;">
           <div class="section-eyebrow">
             "An actively maintained fork of beautiful-mermaid"
           </div>
@@ -141,7 +141,7 @@
             </a>
           </div>
         </div>
-        <div class="hero-visual" style="flex: 0 0 700px; max-width: 100%;">
+        <div class="hero-visual" style="flex: 0 1 700px; min-width: 0px; max-width: 100%;">
           <svg height="auto" style="display: block;" viewBox="0 0 700 460" width="100%">
             <rect fill="var(--panel)" height="320" rx="16" stroke="var(--border)" stroke-width="1.5" width="260" x="20" y="50">
             </rect>
