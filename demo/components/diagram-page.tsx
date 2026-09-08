@@ -37,7 +37,12 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
-import { BreadcrumbSep, FORK_URL, PageShell, StaticPage } from './site-chrome.tsx'
+import {
+  BreadcrumbSep,
+  FORK_URL,
+  PageShell,
+  StaticPage,
+} from './site-chrome.tsx'
 import { Footer, footerCss, type FooterColumn } from './footer.tsx'
 import { Nav, navCss } from './nav.tsx'
 import {
@@ -214,7 +219,12 @@ function StateGlyph() {
         stroke="currentColor"
         strokeWidth="2"
       />
-      <path d="M36 28 L64 42" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path
+        d="M36 28 L64 42"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+      />
     </svg>
   )
 }
@@ -222,8 +232,22 @@ function StateGlyph() {
 function SequenceGlyph() {
   return (
     <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
-      <line x1="22" y1="8" x2="22" y2="62" stroke="currentColor" strokeWidth="2" />
-      <line x1="78" y1="8" x2="78" y2="62" stroke="currentColor" strokeWidth="2" />
+      <line
+        x1="22"
+        y1="8"
+        x2="22"
+        y2="62"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <line
+        x1="78"
+        y1="8"
+        x2="78"
+        y2="62"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
       <path
         d="M22 24 H78"
         stroke="currentColor"
@@ -319,8 +343,22 @@ function ErGlyph() {
 function XyChartGlyph() {
   return (
     <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
-      <line x1="10" y1="8" x2="10" y2="62" stroke="currentColor" strokeWidth="2" />
-      <line x1="10" y1="62" x2="94" y2="62" stroke="currentColor" strokeWidth="2" />
+      <line
+        x1="10"
+        y1="8"
+        x2="10"
+        y2="62"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <line
+        x1="10"
+        y1="62"
+        x2="94"
+        y2="62"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
       <rect
         x="20"
         y="40"
@@ -388,7 +426,9 @@ export function OtherTypesGrid({
   currentSlug: string
 }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: `${SPACE['2xl']}px` }}>
+    <div
+      style={{ display: 'flex', flexWrap: 'wrap', gap: `${SPACE['2xl']}px` }}
+    >
       {types
         .filter((type) => type.slug !== currentSlug)
         .map((type) => {
@@ -774,13 +814,22 @@ export function DiagramTypePage({
               }}
             >
               <SectionEyebrow accent={accent}>Source → render</SectionEyebrow>
-              <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+              <h2
+                style={{
+                  fontSize: '30px',
+                  letterSpacing: LETTER_SPACING.heading,
+                }}
+              >
                 {exampleHeading}
               </h2>
 
               <div
                 className="detail-row"
-                style={{ display: 'flex', gap: `${SPACE['6xl']}px`, alignItems: 'stretch' }}
+                style={{
+                  display: 'flex',
+                  gap: `${SPACE['6xl']}px`,
+                  alignItems: 'stretch',
+                }}
               >
                 <Card
                   accent={accent}
@@ -875,7 +924,13 @@ export function DiagramTypePage({
                 </Card>
               </div>
 
-              <div style={{ display: 'flex', gap: `${SPACE.xl}px`, flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: `${SPACE.xl}px`,
+                  flexWrap: 'wrap',
+                }}
+              >
                 <CTA
                   href={editorHref}
                   accent={accent}
@@ -896,7 +951,12 @@ export function DiagramTypePage({
           </div>
 
           {/* ============ THEME PICKER ============ */}
-          <div className="section-px" style={{ padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px` }}>
+          <div
+            className="section-px"
+            style={{
+              padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+            }}
+          >
             <div
               style={{
                 maxWidth: `${LAYOUT.maxWidth}px`,
@@ -907,13 +967,23 @@ export function DiagramTypePage({
               }}
             >
               <SectionEyebrow>Pick a look</SectionEyebrow>
-              <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+              <h2
+                style={{
+                  fontSize: '30px',
+                  letterSpacing: LETTER_SPACING.heading,
+                }}
+              >
                 Live in every built-in theme.
               </h2>
               <div
                 className="theme-pills"
                 id="theme-pills"
-                style={{ display: 'flex', flexWrap: 'wrap', gap: `${SPACE.md}px`, alignItems: 'flex-start' }}
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: `${SPACE.md}px`,
+                  alignItems: 'flex-start',
+                }}
               >
                 {themePills}
               </div>
@@ -940,7 +1010,12 @@ export function DiagramTypePage({
               }}
             >
               <SectionEyebrow>Keep exploring</SectionEyebrow>
-              <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+              <h2
+                style={{
+                  fontSize: '30px',
+                  letterSpacing: LETTER_SPACING.heading,
+                }}
+              >
                 Explore the other diagram types.
               </h2>
               <OtherTypesGrid types={types} currentSlug={slug} />
