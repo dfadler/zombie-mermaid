@@ -20,11 +20,11 @@
  * {@link DiagramTypePageProps} and demo/diagram-pages-data.ts's
  * `DiagramTypeProfile` for the seams a follow-on issue passes through.
  *
- * `DiagramHubPage` (diagrams/index.html) is deliberately *not* part of this
- * redesign — #600 owns it, and it hasn't started (its own canvas artboard,
- * `DiagramGallery`, is a separate follow-on) — so it keeps rendering
- * through site-chrome.tsx's `StaticPage`/`PageShell`, unchanged from before
- * this PR.
+ * `DiagramHubPage` (diagrams/index.html) applies the same redesign, sourced
+ * from the canvas's `DiagramGallery` artboard (confirmed byte-identical to
+ * `DiagramGalleryMobile`, same as `FlowchartDetail` above) — see that
+ * function's own doc comment for what's the canvas's and what's this file's
+ * addition (#600, part of #599, part of the #590 redesign).
  *
  * Pure functions of already-computed data: pages.ts still owns the I/O and
  * the rendering work (renderMermaidSVG, shiki, esbuild), and hands the
@@ -37,12 +37,7 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
-import {
-  BreadcrumbSep,
-  FORK_URL,
-  PageShell,
-  StaticPage,
-} from './site-chrome.tsx'
+import { FORK_URL } from './site-chrome.tsx'
 import { Footer, footerCss, type FooterColumn } from './footer.tsx'
 import { Nav, navCss } from './nav.tsx'
 import {
@@ -53,6 +48,15 @@ import {
   primitivesCss,
   type Accent,
 } from './primitives.tsx'
+import {
+  ClassIcon,
+  ErIcon,
+  FlowchartIcon,
+  SequenceIcon,
+  StateIcon,
+  XyChartIcon,
+  type DiagramTypeIconProps,
+} from './icons.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
@@ -88,6 +92,38 @@ const NAV_HREFS = {
   blog: '../blog/',
   github: FORK_URL,
 } as const
+
+/**
+ * The footer's Product/Resources/Project columns, shared by every page this
+ * file renders — `DiagramTypePage` and `DiagramHubPage` alike sit at
+ * `diagrams/*.html`, so both point at the same three destinations relative
+ * to that depth.
+ */
+const DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Diagrams', href: NAV_HREFS.diagrams },
+      { label: 'Editor', href: NAV_HREFS.editor },
+      { label: 'Fork fixes', href: NAV_HREFS.forkFixes },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Blog', href: NAV_HREFS.blog },
+      { label: 'GitHub', href: NAV_HREFS.github },
+      { label: 'npm package', href: NPM_URL },
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      { label: 'MIT Licensed' },
+      { label: 'dfadler/zombie-mermaid', href: NAV_HREFS.github },
+    ],
+  },
+]
 
 /**
  * A block that either has one rendering, or a wide/narrow pair swapped by
@@ -643,10 +679,20 @@ function DetailHead({
   canonical,
   faviconHref,
   cssHref,
+  extraStyle = <PageStyle />,
 }: Pick<
   DiagramTypePageProps,
   'title' | 'description' | 'canonical' | 'faviconHref' | 'cssHref'
->) {
+> & {
+  /**
+   * The page-specific `<style>` beyond the shared design/primitives/nav/
+   * footer CSS every page under `diagrams/` emits. Defaults to
+   * {@link PageStyle} (`DiagramTypePage`'s own rules); `DiagramHubPage`
+   * passes {@link HubPageStyle} instead, since it shares this head shape but
+   * needs a different small set of page-specific rules.
+   */
+  extraStyle?: ReactNode
+}) {
   return (
     <head>
       <meta charSet="UTF-8" />
@@ -666,7 +712,7 @@ function DetailHead({
       <style>{primitivesCss()}</style>
       <style>{navCss()}</style>
       <style>{footerCss()}</style>
-      <PageStyle />
+      {extraStyle}
     </head>
   )
 }
@@ -711,32 +757,6 @@ export function DiagramTypePage({
   themeDataScript,
   clientScriptSrc,
 }: DiagramTypePageProps) {
-  const footerColumns: readonly FooterColumn[] = [
-    {
-      title: 'Product',
-      links: [
-        { label: 'Diagrams', href: NAV_HREFS.diagrams },
-        { label: 'Editor', href: NAV_HREFS.editor },
-        { label: 'Fork fixes', href: NAV_HREFS.forkFixes },
-      ],
-    },
-    {
-      title: 'Resources',
-      links: [
-        { label: 'Blog', href: NAV_HREFS.blog },
-        { label: 'GitHub', href: NAV_HREFS.github },
-        { label: 'npm package', href: NPM_URL },
-      ],
-    },
-    {
-      title: 'Project',
-      links: [
-        { label: 'MIT Licensed' },
-        { label: 'dfadler/zombie-mermaid', href: NAV_HREFS.github },
-      ],
-    },
-  ]
-
   return (
     <html lang="en">
       <DetailHead
@@ -1041,7 +1061,7 @@ export function DiagramTypePage({
             </div>
           </div>
 
-          <Footer columns={footerColumns} />
+          <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>
 
         <script
@@ -1055,8 +1075,104 @@ export function DiagramTypePage({
 }
 
 /* -----------------------------------------------------------------
- * DiagramHubPage — unchanged by this PR; see the file header.
+ * DiagramHubPage
  * ----------------------------------------------------------------- */
+
+/**
+ * Every diagram type's large hero icon on the hub, keyed by
+ * `DiagramTypeProfile.slug` — the animated components icons.tsx (#597)
+ * ships but nothing yet consumes (see that file's own doc comment on
+ * `DIAGRAM_TYPE_ICONS`). Each already carries its own accent-scoped
+ * `<style>`/keyframes and `prefers-reduced-motion` guard, so this page emits
+ * no extra animation CSS of its own — unlike {@link DIAGRAM_TYPE_GLYPHS}
+ * above, which are the small hand-drawn crosslink glyphs `pageCss` styles.
+ *
+ * `color` is passed explicitly at each render site rather than relying on
+ * an icon's own default accent: icons.tsx's per-icon `defaultColor` and this
+ * page's own per-type {@link Accent} (from `DIAGRAM_TYPE_PROFILES`, matching
+ * the `DiagramGallery` canvas artboard exactly) disagree for Class/ER/XY
+ * chart — icons.tsx and tokens.tsx's `--amber`/`--green` doc comments assign
+ * Class→pink/ER→green/XY chart→amber, while the canvas's own gallery and
+ * `FlowchartDetail`'s crosslink cards (and so `DIAGRAM_TYPE_PROFILES.accent`)
+ * assign Class→amber/ER→pink/XY chart→green. Passing `color` keeps this
+ * page's icon, card border, and CTA in agreement regardless of that
+ * upstream mismatch, which is icons.tsx's to resolve, not this page's.
+ */
+const HUB_TYPE_ICONS: Record<
+  string,
+  (props: DiagramTypeIconProps) => ReactNode
+> = {
+  flowchart: FlowchartIcon,
+  state: StateIcon,
+  sequence: SequenceIcon,
+  class: ClassIcon,
+  er: ErIcon,
+  'xy-chart': XyChartIcon,
+}
+
+/** A hero icon's rendered size in px — large enough to anchor a 460×360 icon panel. */
+const HUB_ICON_SIZE = 200
+
+/**
+ * Ink for a solid-accent CTA that needs to darken into the accent's own hue
+ * instead of primitives.tsx's default `--bg`. Amber is the one accent the
+ * `DiagramGallery` canvas overrides this way (`color:#241703`); see
+ * primitives.tsx's `SOLID_INK` doc comment, which names this exact value.
+ */
+const AMBER_CTA_INK = '#241703'
+
+/**
+ * This page's own rules, beyond the shared design/primitives/nav/footer CSS
+ * every page under `diagrams/` emits (see {@link DetailHead}). The
+ * breadcrumb rule is duplicated from {@link pageCss} rather than shared,
+ * same as that function's own relationship to primitives.tsx's `.card`/
+ * `.pill` — small enough that one definition per page reads better than a
+ * new shared export two call sites would use.
+ *
+ * The two responsive rules are this page's own transcription of the
+ * `DiagramGallery` canvas artboard's `@media` blocks: a type row collapses
+ * to a single column, and its icon panel drops from a fixed 460×360 to a
+ * full-width strip (280px tall, then 220px at the narrower breakpoint) —
+ * `.page-h1` shrinking at the same 600px breakpoint is shared with
+ * {@link DiagramTypePage}. `navCss`/`footerCss` already carry the nav-bar
+ * and footer-grid rules the canvas's own preamble bundles alongside these.
+ */
+function hubPageCss(): string {
+  return `.breadcrumb {
+  font-size: ${FONT_SIZE.bodySm}px;
+  color: ${colorVar('--text-faint')};
+}
+.breadcrumb .sep {
+  margin: 0 ${SPACE.sm}px;
+  color: ${colorVar('--text-faint')};
+}
+
+${MEDIA.tablet} {
+  .type-row { flex-direction: column !important; }
+  .icon-panel-fixed { flex: 1 1 auto !important; width: 100% !important; height: 280px !important; }
+}
+
+${MEDIA.mobile} {
+  .page-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
+  .icon-panel-fixed { height: 220px !important; }
+}`
+}
+
+/** {@link hubPageCss} in a `<style>` element, for `DiagramHubPage`'s `<head>`. */
+function HubPageStyle() {
+  return <style>{hubPageCss()}</style>
+}
+
+/** The `Home / Diagrams` crumb trail — this page's own last crumb is never a link, since it's the current page. */
+function HubBreadcrumb() {
+  return (
+    <div className="breadcrumb mono">
+      <a href={HOME_HREF}>Home</a>
+      <span className="sep">/</span>
+      <span style={{ color: colorVar('--text-dim') }}>Diagrams</span>
+    </div>
+  )
+}
 
 export interface DiagramHubPageProps {
   title: string
@@ -1065,10 +1181,145 @@ export interface DiagramHubPageProps {
   cssHref: string
   faviconHref: string
   themeCount: number
-  types: ReadonlyArray<DiagramTypeLink & { intro: string }>
+  /**
+   * Every diagram type, in display order — `pages.ts` builds this from
+   * `DIAGRAM_TYPE_PROFILES`, so `label`/`slug`/`intro`/`accent` all come from
+   * that single source of truth rather than being retyped here.
+   */
+  types: ReadonlyArray<DiagramTypeLink & { intro: string; accent: Accent }>
 }
 
-/** diagrams/index.html — the hub listing every generated type page. */
+/** One diagram type's row: hero icon panel, index/label/intro, and a "View examples" CTA to its real detail page. */
+function DiagramTypeRow({
+  type,
+  index,
+  total,
+}: {
+  type: DiagramTypeLink & { intro: string; accent: Accent }
+  index: number
+  total: number
+}) {
+  // The canvas bands every other row with `--bg-soft` + hairline borders and
+  // reverses the icon/text order on the ones in between (see
+  // `DiagramGallery.dc.html`'s six `<div id="…">` sections) — one boolean
+  // drives both, since a banded row is always the "normal" direction and an
+  // unbanded one always "reverse".
+  const isBanded = index % 2 === 0
+  const isReversed = !isBanded
+  const isLast = index === total - 1
+  const Icon = HUB_TYPE_ICONS[type.slug]
+  const accent = accentVar(type.accent)
+  const ctaStyle: CSSProperties | undefined =
+    type.accent === 'amber' ? { color: AMBER_CTA_INK } : undefined
+
+  return (
+    <div
+      id={type.slug}
+      className="section-px"
+      style={{
+        padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px ${
+          isLast ? SECTION_SPACE.hero : SECTION_SPACE.default
+        }px ${LAYOUT.gutter.desktop}px`,
+        background: isBanded ? colorVar('--bg-soft') : undefined,
+        borderTop: isBanded ? `1px solid ${colorVar('--border')}` : undefined,
+        borderBottom: isBanded
+          ? `1px solid ${colorVar('--border')}`
+          : undefined,
+      }}
+    >
+      <div
+        className={isReversed ? 'type-row reverse' : 'type-row'}
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: isReversed ? 'row-reverse' : 'row',
+          alignItems: 'center',
+          gap: `${SPACE['8xl']}px`,
+        }}
+      >
+        <Card
+          accent={type.accent}
+          tone="glow"
+          className="icon-panel icon-panel-fixed"
+          style={{
+            flex: '0 0 460px',
+            height: '360px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {Icon ? <Icon size={HUB_ICON_SIZE} color={accent} /> : null}
+        </Card>
+        <div
+          style={{
+            flex: '1 1 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE['2xl']}px`,
+          }}
+        >
+          <span
+            className="type-index mono"
+            style={{
+              color: accent,
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              fontWeight: FONT_WEIGHT.bold,
+              letterSpacing: '0.1em',
+            }}
+          >
+            {String(index + 1).padStart(2, '0')} /{' '}
+            {String(total).padStart(2, '0')}
+          </span>
+          {/* 34px is off tokens.tsx's FONT_SIZE scale (h3/h2 are the
+              neighbours, 26/32) -- the canvas's own literal for this
+              heading, kept as-is rather than rounded to either step. */}
+          <h2
+            style={{ fontSize: '34px', letterSpacing: LETTER_SPACING.heading }}
+          >
+            {type.label}
+          </h2>
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.lead}px`,
+              lineHeight: 1.65,
+              color: colorVar('--text-dim'),
+              maxWidth: '640px',
+            }}
+          >
+            {type.intro}
+          </p>
+          <CTA
+            href={`${type.slug}.html`}
+            accent={type.accent}
+            style={{
+              width: 'fit-content',
+              marginTop: `${SPACE.xs}px`,
+              ...ctaStyle,
+            }}
+          >
+            View examples
+          </CTA>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * diagrams/index.html — the hub listing every generated type page, one row
+ * per type: its animated icon, name, description, and a real "View
+ * examples" link to that type's own detail page (#600, part of #599). Every
+ * structural choice here is the `DiagramGallery` canvas artboard's own
+ * (confirmed byte-identical to `DiagramGalleryMobile` — see the file
+ * header); `types`' content is `pages.ts`'s, sourced from
+ * `DIAGRAM_TYPE_PROFILES` rather than duplicated here (see that prop's doc
+ * comment) — so a Class/ER/XY-chart `intro` that doesn't yet match the
+ * canvas's own gallery copy for those three types (#602-606 own bringing it
+ * in line) shows up here exactly as `DIAGRAM_TYPE_PROFILES` has it today,
+ * and updates automatically once that lands.
+ */
 export function DiagramHubPage({
   title,
   description,
@@ -1079,38 +1330,90 @@ export function DiagramHubPage({
   types,
 }: DiagramHubPageProps) {
   return (
-    <StaticPage
-      title={title}
-      description={description}
-      canonical={canonical}
-      cssHref={cssHref}
-      faviconHref={faviconHref}
-    >
-      <PageShell
-        homeHref="../"
-        breadcrumb={
-          <>
-            <a href="../">Home</a>
-            <BreadcrumbSep />
-            Diagrams
-          </>
-        }
-      >
-        <h1>Every diagram type</h1>
-        <p className="lede">
-          zombie-mermaid renders {types.length} Mermaid diagram types, each with
-          a live picker across every one of its {themeCount} built-in themes.
-          Pick a diagram type below.
-        </p>
-        {types.map((type) => (
-          <section className="type-group" key={type.slug}>
-            <h2>
-              <a href={`${type.slug}.html`}>{type.label}</a>
-            </h2>
-            <p className="type-intro">{type.intro}</p>
-          </section>
-        ))}
-      </PageShell>
-    </StaticPage>
+    <html lang="en">
+      <DetailHead
+        title={title}
+        description={description}
+        canonical={canonical}
+        faviconHref={faviconHref}
+        cssHref={cssHref}
+        extraStyle={<HubPageStyle />}
+      />
+      <body>
+        <div
+          className="dc-root"
+          style={{
+            fontFamily: 'var(--font-body)',
+            color: colorVar('--text'),
+            width: '100%',
+            maxWidth: `${LAYOUT.maxWidth + 2 * LAYOUT.gutter.desktop}px`,
+            margin: '0 auto',
+            background:
+              'linear-gradient(180deg, #0a0d16 0%, #0d1120 40%, #0a0d16 100%)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <Nav active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+
+          {/* ============ PAGE HEADER ============ */}
+          <div
+            className="section-px"
+            style={{
+              padding: `${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            <div
+              style={{
+                maxWidth: `${LAYOUT.maxWidth}px`,
+                margin: '0 auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${SPACE['3xl']}px`,
+              }}
+            >
+              <HubBreadcrumb />
+              <h1
+                className="page-h1"
+                style={{
+                  fontSize: `${FONT_SIZE.display}px`,
+                  lineHeight: 1.08,
+                  letterSpacing: LETTER_SPACING.display,
+                  maxWidth: '820px',
+                }}
+              >
+                Every diagram type.
+              </h1>
+              <p
+                style={{
+                  fontSize: '18px',
+                  lineHeight: 1.6,
+                  color: colorVar('--text-dim'),
+                  maxWidth: '680px',
+                }}
+              >
+                zombie-mermaid renders {types.length} Mermaid diagram types,
+                each with a live picker across every one of its {themeCount}{' '}
+                built-in themes.
+              </p>
+            </div>
+          </div>
+
+          {/* ============ TYPE ROWS ============ */}
+          {types.map((type, index) => (
+            <DiagramTypeRow
+              key={type.slug}
+              type={type}
+              index={index}
+              total={types.length}
+            />
+          ))}
+
+          <Footer columns={DETAIL_FOOTER_COLUMNS} />
+        </div>
+      </body>
+    </html>
   )
 }
