@@ -31,11 +31,7 @@ import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderHtmlDocument } from '../demo/render-html.ts'
 import { normalizeHtml } from './helpers/normalize-html.ts'
-import {
-  IndexPage,
-  type CategorySection,
-  type HeroCard,
-} from '../demo/components/index-page.tsx'
+import { IndexPage } from '../demo/components/index-page.tsx'
 import { EditorPage } from '../demo/components/editor-page.tsx'
 import { EditorThemeItems } from '../demo/components/editor-topbar.tsx'
 import {
@@ -66,74 +62,10 @@ async function expectGolden(html: string, file: string): Promise<void> {
 }
 
 describe('index.ts → index.html', () => {
-  const heroCards: HeroCard[] = [
-    {
-      index: 0,
-      codeHtml:
-        '<pre class="shiki"><code>flowchart LR\n  A --&gt; B</code></pre>',
-      bg: '#101010',
-    },
-  ]
-
-  const categories: CategorySection[] = [
-    {
-      label: 'Flowchart',
-      slug: 'flowchart',
-      items: [
-        { index: 1, displayNum: 1, title: 'Basic Flow' },
-        { index: 2, displayNum: 2, title: 'Shapes & <edges>' },
-      ],
-      cards: [
-        {
-          index: 1,
-          title: 'Flowchart: Basic Flow',
-          descriptionHtml: 'Uses <code>--&gt;</code> for edges.',
-          highlightedSourceHtml:
-            '<pre class="shiki"><code>flowchart TD</code></pre>',
-          optionsJson: '{"bg":"#fff"}',
-          bg: '#fff',
-        },
-        {
-          // No options: the `.options` row must be absent entirely.
-          index: 2,
-          title: 'Flowchart: Shapes & <edges>',
-          descriptionHtml: 'Quotes markup: <code>&lt;title&gt;</code>.',
-          highlightedSourceHtml:
-            '<pre class="shiki"><code>flowchart LR</code></pre>',
-          optionsJson: null,
-          bg: '',
-        },
-      ],
-    },
-    {
-      // A second category is `hidden` on first load.
-      label: 'XY Chart',
-      slug: 'xy-chart',
-      items: [{ index: 3, displayNum: 3, title: 'Bar' }],
-      cards: [
-        {
-          index: 3,
-          title: 'XY: Bar',
-          descriptionHtml: 'A bar chart.',
-          highlightedSourceHtml:
-            '<pre class="shiki"><code>xychart-beta</code></pre>',
-          optionsJson: '{"width":600}',
-          bg: '#fafafa',
-        },
-      ],
-    },
-  ]
-
   it('normalises to the golden DOM', async () => {
     const html = renderHtmlDocument(
       createElement(IndexPage, {
-        css: FIXTURE_CSS,
         jsonLd: '{\n  "@type": "SoftwareApplication"\n}',
-        samplesJson: '[{"title":"Fixture","source":"flowchart LR"}]',
-        moduleScript: FIXTURE_SCRIPT,
-        totalSampleCount: 3,
-        heroCards,
-        categories,
       }),
     )
     await expectGolden(html, './__fixtures__/index-page.normalized.txt')
