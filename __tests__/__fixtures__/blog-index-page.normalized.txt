@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    </meta>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    </meta>
+    <title>
+      "Blog | Zombie Mermaid"
+    </title>
+    <meta content="Updates on zombie-mermaid, and notes on what it's like maintaining it." name="description">
+    </meta>
+    <link href="https://example.test/blog/" rel="canonical">
+    </link>
+    <meta content="Blog | Zombie Mermaid" property="og:title">
+    </meta>
+    <meta content="Updates on zombie-mermaid, and notes on what it's like maintaining it." property="og:description">
+    </meta>
+    <meta content="website" property="og:type">
+    </meta>
+    <meta content="https://example.test/blog/" property="og:url">
+    </meta>
+    <meta content="summary" name="twitter:card">
+    </meta>
+    <link href="../favicon.svg" rel="icon" type="image/svg+xml">
+    </link>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    </link>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    </link>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    </link>
+    <link href="assets/blog.css" rel="stylesheet">
+    </link>
+  </head>
+  <body>
+    <div class="site-header">
+      <a class="brand-badge" href="../">
+        <strong>
+          "Zombie Mermaid"
+        </strong>
+      </a>
+      <nav class="header-links">
+        <a href="../">
+          "Samples"
+        </a>
+        <a href="../editor">
+          "Editor"
+        </a>
+        <a href="../blog/">
+          "Blog"
+        </a>
+        <a href="https://github.com/dfadler/zombie-mermaid" rel="noopener" target="_blank">
+          "GitHub"
+        </a>
+      </nav>
+    </div>
+    <div class="content-wrapper">
+      <div class="breadcrumb">
+        <a href="../">
+          "Home"
+        </a>
+        <span class="sep">
+          "/"
+        </span>
+        "Blog"
+      </div>
+      <h1>
+        "Blog"
+      </h1>
+      <p class="lede">
+        "Updates on zombie-mermaid, and notes on what it's like maintaining it."
+      </p>
+      <div class="post-list">
+        <article class="post-card">
+          <h2>
+            <a href="shipping-v1.html">
+              "Shipping v1 of a <zombie>"
+            </a>
+          </h2>
+          <p class="post-meta">
+            "March 4, 2026"
+          </p>
+          <p>
+            "What it took, & what broke."
+          </p>
+        </article>
+        <article class="post-card">
+          <h2>
+            <a href="day-zero.html">
+              "Day zero of the toolchain"
+            </a>
+          </h2>
+          <p class="post-meta">
+            "February 1, 2026"
+          </p>
+          <p>
+            "Setting things up."
+          </p>
+        </article>
+      </div>
+      <footer class="site-footer">
+        <span>
+          "© 2026 zombie-mermaid"
+        </span>
+        <a href="https://github.com/dfadler/zombie-mermaid" rel="noopener noreferrer" target="_blank">
+          "GitHub"
+        </a>
+      </footer>
+    </div>
+  </body>
+</html>

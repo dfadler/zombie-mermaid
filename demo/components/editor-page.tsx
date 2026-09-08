@@ -1,57 +1,76 @@
 /** @jsxRuntime automatic */
 /**
- * The live-editor page (editor.ts → editor.html) as a React component —
- * step two of the #423 site-generator migration, after the dashboard.ts
- * pilot (demo/components/dashboard-page.tsx). See
- * docs/decisions/react-site-migration-plan.md for the full plan this
- * belongs to.
+ * The live-editor page (editor.ts → editor.html) as React components.
  *
- * Unlike dashboard.ts, editor.ts's content isn't component-shaped yet:
- * editor/html/{topbar,left-panel,right-panel}.html are hand-written markup
- * fragments (each a single root element, styled by body's `display: flex`
- * layout in editor/css/variables.css — wrapping any one of them in an
- * extra JSX container element would insert an unstyled flex item and
- * visibly break the panel layout), and the browser bundle plus every
- * editor/js/*.js module are spliced into one inline
- * `<script type="module">` verbatim. Turning every one of those into a
- * real JSX tree (each fragment its own component, the bundled script as a
- * `<script dangerouslySetInnerHTML>` element) is real, separate work —
- * out of scope for this pilot step, and tracked as the specific
- * remaining risk in the migration plan doc referenced above.
+ * #423's pilot rendered only the document shell here and spliced the whole
+ * `<body>` in as one raw HTML string, because editor/html/*.html weren't
+ * component-shaped yet. #589 finished the port: the topbar and the two
+ * panels are real components now
+ * (demo/components/editor-topbar.tsx, demo/components/editor-panels.tsx),
+ * `editor/html/` is gone, and the only thing still spliced in raw is the
+ * inline `<script type="module">` carrying the bundled renderer plus every
+ * editor/js/*.js module — which stays a separately bundled vanilla script
+ * by design (see docs/decisions/react-site-migration-plan.md).
  *
- * What this component *does* prove: the document shell (doctype, `<head>`,
- * `SiteHead` reuse, the two favicon links `SiteHead` doesn't cover) renders
- * through `renderToStaticMarkup`, and the body's entire existing raw
- * content — including the inlined `<script type="module">` tag carrying
- * the bundled renderer JS — survives a `dangerouslySetInnerHTML` round
- * trip unescaped and byte-identical. That is the specific risk this page
- * was chosen to derisk (see the plan's "risks the dashboard pilot didn't
- * have to solve" section): raw script content spliced into
- * React-rendered output, not just static data-driven markup dashboard.ts
- * already proved out.
+ * The layout constraint that made this the hard page is preserved
+ * structurally rather than by comment: `.topbar`, `.main`, and the toast are
+ * direct children of `<body>` (whose `display: flex` column layout in
+ * editor/css/variables.css depends on it), and `.panel-left`/`.panel-right`
+ * are direct children of `.main`. No component here introduces a wrapper
+ * element.
  *
- * `bodyHtml` is built by the caller (editor.ts) using the *exact* same
- * template-literal assembly the pre-React generator used for its `<body>`
- * region, deliberately unchanged — so the only thing this component
- * changes is how the surrounding document is produced, not what is inside
- * the body. `__tests__/editor-equivalence.test.ts` proves the full
- * document is unchanged (modulo DOM-normalisation) against the pre-React
- * generator's real output.
+ * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
+ * see the `jsx` comment in demo/tsconfig.json.
  */
+import type { ReactNode } from 'react'
 import { SiteHead } from './site-head.tsx'
+import { EditorTopbar } from './editor-topbar.tsx'
+import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
+
+/**
+ * Everything inside `<body>` except the inlined script: the topbar, the
+ * two panels with the resize handle between them, and the toast.
+ *
+ * Exported so editor/__tests__/support/harness.ts can build its jsdom
+ * document from the *same* component tree the generator ships, rather than
+ * from a second, drifting copy of the markup (it used to read the
+ * editor/html/*.html partials directly, which no longer exist).
+ */
+export function EditorChrome({ themeItems }: { themeItems: ReactNode }) {
+  return (
+    <>
+      {/* Top bar */}
+      <EditorTopbar themeItems={themeItems} />
+
+      {/* Main */}
+      <div className="main">
+        {/* Left panel */}
+        <EditorLeftPanel />
+
+        {/* Resize handle */}
+        <div className="resize-handle" id="resize-handle" />
+
+        {/* Right panel */}
+        <EditorRightPanel />
+      </div>
+
+      <div className="toast" id="toast" />
+    </>
+  )
+}
 
 export interface EditorPageProps {
   css: string
+  /** The theme dropdown's entries (see editor.ts's `ThemeDropdownItems`). */
+  themeItems: ReactNode
   /**
-   * The pre-existing `<body>...</body>` inner content, assembled by
-   * editor.ts exactly as the pre-React generator assembled it (topbar +
-   * main panels + toast + the inlined bundle script). Spliced in raw
-   * because it is not yet component-shaped — see the file header.
+   * The bundled renderer plus every editor/js/*.js module, concatenated by
+   * editor.ts exactly as before and inlined as one module script.
    */
-  bodyHtml: string
+  scriptJs: string
 }
 
-export function EditorPage({ css, bodyHtml }: EditorPageProps) {
+export function EditorPage({ css, themeItems, scriptJs }: EditorPageProps) {
   return (
     <html lang="en">
       <head>
@@ -63,9 +82,16 @@ export function EditorPage({ css, bodyHtml }: EditorPageProps) {
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
         <link rel="apple-touch-icon" href="apple-touch-icon.png" />
       </head>
-      <body
-        dangerouslySetInnerHTML={{ __html: bodyHtml }} // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- bodyHtml is build-time-only static content assembled by editor.ts from files under version control (editor/html/*.html fragments, editor/js/*.js modules), never live/runtime user input; __tests__/editor-equivalence.test.ts proves it's byte-identical to the pre-React generator's own output
-      />
+      <body>
+        <EditorChrome themeItems={themeItems} />
+
+        {/* Bundled renderer */}
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own src/browser.ts bundle plus editor/js/*.js, both under version control and concatenated at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: scriptJs }}
+        />
+      </body>
     </html>
   )
 }

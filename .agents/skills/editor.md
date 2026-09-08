@@ -10,21 +10,21 @@ description: >-
 
 ## Key files
 
-The editor's actual UI/CSS/JS source lives under `editor/` as modular partials; `editor.ts` just concatenates them (in a fixed order) into one self-contained HTML file. Edit the partials, not `editor.ts`, for UI/CSS/JS changes.
+The editor's CSS/JS source lives under `editor/` as modular partials that `editor.ts` concatenates in a fixed order; its markup lives in React components under `demo/components/`. `editor.ts` bundles the lot into one self-contained HTML file. Edit the partials/components, not `editor.ts`, for UI/CSS/JS changes.
 
-| File                                  | Role                                                                                                                 |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `editor.ts`                           | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`                    |
-| `editor/css/*.css`                    | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (editor.ts)                                |
-| `editor/js/*.js`                      | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (editor.ts)                              |
-| `editor/html/*.html`                  | HTML partials: `topbar.html`, `left-panel.html` (source editor + Config panel), `right-panel.html` (preview)         |
-| `editor/__tests__/`                   | Vitest tests for the editor JS modules (jsdom environment) — see `state.ts`/`config.test.ts` etc.                    |
-| `editor.html`                         | Generated output — never edit directly                                                                               |
-| `vite.config.ts`                      | Dev server (Vite); rebuilds both `editor.html` and `index.html` on change, serves `/` → showcase, `/editor` → editor |
-| `src/browser.ts`                      | Bundles the renderer for the browser as `window.__mermaid`                                                           |
-| `packages/core/src/types.ts`          | `RenderOptions` — all supported render options                                                                       |
-| `packages/core/src/theme.ts`          | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                      |
-| `packages/svg-renderer/src/styles.ts` | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                  |
+| File                                                      | Role                                                                                                                                                                                                                    |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor.ts`                                               | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`                                                                                                                       |
+| `editor/css/*.css`                                        | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (editor.ts)                                                                                                                                   |
+| `editor/js/*.js`                                          | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (editor.ts)                                                                                                                                 |
+| `demo/components/editor-topbar.tsx` / `editor-panels.tsx` | The page's markup, as React components: the topbar, the left panel (source editor + Config panel), and the right panel (preview). Composed by `demo/components/editor-page.tsx`. Replaced `editor/html/*.html` in #589. |
+| `editor/__tests__/`                                       | Vitest tests for the editor JS modules (jsdom environment) — see `state.ts`/`config.test.ts` etc.                                                                                                                       |
+| `editor.html`                                             | Generated output — never edit directly                                                                                                                                                                                  |
+| `vite.config.ts`                                          | Dev server (Vite); rebuilds both `editor.html` and `index.html` on change, serves `/` → showcase, `/editor` → editor                                                                                                    |
+| `src/browser.ts`                                          | Bundles the renderer for the browser as `window.__mermaid`                                                                                                                                                              |
+| `packages/core/src/types.ts`                              | `RenderOptions` — all supported render options                                                                                                                                                                          |
+| `packages/core/src/theme.ts`                              | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                                                                                                                         |
+| `packages/svg-renderer/src/styles.ts`                     | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
 
 Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples-data.ts` only feeds the separate showcase page (`index.ts` → `index.html`, served at `/` by `vite.config.ts`).
 
@@ -35,8 +35,8 @@ editor.ts
   ──esbuild.build──►         src/browser.ts bundle (inline JS)
   ──readCssFiles──►          editor/css/*.css concatenated
   ──readJsFiles──►           editor/js/*.js concatenated
-  ──readHtmlPartials──►      editor/html/*.html
-  ──template──►              editor.html  (self-contained, ~1.7 MB)
+  ──renderToStaticMarkup──►  demo/components/editor-page.tsx (JSX markup)
+  ──►                        editor.html  (self-contained, ~1.7 MB)
 ```
 
 Run manually:
@@ -98,7 +98,7 @@ editor input
 
 ### Case A: RenderOptions already supports it (colors, font, padding)
 
-1. Add UI in the relevant `config-section` in `editor/html/left-panel.html`
+1. Add UI in the relevant `config-section` in `demo/components/editor-panels.tsx`
 2. Add a JS state variable in `editor/js/config-panel.js` (e.g. `var cfgFoo = defaultVal`)
 3. Update `readConfig()` (also in `config-panel.js`) to include it in `state.config`
 4. Wire input events in `config-panel.js`
@@ -133,16 +133,10 @@ Add to `RenderOptions` in `packages/core/src/types.ts`, thread through `buildCol
 
 1. Add to the `cfgColors` object in `editor/js/config-panel.js`: `cfgColors.myColor = ''`
 2. Add a `THEME_COLOR_MAP` entry (same file) if the theme has a matching property
-3. Add HTML in the Colors section of `editor/html/left-panel.html`:
+3. Add a `<ColorField>` in the Colors section of `demo/components/editor-panels.tsx`:
 
-```html
-<div class="color-field">
-  <span class="color-field-label">My Color</span>
-  <button class="color-edit-btn" data-cfg="myColor">
-    <span class="cfg-hex-label" id="cfg-myColor-label">—</span>
-    <span class="color-swatch" id="cfg-myColor-swatch"></span>
-  </button>
-</div>
+```tsx
+<ColorField label="My Color" cfg="myColor" />
 ```
 
 4. Update `readConfig()`: `if (cfgColors.myColor) cfg.myColor = cfgColors.myColor`
@@ -152,31 +146,14 @@ Add to `RenderOptions` in `packages/core/src/types.ts`, thread through `buildCol
 
 ## Adding a slider (Layout section)
 
-HTML goes in `editor/html/left-panel.html`, JS in `editor/js/config-panel.js`.
+Markup goes in `demo/components/editor-panels.tsx` (a `<PaddingField>`), JS in `editor/js/config-panel.js`.
 
-```html
-<div class="padding-field">
-  <div class="padding-row">
-    <label>My Setting</label>
-    <input
-      class="padding-num"
-      id="cfg-my-val"
-      type="number"
-      min="0"
-      max="100"
-      value="10"
-    />
-  </div>
-  <input
-    class="padding-slider"
-    id="cfg-my-val-slider"
-    type="range"
-    min="0"
-    max="100"
-    value="10"
-  />
-</div>
+```tsx
+<PaddingField label="My Setting" id="cfg-my-val" min="0" max="100" value="10" />
 ```
+
+(`<PaddingField>` renders both the number input and its slider, deriving the
+slider's id as `<id>-slider`.)
 
 ```js
 var cfgMyVal = 10

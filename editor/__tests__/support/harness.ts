@@ -6,8 +6,9 @@
 // declarations sharing one top-level scope across file boundaries.
 //
 // To exercise the *real* source files (rather than reimplementing their
-// logic in test-only copies), this harness builds a jsdom document using the
-// actual HTML partials from editor/html/, stubs the handful of browser APIs
+// logic in test-only copies), this harness builds a jsdom document from the
+// actual page components (demo/components/editor-*.tsx, which replaced the
+// editor/html/*.html partials in #589), stubs the handful of browser APIs
 // jsdom doesn't implement, and evaluates the real js/*.js files against that
 // document in the same order editor.ts bundles them in. Tests then interact
 // with the resulting `window` exactly like a user/script would in a browser.
@@ -16,10 +17,14 @@
 // readJsFiles() in editor.ts. It's duplicated here (rather than imported)
 // because editor.ts performs side effects (esbuild bundling + writing
 // editor.html) as soon as it's imported.
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync } from 'node:fs'
 import { JSDOM } from 'jsdom'
 import { vi } from 'vitest'
 import { THEMES } from '@zombie-mermaid/core'
+import { EditorChrome } from '../../../demo/components/editor-page.tsx'
+import { EditorThemeItems } from '../../../demo/components/editor-topbar.tsx'
 
 const EDITOR_DIR = new URL('../../', import.meta.url)
 
@@ -48,33 +53,27 @@ function readEditorFile(relativePath: string): string {
   return readFileSync(new URL(relativePath, EDITOR_DIR), 'utf-8')
 }
 
-function buildThemeItems(): string {
-  return [
-    `<button class="theme-dropdown-item active" data-theme="">Default</button>`,
-    ...Object.keys(THEMES).map(
-      (key) =>
-        `<button class="theme-dropdown-item" data-theme="${key}">${key}</button>`,
-    ),
-  ].join('\n')
-}
-
+/**
+ * The editor's real `<body>` markup, minus the inlined script.
+ *
+ * Rendered from the same React components the generator ships
+ * (demo/components/editor-page.tsx's `<EditorChrome>`), so these tests
+ * can't drift from what editor.html actually contains. Theme entries use
+ * the raw THEMES key as their label — the dropdown's human-friendly names
+ * live in editor.ts and are irrelevant to what the js/*.js modules do with
+ * `data-theme`.
+ */
 function buildBodyHtml(): string {
-  const topbar = readEditorFile('html/topbar.html').replace(
-    '{{THEME_ITEMS}}',
-    buildThemeItems(),
+  const themes = Object.keys(THEMES).map((key) => ({
+    key,
+    bg: THEMES[key]!.bg,
+    label: key,
+  }))
+  return renderToStaticMarkup(
+    createElement(EditorChrome, {
+      themeItems: createElement(EditorThemeItems, { themes }),
+    }),
   )
-  const leftPanel = readEditorFile('html/left-panel.html')
-  const rightPanel = readEditorFile('html/right-panel.html')
-  // Mirrors the shell editor.ts wraps the partials in (see generateEditorHtml).
-  return `
-${topbar}
-<div class="main">
-${leftPanel}
-<div class="resize-handle" id="resize-handle"></div>
-${rightPanel}
-</div>
-<div class="toast" id="toast"></div>
-`
 }
 
 export interface EditorEnv {
@@ -93,7 +92,7 @@ export interface CreateEditorEnvOptions {
 
 /**
  * Builds a fresh jsdom environment with the real editor/js/*.js files loaded
- * against the real editor/html/*.html partials, and a mocked
+ * against the real page components' markup, and a mocked
  * window.__mermaid.renderMermaidSVGAsync (the one DOM-external dependency
  * the editor scripts pull in from the bundled renderer).
  */

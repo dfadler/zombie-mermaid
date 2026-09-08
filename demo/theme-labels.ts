@@ -1,7 +1,7 @@
 /**
  * Human-readable metadata for the built-in themes in `packages/core/src/theme.ts`.
  *
- * Consumed by theme-picker.ts's `renderThemePill` (pill labels, and each
+ * Consumed by demo/components/theme-picker.tsx's `ThemePill` (pill labels, and each
  * pill's `title` tooltip) — shared by both index.ts's interactive gallery
  * and pages.ts's per-diagram-type pages — so labels/descriptions never
  * drift out of sync with each other or with `THEMES` itself.

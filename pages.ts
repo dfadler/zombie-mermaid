@@ -43,11 +43,17 @@
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import * as esbuild from 'esbuild'
+import { createElement } from 'react'
 import { escapeHtml, escapeJsonForScriptTag } from './demo/format.ts'
-import { renderShell, pageHtml } from './demo/site-shell.ts'
+import { renderHtmlDocument } from './demo/render-html.ts'
+import {
+  DiagramHubPage,
+  DiagramTypePage,
+  type OrientationVariants,
+} from './demo/components/diagram-page.tsx'
 import { THEMES } from '@zombie-mermaid/core'
 import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
-import { renderThemePicker, DEFAULT_SWATCH } from './theme-picker.ts'
+import { ThemePicker, DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { renderMermaidSVG } from './src/index.ts'
 import type { RenderOptions } from './src/index.ts'
 import { createHighlighter } from 'shiki'
@@ -66,7 +72,8 @@ const OUT_DIR = new URL('./diagrams/', import.meta.url)
 /**
  * Every page renders with this theme initially; the picker switches from
  * here. Set to '' (the main gallery's "Default" pseudo-theme, not a real
- * THEMES entry -- see theme-picker.ts's DEFAULT_SWATCH) rather than an
+ * THEMES entry -- see demo/components/theme-picker.tsx's DEFAULT_SWATCH)
+ * rather than an
  * arbitrary real theme, so a first-time visitor with no stored preference
  * sees the exact same look index.ts's gallery shows by default -- and so
  * this stays correct even if THEMES gets reordered, instead of silently
@@ -134,18 +141,17 @@ async function main(): Promise<void> {
   const themesJson = escapeJsonForScriptTag(
     JSON.stringify({ '': DEFAULT_SWATCH, ...THEMES }),
   )
-  const themePillsHtml = renderThemePicker({
+  const themePills = createElement(ThemePicker, {
     includeDefault: true,
     activeThemeKey: DEFAULT_THEME_KEY,
   })
 
   const sitemapUrls: string[] = [`${SITE_URL}/`, `${SITE_URL}/editor`]
 
-  const otherTypesGrid = (currentSlug: string) =>
-    DIAGRAM_TYPE_PROFILES.map((p) => {
-      const current = p.slug === currentSlug ? ' is-current' : ''
-      return `        <a class="link-grid-item${current}" href="${p.slug}.html">${escapeHtml(p.label)}</a>`
-    }).join('\n')
+  const typeLinks = DIAGRAM_TYPE_PROFILES.map((p) => ({
+    slug: p.slug,
+    label: p.label,
+  }))
 
   for (const profile of DIAGRAM_TYPE_PROFILES) {
     const colors = DEFAULT_SWATCH
@@ -189,79 +195,58 @@ async function main(): Promise<void> {
         ? withNarrowDirection(profile.source, directionLine)
         : null
 
-    const diagramMarkup =
+    const diagramMarkup: OrientationVariants =
       narrowSource === null
         ? renderDiagram(profile.source)
-        : `<div class="orientation-variant orientation-wide">${withUniqueSvgIds(renderDiagram(profile.source), `${profile.slug}-w-`)}</div>` +
-          `<div class="orientation-variant orientation-narrow">${withUniqueSvgIds(renderDiagram(profile.source, { direction: NARROW_DIRECTION }), `${profile.slug}-n-`)}</div>`
+        : {
+            wide: withUniqueSvgIds(
+              renderDiagram(profile.source),
+              `${profile.slug}-w-`,
+            ),
+            narrow: withUniqueSvgIds(
+              renderDiagram(profile.source, { direction: NARROW_DIRECTION }),
+              `${profile.slug}-n-`,
+            ),
+          }
 
-    const sourcePanelMarkup =
+    const sourcePanelMarkup: OrientationVariants =
       narrowSource === null
         ? highlightSource(profile.source)
-        : `<div class="orientation-variant orientation-wide">${highlightSource(profile.source)}</div>` +
-          `<div class="orientation-variant orientation-narrow">${highlightSource(narrowSource)}</div>`
+        : {
+            wide: highlightSource(profile.source),
+            narrow: highlightSource(narrowSource),
+          }
 
     const title = `${profile.label} examples | Zombie Mermaid`
     const description = `${profile.intro} Rendered live in any of ${Object.keys(THEMES).length} built-in themes — free, open source, and dependency-free.`
     const canonical = `${SITE_URL}/diagrams/${profile.slug}.html`
     sitemapUrls.push(canonical)
 
-    const body = renderShell({
-      homeHref: '../',
-      themePillsHtml,
-      breadcrumb: `<a href="../">Home</a><span class="sep">/</span><a href="./">Diagrams</a><span class="sep">/</span>${escapeHtml(profile.label)}`,
-      body: `
-  <h1>${escapeHtml(profile.label)} examples</h1>
-  <p class="lede">${escapeHtml(profile.intro)}</p>
-
-  <div class="diagram-layout">
-    <div class="source-column">
-      <h2 class="source-heading">Mermaid source</h2>
-      <div class="source-panel">
-${sourcePanelMarkup}
-      </div>
-    </div>
-    <div class="diagram-column">
-      <div class="diagram-frame">
-${diagramMarkup}
-      </div>
-    </div>
-  </div>
-
-  <div class="cta-row">
-    <a class="cta-btn primary" href="../editor#${editorHash(profile.source, DEFAULT_THEME_KEY)}">Open in the live editor</a>
-    <a class="cta-btn" href="../#samples-heading">See all samples</a>
-  </div>
-
-  <div class="section">
-    <h2>Other diagram types</h2>
-    <div class="link-grid">
-${otherTypesGrid(profile.slug)}
-    </div>
-  </div>
-`,
-    })
-
     const sourceJson = escapeJsonForScriptTag(JSON.stringify(profile.source))
     const narrowSourceJson = escapeJsonForScriptTag(
       JSON.stringify(narrowSource),
     )
-    const themeDataScript = `<script>window.__diagramPageThemes = ${themesJson}; window.__diagramPageSource = ${sourceJson}; window.__diagramPageNarrowSource = ${narrowSourceJson};</script>`
-    const clientScript = `<script type="module" src="assets/diagram-page-client.js"></script>`
+    const themeDataScript = `window.__diagramPageThemes = ${themesJson}; window.__diagramPageSource = ${sourceJson}; window.__diagramPageNarrowSource = ${narrowSourceJson};`
 
-    // False positive: `body` is built entirely from static DIAGRAM_TYPE_PROFILES
-    // data (escapeHtml()'d) plus renderMermaidSVG/shiki output covered by
-    // docs/decisions/no-script-interactivity.md's no-`<script>` guarantee — no
-    // user input reaches it. Semgrep can't trace that data flow.
-    const html = pageHtml({
-      title,
-      description,
-      canonical,
-      cssHref: 'assets/diagram-page.css',
-      faviconHref: '../favicon.svg',
-      body, // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag
-      bodyScript: `${themeDataScript}\n${clientScript}`,
-    })
+    const html = renderHtmlDocument(
+      createElement(DiagramTypePage, {
+        label: profile.label,
+        slug: profile.slug,
+        intro: profile.intro,
+        title,
+        description,
+        canonical,
+        cssHref: 'assets/diagram-page.css',
+        faviconHref: '../favicon.svg',
+        sourcePanelHtml: sourcePanelMarkup,
+        diagramHtml: diagramMarkup,
+        editorHref: `../editor#${editorHash(profile.source, DEFAULT_THEME_KEY)}`,
+        types: typeLinks,
+        themePills,
+        themeDataScript,
+        clientScriptSrc: 'assets/diagram-page-client.js',
+      }),
+    )
 
     await writeFile(new URL(`./${profile.slug}.html`, OUT_DIR), html)
   }
@@ -270,32 +255,21 @@ ${otherTypesGrid(profile.slug)}
   const hubCanonical = `${SITE_URL}/diagrams/`
   sitemapUrls.push(hubCanonical)
 
-  const typeLinks = DIAGRAM_TYPE_PROFILES.map((profile) => {
-    return `
-  <section class="type-group">
-    <h2><a href="${profile.slug}.html">${escapeHtml(profile.label)}</a></h2>
-    <p class="type-intro">${escapeHtml(profile.intro)}</p>
-  </section>`
-  }).join('\n')
-
-  const hubBody = renderShell({
-    homeHref: '../',
-    breadcrumb: `<a href="../">Home</a><span class="sep">/</span>Diagrams`,
-    body: `
-  <h1>Every diagram type</h1>
-  <p class="lede">zombie-mermaid renders ${DIAGRAM_TYPE_PROFILES.length} Mermaid diagram types, each with a live picker across every one of its ${Object.keys(THEMES).length} built-in themes. Pick a diagram type below.</p>
-${typeLinks}
-`,
-  })
-
-  const hubHtml = pageHtml({
-    title: `Diagram gallery: every type | Zombie Mermaid`,
-    description: `Browse every zombie-mermaid diagram type: ${DIAGRAM_TYPE_PROFILES.map((p) => p.label).join(', ')} — each rendered live in any of ${Object.keys(THEMES).length} built-in themes including Nord, Dracula, Tokyo Night, and GitHub.`,
-    canonical: hubCanonical,
-    cssHref: 'assets/diagram-page.css',
-    faviconHref: '../favicon.svg',
-    body: hubBody,
-  })
+  const hubHtml = renderHtmlDocument(
+    createElement(DiagramHubPage, {
+      title: `Diagram gallery: every type | Zombie Mermaid`,
+      description: `Browse every zombie-mermaid diagram type: ${DIAGRAM_TYPE_PROFILES.map((p) => p.label).join(', ')} — each rendered live in any of ${Object.keys(THEMES).length} built-in themes including Nord, Dracula, Tokyo Night, and GitHub.`,
+      canonical: hubCanonical,
+      cssHref: 'assets/diagram-page.css',
+      faviconHref: '../favicon.svg',
+      themeCount: Object.keys(THEMES).length,
+      types: DIAGRAM_TYPE_PROFILES.map((profile) => ({
+        slug: profile.slug,
+        label: profile.label,
+        intro: profile.intro,
+      })),
+    }),
+  )
 
   await writeFile(new URL('./index.html', OUT_DIR), hubHtml)
 
