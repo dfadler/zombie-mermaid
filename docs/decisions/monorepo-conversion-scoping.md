@@ -123,6 +123,10 @@ benefit. Revisit if/when something outside this repo wants to reuse
 `demo/components/` or the CLI's argument-parsing/HTML-viewer pieces
 independently.
 
+This recommendation is now settled and recorded separately, with a fresh
+verification of the import graph, in
+[`cli-and-demo-stay-apps.md`](cli-and-demo-stay-apps.md) (#626).
+
 ### 4. Migration path: `zombie-mermaid` becomes an umbrella re-export package
 
 Keep the `zombie-mermaid` package name, its `package.json` `exports` map
@@ -241,7 +245,8 @@ each can be picked up and closed independently:
   halves and scope `mermaid-parser`'s public API (findings 1-2)
 - #625 — move `layout-engine/`, `elk-instance.ts`, and the `core` files
   (recommendation 5)
-- #626 — leave `cli`/`demo` as apps (recommendation 3 table)
+- #626 — leave `cli`/`demo` as apps (recommendation 3 table); decided, see
+  [`cli-and-demo-stay-apps.md`](cli-and-demo-stay-apps.md)
 - #627 — decide test layout (per-package vs. shared)
 
 Recommended order: #623 first, then #624 before #625, #622/#621 for
