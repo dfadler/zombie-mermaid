@@ -1,8 +1,19 @@
-# Workspace packages (zombie-mermaid#620's monorepo conversion). The repo
-# root itself is always a workspace package for pnpm and is not listed here.
-# `packages/*` are `"private": true` and bundled into the umbrella's `dist/`
-# by `vite.config.lib.ts`, so they are never published and never appear in
-# the published `zombie-mermaid`'s runtime dependency tree — see #625.
+# Workspace packages (zombie-mermaid#620's monorepo conversion). `packages/*`
+# are `"private": true` and bundled into the umbrella's `dist/` by
+# `vite.config.lib.ts`, so they are never published and never appear in the
+# published `zombie-mermaid`'s runtime dependency tree — see #625.
+#
+# `.` (the repo root) is listed explicitly even though pnpm itself always
+# treats the root as part of the workspace with or without it. Changesets'
+# workspace resolution does not: `@manypkg/get-packages`, which
+# `@changesets/cli` uses to resolve changeset package names, always returns
+# the pnpm workspace root as a separate `rootPackage`, never as a member of
+# `packages` — regardless of what the `packages:` glob matches. Without `.`
+# here, `packagesByName` (built from `packages.packages` only) never
+# contains `zombie-mermaid`, so any changeset naming it fails with "Found
+# changeset ... for package zombie-mermaid which is not in the workspace"
+# the moment `packages:` became non-empty (#625). Confirmed by reproducing
+# against a clean `main` checkout before this fix.
 #
 # Defining `packages:` makes Semgrep's pnpm supply-chain rules apply to this
 # file for the first time (they don't fire on a non-workspace config). The
@@ -14,6 +25,7 @@
 # monorepo-refactor PR. Tracked in #656.
 # nosemgrep: package_managers.pnpm.pnpm-block-exotic-sub-dependencies.pnpm-block-exotic-sub-dependencies, package_managers.pnpm.pnpm-missing-minimum-release-age.pnpm-minimum-release-age, package_managers.pnpm.pnpm-trust-policy.pnpm-trust-policy
 packages:
+  - '.'
   - 'packages/*'
 
 allowBuilds:
