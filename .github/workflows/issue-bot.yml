@@ -11,6 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      pull-requests: read
+      pull-requests: write
     steps:
       - uses: dfadler/issue-bot@0f14bb71f02ee14abf9f2f332bfe97d2ee11a272 # v1.2.0
