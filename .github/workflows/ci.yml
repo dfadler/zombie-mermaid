@@ -528,5 +528,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # demo/ is never published (it's excluded from package.json's "files"
+      # field), so a PR that only touches demo/ has no effect on the shipped
+      # package and shouldn't be forced into a version bump + changelog
+      # entry. Scoped to "every changed file is under demo/" rather than a
+      # flat path-ignore so a PR that touches demo/ *and* src/ still requires
+      # a changeset for the src/ change.
+      - name: Check whether this PR only touches demo/
+        id: diff_scope
+        run: |
+          set -euo pipefail
+          changed_files="$(git diff --name-only origin/main...HEAD)"
+          non_demo_count="$(printf '%s\n' "$changed_files" | grep -vcE '^demo/')"
+          if [ -z "$changed_files" ] || [ "$non_demo_count" -gt 0 ]; then
+            echo "demo_only=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "demo_only=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check for changeset
+        if: steps.diff_scope.outputs.demo_only != 'true'
         run: pnpm changeset status --since origin/main
