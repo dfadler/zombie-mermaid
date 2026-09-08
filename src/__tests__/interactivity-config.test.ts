@@ -13,7 +13,7 @@ import {
   applyInitConfig,
   describeIgnored,
   isInitDirective,
-} from '../init-directive.ts'
+} from '@zombie-mermaid/core'
 import { pointsToPath } from '../edge-curves.ts'
 
 describe('%%{init: ...}%% directives (#198 row 17)', () => {

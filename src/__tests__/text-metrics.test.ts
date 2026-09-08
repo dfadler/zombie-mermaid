@@ -7,7 +7,7 @@ import {
   measureTextWidth,
   isWideChar,
   hasMeasuredAdvance,
-} from '../text-metrics'
+} from '@zombie-mermaid/core'
 
 // ============================================================================
 // Character width classification

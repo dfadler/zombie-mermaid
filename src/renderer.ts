@@ -4,14 +4,23 @@ import type {
   PositionedEdge,
   PositionedGroup,
   Point,
-} from './types.ts'
-import type { DiagramColors, SvgEmitOptions } from './theme.ts'
+  DiagramColors,
+  SvgEmitOptions,
+  CurveStyle,
+} from '@zombie-mermaid/core'
 import {
   svgOpenTag,
   buildStyleBlock,
   styleOpenTag,
   getReadableTextColor,
-} from './theme.ts'
+  measureMultilineText,
+  renderMultilineText,
+  renderMultilineTextWithBackground,
+  escapeXml,
+  escapeAttr,
+  safeHref,
+  sanitizeClassName,
+} from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
 import {
   FONT_SIZES,
@@ -19,17 +28,7 @@ import {
   STROKE_WIDTHS,
   ARROW_HEAD,
 } from './styles.ts'
-import { measureMultilineText } from './text-metrics.ts'
-import {
-  renderMultilineText,
-  renderMultilineTextWithBackground,
-  escapeXml,
-  escapeAttr,
-} from './multiline-utils.ts'
 import { pointsToPath } from './edge-curves.ts'
-import type { CurveStyle } from './init-directive.ts'
-import { safeHref } from './click-directive.ts'
-import { sanitizeClassName } from './style-directives.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.

@@ -10,9 +10,8 @@
 
 import { renderMermaidSVGAsync } from './index.ts'
 import { renderMermaidASCII, diagramColorsToAsciiTheme } from './ascii/index.ts'
-import { THEMES } from './theme.ts'
+import { THEMES, isWideChar } from '@zombie-mermaid/core'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from './xychart/colors.ts'
-import { isWideChar } from './text-metrics.ts'
 
 export interface MermaidBrowserGlobal {
   renderMermaidSVGAsync: typeof renderMermaidSVGAsync

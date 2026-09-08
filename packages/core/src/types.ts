@@ -2,8 +2,43 @@
 // Parsed graph — logical structure extracted from Mermaid text
 // ============================================================================
 
+import type { ElkNode } from 'elkjs'
 import type { InitConfig, CurveStyle } from './init-directive.ts'
-import type { LayoutCache } from './elk-instance.ts'
+
+// `LayoutCache`'s shape is declared here rather than beside
+// `createLayoutCache()`/`elkLayoutSync()` in
+// `@zombie-mermaid/svg-renderer`'s `elk-instance.ts` because
+// `RenderOptions.layoutCache` below references it: a `core` module that
+// type-imported `svg-renderer` would put a cycle in the type graph, which
+// `core` — a dependency of both renderers — must not have
+// (zombie-mermaid#625, umbrella #620). Only the *shape* moved; every
+// function that builds or reads a cache still lives in `svg-renderer`, and
+// `elkjs` is a type-only import here, erased before anything is bundled.
+//
+// The doc comment below is deliberately byte-identical to the one this
+// interface carried in `elk-instance.ts` — api-extractor copies it into
+// the published `dist/index.d.ts`, so editing it would change the shipped
+// declarations. Its "outside this module" still means `elk-instance.ts`,
+// which remains the only place a `LayoutCache` is created or read.
+/**
+ * Opt-in bounded LRU cache for `elkLayoutSync()` results.
+ *
+ * Off by default — `elkLayoutSync()` only consults a cache when one is
+ * explicitly passed in, so existing callers see no behavior change.
+ * Create one with `createLayoutCache()` and reuse it across renders (e.g.
+ * module scope, or a `useRef` in React) — a fresh cache per render defeats
+ * the point.
+ *
+ * The `map`/`maxSize` fields are implementation detail exposed only so
+ * `elkLayoutSync()` (and tests) can read/mutate them directly without a
+ * class; treat a `LayoutCache` as opaque from outside this module.
+ */
+export interface LayoutCache {
+  /** @internal */
+  readonly map: Map<string, ElkNode>
+  /** @internal */
+  readonly maxSize: number
+}
 
 export interface MermaidGraph {
   direction: Direction
@@ -226,7 +261,7 @@ export interface PositionedGroup {
 // Color theming uses CSS custom properties: --bg and --fg are required,
 // optional enrichment variables (--line, --accent, --muted, --surface,
 // --border) add richer color from Shiki themes or custom palettes.
-// See src/theme.ts for the full variable system.
+// See packages/core/src/theme.ts for the full variable system.
 // ============================================================================
 
 export interface RenderOptions {
@@ -323,6 +358,13 @@ export interface RenderOptions {
   /** Stamp the original diagram source onto the root `<svg>` as a `data-src` attribute (HTML-escaped). Default: false */
   embedSource?: boolean
 
+  // The `src/theme.ts` path below is deliberately left at its pre-#625
+  // spelling (this file's `MIX` table now lives at
+  // packages/core/src/theme.ts). api-extractor copies this JSDoc verbatim
+  // into the published `dist/index.d.ts`, and #625 is verified by that
+  // file being byte-identical to the pre-split build — rewording it would
+  // break the check that proves the move changed nothing. Correct it in a
+  // change that is allowed to move those bytes.
   /**
    * Replace every CSS `var(--…)` and `color-mix(…)` in the output with its
    * computed sRGB value (`#rrggbb`, or `rgba()` when translucent), using
@@ -505,7 +547,7 @@ export interface RenderOptions {
 //
 // `RenderOptions` above is one flat interface consumed by all five diagram
 // types (flowchart, sequence, class, ER, xychart — see `DiagramType` in
-// src/diagram-type.ts; state diagrams share the flowchart pipeline and so
+// packages/core/src/diagram-type.ts; state diagrams share the flowchart pipeline and so
 // share `FlowchartRenderOptions`), but most fields apply to only a subset.
 // Historically that applicability was discoverable only via the prose
 // comments above — passing `curve` to an ER render was silently ignored,
@@ -513,10 +555,10 @@ export interface RenderOptions {
 //
 // These `Pick<RenderOptions, ...>` types make each diagram type's actual
 // option surface structural rather than prose-only, confirmed field-by-field
-// against real consumption (grepped across src/renderer.ts,
+// against real consumption (grepped across packages/svg-renderer/src/renderer.ts,
 // src/sequence/renderer.ts, src/class/renderer.ts, src/er/renderer.ts,
 // src/xychart/renderer.ts, and the layout modules each render path calls
-// through — src/layout-engine.ts, src/sequence/layout.ts,
+// through — packages/svg-renderer/src/layout-engine.ts, src/sequence/layout.ts,
 // src/class/layout.ts, src/er/layout.ts, src/xychart/layout.ts).
 //
 // IMPORTANT — this does not narrow `renderMermaidSVG(text, options)` itself.
@@ -561,6 +603,10 @@ export type CommonRenderOptions = Pick<
   | 'decorative'
 >
 
+// Same as the `MIX` JSDoc above: the two `src/…` paths below keep their
+// pre-#625 spelling (they are now under packages/svg-renderer/src/)
+// because this comment ships verbatim in `dist/index.d.ts`, whose
+// byte-identity is what verifies the move.
 /**
  * Options applicable to flowchart (`graph` / `flowchart`) and state
  * (`stateDiagram-v2`) diagrams — both share `DiagramType: 'flowchart'` and

@@ -21,8 +21,7 @@
 
 import { z } from 'zod'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { detectDiagramType } from '../../diagram-type.ts'
-import { splitStatements } from '../../statements.ts'
+import { detectDiagramType, splitStatements } from '@zombie-mermaid/core'
 import { parseSequenceDiagram } from '../../sequence/parser.ts'
 import { checkActivationBalance } from '../../sequence/activation-check.ts'
 

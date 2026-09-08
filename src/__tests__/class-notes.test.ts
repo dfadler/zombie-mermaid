@@ -12,7 +12,7 @@ import { parseClassDiagram } from '../class/parser.ts'
 import { layoutClassDiagramSync } from '../class/layout.ts'
 import { renderMermaidSVG } from '../index.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'
-import { splitStatements } from '../statements.ts'
+import { splitStatements } from '@zombie-mermaid/core'
 
 /** Parse through the same statement splitter index.ts uses. */
 function parse(text: string) {

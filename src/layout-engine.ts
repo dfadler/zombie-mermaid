@@ -29,7 +29,7 @@ import type {
   MermaidGraph,
   PositionedGraph,
   FlowchartRenderOptions,
-} from './types.ts'
+} from '@zombie-mermaid/core'
 import { elkLayoutSync } from './elk-instance.ts'
 import { resolveFontSizes } from './styles.ts'
 import { DEFAULTS } from './layout-engine/constants.ts'

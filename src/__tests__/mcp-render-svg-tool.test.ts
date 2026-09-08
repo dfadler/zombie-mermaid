@@ -3,7 +3,7 @@ import {
   renderSvgHandler,
   renderSvgInputShape,
 } from '../mcp/tools/render-svg.ts'
-import { THEMES } from '../theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { renderMermaidSVG } from '../index.ts'
 
 // ============================================================================

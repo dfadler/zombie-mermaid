@@ -14,17 +14,16 @@ import type {
   PositionedErEntity,
   PositionedErRelationship,
 } from './types.ts'
-import type { ErRenderOptions } from '../types.ts'
+import type { ErRenderOptions, Direction } from '@zombie-mermaid/core'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
   FONT_WEIGHTS,
   resolveFontSizes,
 } from '../styles.ts'
-import { measureMultilineText } from '../text-metrics.ts'
+import { measureMultilineText } from '@zombie-mermaid/core'
 import { elkLayoutSync } from '../elk-instance.ts'
 import { extractEdgePoints } from '../layout-engine/elk-adapter-utils.ts'
-import type { Direction } from '../types.ts'
 
 /** Layout constants for ER diagrams */
 const ER = {

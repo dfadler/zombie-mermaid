@@ -6,10 +6,17 @@ import type {
   ClassMember,
   RelationshipType,
 } from './types.ts'
-import type { DiagramColors } from '../theme.ts'
-import { svgOpenTag, buildStyleBlock, getReadableTextColor } from '../theme.ts'
-import type { SvgEmitOptions } from '../theme.ts'
-import { sanitizeClassName } from '../style-directives.ts'
+import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
+import {
+  svgOpenTag,
+  buildStyleBlock,
+  getReadableTextColor,
+  sanitizeClassName,
+  renderMultilineText,
+  escapeXml as escapeXmlUtil,
+  escapeAttr,
+  safeHref,
+} from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import type { FontSizes } from '../styles.ts'
 import {
@@ -19,12 +26,6 @@ import {
   TEXT_BASELINE_SHIFT,
 } from '../styles.ts'
 import { CLS } from './layout.ts'
-import {
-  renderMultilineText,
-  escapeXml as escapeXmlUtil,
-  escapeAttr,
-} from '../multiline-utils.ts'
-import { safeHref } from '../click-directive.ts'
 
 // ============================================================================
 // Class diagram SVG renderer
@@ -56,7 +57,7 @@ const CLS_FONT = {
  *                       as `data-src` (from `options.embedSource`). Omitted
  *                       when the option is off.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
- *                src/theme.ts.
+ *                packages/core/src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
  * @param linksEnabled - Whether `click`-based `<a href>` links and `<title>`
  *                       tooltips render (from `options.interactivity !==
@@ -372,7 +373,7 @@ function renderMember(
   const displayName = member.isMethod
     ? `${member.name}(${member.params || ''})`
     : member.name
-  // False positive: displayName is passed through escapeXml() (see src/multiline-utils.ts),
+  // False positive: displayName is passed through escapeXml() (see packages/core/src/multiline-utils.ts),
   // which escapes &, <, >, ", ' before interpolation, so this is not raw/unescaped HTML.
   spans.push(`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 

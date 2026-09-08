@@ -48,6 +48,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.11
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:packages/core
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
@@ -100,6 +103,12 @@ importers:
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
+
+  packages/core:
+    dependencies:
+      elkjs:
+        specifier: ^0.11.0
+        version: 0.11.1
 
 packages:
 

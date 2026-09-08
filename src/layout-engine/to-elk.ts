@@ -12,10 +12,10 @@ import type {
   MermaidSubgraph,
   MermaidEdge,
   RenderOptions,
-} from '../types.ts'
+} from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
 import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
-import { measureMultilineText } from '../text-metrics.ts'
+import { measureMultilineText } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 
 /** Convert Mermaid direction to ELK direction */

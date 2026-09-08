@@ -24,8 +24,11 @@
  *    levels of an SVG document is valid per the SVG spec.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { svgOpenTag, __resetSvgTitleIdCounterForTests } from '../theme.ts'
-import type { DiagramColors } from '../theme.ts'
+import {
+  svgOpenTag,
+  __resetSvgTitleIdCounterForTests,
+} from '@zombie-mermaid/core'
+import type { DiagramColors } from '@zombie-mermaid/core'
 import { renderMermaidSVG } from '../index.ts'
 
 const colors: DiagramColors = { bg: '#FFFFFF', fg: '#27272A' }

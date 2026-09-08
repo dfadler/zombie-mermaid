@@ -12,7 +12,7 @@
 //   - ER diagrams (erDiagram)
 //
 // Theming uses CSS custom properties (--bg, --fg, + optional enrichment).
-// See src/theme.ts for the full variable system.
+// See packages/core/src/theme.ts for the full variable system.
 //
 // Usage:
 //   import { renderMermaidSVG } from 'zombie-mermaid'
@@ -31,9 +31,9 @@ export type {
   ClassRenderOptions,
   ErRenderOptions,
   XyChartRenderOptions,
-} from './types.ts'
-export type { DiagramColors, ThemeName } from './theme.ts'
-export { fromShikiTheme, THEMES, DEFAULTS } from './theme.ts'
+} from '@zombie-mermaid/core'
+export type { DiagramColors, ThemeName } from '@zombie-mermaid/core'
+export { fromShikiTheme, THEMES, DEFAULTS } from '@zombie-mermaid/core'
 export { parseMermaid } from './parser.ts'
 import { resolveCssColors } from './resolve-colors.ts'
 export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
@@ -45,16 +45,16 @@ import { decodeXML } from 'entities'
 import { parseMermaid } from './parser.ts'
 import { layoutGraphSync } from './layout.ts'
 import { renderSvg } from './renderer.ts'
-import type { RenderOptions } from './types.ts'
-import type { DiagramColors, SvgEmitOptions } from './theme.ts'
-import { DEFAULTS, themeStyleDeclarations } from './theme.ts'
+import type { RenderOptions } from '@zombie-mermaid/core'
+import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
+import { DEFAULTS, themeStyleDeclarations } from '@zombie-mermaid/core'
 import { resolveFontSizes } from './styles.ts'
-import { isMonospaceFont, setMonospaceMetrics } from './text-metrics.ts'
-import { detectDiagramType } from './diagram-type.ts'
-import type { DiagramType } from './diagram-type.ts'
-import { applyInitConfig } from './init-directive.ts'
-import { withDirectionOverride } from './direction-override.ts'
-import { splitStatements } from './statements.ts'
+import { isMonospaceFont, setMonospaceMetrics } from '@zombie-mermaid/core'
+import { detectDiagramType } from '@zombie-mermaid/core'
+import type { DiagramType } from '@zombie-mermaid/core'
+import { applyInitConfig } from '@zombie-mermaid/core'
+import { withDirectionOverride } from '@zombie-mermaid/core'
+import { splitStatements } from '@zombie-mermaid/core'
 
 import { parseSequenceDiagram } from './sequence/parser.ts'
 import { layoutSequenceDiagram } from './sequence/layout.ts'
@@ -115,7 +115,7 @@ export function themeCssVariables(options: RenderOptions = {}): string {
 /**
  * Resolve the effective strict-CSP emission controls from the public
  * options. Kept as one object so every renderer takes it as a single
- * trailing parameter — see `SvgEmitOptions` in src/theme.ts.
+ * trailing parameter — see `SvgEmitOptions` in packages/core/src/theme.ts.
  */
 function resolveSvgEmit(options: RenderOptions): SvgEmitOptions {
   return {
@@ -296,14 +296,14 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
     default: {
       const parsed = parseMermaid(decoded)
       // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
-      // render option always wins. See src/init-directive.ts.
+      // render option always wins. See packages/core/src/init-directive.ts.
       const effective = parsed.initConfig
         ? applyInitConfig(options, parsed.initConfig)
         : options
       // `direction` replaces the header's (or a state diagram's top-level
       // `direction` line's) direction before layout; nested subgraph /
       // composite-state directions live on the subgraph objects and still
-      // apply on top of it. See src/direction-override.ts.
+      // apply on top of it. See packages/core/src/direction-override.ts.
       const graph = withDirectionOverride(parsed, effective.direction)
       const positioned = layoutGraphSync(graph, effective)
       return renderSvg(

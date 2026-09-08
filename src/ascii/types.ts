@@ -6,7 +6,7 @@
 // and graph structures used by the ASCII/Unicode renderer.
 // ============================================================================
 
-import type { NodeShape } from '../types.ts'
+import type { NodeShape } from '@zombie-mermaid/core'
 import type { Grid } from './grid-occupancy.ts'
 
 // Re-export NodeShape for convenience

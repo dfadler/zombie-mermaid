@@ -4,7 +4,11 @@
  * over a PositionedGraph's nodes/edges.
  */
 
-import type { PositionedNode, PositionedEdge, Direction } from '../types.ts'
+import type {
+  PositionedNode,
+  PositionedEdge,
+  Direction,
+} from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 
 /**
