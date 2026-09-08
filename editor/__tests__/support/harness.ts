@@ -22,7 +22,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync } from 'node:fs'
 import { JSDOM } from 'jsdom'
 import { vi } from 'vitest'
-import { THEMES } from '../../../src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { EditorChrome } from '../../../demo/components/editor-page.tsx'
 import { EditorThemeItems } from '../../../demo/components/editor-topbar.tsx'
 
