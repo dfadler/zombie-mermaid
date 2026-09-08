@@ -204,11 +204,29 @@ if [ -z "$work_dir" ]; then
   work_dir="$cache_root/$(basename "$REPO_ROOT")-$checkout_key"
 fi
 
+mkdir -p "$work_dir"
+
+# Canonicalize both sides before comparing: --work-dir may be relative,
+# contain a trailing slash, or reach the repo root via a symlink, and a
+# string-prefix match on the raw arguments would miss all three. A work
+# directory that resolves to the repo root or any descendant of it is
+# rejected outright - --clean below runs `rm -rf "$work_dir"`, which would
+# delete the real checkout, and even without --clean the later `docker run
+# -v "$work_dir:/work"` would mount (and let the container's `pnpm install`
+# write into) the real checkout instead of an isolated copy.
+canonical_work_dir="$(cd "$work_dir" && pwd -P)"
+canonical_repo_root="$(cd "$REPO_ROOT" && pwd -P)"
+case "$canonical_work_dir/" in
+"$canonical_repo_root/"*)
+  die "$EXIT_USAGE" "--work-dir '$work_dir' resolves to the repository checkout ($canonical_repo_root) or a path inside it; pass a directory outside the repo"
+  ;;
+esac
+
 if [ "$do_clean" -eq 1 ] && [ -d "$work_dir" ]; then
   printf '%s: cleaning %s\n' "$SCRIPT_NAME" "$work_dir"
   rm -rf "$work_dir"
+  mkdir -p "$work_dir"
 fi
-mkdir -p "$work_dir"
 
 if [ "$do_build" -eq 1 ]; then
   printf '%s: building %s for %s\n' "$SCRIPT_NAME" "$image" "$platform"
@@ -255,15 +273,18 @@ set -eu
 # Guard against an --image override (or a future base-tag bump) that lost the
 # font layer: without it every ASCII sample mismatches and the run looks like
 # a real regression. Same assertion the Dockerfile makes at build time.
-match="$(fc-match monospace)"
-case "$match" in
-  DejaVu*) ;;
-  *)
-    echo "fc-match monospace resolved to: $match (expected a DejaVu face)" >&2
-    echo "This image lacks the fonts-dejavu-core layer; every ASCII sample would mismatch." >&2
-    exit 4
-    ;;
-esac
+#
+# Exact family match, not a `DejaVu*` glob: fonts-dejavu-core installs DejaVu
+# Sans (proportional) alongside DejaVu Sans Mono, so a glob would also accept
+# the proportional face here - silently defeating this guard if `monospace`
+# ever misresolved to it, since the ASCII grid needs an actually-monospaced
+# font.
+match="$(fc-match -f "%{family}" monospace)"
+if [ "$match" != "DejaVu Sans Mono" ]; then
+  echo "fc-match monospace resolved to: $match (expected DejaVu Sans Mono)" >&2
+  echo "This image lacks the fonts-dejavu-core layer; every ASCII sample would mismatch." >&2
+  exit 4
+fi
 
 export COREPACK_HOME="$HOME/.cache/node/corepack"
 mkdir -p "$HOME/.bin" "$COREPACK_HOME"

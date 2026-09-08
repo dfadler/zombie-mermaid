@@ -122,7 +122,7 @@ before accounting for CI running the four shards in parallel rather than in sequ
 
 ### Baseline integrity
 
-```
+```text
 562 files under __tests__/visual/__screenshots__ (281 -chromium-linux, 281 -chromium-darwin)
 sha256 manifest before run 1  ==  sha256 manifest after run 3      (diff: empty)
 ```

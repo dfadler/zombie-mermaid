@@ -38,10 +38,18 @@
 #     -f docker/visual-regression.Dockerfile docker
 #
 # Run the suite against the committed baselines:
-#   docker run --rm -v "$PWD:/work" -w /work \
-#     zombie-mermaid/playwright-visual:v1.62.1-jammy \
-#     sh -c 'corepack enable && pnpm install --frozen-lockfile && \
-#            pnpm exec playwright test'
+#   scripts/docker-test-visual-ascii.sh
+#
+# That wrapper is the supported entry point, not a raw `docker run` of this
+# image: this image has no `USER` instruction, so it runs as root by default,
+# and bind-mounting the checkout with `-v "$PWD:/work"` under a root-run
+# container writes root-owned node_modules/test-results/report files back
+# onto the host. The wrapper instead runs the container as the invoking
+# UID/GID (`docker run --user "$(id -u):$(id -g)"`) against a synced copy
+# outside the repo, so nothing it writes is root-owned and the checkout
+# itself is never mounted read-write. If you do need a raw `docker run`
+# (e.g. to poke around inside the image), pass `--user "$(id -u):$(id -g)"`
+# and an `-e HOME=...` pointing at a writable directory, as the wrapper does.
 #
 # The base tag is pinned to the `@playwright/test` version in package.json
 # (1.62.1) and must be bumped in lockstep with it.
@@ -55,11 +63,16 @@ RUN apt-get update \
 
 # Fail the build if the generic families stop resolving to DejaVu — a silent
 # regression here would show up only as ~90 mismatched screenshots later.
+# Exact family match, not a `DejaVu*` glob: fonts-dejavu-core installs DejaVu
+# Sans (proportional), DejaVu Serif, and DejaVu Sans Mono together, so a glob
+# would also accept the proportional "DejaVu Sans" face for the `monospace`
+# generic — silently defeating this guard if `monospace` ever misresolved to
+# it, since the ASCII grid needs an actually-monospaced font.
 RUN set -eu; \
-    for generic in monospace sans-serif serif; do \
-        match="$(fc-match "$generic")"; \
-        case "$match" in \
-            DejaVu*) ;; \
-            *) echo "fc-match $generic resolved to '$match', expected a DejaVu face" >&2; exit 1 ;; \
-        esac; \
-    done
+    assert_family() { \
+        match="$(fc-match -f '%{family}' "$1")"; \
+        [ "$match" = "$2" ] || { echo "fc-match $1 resolved to '$match', expected '$2'" >&2; exit 1; }; \
+    }; \
+    assert_family monospace "DejaVu Sans Mono"; \
+    assert_family sans-serif "DejaVu Sans"; \
+    assert_family serif "DejaVu Serif"

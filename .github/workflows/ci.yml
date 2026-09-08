@@ -198,7 +198,13 @@ jobs:
     # Actions example also passes `--user 1001`; that is omitted here
     # because the font step below needs root.
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1-jammy
+      # Pinned by digest (the amd64 manifest for v1.62.1-jammy, matching
+      # ubuntu-latest's architecture) rather than the mutable tag, so
+      # Chromium and its system libraries can't drift without a workflow
+      # change - the same reasoning the actions/checkout SHA pin below
+      # follows. Re-derive with `docker manifest inspect
+      # mcr.microsoft.com/playwright:v1.62.1-jammy` when bumping the tag.
+      image: mcr.microsoft.com/playwright@sha256:75d2d72c89da49d06aa7f6e623987392019aebbc52c09fd8cd6e2c94c7c7d71d # v1.62.1-jammy (amd64)
       options: --ipc=host
     # Splits the ~280 screenshot tests across 4 parallel runners via
     # Playwright's own --shard flag. Each shard still runs at
@@ -260,16 +266,24 @@ jobs:
       # regenerating baselines, which is exactly what must not happen here.
       - name: Verify generic font families resolve to DejaVu
         run: |
-          for generic in monospace sans-serif serif; do
-            match="$(fc-match "$generic")"
-            case "$match" in
-              DejaVu*) ;;
-              *)
-                echo "::error::fc-match $generic resolved to '$match', expected a DejaVu face — the fonts-dejavu-core step did not take effect. Do NOT regenerate baselines to make this job green."
-                exit 1
-                ;;
-            esac
-          done
+          # Exact family match, not a `DejaVu*` glob: fonts-dejavu-core installs
+          # DejaVu Sans (proportional), DejaVu Serif, and DejaVu Sans Mono
+          # together, so a glob would also accept the proportional "DejaVu Sans"
+          # face for the `monospace` generic - silently defeating this guard's
+          # purpose (a monospace grid rendered in a proportional font) if
+          # `monospace` ever misresolved to it.
+          assert_family() {
+            generic="$1"
+            expected="$2"
+            match="$(fc-match -f '%{family}' "$generic")"
+            if [ "$match" != "$expected" ]; then
+              echo "::error::fc-match $generic resolved to '$match', expected '$expected' — the fonts-dejavu-core step did not take effect. Do NOT regenerate baselines to make this job green."
+              exit 1
+            fi
+          }
+          assert_family monospace "DejaVu Sans Mono"
+          assert_family sans-serif "DejaVu Sans"
+          assert_family serif "DejaVu Serif"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
