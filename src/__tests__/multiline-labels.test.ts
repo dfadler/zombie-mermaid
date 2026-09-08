@@ -17,9 +17,10 @@ import {
   measureMultilineText,
   LINE_HEIGHT_RATIO,
   measureTextWidth,
-} from '../text-metrics.ts'
+  normalizeBrTags,
+  stripFormattingTags,
+} from '@zombie-mermaid/core'
 import { renderMermaid } from '../index.ts'
-import { normalizeBrTags, stripFormattingTags } from '../multiline-utils.ts'
 
 // ============================================================================
 // Parser: <br> tag normalization

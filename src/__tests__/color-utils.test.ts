@@ -5,7 +5,7 @@ import {
   mixSrgb,
   mixHexColors,
   formatCssColor,
-} from '../color-utils.ts'
+} from '@zombie-mermaid/core'
 
 describe('parseCssColor', () => {
   it('parses 3/4/6/8-digit hex, expanding shorthand and reading alpha', () => {

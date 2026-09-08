@@ -6,8 +6,8 @@
 // ============================================================================
 
 import { extname, format as formatPath, parse as parsePath } from 'node:path'
-import { isDirection } from '../parser.ts'
-import type { Direction } from '../types.ts'
+import { isDirection } from '@zombie-mermaid/core'
+import type { Direction } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Types

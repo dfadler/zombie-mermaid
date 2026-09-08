@@ -9,7 +9,7 @@
  */
 
 import type { ElkExtendedEdge } from 'elkjs'
-import type { Point } from '../types.ts'
+import type { Point } from '@zombie-mermaid/core'
 
 /**
  * Walk an ELK edge's first routed section into a flat point path:

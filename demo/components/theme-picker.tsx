@@ -18,7 +18,7 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import { THEMES } from '../../src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { THEME_LABELS, THEME_DESCRIPTIONS } from '../theme-labels.ts'
 
 /** Themes shown as inline pills; the rest live in the "More" dropdown. */

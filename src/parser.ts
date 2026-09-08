@@ -5,9 +5,18 @@ import type {
   Direction,
   NodeShape,
   EdgeStyle,
-} from './types.ts'
-import { normalizeBrTags } from './multiline-utils.ts'
-import { splitStatements } from './statements.ts'
+} from '@zombie-mermaid/core'
+import {
+  isDirection,
+  normalizeBrTags,
+  splitStatements,
+  extractInitConfig,
+  applyClickStatement as applyClickStatementShared,
+  parseStyleProps,
+  tryApplyClassDef,
+  tryApplyClassAssignment,
+  tryApplyStyleStatement,
+} from '@zombie-mermaid/core'
 
 import {
   matchExpandedBlock,
@@ -15,14 +24,6 @@ import {
   resolveShapeName,
 } from './expanded-shapes.ts'
 import type { ExpandedNodeMeta } from './expanded-shapes.ts'
-import { extractInitConfig } from './init-directive.ts'
-import { applyClickStatement as applyClickStatementShared } from './click-directive.ts'
-import {
-  parseStyleProps,
-  tryApplyClassDef,
-  tryApplyClassAssignment,
-  tryApplyStyleStatement,
-} from './style-directives.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()
@@ -46,18 +47,6 @@ function stripWrappingQuotes(s: string): string {
 // Line-by-line regex approach — the grammar is regular enough
 // that we don't need a grammar generator or full parser combinator.
 // ============================================================================
-
-// Exported for direct unit testing (see src/__tests__/parser.test.ts) —
-// not otherwise part of this module's public parsing API.
-export function isDirection(value: string): value is Direction {
-  return (
-    value === 'TD' ||
-    value === 'TB' ||
-    value === 'LR' ||
-    value === 'BT' ||
-    value === 'RL'
-  )
-}
 
 /**
  * Normalize a regex-captured direction token to a `Direction`.
@@ -214,7 +203,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
     const line = lines[i]!
 
     // --- classDef / class assignment / style — shared with the class-diagram
-    // parser, see src/style-directives.ts ---
+    // parser, see packages/core/src/style-directives.ts ---
     if (tryApplyClassDef(line, graph)) continue
     if (tryApplyClassAssignment(line, graph)) continue
     if (tryApplyStyleStatement(line, graph)) continue
@@ -813,7 +802,7 @@ function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
  * genuinely actionable: the node is wrapped in an SVG <a>, which works in any
  * browser without script.
  *
- * The actual grammar and href-safety rules live in src/click-directive.ts,
+ * The actual grammar and href-safety rules live in packages/core/src/click-directive.ts,
  * shared with the class diagram parser (src/class/parser.ts) — this is a
  * thin wrapper binding it to this parser's `graph.interactions` map.
  */

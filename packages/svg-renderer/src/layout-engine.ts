@@ -21,7 +21,7 @@
  *   - from-elk.ts         ELK result → PositionedGraph, plus shape clipping
  *   - layer-alignment.ts  post-process: snap same-layer nodes to a uniform position
  *   - edge-bundling.ts    post-process: merge fan-out/fan-in edges into shared trunks
- * See src/layout-engine/constants.ts for the shared DEFAULTS used across stages.
+ * See packages/svg-renderer/src/layout-engine/constants.ts for the shared DEFAULTS used across stages.
  */
 
 import type { ElkNode } from 'elkjs'
@@ -29,7 +29,7 @@ import type {
   MermaidGraph,
   PositionedGraph,
   FlowchartRenderOptions,
-} from './types.ts'
+} from '@zombie-mermaid/core'
 import { elkLayoutSync } from './elk-instance.ts'
 import { resolveFontSizes } from './styles.ts'
 import { DEFAULTS } from './layout-engine/constants.ts'

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { runRender } from '../cli/render.ts'
 import { renderPng } from '../cli/png.ts'
 import { renderMermaidSVG } from '../index.ts'
-import { THEMES } from '../theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { displayWidth } from '../ascii/display-width.ts'
 import { createMockStdout, renderArgs } from './cli-test-helpers.ts'
 

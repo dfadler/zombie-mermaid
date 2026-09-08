@@ -22,9 +22,9 @@ The editor's CSS/JS source lives under `editor/` as modular partials that `edito
 | `editor.html`                                             | Generated output — never edit directly                                                                                                                                                                                  |
 | `vite.config.ts`                                          | Dev server (Vite); rebuilds both `editor.html` and `index.html` on change, serves `/` → showcase, `/editor` → editor                                                                                                    |
 | `src/browser.ts`                                          | Bundles the renderer for the browser as `window.__mermaid`                                                                                                                                                              |
-| `src/types.ts`                                            | `RenderOptions` — all supported render options                                                                                                                                                                          |
-| `src/theme.ts`                                            | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                                                                                                                         |
-| `src/styles.ts`                                           | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
+| `packages/core/src/types.ts`                              | `RenderOptions` — all supported render options                                                                                                                                                                          |
+| `packages/core/src/theme.ts`                              | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                                                                                                                         |
+| `packages/svg-renderer/src/styles.ts`                     | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
 
 Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples-data.ts` only feeds the separate showcase page (`index.ts` → `index.html`, served at `/` by `vite.config.ts`).
 
@@ -125,7 +125,7 @@ Call your override function in:
 
 ### Case C: Requires renderer support
 
-Add to `RenderOptions` in `src/types.ts`, thread through `buildColors`/`svgOpenTag` in `src/theme.ts`, and use via CSS variable in `buildStyleBlock`.
+Add to `RenderOptions` in `packages/core/src/types.ts`, thread through `buildColors`/`svgOpenTag` in `packages/core/src/theme.ts`, and use via CSS variable in `buildStyleBlock`.
 
 ---
 

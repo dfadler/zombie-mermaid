@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectDiagramType } from '../diagram-type.ts'
+import { detectDiagramType } from '@zombie-mermaid/core'
 
 describe('detectDiagramType', () => {
   it('detects each diagram type from its header keyword', () => {

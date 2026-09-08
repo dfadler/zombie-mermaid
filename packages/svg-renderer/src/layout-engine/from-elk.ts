@@ -16,7 +16,7 @@ import type {
   PositionedEdge,
   PositionedGroup,
   Point,
-} from '../types.ts'
+} from '@zombie-mermaid/core'
 import { ARROW_HEAD } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
@@ -26,7 +26,7 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from './elk-adapter-utils.ts'
-import { resolveNodeStyle } from '../style-directives.ts'
+import { resolveNodeStyle } from '@zombie-mermaid/core'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {
@@ -235,7 +235,7 @@ interface EdgeSegment {
  *  - `targetHops`: target-side boundary crossings (id `e{index}_t{level}`),
  *    keyed by ancestor-chain level. Walking from the LCA inward to the
  *    innermost level (closest to the target node).
- * See src/layout-engine/to-elk.ts (mermaidToElk) for how these are produced.
+ * See packages/svg-renderer/src/layout-engine/to-elk.ts (mermaidToElk) for how these are produced.
  */
 interface EdgeSegmentGroup {
   bridge?: EdgeSegment

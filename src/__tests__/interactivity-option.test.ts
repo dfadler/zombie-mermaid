@@ -4,7 +4,7 @@
  * flowchart edge animation (`e1@{ animate: true }`), `click`-based links/
  * tooltips, and xychart hover tooltips. See
  * docs/decisions/no-script-interactivity.md for the tier model this maps
- * to, and `interactivity`'s TSDoc in src/types.ts for the exact per-level
+ * to, and `interactivity`'s TSDoc in packages/core/src/types.ts for the exact per-level
  * behavior.
  */
 import { describe, it, expect } from 'vitest'

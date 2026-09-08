@@ -5,14 +5,14 @@
  * depending on the layout engine.
  */
 import { describe, it, expect } from 'vitest'
-import { renderSvg } from '../renderer.ts'
-import type { DiagramColors } from '../theme.ts'
+import { renderSvg } from '@zombie-mermaid/svg-renderer'
 import type {
+  DiagramColors,
   PositionedGraph,
   PositionedNode,
   PositionedEdge,
   PositionedGroup,
-} from '../types.ts'
+} from '@zombie-mermaid/core'
 
 /** Minimal positioned graph for testing */
 function makeGraph(overrides: Partial<PositionedGraph> = {}): PositionedGraph {

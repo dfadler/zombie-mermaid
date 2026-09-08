@@ -11,13 +11,15 @@
 // direction exactly as they do relative to the diagram's own header.
 //
 // Shared by the SVG entry (src/index.ts) and the ASCII entry
-// (src/ascii/index.ts). Deliberately dependency-free beyond the parser's
-// own `isDirection` guard so the `zombie-mermaid/ascii` subpath stays free
-// of elkjs.
+// (src/ascii/index.ts). Deliberately dependency-free beyond the
+// `isDirection` guard so the `zombie-mermaid/ascii` subpath stays free of
+// elkjs — the guard itself moved out of `src/parser.ts` and into this
+// package (see `direction.ts`) so that staying dependency-free survives
+// the workspace split (zombie-mermaid#625).
 // ============================================================================
 
 import type { Direction } from './types.ts'
-import { isDirection } from './parser.ts'
+import { isDirection } from './direction.ts'
 
 /**
  * Return `diagram` with its top-level `direction` replaced by `override`,

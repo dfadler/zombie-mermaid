@@ -18,20 +18,17 @@ import type {
   PositionedClassRelationship,
 } from './types.ts'
 import { formatClassMember } from './format.ts'
-import type { ClassRenderOptions } from '../types.ts'
+import type { ClassRenderOptions } from '@zombie-mermaid/core'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
   FONT_WEIGHTS,
   resolveFontSizes,
-} from '../styles.ts'
-import { measureMultilineText } from '../text-metrics.ts'
-import { elkLayoutSync } from '../elk-instance.ts'
-import { resolveNodeStyle } from '../style-directives.ts'
-import {
+  elkLayoutSync,
   extractEdgePoints,
   extractEdgeLabelPosition,
-} from '../layout-engine/elk-adapter-utils.ts'
+} from '@zombie-mermaid/svg-renderer'
+import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 
 /** Layout constants for class diagrams */
 export const CLS = {

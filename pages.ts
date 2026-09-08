@@ -17,7 +17,7 @@
  * pages total, each locked to one theme, with a "pick a different theme"
  * link that reloaded a whole new page. That didn't match how theming works
  * everywhere else on this site (index.ts: one page, an instant client-side
- * theme switch — see src/theme.ts's header comment on why that's cheap: a
+ * theme switch — see packages/core/src/theme.ts's header comment on why that's cheap: a
  * rendered SVG's colors are entirely CSS custom properties, so switching
  * themes is a style update, never a re-render). This version renders each
  * diagram type once and embeds the same live theme picker, via
@@ -51,7 +51,7 @@ import {
   DiagramTypePage,
   type OrientationVariants,
 } from './demo/components/diagram-page.tsx'
-import { THEMES } from './src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
 import { ThemePicker, DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { renderMermaidSVG } from './src/index.ts'

@@ -38,10 +38,9 @@ import {
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { markBoxLabelLinks, mkLinkCanvas } from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
-import { safeHref } from '../click-directive.ts'
+import { safeHref, splitStatements } from '@zombie-mermaid/core'
 import { getCorners } from './shapes/corners.ts'
 import { splitLines } from './multiline-utils.ts'
-import { splitStatements } from '../statements.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 

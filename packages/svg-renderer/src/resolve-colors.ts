@@ -3,13 +3,13 @@
 // and `color-mix(…)` expressions the SVG renderer emits.
 //
 // Browsers evaluate both natively, which is what makes the emitted SVG a
-// live function of its CSS custom properties (see src/theme.ts and
+// live function of its CSS custom properties (see packages/core/src/theme.ts and
 // docs/theming.md). Every other consumer — resvg, librsvg, Inkscape,
 // ImageMagick, anything headless-Chrome-free — implements neither, and
 // rasterizes the whole theme to black (GitHub issue #456). This pass runs
 // over the finished SVG string and evaluates each expression the way a
 // browser would, against the same `<style>` declarations the renderer just
-// wrote, so the MIX percentages in src/theme.ts stay the single source of
+// wrote, so the MIX percentages in packages/core/src/theme.ts stay the single source of
 // truth: nothing here re-states a number.
 //
 // Scope, deliberately narrow — this is not a CSS engine:
@@ -28,8 +28,8 @@
 //     are CSS, so only those are rewritten.
 // ============================================================================
 
-import type { DiagramColors } from './theme.ts'
-import { formatCssColor, mixSrgb, parseCssColor } from './color-utils.ts'
+import type { DiagramColors } from '@zombie-mermaid/core'
+import { formatCssColor, mixSrgb, parseCssColor } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Expression evaluation

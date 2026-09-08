@@ -33,7 +33,7 @@ import {
 } from './canvas.ts'
 import { drawMultiBox, measureMultiBox, classifyBoxChar } from './draw.ts'
 import { splitLines, maxLineWidth } from './multiline-utils.ts'
-import { splitStatements } from '../statements.ts'
+import { splitStatements } from '@zombie-mermaid/core'
 import { toDisplayCells } from './display-width.ts'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 

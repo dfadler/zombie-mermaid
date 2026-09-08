@@ -2,12 +2,12 @@
  * Coverage for the per-diagram-type `RenderOptions` subsets added for issue
  * #534 (`CommonRenderOptions`, `FlowchartRenderOptions`,
  * `SequenceRenderOptions`, `ClassRenderOptions`, `ErRenderOptions`,
- * `XyChartRenderOptions` — see src/types.ts).
+ * `XyChartRenderOptions` — see packages/core/src/types.ts).
  *
  * These types are additive: `renderMermaidSVG` still accepts the full flat
  * `RenderOptions` for every diagram type (that entry point detects the
  * diagram type from the source text at runtime, so it can't be narrowed by
- * type alone — see the JSDoc above the types in src/types.ts). What this
+ * type alone — see the JSDoc above the types in packages/core/src/types.ts). What this
  * file checks:
  *
  *   1. A value typed with the narrow, diagram-specific type is still
@@ -25,7 +25,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
-import { layoutGraphSync } from '../layout-engine.ts'
+import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 import { layoutSequenceDiagram } from '../sequence/layout.ts'
 import { layoutClassDiagramSync } from '../class/layout.ts'
 import { layoutErDiagramSync } from '../er/layout.ts'
@@ -35,14 +35,14 @@ import { parseSequenceDiagram } from '../sequence/parser.ts'
 import { parseClassDiagram } from '../class/parser.ts'
 import { parseErDiagram } from '../er/parser.ts'
 import { parseXYChart } from '../xychart/parser.ts'
-import { splitStatements } from '../statements.ts'
+import { splitStatements } from '@zombie-mermaid/core'
 import type {
   FlowchartRenderOptions,
   SequenceRenderOptions,
   ClassRenderOptions,
   ErRenderOptions,
   XyChartRenderOptions,
-} from '../types.ts'
+} from '@zombie-mermaid/core'
 
 describe('per-diagram-type RenderOptions subsets — additive, not breaking', () => {
   it('a FlowchartRenderOptions value still renders through renderMermaidSVG', () => {

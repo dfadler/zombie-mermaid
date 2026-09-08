@@ -6,7 +6,7 @@
 // for ASCII rendering — we reuse parseMermaid() and convert its output.
 // ============================================================================
 
-import type { MermaidGraph, MermaidSubgraph } from '../types.ts'
+import type { MermaidGraph, MermaidSubgraph } from '@zombie-mermaid/core'
 import type {
   AsciiGraph,
   AsciiNode,
@@ -17,7 +17,7 @@ import type {
 import { EMPTY_STYLE } from './types.ts'
 import { mkCanvas, mkRoleCanvas } from './canvas.ts'
 import { createGrid } from './grid-occupancy.ts'
-import { stripFormattingTags } from '../multiline-utils.ts'
+import { stripFormattingTags } from '@zombie-mermaid/core'
 
 /**
  * Convert a parsed MermaidGraph into an AsciiGraph ready for grid layout.
