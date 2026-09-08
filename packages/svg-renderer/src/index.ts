@@ -12,7 +12,10 @@
 // (`constants.ts` — whose `DEFAULTS` would collide with `core`'s theme
 // `DEFAULTS` anyway — plus `edge-bundling.ts`, `from-elk.ts`,
 // `layer-alignment.ts` and `to-elk.ts`): they are `layoutGraphSync()`'s
-// implementation, not its API.
+// implementation, not its API. `elk-graph-builder.ts` is the exception:
+// `src/class/layout.ts` and `src/er/layout.ts` (still in the umbrella)
+// call its primitives directly (zombie-mermaid#616), so it is part of
+// the public API alongside `elk-adapter-utils.ts`.
 //
 // `layout.ts` re-exports `layoutGraphSync` from `layout-engine.ts`, so the
 // two star-exports below resolve to one and the same binding — legal, and
@@ -25,6 +28,7 @@ export * from './elk-instance.ts'
 export * from './layout.ts'
 export * from './layout-engine.ts'
 export * from './layout-engine/elk-adapter-utils.ts'
+export * from './layout-engine/elk-graph-builder.ts'
 export * from './renderer.ts'
 export * from './resolve-colors.ts'
 export * from './shape-clipping.ts'
