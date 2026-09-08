@@ -14,7 +14,7 @@
 // the geometry this renderer draws.
 // ============================================================================
 
-import type { NodeShape } from './types.ts'
+import type { NodeShape } from '@zombie-mermaid/core'
 
 /**
  * Every documented Mermaid shape name (and alias) mapped to the geometry this

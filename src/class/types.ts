@@ -5,15 +5,14 @@
 // Class diagrams show UML class relationships, inheritance, composition, etc.
 // ============================================================================
 
-import type { NodeInteraction } from '../types.ts'
-import type { StyleDirectives } from '../style-directives.ts'
+import type { NodeInteraction, StyleDirectives } from '@zombie-mermaid/core'
 
 /**
  * Parsed class diagram — logical structure from mermaid text.
  *
  * Extends {@link StyleDirectives} so `classDef` / `cssClass` / `style` /
  * `:::` resolve through the same cascade flowcharts use (see
- * src/style-directives.ts).
+ * packages/core/src/style-directives.ts).
  */
 export interface ClassDiagram extends StyleDirectives {
   /** All class definitions */

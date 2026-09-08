@@ -14,22 +14,20 @@ import type {
   PositionedErEntity,
   PositionedErRelationship,
 } from './types.ts'
-import type { ErRenderOptions } from '../types.ts'
+import type { ErRenderOptions } from '@zombie-mermaid/core'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
   FONT_WEIGHTS,
   resolveFontSizes,
-} from '../styles.ts'
-import { elkLayoutSync } from '../elk-instance.ts'
-import { extractEdgePoints } from '../layout-engine/elk-adapter-utils.ts'
-import {
+  elkLayoutSync,
+  extractEdgePoints,
   ELK_DIRECTION_FALLBACK,
   baseElkLayoutOptions,
   buildElkEdge,
   buildElkLeafNode,
   directionToElk,
-} from '../layout-engine/elk-graph-builder.ts'
+} from '@zombie-mermaid/svg-renderer'
 
 /** Layout constants for ER diagrams */
 const ER = {

@@ -13,8 +13,12 @@ import { readFileSync, existsSync } from 'node:fs'
 
 const DIFF_THRESHOLD = 90
 const LCOV_PATH = 'coverage/lcov.info'
-// Mirrors vitest.config.ts's coverage.include/exclude.
-const INCLUDE_DIR = 'src/'
+// Broad git pathspec for the diff itself (see getChangedLines) — narrowed to
+// vitest.config.ts's actual coverage.include pattern by isTrackedTsFile()
+// below, so a package-root file outside <package>/src/ isn't counted here
+// when Vitest doesn't count it either.
+const DIFF_PATHS = ['src/', 'packages/']
+const PACKAGE_SRC_PREFIX = /^packages\/[^/]+\/src\//
 const EXCLUDE_PREFIX = 'src/__tests__/'
 
 function git(args: string[]): string {
@@ -48,7 +52,7 @@ export function resolveBaseRef(): string | null {
 
 export function isTrackedTsFile(path: string): boolean {
   return (
-    path.startsWith(INCLUDE_DIR) &&
+    (path.startsWith('src/') || PACKAGE_SRC_PREFIX.test(path)) &&
     path.endsWith('.ts') &&
     !path.startsWith(EXCLUDE_PREFIX)
   )
@@ -95,12 +99,18 @@ export function parseChangedLinesFromDiff(
 
 /** Maps each changed file to the set of line numbers added/modified in the diff (new-file line numbers). */
 function getChangedLines(baseRef: string): Map<string, Set<number>> {
-  // Widened to the whole src/ tree and filtered in JS via isTrackedTsFile()
-  // below — git's default pathspec matching treats `**` as two directory-
-  // bound `*`s (not a true globstar) without `:(glob)` magic, so
-  // `src/**/*.ts` silently misses files directly under src/ with no
-  // subdirectory.
-  const diff = git(['diff', '--unified=0', `${baseRef}...HEAD`, '--', 'src/'])
+  // Widened to the whole src/ and packages/ trees and filtered in JS via
+  // isTrackedTsFile() below — git's default pathspec matching treats `**`
+  // as two directory-bound `*`s (not a true globstar) without `:(glob)`
+  // magic, so `src/**/*.ts` silently misses files directly under src/ with
+  // no subdirectory.
+  const diff = git([
+    'diff',
+    '--unified=0',
+    `${baseRef}...HEAD`,
+    '--',
+    ...DIFF_PATHS,
+  ])
   return parseChangedLinesFromDiff(diff)
 }
 

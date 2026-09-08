@@ -24,7 +24,7 @@ import type {
 import { colorizeText } from './ansi.ts'
 import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
 import { getSeriesColor, CHART_ACCENT_FALLBACK } from '../xychart/colors.ts'
-import { splitStatements } from '../statements.ts'
+import { splitStatements } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Constants

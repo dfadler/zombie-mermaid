@@ -7,7 +7,7 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest'
-import { THEMES } from '../theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 import type { runRender as RunRender } from '../cli/render.ts'
 
 // ============================================================================

@@ -6,25 +6,26 @@ import type {
   ClassMember,
   RelationshipType,
 } from './types.ts'
-import type { DiagramColors } from '../theme.ts'
-import { svgOpenTag, buildStyleBlock, getReadableTextColor } from '../theme.ts'
-import type { SvgEmitOptions } from '../theme.ts'
-import { sanitizeClassName } from '../style-directives.ts'
-import { withDataSrc } from '../renderer.ts'
-import type { FontSizes } from '../styles.ts'
+import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
+  svgOpenTag,
+  buildStyleBlock,
+  getReadableTextColor,
+  sanitizeClassName,
+  renderMultilineText,
+  escapeXml as escapeXmlUtil,
+  escapeAttr,
+  safeHref,
+} from '@zombie-mermaid/core'
+import {
+  withDataSrc,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
   TEXT_BASELINE_SHIFT,
-} from '../styles.ts'
+} from '@zombie-mermaid/svg-renderer'
+import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 import { CLS } from './layout.ts'
-import {
-  renderMultilineText,
-  escapeXml as escapeXmlUtil,
-  escapeAttr,
-} from '../multiline-utils.ts'
-import { safeHref } from '../click-directive.ts'
 
 // ============================================================================
 // Class diagram SVG renderer
@@ -56,7 +57,7 @@ const CLS_FONT = {
  *                       as `data-src` (from `options.embedSource`). Omitted
  *                       when the option is off.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
- *                src/theme.ts.
+ *                packages/core/src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
  * @param linksEnabled - Whether `click`-based `<a href>` links and `<title>`
  *                       tooltips render (from `options.interactivity !==
@@ -80,7 +81,7 @@ export function renderClassSvg(
 ): string {
   const parts: string[] = []
 
-  // See #239 / src/renderer.ts's renderSvg: a click-based link renders as a
+  // See #239 / packages/svg-renderer/src/renderer.ts's renderSvg: a click-based link renders as a
   // focusable <a href> inside the SVG, which role="img"/aria-hidden would
   // hide from assistive tech while leaving it Tab-reachable — svgOpenTag
   // forces no root role in that case. Gated by linksEnabled too, since
@@ -185,7 +186,7 @@ function relationshipMarkerDefs(): string {
  * @param linksEnabled - Whether a `click`-based `<a href>` link and `<title>`
  *                       tooltip render (from `options.interactivity !==
  *                       'none'`). Default true. Mirrors renderNode() in
- *                       src/renderer.ts — see that function's docstring and
+ *                       packages/svg-renderer/src/renderer.ts — see that function's docstring and
  *                       docs/decisions/no-script-interactivity.md for why a
  *                       `call`/callback binding is recorded as a data
  *                       attribute rather than ever invoked.
@@ -202,7 +203,7 @@ function renderClassBox(
 
   // Resolve box colors — inline styles (from `classDef`/`cssClass`/`style`)
   // override the CSS-variable defaults the same way renderNodeShape() in
-  // src/renderer.ts does for flowchart nodes. With no inline style the
+  // packages/svg-renderer/src/renderer.ts does for flowchart nodes. With no inline style the
   // variables keep deriving from the theme via color-mix(), so dark mode is
   // untouched; a concrete `fill` is used verbatim, exactly as Mermaid does.
   const fill = escapeAttr(inlineStyle?.fill ?? 'var(--_node-fill)')
@@ -240,7 +241,7 @@ function renderClassBox(
     `data-label="${escapeAttr(cls.label)}"`,
   ]
   // `click ClassName call fn()` is parsed, never invoked, and never written
-  // into the markup — see renderNode() in src/renderer.ts for the rationale.
+  // into the markup — see renderNode() in packages/svg-renderer/src/renderer.ts for the rationale.
   parts.push(`<g ${groupAttrs.join(' ')}${annotationAttr}>`)
 
   // An href becomes a real SVG link, which needs no script to work.
@@ -372,7 +373,7 @@ function renderMember(
   const displayName = member.isMethod
     ? `${member.name}(${member.params || ''})`
     : member.name
-  // False positive: displayName is passed through escapeXml() (see src/multiline-utils.ts),
+  // False positive: displayName is passed through escapeXml() (see packages/core/src/multiline-utils.ts),
   // which escapes &, <, >, ", ' before interpolation, so this is not raw/unescaped HTML.
   spans.push(`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 

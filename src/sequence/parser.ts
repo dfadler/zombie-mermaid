@@ -1,5 +1,5 @@
 import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
-import { normalizeBrTags } from '../multiline-utils.ts'
+import { normalizeBrTags } from '@zombie-mermaid/core'
 import { parseBoxHeader } from './box-color.ts'
 
 /**

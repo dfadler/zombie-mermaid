@@ -1,5 +1,5 @@
 /**
- * Unit tests for src/layout-engine.ts's public entry points.
+ * Unit tests for packages/svg-renderer/src/layout-engine.ts's public entry points.
  *
  * layoutGraphSync is covered indirectly by many integration tests elsewhere
  * (see layout-disconnected.test.ts, edge-approach-direction.test.ts, etc).
@@ -9,7 +9,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
-import { convertToElkFormat, layoutGraphSync } from '../layout-engine.ts'
+import {
+  convertToElkFormat,
+  layoutGraphSync,
+} from '@zombie-mermaid/svg-renderer'
 
 describe('convertToElkFormat', () => {
   it('converts a simple graph into ELK JSON without running layout', () => {

@@ -4,7 +4,7 @@
  * Mirrors the flowchart coverage in interactivity-config.test.ts and
  * interactivity-option.test.ts — same grammar, same href-sanitization rules,
  * same interactivity gating — since both parsers delegate to the shared
- * src/click-directive.ts. Mermaid's own class-diagram syntax documents this
+ * packages/core/src/click-directive.ts. Mermaid's own class-diagram syntax documents this
  * exact form (`click className call callback() "tooltip"` /
  * `click className href "url" "tooltip"`), unlike erDiagram — see
  * src/__tests__/er-click-unsupported.test.ts for that side of issue #292.
@@ -94,7 +94,7 @@ describe('renderMermaidSVG – class diagram click interactions', () => {
     expect(svg).toContain('eat')
   })
 
-  describe('href sanitization (same rules as flowchart — src/click-directive.ts)', () => {
+  describe('href sanitization (same rules as flowchart — packages/core/src/click-directive.ts)', () => {
     it.each([
       'javascript:alert(1)',
       'JavaScript:alert(1)',

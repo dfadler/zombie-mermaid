@@ -13,30 +13,35 @@
  * Source files are organized in editor/:
  *   - editor/css/  — modular CSS components
  *   - editor/js/   — modular JS modules
- *   - editor/html/ — HTML partials (topbar, left-panel, right-panel)
  *
- * This imports src/theme.ts (and bundles src/browser.ts) by relative path
+ * The page's markup lives in React components instead
+ * (demo/components/editor-page.tsx and the editor-topbar/editor-panels
+ * files it composes) — editor/html/ is gone as of #589.
+ *
+ * This imports packages/core/src/theme.ts (and bundles src/browser.ts) by relative path
  * rather than through the published package — a deliberate, accepted
  * pattern here, not a gap to fix. See
  * docs/decisions/editor-in-repo-module.md.
  *
- * The document shell (doctype, `<head>`, `<body>`) is rendered through
- * demo/components/editor-page.tsx via react-dom/server's
- * `renderToStaticMarkup` — step two of the #423 site-generator migration,
- * after the dashboard.ts pilot. See
- * docs/decisions/react-site-migration-plan.md and the component's own
- * header comment for what this step does and does not cover: the body's
- * content (topbar/panels/toast/inline bundle script) is still assembled
- * as a raw string exactly as before and spliced in via
- * `dangerouslySetInnerHTML`, not yet its own component tree.
+ * The whole page is rendered through demo/components/editor-page.tsx via
+ * react-dom/server's `renderToStaticMarkup`. #423 ported the document
+ * shell; #589 finished the job — the topbar and both panels are real
+ * component trees now, and the only raw splice left is the inline
+ * `<script type="module">`, which carries this repo's own bundled
+ * renderer plus every editor/js/*.js module. See
+ * docs/decisions/react-site-migration-plan.md.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { EditorPage } from './demo/components/editor-page.tsx'
+import {
+  EditorThemeItems,
+  type EditorThemeItem,
+} from './demo/components/editor-topbar.tsx'
 import { renderHtmlDocument } from './demo/render-html.ts'
-import { THEMES } from './src/theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
 
 const THEME_LABELS: Record<string, string> = {
   'zinc-light': 'Zinc Light',
@@ -56,7 +61,7 @@ const THEME_LABELS: Record<string, string> = {
   'one-dark': 'One Dark',
 }
 
-// THEME_LABELS manually shadows THEMES' keys (src/theme.ts) so the dropdown
+// THEME_LABELS manually shadows THEMES' keys (packages/core/src/theme.ts) so the dropdown
 // can show a human-friendly name instead of a raw slug. Adding a theme to
 // THEMES without adding a matching entry here doesn't break the build — the
 // dropdown markup below falls back to `THEME_LABELS[key] ?? key`, silently
@@ -123,23 +128,6 @@ async function readJsFiles(): Promise<string> {
   return parts.join('\n\n')
 }
 
-async function readHtmlPartials(themeItems: string): Promise<{
-  topbar: string
-  leftPanel: string
-  rightPanel: string
-}> {
-  const [topbar, leftPanel, rightPanel] = await Promise.all([
-    readEditorFile('html/topbar.html'),
-    readEditorFile('html/left-panel.html'),
-    readEditorFile('html/right-panel.html'),
-  ])
-  return {
-    topbar: topbar.replace('{{THEME_ITEMS}}', themeItems),
-    leftPanel,
-    rightPanel,
-  }
-}
-
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 /** Bundle src/browser.ts for the browser via Vite's build() API. */
@@ -159,53 +147,21 @@ async function generateEditorHtml(): Promise<string> {
   const bundleJs = await bundleBrowserScript()
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
-  const themeItems = [
-    `<button class="theme-dropdown-item active" data-theme="">Default</button>`,
-    ...Object.keys(THEMES).map(
-      (key) =>
-        `<button class="theme-dropdown-item" data-theme="${key}"><span class="theme-swatch" style="background:${THEMES[key].bg}"></span>${THEME_LABELS[key] ?? key}</button>`,
-    ),
-  ].join('\n      ')
+  const themes: EditorThemeItem[] = Object.keys(THEMES).map((key) => ({
+    key,
+    bg: THEMES[key]!.bg,
+    label: THEME_LABELS[key] ?? key,
+  }))
 
-  const [css, appJs, html] = await Promise.all([
-    readCssFiles(),
-    readJsFiles(),
-    readHtmlPartials(themeItems),
-  ])
+  const [css, appJs] = await Promise.all([readCssFiles(), readJsFiles()])
 
-  // Unchanged from the pre-React generator: the body's content is not yet
-  // component-shaped (see demo/components/editor-page.tsx's header), so it
-  // is assembled the same way it always was and spliced in raw.
-  const bodyHtml = `
-<!-- Top bar -->
-${html.topbar}
-
-<!-- Main -->
-<div class="main">
-
-  <!-- Left panel -->
-${html.leftPanel}
-
-  <!-- Resize handle -->
-  <div class="resize-handle" id="resize-handle"></div>
-
-  <!-- Right panel -->
-${html.rightPanel}
-
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- Bundled renderer -->
-<script type="module">
-${bundleJs}
-
-${appJs}
-
-</script>
-`
-
-  return renderHtmlDocument(createElement(EditorPage, { css, bodyHtml }))
+  return renderHtmlDocument(
+    createElement(EditorPage, {
+      css,
+      themeItems: createElement(EditorThemeItems, { themes }),
+      scriptJs: `${bundleJs}\n\n${appJs}\n`,
+    }),
+  )
 }
 
 const result = await generateEditorHtml()
