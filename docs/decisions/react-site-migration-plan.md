@@ -10,12 +10,21 @@ and how the bundle-size gate applies are recorded in
 rather than duplicated here — this file stays a short pointer plus the
 evidence specific to this PR's own change.
 
-Confirmed order: `dashboard.ts` (done) → `editor.ts` (prototyped in this
-PR — document shell only) → `index.ts` → `fork-fixes.ts` → `pages.ts` →
-`demo/client.ts` (separate, later decision — the only step that would
+Confirmed order: `dashboard.ts` (done) → `editor.ts` (prototyped in #423,
+finished in #589) → `index.ts` → `fork-fixes.ts` → `pages.ts` → `blog.ts`
+→ `demo/client.ts` (separate, later decision — the only step that would
 actually introduce a client-side framework runtime).
 
-## Editor.ts prototype (this change)
+**Status: every page generator is migrated as of #589.** `index.ts`,
+`editor.ts`, `fork-fixes.ts`, `pages.ts`, and `blog.ts` all render through
+`renderToStaticMarkup` now, `demo/site-shell.ts` and the repo-root
+`theme-picker.ts` are gone (replaced by `demo/components/site-chrome.tsx`
+and `demo/components/theme-picker.tsx`), and `editor/html/*.html` is gone
+too. `demo/client.ts` remains a separately bundled vanilla script that the
+React shell splices into one `<script type="module">`, exactly as before —
+its own migration is out of scope and still undecided.
+
+## Editor.ts prototype (#423)
 
 `editor.ts`'s document shell (`<!DOCTYPE html>`, `<head>`, the outer
 `<html>`/`<body>` tags) now renders through
@@ -89,3 +98,61 @@ markup/samples directly, never a full generated page), so this suite
 cannot regress-test this migration step regardless — its passing subset
 (`ascii-samples`, `sidebar-focus`) staying green is the relevant signal
 here.
+
+## Finishing the migration (#589)
+
+`index.ts`, `fork-fixes.ts`, `pages.ts`, and `blog.ts` moved to React, and
+`editor.ts`'s port was finished: `editor/html/{topbar,left-panel,right-panel}.html`
+are now `demo/components/editor-topbar.tsx` and
+`demo/components/editor-panels.tsx`, composed by `<EditorPage>` with no
+`dangerouslySetInnerHTML` splice around them. The layout hazard the
+prototype section above flagged — `.topbar`/`.main`/`.toast` must be direct
+`<body>` children and `.panel-left`/`.panel-right` direct `.main` children,
+because `editor/css/variables.css` lays both out with flex — is now asserted
+directly by `__tests__/editor-page.test.ts` rather than only described here.
+`editor/__tests__/support/harness.ts` builds its jsdom document from the
+same `<EditorChrome>` component, so the editor's behavioural tests can't
+drift from the shipped markup.
+
+Shared chrome came out as components rather than being duplicated five more
+times: `demo/components/site-chrome.tsx` (`FontLinks`, `GitHubMarkIcon`,
+`SiteHeader`, `ThemeBar`, `Breadcrumb`, `SiteFooter`, `PageShell`,
+`StaticPage`) replaces `demo/site-shell.ts`, and
+`demo/components/theme-picker.tsx` replaces the repo-root `theme-picker.ts`.
+That is deliberately _not_ the shared component library #591 will build —
+it's just enough structure that #591 doesn't have to start by pulling five
+one-off page implementations apart.
+
+### Equivalence evidence
+
+Every page every generator produces was compared before and after, against
+the real source tree, with `__tests__/helpers/normalize-html.ts`:
+`index.html`, `editor.html`, `fork-fixes.html`, the seven `diagrams/*.html`,
+the twelve `blog/*.html`, plus `sitemap.xml`, `blog/feed.xml`, and both
+copied asset files. **All 27 artifacts matched** — the five non-HTML ones
+byte-for-byte, and 21 of the 22 HTML pages DOM-identical under strict
+normalisation.
+
+The one exception is `index.html`, which is DOM-identical except for the
+order of two `<head>` children: React 19 hoists `<link rel="preconnect">`
+ahead of the `<script type="application/ld+json">` and the Plausible
+`<script defer>` that used to precede them. Nothing about that changes what
+renders — a preconnect is a resource hint, JSON-LD is inert data, and the
+one order that _does_ matter, the font stylesheet `<link>` before the
+page's own `<style>`, is preserved. `normalizeHtml`'s `unorderedHead`
+option exists for exactly this case.
+
+That comparison was a one-time check, not a permanent test, for the reason
+the editor prototype already gave: `index.html` and `editor.html` each
+embed a ~1.6 MB minified bundle, and the fork-fixes and diagram pages embed
+freshly rendered SVG, so whole-page fixtures would be enormous and
+invalidated by any unrelated `src/**` edit. The permanent half is
+`__tests__/site-equivalence.test.ts`, which renders each page over small
+fixture inputs covering its branches and compares the DOM-normalised result
+against a checked-in golden.
+
+`normalizeHtml` itself gained one fix along the way: it compared `style`
+attributes through the CSSOM only for `HTMLElement`, so an inline `<svg>`'s
+`style="display: none"` was compared as a raw string and reported a false
+difference against React's `display:none`. It now normalises any element
+that has a `style` property.

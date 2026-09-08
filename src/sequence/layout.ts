@@ -9,8 +9,12 @@ import type {
   PositionedNote,
   PositionedParticipantBox,
 } from './types.ts'
-import type { RenderOptions, SequenceRenderOptions } from '../types.ts'
-import { estimateTextWidth, FONT_WEIGHTS, resolveFontSizes } from '../styles.ts'
+import type { RenderOptions, SequenceRenderOptions } from '@zombie-mermaid/core'
+import {
+  estimateTextWidth,
+  FONT_WEIGHTS,
+  resolveFontSizes,
+} from '@zombie-mermaid/svg-renderer'
 
 // ============================================================================
 // Sequence diagram layout engine

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.2.0
+
+### Minor Changes
+
+- [#579](https://github.com/dfadler/zombie-mermaid/pull/579) [`6ecd3df`](https://github.com/dfadler/zombie-mermaid/commit/6ecd3dfedac0fb1d75ce579da7b6cd6f414af037) Thanks [@dfadler](https://github.com/dfadler)! - **Experimental — shipped to gauge interest, not a finished or best-effort implementation; feedback welcome.** Add a `check_mermaid_sequence_activations` MCP tool: a mechanical, deterministic check (no LLM judgment involved) for activation/deactivation balance in a Mermaid sequence diagram — every `activate X` (or `+` arrow shorthand) must be closed by a matching `deactivate X` (`-` shorthand). Returns a JSON report (`{ ok, issues }` with `DANGLING_ACTIVATION`/`UNMATCHED_DEACTIVATION` codes) rather than rendering anything, and errors on a non-sequence diagram. Targets a specific gap found in research behind [#536](https://github.com/dfadler/zombie-mermaid/issues/536): LLM-generated sequence diagrams fail mostly on activation handling, not basic syntax, which existing validators already cover well.
+
+- [#577](https://github.com/dfadler/zombie-mermaid/pull/577) [`43e2b16`](https://github.com/dfadler/zombie-mermaid/commit/43e2b163924ef4783a9b57108795057800978640) Thanks [@dfadler](https://github.com/dfadler)! - Add typed per-diagram-type `RenderOptions` subsets (`CommonRenderOptions`, `FlowchartRenderOptions`, `SequenceRenderOptions`, `ClassRenderOptions`, `ErRenderOptions`, `XyChartRenderOptions`) so callers can see which options actually apply to which diagram type. Refs [#534](https://github.com/dfadler/zombie-mermaid/issues/534).
+
+### Patch Changes
+
+- [#574](https://github.com/dfadler/zombie-mermaid/pull/574) [`1f57257`](https://github.com/dfadler/zombie-mermaid/commit/1f5725786024fedc4cb93f31067e32f721c4c112) Thanks [@dfadler](https://github.com/dfadler)! - Fix an ASCII class-diagram relationship label silently disappearing when a later relationship's label collided with it on the same row under tight `paddingY`. Refs [#531](https://github.com/dfadler/zombie-mermaid/issues/531).
+
+- [#573](https://github.com/dfadler/zombie-mermaid/pull/573) [`0c6f62c`](https://github.com/dfadler/zombie-mermaid/commit/0c6f62cc565803d6303a742069c185835fa2d479) Thanks [@dfadler](https://github.com/dfadler)! - Fix transition labels rendering swapped between the two directions of a bidirectional state/edge pair in ASCII output. Refs [#530](https://github.com/dfadler/zombie-mermaid/issues/530).
+
+- [#581](https://github.com/dfadler/zombie-mermaid/pull/581) [`1d90985`](https://github.com/dfadler/zombie-mermaid/commit/1d90985ced48138d7d415092b1f6cefa5af8255d) Thanks [@dfadler](https://github.com/dfadler)! - Improve the error message for an unrecognized Mermaid diagram header: suggest the closest matching supported diagram type and list all six supported headers instead of only three. Refs [#541](https://github.com/dfadler/zombie-mermaid/issues/541).
+
 ## 2.1.0
 
 ### Minor Changes

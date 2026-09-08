@@ -29,7 +29,7 @@
 // across the ASCII renderer.
 // ============================================================================
 
-import { isWideChar } from '../text-metrics.ts'
+import { isWideChar } from '@zombie-mermaid/core'
 
 /**
  * Placeholder written into the grid cell immediately following a wide

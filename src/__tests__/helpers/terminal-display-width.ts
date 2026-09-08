@@ -3,7 +3,7 @@
  * the ASCII wide-character regression suites (issues #66, #182, #205, #214).
  *
  * Deliberately does NOT import from `src/ascii/display-width.ts` or
- * `src/text-metrics.ts`: these suites verify rendered output against an
+ * `packages/core/src/text-metrics.ts`: these suites verify rendered output against an
  * authority separate from the implementation under test, so that a bug in the
  * renderer's own width helper cannot make its tests pass by agreeing with
  * itself. Mirrors the East Asian Width ranges a real monospace terminal uses

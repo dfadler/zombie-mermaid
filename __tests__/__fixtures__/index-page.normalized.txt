@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    </meta>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    </meta>
+    <meta content="#f9f9fa" id="theme-color-meta" name="theme-color">
+    </meta>
+    <title>
+      "Zombie Mermaid — Mermaid Rendering, Made Beautiful"
+    </title>
+    <meta content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, and ER diagrams." name="description">
+    </meta>
+    <link href="favicon.svg" rel="icon" type="image/svg+xml">
+    </link>
+    <link href="favicon.ico" rel="icon" type="image/x-icon">
+    </link>
+    <link href="apple-touch-icon.png" rel="apple-touch-icon">
+    </link>
+    <meta content="Zombie Mermaid" property="og:title">
+    </meta>
+    <meta content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII." property="og:description">
+    </meta>
+    <meta content="https://agents.craft.do/mermaid/og-image.png" property="og:image">
+    </meta>
+    <meta content="website" property="og:type">
+    </meta>
+    <meta content="https://agents.craft.do/mermaid" property="og:url">
+    </meta>
+    <meta content="summary_large_image" name="twitter:card">
+    </meta>
+    <meta content="Zombie Mermaid" name="twitter:title">
+    </meta>
+    <meta content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII." name="twitter:description">
+    </meta>
+    <meta content="https://agents.craft.do/mermaid/og-image.png" name="twitter:image">
+    </meta>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    </link>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    </link>
+    <script type="application/ld+json">
+      "{\n  \"@type\": \"SoftwareApplication\"\n}"
+    </script>
+    <script data-domain="agents.craft.do/mermaid" defer="" src="https://plausible.io/js/script.js">
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    </link>
+    <style>
+      "/* fixture stylesheet */\nbody > .content-wrapper { max-width: 60rem; }"
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#samples-heading">
+      "Skip to samples"
+    </a>
+    <div id="safari-theme-color" style="position: fixed; top: 0px; left: 0px; right: 0px; height: 1px; background: var(--theme-bar-bg); z-index: 9999; pointer-events: none;">
+    </div>
+    <div aria-hidden="true" class="scroll-progress" id="scroll-progress">
+      <div class="scroll-progress-bar" id="scroll-progress-bar">
+      </div>
+    </div>
+    <div class="theme-bar" id="theme-bar">
+      <button aria-controls="sidebar" aria-expanded="false" aria-label="Toggle sample navigation" class="sidebar-toggle shadow-minimal" id="sidebar-toggle">
+        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" viewBox="0 0 16 16">
+          <line x1="2" x2="14" y1="4" y2="4">
+          </line>
+          <line x1="2" x2="14" y1="8" y2="8">
+          </line>
+          <line x1="2" x2="14" y1="12" y2="12">
+          </line>
+        </svg>
+      </button>
+      <a class="brand-badge shadow-minimal" href="https://github.com/dfadler/zombie-mermaid" rel="noopener" target="_blank">
+        <span>
+          <strong>
+            "Zombie Mermaid"
+          </strong>
+        </span>
+      </a>
+      <div class="theme-bar-right">
+        <button aria-label="Random theme" class="theme-pill shadow-minimal" id="random-theme-btn" title="Random theme" type="button">
+          <svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="14">
+            <polyline points="16 3 21 3 21 8">
+            </polyline>
+            <line x1="4" x2="21" y1="20" y2="3">
+            </line>
+            <polyline points="21 16 21 21 16 21">
+            </polyline>
+            <line x1="15" x2="21" y1="15" y2="21">
+            </line>
+            <line x1="4" x2="9" y1="4" y2="9">
+            </line>
+          </svg>
+          " Random "
+        </button>
+        <div class="theme-pills" id="theme-pills">
+          <div class="theme-pills-inline">
+            <button class="theme-pill shadow-minimal active" data-theme="">
+              <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+              </span>
+              "Default"
+            </button>
+            <button class="theme-pill shadow-minimal" data-theme="dracula" title="High-contrast dark theme with a purple-black background, near-white text, and a lavender-purple accent.">
+              <span class="theme-swatch" style="background: rgb(40, 42, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+              </span>
+              "Dracula"
+            </button>
+            <button class="theme-pill shadow-minimal" data-theme="solarized-light" title="Ethan Schoonover's Solarized palette on a warm cream background with muted grey-green text.">
+              <span class="theme-swatch" style="background: rgb(253, 246, 227); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+              </span>
+              "Solarized"
+            </button>
+          </div>
+          <div class="theme-more-wrapper">
+            <button aria-controls="theme-more-dropdown" aria-expanded="false" aria-haspopup="true" aria-label="More themes" class="theme-pill shadow-minimal" id="theme-more-btn">
+              "16 Themes"
+            </button>
+            <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
+              <button class="theme-pill shadow-minimal active" data-theme="">
+                <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Default"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="zinc-light" title="The default look: a plain off-white background with near-black zinc text and no color accent.">
+                <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Zinc Light"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="zinc-dark" title="The dark counterpart to the default theme — near-black zinc background, off-white text.">
+                <span class="theme-swatch" style="background: rgb(24, 24, 27); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Zinc Dark"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="tokyo-night" title="Deep navy background with soft lavender-blue text and a saturated blue accent, from the Tokyo Night VS Code theme.">
+                <span class="theme-swatch" style="background: rgb(26, 27, 38); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Tokyo Night"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="tokyo-night-storm" title="A slightly lighter slate-navy variant of Tokyo Night, with the same lavender-blue text and blue accent.">
+                <span class="theme-swatch" style="background: rgb(36, 40, 59); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Tokyo Storm"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="tokyo-night-light" title="Tokyo Night's light counterpart: a cool grey background with dark blue-grey text.">
+                <span class="theme-swatch" style="background: rgb(213, 214, 219); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Tokyo Light"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="catppuccin-mocha" title="A warm dark background with lavender text and a violet accent, from the Catppuccin Mocha palette.">
+                <span class="theme-swatch" style="background: rgb(30, 30, 46); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Catppuccin"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="catppuccin-latte" title="Catppuccin's light palette: a soft off-white background with slate-blue text and a purple accent.">
+                <span class="theme-swatch" style="background: rgb(239, 241, 245); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Latte"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="nord" title="Arctic-inspired dark theme with a slate-blue background, frost-white text, and a cyan accent.">
+                <span class="theme-swatch" style="background: rgb(46, 52, 64); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Nord"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="nord-light" title="Nord's light variant: pale blue-grey background with dark slate text.">
+                <span class="theme-swatch" style="background: rgb(236, 239, 244); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Nord Light"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="dracula" title="High-contrast dark theme with a purple-black background, near-white text, and a lavender-purple accent.">
+                <span class="theme-swatch" style="background: rgb(40, 42, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Dracula"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="github-light" title="GitHub's default light UI: white background, near-black text, and GitHub's blue accent.">
+                <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "GitHub"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="github-dark" title="GitHub's dark mode: near-black background, light grey text, and the same blue accent lightened for contrast.">
+                <span class="theme-swatch" style="background: rgb(13, 17, 23); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "GitHub Dark"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="solarized-light" title="Ethan Schoonover's Solarized palette on a warm cream background with muted grey-green text.">
+                <span class="theme-swatch" style="background: rgb(253, 246, 227); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Solarized"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="solarized-dark" title="Solarized's dark variant: a deep teal background with the same muted text and blue accent as the light version.">
+                <span class="theme-swatch" style="background: rgb(0, 43, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Solar Dark"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="one-dark" title="Atom's One Dark theme: charcoal background, cool grey text, and a magenta-purple accent.">
+                <span class="theme-swatch" style="background: rgb(40, 44, 52); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "One Dark"
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-backdrop" id="sidebar-backdrop">
+    </div>
+    <div class="category-tabbar" id="category-tabbar">
+      <span class="category-tabbar-label">
+        "Viewing "
+        <strong id="tabbar-category-name">
+        </strong>
+      </span>
+      <button class="category-banner-btn" id="tabbar-browse-btn" type="button">
+        " Browse types "
+        <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="9 18 15 12 9 6">
+          </polyline>
+        </svg>
+      </button>
+    </div>
+    <div class="page-shell">
+      <nav aria-label="Sample navigation" class="sidebar" id="sidebar">
+        <div class="sidebar-search">
+          <label class="visually-hidden" for="sample-search">
+            "Search samples by title, diagram type, or description"
+          </label>
+          <div class="sidebar-search-field">
+            <svg aria-hidden="true" class="sidebar-search-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" viewBox="0 0 16 16">
+              <circle cx="7" cy="7" r="5">
+              </circle>
+              <line x1="10.8" x2="14.5" y1="10.8" y2="14.5">
+              </line>
+            </svg>
+            <input autocomplete="off" class="sidebar-search-input" id="sample-search" placeholder="Search samples…" spellcheck="false" type="search">
+            </input>
+            <button aria-label="Clear search" class="sidebar-search-clear" hidden="" id="sidebar-search-clear" type="button">
+              "×"
+            </button>
+          </div>
+          <div aria-atomic="true" aria-live="polite" class="sidebar-search-status" id="sidebar-search-status" role="status">
+          </div>
+        </div>
+        <details class="sidebar-group" data-category-label="Flowchart" data-category-slug="flowchart" open="">
+          <summary>
+            "Flowchart "
+            <span class="sidebar-group-count">
+              "(2)"
+            </span>
+          </summary>
+          <ol class="sidebar-list" start="1">
+            <li>
+              <a href="#sample-1">
+                <span class="sidebar-num">
+                  "1."
+                </span>
+                " Basic Flow"
+              </a>
+            </li>
+            <li>
+              <a href="#sample-2">
+                <span class="sidebar-num">
+                  "2."
+                </span>
+                " Shapes & <edges>"
+              </a>
+            </li>
+          </ol>
+        </details>
+        <details class="sidebar-group" data-category-label="XY Chart" data-category-slug="xy-chart">
+          <summary>
+            "XY Chart "
+            <span class="sidebar-group-count">
+              "(1)"
+            </span>
+          </summary>
+          <ol class="sidebar-list" start="3">
+            <li>
+              <a href="#sample-3">
+                <span class="sidebar-num">
+                  "3."
+                </span>
+                " Bar"
+              </a>
+            </li>
+          </ol>
+        </details>
+      </nav>
+      <div class="page-main">
+        <header class="hero-header">
+          <h1 class="hero-title">
+            "Zombie Mermaid"
+          </h1>
+          <p class="hero-tagline">
+            "Mermaid Rendering, made beautiful."
+          </p>
+          <p class="hero-description">
+            "An open source library for rendering diagrams, designed for the age of AI: "
+            <a href="https://www.npmjs.com/package/zombie-mermaid" rel="noopener" target="_blank">
+              <code>
+                "zombie-mermaid"
+              </code>
+            </a>
+            ". Ultra-fast, fully themeable, and outputs to both SVG and ASCII."
+          </p>
+          <div class="hero-buttons">
+            <a class="hero-btn hero-btn-primary" href="editor" id="editor-link">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 20h9">
+                </path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z">
+                </path>
+              </svg>
+              " Editor "
+            </a>
+            <a class="hero-btn hero-btn-secondary" href="https://github.com/dfadler/zombie-mermaid" rel="noopener" target="_blank">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z">
+                </path>
+              </svg>
+              " GitHub "
+            </a>
+            <a class="hero-btn hero-btn-secondary" href="fork-fixes.html">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M9 11l3 3L22 4">
+                </path>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11">
+                </path>
+              </svg>
+              " What this fork fixes "
+            </a>
+            <a class="hero-btn hero-btn-secondary" href="diagrams/">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                <rect height="7" rx="1" width="7" x="3" y="3">
+                </rect>
+                <rect height="7" rx="1" width="7" x="14" y="3">
+                </rect>
+                <rect height="7" rx="1" width="7" x="3" y="14">
+                </rect>
+                <rect height="7" rx="1" width="7" x="14" y="14">
+                </rect>
+              </svg>
+              " Browse every diagram type "
+            </a>
+            <a class="hero-btn hero-btn-secondary" href="blog/">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
+                </path>
+                <path d="M14 2v6h6">
+                </path>
+                <line x1="8" x2="16" y1="13" y2="13">
+                </line>
+                <line x1="8" x2="16" y1="17" y2="17">
+                </line>
+              </svg>
+              " Blog "
+            </a>
+            <a class="hero-btn hero-btn-secondary" href="dashboard.html">
+              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                <line x1="18" x2="18" y1="20" y2="10">
+                </line>
+                <line x1="12" x2="12" y1="20" y2="4">
+                </line>
+                <line x1="6" x2="6" y1="20" y2="14">
+                </line>
+              </svg>
+              " Maintenance dashboard "
+            </a>
+          </div>
+          <div class="hero-meta">
+            <p class="meta" id="total-timing">
+              "Rendering samples…"
+            </p>
+            <div class="meta">
+              "ASCII rendering based on "
+              <a href="https://github.com/AlexanderGrooff/mermaid-ascii" rel="noopener" target="_blank">
+                "Mermaid-ASCII"
+              </a>
+            </div>
+            <div class="meta">
+              "Early preview — actively evolving"
+            </div>
+          </div>
+        </header>
+        <div class="content-wrapper">
+          <section class="sample sample-hero" id="sample-0">
+            <div class="hero-transform">
+              <div class="hero-code-panel">
+                <div class="hero-code-titlebar">
+                  <span class="hero-code-dots">
+                    <span class="dot dot-red">
+                    </span>
+                    <span class="dot dot-yellow">
+                    </span>
+                    <span class="dot dot-green">
+                    </span>
+                  </span>
+                  <span class="hero-code-title">
+                    "pipeline.mmd"
+                  </span>
+                </div>
+                <div class="hero-code-body">
+                  <pre class="shiki">
+                    "flowchart LR\n  A --> B"
+                  </pre>
+                </div>
+              </div>
+              <div aria-hidden="true" class="hero-arrow">
+                <span class="hero-arrow-caption">
+                  "renders as"
+                </span>
+                <svg class="hero-arrow-icon" fill="none" viewBox="0 0 56 56">
+                  <defs>
+                    <lineargradient id="hero-arrow-grad-0" x1="0" x2="1" y1="0" y2="0">
+                      <stop offset="0" stop-color="#9570BE">
+                      </stop>
+                      <stop offset="1" stop-color="#3b82f6">
+                      </stop>
+                    </lineargradient>
+                  </defs>
+                  <line class="hero-arrow-dash" stroke="url(#hero-arrow-grad-0)" stroke-linecap="round" stroke-width="2.5" x1="4" x2="44" y1="28" y2="28">
+                  </line>
+                  <path d="M36 16 L52 28 L36 40" fill="none" stroke="url(#hero-arrow-grad-0)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+                  </path>
+                </svg>
+              </div>
+              <div class="hero-diagram-panel" data-sample-bg="#101010" id="svg-panel-0">
+                <div class="svg-container" id="svg-0">
+                  <div class="loading-spinner">
+                  </div>
+                </div>
+                <div class="hero-tag-row">
+                  <span class="hero-tag">
+                    "SVG"
+                  </span>
+                  <span class="hero-tag">
+                    "ASCII"
+                  </span>
+                  <span class="hero-tag hero-tag-brand">
+                    "16 Themes"
+                  </span>
+                  <span class="hero-tag">
+                    "Animated Edges"
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+          <div class="samples-heading">
+            <h2 class="section-title" id="samples-heading" tabindex="-1">
+              "Samples"
+            </h2>
+            <div class="category-banner" id="category-banner">
+              <span>
+                "Showing "
+                <strong id="active-category-name">
+                </strong>
+                " — "
+                <span id="active-category-count">
+                </span>
+                " of 3 samples"
+              </span>
+              <button class="category-banner-btn" id="browse-categories-btn" type="button">
+                "Browse diagram types"
+              </button>
+            </div>
+          </div>
+          <section class="category-view" data-category="flowchart" id="category-flowchart">
+            <section class="sample" id="sample-1">
+              <div class="sample-header">
+                <h2>
+                  "Flowchart: Basic Flow"
+                </h2>
+                <p class="description">
+                  "Uses "
+                  <code>
+                    "-->"
+                  </code>
+                  " for edges."
+                </p>
+              </div>
+              <div class="sample-content">
+                <div class="source-panel" id="source-panel-1">
+                  <pre class="shiki">
+                    "flowchart TD"
+                  </pre>
+                  <div class="options">
+                    <strong>
+                      "Options:"
+                    </strong>
+                    <code>
+                      "{\"bg\":\"#fff\"}"
+                    </code>
+                  </div>
+                  <button class="edit-btn" data-sample="1">
+                    "Edit"
+                  </button>
+                </div>
+                <div class="output-panel">
+                  <div class="output-head">
+                    <div aria-label="Output format" class="seg" role="tablist">
+                      <button aria-selected="true" class="seg-btn" data-view="svg" role="tab" type="button">
+                        "SVG"
+                      </button>
+                      <button aria-selected="false" class="seg-btn" data-view="ascii" role="tab" type="button">
+                        "ASCII"
+                      </button>
+                    </div>
+                  </div>
+                  <div class="output-stage">
+                    <div class="svg-panel is-active" data-sample-bg="#fff" id="svg-panel-1">
+                      <div class="svg-container" id="svg-1">
+                        <div class="loading-spinner">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="ascii-panel" id="ascii-panel-1">
+                      <div class="terminal-window">
+                        <div class="terminal-titlebar">
+                          <span aria-hidden="true" class="terminal-dots">
+                            <span class="terminal-dot terminal-dot-red">
+                            </span>
+                            <span class="terminal-dot terminal-dot-yellow">
+                            </span>
+                            <span class="terminal-dot terminal-dot-green">
+                            </span>
+                          </span>
+                          <span class="terminal-title">
+                            "ascii"
+                          </span>
+                        </div>
+                        <pre class="ascii-output">
+                          "Rendering…"
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="sample" id="sample-2">
+              <div class="sample-header">
+                <h2>
+                  "Flowchart: Shapes & <edges>"
+                </h2>
+                <p class="description">
+                  "Quotes markup: "
+                  <code>
+                    "<title>"
+                  </code>
+                  "."
+                </p>
+              </div>
+              <div class="sample-content">
+                <div class="source-panel" id="source-panel-2">
+                  <pre class="shiki">
+                    "flowchart LR"
+                  </pre>
+                  <button class="edit-btn" data-sample="2">
+                    "Edit"
+                  </button>
+                </div>
+                <div class="output-panel">
+                  <div class="output-head">
+                    <div aria-label="Output format" class="seg" role="tablist">
+                      <button aria-selected="true" class="seg-btn" data-view="svg" role="tab" type="button">
+                        "SVG"
+                      </button>
+                      <button aria-selected="false" class="seg-btn" data-view="ascii" role="tab" type="button">
+                        "ASCII"
+                      </button>
+                    </div>
+                  </div>
+                  <div class="output-stage">
+                    <div class="svg-panel is-active" data-sample-bg="" id="svg-panel-2">
+                      <div class="svg-container" id="svg-2">
+                        <div class="loading-spinner">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="ascii-panel" id="ascii-panel-2">
+                      <div class="terminal-window">
+                        <div class="terminal-titlebar">
+                          <span aria-hidden="true" class="terminal-dots">
+                            <span class="terminal-dot terminal-dot-red">
+                            </span>
+                            <span class="terminal-dot terminal-dot-yellow">
+                            </span>
+                            <span class="terminal-dot terminal-dot-green">
+                            </span>
+                          </span>
+                          <span class="terminal-title">
+                            "ascii"
+                          </span>
+                        </div>
+                        <pre class="ascii-output">
+                          "Rendering…"
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </section>
+          <section class="category-view" data-category="xy-chart" hidden="" id="category-xy-chart">
+            <section class="sample" id="sample-3">
+              <div class="sample-header">
+                <h2>
+                  "XY: Bar"
+                </h2>
+                <p class="description">
+                  "A bar chart."
+                </p>
+              </div>
+              <div class="sample-content">
+                <div class="source-panel" id="source-panel-3">
+                  <pre class="shiki">
+                    "xychart-beta"
+                  </pre>
+                  <div class="options">
+                    <strong>
+                      "Options:"
+                    </strong>
+                    <code>
+                      "{\"width\":600}"
+                    </code>
+                  </div>
+                  <button class="edit-btn" data-sample="3">
+                    "Edit"
+                  </button>
+                </div>
+                <div class="output-panel">
+                  <div class="output-head">
+                    <div aria-label="Output format" class="seg" role="tablist">
+                      <button aria-selected="true" class="seg-btn" data-view="svg" role="tab" type="button">
+                        "SVG"
+                      </button>
+                      <button aria-selected="false" class="seg-btn" data-view="ascii" role="tab" type="button">
+                        "ASCII"
+                      </button>
+                    </div>
+                  </div>
+                  <div class="output-stage">
+                    <div class="svg-panel is-active" data-sample-bg="#fafafa" id="svg-panel-3">
+                      <div class="svg-container" id="svg-3">
+                        <div class="loading-spinner">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="ascii-panel" id="ascii-panel-3">
+                      <div class="terminal-window">
+                        <div class="terminal-titlebar">
+                          <span aria-hidden="true" class="terminal-dots">
+                            <span class="terminal-dot terminal-dot-red">
+                            </span>
+                            <span class="terminal-dot terminal-dot-yellow">
+                            </span>
+                            <span class="terminal-dot terminal-dot-green">
+                            </span>
+                          </span>
+                          <span class="terminal-title">
+                            "ascii"
+                          </span>
+                        </div>
+                        <pre class="ascii-output">
+                          "Rendering…"
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </section>
+          <p class="search-empty" hidden="" id="search-empty">
+            "No samples match your search."
+          </p>
+          <script id="demo-samples" type="application/json">
+            "[{\"title\":\"Fixture\",\"source\":\"flowchart LR\"}]"
+          </script>
+          <script type="module">
+            "globalThis.__fixture = 1 < 2 && 3 > 2;\nconsole.log(\"fixture & <b>bold</b>\");"
+          </script>
+          <div class="edit-overlay" id="edit-overlay">
+            <div aria-labelledby="edit-dialog-title" aria-modal="true" class="edit-dialog shadow-modal-small" role="dialog">
+              <div class="edit-dialog-header">
+                <span class="edit-dialog-title" id="edit-dialog-title">
+                  "Edit Diagram"
+                </span>
+                <button aria-label="Close" class="edit-dialog-close" id="edit-dialog-close">
+                  "×"
+                </button>
+              </div>
+              <textarea aria-label="Mermaid source" autocomplete="off" autocorrect="off" class="edit-dialog-textarea" id="edit-dialog-textarea" spellcheck="false">
+              </textarea>
+              <div class="edit-dialog-footer">
+                <button class="edit-dialog-btn edit-dialog-cancel" id="edit-dialog-cancel">
+                  "Cancel"
+                </button>
+                <button class="edit-dialog-btn edit-dialog-save" id="edit-dialog-save">
+                  "Save & Render"
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer class="site-footer">
+      <span>
+        "© 2026 zombie-mermaid"
+      </span>
+      <div class="footer-links">
+        <a href="https://github.com/dfadler/zombie-mermaid" rel="noopener noreferrer" target="_blank">
+          <svg fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z">
+            </path>
+          </svg>
+        </a>
+      </div>
+    </footer>
+  </body>
+</html>

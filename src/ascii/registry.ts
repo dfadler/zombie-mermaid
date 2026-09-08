@@ -31,7 +31,7 @@
 // has been adapted yet, not because the two must move in lockstep.
 // ============================================================================
 
-import type { DiagramType } from '../diagram-type.ts'
+import type { DiagramType } from '@zombie-mermaid/core'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { renderXYChartAscii } from './xychart.ts'
 import { renderErAscii } from './er-diagram.ts'

@@ -164,20 +164,15 @@ function moduleGraphOf(entry: string): ModuleGraph {
  * to before widening this list, and note anything that fits neither.
  */
 const ALLOWED_OUTSIDE_ASCII = {
-  // -> `core` (#625). A subset of the scoping doc's grep-verified nine-file
-  // list: the ones the ASCII entry reaches with a value import. (`types.ts`
-  // is on that list too but is only ever type-imported — see
-  // TYPE_ONLY_REACH.)
-  core: [
-    'src/click-directive.ts',
-    'src/color-utils.ts',
-    'src/diagram-type.ts',
-    'src/direction-override.ts',
-    'src/multiline-utils.ts',
-    'src/statements.ts',
-    'src/text-metrics.ts',
-    'src/theme.ts',
-  ],
+  // -> `core` (#625). #625 landed (see the scoping doc's "Addendum (#625)")
+  // and moved every one of these into `packages/core/`, so the ASCII entry
+  // now reaches them through the bare `@zombie-mermaid/core` specifier —
+  // invisible to this walker, which only follows relative edges (see
+  // `closureFrom`). Kept as an empty bucket, not deleted, so a future
+  // regression that reintroduces a *relative* `../`-style reach-around
+  // around the package boundary still fails loudly against an explicit
+  // list instead of silently passing.
+  core: [],
   // -> `mermaid-parser` (#624). Note `class/format.ts`, `xychart/colors.ts`
   // and `sequence/box-color.ts`: the doc's finding 1 describes each per-type
   // directory as a `parser.ts`+`types.ts` half and a `layout.ts`+
@@ -193,18 +188,15 @@ const ALLOWED_OUTSIDE_ASCII = {
     'src/xychart/colors.ts',
     'src/xychart/parser.ts',
   ],
-  // The scoping doc's recommendation 5 puts all three on its
-  // `svg-renderer`-only list ("zero `src/ascii/**` imports"), which is true
-  // of *direct* imports and false transitively: `src/parser.ts` — the
-  // flowchart parser both renderers call — imports all three, so the ASCII
-  // entry reaches them and they end up in `dist/ascii.js`. They belong with
-  // the parser, not with `svg-renderer`; #624/#625 have to reclassify them
-  // or `svg-renderer` becomes a dependency of `ascii-renderer`.
-  misclassifiedAsSvgOnly: [
-    'src/expanded-shapes.ts',
-    'src/init-directive.ts',
-    'src/style-directives.ts',
-  ],
+  // The scoping doc's recommendation 5 originally put all three on its
+  // `svg-renderer`-only list. #625's addendum found `init-directive.ts` and
+  // `style-directives.ts` actually belong to `core` (both moved to
+  // `packages/core/` and are now reached the same way as the `core` bucket
+  // above — via the bare specifier, invisible here). `expanded-shapes.ts`
+  // belongs to neither `core` nor `svg-renderer` and is still awaiting #624
+  // (`mermaid-parser`), so it's the only one left reachable by relative
+  // import.
+  misclassifiedAsSvgOnly: ['src/expanded-shapes.ts'],
 } as const
 
 const ALLOWED = [
@@ -218,23 +210,19 @@ const ALLOWED = [
  * from the bundle, so they cost `dist/ascii.js` nothing, but a real
  * `ascii-renderer` package still has to resolve them at build time.
  *
- * All but one are the `types.ts` halves of `core`/`mermaid-parser`, which
- * is unremarkable. The exception is `src/elk-instance.ts`, on the doc's
- * `svg-renderer`-only list, reached as
- * `src/types.ts` -> `import type { LayoutCache }`. A `core` package that
- * type-references `svg-renderer` is a cycle in the type graph even though
- * it never shows up at runtime, so #625 has to move `LayoutCache`, re-home
- * the field that uses it, or accept the edge deliberately. This list exists
- * so that decision gets made rather than discovered — shrink it as #625
- * lands; never grow it without saying which package the new module belongs
- * to.
+ * These are the `types.ts` halves of the still-unpackaged `mermaid-parser`
+ * (#624) directories. `src/types.ts` (`core`) and `src/elk-instance.ts`
+ * (`svg-renderer`) used to appear here too, reached as `src/types.ts` ->
+ * `import type { LayoutCache }` — exactly the type-graph cycle this list's
+ * original comment flagged as something #625 would have to resolve. #625's
+ * addendum confirms it did: `LayoutCache` moved to `packages/core/src/
+ * types.ts`, and both files are now reached through the bare
+ * `@zombie-mermaid/core` specifier, invisible to this relative-only walker.
  */
 const TYPE_ONLY_REACH = [
   'src/class/types.ts',
-  'src/elk-instance.ts',
   'src/er/types.ts',
   'src/sequence/types.ts',
-  'src/types.ts',
   'src/xychart/types.ts',
 ]
 

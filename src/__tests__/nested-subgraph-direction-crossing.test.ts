@@ -2,7 +2,7 @@
  * Regression tests for issue #73: nested-subgraph `direction` overrides
  * breaking cross-subgraph edge routing.
  *
- * Background: `src/layout-engine/to-elk.ts` uses ELK's
+ * Background: `packages/svg-renderer/src/layout-engine/to-elk.ts` uses ELK's
  * `hierarchyHandling: SEPARATE` to let nested subgraphs override the parent
  * diagram's layout direction. Under SEPARATE, ELK only resolves an edge
  * automatically when both endpoints are visible from the edge's declared
@@ -25,7 +25,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, parseMermaid } from '../index.ts'
-import { layoutGraphSync } from '../layout.ts'
+import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 
 /**
  * Extract an attribute value from the first `<tag ...>` in `xml` whose

@@ -15,7 +15,7 @@ import type { ElkExtendedEdge } from 'elkjs'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
-} from '../layout-engine/elk-adapter-utils.ts'
+} from '@zombie-mermaid/svg-renderer'
 
 function edge(partial: Partial<ElkExtendedEdge>): ElkExtendedEdge {
   return { id: 'e0', sources: ['a'], targets: ['b'], ...partial }

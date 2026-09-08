@@ -24,11 +24,16 @@
       "zombie-mermaid": ["./src/index.ts"],
       "zombie-mermaid/*": ["./src/*"]
     },
-    "rootDir": "src",
+    // ".", not "src": the workspace packages under packages/*/src are part
+    // of the same program (see "include" below), and rootDir has to contain
+    // every input file. Under noEmit this only affects rootDir's own
+    // consistency check — the same reasoning demo/tsconfig.json records for
+    // its own widening.
+    "rootDir": ".",
     "outDir": "dist",
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "packages/*/src/**/*"],
+  "exclude": ["node_modules", "dist", "**/node_modules"]
 }

@@ -5,7 +5,7 @@
  * demo/diagram-orientation.ts) when a theme pill is clicked. No re-render:
  * renderMermaidSVG's output is already parameterized entirely by --bg/--fg
  * (plus optional --line/--accent/--muted/--surface/--border), so switching
- * themes is just updating those variables in place — see src/theme.ts's
+ * themes is just updating those variables in place — see packages/core/src/theme.ts's
  * own header comment for that architecture.
  *
  * Deliberately standalone rather than reusing demo/client.ts's
@@ -15,7 +15,7 @@
  * the full interactive gallery (search, sidebar, edit dialog) that has no
  * place on a lightweight SEO landing page. Theme color data is embedded as
  * inline JSON (window.__diagramPageThemes, written by pages.ts) rather than
- * importing src/theme.ts here, so this bundle stays small and this file can
+ * importing packages/core/src/theme.ts here, so this bundle stays small and this file can
  * live under demo/ without reaching outside its rootDir.
  */
 

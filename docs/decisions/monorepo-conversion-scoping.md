@@ -131,6 +131,10 @@ benefit. Revisit if/when something outside this repo wants to reuse
 `demo/components/` or the CLI's argument-parsing/HTML-viewer pieces
 independently.
 
+This recommendation is now settled and recorded separately, with a fresh
+verification of the import graph, in
+[`cli-and-demo-stay-apps.md`](cli-and-demo-stay-apps.md) (#626).
+
 ### 4. Migration path: `zombie-mermaid` becomes an umbrella re-export package
 
 Keep the `zombie-mermaid` package name, its `package.json` `exports` map
@@ -249,7 +253,8 @@ each can be picked up and closed independently:
   halves and scope `mermaid-parser`'s public API (findings 1-2)
 - #625 — move `layout-engine/`, `elk-instance.ts`, and the `core` files
   (recommendation 5)
-- #626 — leave `cli`/`demo` as apps (recommendation 3 table)
+- #626 — leave `cli`/`demo` as apps (recommendation 3 table); decided, see
+  [`cli-and-demo-stay-apps.md`](cli-and-demo-stay-apps.md)
 - #627 — decide test layout (per-package vs. shared)
 
 Recommended order: #623 first, then #624 before #625, #622/#621 for
@@ -347,3 +352,65 @@ imports. Transitively:
 
 The boundary test carries all three as explicit, commented lists, so #624 and
 #625 get a failing assertion rather than a rediscovery.
+
+## Addendum (#625) — what performing the `core` / `svg-renderer` move found
+
+Written while working #625, which created `packages/core/` and
+`packages/svg-renderer/` and moved the files there. Recommendation 5's two
+lists were built from _direct_ `src/ascii/**` imports; re-derived from the
+full module graph (both front doors, plus `src/parser.ts`, which both
+call), they need four corrections. #623's own addendum found three of them
+independently — this is the same finding arrived at from the other side,
+plus one it did not reach.
+
+### `core` gained three files, `svg-renderer` lost four
+
+| File                  | Recommendation 5 said | Actually                                                                                                                                     |
+| --------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init-directive.ts`   | `svg-renderer`-only   | `core` — `src/parser.ts` imports it, so the ASCII entry reaches it, _and_ `core`'s `types.ts` type-imports `InitConfig`/`CurveStyle` from it |
+| `style-directives.ts` | `svg-renderer`-only   | `core` — imported by `src/parser.ts` and `src/class/*` (parser side) as well as `renderer.ts` (SVG side)                                     |
+| `expanded-shapes.ts`  | `svg-renderer`-only   | neither — `src/parser.ts` is its only importer, so it stays in `src/` for #624 to take to `mermaid-parser`                                   |
+| `elk-instance.ts`     | `svg-renderer`-only   | correct for the module, but its `LayoutCache` interface had to move to `core` (below)                                                        |
+
+Left as scoped, the first two would have made `svg-renderer` a dependency of
+whatever package ends up owning `parser.ts` — and, via `renderer.ts`'s own
+imports of them, of the umbrella. That is the cycle this split exists to
+avoid, and it would only have surfaced at #623.
+
+### Two symbols had to move, not just files
+
+Both are cases where a file's _location_ was right but one export in it
+pointed the wrong way across the new boundary:
+
+- **`isDirection`** was defined in `src/parser.ts` and used by
+  `direction-override.ts`, which is `core` and reached from the ASCII entry.
+  Left there, `core` would import `mermaid-parser`. It now lives in
+  `packages/core/src/direction.ts`; `parser.ts`, `cli/parse-args.ts` and the
+  parser's own tests import it from `core`.
+- **`LayoutCache`** was declared in `elk-instance.ts` (`svg-renderer`) and
+  referenced by `RenderOptions.layoutCache` in `types.ts` (`core`) — the
+  type-graph cycle #623's addendum flagged as "#625 has to move
+  `LayoutCache`, re-home the field that uses it, or take the edge
+  deliberately". The interface moved to `core`'s `types.ts` (its only
+  external reference is a type-only `ElkNode`, erased before bundling) and
+  `elk-instance.ts` re-exports it, so every function that builds or reads a
+  cache stays in `svg-renderer`.
+
+`src/__tests__/workspace-package-boundaries.test.ts` walks what both
+packages actually import and fails if either edge returns, so #623 and #624
+get an assertion rather than a rediscovery.
+
+### One deferral, deliberate
+
+The two packages are `"private": true` and are bundled into the umbrella's
+`dist/` (they are absent from `vite.config.lib.ts`'s `isExternal`), so they
+are not runtime `dependencies` of the published `zombie-mermaid` and
+recommendation 4's "they must genuinely be published" constraint does not
+bind yet — it binds the moment the umbrella's entries become thin
+re-exports rather than bundles. Until then the umbrella declares them as
+`devDependencies`, and api-extractor is told to inline their declarations
+(`bundledPackages` plus a `paths` override pointing at the per-file `.d.ts`
+this build already emits, since nothing builds these packages yet). #621 and
+#622 are where that becomes real; `writeDctsTwins` fails the build if a
+`@zombie-mermaid/*` specifier ever survives into a published `.d.ts` in the
+meantime.

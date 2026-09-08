@@ -9,8 +9,8 @@
 import { z } from 'zod'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { renderMermaidSVG } from '../../index.ts'
-import { THEMES } from '../../theme.ts'
-import type { DiagramColors } from '../../theme.ts'
+import { THEMES } from '@zombie-mermaid/core'
+import type { DiagramColors } from '@zombie-mermaid/core'
 
 /**
  * Narrow a string array to zod's required non-empty-tuple shape without an

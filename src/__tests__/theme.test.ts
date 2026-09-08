@@ -1,8 +1,8 @@
 /**
- * Tests for the theme/color-math helpers in src/theme.ts.
+ * Tests for the theme/color-math helpers in packages/core/src/theme.ts.
  */
 import { describe, it, expect } from 'vitest'
-import { getReadableTextColor, buildStyleBlock } from '../theme.ts'
+import { getReadableTextColor, buildStyleBlock } from '@zombie-mermaid/core'
 
 describe('getReadableTextColor', () => {
   it('returns dark text for a light pastel fill (6-digit hex)', () => {

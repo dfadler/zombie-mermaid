@@ -17,10 +17,8 @@
 // ============================================================================
 
 import { parseMermaid } from '../parser.ts'
-import { withDirectionOverride } from '../direction-override.ts'
-import type { Direction } from '../types.ts'
-import { detectDiagramType } from '../diagram-type.ts'
-import type { DiagramType } from '../diagram-type.ts'
+import { withDirectionOverride, detectDiagramType } from '@zombie-mermaid/core'
+import type { Direction, DiagramType } from '@zombie-mermaid/core'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
 import { drawGraph } from './draw.ts'
@@ -187,7 +185,7 @@ export function renderMermaidASCII(
     default: {
       // Flowchart + state diagram pipeline (original). `options.direction`
       // replaces the parsed top-level direction before layout; see
-      // src/direction-override.ts.
+      // packages/core/src/direction-override.ts.
       const parsed = withDirectionOverride(
         parseMermaid(text),
         options.direction,

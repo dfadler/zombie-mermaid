@@ -751,6 +751,13 @@ body.search-active .category-tabbar {
     'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace !important;
   white-space: pre;
 }
+/* Same generic-monospace-fallback issue as .ascii-output above: Shiki wraps
+ * highlighted code in <pre><code>, and the UA stylesheet's `code { font-family:
+ * monospace }` rule matches that <code> directly, beating the font-family
+ * inherited from .hero-code-body pre. */
+.hero-code-body pre code {
+  font-family: inherit;
+}
 
 /* "Renders as" arrow */
 .hero-arrow {
@@ -1343,6 +1350,14 @@ body.search-active .category-tabbar {
   color: #e6edf3; /* fallback for glyphs the renderer leaves uncolored */
   background: transparent;
   scrollbar-color: #30363d transparent;
+}
+/* The Chromium UA stylesheet sets `code { font-family: monospace }` directly
+ * on the <code> child, which beats the font-family inherited from .ascii-output
+ * above (a rule matching the element itself always wins over an inherited
+ * value, regardless of specificity) — so without this, the ASCII art renders
+ * in the browser's generic monospace fallback instead of JetBrains Mono. */
+.ascii-output code {
+  font-family: inherit;
 }
 .ascii-output::-webkit-scrollbar {
   width: 10px;
