@@ -115,7 +115,13 @@ export function RepoMetricsCard({
   referenceIso,
   highlight = false,
 }: RepoMetricsCardProps) {
-  const ink = highlight ? accentVar('green') : colorVar('--text-faint')
+  // --text-faint here (opacity 0.75 on top of it) computes to a ~2.65:1
+  // contrast ratio against the card background — well under WCAG AA's 3:1
+  // floor even for this card's large 32px numbers. --text-dim clears ~4.44:1,
+  // comfortably above 3:1 and effectively at the 4.5:1 normal-text threshold
+  // too, while the opacity still reads as "muted" against the highlighted
+  // fork card.
+  const ink = highlight ? accentVar('green') : colorVar('--text-dim')
   return (
     <Card
       accent={highlight ? 'green' : undefined}
