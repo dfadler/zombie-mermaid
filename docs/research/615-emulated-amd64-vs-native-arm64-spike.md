@@ -24,10 +24,10 @@ the committed x86-CI baselines. The emulation backend turned out to be Rosetta 2
 rendering comparison still holds, but the cost numbers below are Rosetta's, not QEMU's.
 
 | Suite (full run)               | emulated amd64 fail | native arm64 fail |
-| ------------------------------- | -------------------- | ------------------ |
-| ASCII/terminal (90 tests)        | 88/90 (97.8%)        | 88/90 (97.8%)       |
-| SVG (190 tests × 3 runs = 570)   | **0**/570            | 30/570 (5.3%)       |
-| Full-suite wall clock           | 24.4m                | 2.2m                |
+| ------------------------------ | ------------------- | ----------------- |
+| ASCII/terminal (90 tests)      | 88/90 (97.8%)       | 88/90 (97.8%)     |
+| SVG (190 tests × 3 runs = 570) | **0**/570           | 30/570 (5.3%)     |
+| Full-suite wall clock          | 24.4m               | 2.2m              |
 
 ## Findings
 
