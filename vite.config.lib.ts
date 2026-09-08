@@ -72,7 +72,7 @@ const DIST = resolve(ROOT, 'dist')
 // Both are real npm dependencies (see package.json) kept external rather
 // than bundled. Unlike esbuild (which tsup used), Rolldown's `external`
 // only matches an exact import specifier, not a package-name prefix —
-// `external: ['elkjs']` would NOT cover `src/elk-instance.ts`'s
+// `external: ['elkjs']` would NOT cover `packages/svg-renderer/src/elk-instance.ts`'s
 // `import ELKBundled from 'elkjs/lib/elk.bundled.js'`, silently inlining
 // elkjs's entire (huge) UMD bundle into `dist/index.js`/`dist/index.cjs`.
 // A prefix-matching function closes that gap for any current or future
@@ -202,10 +202,9 @@ export default defineConfig({
         // (via @microsoft/api-extractor), matching tsup's dts output —
         // one file per public entry point, not one per source module.
         //
-        // The `@zombie-mermaid/*` workspace packages (zombie-mermaid#625,
-        // umbrella #620 — currently just `core`; more land as later
-        // sub-issues extract them) are `"private": true` and bundled into
-        // this package's JS — they're absent from `isExternal` below — so a
+        // The two `@zombie-mermaid/*` workspace packages (zombie-mermaid#625,
+        // umbrella #620) are `"private": true` and bundled into this
+        // package's JS — they're absent from `isExternal` below — so a
         // `from '@zombie-mermaid/core'` surviving into a rolled-up `.d.ts`
         // would name something no consumer can resolve. Two settings are
         // needed to inline them, and only together:
@@ -229,7 +228,10 @@ export default defineConfig({
         // `writeDctsTwins`'s WORKSPACE_IMPORT_RE guard fails the build if
         // this ever silently stops inlining.
         bundleTypes: {
-          bundledPackages: ['@zombie-mermaid/core'],
+          bundledPackages: [
+            '@zombie-mermaid/core',
+            '@zombie-mermaid/svg-renderer',
+          ],
           extractorConfig: {
             compiler: {
               overrideTsconfig: {
@@ -237,6 +239,9 @@ export default defineConfig({
                   paths: {
                     '@zombie-mermaid/core': [
                       resolve(DIST, 'packages/core/src/index.d.ts'),
+                    ],
+                    '@zombie-mermaid/svg-renderer': [
+                      resolve(DIST, 'packages/svg-renderer/src/index.d.ts'),
                     ],
                   },
                 },

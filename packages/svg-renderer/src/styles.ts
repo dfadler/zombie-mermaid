@@ -3,8 +3,8 @@
 // Used to approximate text bounding boxes without DOM measurement.
 // These are calibrated for Inter's typical glyph widths.
 //
-// NOTE: Theme/color system has moved to packages/core/src/theme.ts. This
-// file only contains font metrics, spacing constants, and stroke widths.
+// NOTE: Theme/color system has moved to packages/core/src/theme.ts. This file only
+// contains font metrics, spacing constants, and stroke widths.
 // ============================================================================
 
 import { measureTextWidth } from '@zombie-mermaid/core'

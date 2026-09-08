@@ -10,7 +10,7 @@ import {
   NODE_PADDING,
   STROKE_WIDTHS,
   ARROW_HEAD,
-} from '../styles.ts'
+} from '@zombie-mermaid/svg-renderer'
 import {
   THEMES,
   DEFAULTS,

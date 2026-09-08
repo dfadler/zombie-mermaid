@@ -15,6 +15,7 @@
 
 import type { ELK, ElkNode } from 'elkjs'
 import ELKBundled from 'elkjs/lib/elk.bundled.js'
+import type { LayoutCache } from '@zombie-mermaid/core'
 
 /** The message envelope ELK's FakeWorker passes to `dispatcher.saveDispatch()`
  * to request a layout run. Mirrors the shape elk-worker.min.js expects on
@@ -63,24 +64,13 @@ let rawWorker: RawFakeWorker | null = null
 // ============================================================================
 
 /**
- * Opt-in bounded LRU cache for `elkLayoutSync()` results.
- *
- * Off by default — `elkLayoutSync()` only consults a cache when one is
- * explicitly passed in, so existing callers see no behavior change.
- * Create one with `createLayoutCache()` and reuse it across renders (e.g.
- * module scope, or a `useRef` in React) — a fresh cache per render defeats
- * the point.
- *
- * The `map`/`maxSize` fields are implementation detail exposed only so
- * `elkLayoutSync()` (and tests) can read/mutate them directly without a
- * class; treat a `LayoutCache` as opaque from outside this module.
+ * `LayoutCache`'s shape lives in `@zombie-mermaid/core`'s `types.ts`
+ * because `RenderOptions.layoutCache` references it and `core` must not
+ * type-import this package (zombie-mermaid#625). Re-exported here so this
+ * module stays the single import site for everything layout-cache-related,
+ * exactly as before the split.
  */
-export interface LayoutCache {
-  /** @internal */
-  readonly map: Map<string, ElkNode>
-  /** @internal */
-  readonly maxSize: number
-}
+export type { LayoutCache }
 
 const DEFAULT_LAYOUT_CACHE_SIZE = 20
 

@@ -10,7 +10,7 @@ import type {
   LegendItem,
 } from './types.ts'
 import type { XyChartRenderOptions } from '@zombie-mermaid/core'
-import { estimateTextWidth } from '../styles.ts'
+import { estimateTextWidth } from '@zombie-mermaid/svg-renderer'
 
 // ============================================================================
 // XY Chart layout engine

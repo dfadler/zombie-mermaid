@@ -16,15 +16,15 @@ import {
   renderMultilineText,
   escapeAttr,
 } from '@zombie-mermaid/core'
-import { withDataSrc } from '../renderer.ts'
-import type { FontSizes } from '../styles.ts'
 import {
+  withDataSrc,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
   ARROW_HEAD,
   estimateTextWidth,
-} from '../styles.ts'
+} from '@zombie-mermaid/svg-renderer'
+import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 
 // ============================================================================
 // Sequence diagram SVG renderer

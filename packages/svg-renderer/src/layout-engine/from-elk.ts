@@ -235,7 +235,7 @@ interface EdgeSegment {
  *  - `targetHops`: target-side boundary crossings (id `e{index}_t{level}`),
  *    keyed by ancestor-chain level. Walking from the LCA inward to the
  *    innermost level (closest to the target node).
- * See src/layout-engine/to-elk.ts (mermaidToElk) for how these are produced.
+ * See packages/svg-renderer/src/layout-engine/to-elk.ts (mermaidToElk) for how these are produced.
  */
 interface EdgeSegmentGroup {
   bridge?: EdgeSegment

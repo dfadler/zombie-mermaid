@@ -13,7 +13,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
-import { layoutGraphSync } from '../layout.ts'
+import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 
 interface Point {
   x: number

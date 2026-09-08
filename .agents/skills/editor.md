@@ -24,7 +24,7 @@ The editor's CSS/JS source lives under `editor/` as modular partials that `edito
 | `src/browser.ts`                                          | Bundles the renderer for the browser as `window.__mermaid`                                                                                                                                                              |
 | `packages/core/src/types.ts`                              | `RenderOptions` — all supported render options                                                                                                                                                                          |
 | `packages/core/src/theme.ts`                              | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                                                                                                                         |
-| `src/styles.ts`                                           | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
+| `packages/svg-renderer/src/styles.ts`                     | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
 
 Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples-data.ts` only feeds the separate showcase page (`index.ts` → `index.html`, served at `/` by `vite.config.ts`).
 

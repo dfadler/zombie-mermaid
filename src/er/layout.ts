@@ -20,10 +20,10 @@ import {
   estimateMonoTextWidth,
   FONT_WEIGHTS,
   resolveFontSizes,
-} from '../styles.ts'
+  elkLayoutSync,
+  extractEdgePoints,
+} from '@zombie-mermaid/svg-renderer'
 import { measureMultilineText } from '@zombie-mermaid/core'
-import { elkLayoutSync } from '../elk-instance.ts'
-import { extractEdgePoints } from '../layout-engine/elk-adapter-utils.ts'
 
 /** Layout constants for ER diagrams */
 const ER = {

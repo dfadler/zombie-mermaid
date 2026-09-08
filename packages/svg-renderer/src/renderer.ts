@@ -39,7 +39,7 @@ import { pointsToPath } from './edge-curves.ts'
 // All colors are referenced via CSS custom properties (var(--_xxx)) defined
 // in the <style> block. The caller provides bg/fg (+ optional enrichment
 // colors) via DiagramColors, which are set as inline CSS variables on the
-// <svg> tag. See src/theme.ts for the full variable system.
+// <svg> tag. See packages/core/src/theme.ts for the full variable system.
 //
 // Style spec:
 // - All corners rx=0 ry=0 (sharp)
@@ -71,7 +71,7 @@ import { pointsToPath } from './edge-curves.ts'
  *                       — preserves the previously-ungated behavior for
  *                       callers who don't pass it.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
- *                src/theme.ts.
+ *                packages/core/src/theme.ts.
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
  * @param emit - Strict-CSP controls (from `options.nonce` /
  *               `options.styleAttribute`, see #216): a `nonce` for every
