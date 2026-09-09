@@ -71,6 +71,7 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and mus
 2. `pnpm run test:coverage`
 3. `pnpm exec tsc --noEmit`
 4. `pnpm run test:visual` (a separate CI job, sharded 4-way for wall-clock speed, and run inside the pinned `mcr.microsoft.com/playwright` image rather than on a bare runner; locally it needs `pnpm exec playwright install --with-deps chromium` first — see "Visual regression tests" below)
+5. `scripts/check-snapshot-allowlist.sh` (guards against a new whole-tree snapshot or string-pin test creeping into demo/editor component tests outside a reviewed allow-list — see "Testing conventions for demo/editor components" below)
 
 Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs — but for ASCII output specifically, a passing visual-regression check is not the same as a real-terminal check; see the caveat in "Visual regression tests" below before treating it as final proof.
 
@@ -91,6 +92,20 @@ A reviewer should be able to read the reason without opening the issue. The desc
 ### Test coverage
 
 CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-26 the baseline is **78.74% statements / 67.91% branches / 83.22% functions / 80.58% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, kept a bit under the measured baseline as headroom) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
+
+### Testing conventions for demo/editor components
+
+`demo/**` and `editor/**` component tests follow a specific pattern —
+`render()` + `screen.getByRole`/`getByText` + `userEvent`, via [React
+Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+— rather than a whole-tree snapshot or a raw markup string-pin. See
+[docs/testing-conventions.md](docs/testing-conventions.md) for the worked
+example, the hydration-testing shape, and — importantly — when a
+literal-value assertion (this repo's design-canvas fidelity checks) or a
+real snapshot matcher (`__tests__/site-equivalence.test.ts`'s golden-DOM
+tests) is still the right call rather than a lapse. `scripts/check-snapshot-allowlist.sh`,
+run in CI, fails on a new `toMatchSnapshot`/`toMatchFileSnapshot`/
+`toMatchInlineSnapshot` usage outside that doc's named exceptions.
 
 ### Visual regression tests
 
