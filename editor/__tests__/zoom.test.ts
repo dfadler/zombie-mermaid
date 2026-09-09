@@ -12,8 +12,8 @@ function asEditorWindow(env: ReturnType<typeof createEditorEnv>): EditorWindow {
 }
 
 describe('zoom', () => {
-  it('scales the rendered SVG and updates the zoom label', () => {
-    const env = createEditorEnv()
+  it('scales the rendered SVG and updates the zoom label', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
     const previewInner = env.document.getElementById('preview-inner')!
     previewInner.innerHTML =
@@ -32,8 +32,8 @@ describe('zoom', () => {
     expect(env.document.getElementById('zoom-label')!.textContent).toBe('200%')
   })
 
-  it('clamps zoom to [0.1, 8]', () => {
-    const env = createEditorEnv()
+  it('clamps zoom to [0.1, 8]', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     win.applyZoom(100)
@@ -43,8 +43,8 @@ describe('zoom', () => {
     expect(win.state.zoom).toBe(0.1)
   })
 
-  it('getSvgNaturalSize prefers the viewBox over attributes', () => {
-    const env = createEditorEnv()
+  it('getSvgNaturalSize prefers the viewBox over attributes', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
     const svg = env.document.createElementNS(
       'http://www.w3.org/2000/svg',
@@ -57,8 +57,8 @@ describe('zoom', () => {
     expect(win.getSvgNaturalSize(svg)).toEqual({ w: 300, h: 150 })
   })
 
-  it('getSvgNaturalSize falls back to width/height attributes without a viewBox', () => {
-    const env = createEditorEnv()
+  it('getSvgNaturalSize falls back to width/height attributes without a viewBox', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
     const svg = env.document.createElementNS(
       'http://www.w3.org/2000/svg',

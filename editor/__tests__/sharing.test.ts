@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createEditorEnv, flushRenderTimers } from './support/harness.ts'
 
 describe('sharing (URL hash source)', () => {
-  it('round-trips arbitrary source text through encodeSource/decodeSource', () => {
-    const env = createEditorEnv()
+  it('round-trips arbitrary source text through encodeSource/decodeSource', async () => {
+    const env = await createEditorEnv()
     const encodeSource = (
       env.window as unknown as { encodeSource: (s: string) => string }
     ).encodeSource
@@ -16,7 +16,7 @@ describe('sharing (URL hash source)', () => {
   })
 
   it('encodes the current source and theme into the URL hash', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
 
     const editor = env.document.getElementById(
@@ -35,8 +35,8 @@ describe('sharing (URL hash source)', () => {
     expect(decoded).toEqual({ source: 'graph TD\n  A --> B', theme: 'nord' })
   })
 
-  it('reads source and theme back out of an existing URL hash', () => {
-    const env = createEditorEnv()
+  it('reads source and theme back out of an existing URL hash', async () => {
+    const env = await createEditorEnv()
     const encodeSource = (
       env.window as unknown as { encodeSource: (s: string) => string }
     ).encodeSource
@@ -57,8 +57,8 @@ describe('sharing (URL hash source)', () => {
     expect(state.theme).toBe('dracula')
   })
 
-  it('returns null when there is no hash', () => {
-    const env = createEditorEnv()
+  it('returns null when there is no hash', async () => {
+    const env = await createEditorEnv()
     env.window.location.hash = ''
     const getHashSource = (
       env.window as unknown as { getHashSource: () => string | null }

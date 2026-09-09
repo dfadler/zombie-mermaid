@@ -1,8 +1,11 @@
-var sourceToolbar = document.getElementById('source-toolbar')
-document.querySelectorAll('.tab').forEach(function (tab) {
+import { refreshAllColorUIs } from './config-panel.ts'
+import { configView, editorView } from './elements.ts'
+
+const sourceToolbar = document.getElementById('source-toolbar')
+document.querySelectorAll<HTMLElement>('.tab').forEach(function (tab) {
   tab.addEventListener('click', function () {
-    var panel = tab.dataset.panel
-    document.querySelectorAll('.tab').forEach(function (t) {
+    const panel = tab.dataset.panel
+    document.querySelectorAll<HTMLElement>('.tab').forEach(function (t) {
       t.classList.remove('active')
     })
     tab.classList.add('active')

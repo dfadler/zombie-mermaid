@@ -117,7 +117,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepublishOnly": "pnpm run build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p demo/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p demo/tsconfig.json && tsc --noEmit -p editor/tsconfig.json",
     "fork-fixes": "tsx fork-fixes.ts",
     "dashboard": "tsx dashboard.ts",
     "dashboard:data": "tsx scripts/generate-dashboard-data.ts",

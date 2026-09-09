@@ -12,7 +12,8 @@
  *
  * Source files are organized in editor/:
  *   - editor/css/  — modular CSS components
- *   - editor/js/   — modular JS modules
+ *   - editor/js/   — the editor's client-side TS modules (editor/js/index.ts
+ *     is the bundle entry point; see bundleEditorJs() below)
  *
  * The page's markup lives in React components instead
  * (demo/components/editor-page.tsx and the editor-topbar/editor-panels
@@ -28,7 +29,9 @@
  * shell; #589 finished the job — the topbar and both panels are real
  * component trees now, and the only raw splice left is the inline
  * `<script type="module">`, which carries this repo's own bundled
- * renderer plus every editor/js/*.js module. See
+ * renderer plus the Vite-bundled editor/js/index.ts graph (#766 converted
+ * that from fixed-order string concatenation of plain editor/js/*.js files
+ * to real TS modules with explicit imports). See
  * docs/decisions/react-site-migration-plan.md.
  */
 
@@ -76,29 +79,24 @@ async function readCssFiles(): Promise<string> {
   return parts.join('\n\n')
 }
 
-async function readJsFiles(): Promise<string> {
-  const order = [
-    'js/helpers.js',
-    'js/state.js',
-    'js/elements.js',
-    'js/sharing.js',
-    'js/rendering.js',
-    'js/zoom.js',
-    'js/pan.js',
-    'js/editor-helpers.js',
-    'js/config-panel.js',
-    'js/color-picker.js',
-    'js/font-picker.js',
-    'js/tabs.js',
-    'js/buttons.js',
-    'js/export.js',
-    'js/resize.js',
-    'js/toast.js',
-    'js/dark-mode.js',
-    'js/init.js',
-  ]
-  const parts = await Promise.all(order.map((f) => readEditorFile(f)))
-  return parts.join('\n\n')
+/**
+ * Bundle editor/js/index.ts -- the live editor's client-side modules,
+ * converted from fixed-order concatenated `editor/js/*.js` files to real
+ * TS modules with explicit imports/exports by zombie-mermaid#766 (#744
+ * previously only documented the load-order graph this replaces).
+ *
+ * `treeshake: false`: these modules exist to run for their top-level side
+ * effects (DOM lookups, `addEventListener` registration), not to export a
+ * computed value the entry point consumes -- see bundleForBrowser's own
+ * `treeshake` option doc for why that needs tree-shaking off rather than
+ * relying on per-module side-effect analysis. `minify: false` keeps it
+ * readable in devtools, matching the previous raw-concatenation output.
+ */
+async function bundleEditorJs(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./editor/js/index.ts', import.meta.url).pathname,
+    { minify: false, treeshake: false },
+  )
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -119,8 +117,10 @@ async function bundleBrowserScript(): Promise<string> {
 /**
  * Bundle demo/editor-theme-state-bridge.ts, which exposes demo/theme-
  * state.ts's getTheme()/setTheme()/subscribe() as window.__themeState for
- * editor/js/init.js (plain, non-module script) to call — see that
- * bridge's own header comment. #688.
+ * editor/js/init.ts (whose own module graph is bundled separately by
+ * bundleEditorJs() below and does not import this bridge directly — it
+ * reaches it only via the `window.__themeState` global, same as it always
+ * has) to call — see that bridge's own header comment. #688.
  *
  * Wrapped in an IIFE: Vite/Rollup's minified ESM output for a
  * fully-self-contained bundle (no import/export statements left — every
@@ -158,7 +158,7 @@ async function generateEditorHtml(): Promise<string> {
     label: THEME_LABELS[key] ?? key,
   }))
 
-  const [css, appJs] = await Promise.all([readCssFiles(), readJsFiles()])
+  const [css, appJs] = await Promise.all([readCssFiles(), bundleEditorJs()])
 
   return renderHtmlDocument(
     createElement(EditorPage, {

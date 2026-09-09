@@ -1,0 +1,18 @@
+import { requireElement } from './dom.ts'
+
+export const editor = requireElement('code-editor', HTMLTextAreaElement)
+export const lineNumbers = requireElement('line-numbers', HTMLElement)
+export const previewInner = requireElement('preview-inner', HTMLElement)
+export const previewBody = requireElement('preview-body', HTMLElement)
+export const statusText = requireElement('status-text', HTMLElement)
+export const statusDot = requireElement('status-dot', HTMLElement)
+export const cursorPos = requireElement('cursor-pos', HTMLElement)
+export const renderTime = requireElement('render-time', HTMLElement)
+export const zoomLabel = requireElement('zoom-label', HTMLElement)
+export const spinner = requireElement('render-spinner', HTMLElement)
+export const toast = requireElement('toast', HTMLElement)
+export const themeMenu = requireElement('theme-dropdown-menu', HTMLElement)
+export const panelLeft = requireElement('panel-left', HTMLElement)
+export const resizeHandle = requireElement('resize-handle', HTMLElement)
+export const editorView = requireElement('editor-view', HTMLElement)
+export const configView = requireElement('config-view', HTMLElement)

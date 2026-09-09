@@ -1,8 +1,24 @@
-var cfgColors = { bg: '', fg: '', accent: '', line: '', muted: '', surface: '' }
-var cfgFont = ''
-var cfgPadding = 24
+import { requireElement } from './dom.ts'
+import { previewInner } from './elements.ts'
+// cfgFont/cfgPadding are owned by font-picker.ts (the only module that ever
+// reassigns them -- see that file's own header comment) and only read here
+// to build the render config; importing them for a read is fine even
+// though the modules import each other back for their own reasons (see
+// font-picker.ts), since neither reads the other's binding until well
+// after both modules have finished their own top-level setup.
+import { cfgFont, cfgPadding } from './font-picker.ts'
+import { state, THEMES } from './state.ts'
 
-var COLOR_PRESETS = [
+export const cfgColors: Record<string, string> = {
+  bg: '',
+  fg: '',
+  accent: '',
+  line: '',
+  muted: '',
+  surface: '',
+}
+
+export const COLOR_PRESETS = [
   '#ffffff',
   '#f5f5f5',
   '#e0e0e0',
@@ -46,8 +62,8 @@ var COLOR_PRESETS = [
   '#16213e',
 ]
 
-function readConfig() {
-  var cfg = {}
+export function readConfig(): void {
+  const cfg: Record<string, unknown> = {}
   if (cfgColors.bg) cfg.bg = cfgColors.bg
   if (cfgColors.fg) cfg.fg = cfgColors.fg
   if (cfgColors.accent) cfg.accent = cfgColors.accent
@@ -59,7 +75,7 @@ function readConfig() {
   state.config = cfg
 }
 
-var THEME_COLOR_MAP = {
+const THEME_COLOR_MAP: Record<string, keyof EditorMermaidTheme> = {
   bg: 'bg',
   fg: 'fg',
   accent: 'accent',
@@ -68,18 +84,23 @@ var THEME_COLOR_MAP = {
   surface: 'surface',
 }
 
-function getThemeColor(key) {
-  if (!state.theme || !THEMES[state.theme]) return null
-  return THEMES[state.theme][THEME_COLOR_MAP[key]] || null
+export function getThemeColor(key: string): string | null {
+  const theme = state.theme ? THEMES[state.theme] : undefined
+  if (!theme) return null
+  const mapped = THEME_COLOR_MAP[key]
+  if (!mapped) return null
+  return theme[mapped] || null
 }
 
-function updateColorUI(key) {
-  var override = cfgColors[key]
-  var themeVal = getThemeColor(key)
-  var effective = override || themeVal
-  var label = document.getElementById('cfg-' + key + '-label')
-  var swatch = document.getElementById('cfg-' + key + '-swatch')
-  var btn = document.querySelector('.color-edit-btn[data-cfg="' + key + '"]')
+export function updateColorUI(key: string): void {
+  const override = cfgColors[key]
+  const themeVal = getThemeColor(key)
+  const effective = override || themeVal
+  const label = document.getElementById('cfg-' + key + '-label')
+  const swatch = document.getElementById('cfg-' + key + '-swatch')
+  const btn = document.querySelector<HTMLElement>(
+    '.color-edit-btn[data-cfg="' + key + '"]',
+  )
 
   if (label) {
     label.textContent = override || (themeVal ? themeVal : '—')
@@ -101,7 +122,7 @@ function updateColorUI(key) {
   }
 }
 
-function refreshAllColorUIs() {
+export function refreshAllColorUIs(): void {
   Object.keys(cfgColors).forEach(function (k) {
     updateColorUI(k)
   })
@@ -109,28 +130,28 @@ function refreshAllColorUIs() {
 
 refreshAllColorUIs()
 
-var cfgEdgeStroke = 1
-var cfgNodeStroke = 1
+let cfgEdgeStroke = 1
+let cfgNodeStroke = 1
 
-function applyStrokeOverrides(svgEl) {
+export function applyStrokeOverrides(svgEl: SVGSVGElement | null): void {
   if (!svgEl) return
-  var defsEl = svgEl.querySelector('defs')
+  const defsEl = svgEl.querySelector('defs')
 
-  function inDefs(el) {
-    return defsEl && defsEl.contains(el)
+  function inDefs(el: Element): boolean {
+    return !!defsEl && defsEl.contains(el)
   }
 
   if (cfgEdgeStroke !== 1) {
-    var ew = String(cfgEdgeStroke)
+    const ew = String(cfgEdgeStroke)
     svgEl
       .querySelectorAll('line, path[fill="none"], polyline[fill="none"]')
       .forEach(function (el) {
         if (!inDefs(el)) el.setAttribute('stroke-width', ew)
       })
-    var arrowFactor = Math.sqrt(cfgEdgeStroke)
+    const arrowFactor = Math.sqrt(cfgEdgeStroke)
     svgEl.querySelectorAll('defs marker').forEach(function (marker) {
-      var origW = parseFloat(marker.getAttribute('markerWidth') || '8')
-      var origH = parseFloat(marker.getAttribute('markerHeight') || '5')
+      const origW = parseFloat(marker.getAttribute('markerWidth') || '8')
+      const origH = parseFloat(marker.getAttribute('markerHeight') || '5')
       marker.setAttribute('viewBox', '0 0 ' + origW + ' ' + origH)
       marker.setAttribute('markerUnits', 'userSpaceOnUse')
       marker.setAttribute('markerWidth', String(origW * arrowFactor))
@@ -139,7 +160,7 @@ function applyStrokeOverrides(svgEl) {
   }
 
   if (cfgNodeStroke !== 1) {
-    var nw = String(cfgNodeStroke)
+    const nw = String(cfgNodeStroke)
     svgEl
       .querySelectorAll('rect, ellipse, circle, polygon')
       .forEach(function (el) {
@@ -148,24 +169,35 @@ function applyStrokeOverrides(svgEl) {
   }
 }
 
-function makeStrokeSetter(numEl, sliderEl, getVal, setVal) {
-  return function (raw) {
-    var v = Math.max(0.25, Math.min(6, parseFloat(raw) || 1))
+function makeStrokeSetter(
+  numEl: HTMLInputElement,
+  sliderEl: HTMLInputElement,
+  getVal: () => number,
+  setVal: (v: number) => void,
+): (raw: string) => void {
+  return function (raw: string) {
+    let v = Math.max(0.25, Math.min(6, parseFloat(raw) || 1))
     v = Math.round(v * 4) / 4
     setVal(v)
-    numEl.value = v
-    sliderEl.value = v
-    var svgEl = previewInner.querySelector('svg')
+    numEl.value = String(v)
+    sliderEl.value = String(v)
+    const svgEl = previewInner.querySelector<SVGSVGElement>('svg')
     if (svgEl) applyStrokeOverrides(svgEl)
   }
 }
 
-var edgeStrokeNum = document.getElementById('cfg-edge-stroke')
-var edgeStrokeSlider = document.getElementById('cfg-edge-stroke-slider')
-var nodeStrokeNum = document.getElementById('cfg-node-stroke')
-var nodeStrokeSlider = document.getElementById('cfg-node-stroke-slider')
+const edgeStrokeNum = requireElement('cfg-edge-stroke', HTMLInputElement)
+const edgeStrokeSlider = requireElement(
+  'cfg-edge-stroke-slider',
+  HTMLInputElement,
+)
+const nodeStrokeNum = requireElement('cfg-node-stroke', HTMLInputElement)
+const nodeStrokeSlider = requireElement(
+  'cfg-node-stroke-slider',
+  HTMLInputElement,
+)
 
-var setEdgeStroke = makeStrokeSetter(
+const setEdgeStroke = makeStrokeSetter(
   edgeStrokeNum,
   edgeStrokeSlider,
   function () {
@@ -175,7 +207,7 @@ var setEdgeStroke = makeStrokeSetter(
     cfgEdgeStroke = v
   },
 )
-var setNodeStroke = makeStrokeSetter(
+const setNodeStroke = makeStrokeSetter(
   nodeStrokeNum,
   nodeStrokeSlider,
   function () {

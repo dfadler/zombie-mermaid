@@ -12,7 +12,7 @@ import { createEditorEnv, flushRenderTimers } from './support/harness.ts'
  */
 describe('export', () => {
   it('downloads the rendered SVG with the right filename and mime type', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
 
     let created: HTMLAnchorElement | null = null
@@ -40,8 +40,8 @@ describe('export', () => {
     expect(toast.textContent).toBe('SVG saved!')
   })
 
-  it('shows a toast and does not attempt a download when nothing is rendered', () => {
-    const env = createEditorEnv()
+  it('shows a toast and does not attempt a download when nothing is rendered', async () => {
+    const env = await createEditorEnv()
     const previewInner = env.document.getElementById('preview-inner')!
     previewInner.innerHTML = ''
 
@@ -53,7 +53,7 @@ describe('export', () => {
   })
 
   it('copies the current share URL to the clipboard', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
 
     const editor = env.document.getElementById(

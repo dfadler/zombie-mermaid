@@ -5,10 +5,9 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 export default tseslint.config(
   {
     // Files that aren't part of the linted source surface for this repo:
-    // build output, the generated static site, generated HTML demos, the
-    // plain (non-TS) browser JS bundled into the editor UI, and standalone
-    // data/config files that sit alongside the TS source but aren't part of
-    // the library itself.
+    // build output, the generated static site, generated HTML demos, and
+    // standalone data/config files that sit alongside the TS source but
+    // aren't part of the library itself.
     ignores: [
       'dist/**',
       'node_modules/**',
@@ -22,7 +21,14 @@ export default tseslint.config(
       'site/**',
       'coverage/**',
       '**/*.html',
-      'editor/**',
+      // editor/js/*.ts (linted below, in the `files` list) used to be
+      // plain, un-typed `.js` here -- #766 converted it to real TS
+      // modules specifically so it could be lint/type-checked like the
+      // rest of the site tooling. editor/css/** and editor/__tests__/**
+      // stay out of scope for that issue (the latter predates it and has
+      // its own pre-existing lint gap, not something to fold in here).
+      'editor/css/**',
+      'editor/__tests__/**',
       'examples/**',
       'public/**',
       'samples-data.ts',
@@ -48,6 +54,8 @@ export default tseslint.config(
       // The site's React components (see #423).
       'demo/**/*.tsx',
       'editor.ts',
+      // The live editor's client-side modules (#766).
+      'editor/js/**/*.ts',
       'vite.config.ts',
       'vite.config.lib.ts',
       'index.ts',

@@ -1,56 +1,47 @@
-// Test harness for the live editor's vanilla-JS modules (editor/js/*.js).
+// Test harness for the live editor's client-side modules (editor/js/*.ts).
 //
-// The editor is NOT written as ES modules — editor.ts concatenates the files
-// in editor/js/ in a fixed order and inlines them into a single <script
-// type="module"> in the generated editor.html, relying on `var`/`function`
-// declarations sharing one top-level scope across file boundaries.
+// zombie-mermaid#766 converted editor/js/*.js from fixed-order concatenated
+// plain scripts into real TS modules with explicit imports/exports, bundled
+// via Vite the same way editor.ts's generated editor.html bundles them (see
+// that file's bundleEditorJs()). This harness reuses the exact same
+// bundleForBrowser() call on the exact same entry point (editor/js/index.ts)
+// -- rather than re-implementing or duplicating the module list the way the
+// old JS_FILES array here had to -- so there is no way for this harness's
+// idea of "the app bundle" to drift from what editor.ts actually ships.
 //
-// To exercise the *real* source files (rather than reimplementing their
-// logic in test-only copies), this harness builds a jsdom document from the
-// actual page components (demo/components/editor-*.tsx, which replaced the
-// editor/html/*.html partials in #589), stubs the handful of browser APIs
-// jsdom doesn't implement, and evaluates the real js/*.js files against that
-// document in the same order editor.ts bundles them in. Tests then interact
-// with the resulting `window` exactly like a user/script would in a browser.
+// The bundle itself is plain, import/export-free JS (a single Rollup chunk
+// with no unresolved external imports and nothing the entry re-exports), so
+// it evaluates as an ordinary *classic* script when handed to `window.eval`
+// -- same as the old hand-concatenated js/*.js files did. Top-level
+// `function`/`var`/`const` declarations in a classic script evaluated via
+// *indirect* eval (`window.eval(...)`, as opposed to a bare `eval(...)`)
+// land in the realm's global scope, which is why `env.window.eval('doRender()')`-
+// style calls in the *.test.ts files alongside this harness still work
+// unchanged after the conversion.
 //
-// NOTE: JS_FILES below must be kept in sync with the `order` array in
-// readJsFiles() in editor.ts. It's duplicated here (rather than imported)
-// because editor.ts performs side effects (esbuild bundling + writing
-// editor.html) as soon as it's imported.
+// The bundle only needs to be produced once per test run (the source is
+// identical across every test), so it's cached in a module-level promise;
+// each createEditorEnv() call still gets its own fresh jsdom window/document,
+// preserving per-test isolation.
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { readFileSync } from 'node:fs'
 import { JSDOM } from 'jsdom'
 import { vi } from 'vitest'
 import { THEMES } from '@zombie-mermaid/core'
 import { EditorChrome } from '../../../demo/components/editor-page.tsx'
 import { EditorThemeItems } from '../../../demo/components/editor-topbar.tsx'
+import { bundleForBrowser } from '../../../scripts/vite-bundle.ts'
 
-const EDITOR_DIR = new URL('../../', import.meta.url)
+let cachedAppJs: Promise<string> | undefined
 
-const JS_FILES = [
-  'js/helpers.js',
-  'js/state.js',
-  'js/elements.js',
-  'js/sharing.js',
-  'js/rendering.js',
-  'js/zoom.js',
-  'js/pan.js',
-  'js/editor-helpers.js',
-  'js/config-panel.js',
-  'js/color-picker.js',
-  'js/font-picker.js',
-  'js/tabs.js',
-  'js/buttons.js',
-  'js/export.js',
-  'js/resize.js',
-  'js/toast.js',
-  'js/dark-mode.js',
-  'js/init.js',
-]
-
-function readEditorFile(relativePath: string): string {
-  return readFileSync(new URL(relativePath, EDITOR_DIR), 'utf-8')
+function getAppJs(): Promise<string> {
+  if (!cachedAppJs) {
+    cachedAppJs = bundleForBrowser(
+      new URL('../../js/index.ts', import.meta.url).pathname,
+      { minify: false, treeshake: false },
+    )
+  }
+  return cachedAppJs
 }
 
 /**
@@ -98,14 +89,14 @@ export interface CreateEditorEnvOptions {
 }
 
 /**
- * Builds a fresh jsdom environment with the real editor/js/*.js files loaded
- * against the real page components' markup, and a mocked
+ * Builds a fresh jsdom environment with the real editor/js/*.ts bundle
+ * loaded against the real page components' markup, and a mocked
  * window.__mermaid.renderMermaidSVGAsync (the one DOM-external dependency
  * the editor scripts pull in from the bundled renderer).
  */
-export function createEditorEnv(
+export async function createEditorEnv(
   options: CreateEditorEnvOptions = {},
-): EditorEnv {
+): Promise<EditorEnv> {
   const dom = new JSDOM(
     `<!doctype html><html><body>${buildBodyHtml()}</body></html>`,
     {
@@ -174,9 +165,8 @@ export function createEditorEnv(
     window.localStorage.setItem(key, value)
   }
 
-  for (const file of JS_FILES) {
-    window.eval(readEditorFile(file))
-  }
+  const appJs = await getAppJs()
+  window.eval(appJs)
 
   return { window, document: window.document, renderMermaidSVGAsync }
 }

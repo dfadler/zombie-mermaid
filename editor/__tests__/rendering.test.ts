@@ -3,7 +3,7 @@ import { createEditorEnv, flushRenderTimers } from './support/harness.ts'
 
 describe('editor rendering', () => {
   it('renders the default diagram on init with no theme options', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
 
     expect(env.renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
@@ -16,7 +16,7 @@ describe('editor rendering', () => {
   })
 
   it('calls the renderer with the current editor source', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
     env.renderMermaidSVGAsync.mockClear()
 
@@ -33,7 +33,7 @@ describe('editor rendering', () => {
   })
 
   it('merges the selected theme colors into the render options', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
     env.renderMermaidSVGAsync.mockClear()
 
@@ -50,7 +50,7 @@ describe('editor rendering', () => {
   })
 
   it('shows an error status and message when rendering throws', async () => {
-    const env = createEditorEnv({
+    const env = await createEditorEnv({
       renderImpl: async () => {
         throw new Error('boom')
       },
@@ -64,7 +64,7 @@ describe('editor rendering', () => {
   })
 
   it('shows the placeholder and resets status when the source is empty', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
 
     const editor = env.document.getElementById(
@@ -84,8 +84,8 @@ describe('editor rendering', () => {
 })
 
 describe('hexToRgb', () => {
-  it('parses 6-digit and 3-digit hex colors', () => {
-    const env = createEditorEnv()
+  it('parses 6-digit and 3-digit hex colors', async () => {
+    const env = await createEditorEnv()
     const hexToRgb = (
       env.window as unknown as { hexToRgb: (v: string) => unknown }
     ).hexToRgb
@@ -93,8 +93,8 @@ describe('hexToRgb', () => {
     expect(hexToRgb('#0f0')).toEqual({ r: 0, g: 255, b: 0 })
   })
 
-  it('returns null for invalid input', () => {
-    const env = createEditorEnv()
+  it('returns null for invalid input', async () => {
+    const env = await createEditorEnv()
     const hexToRgb = (
       env.window as unknown as { hexToRgb: (v: string) => unknown }
     ).hexToRgb

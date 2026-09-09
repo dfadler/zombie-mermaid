@@ -25,6 +25,26 @@ export interface BundleForBrowserOptions {
    * minifying).
    */
   minify: boolean
+  /**
+   * Disable Rollup's tree-shaking for this bundle. Defaults to `true`
+   * (tree-shaking on), matching every existing caller's behavior.
+   *
+   * Set `false` for a bundle whose entry point exists purely to run a
+   * fixed set of modules for their top-level side effects (event listener
+   * registration, DOM setup) rather than to export a computed value — e.g.
+   * editor/js/index.ts, the entry editor.ts bundles in place of its old
+   * hand-concatenated `editor/js/*.js` files (zombie-mermaid#766). This
+   * repo's root package.json declares `"sideEffects": false` for the
+   * *published* library's own tree-shaking guarantee to consumers; Vite/
+   * Rollup honor that same field for any local module resolved from this
+   * package, editor/js included, when deciding whether an unused module or
+   * statement can be dropped. A concatenation-replacement bundle needs the
+   * opposite guarantee — every statement in every included module must
+   * survive untouched, exactly as blind string concatenation would have
+   * kept it — so tree-shaking is fully disabled here rather than trusting
+   * per-module `@__PURE__`-style analysis to reach the same conclusion.
+   */
+  treeshake?: boolean
 }
 
 /**
@@ -33,7 +53,7 @@ export interface BundleForBrowserOptions {
  */
 export async function bundleForBrowser(
   entryPath: string,
-  { minify }: BundleForBrowserOptions,
+  { minify, treeshake = true }: BundleForBrowserOptions,
 ): Promise<string> {
   const result = await viteBuild({
     // Skip loading vite.config.ts entirely — its plugin is dev-server-only
@@ -48,6 +68,7 @@ export async function bundleForBrowser(
       target: 'esnext',
       rollupOptions: {
         input: entryPath,
+        treeshake,
         output: {
           format: 'es',
           codeSplitting: false,

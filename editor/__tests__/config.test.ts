@@ -28,8 +28,8 @@ function asEditorWindow(env: ReturnType<typeof createEditorEnv>): EditorWindow {
 }
 
 describe('config panel state', () => {
-  it('readConfig only includes overridden fields', () => {
-    const env = createEditorEnv()
+  it('readConfig only includes overridden fields', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     // Nothing overridden yet -> empty config.
@@ -48,8 +48,8 @@ describe('config panel state', () => {
     })
   })
 
-  it('buildOptions merges the active theme with config overrides, config wins', () => {
-    const env = createEditorEnv()
+  it('buildOptions merges the active theme with config overrides, config wins', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     win.setTheme('nord')
@@ -61,8 +61,8 @@ describe('config panel state', () => {
     expect(opts.fg).toBe(win.__mermaid.THEMES.nord.fg)
   })
 
-  it('setPadding clamps to [0, 120] and updates state.config', () => {
-    const env = createEditorEnv()
+  it('setPadding clamps to [0, 120] and updates state.config', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     win.setPadding(500)
@@ -74,8 +74,8 @@ describe('config panel state', () => {
     expect(win.state.config.padding).toBe(0)
   })
 
-  it('setActiveColor updates cfgColors and state.config for the active key', () => {
-    const env = createEditorEnv()
+  it('setActiveColor updates cfgColors and state.config for the active key', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
     const anchor = env.document.querySelector(
       '.color-edit-btn[data-cfg="accent"]',
@@ -89,8 +89,8 @@ describe('config panel state', () => {
     expect(win.state.config.accent).toBe('#ABCDEF')
   })
 
-  it('setTheme updates state.theme and persists through the shared theme-state key (#688)', () => {
-    const env = createEditorEnv()
+  it('setTheme updates state.theme and persists through the shared theme-state key (#688)', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     // #688: the editor's theme now persists under the same shared
@@ -106,8 +106,10 @@ describe('config panel state', () => {
     expect(win.localStorage.getItem('mermaid-theme')).toBeNull()
   })
 
-  it('migrates a legacy bm-editor-theme value through window.__themeState.setTheme() (#688)', () => {
-    const env = createEditorEnv({ localStorage: { 'bm-editor-theme': 'nord' } })
+  it('migrates a legacy bm-editor-theme value through window.__themeState.setTheme() (#688)', async () => {
+    const env = await createEditorEnv({
+      localStorage: { 'bm-editor-theme': 'nord' },
+    })
     const win = asEditorWindow(env)
 
     // The migration (init.js, module-top-level) runs once, before this
@@ -118,8 +120,8 @@ describe('config panel state', () => {
     expect(win.state.theme).toBe('nord')
   })
 
-  it('does not let a legacy bm-editor-theme value override an already-set shared preference', () => {
-    const env = createEditorEnv({
+  it('does not let a legacy bm-editor-theme value override an already-set shared preference', async () => {
+    const env = await createEditorEnv({
       localStorage: { 'mermaid-theme': 'dracula', 'bm-editor-theme': 'nord' },
     })
     const win = asEditorWindow(env)
@@ -128,8 +130,8 @@ describe('config panel state', () => {
     expect(win.state.theme).toBe('dracula')
   })
 
-  it('reapplies the theme when window.__themeState notifies a change from elsewhere', () => {
-    const env = createEditorEnv()
+  it('reapplies the theme when window.__themeState notifies a change from elsewhere', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     // Simulates a theme picked on another page/tab -- not this page's own
@@ -142,7 +144,7 @@ describe('config panel state', () => {
   })
 
   it('feeds config changes through to the actual render call', async () => {
-    const env = createEditorEnv()
+    const env = await createEditorEnv()
     await flushRenderTimers()
     env.renderMermaidSVGAsync.mockClear()
     const win = asEditorWindow(env)
@@ -157,8 +159,8 @@ describe('config panel state', () => {
 })
 
 describe('stroke overrides', () => {
-  it('applies edge/node stroke-width to non-defs elements only', () => {
-    const env = createEditorEnv()
+  it('applies edge/node stroke-width to non-defs elements only', async () => {
+    const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     const svg = env.document.createElementNS(

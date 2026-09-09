@@ -1,5 +1,7 @@
-var toastTimer
-function showToast(msg) {
+import { toast } from './elements.ts'
+
+let toastTimer: ReturnType<typeof setTimeout>
+export function showToast(msg: string): void {
   toast.textContent = msg
   toast.classList.add('show')
   clearTimeout(toastTimer)
