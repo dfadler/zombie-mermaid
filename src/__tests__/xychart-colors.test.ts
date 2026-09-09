@@ -1,5 +1,6 @@
 /**
- * Tests for xychart color palette generation (src/xychart/colors.ts).
+ * Tests for xychart color palette generation
+ * (packages/mermaid-parser/src/xychart/colors.ts).
  */
 import { describe, it, expect } from 'vitest'
 import {
@@ -8,7 +9,7 @@ import {
   isDarkBackground,
   mixHexColors,
   getSeriesColor,
-} from '../xychart/colors.ts'
+} from '@zombie-mermaid/mermaid-parser'
 
 describe('isValidHex', () => {
   it('accepts a well-formed 6-digit hex color', () => {

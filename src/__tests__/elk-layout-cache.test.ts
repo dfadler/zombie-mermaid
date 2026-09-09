@@ -13,17 +13,19 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
-import { parseClassDiagram } from '../class/parser.ts'
-import { parseErDiagram } from '../er/parser.ts'
+import {
+  parseClassDiagram,
+  parseErDiagram,
+} from '@zombie-mermaid/mermaid-parser'
 import { splitStatements } from '@zombie-mermaid/core'
 import {
   convertToElkFormat,
   layoutGraphSync,
   elkLayoutSync,
   createLayoutCache,
+  layoutClassDiagramSync,
+  layoutErDiagramSync,
 } from '@zombie-mermaid/svg-renderer'
-import { layoutClassDiagramSync } from '../class/layout.ts'
-import { layoutErDiagramSync } from '../er/layout.ts'
 import { renderMermaidSVG } from '../index.ts'
 
 describe('elkLayoutSync layout cache', () => {

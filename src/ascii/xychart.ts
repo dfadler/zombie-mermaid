@@ -11,8 +11,12 @@
 // Multi-series support: each series gets a distinct color from a palette.
 // ============================================================================
 
-import { parseXYChart } from '../xychart/parser.ts'
-import type { XYChart } from '../xychart/types.ts'
+import {
+  parseXYChart,
+  getSeriesColor,
+  CHART_ACCENT_FALLBACK,
+} from '@zombie-mermaid/mermaid-parser'
+import type { XYChart } from '@zombie-mermaid/mermaid-parser'
 import type {
   AsciiConfig,
   AsciiTheme,
@@ -23,7 +27,6 @@ import type {
 } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
-import { getSeriesColor, CHART_ACCENT_FALLBACK } from '../xychart/colors.ts'
 import { splitStatements } from '@zombie-mermaid/core'
 
 // ============================================================================

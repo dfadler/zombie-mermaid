@@ -3,8 +3,8 @@
  * unimplemented (issue #292).
  *
  * Unlike flowcharts/state diagrams (src/parser.ts) and class diagrams
- * (src/class/parser.ts, added alongside this file — see
- * class-click-interactions.test.ts), Mermaid's *own* erDiagram grammar has
+ * (packages/mermaid-parser/src/class/parser.ts, added alongside this file —
+ * see class-click-interactions.test.ts), Mermaid's *own* erDiagram grammar has
  * no `click` directive to parse: as of this writing, upstream support is an
  * open, unmerged feature request (mermaid-js/mermaid#2880, PR #6985), not a
  * shipped part of the language. Guessing at a syntax Mermaid itself hasn't
@@ -18,7 +18,7 @@
  * neither renders a link/tooltip nor corrupts the rest of the diagram.
  */
 import { describe, it, expect } from 'vitest'
-import { parseErDiagram } from '../er/parser.ts'
+import { parseErDiagram } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
 
 /** Helper to parse — preprocesses text the same way index.ts does */

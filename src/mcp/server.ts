@@ -5,7 +5,8 @@
 // mechanical sequence-diagram semantic check, up as Model Context Protocol
 // tools. No rendering or checking logic lives here — see src/mcp/tools/*.ts
 // for the thin per-tool adapters, src/index.ts / src/ascii/index.ts for the
-// actual renderers, and src/sequence/activation-check.ts for the check.
+// actual renderers, and packages/mermaid-parser/src/sequence/activation-check.ts
+// for the check.
 // ============================================================================
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'

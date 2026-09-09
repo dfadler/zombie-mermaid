@@ -14,12 +14,21 @@
 //
 // So: walk what the files actually import, and assert the shape.
 //
-//   core          -> nothing in this repo, only `elkjs` (type-only)
-//   svg-renderer  -> `@zombie-mermaid/core` and `elkjs`, nothing else
+//   core            -> nothing in this repo, only `elkjs` (type-only)
+//   mermaid-parser  -> `@zombie-mermaid/core`, nothing else
+//   svg-renderer    -> `@zombie-mermaid/core`, `@zombie-mermaid/mermaid-parser`,
+//                      and `elkjs`, nothing else
 //
-// Neither may reach back into `src/` by relative path or by importing
-// `zombie-mermaid` itself — the umbrella depends on them, never the
-// reverse.
+// `svg-renderer` depending on `mermaid-parser` (added under #624) is a new
+// edge, not a violation of the sink property above: it is an ordinary,
+// acyclic dependency (both `svg-renderer` and the future `ascii-renderer`
+// depend on `mermaid-parser` directly — the scoping doc's finding 2), and
+// `mermaid-parser` itself stays a sink exactly like `core` — it does not
+// import `svg-renderer` back.
+//
+// None of the three may reach back into `src/` by relative path or by
+// importing `zombie-mermaid` itself — the umbrella depends on them, never
+// the reverse.
 
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -80,9 +89,12 @@ function externalSpecifiers(pkg: string): string[] {
 /**
  * A relative specifier that climbs out of `packages/<name>/src` — i.e. a
  * reach-around into the umbrella's `src/` or into a sibling package. The
- * three legitimate `../` hops inside `svg-renderer` (`layout-engine/*.ts`
- * importing `../styles.ts` and friends) stay within the package and are
- * resolved, not pattern-matched, so this can't be fooled by depth.
+ * many legitimate `../` hops inside `svg-renderer` (`layout-engine/*.ts`
+ * importing `../styles.ts`, and — since #624 — each `class/`, `er/`,
+ * `sequence/`, `xychart/` subdirectory's `layout.ts`/`renderer.ts`
+ * importing sibling modules like `../elk-instance.ts`/`../renderer.ts`)
+ * stay within the package and are resolved, not pattern-matched, so this
+ * can't be fooled by depth.
  */
 function escapingRelativeImports(pkg: string): string[] {
   const packageSrc = resolve(PACKAGES, pkg, 'src')
@@ -115,10 +127,27 @@ describe('@zombie-mermaid/core is a workspace sink', () => {
   })
 })
 
-describe('@zombie-mermaid/svg-renderer depends only on core', () => {
-  it('imports no workspace package other than @zombie-mermaid/core', () => {
+describe('@zombie-mermaid/mermaid-parser is a workspace sink', () => {
+  // Verified (#624, umbrella #620): no file under packages/mermaid-parser/src
+  // imports `elkjs`, `@zombie-mermaid/svg-renderer`, or anything from the
+  // umbrella — the property that lets both `svg-renderer` and the future
+  // `ascii-renderer` depend on it without either dragging the other in.
+  it('imports no workspace package and no npm dependency other than @zombie-mermaid/core', () => {
+    expect(externalSpecifiers('mermaid-parser')).toEqual([
+      '@zombie-mermaid/core',
+    ])
+  })
+
+  it('never reaches outside its own src/ by relative path', () => {
+    expect(escapingRelativeImports('mermaid-parser')).toEqual([])
+  })
+})
+
+describe('@zombie-mermaid/svg-renderer depends only on core and mermaid-parser', () => {
+  it('imports no workspace package other than @zombie-mermaid/core and @zombie-mermaid/mermaid-parser', () => {
     expect(externalSpecifiers('svg-renderer')).toEqual([
       '@zombie-mermaid/core',
+      '@zombie-mermaid/mermaid-parser',
       'elkjs',
     ])
   })
@@ -129,21 +158,24 @@ describe('@zombie-mermaid/svg-renderer depends only on core', () => {
 })
 
 describe('workspace package manifests', () => {
-  // The umbrella bundles both packages into its own `dist/` (they are
+  // The umbrella bundles all three packages into its own `dist/` (they are
   // absent from `isExternal` in vite.config.lib.ts), so nothing resolves
   // these names at install time and publishing them would be misleading.
   // Recommendation 2 of the scoping doc; the umbrella declares them as
   // devDependencies for the same reason.
-  it.each(['core', 'svg-renderer'])('%s is private and unpublished', (pkg) => {
-    const manifest = JSON.parse(
-      readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
-    ) as { name: string; private: boolean }
-    expect(manifest.name).toBe(`@zombie-mermaid/${pkg}`)
-    expect(manifest.private).toBe(true)
-  })
+  it.each(['core', 'mermaid-parser', 'svg-renderer'])(
+    '%s is private and unpublished',
+    (pkg) => {
+      const manifest = JSON.parse(
+        readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
+      ) as { name: string; private: boolean }
+      expect(manifest.name).toBe(`@zombie-mermaid/${pkg}`)
+      expect(manifest.private).toBe(true)
+    },
+  )
 
   it('declares every external specifier its source actually imports', () => {
-    for (const pkg of ['core', 'svg-renderer'] as const) {
+    for (const pkg of ['core', 'mermaid-parser', 'svg-renderer'] as const) {
       const manifest = JSON.parse(
         readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
       ) as { dependencies?: Record<string, string> }

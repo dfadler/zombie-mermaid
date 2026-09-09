@@ -5,7 +5,7 @@ import type {
   PositionedClassRelationship,
   ClassMember,
   RelationshipType,
-} from './types.ts'
+} from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
@@ -17,14 +17,14 @@ import {
   escapeAttr,
   safeHref,
 } from '@zombie-mermaid/core'
+import { withDataSrc } from '../renderer.ts'
 import {
-  withDataSrc,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
   TEXT_BASELINE_SHIFT,
-} from '@zombie-mermaid/svg-renderer'
-import type { FontSizes } from '@zombie-mermaid/svg-renderer'
+} from '../styles.ts'
+import type { FontSizes } from '../styles.ts'
 import { CLS } from './layout.ts'
 
 // ============================================================================
@@ -399,7 +399,7 @@ const NOTE_FOLD = 6
 /**
  * Render a note as a dog-eared box: a polygon with its top-right corner
  * clipped plus a small fold triangle — the same shape the sequence renderer
- * draws for its notes (src/sequence/renderer.ts renderNote), so notes look
+ * draws for its notes (../sequence/renderer.ts renderNote), so notes look
  * alike across diagram types. Wrapped in <g class="class-note"> with
  * `data-for` naming the class it's attached to, if any.
  */

@@ -2,12 +2,11 @@ import type {
   MermaidGraph,
   MermaidNode,
   MermaidSubgraph,
-  Direction,
   NodeShape,
   EdgeStyle,
 } from '@zombie-mermaid/core'
 import {
-  isDirection,
+  toDirection,
   normalizeBrTags,
   splitStatements,
   extractInitConfig,
@@ -48,26 +47,15 @@ function stripWrappingQuotes(s: string): string {
 // that we don't need a grammar generator or full parser combinator.
 // ============================================================================
 
-/**
- * Normalize a regex-captured direction token to a `Direction`.
- *
- * Accepts `string | undefined` because every call site passes a regex
- * capture group value (`match[1]`, typed as possibly-`undefined` under
- * `noUncheckedIndexedAccess`) straight through. Each call site's regex
- * guards the capture with the same `(TD|TB|LR|BT|RL)` alternation
- * (case-insensitively), so the group always participates in the match in
- * practice — but that's a regex-structure guarantee the type checker can't
- * see across the call site. Validating `undefined` here, instead of
- * asserting non-null at each call site, turns a hypothetical violation into
- * a clear, descriptive error rather than a raw `undefined` crash.
- */
-export function toDirection(raw: string | undefined): Direction {
-  const upper = raw?.toUpperCase()
-  if (upper === undefined || !isDirection(upper)) {
-    throw new Error(`Invalid direction: "${raw}"`)
-  }
-  return upper
-}
+// `toDirection` used to be defined here, with this file as its only caller.
+// #624 gave it a second caller — `packages/mermaid-parser/src/er/parser.ts`,
+// which cannot import this umbrella file without creating a cycle
+// (mermaid-parser -> umbrella -> mermaid-parser) — so it moved to
+// `packages/core/src/direction.ts` alongside `isDirection`, for the same
+// reason that one moved under #625. Re-exported here so existing importers
+// of `toDirection` from `./parser.ts` (this file's own tests included) keep
+// working unchanged.
+export { toDirection } from '@zombie-mermaid/core'
 
 /**
  * All diagram-type headers this library recognizes, for the "supported
@@ -803,8 +791,9 @@ function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
  * browser without script.
  *
  * The actual grammar and href-safety rules live in packages/core/src/click-directive.ts,
- * shared with the class diagram parser (src/class/parser.ts) — this is a
- * thin wrapper binding it to this parser's `graph.interactions` map.
+ * shared with the class diagram parser
+ * (packages/mermaid-parser/src/class/parser.ts) — this is a thin wrapper
+ * binding it to this parser's `graph.interactions` map.
  */
 function applyClickStatement(line: string, graph: MermaidGraph): void {
   applyClickStatementShared(line, graph.interactions)

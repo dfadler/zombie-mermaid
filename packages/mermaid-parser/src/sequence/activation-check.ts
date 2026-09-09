@@ -4,9 +4,10 @@
 // A mechanical, deterministic semantic check: every `activate X` (or the
 // `+` arrow shorthand) must be closed by a matching `deactivate X` (or the
 // `-` shorthand) before the diagram ends. This doesn't need an LLM judge —
-// it's the same activation-stack bookkeeping src/sequence/layout.ts already
-// runs to *draw* activation bars (see its `activationStacks` map), reused
-// here to *report* imbalance instead of silently rendering around it.
+// it's the same activation-stack bookkeeping
+// packages/svg-renderer/src/sequence/layout.ts already runs to *draw*
+// activation bars (see its `activationStacks` map), reused here to *report*
+// imbalance instead of silently rendering around it.
 //
 // Motivation (issue #539, split from #536): research on LLM-generated
 // Mermaid sequence diagrams found they fail mostly on activation handling

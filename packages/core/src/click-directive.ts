@@ -4,8 +4,9 @@ import type { NodeInteraction } from './types.ts'
 // Shared `click` directive parsing and href sanitization.
 //
 // Every diagram type that recognizes Mermaid's `click` statement (flowchart/
-// state via src/parser.ts, class diagrams via src/class/parser.ts) shares
-// this exact grammar and the same href-safety rules — pulled out here so
+// state via src/parser.ts, class diagrams via
+// packages/mermaid-parser/src/class/parser.ts) shares this exact grammar
+// and the same href-safety rules — pulled out here so
 // neither copy can drift from the other. See
 // docs/decisions/no-script-interactivity.md for the tier model this
 // implements: an `href` becomes a real `<a>` link (tier 2), a tooltip

@@ -10,14 +10,16 @@
 // Relationship lines use simple Manhattan routing (vertical + horizontal).
 // ============================================================================
 
-import { parseClassDiagram } from '../class/parser.ts'
-import { formatClassMember } from '../class/format.ts'
+import {
+  parseClassDiagram,
+  formatClassMember,
+} from '@zombie-mermaid/mermaid-parser'
 import type {
   ClassDiagram,
   ClassNode,
   ClassNote,
   RelationshipType,
-} from '../class/types.ts'
+} from '@zombie-mermaid/mermaid-parser'
 import type {
   AsciiConfig,
   Canvas,

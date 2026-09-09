@@ -1,6 +1,6 @@
 /**
  * Tests for the sequence diagram activation/deactivation balance check
- * (src/sequence/activation-check.ts).
+ * (packages/mermaid-parser/src/sequence/activation-check.ts).
  *
  * Covers: balanced diagrams (both the standalone activate/deactivate form
  * and the +/- arrow shorthand, including nesting), a dangling activation
@@ -8,8 +8,10 @@
  * that mix both issue types or both syntactic forms together.
  */
 import { describe, it, expect } from 'vitest'
-import { parseSequenceDiagram } from '../sequence/parser.ts'
-import { checkActivationBalance } from '../sequence/activation-check.ts'
+import {
+  parseSequenceDiagram,
+  checkActivationBalance,
+} from '@zombie-mermaid/mermaid-parser'
 
 /** Helper to parse — preprocesses text the same way index.ts does. */
 function parse(text: string) {

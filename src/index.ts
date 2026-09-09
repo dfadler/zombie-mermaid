@@ -65,12 +65,16 @@ import {
   splitStatements,
 } from '@zombie-mermaid/core'
 
-import { parseSequenceDiagram } from './sequence/parser.ts'
-import { layoutSequenceDiagram } from './sequence/layout.ts'
-import { renderSequenceSvg } from './sequence/renderer.ts'
-import { parseClassDiagram } from './class/parser.ts'
-import { layoutClassDiagramSync } from './class/layout.ts'
-import { renderClassSvg } from './class/renderer.ts'
+import {
+  parseSequenceDiagram,
+  parseClassDiagram,
+} from '@zombie-mermaid/mermaid-parser'
+import {
+  layoutSequenceDiagram,
+  renderSequenceSvg,
+  layoutClassDiagramSync,
+  renderClassSvg,
+} from '@zombie-mermaid/svg-renderer'
 import { diagramRegistry } from './diagram-registry.ts'
 import type { SvgRenderContext } from './diagram-registry.ts'
 

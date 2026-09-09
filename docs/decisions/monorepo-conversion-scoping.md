@@ -426,3 +426,43 @@ this build already emits, since nothing builds these packages yet). #621 and
 #622 are where that becomes real; `writeDctsTwins` fails the build if a
 `@zombie-mermaid/*` specifier ever survives into a published `.d.ts` in the
 meantime.
+
+## Addendum (#624) — what performing the `mermaid-parser` split found
+
+Written while working #624, which created `packages/mermaid-parser/` and
+split each of `class/`, `er/`, `sequence/`, `xychart/` into it (the parser
+half) and `packages/svg-renderer/` (the renderer half, joining the files
+#625 already put there). Finding 1's per-file list (not per-half-pair) held
+exactly as documented — `class/format.ts`, `xychart/colors.ts`,
+`sequence/box-color.ts` went to `mermaid-parser` alongside each directory's
+`parser.ts`/`types.ts`, and `sequence/activation-check.ts` (needed by `mcp`,
+per #623's addendum correction 3) joined them for the same reason.
+
+### A third symbol had to move: `toDirection`
+
+Same shape as `isDirection`'s move under #625, one level down the
+dependency chain: `toDirection` lived in `src/parser.ts` with that file as
+its only caller, until `er/parser.ts` — now in `mermaid-parser` — became a
+second caller that cannot import the umbrella's `src/parser.ts` without
+`mermaid-parser` depending on one of its own consumers. It moved to
+`packages/core/src/direction.ts` alongside `isDirection`; `src/parser.ts`
+re-exports it for backward compatibility. Neither `expanded-shapes.ts` nor
+`src/parser.ts` itself needed to move — #624's scope is the four per-type
+directories only (finding 1), and flowcharts already have the
+shared-`MermaidGraph`-model shape finding 2 contrasts them against.
+
+### `svg-renderer` gained one dependency, deliberately
+
+`layout.ts`/`renderer.ts` in each of the four types used to reach their
+directory's own `types.ts` (for `Positioned*` types), and `class/layout.ts`
+additionally reached `format.ts` (`formatClassMember`) and
+`xychart/renderer.ts` reached `colors.ts` (`getSeriesColor`,
+`CHART_ACCENT_FALLBACK`) — all by relative import within the same
+now-split directory. Every one of those became a type-only or value import
+from `@zombie-mermaid/mermaid-parser` instead. This is the "ordinary,
+acyclic dependency" finding 2 predicted (`svg-renderer` and the future
+`ascii-renderer` both depend on `mermaid-parser`, neither depends on the
+other) rather than a new cycle — `src/__tests__/workspace-package-boundaries.test.ts`
+now asserts `mermaid-parser` stays a sink exactly like `core`, and that
+`svg-renderer`'s only workspace dependencies are `core` and
+`mermaid-parser`.

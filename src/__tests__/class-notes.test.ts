@@ -8,8 +8,8 @@
  * directly beside its class with a dashed connector.
  */
 import { describe, it, expect } from 'vitest'
-import { parseClassDiagram } from '../class/parser.ts'
-import { layoutClassDiagramSync } from '../class/layout.ts'
+import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
+import { layoutClassDiagramSync } from '@zombie-mermaid/svg-renderer'
 import { renderMermaidSVG } from '../index.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'
 import { splitStatements } from '@zombie-mermaid/core'

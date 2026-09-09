@@ -9,7 +9,7 @@
  * flowchart ASCII renderer does.
  */
 import { describe, it, expect } from 'vitest'
-import { parseClassDiagram } from '../class/parser.ts'
+import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 import { parseMermaid } from '../parser.ts'
 import { renderMermaidSVG } from '../index.ts'
 import { renderMermaidASCII } from '../ascii/index.ts'

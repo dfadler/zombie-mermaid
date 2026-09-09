@@ -6,7 +6,7 @@
 and rasterized targets). The library has always emitted zero `<script>` tags
 — the one existing interactive feature, xychart hover tooltips
 (`RenderOptions.interactive`), is implemented entirely as markup and CSS in
-`src/xychart/renderer.ts`:
+`packages/svg-renderer/src/xychart/renderer.ts`:
 
 ```css
 .xychart-bar-group:hover .xychart-tip,

@@ -5,8 +5,8 @@
  * in `./elk-adapter-utils.ts`; this module is its input-side counterpart.
  *
  * Three renderers build ELK's typed JSON input independently —
- * `./to-elk.ts` (flowchart + state), `src/class/layout.ts`, and
- * `src/er/layout.ts`. They differ in domain model and in which extra
+ * `./to-elk.ts` (flowchart + state), `../class/layout.ts`, and
+ * `../er/layout.ts`. They differ in domain model and in which extra
  * `elk.*` options they set, but the primitives underneath are identical:
  * one direction mapping, one `elk.padding` string format, one leaf-node
  * shape, and one measured edge-label box. Those primitives live here so
@@ -42,10 +42,11 @@ export type ElkDirection = 'DOWN' | 'UP' | 'LEFT' | 'RIGHT'
  *   is only a type-level backstop; the effective default is mermaid's own
  *   top-down flowchart default.
  * - **class** — `DOWN`. `ClassDiagram` has no direction concept at all (see
- *   `ClassRenderOptions` in `src/types.ts`: class diagrams "have no
- *   `direction` or `curve` concept"), so this is the renderer's single
- *   fixed orientation, matching Mermaid's own TB class rendering — which
- *   `src/class/layout.ts` relies on to put a `note for X` above its class.
+ *   `ClassRenderOptions` in `packages/core/src/types.ts`: class diagrams
+ *   "have no `direction` or `curve` concept"), so this is the renderer's
+ *   single fixed orientation, matching Mermaid's own TB class rendering —
+ *   which `../class/layout.ts` relies on to put a `note for X` above its
+ *   class.
  * - **ER** — `RIGHT`. An ER diagram's `direction` is optional
  *   (`ErDiagram.direction?`), left `undefined` when the source has no
  *   `direction` statement, and this renderer has always laid those out

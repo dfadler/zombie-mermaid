@@ -33,15 +33,19 @@ import type {
 import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 import { withDirectionOverride } from '@zombie-mermaid/core'
 
-import { parseXYChart } from './xychart/parser.ts'
-import { layoutXYChart } from './xychart/layout.ts'
-import { renderXYChartSvg } from './xychart/renderer.ts'
-import type { XYChart, PositionedXYChart } from './xychart/types.ts'
-
-import { parseErDiagram } from './er/parser.ts'
-import { layoutErDiagramSync } from './er/layout.ts'
-import { renderErSvg } from './er/renderer.ts'
-import type { ErDiagram, PositionedErDiagram } from './er/types.ts'
+import { parseXYChart, parseErDiagram } from '@zombie-mermaid/mermaid-parser'
+import type {
+  XYChart,
+  PositionedXYChart,
+  ErDiagram,
+  PositionedErDiagram,
+} from '@zombie-mermaid/mermaid-parser'
+import {
+  layoutXYChart,
+  renderXYChartSvg,
+  layoutErDiagramSync,
+  renderErSvg,
+} from '@zombie-mermaid/svg-renderer'
 
 /**
  * Parameters shared by every per-type SVG renderer today, factored out of

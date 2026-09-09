@@ -556,10 +556,12 @@ export interface RenderOptions {
 // These `Pick<RenderOptions, ...>` types make each diagram type's actual
 // option surface structural rather than prose-only, confirmed field-by-field
 // against real consumption (grepped across packages/svg-renderer/src/renderer.ts,
-// src/sequence/renderer.ts, src/class/renderer.ts, src/er/renderer.ts,
-// src/xychart/renderer.ts, and the layout modules each render path calls
-// through — packages/svg-renderer/src/layout-engine.ts, src/sequence/layout.ts,
-// src/class/layout.ts, src/er/layout.ts, src/xychart/layout.ts).
+// packages/svg-renderer/src/sequence/renderer.ts, packages/svg-renderer/src/class/renderer.ts,
+// packages/svg-renderer/src/er/renderer.ts, packages/svg-renderer/src/xychart/renderer.ts,
+// and the layout modules each render path calls through —
+// packages/svg-renderer/src/layout-engine.ts, packages/svg-renderer/src/sequence/layout.ts,
+// packages/svg-renderer/src/class/layout.ts, packages/svg-renderer/src/er/layout.ts,
+// packages/svg-renderer/src/xychart/layout.ts).
 //
 // IMPORTANT — this does not narrow `renderMermaidSVG(text, options)` itself.
 // That entry point detects the diagram type from `text` *inside* the

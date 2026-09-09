@@ -6,8 +6,8 @@
  * to inspect Y coordinates, rather than checking SVG output.
  */
 import { describe, it, expect } from 'vitest'
-import { parseSequenceDiagram } from '../sequence/parser.ts'
-import { layoutSequenceDiagram } from '../sequence/layout.ts'
+import { parseSequenceDiagram } from '@zombie-mermaid/mermaid-parser'
+import { layoutSequenceDiagram } from '@zombie-mermaid/svg-renderer'
 
 /** Helper: parse and layout a sequence diagram from source lines */
 function layout(source: string) {

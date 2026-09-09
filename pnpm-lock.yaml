@@ -51,6 +51,9 @@ importers:
       '@zombie-mermaid/core':
         specifier: workspace:*
         version: link:packages/core
+      '@zombie-mermaid/mermaid-parser':
+        specifier: workspace:*
+        version: link:packages/mermaid-parser
       '@zombie-mermaid/svg-renderer':
         specifier: workspace:*
         version: link:packages/svg-renderer
@@ -113,11 +116,20 @@ importers:
         specifier: ^0.11.0
         version: 0.11.1
 
+  packages/mermaid-parser:
+    dependencies:
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/svg-renderer:
     dependencies:
       '@zombie-mermaid/core':
         specifier: workspace:*
         version: link:../core
+      '@zombie-mermaid/mermaid-parser':
+        specifier: workspace:*
+        version: link:../mermaid-parser
       elkjs:
         specifier: ^0.11.0
         version: 0.11.1

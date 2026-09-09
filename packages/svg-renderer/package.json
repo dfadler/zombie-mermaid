@@ -15,6 +15,7 @@
   ],
   "dependencies": {
     "@zombie-mermaid/core": "workspace:*",
+    "@zombie-mermaid/mermaid-parser": "workspace:*",
     "elkjs": "^0.11.0"
   }
 }

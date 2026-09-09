@@ -13,8 +13,8 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
-import { layoutSequenceDiagram } from '../sequence/layout.ts'
-import { parseSequenceDiagram } from '../sequence/parser.ts'
+import { layoutSequenceDiagram } from '@zombie-mermaid/svg-renderer'
+import { parseSequenceDiagram } from '@zombie-mermaid/mermaid-parser'
 
 describe('RenderOptions.fontSizes – flowchart', () => {
   it('overriding nodeLabel changes the emitted node font-size', () => {

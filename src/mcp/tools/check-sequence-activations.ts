@@ -5,9 +5,10 @@
 // render tools: every "activate X" (or "+" arrow shorthand) in a Mermaid
 // sequence diagram must be closed by a matching "deactivate X" ("-"
 // shorthand) before the diagram ends. No LLM judge involved — see
-// src/sequence/activation-check.ts for the actual check, which reuses the
-// same activation-stack bookkeeping src/sequence/layout.ts already runs to
-// *draw* activation bars.
+// packages/mermaid-parser/src/sequence/activation-check.ts for the actual
+// check, which reuses the same activation-stack bookkeeping
+// packages/svg-renderer/src/sequence/layout.ts already runs to *draw*
+// activation bars.
 //
 // Why this tool, and why it isn't duplicating agentic-mermaid's `verify`
 // tool (github.com/adewale/agentic-mermaid): that tool's own docs describe
@@ -22,8 +23,10 @@
 import { z } from 'zod'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { detectDiagramType, splitStatements } from '@zombie-mermaid/core'
-import { parseSequenceDiagram } from '../../sequence/parser.ts'
-import { checkActivationBalance } from '../../sequence/activation-check.ts'
+import {
+  parseSequenceDiagram,
+  checkActivationBalance,
+} from '@zombie-mermaid/mermaid-parser'
 
 export const checkSequenceActivationsInputShape = {
   diagram: z
