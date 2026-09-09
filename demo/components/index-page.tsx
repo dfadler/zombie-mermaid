@@ -46,7 +46,7 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import { renderToString } from 'react-dom/server'
-import { FORK_URL } from './site-chrome.tsx'
+import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
@@ -780,17 +780,7 @@ export function IndexPage({
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <NavIsland
-          homeHref="/zombie-mermaid/"
-          hrefs={{
-            diagrams: 'diagrams/',
-            editor: 'editor.html',
-            forkFixes: 'fork-fixes.html',
-            blog: 'blog/',
-            github: FORK_URL,
-          }}
-          sticky
-        />
+        <NavIsland homeHref={HOME_HREF} hrefs={ROOT_NAV_HREFS} sticky />
         <main id="main">
           {/*
             Plain, inert hydration containers -- see dashboard-app.tsx's

@@ -38,7 +38,7 @@
 import type { ReactNode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { escapeJsonForScriptTag } from '../format.ts'
-import { FORK_URL } from './site-chrome.tsx'
+import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript, type NavKey } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
@@ -84,7 +84,7 @@ export {
 const NAV_HREFS: Partial<Record<NavKey, string>> = {
   diagrams: '../diagrams/',
   editor: '../editor',
-  forkFixes: '../fork-fixes',
+  forkFixes: '../fork-fixes.html',
   blog: './',
   github: FORK_URL,
 }
@@ -98,7 +98,7 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
     links: [
       { label: 'Diagrams', href: '../diagrams/' },
       { label: 'Editor', href: '../editor' },
-      { label: 'Fork fixes', href: '../fork-fixes' },
+      { label: 'Fork fixes', href: '../fork-fixes.html' },
     ],
   },
   {
@@ -235,7 +235,7 @@ export function BlogPostPage({
           )} 40%, ${colorVar('--bg')} 100%)`,
         }}
       >
-        <NavIsland active="blog" homeHref="../" hrefs={NAV_HREFS} />
+        <NavIsland active="blog" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
 
         {/*
           Plain, inert hydration container -- see dashboard-app.tsx's
@@ -320,7 +320,7 @@ export function BlogIndexPage({
           )} 40%, ${colorVar('--bg')} 100%)`,
         }}
       >
-        <NavIsland active="blog" homeHref="../" hrefs={NAV_HREFS} />
+        <NavIsland active="blog" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
 
         {/*
           Plain, inert hydration container -- see BlogPostPage's identical
