@@ -39,8 +39,8 @@
  */
 import type { ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
-import { Nav, NavCopyScript, navCss } from './nav.tsx'
-import { Footer, footerCss, type FooterColumn } from './footer.tsx'
+import { Nav, NavCopyScript } from './nav.tsx'
+import { Footer, type FooterColumn } from './footer.tsx'
 import {
   CheckIcon,
   ChecklistIcon,
@@ -50,13 +50,8 @@ import {
   TerminalIcon,
   FEATURE_ICONS,
 } from './icons.tsx'
-import {
-  Card,
-  CTA,
-  Pill,
-  SectionEyebrow,
-  primitivesCss,
-} from './primitives.tsx'
+import { Card, CTA, Pill, SectionEyebrow } from './primitives.tsx'
+import { SharedPageStyles } from './shared-page-css.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
@@ -68,7 +63,6 @@ import {
   SECTION_SPACE,
   SPACE,
   colorVar,
-  designBaseCss,
 } from './tokens.tsx'
 
 const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
@@ -195,8 +189,8 @@ const LATEST_POST = {
  * hero/section responsive rules. Every animation is disabled under
  * `prefers-reduced-motion: reduce`.
  *
- * Emit once, after `designBaseCss()`, `primitivesCss()`, `navCss()`, and
- * `footerCss()` — this page's `<style>` order in {@link IndexPage}.
+ * Emit once, after shared-page-css.tsx's `sharedPageCss()` (via
+ * `SharedPageStyles`) — this page's `<style>` order in {@link IndexPage}.
  */
 function homePageCss(): string {
   return `body {
@@ -1998,10 +1992,7 @@ export function IndexPage({ jsonLd }: IndexPageProps) {
           src="https://plausible.io/js/script.js"
         />
         <DesignFontLinks />
-        <style>{designBaseCss()}</style>
-        <style>{primitivesCss()}</style>
-        <style>{navCss()}</style>
-        <style>{footerCss()}</style>
+        <SharedPageStyles />
         <style>{homePageCss()}</style>
       </head>
       <body>

@@ -37,10 +37,7 @@ import {
   BlogIndexPage,
   BlogPostPage,
 } from './demo/components/blog-page.tsx'
-import { footerCss } from './demo/components/footer.tsx'
-import { navCss } from './demo/components/nav.tsx'
-import { primitivesCss } from './demo/components/primitives.tsx'
-import { designBaseCss } from './demo/components/tokens.tsx'
+import { sharedPageCss } from './demo/components/shared-page-css.tsx'
 import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { renderMermaidSVG } from './src/index.ts'
 
@@ -377,12 +374,7 @@ async function main(): Promise<void> {
     new URL('./demo/blog.css', import.meta.url),
     'utf8',
   )
-  await writeFile(
-    new URL('./assets/blog.css', OUT_DIR),
-    [designBaseCss(), primitivesCss(), navCss(), footerCss(), blogCss].join(
-      '\n\n',
-    ),
-  )
+  await writeFile(new URL('./assets/blog.css', OUT_DIR), sharedPageCss(blogCss))
 
   const posts = await loadPosts()
   const highlighter = await createHighlighter({

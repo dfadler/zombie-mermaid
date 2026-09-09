@@ -38,16 +38,16 @@
  */
 import type { CSSProperties, ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
-import { Footer, footerCss, type FooterColumn } from './footer.tsx'
-import { Nav, NavCopyScript, navCss } from './nav.tsx'
+import { Footer, type FooterColumn } from './footer.tsx'
+import { Nav, NavCopyScript } from './nav.tsx'
 import {
   Card,
   CTA,
   SectionEyebrow,
   accentVar,
-  primitivesCss,
   type Accent,
 } from './primitives.tsx'
+import { SharedPageStyles } from './shared-page-css.tsx'
 import {
   ClassIcon,
   ErIcon,
@@ -67,7 +67,6 @@ import {
   SECTION_SPACE,
   SPACE,
   colorVar,
-  designBaseCss,
 } from './tokens.tsx'
 
 /**
@@ -518,11 +517,10 @@ export function OtherTypesGrid({
  * colours already read correctly against this page's dark `.card` — only
  * the opaque light-chip background it also paints needs suppressing.
  *
- * Emit once per page, after tokens.tsx's `designBaseCss()`,
- * primitives.tsx's `primitivesCss()`, nav.tsx's `navCss()`, and
- * footer.tsx's `footerCss()` — this reuses `.card`, `.pill`, and
- * `.section-eyebrow`, and `.section-px`'s responsive gutter (declared once,
- * generically, by `footerCss()`) rather than redeclaring them.
+ * Emit once per page, after shared-page-css.tsx's `sharedPageCss()` (via
+ * `SharedPageStyles`) — this reuses `.card`, `.pill`, and `.section-eyebrow`,
+ * and `.section-px`'s responsive gutter (declared once, generically, by
+ * `footerCss()`) rather than redeclaring them.
  */
 function pageCss(): string {
   return `@keyframes marchingAnts { to { stroke-dashoffset: -24; } }
@@ -708,10 +706,7 @@ function DetailHead({
       <link rel="icon" type="image/svg+xml" href={faviconHref} />
       <DesignFontLinks />
       <link rel="stylesheet" href={cssHref} />
-      <style>{designBaseCss()}</style>
-      <style>{primitivesCss()}</style>
-      <style>{navCss()}</style>
-      <style>{footerCss()}</style>
+      <SharedPageStyles />
       {extraStyle}
     </head>
   )
