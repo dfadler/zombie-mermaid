@@ -174,7 +174,12 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
         css: FIXTURE_CSS,
         fixes,
         themeBarScript: FIXTURE_SCRIPT,
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        // #802: fork-fixes.html's clientScript hydrates ForkFixesApp +
+        // NavIsland in one bundle now, replacing the standalone
+        // nav-only-client.tsx bundle every other page here still uses —
+        // reusing FIXTURE_NAV_CLIENT_SCRIPT's content is still apt, since
+        // this fixture only cares that *some* script is inlined verbatim.
+        clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/fork-fixes-page.normalized.txt')

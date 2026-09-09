@@ -17,7 +17,7 @@ import {
   FixPanel,
   tokenizeMermaidSource,
   type PanelContent,
-} from '../demo/components/fork-fixes-page.tsx'
+} from '../demo/components/fork-fixes-app.tsx'
 
 describe('tokenizeMermaidSource', () => {
   it('colours the opening diagram-type keyword, only on the first line', () => {
