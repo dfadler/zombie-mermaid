@@ -59,6 +59,7 @@ import {
   ClockIcon,
 } from './icons.tsx'
 import { Card, CTA, SectionEyebrow, accentVar } from './primitives.tsx'
+import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import {
   FONT_SIZE,
   FONT_WEIGHT,
@@ -69,8 +70,13 @@ import {
   colorVar,
 } from './tokens.tsx'
 
-/** The fork's own repository. */
-export const FORK_URL = 'https://github.com/dfadler/zombie-mermaid'
+/**
+ * The fork's own repository. Re-exported from site-chrome.tsx's `FORK_URL`
+ * (rather than every other page's plain import) because dashboard.html's
+ * own generator (dashboard.ts) and its tests already import this from
+ * dashboard-app.tsx.
+ */
+export { FORK_URL }
 /** The upstream repository this fork tracks. */
 export const UPSTREAM_URL = 'https://github.com/lukilabs/beautiful-mermaid'
 /**
@@ -82,17 +88,20 @@ export const UPSTREAM_URL = 'https://github.com/lukilabs/beautiful-mermaid'
 export const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
 
 /**
- * The site's real routes, relative to dashboard.html's own location in the
- * built `site/` directory (see package.json's `build:site` script, which
- * moves every generator's output into one flat `site/` alongside `blog/`
- * and `diagrams/`).
+ * The site's real routes, as dashboard.html (root-level, alongside
+ * index.html/editor.html/fork-fixes.html — see package.json's `build:site`
+ * script) sees them. Built from site-chrome.tsx's shared `HOME_HREF`/
+ * `ROOT_NAV_HREFS` rather than this file's own hand-typed copy, which used
+ * to drift from every other root-level page's values (a stale relative
+ * `'index.html'` home link, an inconsistent `'diagrams/index.html'`) —
+ * exactly the duplication those two constants exist to prevent.
  */
 export const ROUTES = {
-  home: 'index.html',
-  diagrams: 'diagrams/index.html',
-  editor: 'editor.html',
-  forkFixes: 'fork-fixes.html',
-  blog: 'blog/',
+  home: HOME_HREF,
+  diagrams: ROOT_NAV_HREFS.diagrams,
+  editor: ROOT_NAV_HREFS.editor,
+  forkFixes: ROOT_NAV_HREFS.forkFixes,
+  blog: ROOT_NAV_HREFS.blog,
 } as const
 
 /** The dark green ink primitives.tsx documents for a solid-green CTA/pill — see its `SOLID_INK` note. */

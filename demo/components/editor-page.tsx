@@ -114,7 +114,7 @@
  */
 import type { ReactNode } from 'react'
 import { SiteHead } from './site-head.tsx'
-import { FORK_URL } from './site-chrome.tsx'
+import { HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { EditorAppIsland } from './editor-app-island.tsx'
 import { EDITOR_LEGACY_APP_JS_ELEMENT_ID } from './editor-app.tsx'
 import type { EditorThemeItem } from './editor-topbar.tsx'
@@ -503,7 +503,11 @@ export function EditorPage({
   editorClientScript,
   appJs,
 }: EditorPageProps) {
-  const homeHref = '/zombie-mermaid/'
+  const homeHref = HOME_HREF
+  // This page's own "Editor" nav item has no real destination -- omit the
+  // key so nav.tsx falls back to NAV_ITEMS's `#editor` placeholder, same
+  // as every other page's active-page self-link.
+  const { editor: _editor, ...editorNavHrefs } = ROOT_NAV_HREFS
   return (
     <html lang="en">
       <head>
@@ -524,12 +528,7 @@ export function EditorPage({
           <NavIsland
             active="editor"
             homeHref={homeHref}
-            hrefs={{
-              diagrams: 'diagrams/',
-              forkFixes: 'fork-fixes.html',
-              blog: 'blog/',
-              github: FORK_URL,
-            }}
+            hrefs={editorNavHrefs}
           />
           <EditorHero homeHref={homeHref} />
         </div>

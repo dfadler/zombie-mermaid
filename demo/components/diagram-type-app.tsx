@@ -33,7 +33,7 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
-import { FORK_URL } from './site-chrome.tsx'
+import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
 import { ChevronRightIcon } from './icons.tsx'
 import {
   Card,
@@ -58,8 +58,14 @@ import {
  * type/hub page lives at the same depth, so these are fixed rather than
  * threaded through as props. Exported for `diagram-page.tsx` (`<NavIsland
  * hrefs={NAV_HREFS}>`) and `diagram-hub-app.tsx` (`HubBreadcrumb`).
+ *
+ * `HOME_HREF` itself is just site-chrome.tsx's shared constant, re-exported
+ * here so those two callers don't need a second import -- see that
+ * constant's own doc comment for why it's absolute rather than a relative
+ * `'../'` (which is what this used to be, independently of every other
+ * page's own copy of the same link).
  */
-export const HOME_HREF = '../'
+export { HOME_HREF }
 export const NAV_HREFS = {
   diagrams: './',
   editor: '../editor',

@@ -38,7 +38,7 @@
  */
 import { renderToString } from 'react-dom/server'
 import { escapeJsonForScriptTag } from '../format.ts'
-import { FORK_URL } from './site-chrome.tsx'
+import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
@@ -69,13 +69,7 @@ export {
   type ForkFixesAppProps,
 } from './fork-fixes-app.tsx'
 
-const NAV_HREFS = {
-  diagrams: 'diagrams/',
-  editor: 'editor.html',
-  forkFixes: '#',
-  blog: 'blog/',
-  github: FORK_URL,
-} as const
+const NAV_HREFS = { ...ROOT_NAV_HREFS, forkFixes: '#' }
 
 const FOOTER_COLUMNS: readonly FooterColumn[] = [
   {
@@ -155,7 +149,7 @@ export function ForkFixesPage({
         <style>{css}</style>
       </head>
       <body>
-        <NavIsland active="forkFixes" homeHref="index.html" hrefs={NAV_HREFS} />
+        <NavIsland active="forkFixes" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
 
         {/*
           Plain, inert hydration container -- see dashboard-app.tsx's
