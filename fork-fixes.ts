@@ -43,6 +43,7 @@ import {
   type PanelContent,
 } from './demo/components/fork-fixes-page.tsx'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { siteOutDir } from './scripts/site-out-dir.ts'
 
 const exec = promisify(execFile)
 
@@ -353,7 +354,8 @@ async function generate(): Promise<string> {
 
 console.log(`Rendering ${forkFixes.length} before/after pairs…`)
 const html = await generate()
-const outPath = new URL('./fork-fixes.html', import.meta.url).pathname
+const outPath = new URL('./fork-fixes.html', siteOutDir(import.meta.url))
+  .pathname
 await writeFile(outPath, html, 'utf8')
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
 

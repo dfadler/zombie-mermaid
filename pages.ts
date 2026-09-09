@@ -34,16 +34,19 @@
  * no-`<script>` guarantee covers what renderMermaidSVG/renderMermaidASCII
  * emit, not the pages this repo's own demo site wraps that output in.
  *
- * Output: <repo root>/diagrams/<type-slug>.html (one per
+ * Output: <output dir>/diagrams/<type-slug>.html (one per
  * DIAGRAM_TYPE_PROFILES entry), diagrams/index.html (the hub page),
  * diagrams/assets/diagram-page.css, diagrams/assets/diagram-page-client.js,
- * and sitemap.xml. build:site moves diagrams/ and sitemap.xml into site/
- * alongside index.html/editor.html, the same way it already does for those.
+ * and sitemap.xml — resolved relative to the repo root by default, or to
+ * `SITE_OUT_DIR` when set (see scripts/site-out-dir.ts). build:site sets
+ * `SITE_OUT_DIR=site` so this writes directly into site/, alongside
+ * index.html/editor.html, rather than needing to be moved there afterward.
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { siteOutDir } from './scripts/site-out-dir.ts'
 import {
   escapeHtml,
   escapeJsonForScriptTag,
@@ -75,7 +78,7 @@ import {
 /** The live site's base URL (see README's "Live Demo" badge) — used for canonical links and sitemap.xml. */
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
 
-const OUT_DIR = new URL('./diagrams/', import.meta.url)
+const OUT_DIR = new URL('./diagrams/', siteOutDir(import.meta.url))
 
 /**
  * Every page renders with this theme initially; the picker switches from
@@ -325,7 +328,7 @@ async function main(): Promise<void> {
 ${sitemapUrls.map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`).join('\n')}
 </urlset>
 `
-  await writeFile(new URL('./sitemap.xml', import.meta.url), sitemap)
+  await writeFile(new URL('./sitemap.xml', siteOutDir(import.meta.url)), sitemap)
 
   console.log(
     `Wrote ${DIAGRAM_TYPE_PROFILES.length} diagram pages + hub page + sitemap.xml (${sitemapUrls.length} URLs) to ${OUT_DIR.pathname}`,
