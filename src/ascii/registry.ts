@@ -25,16 +25,21 @@
 // no longer names anything under `src/ascii/`. Both directions are now
 // one-way, and the set of registered types stays a single decision per
 // renderer rather than a `switch` re-listed at each front door — the point of
-// #533. Adding a type to one renderer's table without the other is now
-// expressible, which matches reality: 'sequence'/'class'/'flowchart' are
-// unregistered on both sides today only because neither renderer's signature
-// has been adapted yet, not because the two must move in lockstep.
+// #533. Adding a type to one renderer's table without the other is
+// expressible in principle, though in practice 'xychart'/'er'/'sequence'/
+// 'class' now move together on both sides — only 'flowchart' remains
+// unregistered here, and only because its ASCII path has no per-type
+// wrapper function to slot in yet (see
+// docs/decisions/diagram-type-registry-partial.md), not because the two
+// tables must move in lockstep.
 // ============================================================================
 
 import type { DiagramType } from '@zombie-mermaid/core'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { renderXYChartAscii } from './xychart.ts'
 import { renderErAscii } from './er-diagram.ts'
+import { renderSequenceAscii } from './sequence.ts'
+import { renderClassAscii } from './class-diagram.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — today only
@@ -66,12 +71,18 @@ export type AsciiRenderer = (
 
 /**
  * Types `renderMermaidASCII` dispatches through the registry. Anything
- * absent (currently 'sequence', 'class', 'flowchart') falls through to that
- * function's own switch, unchanged.
+ * absent (currently only 'flowchart') falls through to that function's own
+ * switch, unchanged — flowchart's ASCII path has no per-type wrapper
+ * function to slot in here yet, unlike every other type (see
+ * docs/decisions/diagram-type-registry-partial.md).
  */
 export const asciiRegistry: Partial<Record<DiagramType, AsciiRenderer>> = {
   xychart: (text, config, colorMode, theme) =>
     renderXYChartAscii(text, config, colorMode, theme),
   er: (text, config, colorMode, theme) =>
     renderErAscii(text, config, colorMode, theme),
+  sequence: (text, config, colorMode, theme) =>
+    renderSequenceAscii(text, config, colorMode, theme),
+  class: (text, config, colorMode, theme, extras) =>
+    renderClassAscii(text, config, colorMode, theme, extras),
 }

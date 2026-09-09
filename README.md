@@ -160,7 +160,7 @@ hyperlinks — off by default, since terminal and pager support varies (see
 
 > 🧪 **Experimental — shipped to gauge interest, not a finished or best-effort implementation.** This is a first cut covering the common case; the tool surface may change based on feedback. Try it and [open an issue](https://github.com/dfadler/zombie-mermaid/issues/new) with what you'd want from it.
 
-`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as three tools: `render_mermaid_svg`, `render_mermaid_ascii`, and `check_mermaid_sequence_activations`. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
+`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as four tools: `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, and `fix_mermaid_sequence_activations`. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
 
 Example Claude Desktop / Claude Code MCP server config:
 
@@ -178,6 +178,8 @@ Example Claude Desktop / Claude Code MCP server config:
 All three tools accept a `diagram` string. The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
 
 `check_mermaid_sequence_activations` is a mechanical, deterministic check — no LLM judgment involved — for a specific gap in existing Mermaid validators: every `activate X` (or `+` arrow shorthand) in a `sequenceDiagram` must be closed by a matching `deactivate X` (`-` shorthand) before the diagram ends. It returns a JSON report (`{ ok, issues }`) rather than rendering anything, and errors (`isError: true`) if given a non-sequence diagram.
+
+`fix_mermaid_sequence_activations` runs the same check and, where mechanically safe, returns a corrected diagram: a dangling `activate X` with no matching `deactivate X` gets one appended automatically. An unmatched `deactivate X` (nothing open) is reported but _not_ auto-fixed — deciding whether to delete that statement or insert a preceding `activate X` needs source-position context this tool doesn't have, so it's left for a human (or a future LLM-based layer) to resolve. Returns `{ ok, fixedDiagram, fixesApplied, remainingIssues }`.
 
 To embed the server in your own process instead of running it as a subcommand, import `zombie-mermaid/mcp` and connect it to any [MCP `Transport`](https://modelcontextprotocol.io/) yourself:
 

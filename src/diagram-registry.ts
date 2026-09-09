@@ -11,12 +11,14 @@
 // imported back out of here, a cycle that blocks the monorepo split and
 // already dragged `elkjs` into `dist/ascii.js`).
 //
-// Only 'xychart' and 'er' are registered here. Those two are the only
-// diagram types whose existing renderer signatures adapt to a shared shape
-// with zero behavior change — see the issue-533 scoping doc (in the PR/
-// issue body) for why 'sequence', 'class', and 'flowchart' are NOT
-// registered yet and what would need to change first. The front door
-// checks this table first; anything absent falls through to its own
+// 'xychart', 'er', 'sequence', and 'class' are registered here — every type
+// whose existing renderer signature adapts to the shared `DiagramModule`
+// shape with zero behavior change. See docs/decisions/diagram-type-registry-partial.md
+// for why 'flowchart' is NOT registered yet and what would need to change
+// first (its ASCII path has no per-type wrapper function to slot in, unlike
+// every other type, and its SVG path carries `%%{init: ...}%%` directive
+// handling no other type has). The front door checks this table first;
+// anything absent (currently only 'flowchart') falls through to its own
 // switch, completely unchanged.
 //
 // `packages/core/src/diagram-type.ts` (the `DiagramType` union + `detectDiagramType`)
@@ -33,18 +35,31 @@ import type {
 import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 import { withDirectionOverride } from '@zombie-mermaid/core'
 
-import { parseXYChart, parseErDiagram } from '@zombie-mermaid/mermaid-parser'
+import {
+  parseXYChart,
+  parseErDiagram,
+  parseSequenceDiagram,
+  parseClassDiagram,
+} from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
   PositionedXYChart,
   ErDiagram,
   PositionedErDiagram,
+  SequenceDiagram,
+  PositionedSequenceDiagram,
+  ClassDiagram,
+  PositionedClassDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import {
   layoutXYChart,
   renderXYChartSvg,
   layoutErDiagramSync,
   renderErSvg,
+  layoutSequenceDiagram,
+  renderSequenceSvg,
+  layoutClassDiagramSync,
+  renderClassSvg,
 } from '@zombie-mermaid/svg-renderer'
 
 /**
@@ -127,6 +142,59 @@ const xychartModule: DiagramModule<XYChart, PositionedXYChart> = {
   },
 }
 
+const sequenceModule: DiagramModule<
+  SequenceDiagram,
+  PositionedSequenceDiagram
+> = {
+  type: 'sequence',
+  parse: parseSequenceDiagram,
+  layoutForSvg: layoutSequenceDiagram,
+  renderSvg(positioned, ctx) {
+    return renderSequenceSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Mirrors `resolveLinksEnabled()` in src/index.ts exactly (`interactivity`
+ * defaults unset to `'static'`; only `'none'` turns links off) — duplicated
+ * here rather than imported since that helper is private to src/index.ts and
+ * this module is imported BY src/index.ts, so importing it back would cycle.
+ */
+function resolveLinksEnabled(options: RenderOptions): boolean {
+  const interactivity = options.interactivity ?? 'static'
+  return interactivity !== 'none'
+}
+
+const classModule: DiagramModule<ClassDiagram, PositionedClassDiagram> = {
+  type: 'class',
+  parse: parseClassDiagram,
+  layoutForSvg: layoutClassDiagramSync,
+  renderSvg(positioned, ctx, options) {
+    return renderClassSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      resolveLinksEnabled(options),
+      ctx.emit,
+    )
+  },
+}
+
 const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
   type: 'er',
   parse: parseErDiagram,
@@ -156,10 +224,9 @@ const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
 
 /**
  * The registry proper. Only diagram types listed here are looked up by the
- * SVG front door; anything absent (currently 'sequence', 'class',
- * 'flowchart') falls through to that front door's own switch, unchanged.
- * The ASCII front door's equivalent table is `asciiRegistry` in
- * src/ascii/registry.ts.
+ * SVG front door; anything absent (currently only 'flowchart') falls
+ * through to that front door's own switch, unchanged. The ASCII front
+ * door's equivalent table is `asciiRegistry` in src/ascii/registry.ts.
  *
  * Typed with `any` type parameters at the map level: each entry's own
  * `TDiagram`/`TPositioned` are only known inside that entry's own closure
@@ -176,4 +243,6 @@ type AnyDiagramModule = DiagramModule<
 export const diagramRegistry: Partial<Record<DiagramType, AnyDiagramModule>> = {
   xychart: xychartModule,
   er: erModule,
+  sequence: sequenceModule,
+  class: classModule,
 }
