@@ -43,7 +43,6 @@ import {
   DiagramTypePage,
 } from '../demo/components/diagram-page.tsx'
 import { BlogIndexPage, BlogPostPage } from '../demo/components/blog-page.tsx'
-import { ThemePicker } from '../demo/components/theme-picker.tsx'
 
 /**
  * Stands in for the real stylesheets, which are thousands of lines and
@@ -223,10 +222,6 @@ describe('pages.ts → diagrams/*.html', () => {
           editorHref: `../editor#gallery-${i}`,
         })),
         types,
-        themePills: createElement(ThemePicker, {
-          includeDefault: true,
-          activeThemeKey: '',
-        }),
         themeDataScript: 'window.__diagramPageThemes = {"":{"bg":"#FFFFFF"}};',
         clientScriptSrc: 'assets/diagram-page-client.js',
         navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
@@ -263,10 +258,6 @@ describe('pages.ts → diagrams/*.html', () => {
         // above (a non-empty galleryItems) already covers.
         galleryItems: [],
         types,
-        themePills: createElement(ThemePicker, {
-          includeDefault: true,
-          activeThemeKey: '',
-        }),
         themeDataScript: 'window.__diagramPageNarrowSource = "flowchart TD";',
         clientScriptSrc: 'assets/diagram-page-client.js',
         navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
