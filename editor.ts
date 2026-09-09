@@ -40,10 +40,7 @@ import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { bundleNavClient } from './demo/build-nav-client.ts'
 import { EditorPage } from './demo/components/editor-page.tsx'
-import {
-  EditorThemeItems,
-  type EditorThemeItem,
-} from './demo/components/editor-topbar.tsx'
+import { type EditorThemeItem } from './demo/components/editor-topbar.tsx'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import { THEME_LABELS } from './demo/theme-labels.ts'
@@ -100,6 +97,24 @@ async function bundleEditorJs(): Promise<string> {
   )
 }
 
+/**
+ * Bundle `demo/editor-client.tsx` (zombie-mermaid#806's hydration entry)
+ * for the browser — hydrates {@link EditorApp} (`demo/components/editor-
+ * app.tsx`) against {@link EDITOR_ROOT_ID}. A separate `<script
+ * type="module">` tag from `bundleJs`/`themeStateBridgeJs`/`appJs` below
+ * (never concatenated with them) — see `bundleThemeStateBridge()`'s doc
+ * comment for why concatenating independently-minified bundles into one
+ * script risks colliding top-level identifier names; a separate tag gets
+ * its own module scope for free instead, the same reason `navClientScript`
+ * already stays separate.
+ */
+async function bundleEditorAppClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/editor-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 /** Bundle src/browser.ts for the browser via Vite's build() API. */
@@ -147,11 +162,13 @@ async function bundleThemeStateBridge(): Promise<string> {
 }
 
 async function generateEditorHtml(): Promise<string> {
-  const [bundleJs, themeStateBridgeJs, navClientScript] = await Promise.all([
-    bundleBrowserScript(),
-    bundleThemeStateBridge(),
-    bundleNavClient(),
-  ])
+  const [bundleJs, themeStateBridgeJs, navClientScript, editorAppClientJs] =
+    await Promise.all([
+      bundleBrowserScript(),
+      bundleThemeStateBridge(),
+      bundleNavClient(),
+      bundleEditorAppClient(),
+    ])
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
   const themes: EditorThemeItem[] = Object.keys(THEMES).map((key) => ({
@@ -165,9 +182,10 @@ async function generateEditorHtml(): Promise<string> {
   return renderHtmlDocument(
     createElement(EditorPage, {
       css,
-      themeItems: createElement(EditorThemeItems, { themes }),
+      themes,
       scriptJs: `${bundleJs}\n\n${themeStateBridgeJs}\n\n${appJs}\n`,
       navClientScript,
+      editorClientScript: editorAppClientJs,
     }),
   )
 }

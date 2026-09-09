@@ -33,7 +33,6 @@ import { renderHtmlDocument } from '../demo/render-html.ts'
 import { normalizeHtml } from './helpers/normalize-html.ts'
 import { IndexPage } from '../demo/components/index-page.tsx'
 import { EditorPage } from '../demo/components/editor-page.tsx'
-import { EditorThemeItems } from '../demo/components/editor-topbar.tsx'
 import {
   ForkFixesPage,
   type FixSectionProps,
@@ -81,18 +80,16 @@ describe('index.ts → index.html', () => {
 })
 
 describe('editor.ts → editor.html', () => {
-  const themeItems = createElement(EditorThemeItems, {
-    themes: [
-      { key: 'nord', bg: '#2E3440', label: 'Nord' },
-      { key: 'github-light', bg: '#ffffff', label: 'GitHub' },
-    ],
-  })
+  const themes = [
+    { key: 'nord', bg: '#2E3440', label: 'Nord' },
+    { key: 'github-light', bg: '#ffffff', label: 'GitHub' },
+  ]
 
   it('normalises to the golden DOM', async () => {
     const html = renderHtmlDocument(
       createElement(EditorPage, {
         css: FIXTURE_CSS,
-        themeItems,
+        themes,
         scriptJs: FIXTURE_SCRIPT,
         navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),

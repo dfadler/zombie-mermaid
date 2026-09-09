@@ -186,7 +186,7 @@
       </div>
     </div>
     <div class="section-px" style="padding: 0px 80px 64px; background: rgb(10, 13, 22);">
-      <div class="editor-tool-shell">
+      <div class="editor-tool-shell" id="editor-root">
         <div class="topbar">
           <a class="logo" href="/zombie-mermaid/">
             <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -717,6 +717,9 @@
         </div>
       </div>
     </div>
+    <script id="editor-props" type="application/json">
+      "{\"themes\":[{\"key\":\"nord\",\"bg\":\"#2E3440\",\"label\":\"Nord\"},{\"key\":\"github-light\",\"bg\":\"#ffffff\",\"label\":\"GitHub\"}]}"
+    </script>
     <div class="zm-shell">
       <div class="section-px" style="padding: 32px 80px 140px; background: var(--bg-soft); border-top: 1px solid var(--border);">
         <div style="max-width: 1280px; margin: 0px auto 48px; display: flex; flex-direction: column; gap: 16px;">
@@ -860,6 +863,8 @@
         </div>
       </footer>
     </div>
+    <script type="module">
+    </script>
     <script type="module">
       "globalThis.__fixture = 1 < 2 && 3 > 2;\nconsole.log(\"fixture & <b>bold</b>\");"
     </script>

@@ -135,9 +135,28 @@ export function EditorLeftPanel() {
 
       {/* Code editor view */}
       <div className="editor-wrap" id="editor-view">
-        <div className="line-numbers" id="line-numbers">
-          1
-        </div>
+        {/*
+          `dangerouslySetInnerHTML`, not plain JSX text -- as of
+          zombie-mermaid#806, this element is inside EditorApp's hydrated
+          tree, and `editor/js/editor-helpers.ts`'s `updateLineNumbers()`
+          overwrites this exact textContent synchronously as soon as
+          `editor/js/init.ts` sets the editor's initial source (before a
+          real user has typed anything). A plain-JSX child there is
+          diffed during hydration; `dangerouslySetInnerHTML` makes this
+          node an opaque leaf React never compares, so that startup
+          mutation can never race a hydration-mismatch check -- caught for
+          real in a browser during #806's development (a live SVG
+          preview, not just this counter, mismatched the same way; see
+          the preview-inner div below for that one). Content is otherwise
+          unchanged: still the literal "1" a fresh, empty editor starts
+          with.
+        */}
+        <div
+          className="line-numbers"
+          id="line-numbers"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- a fixed literal ("1"), never user input; see the comment above for why this needs to be an opaque hydration leaf
+          dangerouslySetInnerHTML={{ __html: '1' }}
+        />
         <textarea
           className="code-editor"
           id="code-editor"
@@ -313,11 +332,27 @@ export function EditorRightPanel() {
 
       <div className="preview-body" id="preview-body">
         <div className="render-spinner" id="render-spinner" />
-        <div className="preview-inner" id="preview-inner">
-          <div className="preview-placeholder" id="preview-placeholder">
-            Start typing to render your diagram
-          </div>
-        </div>
+        {/*
+          `dangerouslySetInnerHTML`, not plain JSX children -- see
+          `#line-numbers`'s identical comment above for the general
+          reasoning; this element is the one that actually surfaced the
+          real hydration-mismatch error during #806's development.
+          `editor/js/init.ts` calls `scheduleRender(0)` on page load
+          (rendering `DEFAULT_SOURCE` or a shared URL hash's diagram), and
+          `editor/js/rendering.ts`'s `doRender()` replaces this node's
+          entire innerHTML with the rendered SVG well before a real user
+          has interacted with anything -- a plain-JSX placeholder child
+          here gets diffed during hydration and can lose that race.
+        */}
+        <div
+          className="preview-inner"
+          id="preview-inner"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- a fixed literal placeholder, never user input; see the comment above for why this needs to be an opaque hydration leaf
+          dangerouslySetInnerHTML={{
+            __html:
+              '<div class="preview-placeholder" id="preview-placeholder">Start typing to render your diagram</div>',
+          }}
+        />
       </div>
 
       <div className="preview-footer">

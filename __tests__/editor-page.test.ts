@@ -23,21 +23,19 @@
  * across bundle content: the document shell, the flex-layout-critical body
  * structure, and that raw script content survives untouched.
  */
-import { createElement, type ReactNode } from 'react'
+import { createElement } from 'react'
+import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { EditorChrome, EditorPage } from '../demo/components/editor-page.tsx'
-import { EditorThemeItems } from '../demo/components/editor-topbar.tsx'
+import { EditorApp, EditorPage } from '../demo/components/editor-page.tsx'
 import { renderHtmlDocument } from '../demo/render-html.ts'
 
-const THEME_ITEMS: ReactNode = createElement(EditorThemeItems, {
-  themes: [{ key: 'nord', bg: '#2E3440', label: 'Nord' }],
-})
+const THEMES = [{ key: 'nord', bg: '#2E3440', label: 'Nord' }]
 
 function render(scriptJs: string, css = 'body { color: red; }'): string {
   return renderHtmlDocument(
     createElement(EditorPage, {
       css,
-      themeItems: THEME_ITEMS,
+      themes: THEMES,
       scriptJs,
       navClientScript: '',
     }),
@@ -83,19 +81,29 @@ describe('EditorPage', () => {
     // above and below the tool. `<EditorChrome>` still renders a fragment,
     // so `.topbar`/`.main`/the toast land as `.editor-tool-shell`'s direct
     // children with no wrapper `<div>` in between — assert the resulting
-    // shape rather than trusting a reviewer to spot a stray one.
+    // shape rather than trusting a reviewer to spot a stray one. As of
+    // #806, `.editor-tool-shell` also carries `id="editor-root"` (the
+    // hydration container EDITOR_ROOT_ID) and its children arrive via
+    // `renderToString` (not `renderToStaticMarkup`), so React's own
+    // hydration-boundary `<!-- -->` comments may appear between adjacent
+    // elements -- the regexes below tolerate an optional one after each
+    // opening tag rather than assuming none.
     const html = render('')
-    const shellStart = html.indexOf('<div class="editor-tool-shell">')
+    const shellStart = html.indexOf('<div class="editor-tool-shell"')
     expect(shellStart).toBeGreaterThan(-1)
     const shell = html.slice(shellStart)
     expect(shell).toMatch(
-      /^<div class="editor-tool-shell"><div class="topbar">/,
+      /^<div class="editor-tool-shell" id="editor-root">(<!-- -->)?<div class="topbar">/,
     )
-    expect(shell).toMatch(/<div class="main"><div class="panel-left"/)
     expect(shell).toMatch(
-      /<div class="resize-handle" id="resize-handle"><\/div><div class="panel-right"/,
+      /<div class="main">(<!-- -->)?<div class="panel-left"/,
     )
-    expect(shell).toMatch(/<\/div><div class="toast" id="toast"><\/div><\/div>/)
+    expect(shell).toMatch(
+      /<div class="resize-handle" id="resize-handle"><\/div>(<!-- -->)?<div class="panel-right"/,
+    )
+    expect(shell).toMatch(
+      /<\/div>(<!-- -->)?<div class="toast" id="toast"><\/div><\/div>/,
+    )
   })
 
   it('renders the shared Nav and Footer around the tool', () => {
@@ -108,20 +116,15 @@ describe('EditorPage', () => {
 
   it('renders the same chrome the editor test harness mounts', () => {
     // editor/__tests__/support/harness.ts builds its jsdom document from
-    // <EditorChrome>, so the two must stay the same markup.
+    // <EditorApp>, so the two must stay the same markup. Compared via
+    // renderToString on both sides (not renderToStaticMarkup) since
+    // editor-page.tsx's own hydration container (EDITOR_ROOT_ID) renders
+    // EditorApp that way too -- see that component's doc comment for why.
     const page = render('')
-    const chrome = renderHtmlDocument(
-      createElement(
-        'html',
-        null,
-        createElement(EditorChrome, { themeItems: THEME_ITEMS }),
-      ),
+    const chromeHtml = renderToString(
+      createElement(EditorApp, { themes: THEMES }),
     )
-    const inner = chrome.slice(
-      chrome.indexOf('<div class="topbar">'),
-      chrome.lastIndexOf('</html>'),
-    )
-    expect(page).toContain(inner)
+    expect(page).toContain(chromeHtml)
   })
 
   it('does not hoist or duplicate body content into <head>', () => {

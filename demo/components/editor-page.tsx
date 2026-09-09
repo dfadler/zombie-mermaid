@@ -70,10 +70,17 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { ReactNode } from 'react'
+import { renderToString } from 'react-dom/server'
+import { escapeJsonForScriptTag } from '../format.ts'
 import { SiteHead } from './site-head.tsx'
 import { FORK_URL } from './site-chrome.tsx'
-import { EditorTopbar } from './editor-topbar.tsx'
-import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
+import {
+  EditorApp,
+  EDITOR_PROPS_ELEMENT_ID,
+  EDITOR_ROOT_ID,
+  type EditorAppProps,
+} from './editor-app.tsx'
+import { type EditorThemeItem } from './editor-topbar.tsx'
 import { NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
@@ -97,37 +104,16 @@ import {
   colorVar,
 } from './tokens.tsx'
 
-/**
- * Everything inside `<body>` except the inlined script: the topbar, the
- * two panels with the resize handle between them, and the toast.
- *
- * Exported so editor/__tests__/support/harness.ts can build its jsdom
- * document from the *same* component tree the generator ships, rather than
- * from a second, drifting copy of the markup (it used to read the
- * editor/html/*.html partials directly, which no longer exist).
- */
-export function EditorChrome({ themeItems }: { themeItems: ReactNode }) {
-  return (
-    <>
-      {/* Top bar */}
-      <EditorTopbar themeItems={themeItems} />
-
-      {/* Main */}
-      <div className="main">
-        {/* Left panel */}
-        <EditorLeftPanel />
-
-        {/* Resize handle */}
-        <div className="resize-handle" id="resize-handle" />
-
-        {/* Right panel */}
-        <EditorRightPanel />
-      </div>
-
-      <div className="toast" id="toast" />
-    </>
-  )
-}
+// Re-exported for existing callers/tests that import these from
+// editor-page.tsx rather than editor-app.tsx directly (this file was the
+// sole home for EditorChrome before the #806 split).
+export {
+  EditorApp,
+  EditorChrome,
+  EDITOR_PROPS_ELEMENT_ID,
+  EDITOR_ROOT_ID,
+  type EditorAppProps,
+} from './editor-app.tsx'
 
 /* -----------------------------------------------------------------
  * The new chrome's CSS
@@ -444,11 +430,20 @@ function EditorFeatureStrip() {
 
 export interface EditorPageProps {
   css: string
-  /** The theme dropdown's entries (see editor.ts's `ThemeDropdownItems`). */
-  themeItems: ReactNode
+  /**
+   * The theme dropdown's entries (see editor.ts's `ThemeDropdownItems`) —
+   * plain, JSON-serializable data (not a pre-built `ReactNode`, unlike
+   * before #806) since it now doubles as {@link EditorApp}'s hydration
+   * props.
+   */
+  themes: readonly EditorThemeItem[]
   /**
    * The bundled renderer plus every editor/js/*.js module, concatenated by
-   * editor.ts exactly as before and inlined as one module script.
+   * editor.ts exactly as before and inlined as one module script. Entirely
+   * unaffected by #806's hydration of {@link EditorApp} — see that
+   * component's own doc comment (editor-app.tsx) for why these modules
+   * don't need to change to keep working against hydrated (rather than
+   * only server-rendered) markup.
    */
   scriptJs: string
   /**
@@ -462,14 +457,25 @@ export interface EditorPageProps {
    * free instead.
    */
   navClientScript: string
+  /**
+   * The bundled `demo/editor-client.tsx` entry (zombie-mermaid#806) that
+   * hydrates {@link EditorApp} against {@link EDITOR_ROOT_ID} — its own
+   * separate `<script type="module">` tag, for the identical
+   * concatenation-collision reason {@link navClientScript}'s doc comment
+   * gives. Defaults to `''` (no hydration script at all — SSR-only),
+   * matching every other page's `clientScript` default.
+   */
+  editorClientScript?: string
 }
 
 export function EditorPage({
   css,
-  themeItems,
+  themes,
   scriptJs,
   navClientScript,
+  editorClientScript = '',
 }: EditorPageProps) {
+  const appProps: EditorAppProps = { themes }
   const homeHref = '/zombie-mermaid/'
   return (
     <html lang="en">
@@ -513,16 +519,63 @@ export function EditorPage({
             background: COLORS['--bg'],
           }}
         >
-          <div className="editor-tool-shell">
-            <EditorChrome themeItems={themeItems} />
-          </div>
+          {/*
+            Plain, inert hydration container -- see dashboard-app.tsx's
+            DASHBOARD_ROOT_ID doc comment for why EditorApp's own root
+            can't carry this id itself, and dashboard-page.tsx's own, more
+            detailed version of this comment for why renderToString (not
+            renderToStaticMarkup) is needed here. `.editor-tool-shell`
+            already is (and was, pre-#806) a plain wrapper div around
+            EditorChrome's rendered output with no markup of its own, so it
+            simply gains an id rather than needing a second wrapper.
+          */}
+          <div
+            className="editor-tool-shell"
+            id={EDITOR_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own EditorApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<EditorApp {...appProps} />),
+            }}
+          />
         </div>
+        <script
+          type="application/json"
+          id={EDITOR_PROPS_ELEMENT_ID}
+          dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own EditorAppProps, escaped with escapeJsonForScriptTag; never user input
+            __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+          }}
+        />
 
         <div className={ZM_SHELL}>
           <EditorFeatureStrip />
           <Footer />
         </div>
 
+        {/*
+          Deliberately *before* the `scriptJs` tag below, not after: both
+          are `type="module"` (which, like `defer`, execute in document
+          order relative to each other), and `editor/js/init.ts`'s own
+          top-level code (bundled into `scriptJs`) synchronously mutates
+          DOM nodes *inside* EDITOR_ROOT_ID -- `updateLineNumbers()` sets
+          `#line-numbers`'s `textContent`, for one -- the moment it runs.
+          If that ran before this file's `hydrateRoot()` call (in `demo/
+          editor-client.tsx`, wrapped in `flushSync()` for exactly this
+          reason), React's own hydration-match verification would find
+          `#line-numbers` already containing text it never rendered itself
+          and fail with a real hydration-mismatch error -- caught for real
+          in a browser during #806's development (not by reasoning alone),
+          the same class of bug `diagram-type-client.tsx`'s `flushSync()`
+          fix already addresses for a different page (see that file's own
+          header comment). Running this script first, combined with
+          `flushSync()` there, guarantees hydration always fully settles
+          before `editor/js` gets a chance to touch anything.
+        */}
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/editor-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: editorClientScript }}
+        />
         {/* Bundled renderer */}
         <script
           type="module"

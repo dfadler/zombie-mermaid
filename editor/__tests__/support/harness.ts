@@ -28,8 +28,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { JSDOM } from 'jsdom'
 import { vi } from 'vitest'
 import { THEMES } from '@zombie-mermaid/core'
-import { EditorChrome } from '../../../demo/components/editor-page.tsx'
-import { EditorThemeItems } from '../../../demo/components/editor-topbar.tsx'
+import { EditorApp } from '../../../demo/components/editor-app.tsx'
 import { bundleForBrowser } from '../../../scripts/vite-bundle.ts'
 
 let cachedAppJs: Promise<string> | undefined
@@ -47,12 +46,12 @@ function getAppJs(): Promise<string> {
 /**
  * The editor's real `<body>` markup, minus the inlined script.
  *
- * Rendered from the same React components the generator ships
- * (demo/components/editor-page.tsx's `<EditorChrome>`), so these tests
- * can't drift from what editor.html actually contains. Theme entries use
- * the raw THEMES key as their label — the dropdown's human-friendly names
- * live in editor.ts and are irrelevant to what the js/*.js modules do with
- * `data-theme`.
+ * Rendered from the same React component the generator ships and hydrates
+ * (demo/components/editor-app.tsx's `<EditorApp>`, zombie-mermaid#806), so
+ * these tests can't drift from what editor.html actually contains. Theme
+ * entries use the raw THEMES key as their label — the dropdown's
+ * human-friendly names live in editor.ts and are irrelevant to what the
+ * js/*.js modules do with `data-theme`.
  */
 function buildBodyHtml(): string {
   const themes = Object.keys(THEMES).map((key) => ({
@@ -60,11 +59,7 @@ function buildBodyHtml(): string {
     bg: THEMES[key]!.bg,
     label: key,
   }))
-  return renderToStaticMarkup(
-    createElement(EditorChrome, {
-      themeItems: createElement(EditorThemeItems, { themes }),
-    }),
-  )
+  return renderToStaticMarkup(createElement(EditorApp, { themes }))
 }
 
 export interface EditorEnv {
