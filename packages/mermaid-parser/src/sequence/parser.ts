@@ -136,6 +136,9 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
   // only mean the box — but this parser is lenient about other statements,
   // and a `loop` opened inside a box must still own the next `end`.
   let boxOpenedAtDepth = 0
+  // Line the currently-open box started on, for the unclosed-box error at
+  // EOF below (issue #762) — `boxCtx.open` alone doesn't carry position.
+  let boxOpenLine: number | undefined
 
   // Track actor IDs to auto-create actors referenced in messages
   const actorIds = new Set<string>()
@@ -145,6 +148,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     label: string
     startIndex: number
     dividers: Block['dividers']
+    line: number
   }> = []
 
   // `autonumber` state — a bare `autonumber` turns numbering on starting at 1
@@ -186,6 +190,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       diagram.boxes.push(box)
       boxCtx.open = diagram.boxes.length - 1
       boxOpenedAtDepth = blockStack.length
+      boxOpenLine = stmt.line
       continue
     }
 
@@ -309,6 +314,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
         label,
         startIndex: diagram.messages.length,
         dividers: [],
+        line: stmt.line,
       })
       continue
     }
@@ -334,6 +340,7 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       blockStack.length === boxOpenedAtDepth
     ) {
       boxCtx.open = undefined
+      boxOpenLine = undefined
       continue
     }
 
@@ -348,6 +355,17 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
         dividers: completed.dividers,
       })
       continue
+    }
+
+    // --- Unmatched end ---
+    // Neither branch above claimed this "end" — no box and no block is
+    // currently open, so there's nothing for it to close. Previously
+    // silently ignored (#762); mirrors the "box cannot be nested" throw
+    // above in surfacing a structural mistake instead of dropping it.
+    if (line === 'end') {
+      throw new Error(
+        `Line ${stmt.line}: Sequence diagram: "end" does not match any open block ("loop"/"alt"/"opt"/"par"/"critical"/"break"/"rect") or "box" — nothing is currently open to close.`,
+      )
     }
 
     // --- Standalone activate / deactivate ---
@@ -404,6 +422,22 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
     const msgMatch =
       line.match(MESSAGE_LONG_ARROW_RE) ?? line.match(MESSAGE_ANY_ARROW_RE)
     if (msgMatch) {
+      // Mermaid's own unquoted actor-name grammar excludes `>` and `)` from
+      // ever starting an identifier (see the FROM/TO comment above) — so a
+      // TO capture starting with either one means the real arrow in the
+      // source is longer than what the alternation above actually matched
+      // (e.g. "->>>" only matches as "->>", leaving a stray ">" to be
+      // absorbed into TO as part of a garbled actor name) rather than a
+      // genuinely valid, if unusual, message. Reject it with an actionable
+      // error instead of silently minting that garbled actor — see the
+      // `Alice->>>Bob: Hello` example in issue #762.
+      const arrowToken = msgMatch[2]!
+      const toFirstChar = msgMatch[4]![0]
+      if (toFirstChar === '>' || toFirstChar === ')') {
+        throw new Error(
+          `Line ${stmt.line}: Malformed sequence-diagram arrow in "${line}" — "${arrowToken}${toFirstChar}" is not a recognized arrow. Expected one of: ->, -->, ->>, -->>, -x, --x, -), --), <<->>, <<-->>.`,
+        )
+      }
       pushMessage(
         diagram,
         actorIds,
@@ -438,6 +472,25 @@ export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
       }
       continue
     }
+  }
+
+  // A block/box left open at EOF is a structural mistake, not something to
+  // silently accept as "closed by end of input" — mirrors the class-diagram
+  // parser's unclosed-body check (#761) for the same reason: previously
+  // this was silently ignored (#762). Checked innermost-first (the block
+  // stack) since an unclosed block is the more specific, more actionable
+  // thing to report when both are open.
+  if (blockStack.length > 0) {
+    const unclosed = blockStack[blockStack.length - 1]!
+    throw new Error(
+      `Line ${unclosed.line}: Sequence diagram: unclosed "${unclosed.type}" block — expected a matching "end" before the diagram ends.`,
+    )
+  }
+  if (boxCtx.open !== undefined) {
+    const openBox = diagram.boxes[boxCtx.open]!
+    throw new Error(
+      `Line ${boxOpenLine}: Sequence diagram: unclosed "box${openBox.label ? ` ${openBox.label}` : ''}" — expected a matching "end" before the diagram ends.`,
+    )
   }
 
   return diagram
