@@ -66,12 +66,17 @@ export interface DiagramTypeProfile {
   /**
    * The "Source → render" section's h2, e.g. "A deploy pipeline, start to
    * finish." — type-specific, one sentence, naming the concrete example
-   * `source` renders. Verbatim from the canvas for `flowchart`; the other
-   * five are placeholders in the same voice as `intro`, since #602-606 own
-   * dialing in that type's own reference example and haven't started yet
-   * (see #601's PR body's "Template contract" section) — #603 (Sequence)
-   * can pull the canvas's SequenceDetail artboard for its real copy the
-   * same way this file's `flowchart` entry pulls FlowchartDetail's.
+   * `source` renders. Verbatim from the canvas for `flowchart` and
+   * `sequence` (the design canvas at
+   * `https://claude.ai/code/artifact/2f623662-5eaf-42c4-9fd9-c21588e34993`
+   * has `FlowchartDetail.dc.html` and `SequenceDetail.dc.html` artboards —
+   * the #602-606 audit confirmed the canvas has no
+   * `StateDetail`/`ClassDetail`/`ErDetail`/`XyChartDetail` artboard to
+   * pull from, so `state`/`class`/`er`/`xy-chart` stay hand-written
+   * placeholders in the same voice as `intro` rather than canvas-verbatim
+   * copy — there's nothing to verify them against). If one of those four
+   * artboards is added to the canvas later, pull its real copy the same
+   * way this file's `flowchart`/`sequence` entries do.
    */
   exampleHeading: string
   /**
@@ -112,8 +117,8 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     intro:
       'Sequence diagrams show the order messages pass between participants over time — the standard way to document an API call, an auth handshake, or a distributed-systems trace. zombie-mermaid supports actors, activation boxes, and every Mermaid arrow type.',
     accent: 'cyan',
-    exampleHeading: 'An API handshake, message by message.',
-    sourceFilename: 'handshake.mmd',
+    exampleHeading: 'An authenticated API call, message by message.',
+    sourceFilename: 'auth-flow.mmd',
   },
   {
     slug: 'class',
@@ -141,7 +146,7 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     slug: 'xy-chart',
     label: 'XY chart',
     keyword: 'xychart-beta',
-    source: sampleSource('XY: Simple Bar Chart'),
+    source: sampleSource('XY: Bar and Line Overlay'),
     intro:
       'XY charts plot bar and line series against a shared axis — the one Mermaid diagram type that’s a data chart rather than a graph of nodes and edges. zombie-mermaid renders both bar and line series, mixed on one chart if needed.',
     accent: 'green',
