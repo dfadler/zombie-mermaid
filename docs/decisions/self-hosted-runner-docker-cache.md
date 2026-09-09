@@ -7,9 +7,9 @@ moving `visual-regression` (or the whole CI workflow) to a **self-hosted**
 runner would eliminate the job's repeated container-pull cost, since only a
 self-hosted runner can carry a persistent Docker layer cache across separate
 job runs — GitHub-hosted runners, including paid "larger runners," are
-ephemeral, single-job VMs with no cache that survives between jobs (per
-GitHub's own docs; the issue itself corrects an earlier, inaccurate premise
-that a larger runner would help).
+ephemeral, single-job VMs with no persistent local Docker layer cache that
+survives between jobs (per GitHub's own docs; the issue itself corrects an
+earlier, inaccurate premise that a larger runner would help).
 
 The issue was filed as a speculative, explicitly low-priority follow-up to
 [#729](https://github.com/dfadler/zombie-mermaid/issues/729)'s investigation
@@ -26,11 +26,16 @@ Real, measured numbers from this repo's own CI history
 `docs/research/ci-container-overhead-investigation.md`):
 
 - `visual-regression`'s `container:` step pays a fresh image pull on every
-  shard, every run: **~29.5s/shard average** (25–42s range), because each
-  shard is its own fresh, ephemeral GitHub-hosted VM.
-- The job fans out over a 4-shard matrix, so that's **~92s of extra billed
-  Actions-minutes per CI run** (push or PR) versus the pre-container-migration
-  cache-hit baseline.
+  shard, every run: **~29.5s/shard average** (25–42s range) for the whole
+  init step, because each shard is its own fresh, ephemeral GitHub-hosted VM.
+  The _incremental_ cost versus the pre-migration cache-hit baseline is
+  smaller than that total — **~23s/shard** — since some of the 29.5s would
+  have been paid either way.
+- The job fans out over a 4-shard matrix, so that incremental cost is **~23s
+  × 4 shards ≈ 92s of extra billed Actions-minutes per CI run** (push or PR),
+  not the full 29.5s/shard average × 4 (~118s) — the two numbers measure
+  different things (total init time vs. the delta a self-hosted runner's
+  warm cache would actually recover).
 - #729 already checked and ruled out every workflow-level mitigation
   (`actions/cache` for Docker layers, a slimmer custom image, a shard-count
   change) that doesn't require new infrastructure — its stated conclusion was
@@ -67,18 +72,23 @@ Per GitHub's own security hardening guide
 comment already documents that this workflow runs `pull_request`-triggered
 jobs against fork-submitted code, relying specifically on GitHub-hosted
 runners' per-job ephemeral isolation and the fact that "secrets are not
-passed to the runner" for fork PRs. A self-hosted runner has neither
-property: it is long-lived (the entire point of "warm cache" is that state
-persists across jobs) and it executes the PR's own code — including
-`visual-regression`'s Playwright test suite, which is exactly the kind of
-code path GitHub's warning is about. Any external contributor opening a PR
-against this repo would get arbitrary code execution on a machine the
-maintainer owns and is responsible for securing.
+passed to the runner" for fork PRs. GitHub does offer ephemeral, just-in-time
+self-hosted runners that deregister after a single job — but that mode is
+exactly the one this proposal cannot use, since a warm Docker cache only
+exists if the runner's state (its local image layers) survives _across_
+jobs. The runner this issue is actually proposing is a **persistent**
+self-hosted runner, and a persistent runner has neither of CI's two existing
+protections: its state persists across jobs (the whole point of "warm
+cache") and it executes the PR's own code — including `visual-regression`'s
+Playwright test suite, which is exactly the kind of code path GitHub's
+warning is about. Any external contributor opening a PR against this repo
+would get arbitrary code execution on a machine the maintainer owns and is
+responsible for securing.
 
 This is not a hypothetical/`ubuntu-latest`-adjacent risk that CI's existing
 `github.repository == 'dfadler/zombie-mermaid'` fork-of-this-fork guard
-mitigates — that guard protects against a *second* fork's own Actions budget,
-not against PRs opened *against* this repo, which is exactly the scenario
+mitigates — that guard protects against a _second_ fork's own Actions budget,
+not against PRs opened _against_ this repo, which is exactly the scenario
 GitHub's warning names.
 
 ## Decision
@@ -131,12 +141,13 @@ model makes this a structural blocker, not a scheduling one:
   is a documented security posture, not a number that measurement could move.
 - **What would change this:** if this repo's ownership model changes (e.g. a
   second, trusted maintainer takes on host security, or the project moves to
-  a private repo, or GitHub ships a genuinely ephemeral self-hosted-runner
-  offering that closes the "any user can open pull requests" gap GitHub's own
-  docs currently name), the calculus here should be re-run rather than
-  assumed permanent. Absent one of those changes, don't re-propose this for
-  the same ~92s/run saving — the security fact, not the timing number, is
-  what settled it.
+  a private repo), the calculus here should be re-run rather than assumed
+  permanent. GitHub's existing ephemeral/JIT self-hosted runners don't
+  change it on their own, since a warm cache needs a persistent runner —
+  this proposal and the ephemeral mitigation are mutually exclusive by
+  construction, not a gap GitHub still needs to close. Absent an ownership
+  change, don't re-propose this for the same ~92s/run saving — the security
+  fact, not the timing number, is what settled it.
 - The custom-image-pull-time measurement item
   (`ci-container-overhead-investigation.md`'s item 1: a chromium-only image
   built and pushed to GHCR, timed for real) remains the only still-open,
