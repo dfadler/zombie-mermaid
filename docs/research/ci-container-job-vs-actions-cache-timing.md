@@ -13,10 +13,10 @@ Real per-shard CI timing, measured before and after the `container:` job migrati
 (PR #651), both pulled from this repo's own CI run history (`gh run view --json
 jobs`), not estimated:
 
-| | Install/init step | Total shard job |
-| --- | --- | --- |
-| Pre-migration, cache hit (6 runs) | ~14.7s avg (12–28s) | ~47s avg (40–67s) |
-| Pre-migration, cache miss (2 runs) | ~23.5s avg (21–26s) | ~57.5s avg (55–60s) |
+|                                            | Install/init step   | Total shard job     |
+| ------------------------------------------ | ------------------- | ------------------- |
+| Pre-migration, cache hit (6 runs)          | ~14.7s avg (12–28s) | ~47s avg (40–67s)   |
+| Pre-migration, cache miss (2 runs)         | ~23.5s avg (21–26s) | ~57.5s avg (55–60s) |
 | Post-migration, `container:` job (10 runs) | ~29.5s avg (25–42s) | ~70.5s avg (62–90s) |
 
 **The container job is measurably slower per shard**: roughly +15s init / +23s
@@ -27,7 +27,7 @@ Actions-minutes per run compared to cache-hit.
 This does **not** reopen #548's decision — the migration already shipped for
 cross-platform baseline consistency, not speed (see #544 and
 `docs/decisions/playwright-docker-image-visual-regression.md`) — but it replaces
-this spike's original "roughly a wash" *estimate* with a real number for any
+this spike's original "roughly a wash" _estimate_ with a real number for any
 future review of that tradeoff.
 
 Full methodology, the original pre-migration estimate (superseded once real
