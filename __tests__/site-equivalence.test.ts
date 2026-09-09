@@ -255,11 +255,13 @@ describe('pages.ts → diagrams/*.html', () => {
             slug: 'flowchart',
             label: 'Flowchart',
             intro: 'Flowcharts show a process as boxes and arrows.',
+            accent: 'blue',
           },
           {
             slug: 'sequence',
             label: 'Sequence diagram',
             intro: 'Sequence diagrams show messages between participants.',
+            accent: 'cyan',
           },
         ],
       }),

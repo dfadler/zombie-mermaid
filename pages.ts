@@ -277,6 +277,7 @@ async function main(): Promise<void> {
         slug: profile.slug,
         label: profile.label,
         intro: profile.intro,
+        accent: profile.accent,
       })),
     }),
   )
