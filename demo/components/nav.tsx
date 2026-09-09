@@ -57,12 +57,23 @@
  * it matters (the toggle icon, the diagram motif) rather than claimed as
  * canvas fidelity.
  *
+ * The install pill's package-manager selector (zombie-mermaid#719) is a
+ * second deviation on the same footing: no artboard in the #590 canvas
+ * shows anything but the bare `npm install …` pill, so this wasn't traced
+ * from it either. It was approved by the repo owner via a separate,
+ * follow-up Claude Design exploration
+ * (`https://claude.ai/code/artifact/d6852fbd-08d3-4014-9d29-767defedfbc2`,
+ * not an edit to the #590 canvas itself, which stays a read-only artifact
+ * this repo can't write to) rather than a round-trip through #590. See
+ * {@link NavInstall}'s doc comment for the resulting markup.
+ *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, ReactNode, RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import {
+  CheckIcon,
   CopyIcon,
   ICON_LINE_CAP,
   ICON_STROKE_WIDTH,
@@ -78,6 +89,7 @@ import {
   LAYOUT,
   LETTER_SPACING,
   MEDIA,
+  RADIUS,
   SPACE,
   colorVar,
 } from './tokens.tsx'
@@ -258,6 +270,94 @@ export function bgRgba(alpha: number): string {
   const b = parseInt(hex.slice(5, 7), 16)
   return `rgba(${r},${g},${b},${alpha})`
 }
+
+/* -----------------------------------------------------------------
+ * Install pill: package-manager selector (zombie-mermaid#719)
+ *
+ * Invented — approved by the repo owner via a Claude Design exploration
+ * (see the module doc comment), not part of the #590 canvas. Grouped here
+ * with the rest of this file's measurements/data rather than inline in
+ * {@link NavInstall} for the same reason the mobile-menu literals above
+ * are: one place to find every magic number this file declares.
+ * ----------------------------------------------------------------- */
+
+/**
+ * The four package managers the install pill's popover offers, in the
+ * order the popover lists them. `'npm'` is first and the default —
+ * matching {@link NAV_INSTALL_COMMAND} and this file's pre-#719 behavior.
+ */
+export const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn', 'bun'] as const
+
+/** One of {@link PACKAGE_MANAGERS}, e.g. `'pnpm'`. */
+export type PackageManager = (typeof PACKAGE_MANAGERS)[number]
+
+/**
+ * The literal prefix {@link NAV_INSTALL_COMMAND} (and, by convention, any
+ * page's `installCommand` override) starts with — `'npm install '`. Used
+ * only to recover the bare package name so the other three managers' own
+ * verbs can be substituted in; see {@link packageNameFromCommand}.
+ */
+const NPM_INSTALL_PREFIX = 'npm install '
+
+/**
+ * Recovers the package name from an npm-style install command, e.g.
+ * `'npm install zombie-mermaid'` → `'zombie-mermaid'`.
+ *
+ * A page's {@link NavProps.installCommand} is the only source for this —
+ * there is no separate "package name" prop — so this assumes the npm
+ * phrasing {@link NAV_INSTALL_COMMAND} uses. A command that doesn't start
+ * with {@link NPM_INSTALL_PREFIX} (a page overriding it with something
+ * else entirely) is returned as-is: the pnpm/yarn/bun options then repeat
+ * that same string verbatim rather than guessing at its structure, which
+ * is the smallest safe fallback for a prop that's free-form text.
+ */
+function packageNameFromCommand(installCommand: string): string {
+  return installCommand.startsWith(NPM_INSTALL_PREFIX)
+    ? installCommand.slice(NPM_INSTALL_PREFIX.length)
+    : installCommand
+}
+
+/**
+ * The install command for a given package manager and package name —
+ * `npm install <pkg>` for npm, `<manager> add <pkg>` for the other three
+ * (pnpm, yarn, and bun all share the `add` verb).
+ */
+function installCommandFor(
+  manager: PackageManager,
+  packageName: string,
+): string {
+  return manager === 'npm'
+    ? `npm install ${packageName}`
+    : `${manager} add ${packageName}`
+}
+
+/** The prefix trigger's padding, in px — 6 vertical ({@link SPACE.xxs}), 10
+ * horizontal ({@link SPACE.sm}), per the approved design spec. */
+const INSTALL_PREFIX_PAD_Y = SPACE.xxs
+const INSTALL_PREFIX_PAD_X = SPACE.sm
+
+/** The chevron-down glyph's rendered size, in px — small enough to sit
+ * beside the prefix label without competing with the copy glyph. */
+const INSTALL_CHEVRON_SIZE = 10
+
+/** The vertical divider's height, in px, between the prefix and the
+ * command text — ~18px per the approved design spec; off tokens.tsx's
+ * scale (16 and 20 both miss it), so it stays a literal. */
+const INSTALL_DIVIDER_HEIGHT = 18
+
+/** The popover's rendered width, in px — ~132px per the approved design
+ * spec, wide enough for "pnpm" plus its checkmark without wrapping. */
+const INSTALL_POPOVER_WIDTH = 132
+
+/** Gap between the prefix trigger and the popover below it, in px. */
+const INSTALL_POPOVER_GAP = SPACE.xxs
+
+/** A popover menu item's font size, in px — {@link FONT_SIZE.bodySm} (14),
+ * per the approved design spec. */
+const INSTALL_POPOVER_ITEM_FONT_SIZE = FONT_SIZE.bodySm
+
+/** The checkmark beside the popover's active item, in px. */
+const INSTALL_CHECK_SIZE = 10
 
 /* -----------------------------------------------------------------
  * CSS
@@ -509,8 +609,205 @@ function NavBrand({ homeHref }: { homeHref?: string }) {
 }
 
 /**
+ * The chevron-down glyph after the popover trigger's "npm" label —
+ * {@link ChevronRightIcon}'s path rotated 90°, drawn locally rather than
+ * imported since {@link IconProps} has no rotation escape hatch. Invented
+ * for the package-manager selector (zombie-mermaid#719, see the module
+ * doc comment); still drawn in the icon set's own stroke style (the same
+ * {@link ICON_VIEW_BOX}/{@link ICON_STROKE_WIDTH}/{@link ICON_LINE_CAP}
+ * {@link MenuToggle} draws its own local svg with) so it reads as part of
+ * the same family.
+ */
+function InstallChevronGlyph() {
+  return (
+    <svg
+      width={INSTALL_CHEVRON_SIZE}
+      height={INSTALL_CHEVRON_SIZE}
+      viewBox={ICON_VIEW_BOX}
+      fill="none"
+      stroke={colorVar('--cyan')}
+      strokeWidth={ICON_STROKE_WIDTH}
+      strokeLinecap={ICON_LINE_CAP}
+      strokeLinejoin={ICON_LINE_CAP}
+      aria-hidden="true"
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  )
+}
+
+/**
+ * The install pill's leading "npm ▾" segment — clicking or pressing
+ * Enter/Space opens {@link NavInstallPopover} below it. A `role="button"`
+ * span, not a `<button>`, matching {@link NavInstall}'s own pre-existing
+ * pattern (see `__tests__/demo-nav.test.ts`'s "no extra `<button>`"
+ * assertion this file's module doc comment references).
+ *
+ * Invented for the package-manager selector (zombie-mermaid#719) — see the
+ * module doc comment for where the design came from.
+ */
+function NavInstallPrefix({
+  manager,
+  open,
+  onToggle,
+  triggerRef,
+}: {
+  manager: PackageManager
+  open: boolean
+  onToggle: () => void
+  triggerRef: RefObject<HTMLSpanElement | null>
+}) {
+  function handleKeyDown(event: KeyboardEvent<HTMLSpanElement>): void {
+    if (
+      event.key === 'Enter' ||
+      event.key === ' ' ||
+      event.key === 'ArrowDown'
+    ) {
+      event.preventDefault()
+      if (!open) onToggle()
+    } else if (event.key === 'Escape' && open) {
+      event.preventDefault()
+      onToggle()
+    }
+  }
+
+  return (
+    <span
+      ref={triggerRef}
+      className="nav-install-prefix"
+      role="button"
+      tabIndex={0}
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      aria-label="Choose package manager"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: `${SPACE.xxs}px`,
+        padding: `${INSTALL_PREFIX_PAD_Y}px ${INSTALL_PREFIX_PAD_X}px`,
+        borderRadius: `${RADIUS.sm}px`,
+        color: colorVar('--cyan'),
+        cursor: 'pointer',
+      }}
+      onClick={onToggle}
+      onKeyDown={handleKeyDown}
+    >
+      {manager}
+      <InstallChevronGlyph />
+    </span>
+  )
+}
+
+/**
+ * The install pill's popover: all four {@link PACKAGE_MANAGERS}, with a
+ * checkmark on the current selection. Reachable via the arrow keys once
+ * focus lands inside it ({@link NavInstall} moves focus to the active
+ * item when it opens), and each item is itself a `role="option"` span —
+ * same "no literal `<button>`" reasoning as {@link NavInstallPrefix}.
+ *
+ * Invented for the package-manager selector (zombie-mermaid#719) — see the
+ * module doc comment for where the design came from.
+ */
+function NavInstallPopover({
+  manager,
+  onSelect,
+  onClose,
+  triggerRef,
+  itemRefs,
+}: {
+  manager: PackageManager
+  onSelect: (manager: PackageManager) => void
+  onClose: () => void
+  triggerRef: RefObject<HTMLSpanElement | null>
+  itemRefs: RefObject<(HTMLSpanElement | null)[]>
+}) {
+  function handleItemKeyDown(
+    event: KeyboardEvent<HTMLSpanElement>,
+    item: PackageManager,
+    index: number,
+  ): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onSelect(item)
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose()
+      triggerRef.current?.focus()
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      itemRefs.current[(index + 1) % PACKAGE_MANAGERS.length]?.focus()
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      itemRefs.current[
+        (index - 1 + PACKAGE_MANAGERS.length) % PACKAGE_MANAGERS.length
+      ]?.focus()
+    }
+  }
+
+  return (
+    <span
+      className="nav-install-popover"
+      role="listbox"
+      aria-label="Package manager"
+      style={{
+        position: 'absolute',
+        top: `calc(100% + ${INSTALL_POPOVER_GAP}px)`,
+        left: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        width: `${INSTALL_POPOVER_WIDTH}px`,
+        background: colorVar('--panel'),
+        border: `1px solid ${colorVar('--border')}`,
+        borderRadius: `${RADIUS.lg}px`,
+        padding: `${SPACE.xs}px`,
+        zIndex: NAV_Z_INDEX + 1,
+        cursor: 'default',
+      }}
+    >
+      {PACKAGE_MANAGERS.map((item, index) => {
+        const active = item === manager
+        return (
+          <span
+            key={item}
+            ref={(el) => {
+              itemRefs.current[index] = el
+            }}
+            className="nav-install-option"
+            role="option"
+            aria-selected={active}
+            tabIndex={0}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: `${SPACE.xs}px`,
+              padding: `${SPACE.xs}px ${SPACE.sm}px`,
+              borderRadius: `${RADIUS.sm}px`,
+              fontFamily: 'var(--font-mono)',
+              fontSize: `${INSTALL_POPOVER_ITEM_FONT_SIZE}px`,
+              color: colorVar(active ? '--text' : '--text-dim'),
+              background: active ? colorVar('--panel-2') : 'transparent',
+              cursor: 'pointer',
+            }}
+            onClick={() => onSelect(item)}
+            onKeyDown={(event) => handleItemKeyDown(event, item, index)}
+          >
+            {item}
+            {active ? (
+              <CheckIcon size={INSTALL_CHECK_SIZE} color={colorVar('--cyan')} />
+            ) : null}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
+/**
  * The install pill: the canvas's `muted` {@link Pill} lifted onto
- * `--panel-2`, holding the command and a copy glyph.
+ * `--panel-2`, holding the package-manager selector, the command, and a
+ * copy glyph.
  *
  * The text is the element the 600px rule hides, so it must stay its own
  * `.nav-npm-text` span rather than being the pill's bare text content.
@@ -523,12 +820,35 @@ function NavBrand({ homeHref }: { homeHref?: string }) {
  * render output from the start (identical on the server and the client, so
  * hydration has nothing to reconcile), and the icon's stroke color is
  * driven by {@link copied} instead of a `setAttribute` call.
+ *
+ * As of zombie-mermaid#719 (invented, not canvas-pinned — see the module
+ * doc comment), the pill also carries {@link NavInstallPrefix}: clicking it
+ * (rather than the rest of the pill) opens {@link NavInstallPopover} to
+ * pick a package manager, which drives both the prefix label and the
+ * command text/copy payload via {@link selectedManager}. Neither the
+ * prefix nor the popover is nested inside a click-to-copy region — they
+ * sit beside it as their own focusable, `role`-carrying spans — so there
+ * is no ambiguity between "open the popover" and "copy the command"
+ * clicks, and no nested interactive roles for assistive tech to untangle.
+ * The initial SSR render always shows npm (`useState`'s default), matching
+ * the pill's pre-#719 behavior exactly; the popover starts closed.
  */
 function NavInstall({ command }: { command: string }) {
+  const [selectedManager, setSelectedManager] = useState<PackageManager>('npm')
+  const [popoverOpen, setPopoverOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const revertTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   )
+  const triggerRef = useRef<HTMLSpanElement | null>(null)
+  const popoverRef = useRef<HTMLSpanElement | null>(null)
+  const itemRefs = useRef<(HTMLSpanElement | null)[]>([])
+
+  const packageName = packageNameFromCommand(command)
+  const displayedCommand =
+    selectedManager === 'npm'
+      ? command
+      : installCommandFor(selectedManager, packageName)
 
   // Cleared on unmount so a pending revert never fires against an
   // unmounted component (defensive — Nav is never intentionally unmounted
@@ -540,9 +860,52 @@ function NavInstall({ command }: { command: string }) {
     }
   }, [])
 
+  // Closes the popover on a click/tap outside both the trigger and the
+  // popover itself, and on Escape regardless of which of the two currently
+  // holds focus — the same "click elsewhere or Escape closes it" contract
+  // NAV_MOBILE_MENU_SCRIPT gives the mobile menu, done here in React state
+  // instead since this popover is real `useState`, not a runtime script.
+  useEffect(() => {
+    if (!popoverOpen) return
+
+    function handlePointerDown(event: globalThis.MouseEvent): void {
+      const target = event.target as Node
+      if (triggerRef.current?.contains(target)) return
+      if (popoverRef.current?.contains(target)) return
+      setPopoverOpen(false)
+    }
+
+    function handleKeyDown(event: globalThis.KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        setPopoverOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [popoverOpen])
+
+  // Moves focus into the popover when it opens — onto the currently
+  // selected item, mirroring how opening {@link MobileNavPanel} focuses
+  // its first link.
+  useEffect(() => {
+    if (!popoverOpen) return
+    const activeIndex = PACKAGE_MANAGERS.indexOf(selectedManager)
+    itemRefs.current[activeIndex >= 0 ? activeIndex : 0]?.focus()
+    // Deliberately keyed on `popoverOpen` alone, not every `selectedManager`
+    // change while open — selecting an item already closes the popover
+    // (see `selectManager`), so re-running this on that change would never
+    // observably differ.
+  }, [popoverOpen])
+
   function copyCommand(): void {
-    if (!command || !navigator.clipboard) return
-    navigator.clipboard.writeText(command).then(() => {
+    if (!displayedCommand || !navigator.clipboard) return
+    navigator.clipboard.writeText(displayedCommand).then(() => {
       setCopied(true)
       if (revertTimer.current) clearTimeout(revertTimer.current)
       revertTimer.current = setTimeout(
@@ -552,11 +915,17 @@ function NavInstall({ command }: { command: string }) {
     })
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLSpanElement>): void {
+  function handleCopyKeyDown(event: KeyboardEvent<HTMLSpanElement>): void {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       copyCommand()
     }
+  }
+
+  function selectManager(next: PackageManager): void {
+    setSelectedManager(next)
+    setPopoverOpen(false)
+    triggerRef.current?.focus()
   }
 
   return (
@@ -565,20 +934,56 @@ function NavInstall({ command }: { command: string }) {
       style={{
         background: colorVar('--panel-2'),
         flexShrink: 0,
-        cursor: 'pointer',
+        position: 'relative',
       }}
-      role="button"
-      tabIndex={0}
-      aria-label="Copy install command"
-      onClick={copyCommand}
-      onKeyDown={handleKeyDown}
     >
-      <span className="nav-npm-text">{command}</span>
-      <CopyIcon
-        size={COPY_ICON_SIZE}
-        strokeWidth={COPY_ICON_STROKE}
-        color={copied ? NAV_COPY_SUCCESS_COLOR : NAV_COPY_ICON_COLOR}
+      <NavInstallPrefix
+        manager={selectedManager}
+        open={popoverOpen}
+        onToggle={() => setPopoverOpen((open) => !open)}
+        triggerRef={triggerRef}
       />
+      <span
+        className="nav-install-divider"
+        aria-hidden="true"
+        style={{
+          width: '1px',
+          height: `${INSTALL_DIVIDER_HEIGHT}px`,
+          background: colorVar('--border'),
+        }}
+      />
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label="Copy install command"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: `${SPACE.sm}px`,
+          flex: 1,
+          cursor: 'pointer',
+        }}
+        onClick={copyCommand}
+        onKeyDown={handleCopyKeyDown}
+      >
+        <span className="nav-npm-text">{displayedCommand}</span>
+        <CopyIcon
+          size={COPY_ICON_SIZE}
+          strokeWidth={COPY_ICON_STROKE}
+          color={copied ? NAV_COPY_SUCCESS_COLOR : NAV_COPY_ICON_COLOR}
+        />
+      </span>
+      {popoverOpen ? (
+        <span ref={popoverRef}>
+          <NavInstallPopover
+            manager={selectedManager}
+            onSelect={selectManager}
+            onClose={() => setPopoverOpen(false)}
+            triggerRef={triggerRef}
+            itemRefs={itemRefs}
+          />
+        </span>
+      ) : null}
     </Pill>
   )
 }

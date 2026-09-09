@@ -12,18 +12,20 @@
  * graph statically; a wrong reorder here is a compile error, not a
  * `ReferenceError` at runtime.
  *
- * zombie-mermaid#807/#808 have since removed zoom.ts/pan.ts/resize.ts and
- * config-panel.ts/color-picker.ts/font-picker.ts from this list entirely --
- * that state and DOM wiring now lives in React
- * (demo/components/editor-viewport.ts, demo/components/editor-config.tsx).
+ * zombie-mermaid#807/#808/#809 have since removed zoom.ts/pan.ts/resize.ts,
+ * config-panel.ts/color-picker.ts/font-picker.ts, and
+ * buttons.ts/export.ts/toast.ts/tabs.ts from this list entirely -- that
+ * state and DOM wiring now lives in React (demo/components/editor-viewport.ts,
+ * editor-config.tsx, editor-buttons.ts, editor-export.ts, editor-toast.ts,
+ * editor-tabs.ts).
  *
  * These imports are ordered to match the original `order` array for ease
  * of comparison, but (unlike the old concatenation) the order here no
  * longer has any runtime significance for cross-module references --
  * each file's actual dependencies are its own `import` statements, which
  * ES module evaluation order (and this program's circular-import handling;
- * see dark-mode.ts's header comment) already resolves correctly regardless
- * of this list's sequence. Only side-effect-only imports below need to run
+ * see theme-button.ts's header comment) already resolves correctly
+ * regardless of this list's sequence. Only side-effect-only imports below need to run
  * at all -- most of them are also depended on directly by name elsewhere in
  * the graph, so this list mainly exists to guarantee every module (even
  * one nothing else imports for its exports) is actually included in the
@@ -35,10 +37,14 @@ import './elements.ts'
 import './sharing.ts'
 import './rendering.ts'
 import './editor-helpers.ts'
-import './tabs.ts'
-import './buttons.ts'
-import './export.ts'
-import './toast.ts'
+// zombie-mermaid#809: buttons.ts/export.ts/toast.ts moved to React state
+// entirely (demo/components/editor-buttons.ts, editor-export.ts,
+// editor-toast.ts) and no longer exist as editor/js/*.ts modules.
+// zombie-mermaid#808: tabs.ts's own remaining job (calling
+// refreshAllColorUIs() when config-panel.ts wasn't React-owned yet) is
+// gone too now that config-panel.ts/color-picker.ts/font-picker.ts no
+// longer exist -- see dark-mode.ts's header comment for why *it* is still
+// imported below, just much smaller than before.
 import './theme-button.ts'
 import './dark-mode.ts'
 import './init.ts'

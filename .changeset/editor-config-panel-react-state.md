@@ -15,7 +15,7 @@ after every render; it now reaches them through a new
 `window.__editorConfigState` bridge, following this repo's existing
 `window.__mermaid`/`window.__themeState`/`window.__editorViewportState`
 convention. A color field with no override shows the active theme's own
-color as a placeholder, which needed the *reverse* direction of bridge
+color as a placeholder, which needed the _reverse_ direction of bridge
 (legacy writes, React reads): a `zm-editor-theme-changed` window event,
 dispatched by a new `setEditorTheme()` in `editor/js/state.ts` (now the
 only place `state.theme` is written), since `state.theme` genuinely

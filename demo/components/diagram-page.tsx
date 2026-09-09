@@ -474,12 +474,14 @@ export function DiagramTypePage({
             fontFamily: 'var(--font-body)',
             color: colorVar('--text'),
             width: '100%',
-            // 1440px in the artboard: LAYOUT.maxWidth (1280, the inner
-            // content column every section below centres) plus its own
-            // 80px gutter on each side -- the outer frame the artboard
-            // itself renders at, one level up from the content column.
-            maxWidth: `${LAYOUT.maxWidth + 2 * LAYOUT.gutter.desktop}px`,
-            margin: '0 auto',
+            // No maxWidth/margin cap here, unlike the artboard's own 1440px
+            // outer frame: every other page's header (index-page.tsx,
+            // blog-page.tsx, fork-fixes-page.tsx) spans the full viewport
+            // width, with only each section's own inner content column
+            // (LAYOUT.maxWidth, centred) bounded — capping this wrapper
+            // instead left the diagrams pages' header floating with visible
+            // side gaps on wide viewports while every other page's header
+            // ran edge to edge.
             // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
             // fixed gradient here would leave a static dark band behind on
             // every non-default theme (#772's site-chrome re-theming). The
@@ -670,8 +672,9 @@ export function DiagramHubPage({
             fontFamily: 'var(--font-body)',
             color: colorVar('--text'),
             width: '100%',
-            maxWidth: `${LAYOUT.maxWidth + 2 * LAYOUT.gutter.desktop}px`,
-            margin: '0 auto',
+            // No maxWidth/margin cap -- see DiagramTypePage's identical
+            // wrapper for why (keeps this page's header full-width, matching
+            // every other page, instead of floating with side gaps).
             // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
             // fixed gradient here would leave a static dark band behind on
             // every non-default theme (#772's site-chrome re-theming). The

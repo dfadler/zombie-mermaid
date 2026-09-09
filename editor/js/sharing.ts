@@ -42,3 +42,13 @@ export function updateHash(): void {
   if (state.theme) obj.theme = state.theme
   window.history.replaceState(null, '', '#' + encodeSource(JSON.stringify(obj)))
 }
+
+// The window.__editorSharingState bridge for
+// demo/components/editor-export.ts's copyURL() (zombie-mermaid#809) --
+// this module isn't migrated by that issue (it's also used by
+// rendering.ts's doRender(), well outside #809's five named files), and
+// demo/components/*.tsx doesn't import from editor/js/*.ts directly (see
+// demo/components/editor-app.tsx's requireEditorElement doc comment), so
+// it exposes this one function the same way editor-helpers.ts exposes
+// updateLineNumbers for the identical reason.
+window.__editorSharingState = { updateHash }
