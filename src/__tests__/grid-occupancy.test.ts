@@ -8,7 +8,7 @@ import {
   pathCells,
   cloneGrid,
   NODE_BLOCK_SIZE,
-} from '../ascii/grid-occupancy.ts'
+} from '../../packages/ascii-renderer/src/grid-occupancy.ts'
 
 describe('grid-occupancy', () => {
   it('createGrid starts empty', () => {

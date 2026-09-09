@@ -31,7 +31,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 /** Column indices (0-based) of every lifeline, read off the actor header's
  * bottom border row (the one carrying `┬` junctions). */

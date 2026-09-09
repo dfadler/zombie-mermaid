@@ -15,7 +15,7 @@
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createMcpServer } from '../mcp/index.ts'
+import { createMcpServer } from '@zombie-mermaid/mcp'
 
 /**
  * Execute the `mcp` command: start the MCP server on stdio and resolve once

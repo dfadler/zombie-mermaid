@@ -16,14 +16,18 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
-import { convertToAsciiGraph } from '../ascii/converter.ts'
-import { createMapping } from '../ascii/grid.ts'
+import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
+import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import {
   calculateJunctionPoint,
   routeBundledEdges,
-} from '../ascii/edge-bundling.ts'
-import { Middle } from '../ascii/types.ts'
-import type { AsciiConfig, AsciiGraph, EdgeBundle } from '../ascii/types.ts'
+} from '../../packages/ascii-renderer/src/edge-bundling.ts'
+import { Middle } from '../../packages/ascii-renderer/src/types.ts'
+import type {
+  AsciiConfig,
+  AsciiGraph,
+  EdgeBundle,
+} from '../../packages/ascii-renderer/src/types.ts'
 
 function buildGraph(src: string, graphDirection: 'TD' | 'LR'): AsciiGraph {
   const config: AsciiConfig = {

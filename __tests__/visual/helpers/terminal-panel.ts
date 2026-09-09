@@ -16,11 +16,11 @@
  * still imported from the renderer rather than reimplemented, so "how
  * wide is this glyph" has one source of truth.
  */
-import { charDisplayWidth } from '../../../src/ascii/display-width.ts'
+import { charDisplayWidth } from '../../../packages/ascii-renderer/src/display-width.ts'
 import {
   diagramColorsToAsciiTheme,
   type AsciiRenderOptions,
-} from '../../../src/ascii/index.ts'
+} from '@zombie-mermaid/ascii-renderer'
 
 /**
  * Fixed dark palette an ASCII terminal-preview panel renders with,

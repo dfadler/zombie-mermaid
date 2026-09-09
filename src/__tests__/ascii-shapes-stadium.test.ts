@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { stadiumRenderer } from '../ascii/shapes/stadium.ts'
-import type { Canvas } from '../ascii/types.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { stadiumRenderer } from '../../packages/ascii-renderer/src/shapes/stadium.ts'
+import type { Canvas } from '../../packages/ascii-renderer/src/types.ts'
 
 function canvasToLines(canvas: Canvas): string[] {
   const height = canvas[0]?.length ?? 0

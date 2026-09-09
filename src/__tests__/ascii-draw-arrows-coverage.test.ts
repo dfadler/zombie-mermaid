@@ -4,7 +4,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII arrow drawing: no-arrow edges', () => {
   it('renders a solid no-arrow edge without an arrowhead in unicode mode', () => {

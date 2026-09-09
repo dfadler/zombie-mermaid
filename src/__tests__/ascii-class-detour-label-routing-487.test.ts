@@ -25,7 +25,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 const MVC_SOURCE = `classDiagram
   class Model {

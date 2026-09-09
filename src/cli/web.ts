@@ -12,7 +12,7 @@
 
 import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { renderMermaidSVG } from '../index.ts'
 import type { WebArgs } from './parse-args.ts'
 

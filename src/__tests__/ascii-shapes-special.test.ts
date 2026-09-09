@@ -5,9 +5,14 @@
  * `[\text/]`. None of these shapes were exercised anywhere before this file.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { canvasToString } from '../ascii/canvas.ts'
-import { Up, Down, Left, Right } from '../ascii/types.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { canvasToString } from '../../packages/ascii-renderer/src/canvas.ts'
+import {
+  Up,
+  Down,
+  Left,
+  Right,
+} from '../../packages/ascii-renderer/src/types.ts'
 import {
   subroutineRenderer,
   doublecircleRenderer,
@@ -17,8 +22,8 @@ import {
   parallelogramRenderer,
   parallelogramAltRenderer,
   trapezoidAltRenderer,
-} from '../ascii/shapes/special.ts'
-import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
+} from '../../packages/ascii-renderer/src/shapes/special.ts'
+import type { ShapeRenderOptions } from '../../packages/ascii-renderer/src/shapes/types.ts'
 
 const unicodeOpts: ShapeRenderOptions = { useAscii: false, padding: 1 }
 const asciiOpts: ShapeRenderOptions = { useAscii: true, padding: 1 }

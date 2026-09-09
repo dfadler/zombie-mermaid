@@ -40,7 +40,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 /** paddingY values below the default (5) that the issue found all reproduce
  * the same corruption — the vertical gap floors at 1 row, so nothing about

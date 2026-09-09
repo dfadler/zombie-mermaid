@@ -11,8 +11,12 @@ import {
   colorizeChar,
   colorizeLine,
   colorizeText,
-} from '../ascii/ansi.ts'
-import type { CharRole, AsciiTheme, ColorMode } from '../ascii/types.ts'
+} from '../../packages/ascii-renderer/src/ansi.ts'
+import type {
+  CharRole,
+  AsciiTheme,
+  ColorMode,
+} from '../../packages/ascii-renderer/src/types.ts'
 import type { DiagramColors } from '@zombie-mermaid/core'
 
 const RESET = '\x1b[0m'

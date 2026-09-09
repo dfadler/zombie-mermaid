@@ -10,7 +10,7 @@
 // ============================================================================
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { getPackageVersion } from '../package-info.ts'
+import { getPackageVersion } from '../../../src/package-info.ts'
 import { renderSvgInputShape, renderSvgHandler } from './tools/render-svg.ts'
 import {
   renderAsciiInputShape,

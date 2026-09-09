@@ -36,10 +36,14 @@
  * some real diagram happens to hit this deep a fallback tier.
  */
 import { describe, it, expect } from 'vitest'
-import { determineLabelLine } from '../ascii/edge-routing.ts'
-import { Down, gridKey } from '../ascii/types.ts'
-import type { AsciiEdge, AsciiGraph, AsciiNode } from '../ascii/types.ts'
-import { createGrid } from '../ascii/grid-occupancy.ts'
+import { determineLabelLine } from '../../packages/ascii-renderer/src/edge-routing.ts'
+import { Down, gridKey } from '../../packages/ascii-renderer/src/types.ts'
+import type {
+  AsciiEdge,
+  AsciiGraph,
+  AsciiNode,
+} from '../../packages/ascii-renderer/src/types.ts'
+import { createGrid } from '../../packages/ascii-renderer/src/grid-occupancy.ts'
 
 function makeNode(name: string, x: number, y: number): AsciiNode {
   return {

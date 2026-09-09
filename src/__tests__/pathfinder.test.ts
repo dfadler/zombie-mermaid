@@ -5,10 +5,17 @@ import {
   mergePath,
   createPathBudget,
   DEFAULT_PATH_BUDGET,
-} from '../ascii/pathfinder.ts'
-import type { GridCoord, PathBudget } from '../ascii/types.ts'
-import { createGrid, placeBlock, type Grid } from '../ascii/grid-occupancy.ts'
-import { renderMermaidASCII } from '../ascii/index.ts'
+} from '../../packages/ascii-renderer/src/pathfinder.ts'
+import type {
+  GridCoord,
+  PathBudget,
+} from '../../packages/ascii-renderer/src/types.ts'
+import {
+  createGrid,
+  placeBlock,
+  type Grid,
+} from '../../packages/ascii-renderer/src/grid-occupancy.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 /**
  * Helper to build an occupied grid from a list of coordinates, going through

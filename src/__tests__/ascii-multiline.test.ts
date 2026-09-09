@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { mkCanvas, canvasToString } from '../ascii/canvas.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  mkCanvas,
+  canvasToString,
+} from '../../packages/ascii-renderer/src/canvas.ts'
 import {
   drawMultilineTextCentered,
   drawMultilineTextLeft,
-} from '../ascii/multiline-utils.ts'
+} from '../../packages/ascii-renderer/src/multiline-utils.ts'
 
 describe('ASCII multi-line labels', () => {
   describe('flowchart nodes', () => {

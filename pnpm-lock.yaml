@@ -51,9 +51,15 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.11
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
+      '@zombie-mermaid/ascii-renderer':
+        specifier: workspace:*
+        version: link:packages/ascii-renderer
       '@zombie-mermaid/core':
         specifier: workspace:*
         version: link:packages/core
+      '@zombie-mermaid/mcp':
+        specifier: workspace:*
+        version: link:packages/mcp
       '@zombie-mermaid/mermaid-parser':
         specifier: workspace:*
         version: link:packages/mermaid-parser
@@ -113,11 +119,38 @@ importers:
         specifier: ^2.6.2
         version: 2.6.2
 
+  packages/ascii-renderer:
+    dependencies:
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:../core
+      '@zombie-mermaid/mermaid-parser':
+        specifier: workspace:*
+        version: link:../mermaid-parser
+
   packages/core:
     devDependencies:
       elkjs:
         specifier: ^0.11.0
         version: 0.11.1
+
+  packages/mcp:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.30.0
+        version: 1.30.0(zod@4.5.4)
+      '@zombie-mermaid/ascii-renderer':
+        specifier: workspace:*
+        version: link:../ascii-renderer
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:../core
+      '@zombie-mermaid/mermaid-parser':
+        specifier: workspace:*
+        version: link:../mermaid-parser
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
 
   packages/mermaid-parser:
     dependencies:

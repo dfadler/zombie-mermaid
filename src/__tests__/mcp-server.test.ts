@@ -11,7 +11,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createMcpServer } from '../mcp/server.ts'
+import { createMcpServer } from '../../packages/mcp/src/server.ts'
 
 let server: McpServer
 let client: Client

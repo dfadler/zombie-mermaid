@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   renderSvgHandler,
   renderSvgInputShape,
-} from '../mcp/tools/render-svg.ts'
+} from '../../packages/mcp/src/tools/render-svg.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import { renderMermaidSVG } from '../index.ts'
 

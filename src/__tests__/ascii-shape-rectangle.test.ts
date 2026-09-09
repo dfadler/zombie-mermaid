@@ -4,9 +4,9 @@ import {
   renderBox,
   getBoxAttachmentPoint,
   rectangleRenderer,
-} from '../ascii/shapes/rectangle.ts'
-import { canvasToString } from '../ascii/canvas.ts'
-import { getCorners } from '../ascii/shapes/corners.ts'
+} from '../../packages/ascii-renderer/src/shapes/rectangle.ts'
+import { canvasToString } from '../../packages/ascii-renderer/src/canvas.ts'
+import { getCorners } from '../../packages/ascii-renderer/src/shapes/corners.ts'
 import {
   Up,
   Down,
@@ -17,8 +17,8 @@ import {
   LowerLeft,
   LowerRight,
   Middle,
-} from '../ascii/types.ts'
-import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
+} from '../../packages/ascii-renderer/src/types.ts'
+import type { ShapeRenderOptions } from '../../packages/ascii-renderer/src/shapes/types.ts'
 
 const optsP0: ShapeRenderOptions = { useAscii: false, padding: 0 }
 const optsP1: ShapeRenderOptions = { useAscii: false, padding: 1 }

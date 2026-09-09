@@ -11,7 +11,7 @@ import {
   assertNoDiagonals,
   findOrphanedJunctions,
   hasOrphanedJunctions,
-} from '../ascii/validate.ts'
+} from '../../packages/ascii-renderer/src/validate.ts'
 
 describe('DIAGONAL_CHARS', () => {
   it('exposes ascii, unicode, and combined character sets', () => {

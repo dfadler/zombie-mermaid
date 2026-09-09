@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII edge bundling — refuses to bundle a rank-violating edge (issue #454)', () => {
   it('gives a fan-in edge its own arrowhead when its source shares a rank with the target', () => {

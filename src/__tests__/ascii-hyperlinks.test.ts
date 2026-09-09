@@ -10,7 +10,7 @@
  * can import samples-data.ts without tripping tsconfig's rootDir).
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import {
   OSC8_CLOSE,
   OSC8_SEQUENCE,
@@ -20,13 +20,16 @@ import {
   LinkRunTracker,
   markBoxLabelLinks,
   mkLinkCanvas,
-} from '../ascii/hyperlinks.ts'
-import { colorizeLine, DEFAULT_ASCII_THEME } from '../ascii/ansi.ts'
-import { mkCanvas, write } from '../ascii/canvas.ts'
-import { addCoordsOverlay } from '../ascii/coords.ts'
+} from '../../packages/ascii-renderer/src/hyperlinks.ts'
+import {
+  colorizeLine,
+  DEFAULT_ASCII_THEME,
+} from '../../packages/ascii-renderer/src/ansi.ts'
+import { mkCanvas, write } from '../../packages/ascii-renderer/src/canvas.ts'
+import { addCoordsOverlay } from '../../packages/ascii-renderer/src/coords.ts'
 import { runRender } from '../cli/render.ts'
 import { createMockStdout, renderArgs } from './cli-test-helpers.ts'
-import type { CharRole } from '../ascii/types.ts'
+import type { CharRole } from '../../packages/ascii-renderer/src/types.ts'
 
 const OSC8_PREFIX = '\x1b]8;;'
 

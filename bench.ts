@@ -13,7 +13,7 @@
 import { writeFile } from 'node:fs/promises'
 import { samples } from './samples-data.ts'
 import { renderMermaid } from './src/index.ts'
-import { renderMermaidASCII } from './src/ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 const jsonArg = process.argv.find((a) => a.startsWith('--json='))
 const JSON_OUTPUT_PATH = jsonArg ? jsonArg.slice('--json='.length) : null

@@ -5,7 +5,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII sequence diagrams – autonumber', () => {
   it('renders sequence numbers near each numbered arrow, in order', () => {

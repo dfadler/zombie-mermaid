@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { roundedRenderer } from '../ascii/shapes/rounded.ts'
-import { canvasToString } from '../ascii/canvas.ts'
-import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
+import { roundedRenderer } from '../../packages/ascii-renderer/src/shapes/rounded.ts'
+import { canvasToString } from '../../packages/ascii-renderer/src/canvas.ts'
+import type { ShapeRenderOptions } from '../../packages/ascii-renderer/src/shapes/types.ts'
 
 describe('roundedRenderer.render', () => {
   it('draws Unicode rounded corners around a single-line label', () => {

@@ -466,3 +466,76 @@ other) rather than a new cycle — `src/__tests__/workspace-package-boundaries.t
 now asserts `mermaid-parser` stays a sink exactly like `core`, and that
 `svg-renderer`'s only workspace dependencies are `core` and
 `mermaid-parser`.
+
+## Addendum (#767) — the `ascii-renderer`/`mcp` move #623 closed without doing
+
+#623 was closed via [PR #644](https://github.com/dfadler/zombie-mermaid/pull/644),
+but that PR only did the cycle-removal prerequisite described in its own
+"Correction 2" above (splitting `src/diagram-registry.ts` so the umbrella's
+SVG dispatch and `src/ascii/index.ts` stopped importing each other) — the
+actual package move never happened. #767 tracked that discrepancy and
+performs the move this addendum documents: `src/ascii/**` to
+`packages/ascii-renderer/`, `src/mcp/**` to `packages/mcp/`, following the
+revised order Correction 1 above settled on (last, after `core`,
+`mermaid-parser`, and `svg-renderer` existed to depend on).
+
+Both packages mirror the sibling three exactly: `"private": true`,
+`exports: { ".": "./src/index.ts" }`, `files: ["src/"]`. Actual publishing
+stays out of scope (#769), same as it does for `core`/`mermaid-parser`/
+`svg-renderer` today.
+
+**Two relative back-references into the un-packaged umbrella, both
+deliberate, both already documented before this move landed.** Neither
+`src/parser.ts` (the flowchart/state parser) nor `src/expanded-shapes.ts`
+became a workspace package under #624 — see that issue's addendum above —
+and `src/index.ts`'s own `renderMermaidSVG` dispatch never did either. Three
+imports cross the new package boundary by relative path rather than a bare
+`@zombie-mermaid/*` specifier, unavoidably:
+
+- `packages/ascii-renderer/src/flowchart.ts` imports `parseMermaid` from
+  `../../../src/parser.ts` (previously `../parser.ts`, before the move).
+  `src/__tests__/ascii-package-boundary.test.ts`'s `ALLOWED_OUTSIDE_ASCII`
+  already allow-listed this exact edge; only its `ASCII_ENTRY` path and the
+  test's own `outside()` filter needed updating to point at the file's new
+  location.
+- `packages/mcp/src/server.ts` imports `getPackageVersion` from
+  `../../../src/package-info.ts` (previously `../package-info.ts`).
+- `packages/mcp/src/tools/render-svg.ts` imports `renderMermaidSVG` from
+  `../../../../src/index.ts` (previously `../../index.ts`) — the umbrella's
+  own SVG dispatcher was never folded into `svg-renderer` (that package is
+  rendering primitives and the ELK layout engine, not the per-type
+  dispatch), so this one was never going to become a bare specifier.
+
+None of these are cycles: the umbrella depends on both new packages (via
+`src/index.ts`'s `export … from '@zombie-mermaid/ascii-renderer'` and
+`src/cli/mcp.ts`'s `import { createMcpServer } from '@zombie-mermaid/mcp'`),
+and neither package is ever imported by anything upstream of the two files
+it reaches into.
+
+**One real, new inter-package edge:** `packages/mcp/src/tools/render-ascii.ts`
+previously reached `src/ascii/index.ts` by relative path
+(`../../ascii/index.ts`); now that `ascii-renderer` is a real sibling
+package, that import became the bare specifier
+`@zombie-mermaid/ascii-renderer`, and `packages/mcp/package.json` declares
+it as a `workspace:*` dependency alongside `core` and `mermaid-parser`. This
+is the ordinary, acyclic shape finding 2 already described for
+`svg-renderer`'s dependency on `mermaid-parser` — `ascii-renderer` doesn't
+depend on `mcp` back.
+
+**Test files did not move.** Despite `monorepo-test-layout-627.md`'s
+decision to move each package's tests into `<package>/src/__tests__/`,
+neither #624 nor #625 actually did that in practice — `core`,
+`mermaid-parser`, and `svg-renderer`'s tests are all still under
+`src/__tests__/`, with only their import specifiers rewritten to the bare
+`@zombie-mermaid/*` form. #767 mirrors that actual precedent, not the
+decision doc's on-paper one: the 88 ASCII and 5 MCP test files stayed in
+`src/__tests__/`, and every relative specifier reaching into the moved
+source was rewritten to either the bare package specifier (for anything
+`packages/ascii-renderer/src/index.ts`'s curated public API already
+exported) or a recomputed relative path into `packages/ascii-renderer/src/`
+directly (for the many unit tests that reach ascii-renderer's internal
+modules — `canvas.ts`, `grid-occupancy.ts`, `pathfinder.ts`, and so on —
+which the package's narrow index does not re-export, unlike
+`mermaid-parser`'s `export *`-everything index). Reconciling the doc with
+what actually happened across all three prior extractions is worth its own
+follow-up; not done here.

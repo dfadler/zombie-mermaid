@@ -14,7 +14,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { findBoxRect, rectsOverlap } from './helpers/ascii-form.ts'
 
 function expectNoBoxOverlap(ascii: string, names: string[]): void {

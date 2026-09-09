@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkSequenceActivationsHandler } from '../mcp/tools/check-sequence-activations.ts'
+import { checkSequenceActivationsHandler } from '../../packages/mcp/src/tools/check-sequence-activations.ts'
 
 function parseReport(text: string): { ok: boolean; issues: unknown[] } {
   return JSON.parse(text) as { ok: boolean; issues: unknown[] }

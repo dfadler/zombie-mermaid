@@ -8,8 +8,11 @@
  * Test data: 44 ASCII files + 22 Unicode files = 66 total.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { hasDiagonalLines, DIAGONAL_CHARS } from '../ascii/validate.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  hasDiagonalLines,
+  DIAGONAL_CHARS,
+} from '../../packages/ascii-renderer/src/validate.ts'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'

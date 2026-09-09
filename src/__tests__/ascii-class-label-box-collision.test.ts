@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII class diagram — label collision with an intermediate box', () => {
   it('moves a skip-edge label out of an intermediate class box instead of overwriting it', () => {

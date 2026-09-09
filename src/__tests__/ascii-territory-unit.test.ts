@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { allocateTerritory } from '../ascii/territory.ts'
-import type { TerritoryGeometry } from '../ascii/territory.ts'
+import { allocateTerritory } from '../../packages/ascii-renderer/src/territory.ts'
+import type { TerritoryGeometry } from '../../packages/ascii-renderer/src/territory.ts'
 
 /**
  * Test items carry their own geometry so the accessor stays trivial and the

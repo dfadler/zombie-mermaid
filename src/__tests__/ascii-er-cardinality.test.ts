@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII ER crow-foot cardinality markers', () => {
   it('mirrors the zero-one marker orientation on the left side (regression)', () => {

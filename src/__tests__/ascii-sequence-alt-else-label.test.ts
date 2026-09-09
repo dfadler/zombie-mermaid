@@ -17,7 +17,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII sequence diagrams – alt/else block labels (issue #352)', () => {
   it('does not truncate a long alt/else label mid-word (exact issue repro)', () => {

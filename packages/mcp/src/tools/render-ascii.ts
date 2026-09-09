@@ -8,8 +8,8 @@
 
 import { z } from 'zod'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { renderMermaidASCII } from '../../ascii/index.ts'
-import type { AsciiRenderOptions } from '../../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
 
 export const renderAsciiInputShape = {
   diagram: z

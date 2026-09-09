@@ -9,7 +9,7 @@
  * the ASCII equivalent ('+').
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII vs Unicode charset: box-start border junctions', () => {
   it('draws a "+" junction on a plain top-down edge, matching the Unicode T-junction', () => {

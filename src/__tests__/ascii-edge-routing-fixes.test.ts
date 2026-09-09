@@ -5,7 +5,7 @@
  * drift. Repro diagrams are taken directly from the issue.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('issue #64: edge-routing crashes and layout bugs', () => {
   describe('bug 1: dense fan-in pathfinding blowup', () => {

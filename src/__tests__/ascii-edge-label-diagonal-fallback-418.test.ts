@@ -8,8 +8,8 @@
  * column (`┆thick`) instead of sitting on its own `┃` line.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { expandDiagonalSegments } from '../ascii/edge-routing.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { expandDiagonalSegments } from '../../packages/ascii-renderer/src/edge-routing.ts'
 
 const ALL_EDGE_STYLES = `graph TD
   A[Source] -->|solid| B[Target 1]

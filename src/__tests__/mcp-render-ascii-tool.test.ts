@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { renderAsciiHandler } from '../mcp/tools/render-ascii.ts'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderAsciiHandler } from '../../packages/mcp/src/tools/render-ascii.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 // ============================================================================
 // renderMermaidASCII is wrapped (not fully replaced) so every test above
@@ -8,8 +8,9 @@ import { renderMermaidASCII } from '../ascii/index.ts'
 // non-Error throw (impossible to provoke from real Mermaid source, since
 // the renderer only ever throws Error instances) overrides it per-call.
 // ============================================================================
-vi.mock('../ascii/index.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../ascii/index.ts')>()
+vi.mock('@zombie-mermaid/ascii-renderer', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@zombie-mermaid/ascii-renderer')>()
   return { ...actual, renderMermaidASCII: vi.fn(actual.renderMermaidASCII) }
 })
 

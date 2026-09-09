@@ -21,7 +21,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII padding edge cases (issue #343 follow-up)', () => {
   it('a negative boxBorderPadding does not produce a negative-width class box', () => {

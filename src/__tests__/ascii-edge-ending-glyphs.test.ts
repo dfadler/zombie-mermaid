@@ -10,7 +10,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
   it('draws a circle glyph for --o in unicode mode', () => {

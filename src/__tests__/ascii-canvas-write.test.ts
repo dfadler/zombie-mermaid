@@ -17,8 +17,8 @@ import {
   mkRoleCanvas,
   write,
   getCanvasSize,
-} from '../ascii/canvas.ts'
-import type { CharRole } from '../ascii/types.ts'
+} from '../../packages/ascii-renderer/src/canvas.ts'
+import type { CharRole } from '../../packages/ascii-renderer/src/types.ts'
 
 describe('canvas.ts write()', () => {
   it('writes within bounds, including exactly on the inclusive max edge', () => {

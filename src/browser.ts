@@ -9,7 +9,10 @@
 // ============================================================================
 
 import { renderMermaidSVGAsync } from './index.ts'
-import { renderMermaidASCII, diagramColorsToAsciiTheme } from './ascii/index.ts'
+import {
+  renderMermaidASCII,
+  diagramColorsToAsciiTheme,
+} from '@zombie-mermaid/ascii-renderer'
 import { THEMES, isWideChar } from '@zombie-mermaid/core'
 import {
   getSeriesColor,

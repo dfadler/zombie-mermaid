@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { addCoordsOverlay } from '../ascii/coords.ts'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { addCoordsOverlay } from '../../packages/ascii-renderer/src/coords.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('addCoordsOverlay', () => {
   it('prepends a two-row column ruler and a row-index gutter', () => {
