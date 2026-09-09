@@ -39,7 +39,7 @@
  */
 import type { ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
-import { Nav, navCss } from './nav.tsx'
+import { Nav, NavCopyScript, navCss } from './nav.tsx'
 import { Footer, footerCss, type FooterColumn } from './footer.tsx'
 import {
   CheckIcon,
@@ -1987,6 +1987,7 @@ export function IndexPage({ jsonLd }: IndexPageProps) {
           <BlogTeaser />
         </main>
         <Footer columns={HOME_FOOTER_COLUMNS} />
+        <NavCopyScript />
       </body>
     </html>
   )

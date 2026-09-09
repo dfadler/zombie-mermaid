@@ -663,5 +663,8 @@
         </p>
       </div>
     </footer>
+    <script>
+      "(function () {\n  function copyCommand(pill) {\n    var text = pill.querySelector('.nav-npm-text')\n    var icon = pill.querySelector('svg')\n    if (!text || !navigator.clipboard) return\n    navigator.clipboard.writeText(text.textContent || '').then(function () {\n      if (!icon) return\n      icon.setAttribute('stroke', 'var(--green)')\n      setTimeout(function () {\n        icon.setAttribute('stroke', 'var(--cyan)')\n      }, 1200)\n    })\n  }\n  var pills = document.querySelectorAll('.nav-bar .pill.mono')\n  pills.forEach(function (pill) {\n    pill.setAttribute('role', 'button')\n    pill.setAttribute('tabindex', '0')\n    pill.setAttribute('aria-label', 'Copy install command')\n    pill.style.cursor = 'pointer'\n    pill.addEventListener('click', function () {\n      copyCommand(pill)\n    })\n    pill.addEventListener('keydown', function (event) {\n      if (event.key === 'Enter' || event.key === ' ') {\n        event.preventDefault()\n        copyCommand(pill)\n      }\n    })\n  })\n})()"
+    </script>
   </body>
 </html>
