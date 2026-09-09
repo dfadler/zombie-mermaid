@@ -39,6 +39,7 @@ describe('createMcpServer', () => {
     const names = tools.map((t) => t.name).sort()
     expect(names).toEqual([
       'check_mermaid_sequence_activations',
+      'fix_mermaid_sequence_activations',
       'render_mermaid_ascii',
       'render_mermaid_svg',
     ])
@@ -130,5 +131,33 @@ describe('createMcpServer', () => {
     expect(report.issues).toEqual([
       expect.objectContaining({ code: 'DANGLING_ACTIVATION', actorId: 'A' }),
     ])
+  })
+
+  it('fixes a dangling activation via a real tool call', async () => {
+    const result = await client.callTool({
+      name: 'fix_mermaid_sequence_activations',
+      arguments: {
+        diagram: 'sequenceDiagram\n  activate A\n  A->>B: hello',
+      },
+    })
+    expect(result.isError).toBeFalsy()
+    const content = result.content
+    if (
+      !Array.isArray(content) ||
+      content[0]?.type !== 'text' ||
+      typeof content[0].text !== 'string'
+    ) {
+      throw new Error('Expected text content')
+    }
+    const report = JSON.parse(content[0].text) as {
+      ok: boolean
+      fixedDiagram: string
+      fixesApplied: string[]
+      remainingIssues: unknown[]
+    }
+    expect(report.ok).toBe(true)
+    expect(report.fixedDiagram).toContain('deactivate A')
+    expect(report.fixesApplied).toHaveLength(1)
+    expect(report.remainingIssues).toEqual([])
   })
 })
