@@ -24,6 +24,21 @@
  *    code panel and the `N / <count>` counter in sync. Does nothing under
  *    `prefers-reduced-motion: reduce` — the build-time render is a
  *    complete, correctly themed diagram on its own.
+ *
+ *    The color change itself is hand-tweened in JS (`animateThemeChange`),
+ *    not a plain CSS `transition` — a bare `transition: fill 900ms` on the
+ *    rendered shapes does *not* animate here, because each shape's fill
+ *    derives from `--bg`/`--fg` through an intermediate, unregistered
+ *    custom property (`var(--_node-fill)`, itself `color-mix(...)` of
+ *    `--fg`/`--bg`; see `packages/core/theme.ts`), and Chromium doesn't
+ *    detect a transitionable before/after value across that indirection
+ *    (verified empirically). Registering `--bg`/`--fg` via `@property`
+ *    would fix it but would apply site-wide, since those same two names
+ *    are also the page's own root theme tokens — too broad for a fix
+ *    scoped to this section. `animateThemeChange` instead steps
+ *    `--bg`/`--fg`/… across the fade window via `requestAnimationFrame`,
+ *    matching `demo/components/index-page.tsx`'s own `900ms ease`
+ *    `transition: background` on the surrounding card.
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
@@ -87,6 +102,36 @@ function mixHex(fgHex: string, bgHex: string, pctFg: number): string {
   return '#' + hex(r) + hex(g) + hex(bl)
 }
 
+/** Linearly interpolates between two `#rrggbb` hex colors at `t` (0..1). */
+function lerpHex(fromHex: string, toHex: string, t: number): string {
+  const from = parseInt(fromHex.slice(1), 16)
+  const to = parseInt(toHex.slice(1), 16)
+  const fr = (from >> 16) & 255
+  const fg = (from >> 8) & 255
+  const fb = from & 255
+  const tr = (to >> 16) & 255
+  const tg = (to >> 8) & 255
+  const tb = to & 255
+  const r = Math.round(fr + (tr - fr) * t)
+  const g = Math.round(fg + (tg - fg) * t)
+  const b = Math.round(fb + (tb - fb) * t)
+  const hex = (v: number) => v.toString(16).padStart(2, '0')
+  return '#' + hex(r) + hex(g) + hex(b)
+}
+
+/** Rough visual match for CSS's `ease` timing function (easeOutQuad). */
+function ease(t: number): number {
+  return t * (2 - t)
+}
+
+/**
+ * How long each theme-color fade takes — kept in sync by hand with
+ * `demo/components/index-page.tsx`'s `900ms ease` `transition: background`
+ * on `.theme-showcase-diagram-card` (there's no shared constant between
+ * the two files; see this file's own header doc comment for why).
+ */
+const THEME_FADE_MS = 900
+
 function startShowcaseCycle(): void {
   const reduced =
     typeof window !== 'undefined' &&
@@ -124,6 +169,55 @@ function startShowcaseCycle(): void {
   const themeOrder = buildThemeOrder()
   let i = 0
 
+  const initialTheme = THEMES[SHOWCASE_DEFAULT_THEME]
+  if (!initialTheme) return
+  // The colors currently applied to every slot's svg -- the fade's "from"
+  // state each tick. Starts at the theme the build-time SVGs were already
+  // rendered in, so the first tick fades from what's actually on screen.
+  let currentTheme: DiagramColors = initialTheme
+  let fadeRafId: number | null = null
+
+  /**
+   * Steps every slot's svg --bg/--fg/... from `fromTheme` to `toTheme` over
+   * `durationMs` via requestAnimationFrame -- see this file's header doc
+   * comment for why a plain CSS `transition` doesn't work here.
+   */
+  function animateThemeChange(
+    fromTheme: DiagramColors,
+    toTheme: DiagramColors,
+    durationMs: number,
+  ): void {
+    if (fadeRafId !== null) cancelAnimationFrame(fadeRafId)
+    const start = performance.now()
+
+    function tick(now: number): void {
+      const t = Math.min(1, (now - start) / durationMs)
+      const eased = ease(t)
+      for (const el of slots) {
+        const svg = el.querySelector('svg')
+        if (!(svg instanceof SVGSVGElement)) continue
+        svg.style.setProperty('--bg', lerpHex(fromTheme.bg, toTheme.bg, eased))
+        svg.style.setProperty('--fg', lerpHex(fromTheme.fg, toTheme.fg, eased))
+        for (const prop of ENRICHMENT_KEYS) {
+          const fromValue = fromTheme[prop]
+          const toValue = toTheme[prop]
+          if (fromValue && toValue) {
+            svg.style.setProperty('--' + prop, lerpHex(fromValue, toValue, eased))
+          } else if (toValue) {
+            // The outgoing theme left this channel unset -- nothing to
+            // fade from, so just set the target directly.
+            svg.style.setProperty('--' + prop, toValue)
+          } else {
+            svg.style.removeProperty('--' + prop)
+          }
+        }
+      }
+      fadeRafId = t < 1 ? requestAnimationFrame(tick) : null
+    }
+
+    fadeRafId = requestAnimationFrame(tick)
+  }
+
   window.setInterval(() => {
     i += 1
     const themeKey = themeOrder[i % themeOrder.length]
@@ -133,16 +227,9 @@ function startShowcaseCycle(): void {
 
     for (const el of slots) {
       el.style.display = el === slot ? 'flex' : 'none'
-      const svg = el.querySelector('svg')
-      if (!(svg instanceof SVGSVGElement)) continue
-      svg.style.setProperty('--bg', theme.bg)
-      svg.style.setProperty('--fg', theme.fg)
-      for (const prop of ENRICHMENT_KEYS) {
-        const value = theme[prop]
-        if (value) svg.style.setProperty('--' + prop, value)
-        else svg.style.removeProperty('--' + prop)
-      }
     }
+    animateThemeChange(currentTheme, theme, THEME_FADE_MS)
+    currentTheme = theme
 
     diagramCard.style.background = theme.bg
     counter.textContent = String((i % themeOrder.length) + 1)

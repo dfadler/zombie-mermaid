@@ -347,6 +347,21 @@ function homePageCss(): string {
   max-height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
   margin: 0 auto;
 }
+/* The diagram's own colors fade in step with the card's background 900ms
+   ease transition above, but NOT via a plain CSS "transition: fill ..."
+   rule here -- that was tried first and does nothing: every shape paints
+   via a "fill"/"stroke" presentation attribute whose value derives from
+   --bg/--fg through an intermediate custom property (var(--_node-fill),
+   which itself is var(--surface, color-mix(...var(--fg)...var(--bg)));
+   see packages/core/theme.ts). Chromium doesn't detect a transitionable
+   before/after "fill" across that chain of unregistered custom-property
+   indirection -- verified empirically (before/after computed fill values
+   captured on a timer, no intermediate frame) -- short of registering
+   --bg/--fg themselves via @property, which would apply those *site-wide*
+   (they also name the page's own root theme tokens) for a fix scoped to
+   this one section. index-page-client.ts's startShowcaseCycle() instead
+   hand-tweens --bg/--fg/... across the fade window via requestAnimationFrame,
+   the same way its mixHex() already hand-rolls color math for this file. */
 
 .theme-showcase-frac { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .theme-showcase-frac-cur { font-size: 34px; font-weight: 700; color: ${colorVar('--cyan')}; letter-spacing: -0.02em; }
