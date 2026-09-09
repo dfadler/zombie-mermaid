@@ -825,13 +825,7 @@ function DetailBreadcrumb({
 const GALLERY_VISIBLE_COUNT = 6
 
 /** One `MoreExamplesSection` card: a fixed-aspect thumbnail plus the sample's title, linking to the live editor. */
-function GalleryCard({
-  item,
-  accent,
-}: {
-  item: GalleryItem
-  accent: Accent
-}) {
+function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
   return (
     <Card href={item.editorHref} accent={accent} className="gallery-card">
       <div
