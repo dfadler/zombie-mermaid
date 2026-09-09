@@ -1,16 +1,23 @@
 # Spike: real CI time cost of a `container:` job vs. current `actions/cache` install
 
-Feeds: [#548](https://github.com/dfadler/zombie-mermaid/issues/548) (decision). Part of
-the Docker tracking cluster, [#544](https://github.com/dfadler/zombie-mermaid/issues/544).
+Feeds: [#548](https://github.com/dfadler/zombie-mermaid/issues/548) (decision, already
+closed go/no-go — the container migration shipped as
+[#549](https://github.com/dfadler/zombie-mermaid/issues/549), merged in PR
+[#651](https://github.com/dfadler/zombie-mermaid/pull/651)). Part of the Docker
+tracking cluster, [#544](https://github.com/dfadler/zombie-mermaid/issues/544).
 Answers [#547](https://github.com/dfadler/zombie-mermaid/issues/547).
 
 **Status of the two halves of this comparison:**
 
-- **Current approach (`actions/cache` + `playwright install`): real, measured** —
-  pulled from this repo's own recent CI run history via `gh run view --json jobs`.
-- **Container-job approach (`container: image: mcr.microsoft.com/playwright:...`):
-  documented estimate, not a measurement.** No `workflow_dispatch` trial was run
-  against real CI for this spike. Rationale below.
+- **Current (pre-migration) approach (`actions/cache` + `playwright install`): real,
+  measured** — pulled from this repo's own recent CI run history via
+  `gh run view --json jobs`.
+- **Container-job approach: originally a documented estimate (see §2 below,
+  unchanged as a record of that reasoning); now superseded by §4, a real
+  post-migration measurement** pulled from actual `main` CI runs after PR #651
+  merged the `container:` job into `.github/workflows/ci.yml`. §4 is the live trial
+  this section originally said was not done — it since has been, for free, as a
+  side effect of the job actually shipping.
 
 ## Why the container side is an estimate, not a live trial
 
@@ -177,14 +184,94 @@ step is the real trial #547 originally described: a scoped, temporary
 this exact image and job, run a few times cold and warm, with explicit human
 sign-off to spend the shared CI capacity — then deleted. That was not done here.
 
+**Update (2026-09-09): this next step happened for real, just not via a throwaway
+trial workflow — #548 was decided go, #549 shipped the `container:` job directly to
+`.github/workflows/ci.yml` (PR #651, merged 2026-09-08), and it has since run
+dozens of times on real `main` pushes. §4 below replaces this section's estimate
+with that real data.**
+
+## 4. Post-migration real measurement (2026-09-09 update)
+
+PR #651 merged the `container:` job (`mcr.microsoft.com/playwright@sha256:75d2d7...`,
+pinned digest for `v1.62.1-jammy`) into the `visual-regression` job at
+`2026-09-08T03:19:38Z`. Every `push`-to-`main` run of `ci.yml` since then uses this
+job shape, so its actual timing is now directly observable from CI history — no
+estimate or scaling assumption needed.
+
+**Method**: `gh run list --workflow=ci.yml --branch main --json databaseId,...` for
+runs created after the merge, then `gh run view <id> --json jobs` for shard 1's
+step timestamps in each (same method §1 used for the pre-migration baseline). All
+10 runs sampled are `push` events on `main`, `conclusion: success`, spanning
+2026-09-08T22:47Z–2026-09-09T02:00Z — i.e. real production CI traffic, not a
+purpose-built trial.
+
+| Run ID      | `Initialize containers` (image pull + start) | Total shard job (`Set up job` → `Complete job`) |
+| ----------- | -------------------------------------------- | ----------------------------------------------- |
+| 34287604097 | 32s                                          | 66s                                             |
+| 34287839422 | 25s                                          | 69s                                             |
+| 34289009725 | 25s                                          | 62s                                             |
+| 34290758385 | 25s                                          | 63s                                             |
+| 34291203915 | 42s                                          | 78s                                             |
+| 34296101674 | 31s                                          | 63s                                             |
+| 34299279929 | 27s                                          | 71s                                             |
+| 34299622897 | 36s                                          | 90s                                             |
+| 34301185217 | 27s                                          | 74s                                             |
+| 34301393814 | 25s                                          | 69s                                             |
+
+Aggregates (10 runs, all `main` pushes, all container-based):
+
+- **`Initialize containers`** (the container-job equivalent of the old
+  cache/install step — this is the image pull + container start, paid fresh every
+  shard on every run since each shard is its own fresh runner VM with no
+  persistent Docker layer cache): **25–42s, avg ~29.5s**.
+- **Total shard job wall-clock**: **62–90s, avg ~70.5s**.
+- For comparison, a full step breakdown of one run (34301393814) shows where the
+  rest of the time goes after the container starts: `Install DejaVu fonts` ~8s,
+  `Verify generic font families` <1s, `Setup pnpm`/`Setup Node.js` ~5s combined,
+  `Install dependencies` (pnpm) ~10s, `Run visual regression suite` ~15s.
+
+**This real data changes §3's conclusion.** The container job is **measurably
+slower per shard than either pre-migration state**: ~29.5s avg container
+init vs. ~14.7s avg cache-hit install (**+~15s**) or ~23.5s avg cache-miss install
+(**+~6s**); ~70.5s avg total shard job vs. ~47s avg cache-hit total (**+~23s**, or
++49%) or ~57.5s avg cache-miss total (**+~13s**, or +22%). The §2 estimate (~22s
+container overhead, "within the same range" as the old approach) undershot the
+real number by roughly 7–20s — the linear image-size scaling from a smaller,
+different-registry image was too optimistic, most likely because it didn't
+account for `mcr.microsoft.com`'s own pull latency/layer count independent of raw
+byte size, and because "container start" (not just "image pull") includes
+Actions-side container-runtime setup the blog's bare `docker pull` benchmark
+didn't include.
+
+Per PR run, this job fans out over 4 shards, so the wall-clock cost to a single
+PR is one shard's time (they run in parallel), but the **total Actions-minutes
+cost** is 4× — roughly an extra 4 × 23s ≈ 92s of billed compute per run compared
+to the cache-hit baseline. Over the run volume visible in this repo's `main`
+history (dozens of pushes/day during active development), that is a real,
+non-trivial recurring cost, not a one-time migration tax.
+
+This does **not** reopen #548's already-shipped decision — that issue is closed
+and the migration has already landed for its stated primary reason
+(cross-platform baseline consistency, not speed; see #544 and
+`docs/decisions/playwright-docker-image-visual-regression.md`), and reverting it
+would require re-litigating the baseline-consistency tradeoff, not just the timing
+one. It does mean any future review of that tradeoff has a real cost number to
+weigh (~+23s/shard, ~+49% job time) rather than the "roughly a wash" estimate this
+document originally offered.
+
 ## Appendix: raw commands used
 
 ```bash
-# Current-approach timing
+# Current-approach (pre-migration) timing
 gh run list --workflow=ci.yml --limit 20 --json databaseId,conclusion,createdAt,headBranch,event
 gh run view <id> --json jobs -q '.jobs[] | select(.name | contains("(1, 4)")) | .steps[] | {name, conclusion, startedAt, completedAt}'
 
 # Container image size
 docker manifest inspect mcr.microsoft.com/playwright:v1.62.1-jammy
 docker manifest inspect mcr.microsoft.com/playwright@sha256:<amd64-digest>
+
+# Post-migration (§4) real container-job timing: same commands, filtered to
+# push/main runs created after PR #651's merge (2026-09-08T03:19:38Z)
+gh run list --workflow=ci.yml --branch main --limit 30 --json databaseId,conclusion,createdAt,event,headBranch,status
+gh run view <id> --json jobs,event,headBranch,createdAt
 ```
