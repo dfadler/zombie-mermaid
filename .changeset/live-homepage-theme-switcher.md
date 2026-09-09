@@ -14,5 +14,9 @@ section further down the homepage is removed as redundant (there is now
 only one theme-preview element on the page, matching #759's decision #2).
 `demo/components/nav.tsx` gains two new opt-in props (`installSlot`,
 `sticky`), both defaulting to the canvas's original behavior so every other
-page is unaffected. Addresses #759. Nothing here touches the published
-`zombie-mermaid` package — this is demo-site UI only.
+page is unaffected. Also fixes two previously-static gradient backgrounds
+(`dashboard-page.tsx`, `diagram-page.tsx`) that baked a literal
+`#0a0d16`/`#0d1120` pair, which would have shown a static dark band behind
+on a light theme now that site chrome re-themes live. Addresses #759.
+Nothing here touches the published `zombie-mermaid` package — this is
+demo-site UI only.
