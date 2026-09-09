@@ -11,7 +11,6 @@ import {
 import { escHtml } from './helpers.ts'
 import { updateHash } from './sharing.ts'
 import { renderMermaid, state, THEMES } from './state.ts'
-import { applyZoom } from './zoom.ts'
 
 let renderTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -111,7 +110,13 @@ export async function doRender(): Promise<void> {
     previewInner.innerHTML = svg
     const svgEl = previewInner.querySelector('svg')
     applyStrokeOverrides(svgEl)
-    applyZoom(state.zoom)
+    // zombie-mermaid#807: zoom is now React state owned by <EditorApp>'s
+    // reducer (demo/components/editor-app.tsx) -- editor/js/zoom.ts (which
+    // used to own state.zoom and this reapplication) is gone, so this
+    // reaches the current zoom level through the window.__editorViewportState
+    // bridge instead. See demo/components/editor-viewport.ts's header
+    // comment for the full rationale.
+    window.__editorViewportState.applyZoom()
     statusText.textContent = 'OK'
     statusText.className = 'status-ok'
     statusDot.className = 'status-dot ok'

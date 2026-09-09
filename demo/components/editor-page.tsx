@@ -97,7 +97,7 @@
  *    `<EditorApp>` against pristine, server-rendered markup, hydrates
  *    `<NavIsland>`, then loads and runs {@link appJs} itself.
  *
- * `appJs` — the 18 legacy `editor/js/*.ts` modules (unchanged, still
+ * `appJs` — the remaining 15 legacy `editor/js/*.ts` modules (unchanged, still
  * concatenated the same way `bundleEditorJs()` always has) — is **not** a
  * third `<script type="module">` tag. It's embedded as inert data (a
  * `<script>` with a `type` no browser executes) and only actually run once
@@ -483,7 +483,8 @@ export interface EditorPageProps {
    */
   editorClientScript: string
   /**
-   * The 18 legacy `editor/js/*.js` modules, concatenated by editor.ts
+   * The remaining 15 legacy `editor/js/*.js` modules (zoom.ts/pan.ts/
+   * resize.ts moved to React state by #807), concatenated by editor.ts
    * exactly as before #806 — unchanged behavior. As of #806, embedded as
    * *inert* data (a `<script>` element whose `type` no browser executes),
    * not a `<script type="module">` tag — {@link editorClientScript} loads

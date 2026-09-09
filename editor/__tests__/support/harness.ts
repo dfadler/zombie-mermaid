@@ -160,6 +160,24 @@ export async function createEditorEnv(
     },
   }
 
+  // zombie-mermaid#807: editor/js/rendering.ts now reaches the current
+  // zoom level via window.__editorViewportState (registered by
+  // demo/components/editor-viewport.ts's useEditorViewport, which only
+  // runs when <EditorApp> is actually mounted through React -- this
+  // harness never does that, it only renders EditorApp's markup once via
+  // renderToStaticMarkup for buildBodyHtml() above and then evals the raw
+  // js/*.ts bundle directly). Stub it the same way __mermaid/__themeState
+  // are stubbed above, so editor/js/rendering.ts's doRender() -- exercised
+  // by rendering.test.ts -- has something to call.
+  ;(
+    window as unknown as {
+      __editorViewportState: { getZoom(): number; applyZoom(): void }
+    }
+  ).__editorViewportState = {
+    getZoom: () => 1,
+    applyZoom: vi.fn(),
+  }
+
   for (const [key, value] of Object.entries(options.localStorage ?? {})) {
     window.localStorage.setItem(key, value)
   }
