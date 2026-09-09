@@ -15,11 +15,12 @@
  * design change this repo's own convention reserves for the canvas, not
  * page-generator code.
  *
- * Renders `#theme-pills` (the container `demo/components/theme-bar-
- * client.ts`'s `initThemeBar()` looks for) so a page that mounts this
- * section just needs to bundle and call `initThemeBar()` once — see
- * `demo/theme-bar-only-client.ts` for the shared bundle entry every plain
- * page (no other client JS of its own) uses for exactly that.
+ * Renders `#theme-pills` via `ThemePickerIsland` (the hydration island
+ * `demo/theme-bar-client.tsx`'s `hydrateThemeBar()` looks for, #801) so a
+ * page that mounts this section just needs to bundle and call
+ * `hydrateThemeBar()` once — see `demo/theme-bar-only-client.ts` for the
+ * shared bundle entry every plain page (no other client JS of its own)
+ * uses for exactly that.
  *
  * Also embeds `window.__themeColors` (#772) — the `bg`/`fg` table
  * `demo/chrome-theme-client.ts`'s `initChromeTheme()` needs to re-theme
@@ -28,7 +29,7 @@
  * page that mounts this section gets both for the price of one bundle.
  */
 import { SectionEyebrow } from './primitives.tsx'
-import { ThemePicker } from './theme-picker.tsx'
+import { ThemePickerIsland } from './theme-picker-island.tsx'
 import { LAYOUT, SPACE, LETTER_SPACING, colorVar } from './tokens.tsx'
 import { chromeThemeColorsScript } from '../chrome-theme-data.ts'
 
@@ -84,18 +85,16 @@ export function ThemePickerSection({
           >
             {heading}
           </h2>
-          <div
-            className="theme-pills"
-            id="theme-pills"
+          <ThemePickerIsland
+            includeDefault
+            activeThemeKey=""
             style={{
               display: 'flex',
               flexWrap: 'wrap',
               gap: `${SPACE.md}px`,
               alignItems: 'flex-start',
             }}
-          >
-            <ThemePicker includeDefault activeThemeKey="" />
-          </div>
+          />
         </div>
       </div>
     </>

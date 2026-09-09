@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 /**
  * Guards demo/diagram-page-client.ts's #687 reconciliation onto the shared
- * demo/theme-state.ts + demo/components/theme-bar-client.ts modules (see
- * that file's header comment for the full rationale). Two behaviors are
- * new/changed and worth locking in directly, since neither had unit
- * coverage before this file existed:
+ * demo/theme-state.ts + (as of #801) `demo/theme-bar-client.tsx`'s
+ * `hydrateThemeBar()` (see that file's header comment for the full
+ * rationale). Two behaviors are new/changed and worth locking in directly,
+ * since neither had unit coverage before this file existed:
  *
  * - the legacy 'zm-diagram-page-theme' key migration now goes through
  *   setTheme() (persist + notify), not a raw localStorage write
  * - this page's own re-theming (svg + page chrome + editor link) now runs
  *   as a theme-state.ts subscribe() listener, so it reacts to a theme
- *   change made anywhere -- not just this page's own (now-shared)
- *   `#theme-pills` click handling, which `demo-theme-bar-client.test.ts`
+ *   change made anywhere -- not just this page's own (now-hydrated)
+ *   `#theme-pills` click handling, which `__tests__/dom/theme-picker.test.ts`
  *   already covers directly.
  *
  * The module runs its wiring as side effects at import time (mirroring how
@@ -19,8 +19,18 @@
  * window globals it expects *before* a fresh dynamic import -- `vi.
  * resetModules()` between tests, since a second import would otherwise
  * reuse the first run's already-executed top-level code.
+ *
+ * `#theme-pills` itself is now a hydration island (#801): `buildDom()`
+ * renders the real `ThemePickerIsland` server-side (via `renderToString`,
+ * the same technique `pages.ts` actually uses) rather than hand-typing
+ * static pill markup, so `hydrateThemeBar()` -- called by
+ * `diagram-page-client.ts`'s own top-level code -- has real, matching
+ * markup plus the JSON props script to hydrate against.
  */
+import { act, createElement } from 'react'
+import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ThemePickerIsland } from '../demo/components/theme-picker-island.tsx'
 import { THEME_STORAGE_KEY, getTheme } from '../demo/theme-state.ts'
 
 const THEMES = {
@@ -38,22 +48,21 @@ const THEMES = {
   },
 }
 
-/** Builds the minimal DOM a diagram-type page renders, per diagram-page.tsx. */
+/**
+ * Builds the DOM a diagram-type page renders, per diagram-page.tsx --
+ * `#theme-pills` is the real `ThemePickerIsland` server output (matching
+ * what `pages.ts` actually generates), not hand-typed markup, so
+ * `hydrateThemeBar()` has real matching structure + JSON props to hydrate.
+ */
 function buildDom(): void {
+  const themePillsHtml = renderToString(
+    createElement(ThemePickerIsland, {
+      includeDefault: true,
+      activeThemeKey: '',
+    }),
+  )
   document.body.innerHTML = `
-    <div id="theme-pills">
-      <div class="theme-pills-inline">
-        <button class="theme-pill active" data-theme=""></button>
-        <button class="theme-pill" data-theme="dracula"></button>
-      </div>
-      <div class="theme-more-wrapper">
-        <button class="theme-pill" id="theme-more-btn" aria-expanded="false"></button>
-        <div class="theme-more-dropdown" id="theme-more-dropdown">
-          <button class="theme-pill" data-theme="nord"></button>
-          <button class="theme-pill" data-theme="one-dark"></button>
-        </div>
-      </div>
-    </div>
+    ${themePillsHtml}
     <div class="diagram-frame">
       <svg xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
@@ -172,7 +181,14 @@ describe('#theme-pills wiring reuses the shared theme-bar-client.ts controller',
     const dracula = document.querySelector<HTMLElement>(
       '.theme-pill[data-theme="dracula"]',
     )
-    dracula?.click()
+    // act(): the click's onClick handler runs a React state update, which
+    // (unlike the old plain-DOM initThemeBar()) needs a flush point --
+    // matches this repo's __tests__/dom/*.test.ts hydration tests, just
+    // without going through RTL's own fireEvent (this file predates the RTL
+    // convention and isn't otherwise migrated by #801).
+    act(() => {
+      dracula?.click()
+    })
 
     expect(dracula?.classList.contains('active')).toBe(true)
     expect(

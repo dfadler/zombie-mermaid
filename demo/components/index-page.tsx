@@ -56,7 +56,8 @@ import {
   FEATURE_ICONS,
 } from './icons.tsx'
 import { Card, CTA, Pill, SectionEyebrow } from './primitives.tsx'
-import { ThemePicker, themePickerCss } from './theme-picker.tsx'
+import { themePickerCss } from './theme-picker.tsx'
+import { ThemePickerIsland } from './theme-picker-island.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
 import {
   DesignFontLinks,
@@ -626,9 +627,9 @@ function renderThemeShowcaseDiagram(): string {
  * hand-drawn SVGs with baked-in colours.
  *
  * `#theme-showcase`/`#theme-pills` are load-bearing ids, not decorative:
- * `demo/index-page-client.ts`'s `initThemeBar()` wires the picker by
- * querying `#theme-pills` (there must be exactly one on the page — this is
- * also why {@link IndexPage} no longer renders the separate
+ * `demo/index-page-client.ts`'s `hydrateThemeBar()` (#801) hydrates the
+ * picker by looking up `#theme-pills` (there must be exactly one on the
+ * page — this is also why {@link IndexPage} no longer renders the separate
  * `ThemePickerSection` every other page does, which would otherwise render
  * a second, colliding `#theme-pills`), and its `IntersectionObserver`
  * watches `#theme-showcase` to know when to reparent the picker into the
@@ -688,21 +689,16 @@ function ThemeShowcase() {
           gap: `${SPACE['4xl']}px`,
         }}
       >
-        <div
-          className="theme-pills"
-          id="theme-pills"
+        <ThemePickerIsland
+          includeDefault={false}
+          activeThemeKey={THEME_SHOWCASE_DEFAULT_THEME}
           style={{
             display: 'flex',
             flexWrap: 'wrap',
             justifyContent: 'center',
             gap: `${SPACE.md}px`,
           }}
-        >
-          <ThemePicker
-            includeDefault={false}
-            activeThemeKey={THEME_SHOWCASE_DEFAULT_THEME}
-          />
-        </div>
+        />
         <div
           className="card theme-showcase-diagram"
           style={{
