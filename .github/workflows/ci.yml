@@ -539,7 +539,10 @@ jobs:
         run: |
           set -euo pipefail
           changed_files="$(git diff --name-only origin/main...HEAD)"
-          non_demo_count="$(printf '%s\n' "$changed_files" | grep -vcE '^demo/')"
+          # awk, not `grep -c`, because grep -c exits 1 (a hard failure
+          # under set -e) when the count is zero — exactly the demo-only
+          # case this check needs to detect. awk always exits 0.
+          non_demo_count="$(printf '%s\n' "$changed_files" | awk 'NF && $0 !~ /^demo\// { count++ } END { print count + 0 }')"
           if [ -z "$changed_files" ] || [ "$non_demo_count" -gt 0 ]; then
             echo "demo_only=false" >> "$GITHUB_OUTPUT"
           else
