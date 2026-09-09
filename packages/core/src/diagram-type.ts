@@ -23,7 +23,7 @@ export type DiagramType = 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart'
  * routing and parsing can never disagree about where the header ends.
  */
 export function detectDiagramType(text: string): DiagramType {
-  const firstLine = splitStatements(text)[0]?.toLowerCase() ?? ''
+  const firstLine = splitStatements(text)[0]?.text.toLowerCase() ?? ''
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^sequencediagram\s*$/.test(firstLine)) return 'sequence'

@@ -126,6 +126,22 @@ function splitOnSemicolons(line: string): string[] {
 }
 
 /**
+ * One statement produced by the splitter, paired with the 1-based physical
+ * source line it came from.
+ *
+ * `line` is captured while walking `text.split('\n')`, before blank lines
+ * and `%%` comment lines are dropped — so it survives being the original
+ * source line number even though a statement's array index no longer does.
+ * This is what lets every parser built on top of `splitStatements`/
+ * `splitStatementsByLine` report *where* an error is, not just quote back
+ * the offending statement's text (see issue #760).
+ */
+export interface Statement {
+  text: string
+  line: number
+}
+
+/**
  * Split Mermaid source into trimmed statements, grouped by the physical
  * source line each one came from — dropping blank lines and `%%` comment
  * lines.
@@ -141,11 +157,13 @@ function splitOnSemicolons(line: string): string[] {
  * group) — see `src/parser.ts`'s `mergeContinuationLines`, which only
  * treats the former as mergeable.
  */
-export function splitStatementsByLine(text: string): string[][] {
-  const groups: string[][] = []
+export function splitStatementsByLine(text: string): Statement[][] {
+  const groups: Statement[][] = []
+  const rawLines = text.split('\n')
 
-  for (const rawLine of text.split('\n')) {
-    let line = rawLine.trim()
+  for (let lineIndex = 0; lineIndex < rawLines.length; lineIndex++) {
+    let line = rawLines[lineIndex]!.trim()
+    const lineNumber = lineIndex + 1
 
     /*
      * Cut the comment off first. A Mermaid comment runs to end of line, so
@@ -157,11 +175,11 @@ export function splitStatementsByLine(text: string): string[][] {
     if (comment !== -1) line = line.slice(0, comment).trim()
     if (line.length === 0) continue
 
-    const statements: string[] = []
+    const statements: Statement[] = []
     for (const part of splitOnSemicolons(line)) {
       const statement = part.trim()
       if (statement.length === 0) continue
-      statements.push(statement)
+      statements.push({ text: statement, line: lineNumber })
     }
     if (statements.length > 0) groups.push(statements)
   }
@@ -174,6 +192,6 @@ export function splitStatementsByLine(text: string): string[][] {
  * `%%` comment lines. See `splitStatementsByLine` for the line-grouped form
  * this flattens.
  */
-export function splitStatements(text: string): string[] {
+export function splitStatements(text: string): Statement[] {
   return splitStatementsByLine(text).flat()
 }

@@ -34,6 +34,7 @@ import type {
   MermaidGraph,
   PositionedGraph,
   CurveStyle,
+  Statement,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 import { withDirectionOverride } from '@zombie-mermaid/core'
@@ -126,7 +127,7 @@ export interface SvgRenderContext {
  */
 export interface DiagramModule<TDiagram = unknown, TPositioned = unknown> {
   readonly type: DiagramType
-  parse(lines: string[], text: string): TDiagram
+  parse(lines: Statement[], text: string): TDiagram
   layoutForSvg(diagram: TDiagram, options: RenderOptions): TPositioned
   renderSvg(
     positioned: TPositioned,

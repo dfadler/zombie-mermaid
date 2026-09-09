@@ -1,5 +1,5 @@
 import type { SequenceDiagram, Message, Block, Actor } from './types.ts'
-import { normalizeBrTags } from '@zombie-mermaid/core'
+import { normalizeBrTags, type Statement } from '@zombie-mermaid/core'
 import { parseBoxHeader } from './box-color.ts'
 
 /**
@@ -120,7 +120,7 @@ const MESSAGE_ANY_ARROW_RE =
 // any of these guarantees, but removing the `!` would only replace a
 // proven-safe assertion with an unreachable guard. Left as-is; no
 // behavior change.
-export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
+export function parseSequenceDiagram(lines: Statement[]): SequenceDiagram {
   const diagram: SequenceDiagram = {
     actors: [],
     messages: [],
@@ -163,7 +163,8 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
   let pendingDestroy: string | undefined
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]!
+    const stmt = lines[i]!
+    const line = stmt.text
 
     // --- box <color?> <label?> ---
     // Opens a participant group; closed by `end`. Boxes cannot nest
@@ -173,7 +174,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     if (boxMatch) {
       if (boxCtx.open !== undefined) {
         throw new Error(
-          'Sequence diagram: a box cannot be nested inside another box — close the open box with "end" first',
+          `Line ${stmt.line}: Sequence diagram: a box cannot be nested inside another box — close the open box with "end" first`,
         )
       }
       const { color, label } = parseBoxHeader(boxMatch[1] ?? '')
@@ -202,7 +203,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       if (actorIds.has(id)) {
         // Mermaid's own wording (sequenceDb `createParticipant`).
         throw new Error(
-          "It is not possible to have actors with the same id, even if one is destroyed before the next is created. Use 'AS' aliases to simulate the behavior",
+          `Line ${stmt.line}: It is not possible to have actors with the same id, even if one is destroyed before the next is created. Use 'AS' aliases to simulate the behavior`,
         )
       }
       actorIds.add(id)
@@ -211,7 +212,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         label: normalizeBrTags(createMatch[3]?.trim() ?? id),
         type,
       })
-      joinOpenBox(diagram, boxCtx, id)
+      joinOpenBox(diagram, boxCtx, id, stmt.line)
       pendingCreate = id
       continue
     }
@@ -221,7 +222,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     const destroyMatch = line.match(/^destroy\s+(.+)$/)
     if (destroyMatch) {
       const id = destroyMatch[1]!.trim()
-      ensureActor(diagram, actorIds, boxCtx, id)
+      ensureActor(diagram, actorIds, boxCtx, id, stmt.line)
       pendingDestroy = id
       continue
     }
@@ -262,7 +263,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       }
       // A re-declaration inside a box joins it (or errors if it already
       // belongs to a different one) — Mermaid's `addActor` rule.
-      joinOpenBox(diagram, boxCtx, id)
+      joinOpenBox(diagram, boxCtx, id, stmt.line)
       continue
     }
 
@@ -279,7 +280,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
 
       // Ensure actors exist
       for (const aid of noteActorIds) {
-        ensureActor(diagram, actorIds, boxCtx, aid)
+        ensureActor(diagram, actorIds, boxCtx, aid, stmt.line)
       }
 
       let position: 'left' | 'right' | 'over' = 'over'
@@ -361,7 +362,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
     const activationMatch = line.match(/^(activate|deactivate)\s+(.+)$/)
     if (activationMatch) {
       const actorId = activationMatch[2]!.trim()
-      ensureActor(diagram, actorIds, boxCtx, actorId)
+      ensureActor(diagram, actorIds, boxCtx, actorId, stmt.line)
       diagram.activations.push({
         actorId,
         kind: activationMatch[1] === 'activate' ? 'start' : 'end',
@@ -413,13 +414,14 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
         msgMatch[3],
         msgMatch[4]!,
         msgMatch[5]!,
+        stmt.line,
       )
       const msgIndex = diagram.messages.length - 1
       const msg = diagram.messages[msgIndex]!
       if (pendingCreate !== undefined) {
         if (msg.to !== pendingCreate) {
           throw new Error(
-            `The created participant ${pendingCreate} does not have an associated creating message after its declaration. Please check the sequence diagram.`,
+            `Line ${stmt.line}: The created participant ${pendingCreate} does not have an associated creating message after its declaration. Please check the sequence diagram.`,
           )
         }
         findActor(diagram, pendingCreate).createdAt = msgIndex
@@ -428,7 +430,7 @@ export function parseSequenceDiagram(lines: string[]): SequenceDiagram {
       if (pendingDestroy !== undefined) {
         if (msg.from !== pendingDestroy && msg.to !== pendingDestroy) {
           throw new Error(
-            `The destroyed participant ${pendingDestroy} does not have an associated destroying message after its declaration. Please check the sequence diagram.`,
+            `Line ${stmt.line}: The destroyed participant ${pendingDestroy} does not have an associated destroying message after its declaration. Please check the sequence diagram.`,
           )
         }
         findActor(diagram, pendingDestroy).destroyedAt = msgIndex
@@ -461,12 +463,13 @@ function ensureActor(
   actorIds: Set<string>,
   boxCtx: BoxContext,
   id: string,
+  lineNumber: number,
 ): void {
   if (!actorIds.has(id)) {
     actorIds.add(id)
     diagram.actors.push({ id, label: id, type: 'participant' })
   }
-  joinOpenBox(diagram, boxCtx, id)
+  joinOpenBox(diagram, boxCtx, id, lineNumber)
 }
 
 /**
@@ -478,6 +481,7 @@ function joinOpenBox(
   diagram: SequenceDiagram,
   boxCtx: BoxContext,
   id: string,
+  lineNumber: number,
 ): void {
   const open = boxCtx.open
   if (open === undefined) return
@@ -487,7 +491,7 @@ function joinOpenBox(
     const from = diagram.boxes[existing]!.label
     const to = diagram.boxes[open]!.label
     throw new Error(
-      `A same participant should only be defined in one Box: ${id} can't be in '${from}' and in '${to}' at the same time.`,
+      `Line ${lineNumber}: A same participant should only be defined in one Box: ${id} can't be in '${from}' and in '${to}' at the same time.`,
     )
   }
   boxCtx.membership.set(id, open)
@@ -510,9 +514,10 @@ function pushMessage(
   activationMark: string | undefined,
   to: string,
   rawLabel: string,
+  lineNumber: number,
 ): void {
-  ensureActor(diagram, actorIds, boxCtx, from)
-  ensureActor(diagram, actorIds, boxCtx, to)
+  ensureActor(diagram, actorIds, boxCtx, from, lineNumber)
+  ensureActor(diagram, actorIds, boxCtx, to, lineNumber)
 
   const bidirectional = arrow === '<<->>' || arrow === '<<-->>'
   const lineStyle = bidirectional

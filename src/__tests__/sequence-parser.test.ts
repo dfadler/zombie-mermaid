@@ -10,14 +10,11 @@ import {
   isBlockType,
   toBlockType,
 } from '@zombie-mermaid/mermaid-parser'
+import { splitStatements } from '@zombie-mermaid/core'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
-  return parseSequenceDiagram(lines)
+  return parseSequenceDiagram(splitStatements(text))
 }
 
 // ============================================================================

@@ -14,6 +14,7 @@ import {
   tryApplyClassDef,
   tryApplyCssClass,
   tryApplyStyleStatement,
+  type Statement,
 } from '@zombie-mermaid/core'
 
 // ============================================================================
@@ -55,7 +56,7 @@ import {
 // `noUncheckedIndexedAccess` can't see either guarantee, but removing the
 // `!` would only replace a proven-safe assertion with an unreachable guard.
 // Left as-is; no behavior change.
-export function parseClassDiagram(lines: string[]): ClassDiagram {
+export function parseClassDiagram(lines: Statement[]): ClassDiagram {
   const diagram: ClassDiagram = {
     classes: [],
     relationships: [],
@@ -76,7 +77,8 @@ export function parseClassDiagram(lines: string[]): ClassDiagram {
   let braceDepth = 0
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]!
+    const stmt = lines[i]!
+    const line = stmt.text
 
     // --- Inside a class body block ---
     if (currentClass && braceDepth > 0) {

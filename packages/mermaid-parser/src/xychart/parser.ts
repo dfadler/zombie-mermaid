@@ -1,4 +1,5 @@
 import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
+import type { Statement } from '@zombie-mermaid/core'
 
 // ============================================================================
 // XY Chart parser
@@ -21,14 +22,15 @@ import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
  * Parse a Mermaid xychart-beta diagram from preprocessed lines.
  * Lines should already be trimmed and comment-stripped.
  */
-export function parseXYChart(lines: string[]): XYChart {
+export function parseXYChart(lines: Statement[]): XYChart {
   const xAxis: XYAxis = {}
   const yAxis: XYAxis = {}
   const series: XYChartSeries[] = []
   let title: string | undefined
   let horizontal = false
 
-  for (const line of lines) {
+  for (const stmt of lines) {
+    const line = stmt.text
     // Header line — detect horizontal
     if (/^xychart(-beta)?\b/i.test(line)) {
       if (/\bhorizontal\b/i.test(line)) horizontal = true
@@ -88,7 +90,7 @@ export function parseXYChart(lines: string[]): XYChart {
     if (barMatch) {
       series.push({
         type: 'bar',
-        data: parseNumericArray(barMatch[1]!, 'bar', line),
+        data: parseNumericArray(barMatch[1]!, 'bar', line, stmt.line),
       })
       continue
     }
@@ -98,7 +100,7 @@ export function parseXYChart(lines: string[]): XYChart {
     if (lineMatch) {
       series.push({
         type: 'line',
-        data: parseNumericArray(lineMatch[1]!, 'line', line),
+        data: parseNumericArray(lineMatch[1]!, 'line', line, stmt.line),
       })
       continue
     }
@@ -116,7 +118,11 @@ export function parseXYChart(lines: string[]): XYChart {
     // sites before this pass).
     const keywordMatch = line.match(/^(x-axis|y-axis|bar|line|title)\b/i)
     if (keywordMatch) {
-      throw malformedDirectiveError(keywordMatch[1]!.toLowerCase(), line)
+      throw malformedDirectiveError(
+        keywordMatch[1]!.toLowerCase(),
+        line,
+        stmt.line,
+      )
     }
   }
 
@@ -153,13 +159,14 @@ function parseNumericArray(
   str: string,
   seriesType: 'bar' | 'line',
   line: string,
+  lineNumber: number,
 ): number[] {
   return str.split(',').map((raw, index) => {
     const trimmed = raw.trim()
     const value = parseFloat(trimmed)
     if (trimmed.length === 0 || Number.isNaN(value)) {
       throw new Error(
-        `Invalid numeric value ${JSON.stringify(trimmed)} at position ${
+        `Line ${lineNumber}: Invalid numeric value ${JSON.stringify(trimmed)} at position ${
           index + 1
         } in "${line}". Every value in a ${seriesType} [...] list must be a number.`,
       )
@@ -184,9 +191,13 @@ const XYCHART_DIRECTIVE_HELP: Record<string, string> = {
  * keyword (x-axis/y-axis/bar/line/title) but doesn't match that keyword's
  * expected syntax in any of the forms this parser supports.
  */
-function malformedDirectiveError(keyword: string, line: string): Error {
+function malformedDirectiveError(
+  keyword: string,
+  line: string,
+  lineNumber: number,
+): Error {
   const help = XYCHART_DIRECTIVE_HELP[keyword] ?? keyword
   return new Error(
-    `Malformed xychart-beta "${keyword}" directive: "${line}". Expected: ${help}.`,
+    `Line ${lineNumber}: Malformed xychart-beta "${keyword}" directive: "${line}". Expected: ${help}.`,
   )
 }

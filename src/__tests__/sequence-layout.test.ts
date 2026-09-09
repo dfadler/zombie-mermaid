@@ -8,14 +8,11 @@
 import { describe, it, expect } from 'vitest'
 import { parseSequenceDiagram } from '@zombie-mermaid/mermaid-parser'
 import { layoutSequenceDiagram } from '@zombie-mermaid/svg-renderer'
+import { splitStatements } from '@zombie-mermaid/core'
 
 /** Helper: parse and layout a sequence diagram from source lines */
 function layout(source: string) {
-  const lines = source
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
-  return layoutSequenceDiagram(parseSequenceDiagram(lines))
+  return layoutSequenceDiagram(parseSequenceDiagram(splitStatements(source)))
 }
 
 describe('sequence layout – block spacing', () => {
