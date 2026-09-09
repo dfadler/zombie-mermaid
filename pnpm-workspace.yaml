@@ -15,6 +15,19 @@
 # the moment `packages:` became non-empty (#625). Confirmed by reproducing
 # against a clean `main` checkout before this fix.
 #
+# Including `.` also made the root package's directory the entire repo, so
+# `@changesets/git`'s `getChangedPackagesSinceRef` — which treats a file as
+# "in" a package whenever `path.relative(pkg.dir, file)` doesn't start with
+# `..` — started counting literally every changed file in the repo as a
+# change to `zombie-mermaid`, since changesets' default
+# `changedFilePatterns` is `["**"]`. That made `pnpm changeset status`
+# demand a changeset for any diff at all, docs-only or CI-only included.
+# `.changeset/config.json`'s `changedFilePatterns` scopes this back down to
+# the files that actually affect what's published (mirroring root
+# `package.json`'s `files` field plus the manifest and build entry point);
+# it applies to every workspace package using paths relative to each
+# package's own dir, so `packages/*`'s narrower dirs are unaffected.
+#
 # Defining `packages:` makes Semgrep's pnpm supply-chain rules apply to this
 # file for the first time (they don't fire on a non-workspace config). #656
 # resolved the two policy violations that blocked turning these settings on:
