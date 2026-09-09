@@ -2,10 +2,17 @@
 /**
  * Hydration entry point for dashboard.html (dashboard.ts) — zombie-mermaid#799,
  * the #797 hydration epic's proof-of-concept. `dashboard.ts` bundles this
- * file via `scripts/vite-bundle.ts`'s `bundleForBrowser` and writes it to
- * `assets/dashboard-client.js`, referenced by `demo/components/
- * dashboard-page.tsx`'s `DashboardPage` as a `<script type="module" src=...>`
- * (see that component's `clientScriptSrc` prop).
+ * file via `scripts/vite-bundle.ts`'s `bundleForBrowser` and inlines the
+ * result into a `<script type="module">` (see `dashboard.ts`'s
+ * `bundleDashboardClient()` doc comment for why inlined rather than
+ * written to `assets/` and referenced by `src`).
+ *
+ * Imports {@link DashboardApp} from `./components/dashboard-app.tsx`, *not*
+ * `./components/dashboard-page.tsx` — that second file imports
+ * `react-dom/server` for its own SSR-only purposes, and importing from it
+ * here would drag that whole dependency (and its own real weight) into
+ * this browser bundle for no reason; see `dashboard-app.tsx`'s header
+ * comment for the measured impact of getting this wrong.
  *
  * The pattern, reused unchanged by every later #797 per-page sub-issue:
  *
@@ -35,7 +42,7 @@ import {
   DashboardApp,
   DASHBOARD_PROPS_ELEMENT_ID,
   DASHBOARD_ROOT_ID,
-} from './components/dashboard-page.tsx'
+} from './components/dashboard-app.tsx'
 import type { DashboardViewModel } from './dashboard-model.ts'
 
 function readViewModel(): DashboardViewModel {

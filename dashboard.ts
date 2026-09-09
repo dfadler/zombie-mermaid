@@ -72,11 +72,20 @@ import { bundleForBrowser } from './scripts/vite-bundle.ts'
  * tree-shakeable ES module rather than a concatenation-replacement script
  * — so there's no reason to disable Rollup's default tree-shaking the way
  * bundleEditorJs() in editor.ts does.
+ *
+ * `minify: true` (unlike bundleEditorJs()'s `minify: false`, kept readable
+ * in devtools): this is the first bundle in the repo to include `react`/
+ * `react-dom`, and the #797 epic issue's own accepted "~57.5 KB gzip"
+ * baseline cost was measured against a minified build — an unminified one
+ * measured ~950 KB raw / ~185 KB gzip while building this, entirely from
+ * react-dom's own dev-mode warnings/checks (`vite build()`'s production
+ * `mode` default replaces `process.env.NODE_ENV` for dead-code elimination
+ * of those branches; nothing else here needed to change to get that).
  */
 async function bundleDashboardClient(): Promise<string> {
   return bundleForBrowser(
     new URL('./demo/dashboard-client.tsx', import.meta.url).pathname,
-    { minify: false },
+    { minify: true },
   )
 }
 
