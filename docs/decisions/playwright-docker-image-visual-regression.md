@@ -222,7 +222,7 @@ practical. It has now been run: all 190 SVG samples, native macOS against two
 independent containerized runs of the same commit, with a run-to-run container
 control to separate a real native-vs-container effect from ordinary screenshot
 jitter. Full method and data in
-[`docs/research/551-native-vs-container-svg-parity.md`](../research/551-native-vs-container-svg-parity.md)
+[the comment on #551](https://github.com/dfadler/zombie-mermaid/issues/551#issuecomment-5607848621)
 rather than duplicated here.
 
 **Summary**: a real, systematic, non-noise difference exists between native macOS
