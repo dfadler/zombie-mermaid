@@ -92,6 +92,53 @@ function suggestedHeaderFor(header: string): string | undefined {
 }
 
 /**
+ * Matches the start of a line that continues the *previous* statement's edge
+ * chain rather than beginning a new one: Mermaid lets a vertex-chain
+ * statement break across lines, with the link operator leading the next
+ * line — e.g.
+ *
+ *   start([Start])
+ *   ==> green([Change some code])
+ *   ==> finish([Finish])
+ *
+ * is one chained statement (`start ==> green ==> finish`), identical to
+ * writing it on one line. `splitStatements` only knows about newlines and
+ * `;` as separators, so without this it hands `parseFlowchart` three
+ * unrelated-looking lines — the continuation lines start with a bare arrow
+ * and no node group, so `parseEdgeLine` can't find a source node and drops
+ * them entirely (see issue mermaid-js/mermaid#6049's repro, reported against
+ * this parser).
+ *
+ * Covers every arrow opener `parseEdgeLine` itself recognizes (ARROW_REGEX /
+ * TEXT_ARROW_REGEX below): a solid/thick run (`--`, `===`), a dotted run
+ * (`-.`, `-.-`), a `~~~` run, each optionally preceded by a `<`/`o`/`x`
+ * marker and/or an edge id (`e1@-->`).
+ */
+const CONTINUATION_START_REGEX =
+  /^(?:[\w-]+@)?(?:<|o|x)?(?:-{2,}|={2,}|-\.+-?|~{3,})/
+
+/**
+ * Rejoin a continuation line onto the statement it continues.
+ *
+ * `splitStatements` treats every newline as a statement boundary, which is
+ * right for Mermaid's `;`-terminated statements but wrong for a vertex chain
+ * that wraps across lines (see `CONTINUATION_START_REGEX`). This folds those
+ * lines back into a single logical statement before the line-oriented
+ * parsers below ever see them.
+ */
+function mergeContinuationLines(lines: string[]): string[] {
+  const merged: string[] = []
+  for (const line of lines) {
+    if (merged.length > 0 && CONTINUATION_START_REGEX.test(line)) {
+      merged[merged.length - 1] = `${merged[merged.length - 1]} ${line}`
+    } else {
+      merged.push(line)
+    }
+  }
+  return merged
+}
+
+/**
  * Parse Mermaid text into a logical graph structure.
  * Auto-detects diagram type (flowchart or state diagram).
  * Throws on invalid/unsupported input.
@@ -105,7 +152,7 @@ export function parseMermaid(text: string): MermaidGraph {
    */
   const initConfig = extractInitConfig(text.split('\n').map((l) => l.trim()))
 
-  const lines = splitStatements(text)
+  const lines = mergeContinuationLines(splitStatements(text))
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')

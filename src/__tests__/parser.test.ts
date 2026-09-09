@@ -378,6 +378,87 @@ describe('parseMermaid – edges (original)', () => {
 })
 
 // ============================================================================
+// Continuation-line edge chains (mermaid-js/mermaid#6049)
+//
+// Mermaid lets a vertex-chain statement wrap across lines, with the link
+// operator leading the next line rather than trailing the previous one.
+// `splitStatements` only splits on newlines/`;`, so without merging these
+// back together the continuation lines look like they start with a bare
+// arrow and no source node — parseEdgeLine can't find a node group, so it
+// dropped the node and edge entirely instead of continuing the chain.
+// ============================================================================
+
+describe('parseMermaid – continuation-line edge chains (mermaid-js/mermaid#6049)', () => {
+  it('chains a vertex statement split across lines, same as one line', () => {
+    const g = parseMermaid(
+      [
+        'flowchart TB',
+        '    start([Start])',
+        '    ==> green([Change some code])',
+        '    ==> finish([Finish])',
+      ].join('\n'),
+    )
+
+    expect([...g.nodes.keys()]).toEqual(['start', 'green', 'finish'])
+    expect(g.nodes.get('start')!.label).toBe('Start')
+    expect(g.nodes.get('green')!.label).toBe('Change some code')
+    expect(g.nodes.get('finish')!.label).toBe('Finish')
+
+    expect(g.edges).toHaveLength(2)
+    expect(g.edges[0]).toMatchObject({
+      source: 'start',
+      target: 'green',
+      style: 'thick',
+    })
+    expect(g.edges[1]).toMatchObject({
+      source: 'green',
+      target: 'finish',
+      style: 'thick',
+    })
+  })
+
+  it('keeps a self-loop on a later, unrelated line intact', () => {
+    const g = parseMermaid(
+      [
+        'flowchart TB',
+        '    start([Start])',
+        '    ==> green([Change some code])',
+        '    ==> finish([Finish])',
+        '',
+        '    green -.->|Incomplete ?| green',
+      ].join('\n'),
+    )
+
+    expect(g.edges).toHaveLength(3)
+    expect(g.edges[2]).toMatchObject({
+      source: 'green',
+      target: 'green',
+      label: 'Incomplete ?',
+      style: 'dotted',
+    })
+  })
+
+  it('matches the equivalent single-line chain', () => {
+    const multiline = parseMermaid(
+      [
+        'flowchart TB',
+        '    start([Start])',
+        '    ==> green([Change some code])',
+        '    ==> finish([Finish])',
+      ].join('\n'),
+    )
+    const singleLine = parseMermaid(
+      'flowchart TB\n    start([Start]) ==> green([Change some code]) ==> finish([Finish])',
+    )
+
+    expect([...multiline.nodes.entries()]).toEqual([
+      ...singleLine.nodes.entries(),
+    ])
+    expect(multiline.edges).toEqual(singleLine.edges)
+  })
+})
+
+// ============================================================================
 // Circle-end / cross-end edges: --o, --x (issue #65)
 //
 // Previously ARROW_REGEX didn't recognize these tokens at all, so neither
