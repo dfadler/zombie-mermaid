@@ -45,16 +45,16 @@ export function EditorAppIsland({ themes }: EditorAppProps) {
     <>
       <div
         id={EDITOR_ROOT_ID}
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own EditorApp component tree rendered via renderToString (see the module doc comment); never user input
         dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own EditorApp component tree rendered via renderToString (see the module doc comment); never user input
           __html: renderToString(<EditorApp themes={themes} />),
         }}
       />
       <script
         type="application/json"
         id={EDITOR_PROPS_ELEMENT_ID}
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own EditorAppProps, escaped with escapeJsonForScriptTag; never user input
         dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own EditorAppProps, escaped with escapeJsonForScriptTag; never user input
           __html: escapeJsonForScriptTag(
             JSON.stringify({ themes } satisfies EditorAppProps),
           ),
