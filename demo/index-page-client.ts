@@ -228,7 +228,8 @@ function startShowcaseCycle(): void {
       }
 
       diagramCard.style.background = theme.bg
-      themeName.textContent = '/* ' + (THEME_LABELS[themeKey] ?? themeKey) + ' */'
+      themeName.textContent =
+        '/* ' + (THEME_LABELS[themeKey] ?? themeKey) + ' */'
       counter.textContent = String((i % themeOrder.length) + 1)
       bgVal.textContent = theme.bg
       fgVal.textContent = theme.fg

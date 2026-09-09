@@ -597,7 +597,10 @@ function ThemeShowcase() {
                 id="theme-showcase-theme-name"
                 className="theme-showcase-comment"
               >
-                {'/* ' + (THEME_LABELS[THEME_SHOWCASE_DEFAULT_THEME] ?? THEME_SHOWCASE_DEFAULT_THEME) + ' */'}
+                {'/* ' +
+                  (THEME_LABELS[THEME_SHOWCASE_DEFAULT_THEME] ??
+                    THEME_SHOWCASE_DEFAULT_THEME) +
+                  ' */'}
               </span>
               <br />
               :root {'{'}
