@@ -72,7 +72,7 @@
     </a>
     <div id="nav-root">
       <header class="nav-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 22px 80px; border-bottom: 1px solid var(--border); background: rgba(10, 13, 22, 0.85); position: sticky; top: 0px; z-index: 10;">
-        <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="index.html" style="display: flex; align-items: center; gap: 12px; color: var(--text);">
           <svg aria-hidden="true" fill="none" height="30" viewBox="0 0 24 24" width="30">
             <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
             </rect>
@@ -84,7 +84,7 @@
           <span class="display" style="font-size: 20px; letter-spacing: -0.01em;">
             "zombie-mermaid"
           </span>
-        </div>
+        </a>
         <nav aria-label="Main" class="nav-links" style="display: flex; align-items: center; gap: 36px;">
           <a href="diagrams/" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
             "Diagrams"
@@ -183,7 +183,7 @@
       </nav>
     </div>
     <script id="nav-props" type="application/json">
-      "{\"hrefs\":{\"diagrams\":\"diagrams/\",\"editor\":\"editor.html\",\"forkFixes\":\"fork-fixes.html\",\"blog\":\"blog/\",\"github\":\"https://github.com/dfadler/zombie-mermaid\"},\"sticky\":true,\"hasInstallSlot\":true}"
+      "{\"homeHref\":\"index.html\",\"hrefs\":{\"diagrams\":\"diagrams/\",\"editor\":\"editor.html\",\"forkFixes\":\"fork-fixes.html\",\"blog\":\"blog/\",\"github\":\"https://github.com/dfadler/zombie-mermaid\"},\"sticky\":true,\"hasInstallSlot\":true}"
     </script>
     <main id="main">
       <div class="hero-row" style="display: flex; align-items: center; justify-content: space-between; gap: 48px; padding: 120px 80px 140px; position: relative; z-index: 1;">

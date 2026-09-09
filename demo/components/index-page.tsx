@@ -1995,6 +1995,7 @@ export function IndexPage({
           Skip to content
         </a>
         <NavIsland
+          homeHref="index.html"
           hrefs={{
             diagrams: 'diagrams/',
             editor: 'editor.html',
