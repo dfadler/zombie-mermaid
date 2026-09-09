@@ -43,6 +43,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { siteOutDir } from './scripts/site-out-dir.ts'
 import { EditorPage } from './demo/components/editor-page.tsx'
 import { type EditorThemeItem } from './demo/components/editor-topbar.tsx'
 import { renderHtmlDocument } from './demo/render-html.ts'
@@ -215,6 +216,6 @@ async function generateEditorHtml(): Promise<string> {
 }
 
 const result = await generateEditorHtml()
-const outPath = new URL('./editor.html', import.meta.url).pathname
+const outPath = new URL('./editor.html', siteOutDir(import.meta.url)).pathname
 await writeFile(outPath, result)
 console.log(`Written to ${outPath} (${(result.length / 1024).toFixed(1)} KB)`)

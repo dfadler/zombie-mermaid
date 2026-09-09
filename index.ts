@@ -28,6 +28,7 @@ import {
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { IndexPage } from './demo/components/index-page.tsx'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { siteOutDir } from './scripts/site-out-dir.ts'
 
 /**
  * Bundle `demo/index-page-client.ts` for the browser (#759) — mirrors
@@ -100,7 +101,8 @@ async function generateHtml(clientScript: string): Promise<string> {
   )
 }
 
-const assetsDir = new URL('./assets/', import.meta.url)
+const outDir = siteOutDir(import.meta.url)
+const assetsDir = new URL('./assets/', outDir)
 await mkdir(assetsDir, { recursive: true })
 
 const [indexClientScript, clientJs] = await Promise.all([
@@ -111,6 +113,6 @@ const html = await generateHtml(indexClientScript)
 
 await writeFile(new URL('./index-page-client.js', assetsDir), clientJs)
 
-const outPath = new URL('./index.html', import.meta.url).pathname
+const outPath = new URL('./index.html', outDir).pathname
 await writeFile(outPath, html)
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
