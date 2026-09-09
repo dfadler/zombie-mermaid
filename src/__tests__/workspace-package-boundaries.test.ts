@@ -52,6 +52,20 @@ const PACKAGES = resolve(REPO_ROOT, 'packages')
 const SPECIFIER_RE =
   /(?:^|\n)[ \t]*(?:import|export)\b[^'"\n]*?from[ \t]*['"]([^'"]+)['"]|(?:^|\n)[ \t]*import[ \t]*['"]([^'"]+)['"]|\bimport\([ \t]*['"]([^'"]+)['"]/g
 
+/**
+ * Same three shapes as `SPECIFIER_RE`'s first alternative, but split into
+ * the `import`/`export` keyword and the clause between it and `from`, so a
+ * whole-clause type-only import (`import type { X } from '...'` /
+ * `export type { X } from '...'`) can be told apart from a real value one.
+ * Used only by `valueSpecifiersOf` below — `specifiersOf`/`SPECIFIER_RE`
+ * stay untouched since the import-graph tests above are deliberately
+ * over-approximating.
+ */
+const FROM_CLAUSE_RE =
+  /(?:^|\n)[ \t]*(?:import|export)\b([^'"\n]*?)from[ \t]*['"]([^'"]+)['"]/g
+const SIDE_EFFECT_IMPORT_RE = /(?:^|\n)[ \t]*import[ \t]*['"]([^'"]+)['"]/g
+const DYNAMIC_IMPORT_RE = /\bimport\([ \t]*['"]([^'"]+)['"]/g
+
 function tsFilesUnder(dir: string): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
@@ -80,6 +94,54 @@ function specifiersOf(pkg: string): Map<string, string[]> {
 /** Non-relative specifiers only — a package's real outward dependencies. */
 function externalSpecifiers(pkg: string): string[] {
   return [...specifiersOf(pkg).keys()]
+    .filter((s) => !s.startsWith('.'))
+    .map((s) => (s.startsWith('@') ? s : s.split('/')[0]!))
+    .filter((s, i, all) => all.indexOf(s) === i)
+    .sort()
+}
+
+/**
+ * Every specifier named by a *value* import in `packages/<name>/src` —
+ * i.e. excluding a whole-clause `import type { X } from '...'` /
+ * `export type { X } from '...'`, which is erased before bundling and so
+ * shouldn't obligate a `dependencies` entry (#742). A per-symbol inline
+ * `import { type X, y } from '...'` still counts as a value import here,
+ * since `y` binds to a real runtime export from that module — this repo
+ * doesn't currently mix the two on one specifier, so that distinction
+ * isn't exercised, but the whole-clause check stays conservative rather
+ * than trying to parse the individual specifiers in the braces.
+ */
+function valueSpecifiersOf(pkg: string): Map<string, string[]> {
+  const bySpecifier = new Map<string, string[]>()
+  const record = (specifier: string, file: string) => {
+    const seen = bySpecifier.get(specifier) ?? []
+    seen.push(relative(REPO_ROOT, file))
+    bySpecifier.set(specifier, seen)
+  }
+  for (const file of tsFilesUnder(resolve(PACKAGES, pkg, 'src'))) {
+    const source = readFileSync(file, 'utf8')
+    for (const match of source.matchAll(FROM_CLAUSE_RE)) {
+      const [, clause, specifier] = match
+      if (/^\s*type\b/.test(clause ?? '')) continue
+      record(specifier!, file)
+    }
+    for (const match of source.matchAll(SIDE_EFFECT_IMPORT_RE)) {
+      record(match[1]!, file)
+    }
+    for (const match of source.matchAll(DYNAMIC_IMPORT_RE)) {
+      record(match[1]!, file)
+    }
+  }
+  return bySpecifier
+}
+
+/**
+ * Non-relative value-import specifiers only — what a package's
+ * `dependencies` should actually list, since a type-only import is erased
+ * before anything is bundled and never needs a runtime package present.
+ */
+function externalValueSpecifiers(pkg: string): string[] {
+  return [...valueSpecifiersOf(pkg).keys()]
     .filter((s) => !s.startsWith('.'))
     .map((s) => (s.startsWith('@') ? s : s.split('/')[0]!))
     .filter((s, i, all) => all.indexOf(s) === i)
@@ -174,13 +236,19 @@ describe('workspace package manifests', () => {
     },
   )
 
-  it('declares every external specifier its source actually imports', () => {
+  // Declared `dependencies` must match actual *runtime* imports, not the
+  // over-approximating `externalSpecifiers` above — a type-only import
+  // (e.g. `core`'s `import type { ElkNode } from 'elkjs'`) is erased before
+  // bundling and belongs in `devDependencies` instead, or a published
+  // consumer of the package would pull in a runtime dependency it never
+  // executes (#742).
+  it('declares every runtime (non-type-only) external specifier its source actually imports', () => {
     for (const pkg of ['core', 'mermaid-parser', 'svg-renderer'] as const) {
       const manifest = JSON.parse(
         readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
       ) as { dependencies?: Record<string, string> }
       expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual(
-        externalSpecifiers(pkg),
+        externalValueSpecifiers(pkg),
       )
     }
   })
