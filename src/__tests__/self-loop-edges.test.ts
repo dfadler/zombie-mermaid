@@ -23,9 +23,7 @@ interface Point {
 
 /** True when the segment p1->p2 runs purely horizontal or vertical. */
 function isAxisAligned(p1: Point, p2: Point, tolerance = 0.5): boolean {
-  return (
-    Math.abs(p2.x - p1.x) < tolerance || Math.abs(p2.y - p1.y) < tolerance
-  )
+  return Math.abs(p2.x - p1.x) < tolerance || Math.abs(p2.y - p1.y) < tolerance
 }
 
 describe('self-loop edge routing (flowchart)', () => {
@@ -65,17 +63,12 @@ describe('self-loop edge routing (flowchart)', () => {
 
     // Both ends of the loop attach to the node's right edge.
     expect(points[0]!.x).toBeCloseTo(nodeB!.x + nodeB!.width, 0)
-    expect(points[points.length - 1]!.x).toBeCloseTo(
-      nodeB!.x + nodeB!.width,
-      0,
-    )
+    expect(points[points.length - 1]!.x).toBeCloseTo(nodeB!.x + nodeB!.width, 0)
 
     // The label sits clear of the node, out past the loop's apex — not on
     // top of the node the way the old bracket's cramped shape forced it to.
     expect(selfLoop!.labelPosition).toBeDefined()
-    expect(selfLoop!.labelPosition!.x).toBeGreaterThan(
-      nodeB!.x + nodeB!.width,
-    )
+    expect(selfLoop!.labelPosition!.x).toBeGreaterThan(nodeB!.x + nodeB!.width)
   })
 
   it('stacks multiple self-loops on the same node instead of overlapping', () => {
