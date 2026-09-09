@@ -39,7 +39,7 @@
  */
 import type { ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
-import { Nav, NavCopyScript } from './nav.tsx'
+import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import {
   CheckIcon,
@@ -2019,6 +2019,7 @@ export function IndexPage({ jsonLd }: IndexPageProps) {
         </main>
         <Footer columns={HOME_FOOTER_COLUMNS} />
         <NavCopyScript />
+        <NavMobileMenuScript />
       </body>
     </html>
   )

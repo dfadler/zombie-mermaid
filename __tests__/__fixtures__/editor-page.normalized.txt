@@ -27,13 +27,13 @@
       ".card {\n  background: var(--panel);\n  border: 1px solid var(--border);\n  border-radius: 20px;\n}\n\n.pill {\n  display: inline-flex;\n  align-items: center;\n  gap: 10px;\n  border-radius: 999px;\n  padding: 12px 22px;\n  font-size: 15px;\n  font-weight: 600;\n}\n\n.section-eyebrow {\n  text-transform: uppercase;\n  letter-spacing: 0.14em;\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--cyan);\n}\n\n.mono {\n  font-family: var(--font-mono);\n}"
     </style>
     <style>
-      "@media (max-width: 900px) {\n  .nav-bar { padding: 16px 24px !important; }\n  .nav-links { display: none !important; }\n}\n\n@media (max-width: 600px) {\n  .nav-bar { padding: 14px 20px !important; }\n  .nav-npm-text { display: none !important; }\n}\n\n@media (min-width: 901px) and (max-width: 1100px) {\n  .nav-npm-text { display: none !important; }\n}"
+      "@media (max-width: 900px) {\n  .nav-bar { padding: 16px 24px !important; }\n  .nav-links { display: none !important; }\n  .menu-toggle { display: inline-flex !important; }\n}\n\n@media (max-width: 600px) {\n  .nav-bar { padding: 14px 20px !important; }\n  .nav-npm-text { display: none !important; }\n}\n\n@media (min-width: 901px) and (max-width: 1100px) {\n  .nav-npm-text { display: none !important; }\n}\n\n/* --- Mobile menu (invented; not part of the #590 canvas) --- */\n\nhtml.mobile-nav-open {\n  overflow: hidden;\n}\n\n.menu-toggle .mnt-bar {\n  transition: transform .22s ease, opacity .22s ease;\n  transform-box: fill-box;\n  transform-origin: center;\n}\n\n.menu-toggle.is-open .mnt-bar-top {\n  transform: translateY(5px) rotate(45deg);\n}\n\n.menu-toggle.is-open .mnt-bar-mid {\n  opacity: 0;\n}\n\n.menu-toggle.is-open .mnt-bar-bottom {\n  transform: translateY(-5px) rotate(-45deg);\n}\n\n.mobile-nav-panel {\n  position: fixed;\n  inset: 0;\n  z-index: 9;\n  display: flex;\n  flex-direction: column;\n  padding: 96px 24px 32px;\n  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);\n  opacity: 0;\n  transform: translateX(-12px);\n  pointer-events: none;\n  transition: opacity .26s ease, transform .26s ease;\n  overflow: hidden;\n}\n\n.mobile-nav-panel.is-open {\n  opacity: 1;\n  transform: translateX(0);\n  pointer-events: auto;\n}\n\n.mobile-diagram-bg {\n  position: absolute;\n  inset: 0;\n  z-index: -1;\n}\n\n.mobile-diagram-bg .mdb-edge {\n  animation: mobile-diagram-dash 3s linear infinite;\n}\n\n@keyframes mobile-diagram-dash {\n  to {\n    stroke-dashoffset: -40;\n  }\n}\n\n.mobile-watermark {\n  position: absolute;\n  right: -44px;\n  bottom: -33px;\n  opacity: 0.05;\n  transform: rotate(-8deg);\n  pointer-events: none;\n}\n\n.mobile-links {\n  display: flex;\n  flex-direction: column;\n}\n\n.mobile-link {\n  padding: 12px 0;\n  border-bottom: 1px solid var(--border);\n  text-shadow: 0 2px 16px rgba(10, 13, 22, 0.8);\n}\n\n.mobile-link:last-of-type {\n  border-bottom: none;\n}\n\n.mobile-install {\n  margin-top: auto;\n  align-self: flex-start;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .menu-toggle .mnt-bar,\n  .mobile-nav-panel,\n  .mobile-diagram-bg .mdb-edge {\n    transition-duration: 0.001ms !important;\n    animation: none !important;\n  }\n}\n\n@media (min-width: 901px) {\n  /* Safety net for a viewport resize while the menu is open (e.g. a phone\n   * rotated past the breakpoint) — the toggle that would close it is gone\n   * by then, since it's hidden by the rule above this block. */\n  .mobile-nav-panel.is-open {\n    opacity: 0 !important;\n    pointer-events: none !important;\n  }\n}"
     </style>
     <style>
       "@media (max-width: 900px) {\n  .section-px {\n    padding-left: 32px !important;\n    padding-right: 32px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr 1fr !important;\n  }\n}\n\n@media (max-width: 600px) {\n  .section-px {\n    padding-left: 20px !important;\n    padding-right: 20px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr !important;\n  }\n\n  .footer-bottom-row {\n    flex-direction: column !important;\n    align-items: flex-start !important;\n    gap: 8px !important;\n  }\n}"
     </style>
     <style>
-      ".zm-shell {\n  --bg: #0a0d16;\n  --bg-soft: #10152a;\n  --panel: #141a2e;\n  --panel-2: #181f38;\n  --border: #2a3252;\n  --text: #eef1fb;\n  --text-dim: #9aa3c4;\n  --text-faint: #6b7398;\n  --blue: #4d8dff;\n  --violet: #a374e8;\n  --cyan: #38e0d0;\n  --pink: #ff5fa8;\n  --amber: #ffb84d;\n  --green: #3ee08a;\n  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;\n  --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;\n  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;\n  font-family: var(--font-body);\n  color: var(--text);\n  background: var(--bg);\n}\n\n.zm-shell h1,\n.zm-shell h2,\n.zm-shell h3,\n.zm-shell .display {\n  font-family: var(--font-display);\n  font-weight: 700;\n}\n\n.zm-shell a {\n  color: var(--cyan);\n  text-decoration: none;\n}\n\n.zm-shell a:hover {\n  color: var(--pink);\n}\n\n/* The tool's own engine (editor/css/variables.css) pins html/body to a\n * fixed-height, non-scrolling app-shell. This page now has real content\n * above and below the tool, so it must scroll like the rest of the site.\n * Only height/overflow are touched — display:flex stays the engine's own,\n * unedited declaration, and later rules win the cascade at equal\n * specificity, so this doesn't need !important. */\nhtml,\nbody {\n  height: auto;\n  min-height: 100vh;\n  overflow: visible;\n}\n\n/* Reproduces body's old contract (display:flex; flex-direction:column;\n * overflow:hidden over an explicit height) so <EditorChrome>'s three\n * fragment children lay out exactly as before, just scoped to a card\n * instead of the whole viewport. Colours are literal hex (tokens.tsx's\n * COLORS), not var() — see the module doc comment for why. */\n.editor-tool-shell {\n  display: flex;\n  flex-direction: column;\n  height: min(720px, 82vh);\n  min-height: 480px;\n  max-width: 1280px;\n  margin: 0 auto;\n  overflow: hidden;\n  border: 1px solid #2a3252;\n  border-radius: 20px;\n  box-shadow: 0 18px 44px rgba(10, 13, 22, 0.35);\n}\n\n@media (max-width: 900px) {\n  .editor-tool-shell {\n    height: min(640px, 78vh);\n  }\n  .page-h1 {\n    font-size: 46px;\n  }\n  .editor-features-grid {\n    grid-template-columns: 1fr 1fr;\n  }\n}\n\n@media (max-width: 600px) {\n  .editor-tool-shell {\n    height: min(560px, 74vh);\n  }\n  .page-h1 {\n    font-size: 34px;\n  }\n  .editor-features-grid {\n    grid-template-columns: 1fr;\n  }\n}"
+      ".zm-shell {\n  --bg: #0a0d16;\n  --bg-soft: #10152a;\n  --panel: #141a2e;\n  --panel-2: #181f38;\n  --border: #2a3252;\n  --text: #eef1fb;\n  --text-dim: #9aa3c4;\n  --text-faint: #6b7398;\n  --blue: #4d8dff;\n  --violet: #a374e8;\n  --cyan: #38e0d0;\n  --pink: #ff5fa8;\n  --amber: #ffb84d;\n  --green: #3ee08a;\n  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;\n  --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;\n  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;\n  font-family: var(--font-body);\n  color: var(--text);\n  background: var(--bg);\n}\n\n.zm-shell h1,\n.zm-shell h2,\n.zm-shell h3,\n.zm-shell .display {\n  font-family: var(--font-display);\n  font-weight: 700;\n}\n\n.zm-shell a {\n  color: var(--cyan);\n  text-decoration: none;\n}\n\n.zm-shell a:hover {\n  color: var(--pink);\n}\n\n/* The tool's own engine (editor/css/variables.css) pins html/body to a\n * fixed-height, non-scrolling app-shell. This page now has real content\n * above and below the tool, so it must scroll like the rest of the site.\n * Only height/overflow are touched — display:flex stays the engine's own,\n * unedited declaration, and later rules win the cascade at equal\n * specificity, so this doesn't need !important. */\nhtml,\nbody {\n  height: auto;\n  min-height: 100vh;\n  overflow: visible;\n}\n\n/* Reproduces body's old contract (display:flex; flex-direction:column;\n * overflow:hidden over an explicit height) so <EditorChrome>'s three\n * fragment children lay out exactly as before, just scoped to a card\n * instead of the whole viewport. Colours are literal hex (tokens.tsx's\n * COLORS), not var() — see the module doc comment for why. */\n.editor-tool-shell {\n  display: flex;\n  flex-direction: column;\n  height: min(720px, 82vh);\n  min-height: 480px;\n  max-width: 1280px;\n  margin: 0 auto;\n  overflow: hidden;\n  border: 1px solid #2a3252;\n  border-radius: 20px;\n  box-shadow: 0 18px 44px rgba(10, 13, 22, 0.35);\n  /* The tool's own engine (editor/css/topbar.css, color-picker.css,\n   * font-picker.css, misc.css) reaches z-index 100-9999 for its topbar,\n   * pickers, and toasts -- reasonable *inside* a tool that used to own the\n   * whole viewport, not once the tool lives in a card partway down a\n   * scrolling page. Without isolation, those values compete directly with\n   * the rest of the page's z-index scale (nav.tsx's bar is 10, its mobile\n   * menu overlay 9) and win, so the tool's own chrome would show through\n   * a fullscreen overlay meant to cover everything. The isolation property\n   * below makes this box its own stacking context -- the tool's internal\n   * z-index values stay contained here, however high they go, and the box\n   * itself paints in normal document order in the page's own context. */\n  isolation: isolate;\n}\n\n@media (max-width: 900px) {\n  .editor-tool-shell {\n    height: min(640px, 78vh);\n  }\n  .page-h1 {\n    font-size: 46px;\n  }\n  .editor-features-grid {\n    grid-template-columns: 1fr 1fr;\n  }\n}\n\n@media (max-width: 600px) {\n  .editor-tool-shell {\n    height: min(560px, 74vh);\n  }\n  .page-h1 {\n    font-size: 34px;\n  }\n  .editor-features-grid {\n    grid-template-columns: 1fr;\n  }\n}"
     </style>
   </head>
   <body>
@@ -69,18 +69,94 @@
             "GitHub"
           </a>
         </nav>
-        <span class="pill mono" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); flex-shrink: 0;">
-          <span class="nav-npm-text">
-            "npm install zombie-mermaid"
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="pill mono" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); flex-shrink: 0;">
+            <span class="nav-npm-text">
+              "npm install zombie-mermaid"
+            </span>
+            <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
+              <rect height="12" rx="2" width="12" x="9" y="9">
+              </rect>
+              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
+              </path>
+            </svg>
           </span>
-          <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
-            <rect height="12" rx="2" width="12" x="9" y="9">
+          <button aria-expanded="false" aria-label="Menu" class="menu-toggle" style="display: none; width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0px; cursor: pointer; flex-shrink: 0; border: medium;" type="button">
+            <svg aria-hidden="true" fill="none" height="22" stroke="var(--text)" stroke-linecap="round" stroke-width="1.8" viewBox="0 0 24 24" width="22">
+              <line class="mnt-bar mnt-bar-top" x1="3" x2="21" y1="7" y2="7">
+              </line>
+              <line class="mnt-bar mnt-bar-mid" x1="3" x2="21" y1="12" y2="12">
+              </line>
+              <line class="mnt-bar mnt-bar-bottom" x1="3" x2="21" y1="17" y2="17">
+              </line>
+            </svg>
+          </button>
+        </div>
+      </header>
+      <nav aria-label="Main (mobile)" class="mobile-nav-panel">
+        <svg aria-hidden="true" class="mobile-diagram-bg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 390 844">
+          <path class="mdb-edge" d="M44 150 C 120 205, 90 310, 175 355" fill="none" opacity=".38" stroke="var(--blue)" stroke-dasharray="2 8" stroke-width="1.5">
+          </path>
+          <path class="mdb-edge" d="M348 190 C 300 265, 336 415, 258 478" fill="none" opacity=".32" stroke="var(--violet)" stroke-dasharray="2 8" stroke-width="1.5">
+          </path>
+          <path class="mdb-edge" d="M175 355 C 220 400, 200 445, 258 478" fill="none" opacity=".32" stroke="var(--cyan)" stroke-dasharray="2 8" stroke-width="1.5">
+          </path>
+          <path class="mdb-edge" d="M64 630 C 140 610, 160 705, 262 696" fill="none" opacity=".32" stroke="var(--pink)" stroke-dasharray="2 8" stroke-width="1.5">
+          </path>
+          <path class="mdb-edge" d="M258 478 C 220 560, 160 590, 64 630" fill="none" opacity=".28" stroke="var(--amber)" stroke-dasharray="2 8" stroke-width="1.5">
+          </path>
+          <circle cx="44" cy="150" fill="var(--blue)" opacity=".45" r="5">
+          </circle>
+          <circle cx="175" cy="355" fill="var(--cyan)" opacity=".45" r="5">
+          </circle>
+          <circle cx="348" cy="190" fill="var(--violet)" opacity=".45" r="5">
+          </circle>
+          <circle cx="258" cy="478" fill="var(--amber)" opacity=".45" r="5">
+          </circle>
+          <circle cx="64" cy="630" fill="var(--pink)" opacity=".45" r="5">
+          </circle>
+          <circle cx="262" cy="696" fill="var(--green)" opacity=".45" r="5">
+          </circle>
+        </svg>
+        <div class="mobile-watermark">
+          <svg aria-hidden="true" fill="none" height="220" viewBox="0 0 24 24" width="220">
+            <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
             </rect>
-            <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
+            <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
+            </rect>
+            <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
             </path>
           </svg>
+        </div>
+        <div class="mobile-links">
+          <a class="mobile-link" href="diagrams/" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+            "Diagrams"
+          </a>
+          <a aria-current="page" class="mobile-link" href="#editor" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text);">
+            "Editor"
+          </a>
+          <a class="mobile-link" href="fork-fixes.html" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+            "Fork fixes"
+          </a>
+          <a class="mobile-link" href="blog/" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+            "Blog"
+          </a>
+          <a class="mobile-link" href="https://github.com/dfadler/zombie-mermaid" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+            "GitHub"
+          </a>
+        </div>
+        <span class="mobile-install">
+          <span class="pill mono" style="background: rgba(20, 26, 46, 0.85); border: 1px solid var(--border); color: var(--text-dim);">
+            "npm install zombie-mermaid"
+            <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
+              <rect height="12" rx="2" width="12" x="9" y="9">
+              </rect>
+              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
+              </path>
+            </svg>
+          </span>
         </span>
-      </header>
+      </nav>
       <div class="section-px" style="padding: 64px 80px 32px;">
         <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 16px;">
           <nav aria-label="Breadcrumb" class="mono" style="font-size: 14px; display: flex; align-items: center; gap: 8px;">
@@ -780,6 +856,9 @@
     </div>
     <script type="module">
       "globalThis.__fixture = 1 < 2 && 3 > 2;\nconsole.log(\"fixture & <b>bold</b>\");"
+    </script>
+    <script>
+      "(function () {\n  function closeMenu(toggle, panel, returnFocus) {\n    panel.classList.remove('is-open')\n    toggle.classList.remove('is-open')\n    toggle.setAttribute('aria-expanded', 'false')\n    document.documentElement.classList.remove('mobile-nav-open')\n    if (returnFocus) toggle.focus()\n  }\n\n  function openMenu(toggle, panel) {\n    panel.classList.add('is-open')\n    toggle.classList.add('is-open')\n    toggle.setAttribute('aria-expanded', 'true')\n    document.documentElement.classList.add('mobile-nav-open')\n    var firstLink = panel.querySelector('.mobile-link')\n    if (firstLink) firstLink.focus()\n  }\n\n  document.querySelectorAll('.nav-bar').forEach(function (bar) {\n    var toggle = bar.querySelector('.menu-toggle')\n    var panel = bar.nextElementSibling\n    if (!toggle || !panel || !panel.classList.contains('mobile-nav-panel')) {\n      return\n    }\n\n    toggle.addEventListener('click', function () {\n      if (panel.classList.contains('is-open')) {\n        closeMenu(toggle, panel, true)\n      } else {\n        openMenu(toggle, panel)\n      }\n    })\n\n    panel.querySelectorAll('.mobile-link').forEach(function (link) {\n      link.addEventListener('click', function () {\n        closeMenu(toggle, panel, false)\n      })\n    })\n\n    panel.addEventListener('keydown', function (event) {\n      if (event.key === 'Escape') {\n        event.preventDefault()\n        closeMenu(toggle, panel, true)\n      }\n    })\n  })\n})()"
     </script>
   </body>
 </html>

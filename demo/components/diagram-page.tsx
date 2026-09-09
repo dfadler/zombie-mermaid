@@ -39,7 +39,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
-import { Nav, NavCopyScript } from './nav.tsx'
+import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
 import {
   Card,
   CTA,
@@ -1065,6 +1065,7 @@ export function DiagramTypePage({
         />
         <script type="module" src={clientScriptSrc} />
         <NavCopyScript />
+        <NavMobileMenuScript />
       </body>
     </html>
   )
@@ -1410,6 +1411,7 @@ export function DiagramHubPage({
           <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>
         <NavCopyScript />
+        <NavMobileMenuScript />
       </body>
     </html>
   )

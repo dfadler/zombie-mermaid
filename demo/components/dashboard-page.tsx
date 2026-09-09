@@ -42,7 +42,7 @@ import {
   ChevronRightIcon,
   ClockIcon,
 } from './icons.tsx'
-import { Nav, NavCopyScript } from './nav.tsx'
+import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
 import { Card, CTA, SectionEyebrow, accentVar } from './primitives.tsx'
 import {
   DesignFontLinks,
@@ -622,6 +622,7 @@ export function DashboardPage({ data, css }: DashboardPageProps) {
           />
         </div>
         <NavCopyScript />
+        <NavMobileMenuScript />
       </body>
     </html>
   )
