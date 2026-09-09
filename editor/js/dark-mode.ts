@@ -1,7 +1,6 @@
-import { refreshAllColorUIs } from './config-panel.ts'
 import { requireElement } from './dom.ts'
 import { applyThemeToPage, scheduleRender } from './rendering.ts'
-import { state } from './state.ts'
+import { setEditorTheme, state } from './state.ts'
 // Imported from theme-button.ts, not init.ts, specifically to avoid a
 // dark-mode.ts <-> init.ts import cycle -- see that file's own header
 // comment for why a real bundler's circular-import resolution made that
@@ -36,13 +35,16 @@ export function applyColorMode(dark: boolean, force?: boolean): void {
 
   if (diagramThemeIsAuto || force) {
     const autoTheme = dark ? AUTO_DARK_DIAGRAM_THEME : AUTO_LIGHT_DIAGRAM_THEME
-    state.theme = autoTheme
+    setEditorTheme(autoTheme)
     diagramThemeIsAuto = true
   }
   // Update all page colors via :root inline styles
   applyThemeToPage(state.theme)
   updateThemeButton()
-  refreshAllColorUIs()
+  // zombie-mermaid#808: no more refreshAllColorUIs() call here --
+  // demo/components/editor-config.tsx's ConfigPanel now listens for
+  // setEditorTheme()'s zm-editor-theme-changed event itself and re-renders
+  // its own color-field placeholders reactively.
   scheduleRender(0)
 }
 

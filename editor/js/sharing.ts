@@ -1,5 +1,5 @@
 import { editor } from './elements.ts'
-import { state } from './state.ts'
+import { setEditorTheme, state } from './state.ts'
 
 export function encodeSource(src: string): string {
   try {
@@ -27,7 +27,7 @@ export function getHashSource(): string | null {
     const obj = JSON.parse(decodeSource(hash))
     if (obj && obj.source) {
       if (obj.theme) {
-        state.theme = obj.theme
+        setEditorTheme(obj.theme)
       }
       return obj.source
     }

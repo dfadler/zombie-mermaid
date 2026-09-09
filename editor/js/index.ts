@@ -5,13 +5,17 @@
  * `editor.ts`'s `readJsFiles()` used to perform by hand (zombie-mermaid#766,
  * following up on #744's documentation-only pass over the same load-order
  * graph). Every module below still runs its own top-level side effects
- * (DOM lookups, `addEventListener` registration, and a few immediate calls
- * like config-panel.ts's `refreshAllColorUIs()`) exactly as it did when
+ * (DOM lookups and `addEventListener` registration) exactly as it did when
  * concatenated by hand -- the only thing that changed is that each file now
  * says what it needs via `import`, instead of relying on a hand-maintained
  * order array and implicit global scope. `tsc`/ESLint can now verify the
  * graph statically; a wrong reorder here is a compile error, not a
  * `ReferenceError` at runtime.
+ *
+ * zombie-mermaid#807/#808 have since removed zoom.ts/pan.ts/resize.ts and
+ * config-panel.ts/color-picker.ts/font-picker.ts from this list entirely --
+ * that state and DOM wiring now lives in React
+ * (demo/components/editor-viewport.ts, demo/components/editor-config.tsx).
  *
  * These imports are ordered to match the original `order` array for ease
  * of comparison, but (unlike the old concatenation) the order here no
@@ -31,9 +35,6 @@ import './elements.ts'
 import './sharing.ts'
 import './rendering.ts'
 import './editor-helpers.ts'
-import './config-panel.ts'
-import './color-picker.ts'
-import './font-picker.ts'
 import './tabs.ts'
 import './buttons.ts'
 import './export.ts'

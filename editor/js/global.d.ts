@@ -52,8 +52,36 @@ interface EditorViewportStateBridge {
   applyZoom: () => void
 }
 
+/**
+ * zombie-mermaid#808 -- registered by
+ * demo/components/editor-config.tsx's `useEditorConfig`, read by
+ * `rendering.ts`'s `buildOptions()`/`doRender()` in place of the deleted
+ * `editor/js/config-panel.ts`'s `state.config`/`applyStrokeOverrides()`.
+ * See that file's header comment for the full rationale.
+ */
+interface EditorConfigStateBridge {
+  getConfig: () => Record<string, unknown>
+  applyStrokeOverrides: (svgEl: SVGSVGElement | null) => void
+}
+
+/**
+ * zombie-mermaid#808 -- the *reverse* direction from
+ * `EditorConfigStateBridge`/`EditorViewportStateBridge` above: registered
+ * by `rendering.ts` itself (the assigner, for once, rather than the
+ * reader), called by `demo/components/editor-config.tsx`'s `ConfigPanel`
+ * whenever a color/font/padding change needs to trigger a new render --
+ * see that file's header comment for why this bridge exists (colors/font/
+ * padding are React state now, with no access to this module's own
+ * `scheduleRender` import).
+ */
+interface EditorRenderTriggerBridge {
+  scheduleRender: (delay?: number) => void
+}
+
 interface Window {
   __mermaid: EditorMermaidBridge
   __themeState: EditorThemeStateBridge
   __editorViewportState: EditorViewportStateBridge
+  __editorConfigState: EditorConfigStateBridge
+  __editorRenderTrigger: EditorRenderTriggerBridge
 }

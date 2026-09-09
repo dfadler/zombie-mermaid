@@ -89,6 +89,15 @@ import {
   type Dispatch,
   type ReactNode,
 } from 'react'
+import {
+  clampPadding,
+  clampStroke,
+  computeConfig,
+  DEFAULT_PADDING,
+  DEFAULT_STROKE,
+  useEditorConfig,
+  type ColorKey,
+} from './editor-config.tsx'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
 import {
   EditorThemeItems,
@@ -201,6 +210,25 @@ export interface EditorState {
   panelLeftWidth: number | null
   /** Whether a panel-resize drag is currently in progress. */
   isResizingPanel: boolean
+  /**
+   * Config-panel fields below (zombie-mermaid#808) replace
+   * `editor/js/color-picker.ts`'s/`font-picker.ts`'s/`config-panel.ts`'s
+   * module-level mutable state (`cfgColors`, `cfgFont`, `cfgPadding`,
+   * `cfgEdgeStroke`, `cfgNodeStroke`) with real reducer state -- see
+   * `editor-config.tsx`'s `ConfigPanel` for the markup and
+   * `window.__editorConfigState` for the bridge `editor/js/rendering.ts`
+   * (not ported until #810) reads `config`/the stroke fields through.
+   */
+  /** Per-key color overrides -- `''` means "no override, use the active theme's own". */
+  colors: Record<ColorKey, string>
+  /** Selected font-family override, or `''` for the theme/browser default. */
+  font: string
+  /** Diagram padding in px -- `editor/js/config-panel.ts`'s old `cfgPadding`. */
+  padding: number
+  /** Edge stroke-width multiplier applied post-render (not part of `config`). */
+  edgeStroke: number
+  /** Node/shape stroke-width multiplier applied post-render (not part of `config`). */
+  nodeStroke: number
 }
 
 export const INITIAL_EDITOR_STATE: EditorState = {
@@ -211,6 +239,11 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   isPanning: false,
   panelLeftWidth: null,
   isResizingPanel: false,
+  colors: { bg: '', fg: '', accent: '', line: '', muted: '', surface: '' },
+  font: '',
+  padding: DEFAULT_PADDING,
+  edgeStroke: DEFAULT_STROKE,
+  nodeStroke: DEFAULT_STROKE,
 }
 
 export type EditorAction =
@@ -238,6 +271,11 @@ export type EditorAction =
   | { type: 'SET_PANNING'; panning: boolean }
   | { type: 'SET_PANEL_LEFT_WIDTH'; width: number }
   | { type: 'SET_RESIZING_PANEL'; resizing: boolean }
+  | { type: 'SET_COLOR'; key: ColorKey; value: string }
+  | { type: 'SET_FONT'; font: string }
+  | { type: 'SET_PADDING'; padding: number }
+  | { type: 'SET_EDGE_STROKE'; value: number }
+  | { type: 'SET_NODE_STROKE'; value: number }
 
 export function editorReducer(
   state: EditorState,
@@ -269,6 +307,32 @@ export function editorReducer(
       return { ...state, panelLeftWidth: action.width }
     case 'SET_RESIZING_PANEL':
       return { ...state, isResizingPanel: action.resizing }
+    case 'SET_COLOR': {
+      const colors = { ...state.colors, [action.key]: action.value }
+      return {
+        ...state,
+        colors,
+        config: computeConfig(colors, state.font, state.padding),
+      }
+    }
+    case 'SET_FONT':
+      return {
+        ...state,
+        font: action.font,
+        config: computeConfig(state.colors, action.font, state.padding),
+      }
+    case 'SET_PADDING': {
+      const padding = clampPadding(action.padding)
+      return {
+        ...state,
+        padding,
+        config: computeConfig(state.colors, state.font, padding),
+      }
+    }
+    case 'SET_EDGE_STROKE':
+      return { ...state, edgeStroke: clampStroke(action.value) }
+    case 'SET_NODE_STROKE':
+      return { ...state, nodeStroke: clampStroke(action.value) }
   }
 }
 
@@ -447,11 +511,23 @@ export function EditorApp({ themes }: EditorAppProps) {
   // alone) is what guarantees this.
   useEditorViewport({ state, dispatch, refs })
 
+  // zombie-mermaid#808: registers window.__editorConfigState for
+  // editor/js/rendering.ts to call, and re-applies edge/node stroke
+  // overrides to the currently-rendered SVG -- see editor-config.tsx's
+  // header comment. Reads refs.current (not just registers a callback that
+  // reads it later), so -- like useEditorViewport -- this must run after
+  // the layout effect above has populated it.
+  useEditorConfig({ state, refs })
+
   return (
     <EditorStateContext.Provider value={state}>
       <EditorDispatchContext.Provider value={dispatch}>
         <EditorRefsContext.Provider value={refs}>
-          <EditorChromeMarkup themes={themes} />
+          <EditorChromeMarkup
+            themes={themes}
+            state={state}
+            dispatch={dispatch}
+          />
         </EditorRefsContext.Provider>
       </EditorDispatchContext.Provider>
     </EditorStateContext.Provider>
@@ -467,18 +543,29 @@ export function EditorApp({ themes }: EditorAppProps) {
  * children of whatever mounts {@link EditorApp}, matching every comment in
  * `editor-page.tsx`/`editor-topbar.tsx`/`editor-panels.tsx` warning that an
  * extra wrapper here breaks the engine's own flex layout.
+ *
+ * `state`/`dispatch` are threaded through as plain props (not read via
+ * `EditorLeftPanel` calling `useEditorState()`/`useEditorDispatch()`
+ * itself) so `editor-panels.tsx` never needs a runtime import from this
+ * file -- see `EditorLeftPanelProps`'s doc comment in that file for why
+ * that would be a real circular import (this file already imports
+ * `EditorLeftPanel`/`EditorRightPanel` from there).
  */
 function EditorChromeMarkup({
   themes,
+  state,
+  dispatch,
 }: {
   themes: readonly EditorThemeItem[]
+  state: EditorState
+  dispatch: Dispatch<EditorAction>
 }): ReactNode {
   return (
     <>
       <EditorTopbar themeItems={<EditorThemeItems themes={themes} />} />
 
       <div className="main">
-        <EditorLeftPanel />
+        <EditorLeftPanel state={state} dispatch={dispatch} />
         <div className="resize-handle" id="resize-handle" />
         <EditorRightPanel />
       </div>
