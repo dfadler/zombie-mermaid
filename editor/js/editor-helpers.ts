@@ -1,3 +1,17 @@
+/**
+ * `updateLineNumbers()` is also exposed on `window.__editorHelpersState`
+ * (bottom of this file) for `demo/components/editor-buttons.ts`'s Clear
+ * button (zombie-mermaid#809) to call: setting `editor.value = ''`
+ * programmatically never fires a real `input` event, so the `input`
+ * listener below (which would otherwise call this) never runs, and
+ * `demo/components/*.tsx` doesn't import from `editor/js/*.ts` directly
+ * (see `demo/components/editor-app.tsx`'s `requireEditorElement` doc
+ * comment) -- this module isn't migrated by #809 itself (it's also used by
+ * the plain `input`/`keydown` listeners below, well outside that issue's
+ * five named files), so it stays legacy and exposes this one function the
+ * same way `editor/js/sharing.ts` exposes `updateHash` for the same
+ * reason.
+ */
 import { cursorPos, editor, lineNumbers } from './elements.ts'
 import { scheduleRender } from './rendering.ts'
 
@@ -47,3 +61,7 @@ editor.addEventListener('keydown', function (e) {
 
 editor.addEventListener('keyup', updateCursorPos)
 editor.addEventListener('click', updateCursorPos)
+
+// The window.__editorHelpersState bridge for editor-buttons.ts's Clear
+// button -- see this file's header comment.
+window.__editorHelpersState = { updateLineNumbers }

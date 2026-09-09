@@ -1,5 +1,4 @@
 import { applyStrokeOverrides } from './config-panel.ts'
-import { isDark } from './dark-mode.ts'
 import {
   editor,
   previewInner,
@@ -51,10 +50,15 @@ export function applyThemeToPage(themeKey: string): void {
     root.style.setProperty('--t-fg', t.fg)
     root.style.setProperty('--t-accent', t.accent || '#3b82f6')
   } else {
-    // Default — reset to light/dark base
-    root.style.setProperty('--t-bg', isDark ? '#18181B' : '#FFFFFF')
-    root.style.setProperty('--t-fg', isDark ? '#FAFAFA' : '#27272A')
-    root.style.setProperty('--t-accent', isDark ? '#60a5fa' : '#3b82f6')
+    // Default — reset to light/dark base. zombie-mermaid#809: `isDark`
+    // moved to React state (demo/components/editor-dark-mode.ts) -- reached
+    // here through the window.__editorDarkModeState bridge instead of a
+    // direct import, the same pattern this file already uses for zoom (see
+    // doRender()'s window.__editorViewportState.applyZoom() call below).
+    const dark = window.__editorDarkModeState.getIsDark()
+    root.style.setProperty('--t-bg', dark ? '#18181B' : '#FFFFFF')
+    root.style.setProperty('--t-fg', dark ? '#FAFAFA' : '#27272A')
+    root.style.setProperty('--t-accent', dark ? '#60a5fa' : '#3b82f6')
   }
   // Update shadow RGB
   const fg = root.style.getPropertyValue('--t-fg').trim() || '#27272A'

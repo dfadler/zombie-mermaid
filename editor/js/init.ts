@@ -1,5 +1,10 @@
 import { refreshAllColorUIs } from './config-panel.ts'
-import { applyColorMode, isDark, setDiagramThemeIsAuto } from './dark-mode.ts'
+// zombie-mermaid#809: applyColorMode/isDark moved out of dark-mode.ts (now
+// React state, demo/components/editor-dark-mode.ts) -- this file no longer
+// needs either. setDiagramThemeIsAuto stays a dark-mode.ts export (it's
+// still the diagram-auto-theme flag's only writer besides that module
+// itself); see this file's applyTheme()/hashSource uses below.
+import { setDiagramThemeIsAuto } from './dark-mode.ts'
 import { closest, requireElement } from './dom.ts'
 import { updateLineNumbers } from './editor-helpers.ts'
 import { editor, themeMenu } from './elements.ts'
@@ -69,8 +74,13 @@ themeMenu
     )
   })
 
-// Apply initial dark/light mode (must happen after all DOM refs + functions are ready)
-applyColorMode(isDark)
+// zombie-mermaid#809: the initial-dark-mode bootstrap call that used to
+// live here (`applyColorMode(isDark)`) moved to dark-mode.ts's own module
+// top level -- that module owns `applyColorMode` now, and reaches the
+// persisted preference via `window.__editorDarkModeState.getIsDark()`
+// (registered by demo/editor-dark-mode-state-bridge.ts, always ready
+// before this legacy bundle runs at all -- see editor-app.tsx's
+// EDITOR_HYDRATED_EVENT doc comment). See dark-mode.ts's header comment.
 
 // #688: one-time migration off the editor's own, now-retired
 // 'bm-editor-theme' localStorage key onto the shared 'mermaid-theme' key
