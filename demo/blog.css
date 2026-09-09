@@ -157,6 +157,24 @@ p {
   border: 1px solid var(--border);
 }
 
+/* A ```mermaid-render fence (blog.ts), rendered at build time to an inline
+   SVG via the same renderMermaidSVG the per-diagram-type gallery pages use
+   (pages.ts) — always a white card (DEFAULT_SWATCH), same as there, so it
+   reads as a deliberate "printed diagram" accent against this page's dark
+   background rather than trying to re-theme the diagram itself per post. */
+.prose .mermaid-diagram {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.prose .mermaid-diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .prose :not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.875em;
