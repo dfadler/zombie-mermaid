@@ -10,8 +10,51 @@
 > explains for `interactive`). Zero behavior change, confirmed by the full
 > test suite and a direct before/after render diff (byte-identical) across
 > sequence and class samples in both SVG (links enabled and disabled) and
-> ASCII. `flowchart` remains the one unregistered type, for the reasons this
-> document already gives below — that part of the decision is unchanged.
+> ASCII.
+
+> **Addendum 2 (issue #745 — flowchart registered):** `flowchart` — the last
+> holdout this document flagged below — is now registered on both sides too,
+> closing out #533's original scope. Two things this document's "what would
+> need to change first" section didn't fully anticipate:
+>
+> - **ASCII side:** `renderFlowchartAscii(text, config, colorMode, theme,
+>   extras)` was extracted into its own `src/ascii/flowchart.ts`, mirroring
+>   every other type's entry-point shape exactly — a pure, behavior-preserving
+>   move of the five calls (`parseMermaid`, `convertToAsciiGraph`,
+>   `createMapping`, `drawGraph`, `canvasToString`, plus the BT-flip and
+>   OSC-8-hyperlink steps) that used to live inline in
+>   `renderMermaidASCII`'s fallback. `extras` grew a `direction` field
+>   (`FlowchartAsciiExtras`, folded into the shared `AsciiRenderExtras` in
+>   `src/ascii/registry.ts`) since flowchart is the only ASCII type that
+>   reads a direction override — no other registered type's `extras` field
+>   needed one before.
+> - **SVG side, `parse`'s signature:** `DiagramModule.parse` turned out to
+>   need a second parameter, not just a `SvgRenderContext` change.
+>   `parseMermaid`'s `%%{init: ...}%%` directive extraction reads raw,
+>   un-commented lines, and its continuation-line merging needs each
+>   statement's *originating physical line* grouping — both already lost by
+>   the time `splitStatements(decoded)` (what `xychartModule`/`erModule`/
+>   `sequenceModule`/`classModule`'s parsers already take as `lines`) has
+>   run. `parse` is now `(lines: string[], text: string) => TDiagram`; the
+>   front door computes both once and passes both through. The four
+>   already-registered types are unaffected — TypeScript allows a function
+>   taking fewer parameters than its declared type to satisfy that type, so
+>   `parse: parseXYChart` (etc.) needed no changes at all.
+> - **SVG side, `SvgRenderContext`:** left unchanged, deliberately — see
+>   `PositionedFlowchart` in `src/diagram-registry.ts` for why `curve`
+>   (the one piece of state `applyInitConfig` used to fold in) is resolved
+>   once in `layoutForSvg` and carried on the positioned result instead of
+>   growing `SvgRenderContext` with a field only one type needs.
+>   `animationEnabled`/`linksEnabled` needed no new carry-through: both
+>   already derive from `options` alone via `resolveAnimationEnabled`/
+>   `resolveLinksEnabled` (the latter pre-existing for `class`; the former
+>   newly duplicated from `src/index.ts` the same way).
+>
+> Zero behavior change, confirmed by the full test suite and a real-terminal
+> (not HTML-approximation) before/after ASCII capture plus an SVG
+> before/after string diff, both byte-identical. Both front doors'
+> registries are now total over `DiagramType` — no fallback switch remains
+> in either `src/index.ts` or `src/ascii/index.ts`.
 
 ## Context
 
