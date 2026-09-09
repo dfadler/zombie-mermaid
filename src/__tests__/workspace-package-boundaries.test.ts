@@ -220,30 +220,52 @@ describe('@zombie-mermaid/svg-renderer depends only on core and mermaid-parser',
 })
 
 describe('workspace package manifests', () => {
-  // The umbrella bundles all three packages into its own `dist/` (they are
-  // absent from `isExternal` in vite.config.lib.ts), so nothing resolves
-  // these names at install time and publishing them would be misleading.
-  // Recommendation 2 of the scoping doc; the umbrella declares them as
-  // devDependencies for the same reason.
-  it.each(['core', 'mermaid-parser', 'svg-renderer'])(
-    '%s is private and unpublished',
+  // As of #769 (implementing the publish strategy
+  // docs/decisions/monorepo-conversion.md / #622 recommend), the umbrella
+  // treats all five `@zombie-mermaid/*` packages as external real
+  // dependencies (see `isExternal` in vite.config.lib.ts) rather than
+  // bundling them — so each one is genuinely, independently published under
+  // the `@zombie-mermaid/` npm scope, not merely built and left private.
+  // `.changeset/config.json`'s `fixed` array keeps all six (these five plus
+  // the umbrella) on the same version, so a change to any one bumps them
+  // together — see that file's comment.
+  it.each(['core', 'mermaid-parser', 'svg-renderer', 'ascii-renderer', 'mcp'])(
+    '%s is publishable under the @zombie-mermaid/ scope',
     (pkg) => {
       const manifest = JSON.parse(
         readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
-      ) as { name: string; private: boolean }
+      ) as {
+        name: string
+        private?: boolean
+        publishConfig?: { access?: string }
+      }
       expect(manifest.name).toBe(`@zombie-mermaid/${pkg}`)
-      expect(manifest.private).toBe(true)
+      // Not `"private": true` — a scoped package still defaults to a
+      // *private* npm publish unless `publishConfig.access` says otherwise,
+      // which is the actual thing preventing an accidental unscoped-style
+      // public leak here; `private` merely gates `pnpm publish`/`npm publish`
+      // from running against this package at all.
+      expect(manifest.private).not.toBe(true)
+      expect(manifest.publishConfig?.access).toBe('public')
     },
   )
 
   // Declared `dependencies` must match actual *runtime* imports, not the
   // over-approximating `externalSpecifiers` above — a type-only import
-  // (e.g. `core`'s `import type { ElkNode } from 'elkjs'`) is erased before
+  // (e.g. `mermaid-parser`'s hypothetical future one) is erased before
   // bundling and belongs in `devDependencies` instead, or a published
   // consumer of the package would pull in a runtime dependency it never
-  // executes (#742).
+  // executes (#742) — UNLESS that type is itself part of this package's own
+  // published public surface (its rolled-up `dist/index.d.ts`, built via
+  // api-extractor's `bundleTypes` — see vite.config.package.ts), in which
+  // case a real downstream `tsc` consumer needs the type resolvable and a
+  // `devDependency` (never installed for a consumer) won't do. `core` is
+  // exactly this case: `LayoutCache`'s public field types reference
+  // `elkjs`'s `ElkNode` (`import type { ElkNode } from 'elkjs'` in
+  // `types.ts`), so `elkjs` is a real `dependencies` entry there despite
+  // never being a *value* import in `core`'s own source.
   it('declares every runtime (non-type-only) external specifier its source actually imports', () => {
-    for (const pkg of ['core', 'mermaid-parser', 'svg-renderer'] as const) {
+    for (const pkg of ['mermaid-parser', 'svg-renderer'] as const) {
       const manifest = JSON.parse(
         readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),
       ) as { dependencies?: Record<string, string> }
@@ -251,5 +273,51 @@ describe('workspace package manifests', () => {
         externalValueSpecifiers(pkg),
       )
     }
+  })
+
+  it('core additionally declares elkjs — type-only in source, but part of its own published public types', () => {
+    const manifest = JSON.parse(
+      readFileSync(resolve(PACKAGES, 'core', 'package.json'), 'utf8'),
+    ) as { dependencies?: Record<string, string> }
+    expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual([
+      'elkjs',
+      ...externalValueSpecifiers('core'),
+    ])
+  })
+
+  // `ascii-renderer` and `mcp` each bundle one (`packages/ascii-renderer/src/flowchart.ts`
+  // -> `../../../src/parser.ts`) or two (`packages/mcp/src/{server,tools/render-svg}.ts`
+  // -> `../../../src/{package-info,index}.ts`) files from *outside* their
+  // own `packages/<name>/src/` — see vite.config.package.ts's header and
+  // each package's own vite.config.ts for why (their build still compiles
+  // that source in directly, same as before #769). `externalValueSpecifiers`
+  // above only scans each package's own `src/`, so it can't see what those
+  // reach-through files themselves import — this asserts the full,
+  // hand-traced transitive set instead of extending that scanner to follow
+  // an out-of-package relative import (which `escapingRelativeImports`
+  // above deliberately treats as a violation for the other three packages).
+  it('ascii-renderer declares every specifier its reach-through into src/parser.ts needs, on top of its own', () => {
+    const manifest = JSON.parse(
+      readFileSync(resolve(PACKAGES, 'ascii-renderer', 'package.json'), 'utf8'),
+    ) as { dependencies?: Record<string, string> }
+    expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual([
+      '@zombie-mermaid/core',
+      '@zombie-mermaid/mermaid-parser',
+    ])
+  })
+
+  it('mcp declares every specifier its reach-through into src/{package-info,index}.ts needs, on top of its own', () => {
+    const manifest = JSON.parse(
+      readFileSync(resolve(PACKAGES, 'mcp', 'package.json'), 'utf8'),
+    ) as { dependencies?: Record<string, string> }
+    expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual([
+      '@modelcontextprotocol/sdk',
+      '@zombie-mermaid/ascii-renderer',
+      '@zombie-mermaid/core',
+      '@zombie-mermaid/mermaid-parser',
+      '@zombie-mermaid/svg-renderer',
+      'entities',
+      'zod',
+    ])
   })
 })

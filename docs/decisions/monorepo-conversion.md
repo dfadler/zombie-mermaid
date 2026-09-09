@@ -29,10 +29,13 @@ still genuinely undecided.
   what #623 closed without doing) are all real workspace packages.
 - Workspace tooling (#621) is mostly done; its remaining "use
   `pnpm -r`/`--filter`" scope isn't needed by anything yet.
-- Publish strategy (#622) is the one undecided piece: recommendation is a
-  single npm listing (`zombie-mermaid`), a populated `fixed` changesets
-  array, thin re-exports under the `@zombie-mermaid/` npm scope, and no
-  standalone `mcp` package unless a concrete user request shows up.
+- Publish strategy (#622) is implemented as of #769: a populated `fixed`
+  changesets array, thin re-exports under the `@zombie-mermaid/` npm scope,
+  and no standalone `mcp` package. `zombie-mermaid` is still the only
+  package end users install — the five `@zombie-mermaid/*` packages are
+  real, independently-built runtime dependencies of it, not a second public
+  surface. The one remaining step is manual and maintainer-only: linking npm
+  trusted publishing for each of the five new package names (RELEASING.md).
 - Any PR that flips packages from `"private": true` to published touches
   this repo's dependency-manifest/lockfile surface, which is
   security-critical per this org's standing rule — needs a human on the

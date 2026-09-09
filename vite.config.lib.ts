@@ -3,20 +3,32 @@
  * one declarative config, built with `vite build --app` (Vite's builder
  * mode, which builds every configured environment in order). Replaces the
  * imperative `scripts/build-lib.ts` (zombie-mermaid#404), which drove the
- * same six builds by hand as separate `vite build()` calls. See
+ * same builds by hand as separate `vite build()` calls. See
  * zombie-mermaid#378 for the original tsup -> Vite move.
  *
- * Why six environments rather than one multi-entry `build.lib`: each public
- * JS entry (`.`, `./ascii`, `./mcp`) must be fully self-contained, with no
- * shared runtime chunk between them (tsup's `splitting: false`). Rolldown's
- * multi-entry default is the opposite — it factors modules shared between
- * entries (`parser.ts`, say) into a separate chunk — and its only
- * no-splitting switch, `output.codeSplitting: false`, is rejected outright
- * for multi-input builds (`[INVALID_OPTION] ... multiple inputs are not
+ * This is ONE of six builds a full `pnpm run build` now runs (#769):
+ * `packages/{core,mermaid-parser,svg-renderer,ascii-renderer,mcp}/vite.config.ts`
+ * (via the shared `vite.config.package.ts` factory) each build their own
+ * package first, in that dependency order, before this file's own build
+ * runs — this file's `isExternal` treats all five as real dependencies
+ * rather than bundling their source, and its dts step resolves their types
+ * through their own just-built `dist/index.d.ts`. See the root `build`
+ * script.
+ *
+ * Why five environments (`client`/`ascii`/`mcp`/`cli`/`types`) rather than
+ * one multi-entry `build.lib`: each public JS entry (`.`, `./ascii`,
+ * `./mcp`) must be fully self-contained, with no shared runtime chunk
+ * between them (tsup's `splitting: false`). Rolldown's multi-entry default
+ * is the opposite — it factors modules shared between entries
+ * (`parser.ts`, say) into a separate chunk — and its only no-splitting
+ * switch, `output.codeSplitting: false`, is rejected outright for
+ * multi-input builds (`[INVALID_OPTION] ... multiple inputs are not
  * supported when "output.codeSplitting" is false`, Rolldown 1.2.x). One
  * environment per entry keeps each build single-input, so nothing can be
  * shared across them — the same isolation the old script got from separate
- * `build()` calls, now expressed as config.
+ * `build()` calls, now expressed as config. (Before #769, `mcp` was two
+ * environments — `mcp_es`/`mcp_cjs` — for a reason specific to that era;
+ * see the `mcp` environment's own comment below for why one now suffices.)
  *
  * Environment gotchas this config works around (each verified against the
  * old script's output byte-for-byte — keep them in mind when editing):
@@ -45,9 +57,12 @@
  *   (Vite's `build.ssr: true`): node: built-ins stay real imports instead
  *   of a browser shim (the CLI's `createRequire` breaks otherwise — #378),
  *   `minify` defaults to `false`, and `lib.fileName` is ignored in favor of
- *   the entry file's basename. That last one is why `mcp_es`/`mcp_cjs`/`cli`
- *   also set `output.entryFileNames` explicitly: `packages/mcp/src/index.ts` would
- *   otherwise land on `dist/index.js`, clobbering the real `index` entry.
+ *   the entry file's basename. `ascii` and (as of #769) `mcp` opt back into
+ *   `consumer: 'client'` explicitly (neither entry's own module graph
+ *   touches a Node built-in anymore), so `lib.fileName` works normally for
+ *   them; `cli` stays server-consumer and so still sets
+ *   `output.entryFileNames` explicitly — `src/cli.ts` would otherwise land
+ *   on `dist/index.js`, clobbering the real `index` entry.
  *
  * Types: unplugin-dts's `bundleTypes` (one api-extractor-rolled `.d.ts` per
  * entry, like tsup's dts step) names its outputs after the entry keys only
@@ -89,6 +104,19 @@ const DIST = resolve(ROOT, 'dist')
 // bundle a native `.node` addon at all, and bundling would defeat the whole
 // point of loading it lazily — a normal `--ascii`/`--svg`/`--html` build
 // would end up requiring it eagerly.
+//
+// The five `@zombie-mermaid/*` workspace packages (#769, implementing the
+// publish strategy docs/decisions/monorepo-conversion.md / #622
+// recommend) are real, independently-built, genuinely-published
+// dependencies as of this issue — matched here so `dist/index.js`,
+// `dist/ascii.js`, `dist/mcp.js`, and `dist/cli.js` all `import`/`require`
+// them at runtime instead of inlining their compiled source, same as any
+// other real dependency. Each package's own build (see
+// vite.config.package.ts and packages/*/vite.config.ts) must already exist
+// on disk before this build runs — see the root `build` script's order —
+// since this file's own dts step (below) resolves their types through
+// normal package resolution now, not the old bundledPackages/paths
+// workaround this comment used to describe.
 function isExternal(id: string): boolean {
   return (
     id === 'elkjs' ||
@@ -100,7 +128,17 @@ function isExternal(id: string): boolean {
     id === 'zod' ||
     id.startsWith('zod/') ||
     id === '@resvg/resvg-js' ||
-    id.startsWith('@resvg/resvg-js/')
+    id.startsWith('@resvg/resvg-js/') ||
+    id === '@zombie-mermaid/core' ||
+    id.startsWith('@zombie-mermaid/core/') ||
+    id === '@zombie-mermaid/mermaid-parser' ||
+    id.startsWith('@zombie-mermaid/mermaid-parser/') ||
+    id === '@zombie-mermaid/svg-renderer' ||
+    id.startsWith('@zombie-mermaid/svg-renderer/') ||
+    id === '@zombie-mermaid/ascii-renderer' ||
+    id.startsWith('@zombie-mermaid/ascii-renderer/') ||
+    id === '@zombie-mermaid/mcp' ||
+    id.startsWith('@zombie-mermaid/mcp/')
   )
 }
 
@@ -109,7 +147,6 @@ function isExternal(id: string): boolean {
 // and, per the header comment, only ever at the environment level.
 const ES_AND_CJS: LibraryFormats[] = ['es', 'cjs']
 const ES_ONLY: LibraryFormats[] = ['es']
-const CJS_ONLY: LibraryFormats[] = ['cjs']
 
 // tsup marked its shebang-banner CLI output executable; Rollup/Vite don't.
 const cliExecutable: Plugin = {
@@ -124,15 +161,25 @@ const RELATIVE_IMPORT_RE =
   /^(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]\.\.?\//m
 
 /**
- * A rolled-up declaration must never name a `@zombie-mermaid/*` workspace
- * package: those are `"private": true`, bundled into this package's JS, and
- * therefore unresolvable for any consumer. api-extractor's `bundledPackages`
- * (see the `dts` plugin options) is what inlines them; this guard fails the
- * build if that ever stops working, since — unlike a relative import — a
- * bare specifier would otherwise sail past `RELATIVE_IMPORT_RE` and ship
- * broken types.
+ * `ascii.d.ts`/`mcp.d.ts` MUST reference their `@zombie-mermaid/*` package
+ * by bare specifier (`from '@zombie-mermaid/ascii-renderer'` /
+ * `from '@zombie-mermaid/mcp'`) rather than inlining it — those packages
+ * are real, independently-built, published dependencies as of #769 (see
+ * `isExternal` above and each package's own package.json under
+ * packages/), not bundled source, and
+ * `src/ascii-entry.ts`/`src/mcp-entry.ts` are pure `export * from '...'`
+ * re-exports for exactly that reason. This guard fails the build if a
+ * future change accidentally starts inlining one of them again (e.g. by
+ * adding it to a `bundledPackages` list) — the opposite failure mode from
+ * what this same check (then WORKSPACE_IMPORT_RE) guarded against before
+ * #769, when these packages were still private/bundled and a bare
+ * `@zombie-mermaid/*` specifier surviving into the rolled-up output would
+ * have named something no consumer could resolve.
  */
-const WORKSPACE_IMPORT_RE = /from\s*['"]@zombie-mermaid\//
+const WORKSPACE_REF_RE: Record<string, RegExp> = {
+  'ascii.d.ts': /from\s*['"]@zombie-mermaid\/ascii-renderer['"]/,
+  'mcp.d.ts': /from\s*['"]@zombie-mermaid\/mcp['"]/,
+}
 
 /**
  * Writes `index.d.cts`, `ascii.d.cts`, and `mcp.d.cts` as byte-for-byte
@@ -145,11 +192,11 @@ const WORKSPACE_IMPORT_RE = /from\s*['"]@zombie-mermaid\//
  * files whose extension would need to differ between the ESM and CJS
  * variant (unlike tsup's own `index.d.ts`/`index.d.cts`, which only
  * differed in the extension of an internal cross-file import). A bare
- * package-specifier import (e.g. `import { ElkNode } from 'elkjs'`, surfaced
- * once `LayoutCache`'s public type started referencing it) is fine to
- * duplicate too — Node resolves a bare specifier the same way regardless of
- * the importing file's own module format — so only a relative import
- * (`./`, `../`) trips the guard below.
+ * package-specifier import (e.g. `import { ElkNode } from 'elkjs'`, or —
+ * as of #769 — `from '@zombie-mermaid/core'`) is fine to duplicate too —
+ * Node resolves a bare specifier the same way regardless of the importing
+ * file's own module format — so only a relative import (`./`, `../`) trips
+ * the guard below.
  */
 async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
   const files = [...emitted.keys()].filter((file) => file.endsWith('.d.ts'))
@@ -163,17 +210,18 @@ async function writeDctsTwins(emitted: Map<string, string>): Promise<void> {
   await Promise.all(
     files.map((file) => {
       const content = emitted.get(file)!
+      const name = basename(file)
       if (RELATIVE_IMPORT_RE.test(content)) {
         throw new Error(
-          `${basename(file)} has a relative import/re-export — no longer safe to duplicate verbatim ` +
+          `${name} has a relative import/re-export — no longer safe to duplicate verbatim ` +
             `as its .d.cts twin. Update writeDctsTwins() to handle that.`,
         )
       }
-      if (WORKSPACE_IMPORT_RE.test(content)) {
+      const workspaceRef = WORKSPACE_REF_RE[name]
+      if (workspaceRef && !workspaceRef.test(content)) {
         throw new Error(
-          `${basename(file)} imports from a @zombie-mermaid/* workspace package, which is private and ` +
-            `never published — api-extractor's bundledPackages should have inlined it. See the dts ` +
-            `plugin options in this file.`,
+          `${name} no longer references its @zombie-mermaid/* package by bare specifier — ` +
+            `it may have been inlined again instead of left external. See WORKSPACE_REF_RE above.`,
         )
       }
       return writeFile(file.replace(/\.d\.ts$/, '.d.cts'), content)
@@ -193,7 +241,12 @@ export default defineConfig({
   plugins: [
     {
       ...dts({
-        tsconfigPath: resolve(ROOT, 'tsconfig.json'),
+        // Build-only tsconfig (see its own header comment): resolves every
+        // `@zombie-mermaid/*` import through normal package resolution —
+        // each package's own `dist/index.d.ts` (built first; see the root
+        // `build` script's order) — rather than tsconfig.json's live-source
+        // `paths` overrides, which exist for typecheck/IDE use only.
+        tsconfigPath: resolve(ROOT, 'tsconfig.build.json'),
         // Never process test files reachable via tsconfig's broad
         // `src/**/*` include — they aren't part of the public API and
         // some rely on devDependency-only ambient types (vitest, jsdom).
@@ -202,61 +255,20 @@ export default defineConfig({
         // (via @microsoft/api-extractor), matching tsup's dts output —
         // one file per public entry point, not one per source module.
         //
-        // The three `@zombie-mermaid/*` workspace packages (zombie-mermaid#625,
-        // #624, umbrella #620) are `"private": true` and bundled into this
-        // package's JS — they're absent from `isExternal` below — so a
-        // `from '@zombie-mermaid/core'` surviving into a rolled-up `.d.ts`
-        // would name something no consumer can resolve. Two settings are
-        // needed to inline them, and only together:
-        //
-        // - `bundledPackages` tells api-extractor to emit their
-        //   declarations inline rather than re-export them.
-        // - The `paths` override tells it where to *find* those
-        //   declarations. Left alone, api-extractor resolves
-        //   `@zombie-mermaid/core` through node_modules to the package's
-        //   own `types` field, which points at TypeScript *source*
-        //   (`packages/core/src/index.ts`) because nothing builds these
-        //   packages yet. api-extractor only analyses `.d.ts` input and
-        //   dies on the `.ts` with `Unable to follow symbol for "const"`.
-        //   By then this plugin has already emitted each package's
-        //   per-file declarations under `dist/packages/<name>/src/`
-        //   (tsconfig's `include` covers them), so pointing `paths` at
-        //   those files gives api-extractor real `.d.ts` input.
-        //
-        // Retire the `paths` half once #621/#622 give each package its own
-        // build and a `types` field pointing at emitted declarations.
-        // `writeDctsTwins`'s WORKSPACE_IMPORT_RE guard fails the build if
-        // this ever silently stops inlining.
-        bundleTypes: {
-          bundledPackages: [
-            '@zombie-mermaid/core',
-            '@zombie-mermaid/mermaid-parser',
-            '@zombie-mermaid/svg-renderer',
-            '@zombie-mermaid/ascii-renderer',
-          ],
-          extractorConfig: {
-            compiler: {
-              overrideTsconfig: {
-                compilerOptions: {
-                  paths: {
-                    '@zombie-mermaid/core': [
-                      resolve(DIST, 'packages/core/src/index.d.ts'),
-                    ],
-                    '@zombie-mermaid/mermaid-parser': [
-                      resolve(DIST, 'packages/mermaid-parser/src/index.d.ts'),
-                    ],
-                    '@zombie-mermaid/svg-renderer': [
-                      resolve(DIST, 'packages/svg-renderer/src/index.d.ts'),
-                    ],
-                    '@zombie-mermaid/ascii-renderer': [
-                      resolve(DIST, 'packages/ascii-renderer/src/index.d.ts'),
-                    ],
-                  },
-                },
-              },
-            },
-          },
-        },
+        // The five `@zombie-mermaid/*` workspace packages are real,
+        // independently-built, published dependencies as of #769 (see
+        // `isExternal` above) — absent from `bundledPackages` deliberately,
+        // so a `from '@zombie-mermaid/core'` (etc.) reference survives into
+        // the rolled-up `.d.ts` as a normal external import instead of
+        // being inlined, exactly like `elkjs`. Before #769 this had to
+        // inline them (they were private/bundled, so a bare
+        // `@zombie-mermaid/*` specifier would have named something no
+        // consumer could resolve) via a `bundledPackages` list plus a
+        // `paths` override pointing at this same plugin's own freshly
+        // emitted per-file declarations, since nothing built these packages
+        // independently yet — see this file's git history on #769 for that
+        // version if this ever needs to be reverted.
+        bundleTypes: true,
         // Drop the `types` environment's JS from its bundle before it's
         // written: that JS is a multi-entry build with shared chunks (see
         // the header), never the real output — and it would land on the
@@ -300,59 +312,32 @@ export default defineConfig({
       consumer: 'client',
       build: {
         lib: {
-          entry: resolve(ROOT, 'packages/ascii-renderer/src/index.ts'),
+          entry: resolve(ROOT, 'src/ascii-entry.ts'),
           formats: ES_AND_CJS,
           fileName: (format) => `ascii.${format === 'es' ? 'js' : 'cjs'}`,
         },
       },
     },
-    // `mcp` is split into an ESM and a CJS environment (unlike `index`/
-    // `ascii`'s single dual-format builds) because the CJS half needs a
-    // `define`/`intro` pair that would be wrong to apply to the ESM half.
-    // Both are server-consumer builds: this entry transitively imports
-    // `node:module` (via `src/package-info.ts`, used by
-    // `packages/mcp/src/server.ts` for `Implementation.version`).
-    mcp_es: {
+    // Before #769, `mcp` was split into an ESM and a CJS environment
+    // because its entry (`packages/mcp/src/index.ts`, bundled directly)
+    // transitively pulled in `src/package-info.ts`'s
+    // `createRequire(import.meta.url)` — which needed a CJS-only
+    // `define`/`intro` shim (import.meta isn't valid CJS syntax) that would
+    // have been wrong to apply to the ESM half. As of #769, this entry is
+    // `src/mcp-entry.ts` — a pure `export * from '@zombie-mermaid/mcp'`
+    // re-export whose only import is the external `@zombie-mermaid/mcp`
+    // bare specifier — so nothing in *this* build's own module graph
+    // touches `import.meta.url` or any other Node built-in anymore (that
+    // shim still exists, unchanged, inside `@zombie-mermaid/mcp`'s own
+    // build — see packages/mcp/vite.config.ts). One dual-format
+    // client-consumer environment, same as `ascii` above, now suffices.
+    mcp: {
+      consumer: 'client',
       build: {
         lib: {
-          entry: resolve(ROOT, 'packages/mcp/src/index.ts'),
-          formats: ES_ONLY,
-          fileName: () => 'mcp.js',
-        },
-        rolldownOptions: {
-          output: { entryFileNames: 'mcp.js' },
-        },
-      },
-    },
-    mcp_cjs: {
-      // `src/package-info.ts`'s `createRequire(import.meta.url)`:
-      // `import.meta` isn't valid syntax in CJS, and Rolldown's CJS output
-      // — unlike esbuild (tsup) or classic Rollup, neither of which needed
-      // this — doesn't auto-polyfill a bare `import.meta.url` access; left
-      // alone it silently rewrites `import.meta` to `{}`, turning
-      // `createRequire(import.meta.url)` into `createRequire(undefined)`,
-      // which throws at runtime (`dist/mcp.cjs`'s `getPackageVersion()`
-      // would crash any CJS consumer the moment `createMcpServer()` runs).
-      // `define` rewrites the expression to a placeholder identifier at
-      // build time; `output.intro` defines that identifier for real, using
-      // CJS's own `__filename` (via `pathToFileURL`) — the same fallback
-      // tsup's `shims: true` provided for this exact file under esbuild.
-      define: {
-        'import.meta.url': '__zombie_mermaid_import_meta_url__',
-      },
-      build: {
-        lib: {
-          entry: resolve(ROOT, 'packages/mcp/src/index.ts'),
-          formats: CJS_ONLY,
-          fileName: () => 'mcp.cjs',
-        },
-        rolldownOptions: {
-          output: {
-            entryFileNames: 'mcp.cjs',
-            intro:
-              'var __zombie_mermaid_import_meta_url__ = ' +
-              'require("node:url").pathToFileURL(__filename).href;',
-          },
+          entry: resolve(ROOT, 'src/mcp-entry.ts'),
+          formats: ES_AND_CJS,
+          fileName: (format) => `mcp.${format === 'es' ? 'js' : 'cjs'}`,
         },
       },
     },
@@ -393,8 +378,8 @@ export default defineConfig({
         lib: {
           entry: {
             index: resolve(ROOT, 'src/index.ts'),
-            ascii: resolve(ROOT, 'packages/ascii-renderer/src/index.ts'),
-            mcp: resolve(ROOT, 'packages/mcp/src/index.ts'),
+            ascii: resolve(ROOT, 'src/ascii-entry.ts'),
+            mcp: resolve(ROOT, 'src/mcp-entry.ts'),
           },
           formats: ES_ONLY,
         },

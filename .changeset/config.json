@@ -5,7 +5,16 @@
     { "repo": "dfadler/zombie-mermaid" }
   ],
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "zombie-mermaid",
+      "@zombie-mermaid/core",
+      "@zombie-mermaid/mermaid-parser",
+      "@zombie-mermaid/svg-renderer",
+      "@zombie-mermaid/ascii-renderer",
+      "@zombie-mermaid/mcp"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
@@ -13,10 +22,13 @@
   "ignore": [],
   "changedFilePatterns": [
     "src/**",
+    "packages/**",
     "package.json",
     "README.md",
     "LICENSE",
     "vite.config.lib.ts",
-    "tsconfig.json"
+    "vite.config.package.ts",
+    "tsconfig.json",
+    "tsconfig.build.json"
   ]
 }

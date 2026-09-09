@@ -9,7 +9,15 @@ name: Release
 #     via trusted publishing (OIDC) and tags the release.
 #
 # See RELEASING.md for the full flow and the one-time npmjs.com trusted
-# publisher setup this depends on.
+# publisher setup this depends on. As of #769, `pnpm changeset publish`
+# below publishes six packages (the `zombie-mermaid` umbrella plus five
+# @zombie-mermaid/* internal packages, kept on one version by
+# .changeset/config.json's `fixed` group) instead of one — each needs its
+# own trusted-publisher link configured on npmjs.com (same GitHub Actions
+# values, repeated per package name; see RELEASING.md's "One-time manual
+# setup" section). No change needed in this workflow file itself for that:
+# `changesets/action`/`pnpm changeset publish` already iterate every
+# workspace package with a pending version bump.
 on:
   push:
     branches: [main]

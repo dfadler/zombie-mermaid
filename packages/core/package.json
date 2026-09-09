@@ -1,19 +1,35 @@
 {
   "name": "@zombie-mermaid/core",
   "version": "2.2.0",
-  "private": true,
   "license": "MIT",
   "description": "Shared types, theme, and text/statement utilities used by every zombie-mermaid renderer.",
   "type": "module",
   "sideEffects": false,
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
   },
-  "types": "./src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "files": [
-    "src/"
+    "src/",
+    "dist/",
+    "LICENSE"
   ],
-  "devDependencies": {
+  "dependencies": {
     "elkjs": "^0.11.0"
   }
 }
