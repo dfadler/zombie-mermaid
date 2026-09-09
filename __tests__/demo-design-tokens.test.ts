@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Guards demo/components/tokens.tsx against the design canvas it was
  * extracted from (#592, part of the #590 redesign).
@@ -9,9 +10,21 @@
  * `<helmet><style>` `:root` block, so a later edit that drifts a hex or
  * drops a token fails here rather than silently shipping an off-palette
  * page. Update these expectations only alongside a canvas change.
+ *
+ * This is a deliberate exception to this repo's default RTL pattern
+ * (`docs/testing-conventions.md`'s "design-canvas fidelity checks"): the
+ * literal-value pinning stays exactly as strict as ever, but per that doc
+ * the *query mechanism* should still go through React Testing Library for
+ * consistency with the rest of `demo/**`'s tests, rather than
+ * `renderToStaticMarkup` + string/regex matching on serialized markup.
+ * `tokens.tsx` has no interactive behavior to drive, so `DesignFontLinks`
+ * and `DesignTokensStyle` are rendered with `render()` and asserted on via
+ * real DOM nodes — `container.querySelector`, and the `<style>` element's
+ * own parsed `CSSStyleSheet` (`sheet.cssRules`) for its custom properties —
+ * instead of parsing an HTML string.
  */
 import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
+import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
   ACCENTS,
@@ -151,20 +164,52 @@ describe('scales', () => {
 
 describe('components', () => {
   it('emits preconnects and one stylesheet link', () => {
-    const html = renderToStaticMarkup(createElement(DesignFontLinks))
-    expect(html).toContain(
-      '<link rel="preconnect" href="https://fonts.googleapis.com"/>',
+    // React 19 treats a bare `<link rel="preconnect">` as a hoistable
+    // resource and moves it into `document.head` on mount regardless of
+    // where it's rendered (this is real React behavior, not a jsdom quirk —
+    // see https://react.dev/reference/react-dom/components/link). A plain
+    // `<link rel="stylesheet">` with no `precedence` prop isn't treated as a
+    // resource, so it renders in place instead — hence querying two
+    // different roots below.
+    const { container } = render(createElement(DesignFontLinks))
+
+    const preconnects = Array.from(
+      document.head.querySelectorAll('link[rel="preconnect"]'),
     )
-    expect(html).toContain(
-      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>',
+    expect(preconnects).toHaveLength(2)
+    expect(preconnects.map((link) => link.getAttribute('href')).sort()).toEqual(
+      ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
     )
-    expect(html.match(/rel="stylesheet"/g)).toHaveLength(1)
-    expect(html).toContain(DESIGN_FONTS_HREF.replace(/&/g, '&amp;'))
+    const gstaticPreconnect = preconnects.find(
+      (link) => link.getAttribute('href') === 'https://fonts.gstatic.com',
+    )
+    expect(gstaticPreconnect?.hasAttribute('crossorigin')).toBe(true)
+    expect(gstaticPreconnect?.getAttribute('crossorigin')).toBe('')
+
+    const stylesheets = container.querySelectorAll('link[rel="stylesheet"]')
+    expect(stylesheets).toHaveLength(1)
+    expect(stylesheets[0]?.getAttribute('href')).toBe(DESIGN_FONTS_HREF)
   })
 
   it('wraps the base CSS in a style element', () => {
-    const html = renderToStaticMarkup(createElement(DesignTokensStyle))
-    expect(html.startsWith('<style>')).toBe(true)
-    expect(html).toContain('--bg: #0a0d16;')
+    const { container } = render(createElement(DesignTokensStyle))
+
+    expect(container.children).toHaveLength(1)
+    const styleEl = container.firstElementChild
+    if (!(styleEl instanceof HTMLStyleElement)) {
+      throw new Error(`expected a <style> element, got ${styleEl?.tagName}`)
+    }
+    expect(styleEl.textContent).toBe(designBaseCss())
+
+    // Read the token back through the real, parsed CSSOM — not a string
+    // match on the element's serialized markup — the way a stylesheet
+    // consumer actually resolves a custom property.
+    const rootRule = Array.from(styleEl.sheet?.cssRules ?? []).find(
+      (rule): rule is CSSStyleRule =>
+        'selectorText' in rule && rule.selectorText === ':root',
+    )
+    expect(rootRule?.style.getPropertyValue('--bg').trim()).toBe(
+      CANVAS_PALETTE['--bg'],
+    )
   })
 })
