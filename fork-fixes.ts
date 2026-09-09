@@ -18,6 +18,11 @@
  * `renderToStaticMarkup` — part of #589, which moved every site generator
  * off template-literal HTML. This file keeps everything that needs I/O or a
  * renderer; the component only decides what element each result becomes.
+ *
+ * As of zombie-mermaid#802, this page also hydrates: `demo/fork-fixes-
+ * client.tsx` (bundled below by `bundleForkFixesClient()`, mirroring
+ * dashboard.ts's `bundleDashboardClient()`) hydrates `ForkFixesApp` (the
+ * hero + fixes list) and `<NavIsland>` in one bundle.
  */
 
 import { execFile } from 'node:child_process'
@@ -32,12 +37,12 @@ import { renderHtmlDocument } from './demo/render-html.ts'
 import { sharedPageCss } from './demo/components/shared-page-css.tsx'
 import { themePickerCss } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
-import { bundleNavClient } from './demo/build-nav-client.ts'
 import {
   ForkFixesPage,
   type FixSectionProps,
   type PanelContent,
 } from './demo/components/fork-fixes-page.tsx'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
 
 const exec = promisify(execFile)
 
@@ -272,6 +277,21 @@ function fixSectionProps(pair: RenderPair): FixSectionProps {
   }
 }
 
+/**
+ * Bundle `demo/fork-fixes-client.tsx` (zombie-mermaid#802's hydration
+ * entry) for the browser — mirrors dashboard.ts's `bundleDashboardClient()`
+ * exactly (inlined into the page directly, `minify: true` since this is
+ * the first bundle on this page to include `react`/`react-dom` — see that
+ * function's doc comment for the measured minified-vs-unminified
+ * difference, which applies unchanged here).
+ */
+async function bundleForkFixesClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/fork-fixes-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
 async function generate(): Promise<string> {
   const pairs: RenderPair[] = []
   for (const fix of forkFixes) {
@@ -313,11 +333,12 @@ async function generate(): Promise<string> {
   )
   const styles = sharedPageCss([themePickerCss(), pageCss].join('\n\n'))
 
-  // #687: this page's live theme picker needs no other client JS, so it
-  // gets the same shared bundle Home/the Diagrams hub/Blog/Dashboard use.
-  const [themeBarScript, navClientScript] = await Promise.all([
+  // #687: this page's live theme picker needs no other client JS of its
+  // own, so it gets the same shared bundle Home/the Diagrams hub/Blog/
+  // Dashboard use. #802: clientScript hydrates ForkFixesApp + NavIsland.
+  const [themeBarScript, clientScript] = await Promise.all([
     bundleThemeBarClient(),
-    bundleNavClient(),
+    bundleForkFixesClient(),
   ])
 
   return renderHtmlDocument(
@@ -325,7 +346,7 @@ async function generate(): Promise<string> {
       css: styles,
       fixes: pairs.map(fixSectionProps),
       themeBarScript,
-      navClientScript,
+      clientScript,
     }),
   )
 }
