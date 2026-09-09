@@ -65,6 +65,7 @@ import {
 import { renderMermaidSVG } from '../../src/index.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import { DIAGRAM_TYPE_PROFILES } from '../diagram-pages-data.ts'
+import { THEME_LABELS } from '../theme-labels.ts'
 import {
   IndexHeroApp,
   IndexMainApp,
@@ -259,12 +260,14 @@ function homePageCss(): string {
 }
 .theme-showcase-term-bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid ${colorVar('--border')}; }
 .theme-showcase-term-dot { width: 9px; height: 9px; border-radius: 50%; }
-/* height fits its fixed 5-line content (":root {", 3 var lines, "}") at
-   this font-size/line-height, plus a few px of slack for cross-browser
-   line-box rounding -- content never gains or loses a line, only the
-   swapped-in hex values' text changes width, so this never needs to grow. */
-.theme-showcase-term-body { font-size: 13px; line-height: 1.95; padding: 16px 18px; color: ${colorVar('--text-dim')}; height: 132px; }
+/* height fits its fixed 6-line content (the leading theme-name comment
+   line, ":root {", 3 var lines, "}") at this font-size/line-height, plus
+   a few px of slack for cross-browser line-box rounding -- content never
+   gains or loses a line, only the swapped-in theme name/hex values' text
+   changes width, so this never needs to grow. */
+.theme-showcase-term-body { font-size: 13px; line-height: 1.95; padding: 16px 18px; color: ${colorVar('--text-dim')}; height: 158px; }
 .theme-showcase-kw { color: ${colorVar('--blue')}; }
+.theme-showcase-comment { color: ${colorVar('--text-faint')}; }
 .theme-showcase-swatch {
   display: inline-block;
   width: 10px;
@@ -289,17 +292,21 @@ function homePageCss(): string {
    (the six slots) go position: absolute below, since absolutely
    positioned children no longer contribute to a parent's intrinsic size. */
 #theme-showcase-diagrams { position: relative; width: 100%; height: 100%; }
-/* All six slots stack exactly on top of each other and crossfade via
-   opacity -- see this rule's own transition and index-page-client.ts's
-   startShowcaseCycle() for why: swapping which slot has .is-active is a
-   plain opacity fade between two diagrams that are each ALWAYS at full
-   contrast, rather than interpolating --bg/--fg color values through
-   each other (which, tried first, made text unreadable for a chunk of
-   the fade when the two themes were far apart in lightness -- e.g.
-   dracula to solarized-light passes through a muddy, low-contrast gray).
-   900ms ease matches "*.theme-showcase-diagram-card"'s own background
-   transition above exactly (same duration, same timing function) so the
-   two fade at the same visual rate rather than drifting apart. */
+/* All six slots stack exactly on top of each other; only the .is-active
+   one is visible. index-page-client.ts's startShowcaseCycle() runs each
+   step as a strict, staged sequence rather than animating this and the
+   card's own background transition at once: fade the current diagram out
+   (this rule's own opacity transition) -- once it's fully transparent,
+   re-theme it and animate the card's background (900ms, above) -- once
+   that finishes, fade the new diagram (already re-themed) back in. So the
+   diagram is never visible while its own colors change (each slot is
+   always either hidden or at full contrast, never interpolating between
+   two themes' colors, which made text briefly unreadable when tried) and
+   never competes on-screen with the background's own color transition.
+   350ms here is deliberately quicker than the card's 900ms: it only has
+   to clear the diagram off-screen (or bring it back), not carry a color
+   change of its own. Keep this file's own DIAGRAM_FADE_MS in sync by
+   hand if either changes -- see that constant's doc comment. */
 .theme-showcase-diagram-slot {
   position: absolute;
   inset: 0;
@@ -307,7 +314,7 @@ function homePageCss(): string {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 900ms ease;
+  transition: opacity 350ms ease;
   pointer-events: none;
 }
 .theme-showcase-diagram-slot.is-active { opacity: 1; pointer-events: auto; }
@@ -438,18 +445,16 @@ function renderShowcaseDiagrams(): { slug: string; html: string }[] {
  * this section grows back on its own.)
  *
  * `demo/index-page-client.ts`'s `startShowcaseCycle()` does the actual
- * cycling: every ~2.8s it re-themes the *next* pre-rendered `<svg>` in
- * place via CSS custom properties (`svg.style.setProperty('--bg', …)`, …
- * — the same "swap variables, no re-render" technique
- * `demo/diagram-page-client.ts`'s `applyThemeToDiagram` already uses
- * elsewhere) while it's still invisible, then crossfades it in over the
- * outgoing one via each `.theme-showcase-diagram-slot`'s own `opacity`
- * transition (toggling which slot carries `.is-active`) rather than
- * interpolating colors between the two themes — every visible diagram
- * stays at full contrast throughout, see that CSS rule's own comment for
- * why. It also keeps the `--bg`/`--fg`/`--accent` code panel and the
- * `N / <count>` counter in sync. `prefers-reduced-motion: reduce` stops
- * the cycle before it starts —
+ * cycling, as a strict, staged sequence rather than one simultaneous
+ * change: fade the visible diagram out, re-theme the next one via CSS
+ * custom properties (`svg.style.setProperty('--bg', …)`, … — the same
+ * "swap variables, no re-render" technique `demo/diagram-page-client.ts`'s
+ * `applyThemeToDiagram` already uses elsewhere) and animate the card's
+ * background to match while nothing diagram-shaped is on screen, then
+ * fade the (already re-themed) diagram back in — see
+ * `.theme-showcase-diagram-slot`'s own CSS comment for why. It also keeps
+ * the `--bg`/`--fg`/`--accent` code panel and the `N / <count>` counter in
+ * sync. `prefers-reduced-motion: reduce` stops the cycle before it starts —
  * the build-time render below (flowchart, in
  * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours) is a complete, correctly
  * themed diagram on its own, so that's a real fallback state, not a broken
@@ -588,6 +593,13 @@ function ThemeShowcase() {
               />
             </div>
             <div className="theme-showcase-term-body mono">
+              <span
+                id="theme-showcase-theme-name"
+                className="theme-showcase-comment"
+              >
+                {'/* ' + (THEME_LABELS[THEME_SHOWCASE_DEFAULT_THEME] ?? THEME_SHOWCASE_DEFAULT_THEME) + ' */'}
+              </span>
+              <br />
               :root {'{'}
               <br />
               &nbsp;&nbsp;

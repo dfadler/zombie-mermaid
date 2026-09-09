@@ -14,40 +14,52 @@
  *    below: a visitor's site-wide theme choice (made on some other page's
  *    theme picker) and the showcase's own auto-cycle are two independent
  *    things that happen to both use `THEMES`.
- * 2. **Showcase auto-cycle** — `startShowcaseCycle()` advances one step
- *    roughly every 2.8s: re-theme the *next* diagram's svg in place via CSS
- *    custom properties (`svg.style.setProperty('--bg', …)`, the same "swap
- *    variables, no re-render" technique `demo/diagram-page-client.ts`'s
- *    `applyThemeToDiagram` uses for the per-diagram-type SEO pages) while
- *    it's still invisible, then crossfades it in over the outgoing one by
- *    moving the `.is-active` class between their
- *    `#theme-showcase-diagrams [data-slug]` elements — each slot's own
- *    `opacity 900ms ease` CSS transition (`demo/components/index-page.tsx`)
- *    does the actual fade, matching `.theme-showcase-diagram-card`'s own
- *    `900ms ease` `transition: background` exactly (same duration, same
- *    timing function) so the two move at the same visual rate. It also
- *    keeps the `--bg`/`--fg`/`--accent` code panel and the `N / <count>`
- *    counter in sync. Does nothing under `prefers-reduced-motion: reduce`
- *    — the build-time render is a complete, correctly themed diagram on
- *    its own.
+ * 2. **Showcase auto-cycle** — `startShowcaseCycle()` runs a strict, staged
+ *    sequence rather than changing the diagram and the theme at once:
  *
- *    Deliberately a crossfade (two svgs, each always at full contrast,
- *    opacity-blended) rather than interpolating one svg's --bg/--fg
- *    between the two themes' colors: tried first, and for two themes far
- *    apart in lightness (dracula to solarized-light) the interpolated
- *    midpoint is a muddy, low-contrast gray that makes the diagram's own
- *    text and strokes briefly unreadable mid-fade. A plain CSS
- *    `transition: fill 900ms` on the rendered shapes doesn't work anyway —
- *    each shape's fill derives from `--bg`/`--fg` through an intermediate,
- *    unregistered custom property (`var(--_node-fill)`, itself
- *    `color-mix(...)` of `--fg`/`--bg`; see `packages/core/theme.ts`), and
- *    Chromium doesn't detect a transitionable before/after value across
- *    that indirection (verified empirically) — so interpolating would
- *    need its own `requestAnimationFrame` tween regardless, on top of the
- *    readability problem.
+ *    1. Fade the visible diagram out ({@link DIAGRAM_FADE_MS}, a plain CSS
+ *       `opacity` transition on `.theme-showcase-diagram-slot` — toggling
+ *       which slot carries `.is-active`).
+ *    2. Once it's fully transparent, re-theme the *next* diagram's svg via
+ *       CSS custom properties (`svg.style.setProperty('--bg', …)`, the
+ *       same "swap variables, no re-render" technique
+ *       `demo/diagram-page-client.ts`'s `applyThemeToDiagram` uses for the
+ *       per-diagram-type SEO pages) and animate the card's own background
+ *       to match ({@link THEME_COLOR_MS}, `demo/components/index-page.tsx`'s
+ *       `transition: background`) — nothing diagram-shaped is on screen
+ *       while this runs.
+ *    3. Once that finishes, fade the (already re-themed) diagram back in
+ *       ({@link DIAGRAM_FADE_MS} again).
+ *    4. Hold for {@link HOLD_MS}, then repeat from 1.
+ *
+ *    It also keeps the `--bg`/`--fg`/`--accent` code panel and the
+ *    `N / <count>` counter in sync (updated in step 2, alongside the
+ *    background). Does nothing under `prefers-reduced-motion: reduce` —
+ *    the build-time render is a complete, correctly themed diagram on its
+ *    own.
+ *
+ *    Deliberately staged, not simultaneous: an earlier version crossfaded
+ *    the outgoing/incoming diagrams *while* the card's background
+ *    animated underneath, which technically worked but asked a viewer to
+ *    track two overlapping motions moving independently. Staging them —
+ *    diagram out, then color, then diagram in — reads as one clear
+ *    sequence instead. It also sidesteps interpolating one svg's --bg/--fg
+ *    between two themes' colors, which was tried even earlier: for two
+ *    themes far apart in lightness (dracula to solarized-light) the
+ *    interpolated midpoint is a muddy, low-contrast gray that makes the
+ *    diagram's own text and strokes briefly unreadable mid-fade. Here,
+ *    each diagram is always either fully hidden or fully themed, never
+ *    mid-blend. (A plain CSS `transition: fill` on the rendered shapes
+ *    wouldn't animate anyway — each shape's fill derives from `--bg`/
+ *    `--fg` through an intermediate, unregistered custom property
+ *    (`var(--_node-fill)`, itself `color-mix(...)` of `--fg`/`--bg`; see
+ *    `packages/core/theme.ts`), and Chromium doesn't detect a
+ *    transitionable before/after value across that indirection — verified
+ *    empirically.)
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
+import { THEME_LABELS } from './theme-labels.ts'
 
 /**
  * Must match `demo/components/index-page.tsx`'s own
@@ -58,8 +70,29 @@ import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
  */
 const SHOWCASE_DEFAULT_THEME = 'dracula'
 
-/** How long each (diagram, theme) pairing holds before advancing. */
-const CYCLE_MS = 2800
+/**
+ * How long the outgoing/incoming diagram's own opacity fade takes (stage
+ * 1 and stage 3 of the sequence in this file's header doc comment). Keep
+ * in sync by hand with `demo/components/index-page.tsx`'s
+ * `.theme-showcase-diagram-slot { transition: opacity 350ms ease; }` —
+ * there's no shared constant between the two files (that module is a
+ * `.tsx` React component file with no reason to end up in this bundle).
+ * Quicker than {@link THEME_COLOR_MS}: this stage only has to clear the
+ * diagram off-screen or bring it back, not carry a color change too.
+ */
+const DIAGRAM_FADE_MS = 350
+
+/**
+ * How long the card's background color takes to animate to the next
+ * theme (stage 2). Keep in sync by hand with
+ * `demo/components/index-page.tsx`'s `.theme-showcase-diagram-card`'s own
+ * `transition: background 900ms ease` — same reasoning as
+ * {@link DIAGRAM_FADE_MS} above.
+ */
+const THEME_COLOR_MS = 900
+
+/** How long the fully-revealed diagram holds before the next cycle starts. */
+const HOLD_MS = 2000
 
 const ENRICHMENT_KEYS = [
   'line',
@@ -121,6 +154,7 @@ function startShowcaseCycle(): void {
     ),
   )
   const diagramCard = document.getElementById('theme-showcase-diagram-card')
+  const themeName = document.getElementById('theme-showcase-theme-name')
   const counter = document.getElementById('theme-showcase-counter')
   const bgVal = document.getElementById('theme-showcase-bg-val')
   const fgVal = document.getElementById('theme-showcase-fg-val')
@@ -131,6 +165,7 @@ function startShowcaseCycle(): void {
   if (
     slots.length === 0 ||
     !diagramCard ||
+    !themeName ||
     !counter ||
     !bgVal ||
     !fgVal ||
@@ -151,45 +186,71 @@ function startShowcaseCycle(): void {
   // `let` captured by this closure.
   let activeIndex = 0
 
-  window.setInterval(() => {
+  /**
+   * Runs one full staged cycle (see this file's header doc comment for
+   * the four steps), then schedules the next one after {@link HOLD_MS}.
+   * A chain of `setTimeout`s, not `setInterval`, because the steps have
+   * different, non-uniform durations that must run in strict sequence.
+   *
+   * An arrow function assigned to a `const`, not a `function` declaration
+   * -- TypeScript only carries the null-narrowing on `diagramCard` etc.
+   * from the guard above into a closure it can analyze in place; a
+   * hoisted `function` declaration loses it.
+   */
+  const runCycle = (): void => {
     i += 1
     const themeKey = themeOrder[i % themeOrder.length]
     const theme = themeKey ? THEMES[themeKey] : undefined
-    if (!themeKey || !theme) return
     const nextIndex = i % slots.length
     const nextSlot = slots[nextIndex]
-    if (!nextSlot) return
+    if (!themeKey || !theme || !nextSlot) {
+      window.setTimeout(runCycle, HOLD_MS)
+      return
+    }
 
-    // Re-theme the incoming slot's svg to the new theme's colors while
-    // it's still invisible (opacity 0) -- crisp and correct from the
-    // first frame it's crossfaded in, no interpolation involved.
-    const svg = nextSlot.querySelector('svg')
-    if (svg instanceof SVGSVGElement) {
-      svg.style.setProperty('--bg', theme.bg)
-      svg.style.setProperty('--fg', theme.fg)
-      for (const prop of ENRICHMENT_KEYS) {
-        const value = theme[prop]
-        if (value) svg.style.setProperty('--' + prop, value)
-        else svg.style.removeProperty('--' + prop)
+    // Step 1: fade the currently-visible diagram out.
+    slots[activeIndex]?.classList.remove('is-active')
+
+    window.setTimeout(() => {
+      // Step 2: it's fully transparent now -- re-theme the incoming
+      // diagram (crisp and correct before it's ever shown, no
+      // interpolation involved) and animate the card's background to
+      // match, with nothing diagram-shaped on screen to blend against.
+      const svg = nextSlot.querySelector('svg')
+      if (svg instanceof SVGSVGElement) {
+        svg.style.setProperty('--bg', theme.bg)
+        svg.style.setProperty('--fg', theme.fg)
+        for (const prop of ENRICHMENT_KEYS) {
+          const value = theme[prop]
+          if (value) svg.style.setProperty('--' + prop, value)
+          else svg.style.removeProperty('--' + prop)
+        }
       }
-    }
 
-    if (nextIndex !== activeIndex) {
-      slots[activeIndex]?.classList.remove('is-active')
-      nextSlot.classList.add('is-active')
-      activeIndex = nextIndex
-    }
+      diagramCard.style.background = theme.bg
+      themeName.textContent = '/* ' + (THEME_LABELS[themeKey] ?? themeKey) + ' */'
+      counter.textContent = String((i % themeOrder.length) + 1)
+      bgVal.textContent = theme.bg
+      fgVal.textContent = theme.fg
+      bgSwatch.style.background = theme.bg
+      fgSwatch.style.background = theme.fg
+      const accent = theme.accent ?? mixHex(theme.fg, theme.bg, 85)
+      accentVal.textContent = accent
+      accentSwatch.style.background = accent
 
-    diagramCard.style.background = theme.bg
-    counter.textContent = String((i % themeOrder.length) + 1)
-    bgVal.textContent = theme.bg
-    fgVal.textContent = theme.fg
-    bgSwatch.style.background = theme.bg
-    fgSwatch.style.background = theme.fg
-    const accent = theme.accent ?? mixHex(theme.fg, theme.bg, 85)
-    accentVal.textContent = accent
-    accentSwatch.style.background = accent
-  }, CYCLE_MS)
+      window.setTimeout(() => {
+        // Step 3: the background has finished animating -- fade the
+        // (already re-themed) diagram back in.
+        nextSlot.classList.add('is-active')
+        activeIndex = nextIndex
+
+        // Step 4: hold, then repeat from step 1.
+        window.setTimeout(runCycle, HOLD_MS)
+      }, THEME_COLOR_MS)
+    }, DIAGRAM_FADE_MS)
+  }
+
+  window.setTimeout(runCycle, HOLD_MS)
 }
 
 // Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job,
