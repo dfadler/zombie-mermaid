@@ -23,6 +23,12 @@ carry certain data through, which is true regardless of what render pipeline
 sits on top of it. No screenshot needed to show a `$`-anchored pattern
 rejecting a trailing semicolon.
 
+The diagram after each bug below isn't part of that proof either — it's
+this fork's own renderer, with the fix already applied, showing what the
+same input produces today. Read it as "here's the corrected output," not as
+a before/after against upstream: this repo doesn't have a working
+`beautiful-mermaid` build to render the broken version against.
+
 ## How current is "current"
 
 `git merge-base upstream/main main` returns `2ac8bbb`
@@ -77,6 +83,16 @@ allows the semicolon explicitly, in
 const match = line.match(/^class\s+([\w,-]+)\s+([\w-]+)\s*;?\s*$/)
 ```
 
+Rendered here by this fork, with the fix applied — `B` styled, no stray
+fourth node:
+
+```mermaid-render
+flowchart TD
+  A --> B
+  classDef highlight fill:#f96
+  class B highlight;
+```
+
 ## Bug 2: the left-side "zero or more" ER marker gets dropped
 
 ER diagram cardinality has a left-hand and a right-hand notation that are
@@ -124,6 +140,14 @@ function parseLeftCardinality(str: string): Cardinality | null {
 with the accompanying comment noting exactly why: "sorting `}o` and `o{` to
 the same key conflates 'zero or more' with malformed input."
 
+Rendered here by this fork, with the fix applied — the zero-or-more marker
+present on the `TAG` side:
+
+```mermaid-render
+erDiagram
+    TAG }o--|| PRODUCT : tags
+```
+
 ## Bug 3: a semicolon-separated diagram body parses as empty
 
 `parseMermaid` in upstream's `src/parser.ts` splits the whole input on
@@ -151,6 +175,12 @@ ER, and `xychart-beta` parsers too. This fork's fix
 scattered per-parser splitting with one statement-splitting helper shared
 by every entry point, so `;` and `\n` are both honored everywhere a
 diagram's grammar allows a statement separator.
+
+Rendered here by this fork, with the fix applied — two messages, not zero:
+
+```mermaid-render
+sequenceDiagram;A->>B: Hi;B-->>A: Hi back
+```
 
 ## Bug 4: `:::className` before the shape brackets drops the label
 
@@ -209,6 +239,14 @@ if (preClassMatch) {
 }
 ```
 
+Rendered here by this fork, with the fix applied — `A` keeps its "External
+User" label:
+
+```mermaid-render
+flowchart TD
+  A:::external[External User] --> B
+```
+
 ## Bug 5: a custom class never reaches the SVG `class` attribute
 
 `classDef`/`class` styling in upstream resolves fine as far as the inline
@@ -263,6 +301,17 @@ const classAttr = safeClassName ? `node ${safeClassName}` : 'node'
 with `sanitizeClassName` — an allowlist against a valid CSS identifier —
 now living in
 [`packages/core/src/style-directives.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/core/src/style-directives.ts).
+
+Rendered here by this fork, with the fix applied (the `class="highlight"`
+attribute isn't visible in a screenshot, but it's on the `<g>` element in
+the SVG source):
+
+```mermaid-render
+flowchart TD
+  A[Node A]
+  classDef highlight fill:#f96
+  class A highlight
+```
 
 ## Bug 6: `font-family` is parsed but never rendered
 
@@ -330,6 +379,15 @@ if (fontFamily) {
 }
 ```
 
+Rendered here by this fork, with the fix applied — "Node A" actually sets
+in monospace, not just the theme default:
+
+```mermaid-render
+flowchart TD
+  A[Node A]
+  style A font-family:monospace
+```
+
 ## Bug 7: brackets inside quoted labels, and no-space arrows, both corrupt the graph
 
 Two independent tokenizer bugs share one root cause: upstream's flowchart
@@ -381,6 +439,19 @@ only allow a hyphen between word characters, in
 
 ```ts
 const BARE_NODE_REGEX = /^([\w\p{L}]+(?:-[\w\p{L}]+)*)/u
+```
+
+Rendered here by this fork, with both fixes applied — the quoted brackets
+stay in the label, and the no-space arrow still connects `A` to `B`:
+
+```mermaid-render
+flowchart LR
+  A["test [] brackets"]
+```
+
+```mermaid-render
+flowchart LR
+  A-->B
 ```
 
 ## Bug 8: the SVG start-arrow marker points the wrong way
@@ -436,6 +507,14 @@ function arrowMarkerPair(color: string, idSuffix: string): string {
 }
 ```
 
+Rendered here by this fork, with the fix applied — both arrowheads point
+outward, away from the line:
+
+```mermaid-render
+flowchart LR
+  A <--> B
+```
+
 ## Bug 9: the ER `direction` directive is parsed nowhere, so layout can't apply it
 
 `direction TB`/`LR`/`BT`/`RL` is a valid statement in an ER diagram, same as
@@ -478,6 +557,15 @@ and
 
 ```ts
 direction: directionToElk(diagram.direction, ELK_DIRECTION_FALLBACK.er),
+```
+
+Rendered here by this fork, with the fix applied — laid out top-to-bottom,
+per the `direction TB` line:
+
+```mermaid-render
+erDiagram
+    direction TB
+    CUSTOMER ||--o{ ORDER : places
 ```
 
 ## Bug 10: wide characters break ASCII box alignment
