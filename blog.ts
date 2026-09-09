@@ -37,10 +37,7 @@ import {
   BlogIndexPage,
   BlogPostPage,
 } from './demo/components/blog-page.tsx'
-import { footerCss } from './demo/components/footer.tsx'
-import { navCss } from './demo/components/nav.tsx'
-import { primitivesCss } from './demo/components/primitives.tsx'
-import { designBaseCss } from './demo/components/tokens.tsx'
+import { sharedPageCss } from './demo/components/shared-page-css.tsx'
 import {
   DEFAULT_SWATCH,
   themePickerCss,
@@ -383,14 +380,7 @@ async function main(): Promise<void> {
   )
   await writeFile(
     new URL('./assets/blog.css', OUT_DIR),
-    [
-      designBaseCss(),
-      primitivesCss(),
-      navCss(),
-      footerCss(),
-      themePickerCss(),
-      blogCss,
-    ].join('\n\n'),
+    sharedPageCss([themePickerCss(), blogCss].join('\n\n')),
   )
 
   // #687: the blog index's live theme picker needs no other client JS on

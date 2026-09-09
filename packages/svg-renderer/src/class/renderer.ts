@@ -61,7 +61,8 @@ const CLS_FONT = {
  * @param decorative - Marks the SVG decorative (from `options.decorative`).
  * @param linksEnabled - Whether `click`-based `<a href>` links and `<title>`
  *                       tooltips render (from `options.interactivity !==
- *                       'none'`, see `resolveLinksEnabled` in src/index.ts).
+ *                       'none'`, see `resolveLinksEnabled` in
+ *                       src/diagram-registry.ts).
  *                       Default true — matches the flowchart/state renderer.
  * @param emit - Strict-CSP controls (from `options.nonce` /
  *               `options.styleAttribute`, see #216). Default: no nonce,
