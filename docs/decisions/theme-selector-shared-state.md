@@ -68,3 +68,47 @@ restoration, not a side effect to avoid. This does **not** extend to
 `bm-editor-dark` (`editor/js/dark-mode.js`), an unrelated IDE-chrome
 light/dark toggle with no analog elsewhere on the site — only the diagram
 theme choice is shared.
+
+## Amendment (#689): live SVG re-theme scope, and the ASCII decision reaffirmed
+
+#689's acceptance criteria call for the global picker to live-retheme
+"every rendered `<svg>` on the current page" and for every #687-wired page
+that "actually embeds a diagram or preview" to work. In practice, once
+#687 and #688 landed, this required no new wiring:
+
+- **Diagram-type pages** (`pages.ts`'s `DiagramTypePage`) are the only
+  #687-wired page with a picker sitting next to a live-rendered diagram,
+  and `demo/diagram-page-client.ts`'s `applyThemeToDiagram()` already sets
+  every variable `themeCssVariables()`/`themeStyleDeclarations()`
+  (`packages/core/src/theme.ts`) can emit — `--bg`, `--fg`, `--line`,
+  `--accent`, `--muted`, `--surface`, `--border` — so this criterion was
+  already met before #689 opened, unchanged by #687's reconciliation of
+  _how_ the pill click reaches that function.
+- **Home, the Diagrams hub, the Blog index, and Dashboard** (#687's other
+  four pages) render no live Mermaid diagram at all — Home's hero and
+  theme-showcase graphics are static illustrations/baked-in swatches, not
+  `renderMermaidSVG()` output — so there is nothing on those pages for a
+  theme change to re-theme.
+- **Fork Fixes is a deliberate exception**, not an oversight: it embeds
+  27 real rendered before/after `<svg>` pairs, but each one is generated
+  once at build time with a fixed `{ bg: '#ffffff', fg: '#1a1a1a' }`
+  (`fork-fixes.ts`'s `renderWith()`) — and critically, a pair's "before"
+  half comes from whatever renderer version existed at that historical
+  fix commit (`loadRendererBefore()`), which is not guaranteed to emit
+  the same CSS custom-property contract `themeCssVariables()` defines
+  today. Live-retheming these SVGs would risk silently mis-rendering (or
+  simply not retheming) an old "before" render, and would undermine the
+  page's actual purpose — a precise, stable historical comparison, not an
+  interactive showcase. Fork Fixes's picker (added in #687) exists only
+  for cross-page persistence, matching the Diagrams hub/Dashboard.
+
+**The ASCII terminal-preview decision (fixed palette, not following the
+picker) has nothing left to wire either**, for a different reason: no
+page on the current, #590-redesigned site renders a live ASCII
+terminal-preview panel at all. The one that `demo/client.ts` rendered was
+removed along with that file (#716) and never replaced. The fixed-palette
+decision itself stands as documented above — it now lives on in code only
+at `__tests__/visual/helpers/terminal-panel.ts` (the visual-regression
+suite's own terminal chrome, the sole surviving consumer), whose header
+comment cross-references this ADR so a future implementer restoring a
+real panel starts from the right default instead of guessing.
