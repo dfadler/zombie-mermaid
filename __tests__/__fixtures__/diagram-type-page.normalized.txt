@@ -45,7 +45,7 @@
       "@media (max-width: 900px) {\n  .section-px {\n    padding-left: 32px !important;\n    padding-right: 32px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr 1fr !important;\n  }\n}\n\n@media (max-width: 600px) {\n  .section-px {\n    padding-left: 20px !important;\n    padding-right: 20px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr !important;\n  }\n\n  .footer-bottom-row {\n    flex-direction: column !important;\n    align-items: flex-start !important;\n    gap: 8px !important;\n  }\n}"
     </style>
     <style>
-      "@keyframes marchingAnts { to { stroke-dashoffset: -24; } }\n.edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }\n\n@keyframes radarPing {\n  0% { r: 14; opacity: 0.55; stroke-width: 2; }\n  100% { r: 27; opacity: 0; stroke-width: 0.5; }\n}\n.radar-ping { transform-origin: center; animation: radarPing 1.8s ease-out infinite; }\n\n@keyframes msgFlowRight { to { stroke-dashoffset: -16; } }\n@keyframes msgFlowLeft { to { stroke-dashoffset: 16; } }\n.msg-flow-right { stroke-dasharray: 4 4; animation: msgFlowRight 1.1s linear infinite; }\n.msg-flow-left { stroke-dasharray: 4 4; animation: msgFlowLeft 1.1s linear 0.55s infinite; }\n\n@keyframes drawLine {\n  0% { stroke-dashoffset: 56; }\n  55%, 100% { stroke-dashoffset: 0; }\n}\n.draw-line { stroke-dasharray: 56; animation: drawLine 2.8s ease-in-out infinite; }\n\n@keyframes relationPulse {\n  0%, 100% { opacity: 0.45; stroke-width: 2; }\n  50% { opacity: 1; stroke-width: 3; }\n}\n.relation-pulse { transform-origin: center; animation: relationPulse 1.8s ease-in-out infinite; }\n\n@keyframes barGrow {\n  0%, 100% { transform: scaleY(1); }\n  50% { transform: scaleY(0.4); }\n}\n.bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }\n\n@media (prefers-reduced-motion: reduce) {\n  .edge-anim { animation: none; }\n  .radar-ping { animation: none; opacity: 0; }\n  .msg-flow-right { animation: none; }\n  .msg-flow-left { animation: none; }\n  .draw-line { animation: none; stroke-dashoffset: 0; }\n  .relation-pulse { animation: none; }\n  .bar-grow { animation: none; transform: scaleY(1); }\n}\n\n.breadcrumb {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  font-size: 14px;\n  color: var(--text-faint);\n}\n\n.code-card { overflow: hidden; display: flex; flex-direction: column; }\n\n.crosslink-card {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 12px;\n  text-decoration: none;\n}\n.crosslink-card:hover { color: var(--text); }\n\n.shiki { background: transparent !important; }\n\n@media (max-width: 900px) {\n  .detail-row { flex-direction: column !important; }\n  /*\n   * .code-card and .diagram-frame both get an inline flex: '1 1 0' (see\n   * the DiagramTypePage markup below) to split .detail-row's width evenly\n   * side-by-side above this breakpoint. Once .detail-row flips to a\n   * column here, that flex-basis: 0 combines with .code-card's\n   * overflow: hidden to collapse it to ~0 height: a flex item's\n   * automatic min-height (min-height: auto, letting it grow to fit\n   * content) is spec'd to resolve to 0 whenever overflow isn't visible\n   * (https://www.w3.org/TR/css-flexbox-1/#min-size-auto), so with no\n   * explicit height on .detail-row to grow into, the item shrinks to\n   * nothing instead of sizing to its content. overflow: hidden stays on\n   * .code-card (it clips the file-tab header's square corners to the\n   * card's own rounded ones) rather than being removed, and .diagram-frame\n   * doesn't set overflow so it never hit this; only .code-card needs the\n   * override. Switching to flex-basis: auto sizes both from their content\n   * instead of 0, which sidesteps the automatic-minimum substitution\n   * entirely rather than fighting it with a magic-number min-height.\n   */\n  .code-card, .diagram-frame { flex: 1 1 auto !important; }\n}\n\n@media (max-width: 600px) {\n  .page-h1 { font-size: 34px !important; }\n}"
+      "@keyframes marchingAnts { to { stroke-dashoffset: -24; } }\n.edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }\n\n@keyframes radarPing {\n  0% { r: 14; opacity: 0.55; stroke-width: 2; }\n  100% { r: 27; opacity: 0; stroke-width: 0.5; }\n}\n.radar-ping { transform-origin: center; animation: radarPing 1.8s ease-out infinite; }\n\n@keyframes msgFlowRight { to { stroke-dashoffset: -16; } }\n@keyframes msgFlowLeft { to { stroke-dashoffset: 16; } }\n.msg-flow-right { stroke-dasharray: 4 4; animation: msgFlowRight 1.1s linear infinite; }\n.msg-flow-left { stroke-dasharray: 4 4; animation: msgFlowLeft 1.1s linear 0.55s infinite; }\n\n@keyframes drawLine {\n  0% { stroke-dashoffset: 56; }\n  55%, 100% { stroke-dashoffset: 0; }\n}\n.draw-line { stroke-dasharray: 56; animation: drawLine 2.8s ease-in-out infinite; }\n\n@keyframes relationPulse {\n  0%, 100% { opacity: 0.45; stroke-width: 2; }\n  50% { opacity: 1; stroke-width: 3; }\n}\n.relation-pulse { transform-origin: center; animation: relationPulse 1.8s ease-in-out infinite; }\n\n@keyframes barGrow {\n  0%, 100% { transform: scaleY(1); }\n  50% { transform: scaleY(0.4); }\n}\n.bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }\n\n@media (prefers-reduced-motion: reduce) {\n  .edge-anim { animation: none; }\n  .radar-ping { animation: none; opacity: 0; }\n  .msg-flow-right { animation: none; }\n  .msg-flow-left { animation: none; }\n  .draw-line { animation: none; stroke-dashoffset: 0; }\n  .relation-pulse { animation: none; }\n  .bar-grow { animation: none; transform: scaleY(1); }\n}\n\n.breadcrumb {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  font-size: 14px;\n  color: var(--text-faint);\n}\n\n.code-card { overflow: hidden; display: flex; flex-direction: column; }\n\n.crosslink-card {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 12px;\n  text-decoration: none;\n}\n.crosslink-card:hover { color: var(--text); }\n\n.shiki { background: transparent !important; }\n\n/*\n * \"More examples\" (#714/#715). .gallery-grid is a 3-column CSS grid,\n * dropping to 2 (tablet) then 1 (mobile) below. .gallery-thumb is the\n * fixed-aspect frame that fixes #708's card-sizing bug: a rendered SVG's\n * own width/height attributes only set its *initial* CSS size, so the\n * plain-specificity \".gallery-thumb svg\" rule below overrides them to\n * 100%/100% -- combined with the SVG's default preserveAspectRatio\n * (\"xMidYMid meet\"), that letterboxes any intrinsic aspect ratio inside\n * the frame instead of the frame growing to the diagram's natural size.\n * .gallery-more is a plain <details> disclosure (no client script) for\n * the \"Show N more\" affordance -- see MoreExamplesSection's doc comment.\n */\n.gallery-grid {\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: 20px;\n}\n.gallery-card {\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  text-decoration: none;\n  transition: border-color 0.15s ease;\n}\n.gallery-thumb {\n  aspect-ratio: 4 / 3;\n  width: 100%;\n  background: var(--bg-soft);\n  border-bottom: 1px solid var(--border);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  overflow: hidden;\n  padding: 12px;\n}\n.gallery-thumb svg { width: 100%; height: 100%; display: block; }\n.gallery-label {\n  padding: 16px 20px;\n}\n.gallery-title {\n  font-size: 14px;\n  font-weight: 600;\n  color: var(--text);\n}\n.gallery-more summary {\n  list-style: none;\n  cursor: pointer;\n  width: fit-content;\n}\n.gallery-more summary::-webkit-details-marker { display: none; }\n.gallery-more[open] summary { margin-bottom: 20px; }\n\n@media (max-width: 900px) {\n  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n}\n\n@media (max-width: 600px) {\n  .gallery-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }\n  .gallery-more summary { width: 100%; justify-content: center; }\n}\n\n@media (max-width: 900px) {\n  .detail-row { flex-direction: column !important; }\n  /*\n   * .code-card and .diagram-frame both get an inline flex: '1 1 0' (see\n   * the DiagramTypePage markup below) to split .detail-row's width evenly\n   * side-by-side above this breakpoint. Once .detail-row flips to a\n   * column here, that flex-basis: 0 combines with .code-card's\n   * overflow: hidden to collapse it to ~0 height: a flex item's\n   * automatic min-height (min-height: auto, letting it grow to fit\n   * content) is spec'd to resolve to 0 whenever overflow isn't visible\n   * (https://www.w3.org/TR/css-flexbox-1/#min-size-auto), so with no\n   * explicit height on .detail-row to grow into, the item shrinks to\n   * nothing instead of sizing to its content. overflow: hidden stays on\n   * .code-card (it clips the file-tab header's square corners to the\n   * card's own rounded ones) rather than being removed, and .diagram-frame\n   * doesn't set overflow so it never hit this; only .code-card needs the\n   * override. Switching to flex-basis: auto sizes both from their content\n   * instead of 0, which sidesteps the automatic-minimum substitution\n   * entirely rather than fighting it with a magic-number min-height.\n   */\n  .code-card, .diagram-frame { flex: 1 1 auto !important; }\n}\n\n@media (max-width: 600px) {\n  .page-h1 { font-size: 34px !important; }\n}"
     </style>
   </head>
   <body>
@@ -244,6 +244,102 @@
               "See all samples"
             </a>
           </div>
+        </div>
+      </div>
+      <div class="section-px" style="padding: 96px 80px;">
+        <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 28px;">
+          <div class="section-eyebrow" style="color: var(--cyan);">
+            "More examples"
+          </div>
+          <h2 style="font-size: 30px; letter-spacing: -0.01em;">
+            "More real-world examples."
+          </h2>
+          <div class="gallery-grid">
+            <a class="card gallery-card" href="../editor#gallery-0" style="border-color: var(--cyan);">
+              <div class="gallery-thumb">
+                <svg data-diagram="sequence-gallery-0">
+                </svg>
+              </div>
+              <div class="gallery-label">
+                <span class="gallery-title">
+                  "Actor Stick Figures"
+                </span>
+              </div>
+            </a>
+            <a class="card gallery-card" href="../editor#gallery-1" style="border-color: var(--cyan);">
+              <div class="gallery-thumb">
+                <svg data-diagram="sequence-gallery-1">
+                </svg>
+              </div>
+              <div class="gallery-label">
+                <span class="gallery-title">
+                  "Arrow Types"
+                </span>
+              </div>
+            </a>
+            <a class="card gallery-card" href="../editor#gallery-2" style="border-color: var(--cyan);">
+              <div class="gallery-thumb">
+                <svg data-diagram="sequence-gallery-2">
+                </svg>
+              </div>
+              <div class="gallery-label">
+                <span class="gallery-title">
+                  "Activation Boxes"
+                </span>
+              </div>
+            </a>
+            <a class="card gallery-card" href="../editor#gallery-3" style="border-color: var(--cyan);">
+              <div class="gallery-thumb">
+                <svg data-diagram="sequence-gallery-3">
+                </svg>
+              </div>
+              <div class="gallery-label">
+                <span class="gallery-title">
+                  "Self-Messages"
+                </span>
+              </div>
+            </a>
+            <a class="card gallery-card" href="../editor#gallery-4" style="border-color: var(--cyan);">
+              <div class="gallery-thumb">
+                <svg data-diagram="sequence-gallery-4">
+                </svg>
+              </div>
+              <div class="gallery-label">
+                <span class="gallery-title">
+                  "Loop Block"
+                </span>
+              </div>
+            </a>
+            <a class="card gallery-card" href="../editor#gallery-5" style="border-color: var(--cyan);">
+              <div class="gallery-thumb">
+                <svg data-diagram="sequence-gallery-5">
+                </svg>
+              </div>
+              <div class="gallery-label">
+                <span class="gallery-title">
+                  "Alt/Else Block"
+                </span>
+              </div>
+            </a>
+          </div>
+          <details class="gallery-more">
+            <summary class="pill" style="border: 1px solid var(--cyan); color: var(--cyan);">
+              "Show 1 more example"
+            </summary>
+            <div class="gallery-grid">
+              <a class="card gallery-card" href="../editor#gallery-6" style="border-color: var(--cyan);">
+                <div class="gallery-thumb">
+                  <svg data-diagram="sequence-gallery-6">
+                  </svg>
+                </div>
+                <div class="gallery-label">
+                  <span class="gallery-title">
+                    "OAuth 2.0 Flow"
+                  </span>
+                </div>
+              </a>
+            </div>
+          </details>
         </div>
       </div>
       <div class="section-px" style="padding: 96px 80px;">
