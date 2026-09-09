@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
 import { layoutSequenceDiagram } from '@zombie-mermaid/svg-renderer'
 import { parseSequenceDiagram } from '@zombie-mermaid/mermaid-parser'
+import { splitStatements } from '@zombie-mermaid/core'
 
 describe('RenderOptions.fontSizes – flowchart', () => {
   it('overriding nodeLabel changes the emitted node font-size', () => {
@@ -87,7 +88,9 @@ describe('RenderOptions.fontSizes – sequence diagram', () => {
 
 describe('RenderOptions.sequence – layout overrides', () => {
   it('overriding actorHeight changes actor box height and overall diagram height', () => {
-    const lines = ['sequenceDiagram', 'Alice->>Bob: Hi'].map((l) => l.trim())
+    const lines = splitStatements(
+      ['sequenceDiagram', 'Alice->>Bob: Hi'].join('\n'),
+    )
     const diagram = parseSequenceDiagram(lines)
 
     const withDefault = layoutSequenceDiagram(diagram)
@@ -115,11 +118,9 @@ describe('RenderOptions.sequence – layout overrides', () => {
   })
 
   it('overriding messageRowHeight increases vertical spacing between messages', () => {
-    const lines = [
-      'sequenceDiagram',
-      'Alice->>Bob: One',
-      'Bob->>Alice: Two',
-    ].map((l) => l.trim())
+    const lines = splitStatements(
+      ['sequenceDiagram', 'Alice->>Bob: One', 'Bob->>Alice: Two'].join('\n'),
+    )
     const diagram = parseSequenceDiagram(lines)
 
     const withDefault = layoutSequenceDiagram(diagram)
@@ -135,7 +136,9 @@ describe('RenderOptions.sequence – layout overrides', () => {
   })
 
   it('overriding headerGap increases the gap between actors and the first message', () => {
-    const lines = ['sequenceDiagram', 'Alice->>Bob: Hi'].map((l) => l.trim())
+    const lines = splitStatements(
+      ['sequenceDiagram', 'Alice->>Bob: Hi'].join('\n'),
+    )
     const diagram = parseSequenceDiagram(lines)
 
     const withDefault = layoutSequenceDiagram(diagram)
@@ -149,12 +152,14 @@ describe('RenderOptions.sequence – layout overrides', () => {
   })
 
   it('overriding noteStackGap changes spacing between consecutively stacked notes', () => {
-    const lines = [
-      'sequenceDiagram',
-      'Alice->>Bob: Hi',
-      'Note right of Bob: First note',
-      'Note right of Bob: Second note',
-    ].map((l) => l.trim())
+    const lines = splitStatements(
+      [
+        'sequenceDiagram',
+        'Alice->>Bob: Hi',
+        'Note right of Bob: First note',
+        'Note right of Bob: Second note',
+      ].join('\n'),
+    )
     const diagram = parseSequenceDiagram(lines)
 
     const withDefault = layoutSequenceDiagram(diagram)
@@ -172,11 +177,11 @@ describe('RenderOptions.sequence – layout overrides', () => {
   })
 
   it('overriding noteOffsetAfterMessage changes the gap between a message and the note after it', () => {
-    const lines = [
-      'sequenceDiagram',
-      'Alice->>Bob: Hi',
-      'Note right of Bob: A note',
-    ].map((l) => l.trim())
+    const lines = splitStatements(
+      ['sequenceDiagram', 'Alice->>Bob: Hi', 'Note right of Bob: A note'].join(
+        '\n',
+      ),
+    )
     const diagram = parseSequenceDiagram(lines)
 
     const withDefault = layoutSequenceDiagram(diagram)
@@ -192,7 +197,9 @@ describe('RenderOptions.sequence – layout overrides', () => {
   })
 
   it('partial sequence overrides only change the specified field', () => {
-    const lines = ['sequenceDiagram', 'Alice->>Bob: Hi'].map((l) => l.trim())
+    const lines = splitStatements(
+      ['sequenceDiagram', 'Alice->>Bob: Hi'].join('\n'),
+    )
     const diagram = parseSequenceDiagram(lines)
 
     const withDefault = layoutSequenceDiagram(diagram)

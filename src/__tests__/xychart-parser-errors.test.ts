@@ -9,7 +9,13 @@
  * These tests assert the parser now throws an actionable error instead.
  */
 import { describe, it, expect } from 'vitest'
-import { parseXYChart } from '@zombie-mermaid/mermaid-parser'
+import { parseXYChart as parseXYChartStatements } from '@zombie-mermaid/mermaid-parser'
+import { splitStatements } from '@zombie-mermaid/core'
+
+/** Helper to parse — preprocesses text the same way index.ts does */
+function parseXYChart(sourceLines: string[]) {
+  return parseXYChartStatements(splitStatements(sourceLines.join('\n')))
+}
 
 describe('parseXYChart – non-numeric series data', () => {
   it('throws on a non-numeric value in a bar series', () => {

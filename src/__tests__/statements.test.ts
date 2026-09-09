@@ -15,13 +15,18 @@ import { describe, it, expect } from 'vitest'
 import { splitStatements, detectDiagramType } from '@zombie-mermaid/core'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
+/** Project a `splitStatements` result down to just the text, for assertions
+ * that don't care about position (see the dedicated `line` tests below for
+ * position coverage). */
+const texts = (source: string) => splitStatements(source).map((s) => s.text)
+
 describe('splitStatements (issue #181)', () => {
   it('splits on newlines', () => {
-    expect(splitStatements('graph TD\nA-->B')).toEqual(['graph TD', 'A-->B'])
+    expect(texts('graph TD\nA-->B')).toEqual(['graph TD', 'A-->B'])
   })
 
   it('splits on semicolons', () => {
-    expect(splitStatements('graph TD;A-->B;B-->C')).toEqual([
+    expect(texts('graph TD;A-->B;B-->C')).toEqual([
       'graph TD',
       'A-->B',
       'B-->C',
@@ -29,59 +34,53 @@ describe('splitStatements (issue #181)', () => {
   })
 
   it('drops empty statements from trailing or repeated separators', () => {
-    expect(splitStatements('graph TD;A-->B;')).toEqual(['graph TD', 'A-->B'])
-    expect(splitStatements('graph TD;;;A-->B')).toEqual(['graph TD', 'A-->B'])
-    expect(splitStatements('graph TD\n\n\nA-->B')).toEqual([
-      'graph TD',
-      'A-->B',
-    ])
+    expect(texts('graph TD;A-->B;')).toEqual(['graph TD', 'A-->B'])
+    expect(texts('graph TD;;;A-->B')).toEqual(['graph TD', 'A-->B'])
+    expect(texts('graph TD\n\n\nA-->B')).toEqual(['graph TD', 'A-->B'])
   })
 
   it('trims whitespace around each statement', () => {
-    expect(splitStatements('  graph TD  ;  A-->B  ')).toEqual([
-      'graph TD',
-      'A-->B',
-    ])
+    expect(texts('  graph TD  ;  A-->B  ')).toEqual(['graph TD', 'A-->B'])
   })
 
   describe('does not split a semicolon that is not a separator', () => {
     it('inside a double-quoted label', () => {
-      expect(splitStatements('graph TD\nA["a; b"]-->B')).toEqual([
+      expect(texts('graph TD\nA["a; b"]-->B')).toEqual([
         'graph TD',
         'A["a; b"]-->B',
       ])
     })
 
     it('inside a single-quoted label', () => {
-      expect(splitStatements("graph TD\nA['x; y']-->B")).toEqual([
+      expect(texts("graph TD\nA['x; y']-->B")).toEqual([
         'graph TD',
         "A['x; y']-->B",
       ])
     })
 
     it('terminating a named character reference', () => {
-      expect(splitStatements('graph TD\nA[&amp;]-->B')).toEqual([
+      expect(texts('graph TD\nA[&amp;]-->B')).toEqual([
         'graph TD',
         'A[&amp;]-->B',
       ])
     })
 
     it('terminating a numeric character reference', () => {
-      expect(splitStatements('graph TD\nA[&#35;]-->B')).toEqual([
+      expect(texts('graph TD\nA[&#35;]-->B')).toEqual([
         'graph TD',
         'A[&#35;]-->B',
       ])
     })
 
     it('terminating a hex character reference', () => {
-      expect(splitStatements('graph TD\nA[&#x1F600;]-->B')).toEqual([
+      expect(texts('graph TD\nA[&#x1F600;]-->B')).toEqual([
         'graph TD',
         'A[&#x1F600;]-->B',
       ])
     })
 
     it('but still splits a real separator on the same line as an entity', () => {
-      expect(splitStatements('graph TD;A[&amp;]-->B;B-->C')).toEqual([
+      expect(texts('graph TD;A[&amp;]-->B;B-->C')).toEqual([
         'graph TD',
         'A[&amp;]-->B',
         'B-->C',
@@ -90,26 +89,20 @@ describe('splitStatements (issue #181)', () => {
 
     it('and treats a lone ampersand as an ordinary character', () => {
       // `A & B` is flowchart's parallel-link syntax, not an entity.
-      expect(splitStatements('graph TD;A-->B & C')).toEqual([
-        'graph TD',
-        'A-->B & C',
-      ])
+      expect(texts('graph TD;A-->B & C')).toEqual(['graph TD', 'A-->B & C'])
     })
   })
 
   describe('comments', () => {
     it('drops whole-line comments without splitting their semicolons', () => {
-      expect(splitStatements('graph TD\n%% note; not code\nA-->B')).toEqual([
+      expect(texts('graph TD\n%% note; not code\nA-->B')).toEqual([
         'graph TD',
         'A-->B',
       ])
     })
 
     it('drops a comment that only begins after a semicolon', () => {
-      expect(splitStatements('graph TD\nA-->B; %% note')).toEqual([
-        'graph TD',
-        'A-->B',
-      ])
+      expect(texts('graph TD\nA-->B; %% note')).toEqual(['graph TD', 'A-->B'])
     })
 
     it('lets the comment swallow the rest of the line', () => {
@@ -118,14 +111,14 @@ describe('splitStatements (issue #181)', () => {
        * resurrect what follows. Splitting first and then discarding fragments
        * that merely begin with `%%` left `C-->D` parsing as code.
        */
-      expect(splitStatements('graph TD\nA-->B; %% note; C-->D')).toEqual([
+      expect(texts('graph TD\nA-->B; %% note; C-->D')).toEqual([
         'graph TD',
         'A-->B',
       ])
     })
 
     it('treats %% inside a quoted label as text, not a comment', () => {
-      expect(splitStatements('graph TD\nA["100%% done"]-->B')).toEqual([
+      expect(texts('graph TD\nA["100%% done"]-->B')).toEqual([
         'graph TD',
         'A["100%% done"]-->B',
       ])
@@ -144,14 +137,11 @@ describe('splitStatements (issue #181)', () => {
       ['A[heart #9829; x]-->B', 'a symbol reference'],
       ['A[say #quot;hi#quot;]-->B', 'a named reference'],
     ])('keeps %s intact (%s)', (statement) => {
-      expect(splitStatements(`graph TD\n  ${statement}`)).toEqual([
-        'graph TD',
-        statement,
-      ])
+      expect(texts(`graph TD\n  ${statement}`)).toEqual(['graph TD', statement])
     })
 
     it('still splits a real separator on the same line as one', () => {
-      expect(splitStatements('graph TD;A[#59;]-->B;B-->C')).toEqual([
+      expect(texts('graph TD;A[#59;]-->B;B-->C')).toEqual([
         'graph TD',
         'A[#59;]-->B',
         'B-->C',
@@ -159,11 +149,39 @@ describe('splitStatements (issue #181)', () => {
     })
 
     it('leaves a bare # that is not a reference alone', () => {
-      expect(splitStatements('graph TD;A[C# lang]-->B')).toEqual([
+      expect(texts('graph TD;A[C# lang]-->B')).toEqual([
         'graph TD',
         'A[C# lang]-->B',
       ])
     })
+  })
+})
+
+describe('splitStatements — line numbers (issue #760)', () => {
+  it('reports the 1-based physical source line for each newline-separated statement', () => {
+    const stmts = splitStatements('graph TD\nA-->B\nB-->C')
+    expect(stmts.map((s) => s.line)).toEqual([1, 2, 3])
+  })
+
+  it('carries forward the original line number across dropped blank lines', () => {
+    const stmts = splitStatements('graph TD\n\n\nA-->B')
+    expect(stmts.map((s) => ({ text: s.text, line: s.line }))).toEqual([
+      { text: 'graph TD', line: 1 },
+      { text: 'A-->B', line: 4 },
+    ])
+  })
+
+  it('carries forward the original line number across a dropped comment line', () => {
+    const stmts = splitStatements('graph TD\n%% a comment\nA-->B')
+    expect(stmts.map((s) => ({ text: s.text, line: s.line }))).toEqual([
+      { text: 'graph TD', line: 1 },
+      { text: 'A-->B', line: 3 },
+    ])
+  })
+
+  it('gives every semicolon-separated statement on one physical line the same line number', () => {
+    const stmts = splitStatements('graph TD\nA-->B;B-->C;C-->D')
+    expect(stmts.map((s) => s.line)).toEqual([1, 2, 2, 2])
   })
 })
 

@@ -4,6 +4,7 @@ import type {
   MermaidSubgraph,
   NodeShape,
   EdgeStyle,
+  Statement,
 } from '@zombie-mermaid/core'
 import {
   toDirection,
@@ -136,16 +137,22 @@ const CONTINUATION_START_REGEX = /^(?:[\w-]+@)?<?(?:-{2,}|={2,}|-\.+-?|~{3,})/
  * must stay a boundary, or `--> C` would wrongly become part of the chain
  * instead of the source-less fragment it actually is.
  */
-function mergeContinuationLines(groups: string[][]): string[] {
-  const merged: string[] = []
+function mergeContinuationLines(groups: Statement[][]): Statement[] {
+  const merged: Statement[] = []
   for (const group of groups) {
     group.forEach((statement, index) => {
       if (
         index === 0 &&
         merged.length > 0 &&
-        CONTINUATION_START_REGEX.test(statement)
+        CONTINUATION_START_REGEX.test(statement.text)
       ) {
-        merged[merged.length - 1] = `${merged[merged.length - 1]} ${statement}`
+        // Keep the *first* line's number: a merged statement is reported at
+        // the line its logical statement began, not the continuation line.
+        const prev = merged[merged.length - 1]!
+        merged[merged.length - 1] = {
+          text: `${prev.text} ${statement.text}`,
+          line: prev.line,
+        }
       } else {
         merged.push(statement)
       }
@@ -175,10 +182,10 @@ export function parseMermaid(text: string): MermaidGraph {
   }
 
   // Detect diagram type from header
-  const header = lines[0]!
+  const headerStmt = lines[0]!
 
   // State diagram: "stateDiagram-v2" or "stateDiagram"
-  const graph = /^stateDiagram(-v2)?\s*$/i.test(header)
+  const graph = /^stateDiagram(-v2)?\s*$/i.test(headerStmt.text)
     ? parseStateDiagram(lines)
     : parseFlowchart(lines)
 
@@ -190,16 +197,17 @@ export function parseMermaid(text: string): MermaidGraph {
 // Flowchart parser
 // ============================================================================
 
-function parseFlowchart(lines: string[]): MermaidGraph {
+function parseFlowchart(lines: Statement[]): MermaidGraph {
   // parseFlowchart is only ever invoked by parseMermaid, which has already
   // verified `lines` is non-empty — but that invariant isn't visible to the
   // type checker across the function boundary, so validate it here instead
   // of asserting past it.
-  const header = lines[0]
-  if (header === undefined) {
+  const headerStmt = lines[0]
+  if (headerStmt === undefined) {
     /* v8 ignore next */
     throw new Error('parseFlowchart called with no lines')
   }
+  const header = headerStmt.text
 
   const headerMatch = header.match(
     /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
@@ -215,8 +223,8 @@ function parseFlowchart(lines: string[]): MermaidGraph {
       const rest = partialFlowchartMatch[1]!.trim()
       throw new Error(
         rest.length > 0
-          ? `Invalid direction "${rest}" in header "${header}". Expected one of: TD, TB, LR, BT, RL.`
-          : `Missing direction in header "${header}". Expected e.g. "graph TD" or "flowchart LR" — one of: TD, TB, LR, BT, RL.`,
+          ? `Line ${headerStmt.line}: Invalid direction "${rest}" in header "${header}". Expected one of: TD, TB, LR, BT, RL.`
+          : `Line ${headerStmt.line}: Missing direction in header "${header}". Expected e.g. "graph TD" or "flowchart LR" — one of: TD, TB, LR, BT, RL.`,
       )
     }
 
@@ -229,7 +237,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
         ? ` Did you mean "${suggestion}"?`
         : ''
     throw new Error(
-      `Invalid mermaid header: "${header}".${hint} Supported headers: ${SUPPORTED_HEADERS}.`,
+      `Line ${headerStmt.line}: Invalid mermaid header: "${header}".${hint} Supported headers: ${SUPPORTED_HEADERS}.`,
     )
   }
 
@@ -251,7 +259,8 @@ function parseFlowchart(lines: string[]): MermaidGraph {
   const subgraphStack: MermaidSubgraph[] = []
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]!
+    const stmt = lines[i]!
+    const line = stmt.text
 
     // --- classDef / class assignment / style — shared with the class-diagram
     // parser, see packages/core/src/style-directives.ts ---
@@ -364,7 +373,7 @@ function parseFlowchart(lines: string[]): MermaidGraph {
 //   }
 // ============================================================================
 
-function parseStateDiagram(lines: string[]): MermaidGraph {
+function parseStateDiagram(lines: Statement[]): MermaidGraph {
   const graph: MermaidGraph = {
     direction: 'TD',
     nodes: new Map(),
@@ -386,7 +395,8 @@ function parseStateDiagram(lines: string[]): MermaidGraph {
   let endCount = 0
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]!
+    const stmt = lines[i]!
+    const line = stmt.text
 
     // --- direction override ---
     const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)

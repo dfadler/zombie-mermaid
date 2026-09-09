@@ -5,7 +5,11 @@ import type {
   ErRelationship,
   Cardinality,
 } from './types.ts'
-import { normalizeBrTags, toDirection } from '@zombie-mermaid/core'
+import {
+  normalizeBrTags,
+  toDirection,
+  type Statement,
+} from '@zombie-mermaid/core'
 
 // ============================================================================
 // ER diagram parser
@@ -48,7 +52,7 @@ import { normalizeBrTags, toDirection } from '@zombie-mermaid/core'
 // concern from these `!`s) — `noUncheckedIndexedAccess` can't see either
 // guarantee, but removing the `!` would only replace a proven-safe
 // assertion with an unreachable guard. Left as-is; no behavior change.
-export function parseErDiagram(lines: string[]): ErDiagram {
+export function parseErDiagram(lines: Statement[]): ErDiagram {
   const diagram: ErDiagram = {
     entities: [],
     relationships: [],
@@ -60,7 +64,8 @@ export function parseErDiagram(lines: string[]): ErDiagram {
   let currentEntity: ErEntity | null = null
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]!
+    const stmt = lines[i]!
+    const line = stmt.text
 
     // --- Inside entity body ---
     if (currentEntity) {
@@ -120,7 +125,7 @@ export function parseErDiagram(lines: string[]): ErDiagram {
     }
 
     // --- Relationship: `ENTITY1 cardinality1--cardinality2 ENTITY2 : label` ---
-    const rel = parseRelationshipLine(line)
+    const rel = parseRelationshipLine(line, stmt.line)
     if (rel) {
       // Ensure both entities exist
       ensureEntity(entityMap, rel.entity1)
@@ -196,7 +201,10 @@ function parseAttribute(line: string): ErAttribute | null {
  *
  * Full pattern example: CUSTOMER ||--o{ ORDER : places
  */
-function parseRelationshipLine(line: string): ErRelationship | null {
+function parseRelationshipLine(
+  line: string,
+  lineNumber: number,
+): ErRelationship | null {
   // Loosely match a line shaped like a relationship attempt: two bare
   // tokens flanking a `--`/`..`-based marker, with an optional `: label`.
   // A line with no such marker at all doesn't look like a relationship
@@ -235,14 +243,14 @@ function parseRelationshipLine(line: string): ErRelationship | null {
 
   if (!cardinality1 || !cardinality2) {
     throw new Error(
-      `Invalid ER relationship cardinality "${cardinalityStr}" in "${line}". ` +
+      `Line ${lineNumber}: Invalid ER relationship cardinality "${cardinalityStr}" in "${line}". ` +
         'Left side must be one of ||, |o, }|, }o; right side must be one of ||, o|, |{, o{ (e.g. "||--o{").',
     )
   }
 
   if (!hasLabel || rawLabel.length === 0) {
     throw new Error(
-      `ER relationship "${entity1} ${cardinalityStr} ${entity2}" is missing a ": label" — expected e.g. "${entity1} ${cardinalityStr} ${entity2} : label".`,
+      `Line ${lineNumber}: ER relationship "${entity1} ${cardinalityStr} ${entity2}" is missing a ": label" — expected e.g. "${entity1} ${cardinalityStr} ${entity2} : label".`,
     )
   }
 

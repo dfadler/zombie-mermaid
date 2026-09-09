@@ -21,8 +21,14 @@ import {
   measureTextWidth,
   normalizeBrTags,
   stripFormattingTags,
+  splitStatements,
 } from '@zombie-mermaid/core'
 import { renderMermaid } from '../index.ts'
+
+/** Build a `Statement[]` from plain source lines, one statement per line. */
+function toLines(sourceLines: string[]) {
+  return splitStatements(sourceLines.join('\n'))
+}
 
 // ============================================================================
 // Parser: <br> tag normalization
@@ -133,45 +139,45 @@ describe('parseMermaid – <br> tag normalization', () => {
 
   describe('sequence diagram labels', () => {
     it('normalizes <br> in participant alias labels', () => {
-      const lines = [
+      const lines = toLines([
         'sequenceDiagram',
         'participant A as First<br>Line',
         'A->>A: test',
-      ]
+      ])
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.actors[0]!.label).toBe('First\nLine')
     })
 
     it('normalizes <br> in message labels', () => {
-      const lines = ['sequenceDiagram', 'A->>B: Hello<br>World']
+      const lines = toLines(['sequenceDiagram', 'A->>B: Hello<br>World'])
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.messages[0]!.label).toBe('Hello\nWorld')
     })
 
     it('normalizes <br> in note text', () => {
-      const lines = [
+      const lines = toLines([
         'sequenceDiagram',
         'A->>B: Hello',
         'Note over A,B: First<br>Second',
-      ]
+      ])
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.notes[0]!.text).toBe('First\nSecond')
     })
 
     it('normalizes <br> in block labels', () => {
-      const lines = [
+      const lines = toLines([
         'sequenceDiagram',
         'A->>B: Hello',
         'loop Every<br>30s',
         'A->>B: Ping',
         'end',
-      ]
+      ])
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.blocks[0]!.label).toBe('Every\n30s')
     })
 
     it('normalizes <br> in divider labels', () => {
-      const lines = [
+      const lines = toLines([
         'sequenceDiagram',
         'A->>B: Hello',
         'alt First<br>case',
@@ -179,7 +185,7 @@ describe('parseMermaid – <br> tag normalization', () => {
         'else Second<br>case',
         'A->>B: b',
         'end',
-      ]
+      ])
       const diagram = parseSequenceDiagram(lines)
       expect(diagram.blocks[0]!.dividers[0]!.label).toBe('Second\ncase')
     })
@@ -187,19 +193,19 @@ describe('parseMermaid – <br> tag normalization', () => {
 
   describe('class diagram labels', () => {
     it('normalizes <br> in relationship labels', () => {
-      const lines = ['classDiagram', 'A --> B : uses<br>internally']
+      const lines = toLines(['classDiagram', 'A --> B : uses<br>internally'])
       const diagram = parseClassDiagram(lines)
       expect(diagram.relationships[0]!.label).toBe('uses\ninternally')
     })
 
     it('normalizes <br> in fromCardinality labels', () => {
-      const lines = ['classDiagram', 'A "one<br>to" --> B']
+      const lines = toLines(['classDiagram', 'A "one<br>to" --> B'])
       const diagram = parseClassDiagram(lines)
       expect(diagram.relationships[0]!.fromCardinality).toBe('one\nto')
     })
 
     it('normalizes <br> in toCardinality labels', () => {
-      const lines = ['classDiagram', 'A --> "many<br>items" B']
+      const lines = toLines(['classDiagram', 'A --> "many<br>items" B'])
       const diagram = parseClassDiagram(lines)
       expect(diagram.relationships[0]!.toCardinality).toBe('many\nitems')
     })
@@ -207,18 +213,21 @@ describe('parseMermaid – <br> tag normalization', () => {
 
   describe('ER diagram labels', () => {
     it('normalizes <br> in relationship labels', () => {
-      const lines = ['erDiagram', 'CUSTOMER ||--o{ ORDER : places<br>orders']
+      const lines = toLines([
+        'erDiagram',
+        'CUSTOMER ||--o{ ORDER : places<br>orders',
+      ])
       const diagram = parseErDiagram(lines)
       expect(diagram.relationships[0]!.label).toBe('places\norders')
     })
 
     it('normalizes <br> in attribute comments', () => {
-      const lines = [
+      const lines = toLines([
         'erDiagram',
         'CUSTOMER {',
         'int id PK "primary<br>key"',
         '}',
-      ]
+      ])
       const diagram = parseErDiagram(lines)
       expect(diagram.entities[0]!.attributes[0]!.comment).toBe('primary\nkey')
     })

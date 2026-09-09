@@ -12,13 +12,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseErDiagram } from '@zombie-mermaid/mermaid-parser'
+import { splitStatements } from '@zombie-mermaid/core'
 
 function parse(text: string) {
-  const lines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('%%'))
-  return parseErDiagram(lines)
+  return parseErDiagram(splitStatements(text))
 }
 
 describe('parseErDiagram – invalid cardinality tokens', () => {
