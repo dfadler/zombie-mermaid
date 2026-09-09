@@ -14,7 +14,7 @@ import { themeDropdownBtn, updateThemeButton } from './theme-button.ts'
 // #688: applyTheme() is this file's own re-theming — everything setting
 // `key` here previously did directly, now split so it can also run as a
 // window.__themeState.subscribe() listener (see below), the same shape
-// demo/diagram-page-client.ts's #687 reconciliation uses. setTheme() (the
+// demo/diagram-type-client.tsx's #687 reconciliation uses. setTheme() (the
 // click handler below calls this, not applyTheme() directly) only persists
 // + notifies through the shared demo/theme-state.ts module; applyTheme()
 // is what actually updates this page for a theme change from *any* source
@@ -75,7 +75,7 @@ applyColorMode(isDark)
 // #688: one-time migration off the editor's own, now-retired
 // 'bm-editor-theme' localStorage key onto the shared 'mermaid-theme' key
 // every other page already reads/writes through window.__themeState (demo/
-// theme-state.ts) -- mirrors demo/diagram-page-client.ts's identical
+// theme-state.ts) -- mirrors demo/diagram-type-client.tsx's identical
 // migration for its own prior per-page key (#687, zm-diagram-page-theme).
 // Only migrate when the shared key has nothing stored yet, so a value
 // already picked elsewhere on the site isn't clobbered by a stale editor
