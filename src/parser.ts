@@ -122,8 +122,7 @@ function suggestedHeaderFor(header: string): string | undefined {
  * A genuine marked-start continuation line is rare enough that losing it is
  * the safer tradeoff.
  */
-const CONTINUATION_START_REGEX =
-  /^(?:[\w-]+@)?<?(?:-{2,}|={2,}|-\.+-?|~{3,})/
+const CONTINUATION_START_REGEX = /^(?:[\w-]+@)?<?(?:-{2,}|={2,}|-\.+-?|~{3,})/
 
 /**
  * Rejoin a continuation statement onto the one it continues.
