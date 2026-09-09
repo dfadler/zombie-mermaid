@@ -41,6 +41,22 @@ import { footerCss } from './demo/components/footer.tsx'
 import { navCss } from './demo/components/nav.tsx'
 import { primitivesCss } from './demo/components/primitives.tsx'
 import { designBaseCss } from './demo/components/tokens.tsx'
+import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
+import { renderMermaidSVG } from './src/index.ts'
+
+/**
+ * A fenced code block tagged with this language renders as an actual SVG
+ * diagram (via the same renderMermaidSVG pages.ts uses for the per-type
+ * gallery), instead of syntax-highlighted source. Plain ` ```mermaid `
+ * fences deliberately keep rendering as source text — see
+ * blog-posts/README.md's "Code blocks" section for why the two aren't
+ * interchangeable (mainly: several posts' mermaid fences are the exact
+ * source used to produce an adjacent before/after screenshot, or a repro
+ * of an *upstream* bug that this fork's own renderer no longer has, so
+ * auto-rendering them would show fixed/different output instead of the
+ * thing being illustrated).
+ */
+const MERMAID_RENDER_LANG = 'mermaid-render'
 
 /**
  * The shiki theme fenced code blocks highlight with.
@@ -237,9 +253,32 @@ interface HighlightedCodeToken extends Tokens.Code {
   highlightedHtml?: string
 }
 
+/**
+ * Renders a `mermaid-render`-tagged fence's source to an inline SVG
+ * diagram, using the same options (colors) shape the per-diagram-type
+ * gallery pages already render with (pages.ts) — see the DEFAULT_SWATCH
+ * import above.
+ */
+function renderMermaidDiagram(source: string, sourceFile: string): string {
+  let svg: string
+  try {
+    svg = renderMermaidSVG(source.trim(), {
+      ...DEFAULT_SWATCH,
+      interactivity: 'none',
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(
+      `${sourceFile}: a \`\`\`${MERMAID_RENDER_LANG} fence failed to render: ${message}`,
+    )
+  }
+  return `<div class="mermaid-diagram">${svg}</div>\n`
+}
+
 async function renderPostBody(
   highlighter: Highlighter,
   bodyMarkdown: string,
+  sourceFile: string,
 ): Promise<string> {
   // marked's renderer methods are always called synchronously — an async
   // (Promise-returning) renderer.code() is *not* awaited, it's just
@@ -252,6 +291,8 @@ async function renderPostBody(
     walkTokens: async (token) => {
       if (token.type !== 'code') return
       const codeToken = token as HighlightedCodeToken
+      // Rendered as an SVG diagram below instead — no source highlighting needed.
+      if (codeToken.lang?.trim().toLowerCase() === MERMAID_RENDER_LANG) return
       codeToken.highlightedHtml = await highlightCode(
         highlighter,
         codeToken.text,
@@ -260,7 +301,11 @@ async function renderPostBody(
     },
     renderer: {
       code(token) {
-        const highlightedHtml = (token as HighlightedCodeToken).highlightedHtml
+        const codeToken = token as HighlightedCodeToken
+        if (codeToken.lang?.trim().toLowerCase() === MERMAID_RENDER_LANG) {
+          return renderMermaidDiagram(codeToken.text, sourceFile)
+        }
+        const highlightedHtml = codeToken.highlightedHtml
         if (highlightedHtml === undefined) {
           throw new Error(
             'code token rendered before walkTokens highlighted it',
@@ -348,7 +393,11 @@ async function main(): Promise<void> {
   const sitemapUrls: string[] = [`${SITE_URL}/blog/`]
 
   for (const post of posts) {
-    const bodyHtml = await renderPostBody(highlighter, post.bodyMarkdown)
+    const bodyHtml = await renderPostBody(
+      highlighter,
+      post.bodyMarkdown,
+      post.sourceFile,
+    )
     const canonical = `${SITE_URL}/blog/${post.slug}.html`
     sitemapUrls.push(canonical)
 
