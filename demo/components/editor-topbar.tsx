@@ -14,6 +14,7 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
+import { COLORS } from './tokens.tsx'
 
 /** The stroke-style icon shape shared by every button in the bar. */
 function StrokeIcon({
@@ -80,26 +81,45 @@ function ExportItem({
   )
 }
 
-/** The zombie-mermaid logo mark shown at the far left of the bar. */
+/**
+ * The zombie-mermaid logo mark shown at the far left of the bar.
+ *
+ * Matches nav.tsx's `LogoMark` (icons.tsx) — two rounded squares over a
+ * bracket — the redesign's shared brand mark. It draws the same three
+ * accents as literal hex from tokens.tsx's `COLORS` rather than
+ * `LogoMark`'s own `var(--cyan)`/`var(--violet)`/`var(--pink)`:
+ * editor-page.tsx scopes the design-system palette to `.zm-shell`, and
+ * `.editor-tool-shell` (this bar's ancestor) sits outside that scope, so
+ * those custom properties are unresolved here — a `var()` reference would
+ * compute to its initial value and render invisible strokes.
+ */
 function EditorLogo() {
   return (
     <a href="/zombie-mermaid/" className="logo">
-      <svg viewBox="0 0 299 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M137.879,300L137.875,300C62.3239,300 0.966154,239.232 0.0117188,163.908L0,162.126L137.879,162.126L137.879,300Z"
-          fill="#06367A"
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect
+          x="2"
+          y="2"
+          width="9"
+          height="9"
+          rx="3"
+          stroke={COLORS['--cyan']}
+          strokeWidth="1.6"
+        />
+        <rect
+          x="13"
+          y="2"
+          width="9"
+          height="9"
+          rx="3"
+          stroke={COLORS['--violet']}
+          strokeWidth="1.6"
         />
         <path
-          d="M137.879,0L137.875,0C61.729,0 0,61.729 0,137.875L0,137.878L137.879,137.878L137.879,0Z"
-          fill="#FF51FF"
-        />
-        <path
-          d="M160.558,137.883L160.561,137.883C236.707,137.883 298.436,76.1537 298.436,0.00758561L298.436,0.00562043L160.558,0.00562043L160.558,137.883Z"
-          fill="#007CFF"
-        />
-        <path
-          d="M160.558,162.123L160.561,162.123C236.112,162.123 297.471,222.891 298.426,298.216L298.436,299.998L160.558,299.998L160.558,162.123Z"
-          fill="#0A377B"
+          d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5"
+          stroke={COLORS['--pink']}
+          strokeWidth="1.6"
+          fill="none"
         />
       </svg>
       <span>
