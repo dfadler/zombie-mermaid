@@ -22,6 +22,7 @@ import { describe, expect, it } from 'vitest'
 import {
   NAV_INSTALL_COMMAND,
   NAV_ITEMS,
+  NAV_MOBILE_MENU_SCRIPT,
   NAV_WORDMARK,
   Nav,
   NavStyle,
@@ -35,6 +36,39 @@ import { COLORS } from '../demo/components/tokens.tsx'
 /** Renders the nav to static markup, the way the site's generators do. */
 function render(props: NavProps = {}): string {
   return renderToStaticMarkup(createElement(Nav, props))
+}
+
+/**
+ * Isolates the `<nav class="nav-links">…</nav>` block from a render — the
+ * desktop link list the canvas pins byte-for-byte. Needed because the
+ * mobile menu (below) renders its own copy of the same five labels, which
+ * would otherwise double-count in any test that greps the whole document
+ * for `<a>` tags or link text.
+ */
+function desktopLinksHtml(html: string): string {
+  const start = html.indexOf('<nav class="nav-links"')
+  const end = html.indexOf('</nav>', start) + '</nav>'.length
+  return html.slice(start, end)
+}
+
+/** Isolates the `<nav class="mobile-nav-panel">…</nav>` block — the
+ * invented mobile menu, not part of the canvas. See {@link desktopLinksHtml}. */
+function mobileLinksHtml(html: string): string {
+  const start = html.indexOf('<nav class="mobile-nav-panel"')
+  const end = html.indexOf('</nav>', start) + '</nav>'.length
+  return html.slice(start, end)
+}
+
+/** Isolates the `<header class="nav-bar">…</header>` desktop bar from a
+ * render, excluding the sibling `<nav class="mobile-nav-panel">` the mobile
+ * menu (#784) appends after it. Needed for install-pill assertions: the
+ * mobile panel carries its own, always-present install pill (see 'the
+ * mobile menu' below) independent of the desktop bar's `installSlot`, so an
+ * assertion scoped to the whole document would see the mobile panel's copy
+ * even when the desktop slot correctly replaced its own. */
+function desktopHeaderHtml(html: string): string {
+  const end = html.indexOf('</header>') + '</header>'.length
+  return html.slice(0, end)
 }
 
 /**
@@ -140,7 +174,7 @@ describe('the link list', () => {
   })
 
   it('renders every link, in order', () => {
-    const html = render()
+    const html = desktopLinksHtml(render())
     const labels = [...html.matchAll(/>([^<>]+)<\/a>/g)].map((m) => m[1])
     expect(labels).toEqual(CANVAS_LINKS.map((link) => link.label))
   })
@@ -161,7 +195,7 @@ describe('the active state', () => {
   it.each(CANVAS_ACTIVE)(
     'the $artboard artboard highlights $active',
     ({ active }) => {
-      const html = render({ active })
+      const html = desktopLinksHtml(render({ active }))
       const highlighted = [
         ...html.matchAll(/color:var\(--text\)[^>]*>([^<>]+)<\/a>/g),
       ].map((m) => m[1])
@@ -174,11 +208,12 @@ describe('the active state', () => {
   )
 
   it('dims every other link', () => {
-    const html = render({ active: 'editor' })
+    // Scoped to .nav-links, so the install pill's own --text-dim ink (a
+    // sibling, outside this block) isn't counted alongside the four
+    // inactive links.
+    const html = desktopLinksHtml(render({ active: 'editor' }))
     expect(html.match(/color:var\(--text-dim\)/g)).toHaveLength(
-      // The four inactive links; the install pill's own --text-dim ink comes
-      // from the Pill primitive and is counted here too.
-      CANVAS_LINKS.length - 1 + 1,
+      CANVAS_LINKS.length - 1,
     )
   })
 
@@ -270,14 +305,15 @@ describe('the brand', () => {
   })
 
   it('is a plain div by default, matching the static artboards', () => {
-    // The only <a>s are the five nav links.
-    expect(render().match(/<a /g)).toHaveLength(CANVAS_LINKS.length)
+    // The only <a>s are the five desktop nav links plus their five mobile
+    // menu counterparts (see "the mobile menu" below) — none from the brand.
+    expect(render().match(/<a /g)).toHaveLength(CANVAS_LINKS.length * 2)
   })
 
   it('becomes a link when a page supplies a home destination', () => {
     const html = render({ homeHref: '/' })
     expect(html).toContain('href="/"')
-    expect(html.match(/<a /g)).toHaveLength(CANVAS_LINKS.length + 1)
+    expect(html.match(/<a /g)).toHaveLength(CANVAS_LINKS.length * 2 + 1)
   })
 })
 
@@ -318,23 +354,30 @@ describe('the install pill', () => {
     const html = render({
       installSlot: createElement('div', { id: 'nav-theme-slot' }),
     })
-    expect(html).toContain('<div id="nav-theme-slot">')
-    // The default NavInstall pill is gone, not just supplemented.
-    expect(html).not.toContain(NAV_INSTALL_COMMAND)
-    expect(html).not.toContain('class="pill mono"')
+    const header = desktopHeaderHtml(html)
+    expect(header).toContain('<div id="nav-theme-slot">')
+    // The default NavInstall pill is gone from the desktop bar, not just
+    // supplemented -- scoped to the header since the mobile panel (#784,
+    // merged after #759) always carries its own install pill regardless of
+    // the desktop slot; see 'the mobile menu' below for that assertion.
+    expect(header).not.toContain(NAV_INSTALL_COMMAND)
+    expect(header).not.toContain('class="pill mono"')
   })
 
-  it('still has no <button> in its SSR output with installSlot set (#759)', () => {
+  it('desktop bar has no extra <button> beyond the menu toggle with installSlot set (#759)', () => {
     // The homepage's real installSlot is an empty placeholder div -- a real
     // <button>-based ThemePicker only ever arrives via runtime reparenting
-    // (demo/index-page-client.ts), never server-rendered here. Confirms
-    // nav.tsx's byte-pin ("has no mobile menu" test's sibling assertion,
-    // `semantics`'s "renders as header/nav, not the canvas's bare divs"
-    // block below) holds for this slot too, not just the default render.
+    // (demo/index-page-client.ts), never server-rendered here. The desktop
+    // bar's one legitimate <button> is MenuToggle (#784's invented mobile
+    // menu control, documented as a deliberate deviation from the canvas in
+    // this file's own header comment) -- confirms installSlot doesn't add a
+    // second one, not that the bar has none at all.
     const html = render({
       installSlot: createElement('div', { id: 'nav-theme-slot' }),
     })
-    expect(html.toLowerCase()).not.toContain('<button')
+    const header = desktopHeaderHtml(html)
+    expect(header.match(/<button/gi)).toHaveLength(1)
+    expect(header).toContain('class="menu-toggle"')
   })
 })
 
@@ -383,19 +426,81 @@ describe('responsive rules', () => {
     expect(mobile).not.toContain('.nav-links')
   })
 
-  it('has no mobile menu — the canvas ships none', () => {
-    // Pinned deliberately: below 900px the links are simply hidden, with no
-    // hamburger, drawer, or overflow control anywhere in the sixteen
-    // artboards. If a future change adds one, this test should be updated
-    // alongside the canvas, not deleted quietly.
-    const html = render().toLowerCase()
-    expect(html).not.toContain('hamburger')
-    expect(html).not.toContain('aria-expanded')
-    expect(html).not.toContain('<button')
-  })
-
   it('wraps the rules in a style element', () => {
     const html = renderToStaticMarkup(createElement(NavStyle))
     expect(html).toBe(`<style>${navCss()}</style>`)
+  })
+})
+
+/**
+ * Replaces the old "has no mobile menu — the canvas ships none" pin: the
+ * canvas still has no mobile menu (see the module doc comment), but the
+ * site now does. Nothing below is canvas fidelity — it's this component's
+ * own contract for the menu it invented, so these check *our* markup and
+ * CSS choices rather than transcribing an artboard.
+ */
+describe('the mobile menu', () => {
+  it('renders a closed toggle button, hidden by default', () => {
+    const html = render()
+    expect(html).toContain('class="menu-toggle"')
+    expect(html).toContain('aria-expanded="false"')
+    expect(html).toContain('aria-label="Menu"')
+    // Shown only via navCss()'s tablet-and-below rule — see "responsive
+    // rules" above for `.menu-toggle { display: inline-flex !important; }`.
+    expect(html).toMatch(/class="menu-toggle"[^>]*style="display:none/)
+  })
+
+  it('renders the same five links as the desktop nav, in the same order', () => {
+    const html = mobileLinksHtml(render())
+    const labels = [
+      ...html.matchAll(/class="mobile-link"[^>]*>([^<>]+)</g),
+    ].map((m) => m[1])
+    expect(labels).toEqual(CANVAS_LINKS.map((link) => link.label))
+  })
+
+  it('lets a page override mobile hrefs the same way as desktop ones', () => {
+    const html = mobileLinksHtml(
+      render({ hrefs: { forkFixes: '/fork-fixes' } }),
+    )
+    expect(html).toContain('href="/fork-fixes"')
+  })
+
+  it('highlights the active link the same way the desktop nav does', () => {
+    const html = mobileLinksHtml(render({ active: 'blog' }))
+    expect(html).toContain('aria-current="page"')
+    const highlighted = [
+      ...html.matchAll(/color:var\(--text\)[^>]*>([^<>]+)<\/a>/g),
+    ].map((m) => m[1])
+    expect(highlighted).toEqual(['Blog'])
+  })
+
+  it('shows the install command in full, not the icon-only pill', () => {
+    const html = mobileLinksHtml(render())
+    expect(html).toContain(NAV_INSTALL_COMMAND)
+    // Unlike .nav-npm-text, this copy isn't wrapped in the span the 600px
+    // rule hides — it's meant to stay legible at every mobile width.
+    expect(html).not.toContain('class="nav-npm-text"')
+  })
+
+  it('is a closed, fixed-position overlay by default', () => {
+    const html = render()
+    expect(html).toContain('class="mobile-nav-panel"')
+    expect(html).not.toMatch(/class="mobile-nav-panel is-open"/)
+  })
+
+  it('renders as a sibling of the bar, not nested inside it', () => {
+    // NAV_MOBILE_MENU_SCRIPT pairs a toggle with its panel via
+    // `bar.nextElementSibling` — this is the markup contract that relies on.
+    const html = render()
+    const barEnd = html.indexOf('</header>')
+    const panelStart = html.indexOf('<nav class="mobile-nav-panel"')
+    expect(panelStart).toBeGreaterThan(barEnd)
+    // Nothing but the panel itself sits between them.
+    expect(html.slice(barEnd + '</header>'.length, panelStart)).toBe('')
+  })
+
+  it('behavior script pairs a toggle with the panel that follows it', () => {
+    expect(NAV_MOBILE_MENU_SCRIPT).toContain('bar.nextElementSibling')
+    expect(NAV_MOBILE_MENU_SCRIPT).toContain("event.key === 'Escape'")
   })
 })

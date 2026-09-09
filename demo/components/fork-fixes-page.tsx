@@ -43,7 +43,7 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
-import { Nav, NavCopyScript } from './nav.tsx'
+import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
 import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   CheckIcon,
@@ -976,6 +976,7 @@ export function ForkFixesPage({
           dangerouslySetInnerHTML={{ __html: themeBarScript }}
         />
         <NavCopyScript />
+        <NavMobileMenuScript />
       </body>
     </html>
   )

@@ -35,22 +35,39 @@
  *   `#anchor` placeholders that a page overrides through
  *   {@link NavProps.hrefs}.
  *
- * One gap worth naming rather than papering over: the canvas has no mobile
- * menu. Below 900px the links are simply `display:none`, with no hamburger,
- * drawer, or overflow affordance anywhere in the sixteen artboards. This
- * component reproduces that faithfully; giving phone users a route to
- * Diagrams/Editor/Fork fixes/Blog is a design decision for #590, not
- * something to invent here.
+ * `<Nav>` is live on every redesigned page (index-page.tsx, diagram-page.tsx,
+ * blog-page.tsx, fork-fixes-page.tsx, dashboard-page.tsx, editor-page.tsx) —
+ * #598-610 wired it in and retired site-chrome.tsx's `SiteHeader`, which it
+ * replaces.
  *
- * Nothing on the site consumes this yet — wiring it into the pages is
- * #598-610's job, and that work also retires site-chrome.tsx's `SiteHeader`,
- * which this replaces.
+ * The #590 canvas itself has no mobile menu: below 900px the links are
+ * simply `display:none`, with no hamburger, drawer, or overflow affordance
+ * anywhere in its sixteen artboards. Giving phone users a route to
+ * Diagrams/Editor/Fork fixes/Blog was left as a design decision for later —
+ * this is that later. It was settled through a follow-up Claude Design
+ * exploration (not the #590 canvas, which the rest of this file still pins
+ * byte-for-byte): four directions — an in-flow dropdown, a side drawer, a
+ * fullscreen overlay, and a bottom sheet — narrowed to the fullscreen
+ * overlay, then two more rounds on that direction landed on "split layout
+ * (links pinned top-left, a faint oversized brand mark grounding the
+ * bottom-right corner) plus an animated node/edge graph behind it," which is
+ * what {@link MobileNavPanel} renders below. Unlike the rest of this file,
+ * the mobile menu's markup, CSS, and behavior script are therefore
+ * *invented*, not transcribed from a canvas artboard — flagged inline where
+ * it matters (the toggle icon, the diagram motif) rather than claimed as
+ * canvas fidelity.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
-import { CopyIcon, LogoMark } from './icons.tsx'
+import {
+  CopyIcon,
+  ICON_LINE_CAP,
+  ICON_STROKE_WIDTH,
+  ICON_VIEW_BOX,
+  LogoMark,
+} from './icons.tsx'
 import { Pill } from './primitives.tsx'
 import {
   BREAKPOINTS,
@@ -190,6 +207,41 @@ const NAV_Z_INDEX = 10
 const NAV_CRAMPED_MAX = 1100
 
 /**
+ * The toggle button's hit target, in px — the accessibility floor
+ * `artifact-design`'s "Appropriate scales" guidance sets for mobile mockup
+ * controls, applied here since this is real mobile chrome, not a mockup.
+ */
+const MOBILE_TOGGLE_SIZE = 44
+
+/**
+ * The overlay panel's top padding, in px. There's no way to measure the
+ * nav-bar's actual rendered height from pure CSS, so this is a generous
+ * literal that clears it with room to spare at both breakpoint bands (the
+ * bar's own content is ~44px tall, plus {@link NAV_PAD_Y}'s 14–16px of
+ * padding on each side — 72–76px total).
+ */
+const MOBILE_PANEL_PAD_TOP = 96
+
+/** The overlay panel's side padding, in px — {@link SPACE}'s `3xl` step,
+ * one literal for both breakpoint bands rather than tracking {@link
+ * NAV_PAD_X}'s own two (this menu isn't canvas-pinned, so it doesn't need
+ * to match the bar's gutter exactly). */
+const MOBILE_PANEL_PAD_X = SPACE['3xl']
+
+/** The oversized watermark brand mark's rendered size, in px. */
+const MOBILE_WATERMARK_SIZE = 220
+
+/** The watermark's opacity — faint enough to read as texture, not a logo. */
+const MOBILE_WATERMARK_OPACITY = 0.05
+
+/**
+ * `z-index` on the overlay panel — one below {@link NAV_Z_INDEX}, so the
+ * bar (and the toggle button inside it, mid-morph into a close "X") stays
+ * visible and clickable above the overlay rather than being covered by it.
+ */
+const MOBILE_PANEL_Z_INDEX = NAV_Z_INDEX - 1
+
+/**
  * `--bg` as an `rgba()` at the given alpha.
  *
  * The canvas spells the bar's fill out as the literal
@@ -211,15 +263,19 @@ export function bgRgba(alpha: number): string {
  * ----------------------------------------------------------------- */
 
 /**
- * The nav's two responsive rules, transcribed from the artboards' shared
- * `<helmet><style>` preamble.
+ * The nav's responsive rules: the two breakpoint rules transcribed from the
+ * artboards' shared `<helmet><style>` preamble, plus the mobile menu's own
+ * rules appended after them (invented — see the module doc comment — so
+ * kept visibly separate from the canvas-pinned block above).
  *
  * At 900px and below the links disappear and the bar tightens; at 600px and
  * below the install pill drops its text, leaving the copy glyph alone, and
  * the bar tightens again. Both are `!important` in the canvas because they
  * override the inline styles on the elements themselves, which is also why
  * they must survive into the emitted CSS rather than being folded into the
- * component's `style` objects.
+ * component's `style` objects. The mobile menu block follows the same
+ * `!important` convention for the same reason (overriding {@link
+ * MenuToggle}'s inline `display: none`).
  *
  * Emit this once per page, after tokens.tsx's `designBaseCss()` and
  * primitives.tsx's `primitivesCss()` — the nav's pill is a `.pill`, and its
@@ -229,6 +285,7 @@ export function navCss(): string {
   return `${MEDIA.tablet} {
   .nav-bar { padding: ${NAV_PAD_Y.tablet}px ${NAV_PAD_X.tablet}px !important; }
   .nav-links { display: none !important; }
+  .menu-toggle { display: inline-flex !important; }
 }
 
 ${MEDIA.mobile} {
@@ -238,6 +295,115 @@ ${MEDIA.mobile} {
 
 @media (min-width: ${BREAKPOINTS.tablet + 1}px) and (max-width: ${NAV_CRAMPED_MAX}px) {
   .nav-npm-text { display: none !important; }
+}
+
+/* --- Mobile menu (invented; not part of the #590 canvas) --- */
+
+html.mobile-nav-open {
+  overflow: hidden;
+}
+
+.menu-toggle .mnt-bar {
+  transition: transform .22s ease, opacity .22s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.menu-toggle.is-open .mnt-bar-top {
+  transform: translateY(5px) rotate(45deg);
+}
+
+.menu-toggle.is-open .mnt-bar-mid {
+  opacity: 0;
+}
+
+.menu-toggle.is-open .mnt-bar-bottom {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
+.mobile-nav-panel {
+  position: fixed;
+  inset: 0;
+  z-index: ${MOBILE_PANEL_Z_INDEX};
+  display: flex;
+  flex-direction: column;
+  padding: ${MOBILE_PANEL_PAD_TOP}px ${MOBILE_PANEL_PAD_X}px ${SPACE['5xl']}px;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+  opacity: 0;
+  transform: translateX(-12px);
+  pointer-events: none;
+  transition: opacity .26s ease, transform .26s ease;
+  overflow: hidden;
+}
+
+.mobile-nav-panel.is-open {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.mobile-diagram-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.mobile-diagram-bg .mdb-edge {
+  animation: mobile-diagram-dash 3s linear infinite;
+}
+
+@keyframes mobile-diagram-dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+.mobile-watermark {
+  position: absolute;
+  right: -${Math.round(MOBILE_WATERMARK_SIZE * 0.2)}px;
+  bottom: -${Math.round(MOBILE_WATERMARK_SIZE * 0.15)}px;
+  opacity: ${MOBILE_WATERMARK_OPACITY};
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.mobile-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-link {
+  padding: ${SPACE.md}px 0;
+  border-bottom: 1px solid var(--border);
+  text-shadow: 0 2px 16px rgba(10, 13, 22, 0.8);
+}
+
+.mobile-link:last-of-type {
+  border-bottom: none;
+}
+
+.mobile-install {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-toggle .mnt-bar,
+  .mobile-nav-panel,
+  .mobile-diagram-bg .mdb-edge {
+    transition-duration: 0.001ms !important;
+    animation: none !important;
+  }
+}
+
+@media (min-width: ${BREAKPOINTS.tablet + 1}px) {
+  /* Safety net for a viewport resize while the menu is open (e.g. a phone
+   * rotated past the breakpoint) — the toggle that would close it is gone
+   * by then, since it's hidden by the rule above this block. */
+  .mobile-nav-panel.is-open {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
 }`
 }
 
@@ -358,6 +524,239 @@ function NavInstall({ command }: { command: string }) {
 }
 
 /* -----------------------------------------------------------------
+ * Mobile menu markup
+ *
+ * Everything below, through {@link MobileNavPanel}, is invented — see the
+ * module doc comment for where the design came from. None of it claims
+ * canvas fidelity the way the rest of this file does.
+ * ----------------------------------------------------------------- */
+
+/**
+ * The hamburger-to-close toggle. Three bars that morph into an X via CSS
+ * (`.menu-toggle.is-open` in {@link navCss}) — not traced to any canvas
+ * artboard, since the #590 canvas ships no mobile menu to trace one from.
+ * Drawn at the rest of the icon set's own stroke weight and cap style
+ * ({@link ICON_STROKE_WIDTH}, {@link ICON_LINE_CAP}) so it still reads as
+ * part of the same family.
+ *
+ * Hidden by default (`display: none`, desktop); {@link navCss} shows it
+ * `!important` at {@link BREAKPOINTS}.tablet and below, the same threshold
+ * where `.nav-links` disappears.
+ */
+function MenuToggle() {
+  return (
+    <button
+      type="button"
+      className="menu-toggle"
+      aria-label="Menu"
+      aria-expanded="false"
+      style={{
+        display: 'none',
+        width: `${MOBILE_TOGGLE_SIZE}px`,
+        height: `${MOBILE_TOGGLE_SIZE}px`,
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'transparent',
+        border: 'none',
+        padding: 0,
+        cursor: 'pointer',
+        flexShrink: 0,
+      }}
+    >
+      <svg
+        width={22}
+        height={22}
+        viewBox={ICON_VIEW_BOX}
+        fill="none"
+        stroke={colorVar('--text')}
+        strokeWidth={ICON_STROKE_WIDTH}
+        strokeLinecap={ICON_LINE_CAP}
+        aria-hidden="true"
+      >
+        <line className="mnt-bar mnt-bar-top" x1="3" y1="7" x2="21" y2="7" />
+        <line className="mnt-bar mnt-bar-mid" x1="3" y1="12" x2="21" y2="12" />
+        <line
+          className="mnt-bar mnt-bar-bottom"
+          x1="3"
+          y1="17"
+          x2="21"
+          y2="17"
+        />
+      </svg>
+    </button>
+  )
+}
+
+/**
+ * The overlay panel's animated background: a handful of nodes and dashed
+ * edges in the six accent colours, echoing the product's own diagram art
+ * (mirroring the "animated edges" feature — see {@link navCss}'s
+ * `mobile-diagram-dash` keyframes) rather than a plain fill. Purely
+ * decorative — `aria-hidden`, and `preserveAspectRatio="xMidYMid slice"` so
+ * it crops to cover whatever the viewport's actual aspect ratio is, unlike
+ * the fixed-size artboard it was first drawn against.
+ */
+function MobileDiagramMotif() {
+  return (
+    <svg
+      className="mobile-diagram-bg"
+      viewBox="0 0 390 844"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
+      <path
+        className="mdb-edge"
+        d="M44 150 C 120 205, 90 310, 175 355"
+        stroke={colorVar('--blue')}
+        strokeWidth="1.5"
+        strokeDasharray="2 8"
+        fill="none"
+        opacity=".38"
+      />
+      <path
+        className="mdb-edge"
+        d="M348 190 C 300 265, 336 415, 258 478"
+        stroke={colorVar('--violet')}
+        strokeWidth="1.5"
+        strokeDasharray="2 8"
+        fill="none"
+        opacity=".32"
+      />
+      <path
+        className="mdb-edge"
+        d="M175 355 C 220 400, 200 445, 258 478"
+        stroke={colorVar('--cyan')}
+        strokeWidth="1.5"
+        strokeDasharray="2 8"
+        fill="none"
+        opacity=".32"
+      />
+      <path
+        className="mdb-edge"
+        d="M64 630 C 140 610, 160 705, 262 696"
+        stroke={colorVar('--pink')}
+        strokeWidth="1.5"
+        strokeDasharray="2 8"
+        fill="none"
+        opacity=".32"
+      />
+      <path
+        className="mdb-edge"
+        d="M258 478 C 220 560, 160 590, 64 630"
+        stroke={colorVar('--amber')}
+        strokeWidth="1.5"
+        strokeDasharray="2 8"
+        fill="none"
+        opacity=".28"
+      />
+      <circle cx="44" cy="150" r="5" fill={colorVar('--blue')} opacity=".45" />
+      <circle cx="175" cy="355" r="5" fill={colorVar('--cyan')} opacity=".45" />
+      <circle
+        cx="348"
+        cy="190"
+        r="5"
+        fill={colorVar('--violet')}
+        opacity=".45"
+      />
+      <circle
+        cx="258"
+        cy="478"
+        r="5"
+        fill={colorVar('--amber')}
+        opacity=".45"
+      />
+      <circle cx="64" cy="630" r="5" fill={colorVar('--pink')} opacity=".45" />
+      <circle
+        cx="262"
+        cy="696"
+        r="5"
+        fill={colorVar('--green')}
+        opacity=".45"
+      />
+    </svg>
+  )
+}
+
+/** One link inside {@link MobileNavPanel} — same data as a desktop link,
+ * styled for the overlay instead. */
+function MobileNavLink({
+  href,
+  isActive,
+  children,
+}: {
+  href: string
+  isActive: boolean
+  children: string
+}) {
+  return (
+    <a
+      className="mobile-link"
+      href={href}
+      aria-current={isActive ? 'page' : undefined}
+      style={{
+        fontFamily: 'var(--font-display)',
+        fontWeight: FONT_WEIGHT.bold,
+        fontSize: `${FONT_SIZE.h3}px`,
+        letterSpacing: LETTER_SPACING.heading,
+        color: colorVar(isActive ? '--text' : '--text-dim'),
+      }}
+    >
+      {children}
+    </a>
+  )
+}
+
+/**
+ * The fullscreen mobile menu: {@link MobileDiagramMotif} behind a split
+ * layout — links pinned top-left, an oversized faint {@link LogoMark}
+ * grounding the bottom-right corner, the install command spelled out in
+ * full at the bottom (the one place it's readable on a phone — the bar's
+ * own pill drops to icon-only at {@link BREAKPOINTS}.mobile).
+ *
+ * Closed by default (`.mobile-nav-panel` with no `is-open`); {@link
+ * NAV_MOBILE_MENU_SCRIPT} toggles the class and this element's sibling
+ * {@link MenuToggle} at runtime, the same "static markup, runtime script"
+ * split {@link NAV_COPY_SCRIPT} uses. `position: fixed` on `.mobile-nav-panel`
+ * means it covers the viewport regardless of where `Nav` sits in the page,
+ * so it renders as `Nav`'s sibling rather than nested inside the bar.
+ */
+function MobileNavPanel({
+  linkItems,
+  installCommand,
+  label,
+}: {
+  linkItems: { key: NavKey; label: string; href: string; isActive: boolean }[]
+  installCommand: string
+  label: string
+}) {
+  return (
+    <nav className="mobile-nav-panel" aria-label={`${label} (mobile)`}>
+      <MobileDiagramMotif />
+      <div className="mobile-watermark">
+        <LogoMark size={MOBILE_WATERMARK_SIZE} />
+      </div>
+      <div className="mobile-links">
+        {linkItems.map((item) => (
+          <MobileNavLink
+            key={item.key}
+            href={item.href}
+            isActive={item.isActive}
+          >
+            {item.label}
+          </MobileNavLink>
+        ))}
+      </div>
+      <span className="mobile-install">
+        <Pill mono style={{ background: 'rgba(20,26,46,0.85)' }}>
+          {installCommand}
+          <CopyIcon size={COPY_ICON_SIZE} strokeWidth={COPY_ICON_STROKE} />
+        </Pill>
+      </span>
+    </nav>
+  )
+}
+
+/* -----------------------------------------------------------------
  * Copy-to-clipboard behavior
  * ----------------------------------------------------------------- */
 
@@ -383,14 +782,14 @@ const NAV_COPY_FEEDBACK_MS = 1200
  * Makes the install pill copy its command to the clipboard.
  *
  * Plain runtime JS, not a bundled module: the pill (`.nav-bar .pill.mono`)
- * has no dedicated hook of its own — deliberately. This `Nav` is pinned
- * byte-for-byte to the #590 design canvas (see this file's header comment
- * and `__tests__/demo-nav.test.ts`, which asserts the rendered markup has
- * no `<button>`, specifically to catch elements the sixteen canvas
- * artboards don't have). So this script finds the pill by the classes it
- * already carries and turns it interactive at *runtime* — role, tabindex,
- * click/keydown — instead of changing the server-rendered markup. The
- * rendered HTML is byte-identical whether or not this script ever runs.
+ * has no dedicated hook of its own — deliberately. The parts of `Nav` this
+ * script targets are pinned byte-for-byte to the #590 design canvas (see
+ * this file's header comment), so this script finds the pill by the classes
+ * it already carries and turns it interactive at *runtime* — role,
+ * tabindex, click/keydown — instead of changing the server-rendered markup.
+ * The rendered HTML is byte-identical whether or not this script ever runs.
+ * ({@link MenuToggle}'s `<button>`, added for the mobile menu, is the one
+ * deliberate exception to "no `<button>`" — see the module doc comment.)
  *
  * Exported as a string, not a `demo/*-client.ts` module bundled with
  * esbuild (contrast `demo/diagram-page-client.ts`): every page that
@@ -447,8 +846,97 @@ export function NavCopyScript() {
   )
 }
 
+/* -----------------------------------------------------------------
+ * Mobile menu behavior
+ * ----------------------------------------------------------------- */
+
 /**
- * The site's shared navigation bar: brand, links, install pill.
+ * Opens, closes, and focus-manages {@link MobileNavPanel} — the same
+ * "static markup, runtime script" split {@link NAV_COPY_SCRIPT} uses, for
+ * the same reason: the toggle and panel are plain `Nav` output with no
+ * client-side React to attach handlers to.
+ *
+ * Pairs each `.menu-toggle` with the `.mobile-nav-panel` that follows it —
+ * {@link MobileNavPanel}'s own doc comment explains why that panel renders
+ * as `Nav`'s sibling rather than nested inside the bar, which is what makes
+ * `nextElementSibling` the right (and simplest) way to find it, with no
+ * `id`/`aria-controls` pair needed and nothing to collide if a future page
+ * ever renders more than one `Nav`.
+ *
+ * Behavior: click toggles; tapping a link or pressing Escape closes and
+ * (for Escape) returns focus to the toggle; opening moves focus to the
+ * first link and locks background scroll via the `mobile-nav-open` class
+ * {@link navCss} keys off. What this does *not* do — deliberately, to keep
+ * a first version scoped — is trap Tab/Shift+Tab inside the open panel;
+ * revisit if that turns out to matter in practice.
+ */
+export const NAV_MOBILE_MENU_SCRIPT = `(function () {
+  function closeMenu(toggle, panel, returnFocus) {
+    panel.classList.remove('is-open')
+    toggle.classList.remove('is-open')
+    toggle.setAttribute('aria-expanded', 'false')
+    document.documentElement.classList.remove('mobile-nav-open')
+    if (returnFocus) toggle.focus()
+  }
+
+  function openMenu(toggle, panel) {
+    panel.classList.add('is-open')
+    toggle.classList.add('is-open')
+    toggle.setAttribute('aria-expanded', 'true')
+    document.documentElement.classList.add('mobile-nav-open')
+    var firstLink = panel.querySelector('.mobile-link')
+    if (firstLink) firstLink.focus()
+  }
+
+  document.querySelectorAll('.nav-bar').forEach(function (bar) {
+    var toggle = bar.querySelector('.menu-toggle')
+    var panel = bar.nextElementSibling
+    if (!toggle || !panel || !panel.classList.contains('mobile-nav-panel')) {
+      return
+    }
+
+    toggle.addEventListener('click', function () {
+      if (panel.classList.contains('is-open')) {
+        closeMenu(toggle, panel, true)
+      } else {
+        openMenu(toggle, panel)
+      }
+    })
+
+    panel.querySelectorAll('.mobile-link').forEach(function (link) {
+      link.addEventListener('click', function () {
+        closeMenu(toggle, panel, false)
+      })
+    })
+
+    panel.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeMenu(toggle, panel, true)
+      }
+    })
+  })
+})()`
+
+/**
+ * {@link NAV_MOBILE_MENU_SCRIPT} in a `<script>` element.
+ *
+ * Render this once per page (same rule as {@link NavCopyScript} — see its
+ * doc comment), after the last `<Nav>` in the document.
+ */
+export function NavMobileMenuScript() {
+  return (
+    <script
+      // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- NAV_MOBILE_MENU_SCRIPT is a hardcoded literal with no user input
+      dangerouslySetInnerHTML={{ __html: NAV_MOBILE_MENU_SCRIPT }}
+    />
+  )
+}
+
+/**
+ * The site's shared navigation bar: brand, links, install pill, and (below
+ * {@link BREAKPOINTS}.tablet) a fullscreen mobile menu — see {@link
+ * MobileNavPanel}'s doc comment for where that design came from.
  *
  * ```tsx
  * <Nav active="forkFixes" homeHref="/" hrefs={{ forkFixes: '/fork-fixes' }} />
@@ -456,6 +944,12 @@ export function NavCopyScript() {
  *
  * Every redesigned page renders this one component — there is no per-page
  * nav markup, and the only thing a page varies is which link is `active`.
+ * Returns a fragment (the bar, then the mobile panel as its sibling) rather
+ * than a single element — `position: fixed` on the panel means it doesn't
+ * need to nest inside the bar to cover the viewport, and staying out of the
+ * bar's own `z-index: 10` stacking context is what keeps the panel from
+ * ever being trapped behind unrelated page content with a higher one (the
+ * editor page's own tool chrome, say).
  */
 export function Nav({
   active,
@@ -479,40 +973,59 @@ export function Nav({
     top: sticky ? 0 : undefined,
     zIndex: NAV_Z_INDEX,
   }
+  const linkItems = NAV_ITEMS.map((item) => ({
+    key: item.key,
+    label: item.label,
+    href: hrefs?.[item.key] ?? item.href,
+    isActive: item.key === active,
+  }))
   return (
-    <header
-      className={classNames('nav-bar', className)}
-      style={{ ...barStyle, ...style }}
-    >
-      <NavBrand homeHref={homeHref} />
-      <nav
-        className="nav-links"
-        aria-label={label}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: `${NAV_LINK_GAP}px`,
-        }}
+    <>
+      <header
+        className={classNames('nav-bar', className)}
+        style={{ ...barStyle, ...style }}
       >
-        {NAV_ITEMS.map((item) => {
-          const isActive = item.key === active
-          return (
+        <NavBrand homeHref={homeHref} />
+        <nav
+          className="nav-links"
+          aria-label={label}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${NAV_LINK_GAP}px`,
+          }}
+        >
+          {linkItems.map((item) => (
             <a
               key={item.key}
-              href={hrefs?.[item.key] ?? item.href}
-              aria-current={isActive ? 'page' : undefined}
+              href={item.href}
+              aria-current={item.isActive ? 'page' : undefined}
               style={{
                 fontSize: `${FONT_SIZE.bodyLg}px`,
                 fontWeight: FONT_WEIGHT.semibold,
-                color: colorVar(isActive ? '--text' : '--text-dim'),
+                color: colorVar(item.isActive ? '--text' : '--text-dim'),
               }}
             >
               {item.label}
             </a>
-          )
-        })}
-      </nav>
-      {installSlot ?? <NavInstall command={installCommand} />}
-    </header>
+          ))}
+        </nav>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${SPACE.md}px`,
+          }}
+        >
+          {installSlot ?? <NavInstall command={installCommand} />}
+          <MenuToggle />
+        </div>
+      </header>
+      <MobileNavPanel
+        linkItems={linkItems}
+        installCommand={installCommand}
+        label={label}
+      />
+    </>
   )
 }

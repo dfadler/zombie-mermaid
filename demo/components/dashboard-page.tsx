@@ -42,7 +42,7 @@ import {
   ChevronRightIcon,
   ClockIcon,
 } from './icons.tsx'
-import { Nav, NavCopyScript } from './nav.tsx'
+import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
 import { ThemePickerSection } from './theme-picker-section.tsx'
 import { Card, CTA, SectionEyebrow, accentVar } from './primitives.tsx'
 import {
@@ -647,6 +647,7 @@ export function DashboardPage({
           dangerouslySetInnerHTML={{ __html: themeBarScript }}
         />
         <NavCopyScript />
+        <NavMobileMenuScript />
       </body>
     </html>
   )
