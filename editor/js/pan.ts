@@ -1,6 +1,11 @@
-var panBtn = document.getElementById('pan-btn')
-var panActive = false
-var panStart = null
+import { requireElement } from './dom.ts'
+import { previewBody } from './elements.ts'
+import { state } from './state.ts'
+import { applyZoom } from './zoom.ts'
+
+const panBtn = requireElement('pan-btn', HTMLElement)
+let panActive = false
+let panStart: { x: number; y: number; sl: number; st: number } | null = null
 
 panBtn.addEventListener('click', function () {
   panActive = !panActive
@@ -9,7 +14,7 @@ panBtn.addEventListener('click', function () {
 })
 
 previewBody.addEventListener('mousedown', function (e) {
-  var shouldPan = panActive || e.metaKey || e.ctrlKey
+  const shouldPan = panActive || e.metaKey || e.ctrlKey
   if (!shouldPan) return
   if (e.button !== 0) return
   e.preventDefault()
@@ -24,8 +29,8 @@ previewBody.addEventListener('mousedown', function (e) {
 
 window.addEventListener('mousemove', function (e) {
   if (!panStart) return
-  var dx = e.clientX - panStart.x
-  var dy = e.clientY - panStart.y
+  const dx = e.clientX - panStart.x
+  const dy = e.clientY - panStart.y
   previewBody.scrollLeft = panStart.sl - dx
   previewBody.scrollTop = panStart.st - dy
 })
@@ -48,7 +53,7 @@ previewBody.addEventListener(
   function (e) {
     if (!e.ctrlKey && !e.metaKey) return
     e.preventDefault()
-    var factor = Math.pow(0.999, e.deltaY)
+    const factor = Math.pow(0.999, e.deltaY)
     applyZoom(state.zoom * factor)
   },
   { passive: false },

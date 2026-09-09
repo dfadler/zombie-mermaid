@@ -1,0 +1,16 @@
+{
+  // The live editor's client-side modules need DOM types, which the root
+  // tsconfig deliberately omits (see that file's own note, and demo/
+  // tsconfig.json's identical rationale for the site's other browser-only
+  // code) -- so they're checked under their own config, same pattern.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": [],
+    "noEmit": true,
+    "rootDir": "..",
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["js/**/*.ts"]
+}

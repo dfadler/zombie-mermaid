@@ -1,4 +1,24 @@
-var PRESET_FONTS = [
+import { readConfig } from './config-panel.ts'
+import { closest, requireElement } from './dom.ts'
+import { scheduleRender } from './rendering.ts'
+
+/**
+ * Owned here (not config-panel.ts, despite `readConfig()` there reading
+ * both) because this is the only module that ever reassigns them --
+ * config-panel.ts imports them back read-only. An ES module can't assign
+ * an imported binding from outside its owning module, so whichever file
+ * mutates a piece of cross-file state has to be the one that declares it.
+ */
+export let cfgFont = ''
+export let cfgPadding = 24
+
+interface PresetFont {
+  name: string
+  value: string
+  group: string
+}
+
+const PRESET_FONTS: PresetFont[] = [
   { name: 'Inter', value: 'Inter', group: 'Sans-serif' },
   { name: 'Geist', value: 'Geist', group: 'Sans-serif' },
   { name: 'Roboto', value: 'Roboto', group: 'Sans-serif' },
@@ -18,15 +38,15 @@ var PRESET_FONTS = [
   { name: 'Courier New', value: 'Courier New', group: 'Monospace' },
 ]
 
-var fontPopup = document.getElementById('font-popup')
-var fontSearch = document.getElementById('font-search')
-var fontList = document.getElementById('font-list')
-var fontSelectBtn = document.getElementById('font-select-btn')
-var fontSelectLabel = document.getElementById('font-select-label')
+const fontPopup = requireElement('font-popup', HTMLElement)
+const fontSearch = requireElement('font-search', HTMLInputElement)
+const fontList = requireElement('font-list', HTMLElement)
+const fontSelectBtn = requireElement('font-select-btn', HTMLElement)
+const fontSelectLabel = requireElement('font-select-label', HTMLElement)
 
-function buildFontList(query) {
-  var q = (query || '').toLowerCase()
-  var filtered = PRESET_FONTS.filter(function (f) {
+function buildFontList(query: string): void {
+  const q = (query || '').toLowerCase()
+  const filtered = PRESET_FONTS.filter(function (f) {
     return (
       !q ||
       f.name.toLowerCase().includes(q) ||
@@ -34,35 +54,37 @@ function buildFontList(query) {
     )
   })
 
-  var groups = {}
+  const groups: Record<string, PresetFont[]> = {}
   filtered.forEach(function (f) {
     if (!groups[f.group]) groups[f.group] = []
-    groups[f.group].push(f)
+    groups[f.group]!.push(f)
   })
 
   fontList.innerHTML = ''
 
-  var browserFonts = []
+  let browserFonts: string[] = []
   try {
     document.fonts.forEach(function (ff) {
-      var n = ff.family.replace(/['"]/g, '')
+      const n = ff.family.replace(/['"]/g, '')
       if (!q || n.toLowerCase().includes(q)) browserFonts.push(n)
     })
     browserFonts = [...new Set(browserFonts)].sort()
-  } catch (e) {}
+  } catch {
+    // document.fonts isn't guaranteed to exist in every environment
+  }
 
   Object.keys(groups).forEach(function (group) {
-    var label = document.createElement('div')
+    const label = document.createElement('div')
     label.className = 'font-section-label'
     label.textContent = group
     fontList.appendChild(label)
-    groups[group].forEach(function (f) {
+    groups[group]!.forEach(function (f) {
       appendFontItem(f.name, f.value)
     })
   })
 
   if (browserFonts.length) {
-    var label = document.createElement('div')
+    const label = document.createElement('div')
     label.className = 'font-section-label'
     label.textContent = 'Loaded in browser'
     fontList.appendChild(label)
@@ -72,14 +94,14 @@ function buildFontList(query) {
   }
 }
 
-function appendFontItem(name, value) {
-  var item = document.createElement('div')
+function appendFontItem(name: string, value: string): void {
+  const item = document.createElement('div')
   item.className = 'font-item' + (cfgFont === value ? ' active' : '')
-  var previewSpan = document.createElement('span')
+  const previewSpan = document.createElement('span')
   previewSpan.className = 'font-item-preview'
   previewSpan.style.fontFamily = value + ', sans-serif'
   previewSpan.textContent = 'Aa'
-  var nameSpan = document.createElement('span')
+  const nameSpan = document.createElement('span')
   nameSpan.className = 'font-item-name'
   nameSpan.textContent = name
   item.appendChild(previewSpan)
@@ -94,12 +116,12 @@ function appendFontItem(name, value) {
   fontList.appendChild(item)
 }
 
-function openFontPopup() {
+function openFontPopup(): void {
   buildFontList('')
   fontSearch.value = ''
-  var rect = fontSelectBtn.getBoundingClientRect()
-  var top = rect.bottom + 6
-  var left = rect.right - 220
+  const rect = fontSelectBtn.getBoundingClientRect()
+  const top = rect.bottom + 6
+  let left = rect.right - 220
   if (left < 8) left = 8
   fontPopup.style.top = top + 'px'
   fontPopup.style.left = left + 'px'
@@ -107,7 +129,7 @@ function openFontPopup() {
   fontSearch.focus()
 }
 
-function closeFontPopup() {
+function closeFontPopup(): void {
   fontPopup.classList.remove('open')
 }
 
@@ -126,18 +148,21 @@ fontSearch.addEventListener('input', function () {
 
 document.addEventListener('click', function (e) {
   if (!fontPopup.classList.contains('open')) return
-  if (!e.target.closest('#font-popup') && !e.target.closest('#font-select-btn'))
+  if (
+    !closest(e.target, '#font-popup') &&
+    !closest(e.target, '#font-select-btn')
+  )
     closeFontPopup()
 })
 
-var paddingNum = document.getElementById('cfg-padding')
-var paddingSlider = document.getElementById('cfg-padding-slider')
+const paddingNum = requireElement('cfg-padding', HTMLInputElement)
+const paddingSlider = requireElement('cfg-padding-slider', HTMLInputElement)
 
-function setPadding(val) {
-  val = Math.max(0, Math.min(120, parseInt(val, 10) || 0))
-  cfgPadding = val
-  paddingNum.value = val
-  paddingSlider.value = val
+function setPadding(val: string | number): void {
+  const parsed = Math.max(0, Math.min(120, parseInt(String(val), 10) || 0))
+  cfgPadding = parsed
+  paddingNum.value = String(parsed)
+  paddingSlider.value = String(parsed)
   readConfig()
   scheduleRender(200)
 }

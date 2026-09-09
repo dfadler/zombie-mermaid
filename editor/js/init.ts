@@ -1,25 +1,15 @@
-// Theme dropdown logic
-var themeBtnLabel = document.getElementById('theme-btn-label')
-var themeBtnSwatch = document.getElementById('theme-btn-swatch')
-var themeDropdownBtn = document.getElementById('theme-dropdown-btn')
-
-function updateThemeButton() {
-  var key = state.theme
-  if (key && THEMES[key]) {
-    themeBtnLabel.textContent =
-      themeDropdownBtn.getAttribute('data-label-' + key) || key
-    themeBtnSwatch.style.background = THEMES[key].bg
-    themeBtnSwatch.style.display = ''
-  } else {
-    themeBtnLabel.textContent = 'Default'
-    themeBtnSwatch.style.background = ''
-    themeBtnSwatch.style.display = 'none'
-  }
-  // Update active state in dropdown
-  themeMenu.querySelectorAll('.theme-dropdown-item').forEach(function (item) {
-    item.classList.toggle('active', item.dataset.theme === key)
-  })
-}
+import { refreshAllColorUIs } from './config-panel.ts'
+import { applyColorMode, isDark, setDiagramThemeIsAuto } from './dark-mode.ts'
+import { closest, requireElement } from './dom.ts'
+import { updateLineNumbers } from './editor-helpers.ts'
+import { editor, themeMenu } from './elements.ts'
+import { applyThemeToPage, scheduleRender } from './rendering.ts'
+import { getHashSource } from './sharing.ts'
+import { state, THEMES } from './state.ts'
+// Theme dropdown button + updateThemeButton() live in their own module so
+// dark-mode.ts can also reach updateThemeButton() without an init.ts <->
+// dark-mode.ts import cycle -- see theme-button.ts's header comment.
+import { themeDropdownBtn, updateThemeButton } from './theme-button.ts'
 
 // #688: applyTheme() is this file's own re-theming — everything setting
 // `key` here previously did directly, now split so it can also run as a
@@ -29,48 +19,55 @@ function updateThemeButton() {
 // + notifies through the shared demo/theme-state.ts module; applyTheme()
 // is what actually updates this page for a theme change from *any* source
 // — a click here, or a theme picked on another tab/page entirely.
-function applyTheme(key) {
+function applyTheme(key: string): void {
   state.theme = key
-  diagramThemeIsAuto = false
+  setDiagramThemeIsAuto(false)
   applyThemeToPage(key)
   updateThemeButton()
   refreshAllColorUIs()
   scheduleRender(0)
 }
 
-function setTheme(key) {
+function setTheme(key: string): void {
   window.__themeState.setTheme(key)
 }
 
 // Toggle dropdown
 themeDropdownBtn.addEventListener('click', function (e) {
   e.stopPropagation()
-  var isOpen = themeMenu.classList.toggle('open')
+  const isOpen = themeMenu.classList.toggle('open')
   themeDropdownBtn.classList.toggle('open', isOpen)
 })
 
 // Click item
 themeMenu.addEventListener('click', function (e) {
-  var item = e.target.closest('.theme-dropdown-item')
-  if (!item) return
+  const item = closest(e.target, '.theme-dropdown-item')
+  if (!item || !(item instanceof HTMLElement)) return
   setTheme(item.dataset.theme || '')
   themeMenu.classList.remove('open')
   themeDropdownBtn.classList.remove('open')
 })
 
+const themeDropdownWrap = requireElement('theme-dropdown-wrap', HTMLElement)
+
 // Close on outside click
 document.addEventListener('click', function (e) {
-  if (!document.getElementById('theme-dropdown-wrap').contains(e.target)) {
+  if (!(e.target instanceof Node) || !themeDropdownWrap.contains(e.target)) {
     themeMenu.classList.remove('open')
     themeDropdownBtn.classList.remove('open')
   }
 })
 
 // Store label data for lookup
-themeMenu.querySelectorAll('.theme-dropdown-item').forEach(function (item) {
-  var key = item.dataset.theme || ''
-  themeDropdownBtn.setAttribute('data-label-' + key, item.textContent.trim())
-})
+themeMenu
+  .querySelectorAll<HTMLElement>('.theme-dropdown-item')
+  .forEach(function (item) {
+    const key = item.dataset.theme || ''
+    themeDropdownBtn.setAttribute(
+      'data-label-' + key,
+      item.textContent?.trim() || '',
+    )
+  })
 
 // Apply initial dark/light mode (must happen after all DOM refs + functions are ready)
 applyColorMode(isDark)
@@ -85,7 +82,7 @@ applyColorMode(isDark)
 // preference. window.__themeState.setTheme() both persists under the
 // shared key and notifies the subscribe() listener registered below, so
 // this reaches applyTheme() exactly the same way a live pill click would.
-var legacyEditorTheme = localStorage.getItem('bm-editor-theme')
+const legacyEditorTheme = localStorage.getItem('bm-editor-theme')
 if (
   window.__themeState.getTheme() === '' &&
   legacyEditorTheme &&
@@ -99,10 +96,10 @@ localStorage.removeItem('bm-editor-theme')
 // preference stored" (theme-state.ts's DEFAULT_THEME_KEY), which already
 // matches this page's own build-time default, so there's nothing to apply
 // in that case.
-var savedTheme = window.__themeState.getTheme()
+const savedTheme = window.__themeState.getTheme()
 if (savedTheme && THEMES[savedTheme]) {
   state.theme = savedTheme
-  diagramThemeIsAuto = false
+  setDiagramThemeIsAuto(false)
 }
 applyThemeToPage(state.theme)
 updateThemeButton()
@@ -115,16 +112,16 @@ updateThemeButton()
 window.__themeState.subscribe(applyTheme)
 
 // Load from URL hash or use default
-var DEFAULT_SOURCE =
+const DEFAULT_SOURCE =
   'graph TD\n  A[Start] --> B{Decision?}\n  B -->|Yes| C[Do the thing]\n  B -->|No| D[Skip it]\n  C --> E[End]\n  D --> E'
 
-var hashSource = getHashSource()
+const hashSource = getHashSource()
 if (hashSource) {
   editor.value = hashSource
-  // getHashSource() may have set state.theme (see sharing.js) as a side
+  // getHashSource() may have set state.theme (see sharing.ts) as a side
   // effect, but nothing had applied it yet -- a shared/linked-to theme was
   // silently ignored, leaving only the source itself loaded.
-  diagramThemeIsAuto = false
+  setDiagramThemeIsAuto(false)
   applyThemeToPage(state.theme)
   updateThemeButton()
 } else {

@@ -1,6 +1,8 @@
-var isResizing = false
-var resizeStartX = 0
-var resizeStartW = 0
+import { panelLeft, resizeHandle } from './elements.ts'
+
+let isResizing = false
+let resizeStartX = 0
+let resizeStartW = 0
 
 resizeHandle.addEventListener('mousedown', function (e) {
   isResizing = true
@@ -13,8 +15,8 @@ resizeHandle.addEventListener('mousedown', function (e) {
 
 document.addEventListener('mousemove', function (e) {
   if (!isResizing) return
-  var dx = e.clientX - resizeStartX
-  var newW = Math.max(
+  const dx = e.clientX - resizeStartX
+  const newW = Math.max(
     280,
     Math.min(window.innerWidth * 0.75, resizeStartW + dx),
   )
