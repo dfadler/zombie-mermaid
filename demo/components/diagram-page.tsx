@@ -975,7 +975,7 @@ export function DiagramTypePage({
                   Open in the live editor
                 </CTA>
                 <CTA
-                  href="../#samples-heading"
+                  href={NAV_HREFS.diagrams}
                   accent={accent}
                   variant="ghost"
                   arrow={false}
