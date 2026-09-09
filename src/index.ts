@@ -37,8 +37,6 @@ export { fromShikiTheme, THEMES, DEFAULTS } from '@zombie-mermaid/core'
 export { parseMermaid } from './parser.ts'
 import {
   resolveCssColors,
-  layoutGraphSync,
-  renderSvg,
   resolveFontSizes,
 } from '@zombie-mermaid/svg-renderer'
 export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
@@ -47,7 +45,6 @@ export { createLayoutCache } from '@zombie-mermaid/svg-renderer'
 export type { LayoutCache } from '@zombie-mermaid/svg-renderer'
 
 import { decodeXML } from 'entities'
-import { parseMermaid } from './parser.ts'
 import type {
   RenderOptions,
   DiagramColors,
@@ -60,8 +57,6 @@ import {
   isMonospaceFont,
   setMonospaceMetrics,
   detectDiagramType,
-  applyInitConfig,
-  withDirectionOverride,
   splitStatements,
 } from '@zombie-mermaid/core'
 
@@ -127,45 +122,15 @@ function resolveSvgEmit(options: RenderOptions): SvgEmitOptions {
   }
 }
 
-/**
- * Resolve the effective interactivity level, defaulting unset to `'static'`.
- * See `RenderOptions.interactivity` for what each level means.
- */
-function resolveInteractivity(
-  options: RenderOptions,
-): 'none' | 'static' | 'full' {
-  return options.interactivity ?? 'static'
-}
-
-/**
- * Whether flowchart/state-diagram edge animation (`e1@{ animate: true }`)
- * should render. Gated to `'full'` only — CSS animation is tier-2 *motion*
- * (see docs/decisions/no-script-interactivity.md), so the default
- * (`'static'`, tier 1 + tier 2 minus motion) and `'none'` both render the
- * edge as a still line.
- */
-function resolveAnimationEnabled(options: RenderOptions): boolean {
-  return resolveInteractivity(options) === 'full'
-}
-
-/**
- * Whether flowchart `click`-based links (`<a href>`) and `<title>` tooltips
- * should render. Gated behind `interactivity !== 'none'` — `'none'` is meant
- * for print/rasterized output, where a link is meaningless, so it strips
- * both; `'static'` and `'full'` both keep them.
- */
-function resolveLinksEnabled(options: RenderOptions): boolean {
-  return resolveInteractivity(options) !== 'none'
-}
-
-// Whether xychart hover tooltips should render (`interactivity` wins over
-// the deprecated `interactive` boolean when both are set) now lives next to
-// the xychart registry entry in src/diagram-registry.ts, since xychart's
-// SVG dispatch is fully handled by the registry lookup below — there is no
-// remaining switch case here for it to serve. `resolveLinksEnabled` above
-// is duplicated (not imported) into that same module for the 'class' entry,
-// since src/diagram-registry.ts is imported BY this file — see that
-// duplicate's own comment for why.
+// Interactivity-derived render gates — whether xychart hover tooltips
+// render, whether flowchart/state edge animation (`e1@{ animate: true }`)
+// plays, and whether `click`-based links/`<title>` tooltips render — all
+// now live next to their diagram type's registry entry in
+// src/diagram-registry.ts (`resolveAnimationEnabled`/`resolveLinksEnabled`
+// there, duplicated rather than imported since that module is imported BY
+// this file — see those functions' own comments for why), since every
+// diagram type's SVG dispatch is fully handled by the registry lookup
+// below and there is no remaining switch case here for them to serve.
 
 /**
  * Render Mermaid diagram text to an SVG string — synchronously.
@@ -244,58 +209,28 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
 
   const lines = splitStatements(decoded)
 
-  // Registry lookup first (see src/diagram-registry.ts — issue #533):
-  // 'xychart', 'er', 'sequence', and 'class' are registered there and
-  // handled identically to how their switch cases used to read, just via
-  // the shared adapter shape instead. Only 'flowchart' (and the 'state'
-  // pipeline it shares) is not registered — see
-  // docs/decisions/diagram-type-registry-partial.md for why — so it's the
-  // one case left below instead of a switch.
+  // Registry dispatch (see src/diagram-registry.ts — issue #533 / #745):
+  // every diagram type, including 'flowchart' (and the 'state' pipeline it
+  // shares), is registered there and handled identically to how each
+  // type's original switch case (or, for 'flowchart', its inline fallback)
+  // used to read, just via the shared adapter shape instead. `parse` takes
+  // both `lines` (what every already-registered type's parser wants) and
+  // `decoded` (the raw text flowchart/state's parser needs instead — see
+  // the `parse` doc comment on `DiagramModule`).
   const registered = diagramRegistry[diagramType]
-  if (registered) {
-    const diagram = registered.parse(lines)
-    const positioned = registered.layoutForSvg(diagram, options)
-    const ctx: SvgRenderContext = {
-      colors,
-      font,
-      transparent,
-      fontSizes,
-      embedSource,
-      title,
-      decorative,
-      emit,
-    }
-    return registered.renderSvg(positioned, ctx, options)
-  }
-
-  // Flowchart + state diagram pipeline — the one type not yet migrated to
-  // the registry above (see the comment on `registered`).
-  const parsed = parseMermaid(decoded)
-  // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
-  // render option always wins. See packages/core/src/init-directive.ts.
-  const effective = parsed.initConfig
-    ? applyInitConfig(options, parsed.initConfig)
-    : options
-  // `direction` replaces the header's (or a state diagram's top-level
-  // `direction` line's) direction before layout; nested subgraph /
-  // composite-state directions live on the subgraph objects and still
-  // apply on top of it. See packages/core/src/direction-override.ts.
-  const graph = withDirectionOverride(parsed, effective.direction)
-  const positioned = layoutGraphSync(graph, effective)
-  return renderSvg(
-    positioned,
+  const diagram = registered.parse(lines, decoded)
+  const positioned = registered.layoutForSvg(diagram, options)
+  const ctx: SvgRenderContext = {
     colors,
     font,
     transparent,
     fontSizes,
-    effective.curve ?? 'linear',
     embedSource,
-    resolveAnimationEnabled(options),
-    resolveLinksEnabled(options),
     title,
     decorative,
     emit,
-  )
+  }
+  return registered.renderSvg(positioned, ctx, options)
 }
 
 /**
