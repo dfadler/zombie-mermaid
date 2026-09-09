@@ -193,10 +193,19 @@ const LATEST_POST = {
  *
  * Emit once, after shared-page-css.tsx's `sharedPageCss()` (via
  * `SharedPageStyles`) — this page's `<style>` order in {@link IndexPage}.
+ *
+ * A fourth deliberate deviation from the canvas, alongside the three this
+ * file's header comment already names: the body gradient's middle stop is
+ * `colorVar('--bg-soft')`, not the canvas's literal `#0d1120`. That literal
+ * is a fixed, non-`var()` colour tokens.tsx's `--bg-soft` was already
+ * defined for ("a lifted page background... for alternating full-bleed
+ * sections") — using it instead makes this gradient re-theme along with
+ * the rest of the site chrome (#772) rather than leaving a static dark band
+ * behind on every non-default theme, including light ones.
  */
 function homePageCss(): string {
   return `body {
-  background: linear-gradient(180deg, ${colorVar('--bg')} 0%, #0d1120 40%, ${colorVar('--bg')} 100%);
+  background: linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%);
   overflow-x: hidden;
 }
 

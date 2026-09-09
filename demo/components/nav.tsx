@@ -153,8 +153,16 @@ const LOGO_SIZE = 30
 const COPY_ICON_SIZE = 15
 const COPY_ICON_STROKE = 2
 
-/** The bar's translucency over the page background. */
-const NAV_BG_ALPHA = 0.85
+/**
+ * The bar's translucency over the page background.
+ *
+ * Exported so `demo/site-chrome-theme.ts` can recompute the same alpha at
+ * runtime when a theme changes `--bg` — {@link bgRgba} itself only ever
+ * derives from tokens.tsx's fixed `COLORS`, not the live custom property
+ * (see that module's header comment for why re-theming this specific value
+ * needs a direct element override rather than a `var()` reference).
+ */
+export const NAV_BG_ALPHA = 0.85
 
 /** `z-index` on the bar, so the hero's artwork passes beneath it. */
 const NAV_Z_INDEX = 10

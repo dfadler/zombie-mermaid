@@ -776,8 +776,12 @@ export function DiagramTypePage({
             // itself renders at, one level up from the content column.
             maxWidth: `${LAYOUT.maxWidth + 2 * LAYOUT.gutter.desktop}px`,
             margin: '0 auto',
-            background:
-              'linear-gradient(180deg, #0a0d16 0%, #0d1120 40%, #0a0d16 100%)',
+            // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
+            // fixed gradient here would leave a static dark band behind on
+            // every non-default theme (#772's site-chrome re-theming). The
+            // middle stop reuses --bg-soft, already defined for exactly
+            // this "lifted page background" role (tokens.tsx).
+            background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -1360,8 +1364,12 @@ export function DiagramHubPage({
             width: '100%',
             maxWidth: `${LAYOUT.maxWidth + 2 * LAYOUT.gutter.desktop}px`,
             margin: '0 auto',
-            background:
-              'linear-gradient(180deg, #0a0d16 0%, #0d1120 40%, #0a0d16 100%)',
+            // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
+            // fixed gradient here would leave a static dark band behind on
+            // every non-default theme (#772's site-chrome re-theming). The
+            // middle stop reuses --bg-soft, already defined for exactly
+            // this "lifted page background" role (tokens.tsx).
+            background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
             position: 'relative',
             overflow: 'hidden',
           }}
