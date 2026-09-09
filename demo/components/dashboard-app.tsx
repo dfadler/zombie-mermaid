@@ -2,10 +2,9 @@
 /**
  * The maintenance-transparency dashboard's *hydrated* content: everything
  * inside {@link DASHBOARD_ROOT_ID}'s hydration boundary (hero, metrics,
- * rescued-issues teaser, response time, the theme picker, the footer) --
- * split out from `dashboard-page.tsx`'s `DashboardPage` (zombie-mermaid#799)
- * specifically so this file, and everything it imports, never touches
- * `react-dom/server`.
+ * rescued-issues teaser, response time) -- split out from `dashboard-
+ * page.tsx`'s `DashboardPage` (zombie-mermaid#799) specifically so this
+ * file, and everything it imports, never touches `react-dom/server`.
  *
  * That split matters for real: `demo/dashboard-client.tsx` (the browser
  * hydration entry `dashboard.ts` bundles) imports {@link DashboardApp} from
@@ -22,6 +21,28 @@
  * separate weight simply isn't reachable from the client entry point
  * anymore.
  *
+ * The theme picker and footer used to be rendered here too, but #801 (which
+ * introduced `ThemePickerIsland` as `ThemePickerSection`'s new markup
+ * source) broke that: `ThemePickerIsland` itself imports `react-dom/server`
+ * for its own SSR-only purposes (see `theme-picker-island.tsx`'s header
+ * comment), so nesting `<ThemePickerSection>` in *this* file's tree would
+ * have re-opened exactly the leak the paragraph above describes -- and
+ * would have hydrated `#theme-pills` twice over: once via this file's own
+ * `hydrateRoot()` call (which would try to reconcile `ThemePickerIsland`'s
+ * `dangerouslySetInnerHTML` node) and again, independently, via `demo/
+ * theme-bar-client.tsx`'s `hydrateThemeBar()` (bundled by every page,
+ * dashboard.html included, through `demo/theme-bar-only-client.ts` --
+ * `dashboard-page.tsx`'s `themeBarScript`). Found while investigating #802,
+ * before it ever reached `main` (#801/PR833 was still open). Fixed by
+ * moving `<ThemePickerSection>` (and, for the same nesting reason, `<Footer>`
+ * -- neither has any client-side behavior of its own, so nothing is lost by
+ * keeping both out of this hydration boundary) into `dashboard-page.tsx`
+ * itself, as plain siblings of {@link DASHBOARD_ROOT_ID}'s container --
+ * exactly how every other page mounts `ThemePickerSection` (as top-level
+ * page JSX with no hydrated ancestor), and exactly how `<Nav>` is kept a
+ * sibling island rather than nested in this file's own tree (see this
+ * component's doc comment below).
+ *
  * Design/content provenance (the #590 canvas, #592/#595/#596 tokens etc.)
  * is unchanged from before this split -- see `dashboard-page.tsx`'s own
  * header comment, which still applies to everything rendered here.
@@ -31,14 +52,12 @@ import {
   type DashboardViewModel,
   type RepoMetricsView,
 } from '../dashboard-model.ts'
-import { Footer } from './footer.tsx'
 import {
   ActivityIcon,
   CheckIcon,
   ChevronRightIcon,
   ClockIcon,
 } from './icons.tsx'
-import { ThemePickerSection } from './theme-picker-section.tsx'
 import { Card, CTA, SectionEyebrow, accentVar } from './primitives.tsx'
 import {
   FONT_SIZE,
@@ -54,8 +73,13 @@ import {
 export const FORK_URL = 'https://github.com/dfadler/zombie-mermaid'
 /** The upstream repository this fork tracks. */
 export const UPSTREAM_URL = 'https://github.com/lukilabs/beautiful-mermaid'
-/** The published package, linked from the footer's Resources column. */
-const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
+/**
+ * The published package, linked from the footer's Resources column.
+ * Exported (rather than a local `const`, as before the dashboard/footer
+ * nesting fix above) because `dashboard-page.tsx` now renders `<Footer>`
+ * itself and needs this same URL.
+ */
+export const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
 
 /**
  * The site's real routes, relative to dashboard.html's own location in the
@@ -429,8 +453,10 @@ export interface DashboardAppProps {
 
 /**
  * Everything inside {@link DASHBOARD_ROOT_ID}'s hydration boundary: hero,
- * metrics, rescued-issues teaser, response time, the theme picker, and the
- * footer. The exact same function runs on both sides of hydration:
+ * metrics, rescued-issues teaser, and response time. The theme picker and
+ * footer are deliberately *not* rendered here — see this file's header
+ * comment for why nesting either inside this component's hydrated tree is
+ * unsafe. The exact same function runs on both sides of hydration:
  * `dashboard-page.tsx`'s `DashboardPage` renders it server-side (nested
  * inside the {@link DASHBOARD_ROOT_ID} container, itself inside a full
  * document), and `demo/dashboard-client.tsx` passes it straight to
@@ -564,36 +590,41 @@ export function DashboardApp({ viewModel }: DashboardAppProps) {
       <MetricsSection fork={viewModel.fork} upstream={viewModel.upstream} />
       <RescuedTeaser />
       <ResponseTimeSection responseTime={viewModel.responseTime} />
-
-      <ThemePickerSection />
-
-      <Footer
-        columns={[
-          {
-            title: 'Product',
-            links: [
-              { label: 'Diagrams', href: ROUTES.diagrams },
-              { label: 'Editor', href: ROUTES.editor },
-              { label: 'Fork fixes', href: ROUTES.forkFixes },
-            ],
-          },
-          {
-            title: 'Resources',
-            links: [
-              { label: 'Blog', href: ROUTES.blog },
-              { label: 'GitHub', href: FORK_URL },
-              { label: 'npm package', href: NPM_URL },
-            ],
-          },
-          {
-            title: 'Project',
-            links: [
-              { label: 'MIT Licensed' },
-              { label: 'dfadler/zombie-mermaid', href: FORK_URL },
-            ],
-          },
-        ]}
-      />
     </>
   )
+}
+
+/**
+ * The dashboard footer's column config — factored out (rather than inline
+ * JSX) so `dashboard-page.tsx`'s `<Footer>` (rendered as a plain sibling of
+ * {@link DASHBOARD_ROOT_ID}'s container, not nested inside {@link
+ * DashboardApp} — see that component's doc comment above) can reuse the
+ * exact same links without duplicating them.
+ */
+export function dashboardFooterColumns() {
+  return [
+    {
+      title: 'Product',
+      links: [
+        { label: 'Diagrams', href: ROUTES.diagrams },
+        { label: 'Editor', href: ROUTES.editor },
+        { label: 'Fork fixes', href: ROUTES.forkFixes },
+      ],
+    },
+    {
+      title: 'Resources',
+      links: [
+        { label: 'Blog', href: ROUTES.blog },
+        { label: 'GitHub', href: FORK_URL },
+        { label: 'npm package', href: NPM_URL },
+      ],
+    },
+    {
+      title: 'Project',
+      links: [
+        { label: 'MIT Licensed' },
+        { label: 'dfadler/zombie-mermaid', href: FORK_URL },
+      ],
+    },
+  ]
 }
