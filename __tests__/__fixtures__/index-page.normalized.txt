@@ -140,6 +140,21 @@
               </svg>
             </a>
           </div>
+          <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <span style="display: inline-block; width: 22px; height: 22px; border-radius: 8px; background: rgb(40, 42, 54); border: 1px solid rgb(189, 147, 249);" title="Dracula">
+            </span>
+            <span style="display: inline-block; width: 22px; height: 22px; border-radius: 8px; background: rgb(26, 27, 38); border: 1px solid rgb(122, 162, 247);" title="Tokyo Night">
+            </span>
+            <span style="display: inline-block; width: 22px; height: 22px; border-radius: 8px; background: rgb(253, 246, 227); border: 1px solid rgb(38, 139, 210);" title="Solarized">
+            </span>
+            <span style="display: inline-block; width: 22px; height: 22px; border-radius: 8px; background: rgb(46, 52, 64); border: 1px solid rgb(136, 192, 208);" title="Nord">
+            </span>
+            <span style="display: inline-block; width: 22px; height: 22px; border-radius: 8px; background: rgb(30, 30, 46); border: 1px solid rgb(203, 166, 247);" title="Catppuccin">
+            </span>
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-faint);">
+              "+10 more themes, switchable live"
+            </span>
+          </div>
         </div>
         <div class="hero-visual" style="flex: 0 1 700px; min-width: 0px; max-width: 100%;">
           <svg height="auto" style="display: block;" viewBox="0 0 700 460" width="100%">
