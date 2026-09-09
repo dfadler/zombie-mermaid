@@ -73,8 +73,14 @@ export interface PackageBuildOptions {
   serverConsumer?: boolean
 }
 
-const RELATIVE_IMPORT_RE =
-  /^(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]\.\.?\//m
+// `\bfrom\b` once, not `from` twice — the previous
+// `(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]...` shape required the
+// `export` branch to contain the literal "from" twice, so a single-`from`
+// relative re-export (`export * from './flowchart'`,
+// `export { X } from '../core'`) matched neither alternative and silently
+// passed the afterBuild guard below. Caught in PR review (#769) — this
+// invariant matters more once these packages are actually published.
+const RELATIVE_IMPORT_RE = /^(?:import|export)\s[^;]*\bfrom\s*['"]\.\.?\//m
 
 /**
  * External predicate shared by every package build: bundle only local
@@ -87,9 +93,25 @@ const RELATIVE_IMPORT_RE =
  * specifier these five packages import is a real, declared `dependencies`
  * entry meant to be resolved by whatever installs the package for real —
  * see each `packages/<name>/package.json`.
+ *
+ * A resolved absolute path is always local, never external — `/` covers
+ * POSIX; a Windows absolute path starts with a drive letter (`C:\`, `C:/`)
+ * instead, which — unlike `.`/`/` — would otherwise be misclassified as a
+ * bare external specifier and bundled as if it were a package. This repo's
+ * own CI never hits this (Linux runners), but a resolved id can take this
+ * shape on a Windows contributor's machine — caught in PR review (#769).
  */
+const WINDOWS_ABSOLUTE_PATH_RE = /^[A-Za-z]:[\\/]/
+
 function isExternal(id: string): boolean {
-  return !id.startsWith('.') && !id.startsWith('/')
+  if (
+    id.startsWith('.') ||
+    id.startsWith('/') ||
+    WINDOWS_ABSOLUTE_PATH_RE.test(id)
+  ) {
+    return false
+  }
+  return true
 }
 
 const ES_ONLY: LibraryFormats[] = ['es']

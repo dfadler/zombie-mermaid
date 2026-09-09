@@ -91,6 +91,21 @@ setup has to be repeated six times. For each one:
    - **Workflow filename:** `publish.yml`
    - **Environment name:** leave blank (this workflow doesn't use a GitHub
      Environment)
+   - **Allowed actions:** make sure a direct **`npm publish`** is permitted,
+     not only a staged one. npm's trusted-publisher UI has, at various
+     points, defaulted a _new_ configuration to allow staged publishing only
+     (`npm stage publish` — which then waits on a maintainer's separate,
+     manual 2FA-backed approval before anything actually goes live) unless
+     direct publish is explicitly also selected. This workflow's
+     `pnpm changeset publish` step does a direct publish, not a staged one —
+     if a newly-created config for one of the five new
+     `@zombie-mermaid/*` packages defaults to staged-only, the workflow's
+     publish step will appear to succeed while the package silently sits
+     unpublished, waiting on a manual approval nobody knows to give.
+     Double-check this setting against npm's current
+     [trusted publishers docs](https://docs.npmjs.com/trusted-publishers/)
+     rather than assuming the option is where this list describes it — npm
+     has changed the default here before and may again.
 3. Save. From then on, npm will accept publishes for that package that come
    from a GitHub Actions run of `dfadler/zombie-mermaid`'s `publish.yml`
    workflow on `main`, authenticated via that run's OIDC token — no npm
