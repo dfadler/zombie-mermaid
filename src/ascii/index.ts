@@ -27,8 +27,6 @@ import {
   flipCanvasVertically,
   flipRoleCanvasVertically,
 } from './canvas.ts'
-import { renderSequenceAscii } from './sequence.ts'
-import { renderClassAscii } from './class-diagram.ts'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
 import { buildNodeLinkCanvas, flipLinkCanvasVertically } from './hyperlinks.ts'
@@ -159,73 +157,61 @@ export function renderMermaidASCII(
   let result: string
 
   // Registry lookup first (see src/ascii/registry.ts — issue #533):
-  // 'xychart' and 'er' are registered there and dispatch to the exact same
-  // renderer calls their switch cases below used to make. Anything not
-  // registered (currently 'sequence', 'class', 'flowchart') falls through
-  // to the switch, unchanged.
+  // 'xychart', 'er', 'sequence', and 'class' are registered there and
+  // dispatch to the exact same renderer calls their switch cases used to
+  // make. Only 'flowchart' is not registered — see
+  // docs/decisions/diagram-type-registry-partial.md for why — so it's the
+  // one case left below instead of a switch. `extras` carries every
+  // ASCII-only per-type option (currently just `hyperlinks`, read by
+  // 'class'; ignored by every other registered type).
   const registered = asciiRegistry[diagramType]
 
   if (registered) {
-    result = registered(text, config, colorMode, theme, {})
+    result = registered(text, config, colorMode, theme, {
+      hyperlinks: options.hyperlinks ?? false,
+    })
     return options.showCoords ? addCoordsOverlay(result) : result
   }
 
-  switch (diagramType) {
-    case 'sequence':
-      result = renderSequenceAscii(text, config, colorMode, theme)
-      break
+  // Flowchart + state diagram pipeline (original) — the one type not yet
+  // migrated to the registry above (see the comment on `registered`).
+  // `options.direction` replaces the parsed top-level direction before
+  // layout; see packages/core/src/direction-override.ts.
+  const parsed = withDirectionOverride(parseMermaid(text), options.direction)
 
-    case 'class':
-      result = renderClassAscii(text, config, colorMode, theme, {
-        hyperlinks: options.hyperlinks ?? false,
-      })
-      break
-
-    case 'flowchart':
-    default: {
-      // Flowchart + state diagram pipeline (original). `options.direction`
-      // replaces the parsed top-level direction before layout; see
-      // packages/core/src/direction-override.ts.
-      const parsed = withDirectionOverride(
-        parseMermaid(text),
-        options.direction,
-      )
-
-      // Normalize direction for grid layout.
-      // BT is laid out as TD then flipped vertically after drawing.
-      // RL is treated as LR (full RL support not yet implemented).
-      if (parsed.direction === 'LR' || parsed.direction === 'RL') {
-        config.graphDirection = 'LR'
-      } else {
-        config.graphDirection = 'TD'
-      }
-
-      const graph = convertToAsciiGraph(parsed, config)
-      createMapping(graph)
-      drawGraph(graph)
-
-      // Opt-in OSC 8 hyperlinks: mark each `click`-linked node's label cells
-      // now, from the drawn node positions, before any flip below moves them.
-      const linkCanvas = options.hyperlinks
-        ? buildNodeLinkCanvas(graph, parsed.interactions)
-        : undefined
-
-      // BT: flip the finished canvas vertically so the flow runs bottom→top.
-      // The grid layout ran as TD; flipping + character remapping produces BT.
-      if (parsed.direction === 'BT') {
-        flipCanvasVertically(graph.canvas)
-        flipRoleCanvasVertically(graph.roleCanvas)
-        if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
-      }
-
-      result = canvasToString(graph.canvas, {
-        roleCanvas: graph.roleCanvas,
-        colorMode,
-        theme,
-        linkCanvas,
-      })
-    }
+  // Normalize direction for grid layout.
+  // BT is laid out as TD then flipped vertically after drawing.
+  // RL is treated as LR (full RL support not yet implemented).
+  if (parsed.direction === 'LR' || parsed.direction === 'RL') {
+    config.graphDirection = 'LR'
+  } else {
+    config.graphDirection = 'TD'
   }
+
+  const graph = convertToAsciiGraph(parsed, config)
+  createMapping(graph)
+  drawGraph(graph)
+
+  // Opt-in OSC 8 hyperlinks: mark each `click`-linked node's label cells
+  // now, from the drawn node positions, before any flip below moves them.
+  const linkCanvas = options.hyperlinks
+    ? buildNodeLinkCanvas(graph, parsed.interactions)
+    : undefined
+
+  // BT: flip the finished canvas vertically so the flow runs bottom→top.
+  // The grid layout ran as TD; flipping + character remapping produces BT.
+  if (parsed.direction === 'BT') {
+    flipCanvasVertically(graph.canvas)
+    flipRoleCanvasVertically(graph.roleCanvas)
+    if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
+  }
+
+  result = canvasToString(graph.canvas, {
+    roleCanvas: graph.roleCanvas,
+    colorMode,
+    theme,
+    linkCanvas,
+  })
 
   return options.showCoords ? addCoordsOverlay(result) : result
 }

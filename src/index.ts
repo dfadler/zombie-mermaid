@@ -65,16 +65,6 @@ import {
   splitStatements,
 } from '@zombie-mermaid/core'
 
-import {
-  parseSequenceDiagram,
-  parseClassDiagram,
-} from '@zombie-mermaid/mermaid-parser'
-import {
-  layoutSequenceDiagram,
-  renderSequenceSvg,
-  layoutClassDiagramSync,
-  renderClassSvg,
-} from '@zombie-mermaid/svg-renderer'
 import { diagramRegistry } from './diagram-registry.ts'
 import type { SvgRenderContext } from './diagram-registry.ts'
 
@@ -172,7 +162,10 @@ function resolveLinksEnabled(options: RenderOptions): boolean {
 // the deprecated `interactive` boolean when both are set) now lives next to
 // the xychart registry entry in src/diagram-registry.ts, since xychart's
 // SVG dispatch is fully handled by the registry lookup below — there is no
-// remaining switch case here for it to serve.
+// remaining switch case here for it to serve. `resolveLinksEnabled` above
+// is duplicated (not imported) into that same module for the 'class' entry,
+// since src/diagram-registry.ts is imported BY this file — see that
+// duplicate's own comment for why.
 
 /**
  * Render Mermaid diagram text to an SVG string — synchronously.
@@ -252,10 +245,12 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
   const lines = splitStatements(decoded)
 
   // Registry lookup first (see src/diagram-registry.ts — issue #533):
-  // 'xychart' and 'er' are registered there and handled identically to how
-  // their switch cases below used to read, just via the shared adapter
-  // shape instead. Anything not registered (currently 'sequence', 'class',
-  // 'flowchart') falls through to the switch, unchanged.
+  // 'xychart', 'er', 'sequence', and 'class' are registered there and
+  // handled identically to how their switch cases used to read, just via
+  // the shared adapter shape instead. Only 'flowchart' (and the 'state'
+  // pipeline it shares) is not registered — see
+  // docs/decisions/diagram-type-registry-partial.md for why — so it's the
+  // one case left below instead of a switch.
   const registered = diagramRegistry[diagramType]
   if (registered) {
     const diagram = registered.parse(lines)
@@ -273,68 +268,34 @@ function renderMermaidSVGRaw(text: string, options: RenderOptions): string {
     return registered.renderSvg(positioned, ctx, options)
   }
 
-  switch (diagramType) {
-    case 'sequence': {
-      const diagram = parseSequenceDiagram(lines)
-      const positioned = layoutSequenceDiagram(diagram, options)
-      return renderSequenceSvg(
-        positioned,
-        colors,
-        font,
-        transparent,
-        fontSizes,
-        embedSource,
-        title,
-        decorative,
-        emit,
-      )
-    }
-    case 'class': {
-      const diagram = parseClassDiagram(lines)
-      const positioned = layoutClassDiagramSync(diagram, options)
-      return renderClassSvg(
-        positioned,
-        colors,
-        font,
-        transparent,
-        fontSizes,
-        embedSource,
-        title,
-        decorative,
-        resolveLinksEnabled(options),
-        emit,
-      )
-    }
-    case 'flowchart':
-    default: {
-      const parsed = parseMermaid(decoded)
-      // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
-      // render option always wins. See packages/core/src/init-directive.ts.
-      const effective = parsed.initConfig
-        ? applyInitConfig(options, parsed.initConfig)
-        : options
-      // `direction` replaces the header's (or a state diagram's top-level
-      // `direction` line's) direction before layout; nested subgraph /
-      // composite-state directions live on the subgraph objects and still
-      // apply on top of it. See packages/core/src/direction-override.ts.
-      const graph = withDirectionOverride(parsed, effective.direction)
-      const positioned = layoutGraphSync(graph, effective)
-      return renderSvg(
-        positioned,
-        colors,
-        font,
-        transparent,
-        fontSizes,
-        effective.curve ?? 'linear',
-        embedSource,
-        resolveAnimationEnabled(options),
-        resolveLinksEnabled(options),
-        title,
-        decorative,
-        emit,
-      )
-    }
-  }
+  // Flowchart + state diagram pipeline — the one type not yet migrated to
+  // the registry above (see the comment on `registered`).
+  const parsed = parseMermaid(decoded)
+  // A diagram's own `%%{init: ...}%%` supplies defaults; an explicit
+  // render option always wins. See packages/core/src/init-directive.ts.
+  const effective = parsed.initConfig
+    ? applyInitConfig(options, parsed.initConfig)
+    : options
+  // `direction` replaces the header's (or a state diagram's top-level
+  // `direction` line's) direction before layout; nested subgraph /
+  // composite-state directions live on the subgraph objects and still
+  // apply on top of it. See packages/core/src/direction-override.ts.
+  const graph = withDirectionOverride(parsed, effective.direction)
+  const positioned = layoutGraphSync(graph, effective)
+  return renderSvg(
+    positioned,
+    colors,
+    font,
+    transparent,
+    fontSizes,
+    effective.curve ?? 'linear',
+    embedSource,
+    resolveAnimationEnabled(options),
+    resolveLinksEnabled(options),
+    title,
+    decorative,
+    emit,
+  )
 }
 
 /**

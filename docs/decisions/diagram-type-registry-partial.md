@@ -1,5 +1,18 @@
 # Diagram-type registry: partial adoption, not a single shared `layout` step
 
+> **Addendum (issue #533 follow-up):** `sequence` and `class` have since been
+> added to both `diagramRegistry` (`src/diagram-registry.ts`) and
+> `asciiRegistry` (`src/ascii/registry.ts`), following exactly the
+> `xychartModule`/`erModule` pattern described below — `class`'s SVG adapter
+> derives `linksEnabled` the same way the original `renderClassSvg` switch
+> case did (a `resolveLinksEnabled` helper duplicated from `src/index.ts`,
+> for the same import-direction reason `xychartModule`'s comment already
+> explains for `interactive`). Zero behavior change, confirmed by the full
+> test suite and a direct before/after render diff (byte-identical) across
+> sequence and class samples in both SVG (links enabled and disabled) and
+> ASCII. `flowchart` remains the one unregistered type, for the reasons this
+> document already gives below — that part of the decision is unchanged.
+
 ## Context
 
 [#533](https://github.com/dfadler/zombie-mermaid/issues/533) observed that
