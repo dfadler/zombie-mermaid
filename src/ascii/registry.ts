@@ -27,30 +27,29 @@
 // renderer rather than a `switch` re-listed at each front door — the point of
 // #533. Adding a type to one renderer's table without the other is
 // expressible in principle, though in practice 'xychart'/'er'/'sequence'/
-// 'class' now move together on both sides — only 'flowchart' remains
-// unregistered here, and only because its ASCII path has no per-type
-// wrapper function to slot in yet (see
-// docs/decisions/diagram-type-registry-partial.md), not because the two
-// tables must move in lockstep.
+// 'class'/'flowchart' now move together on both sides.
 // ============================================================================
 
-import type { DiagramType } from '@zombie-mermaid/core'
+import type { DiagramType, Direction } from '@zombie-mermaid/core'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 import { renderXYChartAscii } from './xychart.ts'
 import { renderErAscii } from './er-diagram.ts'
 import { renderSequenceAscii } from './sequence.ts'
 import { renderClassAscii } from './class-diagram.ts'
+import { renderFlowchartAscii } from './flowchart.ts'
 
 /**
- * Small, closed set of ASCII-only extras not every type needs — today only
- * `class` reads `hyperlinks` (see `ClassAsciiOptions` in
- * src/ascii/class-diagram.ts), and `class` is not registered here yet. Kept
+ * Small, closed set of ASCII-only extras not every type needs — `class`
+ * reads `hyperlinks` (see `ClassAsciiOptions` in
+ * src/ascii/class-diagram.ts), `flowchart` reads both `direction` and
+ * `hyperlinks` (see `FlowchartAsciiExtras` in src/ascii/flowchart.ts). Kept
  * as its own type rather than reusing `AsciiRenderOptions` from
  * src/ascii/index.ts so this module stays a leaf of the ASCII tree: index.ts
  * imports it, never the other way round.
  */
 export interface AsciiRenderExtras {
   hyperlinks?: boolean
+  direction?: Direction
 }
 
 /**
@@ -70,13 +69,12 @@ export type AsciiRenderer = (
 ) => string
 
 /**
- * Types `renderMermaidASCII` dispatches through the registry. Anything
- * absent (currently only 'flowchart') falls through to that function's own
- * switch, unchanged — flowchart's ASCII path has no per-type wrapper
- * function to slot in here yet, unlike every other type (see
- * docs/decisions/diagram-type-registry-partial.md).
+ * Every diagram type `renderMermaidASCII` supports, dispatched through this
+ * table — see that function in src/ascii/index.ts, which has no fallback
+ * switch left now that 'flowchart' (the last holdout — see
+ * docs/decisions/diagram-type-registry-partial.md) is registered here too.
  */
-export const asciiRegistry: Partial<Record<DiagramType, AsciiRenderer>> = {
+export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
   xychart: (text, config, colorMode, theme) =>
     renderXYChartAscii(text, config, colorMode, theme),
   er: (text, config, colorMode, theme) =>
@@ -85,4 +83,6 @@ export const asciiRegistry: Partial<Record<DiagramType, AsciiRenderer>> = {
     renderSequenceAscii(text, config, colorMode, theme),
   class: (text, config, colorMode, theme, extras) =>
     renderClassAscii(text, config, colorMode, theme, extras),
+  flowchart: (text, config, colorMode, theme, extras) =>
+    renderFlowchartAscii(text, config, colorMode, theme, extras),
 }

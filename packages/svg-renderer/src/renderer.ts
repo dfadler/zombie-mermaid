@@ -61,13 +61,14 @@ import { pointsToPath } from './edge-curves.ts'
  *                       when the option is off.
  * @param animationEnabled - Whether `e1@{ animate: true }` edges actually
  *                            animate (from `options.interactivity === 'full'`,
- *                            see `resolveAnimationEnabled` in src/index.ts).
+ *                            see `resolveAnimationEnabled` in
+ *                            src/diagram-registry.ts).
  *                            Default true — preserves the previously-ungated
  *                            behavior for callers who don't pass it.
  * @param linksEnabled - Whether `click`-based `<a href>` links and `<title>`
  *                       tooltips render (from
  *                       `options.interactivity !== 'none'`, see
- *                       `resolveLinksEnabled` in src/index.ts). Default true
+ *                       `resolveLinksEnabled` in src/diagram-registry.ts). Default true
  *                       — preserves the previously-ungated behavior for
  *                       callers who don't pass it.
  * @param title - Accessible name (from `options.title`). See svgOpenTag() in
