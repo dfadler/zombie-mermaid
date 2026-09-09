@@ -43,8 +43,8 @@ import {
   themePickerCss,
 } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
-import { bundleNavClient } from './demo/build-nav-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
 
 /**
  * A fenced code block tagged with this language renders as an actual SVG
@@ -359,6 +359,33 @@ function rfc822Date(isoDate: string): string {
   return new Date(`${isoDate}T00:00:00Z`).toUTCString()
 }
 
+/**
+ * Bundle `demo/blog-post-client.tsx` (zombie-mermaid#803's post-page
+ * hydration entry) for the browser — mirrors dashboard.ts's
+ * `bundleDashboardClient()` (inlined directly, `minify: true` since this
+ * is the first bundle on the post template to include `react`/`react-dom`
+ * — see that function's doc comment for the measured minified-vs-
+ * unminified difference, which applies unchanged here). Built once and
+ * reused verbatim across every post page, the same way
+ * `bundleNavClient()`'s output used to be.
+ */
+async function bundleBlogPostClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/blog-post-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
+/** Bundle `demo/blog-index-client.tsx` (zombie-mermaid#803's index-page
+ * hydration entry) for the browser — see {@link bundleBlogPostClient}'s
+ * doc comment for the identical reasoning. */
+async function bundleBlogIndexClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/blog-index-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
 async function main(): Promise<void> {
   // A renamed or deleted post must actually disappear from the built site,
   // not linger from a previous run — clear the whole output directory
@@ -384,13 +411,17 @@ async function main(): Promise<void> {
     sharedPageCss([themePickerCss(), blogCss].join('\n\n')),
   )
 
-  // #687: the blog index's live theme picker needs no other client JS on
-  // this page, so it gets the same shared bundle Home/the Diagrams
-  // hub/Fork Fixes/Dashboard use.
-  const [themeBarScript, navClientScript] = await Promise.all([
-    bundleThemeBarClient(),
-    bundleNavClient(),
-  ])
+  // #687: the blog index's live theme picker needs no other client JS of
+  // its own, so it gets the same shared bundle Home/the Diagrams hub/Fork
+  // Fixes/Dashboard use. #803: postClientScript/indexClientScript hydrate
+  // BlogPostApp/BlogIndexApp + NavIsland (one bundle each, reused across
+  // every post/the index respectively).
+  const [themeBarScript, postClientScript, indexClientScript] =
+    await Promise.all([
+      bundleThemeBarClient(),
+      bundleBlogPostClient(),
+      bundleBlogIndexClient(),
+    ])
 
   const posts = await loadPosts()
   const highlighter = await createHighlighter({
@@ -419,7 +450,7 @@ async function main(): Promise<void> {
         faviconHref: '../favicon.svg',
         publishedTime: post.date,
         bodyHtml,
-        navClientScript,
+        clientScript: postClientScript,
       }),
     )
 
@@ -439,7 +470,7 @@ async function main(): Promise<void> {
         description: post.description,
       })),
       themeBarScript,
-      navClientScript,
+      clientScript: indexClientScript,
     }),
   )
 
