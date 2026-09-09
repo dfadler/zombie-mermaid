@@ -18,17 +18,8 @@ name: Visual regression Chromium-only image (measurement)
 # Manual dispatch only, so it never runs (or burns Actions minutes) as part
 # of normal PR/push CI - re-run it by hand (Actions tab -> this workflow ->
 # "Run workflow") for each additional timing sample desired.
-#
-# TEMPORARY while gathering #737's measurement: workflow_dispatch only
-# becomes dispatchable via API/CLI once GitHub has "discovered" the workflow
-# file on the default branch, which this branch's file isn't on yet. A
-# `push` trigger scoped to this exact branch name has no such restriction,
-# so it's added here to collect real samples pre-merge; removed again before
-# this PR is finalized.
 on:
   workflow_dispatch: {}
-  push:
-    branches: [issue-737-playwright-chromium-image]
 
 concurrency:
   group: ${{ github.workflow }}
