@@ -55,7 +55,7 @@
  */
 import type { CSSProperties, ReactNode } from 'react'
 import { Fragment } from 'react'
-import { ArrowRightIcon, LogoMark } from './icons.tsx'
+import { ArrowRightIcon, ChevronRightIcon, LogoMark } from './icons.tsx'
 import { CTA, Card, Pill, SectionEyebrow } from './primitives.tsx'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
@@ -207,7 +207,7 @@ function BlogBreadcrumb({ crumbs }: { crumbs: Crumb[] }) {
     >
       {crumbs.map((crumb, index) => (
         <Fragment key={crumb.label}>
-          {index > 0 ? <span>/</span> : null}
+          {index > 0 ? <ChevronRightIcon size={12} strokeWidth={2.4} /> : null}
           {crumb.href === undefined ? (
             <span aria-current="page" style={{ color: colorVar('--text-dim') }}>
               {crumb.label}

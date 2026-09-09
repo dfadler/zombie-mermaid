@@ -45,7 +45,7 @@
       "@media (max-width: 900px) {\n  .section-px {\n    padding-left: 32px !important;\n    padding-right: 32px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr 1fr !important;\n  }\n}\n\n@media (max-width: 600px) {\n  .section-px {\n    padding-left: 20px !important;\n    padding-right: 20px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr !important;\n  }\n\n  .footer-bottom-row {\n    flex-direction: column !important;\n    align-items: flex-start !important;\n    gap: 8px !important;\n  }\n}"
     </style>
     <style>
-      ".breadcrumb {\n  font-size: 14px;\n  color: var(--text-faint);\n}\n.breadcrumb .sep {\n  margin: 0 10px;\n  color: var(--text-faint);\n}\n\n@media (max-width: 900px) {\n  .type-row { flex-direction: column !important; }\n  .icon-panel-fixed { flex: 1 1 auto !important; width: 100% !important; height: 280px !important; }\n}\n\n@media (max-width: 600px) {\n  .page-h1 { font-size: 34px !important; }\n  .icon-panel-fixed { height: 220px !important; }\n}"
+      ".breadcrumb {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  font-size: 14px;\n  color: var(--text-faint);\n}\n\n@media (max-width: 900px) {\n  .type-row { flex-direction: column !important; }\n  .icon-panel-fixed { flex: 1 1 auto !important; width: 100% !important; height: 280px !important; }\n}\n\n@media (max-width: 600px) {\n  .page-h1 { font-size: 34px !important; }\n  .icon-panel-fixed { height: 220px !important; }\n}"
     </style>
     <style>
       "#theme-pills {\n  --t-bg: #FFFFFF;\n  --t-fg: #27272A;\n}\n.theme-pills {\n  display: flex;\n  gap: 0.3rem;\n  overflow: visible;\n  padding: 4px;\n  margin: -4px;\n  position: relative;\n  z-index: 2;\n}\n.theme-pills-inline {\n  display: flex;\n  gap: 0.3rem;\n}\n@media (max-width: 1024px) {\n  .theme-pills-inline {\n    display: none;\n  }\n}\n.theme-pill {\n  display: flex;\n  align-items: center;\n  height: 30px;\n  gap: 8px;\n  padding: 0 14px 0 12px;\n  border: none;\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));\n  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));\n  font-size: 12px;\n  font-weight: 500;\n  font-family: inherit;\n  cursor: pointer;\n  white-space: nowrap;\n  transition:\n    color 0.15s,\n    background 0.15s,\n    box-shadow 0.2s,\n    transform 0.1s;\n}\n.theme-pill:hover {\n  color: var(--t-fg);\n  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));\n}\n.theme-pill.active {\n  color: var(--t-fg);\n  background: var(--t-bg);\n  font-weight: 600;\n}\n.theme-pill:active {\n  transform: translateY(0.5px);\n}\n.theme-swatch {\n  display: inline-block;\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  flex-shrink: 0;\n}\n.theme-more-wrapper {\n  position: relative;\n}\n.theme-more-dropdown {\n  display: none;\n  position: absolute;\n  top: calc(100% + 6px);\n  right: 0;\n  background: var(--t-bg);\n  border-radius: 12px;\n  padding: 6px;\n  flex-direction: column;\n  gap: 2px;\n  min-width: 160px;\n  z-index: 1002;\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);\n}\n.theme-more-dropdown.open {\n  display: flex;\n}\n.theme-more-dropdown .theme-pill {\n  width: 100%;\n  justify-content: flex-start;\n  background: transparent;\n  box-shadow: none;\n}\n.theme-more-dropdown .theme-pill:hover {\n  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));\n}\n.theme-more-dropdown .theme-pill.active {\n  background: var(--t-bg);\n}"
@@ -178,9 +178,10 @@
             <a href="../">
               "Home"
             </a>
-            <span class="sep">
-              "/"
-            </span>
+            <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+              <path d="M9 6l6 6-6 6">
+              </path>
+            </svg>
             <span style="color: var(--text-dim);">
               "Diagrams"
             </span>

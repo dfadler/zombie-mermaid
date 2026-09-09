@@ -160,9 +160,10 @@
             <a href="../">
               "Home"
             </a>
-            <span>
-              "/"
-            </span>
+            <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+              <path d="M9 6l6 6-6 6">
+              </path>
+            </svg>
             <span aria-current="page" style="color: var(--text-dim);">
               "Blog"
             </span>

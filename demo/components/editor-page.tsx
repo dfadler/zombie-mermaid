@@ -78,6 +78,7 @@ import { Nav, NavCopyScript, NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
 import { Card, PrimitivesStyle } from './primitives.tsx'
 import {
+  ChevronRightIcon,
   DownloadIcon,
   ShareIcon,
   SyncRenderIcon,
@@ -300,7 +301,7 @@ function EditorHero({ homeHref }: { homeHref: string }) {
           <a href={homeHref} style={{ color: colorVar('--text-faint') }}>
             Home
           </a>
-          <span style={{ color: colorVar('--text-faint') }}>/</span>
+          <ChevronRightIcon size={12} strokeWidth={2.4} />
           <span style={{ color: colorVar('--text-dim') }}>Editor</span>
         </nav>
         <h1
