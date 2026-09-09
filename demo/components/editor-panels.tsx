@@ -15,7 +15,9 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { ReactNode } from 'react'
+import type { Dispatch, ReactNode } from 'react'
+import { ConfigPanel } from './editor-config.tsx'
+import type { EditorAction, EditorState } from './editor-app.tsx'
 
 /** The stroke-style icon shape shared by both panels' toolbar buttons. */
 function StrokeIcon({
@@ -46,66 +48,26 @@ function StrokeIcon({
   )
 }
 
-/** One color row in the Config tab's Colors section. */
-function ColorField({ label, cfg }: { label: string; cfg: string }) {
-  return (
-    <div className="color-field">
-      <span className="color-field-label">{label}</span>
-      <button className="color-edit-btn" data-cfg={cfg}>
-        <span className="cfg-hex-label" id={`cfg-${cfg}-label`}>
-          —
-        </span>
-        <span className="color-swatch" id={`cfg-${cfg}-swatch`} />
-      </button>
-    </div>
-  )
-}
-
-/** One numeric setting in the Config tab's Layout section: field + slider. */
-function PaddingField({
-  label,
-  id,
-  min,
-  max,
-  step,
-  value,
-}: {
-  label: string
-  id: string
-  min: string
-  max: string
-  step?: string
-  value: string
-}) {
-  return (
-    <div className="padding-field">
-      <div className="padding-row">
-        <label>{label}</label>
-        <input
-          className="padding-num"
-          id={id}
-          type="number"
-          min={min}
-          max={max}
-          step={step}
-          defaultValue={value}
-        />
-      </div>
-      <input
-        className="padding-slider"
-        id={`${id}-slider`}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        defaultValue={value}
-      />
-    </div>
-  )
+export interface EditorLeftPanelProps {
+  /**
+   * Threaded from `<EditorApp>`'s own body (via `EditorChromeMarkup`), not
+   * read through `EditorStateContext`/`EditorDispatchContext` here --
+   * `editor-config.tsx`'s `ConfigPanel` (rendered below, zombie-mermaid#808)
+   * needs both, and this file already gets imported *by* `editor-app.tsx`
+   * (for `EditorLeftPanel`/`EditorRightPanel` themselves), so importing
+   * `useEditorState`/`useEditorDispatch` back from there would be a real
+   * runtime circular import, not just a type-level one -- plain props avoid
+   * it entirely, the same tradeoff `editor-app.tsx`'s own header comment
+   * describes for why {@link useEditorRefs} doesn't thread through props
+   * either (there, nothing consumed it yet; here, `ConfigPanel` does, so
+   * threading is the smaller change).
+   */
+  state: EditorState
+  dispatch: Dispatch<EditorAction>
 }
 
 /** The editor's left panel: the source textarea, Config tab, and popups. */
-export function EditorLeftPanel() {
+export function EditorLeftPanel({ state, dispatch }: EditorLeftPanelProps) {
   return (
     <div className="panel-left" id="panel-left">
       {/* Source toolbar — floating label + actions */}
@@ -150,106 +112,11 @@ export function EditorLeftPanel() {
         />
       </div>
 
-      {/* Config view */}
-      <div className="config-panel" id="config-view">
-        {/* Colors section */}
-        <div className="config-section">
-          <div className="config-section-title">Colors</div>
-          <ColorField label="Background" cfg="bg" />
-          <ColorField label="Foreground" cfg="fg" />
-          <ColorField label="Accent" cfg="accent" />
-          <ColorField label="Line" cfg="line" />
-          <ColorField label="Muted" cfg="muted" />
-          <ColorField label="Surface" cfg="surface" />
-        </div>
-
-        {/* Font section */}
-        <div className="config-section">
-          <div className="config-section-title">Typography</div>
-          <div className="font-field">
-            <span className="font-field-label">Font family</span>
-            <button className="font-select-btn" id="font-select-btn">
-              <span id="font-select-label">Default</span>
-              <span className="font-select-caret">▼</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Layout section */}
-        <div className="config-section">
-          <div className="config-section-title">Layout</div>
-          <PaddingField
-            label="Padding"
-            id="cfg-padding"
-            min="0"
-            max="120"
-            value="24"
-          />
-          <PaddingField
-            label="Edge stroke"
-            id="cfg-edge-stroke"
-            min="0.25"
-            max="6"
-            step="0.25"
-            value="1"
-          />
-          <PaddingField
-            label="Node border"
-            id="cfg-node-stroke"
-            min="0.25"
-            max="6"
-            step="0.25"
-            value="1"
-          />
-        </div>
-      </div>
-
-      {/* Color picker popup (shared) */}
-      <div className="color-popup" id="color-popup">
-        <div className="color-popup-header">
-          <span className="color-popup-title" id="color-popup-title">
-            Color
-          </span>
-          <button className="color-popup-close" id="color-popup-close">
-            ×
-          </button>
-        </div>
-        <div className="color-hex-row">
-          <input
-            type="color"
-            className="color-native"
-            id="color-native-input"
-          />
-          <input
-            type="text"
-            className="color-hex-input"
-            id="color-hex-input"
-            placeholder="#rrggbb"
-            maxLength={9}
-          />
-          <button className="color-clear-btn" id="color-clear-btn">
-            Clear
-          </button>
-        </div>
-        <div className="color-palette-title">Presets</div>
-        <div className="color-palette" id="color-palette" />
-      </div>
-
-      {/* Font picker popup */}
-      <div className="font-popup" id="font-popup">
-        <div className="font-search-wrap">
-          <StrokeIcon className="font-search-icon" width="13" height="13">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </StrokeIcon>
-          <input
-            className="font-search"
-            id="font-search"
-            placeholder="Quick search"
-          />
-        </div>
-        <div className="font-list" id="font-list" />
-      </div>
+      {/* Config view, color popup, and font popup -- zombie-mermaid#808,
+          all three now one live React component (editor-config.tsx's
+          ConfigPanel) instead of static markup wired up imperatively by
+          editor/js/config-panel.ts/color-picker.ts/font-picker.ts. */}
+      <ConfigPanel state={state} dispatch={dispatch} />
 
       <div className="status-bar">
         <div className="status-left">

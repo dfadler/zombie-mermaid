@@ -1,11 +1,15 @@
-import { refreshAllColorUIs } from './config-panel.ts'
-import { applyColorMode, isDark, setDiagramThemeIsAuto } from './dark-mode.ts'
+// zombie-mermaid#809: applyColorMode/isDark moved out of dark-mode.ts (now
+// React state, demo/components/editor-dark-mode.ts) -- this file no longer
+// needs either. setDiagramThemeIsAuto stays a dark-mode.ts export (it's
+// still the diagram-auto-theme flag's only writer besides that module
+// itself); see this file's applyTheme()/hashSource uses below.
+import { setDiagramThemeIsAuto } from './dark-mode.ts'
 import { closest, requireElement } from './dom.ts'
 import { updateLineNumbers } from './editor-helpers.ts'
 import { editor, themeMenu } from './elements.ts'
 import { applyThemeToPage, scheduleRender } from './rendering.ts'
 import { getHashSource } from './sharing.ts'
-import { state, THEMES } from './state.ts'
+import { setEditorTheme, state, THEMES } from './state.ts'
 // Theme dropdown button + updateThemeButton() live in their own module so
 // dark-mode.ts can also reach updateThemeButton() without an init.ts <->
 // dark-mode.ts import cycle -- see theme-button.ts's header comment.
@@ -20,11 +24,10 @@ import { themeDropdownBtn, updateThemeButton } from './theme-button.ts'
 // is what actually updates this page for a theme change from *any* source
 // — a click here, or a theme picked on another tab/page entirely.
 function applyTheme(key: string): void {
-  state.theme = key
+  setEditorTheme(key)
   setDiagramThemeIsAuto(false)
   applyThemeToPage(key)
   updateThemeButton()
-  refreshAllColorUIs()
   scheduleRender(0)
 }
 
@@ -69,8 +72,13 @@ themeMenu
     )
   })
 
-// Apply initial dark/light mode (must happen after all DOM refs + functions are ready)
-applyColorMode(isDark)
+// zombie-mermaid#809: the initial-dark-mode bootstrap call that used to
+// live here (`applyColorMode(isDark)`) moved to dark-mode.ts's own module
+// top level -- that module owns `applyColorMode` now, and reaches the
+// persisted preference via `window.__editorDarkModeState.getIsDark()`
+// (registered by demo/editor-dark-mode-state-bridge.ts, always ready
+// before this legacy bundle runs at all -- see editor-app.tsx's
+// EDITOR_HYDRATED_EVENT doc comment). See dark-mode.ts's header comment.
 
 // #688: one-time migration off the editor's own, now-retired
 // 'bm-editor-theme' localStorage key onto the shared 'mermaid-theme' key
@@ -98,7 +106,7 @@ localStorage.removeItem('bm-editor-theme')
 // in that case.
 const savedTheme = window.__themeState.getTheme()
 if (savedTheme && THEMES[savedTheme]) {
-  state.theme = savedTheme
+  setEditorTheme(savedTheme)
   setDiagramThemeIsAuto(false)
 }
 applyThemeToPage(state.theme)

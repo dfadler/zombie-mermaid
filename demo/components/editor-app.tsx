@@ -89,7 +89,21 @@ import {
   type Dispatch,
   type ReactNode,
 } from 'react'
+import { useEditorButtons } from './editor-buttons.ts'
+import { useEditorDarkMode } from './editor-dark-mode.ts'
+import {
+  clampPadding,
+  clampStroke,
+  computeConfig,
+  DEFAULT_PADDING,
+  DEFAULT_STROKE,
+  useEditorConfig,
+  type ColorKey,
+} from './editor-config.tsx'
+import { useEditorExport } from './editor-export.ts'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
+import { useEditorTabs } from './editor-tabs.ts'
+import { useEditorToast } from './editor-toast.ts'
 import {
   EditorThemeItems,
   EditorTopbar,
@@ -201,6 +215,55 @@ export interface EditorState {
   panelLeftWidth: number | null
   /** Whether a panel-resize drag is currently in progress. */
   isResizingPanel: boolean
+  /**
+   * Config-panel fields below (zombie-mermaid#808) replace
+   * `editor/js/color-picker.ts`'s/`font-picker.ts`'s/`config-panel.ts`'s
+   * module-level mutable state (`cfgColors`, `cfgFont`, `cfgPadding`,
+   * `cfgEdgeStroke`, `cfgNodeStroke`) with real reducer state -- see
+   * `editor-config.tsx`'s `ConfigPanel` for the markup and
+   * `window.__editorConfigState` for the bridge `editor/js/rendering.ts`
+   * (not ported until #810) reads `config`/the stroke fields through.
+   */
+  /** Per-key color overrides -- `''` means "no override, use the active theme's own". */
+  colors: Record<ColorKey, string>
+  /** Selected font-family override, or `''` for the theme/browser default. */
+  font: string
+  /** Diagram padding in px -- `editor/js/config-panel.ts`'s old `cfgPadding`. */
+  padding: number
+  /** Edge stroke-width multiplier applied post-render (not part of `config`). */
+  edgeStroke: number
+  /** Node/shape stroke-width multiplier applied post-render (not part of `config`). */
+  nodeStroke: number
+  /**
+   * zombie-mermaid#809: tabs/buttons/export/toast/dark-mode replace
+   * `editor/js/tabs.ts`'s/`buttons.ts`'s/`export.ts`'s/`toast.ts`'s/
+   * `dark-mode.ts`'s own module-level mutable state with reducer state, the
+   * same migration #807 did for zoom/pan/resize above. See
+   * `editor-tabs.ts`/`editor-buttons.ts`/`editor-export.ts`/`editor-toast.ts`/
+   * `editor-dark-mode.ts` for the effects that read/write them.
+   */
+  /** Which panel is showing -- `editor/js/tabs.ts`'s old `.tab.active`/`data-panel`. */
+  activeTab: 'code' | 'config'
+  /** `editor/js/dark-mode.ts`'s old `isDark` module-level variable. */
+  darkMode: boolean
+  /** `editor/js/export.ts`'s old `exportScale` module-level variable. */
+  exportScale: number
+  /** Whether the export dropdown (`#export-dropdown`) is open. */
+  exportDropdownOpen: boolean
+  /** The toast's current message -- `editor/js/toast.ts`'s old `toast.textContent`. */
+  toastMessage: string
+  /** Whether the toast is showing -- `editor/js/toast.ts`'s old `.show` class. */
+  toastVisible: boolean
+  /**
+   * Incremented on every `SHOW_TOAST` dispatch, including a repeat of the
+   * *same* message -- `editor-toast.ts`'s auto-dismiss effect keys its
+   * timer off this (not `toastMessage`) so two identical toasts in a row
+   * still each get their own full 2500ms window, matching
+   * `editor/js/toast.ts`'s old unconditional `clearTimeout` + `setTimeout`
+   * on every call (a `useEffect` keyed on the message text alone would not
+   * re-fire for an unchanged value).
+   */
+  toastNonce: number
 }
 
 export const INITIAL_EDITOR_STATE: EditorState = {
@@ -211,6 +274,18 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   isPanning: false,
   panelLeftWidth: null,
   isResizingPanel: false,
+  colors: { bg: '', fg: '', accent: '', line: '', muted: '', surface: '' },
+  font: '',
+  padding: DEFAULT_PADDING,
+  edgeStroke: DEFAULT_STROKE,
+  nodeStroke: DEFAULT_STROKE,
+  activeTab: 'code',
+  darkMode: false,
+  exportScale: 4,
+  exportDropdownOpen: false,
+  toastMessage: '',
+  toastVisible: false,
+  toastNonce: 0,
 }
 
 export type EditorAction =
@@ -238,6 +313,17 @@ export type EditorAction =
   | { type: 'SET_PANNING'; panning: boolean }
   | { type: 'SET_PANEL_LEFT_WIDTH'; width: number }
   | { type: 'SET_RESIZING_PANEL'; resizing: boolean }
+  | { type: 'SET_COLOR'; key: ColorKey; value: string }
+  | { type: 'SET_FONT'; font: string }
+  | { type: 'SET_PADDING'; padding: number }
+  | { type: 'SET_EDGE_STROKE'; value: number }
+  | { type: 'SET_NODE_STROKE'; value: number }
+  | { type: 'SET_ACTIVE_TAB'; tab: 'code' | 'config' }
+  | { type: 'SET_DARK_MODE'; dark: boolean }
+  | { type: 'SET_EXPORT_SCALE'; scale: number }
+  | { type: 'SET_EXPORT_DROPDOWN_OPEN'; open: boolean }
+  | { type: 'SHOW_TOAST'; message: string }
+  | { type: 'HIDE_TOAST' }
 
 export function editorReducer(
   state: EditorState,
@@ -269,6 +355,49 @@ export function editorReducer(
       return { ...state, panelLeftWidth: action.width }
     case 'SET_RESIZING_PANEL':
       return { ...state, isResizingPanel: action.resizing }
+    case 'SET_COLOR': {
+      const colors = { ...state.colors, [action.key]: action.value }
+      return {
+        ...state,
+        colors,
+        config: computeConfig(colors, state.font, state.padding),
+      }
+    }
+    case 'SET_FONT':
+      return {
+        ...state,
+        font: action.font,
+        config: computeConfig(state.colors, action.font, state.padding),
+      }
+    case 'SET_PADDING': {
+      const padding = clampPadding(action.padding)
+      return {
+        ...state,
+        padding,
+        config: computeConfig(state.colors, state.font, padding),
+      }
+    }
+    case 'SET_EDGE_STROKE':
+      return { ...state, edgeStroke: clampStroke(action.value) }
+    case 'SET_NODE_STROKE':
+      return { ...state, nodeStroke: clampStroke(action.value) }
+    case 'SET_ACTIVE_TAB':
+      return { ...state, activeTab: action.tab }
+    case 'SET_DARK_MODE':
+      return { ...state, darkMode: action.dark }
+    case 'SET_EXPORT_SCALE':
+      return { ...state, exportScale: action.scale }
+    case 'SET_EXPORT_DROPDOWN_OPEN':
+      return { ...state, exportDropdownOpen: action.open }
+    case 'SHOW_TOAST':
+      return {
+        ...state,
+        toastMessage: action.message,
+        toastVisible: true,
+        toastNonce: state.toastNonce + 1,
+      }
+    case 'HIDE_TOAST':
+      return { ...state, toastVisible: false }
   }
 }
 
@@ -325,6 +454,26 @@ export interface EditorRefs {
   zoomOutBtn: HTMLElement
   zoomFitBtn: HTMLElement
   panBtn: HTMLElement
+  /**
+   * Added by zombie-mermaid#809 -- see `editor-tabs.ts`'s `useEditorTabs`,
+   * `editor-buttons.ts`'s `useEditorButtons`, `editor-export.ts`'s
+   * `useEditorExport`, and `editor-dark-mode.ts`'s `useEditorDarkMode`.
+   */
+  sourceToolbar: HTMLElement
+  copySourceBtn: HTMLElement
+  clearBtn: HTMLElement
+  darkLightBtn: HTMLElement
+  iconMoon: SVGElement
+  iconSun: SVGElement
+  exportWrap: HTMLElement
+  exportChevronBtn: HTMLElement
+  exportMainBtn: HTMLElement
+  exportDropdown: HTMLElement
+  sizePills: HTMLElement
+  exportPngBtn: HTMLElement
+  exportSvgBtn: HTMLElement
+  copyImageBtn: HTMLElement
+  copyLinkBtn: HTMLElement
 }
 
 /**
@@ -383,6 +532,21 @@ export function collectEditorRefs(): EditorRefs {
     zoomOutBtn: requireEditorElement('zoom-out-btn', HTMLElement),
     zoomFitBtn: requireEditorElement('zoom-fit-btn', HTMLElement),
     panBtn: requireEditorElement('pan-btn', HTMLElement),
+    sourceToolbar: requireEditorElement('source-toolbar', HTMLElement),
+    copySourceBtn: requireEditorElement('copy-source-btn', HTMLElement),
+    clearBtn: requireEditorElement('clear-btn', HTMLElement),
+    darkLightBtn: requireEditorElement('dark-light-btn', HTMLElement),
+    iconMoon: requireEditorElement('icon-moon', SVGElement),
+    iconSun: requireEditorElement('icon-sun', SVGElement),
+    exportWrap: requireEditorElement('export-wrap', HTMLElement),
+    exportChevronBtn: requireEditorElement('export-chevron-btn', HTMLElement),
+    exportMainBtn: requireEditorElement('export-main-btn', HTMLElement),
+    exportDropdown: requireEditorElement('export-dropdown', HTMLElement),
+    sizePills: requireEditorElement('size-pills', HTMLElement),
+    exportPngBtn: requireEditorElement('export-png-btn', HTMLElement),
+    exportSvgBtn: requireEditorElement('export-svg-btn', HTMLElement),
+    copyImageBtn: requireEditorElement('copy-image-btn', HTMLElement),
+    copyLinkBtn: requireEditorElement('copy-link-btn', HTMLElement),
   }
 }
 
@@ -447,11 +611,36 @@ export function EditorApp({ themes }: EditorAppProps) {
   // alone) is what guarantees this.
   useEditorViewport({ state, dispatch, refs })
 
+  // zombie-mermaid#808: registers window.__editorConfigState for
+  // editor/js/rendering.ts to call, and re-applies edge/node stroke
+  // overrides to the currently-rendered SVG -- see editor-config.tsx's
+  // header comment. Reads refs.current (not just registers a callback that
+  // reads it later), so -- like useEditorViewport -- this must run after
+  // the layout effect above has populated it.
+  useEditorConfig({ state, refs })
+
+  // zombie-mermaid#809: tabs/buttons/export/toast/dark-mode -- see each
+  // hook's own file for what it replaces. Order among these five doesn't
+  // matter the way it did for the ref-collecting effect above (none of them
+  // depend on another's DOM writes), but all run after it for the same
+  // reason useEditorViewport does -- see this file's header comment.
+  useEditorTabs({ state, dispatch, refs })
+  useEditorButtons({ dispatch, refs })
+  useEditorExport({ state, dispatch, refs })
+  useEditorToast({ state, dispatch })
+  useEditorDarkMode({ state, dispatch, refs })
+
   return (
     <EditorStateContext.Provider value={state}>
       <EditorDispatchContext.Provider value={dispatch}>
         <EditorRefsContext.Provider value={refs}>
-          <EditorChromeMarkup themes={themes} />
+          <EditorChromeMarkup
+            themes={themes}
+            state={state}
+            dispatch={dispatch}
+            toastMessage={state.toastMessage}
+            toastVisible={state.toastVisible}
+          />
         </EditorRefsContext.Provider>
       </EditorDispatchContext.Provider>
     </EditorStateContext.Provider>
@@ -467,23 +656,48 @@ export function EditorApp({ themes }: EditorAppProps) {
  * children of whatever mounts {@link EditorApp}, matching every comment in
  * `editor-page.tsx`/`editor-topbar.tsx`/`editor-panels.tsx` warning that an
  * extra wrapper here breaks the engine's own flex layout.
+ *
+ * `state`/`dispatch` are threaded through as plain props (not read via
+ * `EditorLeftPanel` calling `useEditorState()`/`useEditorDispatch()`
+ * itself) so `editor-panels.tsx` never needs a runtime import from this
+ * file -- see `EditorLeftPanelProps`'s doc comment in that file for why
+ * that would be a real circular import (this file already imports
+ * `EditorLeftPanel`/`EditorRightPanel` from there).
  */
 function EditorChromeMarkup({
   themes,
+  state,
+  dispatch,
+  toastMessage,
+  toastVisible,
 }: {
   themes: readonly EditorThemeItem[]
+  state: EditorState
+  dispatch: Dispatch<EditorAction>
+  /**
+   * zombie-mermaid#809: the toast's own content and `.show` class are now
+   * plain React output instead of `editor/js/toast.ts`'s imperative
+   * `textContent`/`classList` writes -- see `editor-toast.ts`'s
+   * `useEditorToast` for the auto-dismiss timer. `id="toast"` is kept
+   * (nothing dynamic depends on it staying an id, but existing tests and
+   * this file's own `EditorRefs.toast` still look it up by id).
+   */
+  toastMessage: string
+  toastVisible: boolean
 }): ReactNode {
   return (
     <>
       <EditorTopbar themeItems={<EditorThemeItems themes={themes} />} />
 
       <div className="main">
-        <EditorLeftPanel />
+        <EditorLeftPanel state={state} dispatch={dispatch} />
         <div className="resize-handle" id="resize-handle" />
         <EditorRightPanel />
       </div>
 
-      <div className="toast" id="toast" />
+      <div className={toastVisible ? 'toast show' : 'toast'} id="toast">
+        {toastMessage}
+      </div>
     </>
   )
 }

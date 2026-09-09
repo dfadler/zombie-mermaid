@@ -115,11 +115,16 @@ The canvas is the source of truth for exact hex values, spacing, and markup
 shape, and it lives outside the repo — nothing mechanical can re-derive it.
 A semantic RTL query (`getByRole('button')`) can't express "this button's
 `stroke` is exactly `var(--cyan)`, matching sixteen artboards byte-for-byte"
-— only a literal comparison can. These tests intentionally use
-`renderToStaticMarkup` plus direct string/attribute assertions (not a
-snapshot matcher — see below), and each file's header comment names the
-canvas source and says to update the expectations only alongside a canvas
-change.
+— only a literal comparison can. Each file's header comment names the canvas
+source and says to update the expectations only alongside a canvas change.
+The exception is to the _query_, not the _mechanism_: [`demo-icons.test.ts`](../__tests__/demo-icons.test.ts)
+(#825) renders each icon with RTL's `render()` into jsdom and reads the pinned
+values off the resulting `<svg>`/`<path>` nodes via the DOM API
+(`getAttribute`/`toHaveAttribute`); the other four files still use
+`renderToStaticMarkup` plus direct string/attribute assertions against the
+markup string. Neither is a snapshot matcher (see below) — pick whichever
+reads more clearly for a given file; nothing here requires migrating the
+rest to match.
 
 **Golden-DOM regression tests.**
 [`__tests__/site-equivalence.test.ts`](../__tests__/site-equivalence.test.ts)

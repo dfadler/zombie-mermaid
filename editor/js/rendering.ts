@@ -1,5 +1,3 @@
-import { applyStrokeOverrides } from './config-panel.ts'
-import { isDark } from './dark-mode.ts'
 import {
   editor,
   previewInner,
@@ -18,6 +16,33 @@ export function scheduleRender(delay?: number): void {
   if (renderTimer) clearTimeout(renderTimer)
   renderTimer = setTimeout(doRender, delay ?? 300)
 }
+
+/**
+ * zombie-mermaid#808: registers `scheduleRender` on `window` for
+ * `demo/components/editor-config.tsx`'s `ConfigPanel` to call -- the
+ * *reverse* direction from `window.__editorConfigState`/
+ * `window.__editorViewportState` above (this module is the one being
+ * called into, not the caller). Colors/font/padding are React state now,
+ * so picking a color/font or dragging the padding slider happens entirely
+ * inside a React event handler with no access to this module's own
+ * `scheduleRender` import -- `editor/js/color-picker.ts`'s/
+ * `font-picker.ts`'s/`config-panel.ts`'s old handlers (deleted by #808)
+ * called it directly, which is exactly what drove the "live preview
+ * updates as you edit" behavior a config change needs to keep. Found via
+ * live-browser verification while building #808: without this, a picked
+ * color updated `window.__editorConfigState.getConfig()` and the config
+ * panel's own swatch/label correctly, but the diagram preview itself never
+ * re-rendered.
+ *
+ * Declared optional on the `demo/` side (`ConfigPanel` calls it through
+ * `?.`) since, unlike the bridges above, there's no ordering guarantee the
+ * other direction: a user could theoretically interact with the config
+ * panel before this module (part of the legacy bundle, loaded after
+ * `<EditorApp>` finishes hydrating) has registered it, however unlikely in
+ * practice. See `editor/js/global.d.ts` for this program's ambient
+ * declaration of the shape (`EditorRenderTriggerBridge`).
+ */
+window.__editorRenderTrigger = { scheduleRender }
 
 export interface Rgb {
   r: number
@@ -51,10 +76,15 @@ export function applyThemeToPage(themeKey: string): void {
     root.style.setProperty('--t-fg', t.fg)
     root.style.setProperty('--t-accent', t.accent || '#3b82f6')
   } else {
-    // Default — reset to light/dark base
-    root.style.setProperty('--t-bg', isDark ? '#18181B' : '#FFFFFF')
-    root.style.setProperty('--t-fg', isDark ? '#FAFAFA' : '#27272A')
-    root.style.setProperty('--t-accent', isDark ? '#60a5fa' : '#3b82f6')
+    // Default — reset to light/dark base. zombie-mermaid#809: `isDark`
+    // moved to React state (demo/components/editor-dark-mode.ts) -- reached
+    // here through the window.__editorDarkModeState bridge instead of a
+    // direct import, the same pattern this file already uses for zoom (see
+    // doRender()'s window.__editorViewportState.applyZoom() call below).
+    const dark = window.__editorDarkModeState.getIsDark()
+    root.style.setProperty('--t-bg', dark ? '#18181B' : '#FFFFFF')
+    root.style.setProperty('--t-fg', dark ? '#FAFAFA' : '#27272A')
+    root.style.setProperty('--t-accent', dark ? '#60a5fa' : '#3b82f6')
   }
   // Update shadow RGB
   const fg = root.style.getPropertyValue('--t-fg').trim() || '#27272A'
@@ -86,7 +116,13 @@ export function buildOptions(): Record<string, unknown> {
     if (t.surface) opts.surface = t.surface
     if (t.border) opts.border = t.border
   }
-  return Object.assign(opts, state.config)
+  // zombie-mermaid#808: colors/font/padding overrides are now React state
+  // owned by <EditorApp>'s reducer (demo/components/editor-config.tsx) --
+  // editor/js/config-panel.ts (which used to own state.config) is gone, so
+  // this reaches the current merged overrides through the
+  // window.__editorConfigState bridge instead. See that file's header
+  // comment for the full rationale.
+  return Object.assign(opts, window.__editorConfigState.getConfig())
 }
 
 export async function doRender(): Promise<void> {
@@ -109,7 +145,9 @@ export async function doRender(): Promise<void> {
     const ms = (performance.now() - t0).toFixed(0)
     previewInner.innerHTML = svg
     const svgEl = previewInner.querySelector('svg')
-    applyStrokeOverrides(svgEl)
+    // zombie-mermaid#808: edge/node stroke overrides are now React state
+    // too -- see buildOptions()'s comment above for the same bridge.
+    window.__editorConfigState.applyStrokeOverrides(svgEl)
     // zombie-mermaid#807: zoom is now React state owned by <EditorApp>'s
     // reducer (demo/components/editor-app.tsx) -- editor/js/zoom.ts (which
     // used to own state.zoom and this reapplication) is gone, so this

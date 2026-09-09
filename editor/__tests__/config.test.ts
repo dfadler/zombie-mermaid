@@ -2,24 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { createEditorEnv, flushRenderTimers } from './support/harness.ts'
 
 interface EditorWindow extends Window {
-  state: { theme: string; zoom: number; config: Record<string, unknown> }
-  cfgColors: Record<string, string>
-  cfgFont: string
-  cfgPadding: number
-  cfgEdgeStroke: number
-  cfgNodeStroke: number
-  readConfig: () => void
+  state: { theme: string }
   buildOptions: () => Record<string, unknown>
-  setPadding: (val: number | string) => void
-  setActiveColor: (hex: string) => void
-  openColorPopup: (key: string, anchorEl: Element) => void
   setTheme: (key: string) => void
-  applyStrokeOverrides: (svgEl: SVGElement) => void
   __mermaid: { THEMES: Record<string, { bg: string; fg: string }> }
   __themeState: {
     getTheme(): string
     setTheme(key: string): void
     subscribe(listener: (themeKey: string) => void): () => void
+  }
+  __editorConfigState: {
+    getConfig(): Record<string, unknown>
+    applyStrokeOverrides(svgEl: SVGSVGElement | null): void
   }
 }
 
@@ -27,66 +21,30 @@ function asEditorWindow(env: ReturnType<typeof createEditorEnv>): EditorWindow {
   return env.window as unknown as EditorWindow
 }
 
+// zombie-mermaid#808 ported editor/js/config-panel.ts,
+// editor/js/color-picker.ts, and editor/js/font-picker.ts (and their
+// cfgColors/cfgFont/cfgPadding/cfgEdgeStroke/cfgNodeStroke/readConfig/
+// setPadding/setActiveColor/openColorPopup/applyStrokeOverrides exports)
+// to React -- see demo/components/editor-config.tsx and its own
+// __tests__/dom/editor-config.test.ts (RTL) for that coverage now.
+// state.theme/window.__themeState stay legacy (out of #808's scope), so
+// those tests remain here unchanged in spirit, just no longer coupled to
+// the now-deleted cfgColors/readConfig() exports.
 describe('config panel state', () => {
-  it('readConfig only includes overridden fields', async () => {
-    const env = await createEditorEnv()
-    const win = asEditorWindow(env)
-
-    // Nothing overridden yet -> empty config.
-    win.readConfig()
-    expect(win.state.config).toEqual({})
-
-    win.cfgColors.bg = '#111111'
-    win.cfgFont = 'Inter'
-    win.cfgPadding = 40
-    win.readConfig()
-
-    expect(win.state.config).toEqual({
-      bg: '#111111',
-      font: 'Inter',
-      padding: 40,
-    })
-  })
-
   it('buildOptions merges the active theme with config overrides, config wins', async () => {
     const env = await createEditorEnv()
     const win = asEditorWindow(env)
 
     win.setTheme('nord')
-    win.cfgColors.bg = '#custom'
-    win.readConfig()
+    // window.__editorConfigState (zombie-mermaid#808's bridge, stubbed by
+    // the harness) stands in for the React-owned config overrides
+    // demo/components/editor-config.tsx's ConfigPanel would otherwise
+    // supply -- see that file's header comment.
+    win.__editorConfigState.getConfig = () => ({ bg: '#custom' })
 
     const opts = win.buildOptions()
     expect(opts.bg).toBe('#custom')
     expect(opts.fg).toBe(win.__mermaid.THEMES.nord.fg)
-  })
-
-  it('setPadding clamps to [0, 120] and updates state.config', async () => {
-    const env = await createEditorEnv()
-    const win = asEditorWindow(env)
-
-    win.setPadding(500)
-    expect(win.cfgPadding).toBe(120)
-    expect(win.state.config.padding).toBe(120)
-
-    win.setPadding(-20)
-    expect(win.cfgPadding).toBe(0)
-    expect(win.state.config.padding).toBe(0)
-  })
-
-  it('setActiveColor updates cfgColors and state.config for the active key', async () => {
-    const env = await createEditorEnv()
-    const win = asEditorWindow(env)
-    const anchor = env.document.querySelector(
-      '.color-edit-btn[data-cfg="accent"]',
-    )!
-
-    win.openColorPopup('accent', anchor)
-    win.setActiveColor('#ABCDEF')
-
-    expect(win.cfgColors.accent).toBe('#ABCDEF')
-    win.readConfig()
-    expect(win.state.config.accent).toBe('#ABCDEF')
   })
 
   it('setTheme updates state.theme and persists through the shared theme-state key (#688)', async () => {
@@ -149,41 +107,10 @@ describe('config panel state', () => {
     env.renderMermaidSVGAsync.mockClear()
     const win = asEditorWindow(env)
 
-    win.cfgPadding = 80
-    win.readConfig()
+    win.__editorConfigState.getConfig = () => ({ padding: 80 })
     await env.window.eval('doRender()')
 
     const [, opts] = env.renderMermaidSVGAsync.mock.calls.at(-1)!
     expect(opts).toMatchObject({ padding: 80 })
-  })
-})
-
-describe('stroke overrides', () => {
-  it('applies edge/node stroke-width to non-defs elements only', async () => {
-    const env = await createEditorEnv()
-    const win = asEditorWindow(env)
-
-    const svg = env.document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'svg',
-    )
-    svg.innerHTML = `
-      <defs><marker id="m"><path fill="none" /></marker></defs>
-      <line x1="0" y1="0" x2="1" y2="1"></line>
-      <rect width="10" height="10"></rect>
-    `
-    env.document.body.appendChild(svg)
-
-    win.cfgEdgeStroke = 3
-    win.cfgNodeStroke = 2
-    win.applyStrokeOverrides(svg)
-
-    const line = svg.querySelector('line')!
-    expect(line.getAttribute('stroke-width')).toBe('3')
-    const rect = svg.querySelector('rect')!
-    expect(rect.getAttribute('stroke-width')).toBe('2')
-    // The path lives inside <defs> and must be left alone.
-    const pathInDefs = svg.querySelector('defs path')!
-    expect(pathInDefs.getAttribute('stroke-width')).toBeNull()
   })
 })
