@@ -14,21 +14,6 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0
         version: 1.30.0(zod@4.5.4)
-      '@zombie-mermaid/ascii-renderer':
-        specifier: workspace:*
-        version: link:packages/ascii-renderer
-      '@zombie-mermaid/core':
-        specifier: workspace:*
-        version: link:packages/core
-      '@zombie-mermaid/mcp':
-        specifier: workspace:*
-        version: link:packages/mcp
-      '@zombie-mermaid/mermaid-parser':
-        specifier: workspace:*
-        version: link:packages/mermaid-parser
-      '@zombie-mermaid/svg-renderer':
-        specifier: workspace:*
-        version: link:packages/svg-renderer
       elkjs:
         specifier: ^0.11.0
         version: 0.11.1
@@ -66,6 +51,21 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.11
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
+      '@zombie-mermaid/ascii-renderer':
+        specifier: workspace:*
+        version: link:packages/ascii-renderer
+      '@zombie-mermaid/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@zombie-mermaid/mcp':
+        specifier: workspace:*
+        version: link:packages/mcp
+      '@zombie-mermaid/mermaid-parser':
+        specifier: workspace:*
+        version: link:packages/mermaid-parser
+      '@zombie-mermaid/svg-renderer':
+        specifier: workspace:*
+        version: link:packages/svg-renderer
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2

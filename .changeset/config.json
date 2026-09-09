@@ -5,16 +5,7 @@
     { "repo": "dfadler/zombie-mermaid" }
   ],
   "commit": false,
-  "fixed": [
-    [
-      "zombie-mermaid",
-      "@zombie-mermaid/core",
-      "@zombie-mermaid/mermaid-parser",
-      "@zombie-mermaid/svg-renderer",
-      "@zombie-mermaid/ascii-renderer",
-      "@zombie-mermaid/mcp"
-    ]
-  ],
+  "fixed": [],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

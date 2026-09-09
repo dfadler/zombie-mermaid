@@ -2,21 +2,31 @@
 'zombie-mermaid': patch
 ---
 
-Implements the #622 publish strategy (issue #769): `@zombie-mermaid/core`,
-`@zombie-mermaid/mermaid-parser`, `@zombie-mermaid/svg-renderer`,
-`@zombie-mermaid/ascii-renderer`, and `@zombie-mermaid/mcp` are now real,
-independently-built dependencies of the published `zombie-mermaid` package
-instead of bundled straight into its `dist/`. `dist/index.js`/`dist/ascii.js`/
-`dist/mcp.js` are correspondingly much smaller — they now import those
-packages rather than inline their compiled source.
+Publish-prep only, per #769: the five internal `@zombie-mermaid/*` workspace
+packages (`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`)
+now have genuinely publishable `package.json` shapes — real `exports`/
+`main`/`module`/`types` pointing at their own `dist/`, `publishConfig:
+{ access: "public", provenance: true }`, `"private"` removed — and each gets
+its own independent Vite build (`packages/*/vite.config.ts`, via the shared
+`vite.config.package.ts` factory), runnable standalone via the new
+`build:packages` script.
 
-This is a packaging change only: `zombie-mermaid`'s own public API (`.`,
-`./ascii`, `./mcp`) and every documented export are unchanged, verified by
-loading the built output and by the full existing test suite passing
-unmodified. `.changeset/config.json`'s `fixed` group keeps all six packages
-(this one plus the five above) on the same version going forward.
+**This is prep only. It does not change what `npm install zombie-mermaid`
+resolves to.** The umbrella's own build (`vite.config.lib.ts`) still bundles
+all five packages' source directly into `dist/index.js`/`dist/ascii.js`/
+`dist/mcp.js`/`dist/cli.js`, exactly as before — none of the five packages
+are wired in as external runtime dependencies, and none are published to
+npm. Actually flipping that (declaring them as real `dependencies`,
+externalizing them in the umbrella build, and locking all six packages to
+one version via `.changeset/config.json`'s `fixed` group) is deferred to a
+future PR, gated on completing npm's one-time trusted-publishing (OIDC)
+setup for each of the five new package names — see RELEASING.md.
 
-The five `@zombie-mermaid/*` packages are not yet actually published to
-npm — that needs a one-time, maintainer-only npm trusted-publishing setup
-per package name (see RELEASING.md) before the next release can publish
-them for real.
+Two real, independent bugs surfaced while giving each package its own
+build are fixed here regardless of the externalization question:
+`packages/svg-renderer/src/elk-instance.ts` now restates `LayoutCache`'s
+concrete shape locally (its `@internal` fields are trimmed from
+`@zombie-mermaid/core`'s own published `.d.ts`), `packages/mcp/package.json`
+gained its real transitive `@zombie-mermaid/svg-renderer`/`entities`
+dependencies, and `packages/core/package.json` moved `elkjs` from
+`devDependencies` to `dependencies` (it's part of `core`'s public types).

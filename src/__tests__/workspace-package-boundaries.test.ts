@@ -220,17 +220,23 @@ describe('@zombie-mermaid/svg-renderer depends only on core and mermaid-parser',
 })
 
 describe('workspace package manifests', () => {
-  // As of #769 (implementing the publish strategy
-  // docs/decisions/monorepo-conversion.md / #622 recommend), the umbrella
-  // treats all five `@zombie-mermaid/*` packages as external real
-  // dependencies (see `isExternal` in vite.config.lib.ts) rather than
-  // bundling them — so each one is genuinely, independently published under
-  // the `@zombie-mermaid/` npm scope, not merely built and left private.
-  // `.changeset/config.json`'s `fixed` array keeps all six (these five plus
-  // the umbrella) on the same version, so a change to any one bumps them
-  // together — see that file's comment.
+  // As of #769, each of the five `@zombie-mermaid/*` packages has a
+  // genuinely publishable `package.json` shape — real `name`/`exports`
+  // pointing at its own built `dist/`, `publishConfig.access: "public"`,
+  // no longer `"private": true` — and its own independent build
+  // (`packages/<name>/vite.config.ts`, via `vite.config.package.ts`).
+  //
+  // That is preparation only. The umbrella (`vite.config.lib.ts`) still
+  // bundles all five packages' source directly into its own `dist/` (they
+  // are absent from `isExternal` there, same as before #769) — none of
+  // them is a real external `dependencies` entry of `zombie-mermaid`, none
+  // is part of `.changeset/config.json`'s `fixed` group (still `[]`), and
+  // none has ever actually been published to npm. Externalizing them for
+  // real is a separate, future PR gated on completing npm's one-time
+  // trusted-publishing setup for each new package name — see
+  // RELEASING.md's "Future: multi-package publish" section.
   it.each(['core', 'mermaid-parser', 'svg-renderer', 'ascii-renderer', 'mcp'])(
-    '%s is publishable under the @zombie-mermaid/ scope',
+    '%s is publish-ready in shape under the @zombie-mermaid/ scope (not yet externalized or published)',
     (pkg) => {
       const manifest = JSON.parse(
         readFileSync(resolve(PACKAGES, pkg, 'package.json'), 'utf8'),

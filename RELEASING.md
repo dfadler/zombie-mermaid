@@ -17,17 +17,21 @@ bump the package version, run:
 pnpm changeset
 ```
 
-This asks which package(s) to bump and which kind of bump the change needs
-(patch/minor/major), then for a short summary. As of #769, the workspace has
-six packages — `zombie-mermaid` and the five internal `@zombie-mermaid/*`
-packages it depends on (`core`, `mermaid-parser`, `svg-renderer`,
-`ascii-renderer`, `mcp`) — but `.changeset/config.json`'s `fixed` group
-locks all six to the same version, so picking any one of them (`zombie-mermaid`
-is simplest) bumps them all together at release time; you don't need to
-select all six by hand. It writes a markdown file under `.changeset/` —
-commit that file alongside your change. A PR can contain more than one
+This asks which kind of bump the change needs (patch/minor/major — this is
+still a single _published_ package, `zombie-mermaid`, so there's only one to
+pick) and for a short summary. It writes a markdown file under `.changeset/`
+— commit that file alongside your change. A PR can contain more than one
 changeset, and a changeset can be empty (`pnpm changeset add --empty`) for
 changes that don't need a release (docs, CI, tests).
+
+The workspace also contains five internal `@zombie-mermaid/*` packages
+(`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`, under
+`packages/`) that #769 made publish-ready in shape. They are **not**
+published, not real runtime dependencies of `zombie-mermaid` yet, and not
+part of `.changeset/config.json`'s `fixed` group (still `[]`) — the
+umbrella's own build (`vite.config.lib.ts`) still bundles their source
+directly into `dist/`, same as before #769. See "Future: multi-package
+publish" below.
 
 Not every change needs one — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
@@ -59,67 +63,74 @@ generated automatically as part of this flow.
 
 Trusted publishing has to be linked on the npm side before any of this can
 publish successfully. **This can only be done by whoever owns/administers
-each package on npmjs.com** (currently the fork maintainer), and only needs
-to be done once **per package name** — as of #769 that means **six separate
-packages**, not just `zombie-mermaid`:
+the `zombie-mermaid` package on npmjs.com** (currently the fork maintainer),
+and only needs to be done once:
 
-- `zombie-mermaid`
+1. Sign in to [npmjs.com](https://www.npmjs.com/) and go to the `zombie-mermaid`
+   package's settings page: `https://www.npmjs.com/package/zombie-mermaid/access`
+   (if the package hasn't been published under this name before, trusted
+   publishing can instead be configured when the package is first created —
+   see npm's docs linked above if that's the situation).
+2. Find the **Trusted Publisher** section and add a GitHub Actions publisher
+   with these exact values (all fields are case-sensitive):
+   - **Organization or user:** `dfadler`
+   - **Repository:** `zombie-mermaid`
+   - **Workflow filename:** `publish.yml`
+   - **Environment name:** leave blank (this workflow doesn't use a GitHub
+     Environment)
+3. Save. From then on, npm will accept publishes for this package that come
+   from a GitHub Actions run of `dfadler/zombie-mermaid`'s `publish.yml`
+   workflow on `main`, authenticated via that run's OIDC token — no npm
+   token needed in CI.
+
+Until this is configured, the publish step in the workflow will fail
+authentication (`ENEEDAUTH` or similar) even though everything else in the
+pipeline succeeds. That's expected and isn't a bug in the workflow — it's
+this missing link.
+
+If an `NPM_TOKEN` repository secret still exists from the old release flow,
+it's no longer used anywhere in `publish.yml` and can be deleted from the
+repo's Actions secrets once trusted publishing is confirmed working.
+
+## Future: multi-package publish (deferred, not part of this setup yet)
+
+#769 made the five internal `@zombie-mermaid/*` packages under `packages/`
+(`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`)
+publish-ready **in shape** — real `package.json` `name`/`exports`/`main`/
+`module`/`types` pointing at their own built `dist/`, `publishConfig:
+{ access: "public", provenance: true }`, `"private"` removed, and each has
+its own independent build (`packages/*/vite.config.ts`, runnable via
+`pnpm run build:packages`). **None of that is wired up yet**: the umbrella's
+own build still bundles all five directly into `dist/index.js`/`dist/ascii.js`/
+`dist/mcp.js` (they are not external `dependencies` of `zombie-mermaid`),
+`.changeset/config.json`'s `fixed` group is still `[]`, and none of the five
+have ever been published to npm.
+
+Actually flipping this — externalizing the five packages in
+`vite.config.lib.ts`, declaring them as real `dependencies`, and locking all
+six packages to one version via the `fixed` group — is a separate, future
+PR. It is explicitly gated on completing the one-time npm trusted-publishing
+setup above, repeated once per new package name, **before** that PR merges:
+
 - `@zombie-mermaid/core`
 - `@zombie-mermaid/mermaid-parser`
 - `@zombie-mermaid/svg-renderer`
 - `@zombie-mermaid/ascii-renderer`
 - `@zombie-mermaid/mcp`
 
-npm trusted publishing is configured per package name individually — there
-is no "cover the whole `@zombie-mermaid` scope at once" option — so this
-setup has to be repeated six times. For each one:
-
-1. Sign in to [npmjs.com](https://www.npmjs.com/) and go to that package's
-   settings page: `https://www.npmjs.com/package/<name>/access` (URL-encode
-   the `@`/`/` in a scoped name, e.g.
-   `https://www.npmjs.com/package/@zombie-mermaid/core/access` — or navigate
-   there from the package's own page). If the package hasn't been published
-   under this name before, trusted publishing can instead be configured when
-   the package is first created — see npm's docs linked above if that's the
-   situation (true today for all five `@zombie-mermaid/*` names — see
-   "Status as of #769" below).
-2. Find the **Trusted Publisher** section and add a GitHub Actions publisher
-   with these exact values (all fields are case-sensitive, and identical
-   across all six packages — only the package being configured changes):
-   - **Organization or user:** `dfadler`
-   - **Repository:** `zombie-mermaid`
-   - **Workflow filename:** `publish.yml`
-   - **Environment name:** leave blank (this workflow doesn't use a GitHub
-     Environment)
-3. Save. From then on, npm will accept publishes for that package that come
-   from a GitHub Actions run of `dfadler/zombie-mermaid`'s `publish.yml`
-   workflow on `main`, authenticated via that run's OIDC token — no npm
-   token needed in CI.
-
-Until this is configured **for a given package**, `pnpm changeset publish`
-will fail to publish _that_ package specifically (`ENEEDAUTH` or similar)
-even if the others succeed — `changesets/action` continues on to the next
-package rather than aborting the whole step, but the run as a whole will
-report the failure. That's expected and isn't a bug in the workflow — it's
-this missing link, and it's fine to configure the six packages at different
-times (each unblocks itself independently).
-
-### Status as of #769
-
-`zombie-mermaid` has been published before and may already have trusted
-publishing configured from before this change (verify at the URL above
-rather than assuming). The five `@zombie-mermaid/*` packages are new as of
-this issue — genuinely publishable (`"private"` is not set, each has a real
-`package.json` `name`/`version`/`exports` pointing at its own built
-`dist/`), but **none of them have ever been published, and none of them
-have trusted publishing configured yet.** The build/config side of making
-them publishable is done; this manual npmjs.com step for each of the five
-new names is the only remaining blocker before the next `pnpm changeset
-publish` run can actually publish them.
-
-If an `NPM_TOKEN` repository secret still exists from the old release flow,
-it's no longer used anywhere in `publish.yml` and can be deleted from the
-repo's Actions secrets once trusted publishing is confirmed working.
+The reason for the ordering: once `.changeset/config.json`'s `fixed` group
+locks these six packages together, `workspace:*` gets rewritten to a
+concrete version number at publish time regardless of whether that specific
+package's publish actually succeeds — so flipping the externalization
+before every one of these five names has trusted publishing configured
+would ship a `zombie-mermaid` npm package whose manifest points at
+dependencies that don't exist on the registry, breaking `npm install
+zombie-mermaid` for every consumer. Configure trusted publishing for all
+five names first (same steps as above, substituting the scoped package name
+and URL-encoding the `@`/`/`, e.g.
+`https://www.npmjs.com/package/@zombie-mermaid/core/access` — each can be
+configured independently and at different times), _then_ open the
+externalization PR.
 
 ## Requirements this depends on
 

@@ -29,13 +29,19 @@ still genuinely undecided.
   what #623 closed without doing) are all real workspace packages.
 - Workspace tooling (#621) is mostly done; its remaining "use
   `pnpm -r`/`--filter`" scope isn't needed by anything yet.
-- Publish strategy (#622) is implemented as of #769: a populated `fixed`
-  changesets array, thin re-exports under the `@zombie-mermaid/` npm scope,
-  and no standalone `mcp` package. `zombie-mermaid` is still the only
-  package end users install — the five `@zombie-mermaid/*` packages are
-  real, independently-built runtime dependencies of it, not a second public
-  surface. The one remaining step is manual and maintainer-only: linking npm
-  trusted publishing for each of the five new package names (RELEASING.md).
+- Publish strategy (#622) is partially implemented as of #769: the five
+  internal packages now have genuinely publishable `package.json` shapes
+  (real `exports`/`main`/`module`/`types`, `publishConfig`, no longer
+  `"private"`) and their own independent builds, but the recommended
+  externalize-and-publish flip itself — a populated `fixed` changesets
+  array, thin re-exports under the `@zombie-mermaid/` npm scope, and
+  externalizing them in the umbrella build — is deferred to a follow-up PR.
+  `zombie-mermaid` is still the only package end users install, and its
+  build still bundles all five packages' source directly, exactly as
+  before. The follow-up is gated on a manual, maintainer-only step: linking
+  npm trusted publishing for each of the five new package names
+  (RELEASING.md) — publishing the umbrella before that's done would ship a
+  manifest pointing at dependencies that don't exist on the registry.
 - Any PR that flips packages from `"private": true` to published touches
   this repo's dependency-manifest/lockfile surface, which is
   security-critical per this org's standing rule — needs a human on the
