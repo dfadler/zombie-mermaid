@@ -1,6 +1,37 @@
+import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
+const ROOT = import.meta.dirname
+
 export default defineConfig({
+  // As of #769, the five `@zombie-mermaid/*` packages' package.json
+  // `exports`/`types` point at their own *built* `dist/index.js`/
+  // `.d.ts` — correct for a real published consumer, but Vite's default
+  // resolver would then need every package built before a single test file
+  // could even load (unlike `tsc`, which honors tsconfig.json's `paths`
+  // override for the same specifiers regardless of package.json — see that
+  // file's comment). These aliases keep the test suite doing what it always
+  // did: running straight against live source, no build step required —
+  // mirroring tsconfig.json's `paths` so both stay in sync by construction
+  // rather than by two people remembering to update two files.
+  resolve: {
+    alias: {
+      '@zombie-mermaid/core': resolve(ROOT, 'packages/core/src/index.ts'),
+      '@zombie-mermaid/mermaid-parser': resolve(
+        ROOT,
+        'packages/mermaid-parser/src/index.ts',
+      ),
+      '@zombie-mermaid/svg-renderer': resolve(
+        ROOT,
+        'packages/svg-renderer/src/index.ts',
+      ),
+      '@zombie-mermaid/ascii-renderer': resolve(
+        ROOT,
+        'packages/ascii-renderer/src/index.ts',
+      ),
+      '@zombie-mermaid/mcp': resolve(ROOT, 'packages/mcp/src/index.ts'),
+    },
+  },
   test: {
     include: [
       'src/__tests__/**/*.test.ts',

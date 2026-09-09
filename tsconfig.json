@@ -22,7 +22,28 @@
     "baseUrl": ".",
     "paths": {
       "zombie-mermaid": ["./src/index.ts"],
-      "zombie-mermaid/*": ["./src/*"]
+      "zombie-mermaid/*": ["./src/*"],
+      // Live-source overrides for the five @zombie-mermaid/* workspace
+      // packages (#769) — without these, `pnpm run typecheck`/the editor
+      // would resolve these bare specifiers through each package's own
+      // package.json `exports`, which (as of #769) points at that
+      // package's *built* dist/index.d.ts. That would make typecheck pass
+      // or fail against stale/missing build output instead of the actual
+      // source being edited, and would require a full package build before
+      // `tsc --noEmit` could even run. `tsconfig.build.json` (used only by
+      // the two vite lib builds' own dts-generation step) intentionally
+      // does NOT carry this override — a real build's declaration output
+      // must resolve these the same way a downstream consumer would: see
+      // that file's comment.
+      "@zombie-mermaid/core": ["./packages/core/src/index.ts"],
+      "@zombie-mermaid/mermaid-parser": [
+        "./packages/mermaid-parser/src/index.ts"
+      ],
+      "@zombie-mermaid/svg-renderer": ["./packages/svg-renderer/src/index.ts"],
+      "@zombie-mermaid/ascii-renderer": [
+        "./packages/ascii-renderer/src/index.ts"
+      ],
+      "@zombie-mermaid/mcp": ["./packages/mcp/src/index.ts"]
     },
     // ".", not "src": the workspace packages under packages/*/src are part
     // of the same program (see "include" below), and rootDir has to contain

@@ -9,7 +9,15 @@ name: Release
 #     via trusted publishing (OIDC) and tags the release.
 #
 # See RELEASING.md for the full flow and the one-time npmjs.com trusted
-# publisher setup this depends on.
+# publisher setup this depends on. `pnpm changeset publish` below still
+# publishes exactly one package (`zombie-mermaid`) today — the five internal
+# @zombie-mermaid/* packages under packages/ are publish-ready in shape
+# (#769) but not yet externalized runtime dependencies, not part of
+# .changeset/config.json's `fixed` group, and not published. See
+# RELEASING.md's "Future: multi-package publish" section for what that
+# follow-up requires (per-package trusted-publisher setup for each of the
+# five new names) before this workflow starts publishing more than one
+# package.
 on:
   push:
     branches: [main]

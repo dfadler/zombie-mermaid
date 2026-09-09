@@ -72,6 +72,30 @@ let rawWorker: RawFakeWorker | null = null
  */
 export type { LayoutCache }
 
+/**
+ * Concrete shape of a `LayoutCache`, restated locally.
+ *
+ * `core`'s `LayoutCache` interface marks `map`/`maxSize` `@internal`
+ * (see the comment on that interface in packages/core/src/types.ts), so
+ * api-extractor strips them from `@zombie-mermaid/core`'s *published*
+ * `dist/index.d.ts` — deliberately, so they stay invisible to
+ * `@zombie-mermaid/core` consumers and to `zombie-mermaid`'s own public
+ * types (which re-export `LayoutCache` from this package). As of #769,
+ * `@zombie-mermaid/core` is a real, independently-built dependency of this
+ * package rather than bundled source, so this module now resolves
+ * `LayoutCache` through that same trimmed public declaration too — same as
+ * any other consumer. This module is the one place, in or out of `core`,
+ * that actually builds and mutates those fields (`createLayoutCache()`
+ * below; the cache read/evict logic in `elkLayoutSync()`), so it restates
+ * the concrete shape here — kept in sync by hand with `core`'s source of
+ * truth — rather than either widening `core`'s public surface or fighting
+ * api-extractor's trimming in the build config to get it back.
+ */
+interface LayoutCacheShape {
+  map: Map<string, ElkNode>
+  maxSize: number
+}
+
 const DEFAULT_LAYOUT_CACHE_SIZE = 20
 
 /**
@@ -92,7 +116,11 @@ export function createLayoutCache(
       `createLayoutCache: maxSize must be a positive integer, got ${maxSize}`,
     )
   }
-  return { map: new Map(), maxSize }
+  // Typed as the concrete shape first (see `LayoutCacheShape` above), then
+  // returned as the public, trimmed `LayoutCache` — a plain widening
+  // assignment, not a cast.
+  const cache: LayoutCacheShape = { map: new Map(), maxSize }
+  return cache
 }
 
 /**
@@ -201,16 +229,22 @@ function ensureElk(): RawFakeWorker {
  *   always-recompute behavior exactly.
  */
 export function elkLayoutSync(graph: ElkNode, cache?: LayoutCache): ElkNode {
-  const cacheKey = cache ? stableStringify(graph) : undefined
-  if (cache && cacheKey !== undefined) {
-    const cached = cache.map.get(cacheKey)
+  // `cache`, when provided, is always an object this module itself built
+  // via `createLayoutCache()` above — never anything constructed outside
+  // this package. Restated as the concrete shape here (see
+  // `LayoutCacheShape`'s doc comment) since the public `LayoutCache` type
+  // this parameter is declared with intentionally hides `map`/`maxSize`.
+  const internalCache = cache as LayoutCacheShape | undefined
+  const cacheKey = internalCache ? stableStringify(graph) : undefined
+  if (internalCache && cacheKey !== undefined) {
+    const cached = internalCache.map.get(cacheKey)
     if (cached) {
       // Mark as most-recently-used: Map iteration order follows insertion
       // order, so a delete+re-set moves this entry to the end — which is
       // what the LRU eviction below relies on to find the *least*
       // recently used entry (the current first key).
-      cache.map.delete(cacheKey)
-      cache.map.set(cacheKey, cached)
+      internalCache.map.delete(cacheKey)
+      internalCache.map.set(cacheKey, cached)
       return cached
     }
   }
@@ -244,13 +278,13 @@ export function elkLayoutSync(graph: ElkNode, cache?: LayoutCache): ElkNode {
   if (error) throw error
   if (!result) throw new Error('ELK layout did not return synchronously')
 
-  if (cache && cacheKey !== undefined) {
-    cache.map.set(cacheKey, result)
-    if (cache.map.size > cache.maxSize) {
+  if (internalCache && cacheKey !== undefined) {
+    internalCache.map.set(cacheKey, result)
+    if (internalCache.map.size > internalCache.maxSize) {
       // Map iteration order is insertion order, so the first key is the
       // least recently used (see the recency bump on hit, above).
-      const oldestKey = cache.map.keys().next().value
-      if (oldestKey !== undefined) cache.map.delete(oldestKey)
+      const oldestKey = internalCache.map.keys().next().value
+      if (oldestKey !== undefined) internalCache.map.delete(oldestKey)
     }
   }
 

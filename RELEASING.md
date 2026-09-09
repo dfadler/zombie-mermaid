@@ -17,12 +17,21 @@ bump the package version, run:
 pnpm changeset
 ```
 
-This asks which kind of bump the change needs (patch/minor/major — this is a
-single-package repo, so there's only one package to pick) and for a short
-summary. It writes a markdown file under `.changeset/` — commit that file
-alongside your change. A PR can contain more than one changeset, and a
-changeset can be empty (`pnpm changeset add --empty`) for changes that don't
-need a release (docs, CI, tests).
+This asks which kind of bump the change needs (patch/minor/major — this is
+still a single _published_ package, `zombie-mermaid`, so there's only one to
+pick) and for a short summary. It writes a markdown file under `.changeset/`
+— commit that file alongside your change. A PR can contain more than one
+changeset, and a changeset can be empty (`pnpm changeset add --empty`) for
+changes that don't need a release (docs, CI, tests).
+
+The workspace also contains five internal `@zombie-mermaid/*` packages
+(`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`, under
+`packages/`) that #769 made publish-ready in shape. They are **not**
+published, not real runtime dependencies of `zombie-mermaid` yet, and not
+part of `.changeset/config.json`'s `fixed` group (still `[]`) — the
+umbrella's own build (`vite.config.lib.ts`) still bundles their source
+directly into `dist/`, same as before #769. See "Future: multi-package
+publish" below.
 
 Not every change needs one — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
@@ -82,6 +91,62 @@ this missing link.
 If an `NPM_TOKEN` repository secret still exists from the old release flow,
 it's no longer used anywhere in `publish.yml` and can be deleted from the
 repo's Actions secrets once trusted publishing is confirmed working.
+
+## Future: multi-package publish (deferred, not part of this setup yet)
+
+#769 made the five internal `@zombie-mermaid/*` packages under `packages/`
+(`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`)
+publish-ready **in shape** — real `package.json` `name`/`exports`/`main`/
+`module`/`types` pointing at their own built `dist/`, `publishConfig:
+{ access: "public", provenance: true }`, `"private"` removed, and each has
+its own independent build (`packages/*/vite.config.ts`, runnable via
+`pnpm run build:packages`). **None of that is wired up yet**: the umbrella's
+own build still bundles all five directly into `dist/index.js`/`dist/ascii.js`/
+`dist/mcp.js` (they are not external `dependencies` of `zombie-mermaid`),
+`.changeset/config.json`'s `fixed` group is still `[]`, and none of the five
+have ever been published to npm.
+
+Actually flipping this — externalizing the five packages in
+`vite.config.lib.ts`, declaring them as real `dependencies`, and locking all
+six packages to one version via the `fixed` group — is a separate, future
+PR. It is explicitly gated on completing the one-time npm trusted-publishing
+setup above, repeated once per new package name, **before** that PR merges:
+
+- `@zombie-mermaid/core`
+- `@zombie-mermaid/mermaid-parser`
+- `@zombie-mermaid/svg-renderer`
+- `@zombie-mermaid/ascii-renderer`
+- `@zombie-mermaid/mcp`
+
+The reason for the ordering: once `.changeset/config.json`'s `fixed` group
+locks these six packages together, `workspace:*` gets rewritten to a
+concrete version number at publish time regardless of whether that specific
+package's publish actually succeeds — so flipping the externalization
+before every one of these five names has trusted publishing configured
+would ship a `zombie-mermaid` npm package whose manifest points at
+dependencies that don't exist on the registry, breaking `npm install
+zombie-mermaid` for every consumer. Configure trusted publishing for all
+five names first (same steps as above, substituting the scoped package name
+and URL-encoding the `@`/`/`, e.g.
+`https://www.npmjs.com/package/@zombie-mermaid/core/access` — each can be
+configured independently and at different times), _then_ open the
+externalization PR.
+
+When configuring trusted publishing for each of these five new package
+names, double-check the **Allowed actions** setting: make sure a direct
+**`npm publish`** is permitted, not only a staged one. npm's
+trusted-publisher UI has, at various points, defaulted a _new_
+configuration to allow staged publishing only (`npm stage publish` — which
+then waits on a maintainer's separate, manual 2FA-backed approval before
+anything actually goes live) unless direct publish is explicitly also
+selected. The future externalization PR's `pnpm changeset publish` step
+does a direct publish, not a staged one — if a newly-created config for one
+of these five packages defaults to staged-only, that step will appear to
+succeed while the package silently sits unpublished, waiting on a manual
+approval nobody knows to give. Double-check this setting against npm's
+current [trusted publishers docs](https://docs.npmjs.com/trusted-publishers/)
+rather than assuming the option is where this note describes it — npm has
+changed the default here before and may again.
 
 ## Requirements this depends on
 

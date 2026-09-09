@@ -13,10 +13,13 @@
   "ignore": [],
   "changedFilePatterns": [
     "src/**",
+    "packages/**",
     "package.json",
     "README.md",
     "LICENSE",
     "vite.config.lib.ts",
-    "tsconfig.json"
+    "vite.config.package.ts",
+    "tsconfig.json",
+    "tsconfig.build.json"
   ]
 }
