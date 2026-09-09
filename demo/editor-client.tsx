@@ -61,6 +61,14 @@
  * this page for no reason (mirrors `fork-fixes-client.tsx`'s identical
  * reasoning). Nav's own hydration has no known interaction with the legacy
  * bundle, so it isn't gated on {@link EDITOR_HYDRATED_EVENT}.
+ *
+ * `initChromeTheme()` (#772's site-chrome re-theming) runs here too, for
+ * the same reason Nav does: every other page generator wires it in via
+ * `demo/theme-bar-only-client.ts`, but this page has no `ThemePickerSection`
+ * to bundle that alongside, and no reason to ship a second bundle just for
+ * one function call. `window.__themeColors` is embedded the same way
+ * `ThemePickerSection` embeds it on those other pages — see `editor.ts`'s
+ * `generateEditorHtml()`.
  */
 import { createElement } from 'react'
 import { hydrateRoot } from 'react-dom/client'
@@ -73,6 +81,14 @@ import {
   type EditorAppProps,
 } from './components/editor-app.tsx'
 import { hydrateNav } from './nav-client.tsx'
+import { initChromeTheme } from './chrome-theme-client.ts'
+import type { ChromeThemeColors } from './components/chrome-theme.ts'
+
+declare global {
+  interface Window {
+    __themeColors: Record<string, ChromeThemeColors>
+  }
+}
 
 function readProps(): EditorAppProps {
   const propsEl = document.getElementById(EDITOR_PROPS_ELEMENT_ID)
@@ -130,8 +146,10 @@ async function main(): Promise<void> {
   // Nav is its own, separate hydration island — see this file's header
   // comment for why it's hydrated from this same bundle rather than a
   // dedicated one, and why it isn't gated on the legacy bundle's ordering
-  // requirement.
+  // requirement. Site-chrome re-theming has the same "no known interaction
+  // with the legacy bundle" property, so it isn't gated either.
   hydrateNav()
+  initChromeTheme(window.__themeColors)
   await hydrated
   await runLegacyEditorBundle()
 }

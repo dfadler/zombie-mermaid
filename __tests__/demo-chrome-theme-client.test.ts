@@ -122,3 +122,43 @@ describe('when there is no .nav-bar in the document', () => {
     )
   })
 })
+
+// editor-page.tsx's own literal-value .zm-shell rule shadows anything
+// inherited from document.documentElement, so a root-only override would
+// be invisible there -- see chrome-theme-client.ts's own module doc
+// comment for the full explanation. These guard the extra per-element
+// pass that makes it visible anyway.
+describe('.zm-shell elements (editor-page.tsx)', () => {
+  beforeEach(() => {
+    // No inline style, matching production: the default palette there comes
+    // from editor-page.tsx's own `.zm-shell { --bg: #0a0d16; … }` stylesheet
+    // rule, not an inline one -- unlike `.nav-bar`'s background, this module
+    // never needs to capture/restore an original value for these elements.
+    document.body.innerHTML += `
+      <div class="zm-shell"></div>
+      <div class="zm-shell"></div>
+    `
+  })
+
+  it('overrides every .zm-shell element inline, not just the root', () => {
+    controller = initChromeTheme(COLORS)
+    setTheme('dracula')
+    const shells = document.querySelectorAll<HTMLElement>('.zm-shell')
+    expect(shells).toHaveLength(2)
+    for (const shell of shells) {
+      expect(shell.style.getPropertyValue('--bg')).toBe('#282a36')
+    }
+  })
+
+  it('restores each .zm-shell element to its own authored rule on Default', () => {
+    controller = initChromeTheme(COLORS)
+    setTheme('nord')
+    setTheme('')
+    for (const shell of document.querySelectorAll<HTMLElement>('.zm-shell')) {
+      // removeProperty(), not reset to the pre-theme literal: the same
+      // "fall back to the stylesheet cleanly" contract initChromeTheme()
+      // already documents for the root.
+      expect(shell.style.getPropertyValue('--bg')).toBe('')
+    }
+  })
+})

@@ -27,7 +27,10 @@ export function chromeThemeColorsTable(): Record<string, ChromeThemeColors> {
 /**
  * `window.__themeColors = {…};`, safe to embed in a `<script>` element —
  * see `escapeJsonForScriptTag`. Read by `demo/chrome-theme-client.ts`'s
- * `initChromeTheme()` on every page that mounts `ThemePickerSection`.
+ * `initChromeTheme()` on every page: most pages get this call (and the
+ * embed) for free from `ThemePickerSection`, which renders this same
+ * script; `editor.ts` has no `ThemePickerSection` of its own and calls
+ * this directly instead — see that generator's `generateEditorHtml()`.
  */
 export function chromeThemeColorsScript(): string {
   const json = escapeJsonForScriptTag(JSON.stringify(chromeThemeColorsTable()))

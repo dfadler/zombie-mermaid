@@ -48,6 +48,7 @@ import { type EditorThemeItem } from './demo/components/editor-topbar.tsx'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import { THEME_LABELS } from './demo/theme-labels.ts'
+import { chromeThemeColorsScript } from './demo/chrome-theme-data.ts'
 
 // #688: THEME_LABELS used to be a second copy of demo/theme-labels.ts's
 // export, kept in sync only by a build-time guard here that threw if
@@ -192,11 +193,21 @@ async function generateEditorHtml(): Promise<string> {
 
   const [css, appJs] = await Promise.all([readCssFiles(), bundleEditorJs()])
 
+  // window.__themeColors: the bg/fg table demo/editor-client.tsx's
+  // initChromeTheme() call needs to re-theme Nav/Footer/the hero on this
+  // page. Every other page generator gets this for free from
+  // ThemePickerSection (demo/components/theme-picker-section.tsx); this
+  // page has no theme-picker section of its own (its 15-theme control
+  // lives in EditorTopbar instead), so it's embedded directly here, ahead
+  // of editorClientScript in the same rendererSetupJs script — see this
+  // function's own doc comment for why script order here is load-bearing.
+  const themeColorsJs = chromeThemeColorsScript()
+
   return renderHtmlDocument(
     createElement(EditorPage, {
       css,
       themes,
-      rendererSetupJs: `${bundleJs}\n\n${themeStateBridgeJs}\n`,
+      rendererSetupJs: `${themeColorsJs}\n\n${bundleJs}\n\n${themeStateBridgeJs}\n`,
       editorClientScript,
       appJs,
     }),
