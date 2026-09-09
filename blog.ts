@@ -41,7 +41,11 @@ import { footerCss } from './demo/components/footer.tsx'
 import { navCss } from './demo/components/nav.tsx'
 import { primitivesCss } from './demo/components/primitives.tsx'
 import { designBaseCss } from './demo/components/tokens.tsx'
-import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
+import {
+  DEFAULT_SWATCH,
+  themePickerCss,
+} from './demo/components/theme-picker.tsx'
+import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
 
 /**
@@ -379,10 +383,20 @@ async function main(): Promise<void> {
   )
   await writeFile(
     new URL('./assets/blog.css', OUT_DIR),
-    [designBaseCss(), primitivesCss(), navCss(), footerCss(), blogCss].join(
-      '\n\n',
-    ),
+    [
+      designBaseCss(),
+      primitivesCss(),
+      navCss(),
+      footerCss(),
+      themePickerCss(),
+      blogCss,
+    ].join('\n\n'),
   )
+
+  // #687: the blog index's live theme picker needs no other client JS on
+  // this page, so it gets the same shared bundle Home/the Diagrams
+  // hub/Fork Fixes/Dashboard use.
+  const themeBarScript = await bundleThemeBarClient()
 
   const posts = await loadPosts()
   const highlighter = await createHighlighter({
@@ -429,6 +443,7 @@ async function main(): Promise<void> {
         displayDate: formatDisplayDate(post.date),
         description: post.description,
       })),
+      themeBarScript,
     }),
   )
 

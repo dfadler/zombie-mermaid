@@ -33,6 +33,8 @@ import { designBaseCss } from './demo/components/tokens.tsx'
 import { primitivesCss } from './demo/components/primitives.tsx'
 import { navCss } from './demo/components/nav.tsx'
 import { footerCss } from './demo/components/footer.tsx'
+import { themePickerCss } from './demo/components/theme-picker.tsx'
+import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import {
   ForkFixesPage,
   type FixSectionProps,
@@ -305,13 +307,19 @@ async function generate(): Promise<string> {
     primitivesCss(),
     navCss(),
     footerCss(),
+    themePickerCss(),
     pageCss,
   ].join('\n\n')
+
+  // #687: this page's live theme picker needs no other client JS, so it
+  // gets the same shared bundle Home/the Diagrams hub/Blog/Dashboard use.
+  const themeBarScript = await bundleThemeBarClient()
 
   return renderHtmlDocument(
     createElement(ForkFixesPage, {
       css: styles,
       fixes: pairs.map(fixSectionProps),
+      themeBarScript,
     }),
   )
 }

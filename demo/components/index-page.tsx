@@ -57,6 +57,8 @@ import {
   SectionEyebrow,
   primitivesCss,
 } from './primitives.tsx'
+import { ThemePickerSection } from './theme-picker-section.tsx'
+import { themePickerCss } from './theme-picker.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
@@ -1953,10 +1955,15 @@ const HOME_FOOTER_COLUMNS: readonly FooterColumn[] = [
 export interface IndexPageProps {
   /** The SoftwareApplication JSON-LD block, indented and script-escaped. */
   jsonLd: string
+  /**
+   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
+   * the live `ThemePickerSection` below is interactive.
+   */
+  themeBarScript: string
 }
 
 /** The whole index.html document: the marketing landing page. */
-export function IndexPage({ jsonLd }: IndexPageProps) {
+export function IndexPage({ jsonLd, themeBarScript }: IndexPageProps) {
   return (
     <html lang="en">
       <head>
@@ -2003,6 +2010,7 @@ export function IndexPage({ jsonLd }: IndexPageProps) {
         <style>{navCss()}</style>
         <style>{footerCss()}</style>
         <style>{homePageCss()}</style>
+        <style>{themePickerCss()}</style>
       </head>
       <body>
         <a className="skip-link" href="#main">
@@ -2020,6 +2028,10 @@ export function IndexPage({ jsonLd }: IndexPageProps) {
         <main id="main">
           <Hero />
           <ThemeShowcase />
+          <ThemePickerSection
+            eyebrow="Try it live"
+            heading="Pick your own theme."
+          />
           <FeatureGrid />
           <CliMcpSection />
           <DiagramGalleryTeaser />
@@ -2027,6 +2039,11 @@ export function IndexPage({ jsonLd }: IndexPageProps) {
           <BlogTeaser />
         </main>
         <Footer columns={HOME_FOOTER_COLUMNS} />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: themeBarScript }}
+        />
         <NavCopyScript />
       </body>
     </html>

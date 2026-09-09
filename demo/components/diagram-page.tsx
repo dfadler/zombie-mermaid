@@ -57,6 +57,8 @@ import {
   XyChartIcon,
   type DiagramTypeIconProps,
 } from './icons.tsx'
+import { ThemePickerSection } from './theme-picker-section.tsx'
+import { ThemePickerStyle } from './theme-picker.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
@@ -1188,6 +1190,14 @@ export interface DiagramHubPageProps {
    * that single source of truth rather than being retyped here.
    */
   types: ReadonlyArray<DiagramTypeLink & { intro: string; accent: Accent }>
+  /**
+   * The bundled `demo/theme-bar-only-client.ts` script (via `demo/build-
+   * theme-bar-client.ts`'s `bundleThemeBarClient()`), inlined so the hub's
+   * `ThemePickerSection` (#687) is interactive — pill selection persists
+   * through `demo/theme-state.ts`, same as every other page that mounts
+   * that section.
+   */
+  themeBarScript: string
 }
 
 /** One diagram type's row: hero icon panel, index/label/intro, and a "View examples" CTA to its real detail page. */
@@ -1329,6 +1339,7 @@ export function DiagramHubPage({
   faviconHref,
   themeCount,
   types,
+  themeBarScript,
 }: DiagramHubPageProps) {
   return (
     <html lang="en">
@@ -1338,7 +1349,12 @@ export function DiagramHubPage({
         canonical={canonical}
         faviconHref={faviconHref}
         cssHref={cssHref}
-        extraStyle={<HubPageStyle />}
+        extraStyle={
+          <>
+            <HubPageStyle />
+            <ThemePickerStyle />
+          </>
+        }
       />
       <body>
         <div
@@ -1412,8 +1428,15 @@ export function DiagramHubPage({
             />
           ))}
 
+          <ThemePickerSection tinted />
+
           <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: themeBarScript }}
+        />
         <NavCopyScript />
       </body>
     </html>
