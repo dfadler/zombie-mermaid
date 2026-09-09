@@ -23,8 +23,8 @@ That premise no longer matches the tree. As of this writing (main at
 - All of this is already documented in exhaustive, ground-truthed detail in
   [`monorepo-conversion-scoping.md`](monorepo-conversion-scoping.md) (from
   PR #558) and its three addenda, written while each extraction actually
-  happened. That doc is the authoritative record of *how* the split was
-  done and *why* the boundaries ended up where they did — this doc does not
+  happened. That doc is the authoritative record of _how_ the split was
+  done and _why_ the boundaries ended up where they did — this doc does not
   repeat that derivation.
 
 So rewriting a "should we do this" proposal from scratch would misrepresent
@@ -47,7 +47,7 @@ piece, not resolving any of them.
 #623 ("extract `ascii-renderer` and `mcp`") is closed, via PR #644. Reading
 that PR's title — "decouple the ASCII renderer from the umbrella registry
 (#623 prerequisite)" — and the tree itself confirms it did the
-*prerequisite* work the scoping doc's addendum called out (removing the
+_prerequisite_ work the scoping doc's addendum called out (removing the
 `diagram-registry.ts` ↔ `src/ascii/registry.ts` import cycle), not the
 actual package move. `src/ascii/**` and `src/mcp/**` are both still at the
 top of `src/`, not under `packages/ascii-renderer/` or `packages/mcp/`.
@@ -64,23 +64,23 @@ not doing more extraction.
 
 Grounded in the current tree, not the original proposal:
 
-| Package | Location | Status |
-| --- | --- | --- |
-| `core` | `packages/core/` | Extracted, `"private": true`, version `2.2.0` |
+| Package          | Location                   | Status                                        |
+| ---------------- | -------------------------- | --------------------------------------------- |
+| `core`           | `packages/core/`           | Extracted, `"private": true`, version `2.2.0` |
 | `mermaid-parser` | `packages/mermaid-parser/` | Extracted, `"private": true`, version `2.2.0` |
-| `svg-renderer` | `packages/svg-renderer/` | Extracted, `"private": true`, version `2.2.0` |
-| `ascii-renderer` | still `src/ascii/` | Not extracted (see discrepancy above) |
-| `mcp` | still `src/mcp/` | Not extracted |
-| `svg-parser` | doesn't exist | Greenfield, out of scope for the split itself |
-| `cli` | `src/cli.ts`, `src/cli/` | Stays an app (#626, decided) |
-| `demo` | `demo/`, `editor/` | Stays an app (#626, decided) |
+| `svg-renderer`   | `packages/svg-renderer/`   | Extracted, `"private": true`, version `2.2.0` |
+| `ascii-renderer` | still `src/ascii/`         | Not extracted (see discrepancy above)         |
+| `mcp`            | still `src/mcp/`           | Not extracted                                 |
+| `svg-parser`     | doesn't exist              | Greenfield, out of scope for the split itself |
+| `cli`            | `src/cli.ts`, `src/cli/`   | Stays an app (#626, decided)                  |
+| `demo`           | `demo/`, `editor/`         | Stays an app (#626, decided)                  |
 
 Residual at `src/` root, not yet assigned to any package: `browser.ts`,
 `diagram-registry.ts`, `expanded-shapes.ts`, `index.ts`, `package-info.ts`,
 `parser.ts`. One of these is a live boundary issue: `expanded-shapes.ts`
 sits in `src/`, but `packages/core/src/types.ts` and
 `packages/svg-renderer/src/renderer.ts` both import it — meaning two
-already-extracted workspace packages currently reach *back out* of
+already-extracted workspace packages currently reach _back out_ of
 `packages/` into the umbrella's own `src/` tree. That's the same shape of
 problem the scoping doc's addenda kept finding and fixing (a package
 depending on something that hasn't moved into a package yet); it's just not
@@ -125,7 +125,7 @@ implies work that may never be needed.
 
 ## Publish strategy (#622): the actual remaining decision
 
-This is the one piece of #416/#620's scope that hasn't been decided *or*
+This is the one piece of #416/#620's scope that hasn't been decided _or_
 built. Current state: `.changeset/config.json`'s `fixed` array is still
 empty (`[]`), and none of `core`/`mermaid-parser`/`svg-renderer` are
 declared as runtime `dependencies` anywhere — they're `"private": true` and
@@ -212,7 +212,7 @@ remaining piece (#622's re-export change) will likely go too:
 
 - **Import-path breakage for consumers**: avoided so far because
   `core`/`mermaid-parser`/`svg-renderer` are still bundled, not externalized
-  — the public `exports` map hasn't changed. This risk is *deferred*, not
+  — the public `exports` map hasn't changed. This risk is _deferred_, not
   resolved: it becomes live the moment #622's thin-re-export change lands,
   since that's when the umbrella's `dist/*.js` actually starts requiring the
   internal packages to be resolvable (published) rather than inlined.
@@ -247,7 +247,7 @@ remaining piece (#622's re-export change) will likely go too:
 1. **Don't re-litigate #416's package boundaries.** They're already decided,
    already grounded in the real import graph (more thoroughly than a fresh
    pass could redo), and mostly built. Treat
-   `monorepo-conversion-scoping.md` as the source of truth for *why* the
+   `monorepo-conversion-scoping.md` as the source of truth for _why_ the
    boundaries are where they are.
 2. **Resolve the #623 discrepancy first** — either reopen it and finish
    moving `src/ascii/**` and `src/mcp/` into `packages/ascii-renderer/` and
@@ -256,7 +256,7 @@ remaining piece (#622's re-export change) will likely go too:
    the tree says another.
 3. **Proceed with #622 as scoped**, using the recommendation above: single
    npm listing, `fixed` changesets array, thin re-exports, `@zombie-mermaid/`
-   scope, genuinely published — and ship it *without* a standalone `mcp`
+   scope, genuinely published — and ship it _without_ a standalone `mcp`
    package unless the repo owner has a concrete reason (a real user request,
    not a hypothetical) to want one now.
 4. **Downgrade or close #621's remaining scope** rather than carrying it as
