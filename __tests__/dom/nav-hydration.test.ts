@@ -175,6 +175,126 @@ describe('NavInstall copy behavior (#800)', () => {
   })
 })
 
+describe('package-manager selector (#719)', () => {
+  /**
+   * The desktop bar's own copy-target span — `aria-label="Copy install
+   * command"` is unique to it. Plain `screen.getByText(...)` isn't safe
+   * for the command string: {@link MobileNavPanel} always renders its own
+   * copy of `npm install zombie-mermaid` regardless of the desktop
+   * selector's state (see `nav.tsx`'s module doc comment on that being a
+   * deliberate, separate scope call for #719), so a document-wide text
+   * query would see both.
+   */
+  function copyTarget() {
+    return screen.getByRole('button', { name: 'Copy install command' })
+  }
+
+  function prefixTrigger() {
+    return screen.getByRole('button', { name: 'Choose package manager' })
+  }
+
+  it('defaults to npm, with the popover closed', () => {
+    render(createElement(Nav))
+
+    expect(prefixTrigger()).toHaveTextContent('npm')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(copyTarget()).toHaveTextContent(NAV_INSTALL_COMMAND)
+  })
+
+  it('opens the popover on click, listing all four managers with npm checked', async () => {
+    const user = userEvent.setup()
+    render(createElement(Nav))
+
+    await user.click(prefixTrigger())
+
+    const listbox = screen.getByRole('listbox', { name: 'Package manager' })
+    expect(listbox).toBeInTheDocument()
+    const options = screen.getAllByRole('option')
+    expect(options.map((option) => option.textContent?.trim())).toEqual([
+      'npm',
+      'pnpm',
+      'yarn',
+      'bun',
+    ])
+    expect(screen.getByRole('option', { name: 'npm' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('option', { name: 'pnpm' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    )
+  })
+
+  it('selecting pnpm updates the prefix label and the command text, and closes the popover', async () => {
+    const user = userEvent.setup()
+    render(createElement(Nav))
+
+    await user.click(prefixTrigger())
+    await user.click(screen.getByRole('option', { name: 'pnpm' }))
+
+    expect(prefixTrigger()).toHaveTextContent('pnpm')
+    expect(copyTarget()).toHaveTextContent('pnpm add zombie-mermaid')
+    expect(copyTarget()).not.toHaveTextContent(NAV_INSTALL_COMMAND)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('copies the newly-selected manager’s command, not npm’s', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText')
+    render(createElement(Nav))
+
+    await user.click(prefixTrigger())
+    await user.click(screen.getByRole('option', { name: 'yarn' }))
+    await user.click(copyTarget())
+
+    expect(writeText).toHaveBeenCalledWith('yarn add zombie-mermaid')
+  })
+
+  it('closes on Escape and returns focus to the prefix trigger', () => {
+    render(createElement(Nav))
+
+    const trigger = prefixTrigger()
+    fireEvent.click(trigger)
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('closes when clicking outside the pill', async () => {
+    const user = userEvent.setup()
+    render(createElement(Nav))
+
+    await user.click(prefixTrigger())
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    await user.click(document.body)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('is keyboard-operable: Enter opens the popover, arrow keys move, Enter selects', () => {
+    render(createElement(Nav))
+
+    const trigger = prefixTrigger()
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    const npmOption = screen.getByRole('option', { name: 'npm' })
+    expect(npmOption).toHaveFocus()
+
+    fireEvent.keyDown(npmOption, { key: 'ArrowDown' })
+    const pnpmOption = screen.getByRole('option', { name: 'pnpm' })
+    expect(pnpmOption).toHaveFocus()
+
+    fireEvent.keyDown(pnpmOption, { key: 'Enter' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(trigger).toHaveTextContent('pnpm')
+    expect(trigger).toHaveFocus()
+  })
+})
+
 describe('<Nav> hydration (#800)', () => {
   let root: Root | undefined
 
