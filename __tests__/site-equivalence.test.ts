@@ -29,6 +29,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
+import { JSDOM } from 'jsdom'
+import { within } from '@testing-library/react'
 import { renderHtmlDocument } from '../demo/render-html.ts'
 import { normalizeHtml } from './helpers/normalize-html.ts'
 import { IndexPage } from '../demo/components/index-page.tsx'
@@ -301,8 +303,24 @@ describe('pages.ts → diagrams/*.html', () => {
   })
 })
 
+/**
+ * Parses a page's rendered HTML string with a fresh `jsdom` document (not
+ * the ambient `render()` container RTL normally uses — these page
+ * components render a whole `<html>` document, and mounting that inside an
+ * RTL container div would nest `<html>`/`<body>` under a `<div>`, which
+ * React's DOM-nesting validation warns about) and returns
+ * `@testing-library/react`'s `within(...)` scoped to that document's body,
+ * so the RTL query helpers (`getByRole`, `getByText`, ...) work against the
+ * real generator output the same way `helpers/normalize-html.ts` already
+ * parses it for the other (still-golden) blocks in this file.
+ */
+function withinRenderedPage(html: string) {
+  const { document } = new JSDOM(html).window
+  return { document, page: within(document.body) }
+}
+
 describe('blog.ts → blog/*.html', () => {
-  it('renders a post', async () => {
+  it('renders a post', () => {
     const html = renderHtmlDocument(
       createElement(BlogPostPage, {
         title: 'Shipping v1 of a <zombie>',
@@ -316,10 +334,28 @@ describe('blog.ts → blog/*.html', () => {
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
-    await expectGolden(html, './__fixtures__/blog-post-page.normalized.txt')
+    const { document, page } = withinRenderedPage(html)
+
+    expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Shipping v1 of a <zombie>',
+      }),
+    ).toBeInTheDocument()
+    expect(page.getByText('March 4, 2026')).toBeInTheDocument()
+    // The meta description isn't rendered text, so it's checked as an
+    // attribute rather than via a screen.getByText-style query.
+    expect(
+      document
+        .querySelector('meta[name="description"]')
+        ?.getAttribute('content'),
+    ).toBe('What it took, & what broke.')
+    // bodyHtml's `dangerouslySetInnerHTML` splice from marked, verified by
+    // the rendered text it produces rather than a raw-HTML string match.
+    expect(page.getByText('markup')).toBeInTheDocument()
   })
 
-  it('renders the index', async () => {
+  it('renders the index', () => {
     const html = renderHtmlDocument(
       createElement(BlogIndexPage, {
         canonical: 'https://example.test/blog/',
@@ -343,10 +379,32 @@ describe('blog.ts → blog/*.html', () => {
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
-    await expectGolden(html, './__fixtures__/blog-index-page.normalized.txt')
+    const { page } = withinRenderedPage(html)
+
+    // The featured post (newest first: shipping-v1).
+    const featuredLink = page.getByRole('link', {
+      name: 'Shipping v1 of a <zombie>',
+    })
+    expect(featuredLink).toHaveAttribute('href', 'shipping-v1.html')
+    expect(page.getByText('What it took, & what broke.')).toBeInTheDocument()
+    const readPostLink = page.getByRole('link', { name: /read the post/i })
+    expect(readPostLink).toHaveAttribute('href', 'shipping-v1.html')
+
+    // The archive grid (everything but the featured post: day-zero).
+    const archiveLink = page.getByRole('link', {
+      name: 'Day zero of the toolchain',
+    })
+    expect(archiveLink).toHaveAttribute('href', 'day-zero.html')
+    expect(page.getByText('Setting things up.')).toBeInTheDocument()
+    const readMoreLink = page.getByRole('link', { name: /read more/i })
+    expect(readMoreLink).toHaveAttribute('href', 'day-zero.html')
+
+    // Both posts' dates render, once each, on their respective cards.
+    expect(page.getByText('March 4, 2026')).toBeInTheDocument()
+    expect(page.getByText('February 1, 2026')).toBeInTheDocument()
   })
 
-  it('renders the empty state when there are no posts', async () => {
+  it('renders the empty state when there are no posts', () => {
     const html = renderHtmlDocument(
       createElement(BlogIndexPage, {
         canonical: 'https://example.test/blog/',
@@ -357,9 +415,12 @@ describe('blog.ts → blog/*.html', () => {
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
-    expect(html).toContain('<p class="empty-state"')
-    expect(html).toContain('No posts yet — check back soon.')
-    expect(html).not.toContain('featured-card')
-    expect(html).not.toContain('archive-grid')
+    const { document, page } = withinRenderedPage(html)
+
+    expect(
+      page.getByText('No posts yet — check back soon.'),
+    ).toBeInTheDocument()
+    expect(document.querySelector('.featured-card')).toBeNull()
+    expect(document.querySelector('.archive-grid')).toBeNull()
   })
 })
