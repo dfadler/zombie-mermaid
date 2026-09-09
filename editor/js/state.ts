@@ -10,12 +10,16 @@ export const renderMermaid = window.__mermaid.renderMermaidSVGAsync
 
 export interface EditorState {
   theme: string
-  zoom: number
   config: Record<string, unknown>
 }
 
+// zombie-mermaid#807: `zoom` moved out of this module-level object and
+// into <EditorApp>'s reducer (demo/components/editor-app.tsx) -- read it
+// via window.__editorViewportState.getZoom() (the bridge
+// demo/components/editor-viewport.ts's useEditorViewport registers), not
+// from here. `theme`/`config` stay module-level for now; they migrate in
+// their own later sub-issues (#808-#810).
 export const state: EditorState = {
   theme: '',
-  zoom: 1,
   config: {},
 }

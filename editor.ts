@@ -31,7 +31,8 @@
  * old raw `dangerouslySetInnerHTML` splice with a real
  * server-render-then-hydrate boundary (`<EditorAppIsland>`, hydrated by
  * demo/editor-client.tsx) — see demo/components/editor-app.tsx's header
- * comment. The 18 legacy `editor/js/*.js` modules (#766 converted these
+ * comment. The remaining 15 legacy `editor/js/*.js` modules (18 minus
+ * zoom.ts/pan.ts/resize.ts, moved to React state by #807) (#766 converted these
  * from fixed-order string concatenation to real TS modules with explicit
  * imports) still run as their own separately-bundled script, unchanged in
  * behavior, layered on *after* hydration — see generateEditorHtml() below

@@ -29,22 +29,30 @@
  *
  * ## Why the legacy modules aren't migrated in this PR
  *
- * `editor/js/state.ts` and `editor/js/elements.ts` are the shared
- * foundation all *other* 16 `editor/js/*.ts` modules (zoom, pan, resize,
- * config-panel, color-picker, font-picker, tabs, buttons, export, toast,
- * theme-button, dark-mode, rendering, sharing, init) read/write through
- * directly. Porting those two files' *exports* away in this PR would
- * require migrating every module that imports them in the same PR --
- * exactly what #806's own scope note says to avoid ("land the other four
- * editor modules as no-op stubs or leave them un-ported temporarily... the
- * goal is a working hydrated shell, not the full app in one PR"). So this
- * PR leaves `editor/js/state.ts`/`editor/js/elements.ts` and everything
- * downstream of them completely unchanged, still bundled and run exactly
- * as before (see `editor.ts`'s `bundleEditorJs()`) -- just *after* this
- * component has actually finished hydrating, instead of being the only
- * script on the page. See {@link EDITOR_HYDRATED_EVENT}'s doc comment and
+ * (Historical, as of #806.) `editor/js/state.ts` and `editor/js/elements.ts`
+ * were the shared foundation all *other* 16 `editor/js/*.ts` modules (zoom,
+ * pan, resize, config-panel, color-picker, font-picker, tabs, buttons,
+ * export, toast, theme-button, dark-mode, rendering, sharing, init)
+ * read/write through directly. Porting those two files' *exports* away in
+ * that PR would have required migrating every module that imports them in
+ * the same PR -- exactly what #806's own scope note said to avoid ("land
+ * the other four editor modules as no-op stubs or leave them un-ported
+ * temporarily... the goal is a working hydrated shell, not the full app in
+ * one PR"). So #806 left `editor/js/state.ts`/`editor/js/elements.ts` and
+ * everything downstream of them completely unchanged, still bundled and run
+ * exactly as before (see `editor.ts`'s `bundleEditorJs()`) -- just *after*
+ * this component finished hydrating, instead of being the only script on
+ * the page. See {@link EDITOR_HYDRATED_EVENT}'s doc comment and
  * `demo/editor-client.tsx`'s header comment for why "after hydration" has
  * to mean a real completion signal, not just script tag order.
+ *
+ * #807 has since migrated the first slice off that legacy foundation:
+ * zoom/pan/resize no longer exist as `editor/js/*.ts` modules at all --
+ * `editor-viewport.ts`'s {@link useEditorViewport} (called from
+ * {@link EditorApp} below) owns that state and its DOM effects now, and
+ * `editor/js/rendering.ts` (still legacy, until #810) reaches the current
+ * zoom level through the `window.__editorViewportState` bridge that hook
+ * registers -- see that file's header comment.
  *
  * ## The refs mechanism
  *
@@ -87,6 +95,7 @@ import {
   EditorTopbar,
   type EditorThemeItem,
 } from './editor-topbar.tsx'
+import { clampZoom, useEditorViewport } from './editor-viewport.ts'
 
 /**
  * `editor-root`: id of the *hydration container* `demo/editor-client.tsx`'s
@@ -172,18 +181,63 @@ export interface EditorState {
   theme: string
   zoom: number
   config: Record<string, unknown>
+  /**
+   * Zoom/pan/panel-resize fields below (zombie-mermaid#807) replace
+   * `editor/js/zoom.ts`'s/`pan.ts`'s/`resize.ts`'s module-level mutable
+   * variables (`state.zoom` -- now just `zoom` above, unclamped writes now
+   * clamped in the reducer -- `panActive`, `panStart`, `isResizing`) with
+   * real reducer state. See `editor-viewport.ts`'s `useEditorViewport` for
+   * the effects that read/write them.
+   */
+  /** Whether the pan tool is toggled on (`pan-btn`'s "active" state). */
+  panActive: boolean
+  /** Whether a pan drag is currently in progress. */
+  isPanning: boolean
+  /**
+   * The left panel's committed inline-style width in px, or `null` to leave
+   * the CSS default in place -- `editor/js/resize.ts` never wrote
+   * `panelLeft.style.width` until the first resize drag either.
+   */
+  panelLeftWidth: number | null
+  /** Whether a panel-resize drag is currently in progress. */
+  isResizingPanel: boolean
 }
 
 export const INITIAL_EDITOR_STATE: EditorState = {
   theme: '',
   zoom: 1,
   config: {},
+  panActive: false,
+  isPanning: false,
+  panelLeftWidth: null,
+  isResizingPanel: false,
 }
 
 export type EditorAction =
   | { type: 'SET_THEME'; theme: string }
   | { type: 'SET_ZOOM'; zoom: number }
+  /**
+   * Multiplies the *current* zoom by `factor` -- unlike `SET_ZOOM`, the
+   * reducer reads the previous zoom itself instead of the caller
+   * precomputing it. This matters under rapid repeated dispatches (e.g.
+   * several zoom-in clicks with no render in between): React guarantees
+   * each queued action in a batch is applied against the *result* of the
+   * one before it, so three `ZOOM_BY_FACTOR` dispatches correctly compound
+   * (1 -> 1.25 -> 1.5625 -> ...). A caller-side `zoom: stateRef.current.zoom
+   * * 1.25` doesn't -- `stateRef.current` only updates on a render, so
+   * three such dispatches queued before any render all read the *same*
+   * stale zoom and collapse to one step. Confirmed empirically while
+   * building this PR (rapid synchronous clicks landed at 125%, not the
+   * expected ~195%) -- see editor-viewport.ts's zoom-button handlers,
+   * which use this action instead of `SET_ZOOM` for exactly this reason.
+   */
+  | { type: 'ZOOM_BY_FACTOR'; factor: number }
   | { type: 'SET_CONFIG'; config: Record<string, unknown> }
+  | { type: 'SET_PAN_ACTIVE'; active: boolean }
+  | { type: 'TOGGLE_PAN_ACTIVE' }
+  | { type: 'SET_PANNING'; panning: boolean }
+  | { type: 'SET_PANEL_LEFT_WIDTH'; width: number }
+  | { type: 'SET_RESIZING_PANEL'; resizing: boolean }
 
 export function editorReducer(
   state: EditorState,
@@ -193,9 +247,28 @@ export function editorReducer(
     case 'SET_THEME':
       return { ...state, theme: action.theme }
     case 'SET_ZOOM':
-      return { ...state, zoom: action.zoom }
+      // Clamped here (not by each caller) so every path that can change
+      // zoom -- buttons, ctrl/cmd-wheel, the fit action -- shares one
+      // source of truth, mirroring editor/js/zoom.ts's old applyZoom()
+      // clamp.
+      return { ...state, zoom: clampZoom(action.zoom) }
+    case 'ZOOM_BY_FACTOR':
+      // See the action's doc comment above -- reads state.zoom itself
+      // rather than trusting the caller's snapshot, so this composes
+      // correctly across rapid, unrendered-between dispatches.
+      return { ...state, zoom: clampZoom(state.zoom * action.factor) }
     case 'SET_CONFIG':
       return { ...state, config: action.config }
+    case 'SET_PAN_ACTIVE':
+      return { ...state, panActive: action.active }
+    case 'TOGGLE_PAN_ACTIVE':
+      return { ...state, panActive: !state.panActive }
+    case 'SET_PANNING':
+      return { ...state, isPanning: action.panning }
+    case 'SET_PANEL_LEFT_WIDTH':
+      return { ...state, panelLeftWidth: action.width }
+    case 'SET_RESIZING_PANEL':
+      return { ...state, isResizingPanel: action.resizing }
   }
 }
 
@@ -247,6 +320,11 @@ export interface EditorRefs {
   resizeHandle: HTMLElement
   editorView: HTMLElement
   configView: HTMLElement
+  /** Added by zombie-mermaid#807 -- see `editor-viewport.ts`'s `useEditorViewport`. */
+  zoomInBtn: HTMLElement
+  zoomOutBtn: HTMLElement
+  zoomFitBtn: HTMLElement
+  panBtn: HTMLElement
 }
 
 /**
@@ -301,6 +379,10 @@ export function collectEditorRefs(): EditorRefs {
     resizeHandle: requireEditorElement('resize-handle', HTMLElement),
     editorView: requireEditorElement('editor-view', HTMLElement),
     configView: requireEditorElement('config-view', HTMLElement),
+    zoomInBtn: requireEditorElement('zoom-in-btn', HTMLElement),
+    zoomOutBtn: requireEditorElement('zoom-out-btn', HTMLElement),
+    zoomFitBtn: requireEditorElement('zoom-fit-btn', HTMLElement),
+    panBtn: requireEditorElement('pan-btn', HTMLElement),
   }
 }
 
@@ -357,6 +439,13 @@ export function EditorApp({ themes }: EditorAppProps) {
     // event, not just "comes after in the script tag order."
     window.dispatchEvent(new Event(EDITOR_HYDRATED_EVENT))
   }, [])
+
+  // zombie-mermaid#807: zoom/pan/panel-resize's own effects, registered
+  // *after* the layout effect above so refs.current is already populated
+  // by the time any of them runs -- see editor-viewport.ts's header
+  // comment for why call order (not `useEffect` vs `useLayoutEffect`
+  // alone) is what guarantees this.
+  useEditorViewport({ state, dispatch, refs })
 
   return (
     <EditorStateContext.Provider value={state}>
