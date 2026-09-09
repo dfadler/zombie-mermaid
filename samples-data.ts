@@ -16,6 +16,20 @@ export interface Sample {
   source: string
   /** Optional category tag for grouping in the Table of Contents */
   category?: string
+  /**
+   * Whether this sample belongs in the `diagrams/<type>.html` gallery
+   * (issue #713's curation) — distinct from being part of the visual-test
+   * suite, which every sample in this file already is regardless of this
+   * field. `true` only on the samples issue #713 explicitly chose as
+   * illustrative/real-world-shaped; absent (not `false`) on everything
+   * else, including a category's own already-featured
+   * `DiagramTypeProfile.exampleTitle` sample and every visual-test-only
+   * fixture. A new sample defaults to excluded — this only grows when
+   * someone deliberately opts a sample in, not automatically as new
+   * coverage fixtures are added. See docs/decisions/diagram-gallery-audit.md
+   * for the reasoning behind which samples are marked `true`.
+   */
+  gallery?: true
   options?: {
     bg?: string
     fg?: string
@@ -105,6 +119,7 @@ export const samples: Sample[] = [
   {
     title: 'All 12 Flowchart Shapes',
     category: 'Flowchart',
+    gallery: true,
     description: 'Every supported flowchart shape in a single diagram.',
     source: `graph LR
   A[Rectangle] --> B(Rounded)
@@ -127,6 +142,7 @@ export const samples: Sample[] = [
   {
     title: 'All Edge Styles',
     category: 'Flowchart',
+    gallery: true,
     description: 'Solid, dotted, and thick arrows with labels.',
     source: `graph TD
   A[Source] -->|solid| B[Target 1]
@@ -136,6 +152,7 @@ export const samples: Sample[] = [
   {
     title: 'No-Arrow Edges',
     category: 'Flowchart',
+    gallery: true,
     description:
       'Lines without arrowheads: solid `---`, dotted `-.-`, thick `===`.',
     source: `graph TD
@@ -158,6 +175,7 @@ export const samples: Sample[] = [
   {
     title: 'Bidirectional Arrows',
     category: 'Flowchart',
+    gallery: true,
     description: 'Arrows in both directions: `<-->`, `<-.->`, `<==>`.',
     source: `graph LR
   A[Client] <-->|sync| B[Server]
@@ -167,6 +185,7 @@ export const samples: Sample[] = [
   {
     title: 'Parallel Links (&)',
     category: 'Flowchart',
+    gallery: true,
     description: 'Using `&` to create multiple edges from/to groups of nodes.',
     source: `graph TD
   A[Input] & B[Config] --> C[Processor]
@@ -187,6 +206,7 @@ export const samples: Sample[] = [
   {
     title: 'linkStyle: Color-Coded Edges',
     category: 'Flowchart',
+    gallery: true,
     description:
       'Using `linkStyle` to color specific edges by index (0-based).',
     source: `graph TD
@@ -222,6 +242,7 @@ export const samples: Sample[] = [
   {
     title: 'Direction: Left-Right (LR)',
     category: 'Flowchart',
+    gallery: true,
     description: 'Horizontal layout flowing left to right.',
     source: `graph LR
   A[Input] --> B[Transform] --> C[Output]`,
@@ -241,6 +262,7 @@ export const samples: Sample[] = [
   {
     title: 'Subgraphs',
     category: 'Flowchart',
+    gallery: true,
     description: 'Grouped nodes inside labeled subgraph containers.',
     source: `graph TD
   subgraph Frontend
@@ -254,6 +276,7 @@ export const samples: Sample[] = [
   {
     title: 'Nested Subgraphs',
     category: 'Flowchart',
+    gallery: true,
     description: 'Subgraphs inside subgraphs for hierarchical grouping.',
     source: `graph TD
   subgraph Cloud
@@ -299,6 +322,7 @@ export const samples: Sample[] = [
   {
     title: 'Inline Style Overrides',
     category: 'Flowchart',
+    gallery: true,
     description:
       'Using `style` statements to override node fill and stroke colors.',
     source: `graph TD
@@ -314,6 +338,7 @@ export const samples: Sample[] = [
   {
     title: 'CI/CD Pipeline',
     category: 'Flowchart',
+    gallery: true,
     description:
       'A realistic CI/CD pipeline with decision points, feedback loops, and deployment stages.',
     source: `graph TD
@@ -331,6 +356,7 @@ export const samples: Sample[] = [
   {
     title: 'System Architecture',
     category: 'Flowchart',
+    gallery: true,
     description:
       'A microservices architecture with multiple services and data stores.',
     source: `graph LR
@@ -353,6 +379,7 @@ export const samples: Sample[] = [
   {
     title: 'Decision Tree',
     category: 'Flowchart',
+    gallery: true,
     description: 'A branching decision flowchart with multiple outcomes.',
     source: `graph TD
   A{Is it raining?} -->|Yes| B{Have umbrella?}
@@ -365,6 +392,7 @@ export const samples: Sample[] = [
   {
     title: 'Git Branching Workflow',
     category: 'Flowchart',
+    gallery: true,
     description: 'A git flow showing feature branches, PRs, and release cycle.',
     source: `graph LR
   A[main] --> B[develop]
@@ -460,6 +488,7 @@ flowchart LR
   {
     title: 'State: Composite States',
     category: 'State',
+    gallery: true,
     description: 'Nested composite states with inner transitions.',
     source: `stateDiagram-v2
   [*] --> Idle
@@ -476,6 +505,7 @@ flowchart LR
   {
     title: 'State: Connection Lifecycle',
     category: 'State',
+    gallery: true,
     description: 'TCP-like connection state machine with multiple states.',
     source: `stateDiagram-v2
   [*] --> Closed
@@ -493,6 +523,7 @@ flowchart LR
   {
     title: 'State: CJK State Names',
     category: 'State',
+    gallery: true,
     description: 'State diagram using Chinese characters for state names.',
     source: `stateDiagram-v2
   [*] --> 空闲
@@ -531,6 +562,7 @@ flowchart LR
   {
     title: 'Sequence: Actor Stick Figures',
     category: 'Sequence',
+    gallery: true,
     description:
       'Using `actor` instead of `participant` renders stick figures instead of boxes.',
     source: `sequenceDiagram
@@ -545,6 +577,7 @@ flowchart LR
   {
     title: 'Sequence: Arrow Types',
     category: 'Sequence',
+    gallery: true,
     description:
       'All arrow types: solid `->>` and dashed `-->>` with filled arrowheads, open arrows `-)` .',
     source: `sequenceDiagram
@@ -556,6 +589,7 @@ flowchart LR
   {
     title: 'Sequence: Activation Boxes',
     category: 'Sequence',
+    gallery: true,
     description: 'Using `+` and `-` to show when participants are active.',
     source: `sequenceDiagram
   participant C as Client
@@ -568,6 +602,7 @@ flowchart LR
   {
     title: 'Sequence: Self-Messages',
     category: 'Sequence',
+    gallery: true,
     description:
       'A participant sending a message to itself (displayed as a loop arrow).',
     source: `sequenceDiagram
@@ -584,6 +619,7 @@ flowchart LR
   {
     title: 'Sequence: Loop Block',
     category: 'Sequence',
+    gallery: true,
     description: 'A `loop` construct wrapping repeated message exchanges.',
     source: `sequenceDiagram
   participant C as Client
@@ -598,6 +634,7 @@ flowchart LR
   {
     title: 'Sequence: Alt/Else Block',
     category: 'Sequence',
+    gallery: true,
     description: 'Conditional branching with `alt` (if) and `else` blocks.',
     source: `sequenceDiagram
   participant C as Client
@@ -614,6 +651,7 @@ flowchart LR
   {
     title: 'Sequence: Opt Block',
     category: 'Sequence',
+    gallery: true,
     description: 'Optional block — executes only if condition is met.',
     source: `sequenceDiagram
   participant A as App
@@ -630,6 +668,7 @@ flowchart LR
   {
     title: 'Sequence: Par Block',
     category: 'Sequence',
+    gallery: true,
     description: 'Parallel execution with `par`/`and` constructs.',
     source: `sequenceDiagram
   participant C as Client
@@ -666,6 +705,7 @@ flowchart LR
   {
     title: 'Sequence: Notes (Right/Left/Over)',
     category: 'Sequence',
+    gallery: true,
     description: 'Notes positioned to the right, left, or over participants.',
     source: `sequenceDiagram
   participant A as Alice
@@ -684,6 +724,7 @@ flowchart LR
   {
     title: 'Sequence: OAuth 2.0 Flow',
     category: 'Sequence',
+    gallery: true,
     description: 'Full OAuth 2.0 authorization code flow with token exchange.',
     source: `sequenceDiagram
   actor U as User
@@ -704,6 +745,7 @@ flowchart LR
   {
     title: 'Sequence: Database Transaction',
     category: 'Sequence',
+    gallery: true,
     description: 'Multi-step database transaction with rollback handling.',
     source: `sequenceDiagram
   participant C as Client
@@ -725,6 +767,7 @@ flowchart LR
   {
     title: 'Sequence: Microservice Orchestration',
     category: 'Sequence',
+    gallery: true,
     description:
       'Complex multi-service flow with parallel calls and error handling.',
     source: `sequenceDiagram
@@ -794,6 +837,7 @@ flowchart LR
   {
     title: 'Class: Visibility Markers',
     category: 'Class',
+    gallery: true,
     description:
       'All four visibility levels: `+` (public), `-` (private), `#` (protected), `~` (package).',
     source: `classDiagram
@@ -811,6 +855,7 @@ flowchart LR
   {
     title: 'Class: Interface Annotation',
     category: 'Class',
+    gallery: true,
     description: 'Using `<<interface>>` annotation above the class name.',
     source: `classDiagram
   class Serializable {
@@ -944,6 +989,7 @@ flowchart LR
   {
     title: 'Class: All 6 Relationship Types',
     category: 'Class',
+    gallery: true,
     description: 'Every relationship type in a single diagram for comparison.',
     source: `classDiagram
   A <|-- B : inheritance
@@ -956,6 +1002,7 @@ flowchart LR
   {
     title: 'Class: Relationship Labels',
     category: 'Class',
+    gallery: true,
     description: 'Labeled relationships between classes with descriptive text.',
     source: `classDiagram
   class Teacher {
@@ -978,6 +1025,7 @@ flowchart LR
   {
     title: 'Class: Design Pattern — Observer',
     category: 'Class',
+    gallery: true,
     description:
       'The Observer (publish-subscribe) design pattern with interface + concrete implementations.',
     source: `classDiagram
@@ -1011,6 +1059,7 @@ flowchart LR
   {
     title: 'Class: MVC Architecture',
     category: 'Class',
+    gallery: true,
     description:
       'Model-View-Controller pattern showing relationships between layers.',
     source: `classDiagram
@@ -1039,6 +1088,7 @@ flowchart LR
   {
     title: 'Class: Full Hierarchy',
     category: 'Class',
+    gallery: true,
     description:
       'A complete class hierarchy with abstract base, interfaces, and concrete classes.',
     source: `classDiagram
@@ -1090,6 +1140,7 @@ flowchart LR
   {
     title: 'ER: Entity with Attributes',
     category: 'ER',
+    gallery: true,
     description:
       'An entity with typed attributes and `PK`/`FK`/`UK` key badges.',
     source: `erDiagram
@@ -1103,6 +1154,7 @@ flowchart LR
   {
     title: 'ER: Attribute Keys (PK, FK, UK)',
     category: 'ER',
+    gallery: true,
     description: 'All three key constraint types rendered as badges.',
     source: `erDiagram
   ORDER {
@@ -1150,6 +1202,7 @@ flowchart LR
   {
     title: 'ER: All Cardinality Types',
     category: 'ER',
+    gallery: true,
     description: 'Every cardinality combination in one diagram.',
     source: `erDiagram
   A ||--|| B : one-to-one
@@ -1181,6 +1234,7 @@ flowchart LR
   {
     title: 'ER: Mixed Identifying & Non-Identifying',
     category: 'ER',
+    gallery: true,
     description: 'Both solid and dashed lines in the same diagram.',
     source: `erDiagram
   ORDER ||--|{ LINE_ITEM : contains
@@ -1196,6 +1250,7 @@ flowchart LR
   {
     title: 'ER: E-Commerce Schema',
     category: 'ER',
+    gallery: true,
     description:
       'Full e-commerce database schema with customers, orders, products, and line items.',
     source: `erDiagram
@@ -1227,6 +1282,7 @@ flowchart LR
   {
     title: 'ER: Blog Platform Schema',
     category: 'ER',
+    gallery: true,
     description: 'Blog system with users, posts, comments, and tags.',
     source: `erDiagram
   USER {
@@ -1261,6 +1317,7 @@ flowchart LR
   {
     title: 'ER: School Management Schema',
     category: 'ER',
+    gallery: true,
     description:
       'School system with students, teachers, courses, and enrollments.',
     source: `erDiagram
@@ -1310,6 +1367,7 @@ flowchart LR
   {
     title: 'XY: Line Chart',
     category: 'XY Chart',
+    gallery: true,
     description: 'Line chart showing revenue growth over years.',
     source: `xychart-beta
     title "Revenue Growth"
@@ -1320,6 +1378,7 @@ flowchart LR
   {
     title: 'XY: Bar and Line Overlay',
     category: 'XY Chart',
+    gallery: true,
     description: 'Bars with a line overlay and both axis titles.',
     source: `xychart-beta
     title "Monthly Revenue"
@@ -1332,6 +1391,7 @@ flowchart LR
   {
     title: 'XY: Horizontal Bars',
     category: 'XY Chart',
+    gallery: true,
     description: 'Horizontal bar chart showing language popularity.',
     source: `xychart-beta horizontal
     title "Language Popularity"
@@ -1342,6 +1402,7 @@ flowchart LR
   {
     title: 'XY: Multiple Bar Series',
     category: 'XY Chart',
+    gallery: true,
     description: 'Two bar series comparing years side by side.',
     source: `xychart-beta
     title "2023 vs 2024 Sales"
@@ -1353,6 +1414,7 @@ flowchart LR
   {
     title: 'XY: Dual Lines',
     category: 'XY Chart',
+    gallery: true,
     description: 'Two lines comparing planned vs actual values.',
     source: `xychart-beta
     title "Planned vs Actual"
@@ -1364,6 +1426,7 @@ flowchart LR
   {
     title: 'XY: Numeric X-Axis',
     category: 'XY Chart',
+    gallery: true,
     description: 'Line chart using a numeric x-axis range.',
     source: `xychart-beta
     title "Distribution Curve"
@@ -1397,6 +1460,7 @@ flowchart LR
   {
     title: 'XY: Sprint Burndown',
     category: 'XY Chart',
+    gallery: true,
     description: 'Sprint burndown chart with actual and ideal lines.',
     source: `xychart-beta
     title "Sprint Burndown"
@@ -1434,6 +1498,7 @@ flowchart LR
   {
     title: 'Sequence: Create/Destroy Participants',
     category: 'Sequence',
+    gallery: true,
     description:
       "Mermaid's own `create`/`destroy` example (#419): Carl and Donald appear at the message that creates them, Carl and Bob's lifelines end with a cross at the message that destroys them.",
     source: `sequenceDiagram
