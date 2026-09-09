@@ -10,8 +10,12 @@
  * combination) now belongs to the Diagrams hub (#599's `/diagrams/`) and the
  * Editor (`editor.html`); this file is the page that sends a first-time
  * visitor to those, not the page that replaces them. Nothing here bundles
- * `src/browser.ts`, calls shiki, or ships `demo/client.ts` — the whole page
- * is static markup with CSS animations, matching the design canvas.
+ * `src/browser.ts` or `demo/client.ts`, or calls shiki — the page is static
+ * markup with CSS animations, matching the design canvas, plus (as of #759)
+ * one real diagram rendered at build time via `renderMermaidSVG` and a
+ * small bundled client script (`demo/index-page-client.ts`, via
+ * `index.ts`'s `bundleClientScript()`) that makes {@link ThemeShowcase}'s
+ * picker genuinely live and relocates it into the nav on scroll.
  *
  * Layout, copy, and every colour/measurement below come from the design
  * canvas linked in #590's body
@@ -19,13 +23,13 @@
  * specifically its `Main.dc.html` (desktop) / `MainMobile.dc.html` (mobile)
  * artboards — the two are byte-identical, so the responsive behaviour lives
  * entirely in the shared component `*Css()` functions and {@link homePageCss}'s
- * `@media` blocks, not in a second markup path. Three deliberate deviations
- * from the canvas, all made to keep the page honest rather than decorative:
+ * `@media` blocks, not in a second markup path. Deliberate deviations from
+ * the canvas, all made to keep the page honest rather than decorative:
  *
- * - The theme showcase renders five *real* built-in themes (dracula,
- *   tokyo-night, solarized-light, nord, catppuccin-mocha — see
- *   {@link SHOWCASE_THEMES}) with their actual `packages/core/src/theme.ts`
- *   colours, not the canvas's five invented names ("Neon", "Pastel", …).
+ * - The theme showcase (#759) renders one *real* diagram, live-switchable
+ *   across all 15 built-in themes via {@link ThemePicker}, not the canvas's
+ *   five static per-theme cards with invented theme names ("Neon",
+ *   "Pastel", …). See {@link ThemeShowcase}'s own doc comment.
  * - The proof/maintenance numbers are the real snapshot from
  *   `demo/dashboard-data.json` (0 days / 334 merged / 1 open vs. upstream's
  *   124 days / 13 merged / 37 open, as of its own `generatedAt`), not the
@@ -51,8 +55,7 @@ import {
   FEATURE_ICONS,
 } from './icons.tsx'
 import { Card, CTA, Pill, SectionEyebrow } from './primitives.tsx'
-import { ThemePickerSection } from './theme-picker-section.tsx'
-import { themePickerCss } from './theme-picker.tsx'
+import { ThemePicker, themePickerCss } from './theme-picker.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
 import {
   DesignFontLinks,
@@ -61,11 +64,12 @@ import {
   LAYOUT,
   LETTER_SPACING,
   MEDIA,
-  RADIUS,
   SECTION_SPACE,
   SPACE,
   colorVar,
 } from './tokens.tsx'
+import { renderMermaidSVG } from '../../src/index.ts'
+import { THEMES } from '@zombie-mermaid/core'
 
 const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
 const NPM_INSTALL_COMMAND = 'npm install zombie-mermaid'
@@ -78,49 +82,27 @@ const PLAUSIBLE_DOMAIN = 'dfadler.github.io/zombie-mermaid'
  * ----------------------------------------------------------------- */
 
 /**
- * Five real built-in themes (from `packages/core/src/theme.ts`) for the
- * theme showcase, each with the colours the showcase card actually draws:
- * `node` for the two rectangle strokes, `edge` for the connecting path and
- * the label ink. Picked for visual spread (three dark, two light) rather
- * than any particular ordering in `THEMES` itself.
+ * The Mermaid source {@link ThemeShowcase} renders live, matching what
+ * {@link HeroVisual}'s hand-drawn mock already depicts ("Start → Deploy? →
+ * Ship it / Iterate") so the showcase diagram tells the same story the hero
+ * does, one section down — rather than an unrelated invented example.
  */
-const SHOWCASE_THEMES = [
-  {
-    key: 'dracula',
-    label: 'Dracula',
-    bg: '#282a36',
-    node: '#6272a4',
-    edge: '#bd93f9',
-  },
-  {
-    key: 'tokyo-night',
-    label: 'Tokyo Night',
-    bg: '#1a1b26',
-    node: '#3d59a1',
-    edge: '#7aa2f7',
-  },
-  {
-    key: 'solarized-light',
-    label: 'Solarized',
-    bg: '#fdf6e3',
-    node: '#93a1a1',
-    edge: '#268bd2',
-  },
-  {
-    key: 'nord',
-    label: 'Nord',
-    bg: '#2e3440',
-    node: '#4c566a',
-    edge: '#88c0d0',
-  },
-  {
-    key: 'catppuccin-mocha',
-    label: 'Catppuccin',
-    bg: '#1e1e2e',
-    node: '#585b70',
-    edge: '#cba6f7',
-  },
-] as const
+const THEME_SHOWCASE_SOURCE = `graph TD
+    Start --> Deploy{Deploy?}
+    Deploy -->|yes| Ship[Ship it]
+    Deploy -->|no| Iterate[Iterate]`
+
+/**
+ * {@link ThemeShowcase}'s starting theme, before a visitor picks one (or a
+ * stored preference from another page restores on load — see
+ * `demo/index-page-client.ts`). Real, not the `''` Default pseudo-theme:
+ * this showcase's whole point is proving the 15 real themes, so its picker
+ * renders with `includeDefault={false}` and needs an actual key to render
+ * the initial SSR diagram with. `dracula` also mirrors `theme-picker.tsx`'s
+ * own `INLINE_THEMES`, which already surfaces it as one of the two themes
+ * always shown outside the "N Themes" dropdown.
+ */
+const THEME_SHOWCASE_DEFAULT_THEME = 'dracula'
 
 /** The six diagram types the gallery teaser links to, and their `/diagrams/` routes. */
 const GALLERY_TYPES = [
@@ -193,10 +175,19 @@ const LATEST_POST = {
  *
  * Emit once, after shared-page-css.tsx's `sharedPageCss()` (via
  * `SharedPageStyles`) — this page's `<style>` order in {@link IndexPage}.
+ *
+ * A fourth deliberate deviation from the canvas, alongside the three this
+ * file's header comment already names: the body gradient's middle stop is
+ * `colorVar('--bg-soft')`, not the canvas's literal `#0d1120`. That literal
+ * is a fixed, non-`var()` colour tokens.tsx's `--bg-soft` was already
+ * defined for ("a lifted page background... for alternating full-bleed
+ * sections") — using it instead makes this gradient re-theme along with
+ * the rest of the site chrome (#772) rather than leaving a static dark band
+ * behind on every non-default theme, including light ones.
  */
 function homePageCss(): string {
   return `body {
-  background: linear-gradient(180deg, ${colorVar('--bg')} 0%, #0d1120 40%, ${colorVar('--bg')} 100%);
+  background: linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%);
   overflow-x: hidden;
 }
 
@@ -261,7 +252,6 @@ ${MEDIA.tablet} {
   .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }
   .hero-copy p { max-width: 100% !important; }
   .hero-visual { flex: 1 1 auto !important; width: 100% !important; max-width: 560px; }
-  .theme-grid { grid-template-columns: repeat(3, 1fr) !important; }
   .feature-connectors { display: none !important; }
   .feature-grid-wrap { height: auto !important; }
   .feature-grid { grid-template-columns: 1fr 1fr !important; grid-template-rows: none !important; }
@@ -273,7 +263,6 @@ ${MEDIA.tablet} {
 ${MEDIA.mobile} {
   .hero-row { padding: 48px 20px 56px 20px !important; }
   .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
-  .theme-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .feature-grid { grid-template-columns: 1fr !important; }
   .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
@@ -592,45 +581,6 @@ function Hero() {
             View the live demo
           </CTA>
         </div>
-        {/* #739: proof strip, not in the original canvas — makes the
-            headline's theme claim visible above the fold, without
-            duplicating ThemeShowcase below. Reuses SHOWCASE_THEMES rather
-            than inventing its own swatch colours. */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: `${SPACE.md}px`,
-            marginTop: `${SPACE.lg}px`,
-            paddingTop: `${SPACE['2xl']}px`,
-            borderTop: `1px solid ${colorVar('--border')}`,
-          }}
-        >
-          {SHOWCASE_THEMES.map((theme) => (
-            <span
-              key={theme.key}
-              title={theme.label}
-              style={{
-                display: 'inline-block',
-                width: '22px',
-                height: '22px',
-                borderRadius: `${RADIUS.sm}px`,
-                background: theme.bg,
-                border: `1px solid ${theme.edge}`,
-              }}
-            />
-          ))}
-          <span
-            style={{
-              fontSize: `${FONT_SIZE.label}px`,
-              fontWeight: FONT_WEIGHT.semibold,
-              color: colorVar('--text-faint'),
-            }}
-          >
-            +10 more themes, switchable live
-          </span>
-        </div>
       </div>
 
       <div
@@ -647,58 +597,52 @@ function Hero() {
  * Theme showcase
  * ----------------------------------------------------------------- */
 
-/** One theme's card: the same two-node/one-edge shape, wearing that theme's real colours. */
-function ThemeCard({ theme }: { theme: (typeof SHOWCASE_THEMES)[number] }) {
-  return (
-    <Card padding={20} style={{ background: theme.bg }}>
-      <svg viewBox="0 0 160 90" width="100%" height="90">
-        <rect
-          x="10"
-          y="15"
-          width="60"
-          height="34"
-          rx="10"
-          fill="none"
-          stroke={theme.node}
-          strokeWidth="2"
-        />
-        <rect
-          x="90"
-          y="42"
-          width="60"
-          height="34"
-          rx="10"
-          fill="none"
-          stroke={theme.edge}
-          strokeWidth="2"
-        />
-        <path
-          d="M60 40 L100 55"
-          stroke={theme.edge}
-          strokeWidth="2"
-          className="edge-anim"
-          fill="none"
-        />
-      </svg>
-      <p
-        style={{
-          marginTop: `${SPACE.lg}px`,
-          fontSize: `${FONT_SIZE.bodySm}px`,
-          fontWeight: FONT_WEIGHT.bold,
-          textAlign: 'center',
-          color: theme.edge,
-        }}
-      >
-        {theme.label}
-      </p>
-    </Card>
-  )
+/**
+ * The showcase's build-time diagram, rendered once in
+ * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours (the client script
+ * re-themes it live from there — see this file's header comment). Thrown,
+ * not a silent fallback: this only ever runs at `index.ts` generation time
+ * under Node, so a typo'd theme key should fail the build loudly rather
+ * than ship a broken page.
+ */
+function renderThemeShowcaseDiagram(): string {
+  const theme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
+  if (!theme) {
+    throw new Error(`Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`)
+  }
+  return renderMermaidSVG(THEME_SHOWCASE_SOURCE, {
+    ...theme,
+    title: 'A flowchart, rendered live in the picked theme',
+    interactivity: 'none',
+  })
 }
 
-/** Same diagram shape, five real built-in themes — proving live theme range. */
+/**
+ * One real diagram plus a full 15-theme {@link ThemePicker} (#759),
+ * replacing the five static per-theme mock cards this section used to
+ * render — the "Switch it live" claim right below the heading now has
+ * something on the page that actually proves it, instead of five
+ * hand-drawn SVGs with baked-in colours.
+ *
+ * `#theme-showcase`/`#theme-pills` are load-bearing ids, not decorative:
+ * `demo/index-page-client.ts`'s `initThemeBar()` wires the picker by
+ * querying `#theme-pills` (there must be exactly one on the page — this is
+ * also why {@link IndexPage} no longer renders the separate
+ * `ThemePickerSection` every other page does, which would otherwise render
+ * a second, colliding `#theme-pills`), and its `IntersectionObserver`
+ * watches `#theme-showcase` to know when to reparent the picker into the
+ * sticky nav's `#nav-theme-slot` (`nav.tsx`'s `installSlot`).
+ *
+ * `includeDefault={false}`: the Default pseudo-theme has no real bg/fg to
+ * render this section's own diagram with, and this showcase's whole point
+ * is proving the 15 real themes — unlike every other page's
+ * `ThemePickerSection`, which wants a Default pill since it only re-themes
+ * the site chrome, with no specific diagram of its own to fall back from.
+ */
 function ThemeShowcase() {
   return (
     <div
+      id="theme-showcase"
       className="section-px"
       style={{
         padding: '100px 80px',
@@ -716,7 +660,7 @@ function ThemeShowcase() {
           gap: `${SPACE.xl}px`,
         }}
       >
-        <SectionEyebrow>Same diagram, 15 built-in themes</SectionEyebrow>
+        <SectionEyebrow>Live theme switching</SectionEyebrow>
         <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
           Pick a theme. Switch it live — no re-render.
         </h2>
@@ -728,24 +672,48 @@ function ThemeShowcase() {
           }}
         >
           Themes are pure CSS custom properties, so switching one is instant.
-          Here are five of the fifteen — the same node-and-edge shape wearing
-          five different looks.
+          Pick any of the fifteen below — the diagram, and this page's own
+          chrome, repaint immediately. No reload.
         </p>
       </div>
 
       <div
-        className="theme-grid"
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           gap: `${SPACE['4xl']}px`,
         }}
       >
-        {SHOWCASE_THEMES.map((theme) => (
-          <ThemeCard theme={theme} key={theme.key} />
-        ))}
+        <div
+          className="theme-pills"
+          id="theme-pills"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: `${SPACE.md}px`,
+          }}
+        >
+          <ThemePicker
+            includeDefault={false}
+            activeThemeKey={THEME_SHOWCASE_DEFAULT_THEME}
+          />
+        </div>
+        <div
+          className="card theme-showcase-diagram"
+          style={{
+            width: '100%',
+            maxWidth: '560px',
+            padding: `${SPACE['4xl']}px`,
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see this file's header comment)
+          dangerouslySetInnerHTML={{ __html: renderThemeShowcaseDiagram() }}
+        />
       </div>
     </div>
   )
@@ -1950,14 +1918,20 @@ export interface IndexPageProps {
   /** The SoftwareApplication JSON-LD block, indented and script-escaped. */
   jsonLd: string
   /**
-   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
-   * the live `ThemePickerSection` below is interactive.
+   * `href` of the bundled `demo/index-page-client.ts` script (#759,
+   * `index.ts`'s `bundleClientScript()`), which wires {@link ThemeShowcase}'s
+   * picker, re-themes its diagram and the site chrome on every theme
+   * change, and reparents the picker into the nav on scroll. Loaded as an
+   * external `<script type="module" src>` (mirroring `demo/components/
+   * diagram-page.tsx`'s `clientScriptSrc`) rather than inlined, unlike the
+   * `themeBarScript` this replaces — this page now has meaningfully more
+   * client logic than a one-line `initThemeBar()` call.
    */
-  themeBarScript: string
+  clientScriptSrc: string
 }
 
 /** The whole index.html document: the marketing landing page. */
-export function IndexPage({ jsonLd, themeBarScript }: IndexPageProps) {
+export function IndexPage({ jsonLd, clientScriptSrc }: IndexPageProps) {
   return (
     <html lang="en">
       <head>
@@ -2015,14 +1989,20 @@ export function IndexPage({ jsonLd, themeBarScript }: IndexPageProps) {
             blog: 'blog/',
             github: FORK_URL,
           }}
+          // #759: the install pill is a placeholder here, not server-
+          // rendered NavInstall -- demo/index-page-client.ts reparents the
+          // real, already-mounted #theme-pills picker into this slot once
+          // #theme-showcase scrolls out of view (one-way; see that
+          // module's own doc comment). Empty rather than NavInstall's
+          // markup so nav.tsx's own "no <button> in SSR output" invariant
+          // (__tests__/demo-nav.test.ts) holds here too: a real <button>
+          // only ever arrives via that runtime reparenting.
+          installSlot={<div id="nav-theme-slot" />}
+          sticky
         />
         <main id="main">
           <Hero />
           <ThemeShowcase />
-          <ThemePickerSection
-            eyebrow="Try it live"
-            heading="Pick your own theme."
-          />
           <FeatureGrid />
           <CliMcpSection />
           <DiagramGalleryTeaser />
@@ -2030,11 +2010,7 @@ export function IndexPage({ jsonLd, themeBarScript }: IndexPageProps) {
           <BlogTeaser />
         </main>
         <Footer columns={HOME_FOOTER_COLUMNS} />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: themeBarScript }}
-        />
+        <script type="module" src={clientScriptSrc} />
         <NavCopyScript />
         <NavMobileMenuScript />
       </body>

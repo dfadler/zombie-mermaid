@@ -59,6 +59,18 @@ function mobileLinksHtml(html: string): string {
   return html.slice(start, end)
 }
 
+/** Isolates the `<header class="nav-bar">…</header>` desktop bar from a
+ * render, excluding the sibling `<nav class="mobile-nav-panel">` the mobile
+ * menu (#784) appends after it. Needed for install-pill assertions: the
+ * mobile panel carries its own, always-present install pill (see 'the
+ * mobile menu' below) independent of the desktop bar's `installSlot`, so an
+ * assertion scoped to the whole document would see the mobile panel's copy
+ * even when the desktop slot correctly replaced its own. */
+function desktopHeaderHtml(html: string): string {
+  const end = html.indexOf('</header>') + '</header>'.length
+  return html.slice(0, end)
+}
+
 /**
  * The nav's five links, in the canvas's own order, with the `#anchor`
  * placeholders the static artboards point at.
@@ -255,6 +267,17 @@ describe('the bar', () => {
       'position:sticky',
     )
   })
+
+  it('stays position:relative by default, matching every canvas artboard', () => {
+    expect(render()).toContain('position:relative')
+    expect(render()).not.toContain('position:sticky')
+  })
+
+  it('opts into position:sticky at top:0 via the sticky prop (#759)', () => {
+    const html = render({ sticky: true })
+    expect(html).toContain('position:sticky')
+    expect(html).toContain('top:0')
+  })
 })
 
 describe('the brand', () => {
@@ -325,6 +348,36 @@ describe('the install pill', () => {
     expect(render({ installCommand: 'pnpm add zombie-mermaid' })).toContain(
       'pnpm add zombie-mermaid',
     )
+  })
+
+  it('is replaced entirely by installSlot when a page passes one (#759)', () => {
+    const html = render({
+      installSlot: createElement('div', { id: 'nav-theme-slot' }),
+    })
+    const header = desktopHeaderHtml(html)
+    expect(header).toContain('<div id="nav-theme-slot">')
+    // The default NavInstall pill is gone from the desktop bar, not just
+    // supplemented -- scoped to the header since the mobile panel (#784,
+    // merged after #759) always carries its own install pill regardless of
+    // the desktop slot; see 'the mobile menu' below for that assertion.
+    expect(header).not.toContain(NAV_INSTALL_COMMAND)
+    expect(header).not.toContain('class="pill mono"')
+  })
+
+  it('desktop bar has no extra <button> beyond the menu toggle with installSlot set (#759)', () => {
+    // The homepage's real installSlot is an empty placeholder div -- a real
+    // <button>-based ThemePicker only ever arrives via runtime reparenting
+    // (demo/index-page-client.ts), never server-rendered here. The desktop
+    // bar's one legitimate <button> is MenuToggle (#784's invented mobile
+    // menu control, documented as a deliberate deviation from the canvas in
+    // this file's own header comment) -- confirms installSlot doesn't add a
+    // second one, not that the bar has none at all.
+    const html = render({
+      installSlot: createElement('div', { id: 'nav-theme-slot' }),
+    })
+    const header = desktopHeaderHtml(html)
+    expect(header.match(/<button/gi)).toHaveLength(1)
+    expect(header).toContain('class="menu-toggle"')
   })
 })
 

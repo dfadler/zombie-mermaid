@@ -60,7 +60,7 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import {
   CopyIcon,
   ICON_LINE_CAP,
@@ -170,7 +170,16 @@ const LOGO_SIZE = 30
 const COPY_ICON_SIZE = 15
 const COPY_ICON_STROKE = 2
 
-/** The bar's translucency over the page background. */
+/**
+ * The bar's translucency over the page background.
+ *
+ * `demo/chrome-theme-client.ts`'s `initChromeTheme()` (#772) re-themes the
+ * `.nav-bar` background at runtime too, but recomputes this same 0.85
+ * alpha as its own private constant rather than importing it from here —
+ * see that module's header comment for why {@link bgRgba} itself (a
+ * build-time-only literal derived from tokens.tsx's fixed `COLORS`) can't
+ * just be made reactive in place.
+ */
 const NAV_BG_ALPHA = 0.85
 
 /** `z-index` on the bar, so the hero's artwork passes beneath it. */
@@ -429,6 +438,27 @@ export interface NavProps {
   homeHref?: string
   /** Overrides the install command in the pill. */
   installCommand?: string
+  /**
+   * Replaces the install pill entirely. Defaults to the canvas's own
+   * `NavInstall` (rendered with {@link installCommand}) — every page but
+   * the homepage keeps that default. #759's homepage passes an empty
+   * `<div id="nav-theme-slot" />` placeholder instead: a real, interactive
+   * theme picker is only ever *reparented* into it at runtime
+   * (`demo/index-page-client.ts`), never server-rendered there, so this
+   * stays a homepage-only behavior rather than a site-wide `Nav` change,
+   * and the "no `<button>` in Nav's SSR output" invariant
+   * (`__tests__/demo-nav.test.ts`) holds regardless of which slot content
+   * a page passes.
+   */
+  installSlot?: ReactNode
+  /**
+   * `position: sticky; top: 0` instead of the canvas's own `position:
+   * relative`. Defaults to `false` — every page but the homepage (#759)
+   * keeps the canvas's non-sticky bar; a page with its own sticky
+   * elements pinned to `top: var(--nav-height)` (the Dashboard) isn't
+   * affected by this being a per-page opt-in rather than a global change.
+   */
+  sticky?: boolean
   /** Accessible name for the link list. Defaults to `'Main'`. */
   label?: string
   /** Appended to `nav-bar`, for a page's own modifier class. */
@@ -926,6 +956,8 @@ export function Nav({
   hrefs,
   homeHref,
   installCommand = NAV_INSTALL_COMMAND,
+  installSlot,
+  sticky = false,
   label = 'Main',
   className,
   style,
@@ -937,7 +969,8 @@ export function Nav({
     padding: `${NAV_PAD_Y.desktop}px ${NAV_PAD_X.desktop}px`,
     borderBottom: `1px solid ${colorVar('--border')}`,
     background: bgRgba(NAV_BG_ALPHA),
-    position: 'relative',
+    position: sticky ? 'sticky' : 'relative',
+    top: sticky ? 0 : undefined,
     zIndex: NAV_Z_INDEX,
   }
   const linkItems = NAV_ITEMS.map((item) => ({
@@ -984,7 +1017,7 @@ export function Nav({
             gap: `${SPACE.md}px`,
           }}
         >
-          <NavInstall command={installCommand} />
+          {installSlot ?? <NavInstall command={installCommand} />}
           <MenuToggle />
         </div>
       </header>
