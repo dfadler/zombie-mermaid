@@ -16,7 +16,15 @@
  *    properties in place, no re-render" technique
  *    `demo/diagram-page-client.ts`'s `applyThemeToDiagram` uses for the
  *    per-diagram-type SEO pages) and the surrounding site chrome
- *    (`demo/site-chrome-theme.ts`'s `applyThemeToSiteChrome`, #772).
+ *    (`demo/chrome-theme-client.ts`'s `initChromeTheme()`, #772/#783).
+ *    `initChromeTheme(THEMES)` passes `@zombie-mermaid/core`'s own THEMES
+ *    table directly rather than reading a `window.__themeColors` embed the
+ *    way `demo/theme-bar-only-client.ts` does — this page already imports
+ *    THEMES for {@link applyThemeToShowcaseDiagram} below, and
+ *    `ChromeThemeColors` only needs `bg`/`fg`, which every `DiagramColors`
+ *    entry already has (structurally compatible, extra fields ignored —
+ *    see `chrome-theme-client.ts`'s own doc comment), so there is no
+ *    Default-page-generator embed to duplicate here.
  * 3. **One-way picker relocation** — an `IntersectionObserver` on
  *    `#theme-showcase` reparents the *same* `#theme-pills` DOM node
  *    (`element.appendChild`, not a clone — one live instance, no duplicate
@@ -29,7 +37,7 @@
  */
 import { getTheme, subscribe } from './theme-state.ts'
 import { initThemeBar } from './components/theme-bar-client.ts'
-import { applyThemeToSiteChrome } from './site-chrome-theme.ts'
+import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES } from '@zombie-mermaid/core'
 
 /**
@@ -69,31 +77,32 @@ function applyThemeToShowcaseDiagram(themeKey: string): void {
   }
 }
 
-/** This page's full re-theming: the showcase diagram plus the site chrome. */
-function applyTheme(themeKey: string): void {
-  applyThemeToShowcaseDiagram(themeKey)
-  applyThemeToSiteChrome(themeKey)
-}
-
 // -- Pill selection, "More" dropdown, ARIA/keyboard support, and
 //    persistence: demo/components/theme-bar-client.ts's job (see this
 //    file's header comment) -- wires the #theme-pills markup ThemeShowcase
 //    already renders to demo/theme-state.ts.
 initThemeBar()
 
-// This page's own re-theming runs on every theme-state change, same-tab or
-// cross-tab, whether it came from this page's own picker or one picked on
-// another page entirely (see subscribe()'s doc comment in theme-state.ts).
-subscribe(applyTheme)
+// Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job.
+// initChromeTheme() applies whatever theme is already stored immediately
+// (a returning visitor's choice) and keeps re-applying on every future
+// theme-state change on its own -- no separate initial-apply/subscribe
+// call needed here for the chrome half.
+initChromeTheme(THEMES)
 
-// -- Restore a previously picked theme, if it differs from this page's
-//    build-time default (SHOWCASE_DEFAULT_THEME). An empty string
-//    (getTheme()'s "no preference stored" value) needs no restore call:
-//    the showcase's own build-time render already matches
-//    SHOWCASE_DEFAULT_THEME, and applyThemeToSiteChrome('') would only
-//    reset overrides that were never set on a fresh load.
+// This page's own diagram re-theming runs on every theme-state change,
+// same-tab or cross-tab, whether it came from this page's own picker or one
+// picked on another page entirely (see subscribe()'s doc comment in
+// theme-state.ts).
+subscribe(applyThemeToShowcaseDiagram)
+
+// -- Restore a previously picked theme for the diagram, if it differs from
+//    this page's build-time default (SHOWCASE_DEFAULT_THEME). An empty
+//    string (getTheme()'s "no preference stored" value) needs no restore
+//    call: the showcase's own build-time render already matches
+//    SHOWCASE_DEFAULT_THEME.
 const initial = getTheme()
-if (initial && THEMES[initial]) applyTheme(initial)
+if (initial && THEMES[initial]) applyThemeToShowcaseDiagram(initial)
 
 /**
  * Reparents `#theme-pills` into `#nav-theme-slot` the first time

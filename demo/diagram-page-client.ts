@@ -27,15 +27,15 @@
  * for the (until #687) unwired global `ThemeBar`/`ThemePicker` — so this
  * page's `#theme-pills` markup is no longer a third, independent
  * implementation of the same behavior. What stays here is what those
- * shared modules don't do: re-theming the rendered `<svg>`(s), the page
- * chrome's `--t-*`/shadow variables, and the "Open in the live editor"
- * link's encoded theme. The redesign's own Nav/Footer/card chrome is a
- * fourth concern, delegated to `demo/site-chrome-theme.ts`'s
- * `applyThemeToSiteChrome()` (#772) rather than reimplemented here.
+ * shared modules don't do: re-theming the rendered `<svg>`(s), this page's
+ * own legacy `--t-*`/shadow-driven "Try it live" card, and the "Open in the
+ * live editor" link's encoded theme. Nav/Footer/cards re-theming (#772) —
+ * common to every page, not just this one — is `demo/chrome-theme-
+ * client.ts`'s `initChromeTheme()`, called below alongside `initThemeBar()`.
  */
 import { getTheme, setTheme, subscribe } from './theme-state.ts'
 import { initThemeBar } from './components/theme-bar-client.ts'
-import { applyThemeToSiteChrome } from './site-chrome-theme.ts'
+import { initChromeTheme } from './chrome-theme-client.ts'
 
 interface DiagramColors {
   bg: string
@@ -182,9 +182,8 @@ function activeThemeKey(): string {
 
 /**
  * Re-themes this page's own concerns for `themeKey` -- the rendered
- * `<svg>`(s), the page chrome's `--t-*`/shadow variables, the shared
- * Nav/Footer/card chrome (`demo/site-chrome-theme.ts`, #772), and the "Open
- * in the live editor" link. Pill active-state and persistence are `demo/
+ * `<svg>`(s), the page chrome's `--t-*`/shadow variables, and the "Open in
+ * the live editor" link. Pill active-state and persistence are `demo/
  * components/theme-bar-client.ts`'s `initThemeBar()`/`demo/theme-state.ts`'s
  * job now (see this file's header comment) -- this function is registered
  * as a `subscribe()` listener below, so it still runs on every pill click
@@ -198,14 +197,6 @@ function applyTheme(themeKey: string): void {
   applyThemeToPage(theme)
   applyThemeToDiagram(themeKey)
   updateEditorLink(themeKey)
-  // Independent lookup from the `theme` above: THEMES here is this page's
-  // embedded window.__diagramPageThemes, which (unlike @zombie-mermaid/
-  // core's own THEMES) includes a '' → DEFAULT_SWATCH entry -- but site
-  // chrome's Default state is "no override", not "light swatch", so
-  // applyThemeToSiteChrome() must resolve '' against the real THEMES map
-  // itself (see its own header comment) rather than reusing this file's
-  // `theme` value.
-  applyThemeToSiteChrome(themeKey)
 }
 
 // The editor link's encoded source must track the orientation actually on
@@ -238,6 +229,7 @@ window.addEventListener('resize', () => {
 //    markup pages.ts already renders (`ThemePicker`, embedded via the
 //    "Pick a look" section) to `demo/theme-state.ts`.
 initThemeBar()
+initChromeTheme(THEMES)
 
 // This page's own re-theming (svg + chrome + editor link) runs on every
 // theme-state change, same-tab or cross-tab, whether it came from a click

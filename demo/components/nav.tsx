@@ -156,13 +156,14 @@ const COPY_ICON_STROKE = 2
 /**
  * The bar's translucency over the page background.
  *
- * Exported so `demo/site-chrome-theme.ts` can recompute the same alpha at
- * runtime when a theme changes `--bg` — {@link bgRgba} itself only ever
- * derives from tokens.tsx's fixed `COLORS`, not the live custom property
- * (see that module's header comment for why re-theming this specific value
- * needs a direct element override rather than a `var()` reference).
+ * `demo/chrome-theme-client.ts`'s `initChromeTheme()` (#772) re-themes the
+ * `.nav-bar` background at runtime too, but recomputes this same 0.85
+ * alpha as its own private constant rather than importing it from here —
+ * see that module's header comment for why {@link bgRgba} itself (a
+ * build-time-only literal derived from tokens.tsx's fixed `COLORS`) can't
+ * just be made reactive in place.
  */
-export const NAV_BG_ALPHA = 0.85
+const NAV_BG_ALPHA = 0.85
 
 /** `z-index` on the bar, so the hero's artwork passes beneath it. */
 const NAV_Z_INDEX = 10
