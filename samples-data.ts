@@ -2,9 +2,13 @@
  * Sample definitions for the zombie-mermaid visual test suite.
  *
  * Shared by:
- *   - index.ts       — generates the HTML visual test page
- *   - bench.ts       — runs performance benchmarks in Bun (no browser)
- *   - vite.config.ts — dev server with live reload
+ *   - __tests__/visual/*.visual.test.ts — the Playwright visual-regression suite
+ *   - scripts/visual-diff.ts            — before/after rendering report
+ *   - demo/diagram-pages-data.ts        — looks up one sample per diagram type by title
+ *   - bench.ts                          — runs performance benchmarks in Bun (no browser)
+ *   - vite.config.ts                    — dev server with live reload
+ *
+ * index.ts (the marketing home page) does not consume this file.
  *
  * Every supported feature, shape, edge type, block construct, and theme
  * variant is exercised by at least one sample.
