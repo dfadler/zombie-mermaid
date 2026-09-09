@@ -85,7 +85,10 @@ async function generateHtml(): Promise<string> {
 const assetsDir = new URL('./assets/', import.meta.url)
 await mkdir(assetsDir, { recursive: true })
 
-const [html, clientJs] = await Promise.all([generateHtml(), bundleClientScript()])
+const [html, clientJs] = await Promise.all([
+  generateHtml(),
+  bundleClientScript(),
+])
 
 await writeFile(new URL('./index-page-client.js', assetsDir), clientJs)
 

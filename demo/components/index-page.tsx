@@ -671,9 +671,9 @@ function ThemeShowcase() {
             maxWidth: `${LAYOUT.proseMaxWidth}px`,
           }}
         >
-          Themes are pure CSS custom properties, so switching one is
-          instant. Pick any of the fifteen below — the diagram, and this
-          page's own chrome, repaint immediately. No reload.
+          Themes are pure CSS custom properties, so switching one is instant.
+          Pick any of the fifteen below — the diagram, and this page's own
+          chrome, repaint immediately. No reload.
         </p>
       </div>
 

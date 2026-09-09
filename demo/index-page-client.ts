@@ -50,7 +50,13 @@ import { THEMES } from '@zombie-mermaid/core'
  */
 const SHOWCASE_DEFAULT_THEME = 'dracula'
 
-const ENRICHMENT_KEYS = ['line', 'accent', 'muted', 'surface', 'border'] as const
+const ENRICHMENT_KEYS = [
+  'line',
+  'accent',
+  'muted',
+  'surface',
+  'border',
+] as const
 
 /**
  * Restyles the showcase's rendered `<svg>` in place — no re-render, exactly
