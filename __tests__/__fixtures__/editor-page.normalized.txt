@@ -187,534 +187,539 @@
     </div>
     <div class="section-px" style="padding: 0px 80px 64px; background: rgb(10, 13, 22);">
       <div class="editor-tool-shell">
-        <div class="topbar">
-          <a class="logo" href="/zombie-mermaid/">
-            <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <rect height="9" rx="3" stroke="#38e0d0" stroke-width="1.6" width="9" x="2" y="2">
-              </rect>
-              <rect height="9" rx="3" stroke="#a374e8" stroke-width="1.6" width="9" x="13" y="2">
-              </rect>
-              <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="#ff5fa8" stroke-width="1.6">
-              </path>
-            </svg>
-            <span>
-              <strong>
-                "zombie-mermaid"
-              </strong>
-              <span class="logo-sub">
-                "Live Editor"
-              </span>
-            </span>
-          </a>
-          <div class="topbar-sep">
-          </div>
-          <div class="tab-group">
-            <button class="tab active" data-panel="code" id="tab-code">
-              "Code"
-            </button>
-            <button class="tab" data-panel="config" id="tab-config">
-              "Config"
-            </button>
-          </div>
-          <div class="spacer">
-          </div>
-          <button class="btn" id="dark-light-btn" title="Toggle dark/light mode">
-            <svg fill="none" id="icon-moon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z">
-              </path>
-            </svg>
-            <svg fill="none" id="icon-sun" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="display: none;" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="5">
-              </circle>
-              <line x1="12" x2="12" y1="1" y2="3">
-              </line>
-              <line x1="12" x2="12" y1="21" y2="23">
-              </line>
-              <line x1="4.22" x2="5.64" y1="4.22" y2="5.64">
-              </line>
-              <line x1="18.36" x2="19.78" y1="18.36" y2="19.78">
-              </line>
-              <line x1="1" x2="3" y1="12" y2="12">
-              </line>
-              <line x1="21" x2="23" y1="12" y2="12">
-              </line>
-              <line x1="4.22" x2="5.64" y1="19.78" y2="18.36">
-              </line>
-              <line x1="18.36" x2="19.78" y1="5.64" y2="4.22">
-              </line>
-            </svg>
-          </button>
-          <div class="topbar-sep">
-          </div>
-          <div class="theme-dropdown-wrap" id="theme-dropdown-wrap">
-            <button class="theme-dropdown-btn" id="theme-dropdown-btn">
-              <span class="theme-swatch" id="theme-btn-swatch">
-              </span>
-              <span id="theme-btn-label">
-                "Default"
-              </span>
-              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24">
-                <polyline points="6 9 12 15 18 9">
-                </polyline>
+        <div id="editor-root">
+          <div class="topbar">
+            <a class="logo" href="/zombie-mermaid/">
+              <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect height="9" rx="3" stroke="#38e0d0" stroke-width="1.6" width="9" x="2" y="2">
+                </rect>
+                <rect height="9" rx="3" stroke="#a374e8" stroke-width="1.6" width="9" x="13" y="2">
+                </rect>
+                <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="#ff5fa8" stroke-width="1.6">
+                </path>
               </svg>
-            </button>
-            <div class="theme-dropdown-menu" id="theme-dropdown-menu">
-              <button class="theme-dropdown-item active" data-theme="">
-                "Default"
-              </button>
-              <button class="theme-dropdown-item" data-theme="nord">
-                <span class="theme-swatch" style="background: rgb(46, 52, 64);">
+              <span>
+                <strong>
+                  "zombie-mermaid"
+                </strong>
+                <span class="logo-sub">
+                  "Live Editor"
                 </span>
-                "Nord"
+              </span>
+            </a>
+            <div class="topbar-sep">
+            </div>
+            <div class="tab-group">
+              <button class="tab active" data-panel="code" id="tab-code">
+                "Code"
               </button>
-              <button class="theme-dropdown-item" data-theme="github-light">
-                <span class="theme-swatch" style="background: rgb(255, 255, 255);">
-                </span>
-                "GitHub"
+              <button class="tab" data-panel="config" id="tab-config">
+                "Config"
               </button>
             </div>
-          </div>
-          <div class="topbar-sep">
-          </div>
-          <div class="export-wrap" id="export-wrap">
-            <button class="btn btn-primary" id="export-main-btn" title="Save PNG (⌘S)">
-              <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4">
+            <div class="spacer">
+            </div>
+            <button class="btn" id="dark-light-btn" title="Toggle dark/light mode">
+              <svg fill="none" id="icon-moon" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z">
                 </path>
-                <polyline points="7 10 12 15 17 10">
-                </polyline>
-                <line x1="12" x2="12" y1="15" y2="3">
+              </svg>
+              <svg fill="none" id="icon-sun" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="display: none;" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="5">
+                </circle>
+                <line x1="12" x2="12" y1="1" y2="3">
+                </line>
+                <line x1="12" x2="12" y1="21" y2="23">
+                </line>
+                <line x1="4.22" x2="5.64" y1="4.22" y2="5.64">
+                </line>
+                <line x1="18.36" x2="19.78" y1="18.36" y2="19.78">
+                </line>
+                <line x1="1" x2="3" y1="12" y2="12">
+                </line>
+                <line x1="21" x2="23" y1="12" y2="12">
+                </line>
+                <line x1="4.22" x2="5.64" y1="19.78" y2="18.36">
+                </line>
+                <line x1="18.36" x2="19.78" y1="5.64" y2="4.22">
                 </line>
               </svg>
-              " Export Image "
             </button>
-            <button class="btn btn-primary export-chevron" id="export-chevron-btn" title="More export options">
-              <svg fill="none" height="12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" width="12">
-                <polyline points="6 9 12 15 18 9">
-                </polyline>
-              </svg>
-            </button>
-            <div class="export-dropdown" id="export-dropdown">
-              <button class="export-item" id="export-png-btn">
-                <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
-                  <rect height="18" rx="2" width="18" x="3" y="3">
-                  </rect>
-                  <circle cx="8.5" cy="8.5" r="1.5">
-                  </circle>
-                  <polyline points="21 15 16 10 5 21">
+            <div class="topbar-sep">
+            </div>
+            <div class="theme-dropdown-wrap" id="theme-dropdown-wrap">
+              <button class="theme-dropdown-btn" id="theme-dropdown-btn">
+                <span class="theme-swatch" id="theme-btn-swatch">
+                </span>
+                <span id="theme-btn-label">
+                  "Default"
+                </span>
+                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24">
+                  <polyline points="6 9 12 15 18 9">
                   </polyline>
                 </svg>
-                <span class="export-item-label">
-                  "Save PNG"
-                </span>
-                <span class="export-item-kbd">
-                  <kbd>
-                    "⌘"
-                  </kbd>
-                  <kbd>
-                    "S"
-                  </kbd>
-                </span>
               </button>
-              <button class="export-item" id="export-svg-btn">
-                <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
-                  <rect height="18" rx="2" width="18" x="3" y="3">
-                  </rect>
-                  <circle cx="8.5" cy="8.5" r="1.5">
-                  </circle>
-                  <polyline points="21 15 16 10 5 21">
-                  </polyline>
-                </svg>
-                <span class="export-item-label">
-                  "Save SVG"
-                </span>
-                <span class="export-item-kbd">
-                  <kbd>
-                    "⌘"
-                  </kbd>
-                  <kbd>
-                    "⇧"
-                  </kbd>
-                  <kbd>
-                    "S"
-                  </kbd>
-                </span>
-              </button>
-              <div class="export-divider">
-              </div>
-              <button class="export-item" id="copy-image-btn">
-                <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
-                  <rect height="13" rx="2" width="13" x="9" y="9">
-                  </rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1">
-                  </path>
-                </svg>
-                <span class="export-item-label">
-                  "Copy Image"
-                </span>
-                <span class="export-item-kbd">
-                  <kbd>
-                    "⌘"
-                  </kbd>
-                  <kbd>
-                    "C"
-                  </kbd>
-                </span>
-              </button>
-              <button class="export-item" id="copy-link-btn">
-                <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71">
-                  </path>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71">
-                  </path>
-                </svg>
-                <span class="export-item-label">
-                  "Copy URL"
-                </span>
-                <span class="export-item-kbd">
-                  <kbd>
-                    "⌘"
-                  </kbd>
-                  <kbd>
-                    "⇧"
-                  </kbd>
-                  <kbd>
-                    "C"
-                  </kbd>
-                </span>
-              </button>
-              <div class="export-divider">
-              </div>
-              <div class="export-size-row">
-                <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
-                  <polyline points="15 3 21 3 21 9">
-                  </polyline>
-                  <polyline points="9 21 3 21 3 15">
-                  </polyline>
-                  <line x1="21" x2="14" y1="3" y2="10">
-                  </line>
-                  <line x1="3" x2="10" y1="21" y2="14">
-                  </line>
-                </svg>
-                <span class="export-item-label">
-                  "Size"
-                </span>
-                <div class="size-pills" id="size-pills">
-                  <button class="size-pill" data-scale="1">
-                    "1x"
-                  </button>
-                  <button class="size-pill" data-scale="2">
-                    "2x"
-                  </button>
-                  <button class="size-pill active" data-scale="4">
-                    "4x"
-                  </button>
-                </div>
+              <div class="theme-dropdown-menu" id="theme-dropdown-menu">
+                <button class="theme-dropdown-item active" data-theme="">
+                  "Default"
+                </button>
+                <button class="theme-dropdown-item" data-theme="nord">
+                  <span class="theme-swatch" style="background: rgb(46, 52, 64);">
+                  </span>
+                  "Nord"
+                </button>
+                <button class="theme-dropdown-item" data-theme="github-light">
+                  <span class="theme-swatch" style="background: rgb(255, 255, 255);">
+                  </span>
+                  "GitHub"
+                </button>
               </div>
             </div>
-          </div>
-        </div>
-        <div class="main">
-          <div class="panel-left" id="panel-left">
-            <div class="source-toolbar" id="source-toolbar">
-              <span class="source-label">
-                "Source"
-              </span>
-              <div class="toolbar-spacer">
-              </div>
-              <div class="source-actions">
-                <button class="toolbar-btn" id="copy-source-btn" title="Copy source">
-                  <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                    <rect height="13" rx="2" ry="2" width="13" x="9" y="9">
+            <div class="topbar-sep">
+            </div>
+            <div class="export-wrap" id="export-wrap">
+              <button class="btn btn-primary" id="export-main-btn" title="Save PNG (⌘S)">
+                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4">
+                  </path>
+                  <polyline points="7 10 12 15 17 10">
+                  </polyline>
+                  <line x1="12" x2="12" y1="15" y2="3">
+                  </line>
+                </svg>
+                " Export Image "
+              </button>
+              <button class="btn btn-primary export-chevron" id="export-chevron-btn" title="More export options">
+                <svg fill="none" height="12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" width="12">
+                  <polyline points="6 9 12 15 18 9">
+                  </polyline>
+                </svg>
+              </button>
+              <div class="export-dropdown" id="export-dropdown">
+                <button class="export-item" id="export-png-btn">
+                  <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
+                    <rect height="18" rx="2" width="18" x="3" y="3">
+                    </rect>
+                    <circle cx="8.5" cy="8.5" r="1.5">
+                    </circle>
+                    <polyline points="21 15 16 10 5 21">
+                    </polyline>
+                  </svg>
+                  <span class="export-item-label">
+                    "Save PNG"
+                  </span>
+                  <span class="export-item-kbd">
+                    <kbd>
+                      "⌘"
+                    </kbd>
+                    <kbd>
+                      "S"
+                    </kbd>
+                  </span>
+                </button>
+                <button class="export-item" id="export-svg-btn">
+                  <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
+                    <rect height="18" rx="2" width="18" x="3" y="3">
+                    </rect>
+                    <circle cx="8.5" cy="8.5" r="1.5">
+                    </circle>
+                    <polyline points="21 15 16 10 5 21">
+                    </polyline>
+                  </svg>
+                  <span class="export-item-label">
+                    "Save SVG"
+                  </span>
+                  <span class="export-item-kbd">
+                    <kbd>
+                      "⌘"
+                    </kbd>
+                    <kbd>
+                      "⇧"
+                    </kbd>
+                    <kbd>
+                      "S"
+                    </kbd>
+                  </span>
+                </button>
+                <div class="export-divider">
+                </div>
+                <button class="export-item" id="copy-image-btn">
+                  <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
+                    <rect height="13" rx="2" width="13" x="9" y="9">
                     </rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1">
                     </path>
                   </svg>
+                  <span class="export-item-label">
+                    "Copy Image"
+                  </span>
+                  <span class="export-item-kbd">
+                    <kbd>
+                      "⌘"
+                    </kbd>
+                    <kbd>
+                      "C"
+                    </kbd>
+                  </span>
                 </button>
-                <button class="toolbar-btn" id="clear-btn" title="Clear editor">
-                  <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                    <polyline points="3 6 5 6 21 6">
+                <button class="export-item" id="copy-link-btn">
+                  <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71">
+                    </path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71">
+                    </path>
+                  </svg>
+                  <span class="export-item-label">
+                    "Copy URL"
+                  </span>
+                  <span class="export-item-kbd">
+                    <kbd>
+                      "⌘"
+                    </kbd>
+                    <kbd>
+                      "⇧"
+                    </kbd>
+                    <kbd>
+                      "C"
+                    </kbd>
+                  </span>
+                </button>
+                <div class="export-divider">
+                </div>
+                <div class="export-size-row">
+                  <svg class="export-item-icon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" viewBox="0 0 24 24">
+                    <polyline points="15 3 21 3 21 9">
                     </polyline>
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6">
-                    </path>
-                    <path d="M10 11v6M14 11v6">
-                    </path>
+                    <polyline points="9 21 3 21 3 15">
+                    </polyline>
+                    <line x1="21" x2="14" y1="3" y2="10">
+                    </line>
+                    <line x1="3" x2="10" y1="21" y2="14">
+                    </line>
                   </svg>
-                </button>
-              </div>
-            </div>
-            <div class="editor-wrap" id="editor-view">
-              <div class="line-numbers" id="line-numbers">
-                "1"
-              </div>
-              <textarea autocapitalize="off" autocomplete="off" autocorrect="off" class="code-editor" id="code-editor" placeholder="Enter mermaid diagram syntax here…" spellcheck="false">
-              </textarea>
-            </div>
-            <div class="config-panel" id="config-view">
-              <div class="config-section">
-                <div class="config-section-title">
-                  "Colors"
-                </div>
-                <div class="color-field">
-                  <span class="color-field-label">
-                    "Background"
+                  <span class="export-item-label">
+                    "Size"
                   </span>
-                  <button class="color-edit-btn" data-cfg="bg">
-                    <span class="cfg-hex-label" id="cfg-bg-label">
-                      "—"
-                    </span>
-                    <span class="color-swatch" id="cfg-bg-swatch">
-                    </span>
-                  </button>
-                </div>
-                <div class="color-field">
-                  <span class="color-field-label">
-                    "Foreground"
-                  </span>
-                  <button class="color-edit-btn" data-cfg="fg">
-                    <span class="cfg-hex-label" id="cfg-fg-label">
-                      "—"
-                    </span>
-                    <span class="color-swatch" id="cfg-fg-swatch">
-                    </span>
-                  </button>
-                </div>
-                <div class="color-field">
-                  <span class="color-field-label">
-                    "Accent"
-                  </span>
-                  <button class="color-edit-btn" data-cfg="accent">
-                    <span class="cfg-hex-label" id="cfg-accent-label">
-                      "—"
-                    </span>
-                    <span class="color-swatch" id="cfg-accent-swatch">
-                    </span>
-                  </button>
-                </div>
-                <div class="color-field">
-                  <span class="color-field-label">
-                    "Line"
-                  </span>
-                  <button class="color-edit-btn" data-cfg="line">
-                    <span class="cfg-hex-label" id="cfg-line-label">
-                      "—"
-                    </span>
-                    <span class="color-swatch" id="cfg-line-swatch">
-                    </span>
-                  </button>
-                </div>
-                <div class="color-field">
-                  <span class="color-field-label">
-                    "Muted"
-                  </span>
-                  <button class="color-edit-btn" data-cfg="muted">
-                    <span class="cfg-hex-label" id="cfg-muted-label">
-                      "—"
-                    </span>
-                    <span class="color-swatch" id="cfg-muted-swatch">
-                    </span>
-                  </button>
-                </div>
-                <div class="color-field">
-                  <span class="color-field-label">
-                    "Surface"
-                  </span>
-                  <button class="color-edit-btn" data-cfg="surface">
-                    <span class="cfg-hex-label" id="cfg-surface-label">
-                      "—"
-                    </span>
-                    <span class="color-swatch" id="cfg-surface-swatch">
-                    </span>
-                  </button>
-                </div>
-              </div>
-              <div class="config-section">
-                <div class="config-section-title">
-                  "Typography"
-                </div>
-                <div class="font-field">
-                  <span class="font-field-label">
-                    "Font family"
-                  </span>
-                  <button class="font-select-btn" id="font-select-btn">
-                    <span id="font-select-label">
-                      "Default"
-                    </span>
-                    <span class="font-select-caret">
-                      "▼"
-                    </span>
-                  </button>
-                </div>
-              </div>
-              <div class="config-section">
-                <div class="config-section-title">
-                  "Layout"
-                </div>
-                <div class="padding-field">
-                  <div class="padding-row">
-                    <label>
-                      "Padding"
-                    </label>
-                    <input class="padding-num" id="cfg-padding" max="120" min="0" type="number" value="24">
-                    </input>
+                  <div class="size-pills" id="size-pills">
+                    <button class="size-pill" data-scale="1">
+                      "1x"
+                    </button>
+                    <button class="size-pill" data-scale="2">
+                      "2x"
+                    </button>
+                    <button class="size-pill active" data-scale="4">
+                      "4x"
+                    </button>
                   </div>
-                  <input class="padding-slider" id="cfg-padding-slider" max="120" min="0" type="range" value="24">
-                  </input>
                 </div>
-                <div class="padding-field">
-                  <div class="padding-row">
-                    <label>
-                      "Edge stroke"
-                    </label>
-                    <input class="padding-num" id="cfg-edge-stroke" max="6" min="0.25" step="0.25" type="number" value="1">
-                    </input>
-                  </div>
-                  <input class="padding-slider" id="cfg-edge-stroke-slider" max="6" min="0.25" step="0.25" type="range" value="1">
-                  </input>
-                </div>
-                <div class="padding-field">
-                  <div class="padding-row">
-                    <label>
-                      "Node border"
-                    </label>
-                    <input class="padding-num" id="cfg-node-stroke" max="6" min="0.25" step="0.25" type="number" value="1">
-                    </input>
-                  </div>
-                  <input class="padding-slider" id="cfg-node-stroke-slider" max="6" min="0.25" step="0.25" type="range" value="1">
-                  </input>
-                </div>
-              </div>
-            </div>
-            <div class="color-popup" id="color-popup">
-              <div class="color-popup-header">
-                <span class="color-popup-title" id="color-popup-title">
-                  "Color"
-                </span>
-                <button class="color-popup-close" id="color-popup-close">
-                  "×"
-                </button>
-              </div>
-              <div class="color-hex-row">
-                <input class="color-native" id="color-native-input" type="color">
-                </input>
-                <input class="color-hex-input" id="color-hex-input" maxlength="9" placeholder="#rrggbb" type="text">
-                </input>
-                <button class="color-clear-btn" id="color-clear-btn">
-                  "Clear"
-                </button>
-              </div>
-              <div class="color-palette-title">
-                "Presets"
-              </div>
-              <div class="color-palette" id="color-palette">
-              </div>
-            </div>
-            <div class="font-popup" id="font-popup">
-              <div class="font-search-wrap">
-                <svg class="font-search-icon" fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="13">
-                  <circle cx="11" cy="11" r="8">
-                  </circle>
-                  <line x1="21" x2="16.65" y1="21" y2="16.65">
-                  </line>
-                </svg>
-                <input class="font-search" id="font-search" placeholder="Quick search">
-                </input>
-              </div>
-              <div class="font-list" id="font-list">
-              </div>
-            </div>
-            <div class="status-bar">
-              <div class="status-left">
-                <span class="status-dot" id="status-dot">
-                </span>
-                <span id="status-text">
-                  "Ready"
-                </span>
-              </div>
-              <div class="status-right">
-                <span id="cursor-pos">
-                  "Ln 1, Col 1"
-                </span>
               </div>
             </div>
           </div>
-          <div class="resize-handle" id="resize-handle">
-          </div>
-          <div class="panel-right" id="panel-right">
-            <div class="preview-toolbar">
-              <span class="preview-label">
-                "Preview"
-              </span>
-              <div class="toolbar-spacer">
+          <div class="main">
+            <div class="panel-left" id="panel-left">
+              <div class="source-toolbar" id="source-toolbar">
+                <span class="source-label">
+                  "Source"
+                </span>
+                <div class="toolbar-spacer">
+                </div>
+                <div class="source-actions">
+                  <button class="toolbar-btn" id="copy-source-btn" title="Copy source">
+                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                      <rect height="13" rx="2" ry="2" width="13" x="9" y="9">
+                      </rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1">
+                      </path>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" id="clear-btn" title="Clear editor">
+                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                      <polyline points="3 6 5 6 21 6">
+                      </polyline>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6">
+                      </path>
+                      <path d="M10 11v6M14 11v6">
+                      </path>
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div class="zoom-controls">
-                <button class="toolbar-btn" id="zoom-out-btn" title="Zoom out">
-                  <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+              <div class="editor-wrap" id="editor-view">
+                <div class="line-numbers" id="line-numbers">
+                  "1"
+                </div>
+                <textarea autocapitalize="off" autocomplete="off" autocorrect="off" class="code-editor" id="code-editor" placeholder="Enter mermaid diagram syntax here…" spellcheck="false">
+                </textarea>
+              </div>
+              <div class="config-panel" id="config-view">
+                <div class="config-section">
+                  <div class="config-section-title">
+                    "Colors"
+                  </div>
+                  <div class="color-field">
+                    <span class="color-field-label">
+                      "Background"
+                    </span>
+                    <button class="color-edit-btn" data-cfg="bg">
+                      <span class="cfg-hex-label" id="cfg-bg-label">
+                        "—"
+                      </span>
+                      <span class="color-swatch" id="cfg-bg-swatch">
+                      </span>
+                    </button>
+                  </div>
+                  <div class="color-field">
+                    <span class="color-field-label">
+                      "Foreground"
+                    </span>
+                    <button class="color-edit-btn" data-cfg="fg">
+                      <span class="cfg-hex-label" id="cfg-fg-label">
+                        "—"
+                      </span>
+                      <span class="color-swatch" id="cfg-fg-swatch">
+                      </span>
+                    </button>
+                  </div>
+                  <div class="color-field">
+                    <span class="color-field-label">
+                      "Accent"
+                    </span>
+                    <button class="color-edit-btn" data-cfg="accent">
+                      <span class="cfg-hex-label" id="cfg-accent-label">
+                        "—"
+                      </span>
+                      <span class="color-swatch" id="cfg-accent-swatch">
+                      </span>
+                    </button>
+                  </div>
+                  <div class="color-field">
+                    <span class="color-field-label">
+                      "Line"
+                    </span>
+                    <button class="color-edit-btn" data-cfg="line">
+                      <span class="cfg-hex-label" id="cfg-line-label">
+                        "—"
+                      </span>
+                      <span class="color-swatch" id="cfg-line-swatch">
+                      </span>
+                    </button>
+                  </div>
+                  <div class="color-field">
+                    <span class="color-field-label">
+                      "Muted"
+                    </span>
+                    <button class="color-edit-btn" data-cfg="muted">
+                      <span class="cfg-hex-label" id="cfg-muted-label">
+                        "—"
+                      </span>
+                      <span class="color-swatch" id="cfg-muted-swatch">
+                      </span>
+                    </button>
+                  </div>
+                  <div class="color-field">
+                    <span class="color-field-label">
+                      "Surface"
+                    </span>
+                    <button class="color-edit-btn" data-cfg="surface">
+                      <span class="cfg-hex-label" id="cfg-surface-label">
+                        "—"
+                      </span>
+                      <span class="color-swatch" id="cfg-surface-swatch">
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div class="config-section">
+                  <div class="config-section-title">
+                    "Typography"
+                  </div>
+                  <div class="font-field">
+                    <span class="font-field-label">
+                      "Font family"
+                    </span>
+                    <button class="font-select-btn" id="font-select-btn">
+                      <span id="font-select-label">
+                        "Default"
+                      </span>
+                      <span class="font-select-caret">
+                        "▼"
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div class="config-section">
+                  <div class="config-section-title">
+                    "Layout"
+                  </div>
+                  <div class="padding-field">
+                    <div class="padding-row">
+                      <label>
+                        "Padding"
+                      </label>
+                      <input class="padding-num" id="cfg-padding" max="120" min="0" type="number" value="24">
+                      </input>
+                    </div>
+                    <input class="padding-slider" id="cfg-padding-slider" max="120" min="0" type="range" value="24">
+                    </input>
+                  </div>
+                  <div class="padding-field">
+                    <div class="padding-row">
+                      <label>
+                        "Edge stroke"
+                      </label>
+                      <input class="padding-num" id="cfg-edge-stroke" max="6" min="0.25" step="0.25" type="number" value="1">
+                      </input>
+                    </div>
+                    <input class="padding-slider" id="cfg-edge-stroke-slider" max="6" min="0.25" step="0.25" type="range" value="1">
+                    </input>
+                  </div>
+                  <div class="padding-field">
+                    <div class="padding-row">
+                      <label>
+                        "Node border"
+                      </label>
+                      <input class="padding-num" id="cfg-node-stroke" max="6" min="0.25" step="0.25" type="number" value="1">
+                      </input>
+                    </div>
+                    <input class="padding-slider" id="cfg-node-stroke-slider" max="6" min="0.25" step="0.25" type="range" value="1">
+                    </input>
+                  </div>
+                </div>
+              </div>
+              <div class="color-popup" id="color-popup">
+                <div class="color-popup-header">
+                  <span class="color-popup-title" id="color-popup-title">
+                    "Color"
+                  </span>
+                  <button class="color-popup-close" id="color-popup-close">
+                    "×"
+                  </button>
+                </div>
+                <div class="color-hex-row">
+                  <input class="color-native" id="color-native-input" type="color">
+                  </input>
+                  <input class="color-hex-input" id="color-hex-input" maxlength="9" placeholder="#rrggbb" type="text">
+                  </input>
+                  <button class="color-clear-btn" id="color-clear-btn">
+                    "Clear"
+                  </button>
+                </div>
+                <div class="color-palette-title">
+                  "Presets"
+                </div>
+                <div class="color-palette" id="color-palette">
+                </div>
+              </div>
+              <div class="font-popup" id="font-popup">
+                <div class="font-search-wrap">
+                  <svg class="font-search-icon" fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="13">
                     <circle cx="11" cy="11" r="8">
                     </circle>
                     <line x1="21" x2="16.65" y1="21" y2="16.65">
                     </line>
-                    <line x1="8" x2="14" y1="11" y2="11">
-                    </line>
                   </svg>
-                </button>
-                <span class="zoom-label" id="zoom-label">
-                  "100%"
-                </span>
-                <button class="toolbar-btn" id="zoom-in-btn" title="Zoom in">
-                  <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8">
-                    </circle>
-                    <line x1="21" x2="16.65" y1="21" y2="16.65">
-                    </line>
-                    <line x1="11" x2="11" y1="8" y2="14">
-                    </line>
-                    <line x1="8" x2="14" y1="11" y2="11">
-                    </line>
-                  </svg>
-                </button>
-                <button class="toolbar-btn" id="zoom-fit-btn" title="Fit to view">
-                  <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
-                    </path>
-                  </svg>
-                </button>
-                <button class="toolbar-btn" id="pan-btn" title="Pan (hold to drag)">
-                  <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2">
-                    </path>
-                    <path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2">
-                    </path>
-                    <path d="M10 10.5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v1.5">
-                    </path>
-                    <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2a8 8 0 0 1-7.4-5">
-                    </path>
-                    <path d="M6 14v-3a2 2 0 0 0-2-2 2 2 0 0 0-2 2v5">
-                    </path>
-                  </svg>
-                </button>
+                  <input class="font-search" id="font-search" placeholder="Quick search">
+                  </input>
+                </div>
+                <div class="font-list" id="font-list">
+                </div>
               </div>
-            </div>
-            <div class="preview-body" id="preview-body">
-              <div class="render-spinner" id="render-spinner">
-              </div>
-              <div class="preview-inner" id="preview-inner">
-                <div class="preview-placeholder" id="preview-placeholder">
-                  "Start typing to render your diagram"
+              <div class="status-bar">
+                <div class="status-left">
+                  <span class="status-dot" id="status-dot">
+                  </span>
+                  <span id="status-text">
+                    "Ready"
+                  </span>
+                </div>
+                <div class="status-right">
+                  <span id="cursor-pos">
+                    "Ln 1, Col 1"
+                  </span>
                 </div>
               </div>
             </div>
-            <div class="preview-footer">
-              <span id="render-time">
-              </span>
-              <span>
-                "zombie-mermaid"
-              </span>
+            <div class="resize-handle" id="resize-handle">
+            </div>
+            <div class="panel-right" id="panel-right">
+              <div class="preview-toolbar">
+                <span class="preview-label">
+                  "Preview"
+                </span>
+                <div class="toolbar-spacer">
+                </div>
+                <div class="zoom-controls">
+                  <button class="toolbar-btn" id="zoom-out-btn" title="Zoom out">
+                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="8">
+                      </circle>
+                      <line x1="21" x2="16.65" y1="21" y2="16.65">
+                      </line>
+                      <line x1="8" x2="14" y1="11" y2="11">
+                      </line>
+                    </svg>
+                  </button>
+                  <span class="zoom-label" id="zoom-label">
+                    "100%"
+                  </span>
+                  <button class="toolbar-btn" id="zoom-in-btn" title="Zoom in">
+                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="8">
+                      </circle>
+                      <line x1="21" x2="16.65" y1="21" y2="16.65">
+                      </line>
+                      <line x1="11" x2="11" y1="8" y2="14">
+                      </line>
+                      <line x1="8" x2="14" y1="11" y2="11">
+                      </line>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" id="zoom-fit-btn" title="Fit to view">
+                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                      </path>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" id="pan-btn" title="Pan (hold to drag)">
+                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2">
+                      </path>
+                      <path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2">
+                      </path>
+                      <path d="M10 10.5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v1.5">
+                      </path>
+                      <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2a8 8 0 0 1-7.4-5">
+                      </path>
+                      <path d="M6 14v-3a2 2 0 0 0-2-2 2 2 0 0 0-2 2v5">
+                      </path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="preview-body" id="preview-body">
+                <div class="render-spinner" id="render-spinner">
+                </div>
+                <div class="preview-inner" id="preview-inner">
+                  <div class="preview-placeholder" id="preview-placeholder">
+                    "Start typing to render your diagram"
+                  </div>
+                </div>
+              </div>
+              <div class="preview-footer">
+                <span id="render-time">
+                </span>
+                <span>
+                  "zombie-mermaid"
+                </span>
+              </div>
             </div>
           </div>
+          <div class="toast" id="toast">
+          </div>
         </div>
-        <div class="toast" id="toast">
-        </div>
+        <script id="editor-props" type="application/json">
+          "{\"themes\":[{\"key\":\"nord\",\"bg\":\"#2E3440\",\"label\":\"Nord\"},{\"key\":\"github-light\",\"bg\":\"#ffffff\",\"label\":\"GitHub\"}]}"
+        </script>
       </div>
     </div>
     <div class="zm-shell">
@@ -865,6 +870,9 @@
     </script>
     <script type="module">
       "globalThis.__navFixture = 1 < 2 && 3 > 2;\nconsole.log(\"nav fixture & <b>bold</b>\");"
+    </script>
+    <script id="editor-legacy-app-js" type="application/x-zm-legacy-js">
+      "globalThis.__fixture = 1 < 2 && 3 > 2;\nconsole.log(\"fixture & <b>bold</b>\");"
     </script>
     <script>
       "(function () {\n  function closeMenu(toggle, panel, returnFocus) {\n    panel.classList.remove('is-open')\n    toggle.classList.remove('is-open')\n    toggle.setAttribute('aria-expanded', 'false')\n    document.documentElement.classList.remove('mobile-nav-open')\n    if (returnFocus) toggle.focus()\n  }\n\n  function openMenu(toggle, panel) {\n    panel.classList.add('is-open')\n    toggle.classList.add('is-open')\n    toggle.setAttribute('aria-expanded', 'true')\n    document.documentElement.classList.add('mobile-nav-open')\n    var firstLink = panel.querySelector('.mobile-link')\n    if (firstLink) firstLink.focus()\n  }\n\n  document.querySelectorAll('.nav-bar').forEach(function (bar) {\n    var toggle = bar.querySelector('.menu-toggle')\n    var panel = bar.nextElementSibling\n    if (!toggle || !panel || !panel.classList.contains('mobile-nav-panel')) {\n      return\n    }\n\n    toggle.addEventListener('click', function () {\n      if (panel.classList.contains('is-open')) {\n        closeMenu(toggle, panel, true)\n      } else {\n        openMenu(toggle, panel)\n      }\n    })\n\n    panel.querySelectorAll('.mobile-link').forEach(function (link) {\n      link.addEventListener('click', function () {\n        closeMenu(toggle, panel, false)\n      })\n    })\n\n    panel.addEventListener('keydown', function (event) {\n      if (event.key === 'Escape') {\n        event.preventDefault()\n        closeMenu(toggle, panel, true)\n      }\n    })\n  })\n})()"
