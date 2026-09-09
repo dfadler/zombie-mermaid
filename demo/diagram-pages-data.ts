@@ -17,7 +17,7 @@
  * longer matches anything actually exercised elsewhere.
  */
 
-import { samples } from '../samples-data.ts'
+import { samples, type Sample } from '../samples-data.ts'
 import type { Accent } from './components/primitives.tsx'
 
 /**
@@ -154,3 +154,37 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     sourceFilename: 'chart.mmd',
   },
 ]
+
+/**
+ * `samples-data.ts`'s `Sample.category` string for each `DiagramTypeProfile`
+ * slug — not the same spelling as `label` ("State diagram" vs. "State"),
+ * so this stays its own small table rather than deriving one from the
+ * other. `Sample.category` is also used by categories this map doesn't
+ * cover (`'Hero'`, `'Interactivity'`), which never carry `gallery: true`
+ * (see samples-data.ts's `Sample.gallery` doc comment) and so never need a
+ * `DiagramTypeProfile` entry of their own.
+ */
+const GALLERY_CATEGORY: Record<string, string> = {
+  flowchart: 'Flowchart',
+  state: 'State',
+  sequence: 'Sequence',
+  class: 'Class',
+  er: 'ER',
+  'xy-chart': 'XY Chart',
+}
+
+/**
+ * The samples-data.ts#713 curated for `slug`'s "More examples" section
+ * (`demo/components/diagram-page.tsx`'s `MoreExamplesSection`) — every
+ * sample whose `category` matches this type and whose `gallery` field is
+ * `true`, in samples-data.ts's own declared order. Never re-derives the
+ * curation (see docs/decisions/diagram-gallery-scope.md): a sample opts in
+ * by setting `gallery: true` there, not by anything computed here.
+ */
+export function moreExamplesFor(slug: string): Sample[] {
+  const category = GALLERY_CATEGORY[slug]
+  if (!category) return []
+  return samples.filter(
+    (sample) => sample.category === category && sample.gallery === true,
+  )
+}

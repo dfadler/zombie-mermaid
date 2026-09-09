@@ -56,7 +56,10 @@ import {
   type OrientationVariants,
 } from './demo/components/diagram-page.tsx'
 import { THEMES } from '@zombie-mermaid/core'
-import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
+import {
+  DIAGRAM_TYPE_PROFILES,
+  moreExamplesFor,
+} from './demo/diagram-pages-data.ts'
 import { ThemePicker, DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
@@ -225,6 +228,18 @@ async function main(): Promise<void> {
     const canonical = `${SITE_URL}/diagrams/${profile.slug}.html`
     sitemapUrls.push(canonical)
 
+    // "More examples" section (#714/#715): the samples-data.ts#713 curation
+    // for this type, each rendered once at the default theme/direction —
+    // these are small thumbnails (demo/components/diagram-page.tsx's
+    // `MoreExamplesSection` letterboxes them into a fixed-aspect frame), not
+    // the page's primary orientation-swapping "Source → render" diagram, so
+    // unlike `diagramMarkup` above they get no narrow-viewport variant.
+    const galleryItems = moreExamplesFor(profile.slug).map((sample) => ({
+      title: sample.title,
+      diagramHtml: renderDiagram(sample.source),
+      editorHref: `../editor#${editorHash(sample.source, DEFAULT_THEME_KEY)}`,
+    }))
+
     const sourceJson = escapeJsonForScriptTag(JSON.stringify(profile.source))
     const narrowSourceJson = escapeJsonForScriptTag(
       JSON.stringify(narrowSource),
@@ -247,6 +262,7 @@ async function main(): Promise<void> {
         sourcePanelHtml: sourcePanelMarkup,
         diagramHtml: diagramMarkup,
         editorHref: `../editor#${editorHash(profile.source, DEFAULT_THEME_KEY)}`,
+        galleryItems,
         types: typeLinks,
         themePills,
         themeDataScript,

@@ -589,6 +589,67 @@ ${MEDIA.reducedMotion} {
 
 .shiki { background: transparent !important; }
 
+/*
+ * "More examples" (#714/#715). .gallery-grid is a 3-column CSS grid,
+ * dropping to 2 (tablet) then 1 (mobile) below. .gallery-thumb is the
+ * fixed-aspect frame that fixes #708's card-sizing bug: a rendered SVG's
+ * own width/height attributes only set its *initial* CSS size, so the
+ * plain-specificity ".gallery-thumb svg" rule below overrides them to
+ * 100%/100% -- combined with the SVG's default preserveAspectRatio
+ * ("xMidYMid meet"), that letterboxes any intrinsic aspect ratio inside
+ * the frame instead of the frame growing to the diagram's natural size.
+ * .gallery-more is a plain <details> disclosure (no client script) for
+ * the "Show N more" affordance -- see MoreExamplesSection's doc comment.
+ */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: ${SPACE['2xl']}px;
+}
+.gallery-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+.gallery-thumb {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  background: ${colorVar('--bg-soft')};
+  border-bottom: 1px solid ${colorVar('--border')};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: ${SPACE.md}px;
+}
+.gallery-thumb svg { width: 100%; height: 100%; display: block; }
+.gallery-label {
+  padding: ${SPACE.xl}px ${SPACE['2xl']}px;
+}
+.gallery-title {
+  font-size: ${FONT_SIZE.bodySm}px;
+  font-weight: 600;
+  color: ${colorVar('--text')};
+}
+.gallery-more summary {
+  list-style: none;
+  cursor: pointer;
+  width: fit-content;
+}
+.gallery-more summary::-webkit-details-marker { display: none; }
+.gallery-more[open] summary { margin-bottom: ${SPACE['2xl']}px; }
+
+${MEDIA.tablet} {
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+${MEDIA.mobile} {
+  .gallery-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .gallery-more summary { width: 100%; justify-content: center; }
+}
+
 ${MEDIA.tablet} {
   .detail-row { flex-direction: column !important; }
   /*
@@ -625,6 +686,20 @@ function PageStyle() {
 /* -----------------------------------------------------------------
  * DiagramTypePage
  * ----------------------------------------------------------------- */
+
+/**
+ * One card in the "More examples" section (#714/#715) — a
+ * samples-data.ts#713 curated sample (`Sample.gallery === true`) already
+ * rendered to SVG at build time, same as this page's primary diagram.
+ */
+export interface GalleryItem {
+  /** `Sample.title`, e.g. "CI/CD Pipeline" — the card's caption. */
+  title: string
+  /** The rendered SVG, via pages.ts's `renderDiagram(sample.source)`. */
+  diagramHtml: string
+  /** `../editor#<base64 payload>` for this sample, same shape as the page's own `editorHref`. */
+  editorHref: string
+}
 
 export interface DiagramTypePageProps {
   label: string
@@ -664,6 +739,14 @@ export interface DiagramTypePageProps {
   diagramHtml: OrientationVariants
   /** `../editor#<base64 payload>` — see pages.ts's `editorHash`. */
   editorHref: string
+  /**
+   * The samples-data.ts#713 curation for this type (`sample.gallery ===
+   * true`), each already rendered — see `demo/diagram-pages-data.ts`'s
+   * `moreExamplesFor`. Renders as {@link MoreExamplesSection}, or not at
+   * all when empty (no type currently has zero, but the section degrades
+   * gracefully rather than assuming a non-empty array).
+   */
+  galleryItems: readonly GalleryItem[]
   /** Every diagram type (including this page's own), for the crosslink grid. */
   types: readonly DiagramCrosslink[]
   themePills: ReactNode
@@ -733,6 +816,118 @@ function DetailBreadcrumb({
   )
 }
 
+/**
+ * Cards visible before the "Show N more" disclosure — 6 fits three rows of
+ * a 3-column desktop grid at two rows, or two rows of a 2-column tablet
+ * grid; see `MoreExamplesSection`'s doc comment for why this is one fixed
+ * number rather than a per-breakpoint one.
+ */
+const GALLERY_VISIBLE_COUNT = 6
+
+/** One `MoreExamplesSection` card: a fixed-aspect thumbnail plus the sample's title, linking to the live editor. */
+function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
+  return (
+    <Card href={item.editorHref} accent={accent} className="gallery-card">
+      <div
+        className="gallery-thumb"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+        dangerouslySetInnerHTML={{ __html: item.diagramHtml }}
+      />
+      <div className="gallery-label">
+        <span className="gallery-title">{item.title}</span>
+      </div>
+    </Card>
+  )
+}
+
+/**
+ * The "More examples" section (#714/#715 — Direction A of
+ * docs/decisions/diagram-gallery-layout.md, drafted on the design canvas
+ * at https://claude.ai/code/artifact/d82d53c8-9678-4013-aa72-5859560b211f):
+ * the samples-data.ts#713 curated set for this type
+ * (`demo/diagram-pages-data.ts`'s `moreExamplesFor`), in a fixed-aspect
+ * card grid. Renders nothing when `items` is empty.
+ *
+ * Bounds the section's height regardless of how many samples a type
+ * curates (3-14 per docs/decisions/diagram-gallery-scope.md) — the direct
+ * fix for #708's ~18,000px pages: everything past
+ * {@link GALLERY_VISIBLE_COUNT} sits inside a native `<details>`
+ * disclosure, so revealing the rest needs no client script at all. That
+ * matches docs/decisions/no-script-interactivity.md's "demo-site chrome
+ * only" allowance for this kind of interaction — `<details>` is simply the
+ * zero-script way to build it, one step further than a hand-rolled toggle
+ * script would have been. The artboard shows a 6-desktop/4-mobile split;
+ * shipping one fixed cap for both keeps this a single static render (no
+ * client-side re-splitting), which still fully solves #708's actual bug
+ * (unbounded height) — see the design decision doc for that tradeoff.
+ *
+ * Each thumbnail (`pageCss`'s `.gallery-thumb`) fixes #708's card-sizing
+ * bug directly: the rendered SVG's own `viewBox` letterboxes into the
+ * frame via `width:100%;height:100%` plus the SVG default
+ * `preserveAspectRatio="xMidYMid meet"`, so a tall/narrow diagram is
+ * contained instead of blowing out the card.
+ */
+function MoreExamplesSection({
+  items,
+  accent,
+}: {
+  items: readonly GalleryItem[]
+  accent: Accent
+}) {
+  if (items.length === 0) return null
+
+  const visible = items.slice(0, GALLERY_VISIBLE_COUNT)
+  const hidden = items.slice(GALLERY_VISIBLE_COUNT)
+
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE['4xl']}px`,
+        }}
+      >
+        <SectionEyebrow accent={accent}>More examples</SectionEyebrow>
+        <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+          More real-world examples.
+        </h2>
+        <div className="gallery-grid">
+          {visible.map((item) => (
+            <GalleryCard key={item.title} item={item} accent={accent} />
+          ))}
+        </div>
+        {hidden.length > 0 && (
+          <details className="gallery-more">
+            <summary
+              className="pill"
+              style={{
+                background: 'transparent',
+                border: `1px solid ${accentVar(accent)}`,
+                color: accentVar(accent),
+              }}
+            >
+              Show {hidden.length} more example{hidden.length === 1 ? '' : 's'}
+            </summary>
+            <div className="gallery-grid">
+              {hidden.map((item) => (
+                <GalleryCard key={item.title} item={item} accent={accent} />
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /** One diagram-type landing page, e.g. diagrams/flowchart.html. */
 export function DiagramTypePage({
   label,
@@ -749,6 +944,7 @@ export function DiagramTypePage({
   sourcePanelHtml,
   diagramHtml,
   editorHref,
+  galleryItems,
   types,
   themePills,
   themeDataScript,
@@ -989,6 +1185,8 @@ export function DiagramTypePage({
               </div>
             </div>
           </div>
+
+          <MoreExamplesSection items={galleryItems} accent={accent} />
 
           {/* ============ THEME PICKER ============ */}
           <div

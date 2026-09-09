@@ -192,6 +192,22 @@ describe('pages.ts → diagrams/*.html', () => {
           '<pre class="shiki"><code>sequenceDiagram</code></pre>',
         diagramHtml: '<svg data-diagram="sequence"></svg>',
         editorHref: '../editor#eyJzb3VyY2UiOiJ4In0=',
+        // 7 items (> GALLERY_VISIBLE_COUNT's 6) exercises the "Show N
+        // more" <details> branch too, with N=1 covering the singular
+        // "example" (not "examples") wording.
+        galleryItems: [
+          'Actor Stick Figures',
+          'Arrow Types',
+          'Activation Boxes',
+          'Self-Messages',
+          'Loop Block',
+          'Alt/Else Block',
+          'OAuth 2.0 Flow',
+        ].map((title, i) => ({
+          title,
+          diagramHtml: `<svg data-diagram="sequence-gallery-${i}"></svg>`,
+          editorHref: `../editor#gallery-${i}`,
+        })),
         types,
         themePills: createElement(ThemePicker, {
           includeDefault: true,
@@ -227,6 +243,10 @@ describe('pages.ts → diagrams/*.html', () => {
           narrow: '<svg data-diagram="flowchart-n"></svg>',
         },
         editorHref: '../editor#eyJzb3VyY2UiOiJ5In0=',
+        // Empty on purpose -- exercises MoreExamplesSection's "renders
+        // nothing" branch, the other half of what the sequence fixture
+        // above (a non-empty galleryItems) already covers.
+        galleryItems: [],
         types,
         themePills: createElement(ThemePicker, {
           includeDefault: true,
