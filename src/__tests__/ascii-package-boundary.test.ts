@@ -193,10 +193,15 @@ const ALLOWED_OUTSIDE_ASCII = {
   // `style-directives.ts` actually belong to `core` (both moved to
   // `packages/core/` and are now reached the same way as the `core` bucket
   // above — via the bare specifier, invisible here). `expanded-shapes.ts`
-  // belongs to neither `core` nor `svg-renderer` and is still awaiting #624
-  // (`mermaid-parser`), so it's the only one left reachable by relative
-  // import.
-  misclassifiedAsSvgOnly: ['src/expanded-shapes.ts'],
+  // belonged to neither `core` nor `svg-renderer` and was still awaiting
+  // #624 (`mermaid-parser`) — #768 moved it into
+  // `packages/mermaid-parser/src/`, so the ASCII entry now reaches it
+  // through the bare `@zombie-mermaid/mermaid-parser` specifier too,
+  // invisible to this walker. Kept as an empty bucket, not deleted, for the
+  // same reason the `core` bucket above is: a future regression that
+  // reintroduces a *relative* reach-around across the package boundary
+  // should still fail loudly against an explicit list.
+  misclassifiedAsSvgOnly: [],
 } as const
 
 const ALLOWED = [
