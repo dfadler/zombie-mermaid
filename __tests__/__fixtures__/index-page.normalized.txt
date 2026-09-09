@@ -337,7 +337,8 @@
             </div>
             <div class="theme-more-wrapper">
               <button aria-controls="theme-more-dropdown" aria-expanded="false" aria-haspopup="true" aria-label="More themes" class="theme-pill shadow-minimal" id="theme-more-btn">
-                "15 Themes"
+                "15"
+                " Themes"
               </button>
               <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
                 <button class="theme-pill shadow-minimal" data-theme="zinc-light" title="The default look: a plain off-white background with near-black zinc text and no color accent.">
@@ -418,6 +419,9 @@
               </div>
             </div>
           </div>
+          <script id="theme-pills-props" type="application/json">
+            "{\"includeDefault\":false,\"activeThemeKey\":\"dracula\"}"
+          </script>
           <div class="card theme-showcase-diagram" style="width: 100%; max-width: 560px; padding: 28px; display: flex; justify-content: center;">
             <svg aria-labelledby="zm-title-1" height="436.63136" role="img" style="--bg: #282a36; --fg: #f8f8f2; --line: #6272a4; --accent: #bd93f9; --muted: #6272a4; background: var(--bg);" viewBox="0 0 291.87651 436.63136" width="291.87651" xmlns="http://www.w3.org/2000/svg">
               <title id="zm-title-1">

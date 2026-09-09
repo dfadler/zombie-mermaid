@@ -60,7 +60,7 @@ import {
   DIAGRAM_TYPE_PROFILES,
   moreExamplesFor,
 } from './demo/diagram-pages-data.ts'
-import { ThemePicker, DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
+import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import { bundleNavClient } from './demo/build-nav-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
@@ -152,10 +152,6 @@ async function main(): Promise<void> {
   const themesJson = escapeJsonForScriptTag(
     JSON.stringify({ '': DEFAULT_SWATCH, ...THEMES }),
   )
-  const themePills = createElement(ThemePicker, {
-    includeDefault: true,
-    activeThemeKey: DEFAULT_THEME_KEY,
-  })
 
   const sitemapUrls: string[] = [`${SITE_URL}/`, `${SITE_URL}/editor`]
 
@@ -268,7 +264,6 @@ async function main(): Promise<void> {
         editorHref: `../editor#${editorHash(profile.source, DEFAULT_THEME_KEY)}`,
         galleryItems,
         types: typeLinks,
-        themePills,
         themeDataScript,
         clientScriptSrc: 'assets/diagram-page-client.js',
         navClientScript,

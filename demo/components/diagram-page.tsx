@@ -61,6 +61,7 @@ import {
 } from './icons.tsx'
 import { ThemePickerSection } from './theme-picker-section.tsx'
 import { ThemePickerStyle } from './theme-picker.tsx'
+import { ThemePickerIsland } from './theme-picker-island.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
@@ -750,7 +751,6 @@ export interface DiagramTypePageProps {
   galleryItems: readonly GalleryItem[]
   /** Every diagram type (including this page's own), for the crosslink grid. */
   types: readonly DiagramCrosslink[]
-  themePills: ReactNode
   /** The inline `<script>` seeding `window.__diagramPage*`, already escaped. */
   themeDataScript: string
   clientScriptSrc: string
@@ -955,7 +955,6 @@ export function DiagramTypePage({
   editorHref,
   galleryItems,
   types,
-  themePills,
   themeDataScript,
   clientScriptSrc,
   navClientScript,
@@ -1223,18 +1222,16 @@ export function DiagramTypePage({
               >
                 Live in every built-in theme.
               </h2>
-              <div
-                className="theme-pills"
-                id="theme-pills"
+              <ThemePickerIsland
+                includeDefault
+                activeThemeKey=""
                 style={{
                   display: 'flex',
                   flexWrap: 'wrap',
                   gap: `${SPACE.md}px`,
                   alignItems: 'flex-start',
                 }}
-              >
-                {themePills}
-              </div>
+              />
             </div>
           </div>
 

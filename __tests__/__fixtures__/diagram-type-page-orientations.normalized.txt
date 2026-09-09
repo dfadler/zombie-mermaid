@@ -292,7 +292,8 @@
             </div>
             <div class="theme-more-wrapper">
               <button aria-controls="theme-more-dropdown" aria-expanded="false" aria-haspopup="true" aria-label="More themes" class="theme-pill shadow-minimal" id="theme-more-btn">
-                "16 Themes"
+                "16"
+                " Themes"
               </button>
               <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
                 <button class="theme-pill shadow-minimal active" data-theme="">
@@ -378,6 +379,9 @@
               </div>
             </div>
           </div>
+          <script id="theme-pills-props" type="application/json">
+            "{\"includeDefault\":true,\"activeThemeKey\":\"\"}"
+          </script>
         </div>
       </div>
       <div class="section-px" style="padding: 96px 80px; background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">

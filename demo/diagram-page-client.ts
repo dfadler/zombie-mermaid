@@ -22,19 +22,20 @@
  * persistence used to be reimplemented here directly (raw
  * `localStorage['mermaid-theme']` access plus a hand-rolled click/dropdown
  * handler). Both now route through the shared `demo/theme-state.ts`
- * (`getTheme()`/`setTheme()`/`subscribe()`) and `demo/components/
- * theme-bar-client.ts` (`initThemeBar()`) — the same modules #686 built
- * for the (until #687) unwired global `ThemeBar`/`ThemePicker` — so this
- * page's `#theme-pills` markup is no longer a third, independent
- * implementation of the same behavior. What stays here is what those
- * shared modules don't do: re-theming the rendered `<svg>`(s), this page's
- * own legacy `--t-*`/shadow-driven "Try it live" card, and the "Open in the
+ * (`getTheme()`/`setTheme()`/`subscribe()`) and, as of #801,
+ * `demo/theme-bar-client.tsx`'s `hydrateThemeBar()` — the hydrated
+ * `ThemePicker` component itself, not a separate imperative controller — so
+ * this page's `#theme-pills` markup is no longer a third, independent
+ * implementation of the same behavior. What stays here is what that shared
+ * component doesn't do: re-theming the rendered `<svg>`(s), this page's own
+ * legacy `--t-*`/shadow-driven "Try it live" card, and the "Open in the
  * live editor" link's encoded theme. Nav/Footer/cards re-theming (#772) —
  * common to every page, not just this one — is `demo/chrome-theme-
- * client.ts`'s `initChromeTheme()`, called below alongside `initThemeBar()`.
+ * client.ts`'s `initChromeTheme()`, called below alongside
+ * `hydrateThemeBar()`.
  */
 import { getTheme, setTheme, subscribe } from './theme-state.ts'
-import { initThemeBar } from './components/theme-bar-client.ts'
+import { hydrateThemeBar } from './theme-bar-client.tsx'
 import { initChromeTheme } from './chrome-theme-client.ts'
 
 interface DiagramColors {
@@ -173,11 +174,24 @@ function updateEditorLink(themeKey: string): void {
   editorLink.setAttribute('href', `${base}#${hash}`)
 }
 
+/**
+ * As of #801, `getTheme()` directly rather than reading `.theme-pill.active`
+ * from the DOM: `ThemePicker` is now a hydrated React component whose
+ * `active` class only reflects `getTheme()` once its post-hydration
+ * `useEffect` has actually run (an unavoidable one-tick-later property of
+ * hydration itself, not something this file can wait on synchronously) --
+ * so a DOM read here, executed synchronously right after `hydrateThemeBar()`
+ * below, could observe the stale server-rendered default instead of a
+ * returning visitor's real stored theme. `getTheme()` is exactly the value
+ * that effect converges to anyway, with no such timing dependency, and
+ * (like the old DOM read) never actually returns null/undefined -- so
+ * unlike the old code's defensive `?? Object.keys(THEMES)[0]!` (guarding a
+ * "no .active pill found" case a DOM read could theoretically hit but a
+ * direct `getTheme()` call cannot), no fallback is needed here. '' (Default)
+ * is returned as-is, exactly as before.
+ */
 function activeThemeKey(): string {
-  const active = document.querySelector('.theme-pill.active')
-  // The Default pill's data-theme is '' -- `??`, not `||`, so that valid,
-  // falsy key isn't mistaken for "no active pill found" and overridden.
-  return active?.getAttribute('data-theme') ?? Object.keys(THEMES)[0]!
+  return getTheme()
 }
 
 /**
@@ -224,17 +238,17 @@ window.addEventListener('resize', () => {
 })
 
 // -- Pill selection, "More" dropdown, ARIA/keyboard support, and
-//    persistence: all `demo/components/theme-bar-client.ts`'s job now (see
-//    this file's header comment) -- one call wires the `#theme-pills`
-//    markup pages.ts already renders (`ThemePicker`, embedded via the
-//    "Pick a look" section) to `demo/theme-state.ts`.
-initThemeBar()
+//    persistence: all the hydrated `ThemePicker`'s own job now (see this
+//    file's header comment) -- one call hydrates the `#theme-pills` markup
+//    pages.ts already renders (`ThemePickerIsland`, embedded via the
+//    "Pick a look" section) against `demo/theme-state.ts`.
+hydrateThemeBar()
 initChromeTheme(THEMES)
 
 // This page's own re-theming (svg + chrome + editor link) runs on every
 // theme-state change, same-tab or cross-tab, whether it came from a click
-// this page's own initThemeBar() handled or a theme picked on another page
-// entirely (see subscribe()'s doc comment in theme-state.ts).
+// this page's own hydrated ThemePicker handled or a theme picked on another
+// page entirely (see subscribe()'s doc comment in theme-state.ts).
 subscribe(applyTheme)
 
 // -- One-time migration: a visitor who picked a theme on a diagrams page

@@ -15,11 +15,51 @@
  * the pills are simply built by JSX now so the two React page generators
  * that embed them don't have to splice a raw HTML string in.
  *
+ * As of #801, `ThemePicker` is a real hydrated component rather than static
+ * markup wired up after the fact by `demo/components/theme-bar-client.ts`'s
+ * `initThemeBar()` (deleted by this issue): pill selection, the "More"
+ * dropdown, keyboard support, and `theme-state.ts` sync all live here as
+ * `useState`/`useEffect`, driven by the shared `activeKey` state that every
+ * pill (inline and dropdown copies alike) reads for its own `active` class.
+ * `demo/components/theme-picker-island.tsx`'s `ThemePickerIsland` is what a
+ * page generator actually renders — it produces the hydratable markup (via
+ * `renderToString`) plus the JSON props blob `demo/theme-bar-client.tsx`'s
+ * `hydrateThemeBar()` reads to `hydrateRoot()` this same component tree on
+ * the client, exactly mirroring `nav-island.tsx`/`nav-client.tsx`'s
+ * established pattern (zombie-mermaid#800).
+ *
+ * Accessibility: preserves the `aria-expanded`/`aria-haspopup` behavior
+ * fixed for the old picker in #281 (the "More" button's `aria-expanded`
+ * silently drifting from the dropdown's actual open/closed state), plus the
+ * keyboard support `initThemeBar()` added: `Escape` returns focus to the
+ * trigger (not just closes the dropdown), and
+ * `ArrowUp`/`ArrowDown`/`Home`/`End` roam the dropdown's own pills while
+ * it's open. Every real theme pill is a native `<button>`, so `Tab` and
+ * `Enter`/`Space` already work for free without any extra handling here.
+ *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react'
 import { THEMES } from '@zombie-mermaid/core'
 import { THEME_LABELS, THEME_DESCRIPTIONS } from '../theme-labels.ts'
+import {
+  DEFAULT_THEME_KEY,
+  getTheme,
+  setTheme,
+  subscribe,
+} from '../theme-state.ts'
+
+/** The `id` of the hydration root `ThemePickerIsland` renders `#theme-pills` as — load-bearing: a page must render exactly one. */
+export const THEME_PILLS_ROOT_ID = 'theme-pills'
+
+/** The `id` of the `<script type="application/json">` `ThemePickerIsland` embeds its `ThemePickerProps` into, for `hydrateThemeBar()` to read. */
+export const THEME_PILLS_PROPS_ELEMENT_ID = 'theme-pills-props'
 
 /** Themes shown as inline pills; the rest live in the "More" dropdown. */
 export const INLINE_THEMES = new Set(['dracula', 'solarized-light'])
@@ -159,6 +199,8 @@ export interface ThemePillProps {
   themeKey: string
   colors: { bg: string; fg: string }
   active?: boolean
+  /** Fires on click/Enter/Space -- native `<button>` semantics give Enter/Space for free. */
+  onClick?: () => void
 }
 
 /** One theme pill, with a color swatch rendered at build time. */
@@ -166,6 +208,7 @@ export function ThemePill({
   themeKey,
   colors,
   active = false,
+  onClick,
 }: ThemePillProps) {
   const isDark = parseInt(colors.bg.replace('#', '').slice(0, 2), 16) < 0x80
   const shadow = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
@@ -177,6 +220,7 @@ export function ThemePill({
       className={`theme-pill shadow-minimal${active ? ' active' : ''}`}
       data-theme={themeKey}
       title={description}
+      onClick={onClick}
     >
       <span
         className="theme-swatch"
@@ -192,27 +236,125 @@ export function ThemePill({
 
 export interface ThemePickerProps {
   /**
-   * Prepends the "Default" pseudo-theme pill (empty key, always rendered
-   * active) ahead of the real themes.
+   * Prepends the "Default" pseudo-theme pill (empty key) ahead of the real
+   * themes.
    */
   includeDefault: boolean
   /**
-   * Marks a real-theme pill active instead -- only takes effect when
-   * `includeDefault` is false, or when `activeThemeKey` isn't the empty
-   * string the Default pill already occupies, since the Default pill's own
-   * active state doesn't consult it.
+   * Which key starts active. Defaults to `''` (the Default pseudo-theme,
+   * matching `theme-state.ts`'s own `DEFAULT_THEME_KEY`) when omitted --
+   * every current call site with `includeDefault: false` passes an explicit
+   * real key instead (see `ThemeShowcase`, demo/components/index-page.tsx),
+   * since there's no Default pill in that case for the fallback to land on.
    */
   activeThemeKey?: string
 }
 
-/** The theme picker: a few pills inline, every theme in a dropdown. */
+/**
+ * The theme picker: a few pills inline, every theme in a dropdown.
+ *
+ * Interactive as of #801 -- see this file's header comment. `activeKey`
+ * starts from `activeThemeKey` (matching the server-rendered markup exactly,
+ * so hydration has nothing to reconcile) and is resynced from
+ * `theme-state.ts` once mounted, since only the client actually knows the
+ * visitor's stored preference; `theme-state.ts` itself is what a pill click
+ * updates going forward, notifying this same `subscribe()` listener (rather
+ * than this component setting its own state directly on click) so same-tab
+ * and cross-tab updates are handled by exactly one code path.
+ */
 export function ThemePicker({
   includeDefault,
   activeThemeKey,
 }: ThemePickerProps) {
+  const [activeKey, setActiveKey] = useState(
+    activeThemeKey ?? DEFAULT_THEME_KEY,
+  )
+  const [open, setOpen] = useState(false)
+  const moreBtnRef = useRef<HTMLButtonElement>(null)
+
+  // Initial sync + ongoing same-tab/cross-tab updates -- mirrors the old
+  // initThemeBar()'s synchronous `syncActive(getTheme())` call plus its
+  // `subscribe(syncActive)` registration, just as effects instead of
+  // imperative DOM writes.
+  useEffect(() => {
+    setActiveKey(getTheme())
+    return subscribe(setActiveKey)
+  }, [])
+
+  // Escape (global, whenever open -- not scoped to focus, matching the old
+  // document-level listener) and outside-click (scoped to .theme-more-wrapper).
+  useEffect(() => {
+    if (!open) return
+
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key !== 'Escape') return
+      setOpen(false)
+      moreBtnRef.current?.focus()
+    }
+    function onClickOutside(e: MouseEvent): void {
+      const target = e.target
+      if (target instanceof Element && target.closest('.theme-more-wrapper')) {
+        return
+      }
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('click', onClickOutside)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('click', onClickOutside)
+    }
+  }, [open])
+
+  /** A pill was picked -- persist, and close+refocus only if the dropdown was actually open (matches the old closeDropdown()'s own `!isOpen()` early-return). */
+  function pickTheme(themeKey: string): void {
+    setTheme(themeKey)
+    if (open) {
+      setOpen(false)
+      moreBtnRef.current?.focus()
+    }
+  }
+
+  /**
+   * ArrowUp/ArrowDown/Home/End roving navigation among the dropdown's own
+   * pills, scoped to whatever's actually rendered under `e.currentTarget`
+   * (the dropdown wrapper this handler is attached to) -- same technique
+   * `initThemeBar()`'s `onDropdownKeydown` used, just reading from the
+   * event target instead of a captured DOM reference.
+   */
+  function onDropdownKeyDown(e: ReactKeyboardEvent<HTMLDivElement>): void {
+    const items = Array.from(
+      e.currentTarget.querySelectorAll<HTMLElement>('.theme-pill[data-theme]'),
+    )
+    if (items.length === 0) return
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement)
+    let nextIndex: number | null = null
+    if (e.key === 'ArrowDown') {
+      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
+    } else if (e.key === 'ArrowUp') {
+      nextIndex =
+        currentIndex < 0
+          ? items.length - 1
+          : (currentIndex - 1 + items.length) % items.length
+    } else if (e.key === 'Home') {
+      nextIndex = 0
+    } else if (e.key === 'End') {
+      nextIndex = items.length - 1
+    }
+    if (nextIndex === null) return
+    e.preventDefault()
+    items[nextIndex]!.focus()
+  }
+
   const themeEntries = Object.entries(THEMES)
   const defaultPill = includeDefault ? (
-    <ThemePill key="" themeKey="" colors={DEFAULT_SWATCH} active />
+    <ThemePill
+      key=""
+      themeKey=""
+      colors={DEFAULT_SWATCH}
+      active={activeKey === ''}
+      onClick={() => pickTheme('')}
+    />
   ) : null
 
   const pill = ([themeKey, colors]: [string, { bg: string; fg: string }]) => (
@@ -220,7 +362,8 @@ export function ThemePicker({
       key={themeKey}
       themeKey={themeKey}
       colors={colors}
-      active={themeKey === activeThemeKey}
+      active={themeKey === activeKey}
+      onClick={() => pickTheme(themeKey)}
     />
   )
 
@@ -238,18 +381,21 @@ export function ThemePicker({
       </div>
       <div className="theme-more-wrapper">
         <button
+          ref={moreBtnRef}
           className="theme-pill shadow-minimal"
           id="theme-more-btn"
           aria-label="More themes"
           aria-haspopup="true"
           aria-controls="theme-more-dropdown"
-          aria-expanded="false"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
         >
           {dropdownCount} Themes
         </button>
         <div
-          className="theme-more-dropdown shadow-modal-small"
+          className={`theme-more-dropdown shadow-modal-small${open ? ' open' : ''}`}
           id="theme-more-dropdown"
+          onKeyDown={onDropdownKeyDown}
         >
           {defaultPill}
           {dropdownPills}

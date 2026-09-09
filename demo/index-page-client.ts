@@ -7,9 +7,9 @@
  * Three concerns, each mirroring an existing pattern elsewhere on the site
  * rather than inventing a new one:
  *
- * 1. **Pill wiring + persistence** — `initThemeBar()`
- *    (`demo/components/theme-bar-client.ts`), the same call every other
- *    page's `demo/theme-bar-only-client.ts` makes.
+ * 1. **Pill wiring + persistence** — `hydrateThemeBar()`
+ *    (`demo/theme-bar-client.tsx`), the same call every other page's
+ *    `demo/theme-bar-only-client.ts` makes (#801).
  * 2. **Re-theming** — every `demo/theme-state.ts` change (this page's own
  *    pill click, or one made on another page/tab) re-themes the showcase's
  *    live `<svg>` (`applyThemeToShowcaseDiagram`, the same "swap CSS custom
@@ -36,7 +36,7 @@
  *    position in that case.
  */
 import { getTheme, subscribe } from './theme-state.ts'
-import { initThemeBar } from './components/theme-bar-client.ts'
+import { hydrateThemeBar } from './theme-bar-client.tsx'
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES } from '@zombie-mermaid/core'
 
@@ -84,10 +84,10 @@ function applyThemeToShowcaseDiagram(themeKey: string): void {
 }
 
 // -- Pill selection, "More" dropdown, ARIA/keyboard support, and
-//    persistence: demo/components/theme-bar-client.ts's job (see this
-//    file's header comment) -- wires the #theme-pills markup ThemeShowcase
-//    already renders to demo/theme-state.ts.
-initThemeBar()
+//    persistence: the hydrated ThemePicker's own job (see this file's
+//    header comment) -- hydrates the #theme-pills markup ThemeShowcase
+//    already renders against demo/theme-state.ts.
+hydrateThemeBar()
 
 // Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job.
 // initChromeTheme() applies whatever theme is already stored immediately
