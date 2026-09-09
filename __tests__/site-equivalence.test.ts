@@ -191,6 +191,15 @@ describe('pages.ts → diagrams/*.html', () => {
           '<pre class="shiki"><code>sequenceDiagram</code></pre>',
         diagramHtml: '<svg data-diagram="sequence"></svg>',
         editorHref: '../editor#eyJzb3VyY2UiOiJ4In0=',
+        moreExamples: [
+          {
+            title: 'Basic Messages',
+            descriptionHtml: 'A request and its reply.',
+            sourceHtml:
+              '<pre class="shiki"><code>sequenceDiagram\nA-&gt;&gt;B: Hi</code></pre>',
+            diagramHtml: '<svg data-diagram="sequence-more-1"></svg>',
+          },
+        ],
         types,
         themePills: createElement(ThemePicker, {
           includeDefault: true,
@@ -226,6 +235,7 @@ describe('pages.ts → diagrams/*.html', () => {
           narrow: '<svg data-diagram="flowchart-n"></svg>',
         },
         editorHref: '../editor#eyJzb3VyY2UiOiJ5In0=',
+        moreExamples: [],
         types,
         themePills: createElement(ThemePicker, {
           includeDefault: true,

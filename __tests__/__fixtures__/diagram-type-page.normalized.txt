@@ -45,7 +45,7 @@
       "@media (max-width: 900px) {\n  .section-px {\n    padding-left: 32px !important;\n    padding-right: 32px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr 1fr !important;\n  }\n}\n\n@media (max-width: 600px) {\n  .section-px {\n    padding-left: 20px !important;\n    padding-right: 20px !important;\n  }\n\n  .footer-grid {\n    grid-template-columns: 1fr !important;\n  }\n\n  .footer-bottom-row {\n    flex-direction: column !important;\n    align-items: flex-start !important;\n    gap: 8px !important;\n  }\n}"
     </style>
     <style>
-      "@keyframes marchingAnts { to { stroke-dashoffset: -24; } }\n.edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }\n\n@keyframes radarPing {\n  0% { r: 14; opacity: 0.55; stroke-width: 2; }\n  100% { r: 27; opacity: 0; stroke-width: 0.5; }\n}\n.radar-ping { transform-origin: center; animation: radarPing 1.8s ease-out infinite; }\n\n@keyframes msgFlowRight { to { stroke-dashoffset: -16; } }\n@keyframes msgFlowLeft { to { stroke-dashoffset: 16; } }\n.msg-flow-right { stroke-dasharray: 4 4; animation: msgFlowRight 1.1s linear infinite; }\n.msg-flow-left { stroke-dasharray: 4 4; animation: msgFlowLeft 1.1s linear 0.55s infinite; }\n\n@keyframes drawLine {\n  0% { stroke-dashoffset: 56; }\n  55%, 100% { stroke-dashoffset: 0; }\n}\n.draw-line { stroke-dasharray: 56; animation: drawLine 2.8s ease-in-out infinite; }\n\n@keyframes relationPulse {\n  0%, 100% { opacity: 0.45; stroke-width: 2; }\n  50% { opacity: 1; stroke-width: 3; }\n}\n.relation-pulse { transform-origin: center; animation: relationPulse 1.8s ease-in-out infinite; }\n\n@keyframes barGrow {\n  0%, 100% { transform: scaleY(1); }\n  50% { transform: scaleY(0.4); }\n}\n.bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }\n\n@media (prefers-reduced-motion: reduce) {\n  .edge-anim { animation: none; }\n  .radar-ping { animation: none; opacity: 0; }\n  .msg-flow-right { animation: none; }\n  .msg-flow-left { animation: none; }\n  .draw-line { animation: none; stroke-dashoffset: 0; }\n  .relation-pulse { animation: none; }\n  .bar-grow { animation: none; transform: scaleY(1); }\n}\n\n.breadcrumb {\n  font-size: 14px;\n  color: var(--text-faint);\n}\n.breadcrumb .sep {\n  margin: 0 10px;\n  color: var(--text-faint);\n}\n\n.code-card { overflow: hidden; display: flex; flex-direction: column; }\n\n.crosslink-card {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 12px;\n  text-decoration: none;\n}\n.crosslink-card:hover { color: var(--text); }\n\n.shiki { background: transparent !important; }\n\n@media (max-width: 900px) {\n  .detail-row { flex-direction: column !important; }\n  /*\n   * .code-card and .diagram-frame both get an inline flex: '1 1 0' (see\n   * the DiagramTypePage markup below) to split .detail-row's width evenly\n   * side-by-side above this breakpoint. Once .detail-row flips to a\n   * column here, that flex-basis: 0 combines with .code-card's\n   * overflow: hidden to collapse it to ~0 height: a flex item's\n   * automatic min-height (min-height: auto, letting it grow to fit\n   * content) is spec'd to resolve to 0 whenever overflow isn't visible\n   * (https://www.w3.org/TR/css-flexbox-1/#min-size-auto), so with no\n   * explicit height on .detail-row to grow into, the item shrinks to\n   * nothing instead of sizing to its content. overflow: hidden stays on\n   * .code-card (it clips the file-tab header's square corners to the\n   * card's own rounded ones) rather than being removed, and .diagram-frame\n   * doesn't set overflow so it never hit this; only .code-card needs the\n   * override. Switching to flex-basis: auto sizes both from their content\n   * instead of 0, which sidesteps the automatic-minimum substitution\n   * entirely rather than fighting it with a magic-number min-height.\n   */\n  .code-card, .diagram-frame { flex: 1 1 auto !important; }\n}\n\n@media (max-width: 600px) {\n  .page-h1 { font-size: 34px !important; }\n}"
+      "@keyframes marchingAnts { to { stroke-dashoffset: -24; } }\n.edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }\n\n@keyframes radarPing {\n  0% { r: 14; opacity: 0.55; stroke-width: 2; }\n  100% { r: 27; opacity: 0; stroke-width: 0.5; }\n}\n.radar-ping { transform-origin: center; animation: radarPing 1.8s ease-out infinite; }\n\n@keyframes msgFlowRight { to { stroke-dashoffset: -16; } }\n@keyframes msgFlowLeft { to { stroke-dashoffset: 16; } }\n.msg-flow-right { stroke-dasharray: 4 4; animation: msgFlowRight 1.1s linear infinite; }\n.msg-flow-left { stroke-dasharray: 4 4; animation: msgFlowLeft 1.1s linear 0.55s infinite; }\n\n@keyframes drawLine {\n  0% { stroke-dashoffset: 56; }\n  55%, 100% { stroke-dashoffset: 0; }\n}\n.draw-line { stroke-dasharray: 56; animation: drawLine 2.8s ease-in-out infinite; }\n\n@keyframes relationPulse {\n  0%, 100% { opacity: 0.45; stroke-width: 2; }\n  50% { opacity: 1; stroke-width: 3; }\n}\n.relation-pulse { transform-origin: center; animation: relationPulse 1.8s ease-in-out infinite; }\n\n@keyframes barGrow {\n  0%, 100% { transform: scaleY(1); }\n  50% { transform: scaleY(0.4); }\n}\n.bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }\n\n@media (prefers-reduced-motion: reduce) {\n  .edge-anim { animation: none; }\n  .radar-ping { animation: none; opacity: 0; }\n  .msg-flow-right { animation: none; }\n  .msg-flow-left { animation: none; }\n  .draw-line { animation: none; stroke-dashoffset: 0; }\n  .relation-pulse { animation: none; }\n  .bar-grow { animation: none; transform: scaleY(1); }\n}\n\n.breadcrumb {\n  font-size: 14px;\n  color: var(--text-faint);\n}\n.breadcrumb .sep {\n  margin: 0 10px;\n  color: var(--text-faint);\n}\n\n.code-card { overflow: hidden; display: flex; flex-direction: column; }\n\n.crosslink-card {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 12px;\n  text-decoration: none;\n}\n.crosslink-card:hover { color: var(--text); }\n\n.shiki { background: transparent !important; }\n\n/*\n * Overrides the legacy demo/diagram-page.css's .diagram-frame (box-shadow,\n * overflow: hidden, its own border/radius) that .example-render also\n * carries for the free 'svg { width: 100%; height: auto }' rule (see the\n * className comment at its call site) -- this card already gets its\n * border/radius/background from the inline style prop, so the legacy\n * class's own copies would otherwise nest a mismatched box inside it, the\n * same clash .source-panel resolves for the featured panel above.\n */\n.example-render.diagram-frame { box-shadow: none; overflow: visible; }\n.example-render svg { max-width: 100%; }\n\n.example-source summary { list-style: revert; }\n.example-source summary:hover { color: var(--text-dim); }\n.example-source pre { margin: 0; overflow-x: auto; }\n\n@media (max-width: 900px) {\n  .detail-row { flex-direction: column !important; }\n  /*\n   * .code-card and .diagram-frame both get an inline flex: '1 1 0' (see\n   * the DiagramTypePage markup below) to split .detail-row's width evenly\n   * side-by-side above this breakpoint. Once .detail-row flips to a\n   * column here, that flex-basis: 0 combines with .code-card's\n   * overflow: hidden to collapse it to ~0 height: a flex item's\n   * automatic min-height (min-height: auto, letting it grow to fit\n   * content) is spec'd to resolve to 0 whenever overflow isn't visible\n   * (https://www.w3.org/TR/css-flexbox-1/#min-size-auto), so with no\n   * explicit height on .detail-row to grow into, the item shrinks to\n   * nothing instead of sizing to its content. overflow: hidden stays on\n   * .code-card (it clips the file-tab header's square corners to the\n   * card's own rounded ones) rather than being removed, and .diagram-frame\n   * doesn't set overflow so it never hit this; only .code-card needs the\n   * override. Switching to flex-basis: auto sizes both from their content\n   * instead of 0, which sidesteps the automatic-minimum substitution\n   * entirely rather than fighting it with a magic-number min-height.\n   */\n  .code-card, .diagram-frame { flex: 1 1 auto !important; }\n}\n\n@media (max-width: 600px) {\n  .page-h1 { font-size: 34px !important; }\n}"
     </style>
   </head>
   <body>
@@ -162,9 +162,45 @@
                 </path>
               </svg>
             </a>
-            <a class="pill" href="../#samples-heading" style="background: var(--panel); border: 1px solid var(--cyan); color: var(--cyan);">
-              "See all samples"
+            <a class="pill" href="#more-examples" style="background: var(--panel); border: 1px solid var(--cyan); color: var(--cyan);">
+              "See more examples"
             </a>
+          </div>
+        </div>
+      </div>
+      <div class="section-px" id="more-examples" style="padding: 96px 80px;">
+        <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 32px;">
+          <div class="section-eyebrow" style="color: var(--cyan);">
+            "1 more example"
+          </div>
+          <h2 style="font-size: 30px; letter-spacing: -0.01em;">
+            "More Sequence diagram examples."
+          </h2>
+          <div class="example-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 28px;">
+            <div class="card example-card" style="border-color: var(--cyan); display: flex; flex-direction: column; gap: 14px; padding: 24px;">
+              <div>
+                <h3 style="font-size: 20px; margin-bottom: 8px;">
+                  "Basic Messages"
+                </h3>
+                <p class="example-desc" style="font-size: 14px; line-height: 1.55; color: var(--text-dim); margin: 0px;">
+                  "A request and its reply."
+                </p>
+              </div>
+              <div class="example-render diagram-frame" style="background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-height: 140px; display: flex; align-items: center; justify-content: center;">
+                <svg data-diagram="sequence-more-1">
+                </svg>
+              </div>
+              <details class="example-source">
+                <summary class="mono" style="cursor: pointer; font-size: 12px; color: var(--text-faint);">
+                  "View source"
+                </summary>
+                <div style="margin-top: 12px; font-size: 12px;">
+                  <pre class="shiki">
+                    "sequenceDiagram\nA->>B: Hi"
+                  </pre>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
       </div>

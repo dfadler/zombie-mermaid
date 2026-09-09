@@ -44,15 +44,23 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import * as esbuild from 'esbuild'
 import { createElement } from 'react'
-import { escapeHtml, escapeJsonForScriptTag } from './demo/format.ts'
+import {
+  escapeHtml,
+  escapeJsonForScriptTag,
+  formatDescription,
+} from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import {
   DiagramHubPage,
   DiagramTypePage,
+  type MoreExampleCard,
   type OrientationVariants,
 } from './demo/components/diagram-page.tsx'
 import { THEMES } from '@zombie-mermaid/core'
-import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
+import {
+  DIAGRAM_TYPE_PROFILES,
+  moreExamplesFor,
+} from './demo/diagram-pages-data.ts'
 import { ThemePicker, DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { renderMermaidSVG } from './src/index.ts'
 import type { RenderOptions } from './src/index.ts'
@@ -229,6 +237,21 @@ async function main(): Promise<void> {
     const canonical = `${SITE_URL}/diagrams/${profile.slug}.html`
     sitemapUrls.push(canonical)
 
+    // "More examples": every other samples-data.ts sample in this type's
+    // category, rendered the same way the featured example above is —
+    // static SVG, default colors, no orientation-variant swap (these are a
+    // supplementary grid, not the page's primary showcase, so one rendering
+    // per sample is enough; see demo/components/diagram-page.tsx's
+    // `MoreExamplesSection` for why that simplification is safe here).
+    const moreExamples: MoreExampleCard[] = moreExamplesFor(profile).map(
+      (sample) => ({
+        title: sample.title,
+        descriptionHtml: formatDescription(sample.description),
+        sourceHtml: highlightSource(sample.source),
+        diagramHtml: renderDiagram(sample.source),
+      }),
+    )
+
     const sourceJson = escapeJsonForScriptTag(JSON.stringify(profile.source))
     const narrowSourceJson = escapeJsonForScriptTag(
       JSON.stringify(narrowSource),
@@ -251,6 +274,7 @@ async function main(): Promise<void> {
         sourcePanelHtml: sourcePanelMarkup,
         diagramHtml: diagramMarkup,
         editorHref: `../editor#${editorHash(profile.source, DEFAULT_THEME_KEY)}`,
+        moreExamples,
         types: typeLinks,
         themePills,
         themeDataScript,

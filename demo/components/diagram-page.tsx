@@ -64,6 +64,7 @@ import {
   LAYOUT,
   LETTER_SPACING,
   MEDIA,
+  RADIUS,
   SECTION_SPACE,
   SPACE,
   colorVar,
@@ -170,6 +171,173 @@ function OrientationBlock({
 export interface DiagramTypeLink {
   slug: string
   label: string
+}
+
+/**
+ * One card in the "More examples" gallery (see {@link MoreExamplesSection}):
+ * a samples-data.ts sample besides the type's own featured "Source →
+ * render" example, pre-rendered by pages.ts the same way that example is —
+ * `descriptionHtml` is `formatDescription` output, `sourceHtml` is
+ * shiki-highlighted Mermaid, and `diagramHtml` is a static rendered SVG
+ * (`interactivity: 'none'`, no wide/narrow orientation swap — a supplementary
+ * grid card doesn't need the featured panel's full treatment).
+ */
+export interface MoreExampleCard {
+  title: string
+  descriptionHtml: string
+  sourceHtml: string
+  diagramHtml: string
+}
+
+/** One card in the {@link MoreExamplesSection} grid: title, description, rendered diagram, and collapsible source. */
+function ExampleCard({
+  card,
+  accent,
+}: {
+  card: MoreExampleCard
+  accent: Accent
+}) {
+  return (
+    <Card
+      accent={accent}
+      className="example-card"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: `${SPACE.lg}px`,
+        padding: `${SPACE['3xl']}px`,
+      }}
+    >
+      <div>
+        <h3
+          style={{
+            fontSize: `${FONT_SIZE.subhead}px`,
+            marginBottom: `${SPACE.xs}px`,
+          }}
+        >
+          {card.title}
+        </h3>
+        <p
+          className="example-desc"
+          style={{
+            fontSize: `${FONT_SIZE.bodySm}px`,
+            lineHeight: 1.55,
+            color: colorVar('--text-dim'),
+            margin: 0,
+          }}
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time formatDescription output over samples-data.ts prose, never user input (see the file header)
+          dangerouslySetInnerHTML={{ __html: card.descriptionHtml }}
+        />
+      </div>
+      <div
+        // "diagram-frame" pulls in the legacy demo/diagram-page.css's
+        // `.diagram-frame svg { width: 100%; height: auto }` (still loaded
+        // via this page's `cssHref` — see DiagramTypePageProps' doc comment)
+        // so this card's SVG scales to fit without its own copy of that
+        // rule; `example-render` overrides the legacy class's border/shadow
+        // below in `pageCss`, the same pattern the featured panel already
+        // reconciles for `.source-panel`.
+        className="example-render diagram-frame"
+        style={{
+          background: colorVar('--bg'),
+          border: `1px solid ${colorVar('--border')}`,
+          borderRadius: `${RADIUS.lg}px`,
+          padding: `${SPACE.xl}px`,
+          minHeight: '140px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+        dangerouslySetInnerHTML={{ __html: card.diagramHtml }}
+      />
+      <details className="example-source">
+        <summary
+          className="mono"
+          style={{
+            cursor: 'pointer',
+            fontSize: `${FONT_SIZE.caption}px`,
+            color: colorVar('--text-faint'),
+          }}
+        >
+          View source
+        </summary>
+        <div
+          style={{
+            marginTop: `${SPACE.md}px`,
+            fontSize: `${FONT_SIZE.caption}px`,
+          }}
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time shiki output, never user input (see the file header)
+          dangerouslySetInnerHTML={{ __html: card.sourceHtml }}
+        />
+      </details>
+    </Card>
+  )
+}
+
+/**
+ * The "More examples" gallery: every other samples-data.ts sample in this
+ * type's own category, restoring the depth the pre-#590 home page showed
+ * grouped by category before #600 replaced it with one hero example per
+ * type page (see demo/diagram-pages-data.ts's `moreExamplesFor`). Renders
+ * nothing when `cards` is empty, so a type with no additional samples never
+ * shows a hollow section.
+ */
+function MoreExamplesSection({
+  cards,
+  accent,
+  label,
+}: {
+  cards: readonly MoreExampleCard[]
+  accent: Accent
+  label: string
+}) {
+  if (cards.length === 0) return null
+  return (
+    <div
+      id="more-examples"
+      className="section-px"
+      style={{
+        padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE['5xl']}px`,
+        }}
+      >
+        <SectionEyebrow accent={accent}>
+          {cards.length} more {cards.length === 1 ? 'example' : 'examples'}
+        </SectionEyebrow>
+        <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+          {/* `label` as-is, not lowercased: "ER diagram" would otherwise
+              read as "er diagram", since ER is an initialism rather than a
+              capitalized common noun like "Flowchart"/"Sequence diagram". */}
+          More {label} examples.
+        </h2>
+        <div
+          className="example-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: `${SPACE['4xl']}px`,
+          }}
+        >
+          {cards.map((card, index) => (
+            <ExampleCard
+              key={`${index}-${card.title}`}
+              card={card}
+              accent={accent}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /* -----------------------------------------------------------------
@@ -589,6 +757,22 @@ ${MEDIA.reducedMotion} {
 
 .shiki { background: transparent !important; }
 
+/*
+ * Overrides the legacy demo/diagram-page.css's .diagram-frame (box-shadow,
+ * overflow: hidden, its own border/radius) that .example-render also
+ * carries for the free 'svg { width: 100%; height: auto }' rule (see the
+ * className comment at its call site) -- this card already gets its
+ * border/radius/background from the inline style prop, so the legacy
+ * class's own copies would otherwise nest a mismatched box inside it, the
+ * same clash .source-panel resolves for the featured panel above.
+ */
+.example-render.diagram-frame { box-shadow: none; overflow: visible; }
+.example-render svg { max-width: 100%; }
+
+.example-source summary { list-style: revert; }
+.example-source summary:hover { color: ${colorVar('--text-dim')}; }
+.example-source pre { margin: 0; overflow-x: auto; }
+
 ${MEDIA.tablet} {
   .detail-row { flex-direction: column !important; }
   /*
@@ -664,6 +848,8 @@ export interface DiagramTypePageProps {
   diagramHtml: OrientationVariants
   /** `../editor#<base64 payload>` — see pages.ts's `editorHash`. */
   editorHref: string
+  /** The "More examples" gallery — see {@link MoreExamplesSection}. Empty renders no section. */
+  moreExamples: readonly MoreExampleCard[]
   /** Every diagram type (including this page's own), for the crosslink grid. */
   types: readonly DiagramCrosslink[]
   themePills: ReactNode
@@ -752,6 +938,7 @@ export function DiagramTypePage({
   sourcePanelHtml,
   diagramHtml,
   editorHref,
+  moreExamples,
   types,
   themePills,
   themeDataScript,
@@ -977,17 +1164,26 @@ export function DiagramTypePage({
                 >
                   Open in the live editor
                 </CTA>
-                <CTA
-                  href="../#samples-heading"
-                  accent={accent}
-                  variant="ghost"
-                  arrow={false}
-                >
-                  See all samples
-                </CTA>
+                {moreExamples.length > 0 ? (
+                  <CTA
+                    href="#more-examples"
+                    accent={accent}
+                    variant="ghost"
+                    arrow={false}
+                  >
+                    See more examples
+                  </CTA>
+                ) : null}
               </div>
             </div>
           </div>
+
+          {/* ============ MORE EXAMPLES ============ */}
+          <MoreExamplesSection
+            cards={moreExamples}
+            accent={accent}
+            label={label}
+          />
 
           {/* ============ THEME PICKER ============ */}
           <div
