@@ -49,6 +49,7 @@ import {
 } from './primitives.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
 import {
+  ChevronRightIcon,
   ClassIcon,
   ErIcon,
   FlowchartIcon,
@@ -568,11 +569,10 @@ ${MEDIA.reducedMotion} {
 }
 
 .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: ${SPACE.sm}px;
   font-size: ${FONT_SIZE.bodySm}px;
-  color: ${colorVar('--text-faint')};
-}
-.breadcrumb .sep {
-  margin: 0 ${SPACE.sm}px;
   color: ${colorVar('--text-faint')};
 }
 
@@ -725,9 +725,9 @@ function DetailBreadcrumb({
   return (
     <div className="breadcrumb mono">
       <a href={HOME_HREF}>Home</a>
-      <span className="sep">/</span>
+      <ChevronRightIcon size={12} strokeWidth={2.4} />
       <a href={NAV_HREFS.diagrams}>Diagrams</a>
-      <span className="sep">/</span>
+      <ChevronRightIcon size={12} strokeWidth={2.4} />
       <span style={{ color: accentVar(accent) }}>{label}</span>
     </div>
   )
@@ -1137,11 +1137,10 @@ const AMBER_CTA_INK = '#241703'
  */
 function hubPageCss(): string {
   return `.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: ${SPACE.sm}px;
   font-size: ${FONT_SIZE.bodySm}px;
-  color: ${colorVar('--text-faint')};
-}
-.breadcrumb .sep {
-  margin: 0 ${SPACE.sm}px;
   color: ${colorVar('--text-faint')};
 }
 
@@ -1166,7 +1165,7 @@ function HubBreadcrumb() {
   return (
     <div className="breadcrumb mono">
       <a href={HOME_HREF}>Home</a>
-      <span className="sep">/</span>
+      <ChevronRightIcon size={12} strokeWidth={2.4} />
       <span style={{ color: colorVar('--text-dim') }}>Diagrams</span>
     </div>
   )

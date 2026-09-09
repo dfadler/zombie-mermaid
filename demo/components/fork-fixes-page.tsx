@@ -47,6 +47,7 @@ import { Nav, NavCopyScript } from './nav.tsx'
 import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   CheckIcon,
+  ChevronRightIcon,
   CommitIcon,
   ExternalLinkIcon,
   FrameIcon,
@@ -885,7 +886,7 @@ export function ForkFixesPage({
               <a href="index.html" style={{ color: colorVar('--text-faint') }}>
                 Home
               </a>
-              <span style={{ color: colorVar('--text-faint') }}>/</span>
+              <ChevronRightIcon size={12} strokeWidth={2.4} />
               <span style={{ color: colorVar('--text-dim') }}>Fork fixes</span>
             </div>
 
