@@ -41,6 +41,27 @@ import {
 // ============================================================================
 
 /**
+ * The set of relationship-arrow tokens `parseRelationship` recognizes,
+ * shared with the "does this line even look like a relationship attempt"
+ * check below so the two can't drift apart. Order matters for regex
+ * alternation (longer/more-specific tokens like `--|>` must be tried before
+ * the bare `--` fallback).
+ */
+const RELATIONSHIP_ARROW_SOURCE =
+  '<\\|--|<\\|\\.\\.|\\*--|o--|-->|--\\*|--o|--\\|>|\\.\\.>|\\.\\.\\|>|<--|<\\.\\.?|--'
+
+/**
+ * Matches a line that *contains* a relationship-arrow token somewhere, even
+ * if the overall shape (FROM/TO, cardinalities) doesn't parse. Used to
+ * scope the "malformed relationship" error (issue #761) to lines that
+ * already look like an attempt at this construct — mirroring the same
+ * "attempt, then validate" pattern #722 used for the ER and xychart-beta
+ * parsers, so a genuinely unrelated line (no arrow at all) still falls
+ * through silently rather than throwing on totally unrecognized syntax.
+ */
+const RELATIONSHIP_ARROW_MARKER = new RegExp(RELATIONSHIP_ARROW_SOURCE)
+
+/**
  * Parse a Mermaid class diagram.
  * Expects the first line to be "classDiagram".
  */
@@ -75,6 +96,10 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
   // Track class body parsing
   let currentClass: ClassNode | null = null
   let braceDepth = 0
+  // Line the currently-open class body started on, for the unclosed-body
+  // error below (issue #761) — `currentClass`/`braceDepth` alone don't
+  // carry position.
+  let openClassLine: number | undefined
 
   for (let i = 1; i < lines.length; i++) {
     const stmt = lines[i]!
@@ -86,6 +111,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
         braceDepth--
         if (braceDepth === 0) {
           currentClass = null
+          openClassLine = undefined
         }
         continue
       }
@@ -97,8 +123,18 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
         continue
       }
 
+      // A line that starts with `<<` but doesn't match the full
+      // `<<name>>` shape is an attempted annotation with broken syntax
+      // (e.g. a missing closing `>>`) rather than a member — surface that
+      // instead of silently mis-parsing it as a member named "<<foo" (#761).
+      if (line.startsWith('<<')) {
+        throw new Error(
+          `Line ${stmt.line}: Malformed class annotation "${line}" — expected "<<name>>" (e.g. "<<interface>>").`,
+        )
+      }
+
       // Parse member: visibility, name, type, optional parens for method
-      addMember(currentClass, line)
+      addMember(currentClass, line, stmt.line)
       continue
     }
 
@@ -157,6 +193,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       const id = declareClass(classBlockMatch[1]!, classBlockMatch[2])
       currentClass = classMap.get(id) ?? null
       braceDepth = 1
+      openClassLine = stmt.line
       continue
     }
 
@@ -179,8 +216,14 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       const annotMatch = body.match(/^<<(\w+)>>$/)
       if (cls && annotMatch) {
         cls.annotation = annotMatch[1]!
+      } else if (cls && body.startsWith('<<')) {
+        // Same broken-annotation-attempt case as the multi-line body
+        // branch above, just on the single-line form (#761).
+        throw new Error(
+          `Line ${stmt.line}: Malformed class annotation "${body}" — expected "<<name>>" (e.g. "<<interface>>").`,
+        )
       } else if (cls && body) {
-        addMember(cls, body)
+        addMember(cls, body, stmt.line)
       }
       continue
     }
@@ -191,7 +234,7 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       // Make sure this isn't a relationship line (those have arrows)
       const rest = inlineAttrMatch[2]!
       if (!rest.match(/<\|--|--|\*--|o--|-->|\.\.>|\.\.\|>/)) {
-        addMember(ensureClass(classMap, inlineAttrMatch[1]!), rest)
+        addMember(ensureClass(classMap, inlineAttrMatch[1]!), rest, stmt.line)
         continue
       }
     }
@@ -211,6 +254,25 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
       diagram.relationships.push(rel)
       continue
     }
+
+    // A line containing a relationship-arrow token that still didn't parse
+    // above is a malformed/dangling relationship attempt — e.g. "Animal
+    // <|--" with no target, or an unsupported arrow shape — rather than an
+    // unrelated line that merely falls through. Scoped to lines that
+    // already look like an attempt (same "attempt, then validate" pattern
+    // #722 used for ER/xychart-beta) so genuinely unrecognized syntax with
+    // no arrow at all keeps falling through silently (#761).
+    if (RELATIONSHIP_ARROW_MARKER.test(line)) {
+      throw new Error(
+        `Line ${stmt.line}: Malformed class-diagram relationship "${line}". Expected "FROM ARROW TO" (optionally with cardinalities and a ": label"), e.g. "Animal <|-- Dog" or 'A "1" --> "*" B : label'. ARROW must be one of <|--, <|.., *--, o--, -->, --*, --o, --|>, ..>, ..|>, <--, <.., or --.`,
+      )
+    }
+  }
+
+  if (currentClass !== null) {
+    throw new Error(
+      `Line ${openClassLine}: Unclosed class body for "${currentClass.id}" — expected a closing "}" before the diagram ends.`,
+    )
   }
 
   diagram.classes = [...classMap.values()]
@@ -260,8 +322,8 @@ export function parseClassDiagram(lines: Statement[]): ClassDiagram {
 }
 
 /** Parse one member line and file it under the class's attributes or methods. */
-function addMember(cls: ClassNode, line: string): void {
-  const member = parseMember(line)
+function addMember(cls: ClassNode, line: string, lineNumber: number): void {
+  const member = parseMember(line, lineNumber)
   if (!member) return
   if (member.isMethod) {
     cls.methods.push(member.member)
@@ -353,6 +415,7 @@ export function parseGenericTypes(input: string): string {
 /** Parse a class member line (attribute or method) */
 function parseMember(
   line: string,
+  lineNumber: number,
 ): { member: ClassMember; isMethod: boolean } | null {
   const trimmed = line.trim().replace(/;$/, '')
   if (!trimmed) return null
@@ -369,6 +432,17 @@ function parseMember(
   ) {
     visibility = visibilityChar
     rest = rest.slice(1).trim()
+  }
+
+  // An attempted method signature with an opening "(" but no closing ")"
+  // at all can't be a genuine attribute either (an attribute name/type
+  // never legitimately contains a bare, unclosed paren) — surface it
+  // instead of silently parsing "eat(void" as a member literally named
+  // that (#761).
+  if (rest.includes('(') && !rest.includes(')')) {
+    throw new Error(
+      `Line ${lineNumber}: Malformed class member "${trimmed}" — unclosed "(" in a method signature. Expected e.g. "+eat() void" or "+eat(Food f) void".`,
+    )
   }
 
   // Mermaid renders `List~Observer~` as `List<Observer>` (its own
@@ -442,7 +516,9 @@ function parseRelationship(line: string): ClassRelationship | null {
   // label separator that follows can't swallow it as a label of `::style`;
   // it's re-joined onto the id here and split off again by the caller.
   const match = line.match(
-    /^(\S+?)\s+(?:"([^"]*?)"\s+)?(<\|--|<\|\.\.|\*--|o--|-->|--\*|--o|--\|>|\.\.>|\.\.\|>|<--|<\.\.?|--)\s+(?:"([^"]*?)"\s+)?(\S+?)(?::::([\w][\w-]*))?(?:\s*:\s*(.+))?$/,
+    new RegExp(
+      `^(\\S+?)\\s+(?:"([^"]*?)"\\s+)?(${RELATIONSHIP_ARROW_SOURCE})\\s+(?:"([^"]*?)"\\s+)?(\\S+?)(?::::([\\w][\\w-]*))?(?:\\s*:\\s*(.+))?$`,
+    ),
   )
   if (!match) return null
 
