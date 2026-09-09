@@ -249,11 +249,15 @@ export async function runRender(
       }
     }
 
-    if (asciiFile !== undefined) {
-      await writeOutputFile(asciiFile, ascii + '\n', args.force)
-    } else {
-      out.write(ascii + '\n')
-    }
+    // ASCII has no "skip" destination (the `if (args.ascii)` guard above
+    // already covers "not requested") — it goes to stdout whenever no file
+    // was resolved for it, so "going to stdout" is simply "no ascii file".
+    await emit(
+      resolveTarget(asciiFile === undefined, asciiFile),
+      ascii + '\n',
+      out,
+      args.force,
+    )
   }
 
   if (args.svg) {
@@ -263,22 +267,14 @@ export async function runRender(
     }
     if (args.direction !== undefined) svgOpts.direction = args.direction
     const svg = renderMermaidSVG(text, svgOpts)
-    if (svgToStdout) {
-      out.write(svg)
-    } else if (svgFile !== undefined) {
-      await writeOutputFile(svgFile, svg, args.force)
-    }
+    await emit(resolveTarget(svgToStdout, svgFile), svg, out, args.force)
   }
 
   if (args.html) {
     const svg = renderMermaidSVG(text, themeColors ?? {})
     const title = args.input ? parsePath(args.input).name : undefined
     const html = buildHtmlViewer({ svg, title })
-    if (htmlToStdout) {
-      out.write(html)
-    } else if (htmlFile !== undefined) {
-      await writeOutputFile(htmlFile, html, args.force)
-    }
+    await emit(resolveTarget(htmlToStdout, htmlFile), html, out, args.force)
   }
 
   if (args.png) {
@@ -290,17 +286,55 @@ export async function runRender(
     if (args.direction !== undefined) svgOpts.direction = args.direction
     const svg = renderMermaidSVG(text, svgOpts)
     const png = await renderPng(svg)
-    if (pngToStdout) {
-      out.write(png)
-    } else if (pngFile !== undefined) {
-      await writeOutputFile(pngFile, png, args.force)
-    }
+    await emit(resolveTarget(pngToStdout, pngFile), png, out, args.force)
   }
 }
 
 // ============================================================================
 // Helpers
 // ============================================================================
+
+/**
+ * Where one rendered format's output goes. Every format in `runRender`
+ * (ascii/svg/html/png) reduces to the same three-way choice — stdout, a
+ * named file, or nowhere — so the decision is made once here instead of
+ * being re-derived per format.
+ */
+type OutputTarget =
+  { kind: 'stdout' } | { kind: 'file'; path: string } | { kind: 'skip' }
+
+/**
+ * Decide a format's output target: stdout when `toStdout`, else the given
+ * `file` path when one was resolved for it, else skip (the format wasn't
+ * requested to go anywhere — see each call site's precomputed booleans).
+ */
+function resolveTarget(
+  toStdout: boolean,
+  file: string | undefined,
+): OutputTarget {
+  if (toStdout) return { kind: 'stdout' }
+  if (file !== undefined) return { kind: 'file', path: file }
+  return { kind: 'skip' }
+}
+
+/** Write `content` to the resolved `target`, or do nothing for `'skip'`. */
+async function emit(
+  target: OutputTarget,
+  content: string | Uint8Array,
+  out: Writable,
+  force: boolean,
+): Promise<void> {
+  switch (target.kind) {
+    case 'stdout':
+      out.write(content)
+      break
+    case 'file':
+      await writeOutputFile(target.path, content, force)
+      break
+    case 'skip':
+      break
+  }
+}
 
 function overwriteRefusal(path: string): Error {
   return new Error(
