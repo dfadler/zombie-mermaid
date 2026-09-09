@@ -107,6 +107,18 @@ const THEME_SHOWCASE_SOURCE = `graph TD
  */
 const THEME_SHOWCASE_DEFAULT_THEME = 'dracula'
 
+/**
+ * Fixed height of the showcase's diagram card, so the section doesn't
+ * reflow every ~2.8s as `index-page-client.ts`'s cycle swaps between
+ * diagram types of very different natural aspect ratios (a tall, narrow
+ * flowchart vs. a short, wide ER diagram) — see `renderShowcaseDiagrams()`.
+ * Comfortably fits the tallest of the six diagram types at this card's
+ * content width (the xy-chart, ~355px once scaled to fit); anything taller
+ * shrinks via `max-height` on the svg, or is clipped by the card's own
+ * `overflow: hidden` as a last resort.
+ */
+const THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT = 400
+
 /** The six diagram types the gallery teaser links to, and their `/diagrams/` routes. */
 const GALLERY_TYPES = [
   { slug: 'flowchart', label: 'Flowchart' },
@@ -293,7 +305,11 @@ function homePageCss(): string {
 }
 .theme-showcase-term-bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid ${colorVar('--border')}; }
 .theme-showcase-term-dot { width: 9px; height: 9px; border-radius: 50%; }
-.theme-showcase-term-body { font-size: 13px; line-height: 1.95; padding: 16px 18px; color: ${colorVar('--text-dim')}; min-height: 108px; }
+/* height fits its fixed 5-line content (":root {", 3 var lines, "}") at
+   this font-size/line-height, plus a few px of slack for cross-browser
+   line-box rounding -- content never gains or loses a line, only the
+   swapped-in hex values' text changes width, so this never needs to grow. */
+.theme-showcase-term-body { font-size: 13px; line-height: 1.95; padding: 16px 18px; color: ${colorVar('--text-dim')}; height: 132px; }
 .theme-showcase-kw { color: ${colorVar('--blue')}; }
 .theme-showcase-swatch {
   display: inline-block;
@@ -305,17 +321,32 @@ function homePageCss(): string {
   transition: background 900ms ease;
 }
 .theme-showcase-diagram-card {
+  height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
   border-radius: ${RADIUS.card}px;
   border: 1px solid ${colorVar('--border')};
   padding: ${SPACE.xl}px;
   margin-top: ${SPACE.xl}px;
   display: flex;
+  align-items: center;
   justify-content: center;
   transition: background 900ms ease;
   overflow: hidden;
 }
 .theme-showcase-diagram-slot { width: 100%; justify-content: center; }
-.theme-showcase-diagram-slot svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.theme-showcase-diagram-slot svg {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  /* Fixed px, not a percentage: the slot's own height is auto (sized to
+     this svg), so a percentage max-height here would have no definite
+     containing block to resolve against and would compute to none. This
+     page has no box-sizing: border-box reset, so the card's own
+     "height" declaration above is already its content-box height --
+     no padding to subtract here. */
+  max-height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
+  margin: 0 auto;
+}
 
 .theme-showcase-frac { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .theme-showcase-frac-cur { font-size: 34px; font-weight: 700; color: ${colorVar('--cyan')}; letter-spacing: -0.02em; }
