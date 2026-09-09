@@ -1,64 +1,68 @@
 # Browsing and using the samples
 
 The fastest way to write a diagram is to start from one that already looks
-close to what you want. This walks through finding a sample, reading it, and
-adapting it.
+close to what you want. This walks through what's actually browsable on the
+live site today, and how to adapt what you find.
 
 ## Where the samples live
 
-The [live demo](https://dfadler.github.io/zombie-mermaid/) renders every
-browsable sample in the library — 90 of them, each shown three ways at once:
+There is no longer a single page that renders every sample in the library —
+the [live site](https://dfadler.github.io/zombie-mermaid/)'s home page is a
+static marketing landing page, not an interactive gallery. (An earlier
+version of this page did render ~90 samples three ways at once — source,
+SVG, and ASCII — but that gallery was retired by the site redesign; see
+[docs/decisions/react-site-migration-plan.md](../decisions/react-site-migration-plan.md).)
 
-- the **Mermaid source** you can copy,
-- the **rendered SVG**, and
-- the **ASCII/Unicode** rendering of the same diagram.
+What's there instead:
 
-Seeing all three together is the point. It is how you tell, before writing
-anything, whether a diagram that reads well as SVG will still read well in a
-terminal — some do not, and it is cheaper to find that out now.
+- **The [Diagrams hub](https://dfadler.github.io/zombie-mermaid/diagrams/)**
+  lists the six diagram types zombie-mermaid supports — Flowchart, State,
+  Sequence, Class, ER, and XY Chart. Each type has its own detail page
+  (`/diagrams/<type>.html`) showing **one** worked example for that type:
+  its Mermaid source (syntax-highlighted) next to the rendered SVG, plus a
+  live picker across every built-in theme and an "Open in the live editor"
+  link that carries the example into the editor pre-loaded.
+- **The [live editor](https://dfadler.github.io/zombie-mermaid/editor.html)**
+  is where you paste your own source and watch it re-render as you type,
+  with the same live theme switching.
 
-The samples are grouped by diagram type:
+Both of these render **SVG only**. Neither shows an ASCII/Unicode preview —
+that output only exists via the CLI or the library API today (see
+"Adapting one" below). If you need to eyeball how a diagram will look in a
+terminal before committing to it, that check now happens outside the
+browser.
 
-| Category      | Samples | Good for                                           |
-| ------------- | ------- | -------------------------------------------------- |
-| Flowchart     | 24      | processes, decisions, pipelines, architecture      |
-| Sequence      | 18      | request/response, protocols, anything time-ordered |
-| Class         | 16      | type hierarchies, domain models                    |
-| ER            | 14      | database schemas, entity relationships             |
-| XY Chart      | 10      | bar and line charts                                |
-| Interactivity | 4       | links, tooltips, curve styles, animated edges      |
-| State         | 4       | state machines, lifecycles                         |
-
-(The banner diagram at the top of the demo is a further sample, but it is
-not part of the browsable gallery — hence 90 here rather than the 91 the
-page renders in total.)
-
-The **Interactivity** samples are worth opening even if you do not need
-links or animation. They are the clearest demonstration of what the three-way
-view is for. Both diagrams still render in ASCII — it is the browser-only
-behaviour that drops away: a `click` node loses its link and tooltip, and an
-animated edge is drawn as an ordinary solid line, with nothing to signal that
-motion was requested. If you are deciding whether to target a browser, a static
-image, or a terminal, that pair answers it directly.
+There is no "browse all the samples" experience anymore, in the browser or
+otherwise. The fuller sample library this section used to describe —
+roughly 90 diagrams covering every shape, edge type, and theme combination —
+still exists in the repo as [`samples-data.ts`](../../samples-data.ts), but
+it now only feeds the internal visual-test suite and
+`scripts/visual-diff.ts`'s local before/after report (see
+[CONTRIBUTING.md](../../CONTRIBUTING.md)); it isn't rendered anywhere on the
+public site, and the dev server's `/` route serves the same marketing page
+the live site does, not a sample browser. If you want to see more starting
+points than the six type pages offer, reading `samples-data.ts` directly is
+the closest thing to browsing it today.
 
 ## Finding one
 
-Open the sidebar (the ☰ button on narrow screens) and pick a category. Only
-one category renders at a time — with 90 samples each rendered twice, showing
-all of them at once would make the page slow to load and slower to scan.
-
-Inside a category, sample titles say what the diagram _is for_ rather than
-what it uses: "CI/CD Pipeline", "Decision Tree", "Git Branching Workflow". Scan
-for the shape of your problem, not for syntax.
+Click **Diagrams** in the site nav (or "Browse every diagram type" on the
+home page) to reach the hub, then **View examples** on the type that matches
+your problem — a flowchart for a process or decision tree, a sequence
+diagram for anything time-ordered, and so on. With one example per type
+rather than dozens of labeled samples, "finding" one is mostly picking the
+right diagram type rather than scanning a gallery.
 
 ## Adapting one
 
-1. **Copy the source block** under the sample.
-2. **Change the labels first, not the structure.** Most samples are already
-   the right shape; renaming the nodes gets you most of the way.
-3. **Re-render and check both outputs.** If you only care about SVG you can
-   ignore the ASCII column — but if the diagram will ever go in a README, a
-   terminal, or a code comment, check it now.
+1. **Copy the source** from the type page's source panel, or open the
+   example in the live editor and copy it from there.
+2. **Change the labels first, not the structure.** The example is already
+   close to the shape most diagrams of that type need; renaming the nodes
+   gets you most of the way.
+3. **Re-render and check both outputs.** The type page and the editor only
+   show you the SVG. If the diagram will ever go in a README, a terminal, or
+   a code comment, also render it as ASCII before committing to it:
 
 ```typescript
 import { renderMermaidSVG, renderMermaidASCII } from 'zombie-mermaid'
@@ -79,7 +83,7 @@ Or from the terminal, without writing any code:
 zombie-mermaid render diagram.mmd --ascii
 ```
 
-## When a sample renders badly in ASCII
+## When a diagram renders badly in ASCII
 
 Dense diagrams — wide fan-outs, deeply nested subgraphs, long labels — have
 much less room in a character grid than in an SVG. If the ASCII rendering is
@@ -100,11 +104,14 @@ cramped:
   in `LR`. A wide fan-out does the opposite. (Those figures come from a test
   that fails if this stops being true.)
 
-## Editing a sample in place
+## Testing a change against the live editor
 
-Each sample card has an **Edit** link that opens it in the live editor, where
-you can change the source and watch both renderings update. That is the
-quickest way to test a change before pasting it into your own project.
+Paste your source into the [live editor](https://dfadler.github.io/zombie-mermaid/editor.html)
+and it re-renders as you type, with the same theme picker as the type pages.
+That's the quickest way to iterate on a change before pasting the final
+version into your own project — for the SVG output. There's no in-editor
+ASCII preview, so still run the CLI or library call above before assuming an
+edit is safe for a terminal.
 
 ## Next
 

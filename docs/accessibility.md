@@ -1,6 +1,6 @@
 # Accessibility conformance statement
 
-Last reviewed: 2026-08-31, against `zombie-mermaid` on `main`.
+Last reviewed: 2026-09-09, against `zombie-mermaid` on `main`.
 
 This is a scoped, honest statement of what `zombie-mermaid` guarantees today
 — not a claim of full [WCAG 2.1](https://www.w3.org/TR/WCAG21/) conformance
@@ -108,38 +108,87 @@ fixes.
 
 ## Demo/editor site: keyboard and focus behavior
 
-The sample gallery and editor (`demo/`, `editor/`, `index.ts` — what
+The site this repo builds and deploys itself (`demo/`, `editor/`, and the
+per-page generators — `index.ts`, `pages.ts`, `blog.ts`, `fork-fixes.ts`,
+`dashboard.ts`, `editor.ts` — what
 [dfadler.github.io/zombie-mermaid](https://dfadler.github.io/zombie-mermaid/)
-serves) implement, in the code on `main` today:
+serves) is no longer one gallery-plus-editor page: the #590 "Diagram-Native
+Showcase" redesign (see
+[docs/decisions/react-site-migration-plan.md](decisions/react-site-migration-plan.md))
+replaced the old interactive sample gallery (and the "Edit Diagram" dialog
+it opened) with six separate page families, each with its own markup and
+its own subset of these properties. The bullets below are scoped per family
+rather than asserted for the site as a whole, since that's no longer true
+of any single one of them:
 
-- **Visible focus indication** — every interactive control (links, buttons,
-  inputs, `[tabindex]` elements) gets a consistent accent-colored
-  `:focus-visible` ring (`demo/styles.css`) rather than relying on each
-  browser's inconsistent default outline — relevant to
-  [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA).
-- **A skip-to-content link** — `<a class="skip-link" href="#samples-heading">`
-  (`index.ts`) — for keyboard users to bypass repeated navigation, relevant to
-  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A).
-- **Modal dialog semantics** — the "Edit Diagram" dialog carries
-  `role="dialog"`, `aria-modal="true"`, and `aria-labelledby` pointing at
-  its heading (`index.ts`), and its form controls have accessible names.
-- **Disclosure-widget state** — the theme picker's "more themes" toggle and
-  the mobile sidebar toggle set `aria-expanded` to reflect open/closed state
-  (`demo/client.ts`).
+- **Visible focus indication** — a consistent accent-colored
+  `:focus-visible` ring (`a:focus-visible, button:focus-visible { … }`)
+  is present on the **Diagrams hub and per-type pages**
+  (`diagrams/*.html`, via `demo/styles.css` + `demo/diagram-page.css`,
+  concatenated into `diagrams/assets/diagram-page.css` by `pages.ts`) and
+  on **Fork fixes** (`fork-fixes.html`, via `demo/fork-fixes.css`) —
+  relevant to
+  [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
+  on those pages. **Home** (`index.html`), **Blog** (`blog/*.html`), and
+  **Dashboard** (`dashboard.html`) — all built on the redesign's shared
+  component library (`demo/components/tokens.tsx`, `primitives.tsx`,
+  `nav.tsx`, `footer.tsx`) — declare no `:focus-visible` rule of their own
+  and fall back to each browser's default outline. **Editor**
+  (`editor.html`) sits in between: its new nav/hero/footer chrome has no
+  ring either, and the editor tool itself only styles `:focus` (not
+  `:focus-visible`) on three specific inputs
+  (`editor/css/config-panel.css`, `font-picker.css`, `color-picker.css`),
+  not as a general control ring.
+- **A skip-to-content link** — exists only on **Home**:
+  `<a className="skip-link" href="#main">` in
+  `demo/components/index-page.tsx`, jumping to `<main id="main">` on that
+  same page — relevant to
+  [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A)
+  on Home only. No other page family (Diagrams, Editor, Fork fixes, Blog,
+  Dashboard) has one. The Diagrams per-type pages do link a "See all
+  samples" CTA to `../#samples-heading`, but that id no longer exists on
+  Home (or anywhere) since the redesign — a dead in-page anchor, not a
+  functioning skip link.
+- **Modal dialog semantics** — **no longer applicable.** The "Edit Diagram"
+  dialog this bullet used to describe was part of the interactive gallery
+  the redesign removed; there is no `role="dialog"`/`aria-modal` element
+  anywhere in the current site. The nearest equivalent workflow today —
+  opening a diagram in the live editor — navigates to `editor.html`
+  instead of opening an in-page dialog, so this WCAG concern doesn't arise
+  the same way.
+- **Disclosure-widget state** — the theme picker's "more themes" toggle
+  (`#theme-more-btn`, `aria-haspopup`/`aria-expanded`, in
+  `demo/components/theme-picker.tsx`, wired by
+  `demo/components/theme-bar-client.ts`) sets `aria-expanded` to reflect
+  open/closed state, but only on the **Diagrams per-type pages** — the hub
+  page renders no theme picker, and the editor's own theme dropdown
+  (`#theme-dropdown-btn` in `demo/components/editor-topbar.tsx`, wired by
+  `editor/js/init.js`) sets no `aria-expanded` at all. The **mobile
+  sidebar toggle** this bullet used to describe no longer exists in any
+  form: `demo/components/nav.tsx`'s own header comment states the redesign
+  ships no hamburger, drawer, or overflow affordance for its nav — below
+  900px the nav links are simply `display:none`, with no toggle and no
+  alternate route to them from the nav bar itself (Home's footer and
+  in-page sections still link to Diagrams/Editor/Fork fixes/Blog, so
+  they're not entirely unreachable on mobile, just not from the nav).
 
 **Verified how:** read directly in the current source (file/selector cited
-above) as part of writing this statement, and each landed as its own
-targeted PR (see `.changeset/consistent-focus-visible-ring.md`,
+above) as part of writing this statement's 2026-09-09 revision, cross-checked
+against `pnpm run build:site`'s actual output. The properties that predate
+the #590 redesign each landed as their own targeted PR (see
+`.changeset/consistent-focus-visible-ring.md`,
 `.changeset/skip-to-content-link.md`, `.changeset/edit-dialog-aria-labels.md`,
-`.changeset/theme-picker-aria-expanded.md` for the change each one made).
+`.changeset/theme-picker-aria-expanded.md` for the change each one made) —
+those changesets describe the pre-redesign gallery this section used to
+cover, not the current per-family scoping above.
 **Not covered:** none of this is exercised by an automated accessibility
-check today — no `axe-core`/`pa11y` (or similar) run in CI against the demo
-site, and no automated keyboard-navigation test walks the page. Marking
-these "implemented" rather than "conformant": they're the correct markup
-for their respective WCAG criteria, but nothing currently re-verifies them
-on every PR the way the SVG accessible-name check does. A demo-site
-accessibility CI check is a reasonable follow-up, not something this
-statement claims already exists.
+check today — no `axe-core`/`pa11y` (or similar) run in CI against any of
+the six page families, and no automated keyboard-navigation test walks any
+of them. Marking these "implemented" rather than "conformant": where a
+property is present, it's the correct markup for its WCAG criterion, but
+nothing currently re-verifies it on every PR the way the SVG accessible-name
+check does. A demo-site accessibility CI check is a reasonable follow-up,
+not something this statement claims already exists.
 
 ## What this statement does not claim
 
