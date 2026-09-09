@@ -161,57 +161,62 @@
       <script id="nav-props" type="application/json">
         "{\"active\":\"blog\",\"homeHref\":\"../\",\"hrefs\":{\"diagrams\":\"../diagrams/\",\"editor\":\"../editor\",\"forkFixes\":\"../fork-fixes\",\"blog\":\"./\",\"github\":\"https://github.com/dfadler/zombie-mermaid\"},\"hasInstallSlot\":false}"
       </script>
-      <div class="section-px" style="padding: 96px 80px 0px; position: relative; z-index: 1;">
-        <div style="max-width: 680px; margin: 0px auto; display: flex; flex-direction: column; gap: 16px;">
-          <div class="mono" style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 14px; font-weight: 600; color: var(--text-faint);">
-            <a href="../">
-              "Home"
-            </a>
-            <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
-              <path d="M9 6l6 6-6 6">
-              </path>
-            </svg>
-            <a href="./">
-              "Blog"
-            </a>
-            <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
-              <path d="M9 6l6 6-6 6">
-              </path>
-            </svg>
-            <span aria-current="page" style="color: var(--text-dim);">
-              "Shipping v1 of a <zombie>"
-            </span>
-          </div>
-          <h1 style="font-size: 38px; line-height: 1.15; letter-spacing: -0.01em;">
-            "Shipping v1 of a <zombie>"
-          </h1>
-          <span class="pill mono" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-faint); align-self: flex-start; font-size: 13px; padding: 8px 16px;">
-            "March 4, 2026"
-          </span>
-        </div>
-      </div>
-      <div class="section-px" style="padding: 40px 80px 140px; position: relative; z-index: 1;">
-        <div style="max-width: 680px; margin: 0px auto;">
-          <div class="prose">
-            <p>
-              "Body "
-              <em>
-                "markup"
-              </em>
-              " from marked."
-            </p>
-          </div>
-          <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border);">
-            <a class="pill" href="./" style="background: var(--violet); color: var(--bg); font-weight: 700;">
-              "More posts"
-              <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="14">
-                <path d="M5 12h14M13 6l6 6-6 6">
+      <div id="blog-post-root">
+        <div class="section-px" style="padding: 96px 80px 0px; position: relative; z-index: 1;">
+          <div style="max-width: 680px; margin: 0px auto; display: flex; flex-direction: column; gap: 16px;">
+            <div class="mono" style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 14px; font-weight: 600; color: var(--text-faint);">
+              <a href="../">
+                "Home"
+              </a>
+              <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+                <path d="M9 6l6 6-6 6">
                 </path>
               </svg>
-            </a>
+              <a href="./">
+                "Blog"
+              </a>
+              <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+                <path d="M9 6l6 6-6 6">
+                </path>
+              </svg>
+              <span aria-current="page" style="color: var(--text-dim);">
+                "Shipping v1 of a <zombie>"
+              </span>
+            </div>
+            <h1 style="font-size: 38px; line-height: 1.15; letter-spacing: -0.01em;">
+              "Shipping v1 of a <zombie>"
+            </h1>
+            <span class="pill mono" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-faint); align-self: flex-start; font-size: 13px; padding: 8px 16px;">
+              "March 4, 2026"
+            </span>
+          </div>
+        </div>
+        <div class="section-px" style="padding: 40px 80px 140px; position: relative; z-index: 1;">
+          <div style="max-width: 680px; margin: 0px auto;">
+            <div class="prose">
+              <p>
+                "Body "
+                <em>
+                  "markup"
+                </em>
+                " from marked."
+              </p>
+            </div>
+            <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border);">
+              <a class="pill" href="./" style="background: var(--violet); color: var(--bg); font-weight: 700;">
+                "More posts"
+                <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="14">
+                  <path d="M5 12h14M13 6l6 6-6 6">
+                  </path>
+                </svg>
+              </a>
+            </div>
           </div>
         </div>
       </div>
+      <script id="blog-post-props" type="application/json">
+        "{\"title\":\"Shipping v1 of a <zombie>\",\"displayDate\":\"March 4, 2026\",\"bodyHtml\":\"<p>Body <em>markup</em> from marked.</p>\"}"
+      </script>
       <footer class="section-px" style="padding: 64px 80px 48px; border-top: 1px solid var(--border); background: var(--bg-soft);">
         <div class="footer-grid" style="max-width: 1280px; margin: 0px auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;">
           <div style="display: flex; flex-direction: column; gap: 14px;">

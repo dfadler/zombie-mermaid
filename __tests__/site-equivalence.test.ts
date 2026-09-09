@@ -317,7 +317,7 @@ describe('blog.ts → blog/*.html', () => {
         faviconHref: '../favicon.svg',
         publishedTime: '2026-03-04',
         bodyHtml: '<p>Body <em>markup</em> from marked.</p>',
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/blog-post-page.normalized.txt')
@@ -344,7 +344,7 @@ describe('blog.ts → blog/*.html', () => {
           },
         ],
         themeBarScript: FIXTURE_SCRIPT,
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/blog-index-page.normalized.txt')
@@ -358,7 +358,7 @@ describe('blog.ts → blog/*.html', () => {
         faviconHref: '../favicon.svg',
         posts: [],
         themeBarScript: FIXTURE_SCRIPT,
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     expect(html).toContain('<p class="empty-state"')
