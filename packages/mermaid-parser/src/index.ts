@@ -39,6 +39,7 @@ export * from './sequence/parser.ts'
 export * from './sequence/types.ts'
 export * from './sequence/box-color.ts'
 export * from './sequence/activation-check.ts'
+export * from './sequence/activation-fix.ts'
 
 export * from './xychart/parser.ts'
 export * from './xychart/types.ts'

@@ -20,6 +20,10 @@ import {
   checkSequenceActivationsInputShape,
   checkSequenceActivationsHandler,
 } from './tools/check-sequence-activations.ts'
+import {
+  fixSequenceActivationsInputShape,
+  fixSequenceActivationsHandler,
+} from './tools/fix-sequence-activations.ts'
 
 /**
  * Build a zombie-mermaid MCP server exposing `render_mermaid_svg`,
@@ -98,6 +102,33 @@ export function createMcpServer(): McpServer {
       },
     },
     checkSequenceActivationsHandler,
+  )
+
+  server.registerTool(
+    'fix_mermaid_sequence_activations',
+    {
+      title: 'Fix Mermaid sequence diagram activation balance',
+      description:
+        'Check a Mermaid sequence diagram for activation/deactivation ' +
+        'imbalance and, where mechanically safe, return a corrected ' +
+        'version: a dangling "activate X" (or "+" shorthand) with no ' +
+        'matching "deactivate X" gets one appended. An unmatched ' +
+        '"deactivate X" with nothing open is reported but not auto-fixed ' +
+        '(no safe, unambiguous edit exists without source-position ' +
+        'tracking). Returns a JSON report ({ ok, fixedDiagram, ' +
+        'fixesApplied, remainingIssues }) rather than rendering anything. ' +
+        'Mechanical and deterministic — no LLM judgment involved. Only ' +
+        'sequence diagrams are supported.',
+      inputSchema: fixSequenceActivationsInputShape,
+      annotations: {
+        title: 'Fix Mermaid sequence diagram activation balance',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    fixSequenceActivationsHandler,
   )
 
   return server
