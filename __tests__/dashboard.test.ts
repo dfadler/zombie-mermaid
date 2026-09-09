@@ -15,12 +15,18 @@ import {
   type RepoStats,
 } from '../dashboard.ts'
 import {
+  DashboardApp,
+  DASHBOARD_PROPS_ELEMENT_ID,
+  DASHBOARD_ROOT_ID,
   MetricsSection,
   RepoMetricsCard,
   RescuedTeaser,
   ResponseTimeSection,
 } from '../demo/components/dashboard-page.tsx'
-import { parseDashboardData } from '../demo/dashboard-model.ts'
+import {
+  buildDashboardViewModel,
+  parseDashboardData,
+} from '../demo/dashboard-model.ts'
 import dashboardData from '../demo/dashboard-data.json' with { type: 'json' }
 
 /** Renders one component to its static markup, the way dashboard.ts renders the page. */
@@ -101,9 +107,15 @@ describe('RepoMetricsCard', () => {
   it("renders every one of a repo's six metrics", () => {
     const html = render(RepoMetricsCard, {
       label: 'zombie-mermaid (this fork)',
-      stats: forkStats,
-      referenceIso,
       highlight: true,
+      entries: [
+        ['2 days ago', 'last commit'],
+        ['3', 'open issues'],
+        ['2', 'open PRs'],
+        ['41', 'merged PRs'],
+        ['2', 'releases published'],
+        ['v1.2.0 (Jul 15, 2026)', 'latest release'],
+      ],
     })
     expect(html).toContain('2 days ago') // Aug 1 -> Aug 3
     expect(html).toContain('>3<') // open issues
@@ -116,31 +128,127 @@ describe('RepoMetricsCard', () => {
   it('renders an em-dash for a repo with no releases', () => {
     const html = render(RepoMetricsCard, {
       label: 'beautiful-mermaid (upstream)',
-      stats: upstreamStats,
-      referenceIso,
+      highlight: false,
+      entries: [
+        ['94 days ago', 'last commit'],
+        ['50', 'open issues'],
+        ['10', 'open PRs'],
+        ['5', 'merged PRs'],
+        ['0', 'releases published'],
+        ['—', 'latest release'],
+      ],
     })
     expect(html).toContain('—')
   })
 
-  it('measures "days ago" from the snapshot instant it is given', () => {
-    const html = render(RepoMetricsCard, {
-      label: 'beautiful-mermaid (upstream)',
-      stats: upstreamStats,
-      referenceIso,
+  it('measures "days ago" from the snapshot instant the view model was built with', () => {
+    const view = buildDashboardViewModel({
+      generatedAt: referenceIso,
+      fork: forkStats,
+      upstream: upstreamStats,
+      rescued: {
+        totalFixes: 0,
+        upstreamIssuesReferenced: 0,
+        upstreamIssuesStillOpen: 0,
+        upstreamIssuesClosedIndependently: 0,
+        issues: [],
+      },
+      responseTime: null,
     })
+    const html = render(RepoMetricsCard, view.upstream)
     expect(html).toContain('94 days ago') // May 1 -> Aug 3
+  })
+})
+
+describe('buildDashboardViewModel', () => {
+  const view = buildDashboardViewModel({
+    generatedAt: referenceIso,
+    fork: forkStats,
+    upstream: upstreamStats,
+    rescued: {
+      totalFixes: 0,
+      upstreamIssuesReferenced: 0,
+      upstreamIssuesStillOpen: 0,
+      upstreamIssuesClosedIndependently: 0,
+      issues: [],
+    },
+    responseTime: null,
+  })
+
+  it("precomputes each repo's six metric entries, matching the old inline computation", () => {
+    expect(view.fork.entries).toEqual([
+      ['2 days ago', 'last commit'],
+      ['3', 'open issues'],
+      ['2', 'open PRs'],
+      ['41', 'merged PRs'],
+      ['2', 'releases published'],
+      ['v1.2.0 (Jul 15, 2026)', 'latest release'],
+    ])
+    expect(view.upstream.entries).toEqual([
+      ['94 days ago', 'last commit'],
+      ['50', 'open issues'],
+      ['10', 'open PRs'],
+      ['5', 'merged PRs'],
+      ['0', 'releases published'],
+      ['—', 'latest release'],
+    ])
+  })
+
+  it('marks only the fork highlighted, matching the canvas', () => {
+    expect(view.fork.highlight).toBe(true)
+    expect(view.upstream.highlight).toBe(false)
+  })
+
+  it('formats generatedAtDisplay the same way formatDateTime does', () => {
+    expect(view.generatedAtDisplay).toBe(formatDateTime(referenceIso))
+  })
+
+  it('passes responseTime through unchanged (no locale-sensitive fields in it)', () => {
+    expect(view.responseTime).toBeNull()
   })
 })
 
 describe('MetricsSection', () => {
   it("renders both repos' cards", () => {
-    const html = render(MetricsSection, {
+    const view = buildDashboardViewModel({
+      generatedAt: referenceIso,
       fork: forkStats,
       upstream: upstreamStats,
-      referenceIso,
+      rescued: {
+        totalFixes: 0,
+        upstreamIssuesReferenced: 0,
+        upstreamIssuesStillOpen: 0,
+        upstreamIssuesClosedIndependently: 0,
+        issues: [],
+      },
+      responseTime: null,
+    })
+    const html = render(MetricsSection, {
+      fork: view.fork,
+      upstream: view.upstream,
     })
     expect(html).toContain('zombie-mermaid (this fork)')
     expect(html).toContain('beautiful-mermaid (upstream)')
+  })
+})
+
+describe('DashboardApp / hydration ids (#799)', () => {
+  it('DashboardApp renders no DASHBOARD_ROOT_ID and no Nav (Nav stays outside the hydration boundary — see that component doc comment)', () => {
+    const view = buildDashboardViewModel(parseDashboardData(dashboardData))
+    const html = render(DashboardApp, { viewModel: view })
+    expect(html).not.toContain(`id="${DASHBOARD_ROOT_ID}"`)
+    expect(html).not.toContain('class="nav-bar"')
+    // Sanity: it still renders the page body (metrics section included).
+    expect(html).toContain('id="metrics"')
+  })
+
+  it('DashboardPage wraps DashboardApp in a plain DASHBOARD_ROOT_ID container and embeds DASHBOARD_PROPS_ELEMENT_ID JSON', () => {
+    const data = parseDashboardData(dashboardData)
+    const html = renderDashboardHtml(data, '')
+    expect(html).toContain(`<div id="${DASHBOARD_ROOT_ID}">`)
+    expect(html).toContain(`id="${DASHBOARD_PROPS_ELEMENT_ID}"`)
+    expect(DASHBOARD_ROOT_ID).toBe('dashboard-root')
+    expect(DASHBOARD_PROPS_ELEMENT_ID).toBe('dashboard-props')
   })
 })
 

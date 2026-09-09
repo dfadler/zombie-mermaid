@@ -43,7 +43,8 @@
  */
 import type { ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
-import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
+import { NAV_THEME_SLOT_ID, NavMobileMenuScript } from './nav.tsx'
+import { NavIsland } from './nav-island.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import {
   CheckIcon,
@@ -1928,10 +1929,22 @@ export interface IndexPageProps {
    * client logic than a one-line `initThemeBar()` call.
    */
   clientScriptSrc: string
+  /**
+   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
+   * hydrates `<Nav>`, inlined into its own `<script type="module">` — see
+   * editor-page.tsx's `EditorPageProps.navClientScript` doc comment for why
+   * it stays a separate tag rather than being concatenated with any other
+   * script.
+   */
+  navClientScript: string
 }
 
 /** The whole index.html document: the marketing landing page. */
-export function IndexPage({ jsonLd, clientScriptSrc }: IndexPageProps) {
+export function IndexPage({
+  jsonLd,
+  clientScriptSrc,
+  navClientScript,
+}: IndexPageProps) {
   return (
     <html lang="en">
       <head>
@@ -1981,7 +1994,7 @@ export function IndexPage({ jsonLd, clientScriptSrc }: IndexPageProps) {
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <Nav
+        <NavIsland
           hrefs={{
             diagrams: 'diagrams/',
             editor: 'editor.html',
@@ -1989,15 +2002,19 @@ export function IndexPage({ jsonLd, clientScriptSrc }: IndexPageProps) {
             blog: 'blog/',
             github: FORK_URL,
           }}
-          // #759: the install pill is a placeholder here, not server-
-          // rendered NavInstall -- demo/index-page-client.ts reparents the
-          // real, already-mounted #theme-pills picker into this slot once
+          // #759: the install pill is a placeholder here, not a real
+          // NavInstall -- demo/index-page-client.ts reparents the real,
+          // already-mounted #theme-pills picker into this slot once
           // #theme-showcase scrolls out of view (one-way; see that
           // module's own doc comment). Empty rather than NavInstall's
           // markup so nav.tsx's own "no <button> in SSR output" invariant
           // (__tests__/demo-nav.test.ts) holds here too: a real <button>
-          // only ever arrives via that runtime reparenting.
-          installSlot={<div id="nav-theme-slot" />}
+          // only ever arrives via that runtime reparenting. NavIsland
+          // reconstructs this same placeholder client-side from
+          // `hasInstallSlot` (zombie-mermaid#800) since a real element
+          // can't round-trip through the JSON hydration payload — see
+          // nav-island.tsx's `NavHydrationProps` doc comment.
+          installSlot={<div id={NAV_THEME_SLOT_ID} />}
           sticky
         />
         <main id="main">
@@ -2011,7 +2028,11 @@ export function IndexPage({ jsonLd, clientScriptSrc }: IndexPageProps) {
         </main>
         <Footer columns={HOME_FOOTER_COLUMNS} />
         <script type="module" src={clientScriptSrc} />
-        <NavCopyScript />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: navClientScript }}
+        />
         <NavMobileMenuScript />
       </body>
     </html>

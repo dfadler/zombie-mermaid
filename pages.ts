@@ -62,6 +62,7 @@ import {
 } from './demo/diagram-pages-data.ts'
 import { ThemePicker, DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
+import { bundleNavClient } from './demo/build-nav-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
 import type { RenderOptions } from './src/index.ts'
 import { createHighlighter } from 'shiki'
@@ -126,7 +127,10 @@ async function main(): Promise<void> {
     `${demoCss}\n${pageCss}`,
   )
 
-  const clientJs = await bundleDiagramPageClient()
+  const [clientJs, navClientScript] = await Promise.all([
+    bundleDiagramPageClient(),
+    bundleNavClient(),
+  ])
   await writeFile(new URL('./assets/diagram-page-client.js', OUT_DIR), clientJs)
 
   // 'github-dark', not the other generators' 'github-light': every type
@@ -267,6 +271,7 @@ async function main(): Promise<void> {
         themePills,
         themeDataScript,
         clientScriptSrc: 'assets/diagram-page-client.js',
+        navClientScript,
       }),
     )
 
@@ -297,6 +302,7 @@ async function main(): Promise<void> {
         accent: profile.accent,
       })),
       themeBarScript,
+      navClientScript,
     }),
   )
 

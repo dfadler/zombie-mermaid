@@ -47,6 +47,47 @@ import {
   type DashboardData,
 } from './demo/dashboard-model.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
+
+/**
+ * Bundle `demo/dashboard-client.tsx` (zombie-mermaid#799's hydration
+ * proof-of-concept) for the browser.
+ *
+ * Inlined into the page directly (see `generate()` below), exactly like
+ * `bundleThemeBarClient()`'s existing `themeBarScript` result — not written
+ * to `assets/` and referenced by `src`, the way index.ts's/pages.ts's own
+ * client bundles are. That external-asset pattern turned out to have a
+ * pre-existing gap this issue doesn't fix: `package.json`'s `build:site`
+ * script never moves the gitignored repo-root `/assets/` directory into
+ * `site/`, so a `src`-referenced bundle 404s once deployed to GitHub Pages
+ * (see zombie-mermaid#799's PR description). Inlining sidesteps that
+ * entirely — the same way this page's own `themeBarScript` already works
+ * in production today — rather than this issue also taking on fixing
+ * unrelated build-pipeline plumbing.
+ *
+ * `treeshake` left at its default (on): unlike editor/js/index.ts's bundle,
+ * this entry's only job is to export nothing and run its top-level
+ * `main()` call for a side effect (`hydrateRoot`), and every module it
+ * imports (`dashboard-page.tsx`, `dashboard-model.ts`) is a normal,
+ * tree-shakeable ES module rather than a concatenation-replacement script
+ * — so there's no reason to disable Rollup's default tree-shaking the way
+ * bundleEditorJs() in editor.ts does.
+ *
+ * `minify: true` (unlike bundleEditorJs()'s `minify: false`, kept readable
+ * in devtools): this is the first bundle in the repo to include `react`/
+ * `react-dom`, and the #797 epic issue's own accepted "~57.5 KB gzip"
+ * baseline cost was measured against a minified build — an unminified one
+ * measured ~950 KB raw / ~185 KB gzip while building this, entirely from
+ * react-dom's own dev-mode warnings/checks (`vite build()`'s production
+ * `mode` default replaces `process.env.NODE_ENV` for dead-code elimination
+ * of those branches; nothing else here needed to change to get that).
+ */
+async function bundleDashboardClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/dashboard-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
 
 export {
   daysSince,
@@ -64,29 +105,44 @@ export {
  * `themeBarScript` defaults to `''` (an empty inline `<script>`) so
  * existing callers/tests that don't care about the theme bar's
  * interactivity — this page has nothing of its own to re-theme — don't
- * need to pass a real bundle.
+ * need to pass a real bundle. `clientScript` (zombie-mermaid#799's
+ * hydration bundle) is likewise optional and inlined the same way — see
+ * `DashboardPageProps`'s own doc comment — omit it for a caller that only
+ * wants SSR markup with no hydration script at all.
  */
 export function renderDashboardHtml(
   data: DashboardData,
   css: string,
   themeBarScript = '',
+  clientScript = '',
 ): string {
   return renderHtmlDocument(
-    createElement(DashboardPage, { data, css, themeBarScript }),
+    createElement(DashboardPage, {
+      data,
+      css,
+      themeBarScript,
+      clientScript,
+    }),
   )
 }
 
-/** Renders the committed snapshot (demo/dashboard-data.json) with the page's assembled stylesheet. */
+/**
+ * Renders the committed snapshot (demo/dashboard-data.json) with the
+ * page's assembled stylesheet and its hydration bundle inlined
+ * (zombie-mermaid#799).
+ */
 export async function generate(): Promise<string> {
-  const [pageCss, themeBarScript] = await Promise.all([
+  const [pageCss, themeBarScript, clientScript] = await Promise.all([
     readFile(new URL('./demo/dashboard.css', import.meta.url), 'utf8'),
     bundleThemeBarClient(),
+    bundleDashboardClient(),
   ])
   const css = sharedPageCss([themePickerCss(), pageCss].join('\n\n'))
   return renderDashboardHtml(
     parseDashboardData(dashboardData),
     css,
     themeBarScript,
+    clientScript,
   )
 }
 

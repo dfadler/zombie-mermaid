@@ -104,3 +104,91 @@ export function formatDateTime(iso: string): string {
 export function pluralDays(n: number): string {
   return `${n} day${n === 1 ? '' : 's'}`
 }
+
+/** One repo card's already-formatted display data — see {@link buildDashboardViewModel}. */
+export interface RepoMetricsView {
+  label: string
+  /** The fork's own card renders highlighted (green, checkmark); upstream's does not. */
+  highlight: boolean
+  /** The six metric tiles, in display order, as `[value, label]` pairs. */
+  entries: Array<[value: string, label: string]>
+}
+
+/**
+ * `dashboard-page.tsx`'s hydratable props: `DashboardData` with every
+ * locale/timezone-sensitive formatting step (`formatDate`, `formatDateTime`,
+ * both `toLocaleDateString`/`toLocaleTimeString` under the hood) already
+ * applied.
+ *
+ * This exists because of zombie-mermaid#799's hydration work: React's
+ * `hydrateRoot()` requires the client's first render to produce byte-
+ * identical markup to what the server already sent, and `toLocaleDateString`/
+ * `toLocaleTimeString` resolve against the *host's own* locale/timezone —
+ * the Node build machine (typically UTC in CI) will not agree with a
+ * visitor's browser (their own local timezone) on what `formatDateTime`
+ * returns for the same instant, especially with `timeZoneName: 'short'` in
+ * play. Computing every such string exactly once, here, on the server, and
+ * carrying the *string* (not the raw ISO timestamp) through to the client
+ * as a prop closes that gap: the client never calls a locale API at all, so
+ * there's nothing left for the two environments to disagree about. `daysSince`
+ * (pure epoch-ms arithmetic, no locale/timezone involved) has no such hazard
+ * and could safely run on either side, but is folded in here too so every
+ * hydrated component receives display-ready strings uniformly rather than a
+ * mix of raw and precomputed fields.
+ */
+export interface DashboardViewModel {
+  generatedAtDisplay: string
+  fork: RepoMetricsView
+  upstream: RepoMetricsView
+  responseTime: DashboardData['responseTime']
+}
+
+function buildRepoMetricsView(
+  label: string,
+  stats: RepoStats,
+  referenceIso: string,
+  highlight: boolean,
+): RepoMetricsView {
+  return {
+    label,
+    highlight,
+    entries: [
+      [
+        `${pluralDays(daysSince(stats.lastPushedAt, referenceIso))} ago`,
+        'last commit',
+      ],
+      [String(stats.openIssues), 'open issues'],
+      [String(stats.openPRs), 'open PRs'],
+      [String(stats.mergedPRs), 'merged PRs'],
+      [String(stats.releaseCount), 'releases published'],
+      [
+        stats.latestRelease
+          ? `${stats.latestRelease.tag} (${formatDate(stats.latestRelease.publishedAt)})`
+          : '—',
+        'latest release',
+      ],
+    ],
+  }
+}
+
+/** Builds the fully display-ready view model {@link DashboardPage} hydrates from — see {@link DashboardViewModel}'s doc comment for why this exists. */
+export function buildDashboardViewModel(
+  data: DashboardData,
+): DashboardViewModel {
+  return {
+    generatedAtDisplay: formatDateTime(data.generatedAt),
+    fork: buildRepoMetricsView(
+      'zombie-mermaid (this fork)',
+      data.fork,
+      data.generatedAt,
+      true,
+    ),
+    upstream: buildRepoMetricsView(
+      'beautiful-mermaid (upstream)',
+      data.upstream,
+      data.generatedAt,
+      false,
+    ),
+    responseTime: data.responseTime,
+  }
+}
