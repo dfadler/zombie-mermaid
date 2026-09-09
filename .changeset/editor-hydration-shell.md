@@ -33,7 +33,7 @@ verification (itself asynchronous, not fully synchronous despite
 together:
 
 1. `editor-page.tsx` now places the new hydration script's `<script
-   type="module">` tag *before* `scriptJs`'s tag (both execute in
+type="module">` tag _before_ `scriptJs`'s tag (both execute in
    document order), and `demo/editor-client.tsx` wraps its `hydrateRoot()`
    call in `react-dom`'s `flushSync()` to force the initial commit fully
    synchronous.
