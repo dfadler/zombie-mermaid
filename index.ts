@@ -28,6 +28,7 @@ import {
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { IndexPage } from './demo/components/index-page.tsx'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { bundleNavClient } from './demo/build-nav-client.ts'
 
 /**
  * Bundle `demo/index-page-client.ts` for the browser (#759) — mirrors
@@ -72,12 +73,13 @@ async function buildJsonLd(): Promise<string> {
     .join('\n')
 }
 
-async function generateHtml(): Promise<string> {
+async function generateHtml(navClientScript: string): Promise<string> {
   const jsonLd = await buildJsonLd()
   return renderHtmlDocument(
     createElement(IndexPage, {
       jsonLd,
       clientScriptSrc: 'assets/index-page-client.js',
+      navClientScript,
     }),
   )
 }
@@ -85,10 +87,11 @@ async function generateHtml(): Promise<string> {
 const assetsDir = new URL('./assets/', import.meta.url)
 await mkdir(assetsDir, { recursive: true })
 
-const [html, clientJs] = await Promise.all([
-  generateHtml(),
+const [navClientScript, clientJs] = await Promise.all([
+  bundleNavClient(),
   bundleClientScript(),
 ])
+const html = await generateHtml(navClientScript)
 
 await writeFile(new URL('./index-page-client.js', assetsDir), clientJs)
 

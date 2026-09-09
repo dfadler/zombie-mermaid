@@ -53,125 +53,130 @@
   </head>
   <body>
     <div class="dc-root" style="font-family: var(--font-body); color: var(--text); width: 100%; max-width: 1440px; margin: 0px auto; background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 40%, var(--bg) 100%); position: relative; overflow: hidden;">
-      <header class="nav-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 22px 80px; border-bottom: 1px solid var(--border); background: rgba(10, 13, 22, 0.85); position: relative; z-index: 10;">
-        <a href="../" style="display: flex; align-items: center; gap: 12px; color: var(--text);">
-          <svg aria-hidden="true" fill="none" height="30" viewBox="0 0 24 24" width="30">
-            <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
-            </rect>
-            <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
-            </rect>
-            <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
-            </path>
-          </svg>
-          <span class="display" style="font-size: 20px; letter-spacing: -0.01em;">
-            "zombie-mermaid"
-          </span>
-        </a>
-        <nav aria-label="Main" class="nav-links" style="display: flex; align-items: center; gap: 36px;">
-          <a aria-current="page" href="./" style="font-size: 15px; font-weight: 600; color: var(--text);">
-            "Diagrams"
-          </a>
-          <a href="../editor" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
-            "Editor"
-          </a>
-          <a href="../fork-fixes.html" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
-            "Fork fixes"
-          </a>
-          <a href="../blog/" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
-            "Blog"
-          </a>
-          <a href="https://github.com/dfadler/zombie-mermaid" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
-            "GitHub"
-          </a>
-        </nav>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <span class="pill mono" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); flex-shrink: 0;">
-            <span class="nav-npm-text">
-              "npm install zombie-mermaid"
+      <div id="nav-root">
+        <header class="nav-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 22px 80px; border-bottom: 1px solid var(--border); background: rgba(10, 13, 22, 0.85); position: relative; z-index: 10;">
+          <a href="../" style="display: flex; align-items: center; gap: 12px; color: var(--text);">
+            <svg aria-hidden="true" fill="none" height="30" viewBox="0 0 24 24" width="30">
+              <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
+              </rect>
+              <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
+              </rect>
+              <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
+              </path>
+            </svg>
+            <span class="display" style="font-size: 20px; letter-spacing: -0.01em;">
+              "zombie-mermaid"
             </span>
-            <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
-              <rect height="12" rx="2" width="12" x="9" y="9">
-              </rect>
-              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
-              </path>
-            </svg>
-          </span>
-          <button aria-expanded="false" aria-label="Menu" class="menu-toggle" style="display: none; width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0px; cursor: pointer; flex-shrink: 0; border: medium;" type="button">
-            <svg aria-hidden="true" fill="none" height="22" stroke="var(--text)" stroke-linecap="round" stroke-width="1.8" viewBox="0 0 24 24" width="22">
-              <line class="mnt-bar mnt-bar-top" x1="3" x2="21" y1="7" y2="7">
-              </line>
-              <line class="mnt-bar mnt-bar-mid" x1="3" x2="21" y1="12" y2="12">
-              </line>
-              <line class="mnt-bar mnt-bar-bottom" x1="3" x2="21" y1="17" y2="17">
-              </line>
-            </svg>
-          </button>
-        </div>
-      </header>
-      <nav aria-label="Main (mobile)" class="mobile-nav-panel">
-        <svg aria-hidden="true" class="mobile-diagram-bg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 390 844">
-          <path class="mdb-edge" d="M44 150 C 120 205, 90 310, 175 355" fill="none" opacity=".38" stroke="var(--blue)" stroke-dasharray="2 8" stroke-width="1.5">
-          </path>
-          <path class="mdb-edge" d="M348 190 C 300 265, 336 415, 258 478" fill="none" opacity=".32" stroke="var(--violet)" stroke-dasharray="2 8" stroke-width="1.5">
-          </path>
-          <path class="mdb-edge" d="M175 355 C 220 400, 200 445, 258 478" fill="none" opacity=".32" stroke="var(--cyan)" stroke-dasharray="2 8" stroke-width="1.5">
-          </path>
-          <path class="mdb-edge" d="M64 630 C 140 610, 160 705, 262 696" fill="none" opacity=".32" stroke="var(--pink)" stroke-dasharray="2 8" stroke-width="1.5">
-          </path>
-          <path class="mdb-edge" d="M258 478 C 220 560, 160 590, 64 630" fill="none" opacity=".28" stroke="var(--amber)" stroke-dasharray="2 8" stroke-width="1.5">
-          </path>
-          <circle cx="44" cy="150" fill="var(--blue)" opacity=".45" r="5">
-          </circle>
-          <circle cx="175" cy="355" fill="var(--cyan)" opacity=".45" r="5">
-          </circle>
-          <circle cx="348" cy="190" fill="var(--violet)" opacity=".45" r="5">
-          </circle>
-          <circle cx="258" cy="478" fill="var(--amber)" opacity=".45" r="5">
-          </circle>
-          <circle cx="64" cy="630" fill="var(--pink)" opacity=".45" r="5">
-          </circle>
-          <circle cx="262" cy="696" fill="var(--green)" opacity=".45" r="5">
-          </circle>
-        </svg>
-        <div class="mobile-watermark">
-          <svg aria-hidden="true" fill="none" height="220" viewBox="0 0 24 24" width="220">
-            <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
-            </rect>
-            <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
-            </rect>
-            <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
+          </a>
+          <nav aria-label="Main" class="nav-links" style="display: flex; align-items: center; gap: 36px;">
+            <a aria-current="page" href="./" style="font-size: 15px; font-weight: 600; color: var(--text);">
+              "Diagrams"
+            </a>
+            <a href="../editor" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+              "Editor"
+            </a>
+            <a href="../fork-fixes.html" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+              "Fork fixes"
+            </a>
+            <a href="../blog/" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+              "Blog"
+            </a>
+            <a href="https://github.com/dfadler/zombie-mermaid" style="font-size: 15px; font-weight: 600; color: var(--text-dim);">
+              "GitHub"
+            </a>
+          </nav>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span aria-label="Copy install command" class="pill mono" role="button" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); flex-shrink: 0; cursor: pointer;" tabindex="0">
+              <span class="nav-npm-text">
+                "npm install zombie-mermaid"
+              </span>
+              <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
+                <rect height="12" rx="2" width="12" x="9" y="9">
+                </rect>
+                <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
+                </path>
+              </svg>
+            </span>
+            <button aria-expanded="false" aria-label="Menu" class="menu-toggle" style="display: none; width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0px; cursor: pointer; flex-shrink: 0; border: medium;" type="button">
+              <svg aria-hidden="true" fill="none" height="22" stroke="var(--text)" stroke-linecap="round" stroke-width="1.8" viewBox="0 0 24 24" width="22">
+                <line class="mnt-bar mnt-bar-top" x1="3" x2="21" y1="7" y2="7">
+                </line>
+                <line class="mnt-bar mnt-bar-mid" x1="3" x2="21" y1="12" y2="12">
+                </line>
+                <line class="mnt-bar mnt-bar-bottom" x1="3" x2="21" y1="17" y2="17">
+                </line>
+              </svg>
+            </button>
+          </div>
+        </header>
+        <nav aria-label="Main (mobile)" class="mobile-nav-panel">
+          <svg aria-hidden="true" class="mobile-diagram-bg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 390 844">
+            <path class="mdb-edge" d="M44 150 C 120 205, 90 310, 175 355" fill="none" opacity=".38" stroke="var(--blue)" stroke-dasharray="2 8" stroke-width="1.5">
             </path>
+            <path class="mdb-edge" d="M348 190 C 300 265, 336 415, 258 478" fill="none" opacity=".32" stroke="var(--violet)" stroke-dasharray="2 8" stroke-width="1.5">
+            </path>
+            <path class="mdb-edge" d="M175 355 C 220 400, 200 445, 258 478" fill="none" opacity=".32" stroke="var(--cyan)" stroke-dasharray="2 8" stroke-width="1.5">
+            </path>
+            <path class="mdb-edge" d="M64 630 C 140 610, 160 705, 262 696" fill="none" opacity=".32" stroke="var(--pink)" stroke-dasharray="2 8" stroke-width="1.5">
+            </path>
+            <path class="mdb-edge" d="M258 478 C 220 560, 160 590, 64 630" fill="none" opacity=".28" stroke="var(--amber)" stroke-dasharray="2 8" stroke-width="1.5">
+            </path>
+            <circle cx="44" cy="150" fill="var(--blue)" opacity=".45" r="5">
+            </circle>
+            <circle cx="175" cy="355" fill="var(--cyan)" opacity=".45" r="5">
+            </circle>
+            <circle cx="348" cy="190" fill="var(--violet)" opacity=".45" r="5">
+            </circle>
+            <circle cx="258" cy="478" fill="var(--amber)" opacity=".45" r="5">
+            </circle>
+            <circle cx="64" cy="630" fill="var(--pink)" opacity=".45" r="5">
+            </circle>
+            <circle cx="262" cy="696" fill="var(--green)" opacity=".45" r="5">
+            </circle>
           </svg>
-        </div>
-        <div class="mobile-links">
-          <a aria-current="page" class="mobile-link" href="./" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text);">
-            "Diagrams"
-          </a>
-          <a class="mobile-link" href="../editor" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
-            "Editor"
-          </a>
-          <a class="mobile-link" href="../fork-fixes.html" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
-            "Fork fixes"
-          </a>
-          <a class="mobile-link" href="../blog/" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
-            "Blog"
-          </a>
-          <a class="mobile-link" href="https://github.com/dfadler/zombie-mermaid" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
-            "GitHub"
-          </a>
-        </div>
-        <span class="mobile-install">
-          <span class="pill mono" style="background: rgba(20, 26, 46, 0.85); border: 1px solid var(--border); color: var(--text-dim);">
-            "npm install zombie-mermaid"
-            <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
-              <rect height="12" rx="2" width="12" x="9" y="9">
+          <div class="mobile-watermark">
+            <svg aria-hidden="true" fill="none" height="220" viewBox="0 0 24 24" width="220">
+              <rect height="9" rx="3" stroke="var(--cyan)" stroke-width="1.6" width="9" x="2" y="2">
               </rect>
-              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
+              <rect height="9" rx="3" stroke="var(--violet)" stroke-width="1.6" width="9" x="13" y="2">
+              </rect>
+              <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" fill="none" stroke="var(--pink)" stroke-width="1.6">
               </path>
             </svg>
+          </div>
+          <div class="mobile-links">
+            <a aria-current="page" class="mobile-link" href="./" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text);">
+              "Diagrams"
+            </a>
+            <a class="mobile-link" href="../editor" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+              "Editor"
+            </a>
+            <a class="mobile-link" href="../fork-fixes.html" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+              "Fork fixes"
+            </a>
+            <a class="mobile-link" href="../blog/" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+              "Blog"
+            </a>
+            <a class="mobile-link" href="https://github.com/dfadler/zombie-mermaid" style="font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; color: var(--text-dim);">
+              "GitHub"
+            </a>
+          </div>
+          <span class="mobile-install">
+            <span class="pill mono" style="background: rgba(20, 26, 46, 0.85); border: 1px solid var(--border); color: var(--text-dim);">
+              "npm install zombie-mermaid"
+              <svg aria-hidden="true" fill="none" height="15" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="15">
+                <rect height="12" rx="2" width="12" x="9" y="9">
+                </rect>
+                <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1">
+                </path>
+              </svg>
+            </span>
           </span>
-        </span>
-      </nav>
+        </nav>
+      </div>
+      <script id="nav-props" type="application/json">
+        "{\"active\":\"diagrams\",\"homeHref\":\"../\",\"hrefs\":{\"diagrams\":\"./\",\"editor\":\"../editor\",\"forkFixes\":\"../fork-fixes.html\",\"blog\":\"../blog/\",\"github\":\"https://github.com/dfadler/zombie-mermaid\"},\"hasInstallSlot\":false}"
+      </script>
       <div class="section-px" style="padding: 64px 80px 96px; position: relative; z-index: 1;">
         <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 24px;">
           <div class="breadcrumb mono">
@@ -466,9 +471,10 @@
       </footer>
     </div>
     <script type="module">
+      "globalThis.__fixture = 1 < 2 && 3 > 2;\nconsole.log(\"fixture & <b>bold</b>\");"
     </script>
-    <script>
-      "(function () {\n  function copyCommand(pill) {\n    var text = pill.querySelector('.nav-npm-text')\n    var icon = pill.querySelector('svg')\n    if (!text || !navigator.clipboard) return\n    navigator.clipboard.writeText(text.textContent || '').then(function () {\n      if (!icon) return\n      icon.setAttribute('stroke', 'var(--green)')\n      setTimeout(function () {\n        icon.setAttribute('stroke', 'var(--cyan)')\n      }, 1200)\n    })\n  }\n  var pills = document.querySelectorAll('.nav-bar .pill.mono')\n  pills.forEach(function (pill) {\n    pill.setAttribute('role', 'button')\n    pill.setAttribute('tabindex', '0')\n    pill.setAttribute('aria-label', 'Copy install command')\n    pill.style.cursor = 'pointer'\n    pill.addEventListener('click', function () {\n      copyCommand(pill)\n    })\n    pill.addEventListener('keydown', function (event) {\n      if (event.key === 'Enter' || event.key === ' ') {\n        event.preventDefault()\n        copyCommand(pill)\n      }\n    })\n  })\n})()"
+    <script type="module">
+      "globalThis.__navFixture = 1 < 2 && 3 > 2;\nconsole.log(\"nav fixture & <b>bold</b>\");"
     </script>
     <script>
       "(function () {\n  function closeMenu(toggle, panel, returnFocus) {\n    panel.classList.remove('is-open')\n    toggle.classList.remove('is-open')\n    toggle.setAttribute('aria-expanded', 'false')\n    document.documentElement.classList.remove('mobile-nav-open')\n    if (returnFocus) toggle.focus()\n  }\n\n  function openMenu(toggle, panel) {\n    panel.classList.add('is-open')\n    toggle.classList.add('is-open')\n    toggle.setAttribute('aria-expanded', 'true')\n    document.documentElement.classList.add('mobile-nav-open')\n    var firstLink = panel.querySelector('.mobile-link')\n    if (firstLink) firstLink.focus()\n  }\n\n  document.querySelectorAll('.nav-bar').forEach(function (bar) {\n    var toggle = bar.querySelector('.menu-toggle')\n    var panel = bar.nextElementSibling\n    if (!toggle || !panel || !panel.classList.contains('mobile-nav-panel')) {\n      return\n    }\n\n    toggle.addEventListener('click', function () {\n      if (panel.classList.contains('is-open')) {\n        closeMenu(toggle, panel, true)\n      } else {\n        openMenu(toggle, panel)\n      }\n    })\n\n    panel.querySelectorAll('.mobile-link').forEach(function (link) {\n      link.addEventListener('click', function () {\n        closeMenu(toggle, panel, false)\n      })\n    })\n\n    panel.addEventListener('keydown', function (event) {\n      if (event.key === 'Escape') {\n        event.preventDefault()\n        closeMenu(toggle, panel, true)\n      }\n    })\n  })\n})()"

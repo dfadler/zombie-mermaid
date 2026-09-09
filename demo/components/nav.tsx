@@ -60,7 +60,8 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CopyIcon,
   ICON_LINE_CAP,
@@ -513,12 +514,71 @@ function NavBrand({ homeHref }: { homeHref?: string }) {
  *
  * The text is the element the 600px rule hides, so it must stay its own
  * `.nav-npm-text` span rather than being the pill's bare text content.
+ *
+ * Real `onClick`/`onKeyDown` handlers plus {@link useState} for the
+ * "copied" flash (zombie-mermaid#800) — replacing the old
+ * `NAV_COPY_SCRIPT` runtime script, which mutated this same markup's
+ * `role`/`tabindex`/`aria-label`/cursor attributes and the icon's `stroke`
+ * *after* the fact. Those attributes are now part of this component's own
+ * render output from the start (identical on the server and the client, so
+ * hydration has nothing to reconcile), and the icon's stroke color is
+ * driven by {@link copied} instead of a `setAttribute` call.
  */
 function NavInstall({ command }: { command: string }) {
+  const [copied, setCopied] = useState(false)
+  const revertTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  )
+
+  // Cleared on unmount so a pending revert never fires against an
+  // unmounted component (defensive — Nav is never intentionally unmounted
+  // in this repo's pages, but hydration boundaries are exactly the place
+  // to not assume that).
+  useEffect(() => {
+    return () => {
+      if (revertTimer.current) clearTimeout(revertTimer.current)
+    }
+  }, [])
+
+  function copyCommand(): void {
+    if (!command || !navigator.clipboard) return
+    navigator.clipboard.writeText(command).then(() => {
+      setCopied(true)
+      if (revertTimer.current) clearTimeout(revertTimer.current)
+      revertTimer.current = setTimeout(
+        () => setCopied(false),
+        NAV_COPY_FEEDBACK_MS,
+      )
+    })
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLSpanElement>): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      copyCommand()
+    }
+  }
+
   return (
-    <Pill mono style={{ background: colorVar('--panel-2'), flexShrink: 0 }}>
+    <Pill
+      mono
+      style={{
+        background: colorVar('--panel-2'),
+        flexShrink: 0,
+        cursor: 'pointer',
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Copy install command"
+      onClick={copyCommand}
+      onKeyDown={handleKeyDown}
+    >
       <span className="nav-npm-text">{command}</span>
-      <CopyIcon size={COPY_ICON_SIZE} strokeWidth={COPY_ICON_STROKE} />
+      <CopyIcon
+        size={COPY_ICON_SIZE}
+        strokeWidth={COPY_ICON_STROKE}
+        color={copied ? NAV_COPY_SUCCESS_COLOR : NAV_COPY_ICON_COLOR}
+      />
     </Pill>
   )
 }
@@ -715,10 +775,12 @@ function MobileNavLink({
  *
  * Closed by default (`.mobile-nav-panel` with no `is-open`); {@link
  * NAV_MOBILE_MENU_SCRIPT} toggles the class and this element's sibling
- * {@link MenuToggle} at runtime, the same "static markup, runtime script"
- * split {@link NAV_COPY_SCRIPT} uses. `position: fixed` on `.mobile-nav-panel`
- * means it covers the viewport regardless of where `Nav` sits in the page,
- * so it renders as `Nav`'s sibling rather than nested inside the bar.
+ * {@link MenuToggle} at runtime — still a "static markup, runtime script"
+ * split (unlike the install pill's copy behavior, real React state as of
+ * #800; see {@link NavInstall}'s doc comment). `position: fixed` on
+ * `.mobile-nav-panel` means it covers the viewport regardless of where
+ * `Nav` sits in the page, so it renders as `Nav`'s sibling rather than
+ * nested inside the bar.
  */
 function MobileNavPanel({
   linkItems,
@@ -763,8 +825,8 @@ function MobileNavPanel({
 /**
  * The copy glyph's resting stroke — `var(--cyan)`, the same value
  * {@link CopyIcon}'s own `defaultColor` resolves to (icons.tsx's
- * `StrokeIcon`). {@link NAV_COPY_SCRIPT} reverts to this after the
- * "copied" flash rather than a hand-typed duplicate of the color.
+ * `StrokeIcon`). {@link NavInstall} reverts to this after the "copied"
+ * flash rather than a hand-typed duplicate of the color.
  */
 const NAV_COPY_ICON_COLOR = colorVar('--cyan')
 
@@ -778,83 +840,57 @@ const NAV_COPY_SUCCESS_COLOR = colorVar('--green')
 /** How long the copy glyph stays green after a successful copy, in ms. */
 const NAV_COPY_FEEDBACK_MS = 1200
 
-/**
- * Makes the install pill copy its command to the clipboard.
- *
- * Plain runtime JS, not a bundled module: the pill (`.nav-bar .pill.mono`)
- * has no dedicated hook of its own — deliberately. The parts of `Nav` this
- * script targets are pinned byte-for-byte to the #590 design canvas (see
- * this file's header comment), so this script finds the pill by the classes
- * it already carries and turns it interactive at *runtime* — role,
- * tabindex, click/keydown — instead of changing the server-rendered markup.
- * The rendered HTML is byte-identical whether or not this script ever runs.
- * ({@link MenuToggle}'s `<button>`, added for the mobile menu, is the one
- * deliberate exception to "no `<button>`" — see the module doc comment.)
- *
- * Exported as a string, not a `demo/*-client.ts` module bundled with
- * esbuild (contrast `demo/diagram-page-client.ts`): every page that
- * renders `<Nav>` already ships its own document from a different
- * generator (index.ts, blog.ts, dashboard.ts, fork-fixes.ts, pages.ts),
- * and this behavior is small and dependency-free enough that duplicating
- * an esbuild step five times over would cost more than it buys.
- */
-export const NAV_COPY_SCRIPT = `(function () {
-  function copyCommand(pill) {
-    var text = pill.querySelector('.nav-npm-text')
-    var icon = pill.querySelector('svg')
-    if (!text || !navigator.clipboard) return
-    navigator.clipboard.writeText(text.textContent || '').then(function () {
-      if (!icon) return
-      icon.setAttribute('stroke', '${NAV_COPY_SUCCESS_COLOR}')
-      setTimeout(function () {
-        icon.setAttribute('stroke', '${NAV_COPY_ICON_COLOR}')
-      }, ${NAV_COPY_FEEDBACK_MS})
-    })
-  }
-  var pills = document.querySelectorAll('.nav-bar .pill.mono')
-  pills.forEach(function (pill) {
-    pill.setAttribute('role', 'button')
-    pill.setAttribute('tabindex', '0')
-    pill.setAttribute('aria-label', 'Copy install command')
-    pill.style.cursor = 'pointer'
-    pill.addEventListener('click', function () {
-      copyCommand(pill)
-    })
-    pill.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault()
-        copyCommand(pill)
-      }
-    })
-  })
-})()`
+/* -----------------------------------------------------------------
+ * Hydration (zombie-mermaid#800)
+ * ----------------------------------------------------------------- */
 
 /**
- * {@link NAV_COPY_SCRIPT} in a `<script>` element.
+ * `nav-root`: id of the *hydration container* every page's Nav-hydration
+ * client script (`demo/nav-client.tsx`'s `hydrateNav()`) mounts onto — see
+ * `demo/components/nav-island.tsx`'s `NavIsland`, which every page-level
+ * generator now renders in place of a bare `<Nav .../>`.
  *
- * Render this once per page (not once per `<Nav>` — a page like
- * blog-page.tsx's post template renders `Nav` twice), after the last
- * `<Nav>` in the document so every install pill already exists when it
- * runs.
+ * A separate wrapper element from `Nav`'s own rendered root, for the same
+ * reason `dashboard-app.tsx`'s `DASHBOARD_ROOT_ID` is (see that constant's
+ * doc comment): `Nav` itself returns a fragment — the bar, then {@link
+ * MobileNavPanel} as its sibling — and `hydrateRoot(container, node)`
+ * requires a single container whose *children* match what `node` renders,
+ * not a container that is itself part of that render output.
  */
-export function NavCopyScript() {
-  return (
-    <script
-      // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- NAV_COPY_SCRIPT is a hardcoded literal with no user input
-      dangerouslySetInnerHTML={{ __html: NAV_COPY_SCRIPT }}
-    />
-  )
-}
+export const NAV_ROOT_ID = 'nav-root'
+
+/**
+ * `nav-props`: the `<script type="application/json">` element
+ * `demo/nav-client.tsx` reads a page's Nav props out of — see
+ * `nav-island.tsx`'s `NavHydrationProps` for the JSON-safe subset of
+ * {@link NavProps} actually embedded (a real `installSlot` element can't
+ * round-trip through JSON, so it's carried as a boolean flag instead and
+ * reconstructed client-side).
+ */
+export const NAV_PROPS_ELEMENT_ID = 'nav-props'
+
+/**
+ * `nav-theme-slot`: id of the placeholder `<div>` the homepage passes as
+ * {@link NavProps.installSlot} (see that prop's own doc comment) —
+ * exported so `nav-island.tsx` can reconstruct the exact same element on
+ * both sides of hydration without a second hardcoded copy of the string,
+ * and so `demo/index-page-client.ts`'s `document.getElementById(...)`
+ * lookup and this id can never drift apart.
+ */
+export const NAV_THEME_SLOT_ID = 'nav-theme-slot'
 
 /* -----------------------------------------------------------------
  * Mobile menu behavior
  * ----------------------------------------------------------------- */
 
 /**
- * Opens, closes, and focus-manages {@link MobileNavPanel} — the same
- * "static markup, runtime script" split {@link NAV_COPY_SCRIPT} uses, for
- * the same reason: the toggle and panel are plain `Nav` output with no
- * client-side React to attach handlers to.
+ * Opens, closes, and focus-manages {@link MobileNavPanel} — a plain runtime
+ * script, not React state, even though `Nav` itself hydrates as of #800:
+ * the toggle and panel render exactly the same DOM either way, and out-of-
+ * scope for #800 (see this file's module doc comment on the mobile menu
+ * being invented, not canvas-pinned) — {@link NavInstall}'s copy button is
+ * the one piece of `Nav` interactivity this issue converts to real
+ * `onClick`/`useState`.
  *
  * Pairs each `.menu-toggle` with the `.mobile-nav-panel` that follows it —
  * {@link MobileNavPanel}'s own doc comment explains why that panel renders
@@ -921,8 +957,8 @@ export const NAV_MOBILE_MENU_SCRIPT = `(function () {
 /**
  * {@link NAV_MOBILE_MENU_SCRIPT} in a `<script>` element.
  *
- * Render this once per page (same rule as {@link NavCopyScript} — see its
- * doc comment), after the last `<Nav>` in the document.
+ * Render this once per page, after the last `<Nav>`/{@link NavIsland} in
+ * the document.
  */
 export function NavMobileMenuScript() {
   return (

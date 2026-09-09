@@ -27,7 +27,12 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { CSSProperties, ReactNode } from 'react'
+import type {
+  CSSProperties,
+  KeyboardEventHandler,
+  MouseEventHandler,
+  ReactNode,
+} from 'react'
 import {
   COLORS,
   FONT_SIZE,
@@ -279,6 +284,20 @@ export interface PillProps {
   className?: string
   /** Merged last, so a page can override any of the above. */
   style?: CSSProperties
+  /**
+   * ARIA role override — e.g. `'button'` for a pill that acts as a click
+   * target (nav.tsx's install-command pill, zombie-mermaid#800). Omit for
+   * every non-interactive pill (the default).
+   */
+  role?: string
+  /** Tab-stop order, paired with `role="button"` for a keyboard-reachable pill. */
+  tabIndex?: number
+  /** Accessible name, for a pill whose visible text doesn't fully describe its action. */
+  'aria-label'?: string
+  /** Click handler, for a pill that acts as a button. */
+  onClick?: MouseEventHandler<HTMLSpanElement>
+  /** Keydown handler, paired with `onClick` for keyboard activation (Enter/Space). */
+  onKeyDown?: KeyboardEventHandler<HTMLSpanElement>
   children?: ReactNode
 }
 
@@ -319,6 +338,11 @@ export function Pill({
   fontSize,
   className,
   style,
+  role,
+  tabIndex,
+  'aria-label': ariaLabel,
+  onClick,
+  onKeyDown,
   children,
 }: PillProps) {
   const resolved: PillVariant = variant ?? (accent ? 'solid' : 'muted')
@@ -328,6 +352,11 @@ export function Pill({
     <span
       className={classNames('pill', mono && 'mono', className)}
       style={{ ...pill, ...style }}
+      role={role}
+      tabIndex={tabIndex}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
     >
       {children}
     </span>

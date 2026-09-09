@@ -29,12 +29,15 @@
  *    ({@link DASHBOARD_ROOT_ID}) — not `createRoot()`, which would discard
  *    and replace the server-rendered markup instead of attaching to it.
  *
- * dashboard.html has no interactive elements yet as of this issue (see
- * #797's audit table) — hydrating it is still worth proving out here
- * specifically *because* there's nothing to regress if the pattern has a
- * bug, per the issue's own reasoning for picking this page first. Later
- * sub-issues (#800 Nav, #801 ThemeBar, the editor rewrite) add the actual
- * interactive behavior this plumbing exists to support.
+ * dashboard.html had no interactive elements as of #799 (see #797's audit
+ * table) — hydrating it was still worth proving out there specifically
+ * *because* there was nothing to regress if the pattern had a bug, per that
+ * issue's own reasoning for picking this page first. #800 is the first
+ * sub-issue to add real interactive behavior on top of this plumbing:
+ * `<Nav>`'s install-copy button, hydrated as its own separate island via
+ * {@link hydrateNav} — see that function's own doc comment
+ * (`demo/nav-client.tsx`) for why it isn't folded into {@link DashboardApp}
+ * itself. #801 (ThemeBar) and the editor rewrite still come later.
  */
 import { createElement } from 'react'
 import { hydrateRoot } from 'react-dom/client'
@@ -44,6 +47,7 @@ import {
   DASHBOARD_ROOT_ID,
 } from './components/dashboard-app.tsx'
 import type { DashboardViewModel } from './dashboard-model.ts'
+import { hydrateNav } from './nav-client.tsx'
 
 function readViewModel(): DashboardViewModel {
   const propsEl = document.getElementById(DASHBOARD_PROPS_ELEMENT_ID)
@@ -64,6 +68,10 @@ function main(): void {
   }
   const viewModel = readViewModel()
   hydrateRoot(container, createElement(DashboardApp, { viewModel }))
+  // Nav is its own, separate hydration island (zombie-mermaid#800) — see
+  // DashboardApp's doc comment (dashboard-app.tsx) for why it still isn't
+  // part of DASHBOARD_ROOT_ID's own boundary.
+  hydrateNav()
 }
 
 main()

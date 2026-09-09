@@ -74,7 +74,8 @@ import { SiteHead } from './site-head.tsx'
 import { FORK_URL } from './site-chrome.tsx'
 import { EditorTopbar } from './editor-topbar.tsx'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
-import { Nav, NavCopyScript, NavMobileMenuScript, NavStyle } from './nav.tsx'
+import { NavMobileMenuScript, NavStyle } from './nav.tsx'
+import { NavIsland } from './nav-island.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
 import { Card, PrimitivesStyle } from './primitives.tsx'
 import {
@@ -450,9 +451,25 @@ export interface EditorPageProps {
    * editor.ts exactly as before and inlined as one module script.
    */
   scriptJs: string
+  /**
+   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
+   * hydrates `<Nav>`, inlined into its own separate `<script type="module">`
+   * — not concatenated into {@link scriptJs}. See editor.ts's own doc
+   * comment for why: two independently-minified bundles concatenated as
+   * plain text risk colliding top-level identifier names (the exact hazard
+   * that already forces `bundleThemeStateBridge()`'s IIFE wrapper there);
+   * a second `<script type="module">` tag gets its own module scope for
+   * free instead.
+   */
+  navClientScript: string
 }
 
-export function EditorPage({ css, themeItems, scriptJs }: EditorPageProps) {
+export function EditorPage({
+  css,
+  themeItems,
+  scriptJs,
+  navClientScript,
+}: EditorPageProps) {
   const homeHref = '/zombie-mermaid/'
   return (
     <html lang="en">
@@ -471,7 +488,7 @@ export function EditorPage({ css, themeItems, scriptJs }: EditorPageProps) {
       </head>
       <body>
         <div className={ZM_SHELL}>
-          <Nav
+          <NavIsland
             active="editor"
             homeHref={homeHref}
             hrefs={{
@@ -512,7 +529,11 @@ export function EditorPage({ css, themeItems, scriptJs }: EditorPageProps) {
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own src/browser.ts bundle plus editor/js/*.js, both under version control and concatenated at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: scriptJs }}
         />
-        <NavCopyScript />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: navClientScript }}
+        />
         <NavMobileMenuScript />
       </body>
     </html>

@@ -38,6 +38,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { bundleNavClient } from './demo/build-nav-client.ts'
 import { EditorPage } from './demo/components/editor-page.tsx'
 import {
   EditorThemeItems,
@@ -146,9 +147,10 @@ async function bundleThemeStateBridge(): Promise<string> {
 }
 
 async function generateEditorHtml(): Promise<string> {
-  const [bundleJs, themeStateBridgeJs] = await Promise.all([
+  const [bundleJs, themeStateBridgeJs, navClientScript] = await Promise.all([
     bundleBrowserScript(),
     bundleThemeStateBridge(),
+    bundleNavClient(),
   ])
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
@@ -165,6 +167,7 @@ async function generateEditorHtml(): Promise<string> {
       css,
       themeItems: createElement(EditorThemeItems, { themes }),
       scriptJs: `${bundleJs}\n\n${themeStateBridgeJs}\n\n${appJs}\n`,
+      navClientScript,
     }),
   )
 }

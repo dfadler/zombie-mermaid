@@ -43,6 +43,7 @@ import {
   themePickerCss,
 } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
+import { bundleNavClient } from './demo/build-nav-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
 
 /**
@@ -386,7 +387,10 @@ async function main(): Promise<void> {
   // #687: the blog index's live theme picker needs no other client JS on
   // this page, so it gets the same shared bundle Home/the Diagrams
   // hub/Fork Fixes/Dashboard use.
-  const themeBarScript = await bundleThemeBarClient()
+  const [themeBarScript, navClientScript] = await Promise.all([
+    bundleThemeBarClient(),
+    bundleNavClient(),
+  ])
 
   const posts = await loadPosts()
   const highlighter = await createHighlighter({
@@ -415,6 +419,7 @@ async function main(): Promise<void> {
         faviconHref: '../favicon.svg',
         publishedTime: post.date,
         bodyHtml,
+        navClientScript,
       }),
     )
 
@@ -434,6 +439,7 @@ async function main(): Promise<void> {
         description: post.description,
       })),
       themeBarScript,
+      navClientScript,
     }),
   )
 
