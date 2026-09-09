@@ -6,20 +6,22 @@
  * `<body>` in as one raw HTML string, because editor/html/*.html weren't
  * component-shaped yet. #589 finished the port: the topbar and the two
  * panels are real components now
- * (demo/components/editor-topbar.tsx, demo/components/editor-panels.tsx),
- * `editor/html/` is gone, and the only thing still spliced in raw is the
- * inline `<script type="module">` carrying the bundled renderer plus every
- * editor/js/*.js module — which stays a separately bundled vanilla script
- * by design (see docs/decisions/react-site-migration-plan.md).
+ * (demo/components/editor-topbar.tsx, demo/components/editor-panels.tsx).
+ * `editor/html/` is gone. #806 replaced the last raw splice (an inline
+ * `<script type="module">` carrying the bundled renderer plus every
+ * editor/js/*.js module, spliced via `dangerouslySetInnerHTML`) with a
+ * real server-render-then-hydrate boundary — see the "Hydration" section
+ * of this comment below.
  *
  * #609 (part of the #590 site redesign) adds the shared {@link Nav} and
  * {@link Footer} plus a hero header and a feature strip, all lifted from
  * the design canvas's `Editor.dc.html` artboard (see #590's body). This is
- * presentation only: {@link EditorChrome} — the topbar, the two panels, and
- * the toast — is untouched, byte-for-byte the same tree
- * editor/__tests__/support/harness.ts mounts and editor/js/*.js queries by
- * id. Two things had to change to fit it into the new chrome, both confined
- * to this file:
+ * presentation only: the tool's own chrome — the topbar, the two panels,
+ * and the toast, now `<EditorAppIsland>`'s hydrated subtree (see
+ * `demo/components/editor-app.tsx`'s `EditorApp`) — is untouched,
+ * byte-for-byte the same tree editor/__tests__/support/harness.ts mounts
+ * and editor/js/*.js queries by id. Two things had to change to fit it
+ * into the new chrome, both confined to this file:
  *
  * 1. **The page now scrolls.** editor/css/variables.css pins `html`/`body`
  *    to a fixed `height:100vh; overflow:hidden` app-shell so `.main`'s
@@ -33,13 +35,17 @@
  * 2. **The tool now lives in a fixed-height card, not the full viewport.**
  *    `.editor-tool-shell` (defined here, not in editor/css) reproduces
  *    body's old contract — `display:flex; flex-direction:column;
- *    overflow:hidden` over an explicit height — so `<EditorChrome>`'s three
+ *    overflow:hidden` over an explicit height — so `<EditorApp>`'s three
  *    children (`.topbar`, `.main`, the toast) lay out exactly as before,
  *    just scoped to a smaller, bordered box instead of the whole window.
- *    `<EditorChrome>` renders a fragment, so those three elements land as
+ *    `<EditorApp>` renders a fragment, so those three elements land as
  *    `.editor-tool-shell`'s direct children with no wrapper `<div>` in
  *    between — the same "no wrapper" invariant the component's own doc
- *    comment describes, just one level down from `<body>`.
+ *    comment describes, just one level down from `<body>` (the actual
+ *    element `.editor-tool-shell` holds is `#editor-root`, `<EditorAppIsland>`'s
+ *    hydration container — see this file's "Hydration" section — but that
+ *    container is a plain, inert wrapper `<EditorApp>` renders no markup
+ *    of its own into, so the invariant still holds one level further down).
  *
  * The new chrome's colours come from tokens.tsx's design-system palette,
  * which is *not* safe to load at `:root` here: editor/css/variables.css
@@ -68,12 +74,49 @@
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
+ *
+ * ## Hydration (zombie-mermaid#806)
+ *
+ * The tool's chrome (topbar, panels, toast — what used to be
+ * `<EditorChrome>`, rendered via `renderToStaticMarkup` with a separate
+ * vanilla-JS bundle bolted on) is now `<EditorAppIsland>`: a real
+ * server-render-then-hydrate boundary, matching `dashboard.html`/
+ * `fork-fixes.html`'s established pattern. See
+ * `demo/components/editor-app.tsx`'s header comment for the state/DOM-ref
+ * core this introduces, and `demo/components/editor-app-island.tsx` for
+ * the server-side half of the boundary.
+ *
+ * Two real `<script type="module">` tags run, in this order (document
+ * order is execution order for module scripts):
+ *
+ * 1. `rendererSetupJs` — the bundled Mermaid renderer (`window.__mermaid`)
+ *    plus the theme-state bridge (`window.__themeState`). Unchanged from
+ *    before this PR, just no longer concatenated with the legacy editor
+ *    bundle into one script.
+ * 2. `editorClientScript` — `demo/editor-client.tsx`'s bundle: hydrates
+ *    `<EditorApp>` against pristine, server-rendered markup, hydrates
+ *    `<NavIsland>`, then loads and runs {@link appJs} itself.
+ *
+ * `appJs` — the 18 legacy `editor/js/*.ts` modules (unchanged, still
+ * concatenated the same way `bundleEditorJs()` always has) — is **not** a
+ * third `<script type="module">` tag. It's embedded as inert data (a
+ * `<script>` with a `type` no browser executes) and only actually run once
+ * `demo/editor-client.tsx`'s `runLegacyEditorBundle()` explicitly loads it
+ * via a `Blob` URL, *after* confirming `<EditorApp>` has really finished
+ * hydrating (not just "come after in the script tag order" — see that
+ * file's header comment and `editor-app.tsx`'s `EDITOR_HYDRATED_EVENT` doc
+ * comment for why script order alone turned out not to be enough: several
+ * legacy modules mutate DOM inside `<EditorApp>`'s hydration boundary at
+ * module-top-level, and `hydrateRoot()`'s own hydration pass is scheduled
+ * asynchronously rather than run synchronously inside the `hydrateRoot()`
+ * call).
  */
 import type { ReactNode } from 'react'
 import { SiteHead } from './site-head.tsx'
 import { FORK_URL } from './site-chrome.tsx'
-import { EditorTopbar } from './editor-topbar.tsx'
-import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
+import { EditorAppIsland } from './editor-app-island.tsx'
+import { EDITOR_LEGACY_APP_JS_ELEMENT_ID } from './editor-app.tsx'
+import type { EditorThemeItem } from './editor-topbar.tsx'
 import { NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
@@ -96,38 +139,6 @@ import {
   SPACE,
   colorVar,
 } from './tokens.tsx'
-
-/**
- * Everything inside `<body>` except the inlined script: the topbar, the
- * two panels with the resize handle between them, and the toast.
- *
- * Exported so editor/__tests__/support/harness.ts can build its jsdom
- * document from the *same* component tree the generator ships, rather than
- * from a second, drifting copy of the markup (it used to read the
- * editor/html/*.html partials directly, which no longer exist).
- */
-export function EditorChrome({ themeItems }: { themeItems: ReactNode }) {
-  return (
-    <>
-      {/* Top bar */}
-      <EditorTopbar themeItems={themeItems} />
-
-      {/* Main */}
-      <div className="main">
-        {/* Left panel */}
-        <EditorLeftPanel />
-
-        {/* Resize handle */}
-        <div className="resize-handle" id="resize-handle" />
-
-        {/* Right panel */}
-        <EditorRightPanel />
-      </div>
-
-      <div className="toast" id="toast" />
-    </>
-  )
-}
 
 /* -----------------------------------------------------------------
  * The new chrome's CSS
@@ -444,31 +455,50 @@ function EditorFeatureStrip() {
 
 export interface EditorPageProps {
   css: string
-  /** The theme dropdown's entries (see editor.ts's `ThemeDropdownItems`). */
-  themeItems: ReactNode
   /**
-   * The bundled renderer plus every editor/js/*.js module, concatenated by
-   * editor.ts exactly as before and inlined as one module script.
+   * The theme dropdown's entries, as plain JSON-serializable data (see
+   * editor.ts's `themes` build) — `<EditorAppIsland>` both renders them
+   * server-side and embeds them for `demo/editor-client.tsx` to hydrate
+   * against. Raw data, not a `ReactNode` (unlike the old `themeItems`
+   * prop): the island needs to `JSON.stringify` this, which a `ReactNode`
+   * can't round-trip through.
    */
-  scriptJs: string
+  themes: readonly EditorThemeItem[]
   /**
-   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
-   * hydrates `<Nav>`, inlined into its own separate `<script type="module">`
-   * — not concatenated into {@link scriptJs}. See editor.ts's own doc
-   * comment for why: two independently-minified bundles concatenated as
-   * plain text risk colliding top-level identifier names (the exact hazard
-   * that already forces `bundleThemeStateBridge()`'s IIFE wrapper there);
-   * a second `<script type="module">` tag gets its own module scope for
-   * free instead.
+   * The bundled Mermaid renderer (`window.__mermaid`) plus the theme-state
+   * bridge (`window.__themeState`) — unchanged from before #806, just no
+   * longer concatenated with the legacy `editor/js/*.js` bundle into one
+   * script. Must run before {@link editorClientScript} (both are
+   * `type="module"`, so document order is execution order) — see this
+   * file's header comment.
    */
-  navClientScript: string
+  rendererSetupJs: string
+  /**
+   * The bundled `demo/editor-client.tsx` entry (zombie-mermaid#806) that
+   * hydrates `<EditorApp>`, hydrates `<NavIsland>`, and then loads and
+   * runs {@link appJs} itself once hydration is confirmed complete — see
+   * this file's header comment and `demo/editor-client.tsx`'s own header
+   * comment for why that has to be an explicit runtime step rather than
+   * just a later `<script>` tag.
+   */
+  editorClientScript: string
+  /**
+   * The 18 legacy `editor/js/*.js` modules, concatenated by editor.ts
+   * exactly as before #806 — unchanged behavior. As of #806, embedded as
+   * *inert* data (a `<script>` element whose `type` no browser executes),
+   * not a `<script type="module">` tag — {@link editorClientScript} loads
+   * and runs it explicitly, at the right time. See this file's header
+   * comment for why.
+   */
+  appJs: string
 }
 
 export function EditorPage({
   css,
-  themeItems,
-  scriptJs,
-  navClientScript,
+  themes,
+  rendererSetupJs,
+  editorClientScript,
+  appJs,
 }: EditorPageProps) {
   const homeHref = '/zombie-mermaid/'
   return (
@@ -514,7 +544,7 @@ export function EditorPage({
           }}
         >
           <div className="editor-tool-shell">
-            <EditorChrome themeItems={themeItems} />
+            <EditorAppIsland themes={themes} />
           </div>
         </div>
 
@@ -523,16 +553,24 @@ export function EditorPage({
           <Footer />
         </div>
 
-        {/* Bundled renderer */}
+        {/* 1. Renderer + theme-state bridge — must run first (see header comment) */}
         <script
           type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own src/browser.ts bundle plus editor/js/*.js, both under version control and concatenated at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: scriptJs }}
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own src/browser.ts bundle plus the theme-state bridge, both under version control and concatenated at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: rendererSetupJs }}
         />
+        {/* 2. Hydrates <EditorApp> + <NavIsland>, then loads (3) itself once hydration is confirmed done */}
         <script
           type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: navClientScript }}
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/editor-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: editorClientScript }}
+        />
+        {/* 3. Legacy editor/js/*.js modules — inert data, not an executable script (see header comment) */}
+        <script
+          type="application/x-zm-legacy-js"
+          id={EDITOR_LEGACY_APP_JS_ELEMENT_ID}
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own editor/js/*.js modules, under version control and concatenated at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: appJs }}
         />
         <NavMobileMenuScript />
       </body>

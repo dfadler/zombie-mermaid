@@ -24,26 +24,26 @@
  * pattern here, not a gap to fix. See
  * docs/decisions/editor-in-repo-module.md.
  *
- * The whole page is rendered through demo/components/editor-page.tsx via
- * react-dom/server's `renderToStaticMarkup`. #423 ported the document
- * shell; #589 finished the job — the topbar and both panels are real
- * component trees now, and the only raw splice left is the inline
- * `<script type="module">`, which carries this repo's own bundled
- * renderer plus the Vite-bundled editor/js/index.ts graph (#766 converted
- * that from fixed-order string concatenation of plain editor/js/*.js files
- * to real TS modules with explicit imports). See
+ * The document shell (nav, hero, feature strip, footer) is rendered
+ * through demo/components/editor-page.tsx via react-dom/server's
+ * `renderToStaticMarkup`, same as every other page. #423 ported that
+ * shell; #589 finished the job for the topbar/panels; #806 replaced the
+ * old raw `dangerouslySetInnerHTML` splice with a real
+ * server-render-then-hydrate boundary (`<EditorAppIsland>`, hydrated by
+ * demo/editor-client.tsx) — see demo/components/editor-app.tsx's header
+ * comment. The 18 legacy `editor/js/*.js` modules (#766 converted these
+ * from fixed-order string concatenation to real TS modules with explicit
+ * imports) still run as their own separately-bundled script, unchanged in
+ * behavior, layered on *after* hydration — see generateEditorHtml() below
+ * for why the script order is load-bearing. See
  * docs/decisions/react-site-migration-plan.md.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { bundleNavClient } from './demo/build-nav-client.ts'
 import { EditorPage } from './demo/components/editor-page.tsx'
-import {
-  EditorThemeItems,
-  type EditorThemeItem,
-} from './demo/components/editor-topbar.tsx'
+import { type EditorThemeItem } from './demo/components/editor-topbar.tsx'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import { THEME_LABELS } from './demo/theme-labels.ts'
@@ -146,11 +146,40 @@ async function bundleThemeStateBridge(): Promise<string> {
   return `;(function () {\n${bundled}\n})();`
 }
 
+/**
+ * Bundle demo/editor-client.tsx (zombie-mermaid#806) — hydrates
+ * `<EditorApp>` and `<NavIsland>`. `minify: true` matches
+ * dashboard.ts's/fork-fixes.ts's own hydration-entry bundles: this is the
+ * first editor.ts bundle to include `react`/`react-dom/client`, and the
+ * #797 epic issue's accepted bundle-size baseline was measured against a
+ * minified build (see dashboard.ts's `bundleDashboardClient()` doc comment
+ * for the measured unminified-vs-minified difference).
+ */
+async function bundleEditorClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/editor-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
+/**
+ * Renders editor.html's three scripts and assembles the final document.
+ *
+ * The three scripts **must** stay in this order — see
+ * demo/components/editor-page.tsx's header comment and
+ * demo/editor-client.tsx's header comment for why this isn't just a
+ * convention: `editorClientScript` needs to hydrate `<EditorApp>` against
+ * pristine, server-rendered markup before `appJs`'s legacy `init.ts` gets
+ * a chance to mutate DOM inside that same hydration boundary (initial
+ * textarea value, line numbers, dark-mode icon state, first render). All
+ * three are `type="module"`, so document order is execution order —
+ * EditorPage renders them in exactly the order this function returns them.
+ */
 async function generateEditorHtml(): Promise<string> {
-  const [bundleJs, themeStateBridgeJs, navClientScript] = await Promise.all([
+  const [bundleJs, themeStateBridgeJs, editorClientScript] = await Promise.all([
     bundleBrowserScript(),
     bundleThemeStateBridge(),
-    bundleNavClient(),
+    bundleEditorClient(),
   ])
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
@@ -165,9 +194,10 @@ async function generateEditorHtml(): Promise<string> {
   return renderHtmlDocument(
     createElement(EditorPage, {
       css,
-      themeItems: createElement(EditorThemeItems, { themes }),
-      scriptJs: `${bundleJs}\n\n${themeStateBridgeJs}\n\n${appJs}\n`,
-      navClientScript,
+      themes,
+      rendererSetupJs: `${bundleJs}\n\n${themeStateBridgeJs}\n`,
+      editorClientScript,
+      appJs,
     }),
   )
 }
