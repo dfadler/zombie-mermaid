@@ -193,3 +193,23 @@ remaining open questions (real bare-metal x86, a flag-matched comparison, QEMU
 vs. Rosetta, native Linux arm64) are recorded in
 [a comment on this issue](https://github.com/dfadler/zombie-mermaid/issues/548#issuecomment-5591525595)
 rather than duplicated here.
+
+## Amendment (2026-09-09): #545 closed, architecture ruled out, #551 still not warranted
+
+[#549](https://github.com/dfadler/zombie-mermaid/issues/549) has since merged, and
+#545's own remaining gaps (a flag-matched arm64 run, and a real-CI-on-the-same-commit
+comparison) are now closed too — see
+[the comment on #545](https://github.com/dfadler/zombie-mermaid/issues/545#issuecomment-5606427602)
+for the full measurement rather than duplicating it here.
+
+**Summary**: three full-suite runs (843 executions) on native arm64, flag-matched to
+CI's actual configuration, against the exact commit real x86 CI was evaluating at the
+same time — passed 843/843 in the final tally, while that same-commit real CI run
+showed _more_ jitter than any of the quiet-host arm64 runs. **#545 is answered:
+architecture is ruled out** as a driver of divergence for both halves of the suite.
+
+**#551 is still not warranted** — this cluster's spikes only ever measured divergence
+_within_ Linux/Docker rendering, never whether native macOS Playwright (the actual
+generator of the `-darwin` baselines) matches the container. That remains untested;
+the concrete prerequisite (extending #550's wrapper to SVG) is filed as
+[#837](https://github.com/dfadler/zombie-mermaid/issues/837).

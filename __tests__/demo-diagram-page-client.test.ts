@@ -66,6 +66,9 @@ function buildDom(): void {
     <div class="diagram-frame">
       <svg xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
+    <div class="gallery-thumb">
+      <svg xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
     <a class="cta-btn primary" href="../editor"></a>
   `
 }
@@ -73,6 +76,13 @@ function buildDom(): void {
 function svg(): SVGSVGElement {
   const el = document.querySelector('.diagram-frame svg')
   if (!(el instanceof SVGSVGElement)) throw new Error('missing diagram svg')
+  return el
+}
+
+function galleryThumbSvg(): SVGSVGElement {
+  const el = document.querySelector('.gallery-thumb svg')
+  if (!(el instanceof SVGSVGElement))
+    throw new Error('missing gallery thumb svg')
   return el
 }
 
@@ -137,6 +147,20 @@ describe('cross-source re-theme via theme-state.ts subscribe()', () => {
       .querySelector('.cta-btn.primary')
       ?.getAttribute('href')
     expect(editorHref).toContain('../editor#')
+  })
+
+  // The "More examples" gallery thumbnails (#714/#715) are rendered at
+  // build time with the same --bg/--fg-driven markup as the primary
+  // diagram, just at the page's default theme -- without this, they'd
+  // stay stuck on that default regardless of what a visitor picks.
+  it("re-themes the 'More examples' gallery thumbnails alongside the primary diagram", async () => {
+    const { setTheme } = await import('../demo/theme-state.ts')
+    await import('../demo/diagram-page-client.ts')
+
+    setTheme('nord')
+
+    expect(galleryThumbSvg().style.getPropertyValue('--bg')).toBe('#2e3440')
+    expect(galleryThumbSvg().style.getPropertyValue('--accent')).toBe('#88c0d0')
   })
 
   // #689: the global picker must live-retheme every CSS custom property

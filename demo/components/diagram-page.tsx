@@ -728,7 +728,7 @@ export interface DiagramTypePageProps {
    * `diagrams/assets/diagram-page.css` (demo/styles.css + this page's own
    * legacy demo/diagram-page.css) — still needed here for the theme
    * picker's pill/dropdown styling, `.orientation-variant`'s responsive
-   * swap, and `.diagram-frame svg`, all of which
+   * swap, and `.diagram-frame svg`/`.gallery-thumb svg`, all of which
    * demo/diagram-page-client.ts's selectors depend on. This template's own
    * redesigned chrome (Nav, Footer, the section layout) is emitted inline
    * instead — see {@link PageStyle} and the *Style components this

@@ -147,20 +147,27 @@ function applyThemeToPage(theme: DiagramColors): void {
 // renders two `<svg>`s, one per `.orientation-variant` — only one is ever
 // shown, but both need theming kept in sync so switching themes doesn't
 // leave the hidden one stale for whenever a viewport resize reveals it.
+// `.gallery-thumb svg` (the "More examples" section's thumbnails, #714/#715)
+// is included here too: pages.ts renders those with the same
+// renderMermaidSVG/--bg/--fg-driven markup as the primary diagram, just at
+// the page's build-time default theme, so without this they'd stay stuck on
+// that default forever regardless of what a visitor picks.
 function applyThemeToDiagram(themeKey: string): void {
   const theme = THEMES[themeKey]
   if (!theme) return
 
-  document.querySelectorAll('.diagram-frame svg').forEach((svg) => {
-    if (!(svg instanceof SVGSVGElement)) return
-    svg.style.setProperty('--bg', theme.bg)
-    svg.style.setProperty('--fg', theme.fg)
-    for (const prop of ENRICHMENT_KEYS) {
-      const value = theme[prop]
-      if (value) svg.style.setProperty('--' + prop, value)
-      else svg.style.removeProperty('--' + prop)
-    }
-  })
+  document
+    .querySelectorAll('.diagram-frame svg, .gallery-thumb svg')
+    .forEach((svg) => {
+      if (!(svg instanceof SVGSVGElement)) return
+      svg.style.setProperty('--bg', theme.bg)
+      svg.style.setProperty('--fg', theme.fg)
+      for (const prop of ENRICHMENT_KEYS) {
+        const value = theme[prop]
+        if (value) svg.style.setProperty('--' + prop, value)
+        else svg.style.removeProperty('--' + prop)
+      }
+    })
 }
 
 function updateEditorLink(themeKey: string): void {

@@ -147,535 +147,551 @@
     <script id="nav-props" type="application/json">
       "{\"active\":\"forkFixes\",\"homeHref\":\"index.html\",\"hrefs\":{\"diagrams\":\"diagrams/\",\"editor\":\"editor.html\",\"forkFixes\":\"#\",\"blog\":\"blog/\",\"github\":\"https://github.com/dfadler/zombie-mermaid\"},\"hasInstallSlot\":false}"
     </script>
-    <header class="section-px" style="padding: 88px 80px 72px;">
-      <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 24px;">
-        <div class="mono" style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
-          <a href="index.html" style="color: var(--text-faint);">
-            "Home"
-          </a>
-          <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
-            <path d="M9 6l6 6-6 6">
-            </path>
-          </svg>
-          <span style="color: var(--text-dim);">
-            "Fork fixes"
-          </span>
-        </div>
-        <div class="section-eyebrow">
-          "Real renders, not mockups"
-        </div>
-        <h1 class="page-h1" style="font-size: 48px; line-height: 1.1; letter-spacing: -0.02em; max-width: 820px;">
-          "What this fork fixes"
-        </h1>
-        <p style="font-size: 17px; line-height: 1.65; color: var(--text-dim); max-width: 820px;">
-          "Every pair below is rendered by this project's own renderer. The "
-          <strong>
-            "before"
-          </strong>
-          " side runs the code as it existed immediately before the fix landed — the tree at that commit's parent — so nothing here is hand-drawn or reconstructed. The generator fails the build if any pair renders identically, because a before/after that looks the same would claim a fix it does not demonstrate."
-        </p>
-        <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px;">
-          <span class="pill mono" style="background: var(--panel); border: 1px solid var(--green); color: var(--green);">
-            <svg aria-hidden="true" fill="none" height="14" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="14">
-              <polyline points="4 12 10 18 20 6">
-              </polyline>
-            </svg>
-            "4 fixes shown"
-          </span>
-          <span style="font-size: 15px; color: var(--text-dim);">
-            "Many more ship in the "
-            <a href="https://github.com/dfadler/zombie-mermaid/blob/main/CHANGELOG.md">
-              "changelog"
+    <div id="fork-fixes-root">
+      <header class="section-px" style="padding: 88px 80px 72px;">
+        <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 24px;">
+          <div class="mono" style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+            <a href="index.html" style="color: var(--text-faint);">
+              "Home"
             </a>
-            "."
-          </span>
+            <svg aria-hidden="true" fill="none" height="12" stroke="var(--text-faint)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+              <path d="M9 6l6 6-6 6">
+              </path>
+            </svg>
+            <span style="color: var(--text-dim);">
+              "Fork fixes"
+            </span>
+          </div>
+          <div class="section-eyebrow">
+            "Real renders, not mockups"
+          </div>
+          <h1 class="page-h1" style="font-size: 48px; line-height: 1.1; letter-spacing: -0.02em; max-width: 820px;">
+            "What this fork fixes"
+          </h1>
+          <p style="font-size: 17px; line-height: 1.65; color: var(--text-dim); max-width: 820px;">
+            "Every pair below is rendered by this project's own renderer. The"
+            <strong>
+              "before"
+            </strong>
+            " side runs the code as it existed immediately before the fix landed — the tree at that commit's parent — so nothing here is hand-drawn or reconstructed. The generator fails the build if any pair renders identically, because a before/after that looks the same would claim a fix it does not demonstrate."
+          </p>
+          <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px;">
+            <span class="pill mono" style="background: var(--panel); border: 1px solid var(--green); color: var(--green);">
+              <svg aria-hidden="true" fill="none" height="14" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="14">
+                <polyline points="4 12 10 18 20 6">
+                </polyline>
+              </svg>
+              "4"
+              " fixes shown"
+            </span>
+            <span style="font-size: 15px; color: var(--text-dim);">
+              "Many more ship in the "
+              <a href="https://github.com/dfadler/zombie-mermaid/blob/main/CHANGELOG.md">
+                "changelog"
+              </a>
+              "."
+            </span>
+          </div>
         </div>
-      </div>
-    </header>
-    <main class="section-px" style="padding: 0px 80px 60px;">
-      <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 56px;">
-        <section id="svg-fix">
-          <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/42" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="6" cy="6" r="3">
-                  </circle>
-                  <circle cx="6" cy="18" r="3">
-                  </circle>
-                  <circle cx="18" cy="6" r="3">
-                  </circle>
-                  <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
-                  </path>
-                </svg>
-                "PR #42"
-              </a>
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/abc1234" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="12" cy="12" r="3">
-                  </circle>
-                  <path d="M2 12h7M15 12h7">
-                  </path>
-                </svg>
-                "abc1234"
-              </a>
-              <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <rect height="18" rx="2" width="18" x="3" y="3">
-                  </rect>
-                  <path d="M8 8h8v8H8z">
-                  </path>
-                </svg>
-                "SVG output"
-              </span>
-              <a class="mono" href="https://github.com/lukilabs/beautiful-mermaid/issues/7" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--pink)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1">
-                  </path>
-                  <path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1">
-                  </path>
-                </svg>
-                "upstream #7"
-              </a>
-              <a class="mono" href="https://github.com/lukilabs/beautiful-mermaid/issues/9" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--pink)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1">
-                  </path>
-                  <path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1">
-                  </path>
-                </svg>
-                "upstream #9"
-              </a>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <h3 style="font-size: 26px; letter-spacing: -0.01em;">
-                <a class="fix-anchor" href="#svg-fix" style="color: inherit; text-decoration: none;">
-                  "Edge labels overlapped"
+      </header>
+      <main class="section-px" style="padding: 0px 80px 60px;">
+        <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 56px;">
+          <section id="svg-fix">
+            <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/42" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="6" cy="6" r="3">
+                    </circle>
+                    <circle cx="6" cy="18" r="3">
+                    </circle>
+                    <circle cx="18" cy="6" r="3">
+                    </circle>
+                    <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
+                    </path>
+                  </svg>
+                  "PR #"
+                  "42"
                 </a>
-              </h3>
-              <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
-                "An edge label using "
-                <code>
-                  "-->"
-                </code>
-                " collided."
-              </p>
-            </div>
-            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/abc1234" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="12" cy="12" r="3">
+                    </circle>
+                    <path d="M2 12h7M15 12h7">
+                    </path>
+                  </svg>
+                  "abc1234"
+                </a>
+                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <rect height="18" rx="2" width="18" x="3" y="3">
+                    </rect>
+                    <path d="M8 8h8v8H8z">
+                    </path>
+                  </svg>
+                  "SVG output"
                 </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
-                </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
-                </span>
-                <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
-                  "svg-fix.mmd"
-                </span>
+                <a class="mono" href="https://github.com/lukilabs/beautiful-mermaid/issues/7" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--pink)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1">
+                    </path>
+                    <path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1">
+                    </path>
+                  </svg>
+                  "upstream #"
+                  "7"
+                </a>
+                <a class="mono" href="https://github.com/lukilabs/beautiful-mermaid/issues/9" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--pink)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1">
+                    </path>
+                    <path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1">
+                    </path>
+                  </svg>
+                  "upstream #"
+                  "9"
+                </a>
               </div>
-              <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
-                <div>
-                  <span style="color: var(--violet);">
-                    "flowchart"
-                  </span>
-                  " LR"
-                </div>
-                <div>
-                  "A "
-                  <span style="color: var(--cyan);">
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <h3 style="font-size: 26px; letter-spacing: -0.01em;">
+                  <a class="fix-anchor" href="#svg-fix" style="color: inherit; text-decoration: none;">
+                    "Edge labels overlapped"
+                  </a>
+                </h3>
+                <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
+                  "An edge label using "
+                  <code>
                     "-->"
+                  </code>
+                  " collided."
+                </p>
+              </div>
+              <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
                   </span>
-                  <span style="color: var(--amber);">
-                    "|label|"
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
                   </span>
-                  " B"
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
+                  </span>
+                  <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
+                    "svg-fix"
+                    ".mmd"
+                  </span>
+                </div>
+                <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
+                  <div>
+                    <span style="color: var(--violet);">
+                      "flowchart"
+                    </span>
+                    " LR"
+                  </div>
+                  <div>
+                    "A "
+                    <span style="color: var(--cyan);">
+                      "-->"
+                    </span>
+                    <span style="color: var(--amber);">
+                      "|label|"
+                    </span>
+                    " B"
+                  </div>
                 </div>
               </div>
+              <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+                      <path d="M12 9v4M12 17h.01">
+                      </path>
+                      <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
+                      </path>
+                    </svg>
+                    "Before"
+                  </span>
+                  <div class="fix-svg" style="background: var(--bg); border-radius: 10px; padding: 16px; min-width: 0px;">
+                    <svg data-before="1">
+                    </svg>
+                  </div>
+                </div>
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
+                      <polyline points="4 12 10 18 20 6">
+                      </polyline>
+                    </svg>
+                    "After"
+                  </span>
+                  <div class="fix-svg" style="background: var(--bg); border-radius: 10px; padding: 16px; min-width: 0px;">
+                    <svg data-after="1">
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="section-eyebrow" style="font-size: 11px;">
+                  "Look for"
+                </div>
+                <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
+                  "Look at the "
+                  <em>
+                    "label"
+                  </em>
+                  " position."
+                </p>
+              </div>
             </div>
-            <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
-                    <path d="M12 9v4M12 17h.01">
+          </section>
+          <section id="ascii-fix">
+            <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/43" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="6" cy="6" r="3">
+                    </circle>
+                    <circle cx="6" cy="18" r="3">
+                    </circle>
+                    <circle cx="18" cy="6" r="3">
+                    </circle>
+                    <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
                     </path>
-                    <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
-                    </path>
                   </svg>
-                  "Before"
-                </span>
-                <div class="fix-svg" style="background: var(--bg); border-radius: 10px; padding: 16px; min-width: 0px;">
-                  <svg data-before="1">
-                  </svg>
-                </div>
-              </div>
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
-                    <polyline points="4 12 10 18 20 6">
-                    </polyline>
-                  </svg>
-                  "After"
-                </span>
-                <div class="fix-svg" style="background: var(--bg); border-radius: 10px; padding: 16px; min-width: 0px;">
-                  <svg data-after="1">
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div class="section-eyebrow" style="font-size: 11px;">
-                "Look for"
-              </div>
-              <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
-                "Look at the "
-                <em>
-                  "label"
-                </em>
-                " position."
-              </p>
-            </div>
-          </div>
-        </section>
-        <section id="ascii-fix">
-          <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/43" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="6" cy="6" r="3">
-                  </circle>
-                  <circle cx="6" cy="18" r="3">
-                  </circle>
-                  <circle cx="18" cy="6" r="3">
-                  </circle>
-                  <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
-                  </path>
-                </svg>
-                "PR #43"
-              </a>
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/def5678" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="12" cy="12" r="3">
-                  </circle>
-                  <path d="M2 12h7M15 12h7">
-                  </path>
-                </svg>
-                "def5678"
-              </a>
-              <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <rect height="14" rx="2" width="18" x="3" y="4">
-                  </rect>
-                  <path d="M8 21h8M12 18v3">
-                  </path>
-                </svg>
-                "ASCII output"
-              </span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <h3 style="font-size: 26px; letter-spacing: -0.01em;">
-                <a class="fix-anchor" href="#ascii-fix" style="color: inherit; text-decoration: none;">
-                  "ASCII junctions"
+                  "PR #"
+                  "43"
                 </a>
-              </h3>
-              <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
-                "Junction glyphs were wrong."
-              </p>
-            </div>
-            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
-                </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
-                </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
-                </span>
-                <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
-                  "ascii-fix.mmd"
-                </span>
-              </div>
-              <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
-                <div>
-                  <span style="color: var(--violet);">
-                    "flowchart"
-                  </span>
-                  " TD"
-                </div>
-                <div>
-                  "A "
-                  <span style="color: var(--cyan);">
-                    "-->"
-                  </span>
-                  " B"
-                </div>
-              </div>
-            </div>
-            <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
-                    <path d="M12 9v4M12 17h.01">
-                    </path>
-                    <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/def5678" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="12" cy="12" r="3">
+                    </circle>
+                    <path d="M2 12h7M15 12h7">
                     </path>
                   </svg>
-                  "Before"
-                </span>
-                <div class="mono" style="padding: 16px; font-size: 14px; line-height: 1.5; color: var(--amber);">
-                  <strong>
-                    "Threw:"
-                  </strong>
-                  " Cannot read property \"x\" of undefined"
-                </div>
-              </div>
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
-                    <polyline points="4 12 10 18 20 6">
-                    </polyline>
-                  </svg>
-                  "After"
-                </span>
-                <pre class="fix-ascii mono" style="margin: 0px; padding: 16px; background: var(--bg); border-radius: 10px; overflow-x: auto; white-space: pre; font-variant-ligatures: none; font-size: 14px; line-height: 1.5; color: var(--text-dim); min-width: 0px;">
-                  "+--+"
-                </pre>
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div class="section-eyebrow" style="font-size: 11px;">
-                "Look for"
-              </div>
-              <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
-                "Compare the corners."
-              </p>
-            </div>
-          </div>
-        </section>
-        <section id="excerpt-fix">
-          <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/44" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="6" cy="6" r="3">
-                  </circle>
-                  <circle cx="6" cy="18" r="3">
-                  </circle>
-                  <circle cx="18" cy="6" r="3">
-                  </circle>
-                  <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
-                  </path>
-                </svg>
-                "PR #44"
-              </a>
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/0123abc" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="12" cy="12" r="3">
-                  </circle>
-                  <path d="M2 12h7M15 12h7">
-                  </path>
-                </svg>
-                "0123abc"
-              </a>
-              <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <rect height="18" rx="2" width="18" x="3" y="3">
-                  </rect>
-                  <path d="M8 8h8v8H8z">
-                  </path>
-                </svg>
-                "SVG output"
-              </span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <h3 style="font-size: 26px; letter-spacing: -0.01em;">
-                <a class="fix-anchor" href="#excerpt-fix" style="color: inherit; text-decoration: none;">
-                  "Start-arrow marker"
+                  "def5678"
                 </a>
-              </h3>
-              <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
-                "The marker was degenerate."
-              </p>
-            </div>
-            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
-                </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
-                </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
-                </span>
-                <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
-                  "excerpt-fix.mmd"
-                </span>
-              </div>
-              <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
-                <div>
-                  <span style="color: var(--violet);">
-                    "flowchart"
-                  </span>
-                  " LR"
-                </div>
-                <div>
-                  "A "
-                  <span style="color: var(--cyan);">
-                    "<-->"
-                  </span>
-                  " B"
-                </div>
-              </div>
-            </div>
-            <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
-                    <path d="M12 9v4M12 17h.01">
-                    </path>
-                    <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
+                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <rect height="14" rx="2" width="18" x="3" y="4">
+                    </rect>
+                    <path d="M8 21h8M12 18v3">
                     </path>
                   </svg>
-                  "Before"
+                  "ASCII output"
                 </span>
-                <div style="padding: 16px; font-size: 14px; font-style: italic; color: var(--text-faint);">
-                  "Rendered nothing — the diagram was dropped entirely."
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <h3 style="font-size: 26px; letter-spacing: -0.01em;">
+                  <a class="fix-anchor" href="#ascii-fix" style="color: inherit; text-decoration: none;">
+                    "ASCII junctions"
+                  </a>
+                </h3>
+                <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
+                  "Junction glyphs were wrong."
+                </p>
+              </div>
+              <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
+                  </span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
+                  </span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
+                  </span>
+                  <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
+                    "ascii-fix"
+                    ".mmd"
+                  </span>
+                </div>
+                <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
+                  <div>
+                    <span style="color: var(--violet);">
+                      "flowchart"
+                    </span>
+                    " TD"
+                  </div>
+                  <div>
+                    "A "
+                    <span style="color: var(--cyan);">
+                      "-->"
+                    </span>
+                    " B"
+                  </div>
                 </div>
               </div>
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
-                    <polyline points="4 12 10 18 20 6">
-                    </polyline>
+              <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+                      <path d="M12 9v4M12 17h.01">
+                      </path>
+                      <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
+                      </path>
+                    </svg>
+                    "Before"
+                  </span>
+                  <div class="mono" style="padding: 16px; font-size: 14px; line-height: 1.5; color: var(--amber);">
+                    <strong>
+                      "Threw:"
+                    </strong>
+                    "Cannot read property \"x\" of undefined"
+                  </div>
+                </div>
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
+                      <polyline points="4 12 10 18 20 6">
+                      </polyline>
+                    </svg>
+                    "After"
+                  </span>
+                  <pre class="fix-ascii mono" style="margin: 0px; padding: 16px; background: var(--bg); border-radius: 10px; overflow-x: auto; white-space: pre; font-variant-ligatures: none; font-size: 14px; line-height: 1.5; color: var(--text-dim); min-width: 0px;">
+                    "+--+"
+                  </pre>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="section-eyebrow" style="font-size: 11px;">
+                  "Look for"
+                </div>
+                <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
+                  "Compare the corners."
+                </p>
+              </div>
+            </div>
+          </section>
+          <section id="excerpt-fix">
+            <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/44" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="6" cy="6" r="3">
+                    </circle>
+                    <circle cx="6" cy="18" r="3">
+                    </circle>
+                    <circle cx="18" cy="6" r="3">
+                    </circle>
+                    <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
+                    </path>
                   </svg>
-                  "After"
-                </span>
-                <pre class="fix-ascii mono" style="margin: 0px; padding: 16px; background: var(--bg); border-radius: 10px; overflow-x: auto; white-space: pre; font-variant-ligatures: none; font-size: 14px; line-height: 1.5; color: var(--text-dim); min-width: 0px;">
-                  "<marker id=\"arrow\"></marker>"
-                </pre>
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div class="section-eyebrow" style="font-size: 11px;">
-                "Look for"
-              </div>
-              <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
-                "Compare the "
-                <code>
-                  "marker"
-                </code>
-                " element."
-              </p>
-            </div>
-          </div>
-        </section>
-        <section id="screenshot-fix">
-          <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/45" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="6" cy="6" r="3">
-                  </circle>
-                  <circle cx="6" cy="18" r="3">
-                  </circle>
-                  <circle cx="18" cy="6" r="3">
-                  </circle>
-                  <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
-                  </path>
-                </svg>
-                "PR #45"
-              </a>
-              <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/456def0" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <circle cx="12" cy="12" r="3">
-                  </circle>
-                  <path d="M2 12h7M15 12h7">
-                  </path>
-                </svg>
-                "456def0"
-              </a>
-              <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
-                <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
-                  <rect height="14" rx="2" width="18" x="3" y="4">
-                  </rect>
-                  <path d="M8 21h8M12 18v3">
-                  </path>
-                </svg>
-                "ASCII output"
-              </span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <h3 style="font-size: 26px; letter-spacing: -0.01em;">
-                <a class="fix-anchor" href="#screenshot-fix" style="color: inherit; text-decoration: none;">
-                  "Real-terminal capture"
+                  "PR #"
+                  "44"
                 </a>
-              </h3>
-              <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
-                "Wide glyphs mis-measured."
-              </p>
-            </div>
-            <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
-                </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
-                </span>
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
-                </span>
-                <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
-                  "screenshot-fix.mmd"
-                </span>
-              </div>
-              <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
-                <div>
-                  <span style="color: var(--violet);">
-                    "flowchart"
-                  </span>
-                  " LR"
-                </div>
-                <div>
-                  "A "
-                  <span style="color: var(--cyan);">
-                    "-->"
-                  </span>
-                  " B"
-                </div>
-              </div>
-            </div>
-            <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
-                    <path d="M12 9v4M12 17h.01">
-                    </path>
-                    <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/0123abc" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="12" cy="12" r="3">
+                    </circle>
+                    <path d="M2 12h7M15 12h7">
                     </path>
                   </svg>
-                  "Before"
-                </span>
-                <img alt="before terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`" loading="lazy" src="fork-fixes-screenshots/screenshot-fix-before.png" style="display: block; width: 100%; height: auto; border-radius: 10px;">
-                </img>
-              </div>
-              <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
-                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
-                  <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
-                    <polyline points="4 12 10 18 20 6">
-                    </polyline>
+                  "0123abc"
+                </a>
+                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <rect height="18" rx="2" width="18" x="3" y="3">
+                    </rect>
+                    <path d="M8 8h8v8H8z">
+                    </path>
                   </svg>
-                  "After"
+                  "SVG output"
                 </span>
-                <img alt="after terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`" loading="lazy" src="fork-fixes-screenshots/screenshot-fix-after.png" style="display: block; width: 100%; height: auto; border-radius: 10px;">
-                </img>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <h3 style="font-size: 26px; letter-spacing: -0.01em;">
+                  <a class="fix-anchor" href="#excerpt-fix" style="color: inherit; text-decoration: none;">
+                    "Start-arrow marker"
+                  </a>
+                </h3>
+                <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
+                  "The marker was degenerate."
+                </p>
+              </div>
+              <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
+                  </span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
+                  </span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
+                  </span>
+                  <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
+                    "excerpt-fix"
+                    ".mmd"
+                  </span>
+                </div>
+                <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
+                  <div>
+                    <span style="color: var(--violet);">
+                      "flowchart"
+                    </span>
+                    " LR"
+                  </div>
+                  <div>
+                    "A "
+                    <span style="color: var(--cyan);">
+                      "<-->"
+                    </span>
+                    " B"
+                  </div>
+                </div>
+              </div>
+              <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+                      <path d="M12 9v4M12 17h.01">
+                      </path>
+                      <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
+                      </path>
+                    </svg>
+                    "Before"
+                  </span>
+                  <div style="padding: 16px; font-size: 14px; font-style: italic; color: var(--text-faint);">
+                    "Rendered nothing — the diagram was dropped entirely."
+                  </div>
+                </div>
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
+                      <polyline points="4 12 10 18 20 6">
+                      </polyline>
+                    </svg>
+                    "After"
+                  </span>
+                  <pre class="fix-ascii mono" style="margin: 0px; padding: 16px; background: var(--bg); border-radius: 10px; overflow-x: auto; white-space: pre; font-variant-ligatures: none; font-size: 14px; line-height: 1.5; color: var(--text-dim); min-width: 0px;">
+                    "<marker id=\"arrow\"></marker>"
+                  </pre>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="section-eyebrow" style="font-size: 11px;">
+                  "Look for"
+                </div>
+                <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
+                  "Compare the "
+                  <code>
+                    "marker"
+                  </code>
+                  " element."
+                </p>
               </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div class="section-eyebrow" style="font-size: 11px;">
-                "Look for"
+          </section>
+          <section id="screenshot-fix">
+            <div class="card fix-card" style="padding: 44px; display: flex; flex-direction: column; gap: 28px; min-width: 0px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/pull/45" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--violet)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="6" cy="6" r="3">
+                    </circle>
+                    <circle cx="6" cy="18" r="3">
+                    </circle>
+                    <circle cx="18" cy="6" r="3">
+                    </circle>
+                    <path d="M6 9v6M18 9a4 4 0 0 1-4 4H9">
+                    </path>
+                  </svg>
+                  "PR #"
+                  "45"
+                </a>
+                <a class="mono" href="https://github.com/dfadler/zombie-mermaid/commit/456def0" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <circle cx="12" cy="12" r="3">
+                    </circle>
+                    <path d="M2 12h7M15 12h7">
+                    </path>
+                  </svg>
+                  "456def0"
+                </a>
+                <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap;">
+                  <svg aria-hidden="true" fill="none" height="13" stroke="var(--cyan)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="13">
+                    <rect height="14" rx="2" width="18" x="3" y="4">
+                    </rect>
+                    <path d="M8 21h8M12 18v3">
+                    </path>
+                  </svg>
+                  "ASCII output"
+                </span>
               </div>
-              <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
-                "Compare the column widths."
-              </p>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <h3 style="font-size: 26px; letter-spacing: -0.01em;">
+                  <a class="fix-anchor" href="#screenshot-fix" style="color: inherit; text-decoration: none;">
+                    "Real-terminal capture"
+                  </a>
+                </h3>
+                <p style="font-size: 15.5px; line-height: 1.6; color: var(--text-dim); max-width: 900px;">
+                  "Wide glyphs mis-measured."
+                </p>
+              </div>
+              <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px 26px 26px; overflow-x: auto; min-width: 0px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 103, 103); display: inline-block;">
+                  </span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 200, 92); display: inline-block;">
+                  </span>
+                  <span style="width: 10px; height: 10px; border-radius: 50%; background: rgb(94, 224, 138); display: inline-block;">
+                  </span>
+                  <span class="mono" style="font-size: 12px; color: var(--text-faint); margin-left: 8px;">
+                    "screenshot-fix"
+                    ".mmd"
+                  </span>
+                </div>
+                <div class="mono" style="font-size: 14px; line-height: 1.8; color: var(--text-dim); white-space: pre; font-variant-ligatures: none;">
+                  <div>
+                    <span style="color: var(--violet);">
+                      "flowchart"
+                    </span>
+                    " LR"
+                  </div>
+                  <div>
+                    "A "
+                    <span style="color: var(--cyan);">
+                      "-->"
+                    </span>
+                    " B"
+                  </div>
+                </div>
+              </div>
+              <div class="ba-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--amber); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(255, 184, 77, 0.14); color: var(--amber);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--amber)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24" width="12">
+                      <path d="M12 9v4M12 17h.01">
+                      </path>
+                      <path d="M10.3 3.9 2.7 17.1a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z">
+                      </path>
+                    </svg>
+                    "Before"
+                  </span>
+                  <img alt="before terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`" loading="lazy" src="fork-fixes-screenshots/screenshot-fix-before.png" style="display: block; width: 100%; height: auto; border-radius: 10px;">
+                  </img>
+                </div>
+                <div style="border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--panel-2); border: 1px solid var(--green); min-width: 0px;">
+                  <span class="mono" style="display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; width: fit-content; background: rgba(62, 224, 138, 0.14); color: var(--green);">
+                    <svg aria-hidden="true" fill="none" height="12" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" viewBox="0 0 24 24" width="12">
+                      <polyline points="4 12 10 18 20 6">
+                      </polyline>
+                    </svg>
+                    "After"
+                  </span>
+                  <img alt="after terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`" loading="lazy" src="fork-fixes-screenshots/screenshot-fix-after.png" style="display: block; width: 100%; height: auto; border-radius: 10px;">
+                  </img>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="section-eyebrow" style="font-size: 11px;">
+                  "Look for"
+                </div>
+                <p style="font-size: 14px; line-height: 1.6; color: var(--text-dim); max-width: 46rem;">
+                  "Compare the column widths."
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script id="fork-fixes-props" type="application/json">
+      "{\"fixes\":[{\"id\":\"svg-fix\",\"title\":\"Edge labels overlapped\",\"symptomHtml\":\"An edge label using <code>--&gt;</code> collided.\",\"lookForHtml\":\"Look at the <em>label</em> position.\",\"pr\":42,\"fixCommit\":\"abc1234\",\"render\":\"svg\",\"upstreamIssues\":[7,9],\"source\":\"flowchart LR\\n  A -->|label| B\",\"before\":{\"kind\":\"svg\",\"html\":\"<svg data-before=\\\"1\\\"></svg>\"},\"after\":{\"kind\":\"svg\",\"html\":\"<svg data-after=\\\"1\\\"></svg>\"}},{\"id\":\"ascii-fix\",\"title\":\"ASCII junctions\",\"symptomHtml\":\"Junction glyphs were wrong.\",\"lookForHtml\":\"Compare the corners.\",\"pr\":43,\"fixCommit\":\"def5678\",\"render\":\"ascii\",\"source\":\"flowchart TD\\n  A --> B\",\"before\":{\"kind\":\"error\",\"message\":\"Cannot read property \\\"x\\\" of undefined\"},\"after\":{\"kind\":\"ascii\",\"html\":\"<span class=\\\"c\\\">+--+</span>\"}},{\"id\":\"excerpt-fix\",\"title\":\"Start-arrow marker\",\"symptomHtml\":\"The marker was degenerate.\",\"lookForHtml\":\"Compare the <code>marker</code> element.\",\"pr\":44,\"fixCommit\":\"0123abc\",\"render\":\"svg\",\"source\":\"flowchart LR\\n  A <--> B\",\"before\":{\"kind\":\"empty\"},\"after\":{\"kind\":\"excerpt\",\"text\":\"<marker id=\\\"arrow\\\"></marker>\"}},{\"id\":\"screenshot-fix\",\"title\":\"Real-terminal capture\",\"symptomHtml\":\"Wide glyphs mis-measured.\",\"lookForHtml\":\"Compare the column widths.\",\"pr\":45,\"fixCommit\":\"456def0\",\"render\":\"ascii\",\"source\":\"flowchart LR\\n  A --> B\",\"before\":{\"kind\":\"screenshot\",\"file\":\"screenshot-fix-before.png\",\"side\":\"before\",\"fixId\":\"screenshot-fix\"},\"after\":{\"kind\":\"screenshot\",\"file\":\"screenshot-fix-after.png\",\"side\":\"after\",\"fixId\":\"screenshot-fix\"}}]}"
+    </script>
     <script>
       "window.__themeColors = {\"zinc-light\":{\"bg\":\"#FFFFFF\",\"fg\":\"#27272A\"},\"zinc-dark\":{\"bg\":\"#18181B\",\"fg\":\"#FAFAFA\"},\"tokyo-night\":{\"bg\":\"#1a1b26\",\"fg\":\"#a9b1d6\"},\"tokyo-night-storm\":{\"bg\":\"#24283b\",\"fg\":\"#a9b1d6\"},\"tokyo-night-light\":{\"bg\":\"#d5d6db\",\"fg\":\"#343b58\"},\"catppuccin-mocha\":{\"bg\":\"#1e1e2e\",\"fg\":\"#cdd6f4\"},\"catppuccin-latte\":{\"bg\":\"#eff1f5\",\"fg\":\"#4c4f69\"},\"nord\":{\"bg\":\"#2e3440\",\"fg\":\"#d8dee9\"},\"nord-light\":{\"bg\":\"#eceff4\",\"fg\":\"#2e3440\"},\"dracula\":{\"bg\":\"#282a36\",\"fg\":\"#f8f8f2\"},\"github-light\":{\"bg\":\"#ffffff\",\"fg\":\"#1f2328\"},\"github-dark\":{\"bg\":\"#0d1117\",\"fg\":\"#e6edf3\"},\"solarized-light\":{\"bg\":\"#fdf6e3\",\"fg\":\"#657b83\"},\"solarized-dark\":{\"bg\":\"#002b36\",\"fg\":\"#839496\"},\"one-dark\":{\"bg\":\"#282c34\",\"fg\":\"#abb2bf\"}};"
     </script>

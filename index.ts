@@ -28,7 +28,6 @@ import {
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { IndexPage } from './demo/components/index-page.tsx'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { bundleNavClient } from './demo/build-nav-client.ts'
 
 /**
  * Bundle `demo/index-page-client.ts` for the browser (#759) — mirrors
@@ -45,6 +44,23 @@ async function bundleClientScript(): Promise<string> {
   return bundleForBrowser(
     new URL('./demo/index-page-client.ts', import.meta.url).pathname,
     { minify: false },
+  )
+}
+
+/**
+ * Bundle `demo/index-client.tsx` (zombie-mermaid#804's hydration entry)
+ * for the browser — mirrors dashboard.ts's `bundleDashboardClient()`
+ * (inlined directly, `minify: true` since this is the first bundle on
+ * this page to include `react`/`react-dom` — see that function's doc
+ * comment for the measured minified-vs-unminified difference, which
+ * applies unchanged here). Hydrates `IndexHeroApp`/`IndexMainApp`/
+ * `<NavIsland>`; unrelated to {@link bundleClientScript}'s `ThemeShowcase`
+ * wiring, which stays a separate external asset.
+ */
+async function bundleIndexClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/index-client.tsx', import.meta.url).pathname,
+    { minify: true },
   )
 }
 
@@ -73,13 +89,13 @@ async function buildJsonLd(): Promise<string> {
     .join('\n')
 }
 
-async function generateHtml(navClientScript: string): Promise<string> {
+async function generateHtml(clientScript: string): Promise<string> {
   const jsonLd = await buildJsonLd()
   return renderHtmlDocument(
     createElement(IndexPage, {
       jsonLd,
       clientScriptSrc: 'assets/index-page-client.js',
-      navClientScript,
+      clientScript,
     }),
   )
 }
@@ -87,11 +103,11 @@ async function generateHtml(navClientScript: string): Promise<string> {
 const assetsDir = new URL('./assets/', import.meta.url)
 await mkdir(assetsDir, { recursive: true })
 
-const [navClientScript, clientJs] = await Promise.all([
-  bundleNavClient(),
+const [indexClientScript, clientJs] = await Promise.all([
+  bundleIndexClient(),
   bundleClientScript(),
 ])
-const html = await generateHtml(navClientScript)
+const html = await generateHtml(indexClientScript)
 
 await writeFile(new URL('./index-page-client.js', assetsDir), clientJs)
 
