@@ -22,11 +22,11 @@
  * live in demo/dashboard-model.ts (re-exported here for callers that
  * already import them from this module).
  *
- * The stylesheet is assembled from the shared component library's own CSS
- * functions — tokens.tsx's `designBaseCss()`, primitives.tsx's
- * `primitivesCss()`, nav.tsx's `navCss()`, footer.tsx's `footerCss()` — plus
- * this page's own demo/dashboard.css, rather than demo/styles.css's older
- * `--t-*` theme those shared modules do not use.
+ * The stylesheet is assembled from shared-page-css.tsx's `sharedPageCss()`
+ * — the shared component library's design tokens, primitives, nav, and
+ * footer CSS, in the order the cascade requires — plus this page's own
+ * demo/dashboard.css, rather than demo/styles.css's older `--t-*` theme
+ * those shared modules do not use.
  *
  * Addresses zombie-mermaid#265 and #610. See also #259 ("state of the fork"
  * report) for a complementary, narrative write-up of similar underlying
@@ -39,10 +39,7 @@ import { fileURLToPath } from 'node:url'
 import { createElement } from 'react'
 import dashboardData from './demo/dashboard-data.json' with { type: 'json' }
 import { DashboardPage } from './demo/components/dashboard-page.tsx'
-import { footerCss } from './demo/components/footer.tsx'
-import { navCss } from './demo/components/nav.tsx'
-import { primitivesCss } from './demo/components/primitives.tsx'
-import { designBaseCss } from './demo/components/tokens.tsx'
+import { sharedPageCss } from './demo/components/shared-page-css.tsx'
 import {
   parseDashboardData,
   type DashboardData,
@@ -70,13 +67,7 @@ export async function generate(): Promise<string> {
     new URL('./demo/dashboard.css', import.meta.url),
     'utf8',
   )
-  const css = [
-    designBaseCss(),
-    primitivesCss(),
-    navCss(),
-    footerCss(),
-    pageCss,
-  ].join('\n\n')
+  const css = sharedPageCss(pageCss)
   return renderDashboardHtml(parseDashboardData(dashboardData), css)
 }
 
