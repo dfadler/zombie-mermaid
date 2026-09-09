@@ -14,6 +14,13 @@ diagrams/
 sitemap.xml
 dashboard.html
 
+# index.ts's bundled client script (demo/index-page-client.ts, #759),
+# alongside index.html above -- mirrors diagrams/assets/ and blog/assets/,
+# both already covered by their own parent directory's ignore line. Rooted
+# (leading /) so this only ignores the repo-root assets/ dir index.ts
+# writes, not a same-named directory elsewhere in the tree.
+/assets/
+
 # blog.ts output (blog/<slug>.html, blog/index.html, blog/feed.xml,
 # blog/assets/); mv'd into site/blog by build:site. blog-posts/ (the
 # Markdown sources) is a separate, non-ignored sibling directory.

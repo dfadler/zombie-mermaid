@@ -18,7 +18,7 @@
  * site generator off template-literal HTML.
  */
 
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import {
   escapeJsonForScriptTag,
@@ -27,7 +27,25 @@ import {
 } from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { IndexPage } from './demo/components/index-page.tsx'
-import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
+
+/**
+ * Bundle `demo/index-page-client.ts` for the browser (#759) — mirrors
+ * `pages.ts`'s `bundleDiagramPageClient()`. Unlike this generator's
+ * previous client script (`demo/theme-bar-only-client.ts`'s `themeBarScript`,
+ * inlined directly into a `<script type="module">` tag), the homepage's
+ * theme showcase now has meaningfully more client logic — diagram
+ * re-theming, site-chrome re-theming, and an `IntersectionObserver`-driven
+ * picker relocation — so it's written to its own external file instead,
+ * the same `assets/` pattern `pages.ts`/`blog.ts`/`dashboard.ts` already
+ * use for their own bundles.
+ */
+async function bundleClientScript(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/index-page-client.ts', import.meta.url).pathname,
+    { minify: false },
+  )
+}
 
 /**
  * Read package.json and build the `SoftwareApplication` JSON-LD block for
@@ -55,16 +73,22 @@ async function buildJsonLd(): Promise<string> {
 }
 
 async function generateHtml(): Promise<string> {
-  const [jsonLd, themeBarScript] = await Promise.all([
-    buildJsonLd(),
-    bundleThemeBarClient(),
-  ])
+  const jsonLd = await buildJsonLd()
   return renderHtmlDocument(
-    createElement(IndexPage, { jsonLd, themeBarScript }),
+    createElement(IndexPage, {
+      jsonLd,
+      clientScriptSrc: 'assets/index-page-client.js',
+    }),
   )
 }
 
-const html = await generateHtml()
+const assetsDir = new URL('./assets/', import.meta.url)
+await mkdir(assetsDir, { recursive: true })
+
+const [html, clientJs] = await Promise.all([generateHtml(), bundleClientScript()])
+
+await writeFile(new URL('./index-page-client.js', assetsDir), clientJs)
+
 const outPath = new URL('./index.html', import.meta.url).pathname
 await writeFile(outPath, html)
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)

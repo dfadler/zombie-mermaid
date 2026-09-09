@@ -66,6 +66,7 @@ describe('index.ts → index.html', () => {
     const html = renderHtmlDocument(
       createElement(IndexPage, {
         jsonLd: '{\n  "@type": "SoftwareApplication"\n}',
+        clientScriptSrc: 'assets/index-page-client.js',
       }),
     )
     await expectGolden(html, './__fixtures__/index-page.normalized.txt')

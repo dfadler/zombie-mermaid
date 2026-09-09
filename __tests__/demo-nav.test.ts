@@ -232,6 +232,17 @@ describe('the bar', () => {
       'position:sticky',
     )
   })
+
+  it('stays position:relative by default, matching every canvas artboard', () => {
+    expect(render()).toContain('position:relative')
+    expect(render()).not.toContain('position:sticky')
+  })
+
+  it('opts into position:sticky at top:0 via the sticky prop (#759)', () => {
+    const html = render({ sticky: true })
+    expect(html).toContain('position:sticky')
+    expect(html).toContain('top:0')
+  })
 })
 
 describe('the brand', () => {
@@ -301,6 +312,29 @@ describe('the install pill', () => {
     expect(render({ installCommand: 'pnpm add zombie-mermaid' })).toContain(
       'pnpm add zombie-mermaid',
     )
+  })
+
+  it('is replaced entirely by installSlot when a page passes one (#759)', () => {
+    const html = render({
+      installSlot: createElement('div', { id: 'nav-theme-slot' }),
+    })
+    expect(html).toContain('<div id="nav-theme-slot">')
+    // The default NavInstall pill is gone, not just supplemented.
+    expect(html).not.toContain(NAV_INSTALL_COMMAND)
+    expect(html).not.toContain('class="pill mono"')
+  })
+
+  it('still has no <button> in its SSR output with installSlot set (#759)', () => {
+    // The homepage's real installSlot is an empty placeholder div -- a real
+    // <button>-based ThemePicker only ever arrives via runtime reparenting
+    // (demo/index-page-client.ts), never server-rendered here. Confirms
+    // nav.tsx's byte-pin ("has no mobile menu" test's sibling assertion,
+    // `semantics`'s "renders as header/nav, not the canvas's bare divs"
+    // block below) holds for this slot too, not just the default render.
+    const html = render({
+      installSlot: createElement('div', { id: 'nav-theme-slot' }),
+    })
+    expect(html.toLowerCase()).not.toContain('<button')
   })
 })
 
