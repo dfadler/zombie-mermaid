@@ -48,5 +48,16 @@ detail:
 1. A real measurement of a chromium-only custom image's actual pull time,
    built and pushed to GHCR, timed the same way the current job was — not
    estimated from layer sizes.
-2. A move to a paid GitHub-hosted "larger runner" or a self-hosted runner,
-   either of which can carry a warm Docker cache across jobs.
+2. A move to a self-hosted runner, which can carry a warm Docker cache
+   across jobs (a paid GitHub-hosted "larger runner" does **not** — it's
+   still an ephemeral VM provisioned fresh per job, same as the default
+   runner, just with more CPU/RAM/disk; per GitHub's own docs, larger
+   runners have no persistent layer cache between separate job executions).
+   Whether a custom larger-runner image could preload the required layers
+   is an unverified hypothesis, not a claim — it would need its own
+   measurement.
+
+See [the canonical CI-timing record](docs/research/ci-container-job-vs-actions-cache-timing.md)
+for the original `container:` vs. `actions/cache` comparison this issue
+follows up on; this investigation's conclusion (no change, gap not closeable
+without new infrastructure) is cross-linked from there.
