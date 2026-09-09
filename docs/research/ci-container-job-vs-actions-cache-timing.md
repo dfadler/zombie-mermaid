@@ -34,3 +34,13 @@ Full methodology, the original pre-migration estimate (superseded once real
 post-migration data existed), per-run tables, and the raw commands used are in
 [a comment on #547](https://github.com/dfadler/zombie-mermaid/issues/547) rather
 than duplicated here.
+
+## Follow-up: can the post-migration overhead be reduced?
+
+[#729](https://github.com/dfadler/zombie-mermaid/issues/729) investigated
+whether the real post-migration container-init overhead recorded above
+(~29.5s/shard avg) could be reduced. Conclusion: no config-level or workflow
+change closes the gap without giving up something the migration was for, or
+adding new infrastructure this repo doesn't have — see
+[`docs/research/ci-container-overhead-investigation.md`](ci-container-overhead-investigation.md)
+and [the full findings comment on #729](https://github.com/dfadler/zombie-mermaid/issues/729#issuecomment-5598686719).
