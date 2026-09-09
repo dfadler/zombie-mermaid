@@ -327,6 +327,96 @@ function NavInstall({ command }: { command: string }) {
   )
 }
 
+/* -----------------------------------------------------------------
+ * Copy-to-clipboard behavior
+ * ----------------------------------------------------------------- */
+
+/**
+ * The copy glyph's resting stroke — `var(--cyan)`, the same value
+ * {@link CopyIcon}'s own `defaultColor` resolves to (icons.tsx's
+ * `StrokeIcon`). {@link NAV_COPY_SCRIPT} reverts to this after the
+ * "copied" flash rather than a hand-typed duplicate of the color.
+ */
+const NAV_COPY_ICON_COLOR = colorVar('--cyan')
+
+/**
+ * The copy glyph's flash color on a successful copy — `var(--green)`, the
+ * same accent icons.tsx's `CheckIcon` already draws its "satisfied claim"
+ * tick in, reused here rather than inventing a new one.
+ */
+const NAV_COPY_SUCCESS_COLOR = colorVar('--green')
+
+/** How long the copy glyph stays green after a successful copy, in ms. */
+const NAV_COPY_FEEDBACK_MS = 1200
+
+/**
+ * Makes the install pill copy its command to the clipboard.
+ *
+ * Plain runtime JS, not a bundled module: the pill (`.nav-bar .pill.mono`)
+ * has no dedicated hook of its own — deliberately. This `Nav` is pinned
+ * byte-for-byte to the #590 design canvas (see this file's header comment
+ * and `__tests__/demo-nav.test.ts`, which asserts the rendered markup has
+ * no `<button>`, specifically to catch elements the sixteen canvas
+ * artboards don't have). So this script finds the pill by the classes it
+ * already carries and turns it interactive at *runtime* — role, tabindex,
+ * click/keydown — instead of changing the server-rendered markup. The
+ * rendered HTML is byte-identical whether or not this script ever runs.
+ *
+ * Exported as a string, not a `demo/*-client.ts` module bundled with
+ * esbuild (contrast `demo/diagram-page-client.ts`): every page that
+ * renders `<Nav>` already ships its own document from a different
+ * generator (index.ts, blog.ts, dashboard.ts, fork-fixes.ts, pages.ts),
+ * and this behavior is small and dependency-free enough that duplicating
+ * an esbuild step five times over would cost more than it buys.
+ */
+export const NAV_COPY_SCRIPT = `(function () {
+  function copyCommand(pill) {
+    var text = pill.querySelector('.nav-npm-text')
+    var icon = pill.querySelector('svg')
+    if (!text || !navigator.clipboard) return
+    navigator.clipboard.writeText(text.textContent || '').then(function () {
+      if (!icon) return
+      icon.setAttribute('stroke', '${NAV_COPY_SUCCESS_COLOR}')
+      setTimeout(function () {
+        icon.setAttribute('stroke', '${NAV_COPY_ICON_COLOR}')
+      }, ${NAV_COPY_FEEDBACK_MS})
+    })
+  }
+  var pills = document.querySelectorAll('.nav-bar .pill.mono')
+  pills.forEach(function (pill) {
+    pill.setAttribute('role', 'button')
+    pill.setAttribute('tabindex', '0')
+    pill.setAttribute('aria-label', 'Copy install command')
+    pill.style.cursor = 'pointer'
+    pill.addEventListener('click', function () {
+      copyCommand(pill)
+    })
+    pill.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        copyCommand(pill)
+      }
+    })
+  })
+})()`
+
+/**
+ * {@link NAV_COPY_SCRIPT} in a `<script>` element.
+ *
+ * Render this once per page (not once per `<Nav>` — a page like
+ * blog-page.tsx's post template renders `Nav` twice), after the last
+ * `<Nav>` in the document so every install pill already exists when it
+ * runs.
+ */
+export function NavCopyScript() {
+  return (
+    <script
+      // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- NAV_COPY_SCRIPT is a hardcoded literal with no user input
+      dangerouslySetInnerHTML={{ __html: NAV_COPY_SCRIPT }}
+    />
+  )
+}
+
 /**
  * The site's shared navigation bar: brand, links, install pill.
  *

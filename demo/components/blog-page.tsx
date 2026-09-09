@@ -59,7 +59,7 @@ import { ArrowRightIcon, LogoMark } from './icons.tsx'
 import { CTA, Card, Pill, SectionEyebrow } from './primitives.tsx'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
-import { Nav, type NavKey } from './nav.tsx'
+import { Nav, NavCopyScript, type NavKey } from './nav.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
@@ -411,6 +411,7 @@ export function BlogPostPage({
         </div>
 
         <Footer columns={FOOTER_COLUMNS} />
+        <NavCopyScript />
       </div>
     </BlogDocument>
   )
@@ -733,6 +734,7 @@ export function BlogIndexPage({
         )}
 
         <Footer columns={FOOTER_COLUMNS} />
+        <NavCopyScript />
       </div>
     </BlogDocument>
   )

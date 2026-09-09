@@ -43,7 +43,7 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
-import { Nav } from './nav.tsx'
+import { Nav, NavCopyScript } from './nav.tsx'
 import {
   CheckIcon,
   CommitIcon,
@@ -958,6 +958,7 @@ export function ForkFixesPage({ css, fixes }: ForkFixesPageProps) {
         </main>
 
         <Footer columns={FOOTER_COLUMNS} />
+        <NavCopyScript />
       </body>
     </html>
   )
