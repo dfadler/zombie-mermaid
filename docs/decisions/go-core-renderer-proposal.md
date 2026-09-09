@@ -82,14 +82,30 @@ leaving them as assumptions:
   import ELK.js." Regression there is close to certain.
 - **Synchronous rendering.** The README and `docs/react-integration.md`
   both describe fully synchronous rendering (no `await`, works inside
-  `useMemo()` in a component body) as load-bearing, not incidental. Chrome
-  enforces a hard 4 KB cap on synchronous `WebAssembly.Compile` on the main
-  thread (a real `RangeError`, not a soft warning); a real parsing+layout
-  core for six diagram types will exceed that by orders of magnitude. The
-  best realistic mitigation — instantiate the WASM module once,
-  asynchronously, at app startup, then call synchronously per render —
-  still relocates an async step into every consumer's setup code, which is
-  itself a breaking change to the documented zero-async contract.
+  `useMemo()` in a component body) as load-bearing, not incidental.
+  Correcting the prior research comment's now-stale figure: Chrome's
+  synchronous main-thread `WebAssembly.Module()`/`WebAssembly.Instance()`
+  cap was raised from 4 KB to **8 MB**, shipped in Chrome 115 (2023) —
+  confirmed via [chromestatus.com's feature entry](https://chromestatus.com/feature/5099433642950656),
+  which also notes Firefox and Safari show no public signal on whether they
+  match this specific relaxation, so cross-browser sync-compile behavior at
+  this size isn't independently confirmed. A realistic TinyGo core (200
+  KB–2 MB raw, per the bundle-size research above) fits under Chrome's 8 MB
+  cap, so the raw _compile_ step is no longer the categorical blocker the
+  earlier draft claimed. The real constraint moves one layer over, into how
+  those bytes reach the page without an async step: synchronously fetching
+  a separate `.wasm` asset isn't possible (network requests are inherently
+  async, short of a deprecated, main-thread-blocking synchronous XHR), so
+  the only way to keep the whole call chain synchronous is inlining the
+  compiled binary as base64 directly inside the JS bundle — which folds
+  this concern back into the bundle-size problem above rather than
+  resolving it: a 200 KB–2 MB binary, base64-inflated by roughly a third,
+  landing inside the same bundle the ASCII entry point exists specifically
+  to keep small. The alternative — fetch/instantiate once asynchronously at
+  app startup, call synchronously per render thereafter — is still a
+  breaking change to the documented zero-async contract, just a smaller one
+  than previously described (async once at boot, not async or size-capped
+  on every call).
 
 ### A related, narrower prototype was already tried and rejected
 
@@ -124,10 +140,11 @@ actual signals:
 - The two concrete technical costs #495 itself flagged as open questions
   turn out to be real, hard constraints once measured, not just
   uncertainties: bundle size would very likely regress (certainly for the
-  ASCII-only entry point, which exists specifically to stay small),
-  and the documented synchronous-rendering guarantee cannot survive
-  a mandatory WASM core in the primary browser target without a breaking
-  API change.
+  ASCII-only entry point, which exists specifically to stay small), and the
+  documented synchronous-rendering guarantee can only be preserved
+  end-to-end by inlining the compiled binary into the JS bundle — folding
+  straight back into the same bundle-size cost — or by accepting a breaking
+  async-at-startup change to the public API.
 - The one related prototype that _was_ built (#540, a native-binary
   subprocess approach rather than WASM) found a real overhead cost and no
   measured benefit, for a fraction of #495's scope (one diagram type, one
