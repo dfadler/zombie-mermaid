@@ -64,6 +64,7 @@ import {
   LAYOUT,
   LETTER_SPACING,
   MEDIA,
+  RADIUS,
   SECTION_SPACE,
   SPACE,
   colorVar,
@@ -594,6 +595,45 @@ function Hero() {
           <CTA href="editor.html" accent="violet">
             View the live demo
           </CTA>
+        </div>
+        {/* #739: proof strip, not in the original canvas — makes the
+            headline's theme claim visible above the fold, without
+            duplicating ThemeShowcase below. Reuses SHOWCASE_THEMES rather
+            than inventing its own swatch colours. */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: `${SPACE.md}px`,
+            marginTop: `${SPACE.lg}px`,
+            paddingTop: `${SPACE['2xl']}px`,
+            borderTop: `1px solid ${colorVar('--border')}`,
+          }}
+        >
+          {SHOWCASE_THEMES.map((theme) => (
+            <span
+              key={theme.key}
+              title={theme.label}
+              style={{
+                display: 'inline-block',
+                width: '22px',
+                height: '22px',
+                borderRadius: `${RADIUS.sm}px`,
+                background: theme.bg,
+                border: `1px solid ${theme.edge}`,
+              }}
+            />
+          ))}
+          <span
+            style={{
+              fontSize: `${FONT_SIZE.label}px`,
+              fontWeight: FONT_WEIGHT.semibold,
+              color: colorVar('--text-faint'),
+            }}
+          >
+            +10 more themes, switchable live
+          </span>
         </div>
       </div>
 
