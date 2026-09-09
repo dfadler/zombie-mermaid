@@ -11,15 +11,15 @@
 // imported back out of here, a cycle that blocks the monorepo split and
 // already dragged `elkjs` into `dist/ascii.js`).
 //
-// 'xychart', 'er', 'sequence', and 'class' are registered here — every type
-// whose existing renderer signature adapts to the shared `DiagramModule`
-// shape with zero behavior change. See docs/decisions/diagram-type-registry-partial.md
-// for why 'flowchart' is NOT registered yet and what would need to change
-// first (its ASCII path has no per-type wrapper function to slot in, unlike
-// every other type, and its SVG path carries `%%{init: ...}%%` directive
-// handling no other type has). The front door checks this table first;
-// anything absent (currently only 'flowchart') falls through to its own
-// switch, completely unchanged.
+// Every diagram type is registered here, including 'flowchart' — see
+// docs/decisions/diagram-type-registry-partial.md for why it was the last
+// holdout (its ASCII path had no per-type wrapper function to slot in until
+// #745 extracted `renderFlowchartAscii`, and its SVG path carries
+// `%%{init: ...}%%` directive handling no other type has — see
+// `flowchartModule.layoutForSvg` below for how that's folded in without
+// growing `SvgRenderContext`). The front door (`renderMermaidSVGRaw` in
+// src/index.ts) has no fallback switch left; every `DiagramType` is a hit
+// here.
 //
 // `packages/core/src/diagram-type.ts` (the `DiagramType` union + `detectDiagramType`)
 // stays exactly as-is and is what the front doors use to key into this
@@ -31,6 +31,9 @@ import type {
   RenderOptions,
   DiagramColors,
   SvgEmitOptions,
+  MermaidGraph,
+  PositionedGraph,
+  CurveStyle,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from '@zombie-mermaid/svg-renderer'
 import { withDirectionOverride } from '@zombie-mermaid/core'
@@ -60,7 +63,10 @@ import {
   renderSequenceSvg,
   layoutClassDiagramSync,
   renderClassSvg,
+  layoutGraphSync,
+  renderSvg as renderFlowchartSvg,
 } from '@zombie-mermaid/svg-renderer'
+import { parseMermaid } from './parser.ts'
 
 /**
  * Parameters shared by every per-type SVG renderer today, factored out of
@@ -104,10 +110,23 @@ export interface SvgRenderContext {
  * parse itself from raw text — which is why the ASCII entries live in
  * src/ascii/registry.ts as plain `(text, …) => string` functions instead of
  * a `renderAscii` method on this interface.
+ *
+ * `parse` takes both `lines` (the pre-split statement list from
+ * `splitStatements(decoded)`, computed once by the front door — what every
+ * already-registered type's parser wants) and `text` (the raw, un-split
+ * source `flowchartModule` below needs instead): `parseMermaid`'s
+ * `%%{init: ...}%%` directive extraction reads raw, un-commented lines that
+ * `splitStatements` has already discarded by the time `lines` exists, and
+ * its multi-line-statement continuation merging needs each statement's
+ * *originating physical line* grouping, which `splitStatements`'s flattened
+ * array has already lost. `xychartModule`/`erModule`/`sequenceModule`/
+ * `classModule` all ignore the second parameter — JS/TS functions may take
+ * fewer parameters than their declared type allows, so `parse: parseXYChart`
+ * (etc.) is unchanged from before this parameter was added.
  */
 export interface DiagramModule<TDiagram = unknown, TPositioned = unknown> {
   readonly type: DiagramType
-  parse(lines: string[]): TDiagram
+  parse(lines: string[], text: string): TDiagram
   layoutForSvg(diagram: TDiagram, options: RenderOptions): TPositioned
   renderSvg(
     positioned: TPositioned,
@@ -175,6 +194,16 @@ function resolveLinksEnabled(options: RenderOptions): boolean {
   return interactivity !== 'none'
 }
 
+/**
+ * Mirrors `resolveAnimationEnabled()` in src/index.ts exactly (`interactivity`
+ * defaults unset to `'static'`; only `'full'` turns animation on) — duplicated
+ * here for the same import-direction reason `resolveLinksEnabled` above is.
+ */
+function resolveAnimationEnabled(options: RenderOptions): boolean {
+  const interactivity = options.interactivity ?? 'static'
+  return interactivity === 'full'
+}
+
 const classModule: DiagramModule<ClassDiagram, PositionedClassDiagram> = {
   type: 'class',
   parse: parseClassDiagram,
@@ -223,15 +252,76 @@ const erModule: DiagramModule<ErDiagram, PositionedErDiagram> = {
 }
 
 /**
- * The registry proper. Only diagram types listed here are looked up by the
- * SVG front door; anything absent (currently only 'flowchart') falls
- * through to that front door's own switch, unchanged. The ASCII front
- * door's equivalent table is `asciiRegistry` in src/ascii/registry.ts.
+ * `renderSvg`'s (the low-level flowchart/state SVG emitter, imported above
+ * as `renderFlowchartSvg`) `curve` parameter is the one piece of
+ * `SvgRenderContext`-adjacent state no other registered type needs: a
+ * `%%{init: {"flowchart": {"curve": ...}}}%%` directive on the diagram
+ * itself can supply a default, and `options.curve` always wins when set —
+ * see `applyInitConfig()` in packages/core/src/init-directive.ts, which
+ * `src/index.ts`'s pre-registry flowchart path used to call directly.
+ *
+ * That resolution needs the parsed diagram (for `initConfig`) AND the
+ * caller's `options` together, and the *result* is only needed later, by
+ * `renderSvg` — so rather than teach `SvgRenderContext` a diagram-specific
+ * `curve` field (every other field there is genuinely shared across types),
+ * `layoutForSvg` below resolves it once and carries it forward on
+ * `PositionedFlowchart`, right next to the `PositionedGraph` it was
+ * resolved alongside. `animationEnabled`/`linksEnabled` need no such
+ * carry-through: both derive from `options` alone via the
+ * `resolveAnimationEnabled`/`resolveLinksEnabled` helpers above, exactly
+ * like `class`'s `linksEnabled` already does, so `flowchartModule.renderSvg`
+ * just calls them directly.
+ */
+export interface PositionedFlowchart {
+  graph: PositionedGraph
+  curve: CurveStyle
+}
+
+const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
+  type: 'flowchart',
+  // Ignores `lines` — see the `parse` doc comment on `DiagramModule` above
+  // for why flowchart/state needs the raw `text` instead.
+  parse: (_lines, text) => parseMermaid(text),
+  layoutForSvg(diagram, options) {
+    // Same order as src/index.ts's original fallback: direction override,
+    // then layout. `options.curve` wins over the diagram's own
+    // `%%{init: ...}%%` directive, which wins over the 'linear' default —
+    // see the doc comment on `PositionedFlowchart` above.
+    const graph = withDirectionOverride(diagram, options.direction)
+    return {
+      graph: layoutGraphSync(graph, options),
+      curve: options.curve ?? diagram.initConfig?.curve ?? 'linear',
+    }
+  },
+  renderSvg(positioned, ctx, options) {
+    return renderFlowchartSvg(
+      positioned.graph,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      positioned.curve,
+      ctx.embedSource,
+      resolveAnimationEnabled(options),
+      resolveLinksEnabled(options),
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * The registry proper — every `DiagramType` is looked up here by the SVG
+ * front door (`renderMermaidSVGRaw` in src/index.ts), which has no
+ * fallback switch left. The ASCII front door's equivalent table is
+ * `asciiRegistry` in src/ascii/registry.ts.
  *
  * Typed with `any` type parameters at the map level: each entry's own
  * `TDiagram`/`TPositioned` are only known inside that entry's own closure
- * (see `xychartModule`/`erModule` above, which are fully typed); the map
- * just needs one consistent shape to hold heterogeneous entries in.
+ * (see `xychartModule`/`erModule`/`flowchartModule` above, which are fully
+ * typed); the map just needs one consistent shape to hold heterogeneous
+ * entries in.
  */
 type AnyDiagramModule = DiagramModule<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above; each entry is fully typed at its own definition site.
@@ -240,9 +330,10 @@ type AnyDiagramModule = DiagramModule<
   any
 >
 
-export const diagramRegistry: Partial<Record<DiagramType, AnyDiagramModule>> = {
+export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   xychart: xychartModule,
   er: erModule,
   sequence: sequenceModule,
   class: classModule,
+  flowchart: flowchartModule,
 }

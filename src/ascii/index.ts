@@ -16,20 +16,10 @@
 //   const ascii = renderMermaidASCII('graph LR\n  A --> B')
 // ============================================================================
 
-import { parseMermaid } from '../parser.ts'
-import { withDirectionOverride, detectDiagramType } from '@zombie-mermaid/core'
+import { detectDiagramType } from '@zombie-mermaid/core'
 import type { Direction, DiagramType } from '@zombie-mermaid/core'
-import { convertToAsciiGraph } from './converter.ts'
-import { createMapping } from './grid.ts'
-import { drawGraph } from './draw.ts'
-import {
-  canvasToString,
-  flipCanvasVertically,
-  flipRoleCanvasVertically,
-} from './canvas.ts'
 import { asciiRegistry } from './registry.ts'
 import { addCoordsOverlay } from './coords.ts'
-import { buildNodeLinkCanvas, flipLinkCanvasVertically } from './hyperlinks.ts'
 import {
   detectColorMode,
   DEFAULT_ASCII_THEME,
@@ -140,7 +130,7 @@ export function renderMermaidASCII(
     paddingX: options.paddingX ?? DEFAULT_PADDING_X,
     paddingY: options.paddingY ?? DEFAULT_PADDING_Y,
     boxBorderPadding: options.boxBorderPadding ?? DEFAULT_BOX_BORDER_PADDING,
-    graphDirection: 'TD', // default, overridden for flowcharts below
+    graphDirection: 'TD', // default; renderFlowchartAscii overrides this for flowcharts/state diagrams
   }
 
   // Resolve color mode ('auto' or unset → detect environment, otherwise use specified mode)
@@ -154,63 +144,16 @@ export function renderMermaidASCII(
 
   const diagramType: DiagramType = detectDiagramType(text)
 
-  let result: string
-
-  // Registry lookup first (see src/ascii/registry.ts — issue #533):
-  // 'xychart', 'er', 'sequence', and 'class' are registered there and
-  // dispatch to the exact same renderer calls their switch cases used to
-  // make. Only 'flowchart' is not registered — see
-  // docs/decisions/diagram-type-registry-partial.md for why — so it's the
-  // one case left below instead of a switch. `extras` carries every
-  // ASCII-only per-type option (currently just `hyperlinks`, read by
-  // 'class'; ignored by every other registered type).
-  const registered = asciiRegistry[diagramType]
-
-  if (registered) {
-    result = registered(text, config, colorMode, theme, {
-      hyperlinks: options.hyperlinks ?? false,
-    })
-    return options.showCoords ? addCoordsOverlay(result) : result
-  }
-
-  // Flowchart + state diagram pipeline (original) — the one type not yet
-  // migrated to the registry above (see the comment on `registered`).
-  // `options.direction` replaces the parsed top-level direction before
-  // layout; see packages/core/src/direction-override.ts.
-  const parsed = withDirectionOverride(parseMermaid(text), options.direction)
-
-  // Normalize direction for grid layout.
-  // BT is laid out as TD then flipped vertically after drawing.
-  // RL is treated as LR (full RL support not yet implemented).
-  if (parsed.direction === 'LR' || parsed.direction === 'RL') {
-    config.graphDirection = 'LR'
-  } else {
-    config.graphDirection = 'TD'
-  }
-
-  const graph = convertToAsciiGraph(parsed, config)
-  createMapping(graph)
-  drawGraph(graph)
-
-  // Opt-in OSC 8 hyperlinks: mark each `click`-linked node's label cells
-  // now, from the drawn node positions, before any flip below moves them.
-  const linkCanvas = options.hyperlinks
-    ? buildNodeLinkCanvas(graph, parsed.interactions)
-    : undefined
-
-  // BT: flip the finished canvas vertically so the flow runs bottom→top.
-  // The grid layout ran as TD; flipping + character remapping produces BT.
-  if (parsed.direction === 'BT') {
-    flipCanvasVertically(graph.canvas)
-    flipRoleCanvasVertically(graph.roleCanvas)
-    if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
-  }
-
-  result = canvasToString(graph.canvas, {
-    roleCanvas: graph.roleCanvas,
-    colorMode,
-    theme,
-    linkCanvas,
+  // Registry dispatch (see src/ascii/registry.ts — issue #533 / #745):
+  // every diagram type, including 'flowchart', is registered there and
+  // dispatches to the exact same renderer calls each type's original
+  // switch case (or, for 'flowchart', inline sequence) used to make.
+  // `extras` carries every ASCII-only per-type option: `hyperlinks` (read
+  // by 'class' and 'flowchart') and `direction` (read by 'flowchart'
+  // only); both are ignored by every other registered type.
+  const result = asciiRegistry[diagramType](text, config, colorMode, theme, {
+    hyperlinks: options.hyperlinks ?? false,
+    direction: options.direction,
   })
 
   return options.showCoords ? addCoordsOverlay(result) : result
