@@ -29,10 +29,7 @@ import { forkFixes, type ForkFix } from './demo/fork-fixes-data.ts'
 import { asciiToHtml } from './ascii-html.ts'
 import { formatProse } from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
-import { designBaseCss } from './demo/components/tokens.tsx'
-import { primitivesCss } from './demo/components/primitives.tsx'
-import { navCss } from './demo/components/nav.tsx'
-import { footerCss } from './demo/components/footer.tsx'
+import { sharedPageCss } from './demo/components/shared-page-css.tsx'
 import { themePickerCss } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import {
@@ -305,23 +302,15 @@ async function generate(): Promise<string> {
   }
 
   // The #608 redesign moved this page onto the shared design system
-  // (#591): tokens.tsx's custom properties and base rules, primitives.tsx's
-  // .card/.pill/.section-eyebrow, nav.tsx's and footer.tsx's own responsive
-  // rules, and finally this page's own small CSS file — see
-  // demo/fork-fixes.css's header for what's left in it and why. This page
-  // no longer loads demo/styles.css's `--t-*` theme system at all.
+  // (#591), assembled by shared-page-css.tsx's `sharedPageCss()` — see
+  // demo/fork-fixes.css's header for what's left in this page's own CSS
+  // file and why. This page no longer loads demo/styles.css's `--t-*`
+  // theme system at all.
   const pageCss = await readFile(
     new URL('./demo/fork-fixes.css', import.meta.url),
     'utf8',
   )
-  const styles = [
-    designBaseCss(),
-    primitivesCss(),
-    navCss(),
-    footerCss(),
-    themePickerCss(),
-    pageCss,
-  ].join('\n\n')
+  const styles = sharedPageCss([themePickerCss(), pageCss].join('\n\n'))
 
   // #687: this page's live theme picker needs no other client JS, so it
   // gets the same shared bundle Home/the Diagrams hub/Blog/Dashboard use.
