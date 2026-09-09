@@ -85,7 +85,14 @@ applyColorMode(isDark)
 // preference. window.__themeState.setTheme() both persists under the
 // shared key and notifies the subscribe() listener registered below, so
 // this reaches applyTheme() exactly the same way a live pill click would.
-var legacyEditorTheme = localStorage.getItem('bm-editor-theme')
+var legacyEditorTheme = ''
+try {
+  legacyEditorTheme = localStorage.getItem('bm-editor-theme')
+} catch {
+  // Storage access can throw (e.g. SecurityError in a storage-restricted
+  // context) -- same defensive pattern demo/theme-state.ts already uses
+  // for every other localStorage access on this site.
+}
 if (
   window.__themeState.getTheme() === '' &&
   legacyEditorTheme &&
@@ -93,7 +100,9 @@ if (
 ) {
   window.__themeState.setTheme(legacyEditorTheme)
 }
-localStorage.removeItem('bm-editor-theme')
+try {
+  localStorage.removeItem('bm-editor-theme')
+} catch {}
 
 // Restore the shared theme preference, if any -- an empty string means "no
 // preference stored" (theme-state.ts's DEFAULT_THEME_KEY), which already
