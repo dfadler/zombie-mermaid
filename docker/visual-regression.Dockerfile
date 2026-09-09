@@ -37,8 +37,8 @@
 #     -t zombie-mermaid/playwright-visual:v1.62.1-jammy \
 #     -f docker/visual-regression.Dockerfile docker
 #
-# Run the suite against the committed baselines:
-#   scripts/docker-test-visual-ascii.sh
+# Run the suite against the committed baselines (ASCII, SVG, or both):
+#   scripts/docker-test-visual.sh
 #
 # That wrapper is the supported entry point, not a raw `docker run` of this
 # image: this image has no `USER` instruction, so it runs as root by default,
