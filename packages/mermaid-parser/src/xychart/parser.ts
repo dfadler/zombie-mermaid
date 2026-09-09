@@ -86,15 +86,37 @@ export function parseXYChart(lines: string[]): XYChart {
     // bar [...]
     const barMatch = line.match(/^bar\s+\[([^\]]+)\]/)
     if (barMatch) {
-      series.push({ type: 'bar', data: parseNumericArray(barMatch[1]!) })
+      series.push({
+        type: 'bar',
+        data: parseNumericArray(barMatch[1]!, 'bar', line),
+      })
       continue
     }
 
     // line [...]
     const lineMatch = line.match(/^line\s+\[([^\]]+)\]/)
     if (lineMatch) {
-      series.push({ type: 'line', data: parseNumericArray(lineMatch[1]!) })
+      series.push({
+        type: 'line',
+        data: parseNumericArray(lineMatch[1]!, 'line', line),
+      })
       continue
+    }
+
+    // None of the recognized directive shapes matched. A line that doesn't
+    // start with any known xychart-beta keyword at all falls through
+    // silently below, same as before — but a line that *does* start with
+    // one of the five keyworded directives (x-axis/y-axis/bar/line/title)
+    // and still failed every pattern above is almost certainly an attempt
+    // at that directive with broken syntax (an unclosed bracket, a missing
+    // quote, a malformed range). Previously this was silently dropped —
+    // the diagram would render with that axis/series just missing and no
+    // indication why. Surface an actionable error instead. See issue #541
+    // (parser error-message quality audit — this parser had zero throw
+    // sites before this pass).
+    const keywordMatch = line.match(/^(x-axis|y-axis|bar|line|title)\b/i)
+    if (keywordMatch) {
+      throw malformedDirectiveError(keywordMatch[1]!.toLowerCase(), line)
     }
   }
 
@@ -120,6 +142,51 @@ export function parseXYChart(lines: string[]): XYChart {
   return { title, horizontal, xAxis, yAxis, series }
 }
 
-function parseNumericArray(str: string): number[] {
-  return str.split(',').map((s) => parseFloat(s.trim()))
+/**
+ * Parse a `bar`/`line` series' comma-separated bracket contents into
+ * numbers, throwing on any element that isn't a valid number instead of
+ * silently coercing it to `NaN` (which serializes as `null` and can
+ * propagate into layout math with no indication anything was wrong — see
+ * issue #541's audit finding on this exact parser).
+ */
+function parseNumericArray(
+  str: string,
+  seriesType: 'bar' | 'line',
+  line: string,
+): number[] {
+  return str.split(',').map((raw, index) => {
+    const trimmed = raw.trim()
+    const value = parseFloat(trimmed)
+    if (trimmed.length === 0 || Number.isNaN(value)) {
+      throw new Error(
+        `Invalid numeric value ${JSON.stringify(trimmed)} at position ${
+          index + 1
+        } in "${line}". Every value in a ${seriesType} [...] list must be a number.`,
+      )
+    }
+    return value
+  })
+}
+
+/** Expected-syntax hint per xychart-beta keyword, for `malformedDirectiveError`. */
+const XYCHART_DIRECTIVE_HELP: Record<string, string> = {
+  'x-axis':
+    'x-axis [A, B, C] (categories) or x-axis 0 --> 100 (numeric range), either optionally preceded by a quoted title',
+  'y-axis':
+    'y-axis 0 --> 100 (numeric range) or y-axis "Title" (title only), optionally preceded by a quoted title before a range',
+  bar: 'bar [10, 20, 30] — a comma-separated numeric array in square brackets',
+  line: 'line [10, 20, 30] — a comma-separated numeric array in square brackets',
+  title: 'title "Chart Title" — a double-quoted string',
+}
+
+/**
+ * Build the error for a line that starts with a recognized xychart-beta
+ * keyword (x-axis/y-axis/bar/line/title) but doesn't match that keyword's
+ * expected syntax in any of the forms this parser supports.
+ */
+function malformedDirectiveError(keyword: string, line: string): Error {
+  const help = XYCHART_DIRECTIVE_HELP[keyword] ?? keyword
+  return new Error(
+    `Malformed xychart-beta "${keyword}" directive: "${line}". Expected: ${help}.`,
+  )
 }

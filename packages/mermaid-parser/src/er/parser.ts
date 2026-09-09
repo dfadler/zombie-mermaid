@@ -197,32 +197,58 @@ function parseAttribute(line: string): ErAttribute | null {
  * Full pattern example: CUSTOMER ||--o{ ORDER : places
  */
 function parseRelationshipLine(line: string): ErRelationship | null {
-  // Match: ENTITY1 <cardinality_and_line> ENTITY2 : label
-  const match = line.match(
-    /^(\S+)\s+([|o}{]+(?:--|\.\.)[|o}{]+)\s+(\S+)\s*:\s*(.+)$/,
+  // Loosely match a line shaped like a relationship attempt: two bare
+  // tokens flanking a `--`/`..`-based marker, with an optional `: label`.
+  // A line with no such marker at all doesn't look like a relationship
+  // attempt and falls through silently (returns null), same as before —
+  // that part of the parser's leniency is unchanged.
+  //
+  // Everything that *does* match this shape is validated below and either
+  // returns a fully-parsed relationship or throws an actionable error.
+  // Before this pass, an invalid cardinality token or a missing/empty
+  // label silently dropped the *entire* line (both entities included)
+  // with zero indication anything was wrong — see issue #541 (parser
+  // error-message quality audit — this parser had zero throw sites before
+  // this pass).
+  const attempt = line.match(
+    /^(\S+)\s+(\S*(?:--|\.\.)\S*)\s+(\S+)\s*(?::\s*(.*))?$/,
   )
-  if (!match) return null
+  if (!attempt) return null
 
-  const entity1 = match[1]!
-  const cardinalityStr = match[2]!
-  const entity2 = match[3]!
-  // Strip surrounding quotes if present, then normalize br tags
-  const rawLabel = match[4]!.trim().replace(/^["']|["']$/g, '')
-  const label = normalizeBrTags(rawLabel)
+  const entity1 = attempt[1]!
+  const cardinalityStr = attempt[2]!
+  const entity2 = attempt[3]!
+  const hasLabel = attempt[4] !== undefined
+  const rawLabel = attempt[4]?.trim() ?? ''
 
-  // Split the cardinality string into left side, line style, right side
-  const lineMatch = cardinalityStr.match(/^([|o}{]+)(--|\.\.?)([|o}{]+)$/)
-  if (!lineMatch) return null
+  // Cardinality symbols on each side of the line style:
+  //   Left side (entity1):  ||  |o  }|  }o
+  //   Line:                 --  (identifying) or  ..  (non-identifying)
+  //   Right side (entity2): ||  o|  |{  o{
+  // `shapeMatch` only confirms the token is built from crow's-foot
+  // characters around a line-style marker — `parseLeftCardinality`/
+  // `parseRightCardinality` still reject a shape match that isn't one of
+  // the four valid two-character combinations per side (e.g. a lone "|").
+  const shapeMatch = cardinalityStr.match(/^([|o}{]*)(--|\.\.?)([|o}{]*)$/)
+  const cardinality1 = shapeMatch ? parseLeftCardinality(shapeMatch[1]!) : null
+  const cardinality2 = shapeMatch ? parseRightCardinality(shapeMatch[3]!) : null
 
-  const leftStr = lineMatch[1]!
-  const lineStyle = lineMatch[2]!
-  const rightStr = lineMatch[3]!
+  if (!cardinality1 || !cardinality2) {
+    throw new Error(
+      `Invalid ER relationship cardinality "${cardinalityStr}" in "${line}". ` +
+        'Left side must be one of ||, |o, }|, }o; right side must be one of ||, o|, |{, o{ (e.g. "||--o{").',
+    )
+  }
 
-  const cardinality1 = parseLeftCardinality(leftStr)
-  const cardinality2 = parseRightCardinality(rightStr)
-  const identifying = lineStyle === '--'
+  if (!hasLabel || rawLabel.length === 0) {
+    throw new Error(
+      `ER relationship "${entity1} ${cardinalityStr} ${entity2}" is missing a ": label" — expected e.g. "${entity1} ${cardinalityStr} ${entity2} : label".`,
+    )
+  }
 
-  if (!cardinality1 || !cardinality2) return null
+  // Strip surrounding quotes if present, then normalize br tags.
+  const label = normalizeBrTags(rawLabel.replace(/^["']|["']$/g, ''))
+  const identifying = shapeMatch![2] === '--'
 
   return { entity1, entity2, cardinality1, cardinality2, label, identifying }
 }
