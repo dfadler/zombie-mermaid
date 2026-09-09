@@ -10,5 +10,13 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [],
+  "changedFilePatterns": [
+    "src/**",
+    "package.json",
+    "README.md",
+    "LICENSE",
+    "vite.config.lib.ts",
+    "tsconfig.json"
+  ]
 }
