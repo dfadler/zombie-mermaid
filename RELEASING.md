@@ -132,6 +132,22 @@ and URL-encoding the `@`/`/`, e.g.
 configured independently and at different times), _then_ open the
 externalization PR.
 
+When configuring trusted publishing for each of these five new package
+names, double-check the **Allowed actions** setting: make sure a direct
+**`npm publish`** is permitted, not only a staged one. npm's
+trusted-publisher UI has, at various points, defaulted a _new_
+configuration to allow staged publishing only (`npm stage publish` — which
+then waits on a maintainer's separate, manual 2FA-backed approval before
+anything actually goes live) unless direct publish is explicitly also
+selected. The future externalization PR's `pnpm changeset publish` step
+does a direct publish, not a staged one — if a newly-created config for one
+of these five packages defaults to staged-only, that step will appear to
+succeed while the package silently sits unpublished, waiting on a manual
+approval nobody knows to give. Double-check this setting against npm's
+current [trusted publishers docs](https://docs.npmjs.com/trusted-publishers/)
+rather than assuming the option is where this note describes it — npm has
+changed the default here before and may again.
+
 ## Requirements this depends on
 
 - npm CLI `11.5.1+` and Node.js `22.14.0+` for trusted publishing support.

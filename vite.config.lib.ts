@@ -120,8 +120,14 @@ const cliExecutable: Plugin = {
   },
 }
 
-const RELATIVE_IMPORT_RE =
-  /^(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]\.\.?\//m
+// `\bfrom\b` once, not `from` twice — the previous
+// `(?:import|export\s+[^;]*from)\s[^;]*from\s*['"]...` shape required the
+// `export` branch to contain the literal "from" twice, so a single-`from`
+// relative re-export (`export * from './foo'`) matched neither alternative
+// and silently passed the afterBuild guard below. Caught in PR review
+// (#769) — this invariant matters more once these packages are actually
+// published (same fix applied in vite.config.package.ts).
+const RELATIVE_IMPORT_RE = /^(?:import|export)\s[^;]*\bfrom\s*['"]\.\.?\//m
 
 /**
  * A rolled-up declaration must never name a `@zombie-mermaid/*` workspace
