@@ -39,7 +39,7 @@ import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { forkFixes } from '../demo/fork-fixes-data.ts'
-import { displayWidth } from '../src/ascii/display-width.ts'
+import { displayWidth } from '../packages/ascii-renderer/src/display-width.ts'
 
 const exec = promisify(execFile)
 

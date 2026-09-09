@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { diamondRenderer } from '../ascii/shapes/diamond.ts'
-import { canvasToString } from '../ascii/canvas.ts'
-import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
+import { diamondRenderer } from '../../packages/ascii-renderer/src/shapes/diamond.ts'
+import { canvasToString } from '../../packages/ascii-renderer/src/canvas.ts'
+import type { ShapeRenderOptions } from '../../packages/ascii-renderer/src/shapes/types.ts'
 
 describe('diamondRenderer.render', () => {
   it('draws unicode diamond corner markers around a short label', () => {

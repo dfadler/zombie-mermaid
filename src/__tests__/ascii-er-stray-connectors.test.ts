@@ -7,10 +7,13 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { chooseFreeRow, isRowFree } from '../ascii/er-diagram.ts'
-import { mkCanvas, write } from '../ascii/canvas.ts'
-import type { Canvas } from '../ascii/types.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  chooseFreeRow,
+  isRowFree,
+} from '../../packages/ascii-renderer/src/er-diagram.ts'
+import { mkCanvas, write } from '../../packages/ascii-renderer/src/canvas.ts'
+import type { Canvas } from '../../packages/ascii-renderer/src/types.ts'
 
 /** Mark every cell in row `y` across [xStart, xEnd] as occupied. */
 function occupyRow(canvas: Canvas, y: number, xStart: number, xEnd: number) {

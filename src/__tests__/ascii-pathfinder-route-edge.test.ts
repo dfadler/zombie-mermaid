@@ -14,7 +14,10 @@
  * true departure direction (see edge-bundling.ts's routeBundledEdges).
  */
 import { describe, it, expect } from 'vitest'
-import { routeEdge, createPathBudget } from '../ascii/pathfinder.ts'
+import {
+  routeEdge,
+  createPathBudget,
+} from '../../packages/ascii-renderer/src/pathfinder.ts'
 import {
   Up,
   Down,
@@ -23,9 +26,16 @@ import {
   Middle,
   UpperRight,
   requireCardinalDirection,
-} from '../ascii/types.ts'
-import type { AsciiGraph, PathBudget } from '../ascii/types.ts'
-import { createGrid, placeBlock, type Grid } from '../ascii/grid-occupancy.ts'
+} from '../../packages/ascii-renderer/src/types.ts'
+import type {
+  AsciiGraph,
+  PathBudget,
+} from '../../packages/ascii-renderer/src/types.ts'
+import {
+  createGrid,
+  placeBlock,
+  type Grid,
+} from '../../packages/ascii-renderer/src/grid-occupancy.ts'
 
 function makeGraph(grid: Grid, pathBudget: PathBudget | undefined): AsciiGraph {
   return {

@@ -28,7 +28,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII ER relationship routing draws a corner glyph at each turn (issue #414)', () => {
   it('draws corner glyphs at a same-row detour around an obstructing entity', () => {

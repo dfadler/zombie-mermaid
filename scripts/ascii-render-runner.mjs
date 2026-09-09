@@ -109,13 +109,13 @@ if (sizeOnly) {
   // `maxLineWidth` helper. Counting the raw escape bytes as graphemes would
   // overestimate `cols` and oversize the capture PTY (see issue #498).
   const { displayWidth } = await import(
-    pathToFileURL(resolve('src/ascii/display-width.ts')).href
+    pathToFileURL(resolve('packages/ascii-renderer/src/display-width.ts')).href
   )
   const { stripOsc8 } = await import(
-    pathToFileURL(resolve('src/ascii/hyperlinks.ts')).href
+    pathToFileURL(resolve('packages/ascii-renderer/src/hyperlinks.ts')).href
   )
   // Matches SGR color escape sequences (`\x1b[...m`); same pattern as the
-  // ANSI_ESCAPE const in src/cli/render.ts and src/ascii/coords.ts.
+  // ANSI_ESCAPE const in src/cli/render.ts and packages/ascii-renderer/src/coords.ts.
   const ANSI_ESCAPE = /\x1b\[[0-9;]*m/g
   const lines = renderMermaidASCII(source, {
     colorMode: 'none',

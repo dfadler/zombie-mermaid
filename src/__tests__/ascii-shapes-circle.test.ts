@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { circleRenderer } from '../ascii/shapes/circle.ts'
-import { canvasToString } from '../ascii/canvas.ts'
-import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
+import { circleRenderer } from '../../packages/ascii-renderer/src/shapes/circle.ts'
+import { canvasToString } from '../../packages/ascii-renderer/src/canvas.ts'
+import type { ShapeRenderOptions } from '../../packages/ascii-renderer/src/shapes/types.ts'
 
 function render(label: string, options: ShapeRenderOptions): string {
   const dimensions = circleRenderer.getDimensions(label, options)

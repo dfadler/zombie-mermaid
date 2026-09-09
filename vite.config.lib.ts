@@ -46,7 +46,7 @@
  *   of a browser shim (the CLI's `createRequire` breaks otherwise — #378),
  *   `minify` defaults to `false`, and `lib.fileName` is ignored in favor of
  *   the entry file's basename. That last one is why `mcp_es`/`mcp_cjs`/`cli`
- *   also set `output.entryFileNames` explicitly: `src/mcp/index.ts` would
+ *   also set `output.entryFileNames` explicitly: `packages/mcp/src/index.ts` would
  *   otherwise land on `dist/index.js`, clobbering the real `index` entry.
  *
  * Types: unplugin-dts's `bundleTypes` (one api-extractor-rolled `.d.ts` per
@@ -232,6 +232,7 @@ export default defineConfig({
             '@zombie-mermaid/core',
             '@zombie-mermaid/mermaid-parser',
             '@zombie-mermaid/svg-renderer',
+            '@zombie-mermaid/ascii-renderer',
           ],
           extractorConfig: {
             compiler: {
@@ -246,6 +247,9 @@ export default defineConfig({
                     ],
                     '@zombie-mermaid/svg-renderer': [
                       resolve(DIST, 'packages/svg-renderer/src/index.d.ts'),
+                    ],
+                    '@zombie-mermaid/ascii-renderer': [
+                      resolve(DIST, 'packages/ascii-renderer/src/index.d.ts'),
                     ],
                   },
                 },
@@ -296,7 +300,7 @@ export default defineConfig({
       consumer: 'client',
       build: {
         lib: {
-          entry: resolve(ROOT, 'src/ascii/index.ts'),
+          entry: resolve(ROOT, 'packages/ascii-renderer/src/index.ts'),
           formats: ES_AND_CJS,
           fileName: (format) => `ascii.${format === 'es' ? 'js' : 'cjs'}`,
         },
@@ -306,12 +310,12 @@ export default defineConfig({
     // `ascii`'s single dual-format builds) because the CJS half needs a
     // `define`/`intro` pair that would be wrong to apply to the ESM half.
     // Both are server-consumer builds: this entry transitively imports
-    // `node:module` (via `src/package-info.ts`, used by `src/mcp/server.ts`
-    // for `Implementation.version`).
+    // `node:module` (via `src/package-info.ts`, used by
+    // `packages/mcp/src/server.ts` for `Implementation.version`).
     mcp_es: {
       build: {
         lib: {
-          entry: resolve(ROOT, 'src/mcp/index.ts'),
+          entry: resolve(ROOT, 'packages/mcp/src/index.ts'),
           formats: ES_ONLY,
           fileName: () => 'mcp.js',
         },
@@ -338,7 +342,7 @@ export default defineConfig({
       },
       build: {
         lib: {
-          entry: resolve(ROOT, 'src/mcp/index.ts'),
+          entry: resolve(ROOT, 'packages/mcp/src/index.ts'),
           formats: CJS_ONLY,
           fileName: () => 'mcp.cjs',
         },
@@ -389,8 +393,8 @@ export default defineConfig({
         lib: {
           entry: {
             index: resolve(ROOT, 'src/index.ts'),
-            ascii: resolve(ROOT, 'src/ascii/index.ts'),
-            mcp: resolve(ROOT, 'src/mcp/index.ts'),
+            ascii: resolve(ROOT, 'packages/ascii-renderer/src/index.ts'),
+            mcp: resolve(ROOT, 'packages/mcp/src/index.ts'),
           },
           formats: ES_ONLY,
         },

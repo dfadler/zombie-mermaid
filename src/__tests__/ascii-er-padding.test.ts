@@ -11,7 +11,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 // A single relationship with a short label — exercises the horizontal gap
 // between entities without the label itself becoming the binding constraint

@@ -11,8 +11,8 @@
  * src/__tests__/ascii-hyperlinks.test.ts.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../src/ascii/index.ts'
-import { stripOsc8 } from '../src/ascii/hyperlinks.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { stripOsc8 } from '../packages/ascii-renderer/src/hyperlinks.ts'
 import { samples } from '../samples-data.ts'
 
 const OSC8_PREFIX = '\x1b]8;;'

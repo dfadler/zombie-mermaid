@@ -18,22 +18,26 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
-import { convertToAsciiGraph } from '../ascii/converter.ts'
-import { createMapping } from '../ascii/grid.ts'
+import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
+import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import {
   isOccupied,
   pathCells,
   createGrid,
   cloneGrid,
   placeBlock,
-} from '../ascii/grid-occupancy.ts'
+} from '../../packages/ascii-renderer/src/grid-occupancy.ts'
 import {
   createEdgeCellStyles,
   findStyleConflict,
   claimPathCells,
-} from '../ascii/edge-cell-styles.ts'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import type { AsciiConfig, AsciiEdge, AsciiGraph } from '../ascii/types.ts'
+} from '../../packages/ascii-renderer/src/edge-cell-styles.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import type {
+  AsciiConfig,
+  AsciiEdge,
+  AsciiGraph,
+} from '../../packages/ascii-renderer/src/types.ts'
 
 const RETRY_LOOP_SOURCE = `graph TD
     A[Push Code] --> B{Tests Pass?}

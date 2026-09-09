@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { assertUniformDisplayWidth } from './helpers/terminal-display-width.ts'
 
 /** Same source as the "Class: All 6 Relationship Types" sample (samples-data.ts). */

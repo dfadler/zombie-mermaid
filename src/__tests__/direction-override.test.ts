@@ -21,7 +21,7 @@ import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, renderMermaidASCII, parseMermaid } from '../index.ts'
 import { withDirectionOverride } from '@zombie-mermaid/core'
 import type { Direction, RenderOptions } from '@zombie-mermaid/core'
-import type { AsciiRenderOptions } from '../ascii/index.ts'
+import type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
 
 /**
  * Top-left corner of the first `<rect>` inside the `<g class="{cls}"

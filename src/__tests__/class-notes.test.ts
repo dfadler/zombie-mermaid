@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest'
 import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 import { layoutClassDiagramSync } from '@zombie-mermaid/svg-renderer'
 import { renderMermaidSVG } from '../index.ts'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { splitStatements } from '@zombie-mermaid/core'
 
 /** Parse through the same statement splitter index.ts uses. */

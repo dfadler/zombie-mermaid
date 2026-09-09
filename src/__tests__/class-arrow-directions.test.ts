@@ -8,7 +8,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('Class Diagram Arrow Directions', () => {
   // ============================================================================

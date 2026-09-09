@@ -16,14 +16,14 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
-import { convertToAsciiGraph } from '../ascii/converter.ts'
-import { createMapping } from '../ascii/grid.ts'
+import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
+import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import type {
   AsciiConfig,
   AsciiGraph,
   EdgeBundle,
   GridCoord,
-} from '../ascii/types.ts'
+} from '../../packages/ascii-renderer/src/types.ts'
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -32,8 +32,8 @@ import {
   drawBundledEdgeArrowhead,
   drawBundledEdgeArrowheadStart,
   drawJunctionCharacter,
-} from '../ascii/draw-bundles.ts'
-import { renderMermaidASCII } from '../ascii/index.ts'
+} from '../../packages/ascii-renderer/src/draw-bundles.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 function buildGraph(src: string, useAscii = false): AsciiGraph {
   const config: AsciiConfig = {

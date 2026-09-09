@@ -28,7 +28,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII ER vertical "one" cardinality marker (invisible-marker fix)', () => {
   it('renders a distinct tick for the upper entity\'s "one" marker, not the invisible line glyph', () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { hexagonRenderer } from '../ascii/shapes/hexagon.ts'
-import { canvasToString } from '../ascii/canvas.ts'
-import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
+import { hexagonRenderer } from '../../packages/ascii-renderer/src/shapes/hexagon.ts'
+import { canvasToString } from '../../packages/ascii-renderer/src/canvas.ts'
+import type { ShapeRenderOptions } from '../../packages/ascii-renderer/src/shapes/types.ts'
 
 describe('hexagonRenderer.render', () => {
   it('draws Unicode hexagon corner markers around a single-line label', () => {

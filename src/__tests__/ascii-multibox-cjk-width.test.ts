@@ -19,7 +19,7 @@
  * — see the shared helper.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import {
   terminalDisplayWidth,
   assertUniformDisplayWidth,

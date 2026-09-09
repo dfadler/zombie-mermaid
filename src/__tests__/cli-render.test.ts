@@ -6,7 +6,7 @@ import { runRender } from '../cli/render.ts'
 import { renderPng } from '../cli/png.ts'
 import { renderMermaidSVG } from '../index.ts'
 import { THEMES } from '@zombie-mermaid/core'
-import { displayWidth } from '../ascii/display-width.ts'
+import { displayWidth } from '../../packages/ascii-renderer/src/display-width.ts'
 import { createMockStdout, renderArgs } from './cli-test-helpers.ts'
 
 // ============================================================================

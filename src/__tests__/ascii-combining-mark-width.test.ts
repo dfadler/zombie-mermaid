@@ -15,8 +15,8 @@
  * against an authority separate from the implementation under test.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { displayWidth } from '../ascii/display-width.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { displayWidth } from '../../packages/ascii-renderer/src/display-width.ts'
 import {
   terminalDisplayWidth,
   assertUniformDisplayWidth,

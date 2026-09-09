@@ -14,7 +14,7 @@
 //     originals are kept here as reference implementations and the shared
 //     function is required to agree with them on every generated input.
 import { describe, it, expect } from 'vitest'
-import { findFreeLane } from '../ascii/lane-search.ts'
+import { findFreeLane } from '../../packages/ascii-renderer/src/lane-search.ts'
 
 describe('findFreeLane', () => {
   it('returns the preferred lane when it is free', () => {

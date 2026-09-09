@@ -29,8 +29,8 @@ describe('render-svg.ts module load — theme registry invariant', () => {
     }))
     vi.resetModules()
 
-    await expect(import('../mcp/tools/render-svg.ts')).rejects.toThrow(
-      'Expected at least one built-in theme to be registered',
-    )
+    await expect(
+      import('../../packages/mcp/src/tools/render-svg.ts'),
+    ).rejects.toThrow('Expected at least one built-in theme to be registered')
   })
 })

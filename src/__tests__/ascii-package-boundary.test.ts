@@ -27,7 +27,12 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..')
-const ASCII_ENTRY = resolve(REPO_ROOT, 'src/ascii/index.ts')
+// `src/ascii/**` moved to `packages/ascii-renderer/src/**` under #767 (the
+// actual extraction #623 was closed without performing — see #767). The
+// entry's own location changed; the allowed-outside-package module list
+// below did not, since #767 was a pure move with no import-graph change
+// beyond adjusting relative-path depth.
+const ASCII_ENTRY = resolve(REPO_ROOT, 'packages/ascii-renderer/src/index.ts')
 
 /**
  * Any static `import`/`export ... from '<specifier>'`, capturing whether it
@@ -226,10 +231,12 @@ const TYPE_ONLY_REACH: string[] = []
 
 const graph = moduleGraphOf(ASCII_ENTRY)
 const outside = (files: Set<string>): string[] =>
-  [...files].filter((file) => !file.startsWith('src/ascii/')).sort()
+  [...files]
+    .filter((file) => !file.startsWith('packages/ascii-renderer/src/'))
+    .sort()
 
-describe('ascii-renderer package boundary (#623)', () => {
-  it('reaches nothing outside src/ascii/ beyond the core + parser modules #624/#625 will package', () => {
+describe('ascii-renderer package boundary (#623, moved under #767)', () => {
+  it('reaches nothing outside packages/ascii-renderer/src/ beyond the core + parser modules', () => {
     expect(outside(graph.runtime)).toEqual(ALLOWED)
   })
 

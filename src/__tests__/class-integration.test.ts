@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('renderMermaidSVG – class diagrams', () => {
   it('renders a basic class diagram to valid SVG', () => {

@@ -5,7 +5,7 @@ import {
   evaluateCssColorValue,
   resolveCssColors,
 } from '@zombie-mermaid/svg-renderer'
-import { diagramColorsToAsciiTheme } from '../ascii/ansi.ts'
+import { diagramColorsToAsciiTheme } from '../../packages/ascii-renderer/src/ansi.ts'
 
 /**
  * Escape regex metacharacters so a value can be interpolated into a

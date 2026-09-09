@@ -18,7 +18,7 @@
  * migrated call site relies on `write()`'s inclusive bounds).
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII subgraph label does not overwrite its own border', () => {
   it('leaves the right border intact when the title is wider than the interior', () => {

@@ -3,8 +3,11 @@ import {
   createEdgeCellStyles,
   findStyleConflict,
   claimPathCells,
-} from '../ascii/edge-cell-styles.ts'
-import { createGrid, placeBlock } from '../ascii/grid-occupancy.ts'
+} from '../../packages/ascii-renderer/src/edge-cell-styles.ts'
+import {
+  createGrid,
+  placeBlock,
+} from '../../packages/ascii-renderer/src/grid-occupancy.ts'
 
 describe('edge-cell-styles', () => {
   it('reports no conflict against an empty map', () => {

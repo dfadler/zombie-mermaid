@@ -5,7 +5,7 @@
  * multi-series support, staircase line routing, and edge cases.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 // ============================================================================
 // Helper — render with no colors for easy string matching

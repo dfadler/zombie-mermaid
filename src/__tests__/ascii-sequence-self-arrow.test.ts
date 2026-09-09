@@ -13,7 +13,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII sequence diagrams – self-arrow labels (issue #68)', () => {
   it('splits <br/> in a self-arrow label across rows without corrupting the canvas', () => {

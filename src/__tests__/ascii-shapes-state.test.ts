@@ -1,9 +1,19 @@
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { stateStartRenderer, stateEndRenderer } from '../ascii/shapes/state.ts'
-import { canvasToString } from '../ascii/canvas.ts'
-import { Up, Down, Left, Right, Middle, UpperLeft } from '../ascii/types.ts'
-import type { ShapeRenderOptions } from '../ascii/shapes/types.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  stateStartRenderer,
+  stateEndRenderer,
+} from '../../packages/ascii-renderer/src/shapes/state.ts'
+import { canvasToString } from '../../packages/ascii-renderer/src/canvas.ts'
+import {
+  Up,
+  Down,
+  Left,
+  Right,
+  Middle,
+  UpperLeft,
+} from '../../packages/ascii-renderer/src/types.ts'
+import type { ShapeRenderOptions } from '../../packages/ascii-renderer/src/shapes/types.ts'
 
 const unicodeOptions: ShapeRenderOptions = { useAscii: false, padding: 1 }
 const asciiOptions: ShapeRenderOptions = { useAscii: true, padding: 1 }

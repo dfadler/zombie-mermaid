@@ -13,8 +13,8 @@
  * directly with hand-built inputs rather than through a full render.
  */
 import { describe, it, expect } from 'vitest'
-import { drawLine } from '../ascii/draw-lines.ts'
-import { mkCanvas } from '../ascii/canvas.ts'
+import { drawLine } from '../../packages/ascii-renderer/src/draw-lines.ts'
+import { mkCanvas } from '../../packages/ascii-renderer/src/canvas.ts'
 
 describe('drawLine diagonal routing', () => {
   it('routes UpperLeft as a horizontal-then-vertical bend', () => {

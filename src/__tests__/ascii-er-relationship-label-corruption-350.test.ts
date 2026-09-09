@@ -24,7 +24,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 /** Assert every one of `needles` appears verbatim, exactly once, in `text`. */
 function expectAllPresentOnce(text: string, needles: string[]): void {

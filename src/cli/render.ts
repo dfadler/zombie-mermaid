@@ -2,15 +2,15 @@ import { access, readFile, writeFile } from 'node:fs/promises'
 import {
   renderMermaidASCII,
   diagramColorsToAsciiTheme,
-} from '../ascii/index.ts'
-import type { AsciiRenderOptions } from '../ascii/index.ts'
-import { displayWidth } from '../ascii/display-width.ts'
-import { stripOsc8 } from '../ascii/hyperlinks.ts'
+} from '@zombie-mermaid/ascii-renderer'
+import type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
+import { displayWidth } from '../../packages/ascii-renderer/src/display-width.ts'
+import { stripOsc8 } from '../../packages/ascii-renderer/src/hyperlinks.ts'
 import {
   DEFAULT_PADDING_X,
   DEFAULT_PADDING_Y,
   DEFAULT_BOX_BORDER_PADDING,
-} from '../ascii/types.ts'
+} from '../../packages/ascii-renderer/src/types.ts'
 import { renderMermaidSVG } from '../index.ts'
 import type { RenderOptions, DiagramColors } from '@zombie-mermaid/core'
 import { THEMES } from '@zombie-mermaid/core'

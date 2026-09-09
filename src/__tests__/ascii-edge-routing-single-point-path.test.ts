@@ -15,10 +15,14 @@
  * zero-length line at that single point instead of indexing past the end.
  */
 import { describe, it, expect } from 'vitest'
-import { determineLabelLine } from '../ascii/edge-routing.ts'
-import { Down } from '../ascii/types.ts'
-import type { AsciiEdge, AsciiGraph, AsciiNode } from '../ascii/types.ts'
-import { createGrid } from '../ascii/grid-occupancy.ts'
+import { determineLabelLine } from '../../packages/ascii-renderer/src/edge-routing.ts'
+import { Down } from '../../packages/ascii-renderer/src/types.ts'
+import type {
+  AsciiEdge,
+  AsciiGraph,
+  AsciiNode,
+} from '../../packages/ascii-renderer/src/types.ts'
+import { createGrid } from '../../packages/ascii-renderer/src/grid-occupancy.ts'
 
 function makeNode(name: string, x: number, y: number): AsciiNode {
   return {

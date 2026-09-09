@@ -21,7 +21,7 @@
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII ER relationship draws do not overwrite existing text (issue #392)', () => {
   it('does not let a later vertical relationship line cut through an earlier label', () => {

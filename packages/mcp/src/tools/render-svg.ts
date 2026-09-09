@@ -8,7 +8,7 @@
 
 import { z } from 'zod'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { renderMermaidSVG } from '../../index.ts'
+import { renderMermaidSVG } from '../../../../src/index.ts'
 import { THEMES } from '@zombie-mermaid/core'
 import type { DiagramColors } from '@zombie-mermaid/core'
 

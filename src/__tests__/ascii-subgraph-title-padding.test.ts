@@ -15,7 +15,7 @@
  * space of left padding whenever the box has any slack at all.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 /** Find the line containing a subgraph's rendered title text. */
 function findTitleLine(output: string, title: string): string {

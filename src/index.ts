@@ -39,8 +39,11 @@ import {
   resolveCssColors,
   resolveFontSizes,
 } from '@zombie-mermaid/svg-renderer'
-export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
-export type { AsciiRenderOptions } from './ascii/index.ts'
+export {
+  renderMermaidASCII,
+  renderMermaidAscii,
+} from '@zombie-mermaid/ascii-renderer'
+export type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
 export { createLayoutCache } from '@zombie-mermaid/svg-renderer'
 export type { LayoutCache } from '@zombie-mermaid/svg-renderer'
 

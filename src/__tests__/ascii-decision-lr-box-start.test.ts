@@ -13,8 +13,8 @@
  * true`), since ASCII mode skips box-start connectors entirely.
  */
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
-import { findOrphanedJunctions } from '../ascii/validate.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { findOrphanedJunctions } from '../../packages/ascii-renderer/src/validate.ts'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'

@@ -25,7 +25,7 @@ import {
   displayWidth,
   toDisplayCells,
   WIDE_CHAR_PLACEHOLDER,
-} from '../ascii/display-width.ts'
+} from '../../packages/ascii-renderer/src/display-width.ts'
 
 const COMBINING_ACUTE = '́'
 const COMBINING_GRAVE = '̀'

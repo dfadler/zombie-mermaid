@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { renderMermaidASCII } from '../ascii/index.ts'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 describe('ASCII class diagram — label territory is row-aware (issue #447 follow-up)', () => {
   it('does not truncate two labels whose relationships share a source but target different, differently-positioned classes', () => {
