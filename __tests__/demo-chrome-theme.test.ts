@@ -18,7 +18,14 @@ describe('chromeThemeVars', () => {
 
   it('derives every other token as a color-mix() of fg into bg', () => {
     const vars = chromeThemeVars({ bg: '#2e3440', fg: '#d8dee9' })
-    for (const token of ['--bg-soft', '--panel', '--panel-2', '--border', '--text-dim', '--text-faint'] as const) {
+    for (const token of [
+      '--bg-soft',
+      '--panel',
+      '--panel-2',
+      '--border',
+      '--text-dim',
+      '--text-faint',
+    ] as const) {
       expect(vars[token]).toEqual(
         expect.stringContaining('color-mix(in srgb, #d8dee9'),
       )
