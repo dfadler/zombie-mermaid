@@ -27,12 +27,15 @@
  * for the (until #687) unwired global `ThemeBar`/`ThemePicker` — so this
  * page's `#theme-pills` markup is no longer a third, independent
  * implementation of the same behavior. What stays here is what those
- * shared modules don't do: re-theming the rendered `<svg>`(s), the page
- * chrome's `--t-*`/shadow variables, and the "Open in the live editor"
- * link's encoded theme.
+ * shared modules don't do: re-theming the rendered `<svg>`(s), this page's
+ * own legacy `--t-*`/shadow-driven "Try it live" card, and the "Open in the
+ * live editor" link's encoded theme. Nav/Footer/cards re-theming (#772) —
+ * common to every page, not just this one — is `demo/chrome-theme-
+ * client.ts`'s `initChromeTheme()`, called below alongside `initThemeBar()`.
  */
 import { getTheme, setTheme, subscribe } from './theme-state.ts'
 import { initThemeBar } from './components/theme-bar-client.ts'
+import { initChromeTheme } from './chrome-theme-client.ts'
 
 interface DiagramColors {
   bg: string
@@ -226,6 +229,7 @@ window.addEventListener('resize', () => {
 //    markup pages.ts already renders (`ThemePicker`, embedded via the
 //    "Pick a look" section) to `demo/theme-state.ts`.
 initThemeBar()
+initChromeTheme(THEMES)
 
 // This page's own re-theming (svg + chrome + editor link) runs on every
 // theme-state change, same-tab or cross-tab, whether it came from a click
