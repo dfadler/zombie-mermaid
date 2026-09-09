@@ -1,39 +1,46 @@
+/** @jsxRuntime automatic */
 /**
- * Client-side theme switcher for the per-diagram-type SEO pages
- * (pages.ts) — swaps the CSS custom properties on the page's rendered
- * `<svg>` (or both, for a page with an orientation alternate — see
- * demo/diagram-orientation.ts) when a theme pill is clicked. No re-render:
- * renderMermaidSVG's output is already parameterized entirely by --bg/--fg
- * (plus optional --line/--accent/--muted/--surface/--border), so switching
- * themes is just updating those variables in place — see packages/core/src/theme.ts's
- * own header comment for that architecture.
+ * Hydration entry point for every diagrams/<slug>.html page (pages.ts) —
+ * zombie-mermaid#805, replacing `demo/diagram-page-client.ts`. Bundled
+ * once via `scripts/vite-bundle.ts`'s `bundleForBrowser` (`pages.ts`'s
+ * `bundleDiagramTypeClient()`) and loaded as an external `<script
+ * type="module" src>` — see `diagram-page.tsx`'s
+ * `DiagramTypePageProps.clientScriptSrc` doc comment for why external
+ * rather than inlined (this is the most bundle-size-sensitive page in the
+ * #797 epic).
  *
- * Deliberately standalone rather than reusing demo/client.ts's
- * applyThemeToSvgElement: that function also handles xychart per-series
- * color variables and multiple `<svg>`s per sample, concerns this
- * single-diagram page doesn't have, and demo/client.ts's bundle pulls in
- * the full interactive gallery (search, sidebar, edit dialog) that has no
- * place on a lightweight SEO landing page. Theme color data is embedded as
- * inline JSON (window.__diagramPageThemes, written by pages.ts) rather than
- * importing packages/core/src/theme.ts here, so this bundle stays small and this file can
- * live under demo/ without reaching outside its rootDir.
+ * Two concerns live here, deliberately kept separate:
  *
- * #687 reconciliation: pill selection, the "More" dropdown, and
- * persistence used to be reimplemented here directly (raw
- * `localStorage['mermaid-theme']` access plus a hand-rolled click/dropdown
- * handler). Both now route through the shared `demo/theme-state.ts`
- * (`getTheme()`/`setTheme()`/`subscribe()`) and, as of #801,
- * `demo/theme-bar-client.tsx`'s `hydrateThemeBar()` — the hydrated
- * `ThemePicker` component itself, not a separate imperative controller — so
- * this page's `#theme-pills` markup is no longer a third, independent
- * implementation of the same behavior. What stays here is what that shared
- * component doesn't do: re-theming the rendered `<svg>`(s), this page's own
- * legacy `--t-*`/shadow-driven "Try it live" card, and the "Open in the
- * live editor" link's encoded theme. Nav/Footer/cards re-theming (#772) —
- * common to every page, not just this one — is `demo/chrome-theme-
- * client.ts`'s `initChromeTheme()`, called below alongside
- * `hydrateThemeBar()`.
+ * 1. **Hydration** (new in #805): `hydrateRoot()`s {@link DiagramTypeApp}
+ *    against {@link DIAGRAM_TYPE_ROOT_ID}, reading its props back from
+ *    {@link DIAGRAM_TYPE_PROPS_ELEMENT_ID} — the same pattern
+ *    `dashboard-client.tsx` established. Also hydrates `<NavIsland>` (via
+ *    {@link hydrateNav}) and the theme picker (via `hydrateThemeBar()`) in
+ *    this same bundle, replacing the separate `nav-only-client.tsx` bundle
+ *    this page used before.
+ * 2. **Re-theming** (unchanged from `demo/diagram-page-client.ts` — moved
+ *    here verbatim, not rewritten): swapping the rendered `<svg>`'s CSS
+ *    custom properties, the page chrome's `--t-*` variables, and the "Open
+ *    in the live editor" link's encoded theme, whenever the theme changes.
+ *    Deliberately still plain, imperative DOM mutation rather than React
+ *    state — see `diagram-page.tsx`'s own header comment for why
+ *    converting this to state-driven re-rendering would regress the
+ *    "no re-render" performance property `renderMermaidSVG`'s CSS-
+ *    variable-parameterized output exists to provide. Theme color data
+ *    stays inline JSON (`window.__diagramPageThemes`, written by
+ *    `pages.ts`) rather than importing `packages/core/src/theme.ts` here,
+ *    for the same bundle-size reason the original file gave.
  */
+import { createElement } from 'react'
+import { flushSync } from 'react-dom'
+import { hydrateRoot } from 'react-dom/client'
+import {
+  DiagramTypeApp,
+  DIAGRAM_TYPE_PROPS_ELEMENT_ID,
+  DIAGRAM_TYPE_ROOT_ID,
+  type DiagramTypeAppProps,
+} from './components/diagram-type-app.tsx'
+import { hydrateNav } from './nav-client.tsx'
 import { getTheme, setTheme, subscribe } from './theme-state.ts'
 import { hydrateThemeBar } from './theme-bar-client.tsx'
 import { initChromeTheme } from './chrome-theme-client.ts'
@@ -205,11 +212,10 @@ function activeThemeKey(): string {
  * Re-themes this page's own concerns for `themeKey` -- the rendered
  * `<svg>`(s), the page chrome's `--t-*`/shadow variables, and the "Open in
  * the live editor" link. Pill active-state and persistence are `demo/
- * components/theme-bar-client.ts`'s `initThemeBar()`/`demo/theme-state.ts`'s
- * job now (see this file's header comment) -- this function is registered
- * as a `subscribe()` listener below, so it still runs on every pill click
- * (via `initThemeBar()`'s own `setTheme()` call) without duplicating that
- * click handling here.
+ * theme-bar-client.tsx`'s `hydrateThemeBar()`/`demo/theme-state.ts`'s job
+ * -- this function is registered as a `subscribe()` listener below, so it
+ * still runs on every pill click (via `hydrateThemeBar()`'s own
+ * `setTheme()` call) without duplicating that click handling here.
  */
 function applyTheme(themeKey: string): void {
   const theme = THEMES[themeKey]
@@ -244,11 +250,48 @@ window.addEventListener('resize', () => {
   applyViewportOrientation()
 })
 
-// -- Pill selection, "More" dropdown, ARIA/keyboard support, and
-//    persistence: all the hydrated `ThemePicker`'s own job now (see this
-//    file's header comment) -- one call hydrates the `#theme-pills` markup
-//    pages.ts already renders (`ThemePickerIsland`, embedded via the
-//    "Pick a look" section) against `demo/theme-state.ts`.
+function readDiagramTypeAppProps(): DiagramTypeAppProps {
+  const propsEl = document.getElementById(DIAGRAM_TYPE_PROPS_ELEMENT_ID)
+  if (!propsEl?.textContent) {
+    throw new Error(
+      `diagram-type-client: no #${DIAGRAM_TYPE_PROPS_ELEMENT_ID} element with JSON content found`,
+    )
+  }
+  return JSON.parse(propsEl.textContent) as DiagramTypeAppProps
+}
+
+function hydrateDiagramTypeApp(): void {
+  const container = document.getElementById(DIAGRAM_TYPE_ROOT_ID)
+  if (!container) {
+    throw new Error(
+      `diagram-type-client: no #${DIAGRAM_TYPE_ROOT_ID} element found to hydrate`,
+    )
+  }
+  hydrateRoot(
+    container,
+    createElement(DiagramTypeApp, readDiagramTypeAppProps()),
+  )
+}
+
+// -- Hydration (#805): DiagramTypeApp's own content, Nav, and the theme
+//    picker. `#theme-pills` is `ThemePickerIsland`, embedded in the "Pick a
+//    look" section -- one call hydrates it against `demo/theme-state.ts`.
+//
+// Wrapped in flushSync(): react-dom/client's hydrateRoot() schedules its
+// own hydration-match verification asynchronously rather than fully
+// synchronously (confirmed via this exact page: without this, code
+// further down that synchronously mutates the same DOM nodes -- the svg,
+// <body>, the editor-link <a> -- raced ahead of that deferred check and
+// produced a spurious "attributes didn't match" console warning in
+// testing, even though the server-rendered markup and the hydrated props
+// were identical; the warning was entirely an artifact of this file's own
+// later mutation, not a real mismatch). flushSync() forces React to
+// finish hydrating before returning, so every mutation below always runs
+// after hydration has actually settled.
+flushSync(() => {
+  hydrateDiagramTypeApp()
+  hydrateNav()
+})
 hydrateThemeBar()
 initChromeTheme(THEMES)
 
@@ -265,7 +308,11 @@ subscribe(applyTheme)
 //    by calling setTheme() -- that both persists it under the shared key
 //    and notifies the subscribe() listener above, so applyTheme() runs
 //    exactly as it would for a live pill click -- then discard the stale
-//    key either way.
+//    key either way. Safe to run synchronously here, after the
+//    flushSync()-wrapped hydration above: hydrateDiagramTypeApp()/
+//    hydrateNav() have already fully settled by this point (see that
+//    block's own comment), so the DOM mutations setTheme()/applyTheme()
+//    below trigger can't race React's own hydration verification.
 const LEGACY_THEME_KEY = 'zm-diagram-page-theme'
 if (getTheme() === '') {
   const legacy = localStorage.getItem(LEGACY_THEME_KEY)

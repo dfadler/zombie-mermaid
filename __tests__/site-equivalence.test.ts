@@ -229,7 +229,6 @@ describe('pages.ts → diagrams/*.html', () => {
         types,
         themeDataScript: 'window.__diagramPageThemes = {"":{"bg":"#FFFFFF"}};',
         clientScriptSrc: 'assets/diagram-page-client.js',
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/diagram-type-page.normalized.txt')
@@ -265,7 +264,6 @@ describe('pages.ts → diagrams/*.html', () => {
         types,
         themeDataScript: 'window.__diagramPageNarrowSource = "flowchart TD";',
         clientScriptSrc: 'assets/diagram-page-client.js',
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(
@@ -298,7 +296,7 @@ describe('pages.ts → diagrams/*.html', () => {
           },
         ],
         themeBarScript: FIXTURE_SCRIPT,
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/diagram-hub-page.normalized.txt')
