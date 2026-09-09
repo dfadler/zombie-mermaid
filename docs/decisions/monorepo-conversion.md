@@ -2,11 +2,15 @@
 
 This was requested as a pre-implementation proposal synthesizing #416, #620,
 #621, and #622 — written as if the package split were still a future
-decision. That premise no longer matches the tree: the split is
-**substantially done**. `packages/core`, `packages/mermaid-parser`, and
-`packages/svg-renderer` already exist and are populated (#624/#625, merged);
-`cli`/`demo` staying as apps is decided (#626); test layout is decided and
-implemented (#627). All of that is recorded in exhaustive detail in
+decision. That premise no longer matches the tree: the split is **done**.
+`packages/core`, `packages/mermaid-parser`, `packages/svg-renderer`
+(#624/#625), and — as of #767, closing the discrepancy this doc originally
+flagged — `packages/ascii-renderer` and `packages/mcp` all exist and are
+populated; `cli`/`demo` staying as apps is decided (#626); test layout is
+decided (#627, though in practice all four extractions left tests in
+`src/__tests__/` rather than moving them into each package's own tree — see
+#767's addendum to `monorepo-conversion-scoping.md`). All of that is
+recorded in exhaustive detail in
 [`monorepo-conversion-scoping.md`](monorepo-conversion-scoping.md) (PR #558)
 and its addenda.
 
@@ -20,10 +24,9 @@ still genuinely undecided.
 
 ## Summary
 
-- The package split (#416/#620) is 3 of 5 planned packages done
-  (`core`, `mermaid-parser`, `svg-renderer`); `ascii-renderer`/`mcp`
-  extraction (#623) is closed but was never actually done — worth
-  reopening or re-scoping.
+- The package split (#416/#620) is done: `core`, `mermaid-parser`,
+  `svg-renderer` (#624/#625), and `ascii-renderer`/`mcp` (#767, finishing
+  what #623 closed without doing) are all real workspace packages.
 - Workspace tooling (#621) is mostly done; its remaining "use
   `pnpm -r`/`--filter`" scope isn't needed by anything yet.
 - Publish strategy (#622) is the one undecided piece: recommendation is a
