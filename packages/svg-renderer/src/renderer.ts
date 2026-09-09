@@ -993,8 +993,9 @@ function renderParallelogramAlt(
 // --- Expanded-syntax shapes (`A@{ shape: ... }`) ---
 //
 // Each of these is reachable only through the expanded metadata syntax; the
-// classic bracket forms have no spelling for them. See src/expanded-shapes.ts
-// for the semantic-name → geometry alias table.
+// classic bracket forms have no spelling for them. See
+// packages/mermaid-parser/src/expanded-shapes.ts for the semantic-name →
+// geometry alias table.
 
 /** Shared attribute string for a filled, stroked path. */
 function shapeAttrs(fill: string, stroke: string, sw: string): string {

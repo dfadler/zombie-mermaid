@@ -91,7 +91,8 @@ export type NodeShape =
   // ---------------------------------------------------------------------
   // Expanded-syntax shapes — reachable via `A@{ shape: ... }` only; the
   // classic bracket syntax has no spelling for them. See
-  // src/expanded-shapes.ts for the full name→shape alias table.
+  // packages/mermaid-parser/src/expanded-shapes.ts for the full name→shape
+  // alias table.
   // ---------------------------------------------------------------------
   | 'document' // wavy-bottomed page
   | 'stacked-document' // document with offset copies behind it

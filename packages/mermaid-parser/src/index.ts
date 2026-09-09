@@ -44,3 +44,5 @@ export * from './sequence/activation-fix.ts'
 export * from './xychart/parser.ts'
 export * from './xychart/types.ts'
 export * from './xychart/colors.ts'
+
+export * from './expanded-shapes.ts'

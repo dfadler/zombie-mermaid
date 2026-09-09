@@ -14,7 +14,7 @@ import {
   matchExpandedBlock,
   resolveShapeName,
   knownShapeNames,
-} from '../expanded-shapes.ts'
+} from '@zombie-mermaid/mermaid-parser'
 
 function parse(statement: string) {
   return parseMermaid(`flowchart TD\n  ${statement}`)
