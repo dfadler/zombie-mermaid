@@ -126,16 +126,23 @@ function splitOnSemicolons(line: string): string[] {
 }
 
 /**
- * Split Mermaid source into trimmed statements, dropping blank lines and
- * `%%` comment lines.
+ * Split Mermaid source into trimmed statements, grouped by the physical
+ * source line each one came from — dropping blank lines and `%%` comment
+ * lines.
  *
  * Newlines and semicolons both separate statements, matching Mermaid's own
  * `graph TD; A-->B;` form. Comments are removed *before* semicolon splitting
  * so that a `;` inside a comment can't resurrect the rest of that line as
  * code.
+ *
+ * The grouping is what lets a caller tell a genuine multi-line continuation
+ * (crossing from one line's group into the next) apart from an explicit
+ * `;`-separated statement on the *same* line (a later entry within one
+ * group) — see `src/parser.ts`'s `mergeContinuationLines`, which only
+ * treats the former as mergeable.
  */
-export function splitStatements(text: string): string[] {
-  const statements: string[] = []
+export function splitStatementsByLine(text: string): string[][] {
+  const groups: string[][] = []
 
   for (const rawLine of text.split('\n')) {
     let line = rawLine.trim()
@@ -150,12 +157,23 @@ export function splitStatements(text: string): string[] {
     if (comment !== -1) line = line.slice(0, comment).trim()
     if (line.length === 0) continue
 
+    const statements: string[] = []
     for (const part of splitOnSemicolons(line)) {
       const statement = part.trim()
       if (statement.length === 0) continue
       statements.push(statement)
     }
+    if (statements.length > 0) groups.push(statements)
   }
 
-  return statements
+  return groups
+}
+
+/**
+ * Split Mermaid source into trimmed statements, dropping blank lines and
+ * `%%` comment lines. See `splitStatementsByLine` for the line-grouped form
+ * this flattens.
+ */
+export function splitStatements(text: string): string[] {
+  return splitStatementsByLine(text).flat()
 }

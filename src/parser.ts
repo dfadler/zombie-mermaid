@@ -8,7 +8,7 @@ import type {
 import {
   toDirection,
   normalizeBrTags,
-  splitStatements,
+  splitStatementsByLine,
   extractInitConfig,
   applyClickStatement as applyClickStatementShared,
   parseStyleProps,
@@ -92,7 +92,7 @@ function suggestedHeaderFor(header: string): string | undefined {
 }
 
 /**
- * Matches the start of a line that continues the *previous* statement's edge
+ * Matches the start of a statement that continues the *previous* one's edge
  * chain rather than beginning a new one: Mermaid lets a vertex-chain
  * statement break across lines, with the link operator leading the next
  * line — e.g.
@@ -102,38 +102,55 @@ function suggestedHeaderFor(header: string): string | undefined {
  *   ==> finish([Finish])
  *
  * is one chained statement (`start ==> green ==> finish`), identical to
- * writing it on one line. `splitStatements` only knows about newlines and
- * `;` as separators, so without this it hands `parseFlowchart` three
- * unrelated-looking lines — the continuation lines start with a bare arrow
- * and no node group, so `parseEdgeLine` can't find a source node and drops
- * them entirely (see issue mermaid-js/mermaid#6049's repro, reported against
- * this parser).
+ * writing it on one line. `splitStatementsByLine` only knows about newlines
+ * and `;` as separators, so without this it hands `parseFlowchart` three
+ * unrelated-looking statements — the continuation lines start with a bare
+ * arrow and no node group, so `parseEdgeLine` can't find a source node and
+ * drops them entirely (see issue mermaid-js/mermaid#6049's repro, reported
+ * against this parser).
  *
  * Covers every arrow opener `parseEdgeLine` itself recognizes (ARROW_REGEX /
  * TEXT_ARROW_REGEX below): a solid/thick run (`--`, `===`), a dotted run
- * (`-.`, `-.-`), a `~~~` run, each optionally preceded by a `<`/`o`/`x`
- * marker and/or an edge id (`e1@-->`).
+ * (`-.`, `-.-`), a `~~~` run, each optionally preceded by a `<` marker and/or
+ * an edge id (`e1@-->`).
+ *
+ * Deliberately excludes the `o`/`x` start markers ARROW_REGEX also accepts
+ * (`o--o`, `x--x`): unlike `<`, both are also valid bare node ids, so a
+ * first-body-line statement like `x-->Y` would otherwise be misread as an
+ * `x`-marked continuation of the header and merged into it, corrupting the
+ * header line (`flowchart TD x-->Y`) instead of parsing `x` as its own node.
+ * A genuine marked-start continuation line is rare enough that losing it is
+ * the safer tradeoff.
  */
 const CONTINUATION_START_REGEX =
-  /^(?:[\w-]+@)?(?:<|o|x)?(?:-{2,}|={2,}|-\.+-?|~{3,})/
+  /^(?:[\w-]+@)?<?(?:-{2,}|={2,}|-\.+-?|~{3,})/
 
 /**
- * Rejoin a continuation line onto the statement it continues.
+ * Rejoin a continuation statement onto the one it continues.
  *
- * `splitStatements` treats every newline as a statement boundary, which is
- * right for Mermaid's `;`-terminated statements but wrong for a vertex chain
- * that wraps across lines (see `CONTINUATION_START_REGEX`). This folds those
- * lines back into a single logical statement before the line-oriented
- * parsers below ever see them.
+ * `splitStatementsByLine` groups statements by their originating physical
+ * line, which is what makes this safe: only the *first* statement in a
+ * group is eligible to merge backward into the previous group's last
+ * statement (a genuine multi-line continuation, see
+ * `CONTINUATION_START_REGEX`). A later statement in the same group got
+ * there via an explicit `;` on that line (`A --> B; --> C`) — that boundary
+ * must stay a boundary, or `--> C` would wrongly become part of the chain
+ * instead of the source-less fragment it actually is.
  */
-function mergeContinuationLines(lines: string[]): string[] {
+function mergeContinuationLines(groups: string[][]): string[] {
   const merged: string[] = []
-  for (const line of lines) {
-    if (merged.length > 0 && CONTINUATION_START_REGEX.test(line)) {
-      merged[merged.length - 1] = `${merged[merged.length - 1]} ${line}`
-    } else {
-      merged.push(line)
-    }
+  for (const group of groups) {
+    group.forEach((statement, index) => {
+      if (
+        index === 0 &&
+        merged.length > 0 &&
+        CONTINUATION_START_REGEX.test(statement)
+      ) {
+        merged[merged.length - 1] = `${merged[merged.length - 1]} ${statement}`
+      } else {
+        merged.push(statement)
+      }
+    })
   }
   return merged
 }
@@ -146,13 +163,13 @@ function mergeContinuationLines(lines: string[]): string[] {
 export function parseMermaid(text: string): MermaidGraph {
   /*
    * Init directives must be read from the raw lines: `%%{init: ...}%%` begins
-   * with `%%`, so splitStatements — which treats `%%` as a comment and
+   * with `%%`, so splitStatementsByLine — which treats `%%` as a comment and
    * truncates the line there — would otherwise discard it along with real
    * comments before it could be seen.
    */
   const initConfig = extractInitConfig(text.split('\n').map((l) => l.trim()))
 
-  const lines = mergeContinuationLines(splitStatements(text))
+  const lines = mergeContinuationLines(splitStatementsByLine(text))
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')

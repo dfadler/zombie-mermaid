@@ -456,6 +456,34 @@ describe('parseMermaid – continuation-line edge chains (mermaid-js/mermaid#604
     ])
     expect(multiline.edges).toEqual(singleLine.edges)
   })
+
+  // Regressions caught in review (PR #730): the continuation-merge heuristic
+  // above must not (a) mistake a bare `x`/`o` node id for the `x`/`o`
+  // start-marker ARROW_REGEX also accepts, or (b) merge across an explicit
+  // `;` statement boundary on the same physical line.
+
+  it('does not misread a bare node id "x" as a marked-continuation opener', () => {
+    const g = parseMermaid('flowchart TD\nx-->Y')
+    expect(g.direction).toBe('TD')
+    expect([...g.nodes.keys()]).toEqual(['x', 'Y'])
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]).toMatchObject({ source: 'x', target: 'Y' })
+  })
+
+  it('does not misread a bare node id "o" as a marked-continuation opener', () => {
+    const g = parseMermaid('flowchart TD\no-->Y')
+    expect(g.direction).toBe('TD')
+    expect([...g.nodes.keys()]).toEqual(['o', 'Y'])
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]).toMatchObject({ source: 'o', target: 'Y' })
+  })
+
+  it('keeps an explicit `;` a real statement boundary, not a continuation', () => {
+    const g = parseMermaid('flowchart TD\nA --> B; --> C')
+    expect([...g.nodes.keys()]).toEqual(['A', 'B'])
+    expect(g.edges).toHaveLength(1)
+    expect(g.edges[0]).toMatchObject({ source: 'A', target: 'B' })
+  })
 })
 
 // ============================================================================
