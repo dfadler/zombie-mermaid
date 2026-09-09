@@ -73,7 +73,7 @@ describe('index.ts → index.html', () => {
       createElement(IndexPage, {
         jsonLd: '{\n  "@type": "SoftwareApplication"\n}',
         clientScriptSrc: 'assets/index-page-client.js',
-        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+        clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/index-page.normalized.txt')
