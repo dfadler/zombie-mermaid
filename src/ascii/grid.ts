@@ -40,6 +40,8 @@ import {
 } from './edge-cell-styles.ts'
 import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
+import { splitLines } from './multiline-utils.ts'
+import { displayWidth } from './display-width.ts'
 
 // `requireGridCoord` is defined in types.ts (a pure predicate over
 // AsciiNode with no grid-state dependency) and re-exported here so the two
@@ -469,6 +471,27 @@ function calculateSubgraphBoundingBox(
   sg.minY = minY - subgraphPadding - subgraphLabelSpace
   sg.maxX = maxX + subgraphPadding
   sg.maxY = maxY + subgraphPadding
+
+  // Widen the box, if necessary, so the subgraph's own cluster label fits
+  // without truncation. `drawSubgraphLabel` (draw-subgraphs.ts) writes the
+  // label into the interior columns `1..width-1` (width = maxX - minX), so
+  // the box needs `width >= labelWidth + 1` to avoid clipping the label
+  // against its own right border. Widening symmetrically (splitting any
+  // extra columns across both sides) keeps the child nodes visually
+  // centered inside the enlarged box rather than skewing it to one side.
+  const labelWidth = Math.max(
+    0,
+    ...splitLines(sg.name).map((line) => displayWidth(line)),
+  )
+  const currentWidth = sg.maxX - sg.minX
+  const requiredWidth = labelWidth + 1
+  if (requiredWidth > currentWidth) {
+    const extra = requiredWidth - currentWidth
+    const extraLeft = Math.floor(extra / 2)
+    const extraRight = extra - extraLeft
+    sg.minX -= extraLeft
+    sg.maxX += extraRight
+  }
 }
 
 /** Ensure non-overlapping root subgraphs have minimum spacing. */
