@@ -101,6 +101,14 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      # Guards against a new whole-tree snapshot or raw markup string-pin
+      # creeping into demo/editor component tests one unreviewed file at a
+      # time, now that RTL is the expected pattern for them (#817, part of
+      # the #815 RTL migration epic) — see docs/testing-conventions.md and
+      # scripts/check-snapshot-allowlist.sh --help.
+      - name: Check snapshot test allow-list
+        run: scripts/check-snapshot-allowlist.sh
+
       - name: Type check
         # Runs both the library config and demo/tsconfig.json — the demo's
         # client-side code needs DOM types the root config deliberately omits,

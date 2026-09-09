@@ -14,16 +14,19 @@
  * tokens (#607, part of #590/#591) — see demo/components/blog-page.tsx's
  * header comment for the layout itself.
  *
- * Post sources live in blog-posts/, a sibling of the generated blog/
- * output directory, not inside it — build:site's `mv blog site/blog`
- * moves the whole output directory verbatim, so a source subdirectory
- * nested inside it would ship the raw Markdown (and this file's own
- * README) onto the live site.
+ * Post sources always live in blog-posts/ next to this file (resolved
+ * from this file's own `import.meta.url`, never redirected by
+ * `SITE_OUT_DIR` — see scripts/site-out-dir.ts), a sibling of the
+ * generated blog/ *output* directory, not inside it — so a source
+ * subdirectory nested inside the output tree never ships the raw Markdown
+ * (and this file's own README) onto the live site.
  *
- * Output: <repo root>/blog/<slug>.html (one per post), blog/index.html,
+ * Output: <output dir>/blog/<slug>.html (one per post), blog/index.html,
  * blog/feed.xml, blog/assets/blog.css, and appended entries in
- * sitemap.xml. build:site moves blog/ into site/, the same way it already
- * does for diagrams/.
+ * sitemap.xml — resolved relative to the repo root by default, or to
+ * `SITE_OUT_DIR` when set. build:site sets `SITE_OUT_DIR=site` so this
+ * writes directly into site/blog/, the same way pages.ts writes directly
+ * into site/diagrams/.
  */
 
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
@@ -45,6 +48,7 @@ import {
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { siteOutDir } from './scripts/site-out-dir.ts'
 
 /**
  * A fenced code block tagged with this language renders as an actual SVG
@@ -76,7 +80,7 @@ const CODE_THEME = 'github-dark'
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
 
 const POSTS_DIR = new URL('./blog-posts/', import.meta.url)
-const OUT_DIR = new URL('./blog/', import.meta.url)
+const OUT_DIR = new URL('./blog/', siteOutDir(import.meta.url))
 
 /** blog/index.html and blog/feed.xml already own these URLs. */
 const RESERVED_SLUGS = new Set(['index', 'feed'])
@@ -502,7 +506,7 @@ ${feedItems}
   await writeFile(new URL('./feed.xml', OUT_DIR), feedXml)
 
   // -- Append to the sitemap.xml pages.ts already wrote --
-  const sitemapPath = new URL('./sitemap.xml', import.meta.url)
+  const sitemapPath = new URL('./sitemap.xml', siteOutDir(import.meta.url))
   const existingSitemap = await readFile(sitemapPath, 'utf8')
   const newUrlLines = sitemapUrls
     .map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`)

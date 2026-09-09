@@ -48,6 +48,7 @@ import {
 } from './demo/dashboard-model.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { siteOutDir } from './scripts/site-out-dir.ts'
 
 /**
  * Bundle `demo/dashboard-client.tsx` (zombie-mermaid#799's hydration
@@ -148,7 +149,9 @@ export async function generate(): Promise<string> {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const html = await generate()
-  const outPath = fileURLToPath(new URL('./dashboard.html', import.meta.url))
+  const outPath = fileURLToPath(
+    new URL('./dashboard.html', siteOutDir(import.meta.url)),
+  )
   await writeFile(outPath, html, 'utf8')
   console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
 }

@@ -21,7 +21,7 @@
  * rendered SVG's colors are entirely CSS custom properties, so switching
  * themes is a style update, never a re-render). This version renders each
  * diagram type once and embeds the same live theme picker, via
- * demo/diagram-page-client.ts — matching the demo's actual UX instead of a
+ * demo/diagram-type-client.tsx — matching the demo's actual UX instead of a
  * page-per-theme matrix. The tradeoff: a search engine no longer gets a
  * distinct indexed URL per (type × theme) pair — only per type. Every real
  * theme is still reachable and rendered (just after one click, client-side),
@@ -34,16 +34,19 @@
  * no-`<script>` guarantee covers what renderMermaidSVG/renderMermaidASCII
  * emit, not the pages this repo's own demo site wraps that output in.
  *
- * Output: <repo root>/diagrams/<type-slug>.html (one per
+ * Output: <output dir>/diagrams/<type-slug>.html (one per
  * DIAGRAM_TYPE_PROFILES entry), diagrams/index.html (the hub page),
  * diagrams/assets/diagram-page.css, diagrams/assets/diagram-page-client.js,
- * and sitemap.xml. build:site moves diagrams/ and sitemap.xml into site/
- * alongside index.html/editor.html, the same way it already does for those.
+ * and sitemap.xml — resolved relative to the repo root by default, or to
+ * `SITE_OUT_DIR` when set (see scripts/site-out-dir.ts). build:site sets
+ * `SITE_OUT_DIR=site` so this writes directly into site/, alongside
+ * index.html/editor.html, rather than needing to be moved there afterward.
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import { siteOutDir } from './scripts/site-out-dir.ts'
 import {
   escapeHtml,
   escapeJsonForScriptTag,
@@ -62,7 +65,6 @@ import {
 } from './demo/diagram-pages-data.ts'
 import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
-import { bundleNavClient } from './demo/build-nav-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
 import type { RenderOptions } from './src/index.ts'
 import { createHighlighter } from 'shiki'
@@ -76,7 +78,7 @@ import {
 /** The live site's base URL (see README's "Live Demo" badge) — used for canonical links and sitemap.xml. */
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
 
-const OUT_DIR = new URL('./diagrams/', import.meta.url)
+const OUT_DIR = new URL('./diagrams/', siteOutDir(import.meta.url))
 
 /**
  * Every page renders with this theme initially; the picker switches from
@@ -102,11 +104,29 @@ function editorHash(source: string, theme: string): string {
   return Buffer.from(payload, 'utf-8').toString('base64')
 }
 
-/** Bundle demo/diagram-page-client.ts for the browser (mirrors editor.ts's bundleBrowserScript). */
-async function bundleDiagramPageClient(): Promise<string> {
+/**
+ * Bundle `demo/diagram-type-client.tsx` (zombie-mermaid#805, replacing
+ * `demo/diagram-page-client.ts`) for the browser. `minify: true`, unlike
+ * the file it replaces: this is the first bundle on this page to include
+ * `react`/`react-dom` (for `DiagramTypeApp`'s hydration) — see
+ * `dashboard.ts`'s `bundleDashboardClient()` doc comment for why a bundle
+ * with those two gets minified while a smaller, React-free one (like the
+ * old `diagram-page-client.ts`) doesn't need to be.
+ */
+async function bundleDiagramTypeClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/diagram-page-client.ts', import.meta.url).pathname,
-    { minify: false },
+    new URL('./demo/diagram-type-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
+/** Bundle `demo/diagram-hub-client.tsx` (zombie-mermaid#805) for the
+ * browser — mirrors `bundleDiagramTypeClient()`'s reasoning; this page has
+ * no live diagram to re-theme, so its bundle is much smaller. */
+async function bundleDiagramHubClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/diagram-hub-client.tsx', import.meta.url).pathname,
+    { minify: true },
   )
 }
 
@@ -127,9 +147,9 @@ async function main(): Promise<void> {
     `${demoCss}\n${pageCss}`,
   )
 
-  const [clientJs, navClientScript] = await Promise.all([
-    bundleDiagramPageClient(),
-    bundleNavClient(),
+  const [clientJs, hubClientScript] = await Promise.all([
+    bundleDiagramTypeClient(),
+    bundleDiagramHubClient(),
   ])
   await writeFile(new URL('./assets/diagram-page-client.js', OUT_DIR), clientJs)
 
@@ -145,7 +165,7 @@ async function main(): Promise<void> {
   })
 
   // Include the '' (Default) pseudo-theme alongside the real THEMES entries
-  // so demo/diagram-page-client.ts can look it up like any other theme key
+  // so demo/diagram-type-client.tsx can look it up like any other theme key
   // -- e.g. if a visitor switches to another theme and back to Default, or
   // if a theme picked on the main gallery (which does use '' for its own
   // Default pill) needs restoring here.
@@ -266,7 +286,6 @@ async function main(): Promise<void> {
         types: typeLinks,
         themeDataScript,
         clientScriptSrc: 'assets/diagram-page-client.js',
-        navClientScript,
       }),
     )
 
@@ -279,7 +298,7 @@ async function main(): Promise<void> {
 
   // #687: the hub has no live diagram of its own to re-theme, so it only
   // needs the theme-bar-only bundle (pill selection + persistence), not
-  // the heavier demo/diagram-page-client.ts every type detail page loads.
+  // the heavier demo/diagram-type-client.tsx every type detail page loads.
   const themeBarScript = await bundleThemeBarClient()
 
   const hubHtml = renderHtmlDocument(
@@ -297,7 +316,7 @@ async function main(): Promise<void> {
         accent: profile.accent,
       })),
       themeBarScript,
-      navClientScript,
+      clientScript: hubClientScript,
     }),
   )
 
@@ -309,7 +328,10 @@ async function main(): Promise<void> {
 ${sitemapUrls.map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`).join('\n')}
 </urlset>
 `
-  await writeFile(new URL('./sitemap.xml', import.meta.url), sitemap)
+  await writeFile(
+    new URL('./sitemap.xml', siteOutDir(import.meta.url)),
+    sitemap,
+  )
 
   console.log(
     `Wrote ${DIAGRAM_TYPE_PROFILES.length} diagram pages + hub page + sitemap.xml (${sitemapUrls.length} URLs) to ${OUT_DIR.pathname}`,

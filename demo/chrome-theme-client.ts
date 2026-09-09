@@ -16,6 +16,15 @@
  * while set and fall back to it cleanly once removed. Picking "Default"
  * therefore restores the exact original look, byte for byte, with no
  * separate reset table to keep in sync.
+ *
+ * `editor-page.tsx` is the one page that can't take a `:root` override:
+ * its own tool (`editor/css/variables.css`) already owns `--bg`/`--border`/
+ * `--green` for its light/dark toggle, so that page scopes the whole
+ * palette to a `.zm-shell` class rule instead of `:root` (see that file's
+ * module doc comment). A rule declared directly on `.zm-shell` shadows
+ * anything inherited from `document.documentElement`, so this module also
+ * applies the same inline overrides to every `.zm-shell` element present —
+ * a no-op on every other page, where that class doesn't exist.
  */
 import {
   chromeThemeVars,
@@ -35,6 +44,15 @@ import { DEFAULT_THEME_KEY, getTheme, subscribe } from './theme-state.ts'
  * live.
  */
 const NAV_BAR_ALPHA = 0.85
+
+/**
+ * `editor-page.tsx`'s scoping class — see this module's own doc comment
+ * for why its palette needs the same overrides `root` gets below. Not
+ * imported from that file: it has no reason to expose a browser-facing
+ * constant just for this, and the two names are already coupled by the
+ * shared `CHROME_REACTIVE_TOKENS` list either side reads from `tokens.tsx`.
+ */
+const ZM_SHELL_SELECTOR = '.zm-shell'
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = Number.parseInt(hex.slice(1, 3), 16)
@@ -73,6 +91,8 @@ export function initChromeTheme(
 
   function applyChromeTheme(themeKey: string): void {
     const root = document.documentElement
+    const scopedRoots =
+      document.querySelectorAll<HTMLElement>(ZM_SHELL_SELECTOR)
     const navBar = document.querySelector<HTMLElement>('.nav-bar')
     if (navBar && navBarDefaultBackground === null) {
       navBarDefaultBackground = navBar.style.background
@@ -83,6 +103,9 @@ export function initChromeTheme(
     if (!theme) {
       for (const token of CHROME_REACTIVE_TOKENS) {
         root.style.removeProperty(token)
+        for (const scopedRoot of scopedRoots) {
+          scopedRoot.style.removeProperty(token)
+        }
       }
       if (navBar) navBar.style.background = navBarDefaultBackground ?? ''
       return
@@ -91,6 +114,9 @@ export function initChromeTheme(
     const vars = chromeThemeVars(theme)
     for (const [token, value] of Object.entries(vars)) {
       root.style.setProperty(token, value)
+      for (const scopedRoot of scopedRoots) {
+        scopedRoot.style.setProperty(token, value)
+      }
     }
     if (navBar) navBar.style.background = hexToRgba(theme.bg, NAV_BAR_ALPHA)
   }
