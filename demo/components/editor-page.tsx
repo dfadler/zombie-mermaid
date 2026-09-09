@@ -74,7 +74,7 @@ import { SiteHead } from './site-head.tsx'
 import { FORK_URL } from './site-chrome.tsx'
 import { EditorTopbar } from './editor-topbar.tsx'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
-import { Nav, NavCopyScript, NavStyle } from './nav.tsx'
+import { Nav, NavCopyScript, NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
 import { Card, PrimitivesStyle } from './primitives.tsx'
 import {
@@ -225,6 +225,18 @@ body {
   border: 1px solid ${COLORS['--border']};
   border-radius: 20px;
   box-shadow: 0 18px 44px rgba(10, 13, 22, 0.35);
+  /* The tool's own engine (editor/css/topbar.css, color-picker.css,
+   * font-picker.css, misc.css) reaches z-index 100-9999 for its topbar,
+   * pickers, and toasts -- reasonable *inside* a tool that used to own the
+   * whole viewport, not once the tool lives in a card partway down a
+   * scrolling page. Without isolation, those values compete directly with
+   * the rest of the page's z-index scale (nav.tsx's bar is 10, its mobile
+   * menu overlay 9) and win, so the tool's own chrome would show through
+   * a fullscreen overlay meant to cover everything. The isolation property
+   * below makes this box its own stacking context -- the tool's internal
+   * z-index values stay contained here, however high they go, and the box
+   * itself paints in normal document order in the page's own context. */
+  isolation: isolate;
 }
 
 @media (max-width: ${BREAKPOINTS_TABLET}px) {
@@ -500,6 +512,7 @@ export function EditorPage({ css, themeItems, scriptJs }: EditorPageProps) {
           dangerouslySetInnerHTML={{ __html: scriptJs }}
         />
         <NavCopyScript />
+        <NavMobileMenuScript />
       </body>
     </html>
   )
