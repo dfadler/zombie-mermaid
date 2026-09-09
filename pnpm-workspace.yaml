@@ -16,14 +16,15 @@
 # against a clean `main` checkout before this fix.
 #
 # Defining `packages:` makes Semgrep's pnpm supply-chain rules apply to this
-# file for the first time (they don't fire on a non-workspace config). The
-# three settings below are deliberately deferred, not overlooked: enabling
-# them fails `pnpm install --frozen-lockfile` against the current lockfile
-# (an existing `undici-types@6.21.0` entry trips `trustPolicy`'s
-# TRUST_DOWNGRADE check, and `@types/react-dom@19.2.7` trips
-# `minimumReleaseAge`) and that needs its own investigation, not a
-# monorepo-refactor PR. Tracked in #656.
-# nosemgrep: package_managers.pnpm.pnpm-block-exotic-sub-dependencies.pnpm-block-exotic-sub-dependencies, package_managers.pnpm.pnpm-missing-minimum-release-age.pnpm-minimum-release-age, package_managers.pnpm.pnpm-trust-policy.pnpm-trust-policy
+# file for the first time (they don't fire on a non-workspace config). #656
+# resolved the two policy violations that blocked turning these settings on:
+# `undici-types@6.21.0` (a transitive dep of `@types/node`) tripped
+# `trustPolicy`'s TRUST_DOWNGRADE check because it predates undici's adoption
+# of npm provenance/trusted publishing — the `overrides` entry below pins it
+# to `6.28.0`, a same-major, provenance-attested release from the same
+# maintainers, which clears the check for real. `@types/react-dom@19.2.7`
+# tripped `minimumReleaseAge` for still being within its 7-day cutoff at the
+# time this landed; see the `minimumReleaseAgeExclude` entry below.
 packages:
   - '.'
   - 'packages/*'
@@ -31,6 +32,7 @@ packages:
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
+  - '@types/react-dom@19.2.7'
   - '@typescript-eslint/eslint-plugin@8.68.0'
   - '@typescript-eslint/parser@8.68.0'
   - '@typescript-eslint/project-service@8.68.0'
@@ -43,3 +45,10 @@ minimumReleaseAgeExclude:
   - '@typescript-eslint/visitor-keys@8.68.0'
   - eslint@10.9.1
   - typescript-eslint@8.68.0
+
+overrides:
+  '@types/node>undici-types': 6.28.0
+
+blockExoticSubdeps: true
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade

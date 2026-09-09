@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@types/node>undici-types': 6.28.0
+
 importers:
 
   .:
@@ -2610,8 +2613,8 @@ packages:
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+  undici-types@6.28.0:
+    resolution: {integrity: sha512-FnO9H9rmJvJbP5Mwy0XICbDezlIKf6WYRkDMCm8uukbHlKWMzmD5jodVA7F1k+TrAiZhWieDcoFayjVN5mnGUg==}
 
   undici-types@8.10.0:
     resolution: {integrity: sha512-ibvdovq3nCFs8Msrd95BW+zUOq+aOVbT+wpHUoPWhztbHEoPc6oof51iFDB6Es8lTKvNvVW9jNSAB8dwrKTMGg==}
@@ -3711,7 +3714,7 @@ snapshots:
 
   '@types/node@22.20.1':
     dependencies:
-      undici-types: 6.21.0
+      undici-types: 6.28.0
 
   '@types/react-dom@19.2.7(@types/react@19.2.18)':
     dependencies:
@@ -5379,7 +5382,7 @@ snapshots:
 
   ufo@1.6.4: {}
 
-  undici-types@6.21.0: {}
+  undici-types@6.28.0: {}
 
   undici-types@8.10.0: {}
 
