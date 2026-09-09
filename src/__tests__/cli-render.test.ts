@@ -312,6 +312,21 @@ describe('runRender – output ergonomics', () => {
     expect(mockStdout.output()).not.toContain('<svg')
     expect(await readFile(outputPath, 'utf-8')).toContain('<svg')
   })
+
+  it('writes nothing when a format resolves to neither stdout nor a file', async () => {
+    // Not reachable via the real CLI — parse-args always derives a file path
+    // or the stdout marker for --svg/--html/--png (see RenderArgs.output's
+    // doc comment) — but runRender doesn't itself enforce that invariant, so
+    // construct the args directly to exercise resolveTarget/emit's `skip`
+    // branch rather than leaving it untested dead code.
+    const inputPath = join(tmpDir, 'diagram.mmd')
+    await writeFile(inputPath, SIMPLE_FLOWCHART)
+
+    const mockStdout = createMockStdout()
+    await runRender(renderArgs({ input: inputPath, svg: true }), mockStdout)
+
+    expect(mockStdout.output()).toBe('')
+  })
 })
 
 // ============================================================================
