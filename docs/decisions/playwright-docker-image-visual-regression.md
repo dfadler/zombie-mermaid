@@ -213,3 +213,34 @@ _within_ Linux/Docker rendering, never whether native macOS Playwright (the actu
 generator of the `-darwin` baselines) matches the container. That remains untested;
 the concrete prerequisite (extending #550's wrapper to SVG) is filed as
 [#837](https://github.com/dfadler/zombie-mermaid/issues/837).
+
+## Amendment (2026-09-09): #551 answered — keep the `-linux`/`-darwin` split, no consolidation
+
+[#837](https://github.com/dfadler/zombie-mermaid/issues/837) (PR #842) landed the
+concrete prerequisite noted above, making the native-macOS-vs-container comparison
+practical. It has now been run: all 190 SVG samples, native macOS against two
+independent containerized runs of the same commit, with a run-to-run container
+control to separate a real native-vs-container effect from ordinary screenshot
+jitter. Full method and data in
+[`docs/research/551-native-vs-container-svg-parity.md`](../research/551-native-vs-container-svg-parity.md)
+rather than duplicated here.
+
+**Summary**: a real, systematic, non-noise difference exists between native macOS
+and containerized Linux SVG rendering. 41% of samples (78/190) show a cross-platform
+diff that clearly exceeds the container's own measured run-to-run jitter — including
+several samples that are byte-identical across two independent container runs while
+still differing from native macOS by a reproducible, nonzero amount. Root cause:
+`packages/core/src/theme.ts`'s font stack (`'Inter', system-ui, sans-serif` for body
+text; `'JetBrains Mono', ..., monospace` for class-diagram code text) falls back to a
+genuinely different typeface on each OS when the named font isn't installed — macOS
+resolves to San Francisco, the container (per `docker/visual-regression.Dockerfile`'s
+font layer) resolves to DejaVu Sans/DejaVu Sans Mono — which is exactly the
+font-rendering rationale #544 originally cited for the `-linux`/`-darwin` split.
+
+**#551 is answered: keep the current baseline scheme unchanged.** No consolidation
+into a single suffix (a real fraction of samples would either fail permanently or
+force the suite's tolerance to loosen suite-wide), and no rename to an
+architecture-based split either — #545 already ruled out architecture as the driver,
+and the current `-linux`/`-darwin` naming already correctly reflects the actual one
+(OS/font-rendering environment). CONTRIBUTING.md's "Visual regression tests" section
+reflects this.
