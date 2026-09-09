@@ -35,9 +35,7 @@ describe('ASCII subgraph label does not overwrite its own border', () => {
     // nodes happened to need, dropping trailing characters), so the title
     // is no longer clipped at all — but the row must still open and close
     // with the border — never spill onto/through it.
-    expect(titleLine).toBe(
-      '│AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA│',
-    )
+    expect(titleLine).toBe('│AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA│')
     expect(titleLine?.startsWith('│')).toBe(true)
     expect(titleLine?.endsWith('│')).toBe(true)
   })

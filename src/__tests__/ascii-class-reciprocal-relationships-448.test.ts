@@ -147,9 +147,7 @@ describe('ASCII class diagram — relationships converging on a shared target fr
     })
     const lines = ascii.split('\n')
     const arrowCols = lines.flatMap((line) =>
-      [...line]
-        .map((ch, i) => (ch === '▼' ? i : -1))
-        .filter((i) => i >= 0),
+      [...line].map((ch, i) => (ch === '▼' ? i : -1)).filter((i) => i >= 0),
     )
     expect(arrowCols).toHaveLength(2)
     expect(arrowCols[0]).not.toBe(arrowCols[1])
