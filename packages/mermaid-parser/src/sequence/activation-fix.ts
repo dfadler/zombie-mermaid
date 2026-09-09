@@ -23,7 +23,10 @@
 
 import { detectDiagramType, splitStatements } from '@zombie-mermaid/core'
 import { parseSequenceDiagram } from './parser.ts'
-import { checkActivationBalance, type ActivationIssue } from './activation-check.ts'
+import {
+  checkActivationBalance,
+  type ActivationIssue,
+} from './activation-check.ts'
 
 export interface ActivationFixResult {
   /** true when the returned diagram has no remaining activation issues. */
@@ -54,7 +57,9 @@ export interface ActivationFixResult {
  * expected to catch and translate, matching `check-sequence-activations.ts`'s
  * own error handling.
  */
-export function fixActivationBalance(sourceDiagram: string): ActivationFixResult {
+export function fixActivationBalance(
+  sourceDiagram: string,
+): ActivationFixResult {
   const diagramType = detectDiagramType(sourceDiagram)
   if (diagramType !== 'sequence') {
     throw new Error(

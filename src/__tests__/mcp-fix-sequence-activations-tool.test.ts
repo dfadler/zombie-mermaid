@@ -49,8 +49,7 @@ describe('fixSequenceActivationsHandler', () => {
 
   it('fixes multiple dangling activations across different actors', () => {
     const result = fixSequenceActivationsHandler({
-      diagram:
-        'sequenceDiagram\n  activate A\n  activate B\n  A->>B: hello',
+      diagram: 'sequenceDiagram\n  activate A\n  activate B\n  A->>B: hello',
     })
     expect(result.isError).toBeUndefined()
     const [content] = result.content
@@ -89,8 +88,7 @@ describe('fixSequenceActivationsHandler', () => {
 
   it('fixes the dangling activation while still reporting an unmatched one', () => {
     const result = fixSequenceActivationsHandler({
-      diagram:
-        'sequenceDiagram\n  activate A\n  A->>B: hello\n  deactivate B',
+      diagram: 'sequenceDiagram\n  activate A\n  A->>B: hello\n  deactivate B',
     })
     expect(result.isError).toBeUndefined()
     const [content] = result.content

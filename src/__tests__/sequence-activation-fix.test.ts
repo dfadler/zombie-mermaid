@@ -44,8 +44,7 @@ describe('fixActivationBalance', () => {
   })
 
   it('closes multiple dangling activations for different actors', () => {
-    const source =
-      'sequenceDiagram\n  activate A\n  activate B\n  A->>B: hello'
+    const source = 'sequenceDiagram\n  activate A\n  activate B\n  A->>B: hello'
     const result = fixActivationBalance(source)
     expect(result.ok).toBe(true)
     expect(result.fixesApplied).toHaveLength(2)
