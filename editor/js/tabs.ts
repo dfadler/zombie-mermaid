@@ -1,23 +1,16 @@
+/**
+ * zombie-mermaid#809: the Code/Config tab buttons, their `.active` class,
+ * and the two panels' visibility all moved to React -- see
+ * `demo/components/editor-tabs.ts`'s `useEditorTabs`. What's left here is
+ * the one thing that hook can't do itself: calling `refreshAllColorUIs()`
+ * (`config-panel.ts`, not migrated to React until #808) whenever the
+ * Config tab becomes active. `demo/components/*.tsx` doesn't import from
+ * `editor/js/*.ts` (see `demo/components/editor-app.tsx`'s
+ * `requireEditorElement` doc comment), so this subscribes to
+ * `window.__editorTabsState` (registered by `useEditorTabs`) instead.
+ */
 import { refreshAllColorUIs } from './config-panel.ts'
-import { configView, editorView } from './elements.ts'
 
-const sourceToolbar = document.getElementById('source-toolbar')
-document.querySelectorAll<HTMLElement>('.tab').forEach(function (tab) {
-  tab.addEventListener('click', function () {
-    const panel = tab.dataset.panel
-    document.querySelectorAll<HTMLElement>('.tab').forEach(function (t) {
-      t.classList.remove('active')
-    })
-    tab.classList.add('active')
-    if (panel === 'code') {
-      editorView.style.display = 'flex'
-      configView.classList.remove('visible')
-      if (sourceToolbar) sourceToolbar.style.display = ''
-    } else {
-      editorView.style.display = 'none'
-      configView.classList.add('visible')
-      if (sourceToolbar) sourceToolbar.style.display = 'none'
-      refreshAllColorUIs()
-    }
-  })
+window.__editorTabsState.subscribe((panel) => {
+  if (panel === 'config') refreshAllColorUIs()
 })

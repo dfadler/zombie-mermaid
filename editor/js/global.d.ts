@@ -9,7 +9,23 @@
  * `window.__editorViewportState` (zombie-mermaid#807) directly by
  * `demo/components/editor-viewport.ts`'s `useEditorViewport` hook (part
  * of `<EditorApp>`'s own hydrated bundle, not a separate spliced-in
- * script) the same way. All three already declare their own
+ * script) the same way.
+ *
+ * zombie-mermaid#809 added three more, two in the same "React registers,
+ * legacy reads" direction as `__editorViewportState`
+ * (`window.__editorTabsState`, by `demo/components/editor-tabs.ts`'s
+ * `useEditorTabs`; `window.__editorDarkModeState`, by `demo/components/
+ * editor-dark-mode.ts`'s `useEditorDarkMode` -- deliberately *not* a
+ * separately-bundled bridge module the way `__themeState` is; see that
+ * hook's header comment for the real cross-bundle duplicate-module-instance
+ * bug that approach hit) and two in the *other* direction --
+ * `window.__editorSharingState` and `window.__editorHelpersState`,
+ * registered by this program's own `sharing.ts`/`editor-helpers.ts` for
+ * `demo/components/editor-export.ts`'s `copyURL()`/`editor-buttons.ts`'s
+ * Clear button to call, since those hooks need a still-legacy function
+ * this time instead of the reverse.
+ *
+ * All of these already declare their own
  * `declare global { interface Window { ... } } }` augmentation for their
  * *own* tsconfig program (root tsconfig.json's `lib` has no DOM, so
  * `src/browser.ts` uses a narrower local `declare const window`; `demo/
@@ -52,8 +68,35 @@ interface EditorViewportStateBridge {
   applyZoom: () => void
 }
 
+/** zombie-mermaid#809 -- see `demo/components/editor-tabs.ts`'s `useEditorTabs`. */
+interface EditorTabsStateBridge {
+  getActiveTab: () => 'code' | 'config'
+  subscribe: (listener: (tab: 'code' | 'config') => void) => () => void
+}
+
+/** zombie-mermaid#809 -- see `demo/components/editor-dark-mode.ts`'s `useEditorDarkMode`. */
+interface EditorDarkModeStateBridge {
+  getIsDark: () => boolean
+  setIsDark: (dark: boolean) => void
+  subscribe: (listener: (dark: boolean) => void) => () => void
+}
+
+/** zombie-mermaid#809 -- see `sharing.ts`'s own registration, bottom of that file. */
+interface EditorSharingStateBridge {
+  updateHash: () => void
+}
+
+/** zombie-mermaid#809 -- see `editor-helpers.ts`'s own registration, bottom of that file. */
+interface EditorHelpersStateBridge {
+  updateLineNumbers: () => void
+}
+
 interface Window {
   __mermaid: EditorMermaidBridge
   __themeState: EditorThemeStateBridge
   __editorViewportState: EditorViewportStateBridge
+  __editorTabsState: EditorTabsStateBridge
+  __editorDarkModeState: EditorDarkModeStateBridge
+  __editorSharingState: EditorSharingStateBridge
+  __editorHelpersState: EditorHelpersStateBridge
 }

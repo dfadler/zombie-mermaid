@@ -89,7 +89,12 @@ import {
   type Dispatch,
   type ReactNode,
 } from 'react'
+import { useEditorButtons } from './editor-buttons.ts'
+import { useEditorDarkMode } from './editor-dark-mode.ts'
+import { useEditorExport } from './editor-export.ts'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
+import { useEditorTabs } from './editor-tabs.ts'
+import { useEditorToast } from './editor-toast.ts'
 import {
   EditorThemeItems,
   EditorTopbar,
@@ -201,6 +206,36 @@ export interface EditorState {
   panelLeftWidth: number | null
   /** Whether a panel-resize drag is currently in progress. */
   isResizingPanel: boolean
+  /**
+   * zombie-mermaid#809: tabs/buttons/export/toast/dark-mode replace
+   * `editor/js/tabs.ts`'s/`buttons.ts`'s/`export.ts`'s/`toast.ts`'s/
+   * `dark-mode.ts`'s own module-level mutable state with reducer state, the
+   * same migration #807 did for zoom/pan/resize above. See
+   * `editor-tabs.ts`/`editor-buttons.ts`/`editor-export.ts`/`editor-toast.ts`/
+   * `editor-dark-mode.ts` for the effects that read/write them.
+   */
+  /** Which panel is showing -- `editor/js/tabs.ts`'s old `.tab.active`/`data-panel`. */
+  activeTab: 'code' | 'config'
+  /** `editor/js/dark-mode.ts`'s old `isDark` module-level variable. */
+  darkMode: boolean
+  /** `editor/js/export.ts`'s old `exportScale` module-level variable. */
+  exportScale: number
+  /** Whether the export dropdown (`#export-dropdown`) is open. */
+  exportDropdownOpen: boolean
+  /** The toast's current message -- `editor/js/toast.ts`'s old `toast.textContent`. */
+  toastMessage: string
+  /** Whether the toast is showing -- `editor/js/toast.ts`'s old `.show` class. */
+  toastVisible: boolean
+  /**
+   * Incremented on every `SHOW_TOAST` dispatch, including a repeat of the
+   * *same* message -- `editor-toast.ts`'s auto-dismiss effect keys its
+   * timer off this (not `toastMessage`) so two identical toasts in a row
+   * still each get their own full 2500ms window, matching
+   * `editor/js/toast.ts`'s old unconditional `clearTimeout` + `setTimeout`
+   * on every call (a `useEffect` keyed on the message text alone would not
+   * re-fire for an unchanged value).
+   */
+  toastNonce: number
 }
 
 export const INITIAL_EDITOR_STATE: EditorState = {
@@ -211,6 +246,13 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   isPanning: false,
   panelLeftWidth: null,
   isResizingPanel: false,
+  activeTab: 'code',
+  darkMode: false,
+  exportScale: 4,
+  exportDropdownOpen: false,
+  toastMessage: '',
+  toastVisible: false,
+  toastNonce: 0,
 }
 
 export type EditorAction =
@@ -238,6 +280,12 @@ export type EditorAction =
   | { type: 'SET_PANNING'; panning: boolean }
   | { type: 'SET_PANEL_LEFT_WIDTH'; width: number }
   | { type: 'SET_RESIZING_PANEL'; resizing: boolean }
+  | { type: 'SET_ACTIVE_TAB'; tab: 'code' | 'config' }
+  | { type: 'SET_DARK_MODE'; dark: boolean }
+  | { type: 'SET_EXPORT_SCALE'; scale: number }
+  | { type: 'SET_EXPORT_DROPDOWN_OPEN'; open: boolean }
+  | { type: 'SHOW_TOAST'; message: string }
+  | { type: 'HIDE_TOAST' }
 
 export function editorReducer(
   state: EditorState,
@@ -269,6 +317,23 @@ export function editorReducer(
       return { ...state, panelLeftWidth: action.width }
     case 'SET_RESIZING_PANEL':
       return { ...state, isResizingPanel: action.resizing }
+    case 'SET_ACTIVE_TAB':
+      return { ...state, activeTab: action.tab }
+    case 'SET_DARK_MODE':
+      return { ...state, darkMode: action.dark }
+    case 'SET_EXPORT_SCALE':
+      return { ...state, exportScale: action.scale }
+    case 'SET_EXPORT_DROPDOWN_OPEN':
+      return { ...state, exportDropdownOpen: action.open }
+    case 'SHOW_TOAST':
+      return {
+        ...state,
+        toastMessage: action.message,
+        toastVisible: true,
+        toastNonce: state.toastNonce + 1,
+      }
+    case 'HIDE_TOAST':
+      return { ...state, toastVisible: false }
   }
 }
 
@@ -325,6 +390,26 @@ export interface EditorRefs {
   zoomOutBtn: HTMLElement
   zoomFitBtn: HTMLElement
   panBtn: HTMLElement
+  /**
+   * Added by zombie-mermaid#809 -- see `editor-tabs.ts`'s `useEditorTabs`,
+   * `editor-buttons.ts`'s `useEditorButtons`, `editor-export.ts`'s
+   * `useEditorExport`, and `editor-dark-mode.ts`'s `useEditorDarkMode`.
+   */
+  sourceToolbar: HTMLElement
+  copySourceBtn: HTMLElement
+  clearBtn: HTMLElement
+  darkLightBtn: HTMLElement
+  iconMoon: SVGElement
+  iconSun: SVGElement
+  exportWrap: HTMLElement
+  exportChevronBtn: HTMLElement
+  exportMainBtn: HTMLElement
+  exportDropdown: HTMLElement
+  sizePills: HTMLElement
+  exportPngBtn: HTMLElement
+  exportSvgBtn: HTMLElement
+  copyImageBtn: HTMLElement
+  copyLinkBtn: HTMLElement
 }
 
 /**
@@ -383,6 +468,21 @@ export function collectEditorRefs(): EditorRefs {
     zoomOutBtn: requireEditorElement('zoom-out-btn', HTMLElement),
     zoomFitBtn: requireEditorElement('zoom-fit-btn', HTMLElement),
     panBtn: requireEditorElement('pan-btn', HTMLElement),
+    sourceToolbar: requireEditorElement('source-toolbar', HTMLElement),
+    copySourceBtn: requireEditorElement('copy-source-btn', HTMLElement),
+    clearBtn: requireEditorElement('clear-btn', HTMLElement),
+    darkLightBtn: requireEditorElement('dark-light-btn', HTMLElement),
+    iconMoon: requireEditorElement('icon-moon', SVGElement),
+    iconSun: requireEditorElement('icon-sun', SVGElement),
+    exportWrap: requireEditorElement('export-wrap', HTMLElement),
+    exportChevronBtn: requireEditorElement('export-chevron-btn', HTMLElement),
+    exportMainBtn: requireEditorElement('export-main-btn', HTMLElement),
+    exportDropdown: requireEditorElement('export-dropdown', HTMLElement),
+    sizePills: requireEditorElement('size-pills', HTMLElement),
+    exportPngBtn: requireEditorElement('export-png-btn', HTMLElement),
+    exportSvgBtn: requireEditorElement('export-svg-btn', HTMLElement),
+    copyImageBtn: requireEditorElement('copy-image-btn', HTMLElement),
+    copyLinkBtn: requireEditorElement('copy-link-btn', HTMLElement),
   }
 }
 
@@ -447,11 +547,26 @@ export function EditorApp({ themes }: EditorAppProps) {
   // alone) is what guarantees this.
   useEditorViewport({ state, dispatch, refs })
 
+  // zombie-mermaid#809: tabs/buttons/export/toast/dark-mode -- see each
+  // hook's own file for what it replaces. Order among these five doesn't
+  // matter the way it did for the ref-collecting effect above (none of them
+  // depend on another's DOM writes), but all run after it for the same
+  // reason useEditorViewport does -- see this file's header comment.
+  useEditorTabs({ state, dispatch, refs })
+  useEditorButtons({ dispatch, refs })
+  useEditorExport({ state, dispatch, refs })
+  useEditorToast({ state, dispatch })
+  useEditorDarkMode({ state, dispatch, refs })
+
   return (
     <EditorStateContext.Provider value={state}>
       <EditorDispatchContext.Provider value={dispatch}>
         <EditorRefsContext.Provider value={refs}>
-          <EditorChromeMarkup themes={themes} />
+          <EditorChromeMarkup
+            themes={themes}
+            toastMessage={state.toastMessage}
+            toastVisible={state.toastVisible}
+          />
         </EditorRefsContext.Provider>
       </EditorDispatchContext.Provider>
     </EditorStateContext.Provider>
@@ -470,8 +585,20 @@ export function EditorApp({ themes }: EditorAppProps) {
  */
 function EditorChromeMarkup({
   themes,
+  toastMessage,
+  toastVisible,
 }: {
   themes: readonly EditorThemeItem[]
+  /**
+   * zombie-mermaid#809: the toast's own content and `.show` class are now
+   * plain React output instead of `editor/js/toast.ts`'s imperative
+   * `textContent`/`classList` writes -- see `editor-toast.ts`'s
+   * `useEditorToast` for the auto-dismiss timer. `id="toast"` is kept
+   * (nothing dynamic depends on it staying an id, but existing tests and
+   * this file's own `EditorRefs.toast` still look it up by id).
+   */
+  toastMessage: string
+  toastVisible: boolean
 }): ReactNode {
   return (
     <>
@@ -483,7 +610,9 @@ function EditorChromeMarkup({
         <EditorRightPanel />
       </div>
 
-      <div className="toast" id="toast" />
+      <div className={toastVisible ? 'toast show' : 'toast'} id="toast">
+        {toastMessage}
+      </div>
     </>
   )
 }

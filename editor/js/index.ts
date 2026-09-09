@@ -18,8 +18,8 @@
  * longer has any runtime significance for cross-module references --
  * each file's actual dependencies are its own `import` statements, which
  * ES module evaluation order (and this program's circular-import handling;
- * see dark-mode.ts's header comment) already resolves correctly regardless
- * of this list's sequence. Only side-effect-only imports below need to run
+ * see theme-button.ts's header comment) already resolves correctly
+ * regardless of this list's sequence. Only side-effect-only imports below need to run
  * at all -- most of them are also depended on directly by name elsewhere in
  * the graph, so this list mainly exists to guarantee every module (even
  * one nothing else imports for its exports) is actually included in the
@@ -34,10 +34,12 @@ import './editor-helpers.ts'
 import './config-panel.ts'
 import './color-picker.ts'
 import './font-picker.ts'
+// zombie-mermaid#809: buttons.ts/export.ts/toast.ts moved to React state
+// entirely (demo/components/editor-buttons.ts, editor-export.ts,
+// editor-toast.ts) and no longer exist as editor/js/*.ts modules -- see
+// tabs.ts's and dark-mode.ts's own header comments for why those two are
+// still imported below, just much smaller than before.
 import './tabs.ts'
-import './buttons.ts'
-import './export.ts'
-import './toast.ts'
 import './theme-button.ts'
 import './dark-mode.ts'
 import './init.ts'

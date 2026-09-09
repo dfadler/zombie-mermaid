@@ -178,6 +178,38 @@ export async function createEditorEnv(
     applyZoom: vi.fn(),
   }
 
+  // zombie-mermaid#809: editor/js/tabs.ts and dark-mode.ts now subscribe to
+  // window.__editorTabsState/window.__editorDarkModeState (registered by
+  // demo/components/editor-tabs.ts's useEditorTabs and
+  // demo/editor-dark-mode-state-bridge.ts respectively) at their own module
+  // top level -- both unreachable from this harness for the same reason
+  // __editorViewportState is, so both need a stand-in here too, or
+  // evaluating the bundle throws immediately.
+  ;(
+    window as unknown as {
+      __editorTabsState: {
+        getActiveTab(): 'code' | 'config'
+        subscribe(listener: (tab: 'code' | 'config') => void): () => void
+      }
+    }
+  ).__editorTabsState = {
+    getActiveTab: () => 'code',
+    subscribe: () => () => {},
+  }
+  ;(
+    window as unknown as {
+      __editorDarkModeState: {
+        getIsDark(): boolean
+        setIsDark(dark: boolean): void
+        subscribe(listener: (dark: boolean) => void): () => void
+      }
+    }
+  ).__editorDarkModeState = {
+    getIsDark: () => options.localStorage?.['bm-editor-dark'] === 'true',
+    setIsDark: vi.fn(),
+    subscribe: () => () => {},
+  }
+
   for (const [key, value] of Object.entries(options.localStorage ?? {})) {
     window.localStorage.setItem(key, value)
   }
