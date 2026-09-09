@@ -13,7 +13,7 @@
   "files": [
     "src/"
   ],
-  "dependencies": {
+  "devDependencies": {
     "elkjs": "^0.11.0"
   }
 }

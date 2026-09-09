@@ -114,7 +114,7 @@ importers:
         version: 2.6.2
 
   packages/core:
-    dependencies:
+    devDependencies:
       elkjs:
         specifier: ^0.11.0
         version: 0.11.1
