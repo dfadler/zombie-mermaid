@@ -43,6 +43,7 @@ import {
   ClockIcon,
 } from './icons.tsx'
 import { Nav, NavCopyScript } from './nav.tsx'
+import { ThemePickerSection } from './theme-picker-section.tsx'
 import { Card, CTA, SectionEyebrow, accentVar } from './primitives.tsx'
 import {
   DesignFontLinks,
@@ -450,9 +451,22 @@ export interface DashboardPageProps {
   data: DashboardData
   /** The page's full stylesheet — tokens/primitives/nav/footer CSS plus this page's own (see dashboard.ts). */
   css: string
+  /**
+   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
+   * the page's `ThemePickerSection` is interactive. This page has nothing
+   * of its own to re-theme (a static data snapshot, not a diagram) — the
+   * picker here exists so a theme chosen elsewhere on the site stays
+   * selected if a visitor lands here, and vice versa (shared `demo/
+   * theme-state.ts` persistence).
+   */
+  themeBarScript: string
 }
 
-export function DashboardPage({ data, css }: DashboardPageProps) {
+export function DashboardPage({
+  data,
+  css,
+  themeBarScript,
+}: DashboardPageProps) {
   return (
     <html lang="en">
       <head>
@@ -593,6 +607,8 @@ export function DashboardPage({ data, css }: DashboardPageProps) {
           <RescuedTeaser />
           <ResponseTimeSection responseTime={data.responseTime} />
 
+          <ThemePickerSection />
+
           <Footer
             columns={[
               {
@@ -621,6 +637,11 @@ export function DashboardPage({ data, css }: DashboardPageProps) {
             ]}
           />
         </div>
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: themeBarScript }}
+        />
         <NavCopyScript />
       </body>
     </html>
