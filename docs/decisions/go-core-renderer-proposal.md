@@ -27,8 +27,8 @@ against actual project signals rather than assumed:
 sample definitions; `bench-baseline.json` is checked in and CI-gated via
 `scripts/bench-compare.ts`. The current baseline
 (`bench-baseline.json`, generated 2026-08-31) shows totals of ~927 ms SVG /
-~153 ms ASCII across 89 samples — averages in the low single-digit
-milliseconds per render. No open or closed issue reports a perf problem
+~153 ms ASCII across 89 samples — averages of ~10.4 ms per SVG render and
+~1.7 ms per ASCII render. No open or closed issue reports a perf problem
 with the renderer; the one related issue (#291, closed) added an _opt-in_
 cache for repeated-input layout calls, not a fix for a demonstrated
 slowness. There is no benchmark, complaint, or profiling result anywhere in
@@ -131,9 +131,9 @@ candidate motivations named in the issue holds up against the project's
 actual signals:
 
 - No demonstrated performance problem exists to fix — the current
-  TypeScript renderer is fast (single-digit milliseconds per render,
-  CI-gated against a checked-in baseline), and no issue or benchmark says
-  otherwise.
+  TypeScript renderer is fast (single-digit to low-double-digit
+  milliseconds per render, CI-gated against a checked-in baseline), and no
+  issue or benchmark says otherwise.
 - No non-JS consumer has ever asked for a native package or FFI surface —
   the entire multi-language thread (#443, #495, #536, #540) is
   maintainer-initiated exploration, not a response to demand.
