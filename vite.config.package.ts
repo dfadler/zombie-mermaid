@@ -129,11 +129,22 @@ export function definePackageBuild(options: PackageBuildOptions) {
     plugins: [
       {
         ...dts({
-          // Shared build-only tsconfig (see its own header comment) — NOT
-          // tsconfig.json, which overrides `@zombie-mermaid/*` to resolve
-          // to source for live typecheck. A build's dts step must resolve
-          // them the same way a real downstream consumer would: through
-          // each dependency's own built `dist/index.d.ts`.
+          // tsconfig.build.json, not tsconfig.json — the latter overrides
+          // `@zombie-mermaid/*` to resolve to source (for live typecheck
+          // and the editor; see its own comment), which this dts step must
+          // NOT inherit. A build's dts step has to resolve those imports
+          // the same way a real downstream consumer would: through each
+          // dependency's own built `dist/index.d.ts` (its package.json
+          // `exports`/`types`), not straight through to source. Plain JSON
+          // (tsc's tsconfig files normally tolerate `//` comments, but this
+          // one is kept strict so any parser can read it) — the override is
+          // just the one `paths` block below; nothing else differs from
+          // tsconfig.json, which `extends` already inherits.
+          //
+          // Only vite.config.package.ts (this file) uses it — the umbrella
+          // build (vite.config.lib.ts) resolves `tsconfig.json` directly,
+          // since #769's rework reverted it to bundling `packages/*` by
+          // source rather than through their built output.
           tsconfigPath: resolve(REPO_ROOT, 'tsconfig.build.json'),
           exclude: ['src/__tests__/**', '**/*.test.ts'],
           // Rolls this package's entire public surface into one

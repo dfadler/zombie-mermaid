@@ -1,21 +1,4 @@
 {
-  // Build-time variant of tsconfig.json, used only by the dts-generation
-  // step of vite.config.lib.ts (umbrella) and vite.config.package.ts (the
-  // five internal @zombie-mermaid/* packages) — never by `pnpm run
-  // typecheck` or the editor, which use tsconfig.json directly.
-  //
-  // The only difference from tsconfig.json: it does NOT carry the
-  // `@zombie-mermaid/*` -> source `paths` overrides tsconfig.json adds for
-  // live typecheck/IDE use (see that file's comment). A build's dts step
-  // must resolve every `@zombie-mermaid/*` import through real package
-  // resolution — each dependency's own package.json `exports`/`types`,
-  // which (after this issue) points at that package's own built
-  // `dist/index.d.ts` — exactly what a real downstream consumer sees.
-  // Overriding to source here would silently re-introduce the same bug the
-  // old `bundledPackages`/`paths` hack in vite.config.lib.ts existed to work
-  // around before every package had its own build (see that file's git
-  // history for #769) — never surface a resolution failure that only a real
-  // published consumer would hit.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
