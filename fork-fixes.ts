@@ -132,7 +132,19 @@ async function requireCommit(commit: string): Promise<void> {
   }
 }
 
-/** Render `source` with whichever export the module provides for `mode`. */
+/**
+ * Render `source` with whichever export the module provides for `mode`.
+ *
+ * The 'svg' branch's `{ bg: '#ffffff', fg: '#1a1a1a' }` is fixed, not
+ * driven by the global theme picker `demo/components/theme-picker-
+ * section.tsx` adds to this page (#687) — a deliberate #689 exception,
+ * not an oversight: `mod` here can be the renderer as it existed at an
+ * arbitrary historical commit (see `loadRendererBefore()` above), which
+ * isn't guaranteed to support the same CSS custom-property contract
+ * `themeCssVariables()` defines today, and this page's whole purpose is a
+ * precise, stable before/after comparison, not a live showcase. See
+ * `docs/decisions/theme-selector-shared-state.md`'s "#689" amendment.
+ */
 function renderWith(
   mod: RendererModule,
   source: string,
