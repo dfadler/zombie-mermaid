@@ -42,9 +42,13 @@
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import * as esbuild from 'esbuild'
 import { createElement } from 'react'
-import { escapeHtml, escapeJsonForScriptTag } from './demo/format.ts'
+import { bundleForBrowser } from './scripts/vite-bundle.ts'
+import {
+  escapeHtml,
+  escapeJsonForScriptTag,
+  stripShikiFenceLines,
+} from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import {
   DiagramHubPage,
@@ -93,19 +97,12 @@ function editorHash(source: string, theme: string): string {
   return Buffer.from(payload, 'utf-8').toString('base64')
 }
 
-/** Bundle demo/diagram-page-client.ts for the browser (mirrors index.ts's bundleClientScript). */
+/** Bundle demo/diagram-page-client.ts for the browser (mirrors editor.ts's bundleBrowserScript). */
 async function bundleDiagramPageClient(): Promise<string> {
-  const result = await esbuild.build({
-    entryPoints: [
-      new URL('./demo/diagram-page-client.ts', import.meta.url).pathname,
-    ],
-    bundle: true,
-    platform: 'browser',
-    format: 'esm',
-    minify: false,
-    write: false,
-  })
-  return result.outputFiles[0]!.text
+  return bundleForBrowser(
+    new URL('./demo/diagram-page-client.ts', import.meta.url).pathname,
+    { minify: false },
+  )
 }
 
 async function main(): Promise<void> {
@@ -180,9 +177,7 @@ async function main(): Promise<void> {
         lang: 'mermaid',
         theme: 'github-dark',
       })
-      return highlightedHtml
-        .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1')
-        .replace(/\n<span class="line">.*?<\/span>(<\/code>)/, '$1')
+      return stripShikiFenceLines(highlightedHtml)
     }
 
     // A wide (LR/RL) flowchart or state diagram gets a TD alternate for

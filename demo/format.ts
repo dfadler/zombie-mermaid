@@ -54,6 +54,24 @@ export function formatProse(text: string): string {
 }
 
 /**
+ * Strip Shiki's wrapping `<span class="line">` for the first and last lines
+ * of a highlighted code block.
+ *
+ * Callers highlight a diagram's source by wrapping it in a fenced
+ * ` ```mermaid ... ``` ` block first, purely so Shiki has a language fence to
+ * highlight against — the fence delimiters themselves aren't part of the
+ * source and shouldn't appear in the rendered output. Shiki emits each
+ * source line (fence lines included) as its own `<span class="line">`, so
+ * removing the first and last such spans drops the fence lines while leaving
+ * the highlighted source lines between them untouched.
+ */
+export function stripShikiFenceLines(html: string): string {
+  return html
+    .replace(/(<code>)<span class="line">.*?<\/span>\n/, '$1') // first line
+    .replace(/\n<span class="line">.*?<\/span>(<\/code>)/, '$1') // last line
+}
+
+/**
  * Make a JSON payload safe to embed in a `<script>` element.
  *
  * An HTML parser ends a script element at the first `</script`, wherever it
