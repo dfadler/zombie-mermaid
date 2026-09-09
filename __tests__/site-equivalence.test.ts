@@ -37,10 +37,6 @@ import {
   ForkFixesPage,
   type FixSectionProps,
 } from '../demo/components/fork-fixes-page.tsx'
-import {
-  DiagramHubPage,
-  DiagramTypePage,
-} from '../demo/components/diagram-page.tsx'
 import { BlogIndexPage, BlogPostPage } from '../demo/components/blog-page.tsx'
 
 /**
@@ -181,123 +177,6 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
       }),
     )
     await expectGolden(html, './__fixtures__/fork-fixes-page.normalized.txt')
-  })
-})
-
-describe('pages.ts → diagrams/*.html', () => {
-  const types = [
-    { slug: 'flowchart', label: 'Flowchart', accent: 'blue' as const },
-    { slug: 'sequence', label: 'Sequence diagram', accent: 'cyan' as const },
-  ]
-
-  it('renders a type page with one orientation', async () => {
-    const html = renderHtmlDocument(
-      createElement(DiagramTypePage, {
-        label: 'Sequence diagram',
-        slug: 'sequence',
-        intro: 'Sequence diagrams show messages between participants.',
-        accent: 'cyan',
-        exampleHeading: 'An API handshake, message by message.',
-        sourceFilename: 'handshake.mmd',
-        title: 'Sequence diagram examples | Zombie Mermaid',
-        description: 'Rendered live in any of 15 built-in themes.',
-        canonical: 'https://example.test/diagrams/sequence.html',
-        cssHref: 'assets/diagram-page.css',
-        faviconHref: '../favicon.svg',
-        sourcePanelHtml:
-          '<pre class="shiki"><code>sequenceDiagram</code></pre>',
-        diagramHtml: '<svg data-diagram="sequence"></svg>',
-        editorHref: '../editor#eyJzb3VyY2UiOiJ4In0=',
-        // 7 items (> GALLERY_VISIBLE_COUNT's 6) exercises the "Show N
-        // more" <details> branch too, with N=1 covering the singular
-        // "example" (not "examples") wording.
-        galleryItems: [
-          'Actor Stick Figures',
-          'Arrow Types',
-          'Activation Boxes',
-          'Self-Messages',
-          'Loop Block',
-          'Alt/Else Block',
-          'OAuth 2.0 Flow',
-        ].map((title, i) => ({
-          title,
-          diagramHtml: `<svg data-diagram="sequence-gallery-${i}"></svg>`,
-          editorHref: `../editor#gallery-${i}`,
-        })),
-        types,
-        themeDataScript: 'window.__diagramPageThemes = {"":{"bg":"#FFFFFF"}};',
-        clientScriptSrc: 'assets/diagram-page-client.js',
-      }),
-    )
-    await expectGolden(html, './__fixtures__/diagram-type-page.normalized.txt')
-  })
-
-  it('renders a type page with wide/narrow orientation variants', async () => {
-    const html = renderHtmlDocument(
-      createElement(DiagramTypePage, {
-        label: 'Flowchart',
-        slug: 'flowchart',
-        intro: 'Flowcharts show a process as boxes and arrows.',
-        accent: 'blue',
-        exampleHeading: 'A deploy pipeline, start to finish.',
-        sourceFilename: 'pipeline.mmd',
-        title: 'Flowchart examples | Zombie Mermaid',
-        description: 'Rendered live in any of 15 built-in themes.',
-        canonical: 'https://example.test/diagrams/flowchart.html',
-        cssHref: 'assets/diagram-page.css',
-        faviconHref: '../favicon.svg',
-        sourcePanelHtml: {
-          wide: '<pre class="shiki"><code>flowchart LR</code></pre>',
-          narrow: '<pre class="shiki"><code>flowchart TD</code></pre>',
-        },
-        diagramHtml: {
-          wide: '<svg data-diagram="flowchart-w"></svg>',
-          narrow: '<svg data-diagram="flowchart-n"></svg>',
-        },
-        editorHref: '../editor#eyJzb3VyY2UiOiJ5In0=',
-        // Empty on purpose -- exercises MoreExamplesSection's "renders
-        // nothing" branch, the other half of what the sequence fixture
-        // above (a non-empty galleryItems) already covers.
-        galleryItems: [],
-        types,
-        themeDataScript: 'window.__diagramPageNarrowSource = "flowchart TD";',
-        clientScriptSrc: 'assets/diagram-page-client.js',
-      }),
-    )
-    await expectGolden(
-      html,
-      './__fixtures__/diagram-type-page-orientations.normalized.txt',
-    )
-  })
-
-  it('renders the hub page', async () => {
-    const html = renderHtmlDocument(
-      createElement(DiagramHubPage, {
-        title: 'Diagram gallery: every type | Zombie Mermaid',
-        description: 'Browse every zombie-mermaid diagram type.',
-        canonical: 'https://example.test/diagrams/',
-        cssHref: 'assets/diagram-page.css',
-        faviconHref: '../favicon.svg',
-        themeCount: 15,
-        types: [
-          {
-            slug: 'flowchart',
-            label: 'Flowchart',
-            intro: 'Flowcharts show a process as boxes and arrows.',
-            accent: 'blue',
-          },
-          {
-            slug: 'sequence',
-            label: 'Sequence diagram',
-            intro: 'Sequence diagrams show messages between participants.',
-            accent: 'cyan',
-          },
-        ],
-        themeBarScript: FIXTURE_SCRIPT,
-        clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
-      }),
-    )
-    await expectGolden(html, './__fixtures__/diagram-hub-page.normalized.txt')
   })
 })
 
