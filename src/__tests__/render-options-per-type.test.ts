@@ -25,16 +25,20 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG } from '../index.ts'
-import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
-import { layoutSequenceDiagram } from '../sequence/layout.ts'
-import { layoutClassDiagramSync } from '../class/layout.ts'
-import { layoutErDiagramSync } from '../er/layout.ts'
-import { layoutXYChart } from '../xychart/layout.ts'
+import {
+  layoutGraphSync,
+  layoutSequenceDiagram,
+  layoutClassDiagramSync,
+  layoutErDiagramSync,
+  layoutXYChart,
+} from '@zombie-mermaid/svg-renderer'
 import { parseMermaid } from '../parser.ts'
-import { parseSequenceDiagram } from '../sequence/parser.ts'
-import { parseClassDiagram } from '../class/parser.ts'
-import { parseErDiagram } from '../er/parser.ts'
-import { parseXYChart } from '../xychart/parser.ts'
+import {
+  parseSequenceDiagram,
+  parseClassDiagram,
+  parseErDiagram,
+  parseXYChart,
+} from '@zombie-mermaid/mermaid-parser'
 import { splitStatements } from '@zombie-mermaid/core'
 import type {
   FlowchartRenderOptions,

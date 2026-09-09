@@ -173,21 +173,21 @@ const ALLOWED_OUTSIDE_ASCII = {
   // around the package boundary still fails loudly against an explicit
   // list instead of silently passing.
   core: [],
-  // -> `mermaid-parser` (#624). Note `class/format.ts`, `xychart/colors.ts`
-  // and `sequence/box-color.ts`: the doc's finding 1 describes each per-type
-  // directory as a `parser.ts`+`types.ts` half and a `layout.ts`+
-  // `renderer.ts` half, but these three are in neither, and the ASCII side
-  // needs all of them — so #624's split is per-file, not per-half-pair.
-  parser: [
-    'src/parser.ts',
-    'src/class/format.ts',
-    'src/class/parser.ts',
-    'src/er/parser.ts',
-    'src/sequence/box-color.ts',
-    'src/sequence/parser.ts',
-    'src/xychart/colors.ts',
-    'src/xychart/parser.ts',
-  ],
+  // -> `mermaid-parser` (#624). #624 landed and moved
+  // `class/format.ts`/`parser.ts`, `er/parser.ts`, `sequence/box-color.ts`/
+  // `parser.ts`/`activation-check.ts`, and `xychart/colors.ts`/`parser.ts`
+  // into `packages/mermaid-parser/` — per-file, not per-half-pair, since the
+  // doc's finding 1 only describes each per-type directory as a
+  // `parser.ts`+`types.ts` half vs. a `layout.ts`+`renderer.ts` half, and
+  // `class/format.ts`, `xychart/colors.ts`, `sequence/box-color.ts` fit
+  // neither. The ASCII entry now reaches all of them through the bare
+  // `@zombie-mermaid/mermaid-parser` specifier — invisible to this walker,
+  // same as the `core` bucket above. `src/parser.ts` (the flowchart/state
+  // parser) is NOT part of #624's scope — findings 1-2 are about
+  // `class`/`er`/`sequence`/`xychart` only, which already have no shared
+  // generic model the way flowcharts do — so it's the one entry still
+  // reached by relative import.
+  parser: ['src/parser.ts'],
   // The scoping doc's recommendation 5 originally put all three on its
   // `svg-renderer`-only list. #625's addendum found `init-directive.ts` and
   // `style-directives.ts` actually belong to `core` (both moved to
@@ -210,21 +210,19 @@ const ALLOWED = [
  * from the bundle, so they cost `dist/ascii.js` nothing, but a real
  * `ascii-renderer` package still has to resolve them at build time.
  *
- * These are the `types.ts` halves of the still-unpackaged `mermaid-parser`
- * (#624) directories. `src/types.ts` (`core`) and `src/elk-instance.ts`
- * (`svg-renderer`) used to appear here too, reached as `src/types.ts` ->
- * `import type { LayoutCache }` — exactly the type-graph cycle this list's
- * original comment flagged as something #625 would have to resolve. #625's
- * addendum confirms it did: `LayoutCache` moved to `packages/core/src/
- * types.ts`, and both files are now reached through the bare
- * `@zombie-mermaid/core` specifier, invisible to this relative-only walker.
+ * Used to list the four per-type `types.ts` halves
+ * (`class`/`er`/`sequence`/`xychart`) while they still lived under
+ * `src/<type>/` and were reached by a relative `import type`. #624 moved
+ * them into `packages/mermaid-parser/src/<type>/types.ts`, so the ASCII
+ * entry now reaches them through the bare `@zombie-mermaid/mermaid-parser`
+ * specifier — invisible to this relative-only walker, same as `src/types.ts`
+ * (`core`) and `src/elk-instance.ts` (`svg-renderer`) before them under
+ * #625. Kept as an empty list, not deleted, for the same reason the `core`
+ * bucket above is kept empty: a future regression that reintroduces a
+ * *relative* `import type` reach-around across the package boundary should
+ * still fail loudly against an explicit list.
  */
-const TYPE_ONLY_REACH = [
-  'src/class/types.ts',
-  'src/er/types.ts',
-  'src/sequence/types.ts',
-  'src/xychart/types.ts',
-]
+const TYPE_ONLY_REACH: string[] = []
 
 const graph = moduleGraphOf(ASCII_ENTRY)
 const outside = (files: Set<string>): string[] =>

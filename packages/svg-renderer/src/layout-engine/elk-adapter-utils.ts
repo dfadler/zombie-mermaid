@@ -1,8 +1,8 @@
 /**
  * Shared ELK-edge-geometry extraction helpers.
  *
- * `from-elk.ts` (flowchart/state), `src/class/layout.ts`, and
- * `src/er/layout.ts` each independently walk an ELK edge's
+ * `from-elk.ts` (flowchart/state), `../class/layout.ts`, and
+ * `../er/layout.ts` each independently walk an ELK edge's
  * `section.startPoint → bendPoints → endPoint` into a `Point[]`, plus
  * near-identical edge-label-position math. This module is the single
  * place that logic lives, so the three call sites can't drift.

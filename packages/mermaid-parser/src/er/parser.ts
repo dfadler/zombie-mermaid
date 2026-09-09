@@ -5,8 +5,7 @@ import type {
   ErRelationship,
   Cardinality,
 } from './types.ts'
-import { normalizeBrTags } from '@zombie-mermaid/core'
-import { toDirection } from '../parser.ts'
+import { normalizeBrTags, toDirection } from '@zombie-mermaid/core'
 
 // ============================================================================
 // ER diagram parser

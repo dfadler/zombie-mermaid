@@ -1,5 +1,5 @@
 /**
- * Coverage-focused tests for src/xychart/layout.ts.
+ * Coverage-focused tests for packages/svg-renderer/src/xychart/layout.ts.
  *
  * Exercises the horizontal layout path (previously untested), numeric
  * x-axis ranges (category label interpolation), multi-series bar groups,

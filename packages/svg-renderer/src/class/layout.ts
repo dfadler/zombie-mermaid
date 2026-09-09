@@ -16,23 +16,27 @@ import type {
   PositionedClassNode,
   PositionedClassNote,
   PositionedClassRelationship,
-} from './types.ts'
-import { formatClassMember } from './format.ts'
+} from '@zombie-mermaid/mermaid-parser'
+import { formatClassMember } from '@zombie-mermaid/mermaid-parser'
 import type { ClassRenderOptions } from '@zombie-mermaid/core'
 import {
   estimateTextWidth,
   estimateMonoTextWidth,
   FONT_WEIGHTS,
   resolveFontSizes,
-  elkLayoutSync,
+} from '../styles.ts'
+import { elkLayoutSync } from '../elk-instance.ts'
+import {
   extractEdgePoints,
   extractEdgeLabelPosition,
+} from '../layout-engine/elk-adapter-utils.ts'
+import {
   ELK_DIRECTION_FALLBACK,
   baseElkLayoutOptions,
   buildElkEdge,
   buildElkLeafNode,
   directionToElk,
-} from '@zombie-mermaid/svg-renderer'
+} from '../layout-engine/elk-graph-builder.ts'
 import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 
 /** Layout constants for class diagrams */

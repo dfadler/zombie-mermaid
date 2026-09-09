@@ -5,7 +5,7 @@
  * relationships with all cardinality types, identifying/non-identifying lines.
  */
 import { describe, it, expect } from 'vitest'
-import { parseErDiagram } from '../er/parser.ts'
+import { parseErDiagram } from '@zombie-mermaid/mermaid-parser'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {

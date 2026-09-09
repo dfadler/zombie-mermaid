@@ -10,11 +10,14 @@
  * - Comments and error cases
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid, toDirection } from '../parser.ts'
-// `isDirection` moved to @zombie-mermaid/core under #625 — `toDirection`
-// (still here) is its only in-parser caller, and core's
-// `direction-override.ts` needs the guard without importing the parser.
-import { isDirection } from '@zombie-mermaid/core'
+import { parseMermaid } from '../parser.ts'
+// `isDirection` moved to @zombie-mermaid/core under #625; `toDirection`
+// followed it under #624 once `er/parser.ts` (now
+// packages/mermaid-parser/src/er/parser.ts) became a second caller that
+// can't import this file without a cycle. `../parser.ts` still re-exports
+// it for backward compatibility, but the tests below import it straight
+// from `core`, same as `isDirection`.
+import { isDirection, toDirection } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Graph header parsing

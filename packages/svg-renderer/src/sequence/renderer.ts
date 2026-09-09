@@ -7,7 +7,7 @@ import type {
   PositionedBlock,
   PositionedNote,
   PositionedParticipantBox,
-} from './types.ts'
+} from '@zombie-mermaid/mermaid-parser'
 import { boxLabelHeight } from './layout.ts'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
@@ -16,15 +16,15 @@ import {
   renderMultilineText,
   escapeAttr,
 } from '@zombie-mermaid/core'
+import { withDataSrc } from '../renderer.ts'
 import {
-  withDataSrc,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
   ARROW_HEAD,
   estimateTextWidth,
-} from '@zombie-mermaid/svg-renderer'
-import type { FontSizes } from '@zombie-mermaid/svg-renderer'
+} from '../styles.ts'
+import type { FontSizes } from '../styles.ts'
 
 // ============================================================================
 // Sequence diagram SVG renderer

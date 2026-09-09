@@ -5,7 +5,10 @@
  * relationships (all 6 types), cardinality, labels, inline attributes.
  */
 import { describe, it, expect } from 'vitest'
-import { parseClassDiagram, parseGenericTypes } from '../class/parser.ts'
+import {
+  parseClassDiagram,
+  parseGenericTypes,
+} from '@zombie-mermaid/mermaid-parser'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {

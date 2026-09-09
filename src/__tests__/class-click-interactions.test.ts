@@ -10,7 +10,7 @@
  * src/__tests__/er-click-unsupported.test.ts for that side of issue #292.
  */
 import { describe, it, expect } from 'vitest'
-import { parseClassDiagram } from '../class/parser.ts'
+import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
 
 /** Helper to parse — preprocesses text the same way index.ts does */

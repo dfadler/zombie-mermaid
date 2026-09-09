@@ -6,7 +6,7 @@
  * whole header is the label. `transparent` is treated as "no colour".
  */
 import { describe, it, expect } from 'vitest'
-import { isCssColor, parseBoxHeader } from '../sequence/box-color.ts'
+import { isCssColor, parseBoxHeader } from '@zombie-mermaid/mermaid-parser'
 
 describe('isCssColor', () => {
   it('recognizes CSS named colours, case-insensitively', () => {

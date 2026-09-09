@@ -10,9 +10,11 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../parser.ts'
-import { parseSequenceDiagram } from '../sequence/parser.ts'
-import { parseClassDiagram } from '../class/parser.ts'
-import { parseErDiagram } from '../er/parser.ts'
+import {
+  parseSequenceDiagram,
+  parseClassDiagram,
+  parseErDiagram,
+} from '@zombie-mermaid/mermaid-parser'
 import {
   measureMultilineText,
   LINE_HEIGHT_RATIO,

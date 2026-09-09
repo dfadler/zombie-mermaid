@@ -202,8 +202,8 @@ export default defineConfig({
         // (via @microsoft/api-extractor), matching tsup's dts output —
         // one file per public entry point, not one per source module.
         //
-        // The two `@zombie-mermaid/*` workspace packages (zombie-mermaid#625,
-        // umbrella #620) are `"private": true` and bundled into this
+        // The three `@zombie-mermaid/*` workspace packages (zombie-mermaid#625,
+        // #624, umbrella #620) are `"private": true` and bundled into this
         // package's JS — they're absent from `isExternal` below — so a
         // `from '@zombie-mermaid/core'` surviving into a rolled-up `.d.ts`
         // would name something no consumer can resolve. Two settings are
@@ -230,6 +230,7 @@ export default defineConfig({
         bundleTypes: {
           bundledPackages: [
             '@zombie-mermaid/core',
+            '@zombie-mermaid/mermaid-parser',
             '@zombie-mermaid/svg-renderer',
           ],
           extractorConfig: {
@@ -239,6 +240,9 @@ export default defineConfig({
                   paths: {
                     '@zombie-mermaid/core': [
                       resolve(DIST, 'packages/core/src/index.d.ts'),
+                    ],
+                    '@zombie-mermaid/mermaid-parser': [
+                      resolve(DIST, 'packages/mermaid-parser/src/index.d.ts'),
                     ],
                     '@zombie-mermaid/svg-renderer': [
                       resolve(DIST, 'packages/svg-renderer/src/index.d.ts'),

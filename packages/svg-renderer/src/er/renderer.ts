@@ -4,7 +4,7 @@ import type {
   PositionedErRelationship,
   ErAttribute,
   Cardinality,
-} from './types.ts'
+} from '@zombie-mermaid/mermaid-parser'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
@@ -14,15 +14,15 @@ import {
   escapeAttr,
   measureMultilineText,
 } from '@zombie-mermaid/core'
+import { withDataSrc } from '../renderer.ts'
 import {
-  withDataSrc,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
   estimateTextWidth,
   TEXT_BASELINE_SHIFT,
-} from '@zombie-mermaid/svg-renderer'
-import type { FontSizes } from '@zombie-mermaid/svg-renderer'
+} from '../styles.ts'
+import type { FontSizes } from '../styles.ts'
 
 // ============================================================================
 // ER diagram SVG renderer

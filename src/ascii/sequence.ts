@@ -9,8 +9,8 @@
 // Instead: actors → columns, messages → rows, all positioned linearly.
 // ============================================================================
 
-import { parseSequenceDiagram } from '../sequence/parser.ts'
-import type { Block } from '../sequence/types.ts'
+import { parseSequenceDiagram } from '@zombie-mermaid/mermaid-parser'
+import type { Block } from '@zombie-mermaid/mermaid-parser'
 import type { AsciiConfig, CharRole, AsciiTheme, ColorMode } from './types.ts'
 import {
   mkCanvas,
@@ -28,7 +28,7 @@ import {
   toDisplayCells,
   WIDE_CHAR_PLACEHOLDER,
 } from './display-width.ts'
-import type { Message } from '../sequence/types.ts'
+import type { Message } from '@zombie-mermaid/mermaid-parser'
 import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 
 // Width of a self-message's loop glyphs (├──┐ / ◀──┘), excluding the label.

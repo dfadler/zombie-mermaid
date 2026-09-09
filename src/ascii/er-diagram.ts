@@ -9,13 +9,13 @@
 // Relationship lines use Manhattan routing between entity boxes.
 // ============================================================================
 
-import { parseErDiagram } from '../er/parser.ts'
+import { parseErDiagram } from '@zombie-mermaid/mermaid-parser'
 import type {
   ErDiagram,
   ErEntity,
   ErAttribute,
   Cardinality,
-} from '../er/types.ts'
+} from '@zombie-mermaid/mermaid-parser'
 import type {
   AsciiConfig,
   CharRole,

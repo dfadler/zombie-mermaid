@@ -9,7 +9,7 @@ import {
   parseSequenceDiagram,
   isBlockType,
   toBlockType,
-} from '../sequence/parser.ts'
+} from '@zombie-mermaid/mermaid-parser'
 
 /** Helper to parse — preprocesses text the same way index.ts does */
 function parse(text: string) {

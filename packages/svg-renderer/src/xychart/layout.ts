@@ -8,9 +8,9 @@ import type {
   GridLine,
   PlotArea,
   LegendItem,
-} from './types.ts'
+} from '@zombie-mermaid/mermaid-parser'
 import type { XyChartRenderOptions } from '@zombie-mermaid/core'
-import { estimateTextWidth } from '@zombie-mermaid/svg-renderer'
+import { estimateTextWidth } from '../styles.ts'
 
 // ============================================================================
 // XY Chart layout engine
