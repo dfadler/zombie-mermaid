@@ -328,7 +328,10 @@ async function main(): Promise<void> {
 ${sitemapUrls.map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`).join('\n')}
 </urlset>
 `
-  await writeFile(new URL('./sitemap.xml', siteOutDir(import.meta.url)), sitemap)
+  await writeFile(
+    new URL('./sitemap.xml', siteOutDir(import.meta.url)),
+    sitemap,
+  )
 
   console.log(
     `Wrote ${DIAGRAM_TYPE_PROFILES.length} diagram pages + hub page + sitemap.xml (${sitemapUrls.length} URLs) to ${OUT_DIR.pathname}`,
