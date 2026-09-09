@@ -420,6 +420,82 @@ export function renderClassAscii(
     }
   }
 
+  // Fan relationships that converge on the same target (or diverge from the
+  // same source) even when they come from/go to otherwise-unrelated
+  // classes — e.g. `Teacher --> Course` and `Student --> Course`, two
+  // distinct pairs that both terminate at Course. `pairGroups` above only
+  // catches multiple relationships between the exact same two classes;
+  // nothing previously separated these, so both anchored at Course's exact
+  // center column. That collapsed their lines and arrowheads onto the same
+  // cells, and — since a relationship's only horizontal jog can land on a
+  // single shared row when the two source rows/box heights are equal —
+  // let one relationship's label (drawn in a later pass, unaware of the
+  // collision) blot out the entire visible portion of the *other*
+  // relationship's connector, leaving it looking like it stops short of
+  // its target instead of merely overlapping (issue #632).
+  //
+  // Scoped to the shared end only — the far end keeps its own center
+  // column — since, unlike a duplicate pair, the *other* end of each
+  // relationship is a different, unrelated class that needs no fanning of
+  // its own. A relationship already offset by `pairGroups` above keeps
+  // that symmetric (both-ends) offset unchanged; only relationships with
+  // no pair-based offset get fanned here.
+  //
+  // Further scoped to relationships whose target sits exactly one level
+  // below their source (`level.get(to) - level.get(from) === 1`) — a
+  // direct, adjacent-level convergence/divergence like this one. A
+  // relationship that instead skips a level (e.g. `A --> C` when `B` sits
+  // between them at `A --> B --> C`) already needs the existing
+  // box-collision detour routing below (`findClearColumn`) to route around
+  // the intervening class; fanning its anchor here too would fight that
+  // routing over the same geometry it depends on, corrupting it. Excluding
+  // skip-level relationships from the group entirely — rather than just
+  // from getting an offset — also keeps a same-level sibling's own offset
+  // arithmetic (position-in-group, spread) based only on the other
+  // relationships it could actually collide with.
+  const relFromOffset = new Map<number, number>()
+  const relFromSpread = new Map<number, number>()
+  const relToOffset = new Map<number, number>()
+  const relToSpread = new Map<number, number>()
+  {
+    const fanBySharedEndpoint = (
+      endpointOf: (rel: (typeof diagram.relationships)[number]) => string,
+      offsetOut: Map<number, number>,
+      spreadOut: Map<number, number>,
+    ): void => {
+      const groups = new Map<string, number[]>()
+      diagram.relationships.forEach((rel, i) => {
+        if (relColumnOffset.has(i)) return // already fanned as a duplicate pair
+        if (!classById.has(rel.from) || !classById.has(rel.to)) return
+        const fromLevel = level.get(rel.from) ?? 0
+        const toLevel = level.get(rel.to) ?? 0
+        if (toLevel - fromLevel !== 1) return // skip-level — leave to detour routing
+        const key = endpointOf(rel)
+        const group = groups.get(key) ?? []
+        group.push(i)
+        groups.set(key, group)
+      })
+      for (const group of groups.values()) {
+        if (group.length < 2) continue
+        const n = group.length
+        const widestLabel = Math.max(
+          ...group.map((i) => {
+            const label = diagram.relationships[i]!.label
+            if (!label) return 3 // room for just a line/arrow
+            return labelCellWidth(label)
+          }),
+        )
+        const step = widestLabel + 1 // +1 for a visual gap between labels
+        group.forEach((relIndex, pos) => {
+          offsetOut.set(relIndex, Math.round((pos - (n - 1) / 2) * step))
+          spreadOut.set(relIndex, (n - 1) * step)
+        })
+      }
+    }
+    fanBySharedEndpoint((rel) => rel.to, relToOffset, relToSpread)
+    fanBySharedEndpoint((rel) => rel.from, relFromOffset, relFromSpread)
+  }
+
   // --- Reserve column room for relationship labels and fanned-out groups ---
   // A class's horizontal slot used to be exactly its box's content width, so
   // a narrow box (a single-letter class with no members) whose relationship
@@ -449,16 +525,31 @@ export function renderClassAscii(
     if (!classById.has(rel.from) || !classById.has(rel.to)) return
     // Mirror the draw pass: a label of `cellW` cells centered on its lane
     // starts `floor(cellW / 2)` cells left of the lane; a bare line/arrow
-    // is a single cell on the lane itself.
+    // is a single cell on the lane itself. Each endpoint reserves room
+    // using its own offset — a duplicate-pair member's offset is the same
+    // at both ends, but a relationship fanned only at its shared target (or
+    // source) — see `relFromOffset`/`relToOffset` above — must reserve
+    // differently at each end, matching where its lane actually sits there.
     const cellW = rel.label ? labelCellWidth(rel.label) : 1
-    const offset = relColumnOffset.get(relIndex) ?? 0
-    const left = Math.floor(cellW / 2) - offset
-    const right = offset + cellW - 1 - Math.floor(cellW / 2)
-    for (const id of [rel.from, rel.to]) {
-      const reach = columnReach.get(id)!
-      reach.left = Math.max(reach.left, left)
-      reach.right = Math.max(reach.right, right)
-    }
+    const fromOffset =
+      relColumnOffset.get(relIndex) ?? relFromOffset.get(relIndex) ?? 0
+    const toOffset =
+      relColumnOffset.get(relIndex) ?? relToOffset.get(relIndex) ?? 0
+    const fromReach = columnReach.get(rel.from)!
+    fromReach.left = Math.max(
+      fromReach.left,
+      Math.floor(cellW / 2) - fromOffset,
+    )
+    fromReach.right = Math.max(
+      fromReach.right,
+      fromOffset + cellW - 1 - Math.floor(cellW / 2),
+    )
+    const toReach = columnReach.get(rel.to)!
+    toReach.left = Math.max(toReach.left, Math.floor(cellW / 2) - toOffset)
+    toReach.right = Math.max(
+      toReach.right,
+      toOffset + cellW - 1 - Math.floor(cellW / 2),
+    )
   })
 
   // Compute positions: each level is a row, classes in a row are spaced horizontally
@@ -643,9 +734,11 @@ export function renderClassAscii(
    * relationships ended up sharing two connection points. Only a group
    * with more members than the box has columns still has to share.
    */
-  function anchorOffset(relIndex: number, boxWidth: number): number {
-    const offset = relColumnOffset.get(relIndex) ?? 0
-    const spread = relGroupSpread.get(relIndex) ?? 0
+  function anchorOffset(
+    offset: number,
+    spread: number,
+    boxWidth: number,
+  ): number {
     // Columns available on each side of the center — the center itself is
     // `floor(boxWidth / 2)` in from the left edge, matching `connectionColumns`.
     const left = Math.floor(boxWidth / 2)
@@ -683,6 +776,13 @@ export function renderClassAscii(
    * their jogs merge into a small trunk at the border — but never a lane.
    * Labels always use the lane, never the anchor: only the line's
    * box-border touchpoint needs pulling back inside the box.
+   *
+   * The offset applied at each end is resolved independently: a
+   * relationship in a duplicate-pair group (`relColumnOffset`) uses that
+   * same offset at both ends, as before, but one that only shares a single
+   * endpoint with other relationships (`relFromOffset`/`relToOffset` — see
+   * their doc comment above) is fanned at that shared end only, leaving its
+   * other, unrelated end anchored on its own box center (issue #632).
    */
   function connectionColumns(
     relIndex: number,
@@ -694,14 +794,22 @@ export function renderClassAscii(
     fromAnchorX: number
     toAnchorX: number
   } {
-    const rawOffset = relColumnOffset.get(relIndex) ?? 0
+    const fromOffset =
+      relColumnOffset.get(relIndex) ?? relFromOffset.get(relIndex) ?? 0
+    const toOffset =
+      relColumnOffset.get(relIndex) ?? relToOffset.get(relIndex) ?? 0
+    const fromSpread =
+      relGroupSpread.get(relIndex) ?? relFromSpread.get(relIndex) ?? 0
+    const toSpread =
+      relGroupSpread.get(relIndex) ?? relToSpread.get(relIndex) ?? 0
     const fromCenter = fromP.x + Math.floor(fromP.width / 2)
     const toCenter = toP.x + Math.floor(toP.width / 2)
     return {
-      fromCX: fromCenter + rawOffset,
-      toCX: toCenter + rawOffset,
-      fromAnchorX: fromCenter + anchorOffset(relIndex, fromP.width),
-      toAnchorX: toCenter + anchorOffset(relIndex, toP.width),
+      fromCX: fromCenter + fromOffset,
+      toCX: toCenter + toOffset,
+      fromAnchorX:
+        fromCenter + anchorOffset(fromOffset, fromSpread, fromP.width),
+      toAnchorX: toCenter + anchorOffset(toOffset, toSpread, toP.width),
     }
   }
 

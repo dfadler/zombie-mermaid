@@ -30,9 +30,14 @@ describe('ASCII subgraph label does not overwrite its own border', () => {
     const titleLine = output.split('\n').find((l) => l.includes('AAAAAAA'))
     expect(titleLine).toBeDefined()
 
-    // The title is truncated by the box's fixed width, but the row must
-    // still open and close with the border — never spill onto/through it.
-    expect(titleLine).toBe('│AAAAAAA│')
+    // The box is now widened to fit the title in full (issue #632 — a
+    // subgraph label used to be truncated to whatever width the child
+    // nodes happened to need, dropping trailing characters), so the title
+    // is no longer clipped at all — but the row must still open and close
+    // with the border — never spill onto/through it.
+    expect(titleLine).toBe(
+      '│AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA│',
+    )
     expect(titleLine?.startsWith('│')).toBe(true)
     expect(titleLine?.endsWith('│')).toBe(true)
   })
@@ -62,28 +67,88 @@ describe('ASCII subgraph label does not overwrite its own border', () => {
     const output = renderMermaidASCII(mermaid)
     expect(output).toBe(
       [
-        '┌───────┐',
-        '│AAAAAAA│',
-        '│       │',
-        '│       │',
-        '│ ┌───┐ │',
-        '│ │   │ │',
-        '│ │ a │ │',
-        '│ │   │ │',
-        '│ └─┬─┘ │',
-        '│   │   │',
-        '│   │   │',
-        '│   │   │',
-        '│   │   │',
-        '│   ▼   │',
-        '│ ┌───┐ │',
-        '│ │   │ │',
-        '│ │ b │ │',
-        '│ │   │ │',
-        '│ └───┘ │',
-        '│       │',
-        '└───────┘',
+        '┌──────────────────────────────────┐',
+        '│AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA│',
+        '│                                  │',
+        '│                                  │',
+        '│              ┌───┐               │',
+        '│              │   │               │',
+        '│              │ a │               │',
+        '│              │   │               │',
+        '│              └─┬─┘               │',
+        '│                │                 │',
+        '│                │                 │',
+        '│                │                 │',
+        '│                │                 │',
+        '│                ▼                 │',
+        '│              ┌───┐               │',
+        '│              │   │               │',
+        '│              │ b │               │',
+        '│              │   │               │',
+        '│              └───┘               │',
+        '│                                  │',
+        '└──────────────────────────────────┘',
       ].join('\n'),
     )
+  })
+})
+
+/**
+ * Regression test for issue #632 — a weekly form-judge audit comparing this
+ * repo's ASCII output against real mermaid.js SVG flagged the "Subgraph
+ * Direction Override" sample (samples-data.ts): the cluster label
+ * "Processing Pipeline" was truncated mid-word to "Processing Pipe" even
+ * though the source SVG's cluster rect is wide enough to fit the full label
+ * untruncated.
+ *
+ * Root cause: `calculateSubgraphBoundingBox` (src/ascii/grid.ts) sized a
+ * subgraph's box purely from its child nodes' positions — it never
+ * considered the width of the subgraph's own label — so a label longer
+ * than the widest child node's contribution to the box got silently
+ * clipped by `drawSubgraphLabel`'s own border-safety guard (the fix
+ * verified by the tests above, which correctly stops a label from spilling
+ * onto the border, but does nothing to stop it needing to spill in the
+ * first place). The fix widens the box, symmetrically, whenever the
+ * label's own display width would otherwise exceed the interior the child
+ * nodes alone would have produced.
+ */
+describe('ASCII subgraph label does not truncate a label wider than its child nodes (issue #632)', () => {
+  it('renders "Processing Pipeline" in full instead of truncating it to "Processing Pipe"', () => {
+    const mermaid = `graph TD
+  subgraph pipeline [Processing Pipeline]
+    direction LR
+    A[Input] --> B[Parse] --> C[Transform] --> D[Output]
+  end
+  E[Source] --> A
+  D --> F[Sink]`
+    const output = renderMermaidASCII(mermaid)
+
+    expect(output).toContain('Processing Pipeline')
+    expect(output).not.toContain('Processing Pipe│')
+    expect(output).not.toContain('Processing Pipe\n')
+
+    const titleLine = output
+      .split('\n')
+      .find((l) => l.includes('Processing Pipeline'))
+    expect(titleLine).toBeDefined()
+    // The label sits fully inside the border on both sides, not clipped
+    // against (or spilling onto) either one.
+    expect(titleLine?.startsWith('│')).toBe(true)
+    expect(titleLine?.endsWith('│')).toBe(true)
+  })
+
+  it('still truncates a title far wider than any reasonable box only via the border-safety clip, never mid-word from box sizing alone', () => {
+    // A label wider than the box has room for, on a subgraph with only a
+    // single tiny child node — the box widens to fit the label (this
+    // issue's fix), so nothing is truncated by width sizing; the only
+    // remaining clip source is `drawSubgraphLabel`'s own border guard
+    // (covered by the tests above), which only fires for pathological
+    // cases (e.g. a taller-than-tall label) that this fix does not touch.
+    const mermaid = `flowchart TD
+  subgraph ONE["A Rather Long Subgraph Title Here"]
+    A1["a"]
+  end`
+    const output = renderMermaidASCII(mermaid)
+    expect(output).toContain('A Rather Long Subgraph Title Here')
   })
 })
