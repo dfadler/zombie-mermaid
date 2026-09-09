@@ -474,8 +474,12 @@ export function mermaidToElk(
     )
   }
 
-  // Add root-level edges
+  // Add root-level edges. Self-loops (edge.source === edge.target) are
+  // excluded — ELK has no native self-loop layout and produces a degenerate
+  // zero-length-span polyline for them; from-elk.ts synthesizes a proper
+  // side loop for these once node positions are known instead.
   for (const { index, edge } of edgesBySubgraph.get(null)!) {
+    if (edge.source === edge.target) continue
     rootEdges.push(
       buildElkEdge({
         id: `e${index}`,
@@ -611,10 +615,12 @@ function subgraphToElk(
     )
   }
 
-  // Add internal edges (edges where both endpoints are in this subgraph)
+  // Add internal edges (edges where both endpoints are in this subgraph).
+  // Self-loops are excluded — see the matching comment in mermaidToElk.
   const edges: ElkExtendedEdge[] = []
   const internalEdges = edgesBySubgraph.get(sg.id) ?? []
   for (const { index, edge } of internalEdges) {
+    if (edge.source === edge.target) continue
     edges.push(
       buildElkEdge({
         id: `e${index}`,

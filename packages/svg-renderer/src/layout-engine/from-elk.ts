@@ -34,6 +34,115 @@ interface MarginInfo {
   rightX: number
 }
 
+// ============================================================================
+// Self-loop synthesis
+//
+// ELK has no native self-loop layout — to-elk.ts excludes edges where
+// `source === target` from the graph it hands to ELK entirely (see the
+// comments in `mermaidToElk`/`subgraphToElk`), so they never reach
+// ELK's own edge routing. Once node positions are final, this module
+// synthesizes a rounded loop bulging out from the node's right side —
+// approximated as a half-ellipse discretized into enough points to read
+// as smooth even under the default `linear` (straight-segment) curve
+// style — rather than letting ELK's generic orthogonal router draw a
+// degenerate zero-span polyline on top of the node.
+// ============================================================================
+
+/** Half-ellipse discretization steps; higher reads smoother as straight segments. */
+const SELF_LOOP_SEGMENTS = 16
+/** Base horizontal reach of the loop bulge, in px. */
+const SELF_LOOP_BASE_RADIUS = 28
+/** Additional reach per stacked self-loop on the same node, in px. */
+const SELF_LOOP_STACK_SPACING = 18
+/** Vertical distance between the loop's two attach points, in px (clamped to node height). */
+const SELF_LOOP_ATTACH_GAP = 28
+/**
+ * Gap between the loop's apex and its label, in px. Wide enough that the
+ * label's own background box (which paints over whatever it sits on top
+ * of) doesn't swallow the loop's visible curve.
+ */
+const SELF_LOOP_LABEL_GAP = 10
+
+/**
+ * Build the routed points and label position for one self-loop edge on
+ * `node`, as a half-ellipse bulging out from the node's right side.
+ *
+ * `stackIndex` (0 for the first self-loop on this node, 1 for the second,
+ * ...) widens each successive loop so multiple self-loops on the same node
+ * nest rather than overlap.
+ */
+function buildSelfLoopGeometry(
+  node: PositionedNode,
+  stackIndex: number,
+): { points: Point[]; labelPosition: Point } {
+  const attachX = node.x + node.width
+  const midY = node.y + node.height / 2
+  const halfGap = Math.min(SELF_LOOP_ATTACH_GAP, node.height * 0.6) / 2
+  const radius = SELF_LOOP_BASE_RADIUS + stackIndex * SELF_LOOP_STACK_SPACING
+
+  // Half-ellipse from the upper attach point (t=0), out to the apex
+  // (t=PI/2), back to the lower attach point (t=PI). Both attach points
+  // sit exactly on the node's right edge, so shape-clipping (a no-op for
+  // rectangle/rounded/stadium, the common cases) leaves them untouched.
+  const points: Point[] = []
+  for (let i = 0; i <= SELF_LOOP_SEGMENTS; i++) {
+    const t = (Math.PI * i) / SELF_LOOP_SEGMENTS
+    points.push({
+      x: attachX + radius * Math.sin(t),
+      y: midY - halfGap * Math.cos(t),
+    })
+  }
+
+  return {
+    points,
+    labelPosition: { x: attachX + radius + SELF_LOOP_LABEL_GAP, y: midY },
+  }
+}
+
+/**
+ * Append a synthesized `PositionedEdge` for every self-loop
+ * (`edge.source === edge.target`) in `graph.edges` onto `edges`.
+ *
+ * Must run after node positions are final (i.e. after `alignLayerNodes`) —
+ * the loop geometry is derived directly from the node's laid-out
+ * x/y/width/height, so computing it any earlier would have it drift out of
+ * sync with a node that layer-alignment later shifts.
+ */
+function synthesizeSelfLoopEdges(
+  graph: MermaidGraph,
+  nodeMap: Map<string, PositionedNode>,
+  edges: PositionedEdge[],
+): void {
+  const stackIndexByNode = new Map<string, number>()
+
+  for (let index = 0; index < graph.edges.length; index++) {
+    const edge = graph.edges[index]!
+    if (edge.source !== edge.target) continue
+
+    const node = nodeMap.get(edge.source)
+    if (!node) continue
+
+    const stackIndex = stackIndexByNode.get(node.id) ?? 0
+    stackIndexByNode.set(node.id, stackIndex + 1)
+
+    const { points, labelPosition } = buildSelfLoopGeometry(node, stackIndex)
+
+    edges.push({
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      style: edge.style,
+      hasArrowStart: edge.hasArrowStart,
+      hasArrowEnd: edge.hasArrowEnd,
+      points,
+      labelPosition: edge.label ? labelPosition : undefined,
+      inlineStyle: resolveEdgeStyle(index, graph),
+      id: edge.id,
+      animate: edge.animate,
+    })
+  }
+}
+
 /** Recursively flatten all group bounding boxes (including nested children) */
 function flattenGroupBounds(
   groups: PositionedGroup[],
@@ -95,6 +204,14 @@ export function elkToPositioned(
   // edge bundling and clipping recalculate edge paths from corrected positions.
   alignLayerNodes(nodes, edges, graph.direction)
 
+  // Synthesize self-loop edges now that node positions are final. These
+  // were excluded from the graph handed to ELK (see to-elk.ts) since ELK
+  // has no native self-loop layout; must run after alignLayerNodes so the
+  // loop geometry is derived from each node's final, not pre-alignment,
+  // position.
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+  synthesizeSelfLoopEdges(graph, nodeMap, edges)
+
   // Bundle fan-out/fan-in edge paths into shared trunks when mergeEdges is enabled
   if (mergeEdges) {
     bundleEdgePaths(edges, nodes, groups, graph.direction)
@@ -103,7 +220,6 @@ export function elkToPositioned(
   // Apply shape-aware edge clipping for non-rectangular shapes.
   // ELK treats all nodes as rectangles, so we need to clip edge endpoints
   // to the actual shape boundaries (e.g., diamond vertices).
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   for (const edge of edges) {
     const sourceNode = nodeMap.get(edge.source)
     const targetNode = nodeMap.get(edge.target)
