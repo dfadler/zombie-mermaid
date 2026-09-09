@@ -43,6 +43,19 @@ linux/arm64`, `CI=true`, same font-layer assertions
    scored against the suite's own `maxDiffPixelRatio: 0.002` — the exact bar
    the real suite uses to call a mismatch a real failure rather than noise.
 
+**Dimension handling**: `pixelmatch` requires both images to share exact
+dimensions, so it cannot run directly on a size-mismatched pair. For the
+core native-vs-container comparisons in the results table below (A, A2, B),
+every one of the 190 pairs had matching width and height at capture time —
+0/190 dimension mismatches, no padding or resizing needed, `pixelmatch` ran
+directly on all of them. The separate host-caveat comparison further down
+(this measurement host's fresh native capture vs. the already-committed
+`-chromium-darwin.png` baselines) did include dimension-mismatched pairs
+(e.g. `general-2`); those were counted directly as over-threshold mismatches
+without attempting `pixelmatch` on them, rather than padded or resized to a
+common size — a size change is itself evidence of a real difference, not
+something to paper over before comparing.
+
 This is a controlled comparison, not just "native vs. one container run":
 comparing native against _two independent_ container runs, and comparing the
 container runs _against each other_, is what makes it possible to tell a real
@@ -70,7 +83,11 @@ diff (native vs. container run 1) against its own same-platform jitter
 (container run 1 vs. run 2):
 
 - **78/190 samples (41%)** show the cross-platform diff clearly exceeding the
-  container's own run-to-run jitter (by >0.1 percentage points).
+  container's own run-to-run jitter (by >0.1 percentage points) — this is a
+  _relative_ signal (cross-platform diff vs. that sample's own jitter), not
+  the same thing as exceeding the suite's absolute `maxDiffPixelRatio: 0.002`
+  gate; see the results table above for the absolute-threshold counts
+  (43/190 and 30/190).
 - **9/190 samples (4.7%)** show the reverse (jitter exceeds the cross-platform
   diff) — these are the suite's ordinary flaky-sample tail, not evidence
   against the finding.
@@ -143,14 +160,17 @@ OSes is what drives the effect, not this host's specific font-install quirk.
 ## Decision
 
 **Do not consolidate.** A real, systematic, non-noise fraction of SVG samples
-(conservatively, the 78/190 = 41% with a clean signal) render differently
-between native macOS and the containerized Linux run, at a magnitude that
-would fail the suite's own real-regression threshold. Merging
-`-chromium-linux.png` and `-chromium-darwin.png` into one suffix would either
-force the tolerance to be loosened suite-wide (defeating the suite's ability
-to catch real regressions — see `playwright.config.ts`'s own comment on how
-tightly `threshold`/`maxDiffPixelRatio` are already tuned) or produce
-permanent, unfixable flakiness for a large minority of samples.
+render differently between native macOS and the containerized Linux run: 43
+of 190 (22.6%, run 1) and 30 of 190 (15.8%, run 2) exceed the suite's own
+`maxDiffPixelRatio: 0.002` real-regression threshold outright, and 78 of 190
+(41%) show a cross-platform diff that clearly exceeds that specific sample's
+own measured jitter — the two figures answer different questions (absolute
+threshold vs. relative-to-jitter), and both point the same direction.
+Merging `-chromium-linux.png` and `-chromium-darwin.png` into one suffix
+would either force the tolerance to be loosened suite-wide (defeating the
+suite's ability to catch real regressions — see `playwright.config.ts`'s own
+comment on how tightly `threshold`/`maxDiffPixelRatio` are already tuned) or
+produce permanent, unfixable flakiness for a large minority of samples.
 
 **Do not rename to an architecture-based split either.** #545 already
 conclusively ruled out architecture as the driver, for both halves of the
