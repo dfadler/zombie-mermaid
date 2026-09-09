@@ -332,6 +332,9 @@
           </div>
         </div>
       </div>
+      <script>
+        "window.__themeColors = {\"zinc-light\":{\"bg\":\"#FFFFFF\",\"fg\":\"#27272A\"},\"zinc-dark\":{\"bg\":\"#18181B\",\"fg\":\"#FAFAFA\"},\"tokyo-night\":{\"bg\":\"#1a1b26\",\"fg\":\"#a9b1d6\"},\"tokyo-night-storm\":{\"bg\":\"#24283b\",\"fg\":\"#a9b1d6\"},\"tokyo-night-light\":{\"bg\":\"#d5d6db\",\"fg\":\"#343b58\"},\"catppuccin-mocha\":{\"bg\":\"#1e1e2e\",\"fg\":\"#cdd6f4\"},\"catppuccin-latte\":{\"bg\":\"#eff1f5\",\"fg\":\"#4c4f69\"},\"nord\":{\"bg\":\"#2e3440\",\"fg\":\"#d8dee9\"},\"nord-light\":{\"bg\":\"#eceff4\",\"fg\":\"#2e3440\"},\"dracula\":{\"bg\":\"#282a36\",\"fg\":\"#f8f8f2\"},\"github-light\":{\"bg\":\"#ffffff\",\"fg\":\"#1f2328\"},\"github-dark\":{\"bg\":\"#0d1117\",\"fg\":\"#e6edf3\"},\"solarized-light\":{\"bg\":\"#fdf6e3\",\"fg\":\"#657b83\"},\"solarized-dark\":{\"bg\":\"#002b36\",\"fg\":\"#839496\"},\"one-dark\":{\"bg\":\"#282c34\",\"fg\":\"#abb2bf\"}};"
+      </script>
       <div class="section-px" style="padding: 80px;">
         <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 28px;">
           <div class="section-eyebrow">

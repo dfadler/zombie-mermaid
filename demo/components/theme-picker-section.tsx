@@ -20,10 +20,17 @@
  * section just needs to bundle and call `initThemeBar()` once — see
  * `demo/theme-bar-only-client.ts` for the shared bundle entry every plain
  * page (no other client JS of its own) uses for exactly that.
+ *
+ * Also embeds `window.__themeColors` (#772) — the `bg`/`fg` table
+ * `demo/chrome-theme-client.ts`'s `initChromeTheme()` needs to re-theme
+ * Nav/Footer/cards, not just the picker itself. `theme-bar-only-client.ts`
+ * reads it and calls `initChromeTheme()` alongside `initThemeBar()`, so a
+ * page that mounts this section gets both for the price of one bundle.
  */
 import { SectionEyebrow } from './primitives.tsx'
 import { ThemePicker } from './theme-picker.tsx'
 import { LAYOUT, SPACE, LETTER_SPACING, colorVar } from './tokens.tsx'
+import { chromeThemeColorsScript } from '../chrome-theme-data.ts'
 
 export interface ThemePickerSectionProps {
   /** Eyebrow label above the heading. Defaults to `'Pick a look'`. */
@@ -44,45 +51,53 @@ export function ThemePickerSection({
   tinted = false,
 }: ThemePickerSectionProps) {
   return (
-    <div
-      className="section-px"
-      style={{
-        padding: `80px ${LAYOUT.gutter.desktop}px`,
-        ...(tinted
-          ? {
-              background: colorVar('--bg-soft'),
-              borderTop: `1px solid ${colorVar('--border')}`,
-              borderBottom: `1px solid ${colorVar('--border')}`,
-            }
-          : {}),
-      }}
-    >
+    <>
+      <script
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from THEMES (packages/core/src/theme.ts), escaped with escapeJsonForScriptTag; never user input
+        dangerouslySetInnerHTML={{ __html: chromeThemeColorsScript() }}
+      />
       <div
+        className="section-px"
         style={{
-          maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: `${SPACE['4xl']}px`,
+          padding: `80px ${LAYOUT.gutter.desktop}px`,
+          ...(tinted
+            ? {
+                background: colorVar('--bg-soft'),
+                borderTop: `1px solid ${colorVar('--border')}`,
+                borderBottom: `1px solid ${colorVar('--border')}`,
+              }
+            : {}),
         }}
       >
-        <SectionEyebrow>{eyebrow}</SectionEyebrow>
-        <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
-          {heading}
-        </h2>
         <div
-          className="theme-pills"
-          id="theme-pills"
           style={{
+            maxWidth: `${LAYOUT.maxWidth}px`,
+            margin: '0 auto',
             display: 'flex',
-            flexWrap: 'wrap',
-            gap: `${SPACE.md}px`,
-            alignItems: 'flex-start',
+            flexDirection: 'column',
+            gap: `${SPACE['4xl']}px`,
           }}
         >
-          <ThemePicker includeDefault activeThemeKey="" />
+          <SectionEyebrow>{eyebrow}</SectionEyebrow>
+          <h2
+            style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}
+          >
+            {heading}
+          </h2>
+          <div
+            className="theme-pills"
+            id="theme-pills"
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: `${SPACE.md}px`,
+              alignItems: 'flex-start',
+            }}
+          >
+            <ThemePicker includeDefault activeThemeKey="" />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
