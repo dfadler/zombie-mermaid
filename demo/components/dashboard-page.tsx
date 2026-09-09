@@ -186,8 +186,8 @@ export function DashboardPage({
           */}
           <div
             id={DASHBOARD_ROOT_ID}
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
             dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
               __html: renderToString(<DashboardApp viewModel={viewModel} />),
             }}
           />
@@ -195,8 +195,8 @@ export function DashboardPage({
         <script
           type="application/json"
           id={DASHBOARD_PROPS_ELEMENT_ID}
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
           dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
             __html: escapeJsonForScriptTag(JSON.stringify(viewModel)),
           }}
         />

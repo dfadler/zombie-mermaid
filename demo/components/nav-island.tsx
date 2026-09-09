@@ -86,8 +86,8 @@ export function NavIsland({
     <>
       <div
         id={NAV_ROOT_ID}
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own Nav component tree rendered via renderToString (see the module doc comment); never user input
         dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own Nav component tree rendered via renderToString (see the module doc comment); never user input
           __html: renderToString(
             <Nav {...navProps} installSlot={resolvedInstallSlot} />,
           ),
@@ -96,8 +96,8 @@ export function NavIsland({
       <script
         type="application/json"
         id={NAV_PROPS_ELEMENT_ID}
-        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own NavHydrationProps, escaped with escapeJsonForScriptTag; never user input
         dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own NavHydrationProps, escaped with escapeJsonForScriptTag; never user input
           __html: escapeJsonForScriptTag(JSON.stringify(hydrationPayload)),
         }}
       />
