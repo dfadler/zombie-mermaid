@@ -123,7 +123,7 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
       lookForHtml: 'Compare the corners.',
       pr: 43,
       fixCommit: 'def5678',
-      // No upstreamIssues: the `.fix-upstream` span must be absent.
+      // No upstreamIssues: no upstream-issue pill (UpstreamPills) must render.
       render: 'ascii',
       source: 'flowchart TD\n  A --> B',
       before: {
@@ -168,7 +168,21 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
     },
   ]
 
-  it('normalises to the golden DOM', async () => {
+  /**
+   * Renders the full document exactly as fork-fixes.ts's real `generate()`
+   * does, then parses it with `jsdom` (the same tool
+   * helpers/normalize-html.ts already uses, for the same reason: RTL/
+   * jest-dom's matchers key off each element's own `ownerDocument`, so a
+   * standalone `JSDOM` instance queries and asserts correctly without
+   * opting this whole file into `@vitest-environment jsdom` just for this
+   * one describe block).
+   *
+   * zombie-mermaid#820 replaces this block's former whole-page golden
+   * (`toMatchFileSnapshot` against the now-deleted
+   * `fork-fixes-page.normalized.txt`) with per-fix-kind RTL assertions
+   * below — see each `it` for what it covers instead.
+   */
+  function renderDocument(): Document {
     const html = renderHtmlDocument(
       createElement(ForkFixesPage, {
         css: FIXTURE_CSS,
@@ -182,7 +196,99 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
-    await expectGolden(html, './__fixtures__/fork-fixes-page.normalized.txt')
+    return new JSDOM(html).window.document
+  }
+
+  /** The `<section id={fix.id}>` FixSection renders — scopes every query below to one fix, so e.g. "PR #42" from one card can't accidentally satisfy an assertion meant for another. */
+  function fixSection(doc: Document, id: string): HTMLElement {
+    const section = doc.getElementById(id)
+    if (!section) throw new Error(`test setup: #${id} section missing`)
+    return section as HTMLElement
+  }
+
+  // Each `it` below exercises the full ForkFixesPage -> FixSection ->
+  // BeforeAfterPanel -> FixPanel chain against one of fixes[]'s four
+  // fix-kind fixtures, proving the real props shape fork-fixes.ts produces
+  // reaches the page's rendered markup end to end (ids, metadata pills,
+  // upstream-issue pills, and the before/after content together).
+  // __tests__/demo-fork-fixes-page.test.ts already unit-tests FixPanel's
+  // per-kind branches in isolation (every PanelContent kind, both accent
+  // colours) — this file doesn't repeat those per-kind assertions, only the
+  // page-level wiring they don't cover.
+
+  it('renders the svg-kind before/after panels as real <svg> elements, plus its upstream-issue pills', () => {
+    const section = fixSection(renderDocument(), 'svg-fix')
+    const scope = within(section)
+
+    // Both sides of this fix are `{ kind: 'svg', html: ... }` — FixPanel's
+    // svg branch injects that html verbatim into a `.fix-svg` div.
+    const svgs = [...section.querySelectorAll('.fix-svg svg')]
+    expect(svgs).toHaveLength(2)
+    const [beforeSvg, afterSvg] = svgs
+    if (!beforeSvg || !afterSvg)
+      throw new Error('test setup: svg panels missing')
+    expect(beforeSvg).toHaveAttribute('data-before', '1')
+    expect(afterSvg).toHaveAttribute('data-after', '1')
+
+    // This is the one fixture with `upstreamIssues: [7, 9]` — both render
+    // as their own link pill (UpstreamPills in fork-fixes-app.tsx).
+    expect(scope.getByRole('link', { name: 'upstream #7' })).toHaveAttribute(
+      'href',
+      'https://github.com/lukilabs/beautiful-mermaid/issues/7',
+    )
+    expect(scope.getByRole('link', { name: 'upstream #9' })).toBeInTheDocument()
+  })
+
+  it("renders the ascii/error-kind panels' distinguishing content, and omits any upstream-issue pill when none are given", () => {
+    const section = fixSection(renderDocument(), 'ascii-fix')
+    const scope = within(section)
+
+    // before: { kind: 'error', message: ... } — FixPanel's error branch.
+    expect(
+      scope.getByText('Cannot read property "x" of undefined'),
+    ).toBeInTheDocument()
+
+    // after: { kind: 'ascii', html: ... } — ascii-html.ts's own HTML
+    // approximation, injected verbatim; the fixture's glyphs are real text
+    // content of the resulting <pre class="fix-ascii">.
+    expect(section.querySelector('pre.fix-ascii')).not.toBeNull()
+    expect(scope.getByText('+--+')).toBeInTheDocument()
+
+    // No `upstreamIssues` on this fix — the presence/absence check the
+    // pre-RTL golden used to cover: no upstream pill of any kind renders.
+    expect(scope.queryByRole('link', { name: /^upstream #/ })).toBeNull()
+  })
+
+  it("renders the excerpt-kind after panel's text verbatim, and the empty-kind before panel's note", () => {
+    const section = fixSection(renderDocument(), 'excerpt-fix')
+    const scope = within(section)
+
+    // before: { kind: 'empty' }
+    expect(
+      scope.getByText('Rendered nothing — the diagram was dropped entirely.'),
+    ).toBeInTheDocument()
+
+    // after: { kind: 'excerpt', text: '<marker id="arrow"></marker>' } —
+    // React text-escapes this (it's a child, not raw HTML via
+    // dangerouslySetInnerHTML), so the accessible text is the literal
+    // excerpt string, angle brackets and all.
+    expect(scope.getByText('<marker id="arrow"></marker>')).toBeInTheDocument()
+  })
+
+  it('renders the screenshot-kind before/after panels as real, alt-described <img> elements', () => {
+    const section = fixSection(renderDocument(), 'screenshot-fix')
+    const scope = within(section)
+
+    expect(
+      scope.getByAltText(
+        'before terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`',
+      ),
+    ).toHaveAttribute('src', 'fork-fixes-screenshots/screenshot-fix-before.png')
+    expect(
+      scope.getByAltText(
+        'after terminal output of `zombie-mermaid render screenshot-fix.mmd --ascii`',
+      ),
+    ).toHaveAttribute('src', 'fork-fixes-screenshots/screenshot-fix-after.png')
   })
 })
 
