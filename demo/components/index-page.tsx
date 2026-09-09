@@ -1995,7 +1995,7 @@ export function IndexPage({
           Skip to content
         </a>
         <NavIsland
-          homeHref="index.html"
+          homeHref="/zombie-mermaid/"
           hrefs={{
             diagrams: 'diagrams/',
             editor: 'editor.html',
