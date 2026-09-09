@@ -1,597 +1,1933 @@
 /** @jsxRuntime automatic */
 /**
- * The sample gallery (index.ts → index.html) as React components — the
- * largest page in #589's move of every site generator off template-literal
- * HTML.
+ * The home page (index.ts → index.html) as the site redesign's actual
+ * marketing landing page (#598, part of the #590 "Diagram-Native Showcase"
+ * redesign).
  *
- * Pure functions of already-computed data. index.ts keeps everything that
- * needs I/O or a build step — reading and re-indenting the stylesheet,
- * building the JSON-LD block, bundling src/browser.ts and demo/client.ts,
- * and pre-highlighting every sample's source with shiki — and hands the
- * results here. The page stays a static document: the interactivity is
- * demo/client.ts, still a separately bundled vanilla script this shell
- * splices into one `<script type="module">` (see
- * docs/decisions/react-site-migration-plan.md — demo/client.ts's own
- * migration is explicitly out of scope for #589).
+ * Until #598 this file rendered the interactive sample gallery — every
+ * shape, edge type, and theme variant, rendered client-side for browsing.
+ * That gallery's job (letting a visitor browse every sample/theme
+ * combination) now belongs to the Diagrams hub (#599's `/diagrams/`) and the
+ * Editor (`editor.html`); this file is the page that sends a first-time
+ * visitor to those, not the page that replaces them. Nothing here bundles
+ * `src/browser.ts`, calls shiki, or ships `demo/client.ts` — the whole page
+ * is static markup with CSS animations, matching the design canvas.
  *
- * Three things arrive as raw HTML and are spliced in with
- * `dangerouslySetInnerHTML`: shiki's highlighted source, `formatDescription`'s
- * `<code>`-annotated prose, and the bundled scripts. All three are build-time
- * output of this repo's own tooling over files under version control, never
- * user input. Each is attached to the element that already carries the class
- * it needs, so no extra wrapper element is introduced.
+ * Layout, copy, and every colour/measurement below come from the design
+ * canvas linked in #590's body
+ * (`https://claude.ai/code/artifact/2f623662-5eaf-42c4-9fd9-c21588e34993`),
+ * specifically its `Main.dc.html` (desktop) / `MainMobile.dc.html` (mobile)
+ * artboards — the two are byte-identical, so the responsive behaviour lives
+ * entirely in the shared component `*Css()` functions and {@link homePageCss}'s
+ * `@media` blocks, not in a second markup path. Three deliberate deviations
+ * from the canvas, all made to keep the page honest rather than decorative:
+ *
+ * - The theme showcase renders five *real* built-in themes (dracula,
+ *   tokyo-night, solarized-light, nord, catppuccin-mocha — see
+ *   {@link SHOWCASE_THEMES}) with their actual `packages/core/src/theme.ts`
+ *   colours, not the canvas's five invented names ("Neon", "Pastel", …).
+ * - The proof/maintenance numbers are the real snapshot from
+ *   `demo/dashboard-data.json` (0 days / 334 merged / 1 open vs. upstream's
+ *   124 days / 13 merged / 37 open, as of its own `generatedAt`), not the
+ *   canvas's placeholder 0/178/5 vs. 117/13/37 — see {@link PROOF_SNAPSHOT}.
+ * - The blog teaser is the real current newest post
+ *   (`blog-posts/294-prs-14-days.md`), not the canvas's invented post — see
+ *   {@link LATEST_POST}.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { ReactNode } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
-import { FontLinks, FORK_URL, GitHubMarkIcon } from './site-chrome.tsx'
-import { ThemePicker } from './theme-picker.tsx'
+import { FORK_URL } from './site-chrome.tsx'
+import { Nav, navCss } from './nav.tsx'
+import { Footer, footerCss, type FooterColumn } from './footer.tsx'
+import {
+  CheckIcon,
+  ChecklistIcon,
+  ICONS,
+  LockIcon,
+  LogoMark,
+  TerminalIcon,
+  FEATURE_ICONS,
+} from './icons.tsx'
+import {
+  Card,
+  CTA,
+  Pill,
+  SectionEyebrow,
+  primitivesCss,
+} from './primitives.tsx'
+import {
+  DesignFontLinks,
+  FONT_SIZE,
+  FONT_WEIGHT,
+  LAYOUT,
+  LETTER_SPACING,
+  MEDIA,
+  SECTION_SPACE,
+  SPACE,
+  colorVar,
+  designBaseCss,
+} from './tokens.tsx'
 
 const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
-const MERMAID_ASCII_URL = 'https://github.com/AlexanderGrooff/mermaid-ascii'
+const NPM_INSTALL_COMMAND = 'npm install zombie-mermaid'
+const SITE_URL = 'https://dfadler.github.io/zombie-mermaid/'
+const OG_IMAGE_URL = 'https://dfadler.github.io/zombie-mermaid/og-image.png'
+const PLAUSIBLE_DOMAIN = 'dfadler.github.io/zombie-mermaid'
 
-/** One entry in a sidebar category group. */
-export interface SidebarItem {
-  /** The sample's index in samples-data.ts, used for the `#sample-N` anchor. */
-  index: number
-  /** The number shown to the reader, which skips the Hero samples. */
-  displayNum: number
-  /** The sample's title, with its redundant category prefix stripped. */
-  title: string
-}
-
-/** One regular (non-Hero) sample card. */
-export interface SampleCard {
-  index: number
-  title: string
-  /** `description` run through `formatDescription` (backticks → `<code>`). */
-  descriptionHtml: string
-  /** shiki's highlighted Mermaid source, fences already stripped. */
-  highlightedSourceHtml: string
-  /** `JSON.stringify(sample.options)`, or null when the sample has none. */
-  optionsJson: string | null
-  /** `options.bg`, stored for "Default" theme restoration; '' when unset. */
-  bg: string
-}
-
-/** One category: its sidebar group and its (initially hidden) card view. */
-export interface CategorySection {
-  label: string
-  slug: string
-  items: SidebarItem[]
-  cards: SampleCard[]
-}
-
-/** The Hero sample's before/after showcase. */
-export interface HeroCard {
-  index: number
-  /** shiki's highlighted Hero source, in the github-dark theme. */
-  codeHtml: string
-  bg: string
-}
+/* -----------------------------------------------------------------
+ * Content: real repo data, not invented copy
+ * ----------------------------------------------------------------- */
 
 /**
- * The sidebar: one collapsible group per category, each listing its samples.
+ * Five real built-in themes (from `packages/core/src/theme.ts`) for the
+ * theme showcase, each with the colours the showcase card actually draws:
+ * `node` for the two rectangle strokes, `edge` for the connecting path and
+ * the label ink. Picked for visual spread (three dark, two light) rather
+ * than any particular ordering in `THEMES` itself.
+ */
+const SHOWCASE_THEMES = [
+  {
+    key: 'dracula',
+    label: 'Dracula',
+    bg: '#282a36',
+    node: '#6272a4',
+    edge: '#bd93f9',
+  },
+  {
+    key: 'tokyo-night',
+    label: 'Tokyo Night',
+    bg: '#1a1b26',
+    node: '#3d59a1',
+    edge: '#7aa2f7',
+  },
+  {
+    key: 'solarized-light',
+    label: 'Solarized',
+    bg: '#fdf6e3',
+    node: '#93a1a1',
+    edge: '#268bd2',
+  },
+  {
+    key: 'nord',
+    label: 'Nord',
+    bg: '#2e3440',
+    node: '#4c566a',
+    edge: '#88c0d0',
+  },
+  {
+    key: 'catppuccin-mocha',
+    label: 'Catppuccin',
+    bg: '#1e1e2e',
+    node: '#585b70',
+    edge: '#cba6f7',
+  },
+] as const
+
+/** The six diagram types the gallery teaser links to, and their `/diagrams/` routes. */
+const GALLERY_TYPES = [
+  { slug: 'flowchart', label: 'Flowchart' },
+  { slug: 'state', label: 'State' },
+  { slug: 'sequence', label: 'Sequence' },
+  { slug: 'class', label: 'Class' },
+  { slug: 'er', label: 'ER' },
+  { slug: 'xy-chart', label: 'XY Chart' },
+] as const
+
+/**
+ * Feature-grid copy, paired with {@link FEATURE_ICONS}'s six entries by
+ * index. Paraphrases the README's own "Features" bullets (dual output, 15
+ * built-in themes, full Shiki compatibility, mono mode, zero DOM
+ * dependencies, synchronous rendering) rather than inventing marketing copy.
+ */
+const FEATURE_COPY = [
+  'SVG for rich UIs, ASCII/Unicode for terminals — mermaid.js itself has no real terminal story.',
+  'Live theme switching via CSS custom properties — no re-render needed, ever.',
+  'Reuse the same VS Code themes your editor already renders code with.',
+  'Full diagrams rendered from just two colors, when that’s all you’ve got.',
+  'Pure TypeScript. Works in the browser, on the server, or anywhere else.',
+  'No async, no flash of unstyled diagram — drops straight into React’s useMemo().',
+] as const
+
+/**
+ * The real fork-vs-upstream snapshot from `demo/dashboard-data.json`
+ * (`generatedAt: "2026-09-07T19:17:01.680Z"`), computed the same way
+ * `demo/dashboard-model.ts` computes "days since last commit": whole days
+ * from a repo's `lastPushedAt` to the snapshot's own `generatedAt`. See the
+ * Dashboard page (`dashboard.html`) for the live, refreshed numbers — this
+ * snapshot is deliberately captioned as a snapshot, not live data.
+ */
+const PROOF_SNAPSHOT = {
+  asOf: 'Sep 7, 2026',
+  fork: { daysSinceCommit: 0, mergedPRs: 334, openPRs: 1 },
+  upstream: { daysSinceCommit: 124, mergedPRs: 13, openPRs: 37 },
+  rescuedFixCount: 27,
+} as const
+
+/**
+ * The real current newest post (`blog-posts/294-prs-14-days.md`), picked by
+ * the same rule `blog.ts`'s `loadPosts()` uses (newest `date`, ties broken
+ * by directory read order) rather than invented.
+ */
+const LATEST_POST = {
+  slug: '294-prs-14-days',
+  title:
+    '294 PRs, 14 Days — What Agent-Driven OSS Maintenance Actually Looks Like',
+  displayDate: 'Sep 6, 2026',
+  description:
+    'The real daily merge-count histogram behind two weeks of reviving a dead fork — not the rounder number the tracking issue guessed — and what it does and doesn’t tell you about agent-driven maintenance.',
+} as const
+
+/* -----------------------------------------------------------------
+ * Page-specific CSS: the responsive rules and animations the canvas
+ * defines that aren't already covered by tokens.tsx / primitives.tsx /
+ * nav.tsx / footer.tsx's own `*Css()` functions.
+ * ----------------------------------------------------------------- */
+
+/**
+ * Keyframes for the six per-diagram-type gallery animations plus the
+ * shared "marching ants" edge animation, transcribed from Main.dc.html's
+ * helmet style block — each keyed to what that diagram type actually shows
+ * in motion (a state diagram's radar ping, a sequence diagram's message
+ * flow, an ER diagram's relationship pulse, …), plus this page's own
+ * hero/section responsive rules. Every animation is disabled under
+ * `prefers-reduced-motion: reduce`.
  *
- * The first category is the default active/expanded one — matching the
- * category view shown on initial load, before JS reads location.hash.
+ * Emit once, after `designBaseCss()`, `primitivesCss()`, `navCss()`, and
+ * `footerCss()` — this page's `<style>` order in {@link IndexPage}.
  */
-export function Sidebar({ categories }: { categories: CategorySection[] }) {
-  return (
-    <nav className="sidebar" id="sidebar" aria-label="Sample navigation">
-      <div className="sidebar-search">
-        <label htmlFor="sample-search" className="visually-hidden">
-          Search samples by title, diagram type, or description
-        </label>
-        <div className="sidebar-search-field">
-          <svg
-            className="sidebar-search-icon"
-            aria-hidden="true"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          >
-            <circle cx="7" cy="7" r="5" />
-            <line x1="10.8" y1="10.8" x2="14.5" y2="14.5" />
-          </svg>
-          <input
-            type="search"
-            id="sample-search"
-            className="sidebar-search-input"
-            placeholder="Search samples…"
-            autoComplete="off"
-            spellCheck="false"
-          />
-          <button
-            type="button"
-            className="sidebar-search-clear"
-            id="sidebar-search-clear"
-            aria-label="Clear search"
-            hidden
-          >
-            ×
-          </button>
-        </div>
-        <div
-          className="sidebar-search-status"
-          id="sidebar-search-status"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        />
-      </div>
-      {categories.map((category, categoryIndex) => (
-        <details
-          className="sidebar-group"
-          data-category-slug={category.slug}
-          data-category-label={category.label}
-          open={categoryIndex === 0}
-          key={category.slug}
-        >
-          <summary>
-            {category.label}{' '}
-            <span className="sidebar-group-count">
-              ({category.items.length})
-            </span>
-          </summary>
-          <ol className="sidebar-list" start={category.items[0]?.displayNum}>
-            {category.items.map((item) => (
-              <li key={item.index}>
-                <a href={`#sample-${item.index}`}>
-                  <span className="sidebar-num">{item.displayNum}.</span>{' '}
-                  {item.title}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </details>
-      ))}
-    </nav>
-  )
+function homePageCss(): string {
+  return `body {
+  background: linear-gradient(180deg, ${colorVar('--bg')} 0%, #0d1120 40%, ${colorVar('--bg')} 100%);
+  overflow-x: hidden;
 }
 
-/**
- * The Hero sample: its raw source (left/top) transforming into the live,
- * theme-reactive rendered diagram (right/bottom) — no header or ASCII panel,
- * since this is a showcase, not a browsable sample.
- */
-export function HeroSample({ card }: { card: HeroCard }) {
-  const gradientId = `hero-arrow-grad-${card.index}`
-  return (
-    <section className="sample sample-hero" id={`sample-${card.index}`}>
-      <div className="hero-transform">
-        <div className="hero-code-panel">
-          <div className="hero-code-titlebar">
-            <span className="hero-code-dots">
-              <span className="dot dot-red" />
-              <span className="dot dot-yellow" />
-              <span className="dot dot-green" />
-            </span>
-            <span className="hero-code-title">pipeline.mmd</span>
-          </div>
-          <div
-            className="hero-code-body"
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- shiki output for a build-time sample in samples-data.ts, never user input
-            dangerouslySetInnerHTML={{ __html: card.codeHtml }}
-          />
-        </div>
-        <div className="hero-arrow" aria-hidden="true">
-          <span className="hero-arrow-caption">renders as</span>
-          <svg className="hero-arrow-icon" viewBox="0 0 56 56" fill="none">
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#9570BE" />
-                <stop offset="1" stopColor="#3b82f6" />
-              </linearGradient>
-            </defs>
-            <line
-              x1="4"
-              y1="28"
-              x2="44"
-              y2="28"
-              stroke={`url(#${gradientId})`}
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              className="hero-arrow-dash"
-            />
-            <path
-              d="M36 16 L52 28 L36 40"
-              stroke={`url(#${gradientId})`}
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
-        </div>
-        <div
-          className="hero-diagram-panel"
-          id={`svg-panel-${card.index}`}
-          data-sample-bg={card.bg}
-        >
-          <div className="svg-container" id={`svg-${card.index}`}>
-            <div className="loading-spinner" />
-          </div>
-          <div className="hero-tag-row">
-            <span className="hero-tag">SVG</span>
-            <span className="hero-tag">ASCII</span>
-            <span className="hero-tag hero-tag-brand">16 Themes</span>
-            <span className="hero-tag">Animated Edges</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: ${SPACE.md}px ${SPACE.xl}px;
+  background: ${colorVar('--panel')};
+  color: ${colorVar('--text')};
+}
+.skip-link:focus {
+  left: ${SPACE.xl}px;
+  top: ${SPACE.xl}px;
 }
 
-/**
- * The source panel's inner markup.
- *
- * shiki's highlighted `<pre>` is a raw HTML string and has siblings, and
- * `dangerouslySetInnerHTML` can't be combined with JSX children — so the
- * siblings are rendered to markup here and concatenated, rather than
- * wrapping either half in an extra element the CSS doesn't expect.
- */
-function sourcePanelInnerHtml(card: SampleCard): string {
-  const siblings = renderToStaticMarkup(
-    <>
-      {card.optionsJson === null ? null : (
-        <div className="options">
-          <strong>Options:</strong> <code>{card.optionsJson}</code>
-        </div>
-      )}
-      <button className="edit-btn" data-sample={card.index}>
-        Edit
-      </button>
-    </>,
-  )
-  return `${card.highlightedSourceHtml}${siblings}`
+@keyframes marchingAnts { to { stroke-dashoffset: -24; } }
+.edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }
+
+@keyframes radarPing {
+  0% { r: 14; opacity: 0.55; stroke-width: 2; }
+  100% { r: 27; opacity: 0; stroke-width: 0.5; }
+}
+.radar-ping { transform-origin: center; animation: radarPing 1.8s ease-out infinite; }
+
+@keyframes msgFlowRight { to { stroke-dashoffset: -16; } }
+@keyframes msgFlowLeft { to { stroke-dashoffset: 16; } }
+.msg-flow-right { stroke-dasharray: 4 4; animation: msgFlowRight 1.1s linear infinite; }
+.msg-flow-left { stroke-dasharray: 4 4; animation: msgFlowLeft 1.1s linear 0.55s infinite; }
+
+@keyframes drawLine {
+  0% { stroke-dashoffset: 56; }
+  55%, 100% { stroke-dashoffset: 0; }
+}
+.draw-line { stroke-dasharray: 56; animation: drawLine 2.8s ease-in-out infinite; }
+
+@keyframes relationPulse {
+  0%, 100% { opacity: 0.45; stroke-width: 2; }
+  50% { opacity: 1; stroke-width: 3; }
+}
+.relation-pulse { transform-origin: center; animation: relationPulse 1.8s ease-in-out infinite; }
+
+@keyframes barGrow {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.4); }
+}
+.bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }
+
+${MEDIA.reducedMotion} {
+  .edge-anim { animation: none; }
+  .radar-ping { animation: none; opacity: 0; }
+  .msg-flow-right { animation: none; }
+  .msg-flow-left { animation: none; }
+  .draw-line { animation: none; stroke-dashoffset: 0; }
+  .relation-pulse { animation: none; }
+  .bar-grow { animation: none; transform: scaleY(1); }
 }
 
-/** One regular sample: source on one side, SVG/ASCII output on the other. */
-export function SampleSection({ card }: { card: SampleCard }) {
-  return (
-    <section className="sample" id={`sample-${card.index}`}>
-      <div className="sample-header">
-        <h2>{card.title}</h2>
-        <p
-          className="description"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- formatDescription output for build-time prose in samples-data.ts, never user input
-          dangerouslySetInnerHTML={{ __html: card.descriptionHtml }}
-        />
-      </div>
-      <div className="sample-content">
-        <div
-          className="source-panel"
-          id={`source-panel-${card.index}`}
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- shiki output plus this file's own rendered markup; see sourcePanelInnerHtml
-          dangerouslySetInnerHTML={{ __html: sourcePanelInnerHtml(card) }}
-        />
-        <div className="output-panel">
-          <div className="output-head">
-            <div className="seg" role="tablist" aria-label="Output format">
-              <button
-                type="button"
-                className="seg-btn"
-                data-view="svg"
-                role="tab"
-                aria-selected="true"
-              >
-                SVG
-              </button>
-              <button
-                type="button"
-                className="seg-btn"
-                data-view="ascii"
-                role="tab"
-                aria-selected="false"
-              >
-                ASCII
-              </button>
-            </div>
-          </div>
-          <div className="output-stage">
-            <div
-              className="svg-panel is-active"
-              id={`svg-panel-${card.index}`}
-              data-sample-bg={card.bg}
-            >
-              <div className="svg-container" id={`svg-${card.index}`}>
-                <div className="loading-spinner" />
-              </div>
-            </div>
-            <div className="ascii-panel" id={`ascii-panel-${card.index}`}>
-              <div className="terminal-window">
-                <div className="terminal-titlebar">
-                  <span className="terminal-dots" aria-hidden="true">
-                    <span className="terminal-dot terminal-dot-red" />
-                    <span className="terminal-dot terminal-dot-yellow" />
-                    <span className="terminal-dot terminal-dot-green" />
-                  </span>
-                  <span className="terminal-title">ascii</span>
-                </div>
-                <pre className="ascii-output">
-                  <code id={`ascii-${card.index}`}>Rendering…</code>
-                  <span className="terminal-cursor" aria-hidden="true">
-                    &nbsp;
-                  </span>
-                </pre>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
+${MEDIA.tablet} {
+  .hero-row { flex-direction: column !important; align-items: flex-start !important; padding: 64px 24px 72px 24px !important; gap: 40px !important; }
+  .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }
+  .hero-copy p { max-width: 100% !important; }
+  .hero-visual { flex: 1 1 auto !important; width: 100% !important; max-width: 560px; }
+  .theme-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .feature-connectors { display: none !important; }
+  .feature-grid-wrap { height: auto !important; }
+  .feature-grid { grid-template-columns: 1fr 1fr !important; grid-template-rows: none !important; }
+  .cli-mcp-row { flex-direction: column !important; }
+  .gallery-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .proof-grid { grid-template-columns: 1fr !important; }
 }
 
-/** The gallery's own footer — a single GitHub mark rather than a link row. */
-export function GalleryFooter() {
-  return (
-    <footer className="site-footer">
-      <span>&copy; 2026 zombie-mermaid</span>
-      <div className="footer-links">
-        <a href={FORK_URL} target="_blank" rel="noopener noreferrer">
-          <GitHubMarkIcon />
-        </a>
-      </div>
-    </footer>
-  )
+${MEDIA.mobile} {
+  .hero-row { padding: 48px 20px 56px 20px !important; }
+  .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
+  .theme-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .feature-grid { grid-template-columns: 1fr !important; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
+  .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
+  .blog-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
+  .blog-teaser-inner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
+}`
 }
 
-function HeroButtonIcon({ children }: { children: ReactNode }) {
+/* -----------------------------------------------------------------
+ * Hero
+ * ----------------------------------------------------------------- */
+
+/** The hero's hand-drawn terminal→diagram transform illustration. */
+function HeroVisual() {
   return (
     <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      viewBox="0 0 700 460"
+      width="100%"
+      height="auto"
+      style={{ display: 'block' }}
     >
-      {children}
+      <rect
+        x="20"
+        y="50"
+        width="260"
+        height="320"
+        rx="16"
+        fill={colorVar('--panel')}
+        stroke={colorVar('--border')}
+        strokeWidth="1.5"
+      />
+      <circle cx="42" cy="72" r="5" fill="#ff6767" />
+      <circle cx="60" cy="72" r="5" fill="#ffc85c" />
+      <circle cx="78" cy="72" r="5" fill="#5ee08a" />
+      <text
+        x="36"
+        y="110"
+        className="mono"
+        fontSize="13"
+        fill={colorVar('--text-faint')}
+      >
+        graph TD
+      </text>
+      <text
+        x="36"
+        y="136"
+        className="mono"
+        fontSize="13"
+        fill={colorVar('--text-dim')}
+      >
+        {'  Start --> '}
+        <tspan fill={colorVar('--violet')}>Deploy</tspan>
+        {'{Deploy?}'}
+      </text>
+      <text
+        x="36"
+        y="162"
+        className="mono"
+        fontSize="13"
+        fill={colorVar('--text-dim')}
+      >
+        {'  Deploy -->|'}
+        <tspan fill={colorVar('--green')}>yes</tspan>
+        {'| '}
+        <tspan fill={colorVar('--amber')}>Ship</tspan>
+        {'[Ship it]'}
+      </text>
+      <text
+        x="36"
+        y="188"
+        className="mono"
+        fontSize="13"
+        fill={colorVar('--text-dim')}
+      >
+        {'  Deploy -->|'}
+        <tspan fill={colorVar('--pink')}>no</tspan>
+        {'| '}
+        <tspan fill={colorVar('--amber')}>Iterate</tspan>
+        {'[Iterate]'}
+      </text>
+
+      <path
+        d="M300 210 L392 210"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2.5"
+        fill="none"
+        className="edge-anim"
+        markerEnd="url(#arrowCyan)"
+      />
+
+      <rect
+        x="430"
+        y="50"
+        width="140"
+        height="50"
+        rx="25"
+        fill={colorVar('--blue')}
+      />
+      <text
+        x="500"
+        y="80"
+        textAnchor="middle"
+        fontSize="14"
+        fontWeight="700"
+        fill="#081018"
+      >
+        Start
+      </text>
+
+      <path
+        d="M500 100 L500 140"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2.5"
+        fill="none"
+        className="edge-anim"
+        markerEnd="url(#arrowCyan)"
+      />
+
+      <polygon
+        points="500,140 565,175 500,210 435,175"
+        fill={colorVar('--violet')}
+      />
+      <text
+        x="500"
+        y="180"
+        textAnchor="middle"
+        fontSize="13"
+        fontWeight="700"
+        fill={colorVar('--bg')}
+      >
+        Deploy?
+      </text>
+
+      <path
+        d="M435 175 C 390 225 410 265 442 298"
+        stroke={colorVar('--green')}
+        strokeWidth="2.5"
+        fill="none"
+        className="edge-anim"
+        markerEnd="url(#arrowGreen)"
+      />
+      <text
+        x="378"
+        y="240"
+        fontSize="12"
+        fill={colorVar('--green')}
+        className="mono"
+      >
+        yes
+      </text>
+
+      <path
+        d="M565 175 C 610 225 592 265 606 298"
+        stroke={colorVar('--pink')}
+        strokeWidth="2.5"
+        fill="none"
+        className="edge-anim"
+        markerEnd="url(#arrowPink)"
+      />
+      <text
+        x="600"
+        y="240"
+        fontSize="12"
+        fill={colorVar('--pink')}
+        className="mono"
+      >
+        no
+      </text>
+
+      <rect
+        x="382"
+        y="300"
+        width="130"
+        height="50"
+        rx="12"
+        fill={colorVar('--green')}
+      />
+      <text
+        x="447"
+        y="330"
+        textAnchor="middle"
+        fontSize="14"
+        fontWeight="700"
+        fill="#081018"
+      >
+        Ship it
+      </text>
+
+      <rect
+        x="546"
+        y="300"
+        width="130"
+        height="50"
+        rx="12"
+        fill={colorVar('--pink')}
+      />
+      <text
+        x="611"
+        y="330"
+        textAnchor="middle"
+        fontSize="14"
+        fontWeight="700"
+        fill="#2a0a18"
+      >
+        Iterate
+      </text>
+
+      <defs>
+        <marker
+          id="arrowCyan"
+          markerWidth="8"
+          markerHeight="8"
+          refX="6"
+          refY="4"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 Z" fill={colorVar('--cyan')} />
+        </marker>
+        <marker
+          id="arrowGreen"
+          markerWidth="8"
+          markerHeight="8"
+          refX="6"
+          refY="4"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 Z" fill={colorVar('--green')} />
+        </marker>
+        <marker
+          id="arrowPink"
+          markerWidth="8"
+          markerHeight="8"
+          refX="6"
+          refY="4"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 Z" fill={colorVar('--pink')} />
+        </marker>
+      </defs>
     </svg>
   )
 }
 
-/** The page header: title, tagline, the row of entry-point buttons, meta. */
-export function HeroHeader() {
+/** Headline, subhead, the animated terminal→diagram visual, and the CTAs. */
+function Hero() {
   return (
-    <header className="hero-header">
-      <h1 className="hero-title">Zombie Mermaid</h1>
-      <p className="hero-tagline">Mermaid Rendering, made beautiful.</p>
-      <p className="hero-description">
-        An open source library for rendering diagrams, designed for the age of
-        AI:{' '}
-        <a href={NPM_URL} target="_blank" rel="noopener">
-          <code>zombie-mermaid</code>
-        </a>
-        . Ultra-fast, fully themeable, and outputs to both SVG and ASCII.
-      </p>
-      <div className="hero-buttons">
-        <a href="editor" id="editor-link" className="hero-btn hero-btn-primary">
-          <HeroButtonIcon>
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-          </HeroButtonIcon>
-          {' Editor '}
-        </a>
-        <a
-          href={FORK_URL}
-          target="_blank"
-          rel="noopener"
-          className="hero-btn hero-btn-secondary"
+    <div
+      className="hero-row"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: `${SPACE['7xl']}px`,
+        padding: `${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px`,
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <div
+        className="hero-copy"
+        style={{
+          flex: '0 1 500px',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE['3xl']}px`,
+        }}
+      >
+        <SectionEyebrow>
+          An actively maintained fork of beautiful-mermaid
+        </SectionEyebrow>
+        <h1
+          className="hero-h1"
+          style={{
+            fontSize: '56px',
+            lineHeight: 1.08,
+            letterSpacing: LETTER_SPACING.display,
+          }}
         >
-          <GitHubMarkIcon />
-          {' GitHub '}
-        </a>
-        <a href="fork-fixes.html" className="hero-btn hero-btn-secondary">
-          <HeroButtonIcon>
-            <path d="M9 11l3 3L22 4" />
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-          </HeroButtonIcon>
-          {' What this fork fixes '}
-        </a>
-        <a href="diagrams/" className="hero-btn hero-btn-secondary">
-          <HeroButtonIcon>
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </HeroButtonIcon>
-          {' Browse every diagram type '}
-        </a>
-        <a href="blog/" className="hero-btn hero-btn-secondary">
-          <HeroButtonIcon>
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <path d="M14 2v6h6" />
-            <line x1="8" y1="13" x2="16" y2="13" />
-            <line x1="8" y1="17" x2="16" y2="17" />
-          </HeroButtonIcon>
-          {' Blog '}
-        </a>
-        <a href="dashboard.html" className="hero-btn hero-btn-secondary">
-          <HeroButtonIcon>
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
-          </HeroButtonIcon>
-          {' Maintenance dashboard '}
-        </a>
-      </div>
-      <div className="hero-meta">
-        <p className="meta" id="total-timing">
-          Rendering samples…
+          Your diagrams deserve more than one gray theme.
+        </h1>
+        <p
+          style={{
+            fontSize: '19px',
+            lineHeight: 1.6,
+            color: colorVar('--text-dim'),
+            maxWidth: '480px',
+          }}
+        >
+          zombie-mermaid renders Mermaid syntax into beautiful SVG or ASCII art
+          — with 15 live-switchable themes, animated edges, and zero re-renders,
+          right where AI-assisted coding happens.
         </p>
-        <div className="meta">
-          ASCII rendering based on{' '}
-          <a href={MERMAID_ASCII_URL} target="_blank" rel="noopener">
-            Mermaid-ASCII
-          </a>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: `${SPACE['2xl']}px`,
+            marginTop: `${SPACE.md}px`,
+          }}
+        >
+          <Pill
+            mono
+            style={{
+              background: colorVar('--panel'),
+              border: `1px solid ${colorVar('--border')}`,
+              color: colorVar('--text'),
+            }}
+          >
+            <CheckIcon size={14} color="var(--green)" strokeWidth={2.4} />
+            <span>{NPM_INSTALL_COMMAND}</span>
+          </Pill>
+          <CTA href="editor.html" accent="violet">
+            View the live demo
+          </CTA>
         </div>
-        <div className="meta">Early preview — actively evolving</div>
       </div>
-    </header>
+
+      <div
+        className="hero-visual"
+        style={{ flex: '0 1 700px', minWidth: 0, maxWidth: '100%' }}
+      >
+        <HeroVisual />
+      </div>
+    </div>
   )
 }
 
-/** The navigation + theme bar pinned to the top of the gallery. */
-export function GalleryThemeBar() {
+/* -----------------------------------------------------------------
+ * Theme showcase
+ * ----------------------------------------------------------------- */
+
+/** One theme's card: the same two-node/one-edge shape, wearing that theme's real colours. */
+function ThemeCard({ theme }: { theme: (typeof SHOWCASE_THEMES)[number] }) {
   return (
-    <div className="theme-bar" id="theme-bar">
-      <button
-        className="sidebar-toggle shadow-minimal"
-        id="sidebar-toggle"
-        aria-label="Toggle sample navigation"
-        aria-controls="sidebar"
-        aria-expanded="false"
+    <Card padding={20} style={{ background: theme.bg }}>
+      <svg viewBox="0 0 160 90" width="100%" height="90">
+        <rect
+          x="10"
+          y="15"
+          width="60"
+          height="34"
+          rx="10"
+          fill="none"
+          stroke={theme.node}
+          strokeWidth="2"
+        />
+        <rect
+          x="90"
+          y="42"
+          width="60"
+          height="34"
+          rx="10"
+          fill="none"
+          stroke={theme.edge}
+          strokeWidth="2"
+        />
+        <path
+          d="M60 40 L100 55"
+          stroke={theme.edge}
+          strokeWidth="2"
+          className="edge-anim"
+          fill="none"
+        />
+      </svg>
+      <p
+        style={{
+          marginTop: `${SPACE.lg}px`,
+          fontSize: `${FONT_SIZE.bodySm}px`,
+          fontWeight: FONT_WEIGHT.bold,
+          textAlign: 'center',
+          color: theme.edge,
+        }}
+      >
+        {theme.label}
+      </p>
+    </Card>
+  )
+}
+
+/** Same diagram shape, five real built-in themes — proving live theme range. */
+function ThemeShowcase() {
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: '100px 80px',
+        background: colorVar('--bg-soft'),
+        borderTop: `1px solid ${colorVar('--border')}`,
+        borderBottom: `1px solid ${colorVar('--border')}`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `0 auto ${SPACE['6xl']}px auto`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <SectionEyebrow>Same diagram, 15 built-in themes</SectionEyebrow>
+        <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
+          Pick a theme. Switch it live — no re-render.
+        </h2>
+        <p
+          style={{
+            fontSize: `${FONT_SIZE.lead}px`,
+            color: colorVar('--text-dim'),
+            maxWidth: `${LAYOUT.proseMaxWidth}px`,
+          }}
+        >
+          Themes are pure CSS custom properties, so switching one is instant.
+          Here are five of the fifteen — the same node-and-edge shape wearing
+          five different looks.
+        </p>
+      </div>
+
+      <div
+        className="theme-grid"
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          gap: `${SPACE['4xl']}px`,
+        }}
+      >
+        {SHOWCASE_THEMES.map((theme) => (
+          <ThemeCard theme={theme} key={theme.key} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* -----------------------------------------------------------------
+ * Feature grid
+ * ----------------------------------------------------------------- */
+
+/** Six real features, six connectors — the canvas's node-graph feature grid. */
+function FeatureGrid() {
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: `${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto 72px auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <SectionEyebrow>Built for how diagrams get used now</SectionEyebrow>
+        <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
+          Six nodes, one rendering engine.
+        </h2>
+      </div>
+
+      <div
+        className="feature-grid-wrap"
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          position: 'relative',
+          height: '464px',
+        }}
       >
         <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
+          className="feature-connectors"
+          viewBox="0 0 1280 464"
+          width="1280"
+          height="464"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 0,
+            maxWidth: '100%',
+          }}
         >
-          <line x1="2" y1="4" x2="14" y2="4" />
-          <line x1="2" y1="8" x2="14" y2="8" />
-          <line x1="2" y1="12" x2="14" y2="12" />
+          <path
+            d="M197 100 L639 100"
+            stroke={colorVar('--blue')}
+            strokeWidth="2.5"
+            className="edge-anim"
+            fill="none"
+          />
+          <path
+            d="M639 100 L1081 100"
+            stroke={colorVar('--violet')}
+            strokeWidth="2.5"
+            className="edge-anim"
+            fill="none"
+          />
+          <path
+            d="M1081 100 L1081 364"
+            stroke={colorVar('--cyan')}
+            strokeWidth="2.5"
+            className="edge-anim"
+            fill="none"
+          />
+          <path
+            d="M1081 364 L639 364"
+            stroke={colorVar('--pink')}
+            strokeWidth="2.5"
+            className="edge-anim"
+            fill="none"
+          />
+          <path
+            d="M639 364 L197 364"
+            stroke={colorVar('--amber')}
+            strokeWidth="2.5"
+            className="edge-anim"
+            fill="none"
+          />
         </svg>
-      </button>
-      <a
-        className="brand-badge shadow-minimal"
-        href={FORK_URL}
-        target="_blank"
-        rel="noopener"
-      >
-        <span>
-          <strong>Zombie Mermaid</strong>
-        </span>
-      </a>
-      <div className="theme-bar-right">
-        <button
-          type="button"
-          className="theme-pill shadow-minimal"
-          id="random-theme-btn"
-          aria-label="Random theme"
-          title="Random theme"
+
+        <div
+          className="feature-grid"
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gridTemplateRows: '200px 200px',
+            gap: '64px 48px',
+          }}
         >
+          {FEATURE_ICONS.map((feature, i) => {
+            const FeatureIcon = ICONS[feature.name]
+            return (
+              <Card
+                key={feature.name}
+                padding={28}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: `${SPACE.lg}px`,
+                }}
+              >
+                <FeatureIcon size={28} />
+                <h3 style={{ fontSize: '18px' }}>{feature.label}</h3>
+                <p
+                  style={{
+                    fontSize: `${FONT_SIZE.body}px`,
+                    color: colorVar('--text-dim'),
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {FEATURE_COPY[i]}
+                </p>
+              </Card>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* -----------------------------------------------------------------
+ * CLI + MCP
+ * ----------------------------------------------------------------- */
+
+/** One line of the CLI transcript. */
+function TermLine({ children }: { children: ReactNode }) {
+  return <div>{children}</div>
+}
+
+/** The CLI panel: a real transcript using this repo's actual flags. */
+function CliPanel() {
+  return (
+    <div
+      style={{
+        flex: '1 1 0',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: `${SPACE.xl}px`,
+      }}
+    >
+      <div
+        className="code-panel-cli"
+        style={{
+          background: colorVar('--bg'),
+          border: `1px solid ${colorVar('--border')}`,
+          borderRadius: '14px',
+          padding: '22px 26px 26px 26px',
+          flex: '1 1 auto',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${SPACE.xs}px`,
+            marginBottom: `${SPACE.xl}px`,
+          }}
+        >
+          <span
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              background: '#ff6767',
+              display: 'inline-block',
+            }}
+          />
+          <span
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              background: '#ffc85c',
+              display: 'inline-block',
+            }}
+          />
+          <span
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              background: '#5ee08a',
+              display: 'inline-block',
+            }}
+          />
+          <span
+            className="mono"
+            style={{
+              fontSize: `${FONT_SIZE.caption}px`,
+              color: colorVar('--text-faint'),
+              marginLeft: `${SPACE.xs}px`,
+            }}
+          >
+            terminal
+          </span>
+        </div>
+        <div className="mono" style={{ fontSize: '13.5px', lineHeight: 1.9 }}>
+          <TermLine>
+            <span style={{ color: colorVar('--text-faint') }}>$</span>{' '}
+            <span style={{ color: colorVar('--text') }}>
+              zombie-mermaid render
+            </span>{' '}
+            <span style={{ color: colorVar('--amber') }}>diagram.mmd</span>{' '}
+            <span style={{ color: colorVar('--violet') }}>--theme</span>{' '}
+            <span style={{ color: colorVar('--amber') }}>dracula</span>
+          </TermLine>
+          <div style={{ color: colorVar('--green') }}>✓ wrote diagram.svg</div>
+          <div style={{ marginTop: `${SPACE.sm}px` }}>
+            <span style={{ color: colorVar('--text-faint') }}>$</span>{' '}
+            <span style={{ color: colorVar('--text') }}>
+              zombie-mermaid render
+            </span>{' '}
+            <span style={{ color: colorVar('--amber') }}>diagram.mmd</span>{' '}
+            <span style={{ color: colorVar('--violet') }}>--ascii</span>
+          </div>
+          <div style={{ color: colorVar('--text-dim') }}>┌─────────┐</div>
+          <div style={{ color: colorVar('--text-dim') }}>{'│  Start   │'}</div>
+          <div style={{ color: colorVar('--text-dim') }}>└────┬────┘</div>
+          <div style={{ color: colorVar('--cyan') }}>{'     │'}</div>
+          <div style={{ marginTop: `${SPACE.sm}px` }}>
+            <span style={{ color: colorVar('--text-faint') }}>$</span>{' '}
+            <span style={{ color: colorVar('--text') }}>
+              zombie-mermaid mcp
+            </span>
+          </div>
+          <div style={{ color: colorVar('--green') }}>
+            ✓ MCP server listening on stdio
+          </div>
+        </div>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xxs}px`,
+        }}
+      >
+        <h3 style={{ fontSize: '19px' }}>CLI</h3>
+        <p
+          style={{
+            fontSize: `${FONT_SIZE.body}px`,
+            color: colorVar('--text-dim'),
+            lineHeight: 1.55,
+          }}
+        >
+          Render SVG, ASCII, HTML, or PNG straight from a script or CI job —
+          themes, direction overrides, and terminal hyperlinks all pass through
+          as flags. <a href={`${FORK_URL}#cli`}>Full flag reference →</a>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** One row of the MCP transcript: an avatar circle beside a message bubble. */
+function McpRow({
+  avatar,
+  bubbleBorder,
+  children,
+}: {
+  avatar: ReactNode
+  bubbleBorder: string
+  children: ReactNode
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: `${SPACE.md}px`,
+      }}
+    >
+      <div
+        style={{
+          flexShrink: 0,
+          width: '30px',
+          height: '30px',
+          borderRadius: '50%',
+          background: colorVar('--panel-2'),
+          border: `1px solid ${colorVar('--border')}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {avatar}
+      </div>
+      <div
+        style={{
+          flex: '1 1 auto',
+          minWidth: 0,
+          background: colorVar('--panel-2'),
+          border: `1px solid ${bubbleBorder}`,
+          borderRadius: '12px',
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xs}px`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/** The MCP panel: an agent tool-call illustration, marked experimental per the README. */
+function McpPanel() {
+  return (
+    <div
+      style={{
+        flex: '1 1 0',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: `${SPACE.xl}px`,
+      }}
+    >
+      <Card
+        accent="violet"
+        padding={24}
+        style={{
+          flex: '1 1 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: `${SPACE.md}px`,
+          }}
+        >
+          <Pill
+            mono
+            fontSize={12.5}
+            style={{
+              background: colorVar('--panel-2'),
+              border: `1px solid ${colorVar('--border')}`,
+              color: colorVar('--text-dim'),
+              padding: '6px 14px',
+            }}
+          >
+            <LockIcon size={12} strokeWidth={2.2} />
+            MCP server
+          </Pill>
+          <Pill
+            accent="amber"
+            variant="tint"
+            mono
+            fontSize={11}
+            style={{
+              padding: '5px 12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+            }}
+          >
+            Experimental
+          </Pill>
+        </div>
+
+        <McpRow
+          avatar={<TerminalIcon size={16} />}
+          bubbleBorder="var(--border)"
+        >
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.label}px`,
+              color: colorVar('--text-faint'),
+            }}
+          >
+            Your coding agent calls a tool —
+          </p>
+          <p
+            className="mono"
+            style={{
+              fontSize: `${FONT_SIZE.label}px`,
+              color: colorVar('--violet'),
+              fontWeight: FONT_WEIGHT.bold,
+            }}
+          >
+            render_mermaid_svg({'{ diagram }'})
+          </p>
+        </McpRow>
+
+        <McpRow avatar={<LogoMark size={16} />} bubbleBorder="var(--green)">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.md}px`,
+            }}
+          >
+            <svg
+              viewBox="0 0 60 40"
+              width="52"
+              height="36"
+              style={{ flexShrink: 0 }}
+            >
+              <rect
+                x="4"
+                y="4"
+                width="20"
+                height="12"
+                rx="4"
+                fill="none"
+                stroke={colorVar('--blue')}
+                strokeWidth="2"
+              />
+              <path
+                d="M14 16 V24 H46 V24"
+                stroke={colorVar('--green')}
+                strokeWidth="2"
+                fill="none"
+                className="edge-anim"
+              />
+              <rect
+                x="36"
+                y="24"
+                width="20"
+                height="12"
+                rx="4"
+                fill="none"
+                stroke={colorVar('--green')}
+                strokeWidth="2"
+              />
+            </svg>
+            <p style={{ fontSize: '12.5px', color: colorVar('--text-dim') }}>
+              …and gets back a rendered SVG, no browser involved.
+            </p>
+          </div>
+        </McpRow>
+      </Card>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xxs}px`,
+        }}
+      >
+        <h3 style={{ fontSize: '19px' }}>MCP server</h3>
+        <p
+          style={{
+            fontSize: `${FONT_SIZE.body}px`,
+            color: colorVar('--text-dim'),
+            lineHeight: 1.55,
+          }}
+        >
+          <span className="mono">render_mermaid_svg</span>,{' '}
+          <span className="mono">render_mermaid_ascii</span>, and a
+          sequence-activation checker, exposed over stdio — embed it, or run{' '}
+          <span className="mono">zombie-mermaid mcp</span> directly. Shipped to
+          gauge interest, not a finished implementation — the tool surface may
+          still change.{' '}
+          <a href={`${FORK_URL}#mcp-server`}>Read the MCP docs →</a>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** CLI + MCP: not just a browser library. */
+function CliMcpSection() {
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: `${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px`,
+        background: colorVar('--bg-soft'),
+        borderTop: `1px solid ${colorVar('--border')}`,
+        borderBottom: `1px solid ${colorVar('--border')}`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `0 auto ${SPACE['6xl']}px auto`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <SectionEyebrow>Not just a browser library</SectionEyebrow>
+        <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
+          A real CLI. A real MCP server.
+        </h2>
+        <p
+          style={{
+            fontSize: `${FONT_SIZE.lead}px`,
+            color: colorVar('--text-dim'),
+            maxWidth: `${LAYOUT.proseMaxWidth}px`,
+          }}
+        >
+          Render from a terminal, a CI pipeline, or hand it straight to your
+          coding agent as a tool call — this isn't a browser-only diagram
+          widget.
+        </p>
+      </div>
+
+      <div
+        className="cli-mcp-row"
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'stretch',
+          gap: `${SPACE['5xl']}px`,
+        }}
+      >
+        <CliPanel />
+        <McpPanel />
+      </div>
+    </div>
+  )
+}
+
+/* -----------------------------------------------------------------
+ * Diagram type gallery teaser
+ * ----------------------------------------------------------------- */
+
+/** Flowchart: two boxes joined by a drawn connector. */
+function FlowchartTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="6"
+        y="8"
+        width="34"
+        height="18"
+        rx="4"
+        fill="none"
+        stroke={colorVar('--blue')}
+        strokeWidth="2"
+      />
+      <rect
+        x="60"
+        y="44"
+        width="34"
+        height="18"
+        rx="4"
+        fill="none"
+        stroke={colorVar('--blue')}
+        strokeWidth="2"
+      />
+      <path
+        d="M23 26 V44 H77 V44"
+        stroke={colorVar('--blue')}
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+/** State: two states, one pulsing (the "current" state radar ping). */
+function StateTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <circle
+        cx="24"
+        cy="20"
+        r="14"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+        className="radar-ping"
+      />
+      <circle
+        cx="24"
+        cy="20"
+        r="14"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+      />
+      <circle
+        cx="76"
+        cy="50"
+        r="14"
+        fill="none"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+      />
+      <path
+        d="M36 28 L64 42"
+        stroke={colorVar('--violet')}
+        strokeWidth="2"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
+/** Sequence: two lifelines exchanging messages in both directions. */
+function SequenceTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <line
+        x1="22"
+        y1="8"
+        x2="22"
+        y2="62"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <line
+        x1="78"
+        y1="8"
+        x2="78"
+        y2="62"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+      />
+      <path
+        d="M22 24 H78"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+        className="msg-flow-right"
+      />
+      <path
+        d="M78 44 H22"
+        stroke={colorVar('--cyan')}
+        strokeWidth="2"
+        className="msg-flow-left"
+      />
+    </svg>
+  )
+}
+
+/** Class: a class box, its two member rows drawing themselves in. */
+function ClassTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="22"
+        y="8"
+        width="56"
+        height="50"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+      />
+      <line
+        x1="22"
+        y1="26"
+        x2="78"
+        y2="26"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+        className="draw-line"
+      />
+      <line
+        x1="22"
+        y1="42"
+        x2="78"
+        y2="42"
+        stroke={colorVar('--amber')}
+        strokeWidth="2"
+        className="draw-line"
+        style={{ animationDelay: '0.5s' }}
+      />
+    </svg>
+  )
+}
+
+/** ER: two entities, a pulsing relationship diamond between them. */
+function ERTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <rect
+        x="4"
+        y="24"
+        width="30"
+        height="20"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <rect
+        x="66"
+        y="24"
+        width="30"
+        height="20"
+        rx="3"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+      />
+      <polygon
+        points="50,20 60,34 50,48 40,34"
+        fill="none"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+        className="relation-pulse"
+      />
+      <path
+        d="M34 34 H40 M60 34 H66"
+        stroke={colorVar('--pink')}
+        strokeWidth="2"
+        className="relation-pulse"
+      />
+    </svg>
+  )
+}
+
+/** XY Chart: three bars growing, a trend line drawn across them. */
+function XYChartTile() {
+  return (
+    <svg viewBox="0 0 100 70" width="100%" height="70">
+      <line
+        x1="10"
+        y1="8"
+        x2="10"
+        y2="62"
+        stroke={colorVar('--green')}
+        strokeWidth="2"
+      />
+      <line
+        x1="10"
+        y1="62"
+        x2="94"
+        y2="62"
+        stroke={colorVar('--green')}
+        strokeWidth="2"
+      />
+      <rect
+        x="20"
+        y="40"
+        width="10"
+        height="22"
+        fill={colorVar('--green')}
+        className="bar-grow"
+      />
+      <rect
+        x="38"
+        y="28"
+        width="10"
+        height="34"
+        fill={colorVar('--green')}
+        className="bar-grow"
+        style={{ animationDelay: '0.2s' }}
+      />
+      <rect
+        x="56"
+        y="16"
+        width="10"
+        height="46"
+        fill={colorVar('--green')}
+        className="bar-grow"
+        style={{ animationDelay: '0.4s' }}
+      />
+      <path
+        d="M20 44 L46 30 L82 14"
+        stroke={colorVar('--green')}
+        strokeWidth="2"
+        fill="none"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+const GALLERY_TILES = [
+  FlowchartTile,
+  StateTile,
+  SequenceTile,
+  ClassTile,
+  ERTile,
+  XYChartTile,
+]
+
+/** Six diagram types, one engine — each card links to its `/diagrams/` page. */
+function DiagramGalleryTeaser() {
+  return (
+    <div
+      id="diagrams"
+      className="section-px"
+      style={{
+        padding: '100px 80px',
+        background: colorVar('--bg-soft'),
+        borderTop: `1px solid ${colorVar('--border')}`,
+        borderBottom: `1px solid ${colorVar('--border')}`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `0 auto ${SPACE['6xl']}px auto`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <SectionEyebrow>Six diagram types, one engine</SectionEyebrow>
+        <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
+          Every shape your system needs to explain itself.
+        </h2>
+      </div>
+
+      <div
+        className="gallery-grid"
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(6, 1fr)',
+          gap: `${SPACE['3xl']}px`,
+        }}
+      >
+        {GALLERY_TYPES.map((type, i) => {
+          const Tile = GALLERY_TILES[i]!
+          return (
+            <Card
+              key={type.slug}
+              href={`diagrams/${type.slug}.html`}
+              padding={18}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: `${SPACE.md}px`,
+              }}
+            >
+              <Tile />
+              <p
+                style={{
+                  fontSize: '13.5px',
+                  fontWeight: FONT_WEIGHT.bold,
+                  textAlign: 'center',
+                  color: colorVar('--text'),
+                }}
+              >
+                {type.label}
+              </p>
+            </Card>
+          )
+        })}
+      </div>
+
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `${SPACE['5xl']}px auto 0 auto`,
+          textAlign: 'center',
+        }}
+      >
+        <CTA href="diagrams/" accent="cyan" variant="ghost">
+          Browse every diagram type
+        </CTA>
+      </div>
+    </div>
+  )
+}
+
+/* -----------------------------------------------------------------
+ * Proof / maintenance
+ * ----------------------------------------------------------------- */
+
+/** One repo's stat row: days since last commit, merged PRs, open PRs. */
+function StatRow({
+  ink,
+  daysSinceCommit,
+  mergedPRs,
+  openPRs,
+}: {
+  ink: string
+  daysSinceCommit: number
+  mergedPRs: number
+  openPRs: number
+}) {
+  return (
+    <div
+      className="stat-row"
+      style={{ display: 'flex', justifyContent: 'space-between' }}
+    >
+      <div>
+        <p className="display" style={{ fontSize: '36px', color: ink }}>
+          {daysSinceCommit} {daysSinceCommit === 1 ? 'day' : 'days'}
+        </p>
+        <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
+          since last commit
+        </p>
+      </div>
+      <div>
+        <p className="display" style={{ fontSize: '36px', color: ink }}>
+          {mergedPRs}
+        </p>
+        <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
+          merged PRs
+        </p>
+      </div>
+      <div>
+        <p className="display" style={{ fontSize: '36px', color: ink }}>
+          {openPRs}
+        </p>
+        <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
+          open PRs
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** Real fork-vs-upstream numbers, and a teaser linking to the full evidence. */
+function ProofSection() {
+  return (
+    <div
+      id="fixes"
+      className="section-px"
+      style={{ padding: `${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px` }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `0 auto ${SPACE['6xl']}px auto`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <SectionEyebrow>
+          Straight from the live maintenance dashboard
+        </SectionEyebrow>
+        <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
+          Actively maintained. Not abandoned.
+        </h2>
+        <p
+          style={{
+            fontSize: `${FONT_SIZE.lead}px`,
+            color: colorVar('--text-dim'),
+            maxWidth: `${LAYOUT.proseMaxWidth}px`,
+          }}
+        >
+          beautiful-mermaid stalled — dozens of open PRs, nothing merged in
+          months. Here's the same fork, measured against the original as of{' '}
+          {PROOF_SNAPSHOT.asOf} — see the{' '}
+          <a href="dashboard.html">live dashboard</a> for current numbers.
+        </p>
+      </div>
+
+      <div
+        className="proof-grid"
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: `${SPACE['7xl']}px`,
+        }}
+      >
+        <Card
+          accent="green"
+          padding={36}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE['4xl']}px`,
+          }}
+        >
+          <p
+            style={{
+              fontSize: '15px',
+              fontWeight: FONT_WEIGHT.bold,
+              color: colorVar('--green'),
+              letterSpacing: '0.02em',
+            }}
+          >
+            zombie-mermaid (this fork)
+          </p>
+          <StatRow ink="var(--green)" {...PROOF_SNAPSHOT.fork} />
+        </Card>
+
+        <Card
+          padding={36}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE['4xl']}px`,
+            opacity: 0.75,
+          }}
+        >
+          <p
+            style={{
+              fontSize: '15px',
+              fontWeight: FONT_WEIGHT.bold,
+              color: colorVar('--text-faint'),
+              letterSpacing: '0.02em',
+            }}
+          >
+            beautiful-mermaid (upstream)
+          </p>
+          <StatRow ink="var(--text-faint)" {...PROOF_SNAPSHOT.upstream} />
+        </Card>
+      </div>
+
+      <Card
+        className="fixes-teaser-card"
+        padding={0}
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `${SPACE['6xl']}px auto 0 auto`,
+          padding: '32px 36px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: `${SPACE['3xl']}px`,
+          background:
+            'linear-gradient(90deg, var(--panel) 0%, var(--panel-2) 100%)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${SPACE['2xl']}px`,
+          }}
+        >
+          <ChecklistIcon size={34} />
+          <div>
+            <h3 style={{ fontSize: '19px' }}>What this fork fixes</h3>
+            <p
+              style={{
+                fontSize: `${FONT_SIZE.body}px`,
+                color: colorVar('--text-dim'),
+              }}
+            >
+              {PROOF_SNAPSHOT.rescuedFixCount} documented bugs, each shown
+              before/after with the actual pre-fix and post-fix code.
+            </p>
+          </div>
+        </div>
+        <CTA
+          href="fork-fixes.html"
+          accent="amber"
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          See the evidence
+        </CTA>
+      </Card>
+    </div>
+  )
+}
+
+/* -----------------------------------------------------------------
+ * Blog teaser
+ * ----------------------------------------------------------------- */
+
+/** The real newest post, linking to Blog. */
+function BlogTeaser() {
+  return (
+    <div
+      id="blog"
+      className="section-px"
+      style={{
+        padding: `80px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <Card
+        className="blog-teaser-card"
+        padding={40}
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: `${SPACE['5xl']}px`,
+        }}
+      >
+        <div
+          className="blog-teaser-inner"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${SPACE['4xl']}px`,
+          }}
+        >
+          <Pill
+            mono
+            style={{
+              background: colorVar('--panel-2'),
+              border: `1px solid ${colorVar('--border')}`,
+              color: colorVar('--text-faint'),
+              fontSize: `${FONT_SIZE.label}px`,
+            }}
+          >
+            {LATEST_POST.displayDate}
+          </Pill>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: `${SPACE.xs}px`,
+              maxWidth: '560px',
+            }}
+          >
+            <h3 style={{ fontSize: '21px' }}>
+              <a
+                href={`blog/${LATEST_POST.slug}.html`}
+                style={{ color: colorVar('--text') }}
+              >
+                {LATEST_POST.title}
+              </a>
+            </h3>
+            <p
+              style={{
+                fontSize: `${FONT_SIZE.body}px`,
+                color: colorVar('--text-dim'),
+                lineHeight: 1.5,
+              }}
+            >
+              {LATEST_POST.description}
+            </p>
+          </div>
+        </div>
+        <a
+          href="blog/"
+          style={{
+            fontSize: `${FONT_SIZE.bodyLg}px`,
+            fontWeight: FONT_WEIGHT.bold,
+            whiteSpace: 'nowrap',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: `${SPACE.xxs}px`,
+          }}
+        >
+          Read the blog
           <svg
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.4"
             strokeLinecap="round"
             strokeLinejoin="round"
-            width="14"
-            height="14"
           >
-            <polyline points="16 3 21 3 21 8" />
-            <line x1="4" y1="20" x2="21" y2="3" />
-            <polyline points="21 16 21 21 16 21" />
-            <line x1="15" y1="15" x2="21" y2="21" />
-            <line x1="4" y1="4" x2="9" y2="9" />
+            <path d="M5 12h14M13 6l6 6-6 6" />
           </svg>
-          {' Random '}
-        </button>
-        <div className="theme-pills" id="theme-pills">
-          <ThemePicker includeDefault />
-        </div>
-      </div>
+        </a>
+      </Card>
     </div>
   )
 }
 
-/** The shared, single-instance "edit this diagram" dialog. */
-export function EditDialog() {
-  return (
-    <div className="edit-overlay" id="edit-overlay">
-      <div
-        className="edit-dialog shadow-modal-small"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-dialog-title"
-      >
-        <div className="edit-dialog-header">
-          <span className="edit-dialog-title" id="edit-dialog-title">
-            Edit Diagram
-          </span>
-          <button
-            className="edit-dialog-close"
-            id="edit-dialog-close"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-        <textarea
-          className="edit-dialog-textarea"
-          id="edit-dialog-textarea"
-          aria-label="Mermaid source"
-          spellCheck="false"
-          autoComplete="off"
-          autoCorrect="off"
-          defaultValue=""
-        />
-        <div className="edit-dialog-footer">
-          <button
-            className="edit-dialog-btn edit-dialog-cancel"
-            id="edit-dialog-cancel"
-          >
-            Cancel
-          </button>
-          <button
-            className="edit-dialog-btn edit-dialog-save"
-            id="edit-dialog-save"
-          >
-            Save &amp; Render
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+/* -----------------------------------------------------------------
+ * Footer links
+ * ----------------------------------------------------------------- */
+
+/** Real destinations for the shared Footer's Product/Resources/Project columns. */
+const HOME_FOOTER_COLUMNS: readonly FooterColumn[] = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Diagrams', href: 'diagrams/' },
+      { label: 'Editor', href: 'editor.html' },
+      { label: 'Fork fixes', href: 'fork-fixes.html' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Blog', href: 'blog/' },
+      { label: 'GitHub', href: FORK_URL },
+      { label: 'npm package', href: NPM_URL },
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      { label: 'MIT Licensed' },
+      { label: 'dfadler/zombie-mermaid', href: FORK_URL },
+    ],
+  },
+]
+
+/* -----------------------------------------------------------------
+ * The document
+ * ----------------------------------------------------------------- */
 
 export interface IndexPageProps {
-  /** demo/styles.css, re-indented for inlining (see index.ts's loadStyles). */
-  css: string
   /** The SoftwareApplication JSON-LD block, indented and script-escaped. */
   jsonLd: string
-  /** The sample definitions the client script reads out of the DOM. */
-  samplesJson: string
-  /** The bundled renderer plus demo/client.ts, one inline module script. */
-  moduleScript: string
-  /** Sample count shown in the category banner (Hero samples excluded). */
-  totalSampleCount: number
-  heroCards: HeroCard[]
-  categories: CategorySection[]
 }
 
-/** The whole index.html document. */
-export function IndexPage({
-  css,
-  jsonLd,
-  samplesJson,
-  moduleScript,
-  totalSampleCount,
-  heroCards,
-  categories,
-}: IndexPageProps) {
+/** The whole index.html document: the marketing landing page. */
+export function IndexPage({ jsonLd }: IndexPageProps) {
   return (
     <html lang="en">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="theme-color" id="theme-color-meta" content="#f9f9fa" />
         <title>Zombie Mermaid — Mermaid Rendering, Made Beautiful</title>
         <meta
           name="description"
-          content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, and ER diagrams."
+          content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams."
         />
+        <link rel="canonical" href={SITE_URL} />
         <link rel="icon" type="image/svg+xml" href="favicon.svg" />
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
         <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -600,22 +1936,16 @@ export function IndexPage({
           property="og:description"
           content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII."
         />
-        <meta
-          property="og:image"
-          content="https://agents.craft.do/mermaid/og-image.png"
-        />
+        <meta property="og:image" content={OG_IMAGE_URL} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://agents.craft.do/mermaid" />
+        <meta property="og:url" content={SITE_URL} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Zombie Mermaid" />
         <meta
           name="twitter:description"
           content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII."
         />
-        <meta
-          name="twitter:image"
-          content="https://agents.craft.do/mermaid/og-image.png"
-        />
+        <meta name="twitter:image" content={OG_IMAGE_URL} />
         <script
           type="application/ld+json"
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD built from package.json at build time and escaped with escapeJsonForScriptTag
@@ -624,164 +1954,39 @@ export function IndexPage({
         {/* Plausible Analytics */}
         <script
           defer
-          data-domain="agents.craft.do/mermaid"
+          data-domain={PLAUSIBLE_DOMAIN}
           src="https://plausible.io/js/script.js"
         />
-        <FontLinks />
-        <style>{css}</style>
+        <DesignFontLinks />
+        <style>{designBaseCss()}</style>
+        <style>{primitivesCss()}</style>
+        <style>{navCss()}</style>
+        <style>{footerCss()}</style>
+        <style>{homePageCss()}</style>
       </head>
       <body>
-        <a className="skip-link" href="#samples-heading">
-          Skip to samples
+        <a className="skip-link" href="#main">
+          Skip to content
         </a>
-
-        {/* Safari 26+ reads title bar color from the topmost fixed element's
-            background. This invisible 1px div provides a real DOM element for
-            Safari to detect. */}
-        <div
-          id="safari-theme-color"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'var(--theme-bar-bg)',
-            zIndex: 9999,
-            pointerEvents: 'none',
+        <Nav
+          hrefs={{
+            diagrams: 'diagrams/',
+            editor: 'editor.html',
+            forkFixes: 'fork-fixes.html',
+            blog: 'blog/',
+            github: FORK_URL,
           }}
         />
-
-        {/* Scroll progress bar — filled client-side as the page scrolls */}
-        <div
-          className="scroll-progress"
-          id="scroll-progress"
-          aria-hidden="true"
-        >
-          <div className="scroll-progress-bar" id="scroll-progress-bar" />
-        </div>
-
-        <GalleryThemeBar />
-
-        <div className="sidebar-backdrop" id="sidebar-backdrop" />
-
-        {/* Persistent mobile/tablet nav: the sidebar (with its category list
-            and active-category state) is hidden behind the hamburger below
-            1024px, so this stays pinned to the bottom of the viewport the
-            whole time a visitor scrolls a category's samples — not just once
-            they reach the end — as the one place that always says what
-            they're viewing and how to reach the rest. Sits above the
-            scroll-progress line (see demo/styles.css) rather than replacing
-            it — that line tracks raw page-scroll position, this tracks
-            category identity; both answer a different half of "is there more,
-            and where." */}
-        <div className="category-tabbar" id="category-tabbar">
-          <span className="category-tabbar-label">
-            Viewing <strong id="tabbar-category-name" />
-          </span>
-          <button
-            type="button"
-            className="category-banner-btn"
-            id="tabbar-browse-btn"
-          >
-            {' Browse types '}
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="page-shell">
-          <Sidebar categories={categories} />
-          <div className="page-main">
-            <HeroHeader />
-
-            <div className="content-wrapper">
-              {heroCards.map((card) => (
-                <HeroSample card={card} key={card.index} />
-              ))}
-
-              <div className="samples-heading">
-                <h2
-                  className="section-title"
-                  id="samples-heading"
-                  tabIndex={-1}
-                >
-                  Samples
-                </h2>
-                <div className="category-banner" id="category-banner">
-                  <span>
-                    Showing <strong id="active-category-name" /> —{' '}
-                    <span id="active-category-count" /> of {totalSampleCount}{' '}
-                    samples
-                  </span>
-                  <button
-                    type="button"
-                    className="category-banner-btn"
-                    id="browse-categories-btn"
-                  >
-                    Browse diagram types
-                  </button>
-                </div>
-              </div>
-
-              {/* Only the first category ships visible — the rest carry
-                  `hidden` so a first-time visitor's initial payload isn't
-                  "render everything at once": the other categories' diagrams
-                  are rendered client-side on demand, when a sidebar category
-                  is opened (see demo/client.ts's category switching). */}
-              {categories.map((category, categoryIndex) => (
-                <section
-                  className="category-view"
-                  id={`category-${category.slug}`}
-                  data-category={category.slug}
-                  hidden={categoryIndex !== 0}
-                  key={category.slug}
-                >
-                  {category.cards.map((card) => (
-                    <SampleSection card={card} key={card.index} />
-                  ))}
-                </section>
-              ))}
-
-              {/* Shown in place of the (all-hidden) category views when a
-                  search matches no samples — see the "Sample search / filter"
-                  section of demo/client.ts. */}
-              <p className="search-empty" id="search-empty" hidden>
-                No samples match your search.
-              </p>
-
-              {/* Sample definitions, read by the client script. Passed through
-                  the DOM rather than interpolated into demo/client.ts so that
-                  file stays plain, type-checkable code with no build-time
-                  substitution. */}
-              <script
-                type="application/json"
-                id="demo-samples"
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from samples-data.ts, escaped with escapeJsonForScriptTag
-                dangerouslySetInnerHTML={{ __html: samplesJson }}
-              />
-
-              {/* Bundled mermaid renderer — exposes window.__mermaid */}
-              <script
-                type="module"
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own src/browser.ts and demo/client.ts, bundled at build time
-                dangerouslySetInnerHTML={{ __html: moduleScript }}
-              />
-
-              <EditDialog />
-            </div>
-          </div>
-        </div>
-
-        <GalleryFooter />
+        <main id="main">
+          <Hero />
+          <ThemeShowcase />
+          <FeatureGrid />
+          <CliMcpSection />
+          <DiagramGalleryTeaser />
+          <ProofSection />
+          <BlogTeaser />
+        </main>
+        <Footer columns={HOME_FOOTER_COLUMNS} />
       </body>
     </html>
   )
