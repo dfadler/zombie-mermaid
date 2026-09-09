@@ -28,10 +28,13 @@ export function requireElement<T extends Element>(
 /**
  * `EventTarget.closest()` isn't available until narrowed to `Element` --
  * `e.target` on a plain `Event`/`MouseEvent` is typed `EventTarget | null`.
- * Several click handlers below (color-picker.ts, font-picker.ts, export.ts)
- * use "did the click land outside this popup" `closest()` checks, so this
- * centralizes the narrowing instead of repeating an `instanceof` guard at
- * each call site.
+ * export.ts's click handler uses a "did the click land outside this
+ * popup" `closest()` check, so this centralizes the narrowing instead of
+ * repeating an `instanceof` guard at each call site. (color-picker.ts and
+ * font-picker.ts used to have the identical need -- zombie-mermaid#808
+ * ported both to React, which reimplements the same narrowing locally in
+ * demo/components/editor-config.tsx since that file is a separate program
+ * from this one -- see that file's `eventTargetClosest`.)
  */
 export function closest(
   target: EventTarget | null,
