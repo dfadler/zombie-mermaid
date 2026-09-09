@@ -1,5 +1,12 @@
 # Research summary: identical Playwright Docker image, real Apple Silicon vs. real x86 CI screenshots
 
+> **Closed.** The two gaps this doc left open (a flag-matched arm64 run, and a real
+> x86-CI-on-the-same-commit data point) are closed in
+> [545-crossarch-ci-flag-matched-confirmation.md](545-crossarch-ci-flag-matched-confirmation.md) —
+> read that doc for the final answer. This page is kept as-is as the original,
+> stock-image measurement that motivated [#614](https://github.com/dfadler/zombie-mermaid/issues/614)'s
+> font fix.
+
 Status: **partially answered — the arm64 side is measured with real data; the amd64/x86 CI
 side still needs either a human-approved CI trial or a real x86 machine.** Written for
 [#545](https://github.com/dfadler/zombie-mermaid/issues/545), part of the
