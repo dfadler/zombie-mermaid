@@ -27,6 +27,133 @@ export const INLINE_THEMES = new Set(['dracula', 'solarized-light'])
 /** The Default (no theme) pill's swatch colors. */
 export const DEFAULT_SWATCH = { bg: '#FFFFFF', fg: '#27272A' }
 
+/**
+ * The `.theme-pill`/`.theme-more-dropdown`/etc CSS every `ThemePicker`
+ * instance needs, extracted from `demo/styles.css` (lines ~221-330 as of
+ * this writing) so a page that doesn't load that whole legacy stylesheet
+ * — every #590-redesigned page (Home, Blog, Fork Fixes, Dashboard, the
+ * Diagrams hub) — can still render a correctly-styled picker by inlining
+ * just this function's output, the same way those pages already inline
+ * `designBaseCss()`/`primitivesCss()`/`navCss()` rather than linking an
+ * external stylesheet (see index.ts's `<style>` block for the pattern this
+ * mirrors).
+ *
+ * `demo/diagram-page.css` (pages.ts's per-diagram-type pages) still gets
+ * these same rules for free via the full `demo/styles.css` concatenation —
+ * this is an additive extraction, not a replacement, so nothing there
+ * changes.
+ *
+ * `--t-bg`/`--t-fg` default here to {@link DEFAULT_SWATCH}'s colors, scoped
+ * to `#theme-pills` rather than `:root`, so a page that never sets them
+ * (no live diagram to re-theme, e.g. the Diagrams hub) still gets a sane,
+ * self-contained pill appearance instead of inheriting nothing. A page
+ * that *does* re-theme a live diagram (pages.ts's `DiagramTypePage`, via
+ * `demo/diagram-page-client.ts`'s `applyThemeToPage`) sets real values on
+ * `<body>`, which cascade down and override this default exactly the way
+ * an inline default is supposed to.
+ */
+export function themePickerCss(): string {
+  return `#theme-pills {
+  --t-bg: ${DEFAULT_SWATCH.bg};
+  --t-fg: ${DEFAULT_SWATCH.fg};
+}
+.theme-pills {
+  display: flex;
+  gap: 0.3rem;
+  overflow: visible;
+  padding: 4px;
+  margin: -4px;
+  position: relative;
+  z-index: 2;
+}
+.theme-pills-inline {
+  display: flex;
+  gap: 0.3rem;
+}
+@media (max-width: 1024px) {
+  .theme-pills-inline {
+    display: none;
+  }
+}
+.theme-pill {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  gap: 8px;
+  padding: 0 14px 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
+  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    box-shadow 0.2s,
+    transform 0.1s;
+}
+.theme-pill:hover {
+  color: var(--t-fg);
+  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+}
+.theme-pill.active {
+  color: var(--t-fg);
+  background: var(--t-bg);
+  font-weight: 600;
+}
+.theme-pill:active {
+  transform: translateY(0.5px);
+}
+.theme-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.theme-more-wrapper {
+  position: relative;
+}
+.theme-more-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--t-bg);
+  border-radius: 12px;
+  padding: 6px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  z-index: 1002;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+.theme-more-dropdown.open {
+  display: flex;
+}
+.theme-more-dropdown .theme-pill {
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+  box-shadow: none;
+}
+.theme-more-dropdown .theme-pill:hover {
+  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
+}
+.theme-more-dropdown .theme-pill.active {
+  background: var(--t-bg);
+}`
+}
+
+/** {@link themePickerCss} in a `<style>` element, for a page's `<head>`. */
+export function ThemePickerStyle() {
+  return <style>{themePickerCss()}</style>
+}
+
 export interface ThemePillProps {
   /** Theme key, or `''` for the "Default" pseudo-theme. */
   themeKey: string

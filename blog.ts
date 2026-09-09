@@ -38,7 +38,11 @@ import {
   BlogPostPage,
 } from './demo/components/blog-page.tsx'
 import { sharedPageCss } from './demo/components/shared-page-css.tsx'
-import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
+import {
+  DEFAULT_SWATCH,
+  themePickerCss,
+} from './demo/components/theme-picker.tsx'
+import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
 
 /**
@@ -374,7 +378,15 @@ async function main(): Promise<void> {
     new URL('./demo/blog.css', import.meta.url),
     'utf8',
   )
-  await writeFile(new URL('./assets/blog.css', OUT_DIR), sharedPageCss(blogCss))
+  await writeFile(
+    new URL('./assets/blog.css', OUT_DIR),
+    sharedPageCss([themePickerCss(), blogCss].join('\n\n')),
+  )
+
+  // #687: the blog index's live theme picker needs no other client JS on
+  // this page, so it gets the same shared bundle Home/the Diagrams
+  // hub/Fork Fixes/Dashboard use.
+  const themeBarScript = await bundleThemeBarClient()
 
   const posts = await loadPosts()
   const highlighter = await createHighlighter({
@@ -421,6 +433,7 @@ async function main(): Promise<void> {
         displayDate: formatDisplayDate(post.date),
         description: post.description,
       })),
+      themeBarScript,
     }),
   )
 

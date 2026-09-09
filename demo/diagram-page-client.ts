@@ -17,7 +17,22 @@
  * inline JSON (window.__diagramPageThemes, written by pages.ts) rather than
  * importing packages/core/src/theme.ts here, so this bundle stays small and this file can
  * live under demo/ without reaching outside its rootDir.
+ *
+ * #687 reconciliation: pill selection, the "More" dropdown, and
+ * persistence used to be reimplemented here directly (raw
+ * `localStorage['mermaid-theme']` access plus a hand-rolled click/dropdown
+ * handler). Both now route through the shared `demo/theme-state.ts`
+ * (`getTheme()`/`setTheme()`/`subscribe()`) and `demo/components/
+ * theme-bar-client.ts` (`initThemeBar()`) — the same modules #686 built
+ * for the (until #687) unwired global `ThemeBar`/`ThemePicker` — so this
+ * page's `#theme-pills` markup is no longer a third, independent
+ * implementation of the same behavior. What stays here is what those
+ * shared modules don't do: re-theming the rendered `<svg>`(s), the page
+ * chrome's `--t-*`/shadow variables, and the "Open in the live editor"
+ * link's encoded theme.
  */
+import { getTheme, setTheme, subscribe } from './theme-state.ts'
+import { initThemeBar } from './components/theme-bar-client.ts'
 
 interface DiagramColors {
   bg: string
@@ -78,12 +93,6 @@ const ENRICHMENT_KEYS = [
   'surface',
   'border',
 ] as const satisfies ReadonlyArray<keyof DiagramColors>
-
-function mustGet(id: string): HTMLElement {
-  const el = document.getElementById(id)
-  if (!el) throw new Error(`missing #${id}`)
-  return el
-}
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   let value = hex.trim()
@@ -168,33 +177,23 @@ function activeThemeKey(): string {
   return active?.getAttribute('data-theme') ?? Object.keys(THEMES)[0]!
 }
 
+/**
+ * Re-themes this page's own concerns for `themeKey` -- the rendered
+ * `<svg>`(s), the page chrome's `--t-*`/shadow variables, and the "Open in
+ * the live editor" link. Pill active-state and persistence are `demo/
+ * components/theme-bar-client.ts`'s `initThemeBar()`/`demo/theme-state.ts`'s
+ * job now (see this file's header comment) -- this function is registered
+ * as a `subscribe()` listener below, so it still runs on every pill click
+ * (via `initThemeBar()`'s own `setTheme()` call) without duplicating that
+ * click handling here.
+ */
 function applyTheme(themeKey: string): void {
   const theme = THEMES[themeKey]
   if (!theme) return
 
   applyThemeToPage(theme)
   applyThemeToDiagram(themeKey)
-
-  document.querySelectorAll('.theme-pill').forEach((pill) => {
-    pill.classList.toggle(
-      'active',
-      pill.getAttribute('data-theme') === themeKey,
-    )
-  })
-
   updateEditorLink(themeKey)
-
-  // Shared with demo/client.ts's main gallery -- same key, same origin, so a
-  // theme picked on either surface carries over to the other instead of
-  // each page silently re-defaulting on the visitor. Mirrors demo/client.ts's
-  // own set/remove split: '' (Default) is stored as an *absence* of a
-  // preference, not the literal empty string, since it's already what a
-  // visitor with no stored preference sees by default.
-  if (themeKey) {
-    localStorage.setItem('mermaid-theme', themeKey)
-  } else {
-    localStorage.removeItem('mermaid-theme')
-  }
 }
 
 // The editor link's encoded source must track the orientation actually on
@@ -221,73 +220,40 @@ window.addEventListener('resize', () => {
   applyViewportOrientation()
 })
 
-// -- Pill clicks (event delegation, same pattern as demo/client.ts) --
-mustGet('theme-pills').addEventListener('click', (e) => {
-  const target = e.target
-  if (!(target instanceof Element)) return
-  const pill = target.closest('.theme-pill')
-  if (!pill || pill.id === 'theme-more-btn') return
-  const themeKey = pill.getAttribute('data-theme')
-  // Not `if (themeKey)` -- the Default pill's data-theme is '', a valid key
-  // that a truthiness check would silently ignore a click on.
-  if (themeKey !== null) applyTheme(themeKey)
+// -- Pill selection, "More" dropdown, ARIA/keyboard support, and
+//    persistence: all `demo/components/theme-bar-client.ts`'s job now (see
+//    this file's header comment) -- one call wires the `#theme-pills`
+//    markup pages.ts already renders (`ThemePicker`, embedded via the
+//    "Pick a look" section) to `demo/theme-state.ts`.
+initThemeBar()
 
-  const dd = document.getElementById('theme-more-dropdown')
-  if (dd?.classList.contains('open')) {
-    dd.classList.remove('open')
-    mustGet('theme-more-btn').setAttribute('aria-expanded', 'false')
-  }
-})
+// This page's own re-theming (svg + chrome + editor link) runs on every
+// theme-state change, same-tab or cross-tab, whether it came from a click
+// this page's own initThemeBar() handled or a theme picked on another page
+// entirely (see subscribe()'s doc comment in theme-state.ts).
+subscribe(applyTheme)
 
-// -- "More themes" dropdown --
-const moreBtn = document.getElementById('theme-more-btn')
-const moreDropdown = document.getElementById('theme-more-dropdown')
-if (moreBtn && moreDropdown) {
-  moreBtn.addEventListener('click', (e) => {
-    e.stopPropagation()
-    const isOpen = moreDropdown.classList.toggle('open')
-    moreBtn.setAttribute('aria-expanded', String(isOpen))
-  })
-
-  document.addEventListener('click', (e) => {
-    if (!moreDropdown.classList.contains('open')) return
-    const target = e.target
-    if (
-      !(target instanceof Element) ||
-      !target.closest('.theme-more-wrapper')
-    ) {
-      moreDropdown.classList.remove('open')
-      moreBtn.setAttribute('aria-expanded', 'false')
-    }
-  })
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && moreDropdown.classList.contains('open')) {
-      moreDropdown.classList.remove('open')
-      moreBtn.setAttribute('aria-expanded', 'false')
-    }
-  })
+// -- One-time migration: a visitor who picked a theme on a diagrams page
+//    before this file switched keys (see #438) has it stored under the
+//    old, diagrams-page-only 'zm-diagram-page-theme' key, which theme-
+//    state.ts (the shared 'mermaid-theme' key) has never read. Migrate it
+//    by calling setTheme() -- that both persists it under the shared key
+//    and notifies the subscribe() listener above, so applyTheme() runs
+//    exactly as it would for a live pill click -- then discard the stale
+//    key either way.
+const LEGACY_THEME_KEY = 'zm-diagram-page-theme'
+if (getTheme() === '') {
+  const legacy = localStorage.getItem(LEGACY_THEME_KEY)
+  if (legacy && THEMES[legacy]) setTheme(legacy)
 }
+localStorage.removeItem(LEGACY_THEME_KEY)
 
 // -- Restore a previously picked theme, if it differs from this page's
-//    build-time default -- reads the same 'mermaid-theme' key the main
-//    gallery (demo/client.ts) writes, so a theme picked there is honored
-//    here too. An empty string means "explicit default" there, which
-//    already matches this page's build-time default, so there's nothing to
-//    apply.
-//
-// One-time migration: a visitor who picked a theme on a diagrams page
-// before this file switched keys (see #438) has it stored under the old,
-// diagrams-page-only 'zm-diagram-page-theme' key. Fall back to that only
-// when the shared key was never set, so they don't silently lose their
-// choice -- applyTheme below re-persists it under 'mermaid-theme',
-// completing the migration, and the stale key is then discarded either way.
-const LEGACY_THEME_KEY = 'zm-diagram-page-theme'
-const saved =
-  localStorage.getItem('mermaid-theme') ??
-  localStorage.getItem(LEGACY_THEME_KEY)
-if (saved && THEMES[saved]) applyTheme(saved)
-localStorage.removeItem(LEGACY_THEME_KEY)
+//    build-time default. An empty string (getTheme()'s "no preference
+//    stored" / explicit-Default value) already matches this page's
+//    build-time default, so there's nothing to apply in that case.
+const initial = getTheme()
+if (initial && THEMES[initial]) applyTheme(initial)
 
 // Reconcile the editor-link href with the current viewport right away — a
 // visitor can land directly on a narrow viewport, not just resize into

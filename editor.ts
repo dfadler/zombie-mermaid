@@ -42,41 +42,14 @@ import {
 } from './demo/components/editor-topbar.tsx'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { THEMES } from '@zombie-mermaid/core'
+import { THEME_LABELS } from './demo/theme-labels.ts'
 
-const THEME_LABELS: Record<string, string> = {
-  'zinc-light': 'Zinc Light',
-  'zinc-dark': 'Zinc Dark',
-  'tokyo-night': 'Tokyo Night',
-  'tokyo-night-storm': 'Tokyo Storm',
-  'tokyo-night-light': 'Tokyo Light',
-  'catppuccin-mocha': 'Catppuccin',
-  'catppuccin-latte': 'Latte',
-  nord: 'Nord',
-  'nord-light': 'Nord Light',
-  dracula: 'Dracula',
-  'github-light': 'GitHub',
-  'github-dark': 'GitHub Dark',
-  'solarized-light': 'Solarized',
-  'solarized-dark': 'Solar Dark',
-  'one-dark': 'One Dark',
-}
-
-// THEME_LABELS manually shadows THEMES' keys (packages/core/src/theme.ts) so the dropdown
-// can show a human-friendly name instead of a raw slug. Adding a theme to
-// THEMES without adding a matching entry here doesn't break the build — the
-// dropdown markup below falls back to `THEME_LABELS[key] ?? key`, silently
-// rendering an unlabeled slug (e.g. "nord-light" instead of "Nord Light").
-// Fail loudly here instead, at generation time, so the gap gets noticed
-// immediately rather than discovered later in the rendered dropdown.
-const missingThemeLabels = Object.keys(THEMES).filter(
-  (key) => !(key in THEME_LABELS),
-)
-if (missingThemeLabels.length > 0) {
-  throw new Error(
-    `THEME_LABELS in editor.ts is missing label(s) for: ${missingThemeLabels.join(', ')}. ` +
-      'Add a human-friendly label for each new THEMES key.',
-  )
-}
+// #688: THEME_LABELS used to be a second copy of demo/theme-labels.ts's
+// export, kept in sync only by a build-time guard here that threw if
+// THEMES gained a key missing from this local map. Importing the shared
+// source directly removes the duplication (and the guard along with it —
+// a real TypeScript import can't silently drift the way a hand-copied
+// object literal could).
 
 // ── File helpers ──────────────────────────────────────────────────────────────
 
@@ -143,8 +116,40 @@ async function bundleBrowserScript(): Promise<string> {
   }
 }
 
+/**
+ * Bundle demo/editor-theme-state-bridge.ts, which exposes demo/theme-
+ * state.ts's getTheme()/setTheme()/subscribe() as window.__themeState for
+ * editor/js/init.js (plain, non-module script) to call — see that
+ * bridge's own header comment. #688.
+ *
+ * Wrapped in an IIFE: Vite/Rollup's minified ESM output for a
+ * fully-self-contained bundle (no import/export statements left — every
+ * dependency here is a local relative file, already inlined) is still a
+ * flat sequence of top-level `var`/`function`/`const` declarations, not
+ * scoped to anything. bundleBrowserScript()'s own bundle (src/browser.ts)
+ * is exactly the same shape and lands in the *same* `<script type="module">`
+ * tag (see generateEditorHtml() below) — two independently-minified
+ * bundles concatenated as plain text will pick colliding short names
+ * (`var t`, `function t()`, …) for unrelated top-level bindings and throw
+ * a `SyntaxError: Identifier 't' has already been declared` at parse
+ * time. The IIFE gives this bundle its own function scope so nothing it
+ * declares internally can collide with bundleJs's or appJs's — the only
+ * thing it needs to expose outside that scope, `window.__themeState`, is
+ * already a property access, not a declaration.
+ */
+async function bundleThemeStateBridge(): Promise<string> {
+  const bundled = await bundleForBrowser(
+    new URL('./demo/editor-theme-state-bridge.ts', import.meta.url).pathname,
+    { minify: true },
+  )
+  return `;(function () {\n${bundled}\n})();`
+}
+
 async function generateEditorHtml(): Promise<string> {
-  const bundleJs = await bundleBrowserScript()
+  const [bundleJs, themeStateBridgeJs] = await Promise.all([
+    bundleBrowserScript(),
+    bundleThemeStateBridge(),
+  ])
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
 
   const themes: EditorThemeItem[] = Object.keys(THEMES).map((key) => ({
@@ -159,7 +164,7 @@ async function generateEditorHtml(): Promise<string> {
     createElement(EditorPage, {
       css,
       themeItems: createElement(EditorThemeItems, { themes }),
-      scriptJs: `${bundleJs}\n\n${appJs}\n`,
+      scriptJs: `${bundleJs}\n\n${themeStateBridgeJs}\n\n${appJs}\n`,
     }),
   )
 }

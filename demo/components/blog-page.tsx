@@ -60,6 +60,7 @@ import { CTA, Card, Pill, SectionEyebrow } from './primitives.tsx'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { Nav, NavCopyScript, NavMobileMenuScript, type NavKey } from './nav.tsx'
+import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
@@ -435,6 +436,11 @@ export interface BlogIndexPageProps {
   cssHref: string
   faviconHref: string
   posts: readonly BlogPostSummary[]
+  /**
+   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
+   * the index's `ThemePickerSection` is interactive.
+   */
+  themeBarScript: string
 }
 
 /**
@@ -645,6 +651,7 @@ export function BlogIndexPage({
   cssHref,
   faviconHref,
   posts,
+  themeBarScript,
 }: BlogIndexPageProps) {
   const [featured, ...rest] = posts
   return (
@@ -734,7 +741,14 @@ export function BlogIndexPage({
           </>
         )}
 
+        <ThemePickerSection tinted />
+
         <Footer columns={FOOTER_COLUMNS} />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: themeBarScript }}
+        />
         <NavCopyScript />
         <NavMobileMenuScript />
       </div>

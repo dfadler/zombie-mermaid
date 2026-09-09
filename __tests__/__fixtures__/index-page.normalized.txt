@@ -62,6 +62,9 @@
     <style>
       "body {\n  background: linear-gradient(180deg, var(--bg) 0%, #0d1120 40%, var(--bg) 100%);\n  overflow-x: hidden;\n}\n\n.skip-link {\n  position: absolute;\n  left: -9999px;\n  top: 0;\n  z-index: 100;\n  padding: 12px 16px;\n  background: var(--panel);\n  color: var(--text);\n}\n.skip-link:focus {\n  left: 16px;\n  top: 16px;\n}\n\n@keyframes marchingAnts { to { stroke-dashoffset: -24; } }\n.edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }\n\n@keyframes radarPing {\n  0% { r: 14; opacity: 0.55; stroke-width: 2; }\n  100% { r: 27; opacity: 0; stroke-width: 0.5; }\n}\n.radar-ping { transform-origin: center; animation: radarPing 1.8s ease-out infinite; }\n\n@keyframes msgFlowRight { to { stroke-dashoffset: -16; } }\n@keyframes msgFlowLeft { to { stroke-dashoffset: 16; } }\n.msg-flow-right { stroke-dasharray: 4 4; animation: msgFlowRight 1.1s linear infinite; }\n.msg-flow-left { stroke-dasharray: 4 4; animation: msgFlowLeft 1.1s linear 0.55s infinite; }\n\n@keyframes drawLine {\n  0% { stroke-dashoffset: 56; }\n  55%, 100% { stroke-dashoffset: 0; }\n}\n.draw-line { stroke-dasharray: 56; animation: drawLine 2.8s ease-in-out infinite; }\n\n@keyframes relationPulse {\n  0%, 100% { opacity: 0.45; stroke-width: 2; }\n  50% { opacity: 1; stroke-width: 3; }\n}\n.relation-pulse { transform-origin: center; animation: relationPulse 1.8s ease-in-out infinite; }\n\n@keyframes barGrow {\n  0%, 100% { transform: scaleY(1); }\n  50% { transform: scaleY(0.4); }\n}\n.bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }\n\n@media (prefers-reduced-motion: reduce) {\n  .edge-anim { animation: none; }\n  .radar-ping { animation: none; opacity: 0; }\n  .msg-flow-right { animation: none; }\n  .msg-flow-left { animation: none; }\n  .draw-line { animation: none; stroke-dashoffset: 0; }\n  .relation-pulse { animation: none; }\n  .bar-grow { animation: none; transform: scaleY(1); }\n}\n\n@media (max-width: 900px) {\n  .hero-row { flex-direction: column !important; align-items: flex-start !important; padding: 64px 24px 72px 24px !important; gap: 40px !important; }\n  .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }\n  .hero-copy p { max-width: 100% !important; }\n  .hero-visual { flex: 1 1 auto !important; width: 100% !important; max-width: 560px; }\n  .theme-grid { grid-template-columns: repeat(3, 1fr) !important; }\n  .feature-connectors { display: none !important; }\n  .feature-grid-wrap { height: auto !important; }\n  .feature-grid { grid-template-columns: 1fr 1fr !important; grid-template-rows: none !important; }\n  .cli-mcp-row { flex-direction: column !important; }\n  .gallery-grid { grid-template-columns: repeat(3, 1fr) !important; }\n  .proof-grid { grid-template-columns: 1fr !important; }\n}\n\n@media (max-width: 600px) {\n  .hero-row { padding: 48px 20px 56px 20px !important; }\n  .hero-h1 { font-size: 34px !important; }\n  .theme-grid { grid-template-columns: repeat(2, 1fr) !important; }\n  .feature-grid { grid-template-columns: 1fr !important; }\n  .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }\n  .stat-row { flex-wrap: wrap !important; gap: 16px !important; }\n  .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }\n  .blog-teaser-card { flex-direction: column !important; align-items: flex-start !important; }\n  .blog-teaser-inner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }\n}"
     </style>
+    <style>
+      "#theme-pills {\n  --t-bg: #FFFFFF;\n  --t-fg: #27272A;\n}\n.theme-pills {\n  display: flex;\n  gap: 0.3rem;\n  overflow: visible;\n  padding: 4px;\n  margin: -4px;\n  position: relative;\n  z-index: 2;\n}\n.theme-pills-inline {\n  display: flex;\n  gap: 0.3rem;\n}\n@media (max-width: 1024px) {\n  .theme-pills-inline {\n    display: none;\n  }\n}\n.theme-pill {\n  display: flex;\n  align-items: center;\n  height: 30px;\n  gap: 8px;\n  padding: 0 14px 0 12px;\n  border: none;\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));\n  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));\n  font-size: 12px;\n  font-weight: 500;\n  font-family: inherit;\n  cursor: pointer;\n  white-space: nowrap;\n  transition:\n    color 0.15s,\n    background 0.15s,\n    box-shadow 0.2s,\n    transform 0.1s;\n}\n.theme-pill:hover {\n  color: var(--t-fg);\n  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));\n}\n.theme-pill.active {\n  color: var(--t-fg);\n  background: var(--t-bg);\n  font-weight: 600;\n}\n.theme-pill:active {\n  transform: translateY(0.5px);\n}\n.theme-swatch {\n  display: inline-block;\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  flex-shrink: 0;\n}\n.theme-more-wrapper {\n  position: relative;\n}\n.theme-more-dropdown {\n  display: none;\n  position: absolute;\n  top: calc(100% + 6px);\n  right: 0;\n  background: var(--t-bg);\n  border-radius: 12px;\n  padding: 6px;\n  flex-direction: column;\n  gap: 2px;\n  min-width: 160px;\n  z-index: 1002;\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);\n}\n.theme-more-dropdown.open {\n  display: flex;\n}\n.theme-more-dropdown .theme-pill {\n  width: 100%;\n  justify-content: flex-start;\n  background: transparent;\n  box-shadow: none;\n}\n.theme-more-dropdown .theme-pill:hover {\n  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));\n}\n.theme-more-dropdown .theme-pill.active {\n  background: var(--t-bg);\n}"
+    </style>
   </head>
   <body>
     <a class="skip-link" href="#main">
@@ -402,6 +405,122 @@
             <p style="margin-top: 14px; font-size: 14px; font-weight: 700; text-align: center; color: rgb(203, 166, 247);">
               "Catppuccin"
             </p>
+          </div>
+        </div>
+      </div>
+      <div class="section-px" style="padding: 80px;">
+        <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 28px;">
+          <div class="section-eyebrow">
+            "Try it live"
+          </div>
+          <h2 style="font-size: 30px; letter-spacing: -0.01em;">
+            "Pick your own theme."
+          </h2>
+          <div class="theme-pills" id="theme-pills" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;">
+            <div class="theme-pills-inline">
+              <button class="theme-pill shadow-minimal active" data-theme="">
+                <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Default"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="dracula" title="High-contrast dark theme with a purple-black background, near-white text, and a lavender-purple accent.">
+                <span class="theme-swatch" style="background: rgb(40, 42, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Dracula"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="solarized-light" title="Ethan Schoonover's Solarized palette on a warm cream background with muted grey-green text.">
+                <span class="theme-swatch" style="background: rgb(253, 246, 227); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Solarized"
+              </button>
+            </div>
+            <div class="theme-more-wrapper">
+              <button aria-controls="theme-more-dropdown" aria-expanded="false" aria-haspopup="true" aria-label="More themes" class="theme-pill shadow-minimal" id="theme-more-btn">
+                "16 Themes"
+              </button>
+              <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
+                <button class="theme-pill shadow-minimal active" data-theme="">
+                  <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Default"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="zinc-light" title="The default look: a plain off-white background with near-black zinc text and no color accent.">
+                  <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Zinc Light"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="zinc-dark" title="The dark counterpart to the default theme — near-black zinc background, off-white text.">
+                  <span class="theme-swatch" style="background: rgb(24, 24, 27); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Zinc Dark"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="tokyo-night" title="Deep navy background with soft lavender-blue text and a saturated blue accent, from the Tokyo Night VS Code theme.">
+                  <span class="theme-swatch" style="background: rgb(26, 27, 38); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Tokyo Night"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="tokyo-night-storm" title="A slightly lighter slate-navy variant of Tokyo Night, with the same lavender-blue text and blue accent.">
+                  <span class="theme-swatch" style="background: rgb(36, 40, 59); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Tokyo Storm"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="tokyo-night-light" title="Tokyo Night's light counterpart: a cool grey background with dark blue-grey text.">
+                  <span class="theme-swatch" style="background: rgb(213, 214, 219); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Tokyo Light"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="catppuccin-mocha" title="A warm dark background with lavender text and a violet accent, from the Catppuccin Mocha palette.">
+                  <span class="theme-swatch" style="background: rgb(30, 30, 46); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Catppuccin"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="catppuccin-latte" title="Catppuccin's light palette: a soft off-white background with slate-blue text and a purple accent.">
+                  <span class="theme-swatch" style="background: rgb(239, 241, 245); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Latte"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="nord" title="Arctic-inspired dark theme with a slate-blue background, frost-white text, and a cyan accent.">
+                  <span class="theme-swatch" style="background: rgb(46, 52, 64); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Nord"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="nord-light" title="Nord's light variant: pale blue-grey background with dark slate text.">
+                  <span class="theme-swatch" style="background: rgb(236, 239, 244); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Nord Light"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="dracula" title="High-contrast dark theme with a purple-black background, near-white text, and a lavender-purple accent.">
+                  <span class="theme-swatch" style="background: rgb(40, 42, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Dracula"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="github-light" title="GitHub's default light UI: white background, near-black text, and GitHub's blue accent.">
+                  <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "GitHub"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="github-dark" title="GitHub's dark mode: near-black background, light grey text, and the same blue accent lightened for contrast.">
+                  <span class="theme-swatch" style="background: rgb(13, 17, 23); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "GitHub Dark"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="solarized-light" title="Ethan Schoonover's Solarized palette on a warm cream background with muted grey-green text.">
+                  <span class="theme-swatch" style="background: rgb(253, 246, 227); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Solarized"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="solarized-dark" title="Solarized's dark variant: a deep teal background with the same muted text and blue accent as the light version.">
+                  <span class="theme-swatch" style="background: rgb(0, 43, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Solar Dark"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="one-dark" title="Atom's One Dark theme: charcoal background, cool grey text, and a magenta-purple accent.">
+                  <span class="theme-swatch" style="background: rgb(40, 44, 52); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "One Dark"
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1017,6 +1136,8 @@
         </p>
       </div>
     </footer>
+    <script type="module">
+    </script>
     <script>
       "(function () {\n  function copyCommand(pill) {\n    var text = pill.querySelector('.nav-npm-text')\n    var icon = pill.querySelector('svg')\n    if (!text || !navigator.clipboard) return\n    navigator.clipboard.writeText(text.textContent || '').then(function () {\n      if (!icon) return\n      icon.setAttribute('stroke', 'var(--green)')\n      setTimeout(function () {\n        icon.setAttribute('stroke', 'var(--cyan)')\n      }, 1200)\n    })\n  }\n  var pills = document.querySelectorAll('.nav-bar .pill.mono')\n  pills.forEach(function (pill) {\n    pill.setAttribute('role', 'button')\n    pill.setAttribute('tabindex', '0')\n    pill.setAttribute('aria-label', 'Copy install command')\n    pill.style.cursor = 'pointer'\n    pill.addEventListener('click', function () {\n      copyCommand(pill)\n    })\n    pill.addEventListener('keydown', function (event) {\n      if (event.key === 'Enter' || event.key === ' ') {\n        event.preventDefault()\n        copyCommand(pill)\n      }\n    })\n  })\n})()"
     </script>

@@ -27,6 +27,7 @@ import {
 } from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { IndexPage } from './demo/components/index-page.tsx'
+import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 
 /**
  * Read package.json and build the `SoftwareApplication` JSON-LD block for
@@ -54,8 +55,13 @@ async function buildJsonLd(): Promise<string> {
 }
 
 async function generateHtml(): Promise<string> {
-  const jsonLd = await buildJsonLd()
-  return renderHtmlDocument(createElement(IndexPage, { jsonLd }))
+  const [jsonLd, themeBarScript] = await Promise.all([
+    buildJsonLd(),
+    bundleThemeBarClient(),
+  ])
+  return renderHtmlDocument(
+    createElement(IndexPage, { jsonLd, themeBarScript }),
+  )
 }
 
 const html = await generateHtml()

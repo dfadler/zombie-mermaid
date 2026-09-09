@@ -1,16 +1,20 @@
 /**
- * Builds the terminal-window DOM the live demo renders ASCII output into
- * (see index.ts's `.ascii-panel` markup and demo/client.ts's
- * `TERMINAL_ASCII_OPTS`/`applyWideCharWidths`), so the visual regression
- * suite screenshots the exact chrome + palette a user actually sees.
+ * Builds a terminal-window DOM matching the chrome + palette a real ASCII
+ * terminal-preview panel would use, so the visual regression suite
+ * screenshots that instead of a bare `<pre>`.
  *
- * demo/client.ts can't be imported directly here: it assumes a bundled
- * `window.__mermaid` global that only exists once esbuild has inlined the
- * renderer into the generated demo page. The pieces below are reimplemented
- * against the real library exports instead — kept in sync with
- * demo/client.ts by hand where the browser DOM logic is duplicated, but
- * `charDisplayWidth` itself is imported from the renderer rather than
- * reimplemented, so "how wide is this glyph" has one source of truth.
+ * There is currently no live production page rendering this: the pre-#590
+ * demo (`index.ts`'s `.ascii-panel` markup, `demo/client.ts`'s
+ * `TERMINAL_ASCII_OPTS`/`applyWideCharWidths`) that this file originally
+ * mirrored was removed by the #590 redesign (`demo/client.ts` itself
+ * deleted in #716) and never replaced — #684's restored global theme
+ * selector deliberately did not bring one back (#685/#689, see below).
+ * This module is now the sole surviving home of that chrome/palette, kept
+ * here purely so `ascii-samples.visual.test.ts` has a realistic terminal
+ * frame to screenshot; if a live panel is ever restored, it should
+ * supersede this file rather than duplicate it. `charDisplayWidth` is
+ * still imported from the renderer rather than reimplemented, so "how
+ * wide is this glyph" has one source of truth.
  */
 import { charDisplayWidth } from '../../../src/ascii/display-width.ts'
 import {
@@ -19,9 +23,15 @@ import {
 } from '../../../src/ascii/index.ts'
 
 /**
- * Fixed dark palette the demo's ASCII panel renders with, independent of
- * the page's theme picker — real terminal output doesn't retheme itself.
- * Mirrors `TERMINAL_PALETTE` in demo/client.ts.
+ * Fixed dark palette an ASCII terminal-preview panel renders with,
+ * independent of the page's theme picker — real terminal output doesn't
+ * retheme itself when you change your editor's color scheme. This is
+ * #685's decision (`docs/decisions/theme-selector-shared-state.md`),
+ * reaffirmed by #689 when the restored global picker was wired up to
+ * live-retheme rendered `<svg>` diagrams: an ASCII preview, if one is
+ * ever restored to a live page, should still use a fixed palette like
+ * this one rather than following that picker. Originally
+ * `TERMINAL_PALETTE` in the now-deleted demo/client.ts.
  */
 const TERMINAL_PALETTE = {
   bg: '#0d1117',

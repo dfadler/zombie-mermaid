@@ -238,7 +238,7 @@
                 </path>
               </svg>
             </a>
-            <a class="pill" href="../#samples-heading" style="background: var(--panel); border: 1px solid var(--cyan); color: var(--cyan);">
+            <a class="pill" href="./" style="background: var(--panel); border: 1px solid var(--cyan); color: var(--cyan);">
               "See all samples"
             </a>
           </div>

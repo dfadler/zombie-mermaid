@@ -40,6 +40,8 @@ import { createElement } from 'react'
 import dashboardData from './demo/dashboard-data.json' with { type: 'json' }
 import { DashboardPage } from './demo/components/dashboard-page.tsx'
 import { sharedPageCss } from './demo/components/shared-page-css.tsx'
+import { themePickerCss } from './demo/components/theme-picker.tsx'
+import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import {
   parseDashboardData,
   type DashboardData,
@@ -56,19 +58,36 @@ export {
   type RescuedIssue,
 } from './demo/dashboard-model.ts'
 
-/** Renders the complete dashboard document for `data`, styled by `css`. */
-export function renderDashboardHtml(data: DashboardData, css: string): string {
-  return renderHtmlDocument(createElement(DashboardPage, { data, css }))
+/**
+ * Renders the complete dashboard document for `data`, styled by `css`.
+ *
+ * `themeBarScript` defaults to `''` (an empty inline `<script>`) so
+ * existing callers/tests that don't care about the theme bar's
+ * interactivity — this page has nothing of its own to re-theme — don't
+ * need to pass a real bundle.
+ */
+export function renderDashboardHtml(
+  data: DashboardData,
+  css: string,
+  themeBarScript = '',
+): string {
+  return renderHtmlDocument(
+    createElement(DashboardPage, { data, css, themeBarScript }),
+  )
 }
 
 /** Renders the committed snapshot (demo/dashboard-data.json) with the page's assembled stylesheet. */
 export async function generate(): Promise<string> {
-  const pageCss = await readFile(
-    new URL('./demo/dashboard.css', import.meta.url),
-    'utf8',
+  const [pageCss, themeBarScript] = await Promise.all([
+    readFile(new URL('./demo/dashboard.css', import.meta.url), 'utf8'),
+    bundleThemeBarClient(),
+  ])
+  const css = sharedPageCss([themePickerCss(), pageCss].join('\n\n'))
+  return renderDashboardHtml(
+    parseDashboardData(dashboardData),
+    css,
+    themeBarScript,
   )
-  const css = sharedPageCss(pageCss)
-  return renderDashboardHtml(parseDashboardData(dashboardData), css)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

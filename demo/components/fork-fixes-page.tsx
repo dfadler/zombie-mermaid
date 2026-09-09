@@ -44,6 +44,7 @@ import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
+import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   CheckIcon,
   CommitIcon,
@@ -832,10 +833,19 @@ export interface ForkFixesPageProps {
    */
   css: string
   fixes: readonly FixSectionProps[]
+  /**
+   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
+   * the page's `ThemePickerSection` is interactive.
+   */
+  themeBarScript: string
 }
 
 /** The whole fork-fixes.html document. */
-export function ForkFixesPage({ css, fixes }: ForkFixesPageProps) {
+export function ForkFixesPage({
+  css,
+  fixes,
+  themeBarScript,
+}: ForkFixesPageProps) {
   return (
     <html lang="en">
       <head>
@@ -957,7 +967,14 @@ export function ForkFixesPage({ css, fixes }: ForkFixesPageProps) {
           </div>
         </main>
 
+        <ThemePickerSection tinted />
+
         <Footer columns={FOOTER_COLUMNS} />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: themeBarScript }}
+        />
         <NavCopyScript />
         <NavMobileMenuScript />
       </body>

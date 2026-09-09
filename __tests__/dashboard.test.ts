@@ -240,6 +240,24 @@ describe('renderDashboardHtml', () => {
     // The footer's copyright line, from footer.tsx's FOOTER_COPYRIGHT default.
     expect(html).toContain('MIT licensed')
   })
+
+  it('renders the global ThemePickerSection (#687)', () => {
+    const html = renderDashboardHtml(data, '')
+    expect(html).toContain('id="theme-pills"')
+    expect(html).toContain('data-theme="dracula"')
+  })
+
+  it('inlines a non-empty themeBarScript verbatim in a module script', () => {
+    const html = renderDashboardHtml(data, '', 'console.log("theme-bar")')
+    expect(html).toContain(
+      '<script type="module">console.log("theme-bar")</script>',
+    )
+  })
+
+  it('defaults themeBarScript to an empty inline script when omitted', () => {
+    const html = renderDashboardHtml(data, '')
+    expect(html).toContain('<script type="module"></script>')
+  })
 })
 
 describe('generate', () => {

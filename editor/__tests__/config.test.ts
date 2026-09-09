@@ -16,6 +16,11 @@ interface EditorWindow extends Window {
   setTheme: (key: string) => void
   applyStrokeOverrides: (svgEl: SVGElement) => void
   __mermaid: { THEMES: Record<string, { bg: string; fg: string }> }
+  __themeState: {
+    getTheme(): string
+    setTheme(key: string): void
+    subscribe(listener: (themeKey: string) => void): () => void
+  }
 }
 
 function asEditorWindow(env: ReturnType<typeof createEditorEnv>): EditorWindow {
@@ -84,17 +89,56 @@ describe('config panel state', () => {
     expect(win.state.config.accent).toBe('#ABCDEF')
   })
 
-  it('setTheme updates state.theme and persists to localStorage', () => {
+  it('setTheme updates state.theme and persists through the shared theme-state key (#688)', () => {
     const env = createEditorEnv()
     const win = asEditorWindow(env)
 
+    // #688: the editor's theme now persists under the same shared
+    // 'mermaid-theme' key every other page reads/writes through
+    // window.__themeState (demo/theme-state.ts) -- not its own
+    // now-retired 'bm-editor-theme' key.
     win.setTheme('one-dark')
     expect(win.state.theme).toBe('one-dark')
-    expect(win.localStorage.getItem('bm-editor-theme')).toBe('one-dark')
+    expect(win.localStorage.getItem('mermaid-theme')).toBe('one-dark')
 
     win.setTheme('')
     expect(win.state.theme).toBe('')
+    expect(win.localStorage.getItem('mermaid-theme')).toBeNull()
+  })
+
+  it('migrates a legacy bm-editor-theme value through window.__themeState.setTheme() (#688)', () => {
+    const env = createEditorEnv({ localStorage: { 'bm-editor-theme': 'nord' } })
+    const win = asEditorWindow(env)
+
+    // The migration (init.js, module-top-level) runs once, before this
+    // test ever calls anything -- it should have already persisted the
+    // legacy value under the shared key and discarded the old one.
+    expect(win.localStorage.getItem('mermaid-theme')).toBe('nord')
     expect(win.localStorage.getItem('bm-editor-theme')).toBeNull()
+    expect(win.state.theme).toBe('nord')
+  })
+
+  it('does not let a legacy bm-editor-theme value override an already-set shared preference', () => {
+    const env = createEditorEnv({
+      localStorage: { 'mermaid-theme': 'dracula', 'bm-editor-theme': 'nord' },
+    })
+    const win = asEditorWindow(env)
+
+    expect(win.localStorage.getItem('mermaid-theme')).toBe('dracula')
+    expect(win.state.theme).toBe('dracula')
+  })
+
+  it('reapplies the theme when window.__themeState notifies a change from elsewhere', () => {
+    const env = createEditorEnv()
+    const win = asEditorWindow(env)
+
+    // Simulates a theme picked on another page/tab -- not this page's own
+    // setTheme() click handler -- reaching this page via the shared
+    // theme-state module's subscribe() mechanism.
+    win.__themeState.setTheme('one-dark')
+
+    expect(win.state.theme).toBe('one-dark')
+    expect(win.localStorage.getItem('mermaid-theme')).toBe('one-dark')
   })
 
   it('feeds config changes through to the actual render call', async () => {

@@ -47,6 +47,9 @@
     <style>
       ".breadcrumb {\n  font-size: 14px;\n  color: var(--text-faint);\n}\n.breadcrumb .sep {\n  margin: 0 10px;\n  color: var(--text-faint);\n}\n\n@media (max-width: 900px) {\n  .type-row { flex-direction: column !important; }\n  .icon-panel-fixed { flex: 1 1 auto !important; width: 100% !important; height: 280px !important; }\n}\n\n@media (max-width: 600px) {\n  .page-h1 { font-size: 34px !important; }\n  .icon-panel-fixed { height: 220px !important; }\n}"
     </style>
+    <style>
+      "#theme-pills {\n  --t-bg: #FFFFFF;\n  --t-fg: #27272A;\n}\n.theme-pills {\n  display: flex;\n  gap: 0.3rem;\n  overflow: visible;\n  padding: 4px;\n  margin: -4px;\n  position: relative;\n  z-index: 2;\n}\n.theme-pills-inline {\n  display: flex;\n  gap: 0.3rem;\n}\n@media (max-width: 1024px) {\n  .theme-pills-inline {\n    display: none;\n  }\n}\n.theme-pill {\n  display: flex;\n  align-items: center;\n  height: 30px;\n  gap: 8px;\n  padding: 0 14px 0 12px;\n  border: none;\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));\n  color: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));\n  font-size: 12px;\n  font-weight: 500;\n  font-family: inherit;\n  cursor: pointer;\n  white-space: nowrap;\n  transition:\n    color 0.15s,\n    background 0.15s,\n    box-shadow 0.2s,\n    transform 0.1s;\n}\n.theme-pill:hover {\n  color: var(--t-fg);\n  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));\n}\n.theme-pill.active {\n  color: var(--t-fg);\n  background: var(--t-bg);\n  font-weight: 600;\n}\n.theme-pill:active {\n  transform: translateY(0.5px);\n}\n.theme-swatch {\n  display: inline-block;\n  width: 14px;\n  height: 14px;\n  border-radius: 50%;\n  flex-shrink: 0;\n}\n.theme-more-wrapper {\n  position: relative;\n}\n.theme-more-dropdown {\n  display: none;\n  position: absolute;\n  top: calc(100% + 6px);\n  right: 0;\n  background: var(--t-bg);\n  border-radius: 12px;\n  padding: 6px;\n  flex-direction: column;\n  gap: 2px;\n  min-width: 160px;\n  z-index: 1002;\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);\n}\n.theme-more-dropdown.open {\n  display: flex;\n}\n.theme-more-dropdown .theme-pill {\n  width: 100%;\n  justify-content: flex-start;\n  background: transparent;\n  box-shadow: none;\n}\n.theme-more-dropdown .theme-pill:hover {\n  background: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));\n}\n.theme-more-dropdown .theme-pill.active {\n  background: var(--t-bg);\n}"
+    </style>
   </head>
   <body>
     <div class="dc-root" style="font-family: var(--font-body); color: var(--text); width: 100%; max-width: 1440px; margin: 0px auto; background: linear-gradient(180deg, rgb(10, 13, 22) 0%, rgb(13, 17, 32) 40%, rgb(10, 13, 22) 100%); position: relative; overflow: hidden;">
@@ -272,6 +275,122 @@
           </div>
         </div>
       </div>
+      <div class="section-px" style="padding: 80px; background: var(--bg-soft); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div style="max-width: 1280px; margin: 0px auto; display: flex; flex-direction: column; gap: 28px;">
+          <div class="section-eyebrow">
+            "Pick a look"
+          </div>
+          <h2 style="font-size: 30px; letter-spacing: -0.01em;">
+            "Live in every built-in theme."
+          </h2>
+          <div class="theme-pills" id="theme-pills" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;">
+            <div class="theme-pills-inline">
+              <button class="theme-pill shadow-minimal active" data-theme="">
+                <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Default"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="dracula" title="High-contrast dark theme with a purple-black background, near-white text, and a lavender-purple accent.">
+                <span class="theme-swatch" style="background: rgb(40, 42, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                </span>
+                "Dracula"
+              </button>
+              <button class="theme-pill shadow-minimal" data-theme="solarized-light" title="Ethan Schoonover's Solarized palette on a warm cream background with muted grey-green text.">
+                <span class="theme-swatch" style="background: rgb(253, 246, 227); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                </span>
+                "Solarized"
+              </button>
+            </div>
+            <div class="theme-more-wrapper">
+              <button aria-controls="theme-more-dropdown" aria-expanded="false" aria-haspopup="true" aria-label="More themes" class="theme-pill shadow-minimal" id="theme-more-btn">
+                "16 Themes"
+              </button>
+              <div class="theme-more-dropdown shadow-modal-small" id="theme-more-dropdown">
+                <button class="theme-pill shadow-minimal active" data-theme="">
+                  <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Default"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="zinc-light" title="The default look: a plain off-white background with near-black zinc text and no color accent.">
+                  <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Zinc Light"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="zinc-dark" title="The dark counterpart to the default theme — near-black zinc background, off-white text.">
+                  <span class="theme-swatch" style="background: rgb(24, 24, 27); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Zinc Dark"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="tokyo-night" title="Deep navy background with soft lavender-blue text and a saturated blue accent, from the Tokyo Night VS Code theme.">
+                  <span class="theme-swatch" style="background: rgb(26, 27, 38); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Tokyo Night"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="tokyo-night-storm" title="A slightly lighter slate-navy variant of Tokyo Night, with the same lavender-blue text and blue accent.">
+                  <span class="theme-swatch" style="background: rgb(36, 40, 59); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Tokyo Storm"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="tokyo-night-light" title="Tokyo Night's light counterpart: a cool grey background with dark blue-grey text.">
+                  <span class="theme-swatch" style="background: rgb(213, 214, 219); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Tokyo Light"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="catppuccin-mocha" title="A warm dark background with lavender text and a violet accent, from the Catppuccin Mocha palette.">
+                  <span class="theme-swatch" style="background: rgb(30, 30, 46); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Catppuccin"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="catppuccin-latte" title="Catppuccin's light palette: a soft off-white background with slate-blue text and a purple accent.">
+                  <span class="theme-swatch" style="background: rgb(239, 241, 245); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Latte"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="nord" title="Arctic-inspired dark theme with a slate-blue background, frost-white text, and a cyan accent.">
+                  <span class="theme-swatch" style="background: rgb(46, 52, 64); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Nord"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="nord-light" title="Nord's light variant: pale blue-grey background with dark slate text.">
+                  <span class="theme-swatch" style="background: rgb(236, 239, 244); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Nord Light"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="dracula" title="High-contrast dark theme with a purple-black background, near-white text, and a lavender-purple accent.">
+                  <span class="theme-swatch" style="background: rgb(40, 42, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Dracula"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="github-light" title="GitHub's default light UI: white background, near-black text, and GitHub's blue accent.">
+                  <span class="theme-swatch" style="background: rgb(255, 255, 255); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "GitHub"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="github-dark" title="GitHub's dark mode: near-black background, light grey text, and the same blue accent lightened for contrast.">
+                  <span class="theme-swatch" style="background: rgb(13, 17, 23); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "GitHub Dark"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="solarized-light" title="Ethan Schoonover's Solarized palette on a warm cream background with muted grey-green text.">
+                  <span class="theme-swatch" style="background: rgb(253, 246, 227); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);">
+                  </span>
+                  "Solarized"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="solarized-dark" title="Solarized's dark variant: a deep teal background with the same muted text and blue accent as the light version.">
+                  <span class="theme-swatch" style="background: rgb(0, 43, 54); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "Solar Dark"
+                </button>
+                <button class="theme-pill shadow-minimal" data-theme="one-dark" title="Atom's One Dark theme: charcoal background, cool grey text, and a magenta-purple accent.">
+                  <span class="theme-swatch" style="background: rgb(40, 44, 52); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">
+                  </span>
+                  "One Dark"
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <footer class="section-px" style="padding: 64px 80px 48px; border-top: 1px solid var(--border); background: var(--bg-soft);">
         <div class="footer-grid" style="max-width: 1280px; margin: 0px auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;">
           <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -342,6 +461,8 @@
         </div>
       </footer>
     </div>
+    <script type="module">
+    </script>
     <script>
       "(function () {\n  function copyCommand(pill) {\n    var text = pill.querySelector('.nav-npm-text')\n    var icon = pill.querySelector('svg')\n    if (!text || !navigator.clipboard) return\n    navigator.clipboard.writeText(text.textContent || '').then(function () {\n      if (!icon) return\n      icon.setAttribute('stroke', 'var(--green)')\n      setTimeout(function () {\n        icon.setAttribute('stroke', 'var(--cyan)')\n      }, 1200)\n    })\n  }\n  var pills = document.querySelectorAll('.nav-bar .pill.mono')\n  pills.forEach(function (pill) {\n    pill.setAttribute('role', 'button')\n    pill.setAttribute('tabindex', '0')\n    pill.setAttribute('aria-label', 'Copy install command')\n    pill.style.cursor = 'pointer'\n    pill.addEventListener('click', function () {\n      copyCommand(pill)\n    })\n    pill.addEventListener('keydown', function (event) {\n      if (event.key === 'Enter' || event.key === ' ') {\n        event.preventDefault()\n        copyCommand(pill)\n      }\n    })\n  })\n})()"
     </script>

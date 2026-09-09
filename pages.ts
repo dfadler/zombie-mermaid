@@ -58,6 +58,7 @@ import {
 import { THEMES } from '@zombie-mermaid/core'
 import { DIAGRAM_TYPE_PROFILES } from './demo/diagram-pages-data.ts'
 import { ThemePicker, DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
+import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import { renderMermaidSVG } from './src/index.ts'
 import type { RenderOptions } from './src/index.ts'
 import { createHighlighter } from 'shiki'
@@ -260,6 +261,11 @@ async function main(): Promise<void> {
   const hubCanonical = `${SITE_URL}/diagrams/`
   sitemapUrls.push(hubCanonical)
 
+  // #687: the hub has no live diagram of its own to re-theme, so it only
+  // needs the theme-bar-only bundle (pill selection + persistence), not
+  // the heavier demo/diagram-page-client.ts every type detail page loads.
+  const themeBarScript = await bundleThemeBarClient()
+
   const hubHtml = renderHtmlDocument(
     createElement(DiagramHubPage, {
       title: `Diagram gallery: every type | Zombie Mermaid`,
@@ -274,6 +280,7 @@ async function main(): Promise<void> {
         intro: profile.intro,
         accent: profile.accent,
       })),
+      themeBarScript,
     }),
   )
 
