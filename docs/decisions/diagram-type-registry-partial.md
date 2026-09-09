@@ -18,7 +18,7 @@
 > need to change first" section didn't fully anticipate:
 >
 > - **ASCII side:** `renderFlowchartAscii(text, config, colorMode, theme,
->   extras)` was extracted into its own `src/ascii/flowchart.ts`, mirroring
+extras)` was extracted into its own `src/ascii/flowchart.ts`, mirroring
 >   every other type's entry-point shape exactly — a pure, behavior-preserving
 >   move of the five calls (`parseMermaid`, `convertToAsciiGraph`,
 >   `createMapping`, `drawGraph`, `canvasToString`, plus the BT-flip and
@@ -32,7 +32,7 @@
 >   need a second parameter, not just a `SvgRenderContext` change.
 >   `parseMermaid`'s `%%{init: ...}%%` directive extraction reads raw,
 >   un-commented lines, and its continuation-line merging needs each
->   statement's *originating physical line* grouping — both already lost by
+>   statement's _originating physical line_ grouping — both already lost by
 >   the time `splitStatements(decoded)` (what `xychartModule`/`erModule`/
 >   `sequenceModule`/`classModule`'s parsers already take as `lines`) has
 >   run. `parse` is now `(lines: string[], text: string) => TDiagram`; the

@@ -35,7 +35,10 @@ export type {
 export type { DiagramColors, ThemeName } from '@zombie-mermaid/core'
 export { fromShikiTheme, THEMES, DEFAULTS } from '@zombie-mermaid/core'
 export { parseMermaid } from './parser.ts'
-import { resolveCssColors, resolveFontSizes } from '@zombie-mermaid/svg-renderer'
+import {
+  resolveCssColors,
+  resolveFontSizes,
+} from '@zombie-mermaid/svg-renderer'
 export { renderMermaidASCII, renderMermaidAscii } from './ascii/index.ts'
 export type { AsciiRenderOptions } from './ascii/index.ts'
 export { createLayoutCache } from '@zombie-mermaid/svg-renderer'
