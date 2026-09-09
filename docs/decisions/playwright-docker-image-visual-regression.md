@@ -196,54 +196,20 @@ rather than duplicated here.
 
 ## Amendment (2026-09-09): #545 closed, architecture ruled out, #551 still not warranted
 
-[#549](https://github.com/dfadler/zombie-mermaid/issues/549) has since merged — CI's
-`visual-regression` job now runs inside the font-corrected container on real
-`ubuntu-latest`, and has been green on the overwhelming majority of runs since. That
-closed this amendment's gap 1 for the general case, but left #545's own literal
-question (and #615's two remaining "not tested" items — a flag-matched arm64 run, and
-a real-CI-on-the-same-commit comparison) still open. Both are now closed; see
-[docs/research/545-crossarch-ci-flag-matched-confirmation.md](../research/545-crossarch-ci-flag-matched-confirmation.md)
-for the full measurement. Summary:
+[#549](https://github.com/dfadler/zombie-mermaid/issues/549) has since merged, and
+#545's own remaining gaps (a flag-matched arm64 run, and a real-CI-on-the-same-commit
+comparison) are now closed too — see
+[the comment on #545](https://github.com/dfadler/zombie-mermaid/issues/545#issuecomment-5606427602)
+for the full measurement rather than duplicating it here.
 
-- **Three full-suite runs (843 executions) on native arm64, with `CI=true`
-  (`retries: 2`, matching real CI's actual configuration) — the flag-matched run
-  #615 never did — passed 843/843 in the final tally.** Two SVG executions were
-  flaky on first attempt (both cleared by one retry; same ratio-0.01,
-  same-dimensions jitter signature this cluster has documented throughout); zero
-  ASCII failures. Baseline `sha256` was verified unchanged before and after.
-- **A real, same-commit comparison was available**: this spike's arm64 runs used
-  commit `73d5940`, which real x86 CI evaluated in
-  [run 34377940579](https://github.com/dfadler/zombie-mermaid/actions/runs/34377940579)
-  at essentially the same time. That CI run's shard 2/4 showed _more_ jitter than
-  any of the three quiet-host arm64 runs (17/70 flaky, 1/70 hard failure, vs. at
-  most 1/281 flaky and 0 hard failures per arm64 run) — the opposite of what an
-  arm64-specific instability theory would predict. The likely explanation is
-  shared-runner CPU contention on the amd64 side, a noise source
-  `playwright.config.ts`'s own comments already document, not architecture.
-- **This inverts #615's more pessimistic reading** (30/570 SVG failures, 5.3%,
-  attributed to native-arm64 instability). The discrepancy is explained by flag
-  matching: #615's runs did not set `CI=true`, so none of its intermittent
-  failures had a chance to clear on retry the way real CI — and this spike's own
-  runs — allow for. Under the configuration that actually matters (CI's own), the
-  arm64/amd64 divergence within Linux/Docker rendering is not meaningfully
-  different from CI's own run-to-run variance.
+**Summary**: three full-suite runs (843 executions) on native arm64, flag-matched to
+CI's actual configuration, against the exact commit real x86 CI was evaluating at the
+same time — passed 843/843 in the final tally, while that same-commit real CI run
+showed _more_ jitter than any of the quiet-host arm64 runs. **#545 is answered:
+architecture is ruled out** as a driver of divergence for both halves of the suite.
 
-**#545 is answered**: identical-image cross-architecture rendering does not produce
-a meaningful divergence once (a) the #614 font layer is applied and (b) CI's actual
-retry policy is in effect. Architecture is ruled out as a driver for both halves of
-the suite.
-
-**#551 is still not warranted**, but for a different, more precise reason than
-before. This cluster's spikes — #545, #549, #615, and this amendment — only ever
-measured divergence _within_ Linux/Docker rendering (arm64 container vs. amd64
-container/CI). None of them measured whether native macOS Playwright — the actual
-generator of the committed `-chromium-darwin.png` baselines — matches the Linux
-container's output. That comparison is the original reason the OS-based split
-exists (font rasterization differing between bare macOS and bare Linux, per #544's
-opening background), and it remains completely untested. #551's two proposed
-branches (full consolidation, or renaming the split from OS-based to arch-based)
-both presuppose local dev and CI render inside the same environment — true today
-only for ASCII (via #550's Docker wrapper), not for SVG, where local dev still runs
-native macOS Playwright against `-darwin` baselines untouched by any of this. The
-concrete prerequisite for #551 is extending #550's wrapper to SVG; that is new
-scope, not something this amendment's evidence authorizes on its own.
+**#551 is still not warranted** — this cluster's spikes only ever measured divergence
+_within_ Linux/Docker rendering, never whether native macOS Playwright (the actual
+generator of the `-darwin` baselines) matches the container. That remains untested;
+the concrete prerequisite (extending #550's wrapper to SVG) is filed as
+[#837](https://github.com/dfadler/zombie-mermaid/issues/837).
