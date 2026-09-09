@@ -74,7 +74,7 @@ import { SiteHead } from './site-head.tsx'
 import { FORK_URL } from './site-chrome.tsx'
 import { EditorTopbar } from './editor-topbar.tsx'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
-import { Nav, NavStyle } from './nav.tsx'
+import { Nav, NavCopyScript, NavStyle } from './nav.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
 import { Card, PrimitivesStyle } from './primitives.tsx'
 import {
@@ -499,6 +499,7 @@ export function EditorPage({ css, themeItems, scriptJs }: EditorPageProps) {
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own src/browser.ts bundle plus editor/js/*.js, both under version control and concatenated at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: scriptJs }}
         />
+        <NavCopyScript />
       </body>
     </html>
   )
