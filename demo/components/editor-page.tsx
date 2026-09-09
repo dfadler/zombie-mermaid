@@ -89,13 +89,14 @@
  * Two real `<script type="module">` tags run, in this order (document
  * order is execution order for module scripts):
  *
- * 1. `rendererSetupJs` — the bundled Mermaid renderer (`window.__mermaid`)
- *    plus the theme-state bridge (`window.__themeState`). Unchanged from
- *    before this PR, just no longer concatenated with the legacy editor
- *    bundle into one script.
+ * 1. `rendererSetupJs` — `window.__themeColors` (the site-chrome re-theming
+ *    table, see this file's own module doc comment and `demo/editor-
+ *    client.tsx`'s), the bundled Mermaid renderer (`window.__mermaid`),
+ *    and the theme-state bridge (`window.__themeState`).
  * 2. `editorClientScript` — `demo/editor-client.tsx`'s bundle: hydrates
  *    `<EditorApp>` against pristine, server-rendered markup, hydrates
- *    `<NavIsland>`, then loads and runs {@link appJs} itself.
+ *    `<NavIsland>`, re-themes the chrome via `initChromeTheme()`, then
+ *    loads and runs {@link appJs} itself.
  *
  * `appJs` — the remaining 15 legacy `editor/js/*.ts` modules (unchanged, still
  * concatenated the same way `bundleEditorJs()` always has) — is **not** a
@@ -465,12 +466,13 @@ export interface EditorPageProps {
    */
   themes: readonly EditorThemeItem[]
   /**
-   * The bundled Mermaid renderer (`window.__mermaid`) plus the theme-state
-   * bridge (`window.__themeState`) — unchanged from before #806, just no
-   * longer concatenated with the legacy `editor/js/*.js` bundle into one
-   * script. Must run before {@link editorClientScript} (both are
-   * `type="module"`, so document order is execution order) — see this
-   * file's header comment.
+   * `window.__themeColors` (the bg/fg table `initChromeTheme()` needs —
+   * every other page gets this from `ThemePickerSection`; this page embeds
+   * it directly instead, see editor.ts's `generateEditorHtml()`), the
+   * bundled Mermaid renderer (`window.__mermaid`), and the theme-state
+   * bridge (`window.__themeState`). Must run before {@link
+   * editorClientScript} (both are `type="module"`, so document order is
+   * execution order) — see this file's header comment.
    */
   rendererSetupJs: string
   /**
@@ -554,10 +556,10 @@ export function EditorPage({
           <Footer />
         </div>
 
-        {/* 1. Renderer + theme-state bridge — must run first (see header comment) */}
+        {/* 1. window.__themeColors + renderer + theme-state bridge — must run first (see header comment) */}
         <script
           type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own src/browser.ts bundle plus the theme-state bridge, both under version control and concatenated at build time; never live/runtime user input
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own chromeThemeColorsScript() output plus the src/browser.ts bundle and the theme-state bridge, all under version control and produced at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: rendererSetupJs }}
         />
         {/* 2. Hydrates <EditorApp> + <NavIsland>, then loads (3) itself once hydration is confirmed done */}
