@@ -207,9 +207,7 @@ function BlogBreadcrumb({ crumbs }: { crumbs: Crumb[] }) {
     >
       {crumbs.map((crumb, index) => (
         <Fragment key={crumb.label}>
-          {index > 0 ? (
-            <ChevronRightIcon size={12} strokeWidth={2.4} />
-          ) : null}
+          {index > 0 ? <ChevronRightIcon size={12} strokeWidth={2.4} /> : null}
           {crumb.href === undefined ? (
             <span aria-current="page" style={{ color: colorVar('--text-dim') }}>
               {crumb.label}
