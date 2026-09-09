@@ -41,13 +41,13 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run fork-fixes` — build `fork-fixes.html`; if you add or change a `render: 'ascii'` entry in `demo/fork-fixes-data.ts`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/` — those real-terminal screenshots are the before/after shown on that page, not a live render
 - `pnpm run lint` — ESLint
 - `pnpm run build` — build the publishable package with Vite's library mode (`vite build --app --config vite.config.lib.ts`; the config's header comment explains why it's one environment per entry point)
-- `pnpm run samples` — render the sample gallery (`index.ts`) to `index.html`
+- `pnpm run samples` — render the marketing home page (`index.ts`) to `index.html` (the script name predates #590's redesign; see that file's header comment)
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot. Its markup comes from React components in `demo/components/` rendered with `react-dom/server` (the [#423](https://github.com/dfadler/zombie-mermaid/issues/423) pilot); every `.tsx` file there must open with `/** @jsxRuntime automatic */` — see the `jsx` comment in `demo/tsconfig.json` for why
 - `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
 - `pnpm run fork-fixes` — render the fork-fixes showcase (`fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
 - `pnpm run blog` — render the blog (`blog.ts`) from `blog-posts/*.md` to `blog/`; must run after `pnpm run pages` in `build:site` since it appends to the `sitemap.xml` that `pages.ts` generates. See `blog-posts/README.md` for the post frontmatter format.
-- `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (samples showcase) and `/editor` (live editor), rebuilding on relevant file changes
+- `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (marketing home page) and `/editor` (live editor), rebuilding on relevant file changes
 - `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
 - `pnpm run bench` — render benchmarks
 - `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
