@@ -39,7 +39,8 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
-import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
+import { NavMobileMenuScript } from './nav.tsx'
+import { NavIsland } from './nav-island.tsx'
 import {
   Card,
   CTA,
@@ -753,6 +754,14 @@ export interface DiagramTypePageProps {
   /** The inline `<script>` seeding `window.__diagramPage*`, already escaped. */
   themeDataScript: string
   clientScriptSrc: string
+  /**
+   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
+   * hydrates `<Nav>`, inlined into its own `<script type="module">` — see
+   * editor-page.tsx's `EditorPageProps.navClientScript` doc comment for why
+   * it stays a separate tag rather than being concatenated with any other
+   * script.
+   */
+  navClientScript: string
 }
 
 /** The page's `<head>` — StaticPage's metadata shape, but with the redesign's own fonts and inline CSS instead of site-chrome.tsx's `FontLinks`/external stylesheet. */
@@ -949,6 +958,7 @@ export function DiagramTypePage({
   themePills,
   themeDataScript,
   clientScriptSrc,
+  navClientScript,
 }: DiagramTypePageProps) {
   return (
     <html lang="en">
@@ -982,7 +992,7 @@ export function DiagramTypePage({
             overflow: 'hidden',
           }}
         >
-          <Nav active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+          <NavIsland active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
 
           {/* ============ BREADCRUMB + HEADER ============ */}
           <div
@@ -1268,7 +1278,11 @@ export function DiagramTypePage({
           dangerouslySetInnerHTML={{ __html: themeDataScript }}
         />
         <script type="module" src={clientScriptSrc} />
-        <NavCopyScript />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: navClientScript }}
+        />
         <NavMobileMenuScript />
       </body>
     </html>
@@ -1395,6 +1409,14 @@ export interface DiagramHubPageProps {
    * that section.
    */
   themeBarScript: string
+  /**
+   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
+   * hydrates `<Nav>`, inlined into its own `<script type="module">` — see
+   * editor-page.tsx's `EditorPageProps.navClientScript` doc comment for why
+   * it stays a separate tag rather than being concatenated with any other
+   * script.
+   */
+  navClientScript: string
 }
 
 /** One diagram type's row: hero icon panel, index/label/intro, and a "View examples" CTA to its real detail page. */
@@ -1537,6 +1559,7 @@ export function DiagramHubPage({
   themeCount,
   types,
   themeBarScript,
+  navClientScript,
 }: DiagramHubPageProps) {
   return (
     <html lang="en">
@@ -1572,7 +1595,7 @@ export function DiagramHubPage({
             overflow: 'hidden',
           }}
         >
-          <Nav active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+          <NavIsland active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
 
           {/* ============ PAGE HEADER ============ */}
           <div
@@ -1638,7 +1661,11 @@ export function DiagramHubPage({
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: themeBarScript }}
         />
-        <NavCopyScript />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: navClientScript }}
+        />
         <NavMobileMenuScript />
       </body>
     </html>

@@ -439,24 +439,30 @@ export interface DashboardAppProps {
  * type's doc comment for why the client must never recompute a formatted
  * string itself.
  *
- * Deliberately does **not** include `<Nav>` (zombie-mermaid#799): `Nav`'s
- * install-pill copy behavior still comes from `NAV_COPY_SCRIPT`
- * (nav.tsx) — a plain, un-hydrated inline script (#800 is the sub-issue
- * that replaces it with real React state) that runs synchronously during
- * HTML parsing and mutates that pill's DOM (adds `role`/`tabindex`/
- * `aria-label`, sets several inline style properties) *before* this page's
- * `type="module"` hydration script gets a chance to run (module scripts are
- * deferred until after parsing, same as `defer`). If `<Nav>` sat inside the
- * hydrated tree, `hydrateRoot()` would find that already-mutated DOM and
- * throw a real "hydrated but some attributes... didn't match" error — this
- * was caught for real (not by test/reasoning alone) via a manual browser
- * check with `read_console_messages`, exactly the "no hydration-mismatch
- * warnings in a real browser" acceptance criterion this issue calls for.
- * `DashboardPage` therefore keeps rendering `<Nav>` as static, unhydrated
- * SSR output, outside {@link DASHBOARD_ROOT_ID} entirely — the same way
- * every other page still will until #800 lands, which is what makes Nav
- * hydration a separate, already-sequenced sub-issue rather than something
- * this one needs to also solve.
+ * Deliberately does **not** include `<Nav>`. As of #799, that was because
+ * `Nav`'s install-pill copy behavior still came from `NAV_COPY_SCRIPT`, a
+ * plain, un-hydrated inline script that ran synchronously during HTML
+ * parsing and mutated that pill's DOM (`role`/`tabindex`/`aria-label`,
+ * several inline style properties) *before* this page's `type="module"`
+ * hydration script got a chance to run (module scripts are deferred until
+ * after parsing, same as `defer`) — if `<Nav>` had sat inside the hydrated
+ * tree, `hydrateRoot()` would have found that already-mutated DOM and
+ * thrown a real "hydrated but some attributes... didn't match" error (this
+ * was caught for real, not by test/reasoning alone, via a manual browser
+ * check with `read_console_messages`).
+ *
+ * `NAV_COPY_SCRIPT` is gone as of #800 — `Nav`'s copy button is real React
+ * state now — but `<Nav>` *still* isn't part of this component: it hydrates
+ * as its own separate island (`demo/components/nav-island.tsx`'s
+ * `NavIsland`, `NAV_ROOT_ID`, mounted by `dashboard-client.tsx`'s
+ * {@link hydrateNav}) rather than moving inside {@link DASHBOARD_ROOT_ID}'s
+ * boundary. That keeps every page's Nav hydration on one shared, uniform
+ * path (`nav-client.tsx`) regardless of whether the rest of that page is
+ * hydrated at all — dashboard.html happens to also hydrate `DashboardApp`,
+ * but editor.html/index.html/fork-fixes.html/blog/diagrams pages hydrate
+ * *only* Nav, and giving dashboard.html a special "Nav folded into the main
+ * app" shape it alone has isn't worth the inconsistency it would add for a
+ * component with no cross-island state to share.
  */
 export function DashboardApp({ viewModel }: DashboardAppProps) {
   return (

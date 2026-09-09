@@ -59,7 +59,8 @@ import { ArrowRightIcon, ChevronRightIcon, LogoMark } from './icons.tsx'
 import { CTA, Card, Pill, SectionEyebrow } from './primitives.tsx'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
-import { Nav, NavCopyScript, NavMobileMenuScript, type NavKey } from './nav.tsx'
+import { NavMobileMenuScript, type NavKey } from './nav.tsx'
+import { NavIsland } from './nav-island.tsx'
 import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   DesignFontLinks,
@@ -273,6 +274,14 @@ export interface BlogPostPageProps {
   publishedTime: string
   /** The post body, rendered from Markdown by marked + shiki. */
   bodyHtml: string
+  /**
+   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
+   * hydrates `<Nav>`, inlined into its own `<script type="module">` — see
+   * editor-page.tsx's `EditorPageProps.navClientScript` doc comment for why
+   * it stays a separate tag rather than being concatenated with any other
+   * script.
+   */
+  navClientScript: string
 }
 
 /**
@@ -312,6 +321,7 @@ export function BlogPostPage({
   faviconHref,
   publishedTime,
   bodyHtml,
+  navClientScript,
 }: BlogPostPageProps) {
   return (
     <BlogDocument
@@ -330,7 +340,7 @@ export function BlogPostPage({
           )} 40%, ${colorVar('--bg')} 100%)`,
         }}
       >
-        <Nav active="blog" homeHref="../" hrefs={NAV_HREFS} />
+        <NavIsland active="blog" homeHref="../" hrefs={NAV_HREFS} />
 
         <div
           className="section-px"
@@ -412,7 +422,11 @@ export function BlogPostPage({
         </div>
 
         <Footer columns={FOOTER_COLUMNS} />
-        <NavCopyScript />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: navClientScript }}
+        />
         <NavMobileMenuScript />
       </div>
     </BlogDocument>
@@ -441,6 +455,14 @@ export interface BlogIndexPageProps {
    * the index's `ThemePickerSection` is interactive.
    */
   themeBarScript: string
+  /**
+   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
+   * hydrates `<Nav>`, inlined into its own `<script type="module">` — see
+   * editor-page.tsx's `EditorPageProps.navClientScript` doc comment for why
+   * it stays a separate tag rather than being concatenated with any other
+   * script.
+   */
+  navClientScript: string
 }
 
 /**
@@ -652,6 +674,7 @@ export function BlogIndexPage({
   faviconHref,
   posts,
   themeBarScript,
+  navClientScript,
 }: BlogIndexPageProps) {
   const [featured, ...rest] = posts
   return (
@@ -669,7 +692,7 @@ export function BlogIndexPage({
           )} 40%, ${colorVar('--bg')} 100%)`,
         }}
       >
-        <Nav active="blog" homeHref="../" hrefs={NAV_HREFS} />
+        <NavIsland active="blog" homeHref="../" hrefs={NAV_HREFS} />
 
         <div
           className="section-px"
@@ -749,7 +772,11 @@ export function BlogIndexPage({
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: themeBarScript }}
         />
-        <NavCopyScript />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: navClientScript }}
+        />
         <NavMobileMenuScript />
       </div>
     </BlogDocument>

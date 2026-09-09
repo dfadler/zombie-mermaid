@@ -57,6 +57,13 @@ const FIXTURE_CSS =
 const FIXTURE_SCRIPT =
   'globalThis.__fixture = 1 < 2 && 3 > 2;\nconsole.log("fixture & <b>bold</b>");'
 
+/**
+ * Stands in for the bundled `demo/nav-only-client.tsx` entry
+ * (zombie-mermaid#800) every page below now inlines.
+ */
+const FIXTURE_NAV_CLIENT_SCRIPT =
+  'globalThis.__navFixture = 1 < 2 && 3 > 2;\nconsole.log("nav fixture & <b>bold</b>");'
+
 async function expectGolden(html: string, file: string): Promise<void> {
   await expect(normalizeHtml(html) + '\n').toMatchFileSnapshot(file)
 }
@@ -67,6 +74,7 @@ describe('index.ts → index.html', () => {
       createElement(IndexPage, {
         jsonLd: '{\n  "@type": "SoftwareApplication"\n}',
         clientScriptSrc: 'assets/index-page-client.js',
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/index-page.normalized.txt')
@@ -87,6 +95,7 @@ describe('editor.ts → editor.html', () => {
         css: FIXTURE_CSS,
         themeItems,
         scriptJs: FIXTURE_SCRIPT,
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/editor-page.normalized.txt')
@@ -162,7 +171,12 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
 
   it('normalises to the golden DOM', async () => {
     const html = renderHtmlDocument(
-      createElement(ForkFixesPage, { css: FIXTURE_CSS, fixes }),
+      createElement(ForkFixesPage, {
+        css: FIXTURE_CSS,
+        fixes,
+        themeBarScript: FIXTURE_SCRIPT,
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
+      }),
     )
     await expectGolden(html, './__fixtures__/fork-fixes-page.normalized.txt')
   })
@@ -215,6 +229,7 @@ describe('pages.ts → diagrams/*.html', () => {
         }),
         themeDataScript: 'window.__diagramPageThemes = {"":{"bg":"#FFFFFF"}};',
         clientScriptSrc: 'assets/diagram-page-client.js',
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/diagram-type-page.normalized.txt')
@@ -254,6 +269,7 @@ describe('pages.ts → diagrams/*.html', () => {
         }),
         themeDataScript: 'window.__diagramPageNarrowSource = "flowchart TD";',
         clientScriptSrc: 'assets/diagram-page-client.js',
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(
@@ -285,6 +301,8 @@ describe('pages.ts → diagrams/*.html', () => {
             accent: 'cyan',
           },
         ],
+        themeBarScript: FIXTURE_SCRIPT,
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/diagram-hub-page.normalized.txt')
@@ -303,6 +321,7 @@ describe('blog.ts → blog/*.html', () => {
         faviconHref: '../favicon.svg',
         publishedTime: '2026-03-04',
         bodyHtml: '<p>Body <em>markup</em> from marked.</p>',
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/blog-post-page.normalized.txt')
@@ -328,6 +347,8 @@ describe('blog.ts → blog/*.html', () => {
             description: 'Setting things up.',
           },
         ],
+        themeBarScript: FIXTURE_SCRIPT,
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     await expectGolden(html, './__fixtures__/blog-index-page.normalized.txt')
@@ -340,6 +361,8 @@ describe('blog.ts → blog/*.html', () => {
         cssHref: 'assets/blog.css',
         faviconHref: '../favicon.svg',
         posts: [],
+        themeBarScript: FIXTURE_SCRIPT,
+        navClientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
     expect(html).toContain('<p class="empty-state"')

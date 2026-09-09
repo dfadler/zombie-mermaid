@@ -43,7 +43,8 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
-import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
+import { NavMobileMenuScript } from './nav.tsx'
+import { NavIsland } from './nav-island.tsx'
 import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   CheckIcon,
@@ -839,6 +840,14 @@ export interface ForkFixesPageProps {
    * the page's `ThemePickerSection` is interactive.
    */
   themeBarScript: string
+  /**
+   * The bundled `demo/nav-only-client.tsx` entry (zombie-mermaid#800) that
+   * hydrates `<Nav>`, inlined into its own `<script type="module">` — see
+   * editor-page.tsx's `EditorPageProps.navClientScript` doc comment for why
+   * it stays a separate tag rather than being concatenated with any other
+   * script.
+   */
+  navClientScript: string
 }
 
 /** The whole fork-fixes.html document. */
@@ -846,6 +855,7 @@ export function ForkFixesPage({
   css,
   fixes,
   themeBarScript,
+  navClientScript,
 }: ForkFixesPageProps) {
   return (
     <html lang="en">
@@ -862,7 +872,7 @@ export function ForkFixesPage({
         <style>{css}</style>
       </head>
       <body>
-        <Nav active="forkFixes" homeHref="index.html" hrefs={NAV_HREFS} />
+        <NavIsland active="forkFixes" homeHref="index.html" hrefs={NAV_HREFS} />
 
         <header className="section-px" style={{ padding: '88px 80px 72px' }}>
           <div
@@ -976,7 +986,11 @@ export function ForkFixesPage({
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: themeBarScript }}
         />
-        <NavCopyScript />
+        <script
+          type="module"
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/nav-only-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+          dangerouslySetInnerHTML={{ __html: navClientScript }}
+        />
         <NavMobileMenuScript />
       </body>
     </html>

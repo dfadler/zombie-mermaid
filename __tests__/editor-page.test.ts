@@ -35,7 +35,12 @@ const THEME_ITEMS: ReactNode = createElement(EditorThemeItems, {
 
 function render(scriptJs: string, css = 'body { color: red; }'): string {
   return renderHtmlDocument(
-    createElement(EditorPage, { css, themeItems: THEME_ITEMS, scriptJs }),
+    createElement(EditorPage, {
+      css,
+      themeItems: THEME_ITEMS,
+      scriptJs,
+      navClientScript: '',
+    }),
   )
 }
 

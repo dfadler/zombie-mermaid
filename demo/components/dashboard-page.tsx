@@ -49,7 +49,8 @@ import {
   FORK_URL,
   ROUTES,
 } from './dashboard-app.tsx'
-import { Nav, NavCopyScript, NavMobileMenuScript } from './nav.tsx'
+import { NavMobileMenuScript } from './nav.tsx'
+import { NavIsland } from './nav-island.tsx'
 import { DesignFontLinks, colorVar } from './tokens.tsx'
 
 // Re-exported for existing callers/tests that import these from
@@ -136,12 +137,12 @@ export function DashboardPage({
           }}
         >
           {/*
-            Static, un-hydrated -- see DashboardApp's doc comment
-            (dashboard-app.tsx) for why Nav specifically stays outside the
-            hydration boundary as of #799 (its install-pill copy behavior
-            isn't hydrated until #800).
+            Its own hydration island (zombie-mermaid#800), separate from
+            DASHBOARD_ROOT_ID -- see DashboardApp's doc comment
+            (dashboard-app.tsx) for why Nav still isn't part of that
+            boundary, and dashboard-client.tsx for where it's hydrated.
           */}
-          <Nav
+          <NavIsland
             homeHref={ROUTES.home}
             hrefs={{
               diagrams: ROUTES.diagrams,
@@ -204,7 +205,6 @@ export function DashboardPage({
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
           dangerouslySetInnerHTML={{ __html: themeBarScript }}
         />
-        <NavCopyScript />
         <NavMobileMenuScript />
         <script
           type="module"
