@@ -281,12 +281,36 @@ function homePageCss(): string {
   padding: ${SPACE.xl}px;
   margin-top: ${SPACE.xl}px;
   display: flex;
-  align-items: center;
   justify-content: center;
   transition: background 900ms ease;
   overflow: hidden;
 }
-.theme-showcase-diagram-slot { width: 100%; justify-content: center; }
+/* Fills the card -- a plain block would collapse to 0x0 once its children
+   (the six slots) go position: absolute below, since absolutely
+   positioned children no longer contribute to a parent's intrinsic size. */
+#theme-showcase-diagrams { position: relative; width: 100%; height: 100%; }
+/* All six slots stack exactly on top of each other and crossfade via
+   opacity -- see this rule's own transition and index-page-client.ts's
+   startShowcaseCycle() for why: swapping which slot has .is-active is a
+   plain opacity fade between two diagrams that are each ALWAYS at full
+   contrast, rather than interpolating --bg/--fg color values through
+   each other (which, tried first, made text unreadable for a chunk of
+   the fade when the two themes were far apart in lightness -- e.g.
+   dracula to solarized-light passes through a muddy, low-contrast gray).
+   900ms ease matches "*.theme-showcase-diagram-card"'s own background
+   transition above exactly (same duration, same timing function) so the
+   two fade at the same visual rate rather than drifting apart. */
+.theme-showcase-diagram-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 900ms ease;
+  pointer-events: none;
+}
+.theme-showcase-diagram-slot.is-active { opacity: 1; pointer-events: auto; }
 .theme-showcase-diagram-slot svg {
   display: block;
   width: auto;
@@ -301,21 +325,6 @@ function homePageCss(): string {
   max-height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
   margin: 0 auto;
 }
-/* The diagram's own colors fade in step with the card's background 900ms
-   ease transition above, but NOT via a plain CSS "transition: fill ..."
-   rule here -- that was tried first and does nothing: every shape paints
-   via a "fill"/"stroke" presentation attribute whose value derives from
-   --bg/--fg through an intermediate custom property (var(--_node-fill),
-   which itself is var(--surface, color-mix(...var(--fg)...var(--bg)));
-   see packages/core/theme.ts). Chromium doesn't detect a transitionable
-   before/after "fill" across that chain of unregistered custom-property
-   indirection -- verified empirically (before/after computed fill values
-   captured on a timer, no intermediate frame) -- short of registering
-   --bg/--fg themselves via @property, which would apply those *site-wide*
-   (they also name the page's own root theme tokens) for a fix scoped to
-   this one section. index-page-client.ts's startShowcaseCycle() instead
-   hand-tweens --bg/--fg/... across the fade window via requestAnimationFrame,
-   the same way its mixHex() already hand-rolls color math for this file. */
 
 .theme-showcase-frac { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .theme-showcase-frac-cur { font-size: 34px; font-weight: 700; color: ${colorVar('--cyan')}; letter-spacing: -0.02em; }
@@ -429,14 +438,18 @@ function renderShowcaseDiagrams(): { slug: string; html: string }[] {
  * this section grows back on its own.)
  *
  * `demo/index-page-client.ts`'s `startShowcaseCycle()` does the actual
- * cycling: every ~2.8s it swaps which of the six pre-rendered `<svg>`s
- * (`#theme-showcase-diagrams [data-slug]`) is visible and re-themes all six
- * in place via CSS custom properties (`svg.style.setProperty('--bg', …)`,
- * …) — the exact "swap variables, no re-render" technique
+ * cycling: every ~2.8s it re-themes the *next* pre-rendered `<svg>` in
+ * place via CSS custom properties (`svg.style.setProperty('--bg', …)`, …
+ * — the same "swap variables, no re-render" technique
  * `demo/diagram-page-client.ts`'s `applyThemeToDiagram` already uses
- * elsewhere, just applied to six SVGs instead of one. It also keeps the
- * `--bg`/`--fg`/`--accent` code panel and the `N / <count>` counter in
- * sync. `prefers-reduced-motion: reduce` stops the cycle before it starts —
+ * elsewhere) while it's still invisible, then crossfades it in over the
+ * outgoing one via each `.theme-showcase-diagram-slot`'s own `opacity`
+ * transition (toggling which slot carries `.is-active`) rather than
+ * interpolating colors between the two themes — every visible diagram
+ * stays at full contrast throughout, see that CSS rule's own comment for
+ * why. It also keeps the `--bg`/`--fg`/`--accent` code panel and the
+ * `N / <count>` counter in sync. `prefers-reduced-motion: reduce` stops
+ * the cycle before it starts —
  * the build-time render below (flowchart, in
  * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours) is a complete, correctly
  * themed diagram on its own, so that's a real fallback state, not a broken
@@ -617,9 +630,12 @@ function ThemeShowcase() {
               {diagrams.map((d, i) => (
                 <div
                   key={d.slug}
-                  className="theme-showcase-diagram-slot"
+                  className={
+                    i === 0
+                      ? 'theme-showcase-diagram-slot is-active'
+                      : 'theme-showcase-diagram-slot'
+                  }
                   data-slug={d.slug}
-                  style={{ display: i === 0 ? 'flex' : 'none' }}
                   // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see this file's header comment)
                   dangerouslySetInnerHTML={{ __html: d.html }}
                 />
