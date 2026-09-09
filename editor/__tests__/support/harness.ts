@@ -88,6 +88,13 @@ export interface CreateEditorEnvOptions {
     source: string,
     options: Record<string, unknown>,
   ) => Promise<string>
+  /**
+   * Pre-seeds `localStorage` before `js/*.js` (init.js in particular) runs
+   * -- e.g. `{ 'bm-editor-theme': 'nord' }` to exercise #688's one-time
+   * migration off that retired key, which only has an effect if it's
+   * present *before* init.js's module-top-level migration code runs.
+   */
+  localStorage?: Record<string, string>
 }
 
 /**
@@ -125,6 +132,46 @@ export function createEditorEnv(
   ;(window as unknown as { __mermaid: unknown }).__mermaid = {
     THEMES,
     renderMermaidSVGAsync,
+  }
+
+  // #688: init.js now calls window.__themeState.getTheme()/setTheme()/
+  // subscribe() (demo/theme-state.ts, bridged for editor/js/*.js's plain
+  // scripts via demo/editor-theme-state-bridge.ts in the real build) instead
+  // of reading/writing localStorage directly. This harness evaluates the
+  // real js/*.js files without that Vite-bundled bridge in the loop, so it
+  // needs its own stand-in here -- a small, self-contained reimplementation
+  // of theme-state.ts's actual get/set/subscribe/'' -default semantics
+  // against this jsdom window's own localStorage, the same hand-built-stub
+  // pattern __mermaid above already uses for renderMermaidSVGAsync.
+  const THEME_STORAGE_KEY = 'mermaid-theme'
+  const themeListeners = new Set<(themeKey: string) => void>()
+  ;(
+    window as unknown as {
+      __themeState: {
+        getTheme(): string
+        setTheme(key: string): void
+        subscribe(listener: (themeKey: string) => void): () => void
+      }
+    }
+  ).__themeState = {
+    getTheme() {
+      return window.localStorage.getItem(THEME_STORAGE_KEY) ?? ''
+    },
+    setTheme(key: string) {
+      if (key) window.localStorage.setItem(THEME_STORAGE_KEY, key)
+      else window.localStorage.removeItem(THEME_STORAGE_KEY)
+      for (const listener of themeListeners) listener(key)
+    },
+    subscribe(listener: (themeKey: string) => void) {
+      themeListeners.add(listener)
+      return () => {
+        themeListeners.delete(listener)
+      }
+    },
+  }
+
+  for (const [key, value] of Object.entries(options.localStorage ?? {})) {
+    window.localStorage.setItem(key, value)
   }
 
   for (const file of JS_FILES) {
