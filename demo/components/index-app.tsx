@@ -150,12 +150,7 @@ export const INDEX_MAIN_ROOT_ID = 'index-main-root'
 
 function HeroVisual() {
   return (
-    <svg
-      viewBox="0 0 700 460"
-      width="100%"
-      height="auto"
-      style={{ display: 'block' }}
-    >
+    <svg viewBox="0 0 700 460" width="100%" style={{ display: 'block' }}>
       <rect
         x="20"
         y="50"
@@ -389,6 +384,8 @@ export function IndexHeroApp() {
         justifyContent: 'space-between',
         gap: `${SPACE['7xl']}px`,
         padding: `${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px`,
+        maxWidth: `${LAYOUT.maxWidth}px`,
+        margin: '0 auto',
         position: 'relative',
         zIndex: 1,
       }}
