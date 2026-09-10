@@ -349,20 +349,14 @@ describe('renderDashboardHtml', () => {
     expect(html).toContain('MIT licensed')
   })
 
-  it('renders the global ThemePickerSection (#687)', () => {
-    const html = renderDashboardHtml(data, '')
-    expect(html).toContain('id="theme-pills"')
-    expect(html).toContain('data-theme="dracula"')
-  })
-
-  it('inlines a non-empty themeBarScript verbatim in a module script', () => {
-    const html = renderDashboardHtml(data, '', 'console.log("theme-bar")')
+  it('inlines a non-empty clientScript verbatim in a module script', () => {
+    const html = renderDashboardHtml(data, '', 'console.log("hydrate")')
     expect(html).toContain(
-      '<script type="module">console.log("theme-bar")</script>',
+      '<script type="module">console.log("hydrate")</script>',
     )
   })
 
-  it('defaults themeBarScript to an empty inline script when omitted', () => {
+  it('defaults clientScript to an empty inline script when omitted', () => {
     const html = renderDashboardHtml(data, '')
     expect(html).toContain('<script type="module"></script>')
   })

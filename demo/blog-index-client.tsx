@@ -12,9 +12,6 @@
  *
  * `<NavIsland>` hydrates here too, via {@link hydrateNav}, in the same
  * bundle — see `blog-post-client.tsx`'s header comment for why.
- * `ThemePicker`'s own hydration is unaffected by this issue: it's still
- * `demo/theme-bar-only-client.ts`'s `hydrateThemeBar()`, bundled
- * separately as this page's `themeBarScript`.
  */
 import { createElement } from 'react'
 import { hydrateRoot } from 'react-dom/client'

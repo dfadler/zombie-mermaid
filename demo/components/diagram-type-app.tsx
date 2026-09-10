@@ -8,14 +8,10 @@
  * everything it imports, never touches `react-dom/server` — mirroring
  * `dashboard-app.tsx`'s split.
  *
- * The "Pick a look" theme-picker section is deliberately **not** rendered
- * here — it stays in `diagram-page.tsx` as a plain sibling of this
- * component's hydration container, for the same reason `dashboard-
- * page.tsx`/`fork-fixes-page.tsx`/`blog-page.tsx`/`index-page.tsx` keep
- * `ThemePickerSection`/`ThemePickerIsland` out of their own hydrated
- * trees: `ThemePickerIsland` imports `react-dom/server` for its own
- * SSR-only purposes. `<NavIsland>`/`<Footer>` are siblings too, same
- * reasoning.
+ * `<NavIsland>`/`<Footer>` render as plain siblings of this component's
+ * hydration container in `diagram-page.tsx` rather than nested in this
+ * file's own tree, for the same reason `dashboard-app.tsx`'s doc comment
+ * gives for its own `<Footer>`/`<Nav>` split.
  *
  * `sourcePanelHtml`/`diagramHtml` are shiki/`renderMermaidSVG` output —
  * plain, pre-rendered strings by the time they reach here (build-time

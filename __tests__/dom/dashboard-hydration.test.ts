@@ -20,21 +20,15 @@
  * PR's manual verification — see the PR description).
  */
 import { act, createElement } from 'react'
-import { renderToStaticMarkup, renderToString } from 'react-dom/server'
+import { renderToString } from 'react-dom/server'
 import { hydrateRoot, type Root } from 'react-dom/client'
-import { fireEvent, screen, within } from '@testing-library/react'
-import { describe, expect, it, afterEach, beforeEach } from 'vitest'
+import { screen, within } from '@testing-library/react'
+import { describe, expect, it, afterEach } from 'vitest'
 import {
   DASHBOARD_PROPS_ELEMENT_ID,
   DASHBOARD_ROOT_ID,
   DashboardApp,
 } from '../../demo/components/dashboard-page.tsx'
-import { dashboardFooterColumns } from '../../demo/components/dashboard-app.tsx'
-import { ThemePickerSection } from '../../demo/components/theme-picker-section.tsx'
-import { Footer } from '../../demo/components/footer.tsx'
-import { hydrateThemeBar } from '../../demo/theme-bar-client.tsx'
-import { THEME_PILLS_ROOT_ID } from '../../demo/components/theme-picker.tsx'
-import { THEME_STORAGE_KEY, getTheme } from '../../demo/theme-state.ts'
 import {
   buildDashboardViewModel,
   parseDashboardData,
@@ -177,118 +171,5 @@ describe('demo/dashboard-client.tsx props contract', () => {
     expect(read?.textContent).toBeTruthy()
     const parsed = JSON.parse(read?.textContent ?? '') as DashboardViewModel
     expect(parsed).toEqual(viewModel)
-  })
-})
-
-/**
- * Regression guard for the bug found (and fixed) during #802's
- * investigation, before it ever reached `main` (#801/PR833 was still
- * open): `DashboardApp` used to nest `<ThemePickerSection>` directly in
- * its own hydrated tree. That both leaked `react-dom/server` into
- * `dashboard-client.tsx`'s browser bundle (covered by
- * `__tests__/dashboard-client-bundle.test.ts`) and meant *two* independent
- * hydration calls would end up targeting the same {@link
- * THEME_PILLS_ROOT_ID} DOM node for one page render: `DashboardApp`'s own
- * `hydrateRoot(DASHBOARD_ROOT_ID, ...)` call (since `ThemePickerSection`
- * sat inside that tree) and `demo/theme-bar-client.tsx`'s
- * `hydrateThemeBar()` (bundled separately, via `demo/theme-bar-only-
- * client.ts`, and mounted by every page that renders `ThemePickerSection`
- * -- dashboard.html included).
- *
- * Renders the *actual* page fragment `dashboard-page.tsx` produces --
- * `DASHBOARD_ROOT_ID`'s container (via `renderToString`, matching that
- * file's own technique) followed by the real `<ThemePickerSection>`/
- * `<Footer>` siblings (via `renderToStaticMarkup`, matching how the rest of
- * the outer document renders) -- then runs both real hydration entry
- * points against it, exactly as a browser would: `DashboardApp`'s own
- * `hydrateRoot()` and `hydrateThemeBar()`.
- */
-describe('no double hydration of #theme-pills (#802 investigation fix)', () => {
-  let root: Root | undefined
-
-  beforeEach(() => {
-    window.localStorage.clear()
-  })
-
-  afterEach(() => {
-    if (root) act(() => root?.unmount())
-    root = undefined
-    document.body.innerHTML = ''
-  })
-
-  function renderDashboardPageFragmentIntoDocument(): void {
-    const dashboardRootHtml = renderToString(
-      createElement(DashboardApp, { viewModel }),
-    )
-    const siblingsHtml = renderToStaticMarkup(
-      createElement(
-        'div',
-        null,
-        createElement(ThemePickerSection),
-        createElement(Footer, { columns: dashboardFooterColumns() }),
-      ),
-    )
-    document.body.innerHTML = `
-      <div class="dc-root">
-        <div id="${DASHBOARD_ROOT_ID}">${dashboardRootHtml}</div>
-        ${siblingsHtml}
-      </div>
-    `
-  }
-
-  it("DashboardApp's hydrated subtree never contains #theme-pills", () => {
-    renderDashboardPageFragmentIntoDocument()
-    const dashboardRoot = document.getElementById(DASHBOARD_ROOT_ID)
-    if (!dashboardRoot) throw new Error('test setup: root container missing')
-    expect(dashboardRoot.querySelector(`#${THEME_PILLS_ROOT_ID}`)).toBeNull()
-    // Sanity: the page still has exactly one #theme-pills, just outside
-    // DashboardApp's own boundary.
-    expect(document.querySelectorAll(`#${THEME_PILLS_ROOT_ID}`)).toHaveLength(1)
-  })
-
-  it('both real hydration entry points can run against the same page fragment with no console warnings/errors, and the picker stays interactive', async () => {
-    renderDashboardPageFragmentIntoDocument()
-    const dashboardRoot = document.getElementById(DASHBOARD_ROOT_ID)
-    if (!dashboardRoot) throw new Error('test setup: root container missing')
-
-    const seen: unknown[][] = []
-    const originalError = console.error
-    const originalWarn = console.warn
-    console.error = (...args: unknown[]) => {
-      seen.push(args)
-    }
-    console.warn = (...args: unknown[]) => {
-      seen.push(args)
-    }
-    let thrown: unknown
-    try {
-      await act(async () => {
-        root = hydrateRoot(
-          dashboardRoot,
-          createElement(DashboardApp, { viewModel }),
-        )
-      })
-      act(() => {
-        hydrateThemeBar()
-      })
-    } catch (err) {
-      thrown = err
-    } finally {
-      console.error = originalError
-      console.warn = originalWarn
-    }
-
-    expect(thrown).toBeUndefined()
-    expect(seen).toEqual([])
-
-    // Real interactivity: hydrateThemeBar() -- not DashboardApp's own root
-    // -- is the only thing that ever owns #theme-pills, and it still works.
-    const dracula = document.querySelector<HTMLElement>(
-      '.theme-pill[data-theme="dracula"]',
-    )
-    if (!dracula) throw new Error('test setup: dracula pill missing')
-    fireEvent.click(dracula)
-    expect(getTheme()).toBe('dracula')
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dracula')
   })
 })

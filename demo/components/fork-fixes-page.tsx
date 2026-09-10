@@ -6,8 +6,8 @@
  * library (#591: tokens.tsx, primitives.tsx, icons.tsx, nav.tsx, footer.tsx).
  *
  * As of zombie-mermaid#802, this file holds only the page *shell*
- * (`<html>`/`<head>`, the `NavIsland`/`ThemePickerSection`/`Footer` sibling
- * islands, the hydration container/script wiring) — the hydrated hero +
+ * (`<html>`/`<head>`, the `NavIsland`/`Footer` sibling islands, the
+ * hydration container/script wiring) — the hydrated hero +
  * fixes-list content (the syntax highlighter, `FixPanel`, `FixSection`,
  * ...) lives in `fork-fixes-app.tsx`'s `ForkFixesApp`, split out
  * specifically so `demo/fork-fixes-client.tsx` (the browser bundle) never
@@ -15,8 +15,8 @@
  * server` (used below for `renderToString`) into the client bundle — see
  * `fork-fixes-app.tsx`'s own header comment, and `dashboard-app.tsx`'s
  * (the pattern this mirrors) for the full rationale, including why
- * `<ThemePickerSection>`/`<Footer>` render here as plain siblings rather
- * than nested inside `ForkFixesApp`'s hydrated tree.
+ * `<Footer>` renders here as a plain sibling rather than nested inside
+ * `ForkFixesApp`'s hydrated tree.
  *
  * Every real fact rendered (the PR/commit/render mode/upstream-issue
  * metadata, the source, and the before/after content itself) still comes
@@ -42,7 +42,6 @@ import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
-import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   ForkFixesApp,
   FORK_FIXES_PROPS_ELEMENT_ID,
@@ -109,20 +108,14 @@ export interface ForkFixesPageProps {
   css: string
   fixes: readonly FixSectionProps[]
   /**
-   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
-   * the page's `ThemePickerSection` is interactive.
-   */
-  themeBarScript: string
-  /**
    * The bundled `demo/fork-fixes-client.tsx` entry (zombie-mermaid#802)
    * that hydrates {@link ForkFixesApp} and `<NavIsland>` (via `hydrateNav()`
    * — mirroring `dashboard-client.tsx`'s exact pattern: one bundle for both,
    * rather than a separate `nav-only-client.tsx` bundle paying for its own
-   * copy of `react`/`react-dom` on top of this one). Inlined the same way
-   * `themeBarScript` is. Defaults to `''` (no hydration script rendered at
-   * all — SSR-only), matching `themeBarScript`'s own default; used by
-   * existing tests that don't care about hydration. `fork-fixes.ts`'s real
-   * `generate()` always passes the built bundle.
+   * copy of `react`/`react-dom` on top of this one). Defaults to `''` (no
+   * hydration script rendered at all — SSR-only), used by existing tests
+   * that don't care about hydration. `fork-fixes.ts`'s real `generate()`
+   * always passes the built bundle.
    */
   clientScript?: string
 }
@@ -131,7 +124,6 @@ export interface ForkFixesPageProps {
 export function ForkFixesPage({
   css,
   fixes,
-  themeBarScript,
   clientScript = '',
 }: ForkFixesPageProps) {
   return (
@@ -189,26 +181,7 @@ export function ForkFixesPage({
           }}
         />
 
-        {/*
-          Plain sibling JSX, not part of ForkFixesApp's hydrated tree -- see
-          this file's header comment and fork-fixes-app.tsx's for why (in
-          short: ThemePickerSection/ThemePickerIsland imports
-          react-dom/server, and nesting it inside FORK_FIXES_ROOT_ID would
-          both leak that into the client bundle and double-hydrate
-          #theme-pills -- the bug found and fixed during this issue's own
-          investigation, on dashboard.html). ThemePicker's own hydration
-          still works: theme-bar-only-client.ts's hydrateThemeBar() (bundled
-          as themeBarScript below) finds and hydrates ThemePickerIsland's
-          #theme-pills exactly as it does on every other page.
-        */}
-        <ThemePickerSection tinted />
-
         <Footer columns={FOOTER_COLUMNS} />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: themeBarScript }}
-        />
         <script
           type="module"
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/fork-fixes-client.tsx bundle, under version control and produced at build time; never live/runtime user input

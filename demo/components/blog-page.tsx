@@ -5,8 +5,8 @@
  * #590/#591).
  *
  * As of zombie-mermaid#803, this file holds only the page *shells*
- * (`<html>`/`<head>`, the `NavIsland`/`ThemePickerSection`/`Footer` sibling
- * islands, the hydration container/script wiring) — the hydrated content
+ * (`<html>`/`<head>`, the `NavIsland`/`Footer` sibling islands, the
+ * hydration container/script wiring) — the hydrated content
  * (breadcrumb, hero, post body, featured/archive grid, ...) lives in
  * `blog-app.tsx`'s `BlogPostApp`/`BlogIndexApp`, split out specifically so
  * `demo/blog-post-client.tsx`/`demo/blog-index-client.tsx` (the browser
@@ -14,8 +14,8 @@
  * `react-dom/server` (used below for `renderToString`) into either client
  * bundle — see `blog-app.tsx`'s own header comment, and `dashboard-
  * app.tsx`'s (the pattern this mirrors) for the full rationale, including
- * why `<ThemePickerSection>`/`<Footer>`/`<NavIsland>` render here as plain
- * siblings rather than nested inside either app's hydrated tree.
+ * why `<Footer>`/`<NavIsland>` render here as plain siblings rather than
+ * nested inside either app's hydrated tree.
  *
  * blog.ts still parses the Markdown sources, renders them through marked +
  * shiki, and formats dates — only the post body arrives here as raw HTML.
@@ -42,7 +42,6 @@ import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript, type NavKey } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
-import { ThemePickerSection } from './theme-picker-section.tsx'
 import {
   BLOG_DESCRIPTION,
   BLOG_INDEX_PROPS_ELEMENT_ID,
@@ -287,11 +286,6 @@ export interface BlogIndexPageProps {
   faviconHref: string
   posts: readonly BlogPostSummary[]
   /**
-   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
-   * the index's `ThemePickerSection` is interactive.
-   */
-  themeBarScript: string
-  /**
    * The bundled `demo/blog-index-client.tsx` entry (zombie-mermaid#803)
    * that hydrates {@link BlogIndexApp} and `<NavIsland>` — see {@link
    * BlogPostPageProps.clientScript}'s doc comment for the identical
@@ -306,7 +300,6 @@ export function BlogIndexPage({
   cssHref,
   faviconHref,
   posts,
-  themeBarScript,
   clientScript = '',
 }: BlogIndexPageProps) {
   const appProps: BlogIndexAppProps = { posts }
@@ -352,23 +345,7 @@ export function BlogIndexPage({
           }}
         />
 
-        {/*
-          Plain sibling JSX, not part of BlogIndexApp's hydrated tree -- see
-          this file's header comment and blog-app.tsx's for why (the same
-          reasoning dashboard-page.tsx/fork-fixes-page.tsx follow).
-          ThemePicker's own hydration still works: theme-bar-only-
-          client.ts's hydrateThemeBar() (bundled as themeBarScript below)
-          finds and hydrates ThemePickerIsland's #theme-pills exactly as it
-          does on every other page.
-        */}
-        <ThemePickerSection tinted />
-
         <Footer columns={FOOTER_COLUMNS} />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: themeBarScript }}
-        />
         <script
           type="module"
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/blog-index-client.tsx bundle, under version control and produced at build time; never live/runtime user input

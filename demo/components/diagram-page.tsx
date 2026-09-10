@@ -4,9 +4,8 @@
  * diagrams/*.html) as React components.
  *
  * As of zombie-mermaid#805, this file holds only the page *shells*
- * (`<html>`/`<head>`, the `NavIsland`/`ThemePickerIsland`/`Footer` sibling
- * islands, the hydration containers/script wiring) — the hydrated body
- * content lives in
+ * (`<html>`/`<head>`, the `NavIsland`/`Footer` sibling islands, the
+ * hydration containers/script wiring) — the hydrated body content lives in
  * `diagram-type-app.tsx`'s `DiagramTypeApp` and `diagram-hub-app.tsx`'s
  * `DiagramHubApp`, split out specifically so `demo/diagram-type-
  * client.tsx`/`demo/diagram-hub-client.tsx` (the browser bundles) never
@@ -17,8 +16,8 @@
  *
  * `DiagramTypePage` is the reference instance of the shared per-type detail
  * template (#601, part of #599, part of the #590 redesign): breadcrumb,
- * description, syntax-highlighted source + rendered SVG side by side, a
- * theme picker, and cross-links to the other five diagram types. Every
+ * description, syntax-highlighted source + rendered SVG side by side, and
+ * cross-links to the other five diagram types. Every
  * structural choice, colour, and string not called out below was lifted
  * from the design canvas's `FlowchartDetail` artboard
  * (`https://claude.ai/code/artifact/2f623662-5eaf-42c4-9fd9-c21588e34993`,
@@ -62,15 +61,11 @@ import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
-import { ThemePickerIsland } from './theme-picker-island.tsx'
-import { SectionEyebrow, type Accent } from './primitives.tsx'
+import { type Accent } from './primitives.tsx'
 import {
   DesignFontLinks,
   FONT_SIZE,
-  LAYOUT,
-  LETTER_SPACING,
   MEDIA,
-  SECTION_SPACE,
   SPACE,
   colorVar,
 } from './tokens.tsx'
@@ -530,50 +525,6 @@ export function DiagramTypePage({
                 __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
               }}
             />
-
-            {/* ============ THEME PICKER ============ */}
-            <div
-              className="section-px"
-              style={{
-                padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
-              }}
-            >
-              <div
-                style={{
-                  maxWidth: `${LAYOUT.maxWidth}px`,
-                  margin: '0 auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: `${SPACE['4xl']}px`,
-                }}
-              >
-                <SectionEyebrow>Pick a look</SectionEyebrow>
-                <h2
-                  style={{
-                    fontSize: '30px',
-                    letterSpacing: LETTER_SPACING.heading,
-                  }}
-                >
-                  Live in every built-in theme.
-                </h2>
-                {/*
-                Plain sibling JSX, not part of DiagramTypeApp's hydrated
-                tree -- see diagram-type-app.tsx's header comment for why
-                (the same reasoning dashboard-page.tsx/fork-fixes-
-                page.tsx/blog-page.tsx/index-page.tsx follow).
-              */}
-                <ThemePickerIsland
-                  includeDefault
-                  activeThemeKey=""
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: `${SPACE.md}px`,
-                    alignItems: 'flex-start',
-                  }}
-                />
-              </div>
-            </div>
 
             <Footer columns={DETAIL_FOOTER_COLUMNS} />
           </div>

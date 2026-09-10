@@ -32,10 +32,9 @@
  * `<NavIsland>` hydrates here too, via {@link hydrateNav}, in the *same*
  * bundle rather than a separate `nav-only-client.tsx` bundle — this page
  * already ships one react/react-dom copy for `ForkFixesApp`'s own
- * hydration, and `demo/theme-bar-only-client.ts` (bundled separately,
- * unchanged by #802) ships a second for the theme picker; a third bundle
- * just for Nav would pay for react/react-dom a third time on this page for
- * no reason. Mirrors `dashboard-client.tsx`'s `main()` exactly.
+ * hydration, and a second bundle just for Nav would pay for react/react-dom
+ * a second time on this page for no reason. Mirrors `dashboard-client.tsx`'s
+ * `main()` exactly.
  */
 import { createElement } from 'react'
 import { hydrateRoot } from 'react-dom/client'
