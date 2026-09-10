@@ -36,7 +36,6 @@ import { renderHtmlDocument } from '../demo/render-html.ts'
 import { IndexPage } from '../demo/components/index-page.tsx'
 import { FORK_URL } from '../demo/components/site-chrome.tsx'
 import { THEMES } from '@zombie-mermaid/core'
-import { THEME_LABELS } from '../demo/theme-labels.ts'
 import { EditorPage } from '../demo/components/editor-page.tsx'
 import {
   ForkFixesPage,
@@ -271,7 +270,7 @@ describe('index.ts → index.html', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(
       document.getElementById('theme-showcase-picker-label')?.textContent,
-    ).toBe(THEME_LABELS.dracula ?? 'dracula')
+    ).toBe('dracula')
 
     const panel = document.getElementById('theme-showcase-picker-panel')
     expect(panel).toBeInTheDocument()

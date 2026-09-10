@@ -36,7 +36,6 @@
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
-import { THEME_LABELS } from './theme-labels.ts'
 
 /** How long `.theme-showcase-burst-ring.active` stays applied — must be >= its own CSS animation duration (650ms) so the animation is never cut off mid-flight. */
 const BURST_MS = 700
@@ -124,8 +123,7 @@ function applyTheme(
   els.diagramCard.style.setProperty('--tsd-muted', colors.muted)
   els.diagramCard.style.setProperty('--tsd-arrow', colors.arrow)
 
-  const label = THEME_LABELS[themeKey] ?? themeKey
-  els.pickerLabel.textContent = label
+  els.pickerLabel.textContent = themeKey
   els.pickerChip.style.background = colors.arrow
   for (const opt of els.pickerOptions) {
     opt.setAttribute('aria-selected', String(opt.dataset.theme === themeKey))

@@ -62,7 +62,6 @@ import {
   colorVar,
 } from './tokens.tsx'
 import { THEMES } from '@zombie-mermaid/core'
-import { THEME_LABELS } from '../theme-labels.ts'
 import {
   IndexHeroApp,
   IndexMainApp,
@@ -273,11 +272,11 @@ function homePageCss(): string {
   margin: -700px 0 0 -900px;
   background: conic-gradient(
     from 0deg,
-    color-mix(in srgb, ${colorVar('--violet')} 24%, transparent),
+    color-mix(in srgb, #bd93f9 24%, transparent),
     color-mix(in srgb, ${colorVar('--cyan')} 18%, transparent),
     color-mix(in srgb, ${colorVar('--pink')} 18%, transparent),
     color-mix(in srgb, ${colorVar('--amber')} 16%, transparent),
-    color-mix(in srgb, ${colorVar('--violet')} 24%, transparent)
+    color-mix(in srgb, #bd93f9 24%, transparent)
   );
   filter: blur(120px);
   opacity: 0.5;
@@ -292,7 +291,11 @@ function homePageCss(): string {
 }
 .theme-showcase-aurora { position: absolute; inset: -10%; animation: themeShowcaseHue 26s linear infinite; }
 .theme-showcase-glow { position: absolute; border-radius: 50%; filter: blur(90px); mix-blend-mode: screen; }
-.theme-showcase-glow.g1 { width: 560px; height: 560px; background: ${colorVar('--violet')}; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 17s ease-in-out infinite alternate; }
+/* #bd93f9, not colorVar('--violet') (#a374e8) -- Main.dc.html has no
+   --violet token at all; every violet in the canvas (here and the mesh
+   gradient above) is this exact literal, matched rather than mapped onto
+   this site's own (different) shared violet accent. */
+.theme-showcase-glow.g1 { width: 560px; height: 560px; background: #bd93f9; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 17s ease-in-out infinite alternate; }
 .theme-showcase-glow.g2 { width: 520px; height: 520px; background: ${colorVar('--cyan')}; opacity: 0.3; top: 6%; right: 0%; animation: themeShowcaseDrift2 21s ease-in-out infinite alternate; }
 .theme-showcase-glow.g3 { width: 480px; height: 480px; background: ${colorVar('--pink')}; opacity: 0.26; bottom: -14%; left: 20%; animation: themeShowcaseDrift3 24s ease-in-out infinite alternate; }
 .theme-showcase-glow.g4 { width: 500px; height: 500px; background: ${colorVar('--amber')}; opacity: 0.22; bottom: -6%; right: 12%; animation: themeShowcaseDrift4 19s ease-in-out infinite alternate; }
@@ -554,8 +557,7 @@ function ThemeShowcasePicker() {
           style={{ background: defaultAccent }}
         />
         <span id="theme-showcase-picker-label">
-          {THEME_LABELS[THEME_SHOWCASE_DEFAULT_THEME] ??
-            THEME_SHOWCASE_DEFAULT_THEME}
+          {THEME_SHOWCASE_DEFAULT_THEME}
         </span>
         <span className="theme-showcase-picker-caret" aria-hidden="true">
           ▾
@@ -583,7 +585,7 @@ function ThemeShowcasePicker() {
                 className="theme-showcase-picker-dot"
                 style={{ background: accent }}
               />
-              {THEME_LABELS[themeKey] ?? themeKey}
+              {themeKey}
             </button>
           )
         })}
