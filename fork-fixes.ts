@@ -26,7 +26,7 @@
  */
 
 import { execFile } from 'node:child_process'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { createElement } from 'react'
@@ -42,6 +42,7 @@ import {
 } from './demo/components/fork-fixes-page.tsx'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { siteOutDir } from './scripts/site-out-dir.ts'
+import { generatePage } from './scripts/generate-page.ts'
 
 const exec = promisify(execFile)
 
@@ -346,10 +347,10 @@ async function generate(): Promise<string> {
 
 console.log(`Rendering ${forkFixes.length} before/after pairs…`)
 const html = await generate()
-const outPath = new URL('./fork-fixes.html', siteOutDir(import.meta.url))
-  .pathname
-await writeFile(outPath, html, 'utf8')
-console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
+await generatePage({
+  outPath: new URL('./fork-fixes.html', siteOutDir(import.meta.url)),
+  content: html,
+})
 
 // The extracted trees are a build artifact; leave no clutter behind.
 await rm(CACHE_DIR, { recursive: true, force: true })

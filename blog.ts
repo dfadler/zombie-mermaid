@@ -29,7 +29,7 @@
  * into site/diagrams/.
  */
 
-import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { readdir, readFile, rm } from 'node:fs/promises'
 import { Marked, type Tokens } from 'marked'
 import { createElement } from 'react'
 import { createHighlighter, type Highlighter } from 'shiki'
@@ -45,6 +45,7 @@ import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import { renderMermaidSVG } from './src/index.ts'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { siteOutDir } from './scripts/site-out-dir.ts'
+import { generatePage } from './scripts/generate-page.ts'
 
 /**
  * A fenced code block tagged with this language renders as an actual SVG
@@ -392,7 +393,6 @@ async function main(): Promise<void> {
   // before regenerating it. Safe to remove wholesale: OUT_DIR only ever
   // holds generated output, never blog-posts/ (a sibling, not a child).
   await rm(OUT_DIR, { recursive: true, force: true })
-  await mkdir(new URL('./assets/', OUT_DIR), { recursive: true })
 
   // The redesign's shared CSS (#590/#591) — palette/base elements, the
   // .card/.pill/.section-eyebrow primitives, and the Nav/Footer responsive
@@ -406,7 +406,11 @@ async function main(): Promise<void> {
     new URL('./demo/blog.css', import.meta.url),
     'utf8',
   )
-  await writeFile(new URL('./assets/blog.css', OUT_DIR), sharedPageCss(blogCss))
+  await generatePage({
+    outPath: new URL('./assets/blog.css', OUT_DIR),
+    content: sharedPageCss(blogCss),
+    log: false,
+  })
 
   // #803: postClientScript/indexClientScript hydrate BlogPostApp/
   // BlogIndexApp + NavIsland (one bundle each, reused across every
@@ -447,7 +451,11 @@ async function main(): Promise<void> {
       }),
     )
 
-    await writeFile(new URL(`./${post.slug}.html`, OUT_DIR), html)
+    await generatePage({
+      outPath: new URL(`./${post.slug}.html`, OUT_DIR),
+      content: html,
+      log: false,
+    })
   }
 
   // -- Index page --
@@ -466,7 +474,11 @@ async function main(): Promise<void> {
     }),
   )
 
-  await writeFile(new URL('./index.html', OUT_DIR), indexHtml)
+  await generatePage({
+    outPath: new URL('./index.html', OUT_DIR),
+    content: indexHtml,
+    log: false,
+  })
 
   // -- RSS feed --
   const feedItems = posts
@@ -491,7 +503,11 @@ ${feedItems}
   </channel>
 </rss>
 `
-  await writeFile(new URL('./feed.xml', OUT_DIR), feedXml)
+  await generatePage({
+    outPath: new URL('./feed.xml', OUT_DIR),
+    content: feedXml,
+    log: false,
+  })
 
   // -- Append to the sitemap.xml pages.ts already wrote --
   const sitemapPath = new URL('./sitemap.xml', siteOutDir(import.meta.url))
@@ -508,7 +524,11 @@ ${feedItems}
     '</urlset>',
     `${newUrlLines}\n</urlset>`,
   )
-  await writeFile(sitemapPath, updatedSitemap)
+  await generatePage({
+    outPath: sitemapPath,
+    content: updatedSitemap,
+    log: false,
+  })
 
   console.log(
     `Wrote ${posts.length} blog post(s) + index + feed.xml to ${OUT_DIR.pathname}, appended ${sitemapUrls.length} URLs to sitemap.xml`,

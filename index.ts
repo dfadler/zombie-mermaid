@@ -18,7 +18,7 @@
  * site generator off template-literal HTML.
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import {
   escapeJsonForScriptTag,
@@ -29,6 +29,7 @@ import { renderHtmlDocument } from './demo/render-html.ts'
 import { IndexPage } from './demo/components/index-page.tsx'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { siteOutDir } from './scripts/site-out-dir.ts'
+import { generatePage } from './scripts/generate-page.ts'
 
 /**
  * Bundle `demo/index-page-client.ts` for the browser (#759) — mirrors
@@ -102,8 +103,6 @@ async function generateHtml(clientScript: string): Promise<string> {
 }
 
 const outDir = siteOutDir(import.meta.url)
-const assetsDir = new URL('./assets/', outDir)
-await mkdir(assetsDir, { recursive: true })
 
 const [indexClientScript, clientJs] = await Promise.all([
   bundleIndexClient(),
@@ -111,8 +110,13 @@ const [indexClientScript, clientJs] = await Promise.all([
 ])
 const html = await generateHtml(indexClientScript)
 
-await writeFile(new URL('./index-page-client.js', assetsDir), clientJs)
-
-const outPath = new URL('./index.html', outDir).pathname
-await writeFile(outPath, html)
-console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)
+await generatePage({
+  outPath: new URL('./index.html', outDir),
+  content: html,
+  assets: [
+    {
+      outPath: new URL('./assets/index-page-client.js', outDir),
+      content: clientJs,
+    },
+  ],
+})
