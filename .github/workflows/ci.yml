@@ -447,10 +447,16 @@ jobs:
       # that PAT is actually used).
       - name: Append to trend history
         if: github.event_name == 'push'
-        run: |
-          pnpm run bench:history:append -- bench-current.json \
-            --commit="${{ github.sha }}" \
-            --ref="${{ github.ref }}"
+        # No --commit=/--ref= flags: scripts/bench-history-append.ts already
+        # falls back to $GITHUB_SHA/$GITHUB_REF, which every Actions job sets
+        # automatically. Passing github.sha/github.ref via `${{ }}`
+        # interpolation into a `run:` step instead would inject untrusted
+        # `github` context data straight into the shell command line (flagged
+        # by this repo's Semgrep SAST scan, yaml.github-actions.security.
+        # run-shell-injection) — reading them as plain env vars avoids that
+        # entirely, with no `env:` indirection needed since the script reads
+        # them itself.
+        run: pnpm run bench:history:append -- bench-current.json
 
       - name: Upload updated trend history
         if: github.event_name == 'push'
