@@ -160,4 +160,28 @@ ${manyAttrs('d', 6)}
     ])
     expectNoBoxOverlap(ascii, ['Left', 'TallMid', 'RightSrc', 'Kid'])
   })
+
+  it('"target above source" branch with a from-side marker renders without corrupting a box', () => {
+    // The "above" branch (this file's second `else if`) has no
+    // findClearColumn collision-avoidance at all — it always draws the
+    // straight jog/vertical/horizontal/vertical/jog path, so it's just as
+    // exposed to this bug as the "below" branch, and is guarded the same
+    // way here. A `Root --> A` / `A <|-- B` / `B --> A` back-edge forces
+    // A's level above B's (the level-assignment BFS keeps the *longest*
+    // path to a node, so B->A's back edge pushes A past B) — the
+    // `A <|-- B` edge then runs from the now-deeper A up to the
+    // shallower B, taking the "above" branch with its hollow-triangle
+    // marker at the 'from' end (A), a combination no other test in this
+    // file exercises.
+    const src = `classDiagram
+  class Root
+  class A
+  class B
+  class Extra
+  Root --> A
+  A <|-- B
+  B --> A`
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    expectNoBoxOverlap(ascii, ['Root', 'A', 'B', 'Extra'])
+  })
 })
