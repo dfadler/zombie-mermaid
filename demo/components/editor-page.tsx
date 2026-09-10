@@ -543,6 +543,7 @@ export function EditorPage({
             active="editor"
             homeHref={homeHref}
             hrefs={editorNavHrefs}
+            installSlotKind="empty"
           />
         </div>
         <div className={ZM_SHELL}>

@@ -1689,6 +1689,22 @@ export function Nav({
             display: 'flex',
             alignItems: 'center',
             gap: `${NAV_LINK_GAP}px`,
+            // A page that overrides installSlot (any NavInstallSlotKind,
+            // 'empty' included) leaves the trailing flex child with no
+            // real content but the mobile-only MenuToggle, which is
+            // itself display:none above the tablet breakpoint -- barStyle's
+            // justify-content:space-between still treats that now-empty
+            // child as a real flex item, splitting the header's leftover
+            // width evenly between "before the links" and "after the
+            // links" and stranding nav-links mid-bar with a dead gap to
+            // its right. marginLeft:'auto' claims that leftover space for
+            // the gap before nav-links instead, pushing it flush against
+            // the (empty) trailing child. Left unset (space-between's
+            // default split) when installSlot is left undefined -- e.g. a
+            // bare `<Nav/>` in tests, or any future caller that wants the
+            // real NavInstall pill -- where the trailing child's real
+            // width already keeps nav-links positioned correctly.
+            marginLeft: installSlot !== undefined ? 'auto' : undefined,
           }}
         >
           {linkItems.map((item) => (

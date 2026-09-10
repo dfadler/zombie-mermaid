@@ -239,6 +239,7 @@ export function BlogPostPage({
           active="blog"
           homeHref={HOME_HREF}
           hrefs={NAV_HREFS}
+          installSlotKind="empty"
         />
 
         {/*
@@ -323,6 +324,7 @@ export function BlogIndexPage({
           active="blog"
           homeHref={HOME_HREF}
           hrefs={NAV_HREFS}
+          installSlotKind="empty"
         />
 
         {/*

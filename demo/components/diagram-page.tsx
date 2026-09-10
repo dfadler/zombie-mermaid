@@ -489,6 +489,7 @@ export function DiagramTypePage({
             active="diagrams"
             homeHref={HOME_HREF}
             hrefs={NAV_HREFS}
+            installSlotKind="empty"
           />
           {/*
             `overflow: hidden` used to live on the `.dc-root` div itself,
@@ -638,6 +639,7 @@ export function DiagramHubPage({
             active="diagrams"
             homeHref={HOME_HREF}
             hrefs={NAV_HREFS}
+            installSlotKind="empty"
           />
           {/*
             `overflow: hidden` used to live on the `.dc-root` div itself,
