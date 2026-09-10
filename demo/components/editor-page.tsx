@@ -223,6 +223,20 @@ body {
   overflow: visible;
 }
 
+/* body itself needs the page background painted on it, not just var(--bg):
+ * the nav's own .zm-shell wrapper is display:contents (see the sticky
+ * NavIsland below), so it never paints a box of its own behind the bar.
+ * <header>'s background is bgRgba(NAV_BG_ALPHA) -- 85% opaque, by design,
+ * so the page shows through it -- and without this rule that "page" is
+ * body's default (unstyled, effectively white) background rather than the
+ * dark navy every other section on this page actually sits on, so the bar
+ * reads as a visibly lighter band instead of blending into the hero below
+ * it. Literal hex (tokens.tsx's COLORS), not var(--bg) -- see the module
+ * doc comment for why var(--bg) itself is off-limits here. */
+body {
+  background: ${COLORS['--bg']};
+}
+
 /* Reproduces body's old contract (display:flex; flex-direction:column;
  * overflow:hidden over an explicit height) so <EditorChrome>'s three
  * fragment children lay out exactly as before, just scoped to a card
