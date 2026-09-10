@@ -13,6 +13,13 @@
  *    `isValidHexColor`, and `getFontDisplayLabel` -- the same "small pure
  *    function, tested directly" coverage `config.test.ts`'s deleted
  *    "stroke overrides" describe block used to give `applyStrokeOverrides`.
+ *    zombie-mermaid#935's audit moved these (and the constants below) out
+ *    of `editor-config.tsx` into `editor-config-helpers.ts` -- a
+ *    dependency-free module the split-out `ColorField`/`ColorPopup`/
+ *    `FontPopup`/`NumberSliderField` components can all import from without
+ *    an import cycle through `editor-config.tsx`'s own `ConfigPanel` -- see
+ *    that file's header comment for the full audit writeup. Behavior is
+ *    unchanged; only the import path moved.
  * 2. `editorReducer` tests for the new #808 actions, alongside #806's/
  *    #807's own `editorReducer` tests in `editor-hydration.test.ts`/
  *    `editor-viewport.test.ts`.
@@ -43,6 +50,7 @@ import {
   editorReducer,
   type EditorAppProps,
 } from '../../demo/components/editor-app.tsx'
+import { EDITOR_EFFECTIVE_THEME_EVENT } from '../../demo/components/editor-config.tsx'
 import {
   applyStrokeOverridesToSvg,
   clampPadding,
@@ -50,7 +58,6 @@ import {
   computeConfig,
   DEFAULT_PADDING,
   DEFAULT_STROKE,
-  EDITOR_EFFECTIVE_THEME_EVENT,
   getEffectiveThemeColor,
   getFontDisplayLabel,
   isValidHexColor,
@@ -58,7 +65,7 @@ import {
   PADDING_MIN,
   STROKE_MAX,
   STROKE_MIN,
-} from '../../demo/components/editor-config.tsx'
+} from '../../demo/components/editor-config-helpers.ts'
 
 const PROPS: EditorAppProps = {
   themes: [{ key: 'nord', bg: '#2E3440', label: 'Nord' }],

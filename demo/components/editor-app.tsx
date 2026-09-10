@@ -91,15 +91,15 @@ import {
 } from 'react'
 import { useEditorButtons } from './editor-buttons.ts'
 import { useEditorDarkMode } from './editor-dark-mode.ts'
+import { useEditorConfig } from './editor-config.tsx'
 import {
   clampPadding,
   clampStroke,
   computeConfig,
   DEFAULT_PADDING,
   DEFAULT_STROKE,
-  useEditorConfig,
   type ColorKey,
-} from './editor-config.tsx'
+} from './editor-config-helpers.ts'
 import { useEditorExport } from './editor-export.ts'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
 import { useEditorRendering } from './editor-rendering.ts'
