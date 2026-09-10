@@ -1,10 +1,12 @@
 /**
- * Regenerates hero.svg (the README's hero image): a before/after "transform"
- * composite — the Hero sample's raw Mermaid source (top) rendered into the
- * Hero sample's actual SVG output (bottom) — matching the demo site's own
- * hero section (see index.ts's hero-transform markup), but stacked instead
- * of side-by-side so it stays legible once GitHub scales it down to a
- * phone-width viewport.
+ * Regenerates hero.svg (the README's hero image): the site's brand lockup
+ * (icon + "ZombieMermaid" wordmark — see docs/brand.md and nav.tsx's
+ * NavBrand, which this reproduces at 1:1 scale) atop a before/after
+ * "transform" composite — the Hero sample's raw Mermaid source (top)
+ * rendered into the Hero sample's actual SVG output (bottom) — matching the
+ * demo site's own hero section (see index.ts's hero-transform markup), but
+ * stacked instead of side-by-side so it stays legible once GitHub scales it
+ * down to a phone-width viewport.
  *
  * The "after" half is rendered through the library's own SVG renderer — the
  * same render path the live demo uses client-side — and nested into the
@@ -29,8 +31,35 @@ import { renderMermaidSVG } from '../src/index.ts'
 
 const WIDTH = 640
 
+// -- Brand lockup (icon + "ZombieMermaid" wordmark) --
+// Same geometry/colors/type as the site's own lockup (nav.tsx's NavBrand +
+// icons.tsx's LogoMark) — see docs/brand.md's "logo lockup" rule. Rendered
+// at 1:1 with the nav's own sizing (30px icon, 12px gap, 20px bold
+// wordmark) rather than scaled up for the hero, so this is literally the
+// same lockup, not a bigger variant of it.
+const LOCKUP_LOGO_SIZE = 30
+const LOCKUP_GAP = 12
+const LOCKUP_FONT_SIZE = 20
+// Measured via getBBox() in a browser against the actual loaded Space
+// Grotesk 700 (no DOM/canvas available in this Node script to measure it
+// directly) — used only to center the lockup as a whole below, so a small
+// drift here (a font substitution, say) just nudges the centering slightly
+// rather than breaking anything.
+const LOCKUP_WORDMARK_W = 152
+const LOCKUP_H = 60
+const LOCKUP_BOTTOM_GAP = 18
+// The nav bar's own wordmark is near-white (`--text`, #eef1fb) because it
+// always sits on the site's dark bar — but a GitHub README renders on
+// whatever background the viewer's OS/GitHub theme picks, light included,
+// where that near-white text would be unreadable. A backing plate in the
+// site's own `--bg` (#0a0d16) keeps the lockup on the same dark ground it
+// has on the site, in both README themes, rather than recoloring the text
+// away from what docs/brand.md and NavBrand actually use.
+const LOCKUP_PLATE_PAD_X = 20
+const LOCKUP_PLATE_PAD_Y = 12
+
 // -- "Before" code panel --
-const CODE_PANEL_Y = 0
+const CODE_PANEL_Y = LOCKUP_H + LOCKUP_BOTTOM_GAP
 const CODE_PANEL_H = 320
 const CODE_TITLEBAR_H = 34
 
@@ -161,15 +190,36 @@ async function main(): Promise<void> {
   const totalHeight = Math.round(tagsY + TAG_H + 14)
   const codeLines = hero.source.trim().split('\n')
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${totalHeight}" width="${WIDTH}" height="${totalHeight}" role="img" aria-label="Mermaid source rendering into a themed, animated diagram">
+  const lockupContentW = LOCKUP_LOGO_SIZE + LOCKUP_GAP + LOCKUP_WORDMARK_W
+  const lockupX = (WIDTH - lockupContentW) / 2
+  const lockupIconY = (LOCKUP_H - LOCKUP_LOGO_SIZE) / 2
+  const plateW = lockupContentW + LOCKUP_PLATE_PAD_X * 2
+  const plateH = LOCKUP_LOGO_SIZE + LOCKUP_PLATE_PAD_Y * 2
+  const plateX = lockupX - LOCKUP_PLATE_PAD_X
+  const plateY = lockupIconY - LOCKUP_PLATE_PAD_Y
+  const lockupMarkup = `<rect x="${plateX}" y="${plateY}" width="${plateW}" height="${plateH}" rx="${plateH / 2}" fill="#0a0d16"/>
+<g transform="translate(${lockupX}, 0)">
+  <svg x="0" y="${lockupIconY}" width="${LOCKUP_LOGO_SIZE}" height="${LOCKUP_LOGO_SIZE}" viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="2" width="9" height="9" rx="3" stroke="#38e0d0" stroke-width="1.6"/>
+    <rect x="13" y="2" width="9" height="9" rx="3" stroke="#a374e8" stroke-width="1.6"/>
+    <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" stroke="#ff5fa8" stroke-width="1.6" fill="none"/>
+  </svg>
+  <text x="${LOCKUP_LOGO_SIZE + LOCKUP_GAP}" y="${lockupIconY + LOCKUP_LOGO_SIZE / 2 + 7}" font-size="${LOCKUP_FONT_SIZE}" font-weight="700" style="font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif; letter-spacing:-0.01em" fill="#eef1fb">ZombieMermaid</text>
+</g>`
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${totalHeight}" width="${WIDTH}" height="${totalHeight}" role="img" aria-label="ZombieMermaid: raw Mermaid source rendering into a themed, animated diagram">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@700&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap');
   @keyframes hero-readme-arrow-dash { to { stroke-dashoffset: -16; } }
   .hero-readme-arrow-dash { stroke-dasharray: 4 4; animation: hero-readme-arrow-dash 0.9s linear infinite; }
   @media (prefers-reduced-motion: reduce) {
     .hero-readme-arrow-dash { animation: none; }
   }
 </style>
+
+<!-- Brand lockup: same icon + "ZombieMermaid" wordmark as the site's nav
+     (nav.tsx's NavBrand, icons.tsx's LogoMark); see docs/brand.md. -->
+${lockupMarkup}
 
 <!-- "Before": raw Mermaid source, terminal-styled -->
 <rect x="0" y="${CODE_PANEL_Y}" width="${WIDTH}" height="${CODE_PANEL_H}" rx="12" fill="#0d1117"/>

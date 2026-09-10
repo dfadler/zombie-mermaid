@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 612" width="640" height="612" role="img" aria-label="Mermaid source rendering into a themed, animated diagram">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 612" width="640" height="612" role="img" aria-label="ZombieMermaid: raw Mermaid source rendering into a themed, animated diagram">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@700&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap');
   @keyframes hero-readme-arrow-dash { to { stroke-dashoffset: -16; } }
   .hero-readme-arrow-dash { stroke-dasharray: 4 4; animation: hero-readme-arrow-dash 0.9s linear infinite; }
   @media (prefers-reduced-motion: reduce) {
@@ -8,10 +8,22 @@
   }
 </style>
 
+<!-- Brand lockup: same icon + "ZombieMermaid" wordmark as the site's nav
+     (nav.tsx's NavBrand, icons.tsx's LogoMark); see docs/brand.md. -->
+<rect x="203" y="3" width="234" height="54" rx="27" fill="#0a0d16"/>
+<g transform="translate(223, 0)">
+  <svg x="0" y="15" width="30" height="30" viewBox="0 0 24 24" fill="none">
+    <rect x="2" y="2" width="9" height="9" rx="3" stroke="#38e0d0" stroke-width="1.6"/>
+    <rect x="13" y="2" width="9" height="9" rx="3" stroke="#a374e8" stroke-width="1.6"/>
+    <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" stroke="#ff5fa8" stroke-width="1.6" fill="none"/>
+  </svg>
+  <text x="42" y="37" font-size="20" font-weight="700" style="font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif; letter-spacing:-0.01em" fill="#eef1fb">ZombieMermaid</text>
+</g>
+
 <!-- "Before": raw Mermaid source, terminal-styled -->
-<rect x="0" y="0" width="640" height="320" rx="12" fill="#0d1117"/>
-<rect x="0" y="0" width="640" height="34" rx="12" fill="#161b22"/>
-<rect x="0" y="12" width="640" height="22" fill="#161b22"/>
+<rect x="0" y="78" width="640" height="320" rx="12" fill="#0d1117"/>
+<rect x="0" y="78" width="640" height="34" rx="12" fill="#161b22"/>
+<rect x="0" y="90" width="640" height="22" fill="#161b22"/>
 <circle cx="16" cy="17" r="5" fill="#ff5f56"/>
 <circle cx="32" cy="17" r="5" fill="#ffbd2e"/>
 <circle cx="48" cy="17" r="5" fill="#27c93f"/>
