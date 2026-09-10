@@ -13,6 +13,13 @@
  * own `scheduleRender(0)` call resolves deterministically instead of
  * hitting {@link doRender}'s `!window.__mermaid` no-op -- none of these
  * tests assert on render *output*, just on theme/bootstrap state.
+ *
+ * Updated for the `theme-selector-shared-state.md` amendment scoping the
+ * Editor's diagram theme back to a local `bm-editor-theme` key: this file
+ * no longer imports `demo/theme-state.ts` (the *site-wide* shared key/
+ * cross-tab sync the Editor no longer participates in) -- see
+ * `THEME_STORAGE_KEY` below, now a local constant matching `editor-theme.ts`'s
+ * own retired-then-restored key, not an import from that shared module.
  */
 import { act, createElement } from 'react'
 import { render } from '@testing-library/react'
@@ -24,7 +31,10 @@ import {
 import { EDITOR_EFFECTIVE_THEME_EVENT } from '../../demo/components/editor-theme.ts'
 import { buildHash } from '../../demo/components/editor-sharing.ts'
 import { DARK_MODE_STORAGE_KEY } from '../../demo/editor-dark-mode-state.ts'
-import { setTheme, THEME_STORAGE_KEY } from '../../demo/theme-state.ts'
+import { setTheme as setSharedTheme } from '../../demo/theme-state.ts'
+
+/** The Editor's own, local diagram-theme key -- mirrors `editor-theme.ts`'s private `THEME_STORAGE_KEY` (not exported, so duplicated here as a literal, the same way that file's own comment documents the key). */
+const THEME_STORAGE_KEY = 'bm-editor-theme'
 
 // Includes 'zinc-dark' -- the dark-mode-derived auto diagram theme -- the
 // same way the real editor.ts builds this prop from *every* THEMES key
@@ -163,7 +173,7 @@ describe('<EditorApp> client bootstrap (#810)', () => {
     )
   })
 
-  it('restores a saved shared theme preference on mount', async () => {
+  it('restores a saved local theme preference on mount', async () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, 'dracula')
     await mount()
     expect(document.getElementById('theme-btn-label')!.textContent).toBe(
@@ -171,11 +181,19 @@ describe('<EditorApp> client bootstrap (#810)', () => {
     )
   })
 
+  it('does not restore a preference from the shared site-wide mermaid-theme key', async () => {
+    setSharedTheme('nord')
+    await mount()
+    expect(document.getElementById('theme-btn-label')!.textContent).toBe(
+      'Default',
+    )
+  })
+
   it('derives the auto dark diagram theme from a persisted dark-mode preference', async () => {
     window.localStorage.setItem(DARK_MODE_STORAGE_KEY, 'true')
     await mount()
-    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
-      THEMES['zinc-dark'].bg,
+    expect(document.getElementById('theme-btn-label')!.textContent).toBe(
+      'Zinc Dark',
     )
   })
 
@@ -195,39 +213,65 @@ describe('<EditorApp> client bootstrap (#810)', () => {
     expect(textarea.value).toBe('graph LR\n  X --> Y')
     expect(document.getElementById('theme-btn-label')!.textContent).toBe('Nord')
   })
-
-  it('migrates a legacy bm-editor-theme value to the shared key (#688)', async () => {
-    window.localStorage.setItem('bm-editor-theme', 'nord')
-    await mount()
-
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('nord')
-    expect(window.localStorage.getItem('bm-editor-theme')).toBeNull()
-    expect(document.getElementById('theme-btn-label')!.textContent).toBe('Nord')
-  })
-
-  it('does not let a legacy bm-editor-theme value override an already-set shared preference', async () => {
-    window.localStorage.setItem(THEME_STORAGE_KEY, 'dracula')
-    window.localStorage.setItem('bm-editor-theme', 'nord')
-    await mount()
-
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('dracula')
-    expect(document.getElementById('theme-btn-label')!.textContent).toBe(
-      'Dracula',
-    )
-  })
 })
 
-describe('<EditorApp> cross-tab/dark-mode theme sync (#810)', () => {
-  it('reapplies the theme when the shared theme-state notifies a change from elsewhere', async () => {
+describe('<EditorApp> theme scoped to the Editor only (theme-selector-shared-state.md amendment)', () => {
+  it('does not reskin the editor chrome when a diagram theme is selected', async () => {
+    await mount()
+    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
+      '#FFFFFF',
+    )
+
+    await act(async () => {
+      document
+        .getElementById('theme-dropdown-btn')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      document
+        .querySelector<HTMLElement>('.theme-dropdown-item[data-theme="nord"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushRenderTimers()
+    })
+
+    // The dropdown label reflects the pick (and the diagram itself gets
+    // Nord's colors -- see editor-rendering.test.ts's buildOptions
+    // coverage), but the tool's own chrome color stays at its light-mode
+    // default: it no longer follows the diagram theme (Nord's bg is
+    // '#2E3440', not '#FFFFFF').
+    expect(document.getElementById('theme-btn-label')!.textContent).toBe(
+      'Nord',
+    )
+    expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
+      '#FFFFFF',
+    )
+  })
+
+  it('does not persist a picked theme to the shared site-wide mermaid-theme key', async () => {
     await mount()
 
     await act(async () => {
-      setTheme('dracula')
+      document
+        .getElementById('theme-dropdown-btn')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      document
+        .querySelector<HTMLElement>('.theme-dropdown-item[data-theme="nord"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushRenderTimers()
+    })
+
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('nord')
+    expect(window.localStorage.getItem('mermaid-theme')).toBeNull()
+  })
+
+  it('does not react to a theme change made through the shared site-wide theme-state module', async () => {
+    await mount()
+
+    await act(async () => {
+      setSharedTheme('dracula')
       await flushRenderTimers()
     })
 
     expect(document.getElementById('theme-btn-label')!.textContent).toBe(
-      'Dracula',
+      'Default',
     )
   })
 
@@ -255,8 +299,14 @@ describe('<EditorApp> cross-tab/dark-mode theme sync (#810)', () => {
       await flushRenderTimers()
     })
 
+    // '#18181B' is editor-dark-mode.ts's applyChromeColorMode() dark-mode
+    // default -- it happens to equal this file's stubbed 'zinc-dark' theme
+    // bg (both are independently '#18181B'), but this assertion is checking
+    // the chrome's own dark/light-derived color, not a reskin-to-diagram-
+    // theme effect (see the "theme scoped to the Editor only" describe
+    // block above for that).
     expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
-      THEMES['zinc-dark'].bg,
+      '#18181B',
     )
     expect(document.getElementById('theme-btn-label')!.textContent).toBe(
       'Zinc Dark',

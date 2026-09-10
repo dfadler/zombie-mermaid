@@ -38,7 +38,7 @@
  * this issue deleted that file. See `editor/js/global.d.ts` for that
  * program's ambient declaration of this shape, unchanged.
  *
- * ## What reads `window.__editorConfigState`/`__editorViewportState`/`__editorDarkModeState` directly instead of `state`
+ * ## What reads `window.__editorConfigState`/`__editorViewportState` directly instead of `state`
  *
  * `applyStrokeOverrides(svgEl)` and `applyZoom()` are DOM-mutation closures
  * owned by `editor-config.tsx`'s/`editor-viewport.ts`'s own hooks (they
@@ -135,42 +135,6 @@ export function escHtml(s: unknown): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-}
-
-/**
- * Moved from `editor/js/rendering.ts`'s `applyThemeToPage()`, minus the
- * `state`/`THEMES` module-level reads (now a `themeKey` parameter and
- * {@link readMermaidThemes}).
- */
-export function applyThemeToPage(themeKey: string): void {
-  const root = document.documentElement
-  const themes = readMermaidThemes()
-  const t = themeKey ? themes?.[themeKey] : undefined
-  if (t) {
-    root.style.setProperty('--t-bg', t.bg)
-    root.style.setProperty('--t-fg', t.fg)
-    root.style.setProperty('--t-accent', t.accent || '#3b82f6')
-  } else {
-    const dark = window.__editorDarkModeState.getIsDark()
-    root.style.setProperty('--t-bg', dark ? '#18181B' : '#FFFFFF')
-    root.style.setProperty('--t-fg', dark ? '#FAFAFA' : '#27272A')
-    root.style.setProperty('--t-accent', dark ? '#60a5fa' : '#3b82f6')
-  }
-  const fg = root.style.getPropertyValue('--t-fg').trim() || '#27272A'
-  const rgb = hexToRgb(fg)
-  if (rgb) {
-    root.style.setProperty(
-      '--foreground-rgb',
-      rgb.r + ', ' + rgb.g + ', ' + rgb.b,
-    )
-    const bgRgb = hexToRgb(root.style.getPropertyValue('--t-bg').trim())
-    const brightness = bgRgb
-      ? (bgRgb.r * 299 + bgRgb.g * 587 + bgRgb.b * 114) / 1000
-      : 255
-    const dark = brightness < 140
-    root.style.setProperty('--shadow-border-opacity', dark ? '0.15' : '0.08')
-    root.style.setProperty('--shadow-blur-opacity', dark ? '0.12' : '0.06')
-  }
 }
 
 /**
@@ -303,10 +267,8 @@ export function useEditorRendering({
     window.__editorRenderTrigger = { scheduleRender }
   }, [scheduleRender])
 
-  // Re-theme the page and trigger a fresh render whenever the effective
-  // diagram theme changes -- editor/js/dark-mode.ts's/init.ts's old
-  // scattered "setEditorTheme(...) then applyThemeToPage()+scheduleRender(0)"
-  // call sites, unified into one state-keyed effect (the same pattern
+  // Trigger a fresh render whenever the effective diagram theme changes --
+  // unified into one state-keyed effect (the same pattern
   // editor-viewport.ts's zoom effect already uses). Also covers the very
   // first render on mount (an effect with a dependency array always runs
   // once on mount regardless of the dependency's value) -- editor-theme.ts's
@@ -314,8 +276,16 @@ export function useEditorRendering({
   // order) supersedes this call's timer with the final post-bootstrap
   // state before it ever fires, the same "multiple scheduleRender() calls
   // collapse into one final timer" behavior the old code already relied on.
+  //
+  // This deliberately does NOT touch document.documentElement's --t-bg/
+  // --t-fg/--t-accent/etc -- those drive the editor's own chrome (topbar,
+  // panels, pickers; see editor/css/variables.css) and are now owned solely
+  // by useEditorDarkMode's applyChromeColorMode(state.darkMode), independent
+  // of which diagram theme is selected here. Picking a diagram theme should
+  // only change the rendered diagram (via buildOptions() below), not the
+  // tool's own surrounding UI -- see docs/decisions/theme-selector-shared-
+  // state.md's amendment on scoping the editor's theme back down.
   useLayoutEffect(() => {
-    applyThemeToPage(state.theme)
     scheduleRender(0)
   }, [state.theme, scheduleRender])
 }

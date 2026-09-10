@@ -112,3 +112,51 @@ at `__tests__/visual/helpers/terminal-panel.ts` (the visual-regression
 suite's own terminal chrome, the sole surviving consumer), whose header
 comment cross-references this ADR so a future implementer restoring a
 real panel starts from the right default instead of guessing.
+
+## Amendment: the Editor's diagram theme is scoped back down to the Editor
+
+Amendment (#688) above reconciled the Editor's preview-pane theme into the
+shared `mermaid-theme` key, on the rationale that "which of the 15 built-in
+themes to render with" is one concept site-wide. In practice this had two
+consequences beyond that stated intent, both scoped well past "one more
+surface that renders a diagram":
+
+1. **Chrome, not just the diagram, followed the pick.** The Editor's own
+   `applyThemeToPage()` (`demo/components/editor-rendering.ts`, née
+   `editor/js/rendering.ts`) wrote the selected theme's colors onto
+   `document.documentElement`'s `--t-bg`/`--t-fg`/`--t-accent` (plus derived
+   shadow variables) — the same `:root` variables `editor/css/variables.css`
+   derives the Editor's entire chrome palette from. Every editor stylesheet
+   (topbar, both panels, the config/color/font pickers, the export dropdown)
+   pulls from that chain, so picking any of the 15 diagram themes reskinned
+   the whole tool, not just the rendered `<svg>`.
+2. **The pick left the tab.** Because the Editor's theme lived under the
+   same `mermaid-theme` key `demo/theme-state.ts` syncs across the `storage`
+   event, a theme picked in the Editor changed every other open tab of the
+   site (home, blog, dashboard, diagram pages), and a theme picked on any of
+   those pages changed the Editor's own diagram back, live, in any open tab.
+
+Neither consequence was itself the stated point of #688 ("the same concept
+everywhere") — they were side effects of the mechanism chosen (one shared
+`:root` write, one shared `localStorage` key) rather than of the underlying
+idea. Decided: **the Editor's diagram theme is local to the Editor again.**
+
+- The Editor's own chrome (`--t-bg`/`--t-fg`/`--t-accent`/etc) is now driven
+  solely by its independent light/dark toggle (`bm-editor-dark`, `demo/
+  editor-dark-mode-state.ts`) via `demo/components/editor-dark-mode.ts`'s
+  `applyChromeColorMode()` — never by which diagram theme is selected. The
+  diagram theme's colors reach only the rendered `<svg>`, through
+  `buildOptions()`/`renderMermaidSVGAsync()` (`demo/components/editor-
+  rendering.ts`), same as every other themed diagram on the site.
+- The Editor's diagram-theme preference is persisted under its own
+  `bm-editor-theme` key again (`demo/components/editor-theme.ts`) — the
+  exact key #688 retired — with no shared module, no cross-tab `storage`
+  listener, and no migration between the two keys. Picking a theme
+  elsewhere on the site no longer reaches an open Editor tab, and picking
+  one in the Editor no longer reaches anywhere else.
+- Every other #687-wired page (home, blog, dashboard, diagram pages, Fork
+  Fixes) is unaffected: `demo/theme-state.ts`'s shared `mermaid-theme` key
+  and cross-tab sync remain exactly as #685–#690 established them. This
+  amendment narrows #688 to the Editor only — it does not revisit whether
+  the rest of the site should share a theme preference, only whether the
+  Editor's own chrome and tab should be part of that sharing.
