@@ -159,13 +159,19 @@ function StrokeIcon({
  * Dual output (SVG and ASCII) — two panes over a shared base.
  *
  * CANVAS: Main.dc.html, feature grid, "Dual output", `--blue` at 28px.
+ * Deliberately taller and the right pane filled (`currentColor`, the same
+ * idiom {@link ThemesIcon} explains) versus the canvas original: at outline
+ * scale this pair of short rects reads much lighter than the set's other
+ * icons once several sit side by side (the home page's feature-pillars
+ * redesign, #895) — the extra height and the filled pane give it the same
+ * visual weight without changing the silhouette's basic shape.
  */
 export function DualOutputIcon(props: IconProps) {
   return (
     <StrokeIcon {...props} defaultColor="--blue">
-      <rect x="2" y="4" width="9" height="7" rx="1.5" />
-      <rect x="13" y="4" width="9" height="7" rx="1.5" />
-      <path d="M6.5 11v3a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-3" />
+      <rect x="2" y="3" width="9" height="10" rx="1.5" />
+      <rect x="13" y="3" width="9" height="10" rx="1.5" fill="currentColor" />
+      <path d="M6.5 13v2a2.5 2.5 0 0 0 2.5 2.5h6a2.5 2.5 0 0 0 2.5-2.5v-2" />
     </StrokeIcon>
   )
 }
@@ -226,11 +232,17 @@ export function MonoModeIcon(props: IconProps) {
  * Zero DOM dependencies — a self-contained package solid.
  *
  * CANVAS: Main.dc.html, feature grid, "Zero DOM dependencies", `--pink` at
- * 28px.
+ * 28px. The top face is filled (`currentColor`, the same idiom
+ * {@link ThemesIcon} explains) on top of the canvas's plain outline — a
+ * pure hexagon outline reads much lighter than the set's filled icons once
+ * several sit side by side (the home page's feature-pillars redesign,
+ * #895); the fill adds the same visual weight without changing the
+ * silhouette.
  */
 export function ZeroDomIcon(props: IconProps) {
   return (
     <StrokeIcon {...props} defaultColor="--pink">
+      <path d="M12 2 3 7l9 5 9-5Z" fill="currentColor" stroke="none" />
       <path d="M12 2 3 7v10l9 5 9-5V7Z" />
       <path d="M3 7l9 5 9-5M12 12v10" />
     </StrokeIcon>
@@ -243,12 +255,17 @@ export function ZeroDomIcon(props: IconProps) {
  * CANVAS: Main.dc.html, feature grid, "Synchronous rendering", `--green` at
  * 28px. Blog.dc.html reuses the drawing at 26px for "Why we forked
  * beautiful-mermaid" (`--violet`), and Editor.dc.html for "Live, debounced
- * rendering" (`--blue`) — pass `color` for those.
+ * rendering" (`--blue`) — pass `color` for those. Filled (`currentColor`,
+ * the same idiom {@link ThemesIcon} explains) rather than the canvas's
+ * plain outline: a hollow bolt reads much lighter than the set's filled
+ * icons once several sit side by side (the home page's feature-pillars
+ * redesign, #895); the fill adds the same visual weight without changing
+ * the silhouette, in every context this icon is reused.
  */
 export function SyncRenderIcon(props: IconProps) {
   return (
     <StrokeIcon {...props} defaultColor="--green">
-      <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />
+      <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" fill="currentColor" />
     </StrokeIcon>
   )
 }
