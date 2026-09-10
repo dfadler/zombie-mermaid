@@ -32,17 +32,32 @@ import {
 } from './nav.tsx'
 
 /**
- * The JSON-safe subset of {@link NavProps} actually embedded for hydration.
- *
- * Omits `installSlot` (a `ReactNode`, which can't round-trip through
- * `JSON.stringify`/`JSON.parse` — a plain object survives, but loses the
- * `$$typeof` symbol React uses to recognize a real element) and `style` (no
- * page currently passes either — see nav.tsx's own callers). The homepage's
- * one real `installSlot` use is a static, prop-free placeholder div (see
- * {@link NavProps.installSlot}'s doc comment), so a boolean flag is enough
- * to reconstruct it identically on the client; `demo/nav-client.tsx` does
- * exactly that.
+ * The two non-default `installSlot` contents a page can ask for — a `kind`
+ * rather than a real `ReactNode` prop, since neither actually varies
+ * per-page: `'theme'` is the homepage's old `#nav-theme-slot` placeholder
+ * (currently unused by any page's `<NavIsland>` call — see `nav.tsx`'s
+ * `NavProps.installSlot` doc comment for its history), and `'empty'` is the
+ * homepage hero's own package-manager selector (zombie-mermaid#902): the
+ * install pill moved into `index-app.tsx`'s `HeroInstall`, so the header
+ * slot renders nothing at all rather than falling back to the default
+ * `NavInstall` pill. Encoding this as a `kind` string, not a `ReactNode`,
+ * is what lets it round-trip through `JSON.stringify`/`JSON.parse`
+ * unchanged — a real element loses the `$$typeof` symbol React needs to
+ * recognize it — so `demo/nav-client.tsx` can reconstruct the exact same
+ * content on the client with no serialization workaround.
  */
+export type NavInstallSlotKind = 'theme' | 'empty'
+
+/** Resolves a {@link NavInstallSlotKind} to the actual `installSlot` node. */
+export function resolveInstallSlotKind(
+  kind: NavInstallSlotKind | undefined,
+): NavProps['installSlot'] {
+  if (kind === 'theme') return <div id={NAV_THEME_SLOT_ID} />
+  if (kind === 'empty') return <></>
+  return undefined
+}
+
+/** The JSON-safe subset of {@link NavProps} actually embedded for hydration. */
 export interface NavHydrationProps {
   active?: NavProps['active']
   hrefs?: NavProps['hrefs']
@@ -51,19 +66,11 @@ export interface NavHydrationProps {
   sticky?: NavProps['sticky']
   label?: NavProps['label']
   className?: NavProps['className']
-  /**
-   * True when the page supplies its own `installSlot` (the homepage's
-   * `#nav-theme-slot` placeholder — see `NavProps.installSlot`'s doc
-   * comment) instead of the default `NavInstall` pill. Reconstructed as a
-   * plain `<div id={NAV_THEME_SLOT_ID} />` on hydration.
-   */
-  hasInstallSlot?: boolean
+  /** Which non-default `installSlot` the page wants — see {@link NavInstallSlotKind}. Omit for the default `NavInstall` pill. */
+  installSlotKind?: NavInstallSlotKind
 }
 
-export interface NavIslandProps extends NavHydrationProps {
-  /** The real placeholder element, when {@link NavHydrationProps.hasInstallSlot} applies — see that field's doc comment. */
-  installSlot?: NavProps['installSlot']
-}
+export type NavIslandProps = NavHydrationProps
 
 /**
  * Renders `<Nav>` as a hydratable island: the pre-rendered markup inside
@@ -71,16 +78,11 @@ export interface NavIslandProps extends NavHydrationProps {
  * `hydrateNav()` reads to hydrate it. Use this everywhere a page component
  * used to render `<Nav .../>` directly.
  */
-export function NavIsland({
-  installSlot,
-  hasInstallSlot,
-  ...navProps
-}: NavIslandProps) {
-  const resolvedInstallSlot =
-    installSlot ?? (hasInstallSlot ? <div id={NAV_THEME_SLOT_ID} /> : undefined)
+export function NavIsland({ installSlotKind, ...navProps }: NavIslandProps) {
+  const resolvedInstallSlot = resolveInstallSlotKind(installSlotKind)
   const hydrationPayload: NavHydrationProps = {
     ...navProps,
-    hasInstallSlot: resolvedInstallSlot !== undefined,
+    installSlotKind,
   }
   return (
     <>

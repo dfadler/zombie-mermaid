@@ -19,7 +19,7 @@
  * into every page's browser bundle for no reason (the exact hazard
  * `dashboard-app.tsx`'s header comment documents for the same split).
  */
-import { createElement } from 'react'
+import { createElement, Fragment } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import {
   NAV_PROPS_ELEMENT_ID,
@@ -45,7 +45,20 @@ interface NavHydrationProps {
   sticky?: NavProps['sticky']
   label?: NavProps['label']
   className?: NavProps['className']
-  hasInstallSlot?: boolean
+  /** Mirrors `nav-island.tsx`'s `NavInstallSlotKind` — kept as the bare
+   * union rather than importing it, for the same "no edge to nav-island.tsx"
+   * reason the rest of this interface is duplicated. */
+  installSlotKind?: 'theme' | 'empty'
+}
+
+/** Mirrors `nav-island.tsx`'s `resolveInstallSlotKind`, duplicated for the
+ * same reason as {@link NavHydrationProps}. */
+function resolveInstallSlotKind(
+  kind: NavHydrationProps['installSlotKind'],
+): NavProps['installSlot'] {
+  if (kind === 'theme') return createElement('div', { id: NAV_THEME_SLOT_ID })
+  if (kind === 'empty') return createElement(Fragment)
+  return undefined
 }
 
 function readNavProps(): NavProps {
@@ -55,14 +68,12 @@ function readNavProps(): NavProps {
       `nav-client: no #${NAV_PROPS_ELEMENT_ID} element with JSON content found`,
     )
   }
-  const { hasInstallSlot, ...navProps } = JSON.parse(
+  const { installSlotKind, ...navProps } = JSON.parse(
     propsEl.textContent,
   ) as NavHydrationProps
   return {
     ...navProps,
-    installSlot: hasInstallSlot
-      ? createElement('div', { id: NAV_THEME_SLOT_ID })
-      : undefined,
+    installSlot: resolveInstallSlotKind(installSlotKind),
   }
 }
 

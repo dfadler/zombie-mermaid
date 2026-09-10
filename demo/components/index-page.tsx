@@ -1039,7 +1039,16 @@ export function IndexPage({
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <NavIsland homeHref={HOME_HREF} hrefs={ROOT_NAV_HREFS} sticky />
+        <NavIsland
+          homeHref={HOME_HREF}
+          hrefs={ROOT_NAV_HREFS}
+          sticky
+          // The package-manager selector moved into the hero's own
+          // HeroInstall (index-app.tsx, zombie-mermaid#902) -- the header
+          // renders nothing in this slot rather than falling back to the
+          // default NavInstall pill, which would just duplicate it.
+          installSlotKind="empty"
+        />
         <main id="main">
           {/*
             Plain, inert hydration containers -- see dashboard-app.tsx's

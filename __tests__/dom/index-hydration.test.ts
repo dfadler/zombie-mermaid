@@ -20,7 +20,7 @@
 import { act, createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { hydrateRoot, type Root } from 'react-dom/client'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, afterEach, vi } from 'vitest'
 import {
@@ -30,7 +30,7 @@ import {
   INDEX_MAIN_ROOT_ID,
 } from '../../demo/components/index-app.tsx'
 import { NavIsland } from '../../demo/components/nav-island.tsx'
-import { NAV_INSTALL_COMMAND } from '../../demo/components/nav.tsx'
+import { NAV_INSTALL_COMMAND, NAV_ROOT_ID } from '../../demo/components/nav.tsx'
 import { hydrateNav } from '../../demo/nav-client.tsx'
 
 let heroRoot: Root | undefined
@@ -98,6 +98,65 @@ describe('IndexHeroApp hydration (#804)', () => {
         name: /your diagrams deserve more than one gray theme/i,
       }),
     ).toBeInTheDocument()
+  })
+})
+
+/**
+ * HeroInstall's package-manager selector (zombie-mermaid#902): the hero's
+ * own instance of `nav.tsx`'s `usePackageManagerInstall` hook, reusing
+ * `NavInstallPrefix`/`NavInstallPopover` verbatim. The underlying
+ * popover/keyboard/copy behavior is already exhaustively covered by
+ * `nav-hydration.test.ts`'s "package-manager selector (#719)" suite against
+ * `NavInstall`, which drives the identical code path — this only proves the
+ * hero's own wiring of that shared hook actually works end to end.
+ */
+describe('HeroInstall package-manager selector (#902)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    // See nav-hydration.test.ts's identical afterEach comment: userEvent's
+    // own jsdom Clipboard polyfill must not leak between tests.
+    // @ts-expect-error -- deleting a property this file's own test defines
+    // via userEvent.setup(), not one TypeScript thinks is optional.
+    delete navigator.clipboard
+  })
+
+  function renderServerHtmlIntoDocument(): void {
+    document.body.innerHTML = renderToString(
+      createElement('div', { id: INDEX_HERO_ROOT_ID }, [
+        createElement(IndexHeroApp, { key: 'app' }),
+      ]),
+    )
+  }
+
+  it('defaults to npm, and switching to pnpm updates the copied command', async () => {
+    renderServerHtmlIntoDocument()
+    const container = document.getElementById(INDEX_HERO_ROOT_ID)
+    if (!container) throw new Error('test setup: root container missing')
+
+    act(() => {
+      heroRoot = hydrateRoot(container, createElement(IndexHeroApp))
+    })
+
+    const user = userEvent.setup()
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText')
+
+    expect(
+      screen.getByRole('button', { name: 'Choose package manager' }),
+    ).toHaveTextContent('npm')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Choose package manager' }),
+    )
+    await user.click(screen.getByRole('option', { name: 'pnpm' }))
+
+    expect(
+      screen.getByRole('button', { name: 'Copy install command' }),
+    ).toHaveTextContent('pnpm add zombie-mermaid')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Copy install command' }),
+    )
+    expect(writeText).toHaveBeenCalledWith('pnpm add zombie-mermaid')
   })
 })
 
@@ -221,8 +280,15 @@ describe('NavIsland hydrates side by side with both index apps (#804)', () => {
 
     const user = userEvent.setup()
     const writeText = vi.spyOn(navigator.clipboard, 'writeText')
+    const navContainer = document.getElementById(NAV_ROOT_ID)
+    if (!navContainer) throw new Error('test setup: nav root missing')
+    // Scoped to the nav bar specifically: the hero now carries its own
+    // "Copy install command" button too (zombie-mermaid#902's hero package-
+    // manager selector), so the bare page-wide query would find both.
     await user.click(
-      screen.getByRole('button', { name: 'Copy install command' }),
+      within(navContainer).getByRole('button', {
+        name: 'Copy install command',
+      }),
     )
     expect(writeText).toHaveBeenCalledWith(NAV_INSTALL_COMMAND)
 
