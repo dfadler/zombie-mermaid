@@ -229,6 +229,25 @@ function homePageCss(): string {
   top: ${SPACE.xl}px;
 }
 
+/* Since #902 moved the install pill into the hero, the header's own
+ * installSlot renders nothing (installSlotKind="empty") — the only thing
+ * left in that trailing flex child is the mobile menu-toggle, which is
+ * itself display:none above the tablet breakpoint. nav-bar's canvas-pinned
+ * justify-content:space-between (nav.tsx) still treats that now-empty
+ * child as a real flex item, though, so it splits the header's leftover
+ * width evenly between "before the links" and "after the links" — leaving
+ * nav-links stranded near the middle of the bar with a wide dead gap to
+ * its right instead of sitting flush against the edge. margin-left:auto
+ * claims all of that leftover space for the gap before nav-links instead,
+ * pushing it flush against the (empty) trailing child — scoped to
+ * home-nav-bar (passed as this page's own NavIsland className) rather than
+ * changed in nav.tsx itself, since every other page still renders a real
+ * pill there and is pinned byte-for-byte to the design canvas's own
+ * nav-bar markup. */
+.home-nav-bar .nav-links {
+  margin-left: auto;
+}
+
 @keyframes marchingAnts { to { stroke-dashoffset: -24; } }
 .edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }
 
@@ -1053,6 +1072,10 @@ export function IndexPage({
           // renders nothing in this slot rather than falling back to the
           // default NavInstall pill, which would just duplicate it.
           installSlotKind="empty"
+          // homePageCss()'s `.home-nav-bar .nav-links` rule pulls the links
+          // flush against the (now permanently empty) trailing slot instead
+          // of leaving them stranded mid-bar -- see that rule's own comment.
+          className="home-nav-bar"
         />
         <main id="main">
           {/*

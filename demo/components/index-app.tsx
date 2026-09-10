@@ -160,7 +160,7 @@ function HeroVisual() {
       <rect
         x="20"
         y="50"
-        width="260"
+        width="298"
         height="320"
         rx="16"
         fill={colorVar('--panel')}
@@ -186,7 +186,9 @@ function HeroVisual() {
         fontSize="13"
         fill={colorVar('--text-dim')}
       >
-        {'  Start --> '}
+        {'  Start '}
+        <tspan fill={colorVar('--text-faint')}>e1@</tspan>
+        {'--> '}
         <tspan fill={colorVar('--violet')}>Deploy</tspan>
         {'{Deploy?}'}
       </text>
@@ -197,7 +199,9 @@ function HeroVisual() {
         fontSize="13"
         fill={colorVar('--text-dim')}
       >
-        {'  Deploy -->|'}
+        {'  Deploy '}
+        <tspan fill={colorVar('--text-faint')}>e2@</tspan>
+        {'-->|'}
         <tspan fill={colorVar('--green')}>yes</tspan>
         {'| '}
         <tspan fill={colorVar('--amber')}>Ship</tspan>
@@ -210,15 +214,56 @@ function HeroVisual() {
         fontSize="13"
         fill={colorVar('--text-dim')}
       >
-        {'  Deploy -->|'}
+        {'  Deploy '}
+        <tspan fill={colorVar('--text-faint')}>e3@</tspan>
+        {'-->|'}
         <tspan fill={colorVar('--pink')}>no</tspan>
         {'| '}
         <tspan fill={colorVar('--amber')}>Iterate</tspan>
         {'[Iterate]'}
       </text>
+      <text
+        x="36"
+        y="214"
+        className="mono"
+        fontSize="13"
+        fill={colorVar('--text-faint')}
+      >
+        {'  e1@{ '}
+        <tspan fill={colorVar('--text-dim')}>animate</tspan>
+        {': '}
+        <tspan fill={colorVar('--amber')}>true</tspan>
+        {' }'}
+      </text>
+      <text
+        x="36"
+        y="240"
+        className="mono"
+        fontSize="13"
+        fill={colorVar('--text-faint')}
+      >
+        {'  e2@{ '}
+        <tspan fill={colorVar('--text-dim')}>animate</tspan>
+        {': '}
+        <tspan fill={colorVar('--amber')}>true</tspan>
+        {' }'}
+      </text>
+      <text
+        x="36"
+        y="266"
+        className="mono"
+        fontSize="13"
+        fill={colorVar('--text-faint')}
+      >
+        {'  e3@{ '}
+        <tspan fill={colorVar('--text-dim')}>animate</tspan>
+        {': '}
+        <tspan fill={colorVar('--amber')}>true</tspan>
+        {' }'}
+      </text>
 
       <path
-        d="M300 210 L392 210"
+        d="M318 210 C 360 210 390 90 400 75 L420 75"
         stroke={colorVar('--cyan')}
         strokeWidth="2.5"
         fill="none"
@@ -246,7 +291,7 @@ function HeroVisual() {
       </text>
 
       <path
-        d="M500 100 L500 140"
+        d="M500 100 L500 130"
         stroke={colorVar('--cyan')}
         strokeWidth="2.5"
         fill="none"
@@ -270,7 +315,7 @@ function HeroVisual() {
       </text>
 
       <path
-        d="M435 175 C 390 225 410 265 442 298"
+        d="M435 175 C 390 225 410 265 435 291"
         stroke={colorVar('--green')}
         strokeWidth="2.5"
         fill="none"
@@ -288,7 +333,7 @@ function HeroVisual() {
       </text>
 
       <path
-        d="M565 175 C 610 225 592 265 606 298"
+        d="M565 175 C 610 225 592 265 602 289"
         stroke={colorVar('--pink')}
         strokeWidth="2.5"
         fill="none"
@@ -460,15 +505,14 @@ function HeroInstall() {
         />
       </span>
       {install.popoverOpen ? (
-        <span ref={install.popoverRef}>
-          <NavInstallPopover
-            manager={install.selectedManager}
-            onSelect={install.selectManager}
-            onClose={install.closePopover}
-            triggerRef={install.triggerRef}
-            itemRefs={install.itemRefs}
-          />
-        </span>
+        <NavInstallPopover
+          manager={install.selectedManager}
+          onSelect={install.selectManager}
+          onClose={install.closePopover}
+          triggerRef={install.triggerRef}
+          itemRefs={install.itemRefs}
+          popoverRef={install.popoverRef}
+        />
       ) : null}
     </Pill>
   )
