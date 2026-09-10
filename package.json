@@ -81,7 +81,12 @@
     "src/",
     "dist/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "packages/core/src/",
+    "packages/mermaid-parser/src/",
+    "packages/svg-renderer/src/",
+    "packages/ascii-renderer/src/",
+    "packages/mcp/src/"
   ],
   "packageManager": "pnpm@11.13.0",
   "engines": {
