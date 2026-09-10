@@ -527,9 +527,10 @@ describe('editor.ts → editor.html', () => {
     const { document } = renderEditorPageDocument()
     const topbar = within(mustFind(document.querySelector('.topbar')))
 
-    expect(
-      topbar.getByRole('link', { name: /ZombieMermaid/ }),
-    ).toHaveAttribute('href', '/zombie-mermaid/')
+    expect(topbar.getByRole('link', { name: /ZombieMermaid/ })).toHaveAttribute(
+      'href',
+      '/zombie-mermaid/',
+    )
     expect(document.getElementById('tab-code')).toHaveClass('active')
     expect(document.getElementById('tab-config')).not.toHaveClass('active')
     expect(document.getElementById('dark-light-btn')).toBeInTheDocument()
