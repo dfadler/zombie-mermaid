@@ -642,7 +642,6 @@ function ThemeShowcase() {
         padding: '100px 80px',
         borderTop: `1px solid ${colorVar('--border')}`,
         borderBottom: `1px solid ${colorVar('--border')}`,
-        overflow: 'hidden',
       }}
     >
       <div className="theme-showcase-bg" aria-hidden="true">
@@ -659,7 +658,13 @@ function ThemeShowcase() {
         className="theme-showcase-grid"
         style={{
           position: 'relative',
-          zIndex: 2,
+          // Must outrank .theme-showcase-footnote's z-index (2): they're
+          // sibling stacking contexts under #theme-showcase, and a later
+          // sibling at an *equal* z-index wins the paint order regardless
+          // of any z-index set on elements nested inside this one (like
+          // the picker panel's own z-index below) -- that's how the
+          // footnote used to render on top of the open dropdown.
+          zIndex: 3,
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'grid',
