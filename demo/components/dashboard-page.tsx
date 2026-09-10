@@ -127,7 +127,7 @@ export function DashboardPage({
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Maintenance dashboard — zombie-mermaid</title>
+        <title>Maintenance dashboard — Zombie Mermaid</title>
         <meta name="description" content={PAGE_DESCRIPTION} />
         <link rel="icon" href="favicon.svg" type="image/svg+xml" />
         <DesignFontLinks />

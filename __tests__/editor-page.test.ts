@@ -64,7 +64,7 @@ describe('EditorPage', () => {
   it('renders a complete document with the expected head metadata', () => {
     const html = render()
     expect(html.startsWith('<!DOCTYPE html>')).toBe(true)
-    expect(html).toContain('<title>zombie-mermaid — Live Editor</title>')
+    expect(html).toContain('<title>Zombie Mermaid — Live Editor</title>')
     // SiteHead's own favicon plus the two links it doesn't cover (see the
     // component's header comment) — both must survive, since dropping
     // either would be a real regression (Windows/old-browser favicon

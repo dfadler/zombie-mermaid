@@ -503,7 +503,7 @@ describe('editor.ts → editor.html', () => {
   it('renders the page title and the hero heading above the tool', () => {
     const { document, page } = renderEditorPageDocument()
 
-    expect(document.title).toBe('zombie-mermaid — Live Editor')
+    expect(document.title).toBe('Zombie Mermaid — Live Editor')
     expect(
       page.getByRole('heading', {
         level: 1,
@@ -527,9 +527,10 @@ describe('editor.ts → editor.html', () => {
     const { document } = renderEditorPageDocument()
     const topbar = within(mustFind(document.querySelector('.topbar')))
 
-    expect(
-      topbar.getByRole('link', { name: /zombie-mermaid/ }),
-    ).toHaveAttribute('href', '/zombie-mermaid/')
+    expect(topbar.getByRole('link', { name: /ZombieMermaid/ })).toHaveAttribute(
+      'href',
+      '/zombie-mermaid/',
+    )
     expect(document.getElementById('tab-code')).toHaveClass('active')
     expect(document.getElementById('tab-config')).not.toHaveClass('active')
     expect(document.getElementById('dark-light-btn')).toBeInTheDocument()

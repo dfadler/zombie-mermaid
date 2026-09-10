@@ -189,7 +189,7 @@ async function main(): Promise<void> {
     ): string =>
       renderMermaidSVG(source, {
         ...colors,
-        title: `${profile.label} diagram, zombie-mermaid`,
+        title: `${profile.label} diagram, Zombie Mermaid`,
         interactivity: 'none',
         ...extra,
       })

@@ -130,8 +130,12 @@ export const NAV_ITEMS = [
 /** One of the five links' identities, e.g. `'forkFixes'`. */
 export type NavKey = (typeof NAV_ITEMS)[number]['key']
 
-/** The brand wordmark, spelled the way the canvas spells it. */
-export const NAV_WORDMARK = 'zombie-mermaid'
+/**
+ * The brand wordmark, as it renders in a logo lockup (icon + wordmark
+ * together) — see `docs/brand.md` for the merged-vs-spaced rule and why
+ * this differs from most other rendered mentions of the product name.
+ */
+export const NAV_WORDMARK = 'ZombieMermaid'
 
 /** The install command in the nav's pill. */
 export const NAV_INSTALL_COMMAND = 'npm install zombie-mermaid'

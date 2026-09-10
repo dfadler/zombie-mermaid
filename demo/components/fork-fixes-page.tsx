@@ -139,7 +139,7 @@ export function ForkFixesPage({
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>What this fork fixes — zombie-mermaid</title>
+        <title>What this fork fixes — Zombie Mermaid</title>
         <meta
           name="description"
           content="Before/after renders of bugs zombie-mermaid fixes over upstream beautiful-mermaid."

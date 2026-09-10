@@ -78,16 +78,22 @@ const CANVAS_COLUMNS = [
   },
 ] satisfies FooterColumn[]
 
-/** The brand block's two strings, verbatim. */
+/**
+ * The brand block's two strings. Wordmark rebranded to the merged logo-lockup
+ * form (docs/brand.md); tagline still verbatim.
+ */
 const CANVAS_BRAND = {
-  wordmark: 'zombie-mermaid',
+  wordmark: 'ZombieMermaid',
   tagline:
     'An open source library for rendering Mermaid diagrams, designed for the age of AI.',
 }
 
-/** The bottom bar's two lines, verbatim. */
+/**
+ * The bottom bar's two lines. Copyright rebranded to the spaced wordmark form
+ * (no icon here, docs/brand.md); fork note still verbatim.
+ */
 const CANVAS_BOTTOM = {
-  copyright: '© 2026 zombie-mermaid contributors. MIT licensed.',
+  copyright: '© 2026 Zombie Mermaid contributors. MIT licensed.',
   forkNote: 'Actively maintained fork of beautiful-mermaid.',
 }
 
