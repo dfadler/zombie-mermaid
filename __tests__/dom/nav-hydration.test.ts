@@ -293,6 +293,27 @@ describe('package-manager selector (#719)', () => {
     expect(trigger).toHaveTextContent('pnpm')
     expect(trigger).toHaveFocus()
   })
+
+  // #827 interaction-coverage audit: the test above only ever exercises
+  // ArrowDown's roving-navigation branch (nav.tsx's handleItemKeyDown) --
+  // ArrowUp is a symmetric but separate `else if` branch with its own
+  // wrap-around arithmetic, and had no coverage at all before this test.
+  it('is keyboard-operable: ArrowUp moves to the previous item and wraps from the first to the last', () => {
+    render(createElement(Nav))
+
+    fireEvent.keyDown(prefixTrigger(), { key: 'Enter' })
+    const npmOption = screen.getByRole('option', { name: 'npm' })
+    expect(npmOption).toHaveFocus()
+
+    // From the first item, ArrowUp wraps around to the last.
+    fireEvent.keyDown(npmOption, { key: 'ArrowUp' })
+    const bunOption = screen.getByRole('option', { name: 'bun' })
+    expect(bunOption).toHaveFocus()
+
+    // From there, ArrowUp moves to the previous (non-wrapping) item.
+    fireEvent.keyDown(bunOption, { key: 'ArrowUp' })
+    expect(screen.getByRole('option', { name: 'yarn' })).toHaveFocus()
+  })
 })
 
 describe('<Nav> hydration (#800)', () => {
