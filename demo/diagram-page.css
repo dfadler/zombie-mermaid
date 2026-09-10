@@ -49,13 +49,14 @@ body {
 /* demo/styles.css defines body::before/::after as scroll-fade gradients
  * whose sole purpose is to blend content scrolling underneath the
  * interactive gallery's *sticky* theme bar (see that file's own comment) --
- * this page's header isn't sticky, and its dark background lives on the
- * `.dc-root` wrapper below <body>, not on <body> itself, so these
- * fixed/viewport-pinned pseudo-elements just render as a stray band at the
- * default --theme-bar-bg (#f9f9fa, meant to track a theme this fixed-dark
- * page never switches) pinned over the top and bottom edges regardless of
- * scroll position. Suppress them outright rather than recoloring, since
- * they serve no purpose without a sticky bar to blend into.
+ * this page has no theme bar (its sticky header is the shared Nav, not
+ * styles.css's theme-bar), and its dark background lives on the `.dc-root`
+ * wrapper below <body>, not on <body> itself, so these fixed/viewport-pinned
+ * pseudo-elements just render as a stray band at the default --theme-bar-bg
+ * (#f9f9fa, meant to track a theme this fixed-dark page never switches)
+ * pinned over the top and bottom edges regardless of scroll position.
+ * Suppress them outright rather than recoloring, since they serve no
+ * purpose without a theme bar to blend into.
  */
 body::before,
 body::after {

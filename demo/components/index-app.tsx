@@ -41,7 +41,8 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import {
   CheckIcon,
@@ -150,12 +151,7 @@ export const INDEX_MAIN_ROOT_ID = 'index-main-root'
 
 function HeroVisual() {
   return (
-    <svg
-      viewBox="0 0 700 460"
-      width="100%"
-      height="auto"
-      style={{ display: 'block' }}
-    >
+    <svg viewBox="0 0 700 460" width="100%" style={{ display: 'block' }}>
       <rect
         x="20"
         y="50"
@@ -389,6 +385,8 @@ export function IndexHeroApp() {
         justifyContent: 'space-between',
         gap: `${SPACE['7xl']}px`,
         padding: `${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px`,
+        maxWidth: `${LAYOUT.maxWidth}px`,
+        margin: '0 auto',
         position: 'relative',
         zIndex: 1,
       }}
@@ -551,8 +549,16 @@ function WhyForkExistsSection() {
             gap: `${SPACE.lg}px`,
           }}
         >
-          <TerminalIcon size={28} />
-          <h3 style={{ fontSize: '19px' }}>A real CLI binary</h3>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.sm}px`,
+            }}
+          >
+            <TerminalIcon size={28} />
+            <h3 style={{ fontSize: '19px' }}>A real CLI binary</h3>
+          </div>
           <p
             style={{
               fontSize: `${FONT_SIZE.bodySm}px`,
@@ -574,10 +580,18 @@ function WhyForkExistsSection() {
             gap: `${SPACE.lg}px`,
           }}
         >
-          <MergeEdgesIcon size={28} />
-          <h3 style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}>
-            mergeEdges
-          </h3>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.sm}px`,
+            }}
+          >
+            <MergeEdgesIcon size={28} />
+            <h3 style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}>
+              mergeEdges
+            </h3>
+          </div>
           <p
             style={{
               fontSize: `${FONT_SIZE.bodySm}px`,
@@ -599,8 +613,16 @@ function WhyForkExistsSection() {
             gap: `${SPACE.lg}px`,
           }}
         >
-          <ChecklistIcon size={28} />
-          <h3 style={{ fontSize: '19px' }}>Real bugs, actually fixed</h3>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.sm}px`,
+            }}
+          >
+            <ChecklistIcon size={28} />
+            <h3 style={{ fontSize: '19px' }}>Real bugs, actually fixed</h3>
+          </div>
           <p
             style={{
               fontSize: `${FONT_SIZE.bodySm}px`,
@@ -691,7 +713,6 @@ function FeaturePillars() {
           const firstCopy = FEATURE_COPY[groupIndex * 2]
           const secondCopy = FEATURE_COPY[groupIndex * 2 + 1]
           if (firstCopy === undefined || secondCopy === undefined) return null
-          const PillarIcon = ICONS[first.name]
           const items = [
             { feature: first, copy: firstCopy },
             { feature: second, copy: secondCopy },
@@ -699,31 +720,37 @@ function FeaturePillars() {
           return (
             <Card
               key={group.label}
-              padding={32}
+              padding={24}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: `${SPACE['2xl']}px`,
+                gap: `${SPACE.lg}px`,
               }}
             >
-              <PillarIcon size={30} />
               <h3 style={{ fontSize: '22px' }}>{group.label}</h3>
-              {items.map(({ feature, copy }) => {
+              {items.map(({ feature, copy }, itemIndex) => {
                 const ItemIcon = ICONS[feature.name]
                 return (
                   <div
                     key={feature.name}
                     style={{
                       display: 'flex',
-                      gap: `${SPACE.md}px`,
+                      gap: `${SPACE.sm}px`,
                       alignItems: 'flex-start',
-                      paddingTop: `${SPACE.xl}px`,
-                      borderTop: `1px solid ${colorVar('--border')}`,
+                      ...(itemIndex === 0
+                        ? { marginTop: `${SPACE.xs}px` }
+                        : {
+                            paddingTop: `${SPACE.md}px`,
+                            borderTop: `1px solid ${colorVar('--border')}`,
+                          }),
                     }}
                   >
-                    <ItemIcon size={20} />
+                    <div style={{ flexShrink: 0 }}>
+                      <ItemIcon size={20} />
+                    </div>
                     <p
                       style={{
+                        margin: 0,
                         fontSize: `${FONT_SIZE.body}px`,
                         color: colorVar('--text-dim'),
                         lineHeight: 1.5,
@@ -1493,42 +1520,260 @@ function DiagramGalleryTeaser() {
  * Proof / maintenance
  * ----------------------------------------------------------------- */
 
+/**
+ * How many full 0-9 laps a digit reel spins through before landing on its
+ * real digit. More laps means more travel distance at the same {@link
+ * SLOT_DURATION_MS} — i.e. a faster-looking spin over the same total time,
+ * not a longer one; {@link SLOT_DURATION_MS} is what controls how long the
+ * animation actually takes.
+ */
+const SLOT_LOOPS = 1
+
+/** How long each digit reel's landing scroll takes, once it starts. */
+const SLOT_DURATION_MS = 4650
+
+/**
+ * Delay between each digit position's landing scroll starting, so the
+ * reels settle left-to-right in sequence instead of all snapping into
+ * place at once — the classic slot-machine "clunk, clunk, clunk" rhythm
+ * rather than one flat "clunk."
+ */
+const SLOT_STAGGER_MS = 90
+
+const SLOT_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)'
+
+/**
+ * A single digit reel's rows: 0-9 repeated {@link SLOT_LOOPS} times, then
+ * continuing up through `digit` one more time — so the *last* row is
+ * always the real digit, whatever it is. Scrolling this strip's bottom row
+ * into view (see {@link SlotDigit}) is what makes it "land" on the correct
+ * number.
+ */
+function buildReelRows(digit: number): number[] {
+  const length = SLOT_LOOPS * 10 + digit + 1
+  return Array.from({ length }, (_, i) => i % 10)
+}
+
+/**
+ * Standard visually-hidden-but-accessible technique (off-screen via a 1px
+ * clipped box, not `display: none`/`visibility: hidden`, which screen
+ * readers skip entirely) — see {@link SlotNumber}'s doc comment for why
+ * this needs to exist alongside the decorative reel at all.
+ */
+const visuallyHiddenStyle = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+} as const
+
+/**
+ * One digit's vertical reel: a tall stack of rows (see {@link
+ * buildReelRows}) inside a one-row-tall `overflow: hidden` window, scrolled
+ * via `transform: translateY` so only the bottom row (the real digit) is
+ * ever visible at rest. `aria-hidden` — the decoy rows above it would
+ * otherwise read out to a screen reader as a garbled run of digits (e.g.
+ * "0123423" for a reel landing on "3"); {@link SlotNumber} renders the real
+ * value as plain, visually-hidden text alongside this reel for that reason.
+ *
+ * The spin is a two-step style flip, not a single `useState` update:
+ * `active` flipping true first snaps the strip to its *top* row (digit 0)
+ * with no transition, then — two animation frames later, so the browser has
+ * actually painted that snap and has something to transition *from* — a
+ * second update applies the transition and scrolls it down to the real
+ * digit's row. A single synchronous update instead risks the browser
+ * coalescing both style changes into one paint and never rendering the
+ * transition at all — the standard "force a paint, then animate" fix for
+ * restarting a CSS transition (one rAF is occasionally still not enough for
+ * the paint to have landed by the time it fires; two is the reliable form).
+ */
+function SlotDigit({
+  digit,
+  active,
+  delayMs,
+}: {
+  digit: number
+  active: boolean
+  delayMs: number
+}) {
+  const rows = buildReelRows(digit)
+  const restEm = -(rows.length - 1)
+  const restStyle = {
+    transform: `translateY(${restEm}em)`,
+    transition: 'none',
+  }
+  const [style, setStyle] = useState<{ transform: string; transition: string }>(
+    restStyle,
+  )
+
+  useEffect(() => {
+    if (!active) return
+    if (typeof requestAnimationFrame === 'undefined') return
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    ) {
+      return
+    }
+
+    setStyle({ transform: 'translateY(0em)', transition: 'none' })
+    let raf1 = 0
+    let raf2 = 0
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setStyle({
+          transform: `translateY(${restEm}em)`,
+          transition: `transform ${SLOT_DURATION_MS}ms ${SLOT_EASING} ${delayMs}ms`,
+        })
+      })
+    })
+    return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+    }
+    // Deliberately keyed on `active` alone: `restEm`/`delayMs` are pure
+    // functions of this reel's own fixed `digit`/position, never change
+    // for a mounted instance, and re-running on their account would be a
+    // no-op anyway.
+  }, [active])
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-block',
+        overflow: 'hidden',
+        height: '1em',
+        lineHeight: 1,
+        verticalAlign: 'bottom',
+      }}
+    >
+      <span style={{ display: 'block', ...style }}>
+        {rows.map((row, i) => (
+          <span
+            key={i}
+            style={{ display: 'block', height: '1em', lineHeight: 1 }}
+          >
+            {row}
+          </span>
+        ))}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * A whole number rendered as one {@link SlotDigit} reel per digit, plus the
+ * real value as plain, visually-hidden text — so a screen reader, a
+ * copy-paste, or this page's own text search always gets "334", never the
+ * decorative reel's decoy rows or a mid-spin digit.
+ */
+function SlotNumber({ value, active }: { value: number; active: boolean }) {
+  const digits = String(value)
+    .split('')
+    .map((d) => Number(d))
+
+  return (
+    <span style={{ position: 'relative', fontVariantNumeric: 'tabular-nums' }}>
+      <span style={{ display: 'inline-flex' }}>
+        {digits.map((digit, i) => (
+          <SlotDigit
+            key={i}
+            digit={digit}
+            active={active}
+            delayMs={i * SLOT_STAGGER_MS}
+          />
+        ))}
+      </span>
+      <span style={visuallyHiddenStyle}>{value}</span>
+    </span>
+  )
+}
+
+/**
+ * True once the returned ref's element has scrolled into the viewport —
+ * flips once and never reverses (the same one-shot contract `demo/index-
+ * page-client.ts`'s theme-picker relocation uses for its own
+ * `IntersectionObserver`), so scrolling back past the section after the
+ * count-up has already played never re-triggers it. Stays `false` forever
+ * wherever `IntersectionObserver` isn't available — the same "silently
+ * does nothing, stays safe to run unconditionally" fallback that picker
+ * relocation uses for its own missing-element case — so a browser without
+ * it (or this component's own jsdom hydration test, which has no
+ * `IntersectionObserver` either) just keeps the static, already-correct
+ * server-rendered numbers instead of animating unprompted.
+ */
+function useInView<T extends HTMLElement>(): [RefObject<T | null>, boolean] {
+  const ref = useRef<T>(null)
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          setInView(true)
+          observer.disconnect()
+          return
+        }
+      },
+      { threshold: 0.3 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return [ref, inView]
+}
+
 /** One repo's stat row: days since last commit, merged PRs, open PRs. */
 function StatRow({
   ink,
   daysSinceCommit,
   mergedPRs,
   openPRs,
+  animate,
 }: {
   ink: string
   daysSinceCommit: number
   mergedPRs: number
   openPRs: number
+  /** Whether the slot-reel spin should be playing — see {@link SlotNumber}. */
+  animate: boolean
 }) {
+  const numberStyle = { fontSize: '36px', color: ink } as const
+
   return (
     <div
       className="stat-row"
       style={{ display: 'flex', justifyContent: 'space-between' }}
     >
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {daysSinceCommit} {daysSinceCommit === 1 ? 'day' : 'days'}
+        <p className="display" style={numberStyle}>
+          <SlotNumber value={daysSinceCommit} active={animate} />{' '}
+          {daysSinceCommit === 1 ? 'day' : 'days'}
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           since last commit
         </p>
       </div>
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {mergedPRs}
+        <p className="display" style={numberStyle}>
+          <SlotNumber value={mergedPRs} active={animate} />
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           merged PRs
         </p>
       </div>
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {openPRs}
+        <p className="display" style={numberStyle}>
+          <SlotNumber value={openPRs} active={animate} />
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           open PRs
@@ -1540,6 +1785,8 @@ function StatRow({
 
 /** Real fork-vs-upstream numbers, and a teaser linking to the full evidence. */
 function ProofSection() {
+  const [statsRef, statsInView] = useInView<HTMLDivElement>()
+
   return (
     <div
       id="fixes"
@@ -1577,6 +1824,7 @@ function ProofSection() {
 
       <div
         className="proof-grid"
+        ref={statsRef}
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
@@ -1604,7 +1852,11 @@ function ProofSection() {
           >
             zombie-mermaid (this fork)
           </p>
-          <StatRow ink="var(--green)" {...PROOF_SNAPSHOT.fork} />
+          <StatRow
+            ink="var(--green)"
+            animate={statsInView}
+            {...PROOF_SNAPSHOT.fork}
+          />
         </Card>
 
         <Card
@@ -1626,7 +1878,11 @@ function ProofSection() {
           >
             beautiful-mermaid (upstream)
           </p>
-          <StatRow ink="var(--text-faint)" {...PROOF_SNAPSHOT.upstream} />
+          <StatRow
+            ink="var(--text-faint)"
+            animate={statsInView}
+            {...PROOF_SNAPSHOT.upstream}
+          />
         </Card>
       </div>
 

@@ -147,7 +147,6 @@ export function DashboardPage({
             // this "lifted page background" role (tokens.tsx).
             background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
             position: 'relative',
-            overflow: 'hidden',
           }}
         >
           {/*
@@ -157,6 +156,7 @@ export function DashboardPage({
             boundary, and dashboard-client.tsx for where it's hydrated.
           */}
           <NavIsland
+            sticky
             homeHref={ROUTES.home}
             hrefs={{
               diagrams: ROUTES.diagrams,
@@ -166,8 +166,20 @@ export function DashboardPage({
               github: FORK_URL,
             }}
           />
-
           {/*
+            `overflow: hidden` used to live on the `.dc-root` div itself,
+            but that made it an ancestor of the sticky `<NavIsland>` above —
+            an `overflow` other than `visible` on any ancestor stops
+            `position: sticky` from ever un-sticking from its static
+            position, since the sticky element's nearest clipping ancestor
+            is what its "stuck" offset is computed against, and this div
+            was never itself the one scrolling. Scoping the clip to this
+            inner wrapper (a sibling of NavIsland, not an ancestor) keeps
+            whatever this was guarding against contained without breaking
+            the header's stickiness.
+          */}
+          <div style={{ overflow: 'hidden' }}>
+            {/*
             Plain, inert hydration container -- see DASHBOARD_ROOT_ID's doc
             comment (dashboard-app.tsx) for why DashboardApp's own root
             can't carry this id itself.
@@ -198,15 +210,15 @@ export function DashboardPage({
             copy this same `renderToString`-for-the-hydrated-island
             approach.
           */}
-          <div
-            id={DASHBOARD_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DashboardApp viewModel={viewModel} />),
-            }}
-          />
+            <div
+              id={DASHBOARD_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DashboardApp viewModel={viewModel} />),
+              }}
+            />
 
-          {/*
+            {/*
             Plain sibling JSX, not part of DashboardApp's hydrated tree --
             see this file's header comment and dashboard-app.tsx's for why
             (in short: ThemePickerSection/ThemePickerIsland imports
@@ -222,8 +234,9 @@ export function DashboardPage({
             hydrates ThemePickerIsland's #theme-pills exactly as it does on
             every other page.
           */}
-          <ThemePickerSection />
-          <Footer columns={dashboardFooterColumns()} />
+            <ThemePickerSection />
+            <Footer columns={dashboardFooterColumns()} />
+          </div>
         </div>
         <script
           type="application/json"

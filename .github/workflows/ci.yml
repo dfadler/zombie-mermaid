@@ -437,6 +437,48 @@ jobs:
           path: bench-current.json
           retention-days: 30
 
+      # Per-package benchmarks (#875, split from #869): bench.ts above only
+      # measures full end-to-end render time, so a regression anywhere in
+      # the pipeline shows up as just "render got slower" with no way to
+      # tell which package caused it. Each of these times only one
+      # package's own code — see each script's header comment for exactly
+      # what is (and isn't) included in its timed region.
+      - name: Run core benchmark
+        run: pnpm run bench:core -- --json=bench-core-current.json
+
+      - name: Run mermaid-parser benchmark
+        run: pnpm run bench:mermaid-parser -- --json=bench-mermaid-parser-current.json
+
+      - name: Run svg-renderer benchmark
+        run: pnpm run bench:svg-renderer -- --json=bench-svg-renderer-current.json
+
+      - name: Run ascii-renderer benchmark
+        run: pnpm run bench:ascii-renderer -- --json=bench-ascii-renderer-current.json
+
+      # Same deliberately loose threshold philosophy as "Compare against
+      # baseline" above (see scripts/bench-package-compare.ts) — but no
+      # per-package baseline is committed yet, so each comparison no-ops
+      # (exit 0) until a maintainer seeds one from a real CI run, the same
+      # bootstrap this repo already used for bench-history.jsonl (#874).
+      - name: Compare per-package benchmarks against baselines
+        run: |
+          pnpm run bench:package-compare -- bench-core-current.json --baseline=bench-baseline-core.json
+          pnpm run bench:package-compare -- bench-mermaid-parser-current.json --baseline=bench-baseline-mermaid-parser.json
+          pnpm run bench:package-compare -- bench-svg-renderer-current.json --baseline=bench-baseline-svg-renderer.json
+          pnpm run bench:package-compare -- bench-ascii-renderer-current.json --baseline=bench-baseline-ascii-renderer.json
+
+      - name: Upload per-package benchmark results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bench-package-results
+          path: |
+            bench-core-current.json
+            bench-mermaid-parser-current.json
+            bench-svg-renderer-current.json
+            bench-ascii-renderer-current.json
+          retention-days: 30
+
       # Records this run's summary into the tracked trend history
       # (bench-history.jsonl) so drift is visible across weeks/months, not
       # just against the one static baseline above — see
