@@ -331,16 +331,28 @@ ${colors}
 
 /**
  * `designTokensCss()` plus the base element rules the canvas applies on top
- * of it: the body font and ink, the display font on headings, and the
- * cyan/pink link pair.
+ * of it: a zeroed `body` margin (the canvas artboards are edge-to-edge, and
+ * every redesigned page's `<Nav>` is meant to sit flush against the
+ * viewport's top/left — without this, the browser's default 8px `body`
+ * margin nudges the nav bar and everything below it away from the edge), the
+ * body font and ink, the display font on headings, and the cyan/pink link
+ * pair.
  *
  * A page wanting only the custom properties (because it inherits its
- * element styling from elsewhere) can emit `designTokensCss()` alone.
+ * element styling from elsewhere) can emit `designTokensCss()` alone — but
+ * then owes the `body` margin reset itself. Before this reset existed here,
+ * index-page.tsx was the one page with no reset from any source (every
+ * other generator picks one up incidentally, e.g. diagram-page.tsx/
+ * blog-page.tsx's linked legacy stylesheets or editor-page.tsx's bundled
+ * `editor/css/variables.css`), which left its `<Nav>` sitting 8px off the
+ * top/left edge on the browser's default `body` margin — visible as the
+ * nav bar visibly jumping on every navigation to or from the home page.
  */
 export function designBaseCss(): string {
   return `${designTokensCss()}
 
 body {
+  margin: 0;
   font-family: var(--font-body);
   color: var(--text);
   background: var(--bg);
