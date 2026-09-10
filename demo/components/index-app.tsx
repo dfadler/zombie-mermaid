@@ -460,15 +460,14 @@ function HeroInstall() {
         />
       </span>
       {install.popoverOpen ? (
-        <span ref={install.popoverRef}>
-          <NavInstallPopover
-            manager={install.selectedManager}
-            onSelect={install.selectManager}
-            onClose={install.closePopover}
-            triggerRef={install.triggerRef}
-            itemRefs={install.itemRefs}
-          />
-        </span>
+        <NavInstallPopover
+          manager={install.selectedManager}
+          onSelect={install.selectManager}
+          onClose={install.closePopover}
+          triggerRef={install.triggerRef}
+          itemRefs={install.itemRefs}
+          popoverRef={install.popoverRef}
+        />
       ) : null}
     </Pill>
   )
