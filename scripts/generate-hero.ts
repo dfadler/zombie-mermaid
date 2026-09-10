@@ -1,28 +1,25 @@
 /**
- * Regenerates hero.svg (the README's hero image) from the site's own home
- * page hero visual, `index-app.tsx`'s `HeroVisual` — the hand-drawn,
- * side-by-side "raw Mermaid source → rendered, animated diagram" panel a
- * visitor sees at the top of the live site. Rendered through
- * `react-dom/server`'s `renderToStaticMarkup` (the same function
- * `demo/render-html.ts` uses for every other generated page), not
- * hand-transcribed, so hero.svg can never drift from what the site actually
- * ships — the day `HeroVisual` changes, regenerating this file picks it up
- * automatically.
+ * Regenerates hero.svg (the README's hero image) from `public/hero-visual.svg`
+ * — the hand-drawn, side-by-side "raw Mermaid source → rendered, animated
+ * diagram" panel a visitor sees at the top of the live site, extracted from
+ * `index-app.tsx`'s `HeroVisual` component to that standalone file
+ * (zombie-mermaid#920).
  *
- * `HeroVisual` colors every shape with `colorVar('--x')` (`tokens.tsx`),
- * which emits a literal `fill="var(--x)"` attribute — on the live site
- * that resolves against the page's own `:root` custom properties
- * (`designBaseCss()`). A standalone hero.svg has no such page around it, so
- * this script publishes the same `:root { --x: ...; }` block itself,
- * sourced from `COLORS` (`tokens.tsx`) rather than re-typing hex values by
- * hand — keeping color drift impossible here too. Unlike the live site
- * (where HeroVisual sits directly on the page's own full-bleed `--bg`),
- * this composite draws its own rounded `--bg` backdrop behind HeroVisual's
- * output — a README renders on whatever background the viewer's GitHub
- * theme picks (white in light mode), and without that backdrop the code
- * card floats with no visual anchor and the diagram's node labels (colored
- * for contrast against `--bg`, e.g. `Deploy?`'s near-black fill) go
- * unreadable.
+ * `public/hero-visual.svg` is already fully self-contained — its own
+ * `:root` colour variables, `.mono` font-family, and `.edge-anim`
+ * marching-ants animation, restated in its own `<style>` block (see that
+ * file's header comment) so it renders identically whether loaded via the
+ * live homepage's `<img src="hero-visual.svg">` or embedded in the README.
+ * That means this script no longer needs to render a React component or
+ * reconstruct any CSS of its own — but the two contexts still differ in one
+ * way: the live site places HeroVisual directly on the page's own
+ * full-bleed `--bg`, while a README renders on whatever background the
+ * viewer's GitHub theme picks (white in light mode). Without a backdrop,
+ * the code card floats with no visual anchor and the diagram's node labels
+ * (colored for contrast against `--bg`, e.g. `Deploy?`'s near-black fill)
+ * go unreadable — so this script inserts one rounded `--bg` backdrop rect
+ * right after the source file's `<style>` block before writing hero.svg,
+ * the one place these two output targets still diverge.
  *
  * hero.svg replaced hero.png (a manually-captured screenshot) once the
  * hero visual's edges gained a marching-ants animation: GitHub renders an
@@ -32,66 +29,31 @@
  * Usage: tsx scripts/generate-hero.ts
  */
 
-import { writeFile } from 'node:fs/promises'
-import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
-import { HeroVisual } from '../demo/components/index-app.tsx'
-import { COLORS, FONTS } from '../demo/components/tokens.tsx'
+import { readFile, writeFile } from 'node:fs/promises'
 
 const WIDTH = 700
 const HEIGHT = 460
-/** Corner radius of the composite's `--bg` backdrop — matches the code
- * card's own `rx="16"` (HeroVisual) closely enough to read as one shape
- * family, rounded up slightly since this rect is the larger of the two. */
+/** Corner radius of the backdrop — matches the code card's own `rx="16"`
+ * (HeroVisual) closely enough to read as one shape family, rounded up
+ * slightly since this rect is the larger of the two. */
 const BACKDROP_RADIUS = 20
 
-/**
- * `.edge-anim`'s marching-ants animation — transcribed from
- * `index-page.tsx`'s `homePageCss()` (the class `HeroVisual`'s own edges
- * use) rather than imported, since that function emits the whole home
- * page's CSS and this composite only needs these four lines of it.
- */
-const EDGE_ANIM_CSS = `@keyframes marchingAnts { to { stroke-dashoffset: -24; } }
-  .edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }
-  @media (prefers-reduced-motion: reduce) {
-    .edge-anim { animation: none; }
-  }`
-
 async function main(): Promise<void> {
-  const heroVisualMarkup = renderToStaticMarkup(createElement(HeroVisual))
-  // HeroVisual's own root <svg viewBox="0 0 700 460" ...> becomes a plain
-  // <g>, positioned to fill the composite exactly — keeping one real <svg>
-  // root rather than nesting a second one for no reason (unlike the old
-  // generator's nested nested-renderer output, which had no choice: that
-  // SVG came from `renderMermaidSVG` at whatever native size the diagram
-  // rendered at, not already sized to this canvas).
-  const heroVisualBody = heroVisualMarkup
-    .replace(/^<svg[^>]*>/, '<g>')
-    .replace(/<\/svg>$/, '</g>')
-
-  const rootVars = Object.entries(COLORS)
-    .map(([token, hex]) => `${token}: ${hex};`)
-    .join(' ')
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" width="${WIDTH}" height="${HEIGHT}" role="img" aria-label="Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself">
-<style>
-  :root { ${rootVars} }
-  /* HeroVisual's code panel text carries the site's global \`.mono\`
-     class (nav.tsx/tokens.tsx's designBaseCss()) for its font — restated
-     here since a standalone hero.svg has no page-wide stylesheet to
-     inherit it from. */
-  .mono { font-family: ${FONTS.mono}; }
-  ${EDGE_ANIM_CSS}
-</style>
-
-<rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" rx="${BACKDROP_RADIUS}" fill="var(--bg)"/>
-${heroVisualBody}
-</svg>
-`
-
+  const srcPath = new URL('../public/hero-visual.svg', import.meta.url)
   const outPath = new URL('../hero.svg', import.meta.url)
+
+  const source = await readFile(srcPath, 'utf8')
+
+  // Inserted right after the closing </style> tag (not inside the style
+  // block itself), so it paints behind every other shape without touching
+  // the CSS those shapes depend on.
+  const backdrop = `<rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" rx="${BACKDROP_RADIUS}" fill="var(--bg)"/>`
+  const svg = source.replace('</style>', `</style>\n${backdrop}`)
+
   await writeFile(outPath, svg, 'utf8')
-  console.log(`Wrote hero.svg (${svg.length} bytes) from HeroVisual`)
+  console.log(
+    `Wrote hero.svg (${svg.length} bytes) from public/hero-visual.svg`,
+  )
 }
 
 main().catch((err: unknown) => {
