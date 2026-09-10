@@ -53,6 +53,7 @@ import { renderToString } from 'react-dom/server'
 import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
+import { Document } from './document.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { SectionEyebrow } from './primitives.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
@@ -997,72 +998,77 @@ export function IndexPage({
   clientScript = '',
 }: IndexPageProps) {
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Zombie Mermaid — Mermaid Rendering, Made Beautiful</title>
-        <meta
-          name="description"
-          content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams."
-        />
-        <link rel="canonical" href={SITE_URL} />
-        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-        <link rel="icon" type="image/x-icon" href="favicon.ico" />
-        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-        <meta property="og:title" content="Zombie Mermaid" />
-        <meta
-          property="og:description"
-          content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII."
-        />
-        <meta property="og:image" content={OG_IMAGE_URL} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={SITE_URL} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Zombie Mermaid" />
-        <meta
-          name="twitter:description"
-          content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII."
-        />
-        <meta name="twitter:image" content={OG_IMAGE_URL} />
-        <script
-          type="application/ld+json"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD built from package.json at build time and escaped with escapeJsonForScriptTag
-          dangerouslySetInnerHTML={{ __html: jsonLd }}
-        />
-        {/* Plausible Analytics */}
-        <script
-          defer
-          data-domain={PLAUSIBLE_DOMAIN}
-          src="https://plausible.io/js/script.js"
-        />
-        <DesignFontLinks />
-        <SharedPageStyles />
-        <style>{homePageCss()}</style>
-      </head>
-      <body>
-        <a className="skip-link" href="#main">
-          Skip to content
-        </a>
-        <NavIsland
-          homeHref={HOME_HREF}
-          hrefs={ROOT_NAV_HREFS}
-          sticky
-          // The site header never shows the npm-install pill on any page --
-          // nav.tsx's own NavInstall stays the *default* (used directly,
-          // with no NavIsland involved at all, e.g. this repo's own unit
-          // tests) -- see diagram-page.tsx/editor-page.tsx/fork-fixes-
-          // page.tsx/blog-page.tsx's matching installSlotKind="empty" for
-          // the rest of the site. Originally scoped to this page alone
-          // (zombie-mermaid#902, to avoid duplicating the hero's own
-          // install pill); made universal after the redesign shipped it
-          // inconsistently everywhere else too. nav.tsx's own nav-links
-          // marginLeft handles the "flush right" layout this used to need
-          // a page-specific CSS class for.
-          installSlotKind="empty"
-        />
-        <main id="main">
+    <Document
+      title="Zombie Mermaid — Mermaid Rendering, Made Beautiful"
+      description="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams."
+      head={
+        <>
           {/*
+            Document's favicon `<link>` (the primary SVG one, right after
+            the description meta tag above) replaces this file's own —
+            this reorders it ahead of the canonical link and the
+            favicon.ico/apple-touch-icon fallbacks below, where it used to
+            sit last among the three. A `<head>`-internal reordering with
+            no rendering/SEO effect, not a behavior change (see
+            document.tsx's own doc comment).
+          */}
+          <link rel="canonical" href={SITE_URL} />
+          <link rel="icon" type="image/x-icon" href="favicon.ico" />
+          <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+          <meta property="og:title" content="Zombie Mermaid" />
+          <meta
+            property="og:description"
+            content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII."
+          />
+          <meta property="og:image" content={OG_IMAGE_URL} />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={SITE_URL} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="Zombie Mermaid" />
+          <meta
+            name="twitter:description"
+            content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII."
+          />
+          <meta name="twitter:image" content={OG_IMAGE_URL} />
+          <script
+            type="application/ld+json"
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- JSON-LD built from package.json at build time and escaped with escapeJsonForScriptTag
+            dangerouslySetInnerHTML={{ __html: jsonLd }}
+          />
+          {/* Plausible Analytics */}
+          <script
+            defer
+            data-domain={PLAUSIBLE_DOMAIN}
+            src="https://plausible.io/js/script.js"
+          />
+          <DesignFontLinks />
+          <SharedPageStyles />
+          <style>{homePageCss()}</style>
+        </>
+      }
+    >
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <NavIsland
+        homeHref={HOME_HREF}
+        hrefs={ROOT_NAV_HREFS}
+        sticky
+        // The site header never shows the npm-install pill on any page --
+        // nav.tsx's own NavInstall stays the *default* (used directly,
+        // with no NavIsland involved at all, e.g. this repo's own unit
+        // tests) -- see diagram-page.tsx/editor-page.tsx/fork-fixes-
+        // page.tsx/blog-page.tsx's matching installSlotKind="empty" for
+        // the rest of the site. Originally scoped to this page alone
+        // (zombie-mermaid#902, to avoid duplicating the hero's own
+        // install pill); made universal after the redesign shipped it
+        // inconsistently everywhere else too. nav.tsx's own nav-links
+        // marginLeft handles the "flush right" layout this used to need
+        // a page-specific CSS class for.
+        installSlotKind="empty"
+      />
+      <main id="main">
+        {/*
             Plain, inert hydration containers -- see dashboard-app.tsx's
             DASHBOARD_ROOT_ID doc comment for why neither app's own root
             can carry these ids itself, and dashboard-page.tsx's own, more
@@ -1071,31 +1077,30 @@ export function IndexPage({
             between them, unhydrated as part of either app -- see this
             file's header comment for why.
           */}
-          <div
-            id={INDEX_HERO_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexHeroApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<IndexHeroApp />),
-            }}
-          />
-          <ThemeShowcase />
-          <div
-            id={INDEX_MAIN_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexMainApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<IndexMainApp />),
-            }}
-          />
-        </main>
-        <Footer columns={HOME_FOOTER_COLUMNS} />
-        <script type="module" src={clientScriptSrc} />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: clientScript }}
+        <div
+          id={INDEX_HERO_ROOT_ID}
+          dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexHeroApp component tree rendered via renderToString (see the comment above); never user input
+            __html: renderToString(<IndexHeroApp />),
+          }}
         />
-        <NavMobileMenuScript />
-      </body>
-    </html>
+        <ThemeShowcase />
+        <div
+          id={INDEX_MAIN_ROOT_ID}
+          dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexMainApp component tree rendered via renderToString (see the comment above); never user input
+            __html: renderToString(<IndexMainApp />),
+          }}
+        />
+      </main>
+      <Footer columns={HOME_FOOTER_COLUMNS} />
+      <script type="module" src={clientScriptSrc} />
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/index-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: clientScript }}
+      />
+      <NavMobileMenuScript />
+    </Document>
   )
 }

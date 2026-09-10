@@ -42,6 +42,7 @@ import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
+import { Document } from './document.tsx'
 import {
   ForkFixesApp,
   FORK_FIXES_PROPS_ELEMENT_ID,
@@ -127,29 +128,25 @@ export function ForkFixesPage({
   clientScript = '',
 }: ForkFixesPageProps) {
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>What this fork fixes — Zombie Mermaid</title>
-        <meta
-          name="description"
-          content="Before/after renders of bugs zombie-mermaid fixes over upstream beautiful-mermaid."
-        />
-        <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-        <DesignFontLinks />
-        <style>{css}</style>
-      </head>
-      <body>
-        <NavIsland
-          sticky
-          active="forkFixes"
-          homeHref={HOME_HREF}
-          hrefs={NAV_HREFS}
-          installSlotKind="empty"
-        />
+    <Document
+      title="What this fork fixes — Zombie Mermaid"
+      description="Before/after renders of bugs zombie-mermaid fixes over upstream beautiful-mermaid."
+      head={
+        <>
+          <DesignFontLinks />
+          <style>{css}</style>
+        </>
+      }
+    >
+      <NavIsland
+        sticky
+        active="forkFixes"
+        homeHref={HOME_HREF}
+        hrefs={NAV_HREFS}
+        installSlotKind="empty"
+      />
 
-        {/*
+      {/*
           Plain, inert hydration container -- see dashboard-app.tsx's
           DASHBOARD_ROOT_ID doc comment for why ForkFixesApp's own root
           can't carry this id itself.
@@ -164,32 +161,31 @@ export function ForkFixesPage({
           for this island, produces them. See dashboard-page.tsx's own,
           more detailed version of this comment (the pattern this mirrors).
         */}
-        <div
-          id={FORK_FIXES_ROOT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own ForkFixesApp component tree rendered via renderToString (see the comment above); never user input
-            __html: renderToString(<ForkFixesApp fixes={fixes} />),
-          }}
-        />
-        <script
-          type="application/json"
-          id={FORK_FIXES_PROPS_ELEMENT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own ForkFixesAppProps, escaped with escapeJsonForScriptTag; never user input
-            __html: escapeJsonForScriptTag(
-              JSON.stringify({ fixes } satisfies ForkFixesAppProps),
-            ),
-          }}
-        />
+      <div
+        id={FORK_FIXES_ROOT_ID}
+        dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own ForkFixesApp component tree rendered via renderToString (see the comment above); never user input
+          __html: renderToString(<ForkFixesApp fixes={fixes} />),
+        }}
+      />
+      <script
+        type="application/json"
+        id={FORK_FIXES_PROPS_ELEMENT_ID}
+        dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own ForkFixesAppProps, escaped with escapeJsonForScriptTag; never user input
+          __html: escapeJsonForScriptTag(
+            JSON.stringify({ fixes } satisfies ForkFixesAppProps),
+          ),
+        }}
+      />
 
-        <Footer columns={FOOTER_COLUMNS} />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/fork-fixes-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: clientScript }}
-        />
-        <NavMobileMenuScript />
-      </body>
-    </html>
+      <Footer columns={FOOTER_COLUMNS} />
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/fork-fixes-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: clientScript }}
+      />
+      <NavMobileMenuScript />
+    </Document>
   )
 }
