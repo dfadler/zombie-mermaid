@@ -12,13 +12,12 @@
  * `theme-state.ts` itself. The two are genuinely different concepts:
  * `theme-state.ts`'s `mermaid-theme` key is "which of the 15 built-in
  * diagram color themes to render with," shared site-wide (editor preview
- * pane included, since #688's reconciliation -- see
- * `demo/editor-theme-state-bridge.ts`); `bm-editor-dark` is the editor
- * tool-chrome's own light/dark appearance, which only *implies* a default
- * diagram theme (`editor/js/dark-mode.ts`'s `AUTO_DARK_DIAGRAM_THEME`/
- * `AUTO_LIGHT_DIAGRAM_THEME` mapping) rather than being one. Confirmed by
- * `editor-theme-state-bridge.ts`'s own header comment, which explicitly
- * carves `bm-editor-dark` out of the #688 unification as "unrelated."
+ * pane included, since #688's reconciliation); `bm-editor-dark` is the
+ * editor tool-chrome's own light/dark appearance, which only *implies* a
+ * default diagram theme (zombie-mermaid#810's `demo/components/editor-theme.ts`
+ * `AUTO_DARK_DIAGRAM_THEME`/`AUTO_LIGHT_DIAGRAM_THEME` mapping, moved from
+ * the original `editor/js/dark-mode.ts`) rather than being one -- #688's
+ * unification deliberately left `bm-editor-dark` out as "unrelated."
  *
  * SSR-safe for the same reason `theme-state.ts` is: `demo/components/
  * editor-app.tsx`'s `EditorApp` (which owns the actual `darkMode` reducer
