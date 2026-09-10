@@ -84,14 +84,21 @@
 }
 .icon-btn:hover {
   color: var(--fg);
-  background: rgba(255, 255, 255, 0.07);
+  /* Was a hardcoded rgba(255,255,255,.07) -- only visible in dark chrome
+   * mode, invisible against the light mode's white panel. color-mix off
+   * --t-fg adapts to whichever chrome mode is active. */
+  background: color-mix(in srgb, var(--t-fg) 7%, transparent);
 }
 .icon-btn svg {
   width: 14px;
   height: 14px;
 }
 .icon-btn.active {
-  background: var(--accent);
+  /* --accent-fill, not --accent: --accent (--t-accent) is a lighter blue in
+   * dark mode, tuned for its own contrast against a dark bg -- white on top
+   * of it only clears ~2.5:1, below the 3:1 icon/UI floor. See
+   * variables.css's --accent-fill doc comment. */
+  background: var(--accent-fill);
   color: #fff;
 }
 
@@ -116,5 +123,9 @@
 }
 .resize-handle:hover,
 .resize-handle.dragging {
-  background: var(--blue);
+  /* --blue only exists in demo/components/tokens.tsx's COLORS map, scoped
+   * to .zm-shell -- the editor page sits outside that scope (see
+   * editor-topbar.tsx's EditorLogo doc comment), so this resolved to
+   * nothing and the resize handle never actually highlighted. */
+  background: var(--t-accent);
 }

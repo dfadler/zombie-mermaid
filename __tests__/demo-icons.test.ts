@@ -190,24 +190,25 @@ describe('props', () => {
 })
 
 describe('canvas paths', () => {
-  it('draws dual output as two panes over a shared base', () => {
+  it('draws dual output as two panes over a shared base, one filled', () => {
     const svg = renderIcon(DualOutputIcon)
     const rects = svg.querySelectorAll('rect')
     expect(rects).toHaveLength(2)
     expect(rects[0]).toHaveAttribute('x', '2')
-    expect(rects[0]).toHaveAttribute('y', '4')
+    expect(rects[0]).toHaveAttribute('y', '3')
     expect(rects[0]).toHaveAttribute('width', '9')
-    expect(rects[0]).toHaveAttribute('height', '7')
+    expect(rects[0]).toHaveAttribute('height', '10')
     expect(rects[0]).toHaveAttribute('rx', '1.5')
     expect(rects[1]).toHaveAttribute('x', '13')
-    expect(rects[1]).toHaveAttribute('y', '4')
+    expect(rects[1]).toHaveAttribute('y', '3')
     expect(rects[1]).toHaveAttribute('width', '9')
-    expect(rects[1]).toHaveAttribute('height', '7')
+    expect(rects[1]).toHaveAttribute('height', '10')
     expect(rects[1]).toHaveAttribute('rx', '1.5')
+    expect(rects[1]).toHaveAttribute('fill', 'currentColor')
     const path = svg.querySelector('path')
     expect(path).toHaveAttribute(
       'd',
-      'M6.5 11v3a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-3',
+      'M6.5 13v2a2.5 2.5 0 0 0 2.5 2.5h6a2.5 2.5 0 0 0 2.5-2.5v-2',
     )
   })
 

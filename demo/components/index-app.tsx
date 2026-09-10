@@ -810,11 +810,11 @@ function FeaturePillars() {
           return (
             <Card
               key={group.label}
-              padding={24}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: `${SPACE.lg}px`,
+                padding: '26px 24px',
               }}
             >
               <h3 style={{ fontSize: '22px' }}>{group.label}</h3>
@@ -823,20 +823,25 @@ function FeaturePillars() {
                 return (
                   <div
                     key={feature.name}
-                    style={{
-                      display: 'flex',
-                      gap: `${SPACE.sm}px`,
-                      alignItems: 'flex-start',
-                      ...(itemIndex === 0
-                        ? { marginTop: `${SPACE.xs}px` }
+                    style={
+                      itemIndex === 0
+                        ? {
+                            display: 'flex',
+                            gap: `${SPACE.sm}px`,
+                            alignItems: 'flex-start',
+                            marginTop: `${SPACE.xs}px`,
+                          }
                         : {
+                            display: 'flex',
+                            gap: `${SPACE.sm}px`,
+                            alignItems: 'flex-start',
                             paddingTop: `${SPACE.md}px`,
                             borderTop: `1px solid ${colorVar('--border')}`,
-                          }),
-                    }}
+                          }
+                    }
                   >
                     <div style={{ flexShrink: 0 }}>
-                      <ItemIcon size={20} />
+                      <ItemIcon size={28} />
                     </div>
                     <p
                       style={{

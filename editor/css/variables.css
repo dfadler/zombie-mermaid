@@ -53,13 +53,27 @@
   --bg2: var(--t-bg);
   --bg3: color-mix(in srgb, var(--t-bg) 97%, var(--t-fg));
   --bg-hover: color-mix(in srgb, var(--t-bg) 92%, var(--t-fg));
-  --border: color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
+  /* Bumped from 5%/50%/35% mixes: those computed to ~1.1:1 / 3.1:1 / 2.1:1
+   * against the two fixed chrome bg/fg pairs applyChromeColorMode() (#809,
+   * demo/components/editor-dark-mode.ts) sets --t-bg/--t-fg to -- all below
+   * the WCAG AA floors (3:1 non-text, 4.5:1 normal text) these tokens are
+   * used for (panel borders, status-bar/zoom-label text, line-numbers).
+   * 50%/74%/66% clear those floors in both light (#FFFFFF/#27272A) and dark
+   * (#18181B/#FAFAFA) chrome modes -- verified against both pairs, not just
+   * the lighter/harder-to-satisfy one. */
+  --border: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
   --fg: var(--t-fg);
   --fg2: color-mix(in srgb, var(--t-fg) 80%, var(--t-bg));
-  --fg3: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
-  --fg4: color-mix(in srgb, var(--t-fg) 35%, var(--t-bg));
+  --fg3: color-mix(in srgb, var(--t-fg) 74%, var(--t-bg));
+  --fg4: color-mix(in srgb, var(--t-fg) 66%, var(--t-bg));
   --accent: var(--t-accent);
   --accent2: color-mix(in srgb, var(--t-accent) 80%, var(--t-bg));
+  /* Fixed (not derived from --t-accent, which is lighter in dark mode for
+   * its own on-bg text/icon contrast): a solid fill white icons/text sit on
+   * top of, e.g. .icon-btn.active. #60a5fa (the dark-mode --t-accent) only
+   * gives white ~2.5:1 on top of it, below the 3:1 UI/icon floor -- #2563eb
+   * clears ~4.5:1 in both modes. */
+  --accent-fill: #2563eb;
   --radius: 8px;
 
   /* Semantic status colors */

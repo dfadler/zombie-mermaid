@@ -39,7 +39,7 @@
   font-weight: 600;
 }
 .logo-sub {
-  color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
+  color: var(--fg3);
   font-weight: 300;
   margin-left: 0.125rem;
 }
@@ -73,7 +73,7 @@
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  cursor: default;
+  cursor: pointer;
   white-space: nowrap;
   user-select: none;
 }
@@ -108,7 +108,7 @@
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  cursor: default;
+  cursor: pointer;
   white-space: nowrap;
   user-select: none;
 }
@@ -121,7 +121,7 @@
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--t-fg) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--t-fg) 30%, transparent);
 }
 .theme-dropdown-btn svg {
   width: 10px;
@@ -164,7 +164,7 @@
   font-size: 12px;
   font-weight: 400;
   font-family: inherit;
-  cursor: default;
+  cursor: pointer;
   white-space: nowrap;
   text-align: left;
   width: 100%;
@@ -192,7 +192,7 @@
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--t-fg) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--t-fg) 30%, transparent);
 }
 
 /* Buttons — match showcase secondary button style */
@@ -210,7 +210,7 @@
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  cursor: default;
+  cursor: pointer;
   white-space: nowrap;
   user-select: none;
   text-decoration: none;
