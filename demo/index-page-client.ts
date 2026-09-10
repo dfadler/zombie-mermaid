@@ -82,6 +82,7 @@ interface DiagramShowcaseColors {
   arrow: string
 }
 
+/** Mirrors `demo/components/index-page.tsx`'s `deriveShowcaseColors()` mapping exactly, so a pick re-themes the diagram identically to how it was first rendered. */
 function deriveDiagramColors(theme: DiagramColors): DiagramShowcaseColors {
   const arrow = theme.accent ?? mixHex(theme.fg, theme.bg, 85)
   return {
@@ -130,6 +131,7 @@ function applyTheme(
   }
 }
 
+/** Queries the showcase's DOM refs and wires up the picker — a no-op (not a thrown error) if any expected element is missing, since this script has no other page to run on and a malformed/absent markup shouldn't break the rest of the page's client bundle. */
 function initThemeShowcase(): void {
   const diagramCard = document.getElementById('theme-showcase-diagram-card')
   const burst = document.getElementById('theme-showcase-burst')
@@ -192,20 +194,22 @@ function wireThemePicker(
 ): void {
   const { wrapper, trigger, panel } = opts
 
-  // Focuses an option without letting the browser's default
-  // scroll-into-view kick in -- #theme-showcase needs `overflow: hidden`
-  // to clip its oversized decorative aurora/mesh background, which
-  // (surprisingly) is enough to make it a real, programmatically
-  // scrollable container even though nothing ever draws a scrollbar on
-  // it. Plain `.focus()` on a deeply-nested option was walking up to that
-  // ancestor and setting a nonzero `scrollTop` on it, silently shifting
-  // the entire section's visible content (confirmed empirically: 27px,
-  // every time, regardless of viewport size) -- exactly the "opening the
-  // picker moves everything below it" bug this fixes. `preventScroll:
-  // true` stops that, including the desirable case (the panel's own
-  // `overflow-y: auto` scrolling to reveal an option outside its current
-  // 300px window), so that specific, correct scroll is reimplemented by
-  // hand here, scoped to just `panel.scrollTop`.
+  /**
+   * Focuses an option without letting the browser's default
+   * scroll-into-view kick in -- #theme-showcase needs `overflow: hidden`
+   * to clip its oversized decorative aurora/mesh background, which
+   * (surprisingly) is enough to make it a real, programmatically
+   * scrollable container even though nothing ever draws a scrollbar on
+   * it. Plain `.focus()` on a deeply-nested option was walking up to that
+   * ancestor and setting a nonzero `scrollTop` on it, silently shifting
+   * the entire section's visible content (confirmed empirically: 27px,
+   * every time, regardless of viewport size) -- exactly the "opening the
+   * picker moves everything below it" bug this fixes. `preventScroll:
+   * true` stops that, including the desirable case (the panel's own
+   * `overflow-y: auto` scrolling to reveal an option outside its current
+   * 300px window), so that specific, correct scroll is reimplemented by
+   * hand here, scoped to just `panel.scrollTop`.
+   */
   function focusOption(option: HTMLElement): void {
     option.focus({ preventScroll: true })
     const panelRect = panel.getBoundingClientRect()
@@ -217,6 +221,7 @@ function wireThemePicker(
     }
   }
 
+  /** The single place open/close state changes -- always call this rather than toggling `panel.hidden` directly, since opening also has to move focus (via {@link focusOption}). */
   function setOpen(open: boolean): void {
     panel.hidden = !open
     trigger.setAttribute('aria-expanded', String(open))

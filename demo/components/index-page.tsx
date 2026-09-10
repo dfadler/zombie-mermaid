@@ -39,7 +39,12 @@
  * `https://claude.ai/code/artifact/021183bd-f416-4d93-a21a-9febe1b8c69f`)
  * pixel-for-pixel: a single decorative flowchart, re-themed in place on a
  * manual pick only (no ambient auto-cycle, no six-diagram gallery) — see
- * {@link ThemeShowcase}'s own doc comment.
+ * {@link ThemeShowcase}'s own doc comment. One deliberate coordinate fix
+ * on top of that 1:1 copy: the canvas's own "Deploy?" diamond sits flush
+ * against the pipeline→Deploy connector and its "pass" label, hiding both
+ * behind the diamond's opaque fill — moved 35 units right here (with its
+ * text, burst ring, and outgoing yes/no curves shifted to match) to open
+ * the same kind of gap the canvas's own "Auth?" diamond already has.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
@@ -802,17 +807,17 @@ function ThemeShowcase() {
               d="M375,150 L410,150"
               markerEnd="url(#theme-showcase-arrowhead)"
             />
-            <text className="tsd-label" x={382} y={140} fontSize={9.5}>
+            <text className="tsd-label" x={382} y={142} fontSize={9.5}>
               pass
             </text>
 
             <polygon
               className="tsd-node"
-              points="410,120 445,150 410,180 375,150"
+              points="445,120 480,150 445,180 410,150"
             />
             <text
               className="tsd-node-text"
-              x={410}
+              x={445}
               y={154}
               textAnchor="middle"
               fontSize={10}
@@ -823,14 +828,14 @@ function ThemeShowcase() {
               id="theme-showcase-burst"
               className="theme-showcase-burst-ring"
               aria-hidden="true"
-              cx={410}
+              cx={445}
               cy={150}
               r={28}
             />
 
             <path
               className="tsd-flow"
-              d="M441,138 C 465,110 480,95 500,88"
+              d="M476,138 C 486,116 488,98 500,90"
               markerEnd="url(#theme-showcase-arrowhead)"
             />
             <text className="tsd-label" x={452} y={108} fontSize={9.5}>
@@ -856,7 +861,7 @@ function ThemeShowcase() {
 
             <path
               className="tsd-rollback-path"
-              d="M441,162 C 465,190 480,205 500,212"
+              d="M476,162 C 486,184 488,202 500,210"
               markerEnd="url(#theme-showcase-arrowhead)"
             />
             <text className="tsd-label" x={452} y={200} fontSize={9.5}>
