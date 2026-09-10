@@ -33,6 +33,20 @@ umbrella's own build (`vite.config.lib.ts`) still bundles their source
 directly into `dist/`, same as before #769. See "Future: multi-package
 publish" below.
 
+**`files` stopgap:** because that source lives under `packages/*/src/`
+instead of the root `src/`, and `package.json`'s `files` field only listed
+`src/`, `dist/`, `LICENSE`, and `README.md`, the published tarball quietly
+stopped shipping readable source for the class/ER/sequence/xychart parsers,
+the ASCII renderer, and the MCP server the moment #769 moved that code out
+of root `src/` — even though the compiled `dist/` output (which bundles all
+five packages) was and still is complete and correct. `package.json`'s
+`files` array now also lists `packages/{core,mermaid-parser,svg-renderer,
+ascii-renderer,mcp}/src/` to restore that parity as a stopgap. **Remove
+those five extra entries the same release that the "Future: multi-package
+publish" externalization below ships** (i.e. bump as a major, since at that
+point the five packages are published in their own right and no longer need
+their source duplicated inside the `zombie-mermaid` tarball).
+
 Not every change needs one — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## What happens on merge to `main`
