@@ -220,22 +220,15 @@ describe('index.ts → index.html', () => {
   it('renders the theme showcase heading, live count, and six pre-rendered diagram slots', () => {
     const document = renderIndexPageDocument()
     const body = within(document.body)
-    const themeCount = Object.keys(THEMES).length
     const defaultTheme = THEMES.dracula
     if (!defaultTheme) throw new Error('test setup: no "dracula" theme')
 
     expect(
       body.getByRole('heading', {
         level: 2,
-        name: 'Pick a theme. Switch it live — no re-render.',
+        name: 'Pick a theme. Watch it flow.',
       }),
     ).toBeInTheDocument()
-    expect(
-      document.querySelector('.theme-showcase-frac-total')?.textContent,
-    ).toBe(`${themeCount}`)
-    expect(document.getElementById('theme-showcase-counter')?.textContent).toBe(
-      '1',
-    )
     expect(
       document.getElementById('theme-showcase-theme-name')?.textContent,
     ).toBe(`/* ${THEME_LABELS.dracula ?? 'dracula'} */`)
@@ -252,6 +245,44 @@ describe('index.ts → index.html', () => {
     expect(
       [...slots].filter((slot) => slot.classList.contains('is-active')),
     ).toHaveLength(1)
+  })
+
+  it('renders the theme showcase picker with a trigger and one option per theme', () => {
+    const document = renderIndexPageDocument()
+    const themeCount = Object.keys(THEMES).length
+
+    const trigger = document.getElementById('theme-showcase-picker-trigger')
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(document.getElementById('theme-showcase-picker-label')?.textContent).toBe(
+      THEME_LABELS.dracula ?? 'dracula',
+    )
+
+    const panel = document.getElementById('theme-showcase-picker-panel')
+    expect(panel).toBeInTheDocument()
+    expect(panel).toHaveAttribute('role', 'listbox')
+
+    const options = document.querySelectorAll(
+      '#theme-showcase-picker-panel [role="option"]',
+    )
+    expect(options).toHaveLength(themeCount)
+    const selected = [...options].filter(
+      (opt) => opt.getAttribute('aria-selected') === 'true',
+    )
+    expect(selected).toHaveLength(1)
+    expect(selected[0]?.getAttribute('data-theme')).toBe('dracula')
+  })
+
+  it('renders a footnote linking to the custom-theme docs', () => {
+    const document = renderIndexPageDocument()
+    const link = within(
+      mustFind(document.querySelector('.theme-showcase-footnote')),
+    ).getByRole('link', { name: /see how easy one is to write/ })
+    expect(link).toHaveAttribute(
+      'href',
+      `${FORK_URL}/blob/main/docs/theming.md`,
+    )
   })
 
   it('renders "Why This Fork Exists" with the new-to-this-fork cards', () => {

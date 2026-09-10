@@ -105,16 +105,45 @@ const THEME_SHOWCASE_SOURCE = `graph TD
     Deploy -->|no| Iterate[Iterate]`
 
 /**
- * {@link ThemeShowcase}'s starting theme, before a visitor picks one (or a
- * stored preference from another page restores on load — see
- * `demo/index-page-client.ts`). Real, not the `''` Default pseudo-theme:
- * this showcase's whole point is proving the 15 real themes, so its picker
- * renders with `includeDefault={false}` and needs an actual key to render
- * the initial SSR diagram with. `dracula` also mirrors `theme-picker.tsx`'s
- * own `INLINE_THEMES`, which already surfaces it as one of the two themes
- * always shown outside the "N Themes" dropdown.
+ * {@link ThemeShowcase}'s starting theme, before a visitor picks one from
+ * {@link ThemeShowcasePicker} or the ambient cycle moves on. Real, not the
+ * `''` Default pseudo-theme: this showcase's whole point is proving the 15
+ * real themes, and there's no "Default" diagram rendering to fall back to
+ * here (unlike `theme-picker.tsx`'s `includeDefault` pages). `dracula` also
+ * mirrors `theme-picker.tsx`'s own `INLINE_THEMES`, which already surfaces
+ * it as one of the two themes always shown outside that picker's "N
+ * Themes" dropdown.
  */
 const THEME_SHOWCASE_DEFAULT_THEME = 'dracula'
+
+/**
+ * Derives a usable accent color for themes with no explicit `accent`
+ * (`zinc-light`/`zinc-dark`) for {@link ThemeShowcasePicker}'s swatch dots.
+ * Mirrors `packages/core/src/theme.ts`'s `MIX.arrow` (85) — the same
+ * derivation the rendered diagrams themselves fall back to via CSS
+ * `color-mix()` — and `demo/index-page-client.ts`'s own `mixHex`, kept as
+ * a separate local copy rather than a shared import: that file is the
+ * client bundle and this one only ever runs at build time under Node, so
+ * there's no reasonable shared module for three lines of arithmetic
+ * without creating a cross-bundle dependency neither side needs otherwise.
+ */
+function mixHexForPicker(fgHex: string, bgHex: string): string {
+  const pctFg = 85
+  const f = parseInt(fgHex.slice(1), 16)
+  const b = parseInt(bgHex.slice(1), 16)
+  const fr = (f >> 16) & 255
+  const fg = (f >> 8) & 255
+  const fb = f & 255
+  const br = (b >> 16) & 255
+  const bgc = (b >> 8) & 255
+  const bb = b & 255
+  const t = pctFg / 100
+  const r = Math.round(fr * t + br * (1 - t))
+  const g = Math.round(fg * t + bgc * (1 - t))
+  const bl = Math.round(fb * t + bb * (1 - t))
+  const hex = (v: number) => v.toString(16).padStart(2, '0')
+  return '#' + hex(r) + hex(g) + hex(bl)
+}
 
 /**
  * Fixed height of the showcase's diagram card, so the section doesn't
@@ -333,10 +362,114 @@ function homePageCss(): string {
   margin: 0 auto;
 }
 
-.theme-showcase-frac { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.theme-showcase-frac-cur { font-size: 34px; font-weight: 700; color: ${colorVar('--cyan')}; letter-spacing: -0.02em; }
-.theme-showcase-frac-slash { font-size: 20px; color: ${colorVar('--text-faint')}; margin: 0 1px; }
-.theme-showcase-frac-total { font-size: 20px; color: ${colorVar('--text-faint')}; }
+/* -- Theme showcase picker: a "movie ticket stub" trigger + dropdown
+   panel. Interaction (open/close, picking a theme) is wired by
+   demo/index-page-client.ts's wireThemePicker() -- see ThemeShowcasePicker's
+   own doc comment. */
+.theme-showcase-picker { position: relative; margin-top: ${SPACE.xs}px; }
+.theme-showcase-picker-trigger {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1.5px dashed ${colorVar('--border')};
+  border-radius: ${RADIUS.card}px;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 0 50%, ${colorVar('--bg-soft')} 8px, transparent 8.5px),
+    radial-gradient(circle at 100% 50%, ${colorVar('--bg-soft')} 8px, transparent 8.5px),
+    color-mix(in srgb, ${colorVar('--panel')} 82%, transparent);
+  color: ${colorVar('--text')};
+  font-size: 14px;
+  transition: border-color 160ms ease;
+}
+.theme-showcase-picker-trigger:hover,
+.theme-showcase-picker-trigger:focus-visible {
+  border-color: ${colorVar('--cyan')};
+  outline: none;
+}
+.theme-showcase-picker-chip { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.theme-showcase-picker-trigger #theme-showcase-picker-label { flex: 1; text-align: left; }
+.theme-showcase-picker-caret { color: ${colorVar('--text-faint')}; transition: transform 200ms ease; }
+.theme-showcase-picker.open .theme-showcase-picker-caret { transform: rotate(180deg); }
+.theme-showcase-picker-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 5;
+  max-width: 280px;
+  border: 1.5px dashed ${colorVar('--border')};
+  border-top: none;
+  border-radius: 0 0 ${RADIUS.card}px ${RADIUS.card}px;
+  background: ${colorVar('--panel')};
+  max-height: 320px;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  transform-origin: top;
+  animation: themeShowcasePickerTear 320ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@keyframes themeShowcasePickerTear {
+  0% { clip-path: inset(0 0 100% 0); transform: skewY(-1.5deg); }
+  60% { clip-path: inset(0 0 0% 0); transform: skewY(0.6deg); }
+  100% { clip-path: inset(0 0 0% 0); transform: skewY(0deg); }
+}
+.theme-showcase-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 18px;
+  background: transparent;
+  border: none;
+  border-top: 1px dashed ${colorVar('--border')};
+  cursor: pointer;
+  font-size: 13px;
+  color: ${colorVar('--text-dim')};
+  min-height: 44px;
+}
+.theme-showcase-picker-option:first-child { border-top: none; }
+.theme-showcase-picker-option:hover { background: color-mix(in srgb, ${colorVar('--cyan')} 8%, transparent); color: ${colorVar('--text')}; }
+.theme-showcase-picker-option[aria-selected='true'] { color: ${colorVar('--cyan')}; }
+.theme-showcase-picker-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* -- Burst ring: a one-off accent-colored flash over the diagram card,
+   fired only for a manual picker selection (never the ambient cycle) --
+   see ThemeShowcase's own doc comment for why the two are visually
+   distinct. */
+.theme-showcase-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+.theme-showcase-burst.active {
+  animation: themeShowcaseBurst 650ms ease-out;
+}
+@keyframes themeShowcaseBurst {
+  0% { opacity: 0.85; transform: scale(0.4); }
+  100% { opacity: 0; transform: scale(3.2); }
+}
+
+.theme-showcase-footnote {
+  position: relative;
+  z-index: 2;
+  max-width: ${LAYOUT.maxWidth}px;
+  margin: ${SPACE['3xl']}px auto 0;
+  padding-top: ${SPACE.lg}px;
+  border-top: 1px solid ${colorVar('--border')};
+  font-size: ${FONT_SIZE.caption}px;
+  color: ${colorVar('--text-faint')};
+}
 
 ${MEDIA.reducedMotion} {
   .edge-anim { animation: none; }
@@ -347,6 +480,8 @@ ${MEDIA.reducedMotion} {
   .relation-pulse { animation: none; }
   .bar-grow { animation: none; transform: scaleY(1); }
   .theme-showcase-mesh, .theme-showcase-aurora, .theme-showcase-glow { animation: none !important; }
+  .theme-showcase-picker-panel { animation: none !important; }
+  .theme-showcase-burst.active { animation: none !important; opacity: 0 !important; }
 }
 
 ${MEDIA.tablet} {
@@ -434,15 +569,24 @@ function renderShowcaseDiagrams(): { slug: string; html: string }[] {
 
 /**
  * Six real diagrams — one per diagram type this library renders — auto-
- * cycling live through every real theme in `THEMES`. Replaces the
- * section's former interactive picker (#759) with a purely informational,
- * non-interactive proof: nothing on the page controls it, so it never
- * competes with the rest of the page for a visitor's clicks. (A header-
- * based theme switcher may take over this section's old picker role
- * site-wide later; that's separate, not-yet-scheduled work, not something
- * this section grows back on its own.)
+ * cycling live through every real theme in `THEMES`, plus (as of this PR)
+ * {@link ThemeShowcasePicker}: a click-to-jump theme selector reinstated
+ * on top of the auto-cycle #759 originally removed.
  *
- * `demo/index-page-client.ts`'s `startShowcaseCycle()` does the actual
+ * Reconciling with #759's own rationale ("nothing on the page controls it,
+ * so it never competes with the rest of the page for a visitor's clicks"):
+ * the ambient cycle stays exactly as #759 shipped it — a visitor who never
+ * touches the picker sees the same unattended, always-legible proof it was
+ * built to be. The picker is additive, not a requirement to use the
+ * section: it only changes *which theme* the cycle is currently showing
+ * (never which diagram type, and never whether the cycle itself is
+ * running), and the ambient cycle resumes from wherever a visitor left it
+ * after their pick's hold period elapses — see
+ * `demo/index-page-client.ts`'s `wireThemePicker()`. It deliberately does
+ * *not* resurrect the pre-#759 picker's nav-reparenting-on-scroll behavior
+ * — out of scope here, and orthogonal to proving the themes.
+ *
+ * `demo/index-page-client.ts`'s `startShowcaseCycle()` does the ambient
  * cycling, as a strict, staged sequence rather than one simultaneous
  * change: fade the visible diagram out, re-theme the next one via CSS
  * custom properties (`svg.style.setProperty('--bg', …)`, … — the same
@@ -451,17 +595,104 @@ function renderShowcaseDiagrams(): { slug: string; html: string }[] {
  * background to match while nothing diagram-shaped is on screen, then
  * fade the (already re-themed) diagram back in — see
  * `.theme-showcase-diagram-slot`'s own CSS comment for why. It also keeps
- * the `--bg`/`--fg`/`--accent` code panel and the `N / <count>` counter in
- * sync. `prefers-reduced-motion: reduce` stops the cycle before it starts —
- * the build-time render below (flowchart, in
- * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours) is a complete, correctly
- * themed diagram on its own, so that's a real fallback state, not a broken
- * one.
+ * the `--bg`/`--fg`/`--accent` code panel in sync. A manual pick from the
+ * picker reuses that same re-theme step (no diagram-type fade, since the
+ * diagram on screen doesn't change) and adds a brief accent-colored
+ * `.theme-showcase-burst` ring flash so a click reads as having *done*
+ * something, distinct from the cycle's own calm transition.
+ * `prefers-reduced-motion: reduce` stops the ambient cycle and the burst
+ * flash, but not the picker itself — the build-time render below
+ * (flowchart, in {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours) is a
+ * complete, correctly themed diagram on its own, so that's a real fallback
+ * state, not a broken one, and a manual pick still re-themes instantly.
  *
  * `id="theme-showcase"` stays even though nothing observes it via
- * `IntersectionObserver` anymore (that relocation was the removed picker's
- * job) — kept as a stable in-page anchor, cheap to keep.
+ * `IntersectionObserver` anymore (that relocation was the pre-#759
+ * picker's job, not this one's) — kept as a stable in-page anchor, cheap
+ * to keep.
  */
+/**
+ * A "movie ticket stub" theme selector: a trigger button (current theme's
+ * swatch + label) that opens a listbox of all {@link THEMES} keys. Static
+ * SSR markup only — like the rest of {@link ThemeShowcase}, this section
+ * isn't part of either hydrated React app (see this file's header
+ * comment), so open/close, keyboard support, and the actual theme pick are
+ * all wired imperatively by `demo/index-page-client.ts`'s
+ * `wireThemePicker()`, the same pattern `startShowcaseCycle()` already
+ * uses for the diagram cycle. Deliberately its own component rather than
+ * `demo/components/theme-picker.tsx`'s `ThemePicker`: that component's
+ * pill row is the right shape for a persistent, always-visible control
+ * (nav, per-diagram-type pages) but doesn't fit a single hero-style
+ * "pick a theme" moment, and reworking its markup to look like a ticket
+ * stub would mean forking a shared, multi-page component for one page's
+ * visual. Both still end up calling the same underlying re-theme step —
+ * see {@link ThemeShowcase}'s own doc comment.
+ */
+function ThemeShowcasePicker() {
+  const themeEntries = Object.entries(THEMES)
+  const defaultTheme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
+  if (!defaultTheme) {
+    throw new Error(
+      `Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`,
+    )
+  }
+  const defaultAccent =
+    defaultTheme.accent ?? mixHexForPicker(defaultTheme.fg, defaultTheme.bg)
+
+  return (
+    <div className="theme-showcase-picker" id="theme-showcase-picker">
+      <button
+        type="button"
+        className="theme-showcase-picker-trigger mono"
+        id="theme-showcase-picker-trigger"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-controls="theme-showcase-picker-panel"
+      >
+        <span
+          className="theme-showcase-picker-chip"
+          id="theme-showcase-picker-chip"
+          style={{ background: defaultAccent }}
+        />
+        <span id="theme-showcase-picker-label">
+          {THEME_LABELS[THEME_SHOWCASE_DEFAULT_THEME] ??
+            THEME_SHOWCASE_DEFAULT_THEME}
+        </span>
+        <span className="theme-showcase-picker-caret" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      <div
+        className="theme-showcase-picker-panel"
+        id="theme-showcase-picker-panel"
+        role="listbox"
+        aria-label="Themes"
+        hidden
+      >
+        {themeEntries.map(([themeKey, colors]) => {
+          const accent = colors.accent ?? mixHexForPicker(colors.fg, colors.bg)
+          return (
+            <button
+              type="button"
+              key={themeKey}
+              className="theme-showcase-picker-option mono"
+              role="option"
+              data-theme={themeKey}
+              aria-selected={themeKey === THEME_SHOWCASE_DEFAULT_THEME}
+            >
+              <span
+                className="theme-showcase-picker-dot"
+                style={{ background: accent }}
+              />
+              {THEME_LABELS[themeKey] ?? themeKey}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function ThemeShowcase() {
   const diagrams = renderShowcaseDiagrams()
   const theme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
@@ -522,7 +753,7 @@ function ThemeShowcase() {
           <h2
             style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}
           >
-            Pick a theme. Switch it live — no re-render.
+            Pick a theme. Watch it flow.
           </h2>
           <p
             style={{
@@ -531,47 +762,12 @@ function ThemeShowcase() {
               margin: 0,
             }}
           >
-            Every one of the {themeCount} built-in themes is just{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --bg
-            </code>
-            ,{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --fg
-            </code>
-            , and{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --accent
-            </code>
-            . The diagram reads them live — no re-render, ever.
+            Every one of the {themeCount} built-in themes is drawn from an
+            editor you already trust — Dracula, Nord, Solarized, Catppuccin,
+            Tokyo Night, and more — each tuned so the diagram stays legible
+            in every one.
           </p>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: `${SPACE.md}px`,
-              marginTop: `${SPACE.xs}px`,
-            }}
-          >
-            <span className="theme-showcase-frac">
-              <span
-                id="theme-showcase-counter"
-                className="theme-showcase-frac-cur"
-              >
-                1
-              </span>
-              <span className="theme-showcase-frac-slash">/</span>
-              <span className="theme-showcase-frac-total">{themeCount}</span>
-            </span>
-            <span
-              style={{
-                fontSize: `${FONT_SIZE.caption}px`,
-                color: colorVar('--text-faint'),
-              }}
-            >
-              themes, cycling
-            </span>
-          </div>
+          <ThemeShowcasePicker />
         </div>
 
         <div>
@@ -654,8 +850,25 @@ function ThemeShowcase() {
                 />
               ))}
             </div>
+            <div
+              id="theme-showcase-burst"
+              className="theme-showcase-burst"
+              aria-hidden="true"
+              style={{ borderColor: accent }}
+            />
           </div>
         </div>
+      </div>
+
+      <div className="theme-showcase-footnote">
+        Want to add your own? Every theme here is just three color roles —{' '}
+        <a
+          href={`${FORK_URL}/blob/main/docs/theming.md`}
+          target="_blank"
+          rel="noopener"
+        >
+          see how easy one is to write →
+        </a>
       </div>
     </div>
   )
