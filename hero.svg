@@ -1,129 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 612" width="640" height="612" role="img" aria-label="ZombieMermaid: raw Mermaid source rendering into a themed, animated diagram">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 460" width="700" height="460" role="img" aria-label="Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@700&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap');
-  @keyframes hero-readme-arrow-dash { to { stroke-dashoffset: -16; } }
-  .hero-readme-arrow-dash { stroke-dasharray: 4 4; animation: hero-readme-arrow-dash 0.9s linear infinite; }
+  :root { --bg: #0a0d16; --bg-soft: #10152a; --panel: #141a2e; --panel-2: #181f38; --border: #2a3252; --text: #eef1fb; --text-dim: #9aa3c4; --text-faint: #6b7398; --blue: #4d8dff; --violet: #a374e8; --cyan: #38e0d0; --pink: #ff5fa8; --amber: #ffb84d; --green: #3ee08a; }
+  /* HeroVisual's code panel text carries the site's global `.mono`
+     class (nav.tsx/tokens.tsx's designBaseCss()) for its font — restated
+     here since a standalone hero.svg has no page-wide stylesheet to
+     inherit it from. */
+  .mono { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; }
+  @keyframes marchingAnts { to { stroke-dashoffset: -24; } }
+  .edge-anim { stroke-dasharray: 6 6; animation: marchingAnts 0.9s linear infinite; }
   @media (prefers-reduced-motion: reduce) {
-    .hero-readme-arrow-dash { animation: none; }
+    .edge-anim { animation: none; }
   }
 </style>
 
-<!-- Brand lockup: same icon + "ZombieMermaid" wordmark as the site's nav
-     (nav.tsx's NavBrand, icons.tsx's LogoMark); see docs/brand.md. -->
-<rect x="203" y="3" width="234" height="54" rx="27" fill="#0a0d16"/>
-<g transform="translate(223, 0)">
-  <svg x="0" y="15" width="30" height="30" viewBox="0 0 24 24" fill="none">
-    <rect x="2" y="2" width="9" height="9" rx="3" stroke="#38e0d0" stroke-width="1.6"/>
-    <rect x="13" y="2" width="9" height="9" rx="3" stroke="#a374e8" stroke-width="1.6"/>
-    <path d="M6.5 11 V16 a2 2 0 0 0 2 2 h7 a2 2 0 0 0 2-2 v-5" stroke="#ff5fa8" stroke-width="1.6" fill="none"/>
-  </svg>
-  <text x="42" y="37" font-size="20" font-weight="700" style="font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif; letter-spacing:-0.01em" fill="#eef1fb">ZombieMermaid</text>
-</g>
+<!-- Full-bleed backdrop: HeroVisual assumes it sits on the site's own dark
+     page background, which a standalone hero.svg doesn't have — this
+     reproduces it so the composite reads the same on both GitHub's light
+     and dark README themes, not just the site itself. -->
+<rect x="0" y="0" width="700" height="460" fill="var(--bg)"/>
 
-<!-- "Before": raw Mermaid source, terminal-styled -->
-<rect x="0" y="78" width="640" height="320" rx="12" fill="#0d1117"/>
-<rect x="0" y="78" width="640" height="34" rx="12" fill="#161b22"/>
-<rect x="0" y="90" width="640" height="22" fill="#161b22"/>
-<circle cx="16" cy="17" r="5" fill="#ff5f56"/>
-<circle cx="32" cy="17" r="5" fill="#ffbd2e"/>
-<circle cx="48" cy="17" r="5" fill="#27c93f"/>
-<text x="64" y="21" font-size="11" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace" fill="#7d8590">pipeline.mmd</text>
-  <text x="24" y="62" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#4493f8">stateDiagram-v2</tspan></text>
-  <text x="40" y="86" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#4493f8">direction</tspan> <tspan style="fill:#e6edf3">LR</tspan></text>
-  <text x="40" y="110" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">Layout</tspan> <tspan style="fill:#6e7681">e4@--&gt;</tspan> <tspan style="fill:#e6edf3">SVG</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">Vector</tspan></text>
-  <text x="40" y="134" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">Layout</tspan> <tspan style="fill:#6e7681">e5@--&gt;</tspan> <tspan style="fill:#e6edf3">ASCII</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">Text</tspan></text>
-  <text x="40" y="158" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">SVG</tspan> <tspan style="fill:#6e7681">e6@--&gt;</tspan> <tspan style="fill:#e6edf3">Theme</tspan></text>
-  <text x="40" y="182" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#e6edf3">ASCII</tspan> <tspan style="fill:#6e7681">e7@--&gt;</tspan> <tspan style="fill:#e6edf3">Theme</tspan></text>
-  <text x="40" y="206" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e4@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
-  <text x="40" y="230" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e5@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
-  <text x="40" y="254" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e6@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
-  <text x="40" y="278" font-size="13" style="font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace"><tspan style="fill:#6e7681">e7@{</tspan> <tspan style="fill:#e6edf3">animate</tspan><tspan style="fill:#6e7681">:</tspan> <tspan style="fill:#ffa657">true</tspan> <tspan style="fill:#6e7681">}</tspan></text>
-
-<!-- "Renders as" arrow -->
-<defs>
-  <linearGradient id="hero-readme-arrow-grad" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#9570BE"/>
-    <stop offset="1" stop-color="#3b82f6"/>
-  </linearGradient>
-</defs>
-<g transform="translate(320, 340)">
-  <line x1="0" y1="0" x2="0" y2="20" stroke="url(#hero-readme-arrow-grad)" stroke-width="2.5" stroke-linecap="round" class="hero-readme-arrow-dash"/>
-  <path d="M-10 14 L0 28 L10 14" stroke="url(#hero-readme-arrow-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</g>
-
-<!-- "After": the actual rendered, animated diagram -->
-<svg x="90" y="388" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.63945 182.5" width="460" height="164.08038903176836" role="img" style="--bg:#FFFFFF;--fg:#27272A">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
-  text { font-family: 'Inter', system-ui, sans-serif; }
-  svg {
-    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
-    --_text:          var(--fg);
-    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
-    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
-    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
-    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
-    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
-    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
-    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
-    --_group-fill:    var(--bg);
-    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
-    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
-    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
-  }
-</style>
-<style>
-  @keyframes zm-edge-dash { to { stroke-dashoffset: -28; } }
-  .edge-animated { animation: zm-edge-dash 1s linear infinite; }
-  @media (prefers-reduced-motion: reduce) {
-    .edge-animated { animation: none; }
-  }
-</style>
-<defs>
-  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
-    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
-  </marker>
-  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto-start-reverse">
-    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
-  </marker>
-</defs>
-<polyline class="edge edge-animated" data-from="Layout" data-to="SVG" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Vector" data-id="e4" points="125.95799,84.75 161.95799,84.75 161.95799,58.45 262.656925,58.45" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="Layout" data-to="ASCII" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Text" data-id="e5" points="125.95799,97.05000000000001 166.31312,97.05000000000001 166.31312,123.35000000000001 262.656925,123.35000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="SVG" data-to="Theme" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e6" points="333.120605,58.45 362.4835925,58.45 362.4835925,90.9 384.69593,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<polyline class="edge edge-animated" data-from="ASCII" data-to="Theme" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-id="e7" points="340.271255,123.35000000000001 362.4835925,123.35000000000001 362.4835925,90.9 384.69593,90.9" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="8 6" marker-end="url(#arrowhead)" />
-<g class="edge-label" data-from="Layout" data-to="SVG" data-label="Vector">
-  <rect x="169.95799" y="42.45" width="52.27426" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="196.09512" y="57.6" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Vector</text>
-</g>
-<g class="edge-label" data-from="Layout" data-to="ASCII" data-label="Text">
-  <rect x="174.31312" y="107.35000000000001" width="40.768480000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="194.69736" y="122.50000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Text</text>
-</g>
-<g class="node" data-id="Layout" data-label="Layout" data-shape="rounded">
-  <rect x="40" y="72.45" width="85.95799" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="82.978995" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Layout</text>
-</g>
-<g class="node" data-id="SVG" data-label="SVG" data-shape="rounded">
-  <rect x="262.656925" y="40" width="70.46368" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="297.888765" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">SVG</text>
-</g>
-<g class="node" data-id="ASCII" data-label="ASCII" data-shape="rounded">
-  <rect x="262.656925" y="104.9" width="77.61433" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="301.46409" y="123.35000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">ASCII</text>
-</g>
-<g class="node" data-id="Theme" data-label="Theme" data-shape="rounded">
-  <rect x="384.69593" y="72.45" width="86.94352" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="428.16769" y="90.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Theme</text>
-</g>
-</svg>
-
-<!-- Feature tags -->
-  <rect x="156" y="572.0803890317684" width="42" height="26" rx="13" fill="rgba(59,130,246,0.1)"/>
-  <text x="177" y="589.0803890317684" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#2563eb">SVG</text>
-  <rect x="208" y="572.0803890317684" width="55" height="26" rx="13" fill="rgba(59,130,246,0.1)"/>
-  <text x="235.5" y="589.0803890317684" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#2563eb">ASCII</text>
-  <rect x="273" y="572.0803890317684" width="83" height="26" rx="13" fill="rgba(149,112,190,0.14)"/>
-  <text x="314.5" y="589.0803890317684" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#9570BE">16 Themes</text>
-  <rect x="366" y="572.0803890317684" width="118" height="26" rx="13" fill="rgba(59,130,246,0.1)"/>
-  <text x="425" y="589.0803890317684" text-anchor="middle" font-size="12" font-weight="600" style="font-family:'Geist',system-ui,sans-serif" fill="#2563eb">Animated Edges</text>
+<g><rect x="20" y="50" width="298" height="320" rx="16" fill="var(--panel)" stroke="var(--border)" stroke-width="1.5"></rect><circle cx="42" cy="72" r="5" fill="#ff6767"></circle><circle cx="60" cy="72" r="5" fill="#ffc85c"></circle><circle cx="78" cy="72" r="5" fill="#5ee08a"></circle><text x="36" y="110" class="mono" font-size="13" fill="var(--text-faint)">graph TD</text><text x="36" y="136" class="mono" font-size="13" fill="var(--text-dim)">  Start <tspan fill="var(--text-faint)">e1@</tspan>--&gt; <tspan fill="var(--violet)">Deploy</tspan>{Deploy?}</text><text x="36" y="162" class="mono" font-size="13" fill="var(--text-dim)">  Deploy <tspan fill="var(--text-faint)">e2@</tspan>--&gt;|<tspan fill="var(--green)">yes</tspan>| <tspan fill="var(--amber)">Ship</tspan>[Ship it]</text><text x="36" y="188" class="mono" font-size="13" fill="var(--text-dim)">  Deploy <tspan fill="var(--text-faint)">e3@</tspan>--&gt;|<tspan fill="var(--pink)">no</tspan>| <tspan fill="var(--amber)">Iterate</tspan>[Iterate]</text><text x="36" y="214" class="mono" font-size="13" fill="var(--text-faint)">  e1@{ <tspan fill="var(--text-dim)">animate</tspan>: <tspan fill="var(--amber)">true</tspan> }</text><text x="36" y="240" class="mono" font-size="13" fill="var(--text-faint)">  e2@{ <tspan fill="var(--text-dim)">animate</tspan>: <tspan fill="var(--amber)">true</tspan> }</text><text x="36" y="266" class="mono" font-size="13" fill="var(--text-faint)">  e3@{ <tspan fill="var(--text-dim)">animate</tspan>: <tspan fill="var(--amber)">true</tspan> }</text><path d="M318 210 C 360 210 390 90 400 75 L420 75" stroke="var(--cyan)" stroke-width="2.5" fill="none" class="edge-anim" marker-end="url(#arrowCyan)"></path><rect x="430" y="50" width="140" height="50" rx="25" fill="var(--blue)"></rect><text x="500" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="#081018">Start</text><path d="M500 100 L500 130" stroke="var(--cyan)" stroke-width="2.5" fill="none" class="edge-anim" marker-end="url(#arrowCyan)"></path><polygon points="500,140 565,175 500,210 435,175" fill="var(--violet)"></polygon><text x="500" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="var(--bg)">Deploy?</text><path d="M435 175 C 390 225 410 265 435 291" stroke="var(--green)" stroke-width="2.5" fill="none" class="edge-anim" marker-end="url(#arrowGreen)"></path><text x="378" y="240" font-size="12" fill="var(--green)" class="mono">yes</text><path d="M565 175 C 610 225 592 265 602 289" stroke="var(--pink)" stroke-width="2.5" fill="none" class="edge-anim" marker-end="url(#arrowPink)"></path><text x="600" y="240" font-size="12" fill="var(--pink)" class="mono">no</text><rect x="382" y="300" width="130" height="50" rx="12" fill="var(--green)"></rect><text x="447" y="330" text-anchor="middle" font-size="14" font-weight="700" fill="#081018">Ship it</text><rect x="546" y="300" width="130" height="50" rx="12" fill="var(--pink)"></rect><text x="611" y="330" text-anchor="middle" font-size="14" font-weight="700" fill="#2a0a18">Iterate</text><defs><marker id="arrowCyan" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--cyan)"></path></marker><marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--green)"></path></marker><marker id="arrowPink" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--pink)"></path></marker></defs></g>
 </svg>

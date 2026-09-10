@@ -154,7 +154,12 @@ export const INDEX_HERO_ROOT_ID = 'index-hero-root'
  */
 export const INDEX_MAIN_ROOT_ID = 'index-main-root'
 
-function HeroVisual() {
+/**
+ * Exported so `scripts/generate-hero.ts` can render the exact same SVG for
+ * the README's hero.svg — see that script's own module doc for why the
+ * README mirrors this component instead of hand-transcribing it.
+ */
+export function HeroVisual() {
   return (
     <svg viewBox="0 0 700 460" width="100%" style={{ display: 'block' }}>
       <rect
