@@ -551,8 +551,10 @@ function WhyForkExistsSection() {
             gap: `${SPACE.lg}px`,
           }}
         >
-          <TerminalIcon size={28} />
-          <h3 style={{ fontSize: '19px' }}>A real CLI binary</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <TerminalIcon size={28} />
+            <h3 style={{ fontSize: '19px' }}>A real CLI binary</h3>
+          </div>
           <p
             style={{
               fontSize: `${FONT_SIZE.bodySm}px`,
@@ -574,10 +576,12 @@ function WhyForkExistsSection() {
             gap: `${SPACE.lg}px`,
           }}
         >
-          <MergeEdgesIcon size={28} />
-          <h3 style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}>
-            mergeEdges
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <MergeEdgesIcon size={28} />
+            <h3 style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}>
+              mergeEdges
+            </h3>
+          </div>
           <p
             style={{
               fontSize: `${FONT_SIZE.bodySm}px`,
@@ -599,8 +603,10 @@ function WhyForkExistsSection() {
             gap: `${SPACE.lg}px`,
           }}
         >
-          <ChecklistIcon size={28} />
-          <h3 style={{ fontSize: '19px' }}>Real bugs, actually fixed</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ChecklistIcon size={28} />
+            <h3 style={{ fontSize: '19px' }}>Real bugs, actually fixed</h3>
+          </div>
           <p
             style={{
               fontSize: `${FONT_SIZE.bodySm}px`,
@@ -691,7 +697,6 @@ function FeaturePillars() {
           const firstCopy = FEATURE_COPY[groupIndex * 2]
           const secondCopy = FEATURE_COPY[groupIndex * 2 + 1]
           if (firstCopy === undefined || secondCopy === undefined) return null
-          const PillarIcon = ICONS[first.name]
           const items = [
             { feature: first, copy: firstCopy },
             { feature: second, copy: secondCopy },
@@ -699,27 +704,35 @@ function FeaturePillars() {
           return (
             <Card
               key={group.label}
-              padding={32}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: `${SPACE['2xl']}px`,
+                gap: `${SPACE.lg}px`,
+                padding: '26px 24px',
               }}
             >
-              <PillarIcon size={30} />
               <h3 style={{ fontSize: '22px' }}>{group.label}</h3>
-              {items.map(({ feature, copy }) => {
+              {items.map(({ feature, copy }, itemIndex) => {
                 const ItemIcon = ICONS[feature.name]
                 return (
                   <div
                     key={feature.name}
-                    style={{
-                      display: 'flex',
-                      gap: `${SPACE.md}px`,
-                      alignItems: 'flex-start',
-                      paddingTop: `${SPACE.xl}px`,
-                      borderTop: `1px solid ${colorVar('--border')}`,
-                    }}
+                    style={
+                      itemIndex === 0
+                        ? {
+                            display: 'flex',
+                            gap: `${SPACE.sm}px`,
+                            alignItems: 'flex-start',
+                            marginTop: `${SPACE.xs}px`,
+                          }
+                        : {
+                            display: 'flex',
+                            gap: `${SPACE.sm}px`,
+                            alignItems: 'flex-start',
+                            paddingTop: `${SPACE.md}px`,
+                            borderTop: `1px solid ${colorVar('--border')}`,
+                          }
+                    }
                   >
                     <ItemIcon size={20} />
                     <p
