@@ -734,7 +734,7 @@ function FeaturePillars() {
                           }
                     }
                   >
-                    <ItemIcon size={20} />
+                    <ItemIcon size={28} />
                     <p
                       style={{
                         margin: 0,
