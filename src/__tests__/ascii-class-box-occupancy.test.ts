@@ -1,16 +1,16 @@
 // ============================================================================
 // ASCII class diagram box-occupancy invariants
 //
-// Unlike src/ascii/er-diagram.ts (which gained an occupancy guard —
-// `setCGuarded`/`boxCells`/`regionClear` — fixing issue #350),
-// src/ascii/class-diagram.ts has no equivalent mechanism: its relationship
-// line/marker/label writes all go through the plain `setC`, which only
-// bounds-checks, never occupancy-checks. This suite sweeps the same "does a
-// relationship line/label ever land on top of an unrelated class's box"
-// question issue #350 asked for ER diagrams, generalized to class diagrams —
-// where it has never been asked before. Most cases pass today (no unguarded
-// code path is exercised); two are confirmed-broken and marked `it.fails`
-// with the exact code path they hit.
+// packages/ascii-renderer/src/er-diagram.ts has an occupancy guard —
+// `setCGuarded`/`boxCells`/`regionClear` — fixing issue #350.
+// packages/ascii-renderer/src/class-diagram.ts now generalizes that same
+// guard (see its own `boxCells`/`setCGuarded`, plus an obstruction-aware
+// same-level detour row) to close issue #953's class-diagram cases. This
+// suite sweeps the same "does a relationship line/label ever land on top of
+// an unrelated class's box" question issue #350 asked for ER diagrams,
+// generalized to class diagrams. Two cases below (the same-level detour
+// crossing a taller, in-between class's box) used to be confirmed-broken and
+// marked `it.fails`; they're now plain `it()` cases, verifying the fix.
 // ============================================================================
 
 import { describe, it, expect } from 'vitest'
@@ -101,18 +101,15 @@ describe('ASCII class diagrams — class boxes never overlap', () => {
     expectNoBoxOverlap(ascii, ['Alpha', 'Mid', 'Charlie'])
   })
 
-  it.fails(
-    // Confirmed by rendering (not just reading the code): the same-level
-    // branch's detour row — `Math.max(fromBY, toP.y + toP.height - 1) + 2`
-    // — is computed only from the *relationship's own* two endpoints
-    // (Alpha, Charlie). It never checks whether Mid, sitting between them
-    // in the same row, is taller and extends below that row. The detour's
-    // horizontal segment is drawn through plain `setC` with no occupancy
-    // check, so it cuts straight through Mid's box — see the middle
-    // attribute line missing from the assertion below.
-    '3-node cycle, Mid (middle) has 6 attributes: detour line corrupts an attribute row',
-    () => {
-      const src = `classDiagram
+  // The same-level branch's detour row used to be computed only from the
+  // relationship's own two endpoints (Alpha, Charlie), never checking
+  // whether Mid — sitting between them in the same row — was taller and
+  // extended below that row. class-diagram.ts now searches for such a
+  // same-row obstruction and routes the detour below its bottom edge too
+  // (generalizing er-diagram.ts's obstructionBottom guard, issue #350),
+  // so the detour's horizontal segment no longer cuts through Mid's box.
+  it('3-node cycle, Mid (middle) has 6 attributes: detour line corrupts an attribute row', () => {
+    const src = `classDiagram
   class Alpha
   class Mid {
 ${manyAttrs('b', 6)}
@@ -121,17 +118,16 @@ ${manyAttrs('b', 6)}
   Alpha --> Mid
   Mid --> Charlie
   Charlie --> Alpha`
-      const ascii = renderMermaidASCII(src, { useAscii: true })
-      expectAllPresentOnce(ascii, [
-        '+ b0: String',
-        '+ b1: String',
-        '+ b2: String',
-        '+ b3: String',
-        '+ b4: String',
-        '+ b5: String',
-      ])
-    },
-  )
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    expectAllPresentOnce(ascii, [
+      '+ b0: String',
+      '+ b1: String',
+      '+ b2: String',
+      '+ b3: String',
+      '+ b4: String',
+      '+ b5: String',
+    ])
+  })
 
   it('3-node cycle, long relationship label, no tall obstruction', () => {
     const src = `classDiagram
@@ -176,14 +172,13 @@ ${manyAttrs('c', 6)}
     expectNoBoxOverlap(ascii, ['A', 'B', 'C', 'D'])
   })
 
-  it.fails(
-    // Confirmed by rendering: a 4-node cycle (A->B->C->D->A) plus a skip
-    // edge (A->C) also falls into the same unguarded same-level detour as
-    // the 3-node case above — a second, independently-verified topology
-    // hitting the same code gap, this time skipping over B's box.
-    '4-node cycle with a skip edge, tall middle class: detour corrupts an attribute row',
-    () => {
-      const src = `classDiagram
+  // A 4-node cycle (A->B->C->D->A) plus a skip edge (A->C) also fell into
+  // the same unguarded same-level detour as the 3-node case above — a
+  // second, independently-verified topology hitting the same code gap,
+  // this time skipping over B's box. Fixed by the same obstruction-aware
+  // detour routing (see the 3-node cycle test above).
+  it('4-node cycle with a skip edge, tall middle class: detour corrupts an attribute row', () => {
+    const src = `classDiagram
   class A
   class B {
 ${manyAttrs('b', 6)}
@@ -195,17 +190,16 @@ ${manyAttrs('b', 6)}
   C --> D
   D --> A
   A --> C`
-      const ascii = renderMermaidASCII(src, { useAscii: true })
-      expectAllPresentOnce(ascii, [
-        '+ b0: String',
-        '+ b1: String',
-        '+ b2: String',
-        '+ b3: String',
-        '+ b4: String',
-        '+ b5: String',
-      ])
-    },
-  )
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    expectAllPresentOnce(ascii, [
+      '+ b0: String',
+      '+ b1: String',
+      '+ b2: String',
+      '+ b3: String',
+      '+ b4: String',
+      '+ b5: String',
+    ])
+  })
 
   it('3 siblings + 2 children, crossing inheritance edges', () => {
     const src = `classDiagram

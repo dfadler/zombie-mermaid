@@ -666,6 +666,37 @@ export function renderClassAscii(
     }
   }
 
+  // --- Snapshot cells occupied by class boxes ---
+  // Taken once, right after boxes are drawn and before any relationship
+  // line, marker, or label is drawn — generalizes er-diagram.ts's boxCells
+  // guard (issue #350) to class diagrams. The "same level" detour branch
+  // below primarily avoids a same-row obstruction by computing its detour
+  // row from this same box geometry (see `obstructionBottom` there); this
+  // snapshot is the last-resort backstop for whatever that routing doesn't
+  // anticipate, via `setCGuarded` below.
+  const boxCells = new Set<string>()
+  for (const p of placed.values()) {
+    for (let by = 0; by < p.height; by++) {
+      for (let bx = 0; bx < p.width; bx++) {
+        boxCells.add(`${p.x + bx},${p.y + by}`)
+      }
+    }
+  }
+
+  /**
+   * Like setC, but refuses to draw into a cell reserved by a class box (see
+   * boxCells above) — generalizes er-diagram.ts's setCGuarded (issue #350)
+   * to class diagrams. Used for the same-level detour's line, corner, and
+   * marker writes, so a route that still ends up crossing an unrelated
+   * box's cells (despite the obstruction-aware detour row) degrades to a
+   * gap in the line rather than corrupting that box's border or member
+   * text.
+   */
+  function setCGuarded(x: number, y: number, ch: string, role: CharRole): void {
+    if (boxCells.has(`${x},${y}`)) return
+    setC(x, y, ch, role)
+  }
+
   /** Check if a point (x, y) is inside any class box */
   function isInsideBox(
     x: number,
@@ -1164,9 +1195,37 @@ export function renderClassAscii(
         }
       }
     } else {
-      // Same level — draw horizontal line with a detour below both boxes
+      // Same level — draw horizontal line with a detour below both boxes.
       const toBY = toP.y + toP.height - 1
-      const detourY = Math.max(fromBY, toBY) + 2
+      const lx = Math.min(fromCX, toCX)
+      const rx = Math.max(fromCX, toCX)
+
+      // The naive detour row — max(fromBY, toBY) + 2 — is derived only from
+      // this relationship's own two endpoints. A same-level layout puts
+      // every class in the level on one shared row (see the placement loop
+      // above), so a relationship cycle that can't be linearly leveled
+      // (e.g. A->B->C->A) lands a third, unrelated class between `fromP`
+      // and `toP` in that same row. When that in-between class is taller
+      // than both endpoints (more attributes/methods), the naive detour row
+      // sits *above* its bottom edge, and the horizontal segment below
+      // (spanning [lx, rx], which crosses straight through that class's
+      // x-range) cuts through its box instead of running beneath it.
+      // Search for any such same-row obstruction and route the detour below
+      // its bottom edge too — generalizing er-diagram.ts's obstructionBottom
+      // search (issue #350) to class diagrams' same-level detour.
+      let obstructionBottom = Math.max(fromBY, toBY)
+      for (const [id, other] of placed.entries()) {
+        if (id === rel.from || id === rel.to) continue
+        if (other.y !== fromP.y) continue
+        const overlapsGap = other.x < rx + 1 && other.x + other.width > lx
+        if (overlapsGap) {
+          obstructionBottom = Math.max(
+            obstructionBottom,
+            other.y + other.height - 1,
+          )
+        }
+      }
+      const detourY = obstructionBottom + 2
       increaseSize(canvas, totalW, detourY + 1)
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
       const fromJogs = fromCX !== fromAnchorX
@@ -1175,17 +1234,15 @@ export function renderClassAscii(
       // Jog out to the lane under the source, then vertical down from it
       drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
       for (let y = fromBY + (fromJogs ? 2 : 1); y <= detourY; y++) {
-        setC(fromCX, y, lineV, 'line')
+        setCGuarded(fromCX, y, lineV, 'line')
       }
       // Horizontal
-      const lx = Math.min(fromCX, toCX)
-      const rx = Math.max(fromCX, toCX)
       for (let x = lx; x <= rx; x++) {
-        setC(x, detourY, lineH, 'line')
+        setCGuarded(x, detourY, lineH, 'line')
       }
       // Vertical up to target, then jog back in to its anchor
       for (let y = detourY - 1; y >= toBY + (toJogs ? 2 : 1); y--) {
-        setC(toCX, y, lineV, 'line')
+        setCGuarded(toCX, y, lineV, 'line')
       }
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
@@ -1194,7 +1251,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1215,7 +1272,7 @@ export function renderClassAscii(
         )
         const my = toP.y + toP.height
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
