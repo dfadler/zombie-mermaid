@@ -334,19 +334,27 @@ ${colors}
  * of it: a zeroed `body` margin (the canvas artboards are edge-to-edge, and
  * every redesigned page's `<Nav>` is meant to sit flush against the
  * viewport's top/left — without this, the browser's default 8px `body`
- * margin nudges the nav bar and everything below it away from the edge), the
- * body font and ink, the display font on headings, and the cyan/pink link
- * pair.
+ * margin nudges the nav bar and everything below it away from the edge),
+ * {@link LINE_HEIGHT}'s `body` step (1.5) as the actual inherited
+ * `line-height` — previously this constant existed but was never applied as
+ * real CSS anywhere, so any text that didn't set its own `line-height`
+ * (most of `<Nav>`'s: the links, the install pill's command text) rendered
+ * at the browser's default `normal` instead — the body font and ink, the
+ * display font on headings, and the cyan/pink link pair.
  *
  * A page wanting only the custom properties (because it inherits its
  * element styling from elsewhere) can emit `designTokensCss()` alone — but
- * then owes the `body` margin reset itself. Before this reset existed here,
- * index-page.tsx was the one page with no reset from any source (every
- * other generator picks one up incidentally, e.g. diagram-page.tsx/
- * blog-page.tsx's linked legacy stylesheets or editor-page.tsx's bundled
- * `editor/css/variables.css`), which left its `<Nav>` sitting 8px off the
- * top/left edge on the browser's default `body` margin — visible as the
- * nav bar visibly jumping on every navigation to or from the home page.
+ * then owes the `body` margin/`line-height` resets itself. Before those
+ * reset here, index-page.tsx was the one page with neither from any source
+ * (every other generator picks up *some* value incidentally, e.g.
+ * diagram-page.tsx's linked `assets/diagram-page.css` sets `body {
+ * line-height: 1.6 }` for its own old UI, blog-page.tsx's `assets/blog.css`
+ * sets its own value, editor-page.tsx's bundled `editor/css/variables.css`
+ * resets margin but not line-height, …) — which meant `<Nav>` rendered at a
+ * different height depending on which page's incidental value (or lack of
+ * one) it happened to inherit, on top of index-page.tsx's own 8px `body`
+ * margin offset — both visible as the nav bar jumping on every navigation,
+ * not just to/from the home page.
  */
 export function designBaseCss(): string {
   return `${designTokensCss()}
@@ -354,6 +362,7 @@ export function designBaseCss(): string {
 body {
   margin: 0;
   font-family: var(--font-body);
+  line-height: ${LINE_HEIGHT.body};
   color: var(--text);
   background: var(--bg);
 }
