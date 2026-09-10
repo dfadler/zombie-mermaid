@@ -1055,7 +1055,11 @@ export const FEATURE_ICONS = [
   { name: 'zeroDom', accent: '--pink', label: 'Zero DOM dependencies' },
   { name: 'syncRender', accent: '--green', label: 'Synchronous rendering' },
   { name: 'speed', accent: '--violet', label: 'Ultra-fast' },
-  { name: 'accessibility', accent: '--cyan', label: 'CI-enforced accessibility' },
+  {
+    name: 'accessibility',
+    accent: '--cyan',
+    label: 'CI-enforced accessibility',
+  },
 ] as const satisfies readonly {
   name: IconName
   accent: ColorToken

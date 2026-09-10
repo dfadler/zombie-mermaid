@@ -527,9 +527,8 @@ function WhyForkExistsSection() {
           }}
         >
           beautiful-mermaid already solved mermaid.js's biggest problems —
-          aesthetics, theming, terminal output, dependencies. This fork
-          keeps all of that, and adds three things beautiful-mermaid never
-          had.
+          aesthetics, theming, terminal output, dependencies. This fork keeps
+          all of that, and adds three things beautiful-mermaid never had.
         </p>
       </div>
 
@@ -561,8 +560,8 @@ function WhyForkExistsSection() {
               lineHeight: 1.5,
             }}
           >
-            beautiful-mermaid never shipped one. Pipe Mermaid source in, get
-            SVG or ASCII out, straight from the command line.
+            beautiful-mermaid never shipped one. Pipe Mermaid source in, get SVG
+            or ASCII out, straight from the command line.
           </p>
         </Card>
 
@@ -576,9 +575,7 @@ function WhyForkExistsSection() {
           }}
         >
           <MergeEdgesIcon size={28} />
-          <h3
-            style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}
-          >
+          <h3 style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}>
             mergeEdges
           </h3>
           <p
@@ -588,8 +585,8 @@ function WhyForkExistsSection() {
               lineHeight: 1.5,
             }}
           >
-            No beautiful-mermaid equivalent. Bundles fan-out/fan-in edges
-            into a shared trunk instead of a tangle of parallel lines.
+            No beautiful-mermaid equivalent. Bundles fan-out/fan-in edges into a
+            shared trunk instead of a tangle of parallel lines.
           </p>
         </Card>
 
@@ -618,9 +615,7 @@ function WhyForkExistsSection() {
         </Card>
       </div>
 
-      <div
-        style={{ textAlign: 'center', marginTop: `${SPACE['3xl']}px` }}
-      >
+      <div style={{ textAlign: 'center', marginTop: `${SPACE['3xl']}px` }}>
         <a
           href="fork-fixes.html"
           style={{ fontSize: '14.5px', fontWeight: FONT_WEIGHT.semibold }}
@@ -671,8 +666,8 @@ function FeaturePillars() {
             color: colorVar('--text-faint'),
           }}
         >
-          (Theming and the fork's backstory are covered above — this is what
-          you actually build with.)
+          (Theming and the fork's backstory are covered above — this is what you
+          actually build with.)
         </p>
       </div>
 
