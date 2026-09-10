@@ -129,6 +129,38 @@ ${manyAttrs('b', 6)}
     ])
   })
 
+  // The same-row obstruction search (see the test above) must skip a class
+  // on a *different* level/row even when it's otherwise a legitimate
+  // `placed` entry — `Root`/`Kid` here sit on a different row from the
+  // Alpha/Mid/Charlie cycle (Root is its own real root via the level-BFS,
+  // Kid is Root's level-1 child), so they should never factor into the
+  // cycle's same-row obstructionBottom search even though the search
+  // iterates over every placed class, not just this row's.
+  it('3-node cycle, unrelated Root->Kid pair on a different level: obstruction search ignores it', () => {
+    const src = `classDiagram
+  class Root
+  class Kid
+  class Alpha
+  class Mid {
+${manyAttrs('b', 6)}
+  }
+  class Charlie
+  Alpha --> Mid
+  Mid --> Charlie
+  Charlie --> Alpha
+  Root --> Kid`
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    expectAllPresentOnce(ascii, [
+      '+ b0: String',
+      '+ b1: String',
+      '+ b2: String',
+      '+ b3: String',
+      '+ b4: String',
+      '+ b5: String',
+    ])
+    expectNoBoxOverlap(ascii, ['Alpha', 'Mid', 'Charlie', 'Root', 'Kid'])
+  })
+
   it('3-node cycle, long relationship label, no tall obstruction', () => {
     const src = `classDiagram
   class Alpha

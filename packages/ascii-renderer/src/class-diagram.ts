@@ -693,6 +693,14 @@ export function renderClassAscii(
    * text.
    */
   function setCGuarded(x: number, y: number, ch: string, role: CharRole): void {
+    // The obstruction-aware detour row above already routes below every
+    // same-row box, so this branch is a last-resort backstop for a case
+    // that routing doesn't leave — same as er-diagram.ts's identical
+    // guard (issue #350), whose analogous branch is equally never hit by
+    // that diagram type's own test suite. Kept for defense-in-depth: if a
+    // future change to the routing above reintroduces a gap, this still
+    // prevents box corruption, degrading to a gap in the line instead.
+    /* v8 ignore next */
     if (boxCells.has(`${x},${y}`)) return
     setC(x, y, ch, role)
   }
