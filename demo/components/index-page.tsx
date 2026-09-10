@@ -490,7 +490,7 @@ ${MEDIA.reducedMotion} {
 }
 
 ${HERO_STACK_MEDIA} {
-  .hero-row { flex-direction: column !important; align-items: flex-start !important; padding: 64px 24px 72px 24px !important; gap: 40px !important; }
+  .hero-row { flex-direction: column !important; align-items: flex-start !important; padding-top: 64px !important; gap: 40px !important; }
   .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }
   .hero-copy p { max-width: 100% !important; }
   .hero-visual { flex: 1 1 auto !important; width: 100% !important; max-width: 560px; }
