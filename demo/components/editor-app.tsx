@@ -102,7 +102,10 @@ import {
 } from './editor-config.tsx'
 import { useEditorExport } from './editor-export.ts'
 import { EditorLeftPanel, EditorRightPanel } from './editor-panels.tsx'
+import { useEditorRendering } from './editor-rendering.ts'
+import { useEditorSharing } from './editor-sharing.ts'
 import { useEditorTabs } from './editor-tabs.ts'
+import { useEditorTheme } from './editor-theme.ts'
 import { useEditorToast } from './editor-toast.ts'
 import {
   EditorThemeItems,
@@ -474,6 +477,16 @@ export interface EditorRefs {
   exportSvgBtn: HTMLElement
   copyImageBtn: HTMLElement
   copyLinkBtn: HTMLElement
+  /**
+   * Added by zombie-mermaid#810 -- see `editor-theme.ts`'s `useEditorTheme`.
+   * `editor/js/theme-button.ts`'s old direct `requireElement` calls for
+   * these same three ids, plus `themeMenu` above (already part of
+   * {@link EditorRefs} since #806).
+   */
+  themeBtnLabel: HTMLElement
+  themeBtnSwatch: HTMLElement
+  themeDropdownBtn: HTMLElement
+  themeDropdownWrap: HTMLElement
 }
 
 /**
@@ -547,6 +560,10 @@ export function collectEditorRefs(): EditorRefs {
     exportSvgBtn: requireEditorElement('export-svg-btn', HTMLElement),
     copyImageBtn: requireEditorElement('copy-image-btn', HTMLElement),
     copyLinkBtn: requireEditorElement('copy-link-btn', HTMLElement),
+    themeBtnLabel: requireEditorElement('theme-btn-label', HTMLElement),
+    themeBtnSwatch: requireEditorElement('theme-btn-swatch', HTMLElement),
+    themeDropdownBtn: requireEditorElement('theme-dropdown-btn', HTMLElement),
+    themeDropdownWrap: requireEditorElement('theme-dropdown-wrap', HTMLElement),
   }
 }
 
@@ -629,6 +646,23 @@ export function EditorApp({ themes }: EditorAppProps) {
   useEditorExport({ state, dispatch, refs })
   useEditorToast({ state, dispatch })
   useEditorDarkMode({ state, dispatch, refs })
+
+  // zombie-mermaid#810: the render pipeline and URL-hash sharing, called
+  // *after* useEditorDarkMode above -- applyThemeToPage's fallback branch
+  // (no theme selected) reads window.__editorDarkModeState.getIsDark()
+  // synchronously from this hook's own mount-time effect, which must
+  // already be registered by then. See editor-rendering.ts's/
+  // editor-sharing.ts's header comments for the rest of what these
+  // register.
+  useEditorRendering({ state, refs })
+  useEditorSharing({ state, refs })
+
+  // zombie-mermaid#810: the theme dropdown and the client bootstrap, called
+  // last -- its bootstrap effect needs window.__editorDarkModeState (from
+  // useEditorDarkMode above) and window.__editorRenderTrigger (from
+  // useEditorRendering just above) both already in place. See
+  // editor-theme.ts's header comment for the full ordering rationale.
+  useEditorTheme({ state, dispatch, refs, themes })
 
   return (
     <EditorStateContext.Provider value={state}>

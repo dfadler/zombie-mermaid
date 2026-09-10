@@ -32,18 +32,23 @@ import {
   editorReducer,
   type EditorAppProps,
 } from '../../demo/components/editor-app.tsx'
+import { decodeSource } from '../../demo/components/editor-sharing.ts'
 
 const PROPS: EditorAppProps = {
   themes: [{ key: 'nord', bg: '#2E3440', label: 'Nord' }],
 }
 
 beforeEach(() => {
-  // editor-export.ts's copyURL() calls through window.__editorSharingState
-  // (normally registered by the *legacy* editor/js/sharing.ts bundle,
-  // which these RTL tests never load -- only <EditorApp> itself is
-  // rendered) -- see that hook's own header comment for why the bridge
-  // exists.
-  window.__editorSharingState = { updateHash: vi.fn() }
+  // editor-export.ts's copyURL() calls through window.__editorSharingState.
+  // Before zombie-mermaid#810, that bridge was registered by the *legacy*
+  // editor/js/sharing.ts bundle (which these RTL tests never load -- only
+  // <EditorApp> itself is rendered), so this file stubbed it by hand. #810
+  // moved sharing to React too (demo/components/editor-sharing.ts's
+  // useEditorSharing, called from <EditorApp>'s own body) -- mounting
+  // <EditorApp> below now registers the *real* bridge itself, so there is
+  // nothing left to stub here; the "copies the current share URL" test
+  // asserts the real, observable effect (the URL hash) instead of a mock
+  // call count.
   window.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   window.URL.revokeObjectURL = vi.fn()
 })
@@ -160,7 +165,7 @@ describe('<EditorApp> export/copy actions (#809)', () => {
     expect(window.URL.createObjectURL).not.toHaveBeenCalled()
   })
 
-  it('copies the current share URL to the clipboard via the sharing.ts bridge', async () => {
+  it('copies the current share URL to the clipboard via the sharing bridge', async () => {
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
       configurable: true,
@@ -176,7 +181,13 @@ describe('<EditorApp> export/copy actions (#809)', () => {
       await Promise.resolve()
     })
 
-    expect(window.__editorSharingState.updateHash).toHaveBeenCalledTimes(1)
+    // window.__editorSharingState.updateHash() is registered by
+    // useEditorSharing itself now (#810) -- assert its real, observable
+    // effect (the URL hash decodes back to the current source) rather than
+    // a mock call count.
+    expect(JSON.parse(decodeSource(window.location.hash.slice(1)))).toEqual({
+      source: 'graph TD\n  A --> B',
+    })
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       window.location.href,
     )

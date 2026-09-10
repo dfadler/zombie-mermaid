@@ -251,9 +251,15 @@ describe('<EditorApp> color/font/config interaction (#808)', () => {
 
   it('calls window.__editorRenderTrigger.scheduleRender() on a color/font/padding change, matching the deleted legacy modules’ delays -- regression test for a real bug live-browser verification caught', async () => {
     const user = userEvent.setup()
+    render(createElement(EditorApp, PROPS))
+    // zombie-mermaid#810: window.__editorRenderTrigger is now registered by
+    // the real demo/components/editor-rendering.ts's useEditorRendering,
+    // called from <EditorApp>'s own body -- mounting above already
+    // overwrites any pre-set stub, so this spy has to replace it *after*
+    // mount instead (safe: that registration effect only ever runs once,
+    // on mount, so nothing re-clobbers it afterward).
     const scheduleRender = vi.fn()
     window.__editorRenderTrigger = { scheduleRender }
-    render(createElement(EditorApp, PROPS))
 
     await user.click(document.querySelector('.color-edit-btn[data-cfg="bg"]')!)
     await user.click(screen.getByTitle('#ff5722'))
@@ -281,9 +287,11 @@ describe('<EditorApp> color/font/config interaction (#808)', () => {
   })
 
   it('does not call scheduleRender for an edge/node stroke change -- applied directly to the live SVG instead', () => {
+    render(createElement(EditorApp, PROPS))
+    // See the previous test's identical comment -- must replace the real
+    // bridge *after* mount, not before.
     const scheduleRender = vi.fn()
     window.__editorRenderTrigger = { scheduleRender }
-    render(createElement(EditorApp, PROPS))
     const previewInner = document.getElementById('preview-inner')!
     previewInner.innerHTML =
       '<svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="0" x2="1" y2="1"></line></svg>'

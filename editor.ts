@@ -31,13 +31,16 @@
  * old raw `dangerouslySetInnerHTML` splice with a real
  * server-render-then-hydrate boundary (`<EditorAppIsland>`, hydrated by
  * demo/editor-client.tsx) — see demo/components/editor-app.tsx's header
- * comment. The remaining 15 legacy `editor/js/*.js` modules (18 minus
- * zoom.ts/pan.ts/resize.ts, moved to React state by #807) (#766 converted these
- * from fixed-order string concatenation to real TS modules with explicit
- * imports) still run as their own separately-bundled script, unchanged in
- * behavior, layered on *after* hydration — see generateEditorHtml() below
- * for why the script order is load-bearing. See
- * docs/decisions/react-site-migration-plan.md.
+ * comment. #807-#810 (the full #797 hydration epic) migrated every other
+ * concern to React one slice at a time — zoom/pan/resize (#807), the
+ * config panel/color/font pickers (#808), tabs/buttons/export/toast/dark-mode
+ * (#809), and finally the render pipeline, URL-hash sharing, and the
+ * theme dropdown/client bootstrap (#810) — leaving just two files
+ * (`editor/js/elements.ts`/`editor-helpers.ts`) still running as their own
+ * separately-bundled script, layered on *after* hydration for the
+ * code-editor textarea's own input/keydown wiring, which has no React
+ * state to drive it — see generateEditorHtml() below for why the script
+ * order is load-bearing. See docs/decisions/react-site-migration-plan.md.
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
@@ -119,37 +122,6 @@ async function bundleBrowserScript(): Promise<string> {
 }
 
 /**
- * Bundle demo/editor-theme-state-bridge.ts, which exposes demo/theme-
- * state.ts's getTheme()/setTheme()/subscribe() as window.__themeState for
- * editor/js/init.ts (whose own module graph is bundled separately by
- * bundleEditorJs() below and does not import this bridge directly — it
- * reaches it only via the `window.__themeState` global, same as it always
- * has) to call — see that bridge's own header comment. #688.
- *
- * Wrapped in an IIFE: Vite/Rollup's minified ESM output for a
- * fully-self-contained bundle (no import/export statements left — every
- * dependency here is a local relative file, already inlined) is still a
- * flat sequence of top-level `var`/`function`/`const` declarations, not
- * scoped to anything. bundleBrowserScript()'s own bundle (src/browser.ts)
- * is exactly the same shape and lands in the *same* `<script type="module">`
- * tag (see generateEditorHtml() below) — two independently-minified
- * bundles concatenated as plain text will pick colliding short names
- * (`var t`, `function t()`, …) for unrelated top-level bindings and throw
- * a `SyntaxError: Identifier 't' has already been declared` at parse
- * time. The IIFE gives this bundle its own function scope so nothing it
- * declares internally can collide with bundleJs's or appJs's — the only
- * thing it needs to expose outside that scope, `window.__themeState`, is
- * already a property access, not a declaration.
- */
-async function bundleThemeStateBridge(): Promise<string> {
-  const bundled = await bundleForBrowser(
-    new URL('./demo/editor-theme-state-bridge.ts', import.meta.url).pathname,
-    { minify: true },
-  )
-  return `;(function () {\n${bundled}\n})();`
-}
-
-/**
  * Bundle demo/editor-client.tsx (zombie-mermaid#806) — hydrates
  * `<EditorApp>` and `<NavIsland>`. `minify: true` matches
  * dashboard.ts's/fork-fixes.ts's own hydration-entry bundles: this is the
@@ -179,9 +151,8 @@ async function bundleEditorClient(): Promise<string> {
  * EditorPage renders them in exactly the order this function returns them.
  */
 async function generateEditorHtml(): Promise<string> {
-  const [bundleJs, themeStateBridgeJs, editorClientScript] = await Promise.all([
+  const [bundleJs, editorClientScript] = await Promise.all([
     bundleBrowserScript(),
-    bundleThemeStateBridge(),
     bundleEditorClient(),
   ])
   console.log(`Browser bundle: ${(bundleJs.length / 1024).toFixed(1)} KB`)
@@ -208,7 +179,7 @@ async function generateEditorHtml(): Promise<string> {
     createElement(EditorPage, {
       css,
       themes,
-      rendererSetupJs: `${themeColorsJs}\n\n${bundleJs}\n\n${themeStateBridgeJs}\n`,
+      rendererSetupJs: `${themeColorsJs}\n\n${bundleJs}\n`,
       editorClientScript,
       appJs,
     }),
