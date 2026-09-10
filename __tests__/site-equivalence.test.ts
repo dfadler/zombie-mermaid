@@ -255,9 +255,9 @@ describe('index.ts → index.html', () => {
     expect(trigger).toBeInTheDocument()
     expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    expect(document.getElementById('theme-showcase-picker-label')?.textContent).toBe(
-      THEME_LABELS.dracula ?? 'dracula',
-    )
+    expect(
+      document.getElementById('theme-showcase-picker-label')?.textContent,
+    ).toBe(THEME_LABELS.dracula ?? 'dracula')
 
     const panel = document.getElementById('theme-showcase-picker-panel')
     expect(panel).toBeInTheDocument()

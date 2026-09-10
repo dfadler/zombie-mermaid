@@ -632,9 +632,7 @@ function ThemeShowcasePicker() {
   const themeEntries = Object.entries(THEMES)
   const defaultTheme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
   if (!defaultTheme) {
-    throw new Error(
-      `Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`,
-    )
+    throw new Error(`Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`)
   }
   const defaultAccent =
     defaultTheme.accent ?? mixHexForPicker(defaultTheme.fg, defaultTheme.bg)
@@ -764,8 +762,8 @@ function ThemeShowcase() {
           >
             Every one of the {themeCount} built-in themes is drawn from an
             editor you already trust — Dracula, Nord, Solarized, Catppuccin,
-            Tokyo Night, and more — each tuned so the diagram stays legible
-            in every one.
+            Tokyo Night, and more — each tuned so the diagram stays legible in
+            every one.
           </p>
           <ThemeShowcasePicker />
         </div>
