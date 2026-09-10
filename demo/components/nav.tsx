@@ -554,10 +554,10 @@ export interface NavProps {
   installSlot?: ReactNode
   /**
    * `position: sticky; top: 0` instead of the canvas's own `position:
-   * relative`. Defaults to `false` — every page but the homepage (#759)
-   * keeps the canvas's non-sticky bar; a page with its own sticky
-   * elements pinned to `top: var(--nav-height)` (the Dashboard) isn't
-   * affected by this being a per-page opt-in rather than a global change.
+   * relative`. Defaults to `false`, but every page currently opts in —
+   * see each page's own `<NavIsland sticky .../>` call site. Stays a
+   * per-page prop rather than a hardcoded value so a future page can still
+   * opt out.
    */
   sticky?: boolean
   /** Accessible name for the link list. Defaults to `'Main'`. */
