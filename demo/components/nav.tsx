@@ -814,12 +814,14 @@ export function NavInstallPopover({
   onClose,
   triggerRef,
   itemRefs,
+  popoverRef,
 }: {
   manager: PackageManager
   onSelect: (manager: PackageManager) => void
   onClose: () => void
   triggerRef: RefObject<HTMLSpanElement | null>
   itemRefs: RefObject<(HTMLSpanElement | null)[]>
+  popoverRef: RefObject<HTMLSpanElement | null>
 }) {
   function handleItemKeyDown(
     event: KeyboardEvent<HTMLSpanElement>,
@@ -846,6 +848,7 @@ export function NavInstallPopover({
 
   return (
     <span
+      ref={popoverRef}
       className="nav-install-popover"
       role="listbox"
       aria-label="Package manager"
@@ -1154,15 +1157,14 @@ function NavInstall({ command }: { command: string }) {
         />
       </span>
       {install.popoverOpen ? (
-        <span ref={install.popoverRef}>
-          <NavInstallPopover
-            manager={install.selectedManager}
-            onSelect={install.selectManager}
-            onClose={install.closePopover}
-            triggerRef={install.triggerRef}
-            itemRefs={install.itemRefs}
-          />
-        </span>
+        <NavInstallPopover
+          manager={install.selectedManager}
+          onSelect={install.selectManager}
+          onClose={install.closePopover}
+          triggerRef={install.triggerRef}
+          itemRefs={install.itemRefs}
+          popoverRef={install.popoverRef}
+        />
       ) : null}
     </Pill>
   )
