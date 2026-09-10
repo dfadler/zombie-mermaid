@@ -21,27 +21,24 @@
  * separate weight simply isn't reachable from the client entry point
  * anymore.
  *
- * The theme picker and footer used to be rendered here too, but #801 (which
+ * The theme picker ("Pick a look" — `ThemePickerSection`, since removed
+ * from every page) and footer used to be rendered here too, but #801 (which
  * introduced `ThemePickerIsland` as `ThemePickerSection`'s new markup
- * source) broke that: `ThemePickerIsland` itself imports `react-dom/server`
- * for its own SSR-only purposes (see `theme-picker-island.tsx`'s header
- * comment), so nesting `<ThemePickerSection>` in *this* file's tree would
- * have re-opened exactly the leak the paragraph above describes -- and
- * would have hydrated `#theme-pills` twice over: once via this file's own
- * `hydrateRoot()` call (which would try to reconcile `ThemePickerIsland`'s
- * `dangerouslySetInnerHTML` node) and again, independently, via `demo/
- * theme-bar-client.tsx`'s `hydrateThemeBar()` (bundled by every page,
- * dashboard.html included, through `demo/theme-bar-only-client.ts` --
- * `dashboard-page.tsx`'s `themeBarScript`). Found while investigating #802,
- * before it ever reached `main` (#801/PR833 was still open). Fixed by
- * moving `<ThemePickerSection>` (and, for the same nesting reason, `<Footer>`
- * -- neither has any client-side behavior of its own, so nothing is lost by
- * keeping both out of this hydration boundary) into `dashboard-page.tsx`
- * itself, as plain siblings of {@link DASHBOARD_ROOT_ID}'s container --
- * exactly how every other page mounts `ThemePickerSection` (as top-level
- * page JSX with no hydrated ancestor), and exactly how `<Nav>` is kept a
- * sibling island rather than nested in this file's own tree (see this
- * component's doc comment below).
+ * source) broke that: `ThemePickerIsland` itself imported `react-dom/server`
+ * for its own SSR-only purposes, so nesting `<ThemePickerSection>` in *this*
+ * file's tree would have re-opened exactly the leak the paragraph above
+ * describes -- and would have hydrated `#theme-pills` twice over: once via
+ * this file's own `hydrateRoot()` call (which would try to reconcile
+ * `ThemePickerIsland`'s `dangerouslySetInnerHTML` node) and again,
+ * independently, via `demo/theme-bar-client.tsx`'s `hydrateThemeBar()`.
+ * Found while investigating #802, before it ever reached `main` (#801/PR833
+ * was still open). Fixed by moving `<ThemePickerSection>` (and, for the
+ * same nesting reason, `<Footer>` -- neither had any client-side behavior
+ * of its own, so nothing was lost by keeping both out of this hydration
+ * boundary) into `dashboard-page.tsx` itself, as plain siblings of {@link
+ * DASHBOARD_ROOT_ID}'s container. `<Footer>` stays there today for the same
+ * reason, alongside `<Nav>`, kept a sibling island rather than nested in
+ * this file's own tree (see this component's doc comment below).
  *
  * Design/content provenance (the #590 canvas, #592/#595/#596 tokens etc.)
  * is unchanged from before this split -- see `dashboard-page.tsx`'s own

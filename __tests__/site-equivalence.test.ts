@@ -680,7 +680,6 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
       createElement(ForkFixesPage, {
         css: FIXTURE_CSS,
         fixes,
-        themeBarScript: FIXTURE_SCRIPT,
         // #802: fork-fixes.html's clientScript hydrates ForkFixesApp +
         // NavIsland in one bundle now, replacing the standalone
         // nav-only-client.tsx bundle every other page here still uses —
@@ -857,7 +856,6 @@ describe('blog.ts → blog/*.html', () => {
             description: 'Setting things up.',
           },
         ],
-        themeBarScript: FIXTURE_SCRIPT,
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )
@@ -893,7 +891,6 @@ describe('blog.ts → blog/*.html', () => {
         cssHref: 'assets/blog.css',
         faviconHref: '../favicon.svg',
         posts: [],
-        themeBarScript: FIXTURE_SCRIPT,
         clientScript: FIXTURE_NAV_CLIENT_SCRIPT,
       }),
     )

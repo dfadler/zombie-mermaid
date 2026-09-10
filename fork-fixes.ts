@@ -35,8 +35,6 @@ import { asciiToHtml } from './ascii-html.ts'
 import { formatProse } from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import { sharedPageCss } from './demo/components/shared-page-css.tsx'
-import { themePickerCss } from './demo/components/theme-picker.tsx'
-import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import {
   ForkFixesPage,
   type FixSectionProps,
@@ -332,21 +330,15 @@ async function generate(): Promise<string> {
     new URL('./demo/fork-fixes.css', import.meta.url),
     'utf8',
   )
-  const styles = sharedPageCss([themePickerCss(), pageCss].join('\n\n'))
+  const styles = sharedPageCss(pageCss)
 
-  // #687: this page's live theme picker needs no other client JS of its
-  // own, so it gets the same shared bundle Home/the Diagrams hub/Blog/
-  // Dashboard use. #802: clientScript hydrates ForkFixesApp + NavIsland.
-  const [themeBarScript, clientScript] = await Promise.all([
-    bundleThemeBarClient(),
-    bundleForkFixesClient(),
-  ])
+  // #802: clientScript hydrates ForkFixesApp + NavIsland.
+  const clientScript = await bundleForkFixesClient()
 
   return renderHtmlDocument(
     createElement(ForkFixesPage, {
       css: styles,
       fixes: pairs.map(fixSectionProps),
-      themeBarScript,
       clientScript,
     }),
   )

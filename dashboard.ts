@@ -40,8 +40,6 @@ import { createElement } from 'react'
 import dashboardData from './demo/dashboard-data.json' with { type: 'json' }
 import { DashboardPage } from './demo/components/dashboard-page.tsx'
 import { sharedPageCss } from './demo/components/shared-page-css.tsx'
-import { themePickerCss } from './demo/components/theme-picker.tsx'
-import { bundleThemeBarClient } from './demo/build-theme-bar-client.ts'
 import {
   parseDashboardData,
   type DashboardData,
@@ -54,17 +52,15 @@ import { siteOutDir } from './scripts/site-out-dir.ts'
  * Bundle `demo/dashboard-client.tsx` (zombie-mermaid#799's hydration
  * proof-of-concept) for the browser.
  *
- * Inlined into the page directly (see `generate()` below), exactly like
- * `bundleThemeBarClient()`'s existing `themeBarScript` result — not written
+ * Inlined into the page directly (see `generate()` below) — not written
  * to `assets/` and referenced by `src`, the way index.ts's/pages.ts's own
  * client bundles are. That external-asset pattern turned out to have a
  * pre-existing gap this issue doesn't fix: `package.json`'s `build:site`
  * script never moves the gitignored repo-root `/assets/` directory into
  * `site/`, so a `src`-referenced bundle 404s once deployed to GitHub Pages
  * (see zombie-mermaid#799's PR description). Inlining sidesteps that
- * entirely — the same way this page's own `themeBarScript` already works
- * in production today — rather than this issue also taking on fixing
- * unrelated build-pipeline plumbing.
+ * entirely, rather than this issue also taking on fixing unrelated
+ * build-pipeline plumbing.
  *
  * `treeshake` left at its default (on): unlike editor/js/index.ts's bundle,
  * this entry's only job is to export nothing and run its top-level
@@ -103,25 +99,19 @@ export {
 /**
  * Renders the complete dashboard document for `data`, styled by `css`.
  *
- * `themeBarScript` defaults to `''` (an empty inline `<script>`) so
- * existing callers/tests that don't care about the theme bar's
- * interactivity — this page has nothing of its own to re-theme — don't
- * need to pass a real bundle. `clientScript` (zombie-mermaid#799's
- * hydration bundle) is likewise optional and inlined the same way — see
- * `DashboardPageProps`'s own doc comment — omit it for a caller that only
- * wants SSR markup with no hydration script at all.
+ * `clientScript` (zombie-mermaid#799's hydration bundle) is optional and
+ * inlined — see `DashboardPageProps`'s own doc comment — omit it for a
+ * caller that only wants SSR markup with no hydration script at all.
  */
 export function renderDashboardHtml(
   data: DashboardData,
   css: string,
-  themeBarScript = '',
   clientScript = '',
 ): string {
   return renderHtmlDocument(
     createElement(DashboardPage, {
       data,
       css,
-      themeBarScript,
       clientScript,
     }),
   )
@@ -133,16 +123,14 @@ export function renderDashboardHtml(
  * (zombie-mermaid#799).
  */
 export async function generate(): Promise<string> {
-  const [pageCss, themeBarScript, clientScript] = await Promise.all([
+  const [pageCss, clientScript] = await Promise.all([
     readFile(new URL('./demo/dashboard.css', import.meta.url), 'utf8'),
-    bundleThemeBarClient(),
     bundleDashboardClient(),
   ])
-  const css = sharedPageCss([themePickerCss(), pageCss].join('\n\n'))
+  const css = sharedPageCss(pageCss)
   return renderDashboardHtml(
     parseDashboardData(dashboardData),
     css,
-    themeBarScript,
     clientScript,
   )
 }

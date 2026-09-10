@@ -12,15 +12,11 @@
  * `fork-fixes-page.tsx`, which imports `renderToString` for its own
  * SSR-only purposes.
  *
- * `<ThemePickerSection>`/`<Footer>`/`<NavIsland>` are deliberately **not**
- * rendered here — they stay in `fork-fixes-page.tsx` as plain siblings of
- * this component's hydration container, the same way `dashboard-page.tsx`
- * renders them today (a fix landed alongside #802's investigation: nesting
- * `ThemePickerSection` inside a hydrated component tree drags
- * `react-dom/server` into the client bundle via `ThemePickerIsland`, and
- * double-hydrates `#theme-pills` — see `dashboard-app.tsx`'s header comment
- * for the full story). `fork-fixes.html` never repeats that mistake in the
- * first place.
+ * `<Footer>`/`<NavIsland>` are deliberately **not** rendered here — they
+ * stay in `fork-fixes-page.tsx` as plain siblings of this component's
+ * hydration container, the same way `dashboard-page.tsx` renders them
+ * today — see `dashboard-app.tsx`'s header comment for the full story of
+ * why that split exists.
  *
  * Every fact rendered below (PR/commit/render-mode/upstream-issue metadata,
  * the source, and the before/after content) still comes from fork-fixes.ts
@@ -810,9 +806,9 @@ export interface ForkFixesAppProps {
  * it straight to `hydrateRoot()` client-side, targeting that same
  * container.
  *
- * Deliberately does **not** include `<NavIsland>`, `<ThemePickerSection>`,
- * or `<Footer>` -- see this file's header comment for why all three stay
- * plain siblings in `fork-fixes-page.tsx` instead.
+ * Deliberately does **not** include `<NavIsland>` or `<Footer>` -- see
+ * this file's header comment for why both stay plain siblings in
+ * `fork-fixes-page.tsx` instead.
  */
 export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
   return (

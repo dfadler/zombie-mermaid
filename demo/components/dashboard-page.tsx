@@ -36,16 +36,11 @@
  * for `renderToString`) into the client bundle. See `dashboard-app.tsx`'s
  * own header comment for the measured bundle-size impact.
  *
- * `<ThemePickerSection>` and `<Footer>` render here too (as plain siblings
- * of the {@link DASHBOARD_ROOT_ID} container, inside the same `dc-root`
- * wrapper `DashboardApp`'s own hydrated content sits in — so the visible
- * layout is unchanged), rather than inside `DashboardApp`'s tree. See
- * `dashboard-app.tsx`'s header comment for why: nesting `ThemePickerSection`
- * (which renders `ThemePickerIsland`, itself an `react-dom/server` importer
- * as of #801) inside `DashboardApp` would leak that import into the client
- * bundle and double-hydrate `#theme-pills`. `<Footer>` moved out alongside
- * it for the same reason (it has no client-side behavior of its own, so
- * nothing is lost).
+ * `<Footer>` renders here too (as a plain sibling of the {@link
+ * DASHBOARD_ROOT_ID} container, inside the same `dc-root` wrapper
+ * `DashboardApp`'s own hydrated content sits in — so the visible layout is
+ * unchanged), rather than inside `DashboardApp`'s tree — it has no
+ * client-side behavior of its own, so nothing is lost.
  */
 import { renderToString } from 'react-dom/server'
 import {
@@ -64,7 +59,6 @@ import {
 import { Footer } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
-import { ThemePickerSection } from './theme-picker-section.tsx'
 import { DesignFontLinks, colorVar } from './tokens.tsx'
 
 // Re-exported for existing callers/tests that import these from
@@ -94,23 +88,13 @@ export interface DashboardPageProps {
   /** The page's full stylesheet — tokens/primitives/nav/footer CSS plus this page's own (see dashboard.ts). */
   css: string
   /**
-   * The bundled `demo/theme-bar-only-client.ts` script (#687), inlined so
-   * the page's `ThemePickerSection` is interactive. This page has nothing
-   * of its own to re-theme (a static data snapshot, not a diagram) — the
-   * picker here exists so a theme chosen elsewhere on the site stays
-   * selected if a visitor lands here, and vice versa (shared `demo/
-   * theme-state.ts` persistence).
-   */
-  themeBarScript: string
-  /**
    * The bundled `demo/dashboard-client.tsx` entry (zombie-mermaid#799) that
-   * hydrates {@link DashboardApp}, inlined the same way `themeBarScript`
-   * is — see `dashboard.ts`'s `bundleDashboardClient()` doc comment for why
-   * this is inlined rather than written to `assets/` and referenced by
-   * `src`. Defaults to `''` (no hydration script rendered at all — SSR-only,
-   * same as before #799), matching `themeBarScript`'s own default; used by
-   * existing tests that don't care about hydration. `dashboard.ts`'s real
-   * `generate()` always passes the built bundle.
+   * hydrates {@link DashboardApp} — see `dashboard.ts`'s
+   * `bundleDashboardClient()` doc comment for why this is inlined rather
+   * than written to `assets/` and referenced by `src`. Defaults to `''` (no
+   * hydration script rendered at all — SSR-only, same as before #799),
+   * used by existing tests that don't care about hydration. `dashboard.ts`'s
+   * real `generate()` always passes the built bundle.
    */
   clientScript?: string
 }
@@ -118,7 +102,6 @@ export interface DashboardPageProps {
 export function DashboardPage({
   data,
   css,
-  themeBarScript,
   clientScript = '',
 }: DashboardPageProps) {
   const viewModel = buildDashboardViewModel(data)
@@ -218,23 +201,6 @@ export function DashboardPage({
               }}
             />
 
-            {/*
-            Plain sibling JSX, not part of DashboardApp's hydrated tree --
-            see this file's header comment and dashboard-app.tsx's for why
-            (in short: ThemePickerSection/ThemePickerIsland imports
-            react-dom/server, and nesting it inside DASHBOARD_ROOT_ID would
-            both leak that into the client bundle and double-hydrate
-            #theme-pills). Rendered through the ordinary renderToStaticMarkup
-            path this whole document uses -- unlike DASHBOARD_ROOT_ID's own
-            container above, nothing ever calls hydrateRoot() against
-            ThemePickerSection/Footer directly, so neither needs the
-            renderToString hydration-boundary comments. ThemePicker's own
-            hydration still works: theme-bar-only-client.ts's
-            hydrateThemeBar() (bundled as themeBarScript below) finds and
-            hydrates ThemePickerIsland's #theme-pills exactly as it does on
-            every other page.
-          */}
-            <ThemePickerSection />
             <Footer columns={dashboardFooterColumns()} />
           </div>
         </div>
@@ -245,11 +211,6 @@ export function DashboardPage({
             // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
             __html: escapeJsonForScriptTag(JSON.stringify(viewModel)),
           }}
-        />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: themeBarScript }}
         />
         <NavMobileMenuScript />
         <script
