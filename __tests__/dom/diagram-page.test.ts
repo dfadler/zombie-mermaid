@@ -237,8 +237,6 @@ describe('DiagramHubPage (#821)', () => {
     )
 
     expect(screen.queryByText('Pick a look')).toBeNull()
-    expect(
-      screen.queryByText('Live in every built-in theme.'),
-    ).toBeNull()
+    expect(screen.queryByText('Live in every built-in theme.')).toBeNull()
   })
 })
