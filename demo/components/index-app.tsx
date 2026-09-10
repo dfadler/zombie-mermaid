@@ -41,7 +41,8 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import {
   CheckIcon,
@@ -1493,42 +1494,137 @@ function DiagramGalleryTeaser() {
  * Proof / maintenance
  * ----------------------------------------------------------------- */
 
+/** How long a stat's count-up animation takes, once triggered. */
+const COUNT_UP_MS = 1200
+
+/**
+ * True once the returned ref's element has scrolled into the viewport —
+ * flips once and never reverses (the same one-shot contract `demo/index-
+ * page-client.ts`'s theme-picker relocation uses for its own
+ * `IntersectionObserver`), so scrolling back past the section after the
+ * count-up has already played never re-triggers it. Stays `false` forever
+ * wherever `IntersectionObserver` isn't available — the same "silently
+ * does nothing, stays safe to run unconditionally" fallback that picker
+ * relocation uses for its own missing-element case — so a browser without
+ * it (or this component's own jsdom hydration test, which has no
+ * `IntersectionObserver` either) just keeps the static, already-correct
+ * server-rendered numbers instead of animating unprompted.
+ */
+function useInView<T extends HTMLElement>(): [RefObject<T | null>, boolean] {
+  const ref = useRef<T>(null)
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          setInView(true)
+          observer.disconnect()
+          return
+        }
+      },
+      { threshold: 0.3 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return [ref, inView]
+}
+
+/**
+ * Counts up from 0 to `target` over {@link COUNT_UP_MS} once `active`
+ * flips true, via an eased `requestAnimationFrame` loop. The initial state
+ * is `target` itself, not 0 — matching the server-rendered markup exactly,
+ * so hydration has nothing to reconcile (the same "SSR default matches the
+ * real render" reasoning `NavInstall`'s `useState('npm')` above uses); the
+ * drop to 0 and count back up only happen after mount, once `active`
+ * actually flips. Skips the animation (stays at `target`) under
+ * `prefers-reduced-motion: reduce`, and wherever `requestAnimationFrame`
+ * isn't available.
+ */
+function useCountUp(target: number, active: boolean): number {
+  const [value, setValue] = useState(target)
+
+  useEffect(() => {
+    if (!active) return
+    if (typeof requestAnimationFrame === 'undefined') return
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    ) {
+      return
+    }
+
+    setValue(0)
+    const start = performance.now()
+    let raf: number
+    function tick(now: number): void {
+      const elapsed = Math.min(1, (now - start) / COUNT_UP_MS)
+      const eased = 1 - (1 - elapsed) ** 3
+      setValue(Math.round(eased * target))
+      if (elapsed < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [active, target])
+
+  return value
+}
+
 /** One repo's stat row: days since last commit, merged PRs, open PRs. */
 function StatRow({
   ink,
   daysSinceCommit,
   mergedPRs,
   openPRs,
+  animate,
 }: {
   ink: string
   daysSinceCommit: number
   mergedPRs: number
   openPRs: number
+  /** Whether the count-up should be playing — see {@link useCountUp}. */
+  animate: boolean
 }) {
+  const days = useCountUp(daysSinceCommit, animate)
+  const merged = useCountUp(mergedPRs, animate)
+  const open = useCountUp(openPRs, animate)
+  const numberStyle = {
+    fontSize: '36px',
+    color: ink,
+    fontVariantNumeric: 'tabular-nums',
+  } as const
+
   return (
     <div
       className="stat-row"
       style={{ display: 'flex', justifyContent: 'space-between' }}
     >
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {daysSinceCommit} {daysSinceCommit === 1 ? 'day' : 'days'}
+        <p className="display" style={numberStyle}>
+          {days} {daysSinceCommit === 1 ? 'day' : 'days'}
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           since last commit
         </p>
       </div>
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {mergedPRs}
+        <p className="display" style={numberStyle}>
+          {merged}
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           merged PRs
         </p>
       </div>
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {openPRs}
+        <p className="display" style={numberStyle}>
+          {open}
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           open PRs
@@ -1540,6 +1636,8 @@ function StatRow({
 
 /** Real fork-vs-upstream numbers, and a teaser linking to the full evidence. */
 function ProofSection() {
+  const [statsRef, statsInView] = useInView<HTMLDivElement>()
+
   return (
     <div
       id="fixes"
@@ -1577,6 +1675,7 @@ function ProofSection() {
 
       <div
         className="proof-grid"
+        ref={statsRef}
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
@@ -1604,7 +1703,11 @@ function ProofSection() {
           >
             zombie-mermaid (this fork)
           </p>
-          <StatRow ink="var(--green)" {...PROOF_SNAPSHOT.fork} />
+          <StatRow
+            ink="var(--green)"
+            animate={statsInView}
+            {...PROOF_SNAPSHOT.fork}
+          />
         </Card>
 
         <Card
@@ -1626,7 +1729,11 @@ function ProofSection() {
           >
             beautiful-mermaid (upstream)
           </p>
-          <StatRow ink="var(--text-faint)" {...PROOF_SNAPSHOT.upstream} />
+          <StatRow
+            ink="var(--text-faint)"
+            animate={statsInView}
+            {...PROOF_SNAPSHOT.upstream}
+          />
         </Card>
       </div>
 
