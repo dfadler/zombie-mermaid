@@ -216,71 +216,69 @@ function lifelineColumn(ascii: string, actorName: string): number {
 }
 
 describe('ASCII sequence — notes do not collide with an unrelated lifeline', () => {
-  it.fails(
-    // Bug: src/ascii/sequence.ts:199-214 — `nx = llX[aIdx] - nWidth - 1`
-    // clamped to `Math.max(0, nx)`. For the leftmost actor, a note wider
-    // than its (small) left margin clamps to column 0, so the note's own
-    // rectangle swallows its own actor's lifeline column instead of sitting
-    // entirely to its left.
-    "note left of the leftmost actor does not overlap that actor's own lifeline",
-    () => {
-      const src = `sequenceDiagram
+  // Fixed by issue #953 case A: `sequence.ts`'s note-x calculation
+  // (`nx = llX[aIdx] - nWidth - 1`) used to clamp straight to
+  // `Math.max(0, nx)`, so a note wider than the leftmost actor's (small)
+  // left margin clamped to column 0 and swallowed its own actor's lifeline
+  // column instead of sitting entirely to its left. The fix reserves room
+  // in the leftmost lifeline's own initial position (`llX[0]`) for its
+  // widest `left` note up front, so `nx` never needs clamping in the first
+  // place. Per this file's header convention, a case confirmed fixed is
+  // promoted from `it.fails` to a plain `it()` regression lock.
+  it("note left of the leftmost actor does not overlap that actor's own lifeline", () => {
+    const src = `sequenceDiagram
   participant A as Alice
   participant B as Bob
   Note left of A: ${LONG_LABEL}
   A->>B: hi`
-      const ascii = renderMermaidASCII(src, { useAscii: true })
-      // findBoxRect, not findTextRect — the note's own border/padding must
-      // also stay clear of the lifeline, not just its bare text span.
-      const noteRect = findBoxRect(ascii, LONG_LABEL)
-      const aliceCol = lifelineColumn(ascii, 'Alice')
-      expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
-    },
-  )
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    // findBoxRect, not findTextRect — the note's own border/padding must
+    // also stay clear of the lifeline, not just its bare text span.
+    const noteRect = findBoxRect(ascii, LONG_LABEL)
+    const aliceCol = lifelineColumn(ascii, 'Alice')
+    expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
+  })
 
-  it.fails(
-    // Bug: same clamp as above, but the victim is a *different* actor's
-    // lifeline — the exact shape visible in samples-data.ts's "Sequence:
-    // Notes (Right/Left/Over)" sample ("Alice prepares" reaching into Bob's
-    // lifeline). A non-leftmost actor with a real left neighbor and a note
-    // wide enough that `llX[aIdx] - nWidth - 1 < 0`.
-    "note left of a non-leftmost actor does not overlap the left-neighbor's lifeline",
-    () => {
-      const src = `sequenceDiagram
+  // Fixed by issue #953 case B: same clamp as above, but the victim is a
+  // *different* actor's lifeline — the exact shape visible in
+  // samples-data.ts's "Sequence: Notes (Right/Left/Over)" sample ("Alice
+  // prepares" reaching into Bob's lifeline). The fix reserves a
+  // note-width-aware gap between adjacent lifelines (see `leftNoteWidth`/
+  // `rightNoteWidth` in sequence.ts), so a `left` note's own gap is sized to
+  // fit it before `nx` is ever computed.
+  it("note left of a non-leftmost actor does not overlap the left-neighbor's lifeline", () => {
+    const src = `sequenceDiagram
   participant A as Alice
   participant B as Bob
   participant C as Carol
   Note left of B: ${LONG_LABEL}
   B->>C: hi`
-      const ascii = renderMermaidASCII(src, { useAscii: true })
-      const noteRect = findBoxRect(ascii, LONG_LABEL)
-      const aliceCol = lifelineColumn(ascii, 'Alice')
-      expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
-    },
-  )
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    const noteRect = findBoxRect(ascii, LONG_LABEL)
+    const aliceCol = lifelineColumn(ascii, 'Alice')
+    expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
+  })
 
-  it.fails(
-    // Bug: the lifeline gap (sequence.ts:114-131) is sized only from
-    // message-label widths — note width never enters that calculation for
-    // either side. Notes draw last (after lifelines/boxes/messages/blocks),
-    // so a right-note wider than the gap to the *next* actor silently
-    // overwrites that actor's lifeline. No `Math.max(0, …)` clamp involved
-    // — a genuinely different bug from the two above, sharing only the
-    // visible symptom.
-    "note right of an actor does not overlap the next actor's lifeline",
-    () => {
-      const src = `sequenceDiagram
+  // Fixed by issue #953 case C: the lifeline gap used to be sized only from
+  // message-label widths — note width never entered that calculation for
+  // either side. Notes draw last (after lifelines/boxes/messages/blocks),
+  // so a right-note wider than the gap to the *next* actor silently
+  // overwrote that actor's lifeline. No `Math.max(0, …)` clamp was involved
+  // — a genuinely different bug from the two above, sharing only the
+  // visible symptom. The fix folds note width into the same gap-sizing pass
+  // that already accounts for message labels.
+  it("note right of an actor does not overlap the next actor's lifeline", () => {
+    const src = `sequenceDiagram
   participant A as Alice
   participant B as Bob
   participant C as Carol
   A->>B: hi
   Note right of B: ${LONG_LABEL}`
-      const ascii = renderMermaidASCII(src, { useAscii: true })
-      const noteRect = findBoxRect(ascii, LONG_LABEL)
-      const carolCol = lifelineColumn(ascii, 'Carol')
-      expect(carolCol < noteRect.x0 || carolCol > noteRect.x1).toBe(true)
-    },
-  )
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    const noteRect = findBoxRect(ascii, LONG_LABEL)
+    const carolCol = lifelineColumn(ascii, 'Carol')
+    expect(carolCol < noteRect.x0 || carolCol > noteRect.x1).toBe(true)
+  })
 
   // Regression locks: short notes, which don't hit any of the three bugs
   // above, must keep rendering without collision.
