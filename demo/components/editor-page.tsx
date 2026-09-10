@@ -524,13 +524,28 @@ export function EditorPage({
         <style>{editorPageCss()}</style>
       </head>
       <body>
-        <div className={ZM_SHELL}>
+        {/*
+          A separate `.zm-shell` wrapper from the hero's below, `display:
+          contents` so it contributes no box of its own -- `<NavIsland
+          sticky>`'s containing block (nav-island.tsx's `display: contents`
+          on #nav-root pushes it here, its own parent) needs to span the
+          page's full scroll height to have any room to actually stick, and
+          the hero-sized `.zm-shell` below does not. `display: contents`
+          still participates fully in the cascade (`--text`/`--bg`/etc
+          inherit through it normally) and in descendant-selector matching
+          (`.zm-shell .nav-bar` etc, from `scopedDesignTokensCss` above,
+          still resolves through it) -- only its own box disappears, so the
+          scoped palette still reaches `<NavIsland>` exactly as before.
+        */}
+        <div className={ZM_SHELL} style={{ display: 'contents' }}>
           <NavIsland
             sticky
             active="editor"
             homeHref={homeHref}
             hrefs={editorNavHrefs}
           />
+        </div>
+        <div className={ZM_SHELL}>
           <EditorHero homeHref={homeHref} />
         </div>
 
