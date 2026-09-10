@@ -157,6 +157,7 @@ export function DashboardPage({
             boundary, and dashboard-client.tsx for where it's hydrated.
           */}
           <NavIsland
+            sticky
             homeHref={ROUTES.home}
             hrefs={{
               diagrams: ROUTES.diagrams,

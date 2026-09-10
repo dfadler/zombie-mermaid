@@ -526,6 +526,7 @@ export function EditorPage({
       <body>
         <div className={ZM_SHELL}>
           <NavIsland
+            sticky
             active="editor"
             homeHref={homeHref}
             hrefs={editorNavHrefs}

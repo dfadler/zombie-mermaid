@@ -492,7 +492,12 @@ export function DiagramTypePage({
             overflow: 'hidden',
           }}
         >
-          <NavIsland active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+          <NavIsland
+            sticky
+            active="diagrams"
+            homeHref={HOME_HREF}
+            hrefs={NAV_HREFS}
+          />
 
           {/*
             Plain, inert hydration container -- see dashboard-app.tsx's
@@ -685,7 +690,12 @@ export function DiagramHubPage({
             overflow: 'hidden',
           }}
         >
-          <NavIsland active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+          <NavIsland
+            sticky
+            active="diagrams"
+            homeHref={HOME_HREF}
+            hrefs={NAV_HREFS}
+          />
 
           {/*
             Plain, inert hydration container -- see DiagramTypePage's
