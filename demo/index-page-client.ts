@@ -411,10 +411,42 @@ function wireThemePicker(
     panel.hidden = !open
     trigger.setAttribute('aria-expanded', String(open))
     wrapper.classList.toggle('open', open)
+    if (open) {
+      const selected = els.pickerOptions.find(
+        (opt) => opt.getAttribute('aria-selected') === 'true',
+      )
+      ;(selected ?? els.pickerOptions[0])?.focus()
+    }
   }
 
   trigger.addEventListener('click', () => {
     setOpen(panel.hidden)
+  })
+
+  // ArrowUp/ArrowDown/Home/End roving focus among the panel's own option
+  // buttons -- mirrors theme-picker.tsx's ThemePicker onDropdownKeyDown,
+  // scoped to whatever's rendered under the panel rather than a captured
+  // items array, since the options are plain focusable buttons already.
+  panel.addEventListener('keydown', (e) => {
+    const items = els.pickerOptions
+    if (items.length === 0) return
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement)
+    let nextIndex: number | null = null
+    if (e.key === 'ArrowDown') {
+      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
+    } else if (e.key === 'ArrowUp') {
+      nextIndex =
+        currentIndex < 0
+          ? items.length - 1
+          : (currentIndex - 1 + items.length) % items.length
+    } else if (e.key === 'Home') {
+      nextIndex = 0
+    } else if (e.key === 'End') {
+      nextIndex = items.length - 1
+    }
+    if (nextIndex === null) return
+    e.preventDefault()
+    items[nextIndex]?.focus()
   })
 
   document.addEventListener('keydown', (e) => {
@@ -435,12 +467,28 @@ function wireThemePicker(
       const theme = themeKey ? THEMES[themeKey] : undefined
       if (!themeKey || !theme) return
 
+      // Cancel whatever step of the ambient cycle is pending *before*
+      // touching the DOM below -- a click can land mid-fade-out (the
+      // cycle already removed .is-active from activeSlot and is waiting
+      // to re-theme+fade in a *different* slot), so this must win outright
+      // rather than race that timeout's own writes.
+      if (state.pendingTimeout !== undefined) {
+        window.clearTimeout(state.pendingTimeout)
+        state.pendingTimeout = undefined
+      }
+
       // Re-themes the currently visible diagram in place, and (via
       // applyThemeToSlot's own els.pickerLabel/pickerChip/pickerOptions
       // sync) this trigger's label/chip and every option's
       // aria-selected -- no separate update needed here.
       const activeSlot = slots[state.activeSlotIndex]
-      if (activeSlot) applyThemeToSlot(activeSlot, themeKey, theme, els)
+      if (activeSlot) {
+        applyThemeToSlot(activeSlot, themeKey, theme, els)
+        // Restore visibility in case a pending fade-out (above) had
+        // already cleared it -- otherwise the diagram stays invisible
+        // until the next ambient tick fires, up to a full HOLD_MS later.
+        activeSlot.classList.add('is-active')
+      }
 
       // Keep the ambient cycle's own position in sync so it resumes
       // forward from here instead of overwriting this pick next tick.
@@ -457,14 +505,11 @@ function wireThemePicker(
       }
 
       // A manual pick shouldn't be immediately clobbered by (or race) the
-      // cycle's own next step -- cancel whatever's pending and reschedule
-      // the *same* runCycle chain after exactly one HOLD_MS. No-op when
-      // reduced motion means the cycle was never started (runCycle stays
-      // undefined).
+      // cycle's own next step -- the pending timeout was already cleared
+      // above, so just reschedule the *same* runCycle chain after exactly
+      // one HOLD_MS. No-op when reduced motion means the cycle was never
+      // started (runCycle stays undefined).
       if (state.runCycle) {
-        if (state.pendingTimeout !== undefined) {
-          window.clearTimeout(state.pendingTimeout)
-        }
         state.pendingTimeout = window.setTimeout(state.runCycle, HOLD_MS)
       }
 

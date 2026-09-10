@@ -307,6 +307,7 @@ function homePageCss(): string {
   transition: background 900ms ease;
 }
 .theme-showcase-diagram-card {
+  position: relative;
   height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
   border-radius: ${RADIUS.card}px;
   border: 1px solid ${colorVar('--border')};
