@@ -678,7 +678,7 @@ export interface NavProps {
    * `NavInstall` (rendered with {@link installCommand}) — every page but
    * the homepage keeps that default. As of zombie-mermaid#902, the
    * homepage passes an empty fragment: its package-manager selector moved
-   * into the hero's own `HeroInstall` (`index-app.tsx`), so the header
+   * into the hero's own `HeroInstall` (`hero-install.tsx`), so the header
    * renders nothing in this slot rather than falling back to `NavInstall`
    * and duplicating it. (An earlier, #759-era homepage instead passed a
    * `<div id="nav-theme-slot" />` placeholder here for a live theme picker
@@ -950,7 +950,7 @@ export function NavInstallPopover({
  * Package-manager install state (zombie-mermaid#719)
  *
  * Extracted out of {@link NavInstall} (zombie-mermaid#902) so the homepage
- * hero's own compact instance (`index-app.tsx`'s `HeroInstall`) can drive
+ * hero's own compact instance (`hero-install.tsx`'s `HeroInstall`) can drive
  * the same popover-and-copy behavior without a second copy of this state —
  * only the surrounding chrome (the outer `<Pill>`'s background/border) is
  * ever specific to where it's mounted.
