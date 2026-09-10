@@ -63,9 +63,10 @@ real generator's full output before/after this change.
 **Equivalence evidence.** Both the pre-change generator (`editor.ts` at the
 commit this branch forked from) and the post-change generator were run
 against the real, current `editor/` source tree, and their outputs were
-compared with `__tests__/helpers/normalize-html.ts` — the same
-DOM-normalising helper `dashboard-equivalence.test.ts` uses (ignores
-attribute order/quoting and whitespace, keeps everything else, including
+compared with `__tests__/helpers/normalize-html.ts` (deleted in #828 once
+the RTL migration it supported was complete) — the same DOM-normalising
+helper `dashboard-equivalence.test.ts` used (ignores attribute
+order/quoting and whitespace, keeps everything else, including
 `<script>`/`<style>` content verbatim). Result: **normalized output is
 byte-identical** (`EQUAL: true`). The only differences in the _raw_ output
 are the `<head>` region's serialization style (React's
@@ -126,7 +127,8 @@ one-off page implementations apart.
 ### Equivalence evidence
 
 Every page every generator produces was compared before and after, against
-the real source tree, with `__tests__/helpers/normalize-html.ts`:
+the real source tree, with `__tests__/helpers/normalize-html.ts` (since
+deleted — see the note above):
 `index.html`, `editor.html`, `fork-fixes.html`, the seven `diagrams/*.html`,
 the twelve `blog/*.html`, plus `sitemap.xml`, `blog/feed.xml`, and both
 copied asset files. **All 27 artifacts matched** — the five non-HTML ones
