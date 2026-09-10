@@ -149,7 +149,12 @@ export function ForkFixesPage({
         <style>{css}</style>
       </head>
       <body>
-        <NavIsland active="forkFixes" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+        <NavIsland
+          sticky
+          active="forkFixes"
+          homeHref={HOME_HREF}
+          hrefs={NAV_HREFS}
+        />
 
         {/*
           Plain, inert hydration container -- see dashboard-app.tsx's

@@ -1,5 +1,5 @@
 /**
- * Golden DOM tests for the five site-generator pages #589 moved from
+ * RTL coverage for the five site-generator pages #589 moved from
  * template-literal HTML to React: index.ts, editor.ts, fork-fixes.ts,
  * pages.ts, and blog.ts.
  *
@@ -9,23 +9,24 @@
  * generator output — every page each generator produces (index.html,
  * editor.html, fork-fixes.html, the seven diagrams/*.html, the twelve
  * blog/*.html, plus sitemap.xml and blog/feed.xml), run before and after
- * the change against the real source tree and compared with
- * helpers/normalize-html.ts. That run is recorded in
- * docs/decisions/react-site-migration-plan.md; it is a one-time check, not
- * a permanent test, for the same reason `dashboard-equivalence.test.ts`
- * gave: index.html and editor.html each embed a ~1.6 MB minified browser
- * bundle, and fork-fixes/diagram pages embed freshly rendered SVG, so a
- * whole-page fixture would be enormous and invalidated by any unrelated
- * `src/**` edit.
+ * the change against the real source tree and DOM-normalised. That run is
+ * recorded in docs/decisions/react-site-migration-plan.md; it was a
+ * one-time check, not a permanent test, for the same reason
+ * `dashboard-equivalence.test.ts` gave: index.html and editor.html each
+ * embed a ~1.6 MB minified browser bundle, and fork-fixes/diagram pages
+ * embed freshly rendered SVG, so a whole-page fixture would be enormous and
+ * invalidated by any unrelated `src/**` edit.
  *
  * This file is the permanent half: each page is rendered over small
- * fixture inputs that exercise its branches, DOM-normalised, and compared
- * against a checked-in golden. An intentional markup change updates the
- * goldens with `pnpm exec vitest -u`; an unintentional one fails here.
- *
- * The goldens are stored normalised rather than raw so they ignore exactly
- * what normalize-html.ts ignores — attribute order and quoting, whitespace
- * between elements, comments — and stay readable one node per line.
+ * fixture inputs that exercise its branches and asserted against with
+ * `@testing-library/react`'s semantic queries (`getByRole`, `getByText`,
+ * ...) rather than a whole-document string/snapshot comparison. Earlier
+ * revisions of this file instead pinned each page's rendered output as a
+ * DOM-normalised, checked-in golden text file — zombie-mermaid#828 (the
+ * final cleanup in the #797/#815 epic) finished converting every remaining
+ * block to RTL assertions and deleted that now-unused fixture
+ * infrastructure (`__tests__/helpers/normalize-html.ts`,
+ * `__tests__/__fixtures__/*.normalized.txt`).
  */
 import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
@@ -71,11 +72,12 @@ describe('index.ts → index.html', () => {
    * hydrates `IndexPage` itself -- it's rendered once, server-side, to a
    * complete `<html>` document (see `demo/render-html.ts`'s own doc
    * comment). Parsing that string with a fresh `jsdom` `Document` (the same
-   * technique `helpers/normalize-html.ts` already uses) rather than
-   * mounting via `@testing-library/react`'s `render()` avoids nesting a
-   * second `<html>/<head>/<body>` inside the RTL container `render()`
-   * appends to *this test file's own* `document.body` -- `IndexPage`'s
-   * output already *is* a full document, not a fragment to mount into one.
+   * approach `withinRenderedPage()` below uses for the other pages in this
+   * file) rather than mounting via `@testing-library/react`'s `render()`
+   * avoids nesting a second `<html>/<head>/<body>` inside the RTL container
+   * `render()` appends to *this test file's own* `document.body` --
+   * `IndexPage`'s output already *is* a full document, not a fragment to
+   * mount into one.
    */
   function renderIndexPageDocument(): Document {
     const html = renderHtmlDocument(
@@ -252,27 +254,58 @@ describe('index.ts → index.html', () => {
     ).toHaveLength(1)
   })
 
-  it('renders the six feature-grid cards', () => {
+  it('renders "Why This Fork Exists" with the new-to-this-fork cards', () => {
     const document = renderIndexPageDocument()
     const body = within(document.body)
 
     expect(
       body.getByRole('heading', {
         level: 2,
-        name: 'Six nodes, one rendering engine.',
+        name: 'What zombie-mermaid adds on top.',
       }),
     ).toBeInTheDocument()
     for (const label of [
-      'Dual output',
-      '15 built-in themes',
-      'Full Shiki compatibility',
-      'Mono mode',
-      'Zero DOM dependencies',
-      'Synchronous rendering',
+      'A real CLI binary',
+      'mergeEdges',
+      'Real bugs, actually fixed',
     ]) {
       expect(
         body.getByRole('heading', { level: 3, name: label }),
       ).toBeInTheDocument()
+    }
+    expect(
+      body.getByRole('link', { name: 'See every fix, before and after →' }),
+    ).toHaveAttribute('href', 'fork-fixes.html')
+  })
+
+  it('renders the three feature pillars', () => {
+    const document = renderIndexPageDocument()
+    const body = within(document.body)
+
+    expect(
+      body.getByRole('heading', {
+        level: 2,
+        name: 'Three ways this stays out of your way.',
+      }),
+    ).toBeInTheDocument()
+    for (const label of [
+      'Output flexibility',
+      'Drop-in architecture',
+      'Proven at scale',
+    ]) {
+      expect(
+        body.getByRole('heading', { level: 3, name: label }),
+      ).toBeInTheDocument()
+    }
+    for (const label of [
+      'Dual output.',
+      'Mono mode.',
+      'Zero DOM dependencies.',
+      'Synchronous rendering.',
+      'Ultra-fast.',
+      'CI-enforced accessibility.',
+    ]) {
+      expect(body.getByText(label)).toBeInTheDocument()
     }
   })
 
@@ -585,9 +618,9 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
 
   /**
    * Renders the full document exactly as fork-fixes.ts's real `generate()`
-   * does, then parses it with `jsdom` (the same tool
-   * helpers/normalize-html.ts already uses, for the same reason: RTL/
-   * jest-dom's matchers key off each element's own `ownerDocument`, so a
+   * does, then parses it with `jsdom` (the same tool `withinRenderedPage()`
+   * below uses, for the same reason: RTL/jest-dom's matchers key off each
+   * element's own `ownerDocument`, so a
    * standalone `JSDOM` instance queries and asserts correctly without
    * opting this whole file into `@vitest-environment jsdom` just for this
    * one describe block).
@@ -715,8 +748,8 @@ describe('fork-fixes.ts → fork-fixes.html', () => {
  * React's DOM-nesting validation warns about) and returns
  * `@testing-library/react`'s `within(...)` scoped to that document's body,
  * so the RTL query helpers (`getByRole`, `getByText`, ...) work against the
- * real generator output the same way `helpers/normalize-html.ts` already
- * parses it for the other (still-golden) blocks in this file.
+ * real generator output the same way every describe block in this file
+ * does.
  */
 function withinRenderedPage(html: string) {
   const { document } = new JSDOM(html).window

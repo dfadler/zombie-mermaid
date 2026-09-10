@@ -253,6 +253,54 @@ export function SyncRenderIcon(props: IconProps) {
   )
 }
 
+/**
+ * Speed — a stopwatch, for the "Ultra-fast" pillar on the home page's
+ * feature-pillars section.
+ *
+ * New for that redesign, not part of the original design canvas.
+ */
+export function SpeedIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--violet">
+      <path d="M9 2h6" />
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l3 2" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Accessibility — a shield with a checkmark, for the "CI-enforced
+ * accessibility" pillar on the home page's feature-pillars section.
+ *
+ * New for that redesign, not part of the original design canvas.
+ */
+export function AccessibilityIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--cyan">
+      <path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6Z" />
+      <path d="M9 12l2 2 4-4" />
+    </StrokeIcon>
+  )
+}
+
+/**
+ * Merge edges — two branches joining a shared trunk, for the `mergeEdges`
+ * card in the home page's "Why This Fork Exists" section.
+ *
+ * New for that redesign, not part of the original design canvas.
+ */
+export function MergeEdgesIcon(props: IconProps) {
+  return (
+    <StrokeIcon {...props} defaultColor="--green">
+      <path d="M6 4v6a4 4 0 0 0 4 4h4" />
+      <path d="M18 4v6a4 4 0 0 0-4 4v4" />
+      <circle cx="6" cy="4" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="4" r="1.5" fill="currentColor" stroke="none" />
+    </StrokeIcon>
+  )
+}
+
 /* -----------------------------------------------------------------
  * The six diagram-type icons — animated (#597)
  * ----------------------------------------------------------------- */
@@ -954,6 +1002,9 @@ export const ICONS = {
   monoMode: MonoModeIcon,
   zeroDom: ZeroDomIcon,
   syncRender: SyncRenderIcon,
+  speed: SpeedIcon,
+  accessibility: AccessibilityIcon,
+  mergeEdges: MergeEdgesIcon,
   zoomIn: ZoomInIcon,
   zoomOut: ZoomOutIcon,
   fitToView: FitToViewIcon,
@@ -985,16 +1036,30 @@ export const ICONS = {
 export type IconName = keyof typeof ICONS
 
 /**
- * The six features the home page's grid enumerates, in canvas order, each
- * paired with the accent the canvas gives it.
+ * The six facts the home page's "Built for how diagrams get used now"
+ * pillars enumerate, grouped in pairs by {@link PILLAR_GROUPS} (index-app.tsx)
+ * into Output flexibility / Drop-in architecture / Proven at scale.
+ *
+ * Theming (15 built-in themes, Shiki compatibility) deliberately isn't
+ * here: the home page's live Theme Showcase, directly above this section,
+ * already proves it — restating it in a static card would just repeat what
+ * the visitor already saw work. "Ultra-fast" and "CI-enforced
+ * accessibility" take its place — both real README features
+ * (`Ultra-fast — Renders 100+ diagrams in under 500ms`, `Accessible SVG
+ * output, CI-enforced`) that were previously true of this fork but never
+ * shown anywhere on the home page.
  */
 export const FEATURE_ICONS = [
   { name: 'dualOutput', accent: '--blue', label: 'Dual output' },
-  { name: 'themes', accent: '--violet', label: '15 built-in themes' },
-  { name: 'shiki', accent: '--cyan', label: 'Full Shiki compatibility' },
   { name: 'monoMode', accent: '--amber', label: 'Mono mode' },
   { name: 'zeroDom', accent: '--pink', label: 'Zero DOM dependencies' },
   { name: 'syncRender', accent: '--green', label: 'Synchronous rendering' },
+  { name: 'speed', accent: '--violet', label: 'Ultra-fast' },
+  {
+    name: 'accessibility',
+    accent: '--cyan',
+    label: 'CI-enforced accessibility',
+  },
 ] as const satisfies readonly {
   name: IconName
   accent: ColorToken

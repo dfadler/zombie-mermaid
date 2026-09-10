@@ -3,9 +3,11 @@
  * RTL coverage for `DiagramTypePage`/`DiagramHubPage`
  * (demo/components/diagram-page.tsx) — replaces the three
  * `toMatchFileSnapshot` goldens `__tests__/site-equivalence.test.ts` used to
- * guard (zombie-mermaid#821): `diagram-type-page.normalized.txt` (single
- * orientation), `diagram-type-page-orientations.normalized.txt` (wide/
- * narrow variant), and `diagram-hub-page.normalized.txt` (the hub page).
+ * guard (zombie-mermaid#821), since deleted along with the rest of the
+ * golden-fixture infrastructure in zombie-mermaid#828:
+ * `diagram-type-page.normalized.txt` (single orientation),
+ * `diagram-type-page-orientations.normalized.txt` (wide/narrow variant),
+ * and `diagram-hub-page.normalized.txt` (the hub page).
  *
  * Per docs/testing-conventions.md, a semantic RTL query is the default over
  * a literal/snapshot pin. These pages have no source of truth outside their

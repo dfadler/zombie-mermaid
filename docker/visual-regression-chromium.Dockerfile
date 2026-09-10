@@ -1,16 +1,36 @@
-# Chromium-only Playwright image, built to answer zombie-mermaid#737: does a
-# custom image with only the browser this repo actually runs pull measurably
-# faster from GHCR than the pinned multi-browser
-# `mcr.microsoft.com/playwright:v1.62.1-jammy` image the real
-# `visual-regression` CI job uses (docker/visual-regression.Dockerfile,
-# consumed by `.github/workflows/ci.yml`'s `container:` key)?
+# Chromium-only Playwright image for the real `visual-regression` CI job in
+# `.github/workflows/ci.yml`'s `container:` key.
 #
-# This is an ARTIFACT FOR MEASUREMENT, not a drop-in replacement adopted by
-# this PR. See docs/research/737-chromium-only-image-pull-timing.md for the
-# actual measured pull-time delta and the resulting recommendation. Per #737's
-# own scope, this file and the `visual-regression-chromium.yml` workflow that
-# builds/pushes it exist so the measurement could be taken at all - the real
-# `visual-regression` job in `.github/workflows/ci.yml` is untouched.
+# Built to answer zombie-mermaid#737: does a custom image with only the
+# browser this repo actually runs (`playwright.config.ts` only defines a
+# `chromium` project) pull measurably faster from GHCR than the pinned
+# multi-browser `mcr.microsoft.com/playwright:v1.62.1-jammy` image
+# (docker/visual-regression.Dockerfile) that job used before? Yes - #737
+# measured ~36% faster / ~43s saved per 4-shard run (see
+# docs/research/737-chromium-only-image-pull-timing.md), and #868 adopted it:
+# `ci.yml`'s `visual-regression` job now pins the digest this file builds
+# instead of the stock multi-browser tag. #868 also re-ran the full suite
+# against this exact image (281/281 passed against the unchanged committed
+# baselines - see `ci.yml`'s `visual-regression` job comment for the run
+# link) before switching.
+#
+# Built and published by
+# `.github/workflows/visual-regression-chromium-image.yml`, which is now
+# `ci.yml`'s real dependency for this image (not just a measurement
+# throwaway) - re-dispatch that workflow to publish a new build after
+# editing this file, then re-derive and update the digest `ci.yml` pins (see
+# that workflow's and job's own comments).
+#
+# KEEPING THE BASE TAG IN SYNC WITH docker/visual-regression.Dockerfile
+#
+# This file's `ubuntu:22.04` base and docker/visual-regression.Dockerfile's
+# `mcr.microsoft.com/playwright:v1.62.1-jammy` base are two independent pins
+# that both encode "v1.62.1, jammy" and must move together: bumping one
+# without the other reintroduces the exact Chromium/OS-library skew both
+# files exist to prevent. If you bump either base tag, bump the other file's
+# base tag (and this file's `playwright@1.62.1` install pin below) to match
+# in the same change - docker/visual-regression.Dockerfile's own FROM
+# comment carries the same cross-reference back to this file.
 #
 # WHY THIS CAN'T JUST EXTEND docker/visual-regression.Dockerfile
 #
@@ -43,15 +63,16 @@
 #     -t zombie-mermaid/playwright-visual-chromium:v1.62.1-jammy \
 #     -f docker/visual-regression-chromium.Dockerfile .
 #
-# Built and pushed to GHCR by .github/workflows/visual-regression-chromium.yml
-# (workflow_dispatch), tagged `visual-regression-chromium-only` so it can
-# never collide with or be mistaken for the real multi-browser image tag.
+# Built and pushed to GHCR by
+# .github/workflows/visual-regression-chromium-image.yml (workflow_dispatch),
+# tagged `visual-regression-chromium-only` so it can never collide with or be
+# mistaken for the real multi-browser image tag.
 FROM ubuntu:22.04@sha256:281c5745f657873d78e5531fc5ba8575f46ab7769b94550ac99543f122679986
 
 # Linked so the built image shows up under this repo's GHCR packages instead
 # of as an anonymous, unattributed package.
 LABEL org.opencontainers.image.source="https://github.com/dfadler/zombie-mermaid"
-LABEL org.opencontainers.image.description="Chromium-only Playwright image for measuring GHCR pull time (zombie-mermaid#737) - not used by the real visual-regression CI job"
+LABEL org.opencontainers.image.description="Chromium-only Playwright image for the real visual-regression CI job (zombie-mermaid#868, a #737 follow-up)"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -90,10 +111,10 @@ RUN npm install -g playwright@1.62.1 \
 # generic `monospace`/`sans-serif`/`serif` CSS families the same way real CI's
 # `ubuntu-latest` runner does, and the ASCII/terminal suite's box-drawing grid
 # is sensitive to exactly that resolution (docs/research/614-docker-font-parity.md).
-# Kept here even though this image is measurement-only, not suite-verified,
-# so that IF a real visual-regression trial run against this image is ever
-# attempted, it starts from the same font baseline as the image it's being
-# compared to rather than a silently different one.
+# This is what makes the real `visual-regression` job's own runtime
+# "Verify generic font families resolve to DejaVu" step (ci.yml) pass without
+# a runtime `apt-get install` step: the fix (and the assertion below) already
+# happened at build time, in this image.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/* \

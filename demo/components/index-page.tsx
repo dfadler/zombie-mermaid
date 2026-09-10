@@ -135,6 +135,22 @@ const THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT = 400
  * ----------------------------------------------------------------- */
 
 /**
+ * A hero-only stacking breakpoint, wider than {@link MEDIA}.tablet's 900px
+ * — a deliberate deviation from the canvas, which only ever defines
+ * a desktop (1440px) and a mobile (390px) artboard with nothing in between.
+ * `.hero-row`'s two flex children (`hero-copy` at 500px + `hero-visual` at
+ * 700px, plus the row's 48px gap) need ~1250px of content width before
+ * neither has to shrink, so leaving the row layout active down to 900px
+ * squeezes both the copy and the diagram together across the entire
+ * 900-1400px band — covering most real laptop viewport widths (1024, 1280,
+ * 1366). Stacking at 1200px instead keeps the side-by-side row for
+ * genuinely wide screens and gives everything narrower the same spacious
+ * full-width column treatment the tablet breakpoint already uses below it,
+ * rather than a cramped in-between state.
+ */
+const HERO_STACK_MEDIA = '@media (max-width: 1200px)'
+
+/**
  * Keyframes for the six per-diagram-type gallery animations plus the
  * shared "marching ants" edge animation, transcribed from Main.dc.html's
  * helmet style block — each keyed to what that diagram type actually shows
@@ -349,14 +365,16 @@ ${MEDIA.reducedMotion} {
   .theme-showcase-mesh, .theme-showcase-aurora, .theme-showcase-glow { animation: none !important; }
 }
 
-${MEDIA.tablet} {
+${HERO_STACK_MEDIA} {
   .hero-row { flex-direction: column !important; align-items: flex-start !important; padding: 64px 24px 72px 24px !important; gap: 40px !important; }
   .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }
   .hero-copy p { max-width: 100% !important; }
   .hero-visual { flex: 1 1 auto !important; width: 100% !important; max-width: 560px; }
-  .feature-connectors { display: none !important; }
-  .feature-grid-wrap { height: auto !important; }
-  .feature-grid { grid-template-columns: 1fr 1fr !important; grid-template-rows: none !important; }
+}
+
+${MEDIA.tablet} {
+  .why-fork-grid { grid-template-columns: 1fr !important; }
+  .pillar-grid { grid-template-columns: 1fr !important; }
   .cli-mcp-row { flex-direction: column !important; }
   .gallery-grid { grid-template-columns: repeat(3, 1fr) !important; }
   .proof-grid { grid-template-columns: 1fr !important; }
@@ -366,7 +384,6 @@ ${MEDIA.tablet} {
 ${MEDIA.mobile} {
   .hero-row { padding: 48px 20px 56px 20px !important; }
   .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
-  .feature-grid { grid-template-columns: 1fr !important; }
   .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
   .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }

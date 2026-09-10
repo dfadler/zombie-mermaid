@@ -268,14 +268,14 @@ describe('canvas paths', () => {
 })
 
 describe('FEATURE_ICONS', () => {
-  it('lists the six features in canvas order', () => {
+  it('lists the six pillar facts in pillar order', () => {
     expect(FEATURE_ICONS.map((f) => f.name)).toEqual([
       'dualOutput',
-      'themes',
-      'shiki',
       'monoMode',
       'zeroDom',
       'syncRender',
+      'speed',
+      'accessibility',
     ])
   })
 

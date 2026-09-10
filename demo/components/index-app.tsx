@@ -41,7 +41,8 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
 import {
   CheckIcon,
@@ -49,6 +50,7 @@ import {
   ICONS,
   LockIcon,
   LogoMark,
+  MergeEdgesIcon,
   TerminalIcon,
   FEATURE_ICONS,
 } from './icons.tsx'
@@ -76,18 +78,31 @@ const GALLERY_TYPES = [
 ] as const
 
 /**
- * Feature-grid copy, paired with {@link FEATURE_ICONS}'s six entries by
- * index. Paraphrases the README's own "Features" bullets (dual output, 15
- * built-in themes, full Shiki compatibility, mono mode, zero DOM
- * dependencies, synchronous rendering) rather than inventing marketing copy.
+ * Feature-pillar copy, paired with {@link FEATURE_ICONS}'s six entries by
+ * index and grouped by {@link PILLAR_GROUPS}. Paraphrases the README's own
+ * "Features" bullets (dual output, mono mode, zero DOM dependencies,
+ * synchronous rendering, ultra-fast, CI-enforced accessible SVG output)
+ * rather than inventing marketing copy — see {@link FEATURE_ICONS}'s own
+ * doc comment (icons.tsx) for why theming isn't among them.
  */
 const FEATURE_COPY = [
   'SVG for rich UIs, ASCII/Unicode for terminals — mermaid.js itself has no real terminal story.',
-  'Live theme switching via CSS custom properties — no re-render needed, ever.',
-  'Reuse the same VS Code themes your editor already renders code with.',
   'Full diagrams rendered from just two colors, when that’s all you’ve got.',
   'Pure TypeScript. Works in the browser, on the server, or anywhere else.',
   'No async, no flash of unstyled diagram — drops straight into React’s useMemo().',
+  'Renders 100+ diagrams in under 500ms — fast enough for every diagram in a CI run.',
+  'Every diagram type ships a role-correct, nameable SVG root — checked in CI, not just claimed.',
+] as const
+
+/**
+ * Groups {@link FEATURE_ICONS}/{@link FEATURE_COPY}'s six entries into the
+ * three pillars {@link FeaturePillars} renders, two facts each, in the same
+ * order as those two arrays (indices 0-1, 2-3, 4-5).
+ */
+const PILLAR_GROUPS = [
+  { label: 'Output flexibility' },
+  { label: 'Drop-in architecture' },
+  { label: 'Proven at scale' },
 ] as const
 
 /**
@@ -136,12 +151,7 @@ export const INDEX_MAIN_ROOT_ID = 'index-main-root'
 
 function HeroVisual() {
   return (
-    <svg
-      viewBox="0 0 700 460"
-      width="100%"
-      height="auto"
-      style={{ display: 'block' }}
-    >
+    <svg viewBox="0 0 700 460" width="100%" style={{ display: 'block' }}>
       <rect
         x="20"
         y="50"
@@ -375,6 +385,8 @@ export function IndexHeroApp() {
         justifyContent: 'space-between',
         gap: `${SPACE['7xl']}px`,
         padding: `${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px`,
+        maxWidth: `${LAYOUT.maxWidth}px`,
+        margin: '0 auto',
         position: 'relative',
         zIndex: 1,
       }}
@@ -451,29 +463,215 @@ export function IndexHeroApp() {
 }
 
 /* -----------------------------------------------------------------
- * Theme showcase
+ * Why this fork exists
  * ----------------------------------------------------------------- */
 
 /**
- * The showcase's build-time diagram, rendered once in
- * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours (the client script
- * re-themes it live from there — see this file's header comment). Thrown,
- * not a silent fallback: this only ever runs at `index.ts` generation time
- * under Node, so a typo'd theme key should fail the build loudly rather
- * than ship a broken page.
+ * "Why This Fork Exists" — the home page's provenance section, named after
+ * the README section it mirrors. Deliberately weighted toward
+ * zombie-mermaid's own contribution rather than the mermaid.js/beautiful-
+ * mermaid history: beautiful-mermaid already solved mermaid.js's
+ * aesthetics/theming/terminal-output/dependency problems (see
+ * `docs/migrating-from-beautiful-mermaid.md`'s "What is drop-in" section),
+ * so restating that in full here would just repeat {@link FeaturePillars}
+ * below. What's actually new to this fork — a real CLI binary and the
+ * `mergeEdges` render option, both called out as "new to this fork" in
+ * that same doc — gets the space instead, plus a link to the fork-fixes
+ * page's real, documented before/after bug fixes rather than re-deriving a
+ * bug count here (that number already has a home in {@link ProofSection}'s
+ * teaser card below, alongside the fork's actively-maintained-vs-stalled
+ * numbers this section deliberately doesn't restate either).
  */
-function FeatureGrid() {
+function WhyForkExistsSection() {
   return (
     <div
       className="section-px"
       style={{
-        padding: `${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px`,
+        padding: `${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
       }}
     >
       <div
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: '0 auto 72px auto',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <SectionEyebrow>
+          The problem with default mermaid rendering
+        </SectionEyebrow>
+        <p
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12.5px',
+            color: colorVar('--text-faint'),
+          }}
+        >
+          mermaid.js → beautiful-mermaid →{' '}
+          <span style={{ color: colorVar('--text') }}>zombie-mermaid</span>
+        </p>
+        <h2 style={{ fontSize: '36px', letterSpacing: LETTER_SPACING.heading }}>
+          What zombie-mermaid adds on top.
+        </h2>
+        <p
+          style={{
+            maxWidth: '760px',
+            fontSize: '15.5px',
+            lineHeight: 1.5,
+            color: colorVar('--text-dim'),
+          }}
+        >
+          beautiful-mermaid already solved mermaid.js's biggest problems —
+          aesthetics, theming, terminal output, dependencies. This fork keeps
+          all of that, and adds three things beautiful-mermaid never had.
+        </p>
+      </div>
+
+      <div
+        className="why-fork-grid"
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `${SPACE['3xl']}px auto 0 auto`,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: `${SPACE['3xl']}px`,
+        }}
+      >
+        <Card
+          accent="amber"
+          padding={28}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE.lg}px`,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.sm}px`,
+            }}
+          >
+            <TerminalIcon size={28} />
+            <h3 style={{ fontSize: '19px' }}>A real CLI binary</h3>
+          </div>
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              color: colorVar('--text-dim'),
+              lineHeight: 1.5,
+            }}
+          >
+            beautiful-mermaid never shipped one. Pipe Mermaid source in, get SVG
+            or ASCII out, straight from the command line.
+          </p>
+        </Card>
+
+        <Card
+          accent="green"
+          padding={28}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE.lg}px`,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.sm}px`,
+            }}
+          >
+            <MergeEdgesIcon size={28} />
+            <h3 style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}>
+              mergeEdges
+            </h3>
+          </div>
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              color: colorVar('--text-dim'),
+              lineHeight: 1.5,
+            }}
+          >
+            No beautiful-mermaid equivalent. Bundles fan-out/fan-in edges into a
+            shared trunk instead of a tangle of parallel lines.
+          </p>
+        </Card>
+
+        <Card
+          accent="cyan"
+          padding={28}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE.lg}px`,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.sm}px`,
+            }}
+          >
+            <ChecklistIcon size={28} />
+            <h3 style={{ fontSize: '19px' }}>Real bugs, actually fixed</h3>
+          </div>
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              color: colorVar('--text-dim'),
+              lineHeight: 1.5,
+            }}
+          >
+            Mermaid syntax beautiful-mermaid shipped with — dropped edges,
+            corrupted labels, stray nodes — found and fixed, with the
+            before/after code to prove it.
+          </p>
+        </Card>
+      </div>
+
+      <div style={{ textAlign: 'center', marginTop: `${SPACE['3xl']}px` }}>
+        <a
+          href="fork-fixes.html"
+          style={{ fontSize: '14.5px', fontWeight: FONT_WEIGHT.semibold }}
+        >
+          See every fix, before and after →
+        </a>
+      </div>
+    </div>
+  )
+}
+
+/* -----------------------------------------------------------------
+ * Feature pillars
+ * ----------------------------------------------------------------- */
+
+/**
+ * "Built for how diagrams get used now" — three named pillars (Output
+ * flexibility / Drop-in architecture / Proven at scale), two facts each,
+ * from {@link FEATURE_ICONS}/{@link FEATURE_COPY}/{@link PILLAR_GROUPS}.
+ * Theming is deliberately absent — see {@link FEATURE_ICONS}'s doc comment
+ * (icons.tsx) for why.
+ */
+function FeaturePillars() {
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
           display: 'flex',
           flexDirection: 'column',
           gap: `${SPACE.xl}px`,
@@ -481,107 +679,99 @@ function FeatureGrid() {
       >
         <SectionEyebrow>Built for how diagrams get used now</SectionEyebrow>
         <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
-          Six nodes, one rendering engine.
+          Three ways this stays out of your way.
         </h2>
+        <p
+          style={{
+            maxWidth: '640px',
+            fontSize: '15px',
+            color: colorVar('--text-faint'),
+          }}
+        >
+          (Theming and the fork's backstory are covered above — this is what you
+          actually build with.)
+        </p>
       </div>
 
       <div
-        className="feature-grid-wrap"
+        className="pillar-grid"
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: '0 auto',
-          position: 'relative',
-          height: '464px',
+          margin: `${SPACE['3xl']}px auto 0 auto`,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: `${SPACE['3xl']}px`,
         }}
       >
-        <svg
-          className="feature-connectors"
-          viewBox="0 0 1280 464"
-          width="1280"
-          height="464"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            zIndex: 0,
-            maxWidth: '100%',
-          }}
-        >
-          <path
-            d="M197 100 L639 100"
-            stroke={colorVar('--blue')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M639 100 L1081 100"
-            stroke={colorVar('--violet')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M1081 100 L1081 364"
-            stroke={colorVar('--cyan')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M1081 364 L639 364"
-            stroke={colorVar('--pink')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M639 364 L197 364"
-            stroke={colorVar('--amber')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-        </svg>
-
-        <div
-          className="feature-grid"
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gridTemplateRows: '200px 200px',
-            gap: '64px 48px',
-          }}
-        >
-          {FEATURE_ICONS.map((feature, i) => {
-            const FeatureIcon = ICONS[feature.name]
-            return (
-              <Card
-                key={feature.name}
-                padding={28}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: `${SPACE.lg}px`,
-                }}
-              >
-                <FeatureIcon size={28} />
-                <h3 style={{ fontSize: '18px' }}>{feature.label}</h3>
-                <p
-                  style={{
-                    fontSize: `${FONT_SIZE.body}px`,
-                    color: colorVar('--text-dim'),
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {FEATURE_COPY[i]}
-                </p>
-              </Card>
-            )
-          })}
-        </div>
+        {PILLAR_GROUPS.map((group, groupIndex) => {
+          const first = FEATURE_ICONS[groupIndex * 2]
+          const second = FEATURE_ICONS[groupIndex * 2 + 1]
+          // Invariant: PILLAR_GROUPS has exactly 3 entries and FEATURE_ICONS
+          // exactly 6, so every group's pair is always in bounds — this
+          // guard exists only to satisfy strict indexed-access typing.
+          if (!first || !second) return null
+          const firstCopy = FEATURE_COPY[groupIndex * 2]
+          const secondCopy = FEATURE_COPY[groupIndex * 2 + 1]
+          if (firstCopy === undefined || secondCopy === undefined) return null
+          const items = [
+            { feature: first, copy: firstCopy },
+            { feature: second, copy: secondCopy },
+          ]
+          return (
+            <Card
+              key={group.label}
+              padding={24}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${SPACE.lg}px`,
+              }}
+            >
+              <h3 style={{ fontSize: '22px' }}>{group.label}</h3>
+              {items.map(({ feature, copy }, itemIndex) => {
+                const ItemIcon = ICONS[feature.name]
+                return (
+                  <div
+                    key={feature.name}
+                    style={{
+                      display: 'flex',
+                      gap: `${SPACE.sm}px`,
+                      alignItems: 'flex-start',
+                      ...(itemIndex === 0
+                        ? { marginTop: `${SPACE.xs}px` }
+                        : {
+                            paddingTop: `${SPACE.md}px`,
+                            borderTop: `1px solid ${colorVar('--border')}`,
+                          }),
+                    }}
+                  >
+                    <div style={{ flexShrink: 0 }}>
+                      <ItemIcon size={20} />
+                    </div>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: `${FONT_SIZE.body}px`,
+                        color: colorVar('--text-dim'),
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <strong
+                        style={{
+                          color: colorVar('--text'),
+                          fontWeight: FONT_WEIGHT.semibold,
+                        }}
+                      >
+                        {feature.label}.
+                      </strong>{' '}
+                      {copy}
+                    </p>
+                  </div>
+                )
+              })}
+            </Card>
+          )
+        })}
       </div>
     </div>
   )
@@ -1330,42 +1520,260 @@ function DiagramGalleryTeaser() {
  * Proof / maintenance
  * ----------------------------------------------------------------- */
 
+/**
+ * How many full 0-9 laps a digit reel spins through before landing on its
+ * real digit. More laps means more travel distance at the same {@link
+ * SLOT_DURATION_MS} — i.e. a faster-looking spin over the same total time,
+ * not a longer one; {@link SLOT_DURATION_MS} is what controls how long the
+ * animation actually takes.
+ */
+const SLOT_LOOPS = 1
+
+/** How long each digit reel's landing scroll takes, once it starts. */
+const SLOT_DURATION_MS = 4650
+
+/**
+ * Delay between each digit position's landing scroll starting, so the
+ * reels settle left-to-right in sequence instead of all snapping into
+ * place at once — the classic slot-machine "clunk, clunk, clunk" rhythm
+ * rather than one flat "clunk."
+ */
+const SLOT_STAGGER_MS = 90
+
+const SLOT_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)'
+
+/**
+ * A single digit reel's rows: 0-9 repeated {@link SLOT_LOOPS} times, then
+ * continuing up through `digit` one more time — so the *last* row is
+ * always the real digit, whatever it is. Scrolling this strip's bottom row
+ * into view (see {@link SlotDigit}) is what makes it "land" on the correct
+ * number.
+ */
+function buildReelRows(digit: number): number[] {
+  const length = SLOT_LOOPS * 10 + digit + 1
+  return Array.from({ length }, (_, i) => i % 10)
+}
+
+/**
+ * Standard visually-hidden-but-accessible technique (off-screen via a 1px
+ * clipped box, not `display: none`/`visibility: hidden`, which screen
+ * readers skip entirely) — see {@link SlotNumber}'s doc comment for why
+ * this needs to exist alongside the decorative reel at all.
+ */
+const visuallyHiddenStyle = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+} as const
+
+/**
+ * One digit's vertical reel: a tall stack of rows (see {@link
+ * buildReelRows}) inside a one-row-tall `overflow: hidden` window, scrolled
+ * via `transform: translateY` so only the bottom row (the real digit) is
+ * ever visible at rest. `aria-hidden` — the decoy rows above it would
+ * otherwise read out to a screen reader as a garbled run of digits (e.g.
+ * "0123423" for a reel landing on "3"); {@link SlotNumber} renders the real
+ * value as plain, visually-hidden text alongside this reel for that reason.
+ *
+ * The spin is a two-step style flip, not a single `useState` update:
+ * `active` flipping true first snaps the strip to its *top* row (digit 0)
+ * with no transition, then — two animation frames later, so the browser has
+ * actually painted that snap and has something to transition *from* — a
+ * second update applies the transition and scrolls it down to the real
+ * digit's row. A single synchronous update instead risks the browser
+ * coalescing both style changes into one paint and never rendering the
+ * transition at all — the standard "force a paint, then animate" fix for
+ * restarting a CSS transition (one rAF is occasionally still not enough for
+ * the paint to have landed by the time it fires; two is the reliable form).
+ */
+function SlotDigit({
+  digit,
+  active,
+  delayMs,
+}: {
+  digit: number
+  active: boolean
+  delayMs: number
+}) {
+  const rows = buildReelRows(digit)
+  const restEm = -(rows.length - 1)
+  const restStyle = {
+    transform: `translateY(${restEm}em)`,
+    transition: 'none',
+  }
+  const [style, setStyle] = useState<{ transform: string; transition: string }>(
+    restStyle,
+  )
+
+  useEffect(() => {
+    if (!active) return
+    if (typeof requestAnimationFrame === 'undefined') return
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    ) {
+      return
+    }
+
+    setStyle({ transform: 'translateY(0em)', transition: 'none' })
+    let raf1 = 0
+    let raf2 = 0
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setStyle({
+          transform: `translateY(${restEm}em)`,
+          transition: `transform ${SLOT_DURATION_MS}ms ${SLOT_EASING} ${delayMs}ms`,
+        })
+      })
+    })
+    return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+    }
+    // Deliberately keyed on `active` alone: `restEm`/`delayMs` are pure
+    // functions of this reel's own fixed `digit`/position, never change
+    // for a mounted instance, and re-running on their account would be a
+    // no-op anyway.
+  }, [active])
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-block',
+        overflow: 'hidden',
+        height: '1em',
+        lineHeight: 1,
+        verticalAlign: 'bottom',
+      }}
+    >
+      <span style={{ display: 'block', ...style }}>
+        {rows.map((row, i) => (
+          <span
+            key={i}
+            style={{ display: 'block', height: '1em', lineHeight: 1 }}
+          >
+            {row}
+          </span>
+        ))}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * A whole number rendered as one {@link SlotDigit} reel per digit, plus the
+ * real value as plain, visually-hidden text — so a screen reader, a
+ * copy-paste, or this page's own text search always gets "334", never the
+ * decorative reel's decoy rows or a mid-spin digit.
+ */
+function SlotNumber({ value, active }: { value: number; active: boolean }) {
+  const digits = String(value)
+    .split('')
+    .map((d) => Number(d))
+
+  return (
+    <span style={{ position: 'relative', fontVariantNumeric: 'tabular-nums' }}>
+      <span style={{ display: 'inline-flex' }}>
+        {digits.map((digit, i) => (
+          <SlotDigit
+            key={i}
+            digit={digit}
+            active={active}
+            delayMs={i * SLOT_STAGGER_MS}
+          />
+        ))}
+      </span>
+      <span style={visuallyHiddenStyle}>{value}</span>
+    </span>
+  )
+}
+
+/**
+ * True once the returned ref's element has scrolled into the viewport —
+ * flips once and never reverses (the same one-shot contract `demo/index-
+ * page-client.ts`'s theme-picker relocation uses for its own
+ * `IntersectionObserver`), so scrolling back past the section after the
+ * count-up has already played never re-triggers it. Stays `false` forever
+ * wherever `IntersectionObserver` isn't available — the same "silently
+ * does nothing, stays safe to run unconditionally" fallback that picker
+ * relocation uses for its own missing-element case — so a browser without
+ * it (or this component's own jsdom hydration test, which has no
+ * `IntersectionObserver` either) just keeps the static, already-correct
+ * server-rendered numbers instead of animating unprompted.
+ */
+function useInView<T extends HTMLElement>(): [RefObject<T | null>, boolean] {
+  const ref = useRef<T>(null)
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          setInView(true)
+          observer.disconnect()
+          return
+        }
+      },
+      { threshold: 0.3 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return [ref, inView]
+}
+
 /** One repo's stat row: days since last commit, merged PRs, open PRs. */
 function StatRow({
   ink,
   daysSinceCommit,
   mergedPRs,
   openPRs,
+  animate,
 }: {
   ink: string
   daysSinceCommit: number
   mergedPRs: number
   openPRs: number
+  /** Whether the slot-reel spin should be playing — see {@link SlotNumber}. */
+  animate: boolean
 }) {
+  const numberStyle = { fontSize: '36px', color: ink } as const
+
   return (
     <div
       className="stat-row"
       style={{ display: 'flex', justifyContent: 'space-between' }}
     >
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {daysSinceCommit} {daysSinceCommit === 1 ? 'day' : 'days'}
+        <p className="display" style={numberStyle}>
+          <SlotNumber value={daysSinceCommit} active={animate} />{' '}
+          {daysSinceCommit === 1 ? 'day' : 'days'}
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           since last commit
         </p>
       </div>
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {mergedPRs}
+        <p className="display" style={numberStyle}>
+          <SlotNumber value={mergedPRs} active={animate} />
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           merged PRs
         </p>
       </div>
       <div>
-        <p className="display" style={{ fontSize: '36px', color: ink }}>
-          {openPRs}
+        <p className="display" style={numberStyle}>
+          <SlotNumber value={openPRs} active={animate} />
         </p>
         <p style={{ fontSize: '13.5px', color: colorVar('--text-dim') }}>
           open PRs
@@ -1377,6 +1785,8 @@ function StatRow({
 
 /** Real fork-vs-upstream numbers, and a teaser linking to the full evidence. */
 function ProofSection() {
+  const [statsRef, statsInView] = useInView<HTMLDivElement>()
+
   return (
     <div
       id="fixes"
@@ -1414,6 +1824,7 @@ function ProofSection() {
 
       <div
         className="proof-grid"
+        ref={statsRef}
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
@@ -1441,7 +1852,11 @@ function ProofSection() {
           >
             zombie-mermaid (this fork)
           </p>
-          <StatRow ink="var(--green)" {...PROOF_SNAPSHOT.fork} />
+          <StatRow
+            ink="var(--green)"
+            animate={statsInView}
+            {...PROOF_SNAPSHOT.fork}
+          />
         </Card>
 
         <Card
@@ -1463,7 +1878,11 @@ function ProofSection() {
           >
             beautiful-mermaid (upstream)
           </p>
-          <StatRow ink="var(--text-faint)" {...PROOF_SNAPSHOT.upstream} />
+          <StatRow
+            ink="var(--text-faint)"
+            animate={statsInView}
+            {...PROOF_SNAPSHOT.upstream}
+          />
         </Card>
       </div>
 
@@ -1618,18 +2037,22 @@ function BlogTeaser() {
 }
 
 /**
- * Everything inside {@link INDEX_MAIN_ROOT_ID}'s hydration boundary: the
- * feature grid, CLI/MCP section, diagram gallery teaser, proof section,
- * and blog teaser — the same five components `index-page.tsx`'s
- * `IndexPage` used to render directly in `<main>`, in the same order. The
- * exact same function runs on both sides of hydration — see `dashboard-
- * app.tsx`'s {@link DashboardApp} doc comment for the general shape this
- * follows. No props: see this file's header comment for why.
+ * Everything inside {@link INDEX_MAIN_ROOT_ID}'s hydration boundary: why
+ * this fork exists, the feature pillars, the CLI/MCP section, diagram
+ * gallery teaser, proof section, and blog teaser — the same components
+ * `index-page.tsx`'s `IndexPage` used to render directly in `<main>`, in
+ * the same order (the feature grid became two sections,
+ * {@link WhyForkExistsSection} and {@link FeaturePillars}, rather than one
+ * flat six-card grid — see their doc comments for why). The exact same
+ * function runs on both sides of hydration — see `dashboard-app.tsx`'s
+ * {@link DashboardApp} doc comment for the general shape this follows. No
+ * props: see this file's header comment for why.
  */
 export function IndexMainApp() {
   return (
     <>
-      <FeatureGrid />
+      <WhyForkExistsSection />
+      <FeaturePillars />
       <CliMcpSection />
       <DiagramGalleryTeaser />
       <ProofSection />

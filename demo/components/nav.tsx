@@ -88,6 +88,7 @@ import {
   FONT_WEIGHT,
   LAYOUT,
   LETTER_SPACING,
+  LINE_HEIGHT,
   MEDIA,
   RADIUS,
   SPACE,
@@ -364,10 +365,63 @@ const INSTALL_CHECK_SIZE = 10
  * ----------------------------------------------------------------- */
 
 /**
- * The nav's responsive rules: the two breakpoint rules transcribed from the
- * artboards' shared `<helmet><style>` preamble, plus the mobile menu's own
- * rules appended after them (invented — see the module doc comment — so
- * kept visibly separate from the canvas-pinned block above).
+ * The nav's responsive rules: three hardening rules that make the whole
+ * `<Nav>` subtree render identically regardless of what the rest of the
+ * page does (or doesn't) provide, then the two breakpoint rules transcribed
+ * from the artboards' shared `<helmet><style>` preamble, plus the mobile
+ * menu's own rules appended after them (invented — see the module doc
+ * comment — so kept visibly separate from the canvas-pinned block above).
+ *
+ * `<Nav>` is meant to render pixel-identically no matter which page embeds
+ * it, but three of the properties its own markup leaves to inheritance —
+ * `box-sizing`, `.mono`/`.display`'s `font-family`, and `line-height` — are
+ * either never declared by tokens.tsx's `designBaseCss()` at all, or (for
+ * `.mono`/`.display`) declared with only the ordinary specificity of a bare
+ * class selector. Either way, `<Nav>` ends up inheriting whatever the *host
+ * page* happens to do around it instead of a value it controls itself:
+ *
+ * - `box-sizing`: every generator except `IndexPage` links or inlines a
+ *   legacy, pre-redesign stylesheet (`assets/diagram-page.css`,
+ *   `assets/blog.css`, `editor/css/variables.css`, …) that resets `*,
+ *   *::before, *::after { box-sizing: border-box }` for its own old UI.
+ *   `<Nav>` has no *currently* box-sizing-sensitive element (everything
+ *   here is either padding-only or auto-sized), so this doesn't fix a
+ *   live bug today — it's defensive, so the day a fixed-size element with
+ *   padding gets added here, its math is `<Nav>`'s own to control rather
+ *   than a bet on whatever the host page happens to reset.
+ * - `.mono`/`.display` (the nav wordmark's and the install pill's fonts):
+ *   this one *is* live, and was one of two confirmed causes of the install
+ *   pill rendering at a visibly different height depending on which page
+ *   you were on. `packages/core/src/theme.ts` emits each rendered
+ *   diagram's colors as a bare, unscoped `<style>` *inside the SVG* —
+ *   including, when the active theme uses one, a `.mono { font-family:
+ *   'JetBrains Mono', ... }` rule for the diagram's own monospace text. An
+ *   inline `<style>` inside an embedded (not `<img>`'d) SVG is not scoped
+ *   to that SVG by the browser, so this rule leaks into the whole document
+ *   — and on any page that both renders a live diagram *and* has this nav
+ *   (the home page's theme showcase, every diagrams page, …), it collides
+ *   with `.mono` on {@link NavInstall}'s pill text and — cascade ties go
+ *   to whichever `<style>` is later in the DOM, not to `<Nav>`'s own —
+ *   often wins, silently swapping the pill onto a different font stack
+ *   than {@link FONTS}.mono and changing its rendered width/height.
+ *   Restating both classes scoped to {@link NAV_ROOT_ID} outranks a bare
+ *   `.mono` on specificity alone, so `<Nav>` wins regardless of DOM order
+ *   or how many diagrams a page embeds.
+ * - `line-height`: the other confirmed cause. `designBaseCss()`'s `body`
+ *   rule now sets this to {@link LINE_HEIGHT}.body (see that function's
+ *   doc comment), but `<Nav>`'s own links and pill text set an explicit
+ *   `font-size` without a matching `line-height`, relying on inheritance —
+ *   and editor-page.tsx doesn't compose `designBaseCss()` at all (it has
+ *   its own `scopedDesignTokensCss()`, which was never given a
+ *   `line-height` either — see that page's module doc comment for why).
+ *   So on every page except `IndexPage`, `<Nav>` picked up whatever
+ *   `line-height` the host page's *other* CSS happened to leave on `body`
+ *   (1.6 from `assets/diagram-page.css`, a different value from
+ *   `assets/blog.css`, the browser default on editor.html) rather than one
+ *   `<Nav>` controls — changing the links' and pill's line-box height, and
+ *   with it the whole bar's rendered height, page to page. Setting it once
+ *   on {@link NAV_ROOT_ID} means `<Nav>` no longer depends on the host
+ *   page providing (or not providing) any particular base style at all.
  *
  * At 900px and below the links disappear and the bar tightens; at 600px and
  * below the install pill drops its text, leaving the copy glyph alone, and
@@ -383,7 +437,27 @@ const INSTALL_CHECK_SIZE = 10
  * wordmark a `.display`, both of which those blocks define.
  */
 export function navCss(): string {
-  return `${MEDIA.tablet} {
+  return `#${NAV_ROOT_ID},
+#${NAV_ROOT_ID} *,
+#${NAV_ROOT_ID} *::before,
+#${NAV_ROOT_ID} *::after {
+  box-sizing: border-box;
+}
+
+#${NAV_ROOT_ID} {
+  line-height: ${LINE_HEIGHT.body};
+}
+
+#${NAV_ROOT_ID} .display {
+  font-family: var(--font-display);
+  font-weight: ${FONT_WEIGHT.bold};
+}
+
+#${NAV_ROOT_ID} .mono {
+  font-family: var(--font-mono);
+}
+
+${MEDIA.tablet} {
   .nav-bar { padding: ${NAV_PAD_Y.tablet}px ${NAV_PAD_X.tablet}px !important; }
   .nav-links { display: none !important; }
   .menu-toggle { display: inline-flex !important; }
@@ -554,10 +628,10 @@ export interface NavProps {
   installSlot?: ReactNode
   /**
    * `position: sticky; top: 0` instead of the canvas's own `position:
-   * relative`. Defaults to `false` — every page but the homepage (#759)
-   * keeps the canvas's non-sticky bar; a page with its own sticky
-   * elements pinned to `top: var(--nav-height)` (the Dashboard) isn't
-   * affected by this being a per-page opt-in rather than a global change.
+   * relative`. Defaults to `false`, but every page currently opts in —
+   * see each page's own `<NavIsland sticky .../>` call site. Stays a
+   * per-page prop rather than a hardcoded value so a future page can still
+   * opt out.
    */
   sticky?: boolean
   /** Accessible name for the link list. Defaults to `'Main'`. */

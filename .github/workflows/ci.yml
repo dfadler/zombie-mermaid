@@ -172,47 +172,64 @@ jobs:
     # for the full reasoning on what github.repository resolves to and what
     # this does/doesn't protect against.
     if: github.repository == 'dfadler/zombie-mermaid'
-    # Runs the suite inside the pinned upstream Playwright image instead of
-    # provisioning Chromium onto a bare runner. Per
+    # Runs the suite inside a custom, chromium-only Playwright image instead
+    # of provisioning Chromium onto a bare runner. Per
     # docs/decisions/playwright-docker-image-visual-regression.md's
-    # 2026-09-07 amendment, this job *is* the remaining experiment for
-    # zombie-mermaid#544: its acceptance bar is a green run against the
-    # UNCHANGED committed baselines. If it goes red, revert this job to the
-    # bare-runner provisioning it replaced and re-open that decision — do
-    # not regenerate baselines to close the gap, since the committed
-    # baselines are the measuring instrument for every result the #544
-    # cluster produced. Pre-flight evidence (3x full-suite green, 281/281,
-    # zero retries consumed, inside this exact image on an emulated-amd64
-    # host) is in docs/research/549-ci-container-migration.md.
+    # 2026-09-07 amendment, running the suite in a container at all *is* the
+    # remaining experiment for zombie-mermaid#544: its acceptance bar is a
+    # green run against the UNCHANGED committed baselines. If it goes red,
+    # revert this job to the bare-runner provisioning it replaced and
+    # re-open that decision — do not regenerate baselines to close the gap,
+    # since the committed baselines are the measuring instrument for every
+    # result the #544 cluster produced. Pre-flight evidence (3x full-suite
+    # green, 281/281, zero retries consumed, inside a Playwright container
+    # image on an emulated-amd64 host) is in
+    # docs/research/549-ci-container-migration.md.
     #
-    # The tag MUST stay in lockstep with package.json's @playwright/test
-    # (1.62.1): the image ships the matching Chrome-for-Testing build at
-    # $PLAYWRIGHT_BROWSERS_PATH (/ms-playwright), which is exactly what
-    # lets the actions/cache + `playwright install` steps disappear below.
-    # jammy, not noble — zombie-mermaid#326 measured a baseline mismatch on
-    # the -noble variant.
+    # zombie-mermaid#868 (a #737 follow-up) switched this job from the
+    # stock, multi-browser `mcr.microsoft.com/playwright:v1.62.1-jammy` image
+    # to `docker/visual-regression-chromium.Dockerfile`'s chromium-only
+    # build, published to GHCR by
+    # .github/workflows/visual-regression-chromium-image.yml: #737 measured
+    # the chromium-only image pulling ~36% faster (~43s saved per 4-shard
+    # run) since it doesn't ship the Firefox/WebKit binaries
+    # playwright.config.ts's single `chromium` project never exercises (see
+    # that config's `projects:` array). #868 re-ran the suite against this
+    # exact image/digest before adopting it: 281/281 passed against the
+    # UNCHANGED committed baselines, same as the pre-flight evidence above
+    # (run https://github.com/dfadler/zombie-mermaid/actions/runs/34413642128,
+    # shard results: 71+70+70+70 passed). The GHCR package is public, so no
+    # `packages: read` permission or pull credentials are needed here
+    # (verified with an unauthenticated `docker manifest inspect`).
     #
-    # This is deliberately the *stock* tag plus the apt step below, not a
-    # custom image built from docker/visual-regression.Dockerfile and
-    # pushed to GHCR: Actions' `container:` key takes an image reference,
-    # not a Dockerfile, so consuming that file here would mean publishing
-    # an image and keeping a second version pin in sync — for one apt
-    # package. The Dockerfile stays as the local-dev artifact (#550) and as
-    # the written-down reasoning for *why* the package is fonts-dejavu-core.
+    # The image's Chromium build/version MUST stay in lockstep with
+    # package.json's @playwright/test (1.62.1) and with
+    # docker/visual-regression.Dockerfile's base tag — see both Dockerfiles'
+    # own header comments, which cross-reference each other so a future
+    # base-tag bump doesn't silently drift the two apart. jammy, not noble —
+    # zombie-mermaid#326 measured a baseline mismatch on the -noble variant,
+    # and docker/visual-regression-chromium.Dockerfile matches jammy for the
+    # same reason.
     #
     # --ipc=host follows Playwright's own Docker guidance ("recommended
     # when using Chromium... without it, Chromium can run out of memory and
     # crash" — https://playwright.dev/docs/docker). Playwright's GitHub
     # Actions example also passes `--user 1001`; that is omitted here
-    # because the font step below needs root.
+    # because this image runs as root by default (no `USER` instruction —
+    # see docker/visual-regression-chromium.Dockerfile).
     container:
-      # Pinned by digest (the amd64 manifest for v1.62.1-jammy, matching
-      # ubuntu-latest's architecture) rather than the mutable tag, so
-      # Chromium and its system libraries can't drift without a workflow
-      # change - the same reasoning the actions/checkout SHA pin below
-      # follows. Re-derive with `docker manifest inspect
-      # mcr.microsoft.com/playwright:v1.62.1-jammy` when bumping the tag.
-      image: mcr.microsoft.com/playwright@sha256:75d2d72c89da49d06aa7f6e623987392019aebbc52c09fd8cd6e2c94c7c7d71d # v1.62.1-jammy (amd64)
+      # Pinned by digest (the amd64 manifest, matching ubuntu-latest's
+      # architecture — docker/build-push-action's default attestation
+      # manifest is `unknown/unknown` and must be skipped) rather than the
+      # mutable `:latest`/`:<sha>` tags, so Chromium and its system
+      # libraries can't drift without a workflow change - the same
+      # reasoning the actions/checkout SHA pin below follows. Re-derive with
+      # `docker manifest inspect
+      # ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only:latest`
+      # (picking the `platform.architecture == "amd64"` entry) after
+      # dispatching .github/workflows/visual-regression-chromium-image.yml
+      # to publish a new build.
+      image: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only@sha256:18abee4dc9528886c8b0e1a9ef8ae562ca68d1761c610f594370f60003f86c28 # built from docker/visual-regression-chromium.Dockerfile at commit 17903fa (v1.62.1-jammy, chromium-only)
       options: --ipc=host
     # Splits the ~280 screenshot tests across 4 parallel runners via
     # Playwright's own --shard flag. Each shard still runs at
@@ -239,39 +256,28 @@ jobs:
         with:
           persist-credentials: false
 
-      # The stock image ships 50 fonts and none of the DejaVu family, so
-      # fontconfig resolves the generic CSS `monospace` family to WenQuanYi
-      # Zen Hei Mono — a CJK face that draws box-drawing glyphs (U+2500
-      # etc.) at full width while drawing Latin at half width. The ASCII
-      # panel is a character grid built entirely out of those glyphs, so
-      # without this step the grid inflates and 88 of 90 ascii-samples
-      # screenshots mismatch the committed baselines (measured three times:
-      # docs/research/614-docker-font-parity.md). `fonts-dejavu-core` is
-      # what a bare `ubuntu-latest` runner already resolves `monospace` to,
-      # and therefore what produced the committed -chromium-linux.png
-      # baselines in the first place — this restores CI's own resolution,
-      # it does not invent a new one.
-      #
-      # Deliberately NOT fonts-jetbrains-mono, despite that being the stack
-      # `.ascii-panel`'s CSS asks for: the grid lives in a `<code>` child,
-      # and Chromium's UA stylesheet sets `code { font-family: monospace }`
-      # directly on that element, which beats the inherited author value.
-      # The named faces therefore never reach the grid and only restyle the
-      # panel chrome — installing them measurably made the fail rate worse
-      # (90/90). Same reasoning, at more length, in
-      # docker/visual-regression.Dockerfile.
-      - name: Install DejaVu fonts (generic monospace parity with ubuntu-latest)
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends fonts-dejavu-core
-          fc-cache -f
-
-      # Carried over from docker/visual-regression.Dockerfile's build-time
-      # assertion. A base-tag bump that silently changed font resolution
-      # would otherwise surface only as ~90 mismatched screenshots, which
-      # reads like a rendering regression in the renderer rather than a
-      # problem with the image — and the tempting "fix" for that is
-      # regenerating baselines, which is exactly what must not happen here.
+      # Unlike the old stock mcr.microsoft.com/playwright image, this
+      # chromium-only image already bakes in `fonts-dejavu-core` and
+      # verifies the fc-match resolution at *build* time (see
+      # docker/visual-regression-chromium.Dockerfile) — a bare image ships
+      # 50 fonts and none of the DejaVu family, so fontconfig would
+      # otherwise resolve the generic CSS `monospace` family to WenQuanYi
+      # Zen Hei Mono, a CJK face that draws box-drawing glyphs (U+2500 etc.)
+      # at full width while drawing Latin at half width. The ASCII panel is
+      # a character grid built entirely out of those glyphs, so that
+      # mis-resolution would inflate the grid and mismatch the committed
+      # baselines (measured three times against the old image:
+      # docs/research/614-docker-font-parity.md). There is therefore no
+      # runtime `apt-get install` step here anymore — this step only
+      # re-checks, at run time, that the image's build-time fix actually
+      # took effect in this container, the same way
+      # docker/visual-regression-chromium.Dockerfile's own build-time
+      # assertion guards the image build itself. A base-tag bump that
+      # silently changed font resolution would otherwise surface only as
+      # ~90 mismatched screenshots, which reads like a rendering regression
+      # in the renderer rather than a problem with the image — and the
+      # tempting "fix" for that is regenerating baselines, which is exactly
+      # what must not happen here.
       - name: Verify generic font families resolve to DejaVu
         run: |
           # Exact family match, not a `DejaVu*` glob: fonts-dejavu-core installs
@@ -285,7 +291,7 @@ jobs:
             expected="$2"
             match="$(fc-match -f '%{family}' "$generic")"
             if [ "$match" != "$expected" ]; then
-              echo "::error::fc-match $generic resolved to '$match', expected '$expected' — the fonts-dejavu-core step did not take effect. Do NOT regenerate baselines to make this job green."
+              echo "::error::fc-match $generic resolved to '$match', expected '$expected' — the image's baked-in fonts-dejavu-core install did not take effect. Do NOT regenerate baselines to make this job green."
               exit 1
             fi
           }
@@ -472,6 +478,117 @@ jobs:
             bench-svg-renderer-current.json
             bench-ascii-renderer-current.json
           retention-days: 30
+
+      # Records this run's summary into the tracked trend history
+      # (bench-history.jsonl) so drift is visible across weeks/months, not
+      # just against the one static baseline above — see
+      # scripts/bench-history-append.ts's header for the full rationale.
+      # Only on a push to main (not every PR): a PR branch's run doesn't
+      # represent a durable point in the project's history, and appending
+      # on every PR push would make the trend far noisier than intended.
+      # This step only produces the updated file as an artifact for the
+      # `bench-history` job below to commit — it never writes back to the
+      # repo itself (this job's permissions stay contents:read, and it
+      # already runs `pnpm install`, i.e. arbitrary dependency lifecycle
+      # scripts, which is exactly why the repo-writing PAT never enters a
+      # job like this one — see the `bench-history` job below for where
+      # that PAT is actually used).
+      - name: Append to trend history
+        if: github.event_name == 'push'
+        # No --commit=/--ref= flags: scripts/bench-history-append.ts already
+        # falls back to $GITHUB_SHA/$GITHUB_REF, which every Actions job sets
+        # automatically. Passing github.sha/github.ref via `${{ }}`
+        # interpolation into a `run:` step instead would inject untrusted
+        # `github` context data straight into the shell command line (flagged
+        # by this repo's Semgrep SAST scan, yaml.github-actions.security.
+        # run-shell-injection) — reading them as plain env vars avoids that
+        # entirely, with no `env:` indirection needed since the script reads
+        # them itself.
+        run: pnpm run bench:history:append -- bench-current.json
+
+      - name: Upload updated trend history
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bench-history-updated
+          path: bench-history.jsonl
+          retention-days: 1
+
+  bench-history:
+    name: Record benchmark trend entry
+    needs: bench
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # pushes via DASHBOARD_REFRESH_PAT below, not the job token
+    # Only after a successful `bench` run on a push to main — see that
+    # job's "Append to trend history" step. Deliberately does NOT run
+    # `pnpm install` (or anything else that executes third-party code) in
+    # this job: it only downloads the already-computed bench-history.jsonl
+    # and runs plain git/gh commands, the same split-job precaution
+    # dashboard-refresh.yml uses for the same reason (see that workflow's
+    # header comment) — the repo-writing PAT below must never share a job
+    # with a dependency lifecycle script that could read it out of the
+    # environment.
+    if: |
+      github.repository == 'dfadler/zombie-mermaid' &&
+      github.event_name == 'push' &&
+      needs.bench.result == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Download updated trend history
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bench-history-updated
+
+      - name: Commit, push, and open PR
+        env:
+          # Reuses the same fine-grained PAT dashboard-refresh.yml uses
+          # (Contents: Read and write + Pull requests: Read and write on
+          # this repo) — the default GITHUB_TOKEN can't author a PR whose
+          # checks then actually run (see dashboard-refresh.yml's header
+          # comment for the GitHub loop-prevention behavior this works
+          # around). Requires the DASHBOARD_REFRESH_PAT repo secret to
+          # already exist; see that workflow's header for how to set it.
+          GH_TOKEN: ${{ secrets.DASHBOARD_REFRESH_PAT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::DASHBOARD_REFRESH_PAT secret is not set — see dashboard-refresh.yml's header comment for why the default GITHUB_TOKEN can't be used here."
+            exit 1
+          fi
+
+          # Empty changeset satisfies the "Changeset present" required
+          # check without claiming a version bump — a trend-data append
+          # isn't a release-worthy change. Same pattern dashboard-
+          # refresh.yml already uses for its own data-only PRs.
+          mkdir -p .changeset
+          printf -- '---\n---\n' > ".changeset/bench-history-${GITHUB_RUN_ID}.md"
+
+          # Suffixed with the run id (not just the date) so two runs on the
+          # same UTC day never collide on branch name and reject the push
+          # as non-fast-forward against an already-open trend PR's branch.
+          BRANCH="chore/bench-history-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          git add bench-history.jsonl .changeset
+          git commit -m 'chore: record benchmark trend entry'
+
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$BRANCH" \
+            --title 'chore: record benchmark trend entry' \
+            --body 'Automated append of this run'"'"'s bench.ts summary to bench-history.jsonl, via the bench-history job in ci.yml. Includes an empty changeset -- this is a data snapshot, not a release-worthy change. Merge once checks pass. Run pnpm run bench:trend to see the trend report.'
 
   bundle-size:
     name: Bundle size gate

@@ -19,14 +19,14 @@
  * enormous and constantly invalidated by unrelated source changes — a poor
  * fit for a checked-in regression test. Byte-for-byte equivalence against
  * the pre-React generator was verified by running both generators over the
- * real repo state and comparing DOM-normalised output with the same
- * helpers/normalize-html.ts (see docs/decisions/react-site-migration-plan.md
+ * real repo state and comparing DOM-normalised output with a
+ * since-removed helper (see docs/decisions/react-site-migration-plan.md
  * for that evidence, for both the #423 step and the #589 one).
- * `__tests__/site-equivalence.test.ts` holds the page's fixture-sized
- * golden; this file guards what is specific to `<EditorPage>` and stable
- * across bundle content: the document shell, the flex-layout-critical body
- * structure, the ordering of the three scripts, and that raw script content
- * survives untouched.
+ * `__tests__/site-equivalence.test.ts` holds this page's RTL shell
+ * assertions (zombie-mermaid#819); this file guards what is specific to
+ * `<EditorPage>` and stable across bundle content: the document shell, the
+ * flex-layout-critical body structure, the ordering of the three scripts,
+ * and that raw script content survives untouched.
  */
 import { createElement } from 'react'
 import { describe, expect, it } from 'vitest'
