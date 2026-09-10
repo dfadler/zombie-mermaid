@@ -668,15 +668,19 @@ export function renderClassAscii(
 
   // --- Snapshot cells occupied by class boxes ---
   // Taken once, right after boxes are drawn and before any relationship
-  // line, corner, or marker is drawn — the class-diagram analog of the
-  // `boxCells`/`setCGuarded` guard er-diagram.ts gained for issue #350.
-  // The same-level branch below (this file's final `else`) guards its own
-  // detour separately; this snapshot backs up the cross-level ("target
-  // below"/"target above") branches, whose routing can jog a long way
-  // horizontally with no prior occupancy check — e.g. connecting a level-1
-  // child to a level-0 parent whose column sits far from an intervening,
-  // taller same-level sibling's box, which the jog then cuts straight
-  // through.
+  // line, corner, marker, or label is drawn — the class-diagram analog of
+  // the `boxCells`/`setCGuarded` guard er-diagram.ts gained for issue #350.
+  // Two independent routing branches rely on it:
+  // - The cross-level ("target below"/"target above") branches, whose
+  //   routing can jog a long way horizontally with no prior occupancy
+  //   check — e.g. connecting a level-1 child to a level-0 parent whose
+  //   column sits far from an intervening, taller same-level sibling's
+  //   box, which the jog then cuts straight through.
+  // - The same-level branch's own detour (this file's final `else`), which
+  //   primarily avoids a same-row obstruction by computing its detour row
+  //   from this same box geometry (see `obstructionBottom` there); this
+  //   snapshot is the last-resort backstop for whatever that routing
+  //   doesn't anticipate.
   const boxCells = new Set<string>()
   for (const p of placed.values()) {
     for (let by = 0; by < p.height; by++) {
@@ -688,9 +692,13 @@ export function renderClassAscii(
 
   /**
    * Like setC, but refuses to draw into a cell already occupied by a class
-   * box (see boxCells above). Used by the cross-level relationship branches
-   * below, so a mis-routed segment degrades to a gap in the line rather
-   * than corrupting a box's border or attribute/method text.
+   * box (see boxCells above). Used by both the cross-level relationship
+   * branches (where a mis-routed jog can cut straight through an
+   * unrelated, taller same-level box) and the same-level branch's own
+   * detour (a last-resort backstop for whatever its obstruction-aware
+   * routing doesn't anticipate — see `obstructionBottom` below), so either
+   * kind of mis-routed segment degrades to a gap in the line rather than
+   * corrupting a box's border or attribute/method text.
    */
   function setCGuarded(x: number, y: number, ch: string, role: CharRole): void {
     if (boxCells.has(`${x},${y}`)) return
@@ -942,6 +950,15 @@ export function renderClassAscii(
       clearSide: 'left' | 'right'
     }
   >()
+
+  // Same-level relationships' obstruction-aware detour row (issue #953),
+  // keyed by relationship index — `computeLabelAnchor`'s own same-level
+  // branch reads this so a labeled same-level relationship's label anchors
+  // on the same corrected row the connector itself routes through, instead
+  // of recomputing the naive (obstruction-unaware) `Math.max(fromBY, toBY)
+  // + 2` and landing back inside whatever box the connector fix was
+  // routing around.
+  const sameLevelDetourY = new Map<number, number>()
 
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
@@ -1215,9 +1232,38 @@ export function renderClassAscii(
         }
       }
     } else {
-      // Same level — draw horizontal line with a detour below both boxes
+      // Same level — draw horizontal line with a detour below both boxes.
       const toBY = toP.y + toP.height - 1
-      const detourY = Math.max(fromBY, toBY) + 2
+      const lx = Math.min(fromCX, toCX)
+      const rx = Math.max(fromCX, toCX)
+
+      // The naive detour row — max(fromBY, toBY) + 2 — is derived only from
+      // this relationship's own two endpoints. A same-level layout puts
+      // every class in the level on one shared row (see the placement loop
+      // above), so a relationship cycle that can't be linearly leveled
+      // (e.g. A->B->C->A) lands a third, unrelated class between `fromP`
+      // and `toP` in that same row. When that in-between class is taller
+      // than both endpoints (more attributes/methods), the naive detour row
+      // sits *above* its bottom edge, and the horizontal segment below
+      // (spanning [lx, rx], which crosses straight through that class's
+      // x-range) cuts through its box instead of running beneath it.
+      // Search for any such same-row obstruction and route the detour below
+      // its bottom edge too — generalizing er-diagram.ts's obstructionBottom
+      // search (issue #350) to class diagrams' same-level detour.
+      let obstructionBottom = Math.max(fromBY, toBY)
+      for (const [id, other] of placed.entries()) {
+        if (id === rel.from || id === rel.to) continue
+        if (other.y !== fromP.y) continue
+        const overlapsGap = other.x < rx + 1 && other.x + other.width > lx
+        if (overlapsGap) {
+          obstructionBottom = Math.max(
+            obstructionBottom,
+            other.y + other.height - 1,
+          )
+        }
+      }
+      const detourY = obstructionBottom + 2
+      sameLevelDetourY.set(relIndex, detourY)
       increaseSize(canvas, totalW, detourY + 1)
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
       const fromJogs = fromCX !== fromAnchorX
@@ -1226,17 +1272,15 @@ export function renderClassAscii(
       // Jog out to the lane under the source, then vertical down from it
       drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
       for (let y = fromBY + (fromJogs ? 2 : 1); y <= detourY; y++) {
-        setC(fromCX, y, lineV, 'line')
+        setCGuarded(fromCX, y, lineV, 'line')
       }
       // Horizontal
-      const lx = Math.min(fromCX, toCX)
-      const rx = Math.max(fromCX, toCX)
       for (let x = lx; x <= rx; x++) {
-        setC(x, detourY, lineH, 'line')
+        setCGuarded(x, detourY, lineH, 'line')
       }
       // Vertical up to target, then jog back in to its anchor
       for (let y = detourY - 1; y >= toBY + (toJogs ? 2 : 1); y--) {
-        setC(toCX, y, lineV, 'line')
+        setCGuarded(toCX, y, lineV, 'line')
       }
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
@@ -1245,7 +1289,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1266,7 +1310,7 @@ export function renderClassAscii(
         )
         const my = toP.y + toP.height
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1364,9 +1408,24 @@ export function renderClassAscii(
         baseMidY: Math.floor((toBY + 1 + fromP.y - 1) / 2),
       }
     }
+    // Same level — anchor on the obstruction-aware detour row the connector
+    // itself was routed through (see `sameLevelDetourY` above), not the
+    // naive `Math.max(fromBY, toBY) + 2` recomputation, which ignores any
+    // taller same-row box between `fromP`/`toP` and would place the label
+    // right back inside it (issue #953).
     return {
       idealMidX: Math.floor((fromCX + toCX) / 2),
-      baseMidY: Math.max(fromBY, toP.y + toP.height - 1) + 2,
+      // The `??` fallback is unreachable in practice: the main
+      // relationship-drawing pass above runs for every relationship before
+      // this label pass does, and it sets `sameLevelDetourY` for every
+      // relIndex that takes this same "same level" branch — the exact
+      // condition this function just evaluated to reach here. Kept only
+      // because `Map.get` is typed `T | undefined`, not because a real
+      // diagram can actually hit it.
+      /* v8 ignore next */
+      baseMidY:
+        sameLevelDetourY.get(relIndex) ??
+        Math.max(fromBY, toP.y + toP.height - 1) + 2,
     }
   }
 
