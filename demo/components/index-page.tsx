@@ -384,21 +384,21 @@ function homePageCss(): string {
    panel. Interaction (open/close, picking a theme) is wired by
    demo/index-page-client.ts's wireThemePicker() -- see ThemeShowcasePicker's
    own doc comment. */
-.theme-showcase-picker { position: relative; margin-top: ${SPACE.xs}px; }
+.theme-showcase-picker { position: relative; }
 .theme-showcase-picker-trigger {
   width: 100%;
   max-width: 280px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   border: 1.5px dashed ${colorVar('--border')};
-  border-radius: ${RADIUS.card}px;
+  border-radius: 4px;
   cursor: pointer;
   background:
-    radial-gradient(circle at 0 50%, ${colorVar('--bg-soft')} 8px, transparent 8.5px),
-    radial-gradient(circle at 100% 50%, ${colorVar('--bg-soft')} 8px, transparent 8.5px),
-    color-mix(in srgb, ${colorVar('--panel')} 82%, transparent);
+    radial-gradient(circle at 0 50%, ${colorVar('--bg')} 8px, transparent 8.5px),
+    radial-gradient(circle at 100% 50%, ${colorVar('--bg')} 8px, transparent 8.5px),
+    ${colorVar('--panel')};
   color: ${colorVar('--text')};
   font-size: 14px;
   transition: border-color 160ms ease;
@@ -421,11 +421,10 @@ function homePageCss(): string {
   max-width: 280px;
   border: 1.5px dashed ${colorVar('--border')};
   border-top: none;
-  border-radius: 0 0 ${RADIUS.card}px ${RADIUS.card}px;
+  border-radius: 0 0 4px 4px;
   background: ${colorVar('--panel')};
-  max-height: 320px;
+  max-height: 300px;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
   transform-origin: top;
   animation: themeShowcasePickerTear 320ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
@@ -440,7 +439,7 @@ function homePageCss(): string {
   gap: 10px;
   width: 100%;
   text-align: left;
-  padding: 10px 18px;
+  padding: 10px 20px;
   background: transparent;
   border: none;
   border-top: 1px dashed ${colorVar('--border')};
@@ -450,7 +449,7 @@ function homePageCss(): string {
   min-height: 44px;
 }
 .theme-showcase-picker-option:first-child { border-top: none; }
-.theme-showcase-picker-option:hover { background: color-mix(in srgb, ${colorVar('--cyan')} 8%, transparent); color: ${colorVar('--text')}; }
+.theme-showcase-picker-option:hover { background: color-mix(in srgb, ${colorVar('--cyan')} 7%, transparent); color: ${colorVar('--text')}; }
 .theme-showcase-picker-option[aria-selected='true'] { color: ${colorVar('--cyan')}; }
 .theme-showcase-picker-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
