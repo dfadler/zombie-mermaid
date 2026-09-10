@@ -67,6 +67,12 @@
  * this repo can't write to) rather than a round-trip through #590. See
  * {@link NavInstall}'s doc comment for the resulting markup.
  *
+ * The wide-viewport padding rule in {@link navCss} (guarded by
+ * {@link NAV_WIDE_MIN}) is a third deviation, and purely additive: the
+ * canvas's single 1440px artboard says nothing about wider viewports, so
+ * there's no canvas answer this could contradict. See NAV_WIDE_MIN's own
+ * doc comment for the alignment gap it closes.
+ *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
@@ -223,6 +229,25 @@ const NAV_Z_INDEX = 10
  * at 1101 and above (through 1150, 1280, and 1440).
  */
 const NAV_CRAMPED_MAX = 1100
+
+/**
+ * Width, in px, above which the canvas's fixed 80px `.nav-bar` padding stops
+ * matching the page body's own content column.
+ *
+ * The canvas is a single 1440px-wide artboard, so it never had to answer
+ * what the bar does above that width — the same kind of gap the mobile menu
+ * fills (see the module doc comment). Every redesigned page body
+ * independently centers its content at {@link LAYOUT.maxWidth} (1280px)
+ * plus this bar's own {@link NAV_PAD_X}.desktop (80px) gutter on each side —
+ * 1440px total — so the two column calculations agree exactly up to 1440px
+ * and diverge above it: the body's content re-centers itself as the
+ * viewport grows past 1440, but the bar's padding stays a fixed 80px,
+ * leaving the logo pinned 80px from the left edge while the body content
+ * it's meant to align with drifts inward. {@link navCss} closes the gap
+ * above this width by growing the bar's padding to match, rather than
+ * leaving it fixed.
+ */
+const NAV_WIDE_MIN = LAYOUT.maxWidth + NAV_PAD_X.desktop * 2
 
 /**
  * The toggle button's hit target, in px — the accessibility floor
@@ -491,6 +516,20 @@ ${MEDIA.mobile} {
 @media (min-width: ${BREAKPOINTS.tablet + 1}px) and (max-width: ${NAV_CRAMPED_MAX}px) {
   .nav-npm-text { display: none !important; }
   .nav-install-copy { min-width: 0 !important; }
+}
+
+/*
+ * Above the canvas's own 1440px artboard width (invented; not part of the
+ * #590 canvas — see NAV_WIDE_MIN's doc comment), grow the bar's padding so
+ * its content re-centers at the same ${LAYOUT.maxWidth}px column the page
+ * body already clamps to, instead of leaving the fixed 80px padding behind
+ * as the viewport keeps growing.
+ */
+@media (min-width: ${NAV_WIDE_MIN + 1}px) {
+  .nav-bar {
+    padding-left: calc((100% - ${LAYOUT.maxWidth}px) / 2) !important;
+    padding-right: calc((100% - ${LAYOUT.maxWidth}px) / 2) !important;
+  }
 }
 
 /* --- Mobile menu (invented; not part of the #590 canvas) --- */
