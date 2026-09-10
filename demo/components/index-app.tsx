@@ -734,7 +734,16 @@ function FeaturePillars() {
                           }
                     }
                   >
-                    <ItemIcon size={28} />
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        height: '22px',
+                        flex: 'none',
+                      }}
+                    >
+                      <ItemIcon size={20} />
+                    </div>
                     <p
                       style={{
                         fontSize: `${FONT_SIZE.body}px`,
