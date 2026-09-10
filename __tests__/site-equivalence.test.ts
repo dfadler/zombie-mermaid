@@ -32,7 +32,6 @@ import { createElement } from 'react'
 import { JSDOM } from 'jsdom'
 import { within } from '@testing-library/react'
 import { renderHtmlDocument } from '../demo/render-html.ts'
-import { normalizeHtml } from './helpers/normalize-html.ts'
 import { IndexPage } from '../demo/components/index-page.tsx'
 import { FORK_URL } from '../demo/components/site-chrome.tsx'
 import { THEMES } from '@zombie-mermaid/core'
@@ -62,10 +61,6 @@ const FIXTURE_SCRIPT =
  */
 const FIXTURE_NAV_CLIENT_SCRIPT =
   'globalThis.__navFixture = 1 < 2 && 3 > 2;\nconsole.log("nav fixture & <b>bold</b>");'
-
-async function expectGolden(html: string, file: string): Promise<void> {
-  await expect(normalizeHtml(html) + '\n').toMatchFileSnapshot(file)
-}
 
 describe('index.ts → index.html', () => {
   const INDEX_JSON_LD = '{\n  "@type": "SoftwareApplication"\n}'
@@ -396,7 +391,20 @@ describe('editor.ts → editor.html', () => {
     { key: 'github-light', bg: '#ffffff', label: 'GitHub' },
   ]
 
-  it('normalises to the golden DOM', async () => {
+  /**
+   * zombie-mermaid#819 replaces this block's former whole-page golden
+   * (`toMatchFileSnapshot` against the now-deleted
+   * `editor-page.normalized.txt`) with RTL assertions scoped to what's
+   * still meaningfully server-rendered *shell*: the topbar, the two-panel
+   * layout with its resize handle, and the theme dropdown's items as
+   * rendered from real props. `<EditorAppIsland>`'s own hydrated behavior
+   * (tab switching, dark mode, export, toast, config, rendering, sharing,
+   * zoom/pan/resize) is already covered by `__tests__/dom/editor-*.test.ts`
+   * against `<EditorApp>` directly -- this file doesn't repeat any of that,
+   * only the page-assembly concern of "does editor.ts's real props shape
+   * reach the rendered document the way editor-page.tsx says it should."
+   */
+  function renderEditorPageDocument() {
     const html = renderHtmlDocument(
       createElement(EditorPage, {
         css: FIXTURE_CSS,
@@ -406,7 +414,105 @@ describe('editor.ts → editor.html', () => {
         appJs: FIXTURE_SCRIPT,
       }),
     )
-    await expectGolden(html, './__fixtures__/editor-page.normalized.txt')
+    return withinRenderedPage(html)
+  }
+
+  /** Narrows a possibly-null `querySelector()`/`getElementById()` result. */
+  function mustFind(element: Element | null): Element {
+    if (!element) throw new Error('test setup: expected element missing')
+    return element
+  }
+
+  it('renders the page title and the hero heading above the tool', () => {
+    const { document, page } = renderEditorPageDocument()
+
+    expect(document.title).toBe('zombie-mermaid — Live Editor')
+    expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Write Mermaid, watch it render as you type.',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the page-level landmarks: the shared nav and footer', () => {
+    // NavIsland/Footer's own markup is pinned byte-for-byte against the
+    // design canvas by demo-nav.test.ts/demo-footer.test.ts -- this only
+    // checks that editor.ts's page assembly actually includes them.
+    const { page } = renderEditorPageDocument()
+
+    expect(page.getByRole('banner')).toBeInTheDocument()
+    expect(page.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
+    expect(page.getByRole('contentinfo')).toBeInTheDocument()
+  })
+
+  it('renders the topbar: logo, code/config tabs, dark-mode toggle, theme button, and export button', () => {
+    const { document } = renderEditorPageDocument()
+    const topbar = within(mustFind(document.querySelector('.topbar')))
+
+    expect(
+      topbar.getByRole('link', { name: /zombie-mermaid/ }),
+    ).toHaveAttribute('href', '/zombie-mermaid/')
+    expect(document.getElementById('tab-code')).toHaveClass('active')
+    expect(document.getElementById('tab-config')).not.toHaveClass('active')
+    expect(document.getElementById('dark-light-btn')).toBeInTheDocument()
+    expect(document.getElementById('theme-dropdown-btn')).toBeInTheDocument()
+    expect(document.getElementById('export-main-btn')).toHaveAttribute(
+      'title',
+      'Save PNG (⌘S)',
+    )
+  })
+
+  it('renders the theme dropdown items from the themes prop, plus the built-in Default entry', () => {
+    const { document } = renderEditorPageDocument()
+    const menu = mustFind(document.getElementById('theme-dropdown-menu'))
+    const items = [...menu.querySelectorAll('.theme-dropdown-item')]
+
+    expect(items.map((item) => item.getAttribute('data-theme'))).toEqual([
+      '',
+      'nord',
+      'github-light',
+    ])
+    expect(items[0]).toHaveClass('active')
+    expect(items[0]).toHaveTextContent('Default')
+    expect(items[1]).toHaveTextContent('Nord')
+    expect(items[2]).toHaveTextContent('GitHub')
+
+    // Each real theme's swatch renders the theme's own bg colour -- the
+    // Default entry has no swatch at all (editor-topbar.tsx's
+    // EditorThemeItems only renders one for entries backed by a real theme).
+    const swatches = [...menu.querySelectorAll('.theme-swatch')]
+    expect(swatches[0]).toHaveStyle({ background: 'rgb(46, 52, 64)' })
+    expect(swatches[1]).toHaveStyle({ background: 'rgb(255, 255, 255)' })
+  })
+
+  it('renders the two-panel layout with a resize handle between the source and preview panels', () => {
+    const { document } = renderEditorPageDocument()
+    const main = mustFind(document.querySelector('.main'))
+
+    expect([...main.children].map((el) => el.id)).toEqual([
+      'panel-left',
+      'resize-handle',
+      'panel-right',
+    ])
+    expect(document.getElementById('code-editor')).toBeInTheDocument()
+    expect(document.getElementById('preview-body')).toBeInTheDocument()
+  })
+
+  it('inlines the renderer-setup, editor-client, and legacy app-js scripts verbatim, with no escaping', () => {
+    const { document } = renderEditorPageDocument()
+    const moduleScripts = [
+      ...document.querySelectorAll('script[type="module"]'),
+    ].map((script) => script.textContent)
+
+    // The `<` and `&` in these fixtures prove no escaping, same as the
+    // golden diff this replaces asserted via its normalized text.
+    expect(moduleScripts).toContain(FIXTURE_SCRIPT)
+    expect(moduleScripts).toContain(FIXTURE_NAV_CLIENT_SCRIPT)
+    expect(document.getElementById('editor-legacy-app-js')).toHaveTextContent(
+      FIXTURE_SCRIPT,
+      { normalizeWhitespace: false },
+    )
   })
 })
 
