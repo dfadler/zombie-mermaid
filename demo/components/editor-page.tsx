@@ -121,7 +121,8 @@ import type { EditorThemeItem } from './editor-topbar.tsx'
 import { NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
-import { Card, PrimitivesStyle } from './primitives.tsx'
+import { Card } from './primitives.tsx'
+import { PrimitivesStyle } from './primitives-css.tsx'
 import {
   ChevronRightIcon,
   DownloadIcon,

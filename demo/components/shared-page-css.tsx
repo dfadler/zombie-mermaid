@@ -1,14 +1,14 @@
 /** @jsxRuntime automatic */
 import { footerCss } from './footer.tsx'
 import { navCss } from './nav.tsx'
-import { primitivesCss } from './primitives.tsx'
+import { primitivesCss } from './primitives-css.tsx'
 import { designBaseCss } from './tokens.tsx'
 
 /**
  * The four shared stylesheet functions every site-generator page composes,
  * joined in the cascade order the design system requires: tokens.tsx's
  * `designBaseCss()` (custom properties and base elements), then
- * primitives.tsx's `primitivesCss()` (`.card`/`.pill`/`.section-eyebrow`),
+ * primitives-css.tsx's `primitivesCss()` (`.card`/`.pill`/`.section-eyebrow`),
  * then nav.tsx's `navCss()` and footer.tsx's `footerCss()` (each layer's
  * responsive rules assume the ones before it are already in scope). `extra`,
  * when given, is spliced in last as the page's own stylesheet.
