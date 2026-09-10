@@ -219,4 +219,42 @@ describe('<EditorApp> export/copy actions (#809)', () => {
     fireEvent.keyDown(document, { key: 'S', shiftKey: true, metaKey: true })
     expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1)
   })
+
+  // #827 interaction-coverage audit: the test above only exercises the
+  // Cmd/Ctrl+Shift+S (exportSVG) branch of useEditorExport's keydown
+  // handler -- the plain Cmd/Ctrl+S (exportPNG) and Cmd/Ctrl+C (copyImage)
+  // branches (demo/components/editor-export.ts's `onKeydown`) had no
+  // coverage at all. PNG rasterization itself can't run under jsdom (see
+  // this file's header comment), but both shortcuts still reach the
+  // shared `getSvgEl` "no diagram rendered yet" guard *before* any
+  // canvas/image work happens, which is enough to prove the shortcut is
+  // actually wired up (and, symmetrically with the SVG shortcut test
+  // above, that it's suppressed while focus is in the editor).
+  it('Cmd/Ctrl+S triggers the PNG export path (blocked on no rendered diagram), but not while focus is in the editor', () => {
+    render(createElement(EditorApp, PROPS))
+    // No seedRenderedSvg() -- proves the shortcut reaches exportPNG's
+    // getSvgEl guard rather than silently no-oping.
+    const textarea = document.getElementById('code-editor')!
+
+    fireEvent.keyDown(textarea, { key: 's', metaKey: true, target: textarea })
+    expect(
+      screen.queryByText('Render a diagram first.'),
+    ).not.toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 's', metaKey: true })
+    expect(screen.getByText('Render a diagram first.')).toBeInTheDocument()
+  })
+
+  it('Cmd/Ctrl+C triggers the copy-image path (blocked on no rendered diagram), but not while focus is in the editor', () => {
+    render(createElement(EditorApp, PROPS))
+    const textarea = document.getElementById('code-editor')!
+
+    fireEvent.keyDown(textarea, { key: 'c', ctrlKey: true, target: textarea })
+    expect(
+      screen.queryByText('Render a diagram first.'),
+    ).not.toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'c', ctrlKey: true })
+    expect(screen.getByText('Render a diagram first.')).toBeInTheDocument()
+  })
 })
