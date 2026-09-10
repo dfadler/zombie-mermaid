@@ -43,10 +43,11 @@
  * index.html/editor.html, rather than needing to be moved there afterward.
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { createElement } from 'react'
 import { bundleForBrowser } from './scripts/vite-bundle.ts'
 import { siteOutDir } from './scripts/site-out-dir.ts'
+import { generatePage } from './scripts/generate-page.ts'
 import {
   escapeHtml,
   escapeJsonForScriptTag,
@@ -130,8 +131,6 @@ async function bundleDiagramHubClient(): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  await mkdir(new URL('./assets/', OUT_DIR), { recursive: true })
-
   // Copy the demo's full stylesheet plus this page type's own small
   // supplement, same two-file split dashboard.ts already uses (dashboard.css
   // on top of styles.css) — gets every design token, shadow-* utility, and
@@ -141,16 +140,21 @@ async function main(): Promise<void> {
     readFile(new URL('./demo/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('./demo/diagram-page.css', import.meta.url), 'utf8'),
   ])
-  await writeFile(
-    new URL('./assets/diagram-page.css', OUT_DIR),
-    `${demoCss}\n${pageCss}`,
-  )
+  await generatePage({
+    outPath: new URL('./assets/diagram-page.css', OUT_DIR),
+    content: `${demoCss}\n${pageCss}`,
+    log: false,
+  })
 
   const [clientJs, hubClientScript] = await Promise.all([
     bundleDiagramTypeClient(),
     bundleDiagramHubClient(),
   ])
-  await writeFile(new URL('./assets/diagram-page-client.js', OUT_DIR), clientJs)
+  await generatePage({
+    outPath: new URL('./assets/diagram-page-client.js', OUT_DIR),
+    content: clientJs,
+    log: false,
+  })
 
   // 'github-dark', not the other generators' 'github-light': every type
   // detail page (demo/components/diagram-page.tsx's `DiagramTypePage`) now
@@ -288,7 +292,11 @@ async function main(): Promise<void> {
       }),
     )
 
-    await writeFile(new URL(`./${profile.slug}.html`, OUT_DIR), html)
+    await generatePage({
+      outPath: new URL(`./${profile.slug}.html`, OUT_DIR),
+      content: html,
+      log: false,
+    })
   }
 
   // -- Hub page: diagrams/index.html, listing every generated type page --
@@ -313,7 +321,11 @@ async function main(): Promise<void> {
     }),
   )
 
-  await writeFile(new URL('./index.html', OUT_DIR), hubHtml)
+  await generatePage({
+    outPath: new URL('./index.html', OUT_DIR),
+    content: hubHtml,
+    log: false,
+  })
 
   // -- sitemap.xml --
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -321,10 +333,11 @@ async function main(): Promise<void> {
 ${sitemapUrls.map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`).join('\n')}
 </urlset>
 `
-  await writeFile(
-    new URL('./sitemap.xml', siteOutDir(import.meta.url)),
-    sitemap,
-  )
+  await generatePage({
+    outPath: new URL('./sitemap.xml', siteOutDir(import.meta.url)),
+    content: sitemap,
+    log: false,
+  })
 
   console.log(
     `Wrote ${DIAGRAM_TYPE_PROFILES.length} diagram pages + hub page + sitemap.xml (${sitemapUrls.length} URLs) to ${OUT_DIR.pathname}`,
