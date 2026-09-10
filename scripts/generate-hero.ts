@@ -15,7 +15,12 @@
  * (`designBaseCss()`). A standalone hero.svg has no such page around it, so
  * this script publishes the same `:root { --x: ...; }` block itself,
  * sourced from `COLORS` (`tokens.tsx`) rather than re-typing hex values by
- * hand — keeping color drift impossible here too.
+ * hand — keeping color drift impossible here too. The canvas itself stays
+ * transparent rather than filled with `--bg`: unlike the live site, a
+ * README renders on whatever background the viewer's GitHub theme picks
+ * (white in light mode), and every element here is already either opaque
+ * (the code panel, the diagram nodes) or has enough of its own contrast
+ * (the accent-colored edges/labels) to read on both.
  *
  * hero.svg replaced hero.png (a manually-captured screenshot) once the
  * hero visual's edges gained a marching-ants animation: GitHub renders an
@@ -72,12 +77,6 @@ async function main(): Promise<void> {
   .mono { font-family: ${FONTS.mono}; }
   ${EDGE_ANIM_CSS}
 </style>
-
-<!-- Full-bleed backdrop: HeroVisual assumes it sits on the site's own dark
-     page background, which a standalone hero.svg doesn't have — this
-     reproduces it so the composite reads the same on both GitHub's light
-     and dark README themes, not just the site itself. -->
-<rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" fill="var(--bg)"/>
 
 ${heroVisualBody}
 </svg>
