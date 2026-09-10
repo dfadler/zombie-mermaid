@@ -437,6 +437,117 @@ jobs:
           path: bench-current.json
           retention-days: 30
 
+      # Records this run's summary into the tracked trend history
+      # (bench-history.jsonl) so drift is visible across weeks/months, not
+      # just against the one static baseline above — see
+      # scripts/bench-history-append.ts's header for the full rationale.
+      # Only on a push to main (not every PR): a PR branch's run doesn't
+      # represent a durable point in the project's history, and appending
+      # on every PR push would make the trend far noisier than intended.
+      # This step only produces the updated file as an artifact for the
+      # `bench-history` job below to commit — it never writes back to the
+      # repo itself (this job's permissions stay contents:read, and it
+      # already runs `pnpm install`, i.e. arbitrary dependency lifecycle
+      # scripts, which is exactly why the repo-writing PAT never enters a
+      # job like this one — see the `bench-history` job below for where
+      # that PAT is actually used).
+      - name: Append to trend history
+        if: github.event_name == 'push'
+        # No --commit=/--ref= flags: scripts/bench-history-append.ts already
+        # falls back to $GITHUB_SHA/$GITHUB_REF, which every Actions job sets
+        # automatically. Passing github.sha/github.ref via `${{ }}`
+        # interpolation into a `run:` step instead would inject untrusted
+        # `github` context data straight into the shell command line (flagged
+        # by this repo's Semgrep SAST scan, yaml.github-actions.security.
+        # run-shell-injection) — reading them as plain env vars avoids that
+        # entirely, with no `env:` indirection needed since the script reads
+        # them itself.
+        run: pnpm run bench:history:append -- bench-current.json
+
+      - name: Upload updated trend history
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bench-history-updated
+          path: bench-history.jsonl
+          retention-days: 1
+
+  bench-history:
+    name: Record benchmark trend entry
+    needs: bench
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # pushes via DASHBOARD_REFRESH_PAT below, not the job token
+    # Only after a successful `bench` run on a push to main — see that
+    # job's "Append to trend history" step. Deliberately does NOT run
+    # `pnpm install` (or anything else that executes third-party code) in
+    # this job: it only downloads the already-computed bench-history.jsonl
+    # and runs plain git/gh commands, the same split-job precaution
+    # dashboard-refresh.yml uses for the same reason (see that workflow's
+    # header comment) — the repo-writing PAT below must never share a job
+    # with a dependency lifecycle script that could read it out of the
+    # environment.
+    if: |
+      github.repository == 'dfadler/zombie-mermaid' &&
+      github.event_name == 'push' &&
+      needs.bench.result == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Download updated trend history
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bench-history-updated
+
+      - name: Commit, push, and open PR
+        env:
+          # Reuses the same fine-grained PAT dashboard-refresh.yml uses
+          # (Contents: Read and write + Pull requests: Read and write on
+          # this repo) — the default GITHUB_TOKEN can't author a PR whose
+          # checks then actually run (see dashboard-refresh.yml's header
+          # comment for the GitHub loop-prevention behavior this works
+          # around). Requires the DASHBOARD_REFRESH_PAT repo secret to
+          # already exist; see that workflow's header for how to set it.
+          GH_TOKEN: ${{ secrets.DASHBOARD_REFRESH_PAT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::DASHBOARD_REFRESH_PAT secret is not set — see dashboard-refresh.yml's header comment for why the default GITHUB_TOKEN can't be used here."
+            exit 1
+          fi
+
+          # Empty changeset satisfies the "Changeset present" required
+          # check without claiming a version bump — a trend-data append
+          # isn't a release-worthy change. Same pattern dashboard-
+          # refresh.yml already uses for its own data-only PRs.
+          mkdir -p .changeset
+          printf -- '---\n---\n' > ".changeset/bench-history-${GITHUB_RUN_ID}.md"
+
+          # Suffixed with the run id (not just the date) so two runs on the
+          # same UTC day never collide on branch name and reject the push
+          # as non-fast-forward against an already-open trend PR's branch.
+          BRANCH="chore/bench-history-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          git add bench-history.jsonl .changeset
+          git commit -m 'chore: record benchmark trend entry'
+
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$BRANCH" \
+            --title 'chore: record benchmark trend entry' \
+            --body 'Automated append of this run'"'"'s bench.ts summary to bench-history.jsonl, via the bench-history job in ci.yml. Includes an empty changeset -- this is a data snapshot, not a release-worthy change. Merge once checks pass. Run pnpm run bench:trend to see the trend report.'
+
   bundle-size:
     name: Bundle size gate
     runs-on: ubuntu-latest
