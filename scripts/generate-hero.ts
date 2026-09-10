@@ -11,21 +11,45 @@
  * file's header comment) so it renders identically whether loaded via the
  * live homepage's `<img src="hero-visual.svg">` or embedded in the README.
  * That means this script no longer needs to render a React component or
- * reconstruct any CSS of its own: hero.svg is now a straight copy of
- * public/hero-visual.svg, so it can never drift from what the site
- * actually ships — regenerating this file after editing that source SVG
- * picks the change up automatically.
+ * reconstruct any CSS of its own — but the two contexts still differ in one
+ * way: the live site places HeroVisual directly on the page's own
+ * full-bleed `--bg`, while a README renders on whatever background the
+ * viewer's GitHub theme picks (white in light mode). Without a backdrop,
+ * the code card floats with no visual anchor and the diagram's node labels
+ * (colored for contrast against `--bg`, e.g. `Deploy?`'s near-black fill)
+ * go unreadable — so this script inserts one rounded `--bg` backdrop rect
+ * right after the source file's `<style>` block before writing hero.svg,
+ * the one place these two output targets still diverge.
+ *
+ * hero.svg replaced hero.png (a manually-captured screenshot) once the
+ * hero visual's edges gained a marching-ants animation: GitHub renders an
+ * embedded SVG's CSS `@keyframes` natively, so the README's hero can
+ * animate — a static PNG never could.
  *
  * Usage: tsx scripts/generate-hero.ts
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
 
+const WIDTH = 700
+const HEIGHT = 460
+/** Corner radius of the backdrop — matches the code card's own `rx="16"`
+ * (HeroVisual) closely enough to read as one shape family, rounded up
+ * slightly since this rect is the larger of the two. */
+const BACKDROP_RADIUS = 20
+
 async function main(): Promise<void> {
   const srcPath = new URL('../public/hero-visual.svg', import.meta.url)
   const outPath = new URL('../hero.svg', import.meta.url)
 
-  const svg = await readFile(srcPath, 'utf8')
+  const source = await readFile(srcPath, 'utf8')
+
+  // Inserted right after the closing </style> tag (not inside the style
+  // block itself), so it paints behind every other shape without touching
+  // the CSS those shapes depend on.
+  const backdrop = `<rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" rx="${BACKDROP_RADIUS}" fill="var(--bg)"/>`
+  const svg = source.replace('</style>', `</style>\n${backdrop}`)
+
   await writeFile(outPath, svg, 'utf8')
   console.log(
     `Wrote hero.svg (${svg.length} bytes) from public/hero-visual.svg`,

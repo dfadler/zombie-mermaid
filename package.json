@@ -112,6 +112,7 @@
     "bench:mcp": "tsx scripts/bench-mcp.ts",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
+    "generate:logo-lockup": "tsx scripts/generate-logo-lockup.ts",
     "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
     "form-diff": "tsx scripts/form-diff.ts",
