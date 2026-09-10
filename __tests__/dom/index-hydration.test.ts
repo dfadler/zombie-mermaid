@@ -140,7 +140,7 @@ describe('IndexMainApp hydration (#804)', () => {
     expect(seen).toEqual([])
   })
 
-  it('renders the real feature grid and blog teaser once hydrated', () => {
+  it('renders the real "why this fork exists" section and blog teaser once hydrated', () => {
     renderServerHtmlIntoDocument()
     const container = document.getElementById(INDEX_MAIN_ROOT_ID)
     if (!container) throw new Error('test setup: root container missing')
@@ -152,7 +152,7 @@ describe('IndexMainApp hydration (#804)', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: /six nodes, one rendering engine/i,
+        name: /what zombie-mermaid adds on top/i,
       }),
     ).toBeInTheDocument()
     expect(screen.getByText(/294 prs, 14 days/i)).toBeInTheDocument()
@@ -237,7 +237,7 @@ describe('NavIsland hydrates side by side with both index apps (#804)', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: /six nodes, one rendering engine/i,
+        name: /what zombie-mermaid adds on top/i,
       }),
     ).toBeInTheDocument()
   })

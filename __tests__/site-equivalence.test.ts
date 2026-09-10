@@ -252,27 +252,58 @@ describe('index.ts → index.html', () => {
     ).toHaveLength(1)
   })
 
-  it('renders the six feature-grid cards', () => {
+  it('renders "Why This Fork Exists" with the new-to-this-fork cards', () => {
     const document = renderIndexPageDocument()
     const body = within(document.body)
 
     expect(
       body.getByRole('heading', {
         level: 2,
-        name: 'Six nodes, one rendering engine.',
+        name: 'What zombie-mermaid adds on top.',
       }),
     ).toBeInTheDocument()
     for (const label of [
-      'Dual output',
-      '15 built-in themes',
-      'Full Shiki compatibility',
-      'Mono mode',
-      'Zero DOM dependencies',
-      'Synchronous rendering',
+      'A real CLI binary',
+      'mergeEdges',
+      'Real bugs, actually fixed',
     ]) {
       expect(
         body.getByRole('heading', { level: 3, name: label }),
       ).toBeInTheDocument()
+    }
+    expect(
+      body.getByRole('link', { name: 'See every fix, before and after →' }),
+    ).toHaveAttribute('href', 'fork-fixes.html')
+  })
+
+  it('renders the three feature pillars', () => {
+    const document = renderIndexPageDocument()
+    const body = within(document.body)
+
+    expect(
+      body.getByRole('heading', {
+        level: 2,
+        name: 'Three ways this stays out of your way.',
+      }),
+    ).toBeInTheDocument()
+    for (const label of [
+      'Output flexibility',
+      'Drop-in architecture',
+      'Proven at scale',
+    ]) {
+      expect(
+        body.getByRole('heading', { level: 3, name: label }),
+      ).toBeInTheDocument()
+    }
+    for (const label of [
+      'Dual output.',
+      'Mono mode.',
+      'Zero DOM dependencies.',
+      'Synchronous rendering.',
+      'Ultra-fast.',
+      'CI-enforced accessibility.',
+    ]) {
+      expect(body.getByText(label)).toBeInTheDocument()
     }
   })
 

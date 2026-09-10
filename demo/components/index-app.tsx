@@ -49,6 +49,7 @@ import {
   ICONS,
   LockIcon,
   LogoMark,
+  MergeEdgesIcon,
   TerminalIcon,
   FEATURE_ICONS,
 } from './icons.tsx'
@@ -76,18 +77,31 @@ const GALLERY_TYPES = [
 ] as const
 
 /**
- * Feature-grid copy, paired with {@link FEATURE_ICONS}'s six entries by
- * index. Paraphrases the README's own "Features" bullets (dual output, 15
- * built-in themes, full Shiki compatibility, mono mode, zero DOM
- * dependencies, synchronous rendering) rather than inventing marketing copy.
+ * Feature-pillar copy, paired with {@link FEATURE_ICONS}'s six entries by
+ * index and grouped by {@link PILLAR_GROUPS}. Paraphrases the README's own
+ * "Features" bullets (dual output, mono mode, zero DOM dependencies,
+ * synchronous rendering, ultra-fast, CI-enforced accessible SVG output)
+ * rather than inventing marketing copy — see {@link FEATURE_ICONS}'s own
+ * doc comment (icons.tsx) for why theming isn't among them.
  */
 const FEATURE_COPY = [
   'SVG for rich UIs, ASCII/Unicode for terminals — mermaid.js itself has no real terminal story.',
-  'Live theme switching via CSS custom properties — no re-render needed, ever.',
-  'Reuse the same VS Code themes your editor already renders code with.',
   'Full diagrams rendered from just two colors, when that’s all you’ve got.',
   'Pure TypeScript. Works in the browser, on the server, or anywhere else.',
   'No async, no flash of unstyled diagram — drops straight into React’s useMemo().',
+  'Renders 100+ diagrams in under 500ms — fast enough for every diagram in a CI run.',
+  'Every diagram type ships a role-correct, nameable SVG root — checked in CI, not just claimed.',
+] as const
+
+/**
+ * Groups {@link FEATURE_ICONS}/{@link FEATURE_COPY}'s six entries into the
+ * three pillars {@link FeaturePillars} renders, two facts each, in the same
+ * order as those two arrays (indices 0-1, 2-3, 4-5).
+ */
+const PILLAR_GROUPS = [
+  { label: 'Output flexibility' },
+  { label: 'Drop-in architecture' },
+  { label: 'Proven at scale' },
 ] as const
 
 /**
@@ -451,29 +465,196 @@ export function IndexHeroApp() {
 }
 
 /* -----------------------------------------------------------------
- * Theme showcase
+ * Why this fork exists
  * ----------------------------------------------------------------- */
 
 /**
- * The showcase's build-time diagram, rendered once in
- * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours (the client script
- * re-themes it live from there — see this file's header comment). Thrown,
- * not a silent fallback: this only ever runs at `index.ts` generation time
- * under Node, so a typo'd theme key should fail the build loudly rather
- * than ship a broken page.
+ * "Why This Fork Exists" — the home page's provenance section, named after
+ * the README section it mirrors. Deliberately weighted toward
+ * zombie-mermaid's own contribution rather than the mermaid.js/beautiful-
+ * mermaid history: beautiful-mermaid already solved mermaid.js's
+ * aesthetics/theming/terminal-output/dependency problems (see
+ * `docs/migrating-from-beautiful-mermaid.md`'s "What is drop-in" section),
+ * so restating that in full here would just repeat {@link FeaturePillars}
+ * below. What's actually new to this fork — a real CLI binary and the
+ * `mergeEdges` render option, both called out as "new to this fork" in
+ * that same doc — gets the space instead, plus a link to the fork-fixes
+ * page's real, documented before/after bug fixes rather than re-deriving a
+ * bug count here (that number already has a home in {@link ProofSection}'s
+ * teaser card below, alongside the fork's actively-maintained-vs-stalled
+ * numbers this section deliberately doesn't restate either).
  */
-function FeatureGrid() {
+function WhyForkExistsSection() {
   return (
     <div
       className="section-px"
       style={{
-        padding: `${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px`,
+        padding: `${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
       }}
     >
       <div
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: '0 auto 72px auto',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE.xl}px`,
+        }}
+      >
+        <SectionEyebrow>
+          The problem with default mermaid rendering
+        </SectionEyebrow>
+        <p
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12.5px',
+            color: colorVar('--text-faint'),
+          }}
+        >
+          mermaid.js → beautiful-mermaid →{' '}
+          <span style={{ color: colorVar('--text') }}>zombie-mermaid</span>
+        </p>
+        <h2 style={{ fontSize: '36px', letterSpacing: LETTER_SPACING.heading }}>
+          What zombie-mermaid adds on top.
+        </h2>
+        <p
+          style={{
+            maxWidth: '760px',
+            fontSize: '15.5px',
+            lineHeight: 1.5,
+            color: colorVar('--text-dim'),
+          }}
+        >
+          beautiful-mermaid already solved mermaid.js's biggest problems —
+          aesthetics, theming, terminal output, dependencies. This fork
+          keeps all of that, and adds three things beautiful-mermaid never
+          had.
+        </p>
+      </div>
+
+      <div
+        className="why-fork-grid"
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: `${SPACE['3xl']}px auto 0 auto`,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: `${SPACE['3xl']}px`,
+        }}
+      >
+        <Card
+          accent="amber"
+          padding={28}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE.lg}px`,
+          }}
+        >
+          <TerminalIcon size={28} />
+          <h3 style={{ fontSize: '19px' }}>A real CLI binary</h3>
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              color: colorVar('--text-dim'),
+              lineHeight: 1.5,
+            }}
+          >
+            beautiful-mermaid never shipped one. Pipe Mermaid source in, get
+            SVG or ASCII out, straight from the command line.
+          </p>
+        </Card>
+
+        <Card
+          accent="green"
+          padding={28}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE.lg}px`,
+          }}
+        >
+          <MergeEdgesIcon size={28} />
+          <h3
+            style={{ fontSize: '19px', fontFamily: 'var(--font-mono)' }}
+          >
+            mergeEdges
+          </h3>
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              color: colorVar('--text-dim'),
+              lineHeight: 1.5,
+            }}
+          >
+            No beautiful-mermaid equivalent. Bundles fan-out/fan-in edges
+            into a shared trunk instead of a tangle of parallel lines.
+          </p>
+        </Card>
+
+        <Card
+          accent="cyan"
+          padding={28}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE.lg}px`,
+          }}
+        >
+          <ChecklistIcon size={28} />
+          <h3 style={{ fontSize: '19px' }}>Real bugs, actually fixed</h3>
+          <p
+            style={{
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              color: colorVar('--text-dim'),
+              lineHeight: 1.5,
+            }}
+          >
+            Mermaid syntax beautiful-mermaid shipped with — dropped edges,
+            corrupted labels, stray nodes — found and fixed, with the
+            before/after code to prove it.
+          </p>
+        </Card>
+      </div>
+
+      <div
+        style={{ textAlign: 'center', marginTop: `${SPACE['3xl']}px` }}
+      >
+        <a
+          href="fork-fixes.html"
+          style={{ fontSize: '14.5px', fontWeight: FONT_WEIGHT.semibold }}
+        >
+          See every fix, before and after →
+        </a>
+      </div>
+    </div>
+  )
+}
+
+/* -----------------------------------------------------------------
+ * Feature pillars
+ * ----------------------------------------------------------------- */
+
+/**
+ * "Built for how diagrams get used now" — three named pillars (Output
+ * flexibility / Drop-in architecture / Proven at scale), two facts each,
+ * from {@link FEATURE_ICONS}/{@link FEATURE_COPY}/{@link PILLAR_GROUPS}.
+ * Theming is deliberately absent — see {@link FEATURE_ICONS}'s doc comment
+ * (icons.tsx) for why.
+ */
+function FeaturePillars() {
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
           display: 'flex',
           flexDirection: 'column',
           gap: `${SPACE.xl}px`,
@@ -481,107 +662,94 @@ function FeatureGrid() {
       >
         <SectionEyebrow>Built for how diagrams get used now</SectionEyebrow>
         <h2 style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}>
-          Six nodes, one rendering engine.
+          Three ways this stays out of your way.
         </h2>
+        <p
+          style={{
+            maxWidth: '640px',
+            fontSize: '15px',
+            color: colorVar('--text-faint'),
+          }}
+        >
+          (Theming and the fork's backstory are covered above — this is what
+          you actually build with.)
+        </p>
       </div>
 
       <div
-        className="feature-grid-wrap"
+        className="pillar-grid"
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
-          margin: '0 auto',
-          position: 'relative',
-          height: '464px',
+          margin: `${SPACE['3xl']}px auto 0 auto`,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: `${SPACE['3xl']}px`,
         }}
       >
-        <svg
-          className="feature-connectors"
-          viewBox="0 0 1280 464"
-          width="1280"
-          height="464"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            zIndex: 0,
-            maxWidth: '100%',
-          }}
-        >
-          <path
-            d="M197 100 L639 100"
-            stroke={colorVar('--blue')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M639 100 L1081 100"
-            stroke={colorVar('--violet')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M1081 100 L1081 364"
-            stroke={colorVar('--cyan')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M1081 364 L639 364"
-            stroke={colorVar('--pink')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-          <path
-            d="M639 364 L197 364"
-            stroke={colorVar('--amber')}
-            strokeWidth="2.5"
-            className="edge-anim"
-            fill="none"
-          />
-        </svg>
-
-        <div
-          className="feature-grid"
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gridTemplateRows: '200px 200px',
-            gap: '64px 48px',
-          }}
-        >
-          {FEATURE_ICONS.map((feature, i) => {
-            const FeatureIcon = ICONS[feature.name]
-            return (
-              <Card
-                key={feature.name}
-                padding={28}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: `${SPACE.lg}px`,
-                }}
-              >
-                <FeatureIcon size={28} />
-                <h3 style={{ fontSize: '18px' }}>{feature.label}</h3>
-                <p
-                  style={{
-                    fontSize: `${FONT_SIZE.body}px`,
-                    color: colorVar('--text-dim'),
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {FEATURE_COPY[i]}
-                </p>
-              </Card>
-            )
-          })}
-        </div>
+        {PILLAR_GROUPS.map((group, groupIndex) => {
+          const first = FEATURE_ICONS[groupIndex * 2]
+          const second = FEATURE_ICONS[groupIndex * 2 + 1]
+          // Invariant: PILLAR_GROUPS has exactly 3 entries and FEATURE_ICONS
+          // exactly 6, so every group's pair is always in bounds — this
+          // guard exists only to satisfy strict indexed-access typing.
+          if (!first || !second) return null
+          const firstCopy = FEATURE_COPY[groupIndex * 2]
+          const secondCopy = FEATURE_COPY[groupIndex * 2 + 1]
+          if (firstCopy === undefined || secondCopy === undefined) return null
+          const PillarIcon = ICONS[first.name]
+          const items = [
+            { feature: first, copy: firstCopy },
+            { feature: second, copy: secondCopy },
+          ]
+          return (
+            <Card
+              key={group.label}
+              padding={32}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: `${SPACE['2xl']}px`,
+              }}
+            >
+              <PillarIcon size={30} />
+              <h3 style={{ fontSize: '22px' }}>{group.label}</h3>
+              {items.map(({ feature, copy }) => {
+                const ItemIcon = ICONS[feature.name]
+                return (
+                  <div
+                    key={feature.name}
+                    style={{
+                      display: 'flex',
+                      gap: `${SPACE.md}px`,
+                      alignItems: 'flex-start',
+                      paddingTop: `${SPACE.xl}px`,
+                      borderTop: `1px solid ${colorVar('--border')}`,
+                    }}
+                  >
+                    <ItemIcon size={20} />
+                    <p
+                      style={{
+                        fontSize: `${FONT_SIZE.body}px`,
+                        color: colorVar('--text-dim'),
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <strong
+                        style={{
+                          color: colorVar('--text'),
+                          fontWeight: FONT_WEIGHT.semibold,
+                        }}
+                      >
+                        {feature.label}.
+                      </strong>{' '}
+                      {copy}
+                    </p>
+                  </div>
+                )
+              })}
+            </Card>
+          )
+        })}
       </div>
     </div>
   )
@@ -1618,18 +1786,22 @@ function BlogTeaser() {
 }
 
 /**
- * Everything inside {@link INDEX_MAIN_ROOT_ID}'s hydration boundary: the
- * feature grid, CLI/MCP section, diagram gallery teaser, proof section,
- * and blog teaser — the same five components `index-page.tsx`'s
- * `IndexPage` used to render directly in `<main>`, in the same order. The
- * exact same function runs on both sides of hydration — see `dashboard-
- * app.tsx`'s {@link DashboardApp} doc comment for the general shape this
- * follows. No props: see this file's header comment for why.
+ * Everything inside {@link INDEX_MAIN_ROOT_ID}'s hydration boundary: why
+ * this fork exists, the feature pillars, the CLI/MCP section, diagram
+ * gallery teaser, proof section, and blog teaser — the same components
+ * `index-page.tsx`'s `IndexPage` used to render directly in `<main>`, in
+ * the same order (the feature grid became two sections,
+ * {@link WhyForkExistsSection} and {@link FeaturePillars}, rather than one
+ * flat six-card grid — see their doc comments for why). The exact same
+ * function runs on both sides of hydration — see `dashboard-app.tsx`'s
+ * {@link DashboardApp} doc comment for the general shape this follows. No
+ * props: see this file's header comment for why.
  */
 export function IndexMainApp() {
   return (
     <>
-      <FeatureGrid />
+      <WhyForkExistsSection />
+      <FeaturePillars />
       <CliMcpSection />
       <DiagramGalleryTeaser />
       <ProofSection />
