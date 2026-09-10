@@ -7,7 +7,7 @@
  *
  * Shared by nav-install-popover.tsx's `NavInstall` (the nav bar, on every
  * page but the homepage) and the homepage hero's own compact instance
- * (`index-app.tsx`'s `HeroInstall`) — both drive the same popover-and-copy
+ * (`hero-install.tsx`'s `HeroInstall`) — both drive the same popover-and-copy
  * behavior off this one hook, so there is exactly one definition of it
  * regardless of which chrome wraps it.
  */

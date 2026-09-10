@@ -255,7 +255,7 @@ export interface NavProps {
    * `NavInstall` (rendered with {@link installCommand}) — every page but
    * the homepage keeps that default. As of zombie-mermaid#902, the
    * homepage passes an empty fragment: its package-manager selector moved
-   * into the hero's own `HeroInstall` (`index-app.tsx`), so the header
+   * into the hero's own `HeroInstall` (`hero-install.tsx`), so the header
    * renders nothing in this slot rather than falling back to `NavInstall`
    * and duplicating it. (An earlier, #759-era homepage instead passed a
    * `<div id="nav-theme-slot" />` placeholder here for a live theme picker

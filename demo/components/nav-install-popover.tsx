@@ -11,7 +11,7 @@
  * itself (the state/handlers behind everything here) lives in its own
  * module, use-package-manager-install.ts, since it's pure logic with no
  * JSX and is shared with the homepage hero's own compact instance
- * (`index-app.tsx`'s `HeroInstall`, which imports {@link NavInstallPrefix}/
+ * (`hero-install.tsx`'s `HeroInstall`, which imports {@link NavInstallPrefix}/
  * {@link NavInstallPopover} directly rather than a second copy).
  */
 import type { KeyboardEvent, RefObject } from 'react'
