@@ -734,18 +734,10 @@ function FeaturePillars() {
                           }
                     }
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        height: '22px',
-                        flex: 'none',
-                      }}
-                    >
-                      <ItemIcon size={20} />
-                    </div>
+                    <ItemIcon size={20} />
                     <p
                       style={{
+                        margin: 0,
                         fontSize: `${FONT_SIZE.body}px`,
                         color: colorVar('--text-dim'),
                         lineHeight: 1.5,
