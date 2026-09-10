@@ -18,7 +18,7 @@
  * the right level, not a whole-document string/snapshot comparison.
  *
  * `DiagramTypePage`/`DiagramHubPage` are page *shells* (`<html>`/`<head>`,
- * `NavIsland`, `ThemePickerIsland`/`ThemePickerSection`, `Footer`) that
+ * `NavIsland`, `ThemePickerIsland`, `Footer`) that
  * embed their hydrated body content (`DiagramTypeApp`/`DiagramHubApp`) via
  * a `renderToString` call — see diagram-page.tsx's own header comment. That
  * hydrated content already has its own dedicated coverage:
@@ -186,7 +186,6 @@ describe('DiagramHubPage (#821)', () => {
             accent: 'cyan',
           },
         ],
-        themeBarScript: 'globalThis.__themeBar = 1;',
       }),
     )
 
@@ -215,5 +214,31 @@ describe('DiagramHubPage (#821)', () => {
       'flowchart.html',
       'sequence.html',
     ])
+  })
+
+  it('no longer renders a "Pick a look" theme-picker section', () => {
+    render(
+      createElement(DiagramHubPage, {
+        title: 'Diagram gallery: every type | Zombie Mermaid',
+        description: 'Browse every zombie-mermaid diagram type.',
+        canonical: 'https://example.test/diagrams/',
+        cssHref: 'assets/diagram-page.css',
+        faviconHref: '../favicon.svg',
+        themeCount: 15,
+        types: [
+          {
+            slug: 'flowchart',
+            label: 'Flowchart',
+            intro: 'Flowcharts show a process as boxes and arrows.',
+            accent: 'blue',
+          },
+        ],
+      }),
+    )
+
+    expect(screen.queryByText('Pick a look')).toBeNull()
+    expect(
+      screen.queryByText('Live in every built-in theme.'),
+    ).toBeNull()
   })
 })
