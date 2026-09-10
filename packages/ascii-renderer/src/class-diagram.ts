@@ -668,12 +668,19 @@ export function renderClassAscii(
 
   // --- Snapshot cells occupied by class boxes ---
   // Taken once, right after boxes are drawn and before any relationship
-  // line, marker, or label is drawn — generalizes er-diagram.ts's boxCells
-  // guard (issue #350) to class diagrams. The "same level" detour branch
-  // below primarily avoids a same-row obstruction by computing its detour
-  // row from this same box geometry (see `obstructionBottom` there); this
-  // snapshot is the last-resort backstop for whatever that routing doesn't
-  // anticipate, via `setCGuarded` below.
+  // line, corner, marker, or label is drawn — the class-diagram analog of
+  // the `boxCells`/`setCGuarded` guard er-diagram.ts gained for issue #350.
+  // Two independent routing branches rely on it:
+  // - The cross-level ("target below"/"target above") branches, whose
+  //   routing can jog a long way horizontally with no prior occupancy
+  //   check — e.g. connecting a level-1 child to a level-0 parent whose
+  //   column sits far from an intervening, taller same-level sibling's
+  //   box, which the jog then cuts straight through.
+  // - The same-level branch's own detour (this file's final `else`), which
+  //   primarily avoids a same-row obstruction by computing its detour row
+  //   from this same box geometry (see `obstructionBottom` there); this
+  //   snapshot is the last-resort backstop for whatever that routing
+  //   doesn't anticipate.
   const boxCells = new Set<string>()
   for (const p of placed.values()) {
     for (let by = 0; by < p.height; by++) {
@@ -684,23 +691,16 @@ export function renderClassAscii(
   }
 
   /**
-   * Like setC, but refuses to draw into a cell reserved by a class box (see
-   * boxCells above) — generalizes er-diagram.ts's setCGuarded (issue #350)
-   * to class diagrams. Used for the same-level detour's line, corner, and
-   * marker writes, so a route that still ends up crossing an unrelated
-   * box's cells (despite the obstruction-aware detour row) degrades to a
-   * gap in the line rather than corrupting that box's border or member
-   * text.
+   * Like setC, but refuses to draw into a cell already occupied by a class
+   * box (see boxCells above). Used by both the cross-level relationship
+   * branches (where a mis-routed jog can cut straight through an
+   * unrelated, taller same-level box) and the same-level branch's own
+   * detour (a last-resort backstop for whatever its obstruction-aware
+   * routing doesn't anticipate — see `obstructionBottom` below), so either
+   * kind of mis-routed segment degrades to a gap in the line rather than
+   * corrupting a box's border or attribute/method text.
    */
   function setCGuarded(x: number, y: number, ch: string, role: CharRole): void {
-    // The obstruction-aware detour row above already routes below every
-    // same-row box, so this branch is a last-resort backstop for a case
-    // that routing doesn't leave — same as er-diagram.ts's identical
-    // guard (issue #350), whose analogous branch is equally never hit by
-    // that diagram type's own test suite. Kept for defense-in-depth: if a
-    // future change to the routing above reintroduces a gap, this still
-    // prevents box corruption, degrading to a gap in the line instead.
-    /* v8 ignore next */
     if (boxCells.has(`${x},${y}`)) return
     setC(x, y, ch, role)
   }
@@ -864,6 +864,7 @@ export function renderClassAscii(
    * an arrowhead at a shared anchor doubles as the junction.
    */
   function setJogCell(x: number, y: number, ch: string, role: CharRole): void {
+    if (boxCells.has(`${x},${y}`)) return
     if (rc[x]?.[y] === 'arrow') return
     const existing = canvas[x]?.[y]
     if (
@@ -1025,21 +1026,21 @@ export function renderClassAscii(
         const lx1 = Math.min(fromAnchorX, routeX)
         const rx1 = Math.max(fromAnchorX, routeX)
         for (let x = lx1; x <= rx1; x++) {
-          setC(x, exitY, lineH, 'line')
+          setCGuarded(x, exitY, lineH, 'line')
         }
         if (!useAscii && exitY < (canvas[0]?.length ?? 0)) {
           if (fromAnchorX < routeX) {
-            setC(fromAnchorX, exitY, '└', 'corner')
-            setC(routeX, exitY, '┐', 'corner')
+            setCGuarded(fromAnchorX, exitY, '└', 'corner')
+            setCGuarded(routeX, exitY, '┐', 'corner')
           } else {
-            setC(fromAnchorX, exitY, '┘', 'corner')
-            setC(routeX, exitY, '┌', 'corner')
+            setCGuarded(fromAnchorX, exitY, '┘', 'corner')
+            setCGuarded(routeX, exitY, '┌', 'corner')
           }
         }
 
         // 2. Vertical at routeX from exit to entry
         for (let y = exitY + 1; y <= entryY; y++) {
-          setC(routeX, y, lineV, 'line')
+          setCGuarded(routeX, y, lineV, 'line')
         }
 
         // 3. Horizontal from routeX to target anchor at entry
@@ -1047,15 +1048,15 @@ export function renderClassAscii(
           const lx2 = Math.min(routeX, toAnchorX)
           const rx2 = Math.max(routeX, toAnchorX)
           for (let x = lx2; x <= rx2; x++) {
-            setC(x, entryY, lineH, 'line')
+            setCGuarded(x, entryY, lineH, 'line')
           }
           if (!useAscii && entryY < (canvas[0]?.length ?? 0)) {
             if (routeX < toAnchorX) {
-              setC(routeX, entryY, '└', 'corner')
-              setC(toAnchorX, entryY, '┐', 'corner')
+              setCGuarded(routeX, entryY, '└', 'corner')
+              setCGuarded(toAnchorX, entryY, '┐', 'corner')
             } else {
-              setC(routeX, entryY, '┘', 'corner')
-              setC(toAnchorX, entryY, '┌', 'corner')
+              setCGuarded(routeX, entryY, '┘', 'corner')
+              setCGuarded(toAnchorX, entryY, '┌', 'corner')
             }
           }
         }
@@ -1076,11 +1077,11 @@ export function renderClassAscii(
             useAscii,
             isHierarchical ? 'up' : 'down',
           )
-          setC(toAnchorX, entryY, markerChar, 'arrow')
+          setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
         }
         if (marker.markerAt === 'from') {
           const markerChar = getMarkerShape(marker.type, useAscii, 'down')
-          setC(fromAnchorX, fromBY + 1, markerChar, 'arrow')
+          setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
         }
       } else {
         // NO COLLISION CASE: Use original midpoint-based routing
@@ -1101,26 +1102,37 @@ export function renderClassAscii(
         //    the source bottom (or from below the jog) to midY
         drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
         for (let y = fromBY + (fromJogs ? 2 : 1); y <= midY; y++) {
-          setC(fromCX, y, lineV, 'line')
+          setCGuarded(fromCX, y, lineV, 'line')
         }
 
         // 2. Horizontal from fromCX to toCX at midY (if needed)
+        //
+        // This segment matters most for the boxCells guard: it can travel
+        // a long way horizontally when the target's column sits far from
+        // the source's (e.g. a level-1 child positioned under a completely
+        // different level-0 sibling than its own parent). Nothing about
+        // `findClearColumn` finding `fromCX` itself clear (the only check
+        // that decided this is the no-collision branch) says the *row*
+        // this horizontal run lands on is clear all the way over to
+        // `toCX` too — a taller same-level sibling sitting between them,
+        // extending below its own row's shortest box, is exactly the case
+        // that check misses.
         if (fromCX !== toCX && midY < (canvas[0]?.length ?? 0)) {
           const lx = Math.min(fromCX, toCX)
           const rx = Math.max(fromCX, toCX)
           for (let x = lx; x <= rx; x++) {
-            setC(x, midY, lineH, 'line')
+            setCGuarded(x, midY, lineH, 'line')
           }
           if (!useAscii) {
-            setC(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
-            setC(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
+            setCGuarded(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
+            setCGuarded(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
           }
         }
 
         // 3. Vertical from midY to the target top (or to above the jog),
         //    then jog from the lane back in to the target anchor
         for (let y = midY + 1; y < toTY - (toJogs ? 1 : 0); y++) {
-          setC(toCX, y, lineV, 'line')
+          setCGuarded(toCX, y, lineV, 'line')
         }
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
@@ -1131,7 +1143,7 @@ export function renderClassAscii(
           // down into it.
           const isHierarchical =
             marker.type === 'inheritance' || marker.type === 'realization'
-          setC(
+          setCGuarded(
             toAnchorX,
             toTY - 1,
             getMarkerShape(
@@ -1143,7 +1155,7 @@ export function renderClassAscii(
           )
         }
         if (marker.markerAt === 'from') {
-          setC(
+          setCGuarded(
             fromAnchorX,
             fromBY + 1,
             getMarkerShape(marker.type, useAscii, 'down'),
@@ -1163,23 +1175,31 @@ export function renderClassAscii(
       // (mirror of the downward case), then vertical up to midY
       drawJog(fromTY - 1, fromAnchorX, fromCX, lineH, false)
       for (let y = fromTY - (fromJogs ? 2 : 1); y >= midY; y--) {
-        setC(fromCX, y, lineV, 'line')
+        setCGuarded(fromCX, y, lineV, 'line')
       }
 
+      // This branch has no collision-avoidance routing at all (unlike the
+      // "target below source" branch above, which at least tries
+      // `findClearColumn` first) — it always draws the straight
+      // jog/vertical/horizontal/vertical/jog path. The boxCells guard is
+      // this path's only protection against a horizontal run landing on
+      // an unrelated box; see the equivalent midY comment in the "target
+      // below source" branch above for why that's a real, not merely
+      // theoretical, case.
       if (fromCX !== toCX) {
         const lx = Math.min(fromCX, toCX)
         const rx = Math.max(fromCX, toCX)
         for (let x = lx; x <= rx; x++) {
-          setC(x, midY, lineH, 'line')
+          setCGuarded(x, midY, lineH, 'line')
         }
         if (!useAscii && midY >= 0 && midY < totalH) {
-          setC(fromCX, midY, fromCX < toCX ? '┌' : '┐', 'corner')
-          setC(toCX, midY, fromCX < toCX ? '┘' : '└', 'corner')
+          setCGuarded(fromCX, midY, fromCX < toCX ? '┌' : '┐', 'corner')
+          setCGuarded(toCX, midY, fromCX < toCX ? '┘' : '└', 'corner')
         }
       }
 
       for (let y = midY - 1; y > toBY + (toJogs ? 1 : 0); y--) {
-        setC(toCX, y, lineV, 'line')
+        setCGuarded(toCX, y, lineV, 'line')
       }
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
@@ -1188,7 +1208,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1203,7 +1223,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, markerDir)
         const my = toBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,

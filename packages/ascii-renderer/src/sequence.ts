@@ -256,6 +256,37 @@ export function renderSequenceAscii(
     }
   }
 
+  // Width (including border + padding, matching the box drawn in the
+  // vertical-layout pass below) of a note anchored to an actor. Computed up
+  // front, before lifeline x-positions are finalized, so `left`/`right`
+  // notes can participate in gap sizing the same way message labels already
+  // do (issue #953 case C) instead of only being checked against a layout
+  // that's already fixed.
+  function noteBoxWidth(note: (typeof diagram.notes)[number]): number {
+    const nLines = splitLines(note.text)
+    return Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+  }
+
+  // Per-actor widest 'left'/'right' note anchored to it. A `left` note on
+  // actor i draws into the gap to its left (between actor i-1 and i, or —
+  // for the leftmost actor — the canvas's own left margin); a `right` note
+  // draws into the gap to its right (between actor i and i+1). Both need to
+  // be reserved as part of layout, not clamped after the fact (issue #953
+  // cases A-C: notes previously only ever collided with whatever gap
+  // message-label sizing happened to leave).
+  const leftNoteWidth: number[] = new Array(diagram.actors.length).fill(0)
+  const rightNoteWidth: number[] = new Array(diagram.actors.length).fill(0)
+  for (const note of diagram.notes) {
+    if (note.position !== 'left' && note.position !== 'right') continue
+    const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
+    const w = noteBoxWidth(note)
+    if (note.position === 'left') {
+      leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
+    } else {
+      rightNoteWidth[aIdx] = Math.max(rightNoteWidth[aIdx]!, w)
+    }
+  }
+
   // Compute lifeline x-positions (greedy left-to-right).
   // See paddingOffset's doc comment (types.ts) for why this is an offset
   // from the paddingX default rather than the raw config value.
@@ -269,8 +300,19 @@ export function renderSequenceAscii(
   // adjacent participants in different groups (or one grouped, one not)
   // need room for the wall(s) between their boxes, plus a blank column on
   // each side of every wall. Same-group neighbours have no wall between.
+  //
+  // A `left` note on the leftmost actor has no left neighbour to reserve a
+  // gap against — it draws into the canvas's own left margin instead, so
+  // that margin (the initial lifeline position itself) must be at least
+  // wide enough for it: `nx = llX[0] - nWidth - 1 >= 0` (see the note-x
+  // calculation below) requires `llX[0] >= nWidth + 1` (issue #953 case A —
+  // previously `nx` was clamped to 0 instead, forcing the note onto the
+  // lifeline it's supposed to sit beside).
   const llX: number[] = [
-    halfBox[0]! + (boxSpanOf[0] === -1 ? 0 : BRACKET_GAP + 1),
+    Math.max(
+      halfBox[0]! + (boxSpanOf[0] === -1 ? 0 : BRACKET_GAP + 1),
+      leftNoteWidth[0]! + 1,
+    ),
   ]
   for (let i = 1; i < diagram.actors.length; i++) {
     const prevSpan = boxSpanOf[i - 1]!
@@ -282,9 +324,16 @@ export function renderSequenceAscii(
     // The base constraint already leaves two blank columns between boxes;
     // each wall needs one column of its own plus one more blank beside it.
     const wallExtra = walls === 0 ? 0 : walls * (BRACKET_GAP + 1) - 1
+    // A `right` note on actor i-1, or a `left` note on actor i, draws into
+    // this gap — reserve room for whichever is wider (issue #953 cases B/C)
+    // so a wide note doesn't overflow into the neighbouring lifeline. The
+    // `+2` mirrors adjMaxWidth's own margin below and matches the 1-column
+    // clearance the note-x calculation already leaves on the lifeline side.
+    const noteGapNeed = Math.max(rightNoteWidth[i - 1]!, leftNoteWidth[i]!) + 2
     const gap = Math.max(
       halfBox[i - 1]! + halfBox[i]! + 2 + wallExtra,
       adjMaxWidth[i - 1]! + 2,
+      noteGapNeed,
       minLifelineGap,
     )
     llX[i] = llX[i - 1]! + gap
@@ -435,8 +484,7 @@ export function renderSequenceAscii(
     if (note.afterIndex !== -1) continue
     curY += rowGap // gap before note
     const nLines = splitLines(note.text)
-    const nWidth =
-      Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+    const nWidth = noteBoxWidth(note)
     const nHeight = nLines.length + 2
 
     const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
@@ -533,8 +581,7 @@ export function renderSequenceAscii(
         curY += rowGap
         const note = diagram.notes[n]!
         const nLines = splitLines(note.text)
-        const nWidth =
-          Math.max(...nLines.map((l) => displayWidth(l))) + 2 + 2 * boxPad
+        const nWidth = noteBoxWidth(note)
         const nHeight = nLines.length + 2
 
         // Determine x position based on note.position
