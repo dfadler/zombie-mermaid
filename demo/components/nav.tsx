@@ -1490,6 +1490,23 @@ export const NAV_THEME_SLOT_ID = 'nav-theme-slot'
  * {@link navCss} keys off. What this does *not* do — deliberately, to keep
  * a first version scoped — is trap Tab/Shift+Tab inside the open panel;
  * revisit if that turns out to matter in practice.
+ *
+ * Also resets the menu when the viewport grows past {@link
+ * BREAKPOINTS}.tablet while it's open (a window resize, or a phone
+ * rotated). {@link navCss}'s own `min-width` safety net only hides the
+ * panel visually (`opacity/pointer-events`) at that point — the toggle
+ * (already `display: none` there, so invisible either way) and `<html>`
+ * both stay stuck in their "open" state otherwise, which leaves background
+ * scroll locked on desktop indefinitely and, if the viewport later shrinks
+ * back below the breakpoint, makes the panel reappear already open with no
+ * click that opened it. `window.matchMedia`'s own `change` event is the
+ * primary signal, with a `resize`-driven fallback gated on an actual
+ * `.matches` flip for environments that don't reliably dispatch `change`
+ * for an emulated viewport (devtools/CDP-driven resizing, observed the same
+ * way in `demo/diagram-page-client.ts`'s `narrowViewportQuery` and
+ * `demo/client.ts`'s gallery equivalent) even though `.matches` itself is
+ * correct there — the exact same two-layer pattern, applied here to the
+ * opposite (`min-width`) direction.
  */
 export const NAV_MOBILE_MENU_SCRIPT = `(function () {
   function closeMenu(toggle, panel, returnFocus) {
@@ -1508,6 +1525,8 @@ export const NAV_MOBILE_MENU_SCRIPT = `(function () {
     var firstLink = panel.querySelector('.mobile-link')
     if (firstLink) firstLink.focus()
   }
+
+  var desktopQuery = window.matchMedia('(min-width: ${BREAKPOINTS.tablet + 1}px)')
 
   document.querySelectorAll('.nav-bar').forEach(function (bar) {
     var toggle = bar.querySelector('.menu-toggle')
@@ -1535,6 +1554,21 @@ export const NAV_MOBILE_MENU_SCRIPT = `(function () {
         event.preventDefault()
         closeMenu(toggle, panel, true)
       }
+    })
+
+    function closeIfDesktop() {
+      if (desktopQuery.matches && panel.classList.contains('is-open')) {
+        closeMenu(toggle, panel, false)
+      }
+    }
+
+    desktopQuery.addEventListener('change', closeIfDesktop)
+
+    var lastDesktopMatch = desktopQuery.matches
+    window.addEventListener('resize', function () {
+      if (desktopQuery.matches === lastDesktopMatch) return
+      lastDesktopMatch = desktopQuery.matches
+      closeIfDesktop()
     })
   })
 })()`

@@ -37,10 +37,12 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, afterEach, vi } from 'vitest'
 import {
   NAV_INSTALL_COMMAND,
+  NAV_MOBILE_MENU_SCRIPT,
   NAV_ROOT_ID,
   Nav,
   type NavProps,
 } from '../../demo/components/nav.tsx'
+import { BREAKPOINTS } from '../../demo/components/tokens.tsx'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -393,5 +395,141 @@ describe('<Nav> hydration (#800)', () => {
     await user.click(pill)
 
     expect(writeText).toHaveBeenCalledWith(NAV_INSTALL_COMMAND)
+  })
+})
+
+describe('mobile menu resize reset', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.documentElement.classList.remove('mobile-nav-open')
+  })
+
+  /**
+   * jsdom doesn't implement matchMedia (see
+   * demo-diagram-page-client.test.ts's own stub for the same gap) -- this
+   * stands in a mutable `.matches` plus the captured 'change' listener, so
+   * a test can drive both of NAV_MOBILE_MENU_SCRIPT's two reset paths: the
+   * primary `change` event, and the `resize`-driven fallback that reads
+   * `.matches` fresh (see that script's doc comment for why both exist).
+   */
+  function stubMatchMedia(): {
+    setMatches: (matches: boolean) => void
+    fireChange: (matches: boolean) => void
+  } {
+    let changeHandler: ((event: { matches: boolean }) => void) | undefined
+    const mql = {
+      matches: false,
+      media: `(min-width: ${BREAKPOINTS.tablet + 1}px)`,
+      addEventListener: (type: string, handler: typeof changeHandler) => {
+        if (type === 'change') changeHandler = handler
+      },
+      removeEventListener: vi.fn(),
+    }
+    window.matchMedia = vi
+      .fn()
+      .mockReturnValue(mql) as unknown as typeof window.matchMedia
+
+    return {
+      setMatches(matches: boolean) {
+        mql.matches = matches
+      },
+      fireChange(matches: boolean) {
+        if (!changeHandler) throw new Error('no change listener registered')
+        mql.matches = matches
+        changeHandler({ matches })
+      },
+    }
+  }
+
+  /** Renders <Nav> plus its behavior script into the document, mirroring
+   * what a real page ships (NavStyle/NavMobileMenuScript alongside Nav). */
+  function renderNavWithScript(): void {
+    document.body.innerHTML = renderToString(createElement(Nav))
+    // Indirect eval, executing this file's own script literal the same way
+    // a browser would from the <script> tag NavMobileMenuScript renders;
+    // not third-party or user-controlled input.
+    ;(0, eval)(NAV_MOBILE_MENU_SCRIPT)
+  }
+
+  it('closes an open menu and unlocks scroll when the viewport grows past the tablet breakpoint', () => {
+    const mediaQuery = stubMatchMedia()
+    renderNavWithScript()
+
+    const toggle = document.querySelector('.menu-toggle')
+    const panel = document.querySelector('.mobile-nav-panel')
+    if (!toggle || !panel) throw new Error('test setup: nav markup missing')
+
+    fireEvent.click(toggle)
+    expect(panel.classList.contains('is-open')).toBe(true)
+    expect(toggle.classList.contains('is-open')).toBe(true)
+    expect(document.documentElement.classList.contains('mobile-nav-open')).toBe(
+      true,
+    )
+
+    mediaQuery.fireChange(true)
+
+    expect(panel.classList.contains('is-open')).toBe(false)
+    expect(toggle.classList.contains('is-open')).toBe(false)
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(document.documentElement.classList.contains('mobile-nav-open')).toBe(
+      false,
+    )
+  })
+
+  it('does nothing on a desktop-breakpoint match if the menu was never opened', () => {
+    const mediaQuery = stubMatchMedia()
+    renderNavWithScript()
+
+    const toggle = document.querySelector('.menu-toggle')
+    if (!toggle) throw new Error('test setup: nav markup missing')
+
+    expect(() => mediaQuery.fireChange(true)).not.toThrow()
+    expect(toggle.classList.contains('is-open')).toBe(false)
+    expect(document.documentElement.classList.contains('mobile-nav-open')).toBe(
+      false,
+    )
+  })
+
+  it('falls back to a resize listener when the MediaQueryList never fires change (e.g. CDP-driven viewport emulation)', () => {
+    const mediaQuery = stubMatchMedia()
+    renderNavWithScript()
+
+    const toggle = document.querySelector('.menu-toggle')
+    const panel = document.querySelector('.mobile-nav-panel')
+    if (!toggle || !panel) throw new Error('test setup: nav markup missing')
+
+    fireEvent.click(toggle)
+    expect(panel.classList.contains('is-open')).toBe(true)
+
+    // .matches flips (the viewport actually grew past the breakpoint) but
+    // no 'change' event fires -- exactly what demo/diagram-page-client.ts's
+    // own comment documents seeing under CDP/devtools viewport emulation.
+    mediaQuery.setMatches(true)
+    window.dispatchEvent(new Event('resize'))
+
+    expect(panel.classList.contains('is-open')).toBe(false)
+    expect(toggle.classList.contains('is-open')).toBe(false)
+    expect(document.documentElement.classList.contains('mobile-nav-open')).toBe(
+      false,
+    )
+  })
+
+  it('ignores a resize tick that does not cross the breakpoint', () => {
+    const mediaQuery = stubMatchMedia()
+    renderNavWithScript()
+
+    const toggle = document.querySelector('.menu-toggle')
+    const panel = document.querySelector('.mobile-nav-panel')
+    if (!toggle || !panel) throw new Error('test setup: nav markup missing')
+
+    fireEvent.click(toggle)
+    expect(panel.classList.contains('is-open')).toBe(true)
+
+    // matches stays false (still within the mobile band) -- a resize tick
+    // that doesn't cross the breakpoint must not close the menu.
+    mediaQuery.setMatches(false)
+    window.dispatchEvent(new Event('resize'))
+
+    expect(panel.classList.contains('is-open')).toBe(true)
   })
 })
