@@ -104,6 +104,7 @@
     "bench:compare": "tsx scripts/bench-compare.ts",
     "bench:history:append": "tsx scripts/bench-history-append.ts",
     "bench:trend": "tsx scripts/bench-trend.ts",
+    "bench:mcp": "tsx scripts/bench-mcp.ts",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
     "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",

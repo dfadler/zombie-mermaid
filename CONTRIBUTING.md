@@ -53,6 +53,7 @@ Useful scripts while developing (see `package.json` for the full list):
 - `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
 - `pnpm run bench:history:append` — append a `bench.ts --json=` summary to the tracked trend history (`bench-history.jsonl`); wired into `.github/workflows/ci.yml`'s `bench` job on every push to `main` (not on PRs) — you shouldn't normally need to run this by hand
 - `pnpm run bench:trend` — print how the combined render total (and each category) has moved across the most recent entries in `bench-history.jsonl`, for a "weeks/months of drift" view that complements `bench:compare`'s single current-vs-baseline check
+- `pnpm run bench:mcp` — benchmark the `packages/mcp` server's own request/response overhead (Zod validation, tool dispatch, transport round-trip) by driving a real MCP `Client` against `createMcpServer()` over `InMemoryTransport`; reports mean/median/p95 latency per tool. Supports `--json=<path>` in `bench.ts`'s own summary shape, `--iterations=<n>` (default 50), and `--warmup=<n>` (default 5)
 - `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
 - `pnpm run format` — format the codebase with Prettier
 - `pnpm run format:check` — check formatting without writing changes
