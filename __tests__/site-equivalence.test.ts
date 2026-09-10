@@ -217,7 +217,7 @@ describe('index.ts → index.html', () => {
     ).toHaveAttribute('href', 'editor.html')
   })
 
-  it('renders the theme showcase heading, live count, and six pre-rendered diagram slots', () => {
+  it('renders the theme showcase heading and a single decorative flowchart, themed in dracula', () => {
     const document = renderIndexPageDocument()
     const body = within(document.body)
     const defaultTheme = THEMES.dracula
@@ -229,22 +229,36 @@ describe('index.ts → index.html', () => {
         name: 'Pick a theme. Watch it flow.',
       }),
     ).toBeInTheDocument()
-    expect(
-      document.getElementById('theme-showcase-theme-name')?.textContent,
-    ).toBe(`/* ${THEME_LABELS.dracula ?? 'dracula'} */`)
-    expect(document.getElementById('theme-showcase-bg-val')?.textContent).toBe(
-      defaultTheme.bg,
+
+    const card = document.getElementById('theme-showcase-diagram-card')
+    expect(card).toBeInTheDocument()
+    expect(card?.style.getPropertyValue('--tsd-bg')).toBe(defaultTheme.bg)
+    expect(card?.style.getPropertyValue('--tsd-text')).toBe(defaultTheme.fg)
+    expect(card?.style.getPropertyValue('--tsd-arrow')).toBe(
+      defaultTheme.accent,
     )
 
-    const slots = document.querySelectorAll(
-      '#theme-showcase-diagrams > [data-slug]',
-    )
-    expect(slots).toHaveLength(6)
-    expect(slots[0]?.getAttribute('data-slug')).toBe('flowchart')
-    expect(slots[0]?.classList.contains('is-active')).toBe(true)
+    const diagram = document.getElementById('theme-showcase-diagram')
+    expect(diagram).toBeInTheDocument()
+    expect(diagram?.tagName.toLowerCase()).toBe('svg')
     expect(
-      [...slots].filter((slot) => slot.classList.contains('is-active')),
-    ).toHaveLength(1)
+      Array.from(diagram?.querySelectorAll('.tsd-node-text') ?? []).map(
+        (el) => el.textContent,
+      ),
+    ).toEqual([
+      'Start',
+      'Auth?',
+      'Build',
+      'Test',
+      'Deploy?',
+      'Ship it',
+      'Rollback',
+      'Monitor',
+    ])
+
+    const burst = document.getElementById('theme-showcase-burst')
+    expect(burst).toBeInTheDocument()
+    expect(burst?.tagName.toLowerCase()).toBe('circle')
   })
 
   it('renders the theme showcase picker with a trigger and one option per theme', () => {
