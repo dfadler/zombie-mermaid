@@ -113,8 +113,8 @@
  * call).
  */
 import type { ReactNode } from 'react'
-import { SiteHead } from './site-head.tsx'
-import { HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
+import { FontLinks, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
+import { Document } from './document.tsx'
 import { EditorAppIsland } from './editor-app-island.tsx'
 import { EDITOR_LEGACY_APP_JS_ELEMENT_ID } from './editor-app.tsx'
 import type { EditorThemeItem } from './editor-topbar.tsx'
@@ -523,22 +523,27 @@ export function EditorPage({
   // as every other page's active-page self-link.
   const { editor: _editor, ...editorNavHrefs } = ROOT_NAV_HREFS
   return (
-    <html lang="en">
-      <head>
-        <SiteHead title="Zombie Mermaid — Live Editor" css={css} />
-        {/* SiteHead only emits the SVG favicon (first shaped around
-            dashboard.ts, which needs nothing else). The original template
-            also links a .ico fallback and an apple-touch-icon; kept here as
-            siblings rather than growing SiteHead's props for one consumer. */}
-        <link rel="icon" type="image/x-icon" href="favicon.ico" />
-        <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-        <PrimitivesStyle />
-        <NavStyle />
-        <FooterStyle />
-        <style>{editorPageCss()}</style>
-      </head>
-      <body>
-        {/*
+    <Document
+      title="Zombie Mermaid — Live Editor"
+      head={
+        <>
+          {/* Document only emits the SVG favicon (its own shared default,
+              first shaped around dashboard.ts, which needs nothing else).
+              The original template also links a .ico fallback and an
+              apple-touch-icon; kept here as siblings rather than growing
+              Document's props for one consumer. */}
+          <FontLinks />
+          <style>{css}</style>
+          <link rel="icon" type="image/x-icon" href="favicon.ico" />
+          <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+          <PrimitivesStyle />
+          <NavStyle />
+          <FooterStyle />
+          <style>{editorPageCss()}</style>
+        </>
+      }
+    >
+      {/*
           A separate `.zm-shell` wrapper from the hero's below, `display:
           contents` so it contributes no box of its own -- `<NavIsland
           sticky>`'s containing block (nav-island.tsx's `display: contents`
@@ -551,62 +556,61 @@ export function EditorPage({
           still resolves through it) -- only its own box disappears, so the
           scoped palette still reaches `<NavIsland>` exactly as before.
         */}
-        <div className={ZM_SHELL} style={{ display: 'contents' }}>
-          <NavIsland
-            sticky
-            active="editor"
-            homeHref={homeHref}
-            hrefs={editorNavHrefs}
-            installSlotKind="empty"
-          />
-        </div>
-        <div className={ZM_SHELL}>
-          <EditorHero homeHref={homeHref} />
-        </div>
-
-        <div
-          className="section-px"
-          style={{
-            padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
-            // Literal hex (tokens.tsx's COLORS), not var(--bg): this div sits
-            // between the two .zm-shell blocks, outside their scope, and
-            // would otherwise show the *tool's* --bg (near-white) through as
-            // a jarring pale band between two dark sections. See the module
-            // doc comment on why var(--bg) itself is off-limits here.
-            background: COLORS['--bg'],
-          }}
-        >
-          <div className="editor-tool-shell">
-            <EditorAppIsland themes={themes} />
-          </div>
-        </div>
-
-        <div className={ZM_SHELL}>
-          <EditorFeatureStrip />
-          <Footer />
-        </div>
-
-        {/* 1. window.__themeColors + renderer + theme-state bridge — must run first (see header comment) */}
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own chromeThemeColorsScript() output plus the src/browser.ts bundle and the theme-state bridge, all under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: rendererSetupJs }}
+      <div className={ZM_SHELL} style={{ display: 'contents' }}>
+        <NavIsland
+          sticky
+          active="editor"
+          homeHref={homeHref}
+          hrefs={editorNavHrefs}
+          installSlotKind="empty"
         />
-        {/* 2. Hydrates <EditorApp> + <NavIsland>, then loads (3) itself once hydration is confirmed done */}
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/editor-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: editorClientScript }}
-        />
-        {/* 3. Legacy editor/js/*.js modules — inert data, not an executable script (see header comment) */}
-        <script
-          type="application/x-zm-legacy-js"
-          id={EDITOR_LEGACY_APP_JS_ELEMENT_ID}
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own editor/js/*.js modules, under version control and concatenated at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: appJs }}
-        />
-        <NavMobileMenuScript />
-      </body>
-    </html>
+      </div>
+      <div className={ZM_SHELL}>
+        <EditorHero homeHref={homeHref} />
+      </div>
+
+      <div
+        className="section-px"
+        style={{
+          padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
+          // Literal hex (tokens.tsx's COLORS), not var(--bg): this div sits
+          // between the two .zm-shell blocks, outside their scope, and
+          // would otherwise show the *tool's* --bg (near-white) through as
+          // a jarring pale band between two dark sections. See the module
+          // doc comment on why var(--bg) itself is off-limits here.
+          background: COLORS['--bg'],
+        }}
+      >
+        <div className="editor-tool-shell">
+          <EditorAppIsland themes={themes} />
+        </div>
+      </div>
+
+      <div className={ZM_SHELL}>
+        <EditorFeatureStrip />
+        <Footer />
+      </div>
+
+      {/* 1. window.__themeColors + renderer + theme-state bridge — must run first (see header comment) */}
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own chromeThemeColorsScript() output plus the src/browser.ts bundle and the theme-state bridge, all under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: rendererSetupJs }}
+      />
+      {/* 2. Hydrates <EditorApp> + <NavIsland>, then loads (3) itself once hydration is confirmed done */}
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/editor-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: editorClientScript }}
+      />
+      {/* 3. Legacy editor/js/*.js modules — inert data, not an executable script (see header comment) */}
+      <script
+        type="application/x-zm-legacy-js"
+        id={EDITOR_LEGACY_APP_JS_ELEMENT_ID}
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own editor/js/*.js modules, under version control and concatenated at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: appJs }}
+      />
+      <NavMobileMenuScript />
+    </Document>
   )
 }

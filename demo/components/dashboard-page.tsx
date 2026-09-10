@@ -59,6 +59,7 @@ import {
 import { Footer } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
+import { Document } from './document.tsx'
 import { DesignFontLinks, colorVar } from './tokens.tsx'
 
 // Re-exported for existing callers/tests that import these from
@@ -106,50 +107,49 @@ export function DashboardPage({
 }: DashboardPageProps) {
   const viewModel = buildDashboardViewModel(data)
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Maintenance dashboard — Zombie Mermaid</title>
-        <meta name="description" content={PAGE_DESCRIPTION} />
-        <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-        <DesignFontLinks />
-        <style>{css}</style>
-      </head>
-      <body>
-        <div
-          className="dc-root"
-          style={{
-            width: '100%',
-            maxWidth: '1440px',
-            margin: '0 auto',
-            // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
-            // fixed gradient here would leave a static dark band behind on
-            // every non-default theme (#772's site-chrome re-theming). The
-            // middle stop reuses --bg-soft, already defined for exactly
-            // this "lifted page background" role (tokens.tsx).
-            background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
-            position: 'relative',
-          }}
-        >
-          {/*
+    <Document
+      title="Maintenance dashboard — Zombie Mermaid"
+      description={PAGE_DESCRIPTION}
+      head={
+        <>
+          <DesignFontLinks />
+          <style>{css}</style>
+        </>
+      }
+    >
+      <div
+        className="dc-root"
+        style={{
+          width: '100%',
+          maxWidth: '1440px',
+          margin: '0 auto',
+          // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
+          // fixed gradient here would leave a static dark band behind on
+          // every non-default theme (#772's site-chrome re-theming). The
+          // middle stop reuses --bg-soft, already defined for exactly
+          // this "lifted page background" role (tokens.tsx).
+          background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
+          position: 'relative',
+        }}
+      >
+        {/*
             Its own hydration island (zombie-mermaid#800), separate from
             DASHBOARD_ROOT_ID -- see DashboardApp's doc comment
             (dashboard-app.tsx) for why Nav still isn't part of that
             boundary, and dashboard-client.tsx for where it's hydrated.
           */}
-          <NavIsland
-            sticky
-            homeHref={ROUTES.home}
-            hrefs={{
-              diagrams: ROUTES.diagrams,
-              editor: ROUTES.editor,
-              forkFixes: ROUTES.forkFixes,
-              blog: ROUTES.blog,
-              github: FORK_URL,
-            }}
-          />
-          {/*
+        <NavIsland
+          sticky
+          homeHref={ROUTES.home}
+          hrefs={{
+            diagrams: ROUTES.diagrams,
+            editor: ROUTES.editor,
+            forkFixes: ROUTES.forkFixes,
+            blog: ROUTES.blog,
+            github: FORK_URL,
+          }}
+        />
+        {/*
             `overflow: hidden` used to live on the `.dc-root` div itself,
             but that made it an ancestor of the sticky `<NavIsland>` above —
             an `overflow` other than `visible` on any ancestor stops
@@ -161,8 +161,8 @@ export function DashboardPage({
             whatever this was guarding against contained without breaking
             the header's stickiness.
           */}
-          <div style={{ overflow: 'hidden' }}>
-            {/*
+        <div style={{ overflow: 'hidden' }}>
+          {/*
             Plain, inert hydration container -- see DASHBOARD_ROOT_ID's doc
             comment (dashboard-app.tsx) for why DashboardApp's own root
             can't carry this id itself.
@@ -193,32 +193,31 @@ export function DashboardPage({
             copy this same `renderToString`-for-the-hydrated-island
             approach.
           */}
-            <div
-              id={DASHBOARD_ROOT_ID}
-              dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
-                __html: renderToString(<DashboardApp viewModel={viewModel} />),
-              }}
-            />
+          <div
+            id={DASHBOARD_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DashboardApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<DashboardApp viewModel={viewModel} />),
+            }}
+          />
 
-            <Footer columns={dashboardFooterColumns()} />
-          </div>
+          <Footer columns={dashboardFooterColumns()} />
         </div>
-        <script
-          type="application/json"
-          id={DASHBOARD_PROPS_ELEMENT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
-            __html: escapeJsonForScriptTag(JSON.stringify(viewModel)),
-          }}
-        />
-        <NavMobileMenuScript />
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/dashboard-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: clientScript }}
-        />
-      </body>
-    </html>
+      </div>
+      <script
+        type="application/json"
+        id={DASHBOARD_PROPS_ELEMENT_ID}
+        dangerouslySetInnerHTML={{
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DashboardViewModel, escaped with escapeJsonForScriptTag; never user input
+          __html: escapeJsonForScriptTag(JSON.stringify(viewModel)),
+        }}
+      />
+      <NavMobileMenuScript />
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/dashboard-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: clientScript }}
+      />
+    </Document>
   )
 }

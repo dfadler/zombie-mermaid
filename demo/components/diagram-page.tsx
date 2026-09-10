@@ -60,6 +60,7 @@ import { escapeJsonForScriptTag } from '../format.ts'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
+import { Document } from './document.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
 import { type Accent } from './primitives.tsx'
 import {
@@ -310,16 +311,26 @@ function PageStyle() {
   return <style>{pageCss()}</style>
 }
 
-function DetailHead({
+/**
+ * Every `<head>` element the two page templates below need beyond
+ * `Document`'s own shared boilerplate (charset, viewport, title,
+ * description, favicon): canonical/Open Graph/Twitter tags, font links, the
+ * page's stylesheet, and its page-specific `<style>`.
+ *
+ * `Document`'s favicon `<link>` now renders right after the description
+ * meta tag rather than after these Open Graph/Twitter tags, where it used
+ * to sit — a `<head>`-internal reordering with no rendering/SEO effect, not
+ * a behavior change (see document.tsx's own doc comment).
+ */
+function DetailHeadExtra({
   title,
   description,
   canonical,
-  faviconHref,
   cssHref,
   extraStyle = <PageStyle />,
 }: Pick<
   DiagramTypePageProps,
-  'title' | 'description' | 'canonical' | 'faviconHref' | 'cssHref'
+  'title' | 'description' | 'canonical' | 'cssHref'
 > & {
   /**
    * The page-specific `<style>` beyond the shared design/primitives/nav/
@@ -331,23 +342,18 @@ function DetailHead({
   extraStyle?: ReactNode
 }) {
   return (
-    <head>
-      <meta charSet="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>{title}</title>
-      <meta name="description" content={description} />
+    <>
       <link rel="canonical" href={canonical} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content="website" />
       <meta property="og:url" content={canonical} />
       <meta name="twitter:card" content="summary" />
-      <link rel="icon" type="image/svg+xml" href={faviconHref} />
       <DesignFontLinks />
       <link rel="stylesheet" href={cssHref} />
       <SharedPageStyles />
       {extraStyle}
-    </head>
+    </>
   )
 }
 
@@ -452,46 +458,50 @@ export function DiagramTypePage({
     types,
   }
   return (
-    <html lang="en">
-      <DetailHead
-        title={title}
-        description={description}
-        canonical={canonical}
-        faviconHref={faviconHref}
-        cssHref={cssHref}
-      />
-      <body>
-        <div
-          className="dc-root"
-          style={{
-            fontFamily: 'var(--font-body)',
-            color: colorVar('--text'),
-            width: '100%',
-            // No maxWidth/margin cap here, unlike the artboard's own 1440px
-            // outer frame: every other page's header (index-page.tsx,
-            // blog-page.tsx, fork-fixes-page.tsx) spans the full viewport
-            // width, with only each section's own inner content column
-            // (LAYOUT.maxWidth, centred) bounded — capping this wrapper
-            // instead left the diagrams pages' header floating with visible
-            // side gaps on wide viewports while every other page's header
-            // ran edge to edge.
-            // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
-            // fixed gradient here would leave a static dark band behind on
-            // every non-default theme (#772's site-chrome re-theming). The
-            // middle stop reuses --bg-soft, already defined for exactly
-            // this "lifted page background" role (tokens.tsx).
-            background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
-            position: 'relative',
-          }}
-        >
-          <NavIsland
-            sticky
-            active="diagrams"
-            homeHref={HOME_HREF}
-            hrefs={NAV_HREFS}
-            installSlotKind="empty"
-          />
-          {/*
+    <Document
+      title={title}
+      description={description}
+      faviconHref={faviconHref}
+      head={
+        <DetailHeadExtra
+          title={title}
+          description={description}
+          canonical={canonical}
+          cssHref={cssHref}
+        />
+      }
+    >
+      <div
+        className="dc-root"
+        style={{
+          fontFamily: 'var(--font-body)',
+          color: colorVar('--text'),
+          width: '100%',
+          // No maxWidth/margin cap here, unlike the artboard's own 1440px
+          // outer frame: every other page's header (index-page.tsx,
+          // blog-page.tsx, fork-fixes-page.tsx) spans the full viewport
+          // width, with only each section's own inner content column
+          // (LAYOUT.maxWidth, centred) bounded — capping this wrapper
+          // instead left the diagrams pages' header floating with visible
+          // side gaps on wide viewports while every other page's header
+          // ran edge to edge.
+          // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
+          // fixed gradient here would leave a static dark band behind on
+          // every non-default theme (#772's site-chrome re-theming). The
+          // middle stop reuses --bg-soft, already defined for exactly
+          // this "lifted page background" role (tokens.tsx).
+          background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
+          position: 'relative',
+        }}
+      >
+        <NavIsland
+          sticky
+          active="diagrams"
+          homeHref={HOME_HREF}
+          hrefs={NAV_HREFS}
+          installSlotKind="empty"
+        />
+        {/*
             `overflow: hidden` used to live on the `.dc-root` div itself,
             but that made it an ancestor of the sticky `<NavIsland>` above —
             an `overflow` other than `visible` on any ancestor stops
@@ -503,42 +513,41 @@ export function DiagramTypePage({
             whatever this was guarding against contained without breaking
             the header's stickiness.
           */}
-          <div style={{ overflow: 'hidden' }}>
-            {/*
+        <div style={{ overflow: 'hidden' }}>
+          {/*
             Plain, inert hydration container -- see dashboard-app.tsx's
             DASHBOARD_ROOT_ID doc comment for why DiagramTypeApp's own root
             can't carry this id itself, and dashboard-page.tsx's own, more
             detailed version of this comment for why renderToString (not
             renderToStaticMarkup) is needed here.
           */}
-            <div
-              id={DIAGRAM_TYPE_ROOT_ID}
-              dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
-                __html: renderToString(<DiagramTypeApp {...appProps} />),
-              }}
-            />
-            <script
-              type="application/json"
-              id={DIAGRAM_TYPE_PROPS_ELEMENT_ID}
-              dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
-                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-              }}
-            />
+          <div
+            id={DIAGRAM_TYPE_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<DiagramTypeApp {...appProps} />),
+            }}
+          />
+          <script
+            type="application/json"
+            id={DIAGRAM_TYPE_PROPS_ELEMENT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
+              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+            }}
+          />
 
-            <Footer columns={DETAIL_FOOTER_COLUMNS} />
-          </div>
+          <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>
+      </div>
 
-        <script
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from DIAGRAM_TYPE_PROFILES, escaped with escapeJsonForScriptTag; never user input
-          dangerouslySetInnerHTML={{ __html: themeDataScript }}
-        />
-        <script type="module" src={clientScriptSrc} />
-        <NavMobileMenuScript />
-      </body>
-    </html>
+      <script
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from DIAGRAM_TYPE_PROFILES, escaped with escapeJsonForScriptTag; never user input
+        dangerouslySetInnerHTML={{ __html: themeDataScript }}
+      />
+      <script type="module" src={clientScriptSrc} />
+      <NavMobileMenuScript />
+    </Document>
   )
 }
 function hubPageCss(): string {
@@ -606,42 +615,46 @@ export function DiagramHubPage({
 }: DiagramHubPageProps) {
   const appProps: DiagramHubAppProps = { themeCount, types }
   return (
-    <html lang="en">
-      <DetailHead
-        title={title}
-        description={description}
-        canonical={canonical}
-        faviconHref={faviconHref}
-        cssHref={cssHref}
-        extraStyle={<HubPageStyle />}
-      />
-      <body>
-        <div
-          className="dc-root"
-          style={{
-            fontFamily: 'var(--font-body)',
-            color: colorVar('--text'),
-            width: '100%',
-            // No maxWidth/margin cap -- see DiagramTypePage's identical
-            // wrapper for why (keeps this page's header full-width, matching
-            // every other page, instead of floating with side gaps).
-            // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
-            // fixed gradient here would leave a static dark band behind on
-            // every non-default theme (#772's site-chrome re-theming). The
-            // middle stop reuses --bg-soft, already defined for exactly
-            // this "lifted page background" role (tokens.tsx).
-            background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
-            position: 'relative',
-          }}
-        >
-          <NavIsland
-            sticky
-            active="diagrams"
-            homeHref={HOME_HREF}
-            hrefs={NAV_HREFS}
-            installSlotKind="empty"
-          />
-          {/*
+    <Document
+      title={title}
+      description={description}
+      faviconHref={faviconHref}
+      head={
+        <DetailHeadExtra
+          title={title}
+          description={description}
+          canonical={canonical}
+          cssHref={cssHref}
+          extraStyle={<HubPageStyle />}
+        />
+      }
+    >
+      <div
+        className="dc-root"
+        style={{
+          fontFamily: 'var(--font-body)',
+          color: colorVar('--text'),
+          width: '100%',
+          // No maxWidth/margin cap -- see DiagramTypePage's identical
+          // wrapper for why (keeps this page's header full-width, matching
+          // every other page, instead of floating with side gaps).
+          // var()-based, not the canvas's literal '#0a0d16'/'#0d1120': a
+          // fixed gradient here would leave a static dark band behind on
+          // every non-default theme (#772's site-chrome re-theming). The
+          // middle stop reuses --bg-soft, already defined for exactly
+          // this "lifted page background" role (tokens.tsx).
+          background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
+          position: 'relative',
+        }}
+      >
+        <NavIsland
+          sticky
+          active="diagrams"
+          homeHref={HOME_HREF}
+          hrefs={NAV_HREFS}
+          installSlotKind="empty"
+        />
+        {/*
             `overflow: hidden` used to live on the `.dc-root` div itself,
             but that made it an ancestor of the sticky `<NavIsland>` above —
             an `overflow` other than `visible` on any ancestor stops
@@ -653,37 +666,36 @@ export function DiagramHubPage({
             whatever this was guarding against contained without breaking
             the header's stickiness.
           */}
-          <div style={{ overflow: 'hidden' }}>
-            {/*
+        <div style={{ overflow: 'hidden' }}>
+          {/*
             Plain, inert hydration container -- see DiagramTypePage's
             identical comment above.
           */}
-            <div
-              id={DIAGRAM_HUB_ROOT_ID}
-              dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
-                __html: renderToString(<DiagramHubApp {...appProps} />),
-              }}
-            />
-            <script
-              type="application/json"
-              id={DIAGRAM_HUB_PROPS_ELEMENT_ID}
-              dangerouslySetInnerHTML={{
-                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
-                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-              }}
-            />
+          <div
+            id={DIAGRAM_HUB_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<DiagramHubApp {...appProps} />),
+            }}
+          />
+          <script
+            type="application/json"
+            id={DIAGRAM_HUB_PROPS_ELEMENT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
+              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+            }}
+          />
 
-            <Footer columns={DETAIL_FOOTER_COLUMNS} />
-          </div>
+          <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-hub-client.tsx bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: clientScript }}
-        />
-        <NavMobileMenuScript />
-      </body>
-    </html>
+      </div>
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-hub-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: clientScript }}
+      />
+      <NavMobileMenuScript />
+    </Document>
   )
 }

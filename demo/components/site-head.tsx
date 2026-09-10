@@ -1,15 +1,29 @@
 /** @jsxRuntime automatic */
 /**
- * Shared `<head>` metadata for the site's generated pages: charset and
- * viewport, title and description, favicon, the Google Fonts preconnects
- * and stylesheet every page loads (Geist + JetBrains Mono), and the page's
- * own CSS inlined into a `<style>` element.
+ * `SiteHead` was an early, partial step toward one shared `<head>` shape
+ * for the site's generated pages (charset/viewport/title/description/
+ * favicon, plus the Google Fonts preconnects and stylesheet this file's own
+ * `GOOGLE_FONTS_HREF` points at, and the page's CSS in a `<style>`
+ * element). This doc comment used to claim dashboard.ts (the #423 pilot)
+ * as its "first consumer" and name fork-fixes.ts/editor.ts/index.ts as
+ * pages that "still carry a hand-written copy of this same block" — by the
+ * time of zombie-mermaid#936, that had drifted: dashboard.ts never actually
+ * rendered `<SiteHead>` (it hand-rolled the same shape independently, see
+ * dashboard-page.tsx's own history), and editor-page.tsx was the *only*
+ * real consumer.
  *
- * Rendered as a fragment rather than a `<head>` element so a page can put
- * its own extras alongside it (index.ts's JSON-LD block, pages.ts's
- * canonical/Open Graph tags) once those pages are ported. First consumer:
- * dashboard.ts (the #423 pilot); fork-fixes.ts, editor.ts, and index.ts
- * each still carry a hand-written copy of this same block.
+ * #936 replaced that one remaining use: `demo/components/document.tsx`'s
+ * `Document` now owns the charset/viewport/title/description/favicon shell
+ * for all six page generators (including editor.ts, which gets its own
+ * Geist + JetBrains Mono font links from `site-chrome.tsx`'s `FontLinks`
+ * instead of `SiteHead`'s bundled font+style combo — `Document` doesn't
+ * hardcode one font family the way `SiteHead` did, since the other five
+ * pages use a different pair, see tokens.tsx's `DesignFontLinks`). `SiteHead`
+ * and `SiteHeadProps` below are therefore unused by any page generator as
+ * of #936; kept rather than deleted since `GOOGLE_FONTS_HREF` (this file's
+ * other export) is still very much in use (`site-chrome.tsx`'s `FontLinks`),
+ * and `SiteHead` itself remains a correct, valid head-fragment shape a
+ * future non-redesigned page could still reach for.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.

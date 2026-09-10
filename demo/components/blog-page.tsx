@@ -42,6 +42,7 @@ import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
 import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript, type NavKey } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
+import { Document } from './document.tsx'
 import {
   BLOG_DESCRIPTION,
   BLOG_INDEX_PROPS_ELEMENT_ID,
@@ -123,11 +124,18 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
 /* -----------------------------------------------------------------
  * Document shell
  *
- * A page-local replacement for site-chrome.tsx's `StaticPage`: same
- * meta/canonical/Open Graph shape, but DesignFontLinks (Space Grotesk +
- * Plus Jakarta Sans) instead of StaticPage's Geist + JetBrains Mono. Kept
- * local rather than added to site-chrome.tsx, which stays untouched for
- * the pages that haven't been redesigned yet.
+ * A page-local wrapper around the shared `Document` (document.tsx):
+ * `Document` itself now owns the charset/viewport/title/description/
+ * favicon boilerplate this used to hand-roll; `BlogDocument` supplies only
+ * what's left — the canonical/Open Graph tags, DesignFontLinks (Space
+ * Grotesk + Plus Jakarta Sans, not `site-chrome.tsx`'s `FontLinks`'s Geist +
+ * JetBrains Mono), the page stylesheet, and the `<body>` background these
+ * pages have always set.
+ *
+ * `Document`'s favicon `<link>` now renders right after the description
+ * meta tag rather than after these Open Graph/Twitter tags, where it used
+ * to sit — a `<head>`-internal reordering with no rendering/SEO effect, not
+ * a behavior change (see document.tsx's own doc comment).
  * ----------------------------------------------------------------- */
 
 interface BlogDocumentProps {
@@ -152,27 +160,29 @@ function BlogDocument({
   children,
 }: BlogDocumentProps) {
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{title}</title>
-        <meta name="description" content={description} />
-        <link rel="canonical" href={canonical} />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={description} />
-        <meta property="og:type" content={ogType} />
-        <meta property="og:url" content={canonical} />
-        {ogType === 'article' && publishedTime ? (
-          <meta property="article:published_time" content={publishedTime} />
-        ) : null}
-        <meta name="twitter:card" content="summary" />
-        <link rel="icon" type="image/svg+xml" href={faviconHref} />
-        <DesignFontLinks />
-        <link rel="stylesheet" href={cssHref} />
-      </head>
-      <body style={{ background: colorVar('--bg') }}>{children}</body>
-    </html>
+    <Document
+      title={title}
+      description={description}
+      faviconHref={faviconHref}
+      bodyStyle={{ background: colorVar('--bg') }}
+      head={
+        <>
+          <link rel="canonical" href={canonical} />
+          <meta property="og:title" content={title} />
+          <meta property="og:description" content={description} />
+          <meta property="og:type" content={ogType} />
+          <meta property="og:url" content={canonical} />
+          {ogType === 'article' && publishedTime ? (
+            <meta property="article:published_time" content={publishedTime} />
+          ) : null}
+          <meta name="twitter:card" content="summary" />
+          <DesignFontLinks />
+          <link rel="stylesheet" href={cssHref} />
+        </>
+      }
+    >
+      {children}
+    </Document>
   )
 }
 
