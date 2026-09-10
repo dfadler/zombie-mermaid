@@ -50,17 +50,24 @@
   min-width: 100px;
   justify-content: flex-end;
 }
+/* Was a hardcoded rgba(255,255,255,.2) plus a `:root.light` override meant
+ * to swap it for rgba(0,0,0,.2) in light mode -- but nothing in the current
+ * chrome-mode code (demo/components/editor-dark-mode.ts's
+ * applyChromeColorMode) ever adds a `.light` class to :root; it only sets
+ * --t-bg/--t-fg custom properties. The override was dead, and the base
+ * rule was invisible in light mode. color-mix off --t-fg adapts to
+ * whichever chrome mode is actually active. */
 .color-edit-btn:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-:root.light .color-edit-btn:hover {
-  border-color: rgba(0, 0, 0, 0.2);
+  border-color: color-mix(in srgb, var(--t-fg) 30%, var(--border));
 }
 .color-swatch {
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  /* Was a fixed rgba(0,0,0,.15) -- invisible against a dark-mode panel
+   * (black-on-near-black). color-mix off --t-fg adapts to either chrome
+   * mode. */
+  border: 1px solid color-mix(in srgb, var(--t-fg) 25%, transparent);
   flex-shrink: 0;
   background: transparent;
 }
@@ -92,7 +99,7 @@
   outline: none;
 }
 .padding-num:focus {
-  border-color: var(--blue);
+  border-color: var(--t-accent);
 }
 .padding-slider {
   -webkit-appearance: none;
@@ -104,12 +111,17 @@
   outline: none;
   cursor: pointer;
 }
+/* --blue only exists in demo/components/tokens.tsx's COLORS map, scoped to
+ * .zm-shell -- outside the editor page's own root (see editor-topbar.tsx's
+ * EditorLogo doc comment) -- so it resolved to nothing here: the slider
+ * thumb had no background at all and rendered invisible. --t-accent is the
+ * editor's own, in-scope accent token. */
 .padding-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--blue);
+  background: var(--t-accent);
   cursor: pointer;
   border: 2px solid var(--bg2);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
@@ -118,7 +130,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--blue);
+  background: var(--t-accent);
   cursor: pointer;
   border: 2px solid var(--bg2);
 }

@@ -65,18 +65,44 @@ declare global {
 
 /**
  * Sets the editor chrome's `--t-bg`/`--t-fg`/`--t-accent`/`--foreground-rgb`/
- * `--shadow-*` custom properties on `:root` from light/dark mode alone --
- * moved here (and no longer theme-keyed) from `editor-rendering.ts`'s old
- * `applyThemeToPage()`, which used to also override these from whichever
- * diagram theme was selected, reskinning the topbar/panels/pickers
- * (`editor/css/variables.css` derives its whole palette from these three) to
- * match. That coupling is gone: the diagram's own colors now only ever
- * reach `buildOptions()`/the rendered `<svg>` (`editor-rendering.ts`), and
- * this function is the tool chrome's only remaining source of truth for
- * `--t-*`, driven solely by `state.darkMode` below.
+ * `--shadow-*` custom properties on `.editor-tool-shell` (the tool's own
+ * card -- see `editor-page.tsx`'s module doc comment, "The tool now lives
+ * in a fixed-height card") from light/dark mode alone -- moved here (and no
+ * longer theme-keyed) from `editor-rendering.ts`'s old `applyThemeToPage()`,
+ * which used to also override these from whichever diagram theme was
+ * selected, reskinning the topbar/panels/pickers (`editor/css/variables.css`
+ * derives its whole palette from these three) to match. That coupling is
+ * gone: the diagram's own colors now only ever reach `buildOptions()`/the
+ * rendered `<svg>` (`editor-rendering.ts`), and this function is the tool
+ * chrome's only remaining source of truth for `--t-*`, driven solely by
+ * `state.darkMode` below.
+ *
+ * Scoped to `.editor-tool-shell`, not `document.documentElement`: this used
+ * to write straight to `:root`, which put `--foreground-rgb`/`--shadow-
+ * border-opacity`/`--shadow-blur-opacity` in scope for the *whole page*,
+ * not just the tool -- `demo/styles.css`'s own `:root` block defines the
+ * same three names for the site-wide `.shadow-minimal`/`.shadow-modal`
+ * system nav.tsx and the hero/footer chrome (`.zm-shell`) use, so toggling
+ * the editor's dark/light mode was visibly reskinning the surrounding site
+ * header too. `editor-page.tsx`'s own module doc comment already documents
+ * an identical `--bg`/`--border`/`--green` name collision between
+ * `editor/css/variables.css` and `tokens.tsx`'s `COLORS` and resolves it by
+ * scoping the design-system palette to `.zm-shell` rather than `:root` --
+ * this is the same fix, on the other side of the boundary: the *tool's*
+ * three extra chrome variables scoped to its own root instead of leaking
+ * outward past it. `.editor-tool-shell` itself only ever reads these three
+ * names through JS-set inline styles, never through its own CSS rule (that
+ * rule uses literal hex/rgba -- see editor-page.tsx), so setting them here
+ * doesn't change how the shell itself paints. Falls back to
+ * `document.documentElement` when `.editor-tool-shell` isn't in the DOM
+ * (e.g. a test harness that mounts `<EditorApp>` directly, without the
+ * `<EditorPage>` wrapper) -- the pre-existing, unscoped behavior, since
+ * there's no page chrome for it to leak into there.
  */
 function applyChromeColorMode(dark: boolean): void {
-  const root = document.documentElement
+  const root: HTMLElement =
+    document.querySelector<HTMLElement>('.editor-tool-shell') ??
+    document.documentElement
   root.style.setProperty('--t-bg', dark ? '#18181B' : '#FFFFFF')
   root.style.setProperty('--t-fg', dark ? '#FAFAFA' : '#27272A')
   root.style.setProperty('--t-accent', dark ? '#60a5fa' : '#3b82f6')
