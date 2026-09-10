@@ -146,6 +146,7 @@ export function ForkFixesPage({
           active="forkFixes"
           homeHref={HOME_HREF}
           hrefs={NAV_HREFS}
+          installSlotKind="empty"
         />
 
         {/*
