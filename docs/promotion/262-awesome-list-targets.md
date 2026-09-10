@@ -27,8 +27,8 @@ perfectly; noted below).
 ### Proposed entry (add after the existing Mermaid line in that section)
 
 ```markdown
-* [zombie-mermaid](https://github.com/dfadler/zombie-mermaid) (Free, Open Source, Diagram as code, Ease of use - Easy, Visual Appearance - Modern).  
-Examples - [Link](https://dfadler.github.io/zombie-mermaid/)
+- [zombie-mermaid](https://github.com/dfadler/zombie-mermaid) (Free, Open Source, Diagram as code, Ease of use - Easy, Visual Appearance - Modern).  
+  Examples - [Link](https://dfadler.github.io/zombie-mermaid/)
 ```
 
 Judgment call: this list's format assumes a hosted tool/app more than a library, so
@@ -41,11 +41,11 @@ section is a hosted product.
 ## 2. `awesome-diagrams`
 
 **Target confirmed:** [`robbie-cao/awesome-diagrams`](https://github.com/robbie-cao/awesome-diagrams)
-("Awesome Diagram Tools" — a curated list of diagram *tools* for programmers, CC0
+("Awesome Diagram Tools" — a curated list of diagram _tools_ for programmers, CC0
 licensed). This is the better match for issue #262's literal `awesome-diagrams` name and
 intent (submitting a tool), not the other repo also named `awesome-diagrams`
 ([`terrastruct/awesome-diagrams`](https://github.com/terrastruct/awesome-diagrams)),
-which is a curated gallery of diagram *images* (screenshots of real companies'
+which is a curated gallery of diagram _images_ (screenshots of real companies'
 architecture diagrams) — not a place to list a rendering tool at all. Confirmed by
 reading both READMEs via `gh api`.
 
