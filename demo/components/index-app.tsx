@@ -747,9 +747,12 @@ function FeaturePillars() {
                           }),
                     }}
                   >
-                    <ItemIcon size={20} />
+                    <div style={{ flexShrink: 0 }}>
+                      <ItemIcon size={20} />
+                    </div>
                     <p
                       style={{
+                        margin: 0,
                         fontSize: `${FONT_SIZE.body}px`,
                         color: colorVar('--text-dim'),
                         lineHeight: 1.5,
