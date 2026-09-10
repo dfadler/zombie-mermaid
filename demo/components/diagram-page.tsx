@@ -4,9 +4,9 @@
  * diagrams/*.html) as React components.
  *
  * As of zombie-mermaid#805, this file holds only the page *shells*
- * (`<html>`/`<head>`, the `NavIsland`/`ThemePickerIsland`-or-
- * `ThemePickerSection`/`Footer` sibling islands, the hydration
- * containers/script wiring) — the hydrated body content lives in
+ * (`<html>`/`<head>`, the `NavIsland`/`ThemePickerIsland`/`Footer` sibling
+ * islands, the hydration containers/script wiring) — the hydrated body
+ * content lives in
  * `diagram-type-app.tsx`'s `DiagramTypeApp` and `diagram-hub-app.tsx`'s
  * `DiagramHubApp`, split out specifically so `demo/diagram-type-
  * client.tsx`/`demo/diagram-hub-client.tsx` (the browser bundles) never
@@ -62,8 +62,6 @@ import { Footer, type FooterColumn } from './footer.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { SharedPageStyles } from './shared-page-css.tsx'
-import { ThemePickerSection } from './theme-picker-section.tsx'
-import { ThemePickerStyle } from './theme-picker.tsx'
 import { ThemePickerIsland } from './theme-picker-island.tsx'
 import { SectionEyebrow, type Accent } from './primitives.tsx'
 import {
@@ -630,17 +628,6 @@ export interface DiagramHubPageProps {
    */
   types: ReadonlyArray<DiagramTypeLink & { intro: string; accent: Accent }>
   /**
-   * The bundled `demo/theme-bar-only-client.ts` script (via `demo/build-
-   * theme-bar-client.ts`'s `bundleThemeBarClient()`), inlined so the hub's
-   * `ThemePickerSection` (#687) is interactive — pill selection persists
-   * through `demo/theme-state.ts`, same as every other page that mounts
-   * that section. Unchanged by #805: the hub has no live diagram of its
-   * own to re-theme, so it keeps its own small, separate theme-bar-only
-   * bundle rather than sharing `demo/diagram-type-client.tsx`'s heavier
-   * one.
-   */
-  themeBarScript: string
-  /**
    * The bundled `demo/diagram-hub-client.tsx` entry (zombie-mermaid#805)
    * that hydrates {@link DiagramHubApp} and `<NavIsland>` (via
    * `hydrateNav()`) — one bundle for both, mirroring `dashboard-
@@ -663,7 +650,6 @@ export function DiagramHubPage({
   faviconHref,
   themeCount,
   types,
-  themeBarScript,
   clientScript = '',
 }: DiagramHubPageProps) {
   const appProps: DiagramHubAppProps = { themeCount, types }
@@ -675,12 +661,7 @@ export function DiagramHubPage({
         canonical={canonical}
         faviconHref={faviconHref}
         cssHref={cssHref}
-        extraStyle={
-          <>
-            <HubPageStyle />
-            <ThemePickerStyle />
-          </>
-        }
+        extraStyle={<HubPageStyle />}
       />
       <body>
         <div
@@ -740,16 +721,9 @@ export function DiagramHubPage({
               }}
             />
 
-            <ThemePickerSection tinted />
-
             <Footer columns={DETAIL_FOOTER_COLUMNS} />
           </div>
         </div>
-        <script
-          type="module"
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/theme-bar-only-client.ts bundle, under version control and produced at build time; never live/runtime user input
-          dangerouslySetInnerHTML={{ __html: themeBarScript }}
-        />
         <script
           type="module"
           // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-hub-client.tsx bundle, under version control and produced at build time; never live/runtime user input

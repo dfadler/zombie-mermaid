@@ -5,8 +5,8 @@
  * `diagram-page.tsx` for the same reason `diagram-type-app.tsx` was — see
  * that file's header comment (this page has no live diagram of its own to
  * re-theme, so it's a much simpler split: no `react-dom/server`-importing
- * concern beyond the usual `ThemePickerSection`/`<NavIsland>`/`<Footer>`
- * siblings every hydrated page keeps out of its own tree).
+ * concern beyond the usual `<NavIsland>`/`<Footer>` siblings every
+ * hydrated page keeps out of its own tree).
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.

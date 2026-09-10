@@ -1,8 +1,10 @@
 /**
  * Bundle entry point for a page that mounts {@link ThemePickerSection}
  * (`demo/components/theme-picker-section.tsx`) and needs no other client
- * JS of its own — Home, the Diagrams hub, Blog, Fork Fixes, and Dashboard
- * as of #687. Hydrates the `ThemePicker` island (`demo/theme-bar-client.tsx`'s
+ * JS of its own — Blog, Fork Fixes, and Dashboard as of #687 (the Diagrams
+ * hub dropped `ThemePickerSection`, and so this bundle, when its own "Pick
+ * a look" section was removed). Hydrates the `ThemePicker` island
+ * (`demo/theme-bar-client.tsx`'s
  * `hydrateThemeBar()`, replacing the imperative `initThemeBar()` deleted by
  * #801), and — as of #772 — the surrounding site chrome (Nav/Footer/cards)
  * via `initChromeTheme()` (`demo/chrome-theme-client.ts`), reading the

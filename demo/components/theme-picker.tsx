@@ -71,9 +71,10 @@ export const DEFAULT_SWATCH = { bg: '#FFFFFF', fg: '#27272A' }
  * The `.theme-pill`/`.theme-more-dropdown`/etc CSS every `ThemePicker`
  * instance needs, extracted from `demo/styles.css` (lines ~221-330 as of
  * this writing) so a page that doesn't load that whole legacy stylesheet
- * — every #590-redesigned page (Home, Blog, Fork Fixes, Dashboard, the
- * Diagrams hub) — can still render a correctly-styled picker by inlining
- * just this function's output, the same way those pages already inline
+ * — every #590-redesigned page that still mounts `ThemePickerSection`
+ * (Home, Blog, Fork Fixes, Dashboard) — can still render a
+ * correctly-styled picker by inlining just this function's output, the
+ * same way those pages already inline
  * `designBaseCss()`/`primitivesCss()`/`navCss()` rather than linking an
  * external stylesheet (see index.ts's `<style>` block for the pattern this
  * mirrors).
@@ -85,7 +86,7 @@ export const DEFAULT_SWATCH = { bg: '#FFFFFF', fg: '#27272A' }
  *
  * `--t-bg`/`--t-fg` default here to {@link DEFAULT_SWATCH}'s colors, scoped
  * to `#theme-pills` rather than `:root`, so a page that never sets them
- * (no live diagram to re-theme, e.g. the Diagrams hub) still gets a sane,
+ * (no live diagram to re-theme, e.g. Blog) still gets a sane,
  * self-contained pill appearance instead of inheriting nothing. A page
  * that *does* re-theme a live diagram (pages.ts's `DiagramTypePage`, via
  * `demo/diagram-page-client.ts`'s `applyThemeToPage`) sets real values on
