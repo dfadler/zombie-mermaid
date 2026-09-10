@@ -20,12 +20,11 @@
  * browser bundle) never needs to import this file, and therefore never
  * pulls in `react-dom/server` (used below for `renderToString`) into the
  * client bundle. `ThemeShowcase` stays here rather than moving into either
- * app: it calls `renderMermaidSVG` to build-time-render its six diagrams
- * (Node-only work a client bundle can't do), so it's static markup plus a
- * small separate bundled client script (`demo/index-page-client.ts`, via
- * `index.ts`'s `bundleClientScript()`) that auto-cycles those six
- * pre-rendered diagrams through all of `THEMES`, live, with no interactive
- * control on the page itself — see that section's own doc comment for why.
+ * app: it renders static markup (a hand-authored decorative flowchart svg,
+ * not a build-time Mermaid render) plus a small separate bundled client
+ * script (`demo/index-page-client.ts`, via `index.ts`'s
+ * `bundleClientScript()`) that wires up its click-to-pick theme selector —
+ * see that section's own doc comment.
  *
  * Layout, copy, and every colour/measurement below come from the design
  * canvas linked in #590's body
@@ -35,12 +34,17 @@
  * entirely in the shared component `*Css()` functions and {@link homePageCss}'s
  * `@media` blocks, not in a second markup path. See `index-app.tsx`'s
  * header comment for its own deliberate deviations from the canvas
- * (unchanged by this split). This file's own deviation: the theme
- * showcase renders six *real* diagrams (one per diagram type this library
- * supports), auto-cycling live across every real theme in `THEMES`, not
- * the canvas's five static per-theme cards with invented theme names
- * ("Neon", "Pastel", …) or a single flowchart. See {@link ThemeShowcase}'s
- * own doc comment.
+ * (unchanged by this split). `ThemeShowcase` itself now follows a *newer*
+ * canvas ("1e — Flow + Burst",
+ * `https://claude.ai/code/artifact/021183bd-f416-4d93-a21a-9febe1b8c69f`)
+ * pixel-for-pixel: a single decorative flowchart, re-themed in place on a
+ * manual pick only (no ambient auto-cycle, no six-diagram gallery) — see
+ * {@link ThemeShowcase}'s own doc comment. One deliberate coordinate fix
+ * on top of that 1:1 copy: the canvas's own "Deploy?" diamond sits flush
+ * against the pipeline→Deploy connector and its "pass" label, hiding both
+ * behind the diamond's opaque fill — moved 35 units right here (with its
+ * text, burst ring, and outgoing yes/no curves shifted to match) to open
+ * the same kind of gap the canvas's own "Auth?" diamond already has.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
@@ -62,10 +66,7 @@ import {
   SPACE,
   colorVar,
 } from './tokens.tsx'
-import { renderMermaidSVG } from '../../src/index.ts'
 import { THEMES } from '@zombie-mermaid/core'
-import { DIAGRAM_TYPE_PROFILES } from '../diagram-pages-data.ts'
-import { THEME_LABELS } from '../theme-labels.ts'
 import {
   IndexHeroApp,
   IndexMainApp,
@@ -93,40 +94,77 @@ const PLAUSIBLE_DOMAIN = 'dfadler.github.io/zombie-mermaid'
  * ----------------------------------------------------------------- */
 
 /**
- * The Mermaid source {@link ThemeShowcase} renders live, matching what
- * `index-app.tsx`'s `IndexHeroApp` hand-drawn mock already depicts ("Start
- * → Deploy? → Ship it / Iterate") so the showcase diagram tells the same
- * story the hero does, one section down — rather than an unrelated
- * invented example.
- */
-const THEME_SHOWCASE_SOURCE = `graph TD
-    Start --> Deploy{Deploy?}
-    Deploy -->|yes| Ship[Ship it]
-    Deploy -->|no| Iterate[Iterate]`
-
-/**
- * {@link ThemeShowcase}'s starting theme, before a visitor picks one (or a
- * stored preference from another page restores on load — see
- * `demo/index-page-client.ts`). Real, not the `''` Default pseudo-theme:
- * this showcase's whole point is proving the 15 real themes, so its picker
- * renders with `includeDefault={false}` and needs an actual key to render
- * the initial SSR diagram with. `dracula` also mirrors `theme-picker.tsx`'s
- * own `INLINE_THEMES`, which already surfaces it as one of the two themes
- * always shown outside the "N Themes" dropdown.
+ * {@link ThemeShowcase}'s starting theme, before a visitor picks one from
+ * {@link ThemeShowcasePicker}. Real, not the `''` Default pseudo-theme:
+ * this showcase's whole point is proving the 15 real themes, and there's no
+ * "Default" diagram rendering to fall back to here (unlike
+ * `theme-picker.tsx`'s `includeDefault` pages). `dracula` also mirrors
+ * `theme-picker.tsx`'s own `INLINE_THEMES`, which already surfaces it as
+ * one of the two themes always shown outside that picker's "N Themes"
+ * dropdown.
  */
 const THEME_SHOWCASE_DEFAULT_THEME = 'dracula'
 
 /**
- * Fixed height of the showcase's diagram card, so the section doesn't
- * reflow every ~2.8s as `index-page-client.ts`'s cycle swaps between
- * diagram types of very different natural aspect ratios (a tall, narrow
- * flowchart vs. a short, wide ER diagram) — see `renderShowcaseDiagrams()`.
- * Comfortably fits the tallest of the six diagram types at this card's
- * content width (the xy-chart, ~355px once scaled to fit); anything taller
- * shrinks via `max-height` on the svg, or is clipped by the card's own
- * `overflow: hidden` as a last resort.
+ * Blends `fgHex` into `bgHex` at `pctFg`% — the design canvas's own inline
+ * `mix()` helper (Main.dc.html), transcribed rather than shared:
+ * `demo/index-page-client.ts` keeps an identical copy for its own re-theme
+ * step, and this file only ever runs at build time under Node, so there's
+ * no reasonable shared module for three lines of arithmetic without
+ * creating a cross-bundle dependency neither side needs otherwise.
  */
-const THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT = 400
+function mixHex(fgHex: string, bgHex: string, pctFg: number): string {
+  const f = parseInt(fgHex.slice(1), 16)
+  const b = parseInt(bgHex.slice(1), 16)
+  const fr = (f >> 16) & 255
+  const fg = (f >> 8) & 255
+  const fb = f & 255
+  const br = (b >> 16) & 255
+  const bgc = (b >> 8) & 255
+  const bb = b & 255
+  const t = pctFg / 100
+  const r = Math.round(fr * t + br * (1 - t))
+  const g = Math.round(fg * t + bgc * (1 - t))
+  const bl = Math.round(fb * t + bb * (1 - t))
+  const hex = (v: number) => v.toString(16).padStart(2, '0')
+  return '#' + hex(r) + hex(g) + hex(bl)
+}
+
+/** The six color roles {@link ThemeShowcase}'s decorative flowchart needs, derived from a theme's `bg`/`fg`/`accent` the same way Main.dc.html's `renderVals()` does. */
+interface ShowcaseDiagramColors {
+  bg: string
+  nodeFill: string
+  nodeStroke: string
+  text: string
+  labelText: string
+  muted: string
+  arrow: string
+}
+
+/**
+ * Derives {@link ShowcaseDiagramColors} from a theme, matching the design
+ * canvas's `renderVals()` mapping exactly (`nodeFill`/`nodeStroke`/
+ * `labelText`/`muted` as fixed mix percentages of `fg` into `bg`; `arrow`
+ * as the theme's own `accent`, falling back to the same 85% mix
+ * `packages/core/src/theme.ts`'s `MIX.arrow` uses for themes with none —
+ * `zinc-light`/`zinc-dark`). Shared by {@link ThemeShowcasePicker}'s swatch
+ * dots (just `arrow`) and {@link ThemeShowcase}'s diagram card.
+ */
+function deriveShowcaseColors(theme: {
+  bg: string
+  fg: string
+  accent?: string
+}): ShowcaseDiagramColors {
+  return {
+    bg: theme.bg,
+    nodeFill: mixHex(theme.fg, theme.bg, 6),
+    nodeStroke: mixHex(theme.fg, theme.bg, 26),
+    text: theme.fg,
+    labelText: mixHex(theme.fg, theme.bg, 45),
+    muted: mixHex(theme.fg, theme.bg, 34),
+    arrow: theme.accent ?? mixHex(theme.fg, theme.bg, 85),
+  }
+}
 
 /* -----------------------------------------------------------------
  * Page-specific CSS: the responsive rules and animations the canvas
@@ -223,10 +261,11 @@ function homePageCss(): string {
 }
 .bar-grow { transform-box: fill-box; transform-origin: bottom; animation: barGrow 1.6s ease-in-out infinite; }
 
-/* -- Theme showcase: full-bleed animated backdrop + auto-cycling proof.
-   demo/index-page-client.ts's startShowcaseCycle() drives the actual
-   theme/diagram swapping (JS, not CSS) -- everything here is either the
-   ambient background motion or static layout/type. */
+/* -- Theme showcase: full-bleed animated backdrop behind a single
+   decorative flowchart, re-themed in place on a picker click.
+   demo/index-page-client.ts's wireThemePicker() drives the actual
+   re-theme (JS, not CSS) -- everything here is either the ambient
+   background motion or static layout/type/shape. */
 .theme-showcase { background: ${colorVar('--bg-soft')}; }
 .theme-showcase-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .theme-showcase-mesh {
@@ -238,11 +277,11 @@ function homePageCss(): string {
   margin: -700px 0 0 -900px;
   background: conic-gradient(
     from 0deg,
-    color-mix(in srgb, ${colorVar('--violet')} 24%, transparent),
+    color-mix(in srgb, #bd93f9 24%, transparent),
     color-mix(in srgb, ${colorVar('--cyan')} 18%, transparent),
     color-mix(in srgb, ${colorVar('--pink')} 18%, transparent),
     color-mix(in srgb, ${colorVar('--amber')} 16%, transparent),
-    color-mix(in srgb, ${colorVar('--violet')} 24%, transparent)
+    color-mix(in srgb, #bd93f9 24%, transparent)
   );
   filter: blur(120px);
   opacity: 0.5;
@@ -257,7 +296,11 @@ function homePageCss(): string {
 }
 .theme-showcase-aurora { position: absolute; inset: -10%; animation: themeShowcaseHue 26s linear infinite; }
 .theme-showcase-glow { position: absolute; border-radius: 50%; filter: blur(90px); mix-blend-mode: screen; }
-.theme-showcase-glow.g1 { width: 560px; height: 560px; background: ${colorVar('--violet')}; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 17s ease-in-out infinite alternate; }
+/* #bd93f9, not colorVar('--violet') (#a374e8) -- Main.dc.html has no
+   --violet token at all; every violet in the canvas (here and the mesh
+   gradient above) is this exact literal, matched rather than mapped onto
+   this site's own (different) shared violet accent. */
+.theme-showcase-glow.g1 { width: 560px; height: 560px; background: #bd93f9; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 17s ease-in-out infinite alternate; }
 .theme-showcase-glow.g2 { width: 520px; height: 520px; background: ${colorVar('--cyan')}; opacity: 0.3; top: 6%; right: 0%; animation: themeShowcaseDrift2 21s ease-in-out infinite alternate; }
 .theme-showcase-glow.g3 { width: 480px; height: 480px; background: ${colorVar('--pink')}; opacity: 0.26; bottom: -14%; left: 20%; animation: themeShowcaseDrift3 24s ease-in-out infinite alternate; }
 .theme-showcase-glow.g4 { width: 500px; height: 500px; background: ${colorVar('--amber')}; opacity: 0.22; bottom: -6%; right: 12%; animation: themeShowcaseDrift4 19s ease-in-out infinite alternate; }
@@ -267,92 +310,170 @@ function homePageCss(): string {
 @keyframes themeShowcaseDrift3 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(110px,95px) scale(1.12); } 100% { transform: translate(-130px,-55px) scale(0.9); } }
 @keyframes themeShowcaseDrift4 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(-100px,-85px) scale(1.08); } 100% { transform: translate(120px,55px) scale(0.94); } }
 
-.theme-showcase-term {
-  background: color-mix(in srgb, ${colorVar('--panel')} 82%, transparent);
-  backdrop-filter: blur(6px);
-  border: 1px solid ${colorVar('--border')};
-  border-radius: ${RADIUS.card}px;
-  overflow: hidden;
-}
-.theme-showcase-term-bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid ${colorVar('--border')}; }
-.theme-showcase-term-dot { width: 9px; height: 9px; border-radius: 50%; }
-/* height fits its fixed 6-line content (the leading theme-name comment
-   line, ":root {", 3 var lines, "}") at this font-size/line-height, plus
-   a few px of slack for cross-browser line-box rounding -- content never
-   gains or loses a line, only the swapped-in theme name/hex values' text
-   changes width, so this never needs to grow. */
-.theme-showcase-term-body { font-size: 13px; line-height: 1.95; padding: 16px 18px; color: ${colorVar('--text-dim')}; height: 158px; }
-.theme-showcase-kw { color: ${colorVar('--blue')}; }
-.theme-showcase-comment { color: ${colorVar('--text-faint')}; }
-.theme-showcase-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  margin-right: 8px;
-  vertical-align: middle;
-  transition: background 900ms ease;
-}
+/* Diagram card: every color role a re-theme touches lives as a CSS custom
+   property set inline on this element (deriveShowcaseColors() at SSR time,
+   demo/index-page-client.ts's wireThemePicker() on a pick) -- descendant
+   svg elements below read them via var(), so a re-theme is one
+   setProperty() call per role on this single element rather than walking
+   the diagram's individual shapes. Matches the design canvas's own
+   transition durations/easing exactly (500ms ease). */
 .theme-showcase-diagram-card {
-  height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
+  position: relative;
   border-radius: ${RADIUS.card}px;
-  border: 1px solid ${colorVar('--border')};
-  padding: ${SPACE.xl}px;
+  padding: clamp(16px, 3vw, 28px);
   margin-top: ${SPACE.xl}px;
+  border: 1.5px dashed var(--tsd-node-stroke);
+  background: var(--tsd-bg);
+  transition: background 500ms ease, border-color 500ms ease;
   display: flex;
   justify-content: center;
-  transition: background 900ms ease;
   overflow: hidden;
 }
-/* Fills the card -- a plain block would collapse to 0x0 once its children
-   (the six slots) go position: absolute below, since absolutely
-   positioned children no longer contribute to a parent's intrinsic size. */
-#theme-showcase-diagrams { position: relative; width: 100%; height: 100%; }
-/* All six slots stack exactly on top of each other; only the .is-active
-   one is visible. index-page-client.ts's startShowcaseCycle() runs each
-   step as a strict, staged sequence rather than animating this and the
-   card's own background transition at once: fade the current diagram out
-   (this rule's own opacity transition) -- once it's fully transparent,
-   re-theme it and animate the card's background (900ms, above) -- once
-   that finishes, fade the new diagram (already re-themed) back in. So the
-   diagram is never visible while its own colors change (each slot is
-   always either hidden or at full contrast, never interpolating between
-   two themes' colors, which made text briefly unreadable when tried) and
-   never competes on-screen with the background's own color transition.
-   350ms here is deliberately quicker than the card's 900ms: it only has
-   to clear the diagram off-screen (or bring it back), not carry a color
-   change of its own. Keep this file's own DIAGRAM_FADE_MS in sync by
-   hand if either changes -- see that constant's doc comment. */
-.theme-showcase-diagram-slot {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 350ms ease;
-  pointer-events: none;
-}
-.theme-showcase-diagram-slot.is-active { opacity: 1; pointer-events: auto; }
-.theme-showcase-diagram-slot svg {
-  display: block;
-  width: auto;
+.theme-showcase-diagram {
+  width: 100%;
   height: auto;
-  max-width: 100%;
-  /* Fixed px, not a percentage: the slot's own height is auto (sized to
-     this svg), so a percentage max-height here would have no definite
-     containing block to resolve against and would compute to none. This
-     page has no box-sizing: border-box reset, so the card's own
-     "height" declaration above is already its content-box height --
-     no padding to subtract here. */
-  max-height: ${THEME_SHOWCASE_DIAGRAM_CARD_HEIGHT}px;
+  max-width: 560px;
+  display: block;
   margin: 0 auto;
 }
+.tsd-node {
+  fill: var(--tsd-node-fill);
+  stroke: var(--tsd-node-stroke);
+  stroke-width: 1.5px;
+  transition: fill 500ms ease, stroke 500ms ease;
+}
+.tsd-node-muted {
+  fill: var(--tsd-node-fill);
+  stroke: var(--tsd-muted);
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 3;
+  transition: fill 500ms ease, stroke 500ms ease;
+}
+.tsd-node-text { fill: var(--tsd-text); font-weight: 700; transition: fill 500ms ease; }
+.tsd-label { fill: var(--tsd-label-text); transition: fill 500ms ease; }
+.tsd-pipeline-box {
+  fill: none;
+  stroke: var(--tsd-muted);
+  stroke-width: 1.5px;
+  stroke-dasharray: 5 4;
+  transition: stroke 500ms ease;
+}
+.tsd-flow {
+  stroke: var(--tsd-arrow);
+  stroke-width: 2px;
+  fill: none;
+  stroke-dasharray: 6 5;
+  animation: themeShowcaseDashFlow 900ms linear infinite;
+  transition: stroke 500ms ease;
+}
+@keyframes themeShowcaseDashFlow { to { stroke-dashoffset: -22; } }
+.tsd-rollback-path { stroke: var(--tsd-muted); stroke-width: 1.5px; stroke-dasharray: 4 3; fill: none; transition: stroke 500ms ease; }
+.tsd-monitor-path { stroke: var(--tsd-label-text); stroke-width: 1.5px; stroke-dasharray: 1.5 4; fill: none; transition: stroke 500ms ease; }
+.tsd-monitor-dot { fill: var(--tsd-label-text); transition: fill 500ms ease; }
+.tsd-arrow-fill { fill: var(--tsd-arrow); transition: fill 500ms ease; }
+.theme-showcase-burst-ring {
+  opacity: 0;
+  fill: none;
+  stroke: var(--tsd-arrow);
+  stroke-width: 2px;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.theme-showcase-burst-ring.active { animation: themeShowcaseBurst 650ms ease-out; }
+@keyframes themeShowcaseBurst {
+  0% { opacity: 0.85; transform: scale(0.35); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
 
-.theme-showcase-frac { display: inline-flex; align-items: baseline; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.theme-showcase-frac-cur { font-size: 34px; font-weight: 700; color: ${colorVar('--cyan')}; letter-spacing: -0.02em; }
-.theme-showcase-frac-slash { font-size: 20px; color: ${colorVar('--text-faint')}; margin: 0 1px; }
-.theme-showcase-frac-total { font-size: 20px; color: ${colorVar('--text-faint')}; }
+/* -- Theme showcase picker: a "movie ticket stub" trigger + dropdown
+   panel. Interaction (open/close, picking a theme) is wired by
+   demo/index-page-client.ts's wireThemePicker() -- see ThemeShowcasePicker's
+   own doc comment. */
+.theme-showcase-picker { position: relative; }
+.theme-showcase-picker-trigger {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1.5px dashed ${colorVar('--border')};
+  border-radius: 4px;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 0 50%, ${colorVar('--bg')} 8px, transparent 8.5px),
+    radial-gradient(circle at 100% 50%, ${colorVar('--bg')} 8px, transparent 8.5px),
+    ${colorVar('--panel')};
+  color: ${colorVar('--text')};
+  font-size: 14px;
+  transition: border-color 160ms ease;
+}
+.theme-showcase-picker-trigger:hover,
+.theme-showcase-picker-trigger:focus-visible {
+  border-color: ${colorVar('--cyan')};
+  outline: none;
+}
+.theme-showcase-picker-chip { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.theme-showcase-picker-trigger #theme-showcase-picker-label { flex: 1; text-align: left; }
+.theme-showcase-picker-caret { color: ${colorVar('--text-faint')}; transition: transform 200ms ease; }
+.theme-showcase-picker.open .theme-showcase-picker-caret { transform: rotate(180deg); }
+.theme-showcase-picker-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  z-index: 5;
+  max-width: 280px;
+  border: 1.5px dashed ${colorVar('--border')};
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  background: ${colorVar('--panel')};
+  max-height: 300px;
+  overflow-y: auto;
+  transform-origin: top;
+  animation: themeShowcasePickerTear 320ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@keyframes themeShowcasePickerTear {
+  0% { clip-path: inset(0 0 100% 0); transform: skewY(-1.5deg); }
+  60% { clip-path: inset(0 0 0% 0); transform: skewY(0.6deg); }
+  100% { clip-path: inset(0 0 0% 0); transform: skewY(0deg); }
+}
+.theme-showcase-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-top: 1px dashed ${colorVar('--border')};
+  cursor: pointer;
+  font-size: 13px;
+  color: ${colorVar('--text-dim')};
+  min-height: 44px;
+}
+.theme-showcase-picker-option:first-child { border-top: none; }
+.theme-showcase-picker-option:hover { background: color-mix(in srgb, ${colorVar('--cyan')} 7%, transparent); color: ${colorVar('--text')}; }
+.theme-showcase-picker-option[aria-selected='true'] { color: ${colorVar('--cyan')}; }
+.theme-showcase-picker-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* -- Burst ring: a one-off accent-colored flash over the diagram card,
+   fired only for a manual picker selection -- see ThemeShowcase's own doc
+   comment. Its CSS lives above alongside the rest of the diagram's node
+   classes (.theme-showcase-burst-ring): it's an svg <circle> centered on
+   the Deploy? diamond, not a separate overlay element. */
+
+.theme-showcase-footnote {
+  position: relative;
+  z-index: 2;
+  max-width: ${LAYOUT.maxWidth}px;
+  margin: ${SPACE['3xl']}px auto 0;
+  padding-top: ${SPACE.lg}px;
+  border-top: 1px solid ${colorVar('--border')};
+  font-size: ${FONT_SIZE.caption}px;
+  color: ${colorVar('--text-faint')};
+}
 
 ${MEDIA.reducedMotion} {
   .edge-anim { animation: none; }
@@ -363,6 +484,9 @@ ${MEDIA.reducedMotion} {
   .relation-pulse { animation: none; }
   .bar-grow { animation: none; transform: scaleY(1); }
   .theme-showcase-mesh, .theme-showcase-aurora, .theme-showcase-glow { animation: none !important; }
+  .theme-showcase-picker-panel { animation: none !important; }
+  .tsd-flow { animation: none !important; }
+  .theme-showcase-burst-ring.active { animation: none !important; opacity: 0 !important; }
 }
 
 ${HERO_STACK_MEDIA} {
@@ -398,102 +522,97 @@ ${MEDIA.mobile} {
  * ----------------------------------------------------------------- */
 
 /**
- * The six diagram types this library renders, one real Mermaid source each,
- * for the showcase to cycle through. `flowchart` reuses {@link
- * THEME_SHOWCASE_SOURCE} (matching the hero's own mock — see that
- * constant's doc comment); the other five reuse the exact, already-vetted
- * source each type's own SEO landing page renders
- * (`demo/diagram-pages-data.ts`'s `DIAGRAM_TYPE_PROFILES`), rather than
- * hand-typing new Mermaid a second time for this page alone.
+ * A "movie ticket stub" theme selector: a trigger button (current theme's
+ * swatch + label) that opens a listbox of all {@link THEMES} keys. Static
+ * SSR markup only — like the rest of {@link ThemeShowcase}, this section
+ * isn't part of either hydrated React app (see this file's header
+ * comment), so open/close, keyboard support, and the actual theme pick are
+ * all wired imperatively by `demo/index-page-client.ts`'s
+ * `wireThemePicker()`. Deliberately its own component rather than
+ * `demo/components/theme-picker.tsx`'s `ThemePicker`: that component's
+ * pill row is the right shape for a persistent, always-visible control
+ * (nav, per-diagram-type pages) but doesn't fit a single hero-style
+ * "pick a theme" moment, and reworking its markup to look like a ticket
+ * stub would mean forking a shared, multi-page component for one page's
+ * visual. Both still end up calling the same underlying re-theme step —
+ * see {@link ThemeShowcase}'s own doc comment.
  */
-const SHOWCASE_TYPE_SLUGS = [
-  'flowchart',
-  'sequence',
-  'class',
-  'state',
-  'er',
-  'xy-chart',
-] as const
-
-function showcaseSource(slug: (typeof SHOWCASE_TYPE_SLUGS)[number]): string {
-  if (slug === 'flowchart') return THEME_SHOWCASE_SOURCE
-  const profile = DIAGRAM_TYPE_PROFILES.find((p) => p.slug === slug)
-  if (!profile) {
-    throw new Error(
-      `demo/components/index-page.tsx: no DIAGRAM_TYPE_PROFILES entry for slug "${slug}"`,
-    )
-  }
-  return profile.source
-}
-
-/**
- * The showcase's six build-time diagrams, one per {@link
- * SHOWCASE_TYPE_SLUGS} entry, all rendered in
- * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours — the client script cycles
- * both which diagram is visible and which theme is applied from there (see
- * this file's header comment and `demo/index-page-client.ts`). Thrown, not
- * a silent fallback: this only ever runs at `index.ts` generation time
- * under Node, so a typo'd theme key or slug should fail the build loudly
- * rather than ship a broken page.
- */
-function renderShowcaseDiagrams(): { slug: string; html: string }[] {
-  const theme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
-  if (!theme) {
+function ThemeShowcasePicker() {
+  const themeEntries = Object.entries(THEMES)
+  const defaultTheme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
+  if (!defaultTheme) {
     throw new Error(`Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`)
   }
-  return SHOWCASE_TYPE_SLUGS.map((slug) => ({
-    slug,
-    html: renderMermaidSVG(showcaseSource(slug), {
-      ...theme,
-      title: `A ${slug} diagram, rendered live in the current theme`,
-      interactivity: 'none',
-    }),
-  }))
+  const defaultAccent = deriveShowcaseColors(defaultTheme).arrow
+
+  return (
+    <div className="theme-showcase-picker" id="theme-showcase-picker">
+      <button
+        type="button"
+        className="theme-showcase-picker-trigger mono"
+        id="theme-showcase-picker-trigger"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        aria-controls="theme-showcase-picker-panel"
+      >
+        <span
+          className="theme-showcase-picker-chip"
+          id="theme-showcase-picker-chip"
+          style={{ background: defaultAccent }}
+        />
+        <span id="theme-showcase-picker-label">
+          {THEME_SHOWCASE_DEFAULT_THEME}
+        </span>
+        <span className="theme-showcase-picker-caret" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      <div
+        className="theme-showcase-picker-panel"
+        id="theme-showcase-picker-panel"
+        role="listbox"
+        aria-label="Themes"
+        hidden
+      >
+        {themeEntries.map(([themeKey, colors]) => {
+          const accent = deriveShowcaseColors(colors).arrow
+          return (
+            <button
+              type="button"
+              key={themeKey}
+              className="theme-showcase-picker-option mono"
+              role="option"
+              data-theme={themeKey}
+              aria-selected={themeKey === THEME_SHOWCASE_DEFAULT_THEME}
+            >
+              <span
+                className="theme-showcase-picker-dot"
+                style={{ background: accent }}
+              />
+              {themeKey}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
-/**
- * Six real diagrams — one per diagram type this library renders — auto-
- * cycling live through every real theme in `THEMES`. Replaces the
- * section's former interactive picker (#759) with a purely informational,
- * non-interactive proof: nothing on the page controls it, so it never
- * competes with the rest of the page for a visitor's clicks. (A header-
- * based theme switcher may take over this section's old picker role
- * site-wide later; that's separate, not-yet-scheduled work, not something
- * this section grows back on its own.)
- *
- * `demo/index-page-client.ts`'s `startShowcaseCycle()` does the actual
- * cycling, as a strict, staged sequence rather than one simultaneous
- * change: fade the visible diagram out, re-theme the next one via CSS
- * custom properties (`svg.style.setProperty('--bg', …)`, … — the same
- * "swap variables, no re-render" technique `demo/diagram-page-client.ts`'s
- * `applyThemeToDiagram` already uses elsewhere) and animate the card's
- * background to match while nothing diagram-shaped is on screen, then
- * fade the (already re-themed) diagram back in — see
- * `.theme-showcase-diagram-slot`'s own CSS comment for why. It also keeps
- * the `--bg`/`--fg`/`--accent` code panel and the `N / <count>` counter in
- * sync. `prefers-reduced-motion: reduce` stops the cycle before it starts —
- * the build-time render below (flowchart, in
- * {@link THEME_SHOWCASE_DEFAULT_THEME}'s colours) is a complete, correctly
- * themed diagram on its own, so that's a real fallback state, not a broken
- * one.
- *
- * `id="theme-showcase"` stays even though nothing observes it via
- * `IntersectionObserver` anymore (that relocation was the removed picker's
- * job) — kept as a stable in-page anchor, cheap to keep.
- */
 function ThemeShowcase() {
-  const diagrams = renderShowcaseDiagrams()
   const theme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
   if (!theme) {
     throw new Error(`Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`)
   }
-  const accent = theme.accent
-  if (!accent) {
-    throw new Error(
-      `THEME_SHOWCASE_DEFAULT_THEME (${THEME_SHOWCASE_DEFAULT_THEME}) has no accent`,
-    )
+  const colors = deriveShowcaseColors(theme)
+  const diagramCardStyle: Record<string, string> = {
+    '--tsd-bg': colors.bg,
+    '--tsd-node-fill': colors.nodeFill,
+    '--tsd-node-stroke': colors.nodeStroke,
+    '--tsd-text': colors.text,
+    '--tsd-label-text': colors.labelText,
+    '--tsd-muted': colors.muted,
+    '--tsd-arrow': colors.arrow,
   }
-  const themeCount = Object.keys(THEMES).length
 
   return (
     <div
@@ -541,7 +660,7 @@ function ThemeShowcase() {
           <h2
             style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}
           >
-            Pick a theme. Switch it live — no re-render.
+            Pick a theme. Watch it flow.
           </h2>
           <p
             style={{
@@ -550,131 +669,254 @@ function ThemeShowcase() {
               margin: 0,
             }}
           >
-            Every one of the {themeCount} built-in themes is just{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --bg
-            </code>
-            ,{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --fg
-            </code>
-            , and{' '}
-            <code className="mono" style={{ color: colorVar('--text') }}>
-              --accent
-            </code>
-            . The diagram reads them live — no re-render, ever.
+            Fifteen palettes pulled from editors you already trust — Dracula,
+            Nord, Solarized, Catppuccin, Tokyo Night, and more — each tuned so
+            the diagram stays legible in every one.
           </p>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: `${SPACE.md}px`,
-              marginTop: `${SPACE.xs}px`,
-            }}
+          <ThemeShowcasePicker />
+        </div>
+
+        <div
+          id="theme-showcase-diagram-card"
+          className="theme-showcase-diagram-card"
+          style={diagramCardStyle}
+        >
+          <svg
+            id="theme-showcase-diagram"
+            className="theme-showcase-diagram"
+            viewBox="0 0 600 300"
+            aria-hidden="true"
           >
-            <span className="theme-showcase-frac">
-              <span
-                id="theme-showcase-counter"
-                className="theme-showcase-frac-cur"
+            <defs>
+              <marker
+                id="theme-showcase-arrowhead"
+                markerWidth={7}
+                markerHeight={7}
+                refX={5}
+                refY={3.5}
+                orient="auto"
               >
-                1
-              </span>
-              <span className="theme-showcase-frac-slash">/</span>
-              <span className="theme-showcase-frac-total">{themeCount}</span>
-            </span>
-            <span
-              style={{
-                fontSize: `${FONT_SIZE.caption}px`,
-                color: colorVar('--text-faint'),
-              }}
+                <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
+              </marker>
+            </defs>
+
+            <rect
+              className="tsd-node"
+              x={10}
+              y={130}
+              width={80}
+              height={40}
+              rx={10}
+            />
+            <text
+              className="tsd-node-text"
+              x={50}
+              y={154}
+              textAnchor="middle"
+              fontSize={12}
             >
-              themes, cycling
-            </span>
-          </div>
-        </div>
+              Start
+            </text>
+            <path
+              className="tsd-flow"
+              d="M90,150 L120,150"
+              markerEnd="url(#theme-showcase-arrowhead)"
+            />
 
-        <div>
-          <div className="theme-showcase-term">
-            <div className="theme-showcase-term-bar">
-              <span
-                className="theme-showcase-term-dot"
-                style={{ background: '#ff6767' }}
-              />
-              <span
-                className="theme-showcase-term-dot"
-                style={{ background: '#ffc85c' }}
-              />
-              <span
-                className="theme-showcase-term-dot"
-                style={{ background: '#5ee08a' }}
-              />
-            </div>
-            <div className="theme-showcase-term-body mono">
-              <span
-                id="theme-showcase-theme-name"
-                className="theme-showcase-comment"
-              >
-                {'/* ' +
-                  (THEME_LABELS[THEME_SHOWCASE_DEFAULT_THEME] ??
-                    THEME_SHOWCASE_DEFAULT_THEME) +
-                  ' */'}
-              </span>
-              <br />
-              :root {'{'}
-              <br />
-              &nbsp;&nbsp;
-              <span className="theme-showcase-kw">--bg</span>:{' '}
-              <span
-                id="theme-showcase-bg-swatch"
-                className="theme-showcase-swatch"
-                style={{ background: theme.bg }}
-              />
-              <span id="theme-showcase-bg-val">{theme.bg}</span>;
-              <br />
-              &nbsp;&nbsp;
-              <span className="theme-showcase-kw">--fg</span>:{' '}
-              <span
-                id="theme-showcase-fg-swatch"
-                className="theme-showcase-swatch"
-                style={{ background: theme.fg }}
-              />
-              <span id="theme-showcase-fg-val">{theme.fg}</span>;
-              <br />
-              &nbsp;&nbsp;
-              <span className="theme-showcase-kw">--accent</span>:{' '}
-              <span
-                id="theme-showcase-accent-swatch"
-                className="theme-showcase-swatch"
-                style={{ background: accent }}
-              />
-              <span id="theme-showcase-accent-val">{accent}</span>;
-              <br />
-              {'}'}
-            </div>
-          </div>
+            <polygon
+              className="tsd-node"
+              points="160,120 190,150 160,180 130,150"
+            />
+            <text
+              className="tsd-node-text"
+              x={160}
+              y={154}
+              textAnchor="middle"
+              fontSize={10.5}
+            >
+              Auth?
+            </text>
+            <path
+              className="tsd-flow"
+              d="M190,150 L225,150"
+              markerEnd="url(#theme-showcase-arrowhead)"
+            />
+            <text className="tsd-label" x={200} y={140} fontSize={9.5}>
+              ok
+            </text>
 
-          <div
-            id="theme-showcase-diagram-card"
-            className="theme-showcase-diagram-card"
-            style={{ background: theme.bg }}
-          >
-            <div id="theme-showcase-diagrams">
-              {diagrams.map((d, i) => (
-                <div
-                  key={d.slug}
-                  className={
-                    i === 0
-                      ? 'theme-showcase-diagram-slot is-active'
-                      : 'theme-showcase-diagram-slot'
-                  }
-                  data-slug={d.slug}
-                  // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see this file's header comment)
-                  dangerouslySetInnerHTML={{ __html: d.html }}
-                />
-              ))}
-            </div>
-          </div>
+            <rect
+              className="tsd-pipeline-box"
+              x={225}
+              y={95}
+              width={150}
+              height={110}
+              rx={10}
+            />
+            <text
+              className="tsd-label"
+              x={235}
+              y={112}
+              fontSize={9}
+              letterSpacing="0.08em"
+            >
+              PIPELINE
+            </text>
+            <rect
+              className="tsd-node"
+              x={245}
+              y={120}
+              width={110}
+              height={32}
+              rx={7}
+            />
+            <text
+              className="tsd-node-text"
+              x={300}
+              y={140}
+              textAnchor="middle"
+              fontSize={11}
+            >
+              Build
+            </text>
+            <path
+              className="tsd-flow"
+              d="M300,152 L300,166"
+              markerEnd="url(#theme-showcase-arrowhead)"
+            />
+            <rect
+              className="tsd-node"
+              x={245}
+              y={168}
+              width={110}
+              height={32}
+              rx={7}
+            />
+            <text
+              className="tsd-node-text"
+              x={300}
+              y={188}
+              textAnchor="middle"
+              fontSize={11}
+            >
+              Test
+            </text>
+
+            <path
+              className="tsd-flow"
+              d="M375,150 L410,150"
+              markerEnd="url(#theme-showcase-arrowhead)"
+            />
+            <text className="tsd-label" x={382} y={142} fontSize={9.5}>
+              pass
+            </text>
+
+            <polygon
+              className="tsd-node"
+              points="445,120 480,150 445,180 410,150"
+            />
+            <text
+              className="tsd-node-text"
+              x={445}
+              y={154}
+              textAnchor="middle"
+              fontSize={10}
+            >
+              Deploy?
+            </text>
+            <circle
+              id="theme-showcase-burst"
+              className="theme-showcase-burst-ring"
+              aria-hidden="true"
+              cx={445}
+              cy={150}
+              r={28}
+            />
+
+            <path
+              className="tsd-flow"
+              d="M476,138 C 486,116 488,98 500,90"
+              markerEnd="url(#theme-showcase-arrowhead)"
+            />
+            <text className="tsd-label" x={452} y={108} fontSize={9.5}>
+              yes
+            </text>
+            <rect
+              className="tsd-node"
+              x={500}
+              y={68}
+              width={76}
+              height={40}
+              rx={9}
+            />
+            <text
+              className="tsd-node-text"
+              x={538}
+              y={92}
+              textAnchor="middle"
+              fontSize={11}
+            >
+              Ship it
+            </text>
+
+            <path
+              className="tsd-rollback-path"
+              d="M476,162 C 486,184 488,202 500,210"
+              markerEnd="url(#theme-showcase-arrowhead)"
+            />
+            <text className="tsd-label" x={452} y={200} fontSize={9.5}>
+              no
+            </text>
+            <rect
+              className="tsd-node-muted"
+              x={496}
+              y={192}
+              width={84}
+              height={40}
+              rx={9}
+            />
+            <text
+              className="tsd-node-text"
+              x={538}
+              y={216}
+              textAnchor="middle"
+              fontSize={10}
+            >
+              Rollback
+            </text>
+
+            <path className="tsd-monitor-path" d="M300,200 L300,250" />
+            <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
+            <rect
+              className="tsd-node"
+              x={255}
+              y={252}
+              width={90}
+              height={32}
+              rx={7}
+            />
+            <text
+              className="tsd-node-text"
+              x={300}
+              y={272}
+              textAnchor="middle"
+              fontSize={10.5}
+            >
+              Monitor
+            </text>
+          </svg>
         </div>
+      </div>
+
+      <div className="theme-showcase-footnote">
+        Want to add your own? Every theme here is just three color roles —{' '}
+        <a
+          href={`${FORK_URL}/blob/main/docs/theming.md`}
+          target="_blank"
+          rel="noopener"
+        >
+          see how easy one is to write →
+        </a>
       </div>
     </div>
   )

@@ -36,7 +36,6 @@ import { renderHtmlDocument } from '../demo/render-html.ts'
 import { IndexPage } from '../demo/components/index-page.tsx'
 import { FORK_URL } from '../demo/components/site-chrome.tsx'
 import { THEMES } from '@zombie-mermaid/core'
-import { THEME_LABELS } from '../demo/theme-labels.ts'
 import { EditorPage } from '../demo/components/editor-page.tsx'
 import {
   ForkFixesPage,
@@ -217,41 +216,86 @@ describe('index.ts → index.html', () => {
     ).toHaveAttribute('href', 'editor.html')
   })
 
-  it('renders the theme showcase heading, live count, and six pre-rendered diagram slots', () => {
+  it('renders the theme showcase heading and a single decorative flowchart, themed in dracula', () => {
     const document = renderIndexPageDocument()
     const body = within(document.body)
-    const themeCount = Object.keys(THEMES).length
     const defaultTheme = THEMES.dracula
     if (!defaultTheme) throw new Error('test setup: no "dracula" theme')
 
     expect(
       body.getByRole('heading', {
         level: 2,
-        name: 'Pick a theme. Switch it live — no re-render.',
+        name: 'Pick a theme. Watch it flow.',
       }),
     ).toBeInTheDocument()
-    expect(
-      document.querySelector('.theme-showcase-frac-total')?.textContent,
-    ).toBe(`${themeCount}`)
-    expect(document.getElementById('theme-showcase-counter')?.textContent).toBe(
-      '1',
-    )
-    expect(
-      document.getElementById('theme-showcase-theme-name')?.textContent,
-    ).toBe(`/* ${THEME_LABELS.dracula ?? 'dracula'} */`)
-    expect(document.getElementById('theme-showcase-bg-val')?.textContent).toBe(
-      defaultTheme.bg,
+
+    const card = document.getElementById('theme-showcase-diagram-card')
+    expect(card).toBeInTheDocument()
+    expect(card?.style.getPropertyValue('--tsd-bg')).toBe(defaultTheme.bg)
+    expect(card?.style.getPropertyValue('--tsd-text')).toBe(defaultTheme.fg)
+    expect(card?.style.getPropertyValue('--tsd-arrow')).toBe(
+      defaultTheme.accent,
     )
 
-    const slots = document.querySelectorAll(
-      '#theme-showcase-diagrams > [data-slug]',
-    )
-    expect(slots).toHaveLength(6)
-    expect(slots[0]?.getAttribute('data-slug')).toBe('flowchart')
-    expect(slots[0]?.classList.contains('is-active')).toBe(true)
+    const diagram = document.getElementById('theme-showcase-diagram')
+    expect(diagram).toBeInTheDocument()
+    expect(diagram?.tagName.toLowerCase()).toBe('svg')
     expect(
-      [...slots].filter((slot) => slot.classList.contains('is-active')),
-    ).toHaveLength(1)
+      Array.from(diagram?.querySelectorAll('.tsd-node-text') ?? []).map(
+        (el) => el.textContent,
+      ),
+    ).toEqual([
+      'Start',
+      'Auth?',
+      'Build',
+      'Test',
+      'Deploy?',
+      'Ship it',
+      'Rollback',
+      'Monitor',
+    ])
+
+    const burst = document.getElementById('theme-showcase-burst')
+    expect(burst).toBeInTheDocument()
+    expect(burst?.tagName.toLowerCase()).toBe('circle')
+  })
+
+  it('renders the theme showcase picker with a trigger and one option per theme', () => {
+    const document = renderIndexPageDocument()
+    const themeCount = Object.keys(THEMES).length
+
+    const trigger = document.getElementById('theme-showcase-picker-trigger')
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      document.getElementById('theme-showcase-picker-label')?.textContent,
+    ).toBe('dracula')
+
+    const panel = document.getElementById('theme-showcase-picker-panel')
+    expect(panel).toBeInTheDocument()
+    expect(panel).toHaveAttribute('role', 'listbox')
+
+    const options = document.querySelectorAll(
+      '#theme-showcase-picker-panel [role="option"]',
+    )
+    expect(options).toHaveLength(themeCount)
+    const selected = [...options].filter(
+      (opt) => opt.getAttribute('aria-selected') === 'true',
+    )
+    expect(selected).toHaveLength(1)
+    expect(selected[0]?.getAttribute('data-theme')).toBe('dracula')
+  })
+
+  it('renders a footnote linking to the custom-theme docs', () => {
+    const document = renderIndexPageDocument()
+    const link = within(
+      mustFind(document.querySelector('.theme-showcase-footnote')),
+    ).getByRole('link', { name: /see how easy one is to write/ })
+    expect(link).toHaveAttribute(
+      'href',
+      `${FORK_URL}/blob/main/docs/theming.md`,
+    )
   })
 
   it('renders "Why This Fork Exists" with the new-to-this-fork cards', () => {
