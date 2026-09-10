@@ -31,26 +31,27 @@
  * and `editor-tabs.ts`'s `window.__editorTabsState` already use. See
  * `editor/js/global.d.ts` for the ambient declaration.
  *
- * ## What stays legacy, and why
+ * ## Chrome color mode, owned entirely by this hook
  *
- * `editor/js/dark-mode.ts`'s old `applyColorMode()` did five things: (1)
- * toggle the moon/sun icons, (2) persist to `localStorage`, (3) derive an
- * "auto" diagram theme from dark/light and write `state.theme`, (4) call
- * `applyThemeToPage()`/`updateThemeButton()`/`refreshAllColorUIs()`/
- * `scheduleRender()`. This hook owns (1) directly (icon refs) and (2)
- * through the state module above; (3) and (4) all reach into `state.theme`
- * (`editor/js/state.ts`, migrating in #808-#810) and three still-legacy
- * modules' functions (`config-panel.ts`, `rendering.ts`, `theme-button.ts`)
- * -- none of which this issue owns, and `demo/components/*.tsx` doesn't
- * import from `editor/js/*.ts` regardless (see `editor-app.tsx`'s
- * `requireEditorElement` doc comment). So (3)/(4) stay in a *shrunk*
- * `editor/js/dark-mode.ts`, which now does nothing but subscribe to the
- * bridge below and re-run that old orchestration whenever this hook calls
- * `setIsDark()` -- see that legacy file's own header comment.
+ * The original `editor/js/dark-mode.ts`'s `applyColorMode()` did five
+ * things: (1) toggle the moon/sun icons, (2) persist to `localStorage`, (3)
+ * derive an "auto" diagram theme from dark/light and write `state.theme`,
+ * (4) write the tool chrome's `--t-bg`/`--t-fg`/`--t-accent`/etc `:root`
+ * vars. #810 moved (3) to `editor-theme.ts` (it derives the diagram theme
+ * from `getIsDark()`/a dark-mode subscription there instead). (4) used to
+ * live in `editor-rendering.ts`'s `applyThemeToPage()`, run from a
+ * `state.theme`-keyed effect -- which meant picking any of the 15 diagram
+ * themes also reskinned the topbar/panels/pickers to match, not just the
+ * rendered diagram. {@link applyChromeColorMode} below moves (4) here and
+ * keys it on `state.darkMode` alone, so the tool's own chrome now only ever
+ * follows this light/dark toggle -- never the diagram theme dropdown. See
+ * `docs/decisions/theme-selector-shared-state.md`'s amendment for the full
+ * rationale.
  */
 import { useLayoutEffect, useRef, type Dispatch } from 'react'
 import { getIsDark, setIsDark, subscribe } from '../editor-dark-mode-state.ts'
 import type { EditorAction, EditorRefs, EditorState } from './editor-app.tsx'
+import { hexToRgb } from './editor-rendering.ts'
 
 declare global {
   interface Window {
@@ -59,6 +60,46 @@ declare global {
       setIsDark: typeof setIsDark
       subscribe: typeof subscribe
     }
+  }
+}
+
+/**
+ * Sets the editor chrome's `--t-bg`/`--t-fg`/`--t-accent`/`--foreground-rgb`/
+ * `--shadow-*` custom properties on `:root` from light/dark mode alone --
+ * moved here (and no longer theme-keyed) from `editor-rendering.ts`'s old
+ * `applyThemeToPage()`, which used to also override these from whichever
+ * diagram theme was selected, reskinning the topbar/panels/pickers
+ * (`editor/css/variables.css` derives its whole palette from these three) to
+ * match. That coupling is gone: the diagram's own colors now only ever
+ * reach `buildOptions()`/the rendered `<svg>` (`editor-rendering.ts`), and
+ * this function is the tool chrome's only remaining source of truth for
+ * `--t-*`, driven solely by `state.darkMode` below.
+ */
+function applyChromeColorMode(dark: boolean): void {
+  const root = document.documentElement
+  root.style.setProperty('--t-bg', dark ? '#18181B' : '#FFFFFF')
+  root.style.setProperty('--t-fg', dark ? '#FAFAFA' : '#27272A')
+  root.style.setProperty('--t-accent', dark ? '#60a5fa' : '#3b82f6')
+  const fg = root.style.getPropertyValue('--t-fg').trim() || '#27272A'
+  const rgb = hexToRgb(fg)
+  if (rgb) {
+    root.style.setProperty(
+      '--foreground-rgb',
+      rgb.r + ', ' + rgb.g + ', ' + rgb.b,
+    )
+    const bgRgb = hexToRgb(root.style.getPropertyValue('--t-bg').trim())
+    const brightness = bgRgb
+      ? (bgRgb.r * 299 + bgRgb.g * 587 + bgRgb.b * 114) / 1000
+      : 255
+    const shadowDark = brightness < 140
+    root.style.setProperty(
+      '--shadow-border-opacity',
+      shadowDark ? '0.15' : '0.08',
+    )
+    root.style.setProperty(
+      '--shadow-blur-opacity',
+      shadowDark ? '0.12' : '0.06',
+    )
   }
 }
 
@@ -114,6 +155,17 @@ export function useEditorDarkMode({
     r.iconMoon.style.display = state.darkMode ? 'none' : ''
     r.iconSun.style.display = state.darkMode ? '' : 'none'
   }, [state.darkMode, refs])
+
+  // Chrome color mode -- editor/js/dark-mode.ts's old applyColorMode()
+  // :root-var half, now keyed purely on state.darkMode instead of also
+  // running from editor-rendering.ts's theme-change effect. Runs on mount
+  // too (an effect with a dependency array always runs once regardless of
+  // the dependency's initial value), so this is also this tool's only
+  // source for the chrome's starting --t-bg/--t-fg/--t-accent/etc, matching
+  // the old code's unconditional call from every re-theme path.
+  useLayoutEffect(() => {
+    applyChromeColorMode(state.darkMode)
+  }, [state.darkMode])
 
   // Click handler: persist + notify (the legacy dark-mode.ts subscriber
   // re-runs its own theme/render orchestration off this), then update this

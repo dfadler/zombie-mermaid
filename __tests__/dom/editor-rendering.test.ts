@@ -205,11 +205,13 @@ describe('<EditorApp> render pipeline (#810)', () => {
     expect(renderMermaidSVGAsync).not.toHaveBeenCalled()
   })
 
-  it('re-renders and re-themes the page when the diagram theme changes', async () => {
+  it('re-renders the diagram (but not the editor chrome) when the diagram theme changes', async () => {
     const renderMermaidSVGAsync = stubMermaid()
     render(createElement(EditorApp, PROPS))
     await act(() => flushRenderTimers())
     renderMermaidSVGAsync.mockClear()
+    const chromeBgBefore =
+      document.documentElement.style.getPropertyValue('--t-bg')
 
     await act(async () => {
       document
@@ -225,7 +227,17 @@ describe('<EditorApp> render pipeline (#810)', () => {
     expect(renderMermaidSVGAsync).toHaveBeenCalled()
     const [, opts] = renderMermaidSVGAsync.mock.calls.at(-1)!
     expect(opts).toMatchObject({ bg: THEMES.nord.bg, fg: THEMES.nord.fg })
+    // The diagram theme reaches the render call above, but the editor's own
+    // chrome color is unchanged -- selecting a diagram theme is scoped to
+    // the diagram only (editor-dark-mode.ts's applyChromeColorMode() is the
+    // chrome's sole source of --t-bg/etc, keyed on the dark/light toggle,
+    // not on this theme dropdown). See demo/components/editor-theme.test.ts's
+    // "theme scoped to the Editor only" describe block for the same
+    // assertion from the theme-dropdown side.
     expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
+      chromeBgBefore,
+    )
+    expect(document.documentElement.style.getPropertyValue('--t-bg')).not.toBe(
       THEMES.nord.bg,
     )
   })
