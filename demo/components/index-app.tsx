@@ -1496,14 +1496,15 @@ function DiagramGalleryTeaser() {
 
 /**
  * How many full 0-9 laps a digit reel spins through before landing on its
- * real digit. Kept to one lap so the "short" animation stays short — more
- * laps just means more travel distance at the same {@link SLOT_DURATION_MS},
- * i.e. a faster-looking spin, not a longer one.
+ * real digit. More laps means more travel distance at the same {@link
+ * SLOT_DURATION_MS} — i.e. a faster-looking spin over the same total time,
+ * not a longer one; {@link SLOT_DURATION_MS} is what controls how long the
+ * animation actually takes.
  */
 const SLOT_LOOPS = 1
 
 /** How long each digit reel's landing scroll takes, once it starts. */
-const SLOT_DURATION_MS = 650
+const SLOT_DURATION_MS = 4650
 
 /**
  * Delay between each digit position's landing scroll starting, so the
