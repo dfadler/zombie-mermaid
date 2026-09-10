@@ -1,6 +1,9 @@
 <div align="center">
 
-# zombie-mermaid
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logo-lockup-dark.svg">
+  <img src="logo-lockup-light.svg" alt="ZombieMermaid" height="48">
+</picture>
 
 **Render Mermaid diagrams as beautiful SVGs or ASCII art**
 
