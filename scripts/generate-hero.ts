@@ -15,12 +15,14 @@
  * (`designBaseCss()`). A standalone hero.svg has no such page around it, so
  * this script publishes the same `:root { --x: ...; }` block itself,
  * sourced from `COLORS` (`tokens.tsx`) rather than re-typing hex values by
- * hand — keeping color drift impossible here too. The canvas itself stays
- * transparent rather than filled with `--bg`: unlike the live site, a
- * README renders on whatever background the viewer's GitHub theme picks
- * (white in light mode), and every element here is already either opaque
- * (the code panel, the diagram nodes) or has enough of its own contrast
- * (the accent-colored edges/labels) to read on both.
+ * hand — keeping color drift impossible here too. Unlike the live site
+ * (where HeroVisual sits directly on the page's own full-bleed `--bg`),
+ * this composite draws its own rounded `--bg` backdrop behind HeroVisual's
+ * output — a README renders on whatever background the viewer's GitHub
+ * theme picks (white in light mode), and without that backdrop the code
+ * card floats with no visual anchor and the diagram's node labels (colored
+ * for contrast against `--bg`, e.g. `Deploy?`'s near-black fill) go
+ * unreadable.
  *
  * hero.svg replaced hero.png (a manually-captured screenshot) once the
  * hero visual's edges gained a marching-ants animation: GitHub renders an
@@ -38,6 +40,10 @@ import { COLORS, FONTS } from '../demo/components/tokens.tsx'
 
 const WIDTH = 700
 const HEIGHT = 460
+/** Corner radius of the composite's `--bg` backdrop — matches the code
+ * card's own `rx="16"` (HeroVisual) closely enough to read as one shape
+ * family, rounded up slightly since this rect is the larger of the two. */
+const BACKDROP_RADIUS = 20
 
 /**
  * `.edge-anim`'s marching-ants animation — transcribed from
@@ -78,6 +84,7 @@ async function main(): Promise<void> {
   ${EDGE_ANIM_CSS}
 </style>
 
+<rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" rx="${BACKDROP_RADIUS}" fill="var(--bg)"/>
 ${heroVisualBody}
 </svg>
 `
