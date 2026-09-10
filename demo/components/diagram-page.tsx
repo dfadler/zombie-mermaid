@@ -489,79 +489,96 @@ export function DiagramTypePage({
             // this "lifted page background" role (tokens.tsx).
             background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
             position: 'relative',
-            overflow: 'hidden',
           }}
         >
-          <NavIsland active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
-
+          <NavIsland
+            sticky
+            active="diagrams"
+            homeHref={HOME_HREF}
+            hrefs={NAV_HREFS}
+          />
           {/*
+            `overflow: hidden` used to live on the `.dc-root` div itself,
+            but that made it an ancestor of the sticky `<NavIsland>` above —
+            an `overflow` other than `visible` on any ancestor stops
+            `position: sticky` from ever un-sticking from its static
+            position, since the sticky element's nearest clipping ancestor
+            is what its "stuck" offset is computed against, and this div
+            was never itself the one scrolling. Scoping the clip to this
+            inner wrapper (a sibling of NavIsland, not an ancestor) keeps
+            whatever this was guarding against contained without breaking
+            the header's stickiness.
+          */}
+          <div style={{ overflow: 'hidden' }}>
+            {/*
             Plain, inert hydration container -- see dashboard-app.tsx's
             DASHBOARD_ROOT_ID doc comment for why DiagramTypeApp's own root
             can't carry this id itself, and dashboard-page.tsx's own, more
             detailed version of this comment for why renderToString (not
             renderToStaticMarkup) is needed here.
           */}
-          <div
-            id={DIAGRAM_TYPE_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DiagramTypeApp {...appProps} />),
-            }}
-          />
-          <script
-            type="application/json"
-            id={DIAGRAM_TYPE_PROPS_ELEMENT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
-              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-            }}
-          />
-
-          {/* ============ THEME PICKER ============ */}
-          <div
-            className="section-px"
-            style={{
-              padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
-            }}
-          >
             <div
+              id={DIAGRAM_TYPE_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DiagramTypeApp {...appProps} />),
+              }}
+            />
+            <script
+              type="application/json"
+              id={DIAGRAM_TYPE_PROPS_ELEMENT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
+                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+              }}
+            />
+
+            {/* ============ THEME PICKER ============ */}
+            <div
+              className="section-px"
               style={{
-                maxWidth: `${LAYOUT.maxWidth}px`,
-                margin: '0 auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: `${SPACE['4xl']}px`,
+                padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
               }}
             >
-              <SectionEyebrow>Pick a look</SectionEyebrow>
-              <h2
+              <div
                 style={{
-                  fontSize: '30px',
-                  letterSpacing: LETTER_SPACING.heading,
+                  maxWidth: `${LAYOUT.maxWidth}px`,
+                  margin: '0 auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: `${SPACE['4xl']}px`,
                 }}
               >
-                Live in every built-in theme.
-              </h2>
-              {/*
+                <SectionEyebrow>Pick a look</SectionEyebrow>
+                <h2
+                  style={{
+                    fontSize: '30px',
+                    letterSpacing: LETTER_SPACING.heading,
+                  }}
+                >
+                  Live in every built-in theme.
+                </h2>
+                {/*
                 Plain sibling JSX, not part of DiagramTypeApp's hydrated
                 tree -- see diagram-type-app.tsx's header comment for why
                 (the same reasoning dashboard-page.tsx/fork-fixes-
                 page.tsx/blog-page.tsx/index-page.tsx follow).
               */}
-              <ThemePickerIsland
-                includeDefault
-                activeThemeKey=""
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: `${SPACE.md}px`,
-                  alignItems: 'flex-start',
-                }}
-              />
+                <ThemePickerIsland
+                  includeDefault
+                  activeThemeKey=""
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: `${SPACE.md}px`,
+                    alignItems: 'flex-start',
+                  }}
+                />
+              </div>
             </div>
-          </div>
 
-          <Footer columns={DETAIL_FOOTER_COLUMNS} />
+            <Footer columns={DETAIL_FOOTER_COLUMNS} />
+          </div>
         </div>
 
         <script
@@ -682,34 +699,51 @@ export function DiagramHubPage({
             // this "lifted page background" role (tokens.tsx).
             background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
             position: 'relative',
-            overflow: 'hidden',
           }}
         >
-          <NavIsland active="diagrams" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
-
+          <NavIsland
+            sticky
+            active="diagrams"
+            homeHref={HOME_HREF}
+            hrefs={NAV_HREFS}
+          />
           {/*
+            `overflow: hidden` used to live on the `.dc-root` div itself,
+            but that made it an ancestor of the sticky `<NavIsland>` above —
+            an `overflow` other than `visible` on any ancestor stops
+            `position: sticky` from ever un-sticking from its static
+            position, since the sticky element's nearest clipping ancestor
+            is what its "stuck" offset is computed against, and this div
+            was never itself the one scrolling. Scoping the clip to this
+            inner wrapper (a sibling of NavIsland, not an ancestor) keeps
+            whatever this was guarding against contained without breaking
+            the header's stickiness.
+          */}
+          <div style={{ overflow: 'hidden' }}>
+            {/*
             Plain, inert hydration container -- see DiagramTypePage's
             identical comment above.
           */}
-          <div
-            id={DIAGRAM_HUB_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DiagramHubApp {...appProps} />),
-            }}
-          />
-          <script
-            type="application/json"
-            id={DIAGRAM_HUB_PROPS_ELEMENT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
-              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-            }}
-          />
+            <div
+              id={DIAGRAM_HUB_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DiagramHubApp {...appProps} />),
+              }}
+            />
+            <script
+              type="application/json"
+              id={DIAGRAM_HUB_PROPS_ELEMENT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
+                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+              }}
+            />
 
-          <ThemePickerSection tinted />
+            <ThemePickerSection tinted />
 
-          <Footer columns={DETAIL_FOOTER_COLUMNS} />
+            <Footer columns={DETAIL_FOOTER_COLUMNS} />
+          </div>
         </div>
         <script
           type="module"

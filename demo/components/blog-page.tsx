@@ -235,7 +235,12 @@ export function BlogPostPage({
           )} 40%, ${colorVar('--bg')} 100%)`,
         }}
       >
-        <NavIsland active="blog" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+        <NavIsland
+          sticky
+          active="blog"
+          homeHref={HOME_HREF}
+          hrefs={NAV_HREFS}
+        />
 
         {/*
           Plain, inert hydration container -- see dashboard-app.tsx's
@@ -320,7 +325,12 @@ export function BlogIndexPage({
           )} 40%, ${colorVar('--bg')} 100%)`,
         }}
       >
-        <NavIsland active="blog" homeHref={HOME_HREF} hrefs={NAV_HREFS} />
+        <NavIsland
+          sticky
+          active="blog"
+          homeHref={HOME_HREF}
+          hrefs={NAV_HREFS}
+        />
 
         {/*
           Plain, inert hydration container -- see BlogPostPage's identical
