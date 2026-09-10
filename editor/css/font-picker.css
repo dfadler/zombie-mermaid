@@ -25,11 +25,12 @@
   justify-content: space-between;
   transition: border-color 0.15s;
 }
+/* Was a hardcoded rgba(255,255,255,.2) plus a dead `:root.light` override
+ * -- see config-panel.css's .color-edit-btn:hover for why nothing ever
+ * applies a `.light` class to :root, and why the base rule alone was
+ * invisible in light mode. */
 .font-select-btn:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-:root.light .font-select-btn:hover {
-  border-color: rgba(0, 0, 0, 0.2);
+  border-color: color-mix(in srgb, var(--t-fg) 30%, var(--border));
 }
 .font-select-caret {
   color: var(--fg3);
@@ -67,7 +68,7 @@
   flex-shrink: 0;
 }
 .font-search:focus {
-  border-color: var(--blue);
+  border-color: var(--t-accent);
 }
 .font-search-wrap {
   position: relative;
@@ -100,8 +101,14 @@
   background: var(--bg3);
 }
 .font-item.active {
-  background: rgba(88, 166, 255, 0.12);
-  color: var(--blue);
+  /* --blue was undefined on this page -- see .padding-slider::-webkit-
+   * slider-thumb's doc comment in config-panel.css. Text stays --fg rather
+   * than switching to --t-accent: --t-accent only clears ~3.7:1 against
+   * this popup's light-mode background, below the 4.5:1 floor for normal
+   * text at this size -- the tinted background alone is enough to mark the
+   * active row. */
+  background: color-mix(in srgb, var(--t-accent) 15%, transparent);
+  color: var(--fg);
 }
 .font-item-preview {
   font-size: 1rem;
