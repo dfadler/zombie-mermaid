@@ -23,15 +23,19 @@
  *                   $GITHUB_REF, else 'unknown'.
  *   --max-entries   Oldest entries beyond this count are dropped so the
  *                   file doesn't grow without bound. Defaults to 520
- *                   (roughly 10/week for a year at one entry per merge to
- *                   main) — just a cap, tune freely.
+ *                   (10 years' worth at one entry/week) — just a cap, tune
+ *                   freely.
  *
- * Intended to run once per merge to main (see the `bench-history` job in
- * .github/workflows/ci.yml), not once per PR — a PR branch's bench run
- * doesn't represent a durable point in the project's history the way a
- * commit that actually landed on main does, and appending on every PR push
- * would make the history far noisier than the "weeks/months" trend view
- * it's meant to support.
+ * Intended to run once a week against main (see .github/workflows/
+ * bench-trend.yml), not once per merge or once per PR. This used to run
+ * once per merge to main, but that ties the trend's cadence to how often
+ * *anything* gets merged rather than to actual elapsed time — in a repo
+ * merging many PRs a day, that produced far more "record benchmark trend
+ * entry" PRs than any maintainer could keep up with (24 were open at once,
+ * none ever merged). A schedule keeps the recorded cadence intentional
+ * regardless of merge volume, and a PR branch's bench run still shouldn't
+ * feed this file — it doesn't represent a durable point in the project's
+ * history the way a commit that actually landed on main does.
  *
  * IMPORTANT: like bench-baseline.json (see scripts/bench-compare.ts's
  * header), entries should only ever come from a GitHub Actions runner, not
