@@ -210,9 +210,8 @@ describe('<EditorApp> render pipeline (#810)', () => {
     render(createElement(EditorApp, PROPS))
     await act(() => flushRenderTimers())
     renderMermaidSVGAsync.mockClear()
-    const chromeBgBefore = document.documentElement.style.getPropertyValue(
-      '--t-bg',
-    )
+    const chromeBgBefore =
+      document.documentElement.style.getPropertyValue('--t-bg')
 
     await act(async () => {
       document

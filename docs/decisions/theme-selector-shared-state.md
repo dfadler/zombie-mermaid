@@ -143,11 +143,11 @@ idea. Decided: **the Editor's diagram theme is local to the Editor again.**
 
 - The Editor's own chrome (`--t-bg`/`--t-fg`/`--t-accent`/etc) is now driven
   solely by its independent light/dark toggle (`bm-editor-dark`, `demo/
-  editor-dark-mode-state.ts`) via `demo/components/editor-dark-mode.ts`'s
+editor-dark-mode-state.ts`) via `demo/components/editor-dark-mode.ts`'s
   `applyChromeColorMode()` — never by which diagram theme is selected. The
   diagram theme's colors reach only the rendered `<svg>`, through
   `buildOptions()`/`renderMermaidSVGAsync()` (`demo/components/editor-
-  rendering.ts`), same as every other themed diagram on the site.
+rendering.ts`), same as every other themed diagram on the site.
 - The Editor's diagram-theme preference is persisted under its own
   `bm-editor-theme` key again (`demo/components/editor-theme.ts`) — the
   exact key #688 retired — with no shared module, no cross-tab `storage`

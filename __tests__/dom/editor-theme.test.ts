@@ -237,9 +237,7 @@ describe('<EditorApp> theme scoped to the Editor only (theme-selector-shared-sta
     // coverage), but the tool's own chrome color stays at its light-mode
     // default: it no longer follows the diagram theme (Nord's bg is
     // '#2E3440', not '#FFFFFF').
-    expect(document.getElementById('theme-btn-label')!.textContent).toBe(
-      'Nord',
-    )
+    expect(document.getElementById('theme-btn-label')!.textContent).toBe('Nord')
     expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
       '#FFFFFF',
     )

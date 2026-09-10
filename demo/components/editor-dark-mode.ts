@@ -96,7 +96,10 @@ function applyChromeColorMode(dark: boolean): void {
       '--shadow-border-opacity',
       shadowDark ? '0.15' : '0.08',
     )
-    root.style.setProperty('--shadow-blur-opacity', shadowDark ? '0.12' : '0.06')
+    root.style.setProperty(
+      '--shadow-blur-opacity',
+      shadowDark ? '0.12' : '0.06',
+    )
   }
 }
 
