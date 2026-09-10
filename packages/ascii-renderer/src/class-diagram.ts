@@ -950,6 +950,15 @@ export function renderClassAscii(
     }
   >()
 
+  // Same-level relationships' obstruction-aware detour row (issue #953),
+  // keyed by relationship index — `computeLabelAnchor`'s own same-level
+  // branch reads this so a labeled same-level relationship's label anchors
+  // on the same corrected row the connector itself routes through, instead
+  // of recomputing the naive (obstruction-unaware) `Math.max(fromBY, toBY)
+  // + 2` and landing back inside whatever box the connector fix was
+  // routing around.
+  const sameLevelDetourY = new Map<number, number>()
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -1234,6 +1243,7 @@ export function renderClassAscii(
         }
       }
       const detourY = obstructionBottom + 2
+      sameLevelDetourY.set(relIndex, detourY)
       increaseSize(canvas, totalW, detourY + 1)
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
       const fromJogs = fromCX !== fromAnchorX
@@ -1378,9 +1388,24 @@ export function renderClassAscii(
         baseMidY: Math.floor((toBY + 1 + fromP.y - 1) / 2),
       }
     }
+    // Same level — anchor on the obstruction-aware detour row the connector
+    // itself was routed through (see `sameLevelDetourY` above), not the
+    // naive `Math.max(fromBY, toBY) + 2` recomputation, which ignores any
+    // taller same-row box between `fromP`/`toP` and would place the label
+    // right back inside it (issue #953).
     return {
       idealMidX: Math.floor((fromCX + toCX) / 2),
-      baseMidY: Math.max(fromBY, toP.y + toP.height - 1) + 2,
+      // The `??` fallback is unreachable in practice: the main
+      // relationship-drawing pass above runs for every relationship before
+      // this label pass does, and it sets `sameLevelDetourY` for every
+      // relIndex that takes this same "same level" branch — the exact
+      // condition this function just evaluated to reach here. Kept only
+      // because `Map.get` is typed `T | undefined`, not because a real
+      // diagram can actually hit it.
+      /* v8 ignore next */
+      baseMidY:
+        sameLevelDetourY.get(relIndex) ??
+        Math.max(fromBY, toP.y + toP.height - 1) + 2,
     }
   }
 

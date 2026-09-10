@@ -130,18 +130,35 @@ ${manyAttrs('b', 6)}
   })
 
   // The same-row obstruction search (see the test above) must skip a class
-  // on a *different* level/row even when it's otherwise a legitimate
-  // `placed` entry — `Root`/`Kid` here sit on a different row from the
-  // Alpha/Mid/Charlie cycle (Root is its own real root via the level-BFS,
-  // Kid is Root's level-1 child), so they should never factor into the
-  // cycle's same-row obstructionBottom search even though the search
-  // iterates over every placed class, not just this row's.
-  it('3-node cycle, unrelated Root->Kid pair on a different level: obstruction search ignores it', () => {
-    const src = `classDiagram
-  class Root
+  // on a *different* level/row, even when that class's box geometrically
+  // overlaps the detour's horizontal span — not just when it happens to sit
+  // off to the side where the search would ignore it anyway regardless of
+  // the `other.y !== fromP.y` filter. `Root`/`Kid` are a real root/child
+  // pair via the level-BFS (Root has no parent, Kid is its level-1 child),
+  // placed on a different row from the Alpha/Mid/Charlie cycle.
+  //
+  // Two orderings of the same Root/Kid pair are compared: declaring Root
+  // first places Kid's column off to the side, outside the Alpha-to-Charlie
+  // detour span; declaring Root between Alpha and Mid places Kid's column
+  // so it overlaps Alpha's own range instead (confirmed below via
+  // `findBoxRect`). If the different-row filter worked, both orderings
+  // render the cycle identically — Root/Kid's actual row is irrelevant to
+  // it either way. A test that only used the non-overlapping ordering would
+  // pass even with the filter deleted (verified: an earlier version of this
+  // test did exactly that, and CodeRabbit correctly flagged it as not
+  // actually exercising the filter — see the PR discussion). Sabotage-
+  // verified: deleting the filter leaves both orderings' `+ bN: String`
+  // lines intact but makes the overlapping ordering one row taller than the
+  // non-overlapping one (19 vs. 18), which the equality assertion below
+  // catches.
+  it('3-node cycle, unrelated Root->Kid pair on a different level: obstruction search ignores it regardless of whether it overlaps the detour span', () => {
+    function withRootKid(rootDeclaredBetweenAlphaAndMid: boolean): string {
+      const rootAndKid = `  class Root
   class Kid
-  class Alpha
-  class Mid {
+`
+      return `classDiagram
+${rootDeclaredBetweenAlphaAndMid ? '' : rootAndKid}  class Alpha
+${rootDeclaredBetweenAlphaAndMid ? rootAndKid : ''}  class Mid {
 ${manyAttrs('b', 6)}
   }
   class Charlie
@@ -149,6 +166,65 @@ ${manyAttrs('b', 6)}
   Mid --> Charlie
   Charlie --> Alpha
   Root --> Kid`
+    }
+
+    const nonOverlapping = renderMermaidASCII(withRootKid(false), {
+      useAscii: true,
+    })
+    const overlapping = renderMermaidASCII(withRootKid(true), {
+      useAscii: true,
+    })
+
+    // Confirms the geometry this test relies on: in the "overlapping"
+    // ordering, Kid really does sit on a different row from the cycle, and
+    // really does overlap Alpha's own column range (i.e. the obstruction
+    // search has something to incorrectly notice if the different-row
+    // filter is missing); in the "non-overlapping" ordering, it doesn't.
+    const overlappingAlphaRect = findBoxRect(overlapping, 'Alpha')
+    const overlappingKidRect = findBoxRect(overlapping, 'Kid')
+    expect(overlappingKidRect.y0).toBeGreaterThan(overlappingAlphaRect.y1)
+    expect(overlappingKidRect.x0).toBeLessThan(overlappingAlphaRect.x1)
+    const nonOverlappingAlphaRect = findBoxRect(nonOverlapping, 'Alpha')
+    const nonOverlappingKidRect = findBoxRect(nonOverlapping, 'Kid')
+    expect(nonOverlappingKidRect.x1).toBeLessThanOrEqual(
+      nonOverlappingAlphaRect.x0,
+    )
+
+    for (const ascii of [nonOverlapping, overlapping]) {
+      expectAllPresentOnce(ascii, [
+        '+ b0: String',
+        '+ b1: String',
+        '+ b2: String',
+        '+ b3: String',
+        '+ b4: String',
+        '+ b5: String',
+      ])
+      expectNoBoxOverlap(ascii, ['Alpha', 'Mid', 'Charlie', 'Root', 'Kid'])
+    }
+
+    // The real check: Kid overlapping the detour span must not change the
+    // cycle's own rendered height compared to Kid sitting clear of it.
+    expect(overlapping.split('\n').length).toBe(
+      nonOverlapping.split('\n').length,
+    )
+  })
+
+  // `computeLabelAnchor`'s same-level branch used to recompute the label's
+  // row from scratch (`Math.max(fromBY, toBY) + 2`) instead of reusing the
+  // connector's own obstruction-aware `detourY` (`sameLevelDetourY` above)
+  // — so a *labeled* same-level relationship still landed its label inside
+  // Mid's box even after the unlabeled connector-line fix above, the same
+  // corruption in a sibling code path (caught in review on PR #957).
+  it('3-node cycle, Mid (middle) has 6 attributes, labeled wrap-around relationship: label no longer corrupts an attribute row', () => {
+    const src = `classDiagram
+  class Alpha
+  class Mid {
+${manyAttrs('b', 6)}
+  }
+  class Charlie
+  Alpha --> Mid
+  Mid --> Charlie
+  Charlie --> Alpha : a rather long descriptive label`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectAllPresentOnce(ascii, [
       '+ b0: String',
@@ -158,7 +234,7 @@ ${manyAttrs('b', 6)}
       '+ b4: String',
       '+ b5: String',
     ])
-    expectNoBoxOverlap(ascii, ['Alpha', 'Mid', 'Charlie', 'Root', 'Kid'])
+    expect(ascii).toContain('a rather long descriptive label')
   })
 
   it('3-node cycle, long relationship label, no tall obstruction', () => {
