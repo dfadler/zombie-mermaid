@@ -192,6 +192,31 @@ function wireThemePicker(
 ): void {
   const { wrapper, trigger, panel } = opts
 
+  // Focuses an option without letting the browser's default
+  // scroll-into-view kick in -- #theme-showcase needs `overflow: hidden`
+  // to clip its oversized decorative aurora/mesh background, which
+  // (surprisingly) is enough to make it a real, programmatically
+  // scrollable container even though nothing ever draws a scrollbar on
+  // it. Plain `.focus()` on a deeply-nested option was walking up to that
+  // ancestor and setting a nonzero `scrollTop` on it, silently shifting
+  // the entire section's visible content (confirmed empirically: 27px,
+  // every time, regardless of viewport size) -- exactly the "opening the
+  // picker moves everything below it" bug this fixes. `preventScroll:
+  // true` stops that, including the desirable case (the panel's own
+  // `overflow-y: auto` scrolling to reveal an option outside its current
+  // 300px window), so that specific, correct scroll is reimplemented by
+  // hand here, scoped to just `panel.scrollTop`.
+  function focusOption(option: HTMLElement): void {
+    option.focus({ preventScroll: true })
+    const panelRect = panel.getBoundingClientRect()
+    const optionRect = option.getBoundingClientRect()
+    if (optionRect.top < panelRect.top) {
+      panel.scrollTop -= panelRect.top - optionRect.top
+    } else if (optionRect.bottom > panelRect.bottom) {
+      panel.scrollTop += optionRect.bottom - panelRect.bottom
+    }
+  }
+
   function setOpen(open: boolean): void {
     panel.hidden = !open
     trigger.setAttribute('aria-expanded', String(open))
@@ -200,7 +225,8 @@ function wireThemePicker(
       const selected = els.pickerOptions.find(
         (opt) => opt.getAttribute('aria-selected') === 'true',
       )
-      ;(selected ?? els.pickerOptions[0])?.focus()
+      const target = selected ?? els.pickerOptions[0]
+      if (target) focusOption(target)
     }
   }
 
@@ -231,13 +257,14 @@ function wireThemePicker(
     }
     if (nextIndex === null) return
     e.preventDefault()
-    items[nextIndex]?.focus()
+    const next = items[nextIndex]
+    if (next) focusOption(next)
   })
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || panel.hidden) return
     setOpen(false)
-    trigger.focus()
+    trigger.focus({ preventScroll: true })
   })
   document.addEventListener('click', (e) => {
     if (panel.hidden) return
@@ -267,7 +294,7 @@ function wireThemePicker(
       }
 
       setOpen(false)
-      trigger.focus()
+      trigger.focus({ preventScroll: true })
     })
   }
 }
