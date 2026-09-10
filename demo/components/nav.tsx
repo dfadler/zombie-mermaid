@@ -312,7 +312,7 @@ const NPM_INSTALL_PREFIX = 'npm install '
  * that same string verbatim rather than guessing at its structure, which
  * is the smallest safe fallback for a prop that's free-form text.
  */
-function packageNameFromCommand(installCommand: string): string {
+export function packageNameFromCommand(installCommand: string): string {
   return installCommand.startsWith(NPM_INSTALL_PREFIX)
     ? installCommand.slice(NPM_INSTALL_PREFIX.length)
     : installCommand
@@ -323,7 +323,7 @@ function packageNameFromCommand(installCommand: string): string {
  * `npm install <pkg>` for npm, `<manager> add <pkg>` for the other three
  * (pnpm, yarn, and bun all share the `add` verb).
  */
-function installCommandFor(
+export function installCommandFor(
   manager: PackageManager,
   packageName: string,
 ): string {
@@ -336,6 +336,21 @@ function installCommandFor(
  * horizontal ({@link SPACE.sm}), per the approved design spec. */
 const INSTALL_PREFIX_PAD_Y = SPACE.xxs
 const INSTALL_PREFIX_PAD_X = SPACE.sm
+
+/**
+ * The longest of {@link PACKAGE_MANAGERS}' own names, in characters
+ * (`'pnpm'`/`'yarn'`, both 4) — reserved as the prefix label's `min-width`
+ * (in `ch`, exact in the pill's monospace face) so switching between a
+ * 3-letter manager (`npm`/`bun`) and a 4-letter one doesn't change the
+ * trigger's rendered width and, with it, shove the divider/command/copy
+ * glyph sideways (zombie-mermaid#902 — caught in the homepage hero, where
+ * that shift visibly nudges the CTA button beside it; the header pill has
+ * the identical dependency, just harder to notice next to a plain
+ * hamburger icon).
+ */
+const INSTALL_PREFIX_LABEL_MIN_WIDTH_CH = Math.max(
+  ...PACKAGE_MANAGERS.map((manager) => manager.length),
+)
 
 /** The chevron-down glyph's rendered size, in px — small enough to sit
  * beside the prefix label without competing with the copy glyph. */
@@ -466,10 +481,12 @@ ${MEDIA.tablet} {
 ${MEDIA.mobile} {
   .nav-bar { padding: ${NAV_PAD_Y.mobile}px ${NAV_PAD_X.mobile}px !important; }
   .nav-npm-text { display: none !important; }
+  .nav-install-copy { min-width: 0 !important; }
 }
 
 @media (min-width: ${BREAKPOINTS.tablet + 1}px) and (max-width: ${NAV_CRAMPED_MAX}px) {
   .nav-npm-text { display: none !important; }
+  .nav-install-copy { min-width: 0 !important; }
 }
 
 /* --- Mobile menu (invented; not part of the #590 canvas) --- */
@@ -616,14 +633,17 @@ export interface NavProps {
   /**
    * Replaces the install pill entirely. Defaults to the canvas's own
    * `NavInstall` (rendered with {@link installCommand}) — every page but
-   * the homepage keeps that default. #759's homepage passes an empty
-   * `<div id="nav-theme-slot" />` placeholder instead: a real, interactive
-   * theme picker is only ever *reparented* into it at runtime
-   * (`demo/index-page-client.ts`), never server-rendered there, so this
-   * stays a homepage-only behavior rather than a site-wide `Nav` change,
-   * and the "no `<button>` in Nav's SSR output" invariant
-   * (`__tests__/demo-nav.test.ts`) holds regardless of which slot content
-   * a page passes.
+   * the homepage keeps that default. As of zombie-mermaid#902, the
+   * homepage passes an empty fragment: its package-manager selector moved
+   * into the hero's own `HeroInstall` (`index-app.tsx`), so the header
+   * renders nothing in this slot rather than falling back to `NavInstall`
+   * and duplicating it. (An earlier, #759-era homepage instead passed a
+   * `<div id="nav-theme-slot" />` placeholder here for a live theme picker
+   * reparented into it at runtime; that page-level use has since been
+   * retired, though `NAV_THEME_SLOT_ID` and the plumbing for it remain in
+   * `nav-island.tsx`/`demo/nav-client.tsx` — the "no `<button>` in Nav's
+   * SSR output" invariant (`__tests__/demo-nav.test.ts`) holds regardless
+   * of which slot content a page passes.)
    */
   installSlot?: ReactNode
   /**
@@ -692,7 +712,7 @@ function NavBrand({ homeHref }: { homeHref?: string }) {
  * {@link MenuToggle} draws its own local svg with) so it reads as part of
  * the same family.
  */
-function InstallChevronGlyph() {
+export function InstallChevronGlyph() {
   return (
     <svg
       width={INSTALL_CHEVRON_SIZE}
@@ -720,7 +740,7 @@ function InstallChevronGlyph() {
  * Invented for the package-manager selector (zombie-mermaid#719) — see the
  * module doc comment for where the design came from.
  */
-function NavInstallPrefix({
+export function NavInstallPrefix({
   manager,
   open,
   onToggle,
@@ -766,7 +786,9 @@ function NavInstallPrefix({
       onClick={onToggle}
       onKeyDown={handleKeyDown}
     >
-      {manager}
+      <span style={{ minWidth: `${INSTALL_PREFIX_LABEL_MIN_WIDTH_CH}ch` }}>
+        {manager}
+      </span>
       <InstallChevronGlyph />
     </span>
   )
@@ -782,7 +804,7 @@ function NavInstallPrefix({
  * Invented for the package-manager selector (zombie-mermaid#719) — see the
  * module doc comment for where the design came from.
  */
-function NavInstallPopover({
+export function NavInstallPopover({
   manager,
   onSelect,
   onClose,
@@ -878,36 +900,63 @@ function NavInstallPopover({
   )
 }
 
+/* -----------------------------------------------------------------
+ * Package-manager install state (zombie-mermaid#719)
+ *
+ * Extracted out of {@link NavInstall} (zombie-mermaid#902) so the homepage
+ * hero's own compact instance (`index-app.tsx`'s `HeroInstall`) can drive
+ * the same popover-and-copy behavior without a second copy of this state —
+ * only the surrounding chrome (the outer `<Pill>`'s background/border) is
+ * ever specific to where it's mounted.
+ * ----------------------------------------------------------------- */
+
+/** Everything {@link usePackageManagerInstall} hands back to a caller. */
+export interface PackageManagerInstall {
+  /** The popover's current selection. */
+  selectedManager: PackageManager
+  /** Whether {@link NavInstallPopover} is open. */
+  popoverOpen: boolean
+  /** Whether the "copied" flash is showing. */
+  copied: boolean
+  /** `command`, rewritten for {@link selectedManager}. */
+  displayedCommand: string
+  /** The longest of the four managers' commands for this `command`'s
+   * package name — always the npm form. A caller reserves this as the copy
+   * target's `min-width` (in `ch`) so switching managers never shrinks the
+   * pill (zombie-mermaid#902). */
+  widestCommand: string
+  /** Attach to the trigger element {@link NavInstallPrefix} renders. */
+  triggerRef: RefObject<HTMLSpanElement | null>
+  /** Attach to the wrapper around a rendered {@link NavInstallPopover}. */
+  popoverRef: RefObject<HTMLSpanElement | null>
+  /** Attach to each popover item, for {@link NavInstallPopover}'s roving focus. */
+  itemRefs: RefObject<(HTMLSpanElement | null)[]>
+  /** Opens/closes the popover. */
+  togglePopover: () => void
+  /** Closes the popover without moving focus. */
+  closePopover: () => void
+  /** Picks a manager, closes the popover, and returns focus to the trigger. */
+  selectManager: (next: PackageManager) => void
+  /** Copies {@link displayedCommand} and flashes {@link copied}. */
+  copyCommand: () => void
+  /** Enter/Space activates {@link copyCommand}. */
+  handleCopyKeyDown: (event: KeyboardEvent<HTMLSpanElement>) => void
+}
+
 /**
- * The install pill: the canvas's `muted` {@link Pill} lifted onto
- * `--panel-2`, holding the package-manager selector, the command, and a
- * copy glyph.
+ * State and handlers behind the install pill's package-manager popover and
+ * copy-to-clipboard button — shared by {@link NavInstall} (the nav bar, on
+ * every page but the homepage) and the homepage hero's own compact
+ * instance. Takes the same `command` prop either caller already has (a
+ * page's `installCommand`/{@link NAV_INSTALL_COMMAND}), so there is exactly
+ * one definition of this behavior regardless of which chrome wraps it.
  *
- * The text is the element the 600px rule hides, so it must stay its own
- * `.nav-npm-text` span rather than being the pill's bare text content.
- *
- * Real `onClick`/`onKeyDown` handlers plus {@link useState} for the
- * "copied" flash (zombie-mermaid#800) — replacing the old
- * `NAV_COPY_SCRIPT` runtime script, which mutated this same markup's
- * `role`/`tabindex`/`aria-label`/cursor attributes and the icon's `stroke`
- * *after* the fact. Those attributes are now part of this component's own
- * render output from the start (identical on the server and the client, so
- * hydration has nothing to reconcile), and the icon's stroke color is
- * driven by {@link copied} instead of a `setAttribute` call.
- *
- * As of zombie-mermaid#719 (invented, not canvas-pinned — see the module
- * doc comment), the pill also carries {@link NavInstallPrefix}: clicking it
- * (rather than the rest of the pill) opens {@link NavInstallPopover} to
- * pick a package manager, which drives both the prefix label and the
- * command text/copy payload via {@link selectedManager}. Neither the
- * prefix nor the popover is nested inside a click-to-copy region — they
- * sit beside it as their own focusable, `role`-carrying spans — so there
- * is no ambiguity between "open the popover" and "copy the command"
- * clicks, and no nested interactive roles for assistive tech to untangle.
  * The initial SSR render always shows npm (`useState`'s default), matching
  * the pill's pre-#719 behavior exactly; the popover starts closed.
  */
-function NavInstall({ command }: { command: string }) {
+export function usePackageManagerInstall(
+  command: string,
+): PackageManagerInstall {
   const [selectedManager, setSelectedManager] = useState<PackageManager>('npm')
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -923,11 +972,18 @@ function NavInstall({ command }: { command: string }) {
     selectedManager === 'npm'
       ? command
       : installCommandFor(selectedManager, packageName)
+  // Always the `npm install <pkg>` form: `install` outruns the other three
+  // managers' shared `add` verb regardless of `packageName`, so this is
+  // always at least as long as any of the four rendered commands. Reserved
+  // as the copy target's `min-width` (see the two call sites) so switching
+  // managers can only ever leave *trailing* space in the pill, never shrink
+  // it and shove whatever sits next to it (zombie-mermaid#902).
+  const widestCommand = installCommandFor('npm', packageName)
 
   // Cleared on unmount so a pending revert never fires against an
-  // unmounted component (defensive — Nav is never intentionally unmounted
-  // in this repo's pages, but hydration boundaries are exactly the place
-  // to not assume that).
+  // unmounted component (defensive — neither caller intentionally unmounts
+  // this, but hydration boundaries are exactly the place to not assume
+  // that).
   useEffect(() => {
     return () => {
       if (revertTimer.current) clearTimeout(revertTimer.current)
@@ -1002,6 +1058,44 @@ function NavInstall({ command }: { command: string }) {
     triggerRef.current?.focus()
   }
 
+  return {
+    selectedManager,
+    popoverOpen,
+    copied,
+    displayedCommand,
+    widestCommand,
+    triggerRef,
+    popoverRef,
+    itemRefs,
+    togglePopover: () => setPopoverOpen((open) => !open),
+    closePopover: () => setPopoverOpen(false),
+    selectManager,
+    copyCommand,
+    handleCopyKeyDown,
+  }
+}
+
+/**
+ * The install pill: the canvas's `muted` {@link Pill} lifted onto
+ * `--panel-2`, holding the package-manager selector, the command, and a
+ * copy glyph — all driven by {@link usePackageManagerInstall}.
+ *
+ * The text is the element the 600px rule hides, so it must stay its own
+ * `.nav-npm-text` span rather than being the pill's bare text content.
+ *
+ * As of zombie-mermaid#719 (invented, not canvas-pinned — see the module
+ * doc comment), the pill also carries {@link NavInstallPrefix}: clicking it
+ * (rather than the rest of the pill) opens {@link NavInstallPopover} to
+ * pick a package manager, which drives both the prefix label and the
+ * command text/copy payload. Neither the prefix nor the popover is nested
+ * inside a click-to-copy region — they sit beside it as their own
+ * focusable, `role`-carrying spans — so there is no ambiguity between
+ * "open the popover" and "copy the command" clicks, and no nested
+ * interactive roles for assistive tech to untangle.
+ */
+function NavInstall({ command }: { command: string }) {
+  const install = usePackageManagerInstall(command)
+
   return (
     <Pill
       mono
@@ -1012,10 +1106,10 @@ function NavInstall({ command }: { command: string }) {
       }}
     >
       <NavInstallPrefix
-        manager={selectedManager}
-        open={popoverOpen}
-        onToggle={() => setPopoverOpen((open) => !open)}
-        triggerRef={triggerRef}
+        manager={install.selectedManager}
+        open={install.popoverOpen}
+        onToggle={install.togglePopover}
+        triggerRef={install.triggerRef}
       />
       <span
         className="nav-install-divider"
@@ -1027,6 +1121,7 @@ function NavInstall({ command }: { command: string }) {
         }}
       />
       <span
+        className="nav-install-copy"
         role="button"
         tabIndex={0}
         aria-label="Copy install command"
@@ -1035,26 +1130,33 @@ function NavInstall({ command }: { command: string }) {
           alignItems: 'center',
           gap: `${SPACE.sm}px`,
           flex: 1,
+          // Reserves room for the widest of the four managers' commands —
+          // see `widestCommand`'s doc comment — so switching managers can
+          // only ever leave trailing space here, never shrink the pill.
+          // Zeroed back out (navCss's `.nav-install-copy` rules) wherever
+          // `.nav-npm-text` itself goes `display: none` — no sense
+          // reserving room for text that isn't rendered.
+          minWidth: `calc(${install.widestCommand.length}ch + ${SPACE.sm}px + ${COPY_ICON_SIZE}px)`,
           cursor: 'pointer',
         }}
-        onClick={copyCommand}
-        onKeyDown={handleCopyKeyDown}
+        onClick={install.copyCommand}
+        onKeyDown={install.handleCopyKeyDown}
       >
-        <span className="nav-npm-text">{displayedCommand}</span>
+        <span className="nav-npm-text">{install.displayedCommand}</span>
         <CopyIcon
           size={COPY_ICON_SIZE}
           strokeWidth={COPY_ICON_STROKE}
-          color={copied ? NAV_COPY_SUCCESS_COLOR : NAV_COPY_ICON_COLOR}
+          color={install.copied ? NAV_COPY_SUCCESS_COLOR : NAV_COPY_ICON_COLOR}
         />
       </span>
-      {popoverOpen ? (
-        <span ref={popoverRef}>
+      {install.popoverOpen ? (
+        <span ref={install.popoverRef}>
           <NavInstallPopover
-            manager={selectedManager}
-            onSelect={selectManager}
-            onClose={() => setPopoverOpen(false)}
-            triggerRef={triggerRef}
-            itemRefs={itemRefs}
+            manager={install.selectedManager}
+            onSelect={install.selectManager}
+            onClose={install.closePopover}
+            triggerRef={install.triggerRef}
+            itemRefs={install.itemRefs}
           />
         </span>
       ) : null}
