@@ -156,7 +156,7 @@ describe('buildSoftwareApplicationJsonLd', () => {
     expect(jsonLd).toEqual({
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
-      name: 'ZombieMermaid',
+      name: 'Zombie Mermaid',
       description: pkg.description,
       softwareVersion: pkg.version,
       applicationCategory: 'DeveloperApplication',

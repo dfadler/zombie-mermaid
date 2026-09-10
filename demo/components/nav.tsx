@@ -131,12 +131,9 @@ export const NAV_ITEMS = [
 export type NavKey = (typeof NAV_ITEMS)[number]['key']
 
 /**
- * The brand wordmark.
- *
- * Rebranded from the hyphenated `zombie-mermaid` to this merged PascalCase
- * form (a typography exploration, not the #590 canvas) — the npm package
- * name, GitHub repo slug, and CLI command stay hyphenated; only the
- * rendered wordmark changed.
+ * The brand wordmark, as it renders in a logo lockup (icon + wordmark
+ * together) — see `docs/brand.md` for the merged-vs-spaced rule and why
+ * this differs from most other rendered mentions of the product name.
  */
 export const NAV_WORDMARK = 'ZombieMermaid'
 

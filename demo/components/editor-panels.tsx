@@ -189,7 +189,7 @@ export function EditorRightPanel() {
 
       <div className="preview-footer">
         <span id="render-time" />
-        <span>ZombieMermaid</span>
+        <span>Zombie Mermaid</span>
       </div>
     </div>
   )

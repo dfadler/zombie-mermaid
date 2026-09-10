@@ -99,7 +99,7 @@ describe('index.ts → index.html', () => {
     const document = renderIndexPageDocument()
 
     expect(document.title).toBe(
-      'ZombieMermaid — Mermaid Rendering, Made Beautiful',
+      'Zombie Mermaid — Mermaid Rendering, Made Beautiful',
     )
     expect(
       document
@@ -503,7 +503,7 @@ describe('editor.ts → editor.html', () => {
   it('renders the page title and the hero heading above the tool', () => {
     const { document, page } = renderEditorPageDocument()
 
-    expect(document.title).toBe('ZombieMermaid — Live Editor')
+    expect(document.title).toBe('Zombie Mermaid — Live Editor')
     expect(
       page.getByRole('heading', {
         level: 1,
