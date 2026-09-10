@@ -53,6 +53,16 @@
 #
 # The base tag is pinned to the `@playwright/test` version in package.json
 # (1.62.1) and must be bumped in lockstep with it.
+#
+# KEEPING THIS IN SYNC WITH docker/visual-regression-chromium.Dockerfile: that
+# file's `ubuntu:22.04` base and `playwright@1.62.1` install pin encode the
+# same "v1.62.1, jammy" version this tag does, so the real `visual-regression`
+# CI job (which now runs on docker/visual-regression-chromium.Dockerfile's
+# published image, not this one - see zombie-mermaid#868) stays in lockstep
+# too. If you bump this tag, bump that file's base/version pins to match in
+# the same change, then re-publish and re-pin the digest `ci.yml` uses (see
+# that file's and .github/workflows/visual-regression-chromium-image.yml's
+# own comments).
 FROM mcr.microsoft.com/playwright:v1.62.1-jammy
 
 RUN apt-get update \

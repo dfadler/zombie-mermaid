@@ -1,23 +1,43 @@
-name: Visual regression Chromium-only image (measurement)
+name: Visual regression Chromium-only image (build & publish)
 
-# Builds and pushes docker/visual-regression-chromium.Dockerfile to GHCR, then
-# runs a throwaway `container:` job against it so its real "Initialize
-# containers" (image pull) time can be sampled from `gh run view --json jobs`
-# the same way docs/research/ci-container-job-vs-actions-cache-timing.md
-# sampled the real `visual-regression` job's pull time in ci.yml.
+# Builds and pushes docker/visual-regression-chromium.Dockerfile to GHCR,
+# then runs a throwaway `container:` job against the freshly-pushed image so
+# its real "Initialize containers" (image pull) time can be sampled from
+# `gh run view --json jobs` the same way
+# docs/research/ci-container-job-vs-actions-cache-timing.md sampled the real
+# `visual-regression` job's pull time in ci.yml.
 #
-# This workflow exists ONLY to take that measurement for
-# zombie-mermaid#737 - a speculative, explicitly low-priority follow-up to
-# #729/#733's investigation into `visual-regression`'s container-init
-# overhead. It is intentionally NOT wired into `push`/`pull_request` and does
-# NOT modify ci.yml's real `visual-regression` job: #737's own scope is
-# "build the image and measure it," not "adopt it." See
-# docs/research/737-chromium-only-image-pull-timing.md for the resulting
-# numbers and recommendation.
+# ORIGIN AND CURRENT ROLE
 #
-# Manual dispatch only, so it never runs (or burns Actions minutes) as part
-# of normal PR/push CI - re-run it by hand (Actions tab -> this workflow ->
-# "Run workflow") for each additional timing sample desired.
+# Originally added to answer zombie-mermaid#737 - a speculative, low-priority
+# follow-up to #729/#733's investigation into `visual-regression`'s
+# container-init overhead - and deliberately NOT wired into
+# `push`/`pull_request`, since #737's own scope was "build the image and
+# measure it," not "adopt it" (docs/research/737-chromium-only-image-pull-timing.md
+# has the resulting numbers).
+#
+# zombie-mermaid#868 adopted the image #737 built: `ci.yml`'s real
+# `visual-regression` job now pins a digest this workflow's `build-and-push`
+# job published (see that job's own comment for why it, not a new
+# always-on-push workflow, remains the publish mechanism). That makes this
+# workflow's `build-and-push` job a real CI dependency now, not just a
+# measurement artifact - it is the only thing that produces the image
+# `ci.yml` consumes. It stays `workflow_dispatch`-only rather than gaining an
+# automatic trigger (e.g. on Dockerfile changes): re-pinning `ci.yml`'s
+# digest is itself a manual step (the digest is copy-pasted into a comment
+# there), so an auto-rebuilt image would silently stop matching what
+# `ci.yml` actually pins - the same manual-bump-then-redigest pattern
+# docker/visual-regression.Dockerfile's own base-tag comment already
+# documents for the multi-browser image. Re-run this by hand (Actions tab ->
+# this workflow -> "Run workflow") whenever the Dockerfile changes or the
+# pinned Playwright/base-image version bumps, then update `ci.yml`'s digest
+# to match.
+#
+# The `measure-pull-time` job below is no longer this workflow's primary
+# purpose, but it costs nothing extra on a workflow_dispatch-only run and
+# remains useful for a future re-measurement if the base image changes
+# again - kept per #868's own explicit "keep for future re-measurement"
+# option rather than deleted.
 on:
   workflow_dispatch: {}
 
@@ -27,10 +47,9 @@ concurrency:
 
 env:
   # A single, distinct tag (not a mutable `:latest`-style alias shared with
-  # anything else) so this can never be confused with or clobber the real
-  # multi-browser image this repo's actual `visual-regression` job uses
-  # (mcr.microsoft.com/playwright, pinned by digest in ci.yml). Per #737's
-  # own suggestion.
+  # anything else) so this can never be confused with or clobber the old
+  # multi-browser image the real `visual-regression` job used before #868
+  # (mcr.microsoft.com/playwright). Per #737's own suggestion.
   IMAGE: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only
 
 jobs:
