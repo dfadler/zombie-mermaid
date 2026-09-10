@@ -220,7 +220,7 @@ export function BlogPostPage({
   const appProps: BlogPostAppProps = { title, displayDate, bodyHtml }
   return (
     <BlogDocument
-      title={`${title} | Zombie Mermaid Blog`}
+      title={`${title} | ZombieMermaid Blog`}
       description={description}
       canonical={canonical}
       cssHref={cssHref}
@@ -312,7 +312,7 @@ export function BlogIndexPage({
   const appProps: BlogIndexAppProps = { posts }
   return (
     <BlogDocument
-      title="Blog | Zombie Mermaid"
+      title="Blog | ZombieMermaid"
       description={BLOG_DESCRIPTION}
       canonical={canonical}
       cssHref={cssHref}

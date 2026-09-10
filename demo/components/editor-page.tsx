@@ -511,7 +511,7 @@ export function EditorPage({
   return (
     <html lang="en">
       <head>
-        <SiteHead title="zombie-mermaid — Live Editor" css={css} />
+        <SiteHead title="ZombieMermaid — Live Editor" css={css} />
         {/* SiteHead only emits the SVG favicon (first shaped around
             dashboard.ts, which needs nothing else). The original template
             also links a .ico fallback and an apple-touch-icon; kept here as

@@ -115,7 +115,7 @@ export function buildSoftwareApplicationJsonLd(
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'Zombie Mermaid',
+    name: 'ZombieMermaid',
     description: pkg.description,
     softwareVersion: pkg.version,
     applicationCategory: 'DeveloperApplication',

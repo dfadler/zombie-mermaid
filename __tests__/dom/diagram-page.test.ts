@@ -57,7 +57,7 @@ describe('DiagramTypePage (#821)', () => {
         accent: 'cyan',
         exampleHeading: 'An API handshake, message by message.',
         sourceFilename: 'handshake.mmd',
-        title: 'Sequence diagram examples | Zombie Mermaid',
+        title: 'Sequence diagram examples | ZombieMermaid',
         description: 'Rendered live in any of 15 built-in themes.',
         canonical: 'https://example.test/diagrams/sequence.html',
         cssHref: 'assets/diagram-page.css',
@@ -113,7 +113,7 @@ describe('DiagramTypePage (#821)', () => {
         accent: 'blue',
         exampleHeading: 'A deploy pipeline, start to finish.',
         sourceFilename: 'pipeline.mmd',
-        title: 'Flowchart examples | Zombie Mermaid',
+        title: 'Flowchart examples | ZombieMermaid',
         description: 'Rendered live in any of 15 built-in themes.',
         canonical: 'https://example.test/diagrams/flowchart.html',
         cssHref: 'assets/diagram-page.css',
@@ -166,7 +166,7 @@ describe('DiagramHubPage (#821)', () => {
   it('renders the list of diagram types with correct links', () => {
     render(
       createElement(DiagramHubPage, {
-        title: 'Diagram gallery: every type | Zombie Mermaid',
+        title: 'Diagram gallery: every type | ZombieMermaid',
         description: 'Browse every zombie-mermaid diagram type.',
         canonical: 'https://example.test/diagrams/',
         cssHref: 'assets/diagram-page.css',

@@ -123,7 +123,7 @@ function EditorLogo() {
         />
       </svg>
       <span>
-        <strong>zombie-mermaid</strong>
+        <strong>ZombieMermaid</strong>
         <span className="logo-sub">Live Editor</span>
       </span>
     </a>

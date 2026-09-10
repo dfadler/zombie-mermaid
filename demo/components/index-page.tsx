@@ -996,7 +996,7 @@ export function IndexPage({
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Zombie Mermaid — Mermaid Rendering, Made Beautiful</title>
+        <title>ZombieMermaid — Mermaid Rendering, Made Beautiful</title>
         <meta
           name="description"
           content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams."
@@ -1005,7 +1005,7 @@ export function IndexPage({
         <link rel="icon" type="image/svg+xml" href="favicon.svg" />
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
         <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-        <meta property="og:title" content="Zombie Mermaid" />
+        <meta property="og:title" content="ZombieMermaid" />
         <meta
           property="og:description"
           content="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII."
@@ -1014,7 +1014,7 @@ export function IndexPage({
         <meta property="og:type" content="website" />
         <meta property="og:url" content={SITE_URL} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Zombie Mermaid" />
+        <meta name="twitter:title" content="ZombieMermaid" />
         <meta
           name="twitter:description"
           content="Mermaid rendering, made beautiful. Ultra-fast, fully themeable, outputs to SVG and ASCII."

@@ -130,8 +130,15 @@ export const NAV_ITEMS = [
 /** One of the five links' identities, e.g. `'forkFixes'`. */
 export type NavKey = (typeof NAV_ITEMS)[number]['key']
 
-/** The brand wordmark, spelled the way the canvas spells it. */
-export const NAV_WORDMARK = 'zombie-mermaid'
+/**
+ * The brand wordmark.
+ *
+ * Rebranded from the hyphenated `zombie-mermaid` to this merged PascalCase
+ * form (a typography exploration, not the #590 canvas) — the npm package
+ * name, GitHub repo slug, and CLI command stay hyphenated; only the
+ * rendered wordmark changed.
+ */
+export const NAV_WORDMARK = 'ZombieMermaid'
 
 /** The install command in the nav's pill. */
 export const NAV_INSTALL_COMMAND = 'npm install zombie-mermaid'

@@ -70,8 +70,11 @@ export interface FooterColumn {
 
 /**
  * The wordmark text beside the brand mark.
+ *
+ * Rebranded to this merged PascalCase form — see `NAV_WORDMARK` in
+ * nav.tsx for why.
  */
-export const FOOTER_WORDMARK = 'zombie-mermaid'
+export const FOOTER_WORDMARK = 'ZombieMermaid'
 
 /** The one-line description under the wordmark, verbatim from the canvas. */
 export const FOOTER_TAGLINE =
@@ -112,9 +115,9 @@ export const FOOTER_COLUMNS: readonly FooterColumn[] = [
   },
 ]
 
-/** The bottom bar's left-hand line, verbatim from the canvas. */
+/** The bottom bar's left-hand line — rebranded to the new wordmark. */
 export const FOOTER_COPYRIGHT =
-  '© 2026 zombie-mermaid contributors. MIT licensed.'
+  '© 2026 ZombieMermaid contributors. MIT licensed.'
 
 /** The bottom bar's right-hand line, verbatim from the canvas. */
 export const FOOTER_FORK_NOTE = 'Actively maintained fork of beautiful-mermaid.'

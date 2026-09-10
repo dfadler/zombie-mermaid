@@ -496,7 +496,7 @@ async function main(): Promise<void> {
   const feedXml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>Zombie Mermaid Blog</title>
+    <title>ZombieMermaid Blog</title>
     <link>${SITE_URL}/blog/</link>
     <description>${escapeHtml(BLOG_DESCRIPTION)}</description>
 ${feedItems}

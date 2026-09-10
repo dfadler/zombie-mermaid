@@ -190,7 +190,7 @@ async function main(): Promise<void> {
     ): string =>
       renderMermaidSVG(source, {
         ...colors,
-        title: `${profile.label} diagram, zombie-mermaid`,
+        title: `${profile.label} diagram, ZombieMermaid`,
         interactivity: 'none',
         ...extra,
       })
@@ -243,7 +243,7 @@ async function main(): Promise<void> {
             narrow: highlightSource(narrowSource),
           }
 
-    const title = `${profile.label} examples | Zombie Mermaid`
+    const title = `${profile.label} examples | ZombieMermaid`
     const description = `${profile.intro} Rendered live in any of ${Object.keys(THEMES).length} built-in themes — free, open source, and dependency-free.`
     const canonical = `${SITE_URL}/diagrams/${profile.slug}.html`
     sitemapUrls.push(canonical)
@@ -303,7 +303,7 @@ async function main(): Promise<void> {
 
   const hubHtml = renderHtmlDocument(
     createElement(DiagramHubPage, {
-      title: `Diagram gallery: every type | Zombie Mermaid`,
+      title: `Diagram gallery: every type | ZombieMermaid`,
       description: `Browse every zombie-mermaid diagram type: ${DIAGRAM_TYPE_PROFILES.map((p) => p.label).join(', ')} — each rendered live in any of ${Object.keys(THEMES).length} built-in themes including Nord, Dracula, Tokyo Night, and GitHub.`,
       canonical: hubCanonical,
       cssHref: 'assets/diagram-page.css',
