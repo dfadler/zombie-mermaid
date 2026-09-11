@@ -40,9 +40,24 @@ export interface TagRule {
   test: (sample: Sample) => boolean
 }
 
-/** True when `source` contains a Mermaid statement keyword at the start of a line (ignoring leading whitespace) — e.g. `loop`, `alt`, `Note`. Safer than a bare substring test: won't match the word appearing inside a label or comment. */
+/**
+ * True when `source` contains a Mermaid statement keyword at the start of
+ * a line (ignoring leading whitespace) — e.g. `loop`, `alt`, `Note`. Safer
+ * than a bare substring test: won't match the word appearing inside a
+ * label or comment. Plain string methods plus one *literal* `/\w/` check
+ * for the trailing word-boundary, not `new RegExp(keyword)` — a
+ * dynamically-built regex trips Semgrep's `detect-non-literal-regexp`
+ * (every caller here passes a hardcoded keyword, never attacker input, but
+ * removing the pattern entirely is cleaner than a suppression comment for
+ * something a static scanner can't verify by itself).
+ */
 function hasLineKeyword(source: string, keyword: string): boolean {
-  return new RegExp(`^\\s*${keyword}\\b`, 'm').test(source)
+  return source.split('\n').some((line) => {
+    const trimmed = line.trimStart()
+    if (!trimmed.startsWith(keyword)) return false
+    const nextChar = trimmed.charAt(keyword.length)
+    return nextChar === '' || !/\w/.test(nextChar)
+  })
 }
 
 export const TAG_RULES: readonly TagRule[] = [
