@@ -90,7 +90,6 @@ import {
   type ReactNode,
 } from 'react'
 import { useEditorButtons } from './editor-buttons.ts'
-import { useEditorDarkMode } from './editor-dark-mode.ts'
 import { useEditorConfig } from './editor-config.tsx'
 import { useEditorFullscreen } from './editor-fullscreen.ts'
 import {
@@ -239,17 +238,15 @@ export interface EditorState {
   /** Node/shape stroke-width multiplier applied post-render (not part of `config`). */
   nodeStroke: number
   /**
-   * zombie-mermaid#809: tabs/buttons/export/toast/dark-mode replace
-   * `editor/js/tabs.ts`'s/`buttons.ts`'s/`export.ts`'s/`toast.ts`'s/
-   * `dark-mode.ts`'s own module-level mutable state with reducer state, the
-   * same migration #807 did for zoom/pan/resize above. See
-   * `editor-tabs.ts`/`editor-buttons.ts`/`editor-export.ts`/`editor-toast.ts`/
-   * `editor-dark-mode.ts` for the effects that read/write them.
+   * zombie-mermaid#809: tabs/buttons/export/toast replace
+   * `editor/js/tabs.ts`'s/`buttons.ts`'s/`export.ts`'s/`toast.ts`'s own
+   * module-level mutable state with reducer state, the same migration #807
+   * did for zoom/pan/resize above. See
+   * `editor-tabs.ts`/`editor-buttons.ts`/`editor-export.ts`/`editor-toast.ts`
+   * for the effects that read/write them.
    */
   /** Which panel is showing -- `editor/js/tabs.ts`'s old `.tab.active`/`data-panel`. */
   activeTab: 'code' | 'config'
-  /** `editor/js/dark-mode.ts`'s old `isDark` module-level variable. */
-  darkMode: boolean
   /** `editor/js/export.ts`'s old `exportScale` module-level variable. */
   exportScale: number
   /** Whether the export dropdown (`#export-dropdown`) is open. */
@@ -293,7 +290,6 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   edgeStroke: DEFAULT_STROKE,
   nodeStroke: DEFAULT_STROKE,
   activeTab: 'code',
-  darkMode: false,
   exportScale: 4,
   exportDropdownOpen: false,
   toastMessage: '',
@@ -333,7 +329,6 @@ export type EditorAction =
   | { type: 'SET_EDGE_STROKE'; value: number }
   | { type: 'SET_NODE_STROKE'; value: number }
   | { type: 'SET_ACTIVE_TAB'; tab: 'code' | 'config' }
-  | { type: 'SET_DARK_MODE'; dark: boolean }
   | { type: 'SET_EXPORT_SCALE'; scale: number }
   | { type: 'SET_EXPORT_DROPDOWN_OPEN'; open: boolean }
   | { type: 'SHOW_TOAST'; message: string }
@@ -398,8 +393,6 @@ export function editorReducer(
       return { ...state, nodeStroke: clampStroke(action.value) }
     case 'SET_ACTIVE_TAB':
       return { ...state, activeTab: action.tab }
-    case 'SET_DARK_MODE':
-      return { ...state, darkMode: action.dark }
     case 'SET_EXPORT_SCALE':
       return { ...state, exportScale: action.scale }
     case 'SET_EXPORT_DROPDOWN_OPEN':
@@ -473,15 +466,12 @@ export interface EditorRefs {
   panBtn: HTMLElement
   /**
    * Added by zombie-mermaid#809 -- see `editor-tabs.ts`'s `useEditorTabs`,
-   * `editor-buttons.ts`'s `useEditorButtons`, `editor-export.ts`'s
-   * `useEditorExport`, and `editor-dark-mode.ts`'s `useEditorDarkMode`.
+   * `editor-buttons.ts`'s `useEditorButtons`, and `editor-export.ts`'s
+   * `useEditorExport`.
    */
   sourceToolbar: HTMLElement
   copySourceBtn: HTMLElement
   clearBtn: HTMLElement
-  darkLightBtn: HTMLElement
-  iconMoon: SVGElement
-  iconSun: SVGElement
   exportWrap: HTMLElement
   exportChevronBtn: HTMLElement
   exportMainBtn: HTMLElement
@@ -566,9 +556,6 @@ export function collectEditorRefs(): EditorRefs {
     sourceToolbar: requireEditorElement('source-toolbar', HTMLElement),
     copySourceBtn: requireEditorElement('copy-source-btn', HTMLElement),
     clearBtn: requireEditorElement('clear-btn', HTMLElement),
-    darkLightBtn: requireEditorElement('dark-light-btn', HTMLElement),
-    iconMoon: requireEditorElement('icon-moon', SVGElement),
-    iconSun: requireEditorElement('icon-sun', SVGElement),
     exportWrap: requireEditorElement('export-wrap', HTMLElement),
     exportChevronBtn: requireEditorElement('export-chevron-btn', HTMLElement),
     exportMainBtn: requireEditorElement('export-main-btn', HTMLElement),
@@ -663,39 +650,31 @@ export function EditorApp({ themes }: EditorAppProps) {
   // the layout effect above has populated it.
   useEditorConfig({ state, refs })
 
-  // zombie-mermaid#809: tabs/buttons/export/toast/dark-mode -- see each
-  // hook's own file for what it replaces. Order among these five doesn't
-  // matter the way it did for the ref-collecting effect above (none of them
-  // depend on another's DOM writes), but all run after it for the same
-  // reason useEditorViewport does -- see this file's header comment.
+  // zombie-mermaid#809: tabs/buttons/export/toast -- see each hook's own
+  // file for what it replaces. Order among these four doesn't matter the
+  // way it did for the ref-collecting effect above (none of them depend on
+  // another's DOM writes), but all run after it for the same reason
+  // useEditorViewport does -- see this file's header comment.
   useEditorTabs({ state, dispatch, refs })
   useEditorButtons({ dispatch, refs })
   useEditorExport({ state, dispatch, refs })
   useEditorToast({ state, dispatch })
-  useEditorDarkMode({ state, dispatch, refs })
 
   // The fullscreen toggle -- has no ordering dependency on any hook above or
   // below (it neither reads nor writes anything they own), so its position
-  // in this list is arbitrary; kept next to useEditorDarkMode since both are
-  // simple topbar-button toggles with the same "click wires a DOM effect,
-  // an icon pair swaps on state" shape. See editor-fullscreen.ts.
+  // in this list is arbitrary. See editor-fullscreen.ts.
   useEditorFullscreen({ state, dispatch, refs })
 
-  // zombie-mermaid#810: the render pipeline and URL-hash sharing, called
-  // *after* useEditorDarkMode above -- applyThemeToPage's fallback branch
-  // (no theme selected) reads window.__editorDarkModeState.getIsDark()
-  // synchronously from this hook's own mount-time effect, which must
-  // already be registered by then. See editor-rendering.ts's/
-  // editor-sharing.ts's header comments for the rest of what these
-  // register.
+  // zombie-mermaid#810: the render pipeline and URL-hash sharing. See
+  // editor-rendering.ts's/editor-sharing.ts's header comments for what
+  // these register.
   useEditorRendering({ state, refs })
   useEditorSharing({ state, refs })
 
   // zombie-mermaid#810: the theme dropdown and the client bootstrap, called
-  // last -- its bootstrap effect needs window.__editorDarkModeState (from
-  // useEditorDarkMode above) and window.__editorRenderTrigger (from
-  // useEditorRendering just above) both already in place. See
-  // editor-theme.ts's header comment for the full ordering rationale.
+  // last -- its bootstrap effect needs window.__editorRenderTrigger (from
+  // useEditorRendering just above) already in place. See editor-theme.ts's
+  // header comment for the full ordering rationale.
   useEditorTheme({ state, dispatch, refs, themes })
 
   return (

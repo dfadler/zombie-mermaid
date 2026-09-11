@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Proves zombie-mermaid#809's tabs/buttons/toast/dark-mode React state
- * actually works, replacing `editor/__tests__/*.test.ts`'s old
- * `createEditorEnv()` + `window.eval` approach for these four concerns
- * (`editor/js/tabs.ts`'s/`buttons.ts`'s/`toast.ts`'s/`dark-mode.ts`'s old
- * click listeners and module-level state no longer exist, or barely do --
- * see each hook's own file) with this repo's React Testing Library pattern
+ * Proves zombie-mermaid#809's tabs/buttons/toast React state actually
+ * works, replacing `editor/__tests__/*.test.ts`'s old `createEditorEnv()` +
+ * `window.eval` approach for these three concerns (`editor/js/tabs.ts`'s/
+ * `buttons.ts`'s/`toast.ts`'s old click listeners and module-level state no
+ * longer exist, or barely do -- see each hook's own file) with this repo's
+ * React Testing Library pattern
  * (`__tests__/dom/rtl-example.test.ts`), the same migration
  * `__tests__/dom/editor-viewport.test.ts` did for #807's zoom/pan/resize.
  * `editor-export.ts`'s own test file covers export (kept separate: it's
@@ -28,7 +28,6 @@ import {
   editorReducer,
   type EditorAppProps,
 } from '../../demo/components/editor-app.tsx'
-import { DARK_MODE_STORAGE_KEY } from '../../demo/editor-dark-mode-state.ts'
 
 const PROPS: EditorAppProps = {
   themes: [{ key: 'nord', bg: '#2E3440', label: 'Nord' }],
@@ -44,7 +43,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  window.localStorage.removeItem(DARK_MODE_STORAGE_KEY)
   // See nav-hydration.test.ts's header comment: userEvent.setup() installs
   // its own jsdom Clipboard polyfill onto navigator.clipboard the first
   // time it runs and never uninstalls it, so a later test's
@@ -54,21 +52,13 @@ afterEach(() => {
   delete navigator.clipboard
 })
 
-describe('editorReducer (#809 tabs/dark-mode/toast actions)', () => {
+describe('editorReducer (#809 tabs/toast actions)', () => {
   it('SET_ACTIVE_TAB updates activeTab only', () => {
     const next = editorReducer(INITIAL_EDITOR_STATE, {
       type: 'SET_ACTIVE_TAB',
       tab: 'config',
     })
     expect(next).toEqual({ ...INITIAL_EDITOR_STATE, activeTab: 'config' })
-  })
-
-  it('SET_DARK_MODE updates darkMode only', () => {
-    const next = editorReducer(INITIAL_EDITOR_STATE, {
-      type: 'SET_DARK_MODE',
-      dark: true,
-    })
-    expect(next).toEqual({ ...INITIAL_EDITOR_STATE, darkMode: true })
   })
 
   it('SHOW_TOAST sets the message, marks it visible, and bumps the nonce', () => {
@@ -253,66 +243,5 @@ describe('<EditorApp> toast auto-dismiss (#809)', () => {
     } finally {
       vi.useRealTimers()
     }
-  })
-})
-
-describe('<EditorApp> dark-mode interaction (#809)', () => {
-  it('toggles the moon/sun icons and persists the preference', async () => {
-    const user = userEvent.setup()
-    render(createElement(EditorApp, PROPS))
-    const iconMoon = document.getElementById(
-      'icon-moon',
-    ) as unknown as SVGElement & {
-      style: CSSStyleDeclaration
-    }
-    const iconSun = document.getElementById(
-      'icon-sun',
-    ) as unknown as SVGElement & {
-      style: CSSStyleDeclaration
-    }
-    const toggle = document.getElementById('dark-light-btn')!
-
-    expect(iconMoon.style.display).toBe('')
-    expect(iconSun.style.display).toBe('none')
-
-    await user.click(toggle)
-
-    expect(iconMoon.style.display).toBe('none')
-    expect(iconSun.style.display).toBe('')
-    expect(window.localStorage.getItem(DARK_MODE_STORAGE_KEY)).toBe('true')
-
-    await user.click(toggle)
-
-    expect(iconMoon.style.display).toBe('')
-    expect(iconSun.style.display).toBe('none')
-    expect(window.localStorage.getItem(DARK_MODE_STORAGE_KEY)).toBe('false')
-  })
-
-  it('restores a persisted dark preference on mount', () => {
-    window.localStorage.setItem(DARK_MODE_STORAGE_KEY, 'true')
-    render(createElement(EditorApp, PROPS))
-
-    const iconSun = document.getElementById(
-      'icon-sun',
-    ) as unknown as SVGElement & {
-      style: CSSStyleDeclaration
-    }
-    expect(iconSun.style.display).toBe('')
-  })
-
-  it('notifies window.__editorDarkModeState subscribers (editor/js/dark-mode.ts) on toggle', async () => {
-    const user = userEvent.setup()
-    render(createElement(EditorApp, PROPS))
-
-    const seen: boolean[] = []
-    const unsubscribe = window.__editorDarkModeState.subscribe((dark) => {
-      seen.push(dark)
-    })
-
-    await user.click(document.getElementById('dark-light-btn')!)
-
-    expect(seen).toEqual([true])
-    expect(window.__editorDarkModeState.getIsDark()).toBe(true)
-    unsubscribe()
   })
 })

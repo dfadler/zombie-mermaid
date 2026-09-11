@@ -523,7 +523,7 @@ describe('editor.ts → editor.html', () => {
     expect(page.getByRole('contentinfo')).toBeInTheDocument()
   })
 
-  it('renders the topbar: logo, code/config tabs, dark-mode toggle, theme button, and export button', () => {
+  it('renders the topbar: logo, code/config tabs, theme button, and export button', () => {
     const { document } = renderEditorPageDocument()
     const topbar = within(mustFind(document.querySelector('.topbar')))
 
@@ -533,7 +533,6 @@ describe('editor.ts → editor.html', () => {
     )
     expect(document.getElementById('tab-code')).toHaveClass('active')
     expect(document.getElementById('tab-config')).not.toHaveClass('active')
-    expect(document.getElementById('dark-light-btn')).toBeInTheDocument()
     expect(document.getElementById('theme-dropdown-btn')).toBeInTheDocument()
     expect(document.getElementById('export-main-btn')).toHaveAttribute(
       'title',

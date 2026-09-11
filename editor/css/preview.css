@@ -123,16 +123,14 @@
 
 /* The rendered SVG paints its own opaque theme background (RenderOptions.bg
  * -- src/index.ts, default not transparent) sized to the diagram, sitting
- * directly on .preview-body's chrome-mode background (--bg2/--t-bg, which
- * only ever follows the light/dark toggle -- see
- * demo/components/editor-dark-mode.ts's applyChromeColorMode doc comment,
- * "Chrome color mode, owned entirely by this hook"). A diagram theme far
- * from the chrome's own mode (e.g. GitHub Dark's near-black bg on the
- * light-mode chrome's white canvas) reads as a jarring, unbounded color
- * clash. Framing it as a bounded card makes that edge read as deliberate
- * instead of accidental, in both chrome modes and for every diagram theme.
- * :has() scopes this to only when an svg is actually present, leaving the
- * empty-state placeholder/error text unaffected. */
+ * directly on .preview-body's fixed light chrome background (--bg2/--t-bg
+ * -- see editor/css/variables.css's `:root` defaults). A diagram theme far
+ * from the chrome's own light background (e.g. GitHub Dark's near-black bg
+ * on the chrome's white canvas) reads as a jarring, unbounded color clash.
+ * Framing it as a bounded card makes that edge read as deliberate instead
+ * of accidental, for every diagram theme. :has() scopes this to only when
+ * an svg is actually present, leaving the empty-state placeholder/error
+ * text unaffected. */
 .preview-inner:has(svg) {
   border-radius: 12px;
   overflow: hidden;

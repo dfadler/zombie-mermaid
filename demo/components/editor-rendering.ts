@@ -279,12 +279,12 @@ export function useEditorRendering({
   //
   // This deliberately does NOT touch document.documentElement's --t-bg/
   // --t-fg/--t-accent/etc -- those drive the editor's own chrome (topbar,
-  // panels, pickers; see editor/css/variables.css) and are now owned solely
-  // by useEditorDarkMode's applyChromeColorMode(state.darkMode), independent
-  // of which diagram theme is selected here. Picking a diagram theme should
-  // only change the rendered diagram (via buildOptions() below), not the
-  // tool's own surrounding UI -- see docs/decisions/theme-selector-shared-
-  // state.md's amendment on scoping the editor's theme back down.
+  // panels, pickers; see editor/css/variables.css) and are fixed by that
+  // stylesheet's own `:root` defaults, independent of which diagram theme
+  // is selected here. Picking a diagram theme should only change the
+  // rendered diagram (via buildOptions() below), not the tool's own
+  // surrounding UI -- see docs/decisions/theme-selector-shared-state.md's
+  // amendment on scoping the editor's theme back down.
   useLayoutEffect(() => {
     scheduleRender(0)
   }, [state.theme, scheduleRender])

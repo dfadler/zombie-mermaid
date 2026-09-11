@@ -12,10 +12,9 @@
  * `.editor-tool-shell:fullscreen` rule that resets the card's normal
  * bordered/max-width/centered layout to fill the fullscreen element.
  *
- * Same shape as `editor-dark-mode.ts`'s `useEditorDarkMode`: a click handler
- * wires a DOM/browser effect, and a pair of icons (`icon-fullscreen-enter`/
- * `icon-fullscreen-exit`, mirroring `icon-moon`/`icon-sun`) swaps visibility
- * off `state.fullscreen`.
+ * A click handler wires a DOM/browser effect, and a pair of icons
+ * (`icon-fullscreen-enter`/`icon-fullscreen-exit`) swaps visibility off
+ * `state.fullscreen`.
  *
  * `state.fullscreen` is never set optimistically from the click handler --
  * only from a `fullscreenchange` listener reading `document.fullscreenElement`
@@ -31,12 +30,11 @@ import type { EditorAction, EditorRefs, EditorState } from './editor-app.tsx'
 
 /**
  * The element `requestFullscreen()`/`document.fullscreenElement` target --
- * `.editor-tool-shell` in production, matching `editor-dark-mode.ts`'s
- * `applyChromeColorMode` precedent for the same query-with-fallback (falls
- * back to `document.documentElement` when the page wrapper isn't mounted,
- * e.g. a test harness that mounts `<EditorApp>` directly). Exported for
- * direct testing, mirroring `collectEditorRefs`'s "small pure/DOM-query
- * function, exported for direct testing" precedent.
+ * `.editor-tool-shell` in production, falling back to
+ * `document.documentElement` when the page wrapper isn't mounted (e.g. a
+ * test harness that mounts `<EditorApp>` directly). Exported for direct
+ * testing, mirroring `collectEditorRefs`'s "small pure/DOM-query function,
+ * exported for direct testing" precedent.
  */
 export function getFullscreenTarget(): HTMLElement {
   return (
@@ -103,8 +101,7 @@ export function useEditorFullscreen({
     return () => r.fullscreenBtn.removeEventListener('click', onClick)
   }, [refs])
 
-  // Icon visibility + title/aria-pressed -- editor-dark-mode.ts's icon-sync
-  // effect, same shape.
+  // Icon visibility + title/aria-pressed, kept in sync with state.fullscreen.
   useLayoutEffect(() => {
     const r = refs.current
     if (!r) return
