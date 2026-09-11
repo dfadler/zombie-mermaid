@@ -666,6 +666,45 @@ export function renderClassAscii(
     }
   }
 
+  // --- Snapshot cells occupied by class boxes ---
+  // Taken once, right after boxes are drawn and before any relationship
+  // line, corner, marker, or label is drawn — the class-diagram analog of
+  // the `boxCells`/`setCGuarded` guard er-diagram.ts gained for issue #350.
+  // Two independent routing branches rely on it:
+  // - The cross-level ("target below"/"target above") branches, whose
+  //   routing can jog a long way horizontally with no prior occupancy
+  //   check — e.g. connecting a level-1 child to a level-0 parent whose
+  //   column sits far from an intervening, taller same-level sibling's
+  //   box, which the jog then cuts straight through.
+  // - The same-level branch's own detour (this file's final `else`), which
+  //   primarily avoids a same-row obstruction by computing its detour row
+  //   from this same box geometry (see `obstructionBottom` there); this
+  //   snapshot is the last-resort backstop for whatever that routing
+  //   doesn't anticipate.
+  const boxCells = new Set<string>()
+  for (const p of placed.values()) {
+    for (let by = 0; by < p.height; by++) {
+      for (let bx = 0; bx < p.width; bx++) {
+        boxCells.add(`${p.x + bx},${p.y + by}`)
+      }
+    }
+  }
+
+  /**
+   * Like setC, but refuses to draw into a cell already occupied by a class
+   * box (see boxCells above). Used by both the cross-level relationship
+   * branches (where a mis-routed jog can cut straight through an
+   * unrelated, taller same-level box) and the same-level branch's own
+   * detour (a last-resort backstop for whatever its obstruction-aware
+   * routing doesn't anticipate — see `obstructionBottom` below), so either
+   * kind of mis-routed segment degrades to a gap in the line rather than
+   * corrupting a box's border or attribute/method text.
+   */
+  function setCGuarded(x: number, y: number, ch: string, role: CharRole): void {
+    if (boxCells.has(`${x},${y}`)) return
+    setC(x, y, ch, role)
+  }
+
   /** Check if a point (x, y) is inside any class box */
   function isInsideBox(
     x: number,
@@ -825,6 +864,7 @@ export function renderClassAscii(
    * an arrowhead at a shared anchor doubles as the junction.
    */
   function setJogCell(x: number, y: number, ch: string, role: CharRole): void {
+    if (boxCells.has(`${x},${y}`)) return
     if (rc[x]?.[y] === 'arrow') return
     const existing = canvas[x]?.[y]
     if (
@@ -911,6 +951,15 @@ export function renderClassAscii(
     }
   >()
 
+  // Same-level relationships' obstruction-aware detour row (issue #953),
+  // keyed by relationship index — `computeLabelAnchor`'s own same-level
+  // branch reads this so a labeled same-level relationship's label anchors
+  // on the same corrected row the connector itself routes through, instead
+  // of recomputing the naive (obstruction-unaware) `Math.max(fromBY, toBY)
+  // + 2` and landing back inside whatever box the connector fix was
+  // routing around.
+  const sameLevelDetourY = new Map<number, number>()
+
   diagram.relationships.forEach((rel, relIndex) => {
     const fromP = placed.get(rel.from)
     const toP = placed.get(rel.to)
@@ -977,21 +1026,21 @@ export function renderClassAscii(
         const lx1 = Math.min(fromAnchorX, routeX)
         const rx1 = Math.max(fromAnchorX, routeX)
         for (let x = lx1; x <= rx1; x++) {
-          setC(x, exitY, lineH, 'line')
+          setCGuarded(x, exitY, lineH, 'line')
         }
         if (!useAscii && exitY < (canvas[0]?.length ?? 0)) {
           if (fromAnchorX < routeX) {
-            setC(fromAnchorX, exitY, '└', 'corner')
-            setC(routeX, exitY, '┐', 'corner')
+            setCGuarded(fromAnchorX, exitY, '└', 'corner')
+            setCGuarded(routeX, exitY, '┐', 'corner')
           } else {
-            setC(fromAnchorX, exitY, '┘', 'corner')
-            setC(routeX, exitY, '┌', 'corner')
+            setCGuarded(fromAnchorX, exitY, '┘', 'corner')
+            setCGuarded(routeX, exitY, '┌', 'corner')
           }
         }
 
         // 2. Vertical at routeX from exit to entry
         for (let y = exitY + 1; y <= entryY; y++) {
-          setC(routeX, y, lineV, 'line')
+          setCGuarded(routeX, y, lineV, 'line')
         }
 
         // 3. Horizontal from routeX to target anchor at entry
@@ -999,15 +1048,15 @@ export function renderClassAscii(
           const lx2 = Math.min(routeX, toAnchorX)
           const rx2 = Math.max(routeX, toAnchorX)
           for (let x = lx2; x <= rx2; x++) {
-            setC(x, entryY, lineH, 'line')
+            setCGuarded(x, entryY, lineH, 'line')
           }
           if (!useAscii && entryY < (canvas[0]?.length ?? 0)) {
             if (routeX < toAnchorX) {
-              setC(routeX, entryY, '└', 'corner')
-              setC(toAnchorX, entryY, '┐', 'corner')
+              setCGuarded(routeX, entryY, '└', 'corner')
+              setCGuarded(toAnchorX, entryY, '┐', 'corner')
             } else {
-              setC(routeX, entryY, '┘', 'corner')
-              setC(toAnchorX, entryY, '┌', 'corner')
+              setCGuarded(routeX, entryY, '┘', 'corner')
+              setCGuarded(toAnchorX, entryY, '┌', 'corner')
             }
           }
         }
@@ -1028,11 +1077,11 @@ export function renderClassAscii(
             useAscii,
             isHierarchical ? 'up' : 'down',
           )
-          setC(toAnchorX, entryY, markerChar, 'arrow')
+          setCGuarded(toAnchorX, entryY, markerChar, 'arrow')
         }
         if (marker.markerAt === 'from') {
           const markerChar = getMarkerShape(marker.type, useAscii, 'down')
-          setC(fromAnchorX, fromBY + 1, markerChar, 'arrow')
+          setCGuarded(fromAnchorX, fromBY + 1, markerChar, 'arrow')
         }
       } else {
         // NO COLLISION CASE: Use original midpoint-based routing
@@ -1053,26 +1102,37 @@ export function renderClassAscii(
         //    the source bottom (or from below the jog) to midY
         drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
         for (let y = fromBY + (fromJogs ? 2 : 1); y <= midY; y++) {
-          setC(fromCX, y, lineV, 'line')
+          setCGuarded(fromCX, y, lineV, 'line')
         }
 
         // 2. Horizontal from fromCX to toCX at midY (if needed)
+        //
+        // This segment matters most for the boxCells guard: it can travel
+        // a long way horizontally when the target's column sits far from
+        // the source's (e.g. a level-1 child positioned under a completely
+        // different level-0 sibling than its own parent). Nothing about
+        // `findClearColumn` finding `fromCX` itself clear (the only check
+        // that decided this is the no-collision branch) says the *row*
+        // this horizontal run lands on is clear all the way over to
+        // `toCX` too — a taller same-level sibling sitting between them,
+        // extending below its own row's shortest box, is exactly the case
+        // that check misses.
         if (fromCX !== toCX && midY < (canvas[0]?.length ?? 0)) {
           const lx = Math.min(fromCX, toCX)
           const rx = Math.max(fromCX, toCX)
           for (let x = lx; x <= rx; x++) {
-            setC(x, midY, lineH, 'line')
+            setCGuarded(x, midY, lineH, 'line')
           }
           if (!useAscii) {
-            setC(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
-            setC(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
+            setCGuarded(fromCX, midY, fromCX < toCX ? '└' : '┘', 'corner')
+            setCGuarded(toCX, midY, fromCX < toCX ? '┐' : '┌', 'corner')
           }
         }
 
         // 3. Vertical from midY to the target top (or to above the jog),
         //    then jog from the lane back in to the target anchor
         for (let y = midY + 1; y < toTY - (toJogs ? 1 : 0); y++) {
-          setC(toCX, y, lineV, 'line')
+          setCGuarded(toCX, y, lineV, 'line')
         }
         drawJog(toTY - 1, toAnchorX, toCX, lineH, false)
 
@@ -1083,7 +1143,7 @@ export function renderClassAscii(
           // down into it.
           const isHierarchical =
             marker.type === 'inheritance' || marker.type === 'realization'
-          setC(
+          setCGuarded(
             toAnchorX,
             toTY - 1,
             getMarkerShape(
@@ -1095,7 +1155,7 @@ export function renderClassAscii(
           )
         }
         if (marker.markerAt === 'from') {
-          setC(
+          setCGuarded(
             fromAnchorX,
             fromBY + 1,
             getMarkerShape(marker.type, useAscii, 'down'),
@@ -1115,23 +1175,31 @@ export function renderClassAscii(
       // (mirror of the downward case), then vertical up to midY
       drawJog(fromTY - 1, fromAnchorX, fromCX, lineH, false)
       for (let y = fromTY - (fromJogs ? 2 : 1); y >= midY; y--) {
-        setC(fromCX, y, lineV, 'line')
+        setCGuarded(fromCX, y, lineV, 'line')
       }
 
+      // This branch has no collision-avoidance routing at all (unlike the
+      // "target below source" branch above, which at least tries
+      // `findClearColumn` first) — it always draws the straight
+      // jog/vertical/horizontal/vertical/jog path. The boxCells guard is
+      // this path's only protection against a horizontal run landing on
+      // an unrelated box; see the equivalent midY comment in the "target
+      // below source" branch above for why that's a real, not merely
+      // theoretical, case.
       if (fromCX !== toCX) {
         const lx = Math.min(fromCX, toCX)
         const rx = Math.max(fromCX, toCX)
         for (let x = lx; x <= rx; x++) {
-          setC(x, midY, lineH, 'line')
+          setCGuarded(x, midY, lineH, 'line')
         }
         if (!useAscii && midY >= 0 && midY < totalH) {
-          setC(fromCX, midY, fromCX < toCX ? '┌' : '┐', 'corner')
-          setC(toCX, midY, fromCX < toCX ? '┘' : '└', 'corner')
+          setCGuarded(fromCX, midY, fromCX < toCX ? '┌' : '┐', 'corner')
+          setCGuarded(toCX, midY, fromCX < toCX ? '┘' : '└', 'corner')
         }
       }
 
       for (let y = midY - 1; y > toBY + (toJogs ? 1 : 0); y--) {
-        setC(toCX, y, lineV, 'line')
+        setCGuarded(toCX, y, lineV, 'line')
       }
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
@@ -1140,7 +1208,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, 'up')
         const my = fromTY - 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1155,7 +1223,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, markerDir)
         const my = toBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1164,9 +1232,38 @@ export function renderClassAscii(
         }
       }
     } else {
-      // Same level — draw horizontal line with a detour below both boxes
+      // Same level — draw horizontal line with a detour below both boxes.
       const toBY = toP.y + toP.height - 1
-      const detourY = Math.max(fromBY, toBY) + 2
+      const lx = Math.min(fromCX, toCX)
+      const rx = Math.max(fromCX, toCX)
+
+      // The naive detour row — max(fromBY, toBY) + 2 — is derived only from
+      // this relationship's own two endpoints. A same-level layout puts
+      // every class in the level on one shared row (see the placement loop
+      // above), so a relationship cycle that can't be linearly leveled
+      // (e.g. A->B->C->A) lands a third, unrelated class between `fromP`
+      // and `toP` in that same row. When that in-between class is taller
+      // than both endpoints (more attributes/methods), the naive detour row
+      // sits *above* its bottom edge, and the horizontal segment below
+      // (spanning [lx, rx], which crosses straight through that class's
+      // x-range) cuts through its box instead of running beneath it.
+      // Search for any such same-row obstruction and route the detour below
+      // its bottom edge too — generalizing er-diagram.ts's obstructionBottom
+      // search (issue #350) to class diagrams' same-level detour.
+      let obstructionBottom = Math.max(fromBY, toBY)
+      for (const [id, other] of placed.entries()) {
+        if (id === rel.from || id === rel.to) continue
+        if (other.y !== fromP.y) continue
+        const overlapsGap = other.x < rx + 1 && other.x + other.width > lx
+        if (overlapsGap) {
+          obstructionBottom = Math.max(
+            obstructionBottom,
+            other.y + other.height - 1,
+          )
+        }
+      }
+      const detourY = obstructionBottom + 2
+      sameLevelDetourY.set(relIndex, detourY)
       increaseSize(canvas, totalW, detourY + 1)
       increaseRoleCanvasSize(rc, totalW, detourY + 1)
       const fromJogs = fromCX !== fromAnchorX
@@ -1175,17 +1272,15 @@ export function renderClassAscii(
       // Jog out to the lane under the source, then vertical down from it
       drawJog(fromBY + 1, fromAnchorX, fromCX, lineH, true)
       for (let y = fromBY + (fromJogs ? 2 : 1); y <= detourY; y++) {
-        setC(fromCX, y, lineV, 'line')
+        setCGuarded(fromCX, y, lineV, 'line')
       }
       // Horizontal
-      const lx = Math.min(fromCX, toCX)
-      const rx = Math.max(fromCX, toCX)
       for (let x = lx; x <= rx; x++) {
-        setC(x, detourY, lineH, 'line')
+        setCGuarded(x, detourY, lineH, 'line')
       }
       // Vertical up to target, then jog back in to its anchor
       for (let y = detourY - 1; y >= toBY + (toJogs ? 2 : 1); y--) {
-        setC(toCX, y, lineV, 'line')
+        setCGuarded(toCX, y, lineV, 'line')
       }
       drawJog(toBY + 1, toAnchorX, toCX, lineH, true)
 
@@ -1194,7 +1289,7 @@ export function renderClassAscii(
         const markerChar = getMarkerShape(marker.type, useAscii, 'down')
         const my = fromBY + 1
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             fromAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1215,7 +1310,7 @@ export function renderClassAscii(
         )
         const my = toP.y + toP.height
         for (let i = 0; i < markerChar.length; i++) {
-          setC(
+          setCGuarded(
             toAnchorX - Math.floor(markerChar.length / 2) + i,
             my,
             markerChar[i]!,
@@ -1313,9 +1408,24 @@ export function renderClassAscii(
         baseMidY: Math.floor((toBY + 1 + fromP.y - 1) / 2),
       }
     }
+    // Same level — anchor on the obstruction-aware detour row the connector
+    // itself was routed through (see `sameLevelDetourY` above), not the
+    // naive `Math.max(fromBY, toBY) + 2` recomputation, which ignores any
+    // taller same-row box between `fromP`/`toP` and would place the label
+    // right back inside it (issue #953).
     return {
       idealMidX: Math.floor((fromCX + toCX) / 2),
-      baseMidY: Math.max(fromBY, toP.y + toP.height - 1) + 2,
+      // The `??` fallback is unreachable in practice: the main
+      // relationship-drawing pass above runs for every relationship before
+      // this label pass does, and it sets `sameLevelDetourY` for every
+      // relIndex that takes this same "same level" branch — the exact
+      // condition this function just evaluated to reach here. Kept only
+      // because `Map.get` is typed `T | undefined`, not because a real
+      // diagram can actually hit it.
+      /* v8 ignore next */
+      baseMidY:
+        sameLevelDetourY.get(relIndex) ??
+        Math.max(fromBY, toP.y + toP.height - 1) + 2,
     }
   }
 

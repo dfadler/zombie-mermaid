@@ -501,6 +501,11 @@ describe('the mobile menu', () => {
 
   it('behavior script pairs a toggle with the panel that follows it', () => {
     expect(NAV_MOBILE_MENU_SCRIPT).toContain('bar.nextElementSibling')
-    expect(NAV_MOBILE_MENU_SCRIPT).toContain("event.key === 'Escape'")
+    // Quote-style-agnostic (zombie-mermaid#933: this string is now the
+    // `.toString()` of a real, esbuild-transpiled TypeScript function —
+    // mobile-menu.client.ts's `initMobileMenu` — rather than a hand-typed
+    // template literal, and esbuild's printer normalizes to double quotes
+    // regardless of the source's own quote style).
+    expect(NAV_MOBILE_MENU_SCRIPT).toMatch(/event\.key === ['"]Escape['"]/)
   })
 })

@@ -2,7 +2,7 @@
  * Regenerates hero.svg (the README's hero image) from `public/hero-visual.svg`
  * — the hand-drawn, side-by-side "raw Mermaid source → rendered, animated
  * diagram" panel a visitor sees at the top of the live site, extracted from
- * `index-app.tsx`'s `HeroVisual` component to that standalone file
+ * `hero-visual.tsx`'s `HeroVisual` component to that standalone file
  * (zombie-mermaid#920).
  *
  * `public/hero-visual.svg` is already fully self-contained — its own
