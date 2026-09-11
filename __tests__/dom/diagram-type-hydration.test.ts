@@ -144,6 +144,7 @@ const TAG_PROPS: DiagramTagAppProps = {
   label: 'Subgraph',
   description:
     'Grouping nodes inside a labeled `subgraph` container, for a diagram whose flow naturally breaks into stages or systems.',
+  docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html#subgraphs',
   results: [
     {
       title: 'Subgraphs',
@@ -606,6 +607,10 @@ describe('DiagramTagApp hydration (#991)', () => {
     expect(
       document.querySelector('.gallery-thumb svg[data-diagram="tag-result"]'),
     ).not.toBeNull()
+    const docsLink = screen.getByRole('link', { name: /mermaid docs/i })
+    expect(docsLink).toHaveAttribute('href', TAG_PROPS.docsUrl)
+    expect(docsLink).toHaveAttribute('target', '_blank')
+    expect(docsLink).toHaveAttribute('rel', 'noopener')
   })
 })
 

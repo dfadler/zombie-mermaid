@@ -36,6 +36,18 @@ export interface TagRule {
   label: string
   /** One sentence explaining the construct, shown on the tag's own page. */
   description: string
+  /**
+   * The real Mermaid docs page (and, where one actually exists, the
+   * anchor) documenting this construct — e.g.
+   * `https://mermaid.ai/open-source/syntax/classDiagram.html#annotations-on-classes`
+   * for `stereotype-annotation`. Every anchor here was verified against
+   * that page's real `id="..."` heading attributes (not guessed at) —
+   * where no construct-specific heading exists (e.g. Class's three
+   * relationship-arrow tags), this points at the closest real section
+   * that documents it (`#defining-relationship`) rather than a
+   * fabricated anchor.
+   */
+  docsUrl: string
   /** Whether `sample` uses this construct, tested against its real `source`. */
   test: (sample: Sample) => boolean
 }
@@ -67,6 +79,7 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Subgraph',
     description:
       'Grouping nodes inside a labeled `subgraph` container, for a diagram whose flow naturally breaks into stages or systems.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html#subgraphs',
     test: (s) => s.category === 'Flowchart' && /subgraph\s/i.test(s.source),
   },
   {
@@ -74,6 +87,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Decision Diamond',
     description:
       "A `{label}` diamond node — Mermaid's branch-point shape, for a yes/no or multi-way decision in the flow.",
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/flowchart.html#decision-diamond',
     test: (s) => s.category === 'Flowchart' && /\{[^{}]+\}/.test(s.source),
   },
   {
@@ -81,6 +96,7 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Dashed Edge',
     description:
       'A `-.->` dashed connector — typically a feedback loop, a retry path, or any edge meant to read as secondary to the main flow.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html#dotted-link',
     test: (s) => /-\.-{1,2}>/.test(s.source),
   },
   {
@@ -88,6 +104,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Bidirectional Edge',
     description:
       'An edge that points both ways (`<-->`, `<-.->`, `<==>`) — two nodes that affect each other rather than a strict one-way flow.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/flowchart.html#multi-directional-arrows',
     test: (s) => /<-{1,3}\.?-{0,2}>|<==>/.test(s.source),
   },
   {
@@ -95,6 +113,7 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Custom Node Shape',
     description:
       'A node drawn as something other than a plain rectangle or rounded box — a stadium, circle, hexagon, cylinder, subroutine, or trapezoid — for when a shape itself should carry meaning.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html#node-shapes',
     test: (s) =>
       s.category === 'Flowchart' &&
       /\(\[|\(\(|\{\{|\[\[|\[\(|[A-Za-z0-9_]>|\[\/|\[\\/.test(s.source),
@@ -104,6 +123,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'linkStyle',
     description:
       'Using `linkStyle` to color or restyle specific edges by index — for calling out a critical path or grouping edges visually.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/flowchart.html#styling-links',
     test: (s) => /linkStyle\s/.test(s.source),
   },
   {
@@ -111,6 +132,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Custom Node Styling',
     description:
       'Using `style`/`:::` to override a node’s own fill or stroke color, or assign it a class, independent of the active theme.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/flowchart.html#styling-and-classes',
     test: (s) => /:::|^\s*style\s/m.test(s.source),
   },
   // -- Sequence --
@@ -119,6 +142,7 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Loop Block',
     description:
       'A `loop` block wrapping a repeated exchange of messages — polling, retries, or any cycle in the interaction.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/sequenceDiagram.html#loops',
     test: (s) => hasLineKeyword(s.source, 'loop'),
   },
   {
@@ -126,6 +150,7 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Conditional Block',
     description:
       'An `alt`/`else` or `opt` block — a branch in the message flow that depends on a runtime condition.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/sequenceDiagram.html#alt',
     test: (s) =>
       hasLineKeyword(s.source, 'alt') || hasLineKeyword(s.source, 'opt'),
   },
@@ -134,6 +159,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Parallel Block',
     description:
       'A `par`/`and` block — messages that happen concurrently rather than strictly in sequence.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/sequenceDiagram.html#parallel',
     test: (s) => hasLineKeyword(s.source, 'par'),
   },
   {
@@ -141,6 +168,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Critical Block',
     description:
       'A `critical` block — a section that must run to completion atomically, with optional `option` fallback paths.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/sequenceDiagram.html#critical-region',
     test: (s) => hasLineKeyword(s.source, 'critical'),
   },
   {
@@ -148,6 +177,7 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Note',
     description:
       'A `Note` positioned over, left of, or right of a participant — free-text context attached to a specific point in the exchange.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/sequenceDiagram.html#notes',
     test: (s) => hasLineKeyword(s.source, 'Note'),
   },
   {
@@ -155,6 +185,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Participant Create/Destroy',
     description:
       'A `create`/`destroy` participant — an actor that appears or disappears partway through the diagram instead of existing for its entire length.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/sequenceDiagram.html#actor-creation-and-destruction-v10-3-0',
     test: (s) =>
       hasLineKeyword(s.source, 'create') || hasLineKeyword(s.source, 'destroy'),
   },
@@ -164,6 +196,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Inheritance',
     description:
       'A `<|--` inheritance relationship — a hollow-triangle "is-a" link between a subclass and its parent.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/classDiagram.html#defining-relationship',
     test: (s) => s.category === 'Class' && /<\|--/.test(s.source),
   },
   {
@@ -171,6 +205,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Composition',
     description:
       'A `*--` composition relationship — a filled-diamond "owns and controls the lifetime of" link.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/classDiagram.html#defining-relationship',
     test: (s) => s.category === 'Class' && /\*--/.test(s.source),
   },
   {
@@ -178,6 +214,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Aggregation',
     description:
       'An `o--` aggregation relationship — a hollow-diamond "has, but doesn’t own the lifetime of" link.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/classDiagram.html#defining-relationship',
     // Scoped to Class: ER's crow's-foot cardinality notation (e.g.
     // `|o--|{`) contains the same "o--" substring for an unrelated reason
     // (zero-or-one cardinality, not aggregation) -- verified via
@@ -190,6 +228,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Stereotype Annotation',
     description:
       'An `<<interface>>`, `<<abstract>>`, or `<<enumeration>>` stereotype above a class name, marking its role beyond a plain concrete class.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/classDiagram.html#annotations-on-classes',
     test: (s) => /<<\s*(interface|abstract|enumeration)\s*>>/i.test(s.source),
   },
   // -- ER --
@@ -198,6 +238,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Attribute Keys',
     description:
       'A `PK`/`FK`/`UK` key badge on a typed attribute — marking a primary, foreign, or unique key inline in the schema.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/entityRelationshipDiagram.html#attribute-keys-and-comments',
     test: (s) => /\b(PK|FK|UK)\b/.test(s.source),
   },
   {
@@ -205,6 +247,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Non-Identifying Relationship',
     description:
       'A dashed (`..`) relationship line — the child entity doesn’t depend on the parent for its own identity, unlike a solid identifying relationship.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/entityRelationshipDiagram.html#identification',
     test: (s) => s.category === 'ER' && /\.\./.test(s.source),
   },
   // -- XY Chart --
@@ -212,12 +256,14 @@ export const TAG_RULES: readonly TagRule[] = [
     slug: 'bar-series',
     label: 'Bar Series',
     description: 'A `bar` series — categorical values plotted as bars.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/xyChart.html#bar-chart',
     test: (s) => s.category === 'XY Chart' && /\bbar\s/.test(s.source),
   },
   {
     slug: 'line-series',
     label: 'Line Series',
     description: 'A `line` series — values plotted as a connected line.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/xyChart.html#line-chart',
     test: (s) => s.category === 'XY Chart' && /\bline\s/.test(s.source),
   },
   // -- State --
@@ -226,6 +272,8 @@ export const TAG_RULES: readonly TagRule[] = [
     label: 'Composite State',
     description:
       'A `state X { ... }` block — a state that contains its own nested sub-states and transitions.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/stateDiagram.html#composite-states',
     test: (s) =>
       s.category === 'State' && /^\s*state\s+\S+\s*\{/m.test(s.source),
   },

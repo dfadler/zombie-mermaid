@@ -65,4 +65,12 @@ describe('TAG_RULES', () => {
     const matches = samples.filter((s) => nonIdentifying?.test(s))
     expect(matches.every((s) => s.category === 'ER')).toBe(true)
   })
+
+  it('gives every rule a real, well-formed Mermaid docs URL', () => {
+    for (const rule of TAG_RULES) {
+      expect(rule.docsUrl, `${rule.slug} is missing docsUrl`).toMatch(
+        /^https:\/\/mermaid\.ai\/open-source\/syntax\/[A-Za-z]+\.html(#[a-z0-9-]+)?$/,
+      )
+    }
+  })
 })
