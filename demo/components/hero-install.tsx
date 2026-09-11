@@ -1,28 +1,27 @@
 /** @jsxRuntime automatic */
 /**
  * The hero's install pill: `npm install zombie-mermaid` behind the same
- * package-manager popover the nav bar's install pill uses (`nav.tsx`'s
- * {@link usePackageManagerInstall}, zombie-mermaid#719) — moved here and
- * made compact so a visitor can pick npm/pnpm/yarn/bun straight from the
- * hero. The homepage's own header has no room for this control today: its
- * install-pill slot carries the live theme picker instead (`nav.tsx`'s
- * `NavProps.installSlot` doc comment), which is also why this pill needs
- * its own instance rather than reusing the header's.
+ * package-manager popover the nav bar's install pill uses
+ * (use-package-manager-install.ts's {@link usePackageManagerInstall},
+ * zombie-mermaid#719) — moved here and made compact so a visitor can pick
+ * npm/pnpm/yarn/bun straight from the hero. The homepage's own header has no
+ * room for this control today: its install-pill slot carries the live theme
+ * picker instead (`nav.tsx`'s `NavProps.installSlot` doc comment), which is
+ * also why this pill needs its own instance rather than reusing the
+ * header's.
  *
- * Reuses `nav.tsx`'s {@link NavInstallPrefix}/{@link NavInstallPopover}
- * verbatim rather than re-implementing the trigger/popover chrome — the
- * only hero-specific piece is the outer `<Pill>`'s fill (`--panel`, this
- * row's existing look, instead of the nav pill's `--panel-2`) and the copy
- * span's plain text (no `.nav-npm-text`/600px-hiding rule here — the hero
- * pill has no header dead-zone to work around).
+ * Reuses nav-install-popover.tsx's {@link NavInstallPrefix}/{@link
+ * NavInstallPopover} verbatim rather than re-implementing the trigger/
+ * popover chrome — the only hero-specific piece is the outer `<Pill>`'s
+ * fill (`--panel`, this row's existing look, instead of the nav pill's
+ * `--panel-2`) and the copy span's plain text (no
+ * `.nav-npm-text`/600px-hiding rule here — the hero pill has no header
+ * dead-zone to work around).
  *
  * Split out of `index-app.tsx` into its own file (zombie-mermaid#932).
  */
-import {
-  NavInstallPrefix,
-  NavInstallPopover,
-  usePackageManagerInstall,
-} from './nav.tsx'
+import { NavInstallPrefix, NavInstallPopover } from './nav-install-popover.tsx'
+import { usePackageManagerInstall } from './use-package-manager-install.ts'
 import { CopyIcon } from './icons.tsx'
 import { Pill } from './primitives.tsx'
 import { SPACE, colorVar } from './tokens.tsx'

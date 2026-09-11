@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 import { footerCss } from './footer.tsx'
-import { navCss } from './nav.tsx'
+import { navCss } from './nav-css.ts'
 import { primitivesCss } from './primitives.tsx'
 import { designBaseCss } from './tokens.tsx'
 
@@ -9,7 +9,7 @@ import { designBaseCss } from './tokens.tsx'
  * joined in the cascade order the design system requires: tokens.tsx's
  * `designBaseCss()` (custom properties and base elements), then
  * primitives.tsx's `primitivesCss()` (`.card`/`.pill`/`.section-eyebrow`),
- * then nav.tsx's `navCss()` and footer.tsx's `footerCss()` (each layer's
+ * then nav-css.ts's `navCss()` and footer.tsx's `footerCss()` (each layer's
  * responsive rules assume the ones before it are already in scope). `extra`,
  * when given, is spliced in last as the page's own stylesheet.
  *
@@ -21,11 +21,14 @@ import { designBaseCss } from './tokens.tsx'
  *
  * Lives in its own module rather than alongside `designBaseCss` in
  * tokens.tsx: tokens.tsx is the base of this dependency graph (primitives.tsx,
- * nav.tsx, and footer.tsx all import from it), so having it import
+ * nav-css.ts, and footer.tsx all import from it), so having it import
  * `primitivesCss`/`navCss`/`footerCss` back would create a circular import —
  * which breaks at runtime (a `ReferenceError` from a `const` accessed before
  * its owning module finishes initializing), not just at lint time. This
  * module sits above all four, so it can depend on each without a cycle.
+ * (nav-constants.ts, split out of nav.tsx alongside nav-css.ts for exactly
+ * this reason, is the same pattern one level down — see that file's own
+ * doc comment.)
  */
 export function sharedPageCss(extra?: string): string {
   return [designBaseCss(), primitivesCss(), navCss(), footerCss(), extra]
