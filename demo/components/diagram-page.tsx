@@ -95,6 +95,13 @@ import {
   NAV_HREFS as DETAIL_NAV_HREFS,
   type DiagramDetailAppProps,
 } from './diagram-detail-app.tsx'
+import {
+  DiagramTagApp,
+  DIAGRAM_TAG_PROPS_ELEMENT_ID,
+  DIAGRAM_TAG_ROOT_ID,
+  NAV_HREFS as TAG_NAV_HREFS,
+  type DiagramTagAppProps,
+} from './diagram-tag-app.tsx'
 
 // Re-exported for existing callers/tests that import these from
 // diagram-page.tsx rather than diagram-type-app.tsx/diagram-hub-app.tsx
@@ -126,6 +133,13 @@ export {
   type DiagramDetailAppProps,
   type DiagramDetailCrosslink,
 } from './diagram-detail-app.tsx'
+export {
+  DiagramTagApp,
+  DIAGRAM_TAG_PROPS_ELEMENT_ID,
+  DIAGRAM_TAG_ROOT_ID,
+  type DiagramTagAppProps,
+  type TagResultItem,
+} from './diagram-tag-app.tsx'
 
 /**
  * The site's npm package listing, linked from the footer's Resources
@@ -198,6 +212,38 @@ const SAMPLE_DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     links: [
       { label: 'MIT Licensed' },
       { label: 'dfadler/zombie-mermaid', href: DETAIL_NAV_HREFS.github },
+    ],
+  },
+]
+
+/** Same three footer columns, built from {@link TAG_NAV_HREFS} — a tag
+ * page sits at the same depth as a sample detail page (`diagrams/tag/
+ * <slug>.html` vs `diagrams/<type>/<sample>.html`), so the values happen
+ * to match {@link SAMPLE_DETAIL_FOOTER_COLUMNS}'s, but stays its own
+ * constant for the same reason that one isn't shared with
+ * `DETAIL_FOOTER_COLUMNS`. */
+const TAG_FOOTER_COLUMNS: readonly FooterColumn[] = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Diagrams', href: TAG_NAV_HREFS.diagrams },
+      { label: 'Editor', href: TAG_NAV_HREFS.editor },
+      { label: 'Fork fixes', href: TAG_NAV_HREFS.forkFixes },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Blog', href: TAG_NAV_HREFS.blog },
+      { label: 'GitHub', href: TAG_NAV_HREFS.github },
+      { label: 'npm package', href: NPM_URL },
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      { label: 'MIT Licensed' },
+      { label: 'dfadler/zombie-mermaid', href: TAG_NAV_HREFS.github },
     ],
   },
 ]
@@ -864,6 +910,99 @@ export function DiagramDetailPage({
           />
 
           <Footer columns={SAMPLE_DETAIL_FOOTER_COLUMNS} />
+        </div>
+      </div>
+      <script type="module" src={clientScriptSrc} />
+      <NavMobileMenuScript />
+    </Document>
+  )
+}
+
+export interface DiagramTagPageProps extends DiagramTagAppProps {
+  title: string
+  /**
+   * `<meta name="description">` text — deliberately not named
+   * `description`: {@link DiagramTagAppProps} already has its own
+   * `description` (the construct's real intro paragraph, shown on the
+   * page), and this page needs both at once — the meta description
+   * restates that plus the real example count, it isn't a duplicate of
+   * it. See pages.ts's generator for the exact string.
+   */
+  metaDescription: string
+  canonical: string
+  faviconHref: string
+  /** Same depth as `DiagramDetailPageProps.cssHref` — see pages.ts's generator for the exact relative path. */
+  cssHref: string
+  /**
+   * The bundled `demo/diagram-tag-client.tsx` entry that hydrates {@link
+   * DiagramTagApp} and `<NavIsland>` — one small bundle (mirrors
+   * `diagram-hub-client.tsx`'s, no live diagram to re-theme), reused
+   * unchanged across every generated tag page the same way
+   * `DiagramDetailPageProps.clientScriptSrc` is reused across every
+   * sample page.
+   */
+  clientScriptSrc: string
+}
+
+/** One single-tag search page, e.g. diagrams/tag/subgraph.html (#991). */
+export function DiagramTagPage({
+  title,
+  metaDescription,
+  canonical,
+  faviconHref,
+  cssHref,
+  clientScriptSrc,
+  ...appProps
+}: DiagramTagPageProps) {
+  return (
+    <Document
+      title={title}
+      description={metaDescription}
+      faviconHref={faviconHref}
+      head={
+        <DetailHeadExtra
+          title={title}
+          description={metaDescription}
+          canonical={canonical}
+          cssHref={cssHref}
+        />
+      }
+    >
+      <div
+        className="dc-root"
+        style={{
+          fontFamily: 'var(--font-body)',
+          color: colorVar('--text'),
+          width: '100%',
+          background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
+          position: 'relative',
+        }}
+      >
+        <NavIsland
+          sticky
+          active="diagrams"
+          homeHref={HOME_HREF}
+          hrefs={TAG_NAV_HREFS}
+          installSlotKind="empty"
+        />
+        <div style={{ overflow: 'hidden' }}>
+          <div
+            id={DIAGRAM_TAG_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTagApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<DiagramTagApp {...appProps} />),
+            }}
+          />
+          <script
+            type="application/json"
+            id={DIAGRAM_TAG_PROPS_ELEMENT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTagAppProps, escaped with escapeJsonForScriptTag; never user input
+              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+            }}
+          />
+
+          <Footer columns={TAG_FOOTER_COLUMNS} />
         </div>
       </div>
       <script type="module" src={clientScriptSrc} />

@@ -44,6 +44,12 @@ import {
   DIAGRAM_DETAIL_ROOT_ID,
   type DiagramDetailAppProps,
 } from '../../demo/components/diagram-detail-app.tsx'
+import {
+  DiagramTagApp,
+  DIAGRAM_TAG_PROPS_ELEMENT_ID,
+  DIAGRAM_TAG_ROOT_ID,
+  type DiagramTagAppProps,
+} from '../../demo/components/diagram-tag-app.tsx'
 import { NavIsland } from '../../demo/components/nav-island.tsx'
 import { NAV_INSTALL_COMMAND } from '../../demo/components/nav.tsx'
 import { hydrateNav } from '../../demo/nav-client.tsx'
@@ -119,6 +125,23 @@ const DETAIL_PROPS: DiagramDetailAppProps = {
       title: 'Simple Flow',
       href: './simple-flow.html',
       diagramHtml: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    },
+  ],
+  tags: [{ label: 'Subgraph', href: '../tag/subgraph.html' }],
+}
+
+const TAG_PROPS: DiagramTagAppProps = {
+  label: 'Subgraph',
+  description:
+    'Grouping nodes inside a labeled `subgraph` container, for a diagram whose flow naturally breaks into stages or systems.',
+  results: [
+    {
+      title: 'Subgraphs',
+      typeLabel: 'Flowchart',
+      typeAccent: 'blue',
+      href: '../flowchart/subgraphs.html',
+      diagramHtml:
+        '<svg xmlns="http://www.w3.org/2000/svg" data-diagram="tag-result"></svg>',
     },
   ],
 }
@@ -486,5 +509,76 @@ describe('demo/diagram-detail-client.tsx props contract', () => {
     const read = document.getElementById(DIAGRAM_DETAIL_PROPS_ELEMENT_ID)
     expect(read?.textContent).toBeTruthy()
     expect(JSON.parse(read?.textContent ?? '')).toEqual(DETAIL_PROPS)
+  })
+})
+
+describe('DiagramTagApp hydration (#991)', () => {
+  function renderServerHtmlIntoDocument(): void {
+    document.body.innerHTML = renderToString(
+      createElement('div', { id: DIAGRAM_TAG_ROOT_ID }, [
+        createElement(DiagramTagApp, { ...TAG_PROPS, key: 'app' }),
+      ]),
+    )
+  }
+
+  it('hydrates against server-rendered markup, including the embedded svg content, with no console warnings/errors', async () => {
+    renderServerHtmlIntoDocument()
+    const container = document.getElementById(DIAGRAM_TAG_ROOT_ID)
+    if (!container) throw new Error('test setup: root container missing')
+
+    const seen: unknown[][] = []
+    const originalError = console.error
+    const originalWarn = console.warn
+    console.error = (...args: unknown[]) => {
+      seen.push(args)
+    }
+    console.warn = (...args: unknown[]) => {
+      seen.push(args)
+    }
+    let thrown: unknown
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, createElement(DiagramTagApp, TAG_PROPS))
+      })
+    } catch (err) {
+      thrown = err
+    } finally {
+      console.error = originalError
+      console.warn = originalWarn
+    }
+
+    expect(thrown).toBeUndefined()
+    expect(seen).toEqual([])
+  })
+
+  it('renders the real heading and result cards once hydrated', () => {
+    renderServerHtmlIntoDocument()
+    const container = document.getElementById(DIAGRAM_TAG_ROOT_ID)
+    if (!container) throw new Error('test setup: root container missing')
+
+    act(() => {
+      root = hydrateRoot(container, createElement(DiagramTagApp, TAG_PROPS))
+    })
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Subgraph' }),
+    ).toBeInTheDocument()
+    expect(
+      document.querySelector('.gallery-thumb svg[data-diagram="tag-result"]'),
+    ).not.toBeNull()
+  })
+})
+
+describe('demo/diagram-tag-client.tsx props contract', () => {
+  it("diagram-page.tsx's embedded JSON round-trips through DIAGRAM_TAG_PROPS_ELEMENT_ID exactly as the client reads it", () => {
+    const scriptEl = document.createElement('script')
+    scriptEl.type = 'application/json'
+    scriptEl.id = DIAGRAM_TAG_PROPS_ELEMENT_ID
+    scriptEl.textContent = JSON.stringify(TAG_PROPS)
+    document.body.appendChild(scriptEl)
+
+    const read = document.getElementById(DIAGRAM_TAG_PROPS_ELEMENT_ID)
+    expect(read?.textContent).toBeTruthy()
+    expect(JSON.parse(read?.textContent ?? '')).toEqual(TAG_PROPS)
   })
 })
