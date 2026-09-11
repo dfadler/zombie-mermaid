@@ -109,6 +109,23 @@
   background: var(--bg);
   min-width: 0;
   position: relative;
+  /* The preview surface's own palette -- toolbar/body/footer (preview.css)
+   * paint from these, not the chrome's fixed --bg2/--fg directly, so the
+   * strip of surface directly behind the diagram can follow the selected
+   * diagram theme instead of always being the chrome's own fixed light
+   * color. See editor-rendering.ts's useEditorRendering doc comment: JS
+   * overrides these two (inline style beats this stylesheet rule at equal
+   * specificity) whenever the diagram theme or a config-panel color
+   * override changes; this rule is only the pre-hydration/SSR default,
+   * matching today's chrome-following behavior until that effect runs.
+   * The rest are derived here via color-mix(), mirroring variables.css's
+   * --fg3/--fg4/--border derivation of --t-fg/--t-bg exactly, just off
+   * --preview-fg/--preview-bg instead. */
+  --preview-bg: var(--bg2);
+  --preview-fg: var(--fg);
+  --preview-bg3: color-mix(in srgb, var(--preview-bg) 97%, var(--preview-fg));
+  --preview-fg3: color-mix(in srgb, var(--preview-fg) 74%, var(--preview-bg));
+  --preview-fg4: color-mix(in srgb, var(--preview-fg) 66%, var(--preview-bg));
 }
 
 .resize-handle {

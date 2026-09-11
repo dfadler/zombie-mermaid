@@ -35,6 +35,7 @@ import {
 import {
   buildOptions,
   escHtml,
+  getPreviewSurfaceColors,
   hexToRgb,
 } from '../../demo/components/editor-rendering.ts'
 import { decodeSource } from '../../demo/components/editor-sharing.ts'
@@ -106,6 +107,30 @@ describe('buildOptions (#810, moved from editor/js/rendering.ts’s buildOptions
 
   it('is a no-op when themes is undefined (renderer not loaded yet)', () => {
     expect(buildOptions(undefined, { theme: 'nord', config: {} })).toEqual({})
+  })
+})
+
+describe('getPreviewSurfaceColors (preview panel follows the diagram theme)', () => {
+  it("uses the selected theme's bg/fg", () => {
+    expect(
+      getPreviewSurfaceColors(THEMES, { theme: 'nord', config: {} }),
+    ).toEqual({ bg: THEMES.nord.bg, fg: THEMES.nord.fg })
+  })
+
+  it('falls back to the renderer default (zinc-light) with no theme selected', () => {
+    expect(getPreviewSurfaceColors(THEMES, { theme: '', config: {} })).toEqual({
+      bg: '#FFFFFF',
+      fg: '#27272A',
+    })
+  })
+
+  it('follows a config-panel color override the same way the render call does', () => {
+    expect(
+      getPreviewSurfaceColors(THEMES, {
+        theme: 'nord',
+        config: { bg: '#custom' },
+      }),
+    ).toEqual({ bg: '#custom', fg: THEMES.nord.fg })
   })
 })
 
@@ -239,6 +264,31 @@ describe('<EditorApp> render pipeline (#810)', () => {
     )
     expect(document.documentElement.style.getPropertyValue('--t-bg')).not.toBe(
       THEMES.nord.bg,
+    )
+  })
+
+  it("re-colors the preview panel's own surface to match the selected diagram theme", async () => {
+    stubMermaid()
+    render(createElement(EditorApp, PROPS))
+    await act(() => flushRenderTimers())
+
+    await act(async () => {
+      document
+        .getElementById('theme-dropdown-btn')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const item = document.querySelector<HTMLElement>(
+        '.theme-dropdown-item[data-theme="nord"]',
+      )!
+      item.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushRenderTimers()
+    })
+
+    const panelRight = document.getElementById('panel-right')!
+    expect(panelRight.style.getPropertyValue('--preview-bg')).toBe(
+      THEMES.nord.bg,
+    )
+    expect(panelRight.style.getPropertyValue('--preview-fg')).toBe(
+      THEMES.nord.fg,
     )
   })
 })
