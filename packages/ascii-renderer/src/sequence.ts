@@ -289,7 +289,7 @@ export function renderSequenceAscii(
   const overNoteHalfRight: number[] = new Array(diagram.actors.length).fill(0)
   for (const note of diagram.notes) {
     if (note.position === 'left' || note.position === 'right') {
-      const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
+      const aIdx = actorIndexOf(note.actorIds[0]!)
       const w = noteBoxWidth(note)
       if (note.position === 'left') {
         leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
@@ -297,7 +297,7 @@ export function renderSequenceAscii(
         rightNoteWidth[aIdx] = Math.max(rightNoteWidth[aIdx]!, w)
       }
     } else if (note.position === 'over' && note.actorIds.length === 1) {
-      const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
+      const aIdx = actorIndexOf(note.actorIds[0]!)
       const w = noteBoxWidth(note)
       const halfLeft = Math.floor(w / 2)
       const halfRight = w - halfLeft
