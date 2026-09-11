@@ -19,7 +19,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg3);
+  color: var(--preview-fg3);
   user-select: none;
 }
 
@@ -33,7 +33,12 @@
   gap: 2px;
   padding: 3px;
   border-radius: 8px;
-  background: var(--t-bg);
+  /* --preview-bg3, not --t-bg: this pill floats over .preview-body, whose
+   * own background now follows the diagram theme (see panels.css's
+   * --preview-* custom properties) -- pinning it to the chrome's fixed
+   * --t-bg would leave a fixed white chip sitting on top of a
+   * differently-colored surface. */
+  background: var(--preview-bg3);
   box-shadow: var(--shadow-minimal);
 }
 
@@ -52,7 +57,7 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--fg3);
+  color: var(--preview-fg3);
   cursor: pointer;
   user-select: none;
   transition:
@@ -60,12 +65,12 @@
     background 0.15s;
 }
 .toolbar-btn:hover {
-  color: var(--fg);
-  background: color-mix(in srgb, var(--t-fg) 6%, transparent);
+  color: var(--preview-fg);
+  background: color-mix(in srgb, var(--preview-fg) 6%, transparent);
 }
 .toolbar-btn.active {
-  color: var(--fg);
-  background: color-mix(in srgb, var(--t-fg) 5%, var(--t-bg));
+  color: var(--preview-fg);
+  background: color-mix(in srgb, var(--preview-fg) 5%, var(--preview-bg));
 }
 .toolbar-btn svg {
   width: 14px;
@@ -75,7 +80,7 @@
 .zoom-label {
   font-size: 11px;
   font-weight: 500;
-  color: var(--fg3);
+  color: var(--preview-fg3);
   min-width: 40px;
   text-align: center;
   font-family: 'JetBrains Mono', monospace;
@@ -89,7 +94,7 @@
   box-sizing: border-box;
   position: relative;
   z-index: 0;
-  background: var(--bg2);
+  background: var(--preview-bg);
 }
 .preview-body.pan-mode {
   cursor: grab;
@@ -123,14 +128,16 @@
 
 /* The rendered SVG paints its own opaque theme background (RenderOptions.bg
  * -- src/index.ts, default not transparent) sized to the diagram, sitting
- * directly on .preview-body's fixed light chrome background (--bg2/--t-bg
- * -- see editor/css/variables.css's `:root` defaults). A diagram theme far
- * from the chrome's own light background (e.g. GitHub Dark's near-black bg
- * on the chrome's white canvas) reads as a jarring, unbounded color clash.
- * Framing it as a bounded card makes that edge read as deliberate instead
- * of accidental, for every diagram theme. :has() scopes this to only when
- * an svg is actually present, leaving the empty-state placeholder/error
- * text unaffected. */
+ * on .preview-body's own --preview-bg -- which now tracks the exact same
+ * bg/fg the render call itself used (getPreviewSurfaceColors(),
+ * editor-rendering.ts, reuses buildOptions() so a config-panel color
+ * override is covered too), so the two backgrounds always match. This
+ * box-shadow-only "card" framing (no border/background of its own) stays
+ * anyway: it's what makes the diagram read as a distinct surface floating
+ * in the panel rather than a borderless void, in every theme, not just a
+ * fallback for a color mismatch. :has() scopes this to only when an svg is
+ * actually present, leaving the empty-state placeholder/error text
+ * unaffected. */
 .preview-inner:has(svg) {
   border-radius: 12px;
   overflow: hidden;
@@ -144,7 +151,7 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   padding: 1.5rem;
-  background: color-mix(in srgb, var(--red) 6%, var(--bg2));
+  background: color-mix(in srgb, var(--red) 6%, var(--preview-bg));
   border: 1px solid color-mix(in srgb, var(--red) 15%, transparent);
   border-radius: var(--radius);
   white-space: pre-wrap;
@@ -152,7 +159,7 @@
 }
 
 .preview-placeholder {
-  color: var(--fg4);
+  color: var(--preview-fg4);
   font-size: 0.875rem;
   text-align: center;
 }
@@ -163,9 +170,9 @@
   justify-content: space-between;
   padding: 0 0.75rem;
   height: 28px;
-  background: var(--bg2);
+  background: var(--preview-bg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--fg3);
+  color: var(--preview-fg3);
   flex-shrink: 0;
 }

@@ -165,6 +165,42 @@ export function buildOptions(
 }
 
 /**
+ * Mirrors `packages/core/src/theme.ts`'s `DEFAULTS` -- the exact bg/fg
+ * `src/index.ts`'s `renderMermaidSVGAsync()` falls back to
+ * (`options.bg ?? DEFAULTS.bg`) whenever {@link buildOptions} omits `bg`/
+ * `fg` (no theme selected and no config override either). Duplicated as a
+ * literal rather than imported so {@link getPreviewSurfaceColors} stays a
+ * plain, dependency-free function like the rest of this file.
+ */
+const DEFAULT_PREVIEW_COLORS: Pick<EditorMermaidTheme, 'bg' | 'fg'> = {
+  bg: '#FFFFFF',
+  fg: '#27272A',
+}
+
+/**
+ * The preview surface's background/foreground for the current render --
+ * built from {@link buildOptions} itself (theme *and* any per-color config
+ * override, config winning, same as the actual render call), falling back
+ * to {@link DEFAULT_PREVIEW_COLORS} when neither sets `bg`/`fg`. This is
+ * deliberately not just a theme lookup: `editor-config.tsx`'s color pickers
+ * can override `bg`/`fg` independently of the theme dropdown, and those
+ * reach the rendered `<svg>` the same way (`buildOptions()`'s `config` wins
+ * over `theme`) -- reusing it here means the panel behind the diagram can
+ * never disagree with what actually got rendered. See
+ * `useEditorRendering`'s doc comment for where this is applied.
+ */
+export function getPreviewSurfaceColors(
+  themes: Record<string, EditorMermaidTheme> | undefined,
+  state: Pick<EditorState, 'theme' | 'config'>,
+): Pick<EditorMermaidTheme, 'bg' | 'fg'> {
+  const opts = buildOptions(themes, state)
+  return {
+    bg: typeof opts.bg === 'string' ? opts.bg : DEFAULT_PREVIEW_COLORS.bg,
+    fg: typeof opts.fg === 'string' ? opts.fg : DEFAULT_PREVIEW_COLORS.fg,
+  }
+}
+
+/**
  * Moved from `editor/js/rendering.ts`'s `doRender()` -- `refs`/`state` are
  * now parameters read fresh at call time (this is invoked from inside a
  * `setTimeout` callback, well after the render that scheduled it), instead
@@ -279,13 +315,38 @@ export function useEditorRendering({
   //
   // This deliberately does NOT touch document.documentElement's --t-bg/
   // --t-fg/--t-accent/etc -- those drive the editor's own chrome (topbar,
-  // panels, pickers; see editor/css/variables.css) and are fixed by that
-  // stylesheet's own `:root` defaults, independent of which diagram theme
-  // is selected here. Picking a diagram theme should only change the
-  // rendered diagram (via buildOptions() below), not the tool's own
+  // side panels, pickers; see editor/css/variables.css) and are fixed by
+  // that stylesheet's own `:root` defaults, independent of which diagram
+  // theme is selected here. Picking a diagram theme should only change the
+  // rendered diagram (via buildOptions() above) and the preview surface
+  // immediately behind it (the next effect, below) -- not the tool's own
   // surrounding UI -- see docs/decisions/theme-selector-shared-state.md's
   // amendment on scoping the editor's theme back down.
   useLayoutEffect(() => {
     scheduleRender(0)
   }, [state.theme, scheduleRender])
+
+  // Keep the preview panel's own surface (toolbar/body/footer -- see
+  // editor-panels.tsx's EditorRightPanel) in step with the selected diagram
+  // theme (and any per-color override -- see getPreviewSurfaceColors), via
+  // --preview-bg/--preview-fg scoped to refs.panelRight (the panel's common
+  // ancestor -- see panels.css/preview.css for the consuming rules).
+  // Narrower than the chrome-following behavior docs/decisions/theme-
+  // selector-shared-state.md's amendment removed: that amendment was about
+  // the *whole tool* (topbar, both panels, every picker) reskinning with
+  // the diagram theme, which caused real contrast/cross-tab problems
+  // documented there. This only re-colors the small strip of surface
+  // directly behind the diagram -- previously always the chrome's fixed
+  // light color (--bg2) that a dark/colorful diagram theme's own painted
+  // background (see preview.css's ".preview-inner:has(svg)" comment) could
+  // clash with -- so it stays keyed on state.theme/state.config, using the
+  // exact same bg/fg the rendered <svg> itself gets, never touching the
+  // chrome's own --t-bg/etc.
+  useLayoutEffect(() => {
+    const r = refs.current
+    if (!r) return
+    const { bg, fg } = getPreviewSurfaceColors(readMermaidThemes(), state)
+    r.panelRight.style.setProperty('--preview-bg', bg)
+    r.panelRight.style.setProperty('--preview-fg', fg)
+  }, [state.theme, state.config, refs])
 }

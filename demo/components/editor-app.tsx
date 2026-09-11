@@ -495,6 +495,15 @@ export interface EditorRefs {
   fullscreenBtn: HTMLElement
   iconFullscreenEnter: SVGElement
   iconFullscreenExit: SVGElement
+  /**
+   * Added by zombie-mermaid's preview-surface-follows-theme change -- see
+   * `editor-rendering.ts`'s `useEditorRendering` doc comment. The common
+   * ancestor of the preview toolbar/body/footer (`editor-panels.tsx`'s
+   * `EditorRightPanel`), used as the scope for the `--preview-bg`/
+   * `--preview-fg` custom properties that let the preview surface (not the
+   * rest of the tool's chrome) follow the selected diagram theme.
+   */
+  panelRight: HTMLElement
 }
 
 /**
@@ -578,6 +587,7 @@ export function collectEditorRefs(): EditorRefs {
       'icon-fullscreen-exit',
       SVGElement,
     ),
+    panelRight: requireEditorElement('panel-right', HTMLElement),
   }
 }
 

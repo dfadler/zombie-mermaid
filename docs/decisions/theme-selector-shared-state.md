@@ -160,3 +160,52 @@ rendering.ts`), same as every other themed diagram on the site.
   amendment narrows #688 to the Editor only — it does not revisit whether
   the rest of the site should share a theme preference, only whether the
   Editor's own chrome and tab should be part of that sharing.
+
+## Amendment: the preview panel's own surface rejoins the diagram theme (chrome stays out)
+
+The amendment above deliberately drew the line at "the diagram theme's
+colors reach only the rendered `<svg>`" after the wider version of that
+coupling (reskinning the whole tool) caused the contrast/cross-tab problems
+it documents. (Since then, #982 removed the Editor's independent light/dark
+chrome toggle entirely — `demo/components/editor-dark-mode.ts`,
+`applyChromeColorMode()`, and the `bm-editor-dark` key no longer exist; the
+tool's chrome is now permanently the one fixed light palette
+`editor/css/variables.css`'s `:root` defaults describe. That doesn't change
+anything decided here — chrome was never supposed to follow the diagram
+theme either way — but it does mean the mismatch below is no longer
+conditional on a toggle: it happens for _any_ dark or colorful diagram
+theme, every time, not just when the toggle and the theme disagree.)
+
+In practice this left one visible seam: `.preview-body`/`.preview-footer`
+(`editor/css/preview.css`) kept painting from the chrome's own fixed
+`--bg2`/`--fg3`, so a diagram theme whose colors sit far from that fixed
+light chrome — e.g. `tokyo-night` or any other dark theme — rendered as a
+small themed "card" floating on a mismatched white panel, exactly the
+clash `preview.css`'s own `.preview-inner:has(svg)` comment already called
+out and worked around with a box-shadow border.
+
+**Decision: the preview panel's own surface follows the diagram theme; the
+rest of the tool's chrome does not.** `useEditorRendering`
+(`demo/components/editor-rendering.ts`) now also sets `--preview-bg`/
+`--preview-fg` — scoped to `#panel-right`, the common ancestor of the
+preview toolbar/body/footer (`editor-panels.tsx`'s `EditorRightPanel`) —
+from `getPreviewSurfaceColors()`, which mirrors `buildOptions()`'s own
+theme-plus-config-override lookup so the surface can never disagree with
+what the `<svg>` itself painted. This is narrower than what the prior
+amendment reverted:
+
+- **Still true, unchanged:** the topbar, both side panels (source +
+  config), every picker, and the chrome's own `--t-bg`/`--t-fg`/`--t-accent`
+  remain fixed by `editor/css/variables.css`'s `:root` defaults, never
+  written to from the diagram theme dropdown. No shared key, no cross-tab
+  sync is reintroduced — this is the Editor's own local `state.theme`,
+  applied to one small piece of the Editor's own DOM.
+- **What's new:** only the surface directly behind the diagram — previously
+  the one remaining place a diagram theme and the chrome's fixed light
+  palette could visibly clash.
+
+This is scoped deliberately narrow (confirmed in chat before implementing,
+given this ADR's history of reverting a broader version of the same idea):
+if a future change wants the preview surface _not_ to follow the diagram
+theme either, that's a further amendment here, not a silent revert buried
+in a `preview.css` tweak.
