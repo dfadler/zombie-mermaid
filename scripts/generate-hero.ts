@@ -21,6 +21,10 @@
  * right after the source file's `<style>` block before writing hero.svg,
  * the one place these two output targets still diverge.
  *
+ * The README places its own brand lockup (logo-lockup-{dark,light}.svg,
+ * see scripts/generate-logo-lockup.ts) above this image, so hero.svg itself
+ * carries no wordmark — just the code+diagram visual.
+ *
  * hero.svg replaced hero.png (a manually-captured screenshot) once the
  * hero visual's edges gained a marching-ants animation: GitHub renders an
  * embedded SVG's CSS `@keyframes` natively, so the README's hero can
