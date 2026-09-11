@@ -38,6 +38,7 @@ import {
   accentVar,
   type Accent,
 } from './primitives.tsx'
+import { DetailOutputPanel } from './diagram-detail-app.tsx'
 import {
   FONT_SIZE,
   FONT_WEIGHT,
@@ -442,8 +443,14 @@ export interface GalleryItem {
   title: string
   /** The rendered SVG, via pages.ts's `renderDiagram(sample.source)`. */
   diagramHtml: string
-  /** `../editor#<base64 payload>` for this sample, same shape as the page's own `editorHref`. */
-  editorHref: string
+  /**
+   * This sample's own specific-diagram detail page, e.g.
+   * `flowchart/ci-cd-pipeline.html` (zombie-mermaid#989's part 2) —
+   * relative to this type page's own URL, since both live directly under
+   * `diagrams/`. Was `editorHref` (a link into the shared live editor)
+   * before #989 gave every sample its own real page to link to instead.
+   */
+  href: string
 }
 
 function DetailBreadcrumb({
@@ -465,10 +472,10 @@ function DetailBreadcrumb({
 }
 const GALLERY_VISIBLE_COUNT = 6
 
-/** One `MoreExamplesSection` card: a fixed-aspect thumbnail plus the sample's title, linking to the live editor. */
+/** One `MoreExamplesSection` card: a fixed-aspect thumbnail plus the sample's title, linking to that sample's own detail page. */
 function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
   return (
-    <Card href={item.editorHref} accent={accent} className="gallery-card">
+    <Card href={item.href} accent={accent} className="gallery-card">
       <div
         className="gallery-thumb"
         // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
@@ -482,16 +489,21 @@ function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
 }
 
 /**
- * The "More examples" section (#714/#715 — Direction A of
- * docs/decisions/diagram-gallery-layout.md, drafted on the design canvas
- * at https://claude.ai/code/artifact/d82d53c8-9678-4013-aa72-5859560b211f):
- * the samples-data.ts#713 curated set for this type
- * (`demo/diagram-pages-data.ts`'s `moreExamplesFor`), in a fixed-aspect
- * card grid. Renders nothing when `items` is empty.
+ * The "More examples" section — originally #714/#715's Direction A of
+ * docs/decisions/diagram-gallery-layout.md (drafted on the design canvas
+ * at https://claude.ai/code/artifact/d82d53c8-9678-4013-aa72-5859560b211f),
+ * built around the samples-data.ts#713 *curated* set for this type.
+ * zombie-mermaid#989's part 2 changes the *data* this renders — every real
+ * sample for the type (`demo/diagram-pages-data.ts`'s `allExamplesFor`),
+ * not just the curated subset (`moreExamplesFor`), each linking to its own
+ * new detail page instead of the shared editor — per the decision recorded
+ * in docs/decisions/diagram-tag-search.md's Context section. The *layout*
+ * mechanism below is unchanged and still does its job at the larger count
+ * (up to 24, not 3-14): a fixed-aspect card grid, capped and disclosed via
+ * `<details>`. Renders nothing when `items` is empty.
  *
- * Bounds the section's height regardless of how many samples a type
- * curates (3-14 per docs/decisions/diagram-gallery-scope.md) — the direct
- * fix for #708's ~18,000px pages: everything past
+ * Bounds the section's height regardless of how many samples a type has —
+ * the direct fix for #708's ~18,000px pages: everything past
  * {@link GALLERY_VISIBLE_COUNT} sits inside a native `<details>`
  * disclosure, so revealing the rest needs no client script at all. That
  * matches docs/decisions/no-script-interactivity.md's "demo-site chrome
@@ -500,7 +512,7 @@ function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
  * script would have been. The artboard shows a 6-desktop/4-mobile split;
  * shipping one fixed cap for both keeps this a single static render (no
  * client-side re-splitting), which still fully solves #708's actual bug
- * (unbounded height) — see the design decision doc for that tradeoff.
+ * (unbounded height) regardless of how many samples land in `items`.
  *
  * Each thumbnail (`pageCss`'s `.gallery-thumb`) fixes #708's card-sizing
  * bug directly: the rendered SVG's own `viewBox` letterboxes into the
@@ -509,9 +521,11 @@ function GalleryCard({ item, accent }: { item: GalleryItem; accent: Accent }) {
  * contained instead of blowing out the card.
  */
 function MoreExamplesSection({
+  label,
   items,
   accent,
 }: {
+  label: string
   items: readonly GalleryItem[]
   accent: Accent
 }) {
@@ -536,9 +550,9 @@ function MoreExamplesSection({
           gap: `${SPACE['4xl']}px`,
         }}
       >
-        <SectionEyebrow accent={accent}>More examples</SectionEyebrow>
+        <SectionEyebrow accent={accent}>Every example</SectionEyebrow>
         <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
-          More real-world examples.
+          {`Every ${label} example, on its own page.`}
         </h2>
         <div className="gallery-grid">
           {visible.map((item) => (
@@ -594,6 +608,8 @@ export interface DiagramTypeAppProps {
   sourceFilename: string
   sourcePanelHtml: OrientationVariants
   diagramHtml: OrientationVariants
+  /** `renderMermaidASCII({ colorMode: 'html' })` output for this type's hero example — see `DetailOutputPanel`'s doc comment for why this page reuses that component instead of a second toggle implementation. */
+  asciiHtml: string
   editorHref: string
   galleryItems: readonly GalleryItem[]
   types: readonly DiagramCrosslink[]
@@ -617,6 +633,7 @@ export function DiagramTypeApp({
   sourceFilename,
   sourcePanelHtml,
   diagramHtml,
+  asciiHtml,
   editorHref,
   galleryItems,
   types,
@@ -785,17 +802,16 @@ export function DiagramTypeApp({
             <Card
               accent={accent}
               tone="glow"
-              className="diagram-frame"
+              className="output-card"
               style={{
                 flex: '1 1 0',
                 minWidth: 0,
-                padding: `${SPACE['5xl']}px`,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                flexDirection: 'column',
+                overflow: 'hidden',
               }}
             >
-              <OrientationBlock html={diagramHtml} />
+              <DetailOutputPanel svgHtml={diagramHtml} asciiHtml={asciiHtml} />
             </Card>
           </div>
 
@@ -821,7 +837,7 @@ export function DiagramTypeApp({
         </div>
       </div>
 
-      <MoreExamplesSection items={galleryItems} accent={accent} />
+      <MoreExamplesSection label={label} items={galleryItems} accent={accent} />
       {/* ============ CROSS-LINKS ============ */}
       <div
         className="section-px"

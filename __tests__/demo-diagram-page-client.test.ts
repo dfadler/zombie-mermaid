@@ -70,12 +70,13 @@ const DIAGRAM_TYPE_APP_PROPS: DiagramTypeAppProps = {
   sourceFilename: 'flowchart.mmd',
   sourcePanelHtml: '<pre>graph TD</pre>',
   diagramHtml: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+  asciiHtml: '<span style="color:#27272A">ascii-test</span>',
   editorHref: '../editor#test',
   galleryItems: [
     {
       title: 'Gallery sample',
       diagramHtml: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
-      editorHref: '../editor#gallery-test',
+      href: 'flowchart/gallery-sample.html',
     },
   ],
   types: [],

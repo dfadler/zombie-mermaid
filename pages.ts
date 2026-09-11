@@ -65,7 +65,6 @@ import { THEMES } from '@zombie-mermaid/core'
 import {
   DIAGRAM_TYPE_PROFILES,
   allExamplesFor,
-  moreExamplesFor,
   sampleSlug,
 } from './demo/diagram-pages-data.ts'
 import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
@@ -298,25 +297,30 @@ async function main(): Promise<void> {
       return html
     }
 
-    // "More examples" section (#714/#715): the samples-data.ts#713 curation
-    // for this type, each rendered once at the default theme/direction —
+    // Every real sample for this type — not gated by sample.gallery, per
+    // allExamplesFor's own doc comment (docs/decisions/diagram-tag-
+    // search.md's Context section records that decision). Backs both the
+    // type page's "More examples" section (#989's part 2) and the
+    // specific-diagram detail pages generated below (#989's part 1).
+    const allSamples = allExamplesFor(profile.slug)
+
+    // "More examples" section: every real sample, each rendered once at the
+    // default theme/direction and linking to its own detail page below —
     // these are small thumbnails (demo/components/diagram-page.tsx's
     // `MoreExamplesSection` letterboxes them into a fixed-aspect frame), not
     // the page's primary orientation-swapping "Source → render" diagram, so
-    // unlike `diagramMarkup` above they get no narrow-viewport variant.
-    const galleryItems = moreExamplesFor(profile.slug).map((sample) => ({
+    // unlike `diagramMarkup` above they get no narrow-viewport variant. The
+    // section's own `<details>` disclosure (unchanged) keeps this bounded
+    // regardless of a type's real sample count (4-24) — see
+    // MoreExamplesSection's doc comment.
+    const galleryItems = allSamples.map((sample) => ({
       title: sample.title,
       diagramHtml: cachedSvg(sample),
-      editorHref: `../editor#${editorHash(sample.source, DEFAULT_THEME_KEY)}`,
+      href: `${profile.slug}/${sampleSlug(sample.title)}.html`,
     }))
 
-    // -- Specific-diagram detail pages (#989): one per real sample of this
-    // type, e.g. diagrams/flowchart/ci-cd-pipeline.html. Not gated by
-    // sample.gallery, unlike galleryItems above — see allExamplesFor's own
-    // doc comment for why every real sample gets its own indexable page now
-    // rather than only the curated subset (docs/decisions/diagram-tag-
-    // search.md's Context section records that decision).
-    const allSamples = allExamplesFor(profile.slug)
+    // -- Specific-diagram detail pages (#989's part 1): one per real sample
+    // of this type, e.g. diagrams/flowchart/ci-cd-pipeline.html.
     for (const sample of allSamples) {
       const sampleUrlSlug = sampleSlug(sample.title)
       const detailCanonical = `${SITE_URL}/diagrams/${profile.slug}/${sampleUrlSlug}.html`
@@ -372,6 +376,17 @@ async function main(): Promise<void> {
     )
     const themeDataScript = `window.__diagramPageThemes = ${themesJson}; window.__diagramPageSource = ${sourceJson}; window.__diagramPageNarrowSource = ${narrowSourceJson};`
 
+    // The type page's own hero diagram, in the ASCII toggle state (#989's
+    // part 2) — always the wide/default orientation, unlike diagramMarkup
+    // above: ASCII text degrades to horizontal scroll on a narrow viewport
+    // (ASCII_OUTPUT_STYLE's overflowX), it doesn't overflow the layout the
+    // way an un-narrowed wide SVG would, so a second orientation-swapped
+    // render isn't needed here the way it is for diagramMarkup/sourcePanelMarkup.
+    const typeAsciiHtml = renderMermaidASCII(profile.source, {
+      colorMode: 'html',
+      theme: detailAsciiTheme,
+    }).replace(/[ \t]+$/gm, '')
+
     const html = renderHtmlDocument(
       createElement(DiagramTypePage, {
         label: profile.label,
@@ -387,6 +402,7 @@ async function main(): Promise<void> {
         faviconHref: '../favicon.svg',
         sourcePanelHtml: sourcePanelMarkup,
         diagramHtml: diagramMarkup,
+        asciiHtml: typeAsciiHtml,
         editorHref: `../editor#${editorHash(profile.source, DEFAULT_THEME_KEY)}`,
         galleryItems,
         types: typeLinks,
