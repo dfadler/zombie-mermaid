@@ -117,7 +117,7 @@ describe('DiagramTypePage (#821)', () => {
     expect(screen.getByText('Show 1 more example')).toBeInTheDocument()
   })
 
-  it("keeps the tablet/mobile flex-basis override targeting .output-card, not the stale .diagram-frame selector it renamed from", () => {
+  it('keeps the tablet/mobile flex-basis override targeting .output-card, not the stale .diagram-frame selector it renamed from', () => {
     // Regression test for a live bug: DetailOutputPanel's SVG/ASCII toggle
     // (#989) renamed the "Source → render" panel's own flex-item class from
     // .diagram-frame to .output-card (.diagram-frame became an inner div,
