@@ -407,22 +407,40 @@ export function DetailOutputPanel({
         style={{
           flex: '1 1 auto',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           padding: `${SPACE['5xl']}px`,
           overflow: 'auto',
         }}
       >
-        {mode === 'svg' ? (
-          <SvgOutput svgHtml={svgHtml} />
-        ) : (
-          <pre
-            className="mono"
-            style={ASCII_OUTPUT_STYLE}
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output, entity-escaped by the renderer itself, never user input (see the file header)
-            dangerouslySetInnerHTML={{ __html: asciiHtml }}
-          />
-        )}
+        {/*
+         * `margin: auto` on the scrollable flex item, not `alignItems`/
+         * `justifyContent: center` on this container -- centering via
+         * align/justify content clips unreachably as soon as the content
+         * overflows the container in the centered axis: the browser has
+         * nowhere to scroll *to* for the portion pushed off the leading
+         * edge, since align/justify-content never generates negative
+         * scroll offset. Surfaced by #1015's fullscreen toggle (a large
+         * diagram's top/left edge was clipped with no way to scroll to
+         * it once .output-card's height was clamped to the viewport),
+         * but the bug was already latent here before that change -- the
+         * normal (non-fullscreen) case just never constrained this
+         * container's height enough to trigger it. `margin: auto` still
+         * centers when the content fits (an auto margin absorbs
+         * available space same as center alignment) but degrades to 0,
+         * not negative, once it doesn't -- leaving the item at its
+         * natural start position and fully reachable by scrolling.
+         */}
+        <div style={{ margin: 'auto' }}>
+          {mode === 'svg' ? (
+            <SvgOutput svgHtml={svgHtml} />
+          ) : (
+            <pre
+              className="mono"
+              style={ASCII_OUTPUT_STYLE}
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output, entity-escaped by the renderer itself, never user input (see the file header)
+              dangerouslySetInnerHTML={{ __html: asciiHtml }}
+            />
+          )}
+        </div>
       </div>
     </>
   )

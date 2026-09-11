@@ -16,6 +16,21 @@
  * page) and `DiagramDetailApp` (the per-sample page) -- see its own doc
  * comment -- so exercising it once through `DiagramDetailApp` covers both;
  * neither page wraps or overrides its fullscreen behavior.
+ *
+ * Also covers the overflow-scroll regression the fullscreen toggle
+ * surfaced (#1015 review feedback): the output content wrapper used to
+ * center its child via `alignItems`/`justifyContent: center`, which
+ * clips unreachably as soon as the content overflows the container in
+ * the centered axis -- confirmed live (a real Chrome tab, not jsdom,
+ * which does no real layout) by clamping `.output-card` to a small
+ * height and measuring the rendered `<svg>`'s position at min/max
+ * scroll: the old styling left the SVG's top ~40px permanently above
+ * the container's top edge with `scrollTop` already at its minimum (0)
+ * -- no scroll position could reach it. `margin: auto` on the content
+ * item instead of container-level center alignment fixes that (it
+ * degrades to a 0 margin, not a negative one, once the content
+ * overflows) while jsdom can't assert the layout math itself, it can
+ * assert the actual fix -- these inline styles -- stays in place.
  */
 import { act, createElement } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -186,5 +201,31 @@ describe('DetailOutputPanel fullscreen toggle', () => {
     } finally {
       api.restore()
     }
+  })
+})
+
+describe('DetailOutputPanel output scroll region (#1015 overflow-scroll fix)', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('centers overflow content with margin: auto on the item, not align/justify-content on the scrollable container', () => {
+    render(createElement(DiagramDetailApp, DETAIL_PROPS))
+
+    const diagramFrame = document.querySelector('.diagram-frame')
+    if (!diagramFrame) throw new Error('test setup: .diagram-frame missing')
+    const marginAutoWrapper = diagramFrame.parentElement
+    const scrollContainer = marginAutoWrapper?.parentElement
+    if (!marginAutoWrapper || !scrollContainer) {
+      throw new Error('test setup: expected wrapper structure missing')
+    }
+
+    expect(marginAutoWrapper.style.margin).toBe('auto')
+    // The regression: centering via align/justify-content here makes
+    // overflow content unreachable by scroll -- see this file's header
+    // comment for the measured proof in a real browser.
+    expect(scrollContainer.style.alignItems).toBe('')
+    expect(scrollContainer.style.justifyContent).toBe('')
+    expect(scrollContainer.style.overflow).toBe('auto')
   })
 })
