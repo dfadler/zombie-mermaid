@@ -136,7 +136,7 @@ import type { EditorThemeItem } from './editor-topbar.tsx'
 import { NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
-import { PrimitivesStyle } from './primitives.tsx'
+import { PrimitivesStyle } from './primitives-css.tsx'
 import { COLORS, FONT_WEIGHT, FONTS, LAYOUT, SECTION_SPACE } from './tokens.tsx'
 
 /* -----------------------------------------------------------------

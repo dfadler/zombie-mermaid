@@ -37,6 +37,10 @@ blog/
 visual-diff.html
 .visual-diff-cache/
 
+# On-disk cache for scripts/load-css-module.ts's CSS Modules seam
+# (zombie-mermaid#938) — keyed by content hash, safe to delete any time.
+.css-modules-cache/
+
 # Human-reviewable SVG-vs-ASCII report from scripts/form-diff.ts.
 form-diff.html
 

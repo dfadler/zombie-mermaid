@@ -10,9 +10,9 @@
  * eight pages, each in a 1440px desktop and a 390px mobile variant — share
  * one `<helmet><style>` preamble, and its `.card`, `.pill`, and
  * `.section-eyebrow` rules are byte-identical across all sixteen. Those
- * three rules are reproduced verbatim in {@link primitivesCss}; the variants
- * below are the inline-style overrides the artboards actually spell out at
- * their usage sites.
+ * three rules are reproduced verbatim in `primitives-css.tsx`'s
+ * `primitivesCss()`; the variants below are the inline-style overrides the
+ * artboards actually spell out at their usage sites.
  *
  * That base-class-plus-inline-override split is the canvas's own authoring
  * shape, so the components keep it: each renders the canvas class name and
@@ -20,9 +20,8 @@
  * `primitivesCss()` once (alongside tokens.tsx's `designBaseCss()`) and gets
  * markup that matches the artboards element for element.
  *
- * Nothing on the site consumes these yet — wiring them into the pages is
- * #598-610's job. Colours, radii, spacing, and type all come from tokens.tsx
- * rather than being retyped, so the palette has exactly one definition.
+ * Colours, radii, spacing, and type all come from tokens.tsx rather than
+ * being retyped, so the palette has exactly one definition.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
@@ -33,16 +32,7 @@ import type {
   MouseEventHandler,
   ReactNode,
 } from 'react'
-import {
-  COLORS,
-  FONT_SIZE,
-  FONT_WEIGHT,
-  LETTER_SPACING,
-  RADIUS,
-  SPACE,
-  colorVar,
-  type ColorToken,
-} from './tokens.tsx'
+import { COLORS, FONT_WEIGHT, colorVar, type ColorToken } from './tokens.tsx'
 
 /* -----------------------------------------------------------------
  * Accents
@@ -108,68 +98,31 @@ export function accentRgba(accent: Accent, alpha: number): string {
  */
 const SOLID_INK = colorVar('--bg')
 
-/**
- * A pill's horizontal padding in px.
- *
- * The canvas declares `padding: 12px 22px`. The 12 is tokens.tsx's
- * `SPACE.md`; 22 is not on that scale — no other measurement in the
- * artboards uses it — so it stays a literal here rather than becoming a
- * spacing step nothing else would reference.
- */
-const PILL_PADDING_X = 22
-
 /* -----------------------------------------------------------------
  * Base CSS
  * ----------------------------------------------------------------- */
 
 /**
- * The `.card`, `.pill`, `.section-eyebrow`, and `.mono` rules, transcribed
- * from the sixteen showcase artboards' shared style preamble.
+ * The `.card`/`.pill`/`.section-eyebrow`/`.mono` rules these components
+ * render against now live in `primitives-css.tsx` (zombie-mermaid#938,
+ * part of the #931 umbrella — see that file for why it's a separate
+ * module rather than living here alongside the components).
  *
- * The values are written through the tokens module rather than retyped, but
- * they resolve to exactly what the canvas declares: a 20px-radius panel with
- * a hairline border, a fully-rounded 12px/22px inline-flex pill at 15px/600,
- * and an uppercase 13px/700 cyan eyebrow tracked out to 0.14em.
- *
- * Emit this once per page, after tokens.tsx's `designBaseCss()` — the rules
- * reference the custom properties that block defines.
+ * The class name *strings* below (`'card'`, `'pill'`, …) stay plain
+ * literals rather than importing anything from `primitives-css.tsx`: this
+ * file is shared between SSR (`*-page.tsx`) and browser-hydrated
+ * (`*-app.tsx`) code — `Card`/`Pill`/`SectionEyebrow`/`CTA` all render
+ * inside client bundles — and `primitives-css.tsx` resolves its stylesheet
+ * through a real Vite build at module-load time, which depends on Node
+ * built-ins (`vite`, transitively `esbuild`/`child_process`) that don't
+ * exist in a browser. Importing from it here would drag that whole
+ * dependency into every page's client bundle (verified empirically while
+ * building this seam: `bundleForBrowser()` warned about `child_process`/
+ * `fs`/`tty` being "externalized for browser compatibility" the one time
+ * this file tried it). `primitives.module.css`'s selectors are unhashed by
+ * design (see `scripts/load-css-module.ts`), so the literal here and the
+ * compiled rule there are guaranteed to name the same class regardless.
  */
-export function primitivesCss(): string {
-  return `.card {
-  background: ${colorVar('--panel')};
-  border: 1px solid ${colorVar('--border')};
-  border-radius: ${RADIUS.card}px;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: ${SPACE.sm}px;
-  border-radius: ${RADIUS.pill}px;
-  padding: ${SPACE.md}px ${PILL_PADDING_X}px;
-  font-size: ${FONT_SIZE.bodyLg}px;
-  font-weight: ${FONT_WEIGHT.semibold};
-}
-
-.section-eyebrow {
-  text-transform: uppercase;
-  letter-spacing: ${LETTER_SPACING.eyebrow};
-  font-size: ${FONT_SIZE.label}px;
-  font-weight: ${FONT_WEIGHT.bold};
-  color: ${colorVar('--cyan')};
-}
-
-.mono {
-  font-family: var(--font-mono);
-}`
-}
-
-/** {@link primitivesCss} in a `<style>` element, for a page's `<head>`. */
-export function PrimitivesStyle() {
-  return <style>{primitivesCss()}</style>
-}
-
-/** Joins class names, dropping the empty ones. */
 function classNames(...parts: (string | false | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
 }

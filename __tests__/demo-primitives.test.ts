@@ -34,20 +34,30 @@
 import { createElement } from 'react'
 import { render, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { ACCENTS, COLORS } from '../demo/components/tokens.tsx'
+import {
+  ACCENTS,
+  COLORS,
+  FONT_SIZE,
+  FONT_WEIGHT,
+  LETTER_SPACING,
+  RADIUS,
+  SPACE,
+} from '../demo/components/tokens.tsx'
 import {
   ACCENT_NAMES,
   CTA,
   Card,
   Pill,
-  PrimitivesStyle,
   SectionEyebrow,
   accentRgba,
   accentToken,
   accentVar,
-  primitivesCss,
   type Accent,
 } from '../demo/components/primitives.tsx'
+import {
+  PrimitivesStyle,
+  primitivesCss,
+} from '../demo/components/primitives-css.tsx'
 
 /** Renders a component into a real (jsdom) DOM via React Testing Library. */
 function renderComponent(
@@ -157,6 +167,28 @@ describe('primitivesCss', () => {
 
   it('points .mono at the tokens module font stack', () => {
     expect(css).toContain('font-family: var(--font-mono);')
+  })
+
+  // primitivesCss() now delegates to primitives.module.css — a real static
+  // CSS file, through the CSS Modules seam in scripts/load-css-module.ts
+  // (zombie-mermaid#938) — which can't `import` tokens.tsx the way the old
+  // template-literal implementation did, so its non-color values (radii,
+  // spacing, type) are literals transcribed from these tokens rather than
+  // references to them. This test is the backstop that documented tradeoff
+  // needs: if a token changes here without primitives.module.css being
+  // updated to match, this fails loudly instead of the two silently
+  // drifting apart (`22` isn't on any tokens.tsx scale — see
+  // primitives.module.css's own comment on that rule for why).
+  it('keeps primitives.module.css literals in sync with tokens.tsx', () => {
+    expect(css).toContain(`border-radius: ${RADIUS.card}px;`)
+    expect(css).toContain(`gap: ${SPACE.sm}px;`)
+    expect(css).toContain(`border-radius: ${RADIUS.pill}px;`)
+    expect(css).toContain(`padding: ${SPACE.md}px 22px;`)
+    expect(css).toContain(`font-size: ${FONT_SIZE.bodyLg}px;`)
+    expect(css).toContain(`font-weight: ${FONT_WEIGHT.semibold};`)
+    expect(css).toContain(`letter-spacing: ${LETTER_SPACING.eyebrow};`)
+    expect(css).toContain(`font-size: ${FONT_SIZE.label}px;`)
+    expect(css).toContain(`font-weight: ${FONT_WEIGHT.bold};`)
   })
 
   it('wraps in a style element', () => {

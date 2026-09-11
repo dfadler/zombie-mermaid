@@ -1,0 +1,29 @@
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  /* 12 is tokens.tsx's SPACE.md; 22 is not on that scale (no other
+     measurement in the design canvas uses it), so it stays a literal. */
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.section-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
