@@ -144,7 +144,8 @@ describe('<EditorApp> fullscreen toggle', () => {
       // Wait a tick for the (already-resolved) promise, then play out what
       // the browser does once the request actually takes effect.
       await Promise.resolve()
-      const target = document.querySelector('.editor-tool-shell') ?? document.documentElement
+      const target =
+        document.querySelector('.editor-tool-shell') ?? document.documentElement
       api.enterSettles(target)
 
       const exitBtn = screen.getByTitle('Exit fullscreen')
