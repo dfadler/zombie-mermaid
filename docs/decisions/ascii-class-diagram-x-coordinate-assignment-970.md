@@ -55,51 +55,102 @@ predecessor of Brandes-Köpf, not the full algorithm.** Concretely:
    left-packing in the most common multi-child case.
 
 3. For each level, in the level's existing declaration order:
-   - A block with no parents (a root, or a class this diagram never
-     connects) keeps exactly the x-position the _current_ left-to-right
-     packing would give it. There is nothing to align it to, and every
-     level-0 class is in this state.
-   - A block with parents computes its **desired center** as the mean of
-     its distinct parents' center columns (already resolved, since levels
-     are processed top-down), rounded to the nearest integer cell
-     (`Math.round`; ties round up, matching JS's existing rounding
-     convention used elsewhere in this file, e.g. `relColumnOffset`'s
-     `Math.round((pos - (n - 1) / 2) * step)`). A block with one member and
-     one parent is the single-parent case (#971): its desired center _is_
-     the parent's center, so the lone child aligns exactly under it — this
-     is the #964 repro, fixed exactly as stated. A block with one member
-     and more than one parent is the converging case (#972): mean-of-parents
-     is the "reasonable compromise" #964's own suggested scope named. A
-     block with more than one member (several children sharing one parent)
-     spreads those children evenly by centering the _whole block's total
-     width_ (sum of member widths + gaps between them) on the shared
-     parent's center, then laying members out left-to-right inside the
-     block at their normal spacing — this is what actually implements
-     "multiple children of the same parent spread evenly around that
-     parent's center."
+   - A block counts as having **no resolvable parents** — and keeps exactly
+     the x-position the _current_ left-to-right packing would give it,
+     because there is nothing valid to align it to — in two cases: it has no
+     parent edges at all (a root, or a class this diagram never connects),
+     **or** every one of its parent edges points to a class at the _same_
+     level rather than a strictly shallower one. The second case is a
+     rootless relationship cycle (e.g. `A --> B --> C --> A` with no
+     external root): the existing level-BFS (`level`/`levelGroups`) finds no
+     root anywhere in the cycle, so every member falls back to level 0
+     together, while the semantic `parents` map still records each one's
+     in-cycle predecessor as its "parent." That predecessor is not
+     "already resolved" the way a true shallower-level parent is — it's a
+     same-row sibling being positioned in this exact pass — so a block must
+     only average parent centers over parents whose `level` is strictly
+     less than the block's own; a block with parent edges but zero
+     qualifying (strictly-shallower) parents falls into this same
+     no-resolvable-parents case. (Same-level relationships between such
+     classes are otherwise unaffected: they're still drawn by the same-level
+     detour path described below, which has never depended on x-assignment
+     order.)
+   - A block with at least one qualifying (strictly-shallower) parent
+     computes its **desired center** as the mean of those parents' center
+     columns (already resolved, since levels are processed top-down),
+     rounded to the nearest integer cell (`Math.round`; ties round up,
+     matching JS's existing rounding convention used elsewhere in this
+     file, e.g. `relColumnOffset`'s `Math.round((pos - (n - 1) / 2) *
+step)`). "Center column" here means the _box's_ rendered center
+     (`box.x + Math.floor(box.width / 2)`), never the reach-padded slot's
+     center — see point 4 below for why slot width and box center are
+     deliberately kept separate. A block with one member and one qualifying
+     parent is the single-parent case (#971): its desired center _is_ the
+     parent's center, so the lone child aligns exactly under it — this is
+     the #964 repro, fixed exactly as stated. A block with one member and
+     more than one qualifying parent is the converging case (#972):
+     mean-of-parents is the "reasonable compromise" #964's own suggested
+     scope named. A block with more than one member (several children
+     sharing one qualifying-parent-set) spreads those children evenly by
+     centering the _whole block's total width_ (sum of member widths + gaps
+     between them) on the shared desired center, then laying members out
+     left-to-right inside the block at their normal spacing — this is what
+     actually implements "multiple children of the same parent spread
+     evenly around that parent's center." Converting that block-level
+     desired _center_ into the block's desired _left edge_ is
+     `desiredCenter - Math.floor(totalWidth / 2)` — floor, not round or
+     ceil, chosen only for determinism (an odd `totalWidth` consistently
+     biases the extra cell to the block's right side; no other file
+     convention dictated this choice, and #971/#972 are free to pick ceil
+     instead as long as they document it and apply it consistently, since
+     the visual difference is at most one column). This keeps every
+     intermediate value integer; no separate fractional-center-then-round
+     step exists.
    - Blocks are then compacted left-to-right, one pass, in the level's
      existing declaration order: each block's actual left edge is
-     `max(desiredLeft, previousBlockRightEdge + hGap, 0)`. A block can only
-     be pushed right of its desired position, never left, and blocks are
-     never reordered relative to each other. This is the overlap-resolution
-     step (#972's other half): when two blocks' desired positions would
-     collide, the later one (in declaration order) yields, exactly the way
-     Gansner/Sugiyama-style "priority" compaction resolves conflicts, and
-     exactly how today's code already resolves the (currently trivial,
-     always-satisfied) case of one level-0 root with no other blocks to
-     collide with.
+     `max(desiredLeft, previousBlockRightEdge + hGap, 0)`, where a block
+     with no resolvable parents (first bullet above) uses today's
+     unmodified left-to-right position as its `desiredLeft`. A block can
+     only be pushed right of its desired position, never left, and blocks
+     are never reordered relative to each other. **This compaction pass is
+     universal, not #972-specific**: it runs over every block at a level
+     regardless of parent-set size, because two _different_ single-parent
+     blocks (#971's own case — e.g. two unrelated classes at the same level,
+     each the sole child of a different, nearby parent) can still have
+     colliding desired positions even though neither individually has
+     "more than one parent." #971 must therefore implement this compaction
+     step too, not defer it to #972 — see "Staging" below for what that
+     changes about the #971/#972 boundary. When two blocks' desired
+     positions do collide, the later one (in declaration order) yields,
+     exactly the way Gansner/Sugiyama-style "priority" compaction resolves
+     conflicts, and exactly how today's code already resolves the
+     (currently trivial, always-satisfied) case of one level-0 root with no
+     other blocks to collide with.
 
 4. `columnReach` (the per-relationship label/fan-out padding reservation,
    [lines 499-553](https://github.com/dfadler/zombie-mermaid/blob/main/packages/ascii-renderer/src/class-diagram.ts#L499-L553))
    is unaffected in kind: it still runs _before_ x-assignment, still
    widening each class's _slot_ (not its box) by however much a label or
-   fan-out overhangs the box edges. The only change x-assignment makes here
-   is that "slot width" (already `leftPad + w + rightPad`, current code
+   fan-out overhangs the box edges. **Slot width and box position are used
+   for two deliberately different purposes, and #971/#972 must not conflate
+   them:** "slot width" (already `leftPad + w + rightPad`, current code
    [line 589](https://github.com/dfadler/zombie-mermaid/blob/main/packages/ascii-renderer/src/class-diagram.ts#L589))
-   is what block-width and block-compaction arithmetic above must use in
-   place of raw box width `w` — reach-padding and parent-alignment compose
-   by having the alignment pass consume the already-reach-padded slot
-   widths, not by either pass needing to know about the other's internals.
+   is what block-width and block-compaction _spacing_ arithmetic above must
+   use in place of raw box width `w` — it decides how much horizontal room
+   a block reserves and how far apart two blocks' edges must stay. A
+   parent's or block's **center column**, used as an alignment _target_
+   (the "desired center" computed in point 3 above), is always the box's
+   own center — `slotLeft + leftPad + Math.floor(w / 2)` — never the
+   padded slot's center (`slotLeft + Math.floor(slotWidth / 2)`), which can
+   differ from the box center whenever `leftPad != rightPad` (an
+   asymmetric label/fan-out reservation). Aligning to the slot's center
+   instead would visually misalign the rendered _boxes_ even while their
+   slots compact cleanly against each other. Reach-padding and
+   parent-alignment therefore compose by having the compaction/spacing math
+   consume reach-padded slot widths while the alignment math consumes
+   unpadded box centers — two consistent, separately-defined conversions
+   from the same underlying slot geometry, not one shared "position" that
+   both passes read.
 
 ### Why a block-based priority method, not full Brandes-Köpf
 
@@ -247,26 +298,42 @@ Net effect on #971/#972's implementation: neither issue needs to touch
 already position-derived, generic, and orthogonal to the x-assignment
 algorithm producing those positions.
 
-## Staging: two implementation issues, as already scoped
+## Staging: two implementation issues, with one correction to #964's original split
 
-The two-stage split #964 already proposed maps directly onto the block
-method above, with no changes needed to that boundary:
+The two-stage split #964 already proposed maps onto the block method above
+with **one adjustment**: the left-to-right compaction pass (step 3's final
+bullet) has to move into #971, not stay exclusive to #972, because it's
+needed the moment a level has more than one block — regardless of whether
+any individual block has more than one parent. Two different single-parent
+blocks (each satisfying #971's "class alone in its parent-set group"
+definition on its own) can still want overlapping desired positions if
+their respective parents sit close together; #964's original framing
+("#971 covers... a class alone in its parent-set group" implying nothing
+else to compact against) only holds for a level with exactly one block
+total, which isn't guaranteed just because every block at that level
+happens to be single-parent.
 
-- **#971 (single-parent alignment)** implements step 3's single-member,
-  single-parent case: a block of one class with exactly one parent aligns
-  its center under that parent's center. This is the #964 repro exactly,
-  and requires no block-compaction conflict handling beyond what already
-  exists (a lone block with no other same-level block competing for space,
-  which is every case #971 covers by definition — a class alone in its
-  parent-set group).
+- **#971 (single-parent alignment + universal compaction)** implements:
+  step 3's single-member/single-parent desired-center computation (a block
+  of one class with one qualifying parent aligns its center under that
+  parent's center — the #964 repro exactly); the no-resolvable-parents case
+  (root blocks and rootless-cycle members keep today's left-to-right
+  position); and the compaction pass itself
+  (`max(desiredLeft, prevRight + hGap, 0)`), applied across **all** blocks
+  at a level, not just single-parent ones — multi-member/multi-parent
+  blocks simply aren't computed yet, so they fall back to their
+  no-resolvable-parents (today's) position and compact like any other block
+  in the interim. This makes #971 a real, independently mergeable
+  improvement (the repro case is fully fixed, and no level can regress
+  since every block still gets a defined position and never overlaps
+  another), not a fragment waiting on #972 to be safe to ship.
 - **#972 (multi-parent / overlap resolution)** implements the remaining
-  cases: multi-member blocks (children sharing one parent, spread across
-  the block's width), multi-parent blocks (mean-of-parents), and the
-  block-compaction conflict rule (`max(desiredLeft, prevRight + hGap, 0)`)
-  for when two blocks' desired positions collide. #971 should land first
-  since #972's compaction logic subsumes and must not regress it — the
-  single-block case is a degenerate instance of the same block algorithm
-  with nothing to compact against.
+  desired-_position_ computations only: multi-member blocks (children
+  sharing one qualifying parent-set, spread across the block's width) and
+  multi-parent blocks (mean-of-parents). It reuses #971's compaction pass
+  unchanged — #972 changes what `desiredLeft` is computed to be for these
+  block shapes, not how blocks reconcile colliding desired positions, which
+  #971 already established for every block shape.
 
 ## Sample-catalog impact (verified, not assumed)
 
