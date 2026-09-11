@@ -137,70 +137,109 @@ ${manyAttrs('b', 6)}
   // pair via the level-BFS (Root has no parent, Kid is its level-1 child),
   // placed on a different row from the Alpha/Mid/Charlie cycle.
   //
-  // Two orderings of the same Root/Kid pair are compared: declaring Root
-  // first places Kid's column off to the side, outside the Alpha-to-Charlie
-  // detour span; declaring Root between Alpha and Mid places Kid's column
-  // so it overlaps Alpha's own range instead (confirmed below via
-  // `findBoxRect`). If the different-row filter worked, both orderings
+  // Two variants of the same Root/Kid pair are compared: a narrow `Kid`
+  // never reaches the cycle's column span (baseline); a `Kid` wide enough
+  // to need real space, with `Root` declared right after `Alpha`, overlaps
+  // Alpha's (and Mid's) column range instead (confirmed below via
+  // `findBoxRect`). If the different-row filter worked, both variants
   // render the cycle identically — Root/Kid's actual row is irrelevant to
-  // it either way. A test that only used the non-overlapping ordering would
+  // it either way. A test that only used the non-overlapping variant would
   // pass even with the filter deleted (verified: an earlier version of this
   // test did exactly that, and CodeRabbit correctly flagged it as not
-  // actually exercising the filter — see the PR discussion). Sabotage-
-  // verified: deleting the filter leaves both orderings' `+ bN: String`
-  // lines intact but makes the overlapping ordering one row taller than the
-  // non-overlapping one (19 vs. 18), which the equality assertion below
+  // actually exercising the filter — see the PR discussion).
+  //
+  // Declaration order alone no longer controls Kid's column (issue #971:
+  // `Kid`, as the sole occupant of its level with exactly one qualifying
+  // parent, now aligns under Root's own — already-placed — column instead
+  // of always landing at the leftmost slot). This test used to force the
+  // overlapping/non-overlapping split by moving `Root`/`Kid`'s declaration
+  // point around the cycle alone; that no longer produces reliably
+  // different geometry, since Kid's position now tracks wherever Root
+  // ends up rather than its own declaration slot. Widening `Kid` (so its
+  // box needs more room than the gap next to Root provides) is what
+  // reliably produces a real overlap now, confirmed empirically against
+  // the current renderer rather than assumed.
+  //
+  // Sabotage-verified: deleting the filter leaves both variants' `+ bN:
+  // String` lines intact but makes the overlapping variant one row taller
+  // than the baseline (19 vs. 18), which the equality assertion below
   // catches.
   it('3-node cycle, unrelated Root->Kid pair on a different level: obstruction search ignores it regardless of whether it overlaps the detour span', () => {
-    function withRootKid(rootDeclaredBetweenAlphaAndMid: boolean): string {
-      const rootAndKid = `  class Root
+    // Baseline: Root/Kid declared after the whole cycle, Kid narrow enough
+    // to never need more room than the gap next to Root provides.
+    const nonOverlapping = renderMermaidASCII(
+      `classDiagram
+  class Alpha
+  class Mid {
+${manyAttrs('b', 6)}
+  }
+  class Charlie
+  class Root
   class Kid
-`
-      return `classDiagram
-${rootDeclaredBetweenAlphaAndMid ? '' : rootAndKid}  class Alpha
-${rootDeclaredBetweenAlphaAndMid ? rootAndKid : ''}  class Mid {
+  Alpha --> Mid
+  Mid --> Charlie
+  Charlie --> Alpha
+  Root --> Kid`,
+      { useAscii: true },
+    )
+    // Overlapping: Root declared immediately after Alpha, Kid wide enough
+    // that centering it under Root's (narrow) column reaches into Alpha's.
+    const overlapping = renderMermaidASCII(
+      `classDiagram
+  class Alpha
+  class Root
+  class VeryLongKidName
+  class Mid {
 ${manyAttrs('b', 6)}
   }
   class Charlie
   Alpha --> Mid
   Mid --> Charlie
   Charlie --> Alpha
-  Root --> Kid`
-    }
-
-    const nonOverlapping = renderMermaidASCII(withRootKid(false), {
-      useAscii: true,
-    })
-    const overlapping = renderMermaidASCII(withRootKid(true), {
-      useAscii: true,
-    })
-
-    // Confirms the geometry this test relies on: in the "overlapping"
-    // ordering, Kid really does sit on a different row from the cycle, and
-    // really does overlap Alpha's own column range (i.e. the obstruction
-    // search has something to incorrectly notice if the different-row
-    // filter is missing); in the "non-overlapping" ordering, it doesn't.
-    const overlappingAlphaRect = findBoxRect(overlapping, 'Alpha')
-    const overlappingKidRect = findBoxRect(overlapping, 'Kid')
-    expect(overlappingKidRect.y0).toBeGreaterThan(overlappingAlphaRect.y1)
-    expect(overlappingKidRect.x0).toBeLessThan(overlappingAlphaRect.x1)
-    const nonOverlappingAlphaRect = findBoxRect(nonOverlapping, 'Alpha')
-    const nonOverlappingKidRect = findBoxRect(nonOverlapping, 'Kid')
-    expect(nonOverlappingKidRect.x1).toBeLessThanOrEqual(
-      nonOverlappingAlphaRect.x0,
+  Root --> VeryLongKidName`,
+      { useAscii: true },
     )
 
-    for (const ascii of [nonOverlapping, overlapping]) {
-      expectAllPresentOnce(ascii, [
-        '+ b0: String',
-        '+ b1: String',
-        '+ b2: String',
-        '+ b3: String',
-        '+ b4: String',
-        '+ b5: String',
-      ])
-      expectNoBoxOverlap(ascii, ['Alpha', 'Mid', 'Charlie', 'Root', 'Kid'])
-    }
+    // Confirms the geometry this test relies on: in the "overlapping"
+    // variant, Kid really does sit on a different row from the cycle, and
+    // really does overlap Alpha's own column range (i.e. the obstruction
+    // search has something to incorrectly notice if the different-row
+    // filter is missing); in the baseline, it doesn't.
+    const overlappingAlphaRect = findBoxRect(overlapping, 'Alpha')
+    const overlappingKidRect = findBoxRect(overlapping, 'VeryLongKidName')
+    expect(overlappingKidRect.y0).toBeGreaterThan(overlappingAlphaRect.y1)
+    expect(overlappingKidRect.x0).toBeLessThanOrEqual(overlappingAlphaRect.x1)
+    const nonOverlappingAlphaRect = findBoxRect(nonOverlapping, 'Alpha')
+    const nonOverlappingKidRect = findBoxRect(nonOverlapping, 'Kid')
+    expect(
+      nonOverlappingKidRect.x1 < nonOverlappingAlphaRect.x0 ||
+        nonOverlappingKidRect.x0 > nonOverlappingAlphaRect.x1,
+    ).toBe(true)
+
+    expectAllPresentOnce(nonOverlapping, [
+      '+ b0: String',
+      '+ b1: String',
+      '+ b2: String',
+      '+ b3: String',
+      '+ b4: String',
+      '+ b5: String',
+    ])
+    expectNoBoxOverlap(nonOverlapping, [
+      'Alpha',
+      'Mid',
+      'Charlie',
+      'Root',
+      'Kid',
+    ])
+    expectAllPresentOnce(overlapping, [
+      '+ b0: String',
+      '+ b1: String',
+      '+ b2: String',
+      '+ b3: String',
+      '+ b4: String',
+      '+ b5: String',
+    ])
+    expectNoBoxOverlap(overlapping, ['Alpha', 'Mid', 'Charlie', 'Root'])
 
     // The real check: Kid overlapping the detour span must not change the
     // cycle's own rendered height compared to Kid sitting clear of it.
