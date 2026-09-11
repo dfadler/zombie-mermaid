@@ -280,6 +280,34 @@ body {
   .editor-features-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* editor-fullscreen.ts's useEditorFullscreen requestFullscreen()s this
+ * exact element -- the browser then promotes it to the "top layer" and
+ * applies its own UA-stylesheet :fullscreen sizing, but author rules
+ * (this one included) outrank that UA default regardless of specificity,
+ * so the card's normal bordered/max-width/centered/fixed-height layout
+ * above would otherwise keep confining it. :fullscreen's own specificity
+ * (a pseudo-class, same weight as a plain class) already outranks every
+ * plain ".editor-tool-shell" rule above including the @media-scoped
+ * height overrides, so this doesn't need to be more specific than them,
+ * just present. background: var(--t-bg) (not a literal hex, unlike this
+ * card's border/shadow above) is deliberate: --t-bg is the *tool's* own
+ * light/dark chrome token, correctly in scope here since .editor-tool-
+ * shell is that token's own scope root, not the design-system palette's
+ * -- see editor-dark-mode.ts's applyChromeColorMode. -webkit-full-screen
+ * covers Safari < 16.4. */
+.editor-tool-shell:fullscreen,
+.editor-tool-shell:-webkit-full-screen {
+  max-width: none;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--t-bg);
 }`
 }
 

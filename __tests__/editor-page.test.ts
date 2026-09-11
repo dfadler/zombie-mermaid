@@ -151,8 +151,14 @@ describe('EditorPage', () => {
     const shellStart = html.indexOf('<div class="editor-tool-shell">')
     expect(shellStart).toBeGreaterThan(-1)
     const shell = html.slice(shellStart)
+    // `#editor-root` carries `style="display:contents"` so it contributes
+    // no box to `.editor-tool-shell`'s flex layout -- `.main`'s `flex: 1`
+    // only applies to a flex container's *direct* children, so without
+    // this a plain `display:block` wrapper here would size to its own
+    // content instead of stretching (see editor-app-island.tsx's doc
+    // comment).
     expect(shell).toMatch(
-      /^<div class="editor-tool-shell"><div id="editor-root">(?:<!--.*?-->)?<div class="topbar">/,
+      /^<div class="editor-tool-shell"><div id="editor-root" style="display:contents">(?:<!--.*?-->)?<div class="topbar">/,
     )
     expect(shell).toMatch(/<div class="main"><div class="panel-left"/)
     expect(shell).toMatch(
@@ -195,7 +201,7 @@ describe('EditorPage', () => {
     // renderToString's hydration-boundary comments, which
     // renderToStaticMarkup never emits.
     const page = render()
-    const rootMarker = '<div id="editor-root">'
+    const rootMarker = '<div id="editor-root" style="display:contents">'
     const rootStart = page.indexOf(rootMarker) + rootMarker.length
     const rootEnd = page.indexOf(
       '<script type="application/json" id="editor-props">',
