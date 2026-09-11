@@ -27,16 +27,28 @@ on:
     branches: [main]
 
 permissions:
-  # `gh pr diff` reads PR metadata (pull-requests). The comment itself is
-  # posted via `gh api repos/.../issues/{number}/comments` (REST), which
-  # only needs `issues: write` — NOT `gh pr comment`, which goes through
-  # the GraphQL `addComment` mutation and requires `pull-requests: write`
-  # even for a comment on a pull request (see dfadler/zombie-mermaid#493,
-  # runs 33980953733/33980954246: `gh pr comment` failed here with
-  # "Resource not accessible by integration (addComment)" under
-  # `pull-requests: read`). Posting via the REST issues-comments endpoint
-  # keeps this workflow's PR permission at read-only.
-  pull-requests: read
+  # `gh pr diff` reads PR metadata (pull-requests).
+  #
+  # An earlier revision kept this at `pull-requests: read`, on the theory
+  # that posting via the REST `issues/{number}/comments` endpoint (as
+  # opposed to `gh pr comment`'s GraphQL `addComment` mutation) only needs
+  # `issues: write`. That theory held for the switch away from `gh pr
+  # comment` (see dfadler/zombie-mermaid#493, runs
+  # 33980953733/33980954246: GraphQL `addComment` failed under
+  # `pull-requests: read`) but turned out to be wrong for the REST
+  # endpoint too: with `issues: write` + `pull-requests: read`, the same
+  # `gh api .../issues/{number}/comments` POST still 403'd —
+  # "Resource not accessible by integration" — on every `bug`-labeled PR
+  # that reached this step (see dfadler/zombie-mermaid#295, run
+  # https://github.com/dfadler/zombie-mermaid/actions/runs/33980954246/job/101345954704
+  # and the later run on PR #984,
+  # https://github.com/dfadler/zombie-mermaid/actions/runs/34624341273,
+  # both with `Issues: write` confirmed granted in the job's own
+  # "GITHUB_TOKEN Permissions" debug output). Commenting on a PR through
+  # the issues-comments REST endpoint apparently still requires
+  # `pull-requests: write` in practice, not just `issues: write` — grant
+  # both rather than re-relitigating this.
+  pull-requests: write
   issues: write
 
 jobs:
