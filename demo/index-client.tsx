@@ -18,9 +18,13 @@
  * app.tsx`'s header comment for why `ThemeShowcase` has to sit between
  * them, unhydrated by either), so this mirrors calling `hydrateRoot()`
  * once per island the same way `dashboard-client.tsx` calls it once for
- * `DashboardApp` and once (via {@link hydrateNav}) for `<Nav>`. Neither
- * app takes props, so there is no `<script type="application/json">` to
- * read back first — see `index-app.tsx`'s header comment for why.
+ * `DashboardApp` and once (via {@link hydrateNav}) for `<Nav>`.
+ * `IndexMainApp` takes no props, so it hydrates directly; `IndexHeroApp`
+ * needs its real `asciiHtml` prop read back from
+ * `#index-hero-props`' `<script type="application/json">` element first
+ * (via {@link readIndexHeroAppProps}) — the same
+ * `diagram-type-app.tsx`/`demo/diagram-type-client.tsx` pattern, see
+ * `index-app.tsx`'s header comment for why.
  *
  * `<NavIsland>` hydrates here too, via {@link hydrateNav}, in the same
  * bundle rather than a separate `nav-only-client.tsx` bundle — see
@@ -34,7 +38,9 @@ import {
   IndexHeroApp,
   IndexMainApp,
   INDEX_HERO_ROOT_ID,
+  INDEX_HERO_PROPS_ELEMENT_ID,
   INDEX_MAIN_ROOT_ID,
+  type IndexHeroAppProps,
 } from './components/index-app.tsx'
 import { hydrateNav } from './nav-client.tsx'
 
@@ -49,8 +55,21 @@ function hydrateContainer(
   hydrateRoot(container, node)
 }
 
+function readIndexHeroAppProps(): IndexHeroAppProps {
+  const propsEl = document.getElementById(INDEX_HERO_PROPS_ELEMENT_ID)
+  if (!propsEl?.textContent) {
+    throw new Error(
+      `index-client: no #${INDEX_HERO_PROPS_ELEMENT_ID} element with JSON content found`,
+    )
+  }
+  return JSON.parse(propsEl.textContent) as IndexHeroAppProps
+}
+
 function main(): void {
-  hydrateContainer(INDEX_HERO_ROOT_ID, createElement(IndexHeroApp))
+  hydrateContainer(
+    INDEX_HERO_ROOT_ID,
+    createElement(IndexHeroApp, readIndexHeroAppProps()),
+  )
   hydrateContainer(INDEX_MAIN_ROOT_ID, createElement(IndexMainApp))
   hydrateNav()
 }
