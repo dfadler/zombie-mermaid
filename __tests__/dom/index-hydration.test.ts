@@ -28,10 +28,22 @@ import {
   IndexMainApp,
   INDEX_HERO_ROOT_ID,
   INDEX_MAIN_ROOT_ID,
+  type IndexHeroAppProps,
 } from '../../demo/components/index-app.tsx'
 import { NavIsland } from '../../demo/components/nav-island.tsx'
 import { NAV_INSTALL_COMMAND, NAV_ROOT_ID } from '../../demo/components/nav.tsx'
 import { hydrateNav } from '../../demo/nav-client.tsx'
+
+/**
+ * A fixture, not real `renderMermaidASCII()` output -- this file tests
+ * hydration plumbing, not ASCII rendering (that's `ascii-html.ts`/
+ * `packages/ascii-renderer`'s own coverage). Passed identically at every
+ * `IndexHeroApp` call site below, the same fixture pattern
+ * `diagram-type-hydration.test.ts`'s `SINGLE_ORIENTATION_PROPS` uses.
+ */
+const INDEX_HERO_APP_PROPS: IndexHeroAppProps = {
+  asciiHtml: '<pre>fixture</pre>',
+}
 
 let heroRoot: Root | undefined
 let mainRoot: Root | undefined
@@ -48,7 +60,7 @@ describe('IndexHeroApp hydration (#804)', () => {
   function renderServerHtmlIntoDocument(): void {
     document.body.innerHTML = renderToString(
       createElement('div', { id: INDEX_HERO_ROOT_ID }, [
-        createElement(IndexHeroApp, { key: 'app' }),
+        createElement(IndexHeroApp, { key: 'app', ...INDEX_HERO_APP_PROPS }),
       ]),
     )
   }
@@ -70,7 +82,10 @@ describe('IndexHeroApp hydration (#804)', () => {
     let thrown: unknown
     try {
       await act(async () => {
-        heroRoot = hydrateRoot(container, createElement(IndexHeroApp))
+        heroRoot = hydrateRoot(
+          container,
+          createElement(IndexHeroApp, INDEX_HERO_APP_PROPS),
+        )
       })
     } catch (err) {
       thrown = err
@@ -89,7 +104,10 @@ describe('IndexHeroApp hydration (#804)', () => {
     if (!container) throw new Error('test setup: root container missing')
 
     act(() => {
-      heroRoot = hydrateRoot(container, createElement(IndexHeroApp))
+      heroRoot = hydrateRoot(
+        container,
+        createElement(IndexHeroApp, INDEX_HERO_APP_PROPS),
+      )
     })
 
     expect(
@@ -123,7 +141,7 @@ describe('HeroInstall package-manager selector (#902)', () => {
   function renderServerHtmlIntoDocument(): void {
     document.body.innerHTML = renderToString(
       createElement('div', { id: INDEX_HERO_ROOT_ID }, [
-        createElement(IndexHeroApp, { key: 'app' }),
+        createElement(IndexHeroApp, { key: 'app', ...INDEX_HERO_APP_PROPS }),
       ]),
     )
   }
@@ -134,7 +152,10 @@ describe('HeroInstall package-manager selector (#902)', () => {
     if (!container) throw new Error('test setup: root container missing')
 
     act(() => {
-      heroRoot = hydrateRoot(container, createElement(IndexHeroApp))
+      heroRoot = hydrateRoot(
+        container,
+        createElement(IndexHeroApp, INDEX_HERO_APP_PROPS),
+      )
     })
 
     const user = userEvent.setup()
@@ -253,7 +274,7 @@ describe('NavIsland hydrates side by side with both index apps (#804)', () => {
       ) +
       renderToString(
         createElement('div', { id: INDEX_HERO_ROOT_ID }, [
-          createElement(IndexHeroApp, { key: 'hero' }),
+          createElement(IndexHeroApp, { key: 'hero', ...INDEX_HERO_APP_PROPS }),
         ]),
       ) +
       renderToString(
@@ -269,7 +290,10 @@ describe('NavIsland hydrates side by side with both index apps (#804)', () => {
     }
 
     await act(async () => {
-      heroRoot = hydrateRoot(heroContainer, createElement(IndexHeroApp))
+      heroRoot = hydrateRoot(
+        heroContainer,
+        createElement(IndexHeroApp, INDEX_HERO_APP_PROPS),
+      )
     })
     await act(async () => {
       mainRoot = hydrateRoot(mainContainer, createElement(IndexMainApp))

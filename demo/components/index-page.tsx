@@ -50,6 +50,9 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import { renderToString } from 'react-dom/server'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { asciiToHtml } from '../../ascii-html.ts'
+import { escapeJsonForScriptTag } from '../format.ts'
 import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { NavMobileMenuScript } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
@@ -72,8 +75,11 @@ import {
   IndexHeroApp,
   IndexMainApp,
   INDEX_HERO_ROOT_ID,
+  INDEX_HERO_PROPS_ELEMENT_ID,
   INDEX_MAIN_ROOT_ID,
+  type IndexHeroAppProps,
 } from './index-app.tsx'
+import { HERO_MERMAID_SOURCE } from './hero-output-panel.tsx'
 
 // Re-exported for existing callers/tests that import these from
 // index-page.tsx rather than index-app.tsx directly (this file was the
@@ -82,8 +88,26 @@ export {
   IndexHeroApp,
   IndexMainApp,
   INDEX_HERO_ROOT_ID,
+  INDEX_HERO_PROPS_ELEMENT_ID,
   INDEX_MAIN_ROOT_ID,
 } from './index-app.tsx'
+
+/**
+ * The hero output panel's real ASCII state — `renderMermaidASCII` run
+ * against the exact same source {@link HeroCodePanel} (in
+ * `hero-output-panel.tsx`) displays, then column-width-corrected the same
+ * way `fork-fixes.ts` already does for its own ASCII panels
+ * (`asciiToHtml`, trailing-whitespace stripped per line first).
+ * `colorMode: 'none'` matches the CLI's own default for a non-TTY target —
+ * `'auto'`'s TTY detection behaves differently under Node than a real
+ * terminal, which this build-time call is not.
+ */
+const heroAsciiHtml = asciiToHtml(
+  renderMermaidASCII(HERO_MERMAID_SOURCE, { colorMode: 'none' }).replace(
+    /[ \t]+$/gm,
+    '',
+  ),
+)
 
 const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid/'
@@ -490,6 +514,20 @@ ${MEDIA.reducedMotion} {
   .theme-showcase-burst-ring.active { animation: none !important; opacity: 0 !important; }
 }
 
+.output-segment {
+  border: none;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  font-family: inherit;
+  font-size: ${FONT_SIZE.caption}px;
+  font-weight: 700;
+  padding: ${SPACE.xxs}px ${SPACE.md}px;
+  border-radius: ${RADIUS.pill}px;
+  cursor: pointer;
+}
+.output-segment.active { background: ${colorVar('--panel-2')}; color: ${colorVar('--text')}; }
+.output-segment:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
+
 ${HERO_STACK_MEDIA} {
   .hero-row { flex-direction: column !important; align-items: flex-start !important; padding-top: 64px !important; gap: 40px !important; }
   .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }
@@ -509,6 +547,16 @@ ${MEDIA.tablet} {
 ${MEDIA.mobile} {
   .hero-row { padding: 48px 20px 56px 20px !important; }
   .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
+  /* align-items: stretch (not the row layout's flex-start) so both panels
+     fill the column's full width -- a "width: 100%" override here would
+     double-count each panel's own padding/border on top of that 100%,
+     since this codebase has no global box-sizing: border-box reset. */
+  .hero-visual { flex-direction: column !important; align-items: stretch !important; }
+  /* hero-code-panel's own flex: 0 0 240px is a *row*-layout width basis --
+     flex-basis targets whichever axis is currently the main axis, so left
+     as-is it would try to make this 240px *tall* once the row above turns
+     this into a column. Reset it to a normal auto-sized block instead. */
+  .hero-code-panel { flex: 1 1 auto !important; }
   .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
   .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
@@ -1081,7 +1129,19 @@ export function IndexPage({
           id={INDEX_HERO_ROOT_ID}
           dangerouslySetInnerHTML={{
             // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own IndexHeroApp component tree rendered via renderToString (see the comment above); never user input
-            __html: renderToString(<IndexHeroApp />),
+            __html: renderToString(<IndexHeroApp asciiHtml={heroAsciiHtml} />),
+          }}
+        />
+        <script
+          type="application/json"
+          id={INDEX_HERO_PROPS_ELEMENT_ID}
+          dangerouslySetInnerHTML={{
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own IndexHeroAppProps, escaped with escapeJsonForScriptTag; never user input
+            __html: escapeJsonForScriptTag(
+              JSON.stringify({
+                asciiHtml: heroAsciiHtml,
+              } satisfies IndexHeroAppProps),
+            ),
           }}
         />
         <ThemeShowcase />

@@ -1,10 +1,15 @@
 // @vitest-environment jsdom
 /**
  * Dedicated render coverage for `demo/components/hero-visual.tsx`'s
- * `HeroVisual`, split out of `index-app.tsx` (zombie-mermaid#932). Its
- * hydration/visual behavior as part of the real hero is already covered by
- * `__tests__/dom/index-hydration.test.ts`; this just proves the component
- * itself renders the static hero image with its accessible alt text.
+ * `HeroVisual`, split out of `index-app.tsx` (zombie-mermaid#932).
+ * `IndexHeroApp` no longer renders this component — the homepage hero uses
+ * `hero-output-panel.tsx`'s `HeroCodePanel`/`HeroOutputPanel` instead (see
+ * `index-app.tsx`'s header comment) — but `HeroVisual` stays, and stays
+ * tested, because `scripts/generate-hero.ts` still reads
+ * `public/hero-visual.svg` directly as the README's own hero.svg source of
+ * truth, and a static `<img>` is the right choice there (GitHub can't run
+ * a click-to-toggle). This just proves the component itself still renders
+ * that static hero image with its accessible alt text.
  */
 import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
