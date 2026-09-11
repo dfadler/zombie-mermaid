@@ -38,6 +38,7 @@ import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
+  DiagramDetailPage,
   DiagramHubPage,
   DiagramTypePage,
 } from '../../demo/components/diagram-page.tsx'
@@ -159,6 +160,97 @@ describe('DiagramTypePage (#821)', () => {
 
     // galleryItems: [] — MoreExamplesSection renders nothing.
     expect(screen.queryByText('More real-world examples.')).toBeNull()
+  })
+})
+
+describe('DiagramDetailPage (#989)', () => {
+  const baseProps = {
+    typeLabel: 'Flowchart',
+    typeHref: '../flowchart.html',
+    accent: 'blue' as const,
+    sampleTitle: 'CI/CD Pipeline',
+    sampleDescription: 'A realistic CI/CD pipeline with decision points.',
+    sourceFilename: 'ci-cd-pipeline.mmd',
+    sourceHtml: '<pre class="shiki"><code>graph TD</code></pre>',
+    svgHtml: '<svg data-diagram="detail-svg"></svg>',
+    asciiHtml: '<span style="color:#27272A">detail-ascii-output</span>',
+    editorHref: '../../editor#eyJzb3VyY2UiOiJ6In0=',
+    title: 'CI/CD Pipeline | Flowchart diagram | Zombie Mermaid',
+    description: 'Rendered live as both SVG and ASCII.',
+    canonical: 'https://example.test/diagrams/flowchart/ci-cd-pipeline.html',
+    cssHref: '../assets/diagram-page.css',
+    faviconHref: '../../favicon.svg',
+    clientScriptSrc: '../assets/diagram-detail-client.js',
+  }
+
+  it('renders the breadcrumb, heading, source, and the SVG output by default', () => {
+    render(createElement(DiagramDetailPage, { ...baseProps, moreFromType: [] }))
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'CI/CD Pipeline' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('A realistic CI/CD pipeline with decision points.'),
+    ).toBeInTheDocument()
+    // Breadcrumb: Home > Diagrams > Flowchart > CI/CD Pipeline.
+    expect(screen.getByRole('link', { name: 'Flowchart' })).toHaveAttribute(
+      'href',
+      '../flowchart.html',
+    )
+    expect(screen.getByText('graph TD')).toBeInTheDocument()
+    // SVG state is the default -- ASCII hasn't been clicked yet, so only
+    // the svg branch is in the DOM (DetailOutputPanel renders one branch
+    // at a time, unlike DiagramTypePage's orientation variants above,
+    // which render both and let CSS pick).
+    expect(
+      document.querySelector('.diagram-frame svg[data-diagram="detail-svg"]'),
+    ).not.toBeNull()
+    expect(screen.queryByText('detail-ascii-output')).toBeNull()
+    expect(
+      screen.getByRole('link', { name: 'Open in the live editor' }),
+    ).toHaveAttribute('href', '../../editor#eyJzb3VyY2UiOiJ6In0=')
+  })
+
+  // The SVG/ASCII toggle's actual click -> state-change behavior isn't
+  // testable at this shell level: DiagramDetailPage embeds DiagramDetailApp
+  // via `renderToString` + `dangerouslySetInnerHTML` (inert markup, no
+  // React event handlers attached) -- exactly like DiagramTypePage's own
+  // gallery/theme-pill content above. That interaction is covered by
+  // hydrating DiagramDetailApp directly, in
+  // __tests__/dom/diagram-type-hydration.test.ts's "DiagramDetailApp
+  // hydration (#989)" block, the same split that file's own header comment
+  // already documents for DiagramTypeApp's Nav copy-button and theme-pill
+  // interactions.
+
+  it('renders "More <type> examples" links when moreFromType is non-empty, and nothing when empty', () => {
+    const { unmount } = render(
+      createElement(DiagramDetailPage, {
+        ...baseProps,
+        moreFromType: [
+          {
+            title: 'Simple Flow',
+            href: './simple-flow.html',
+            diagramHtml: '<svg data-diagram="simple-flow"></svg>',
+          },
+        ],
+      }),
+    )
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'More Flowchart examples',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Simple Flow' })).toHaveAttribute(
+      'href',
+      './simple-flow.html',
+    )
+    unmount()
+
+    render(createElement(DiagramDetailPage, { ...baseProps, moreFromType: [] }))
+    expect(
+      screen.queryByRole('heading', { level: 2, name: /More .* examples/ }),
+    ).toBeNull()
   })
 })
 

@@ -188,3 +188,35 @@ export function moreExamplesFor(slug: string): Sample[] {
     (sample) => sample.category === category && sample.gallery === true,
   )
 }
+
+/**
+ * Every real sample for a diagram type — not gated by `sample.gallery`,
+ * unlike {@link moreExamplesFor}. Backs the per-sample detail pages
+ * (`/diagrams/<type>/<sample>.html`; see docs/decisions/diagram-tag-search.md's
+ * Context section and issue #989): the decision there was to show every
+ * example rather than the `moreExamplesFor` curated subset, since each one
+ * now gets its own indexable page instead of a shared "More examples" tile.
+ * Same order as `samples-data.ts` declares them.
+ */
+export function allExamplesFor(slug: string): Sample[] {
+  const category = GALLERY_CATEGORY[slug]
+  if (!category) return []
+  return samples.filter((sample) => sample.category === category)
+}
+
+/**
+ * URL-safe slug for one sample's detail page, e.g. "CI/CD Pipeline" ->
+ * "ci-cd-pipeline". Lowercases, replaces every run of non-alphanumeric
+ * characters with a single hyphen, and trims leading/trailing hyphens —
+ * the same scheme used to slug a `DiagramTypeProfile.slug` by hand
+ * elsewhere in this file, just applied to a sample title instead of typed
+ * out per type. Not guaranteed collision-free against a pathological title,
+ * but every real samples-data.ts title in the six diagram-type categories
+ * produces a distinct slug (checked by `__tests__/demo-diagram-pages-data.test.ts`).
+ */
+export function sampleSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}

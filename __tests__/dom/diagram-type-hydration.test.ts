@@ -38,6 +38,12 @@ import {
   DIAGRAM_HUB_ROOT_ID,
   type DiagramHubAppProps,
 } from '../../demo/components/diagram-hub-app.tsx'
+import {
+  DiagramDetailApp,
+  DIAGRAM_DETAIL_PROPS_ELEMENT_ID,
+  DIAGRAM_DETAIL_ROOT_ID,
+  type DiagramDetailAppProps,
+} from '../../demo/components/diagram-detail-app.tsx'
 import { NavIsland } from '../../demo/components/nav-island.tsx'
 import { NAV_INSTALL_COMMAND } from '../../demo/components/nav.tsx'
 import { hydrateNav } from '../../demo/nav-client.tsx'
@@ -88,6 +94,27 @@ const HUB_PROPS: DiagramHubAppProps = {
       label: 'Sequence diagram',
       intro: 'Sequence diagrams show messages between participants.',
       accent: 'cyan',
+    },
+  ],
+}
+
+const DETAIL_PROPS: DiagramDetailAppProps = {
+  typeLabel: 'Flowchart',
+  typeHref: '../flowchart.html',
+  accent: 'blue',
+  sampleTitle: 'CI/CD Pipeline',
+  sampleDescription: 'A realistic CI/CD pipeline with decision points.',
+  sourceFilename: 'ci-cd-pipeline.mmd',
+  sourceHtml: '<pre class="shiki"><code>graph TD</code></pre>',
+  svgHtml:
+    '<svg xmlns="http://www.w3.org/2000/svg" data-diagram="detail-svg"></svg>',
+  asciiHtml: '<span style="color:#27272A">detail-ascii-output</span>',
+  editorHref: '../../editor#test',
+  moreFromType: [
+    {
+      title: 'Simple Flow',
+      href: './simple-flow.html',
+      diagramHtml: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
     },
   ],
 }
@@ -342,5 +369,96 @@ describe('NavIsland hydrates side by side with each diagram app (#805)', () => {
       screen.getByRole('button', { name: 'Copy install command' }),
     )
     expect(writeText).toHaveBeenCalledWith(NAV_INSTALL_COMMAND)
+  })
+})
+
+describe('DiagramDetailApp hydration (#989)', () => {
+  function renderServerHtmlIntoDocument(): void {
+    document.body.innerHTML = renderToString(
+      createElement('div', { id: DIAGRAM_DETAIL_ROOT_ID }, [
+        createElement(DiagramDetailApp, { ...DETAIL_PROPS, key: 'app' }),
+      ]),
+    )
+  }
+
+  it('hydrates against server-rendered markup, including the embedded svg/shiki content, with no console warnings/errors', async () => {
+    renderServerHtmlIntoDocument()
+    const container = document.getElementById(DIAGRAM_DETAIL_ROOT_ID)
+    if (!container) throw new Error('test setup: root container missing')
+
+    const seen: unknown[][] = []
+    const originalError = console.error
+    const originalWarn = console.warn
+    console.error = (...args: unknown[]) => {
+      seen.push(args)
+    }
+    console.warn = (...args: unknown[]) => {
+      seen.push(args)
+    }
+    let thrown: unknown
+    try {
+      await act(async () => {
+        root = hydrateRoot(
+          container,
+          createElement(DiagramDetailApp, DETAIL_PROPS),
+        )
+      })
+    } catch (err) {
+      thrown = err
+    } finally {
+      console.error = originalError
+      console.warn = originalWarn
+    }
+
+    expect(thrown).toBeUndefined()
+    expect(seen).toEqual([])
+  })
+
+  it('renders the real heading and SVG output once hydrated, then switches to ASCII and back on click', async () => {
+    renderServerHtmlIntoDocument()
+    const container = document.getElementById(DIAGRAM_DETAIL_ROOT_ID)
+    if (!container) throw new Error('test setup: root container missing')
+
+    act(() => {
+      root = hydrateRoot(
+        container,
+        createElement(DiagramDetailApp, DETAIL_PROPS),
+      )
+    })
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'CI/CD Pipeline' }),
+    ).toBeInTheDocument()
+    expect(
+      document.querySelector('.diagram-frame svg[data-diagram="detail-svg"]'),
+    ).not.toBeNull()
+    expect(screen.queryByText('detail-ascii-output')).toBeNull()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'ASCII' }))
+    expect(screen.getByText('detail-ascii-output')).toBeInTheDocument()
+    expect(
+      document.querySelector('.diagram-frame svg[data-diagram="detail-svg"]'),
+    ).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'SVG' }))
+    expect(
+      document.querySelector('.diagram-frame svg[data-diagram="detail-svg"]'),
+    ).not.toBeNull()
+    expect(screen.queryByText('detail-ascii-output')).toBeNull()
+  })
+})
+
+describe('demo/diagram-detail-client.tsx props contract', () => {
+  it("diagram-page.tsx's embedded JSON round-trips through DIAGRAM_DETAIL_PROPS_ELEMENT_ID exactly as the client reads it", () => {
+    const scriptEl = document.createElement('script')
+    scriptEl.type = 'application/json'
+    scriptEl.id = DIAGRAM_DETAIL_PROPS_ELEMENT_ID
+    scriptEl.textContent = JSON.stringify(DETAIL_PROPS)
+    document.body.appendChild(scriptEl)
+
+    const read = document.getElementById(DIAGRAM_DETAIL_PROPS_ELEMENT_ID)
+    expect(read?.textContent).toBeTruthy()
+    expect(JSON.parse(read?.textContent ?? '')).toEqual(DETAIL_PROPS)
   })
 })

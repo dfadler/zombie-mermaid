@@ -1,0 +1,520 @@
+/** @jsxRuntime automatic */
+/**
+ * The per-sample diagram detail page's *hydrated* content
+ * (`/diagrams/<type>/<sample>.html`, zombie-mermaid#989, implementing the
+ * design drafted on
+ * <https://claude.ai/code/artifact/5f6f7f34-15a9-45c1-8ede-ecde2d214367>):
+ * breadcrumb, header, the "Source → render" split panel with a real
+ * SVG/ASCII output toggle, and a "More `<type>` examples" cross-link grid
+ * back into the type directory.
+ *
+ * Reuses `diagram-type-app.tsx`'s established visual vocabulary (the
+ * traffic-light file tab, `Card tone="glow"` render panel, breadcrumb
+ * styling, `MEDIA`/`SPACE`/`FONT_SIZE` tokens) rather than inventing a
+ * second one — this page is one level deeper in the same `diagrams/`
+ * hierarchy, not a different product area.
+ *
+ * The SVG/ASCII toggle ({@link DetailOutputPanel}) is the same interaction
+ * `hero-output-panel.tsx`'s `HeroOutputPanel` already ships on the home
+ * page — a segmented `.output-segment`/`.output-segment.active` button
+ * pair driven by local `useState`, not a new pattern. This is a separate
+ * component rather than a direct reuse of `HeroOutputPanel`: that one
+ * hardcodes the fixed hero diagram (`HeroFlowchartSvg`) and its own plain
+ * bordered panel chrome, where this page needs an arbitrary per-sample
+ * `svgHtml` and the accent-tinted `Card tone="glow"` treatment
+ * `diagram-type-app.tsx`'s "Source → render" panel already established for
+ * this page family — so the *toggle bar and class names* are reused
+ * (`.output-segment` is defined identically in `diagram-page.tsx`'s
+ * `pageCss`), but the outer chrome and props are this page's own.
+ *
+ * No per-sample feature tags (e.g. "Subgraph", "Decision diamond") yet —
+ * those were illustrative on the design canvas, not real data; a real
+ * construct taxonomy across all six diagram types is issue #991's job, not
+ * this one's.
+ *
+ * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
+ * see the `jsx` comment in demo/tsconfig.json.
+ */
+import { useState } from 'react'
+import { ChevronRightIcon } from './icons.tsx'
+import { Card, CTA, type Accent, accentVar } from './primitives.tsx'
+import {
+  FONT_SIZE,
+  LAYOUT,
+  LETTER_SPACING,
+  SECTION_SPACE,
+  SPACE,
+  colorVar,
+} from './tokens.tsx'
+import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
+
+export { HOME_HREF }
+
+/**
+ * Real destinations for nav.tsx's `NAV_ITEMS`/footer.tsx's
+ * `FOOTER_COLUMNS`, relative to a page under `diagrams/<type>/` — one level
+ * deeper than `diagram-type-app.tsx`'s own `NAV_HREFS`, which is scoped to
+ * `diagrams/<type>.html`. Deliberately a separate constant, not that one
+ * reused: reusing it here would silently point every link on this page one
+ * directory too shallow (`../editor` instead of `../../editor`, etc.) —
+ * exactly the class of bug `site-chrome.tsx`'s own header comment says
+ * `HOME_HREF`/`ROOT_NAV_HREFS` exist to stop happening again.
+ */
+export const NAV_HREFS = {
+  diagrams: '../',
+  editor: '../../editor',
+  forkFixes: '../../fork-fixes.html',
+  blog: '../../blog/',
+  github: FORK_URL,
+} as const
+
+function DetailBreadcrumb({
+  typeLabel,
+  typeHref,
+  sampleTitle,
+  accent,
+}: {
+  typeLabel: string
+  typeHref: string
+  sampleTitle: string
+  accent: Accent
+}) {
+  return (
+    <div className="breadcrumb mono">
+      <a href={HOME_HREF}>Home</a>
+      <ChevronRightIcon size={12} strokeWidth={2.4} />
+      <a href={NAV_HREFS.diagrams}>Diagrams</a>
+      <ChevronRightIcon size={12} strokeWidth={2.4} />
+      <a href={typeHref}>{typeLabel}</a>
+      <ChevronRightIcon size={12} strokeWidth={2.4} />
+      <span style={{ color: accentVar(accent) }}>{sampleTitle}</span>
+    </div>
+  )
+}
+
+/** The traffic-light file tab above the source panel — lifted verbatim
+ * from `diagram-type-app.tsx`'s inline markup (not exported there), since
+ * every page under `diagrams/` draws its own copy rather than sharing a
+ * component across files that share nothing at runtime. */
+function FileTab({ filename }: { filename: string }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: `${SPACE.xs}px`,
+        padding: `${SPACE.xl}px ${SPACE['2xl']}px`,
+        borderBottom: `1px solid ${colorVar('--border')}`,
+        background: colorVar('--panel-2'),
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          width: '10px',
+          height: '10px',
+          borderRadius: '50%',
+          background: '#ff6767',
+          display: 'inline-block',
+        }}
+      />
+      <span
+        style={{
+          width: '10px',
+          height: '10px',
+          borderRadius: '50%',
+          background: '#ffc85c',
+          display: 'inline-block',
+        }}
+      />
+      <span
+        style={{
+          width: '10px',
+          height: '10px',
+          borderRadius: '50%',
+          background: '#5ee08a',
+          display: 'inline-block',
+        }}
+      />
+      <span
+        className="mono"
+        style={{
+          marginLeft: `${SPACE.sm}px`,
+          fontSize: `${FONT_SIZE.caption}px`,
+          color: colorVar('--text-faint'),
+        }}
+      >
+        {filename}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * The real ASCII output's style. Unlike `hero-output-panel.tsx`'s
+ * `HERO_ASCII_STYLE` (a single flat `--text-dim` color, because the home
+ * hero renders its ASCII with `colorMode: 'none'` on the dark page chrome
+ * directly), this page's `asciiHtml` prop is rendered with `colorMode:
+ * 'html'` + `diagramColorsToAsciiTheme(DEFAULT_SWATCH)` (pages.ts) — the
+ * same per-role-colored technique `index-page.tsx`'s theme showcase uses —
+ * so every character already carries its own color span. Those spans are
+ * derived from `DEFAULT_SWATCH`'s light theme (`#FFFFFF`/`#27272A`), the
+ * same colors `renderMermaidSVG` paints into its own `<svg
+ * style="background:...">` for this page's SVG state, so the ASCII panel
+ * gets an explicit matching white background here — without it, that
+ * light-theme text would sit unreadable on this page's dark `--panel`
+ * chrome, and the two toggle states would look like different products
+ * instead of two views of the same diagram. `color` is only a fallback for
+ * stray unspanned whitespace text nodes, not the real text color.
+ */
+const ASCII_OUTPUT_STYLE = {
+  margin: 0,
+  width: '100%',
+  overflowX: 'auto' as const,
+  whiteSpace: 'pre' as const,
+  fontVariantLigatures: 'none' as const,
+  fontSize: `${FONT_SIZE.bodySm}px`,
+  lineHeight: 1.5,
+  color: '#27272A',
+  background: '#FFFFFF',
+  borderRadius: '12px',
+  padding: `${SPACE.xl}px ${SPACE['2xl']}px`,
+  minWidth: 0,
+}
+
+/**
+ * The "Source → render" panel's render half: a segmented SVG/ASCII toggle
+ * (`.output-segment`/`.output-segment.active`, defined identically in
+ * `diagram-page.tsx`'s `pageCss` — same classes `hero-output-panel.tsx`'s
+ * `HeroOutputPanel` uses on the home page, see this file's header comment)
+ * over the two pre-rendered outputs. `useState` plus plain click handlers,
+ * the same shape `HeroOutputPanel` already proves safe in a hydrated demo
+ * page — not a new interactivity pattern for this codebase.
+ */
+function DetailOutputPanel({
+  svgHtml,
+  asciiHtml,
+}: {
+  svgHtml: string
+  asciiHtml: string
+}) {
+  const [mode, setMode] = useState<'svg' | 'ascii'>('svg')
+
+  return (
+    <>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: `${SPACE.md}px ${SPACE.xl}px`,
+          background: colorVar('--panel-2'),
+          borderBottom: `1px solid ${colorVar('--border')}`,
+          flexShrink: 0,
+        }}
+      >
+        <span
+          className="mono"
+          style={{
+            fontSize: `${FONT_SIZE.micro}px`,
+            letterSpacing: LETTER_SPACING.eyebrow,
+            textTransform: 'uppercase',
+            color: colorVar('--text-faint'),
+          }}
+        >
+          Output
+        </span>
+        <div
+          style={{
+            display: 'flex',
+            gap: '2px',
+            background: colorVar('--panel'),
+            borderRadius: '999px',
+            padding: '2px',
+          }}
+        >
+          <button
+            type="button"
+            className={`output-segment${mode === 'svg' ? ' active' : ''}`}
+            aria-pressed={mode === 'svg'}
+            onClick={() => setMode('svg')}
+          >
+            SVG
+          </button>
+          <button
+            type="button"
+            className={`output-segment${mode === 'ascii' ? ' active' : ''}`}
+            aria-pressed={mode === 'ascii'}
+            onClick={() => setMode('ascii')}
+          >
+            ASCII
+          </button>
+        </div>
+      </div>
+      <div
+        style={{
+          flex: '1 1 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: `${SPACE['5xl']}px`,
+          overflow: 'auto',
+        }}
+      >
+        {mode === 'svg' ? (
+          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+          <div
+            className="diagram-frame"
+            style={{ width: '100%' }}
+            dangerouslySetInnerHTML={{ __html: svgHtml }}
+          />
+        ) : (
+          <pre
+            className="mono"
+            style={ASCII_OUTPUT_STYLE}
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output, entity-escaped by the renderer itself, never user input (see the file header)
+            dangerouslySetInnerHTML={{ __html: asciiHtml }}
+          />
+        )}
+      </div>
+    </>
+  )
+}
+
+export interface DiagramDetailCrosslink {
+  title: string
+  href: string
+  diagramHtml: string
+}
+
+/**
+ * `diagram-detail-root`: id of the *hydration container*
+ * `demo/diagram-detail-client.tsx`'s `hydrateRoot()` call mounts onto —
+ * see `diagram-hub-app.tsx`'s `DIAGRAM_HUB_ROOT_ID` doc comment for the
+ * same reasoning.
+ */
+export const DIAGRAM_DETAIL_ROOT_ID = 'diagram-detail-root'
+
+/**
+ * `diagram-detail-props`: the `<script type="application/json">` element
+ * `demo/diagram-detail-client.tsx` reads {@link DiagramDetailAppProps} out
+ * of.
+ */
+export const DIAGRAM_DETAIL_PROPS_ELEMENT_ID = 'diagram-detail-props'
+
+export interface DiagramDetailAppProps {
+  typeLabel: string
+  typeHref: string
+  accent: Accent
+  sampleTitle: string
+  sampleDescription: string
+  sourceFilename: string
+  /** shiki-highlighted Mermaid source (github-dark theme, matching the type page's source panel). */
+  sourceHtml: string
+  /** `renderMermaidSVG` output for this sample. */
+  svgHtml: string
+  /** `renderMermaidASCII({ colorMode: 'html' })` output for this sample — already HTML-escaped and colored by the renderer itself. */
+  asciiHtml: string
+  /** `../../editor#<base64 payload>` — see pages.ts's `editorHash`. */
+  editorHref: string
+  /** Other real samples for the same type (excluding this one), each already rendered — see `demo/diagram-pages-data.ts`'s `allExamplesFor`. */
+  moreFromType: readonly DiagramDetailCrosslink[]
+}
+
+/**
+ * Everything inside {@link DIAGRAM_DETAIL_ROOT_ID}'s hydration boundary.
+ */
+export function DiagramDetailApp({
+  typeLabel,
+  typeHref,
+  accent,
+  sampleTitle,
+  sampleDescription,
+  sourceFilename,
+  sourceHtml,
+  svgHtml,
+  asciiHtml,
+  editorHref,
+  moreFromType,
+}: DiagramDetailAppProps) {
+  return (
+    <>
+      {/* ============ BREADCRUMB + HEADER ============ */}
+      <div
+        className="section-px"
+        style={{
+          padding: `${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.default - 16}px ${LAYOUT.gutter.desktop}px`,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: `${LAYOUT.maxWidth}px`,
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE['3xl']}px`,
+          }}
+        >
+          <DetailBreadcrumb
+            typeLabel={typeLabel}
+            typeHref={typeHref}
+            sampleTitle={sampleTitle}
+            accent={accent}
+          />
+          <h1
+            className="page-h1"
+            style={{
+              fontSize: `${FONT_SIZE.display}px`,
+              lineHeight: 1.08,
+              letterSpacing: LETTER_SPACING.display,
+              maxWidth: '820px',
+            }}
+          >
+            {sampleTitle}
+          </h1>
+          <p
+            style={{
+              fontSize: '17px',
+              lineHeight: 1.65,
+              color: colorVar('--text-dim'),
+              maxWidth: '680px',
+            }}
+          >
+            {sampleDescription}
+          </p>
+        </div>
+      </div>
+
+      {/* ============ SOURCE + RENDER ============ */}
+      <div
+        className="section-px"
+        style={{
+          padding: `${SECTION_SPACE.default - 16}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+          background: colorVar('--bg-soft'),
+          borderTop: `1px solid ${colorVar('--border')}`,
+          borderBottom: `1px solid ${colorVar('--border')}`,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: `${LAYOUT.maxWidth}px`,
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${SPACE['5xl']}px`,
+          }}
+        >
+          <div
+            className="detail-row"
+            style={{
+              display: 'flex',
+              gap: `${SPACE['6xl']}px`,
+              alignItems: 'stretch',
+            }}
+          >
+            <Card
+              accent={accent}
+              className="code-card"
+              style={{ flex: '1 1 0', minWidth: 0 }}
+            >
+              <FileTab filename={sourceFilename} />
+              <div
+                className="source-panel"
+                style={{
+                  padding: `${SPACE['4xl']}px ${SPACE['3xl']}px`,
+                  fontSize: `${FONT_SIZE.bodySm}px`,
+                  overflowX: 'auto',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 0,
+                }}
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time shiki output, never user input (see the file header)
+                dangerouslySetInnerHTML={{ __html: sourceHtml }}
+              />
+            </Card>
+
+            <Card
+              accent={accent}
+              tone="glow"
+              className="output-card"
+              style={{
+                flex: '1 1 0',
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              <DetailOutputPanel svgHtml={svgHtml} asciiHtml={asciiHtml} />
+            </Card>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: `${SPACE.xl}px`,
+              flexWrap: 'wrap',
+            }}
+          >
+            <CTA href={editorHref} accent={accent} className="cta-btn primary">
+              Open in the live editor
+            </CTA>
+            <CTA href={typeHref} accent={accent} variant="ghost" arrow={false}>
+              {`← Back to ${typeLabel} examples`}
+            </CTA>
+          </div>
+        </div>
+      </div>
+
+      {/* ============ MORE FROM THIS TYPE ============ */}
+      {moreFromType.length > 0 && (
+        <div
+          className="section-px"
+          style={{
+            padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+          }}
+        >
+          <div
+            style={{
+              maxWidth: `${LAYOUT.maxWidth}px`,
+              margin: '0 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: `${SPACE['4xl']}px`,
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '26px',
+                letterSpacing: LETTER_SPACING.heading,
+              }}
+            >
+              {`More ${typeLabel} examples`}
+            </h2>
+            <div className="gallery-grid">
+              {moreFromType.map((item) => (
+                <a
+                  key={item.title}
+                  href={item.href}
+                  className="card gallery-card"
+                  style={{ borderColor: colorVar('--border') }}
+                >
+                  <div
+                    className="gallery-thumb"
+                    // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+                    dangerouslySetInnerHTML={{ __html: item.diagramHtml }}
+                  />
+                  <div className="gallery-label">
+                    <span className="gallery-title">{item.title}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}

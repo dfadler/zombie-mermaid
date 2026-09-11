@@ -55,18 +55,24 @@ import {
 } from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import {
+  DiagramDetailPage,
   DiagramHubPage,
   DiagramTypePage,
+  type DiagramDetailCrosslink,
   type OrientationVariants,
 } from './demo/components/diagram-page.tsx'
 import { THEMES } from '@zombie-mermaid/core'
 import {
   DIAGRAM_TYPE_PROFILES,
+  allExamplesFor,
   moreExamplesFor,
+  sampleSlug,
 } from './demo/diagram-pages-data.ts'
 import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
-import { renderMermaidSVG } from './src/index.ts'
+import type { Sample } from './samples-data.ts'
+import { renderMermaidASCII, renderMermaidSVG } from './src/index.ts'
 import type { RenderOptions } from './src/index.ts'
+import { diagramColorsToAsciiTheme } from '@zombie-mermaid/ascii-renderer'
 import { createHighlighter } from 'shiki'
 import {
   wideDiagramDirectionLine,
@@ -130,6 +136,20 @@ async function bundleDiagramHubClient(): Promise<string> {
   )
 }
 
+/**
+ * Bundle `demo/diagram-detail-client.tsx` (zombie-mermaid#989) for the
+ * browser — written once to `assets/diagram-detail-client.js` and reused
+ * as an external `<script src>` across every generated sample page (see
+ * `diagram-page.tsx`'s `DiagramDetailPageProps.clientScriptSrc` doc
+ * comment for why that's an external asset rather than inlined per page).
+ */
+async function bundleDiagramDetailClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/diagram-detail-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
 async function main(): Promise<void> {
   // Copy the demo's full stylesheet plus this page type's own small
   // supplement, same two-file split dashboard.ts already uses (dashboard.css
@@ -146,15 +166,28 @@ async function main(): Promise<void> {
     log: false,
   })
 
-  const [clientJs, hubClientScript] = await Promise.all([
+  const [clientJs, hubClientScript, detailClientJs] = await Promise.all([
     bundleDiagramTypeClient(),
     bundleDiagramHubClient(),
+    bundleDiagramDetailClient(),
   ])
   await generatePage({
     outPath: new URL('./assets/diagram-page-client.js', OUT_DIR),
     content: clientJs,
     log: false,
   })
+  await generatePage({
+    outPath: new URL('./assets/diagram-detail-client.js', OUT_DIR),
+    content: detailClientJs,
+    log: false,
+  })
+
+  // The ASCII counterpart of DEFAULT_SWATCH's SVG rendering below --
+  // colorMode: 'html' + diagramColorsToAsciiTheme() is the same
+  // per-role-colored technique index-page.tsx's theme showcase uses (see
+  // that file's themeShowcaseAsciiHtmlByTheme doc comment), computed once
+  // here since DEFAULT_SWATCH never varies per type or sample.
+  const detailAsciiTheme = diagramColorsToAsciiTheme(DEFAULT_SWATCH)
 
   // 'github-dark', not the other generators' 'github-light': every type
   // detail page (demo/components/diagram-page.tsx's `DiagramTypePage`) now
@@ -251,6 +284,20 @@ async function main(): Promise<void> {
     const canonical = `${SITE_URL}/diagrams/${profile.slug}.html`
     sitemapUrls.push(canonical)
 
+    // Memoizes renderDiagram(sample.source) by sample title within this
+    // type: a sample can be rendered once here for `galleryItems`/its own
+    // detail page and again as another sample's "More <type> examples"
+    // crosslink thumbnail below — caching avoids re-running the renderer
+    // for the same source twice.
+    const svgCache = new Map<string, string>()
+    const cachedSvg = (sample: Sample): string => {
+      const cached = svgCache.get(sample.title)
+      if (cached !== undefined) return cached
+      const html = renderDiagram(sample.source)
+      svgCache.set(sample.title, html)
+      return html
+    }
+
     // "More examples" section (#714/#715): the samples-data.ts#713 curation
     // for this type, each rendered once at the default theme/direction —
     // these are small thumbnails (demo/components/diagram-page.tsx's
@@ -259,9 +306,65 @@ async function main(): Promise<void> {
     // unlike `diagramMarkup` above they get no narrow-viewport variant.
     const galleryItems = moreExamplesFor(profile.slug).map((sample) => ({
       title: sample.title,
-      diagramHtml: renderDiagram(sample.source),
+      diagramHtml: cachedSvg(sample),
       editorHref: `../editor#${editorHash(sample.source, DEFAULT_THEME_KEY)}`,
     }))
+
+    // -- Specific-diagram detail pages (#989): one per real sample of this
+    // type, e.g. diagrams/flowchart/ci-cd-pipeline.html. Not gated by
+    // sample.gallery, unlike galleryItems above — see allExamplesFor's own
+    // doc comment for why every real sample gets its own indexable page now
+    // rather than only the curated subset (docs/decisions/diagram-tag-
+    // search.md's Context section records that decision).
+    const allSamples = allExamplesFor(profile.slug)
+    for (const sample of allSamples) {
+      const sampleUrlSlug = sampleSlug(sample.title)
+      const detailCanonical = `${SITE_URL}/diagrams/${profile.slug}/${sampleUrlSlug}.html`
+      sitemapUrls.push(detailCanonical)
+
+      // Capped at 6, matching MoreExamplesSection's own desktop cap on the
+      // type page — not every other sample of a 24-strong type inlined on
+      // every one of its own detail pages.
+      const moreFromType: DiagramDetailCrosslink[] = allSamples
+        .filter((other) => other.title !== sample.title)
+        .slice(0, 6)
+        .map((other) => ({
+          title: other.title,
+          href: `./${sampleSlug(other.title)}.html`,
+          diagramHtml: cachedSvg(other),
+        }))
+
+      const detailHtml = renderHtmlDocument(
+        createElement(DiagramDetailPage, {
+          typeLabel: profile.label,
+          typeHref: `../${profile.slug}.html`,
+          accent: profile.accent,
+          sampleTitle: sample.title,
+          sampleDescription: sample.description,
+          sourceFilename: `${sampleUrlSlug}.mmd`,
+          sourceHtml: highlightSource(sample.source),
+          svgHtml: cachedSvg(sample),
+          asciiHtml: renderMermaidASCII(sample.source, {
+            colorMode: 'html',
+            theme: detailAsciiTheme,
+          }).replace(/[ \t]+$/gm, ''),
+          editorHref: `../../editor#${editorHash(sample.source, DEFAULT_THEME_KEY)}`,
+          moreFromType,
+          title: `${sample.title} | ${profile.label} diagram | Zombie Mermaid`,
+          description: `${sample.description} Rendered live as both SVG and ASCII by zombie-mermaid, free and open source.`,
+          canonical: detailCanonical,
+          faviconHref: '../../favicon.svg',
+          cssHref: '../assets/diagram-page.css',
+          clientScriptSrc: '../assets/diagram-detail-client.js',
+        }),
+      )
+
+      await generatePage({
+        outPath: new URL(`./${profile.slug}/${sampleUrlSlug}.html`, OUT_DIR),
+        content: detailHtml,
+        log: false,
+      })
+    }
 
     const sourceJson = escapeJsonForScriptTag(JSON.stringify(profile.source))
     const narrowSourceJson = escapeJsonForScriptTag(

@@ -88,6 +88,13 @@ import {
   DIAGRAM_HUB_ROOT_ID,
   type DiagramHubAppProps,
 } from './diagram-hub-app.tsx'
+import {
+  DiagramDetailApp,
+  DIAGRAM_DETAIL_PROPS_ELEMENT_ID,
+  DIAGRAM_DETAIL_ROOT_ID,
+  NAV_HREFS as DETAIL_NAV_HREFS,
+  type DiagramDetailAppProps,
+} from './diagram-detail-app.tsx'
 
 // Re-exported for existing callers/tests that import these from
 // diagram-page.tsx rather than diagram-type-app.tsx/diagram-hub-app.tsx
@@ -112,6 +119,13 @@ export {
   DIAGRAM_HUB_ROOT_ID,
   type DiagramHubAppProps,
 } from './diagram-hub-app.tsx'
+export {
+  DiagramDetailApp,
+  DIAGRAM_DETAIL_PROPS_ELEMENT_ID,
+  DIAGRAM_DETAIL_ROOT_ID,
+  type DiagramDetailAppProps,
+  type DiagramDetailCrosslink,
+} from './diagram-detail-app.tsx'
 
 /**
  * The site's npm package listing, linked from the footer's Resources
@@ -149,6 +163,41 @@ const DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     links: [
       { label: 'MIT Licensed' },
       { label: 'dfadler/zombie-mermaid', href: NAV_HREFS.github },
+    ],
+  },
+]
+
+/**
+ * The same three footer columns as {@link DETAIL_FOOTER_COLUMNS}, built
+ * from {@link DETAIL_NAV_HREFS} instead — `DiagramDetailPage` sits one
+ * level deeper (`diagrams/<type>/<sample>.html`), so reusing
+ * `DETAIL_FOOTER_COLUMNS` verbatim would point every footer link one
+ * directory too shallow. See `diagram-detail-app.tsx`'s own `NAV_HREFS`
+ * doc comment for why this is a separate constant rather than a depth
+ * parameter threaded through the shallower one.
+ */
+const SAMPLE_DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Diagrams', href: DETAIL_NAV_HREFS.diagrams },
+      { label: 'Editor', href: DETAIL_NAV_HREFS.editor },
+      { label: 'Fork fixes', href: DETAIL_NAV_HREFS.forkFixes },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Blog', href: DETAIL_NAV_HREFS.blog },
+      { label: 'GitHub', href: DETAIL_NAV_HREFS.github },
+      { label: 'npm package', href: NPM_URL },
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      { label: 'MIT Licensed' },
+      { label: 'dfadler/zombie-mermaid', href: DETAIL_NAV_HREFS.github },
     ],
   },
 ]
@@ -303,7 +352,28 @@ ${MEDIA.tablet} {
 
 ${MEDIA.mobile} {
   .page-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
-}`
+}
+
+/*
+ * The SVG/ASCII output toggle (diagram-detail-app.tsx's DetailOutputPanel)
+ * -- the exact same .output-segment/.output-segment.active/:focus-visible
+ * rules index-page.tsx's homePageCss defines for hero-output-panel.tsx's
+ * HeroOutputPanel, duplicated here rather than shared across two
+ * independently-bundled pages (see that file's own precedent for this).
+ */
+.output-segment {
+  border: none;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  font-family: inherit;
+  font-size: ${FONT_SIZE.caption}px;
+  font-weight: 700;
+  padding: ${SPACE.xxs}px ${SPACE.md}px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.output-segment.active { background: ${colorVar('--panel-2')}; color: ${colorVar('--text')}; }
+.output-segment:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }`
 }
 
 /** {@link pageCss} in a `<style>` element, for this page's `<head>`. */
@@ -695,6 +765,100 @@ export function DiagramHubPage({
         // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-hub-client.tsx bundle, under version control and produced at build time; never live/runtime user input
         dangerouslySetInnerHTML={{ __html: clientScript }}
       />
+      <NavMobileMenuScript />
+    </Document>
+  )
+}
+
+export interface DiagramDetailPageProps extends DiagramDetailAppProps {
+  title: string
+  description: string
+  canonical: string
+  faviconHref: string
+  /** The combined stylesheet, one level deeper than `DiagramTypePageProps.cssHref` — see this file's own generator (pages.ts) for the exact relative path. */
+  cssHref: string
+  /**
+   * The bundled `demo/diagram-detail-client.tsx` entry that hydrates
+   * {@link DiagramDetailApp} and `<NavIsland>` (via `hydrateNav()`) — one
+   * bundle, reused unchanged across every generated sample page (pages.ts
+   * writes it once to `diagrams/assets/diagram-detail-client.js`), so an
+   * external `<script type="module" src>` is strictly better here than
+   * inlining: every one of the ~86 generated pages shares the exact same
+   * cacheable asset instead of repeating it inline per page (contrast
+   * `DiagramHubPageProps.clientScript`, inlined because the hub is a
+   * single page with nothing to share the bytes across).
+   */
+  clientScriptSrc: string
+}
+
+/** One specific-diagram detail page, e.g. diagrams/flowchart/ci-cd-pipeline.html (#989). */
+export function DiagramDetailPage({
+  title,
+  description,
+  canonical,
+  faviconHref,
+  cssHref,
+  clientScriptSrc,
+  ...appProps
+}: DiagramDetailPageProps) {
+  return (
+    <Document
+      title={title}
+      description={description}
+      faviconHref={faviconHref}
+      head={
+        <DetailHeadExtra
+          title={title}
+          description={description}
+          canonical={canonical}
+          cssHref={cssHref}
+        />
+      }
+    >
+      <div
+        className="dc-root"
+        style={{
+          fontFamily: 'var(--font-body)',
+          color: colorVar('--text'),
+          width: '100%',
+          // No maxWidth/margin cap here -- see DiagramTypePage's identical
+          // wrapper for why.
+          background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
+          position: 'relative',
+        }}
+      >
+        <NavIsland
+          sticky
+          active="diagrams"
+          homeHref={HOME_HREF}
+          hrefs={DETAIL_NAV_HREFS}
+          installSlotKind="empty"
+        />
+        {/* See DiagramTypePage's identical wrapper for why this clip lives
+            on a sibling of NavIsland rather than an ancestor. */}
+        <div style={{ overflow: 'hidden' }}>
+          {/* Plain, inert hydration container -- see DiagramTypePage's
+              identical comment above. */}
+          <div
+            id={DIAGRAM_DETAIL_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramDetailApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<DiagramDetailApp {...appProps} />),
+            }}
+          />
+          <script
+            type="application/json"
+            id={DIAGRAM_DETAIL_PROPS_ELEMENT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramDetailAppProps, escaped with escapeJsonForScriptTag; never user input
+              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+            }}
+          />
+
+          <Footer columns={SAMPLE_DETAIL_FOOTER_COLUMNS} />
+        </div>
+      </div>
+      <script type="module" src={clientScriptSrc} />
       <NavMobileMenuScript />
     </Document>
   )
