@@ -16,7 +16,12 @@
  * fill (`--panel`, this row's existing look, instead of the nav pill's
  * `--panel-2`) and the copy span's plain text (no
  * `.nav-npm-text`/600px-hiding rule here — the hero pill has no header
- * dead-zone to work around).
+ * dead-zone to work around, so the full command stays visible at every
+ * width; see `.hero-install-pill`'s own `${MEDIA.mobile}` rule in
+ * index-page.tsx for the *different* mobile problem this pill does have —
+ * keeping its own rendered width inside `.hero-copy` instead of widening
+ * the page — and this file's own `<Pill>` `style` comment for the rest of
+ * that fix).
  *
  * Split out of `index-app.tsx` into its own file (zombie-mermaid#932).
  */
@@ -45,11 +50,25 @@ export function HeroInstall() {
   return (
     <Pill
       mono
+      className="hero-install-pill"
       style={{
         background: colorVar('--panel'),
         border: `1px solid ${colorVar('--border')}`,
         color: colorVar('--text'),
         position: 'relative',
+        // The pill is a flex item of `.hero-copy`'s column flex layout
+        // (index-app.tsx), whose default `min-width: auto` resolves to
+        // this pill's own content width — the full `npm install
+        // zombie-mermaid` command, which is wider than `.hero-copy` at
+        // mobile widths. Without an explicit `min-width: 0`, that trap
+        // overrides `.hero-copy`'s `max-width: 100%` and widens the whole
+        // page instead of the pill shrinking or scrolling in place;
+        // `overflow-x: auto` is the fallback for whatever the pill still
+        // can't shrink to fit (matches fork-fixes-app.tsx's `CodePanel`/
+        // `ASCII_WELL_STYLE`, which hit the same flexbox trap).
+        minWidth: 0,
+        maxWidth: '100%',
+        overflowX: 'auto',
       }}
     >
       <NavInstallPrefix
