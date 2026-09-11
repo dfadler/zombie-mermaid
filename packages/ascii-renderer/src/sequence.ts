@@ -276,14 +276,33 @@ export function renderSequenceAscii(
   // message-label sizing happened to leave).
   const leftNoteWidth: number[] = new Array(diagram.actors.length).fill(0)
   const rightNoteWidth: number[] = new Array(diagram.actors.length).fill(0)
+  // A single-actor `over` note draws centered on that actor's own lifeline
+  // (see the note-x calculation below): `Math.floor(w / 2)` columns land to
+  // its left, the rest to its right. Neither half was reserved during gap
+  // sizing before this fix, so a note wider than the actor's own column
+  // silently spilled into whichever neighbour was closer (issue #992) — the
+  // same problem left/rightNoteWidth above already solved for `left`/
+  // `right` notes, just for the two halves of a centered one instead. A
+  // multi-actor `over` note (`Note over Alice,Bob`) is excluded on purpose:
+  // spanning both actors' columns is its intended shape, not a collision.
+  const overNoteHalfLeft: number[] = new Array(diagram.actors.length).fill(0)
+  const overNoteHalfRight: number[] = new Array(diagram.actors.length).fill(0)
   for (const note of diagram.notes) {
-    if (note.position !== 'left' && note.position !== 'right') continue
-    const aIdx = actorIdx.get(note.actorIds[0]!) ?? 0
-    const w = noteBoxWidth(note)
-    if (note.position === 'left') {
-      leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
-    } else {
-      rightNoteWidth[aIdx] = Math.max(rightNoteWidth[aIdx]!, w)
+    if (note.position === 'left' || note.position === 'right') {
+      const aIdx = actorIndexOf(note.actorIds[0]!)
+      const w = noteBoxWidth(note)
+      if (note.position === 'left') {
+        leftNoteWidth[aIdx] = Math.max(leftNoteWidth[aIdx]!, w)
+      } else {
+        rightNoteWidth[aIdx] = Math.max(rightNoteWidth[aIdx]!, w)
+      }
+    } else if (note.position === 'over' && note.actorIds.length === 1) {
+      const aIdx = actorIndexOf(note.actorIds[0]!)
+      const w = noteBoxWidth(note)
+      const halfLeft = Math.floor(w / 2)
+      const halfRight = w - halfLeft
+      overNoteHalfLeft[aIdx] = Math.max(overNoteHalfLeft[aIdx]!, halfLeft)
+      overNoteHalfRight[aIdx] = Math.max(overNoteHalfRight[aIdx]!, halfRight)
     }
   }
 
@@ -312,6 +331,11 @@ export function renderSequenceAscii(
     Math.max(
       halfBox[0]! + (boxSpanOf[0] === -1 ? 0 : BRACKET_GAP + 1),
       leftNoteWidth[0]! + 1,
+      // A single-actor `over` note on the leftmost actor has no left
+      // neighbour either — same reasoning as the `left`-note case just
+      // above, but for the note's own left half (`nx = llX[0] -
+      // overNoteHalfLeft[0]` must stay >= 0; issue #992).
+      overNoteHalfLeft[0]!,
     ),
   ]
   for (let i = 1; i < diagram.actors.length; i++) {
@@ -329,7 +353,17 @@ export function renderSequenceAscii(
     // so a wide note doesn't overflow into the neighbouring lifeline. The
     // `+2` mirrors adjMaxWidth's own margin below and matches the 1-column
     // clearance the note-x calculation already leaves on the lifeline side.
-    const noteGapNeed = Math.max(rightNoteWidth[i - 1]!, leftNoteWidth[i]!) + 2
+    // A single-actor `over` note on either actor reaches into this same gap
+    // from its own side (its right half from i-1, its left half from i) —
+    // issue #992, folded into the same max() rather than summed, matching
+    // how the left/right pair above is already handled.
+    const noteGapNeed =
+      Math.max(
+        rightNoteWidth[i - 1]!,
+        leftNoteWidth[i]!,
+        overNoteHalfRight[i - 1]!,
+        overNoteHalfLeft[i]!,
+      ) + 2
     const gap = Math.max(
       halfBox[i - 1]! + halfBox[i]! + 2 + wallExtra,
       adjMaxWidth[i - 1]! + 2,
