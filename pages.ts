@@ -435,6 +435,7 @@ async function main(): Promise<void> {
         label: profile.label,
         intro: profile.intro,
         accent: profile.accent,
+        count: allExamplesFor(profile.slug).length,
       })),
       clientScript: hubClientScript,
     }),

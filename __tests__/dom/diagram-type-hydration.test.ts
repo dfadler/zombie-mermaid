@@ -90,12 +90,14 @@ const HUB_PROPS: DiagramHubAppProps = {
       label: 'Flowchart',
       intro: 'Flowcharts show a process as boxes and arrows.',
       accent: 'blue',
+      count: 24,
     },
     {
       slug: 'sequence',
       label: 'Sequence diagram',
       intro: 'Sequence diagrams show messages between participants.',
       accent: 'cyan',
+      count: 18,
     },
   ],
 }

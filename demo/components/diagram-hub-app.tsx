@@ -22,7 +22,7 @@ import {
   XyChartIcon,
   type DiagramTypeIconProps,
 } from './icons.tsx'
-import { Card, CTA, type Accent, accentVar } from './primitives.tsx'
+import { Card, CTA, Pill, type Accent, accentVar } from './primitives.tsx'
 import {
   FONT_SIZE,
   FONT_WEIGHT,
@@ -68,7 +68,7 @@ function DiagramTypeRow({
   index,
   total,
 }: {
-  type: DiagramTypeLink & { intro: string; accent: Accent }
+  type: DiagramTypeLink & { intro: string; accent: Accent; count: number }
   index: number
   total: number
 }) {
@@ -163,17 +163,37 @@ function DiagramTypeRow({
           >
             {type.intro}
           </p>
-          <CTA
-            href={`${type.slug}.html`}
-            accent={type.accent}
+          <div
             style={{
-              width: 'fit-content',
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${SPACE.lg}px`,
               marginTop: `${SPACE.xs}px`,
-              ...ctaStyle,
             }}
           >
-            View examples
-          </CTA>
+            <CTA
+              href={`${type.slug}.html`}
+              accent={type.accent}
+              style={{ width: 'fit-content', ...ctaStyle }}
+            >
+              View examples
+            </CTA>
+            {/* zombie-mermaid#989's part 3: how many dedicated pages a
+                visitor will find behind "View examples" — each type now
+                links to a full directory of real per-sample pages (#1003),
+                not just a single hero example, so the count is worth
+                surfacing here before the click. `variant="muted"`
+                (primitives.tsx's neutral treatment) rather than the type's
+                own accent: the CTA stays the one accent-colored action in
+                this row, this pill is quiet metadata beside it. */}
+            <Pill
+              mono
+              fontSize={FONT_SIZE.bodySm}
+              style={{ cursor: 'default' }}
+            >
+              {`${type.count} example${type.count === 1 ? '' : 's'}`}
+            </Pill>
+          </div>
         </div>
       </div>
     </div>
@@ -195,7 +215,9 @@ export const DIAGRAM_HUB_PROPS_ELEMENT_ID = 'diagram-hub-props'
 
 export interface DiagramHubAppProps {
   themeCount: number
-  types: ReadonlyArray<DiagramTypeLink & { intro: string; accent: Accent }>
+  types: ReadonlyArray<
+    DiagramTypeLink & { intro: string; accent: Accent; count: number }
+  >
 }
 
 /**
