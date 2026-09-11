@@ -283,12 +283,14 @@ describe('DiagramHubPage (#821)', () => {
             label: 'Flowchart',
             intro: 'Flowcharts show a process as boxes and arrows.',
             accent: 'blue',
+            count: 24,
           },
           {
             slug: 'sequence',
             label: 'Sequence diagram',
             intro: 'Sequence diagrams show messages between participants.',
             accent: 'cyan',
+            count: 1,
           },
         ],
       }),
@@ -311,6 +313,10 @@ describe('DiagramHubPage (#821)', () => {
     expect(
       screen.getByText('Sequence diagrams show messages between participants.'),
     ).toBeInTheDocument()
+
+    // The example-count pill (#989 part 3) — plural and singular wording.
+    expect(screen.getByText('24 examples')).toBeInTheDocument()
+    expect(screen.getByText('1 example')).toBeInTheDocument()
 
     const viewExamplesLinks = screen.getAllByRole('link', {
       name: 'View examples',
@@ -336,6 +342,7 @@ describe('DiagramHubPage (#821)', () => {
             label: 'Flowchart',
             intro: 'Flowcharts show a process as boxes and arrows.',
             accent: 'blue',
+            count: 24,
           },
         ],
       }),

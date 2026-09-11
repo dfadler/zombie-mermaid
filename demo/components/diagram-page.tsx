@@ -660,9 +660,12 @@ export interface DiagramHubPageProps {
   /**
    * Every diagram type, in display order — `pages.ts` builds this from
    * `DIAGRAM_TYPE_PROFILES`, so `label`/`slug`/`intro`/`accent` all come from
-   * that single source of truth rather than being retyped here.
+   * that single source of truth rather than being retyped here. `count` is
+   * `allExamplesFor(slug).length` (zombie-mermaid#989's part 3).
    */
-  types: ReadonlyArray<DiagramTypeLink & { intro: string; accent: Accent }>
+  types: ReadonlyArray<
+    DiagramTypeLink & { intro: string; accent: Accent; count: number }
+  >
   /**
    * The bundled `demo/diagram-hub-client.tsx` entry (zombie-mermaid#805)
    * that hydrates {@link DiagramHubApp} and `<NavIsland>` (via
