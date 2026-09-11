@@ -261,9 +261,7 @@ function initThemeShowcase(): ShowcaseEls | null {
     asciiPre: document.getElementById('theme-showcase-ascii'),
     asciiHtmlByTheme: readThemeShowcaseAsciiHtmlByTheme(),
     asciiFadeLeft: document.getElementById('theme-showcase-ascii-fade-left'),
-    asciiFadeRight: document.getElementById(
-      'theme-showcase-ascii-fade-right',
-    ),
+    asciiFadeRight: document.getElementById('theme-showcase-ascii-fade-right'),
   }
 
   // Keeps the fade overlays in sync with scroll position and with the
