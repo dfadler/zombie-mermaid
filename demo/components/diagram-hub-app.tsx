@@ -218,6 +218,15 @@ export interface DiagramHubAppProps {
   types: ReadonlyArray<
     DiagramTypeLink & { intro: string; accent: Accent; count: number }
   >
+  /**
+   * `diagrams/all.html`'s href relative to this page (zombie-
+   * mermaid#1001) — the "View all diagrams" CTA below the intro
+   * paragraph. Threaded through as a prop rather than a hardcoded `'./
+   * all.html'` literal so this file doesn't need to know the all-page's
+   * own URL shape, matching how every other cross-page link on this site
+   * is passed in rather than assumed.
+   */
+  allHref: string
 }
 
 /**
@@ -226,7 +235,11 @@ export interface DiagramHubAppProps {
  * `DiagramHubPage` used to render directly, in the same order. The exact
  * same function runs on both sides of hydration.
  */
-export function DiagramHubApp({ themeCount, types }: DiagramHubAppProps) {
+export function DiagramHubApp({
+  themeCount,
+  types,
+  allHref,
+}: DiagramHubAppProps) {
   return (
     <>
       {/* ============ PAGE HEADER ============ */}
@@ -271,6 +284,13 @@ export function DiagramHubApp({ themeCount, types }: DiagramHubAppProps) {
             with a live picker across every one of its {themeCount} built-in
             themes.
           </p>
+          {/* #1001: a secondary path into every real example at once,
+              alongside the per-type rows below -- ghost/violet so it reads
+              as a lighter-weight action than each row's own solid "View
+              examples" CTA. */}
+          <CTA href={allHref} variant="ghost" style={{ width: 'fit-content' }}>
+            View all diagrams
+          </CTA>
         </div>
       </div>
 

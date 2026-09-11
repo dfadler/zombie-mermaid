@@ -55,10 +55,12 @@ import {
 } from './demo/format.ts'
 import { renderHtmlDocument } from './demo/render-html.ts'
 import {
+  DiagramAllPage,
   DiagramDetailPage,
   DiagramHubPage,
   DiagramTagPage,
   DiagramTypePage,
+  type DiagramAllTypeSection,
   type DiagramDetailCrosslink,
   type OrientationVariants,
   type TagResultItem,
@@ -166,6 +168,16 @@ async function bundleDiagramTagClient(): Promise<string> {
   )
 }
 
+/** Bundle `demo/diagram-all-client.tsx` (zombie-mermaid#1001) for the
+ * browser — mirrors `bundleDiagramHubClient()`'s reasoning (no live
+ * diagram to re-theme, a single page, so nothing to share bytes across). */
+async function bundleDiagramAllClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/diagram-all-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
 async function main(): Promise<void> {
   // Copy the demo's full stylesheet plus this page type's own small
   // supplement, same two-file split dashboard.ts already uses (dashboard.css
@@ -182,13 +194,19 @@ async function main(): Promise<void> {
     log: false,
   })
 
-  const [clientJs, hubClientScript, detailClientJs, tagClientJs] =
-    await Promise.all([
-      bundleDiagramTypeClient(),
-      bundleDiagramHubClient(),
-      bundleDiagramDetailClient(),
-      bundleDiagramTagClient(),
-    ])
+  const [
+    clientJs,
+    hubClientScript,
+    detailClientJs,
+    tagClientJs,
+    allClientScript,
+  ] = await Promise.all([
+    bundleDiagramTypeClient(),
+    bundleDiagramHubClient(),
+    bundleDiagramDetailClient(),
+    bundleDiagramTagClient(),
+    bundleDiagramAllClient(),
+  ])
   await generatePage({
     outPath: new URL('./assets/diagram-page-client.js', OUT_DIR),
     content: clientJs,
@@ -511,6 +529,50 @@ async function main(): Promise<void> {
     })
   }
 
+  // -- View-all page (#1001): diagrams/all.html, every real sample across
+  // every type, grouped by type, on one continuously-scrolling page --
+  // complementary to the per-type/per-sample/per-tag pages above, not a
+  // replacement for them (see diagram-all-app.tsx's header comment and
+  // docs/decisions/diagram-gallery-layout.md's revisited Direction C).
+  // Built from allSamplesFlat, same as the tag pages, but grouped by
+  // DIAGRAM_TYPE_PROFILES order instead of flattened across types.
+  const allCanonical = `${SITE_URL}/diagrams/all.html`
+  sitemapUrls.push(allCanonical)
+
+  const allSections: DiagramAllTypeSection[] = DIAGRAM_TYPE_PROFILES.map(
+    (profile) => ({
+      slug: profile.slug,
+      label: profile.label,
+      accent: profile.accent,
+      items: allSamplesFlat
+        .filter((entry) => entry.profile.slug === profile.slug)
+        .map((entry) => ({
+          title: entry.sample.title,
+          diagramHtml: entry.svgHtml,
+          href: `${profile.slug}/${sampleSlug(entry.sample.title)}.html`,
+        })),
+    }),
+  )
+
+  const allHtml = renderHtmlDocument(
+    createElement(DiagramAllPage, {
+      totalCount: allSamplesFlat.length,
+      sections: allSections,
+      title: `Every diagram, one scroll | Zombie Mermaid`,
+      description: `All ${allSamplesFlat.length} real zombie-mermaid examples across every diagram type -- ${DIAGRAM_TYPE_PROFILES.map((p) => p.label).join(', ')} -- grouped by type on one page.`,
+      canonical: allCanonical,
+      cssHref: 'assets/diagram-page.css',
+      faviconHref: '../favicon.svg',
+      clientScript: allClientScript,
+    }),
+  )
+
+  await generatePage({
+    outPath: new URL('./all.html', OUT_DIR),
+    content: allHtml,
+    log: false,
+  })
+
   // -- Hub page: diagrams/index.html, listing every generated type page --
   const hubCanonical = `${SITE_URL}/diagrams/`
   sitemapUrls.push(hubCanonical)
@@ -530,6 +592,7 @@ async function main(): Promise<void> {
         accent: profile.accent,
         count: allExamplesFor(profile.slug).length,
       })),
+      allHref: 'all.html',
       clientScript: hubClientScript,
     }),
   )

@@ -102,6 +102,12 @@ import {
   NAV_HREFS as TAG_NAV_HREFS,
   type DiagramTagAppProps,
 } from './diagram-tag-app.tsx'
+import {
+  DiagramAllApp,
+  DIAGRAM_ALL_PROPS_ELEMENT_ID,
+  DIAGRAM_ALL_ROOT_ID,
+  type DiagramAllAppProps,
+} from './diagram-all-app.tsx'
 
 // Re-exported for existing callers/tests that import these from
 // diagram-page.tsx rather than diagram-type-app.tsx/diagram-hub-app.tsx
@@ -140,6 +146,13 @@ export {
   type DiagramTagAppProps,
   type TagResultItem,
 } from './diagram-tag-app.tsx'
+export {
+  DiagramAllApp,
+  DIAGRAM_ALL_PROPS_ELEMENT_ID,
+  DIAGRAM_ALL_ROOT_ID,
+  type DiagramAllAppProps,
+  type DiagramAllTypeSection,
+} from './diagram-all-app.tsx'
 
 /**
  * The site's npm package listing, linked from the footer's Resources
@@ -734,6 +747,8 @@ export interface DiagramHubPageProps {
   types: ReadonlyArray<
     DiagramTypeLink & { intro: string; accent: Accent; count: number }
   >
+  /** `diagrams/all.html`'s href relative to this page (#1001) — see `DiagramHubAppProps.allHref`'s own doc comment. */
+  allHref: string
   /**
    * The bundled `demo/diagram-hub-client.tsx` entry (zombie-mermaid#805)
    * that hydrates {@link DiagramHubApp} and `<NavIsland>` (via
@@ -757,9 +772,10 @@ export function DiagramHubPage({
   faviconHref,
   themeCount,
   types,
+  allHref,
   clientScript = '',
 }: DiagramHubPageProps) {
-  const appProps: DiagramHubAppProps = { themeCount, types }
+  const appProps: DiagramHubAppProps = { themeCount, types, allHref }
   return (
     <Document
       title={title}
@@ -1028,6 +1044,94 @@ export function DiagramTagPage({
         </div>
       </div>
       <script type="module" src={clientScriptSrc} />
+      <NavMobileMenuScript />
+    </Document>
+  )
+}
+
+export interface DiagramAllPageProps extends DiagramAllAppProps {
+  title: string
+  description: string
+  canonical: string
+  cssHref: string
+  faviconHref: string
+  /**
+   * The bundled `demo/diagram-all-client.tsx` entry (zombie-mermaid#1001)
+   * that hydrates {@link DiagramAllApp} and `<NavIsland>` — inlined the
+   * same way `DiagramHubPageProps.clientScript` is (a single page, nothing
+   * to share the bytes across), rather than an external
+   * `clientScriptSrc` like the per-sample/per-tag pages use. Defaults to
+   * `''` (SSR-only), matching every other page's `clientScript` default.
+   */
+  clientScript?: string
+}
+
+/** diagrams/all.html — every real sample across every diagram type, grouped by type, on one continuously-scrolling page (#1001). Same depth as diagrams/index.html, so it reuses that page's NAV_HREFS/footer columns. */
+export function DiagramAllPage({
+  title,
+  description,
+  canonical,
+  cssHref,
+  faviconHref,
+  clientScript = '',
+  ...appProps
+}: DiagramAllPageProps) {
+  return (
+    <Document
+      title={title}
+      description={description}
+      faviconHref={faviconHref}
+      head={
+        <DetailHeadExtra
+          title={title}
+          description={description}
+          canonical={canonical}
+          cssHref={cssHref}
+        />
+      }
+    >
+      <div
+        className="dc-root"
+        style={{
+          fontFamily: 'var(--font-body)',
+          color: colorVar('--text'),
+          width: '100%',
+          background: `linear-gradient(180deg, ${colorVar('--bg')} 0%, ${colorVar('--bg-soft')} 40%, ${colorVar('--bg')} 100%)`,
+          position: 'relative',
+        }}
+      >
+        <NavIsland
+          sticky
+          active="diagrams"
+          homeHref={HOME_HREF}
+          hrefs={NAV_HREFS}
+          installSlotKind="empty"
+        />
+        <div style={{ overflow: 'hidden' }}>
+          <div
+            id={DIAGRAM_ALL_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramAllApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<DiagramAllApp {...appProps} />),
+            }}
+          />
+          <script
+            type="application/json"
+            id={DIAGRAM_ALL_PROPS_ELEMENT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramAllAppProps, escaped with escapeJsonForScriptTag; never user input
+              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+            }}
+          />
+
+          <Footer columns={DETAIL_FOOTER_COLUMNS} />
+        </div>
+      </div>
+      <script
+        type="module"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this repo's own demo/diagram-all-client.tsx bundle, under version control and produced at build time; never live/runtime user input
+        dangerouslySetInnerHTML={{ __html: clientScript }}
+      />
       <NavMobileMenuScript />
     </Document>
   )
