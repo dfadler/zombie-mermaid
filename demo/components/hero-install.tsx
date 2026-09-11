@@ -20,8 +20,8 @@
  * width; see `.hero-install-pill`'s own `${MEDIA.mobile}` rule in
  * index-page.tsx for the *different* mobile problem this pill does have —
  * keeping its own rendered width inside `.hero-copy` instead of widening
- * the page — and this file's own `<Pill>` `style` comment for the rest of
- * that fix).
+ * the page — and this file's own inner-wrapper `style` comment for the
+ * rest of that fix).
  *
  * Split out of `index-app.tsx` into its own file (zombie-mermaid#932).
  */
@@ -60,55 +60,74 @@ export function HeroInstall() {
         // (index-app.tsx), whose default `min-width: auto` resolves to
         // this pill's own content width — the full `npm install
         // zombie-mermaid` command, which is wider than `.hero-copy` at
-        // mobile widths. Without an explicit `min-width: 0`, that trap
-        // overrides `.hero-copy`'s `max-width: 100%` and widens the whole
-        // page instead of the pill shrinking or scrolling in place;
-        // `overflow-x: auto` is the fallback for whatever the pill still
-        // can't shrink to fit (matches fork-fixes-app.tsx's `CodePanel`/
-        // `ASCII_WELL_STYLE`, which hit the same flexbox trap).
+        // mobile widths. Without this, that trap overrides `.hero-copy`'s
+        // `max-width: 100%` and widens the whole page instead of the pill
+        // shrinking in place. The actual horizontal-scroll fallback (for
+        // whatever the pill still can't shrink to fit) lives one level
+        // in, on the wrapper span below — *not* here — because this `Pill`
+        // is also `NavInstallPopover`'s positioned ancestor
+        // (`position: relative`); an `overflow-x` other than `visible` on
+        // it would clip the popover, which renders as this element's own
+        // absolutely-positioned sibling and needs to hang below the pill
+        // uncropped (matches diagram-page.tsx's `.dc-root`/`NavIsland`
+        // comment — same "don't put a clipping overflow on a popover's own
+        // positioned ancestor" trap, one popover over).
         minWidth: 0,
         maxWidth: '100%',
-        overflowX: 'auto',
       }}
     >
-      <NavInstallPrefix
-        manager={install.selectedManager}
-        open={install.popoverOpen}
-        onToggle={install.togglePopover}
-        triggerRef={install.triggerRef}
-      />
       <span
-        aria-hidden="true"
-        style={{
-          width: '1px',
-          height: `${HERO_INSTALL_DIVIDER_HEIGHT}px`,
-          background: colorVar('--border'),
-        }}
-      />
-      <span
-        role="button"
-        tabIndex={0}
-        aria-label="Copy install command"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: `${SPACE.sm}px`,
-          // Reserves room for the widest of the four managers' commands —
-          // see nav.tsx's `widestCommand` doc comment — so switching
-          // managers can only ever leave trailing space here, never shrink
-          // the pill and shove the CTA button beside it (zombie-mermaid#902).
-          minWidth: `calc(${install.widestCommand.length}ch + ${SPACE.sm}px + ${HERO_COPY_ICON_SIZE}px)`,
-          cursor: 'pointer',
+          // Scoped to just the trigger/divider/copy row (not the outer
+          // `Pill`, and not the popover below) — see the `Pill` `style`
+          // comment above for why.
+          minWidth: 0,
+          overflowX: 'auto',
         }}
-        onClick={install.copyCommand}
-        onKeyDown={install.handleCopyKeyDown}
       >
-        <span>{install.displayedCommand}</span>
-        <CopyIcon
-          size={HERO_COPY_ICON_SIZE}
-          strokeWidth={HERO_COPY_ICON_STROKE}
-          color={install.copied ? colorVar('--green') : colorVar('--cyan')}
+        <NavInstallPrefix
+          manager={install.selectedManager}
+          open={install.popoverOpen}
+          onToggle={install.togglePopover}
+          triggerRef={install.triggerRef}
         />
+        <span
+          aria-hidden="true"
+          style={{
+            width: '1px',
+            height: `${HERO_INSTALL_DIVIDER_HEIGHT}px`,
+            background: colorVar('--border'),
+            flexShrink: 0,
+          }}
+        />
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label="Copy install command"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: `${SPACE.sm}px`,
+            // Reserves room for the widest of the four managers' commands —
+            // see nav.tsx's `widestCommand` doc comment — so switching
+            // managers can only ever leave trailing space here, never shrink
+            // the pill and shove the CTA button beside it (zombie-mermaid#902).
+            minWidth: `calc(${install.widestCommand.length}ch + ${SPACE.sm}px + ${HERO_COPY_ICON_SIZE}px)`,
+            cursor: 'pointer',
+          }}
+          onClick={install.copyCommand}
+          onKeyDown={install.handleCopyKeyDown}
+        >
+          <span>{install.displayedCommand}</span>
+          <CopyIcon
+            size={HERO_COPY_ICON_SIZE}
+            strokeWidth={HERO_COPY_ICON_STROKE}
+            color={install.copied ? colorVar('--green') : colorVar('--cyan')}
+          />
+        </span>
       </span>
       {install.popoverOpen ? (
         <NavInstallPopover
