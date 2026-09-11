@@ -80,6 +80,9 @@ const DIAGRAM_TYPE_APP_PROPS: DiagramTypeAppProps = {
     },
   ],
   types: [],
+  aboutHeading: 'Test about heading',
+  about: 'Test about paragraph.',
+  docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html',
 }
 
 /**
