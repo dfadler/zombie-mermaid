@@ -634,20 +634,28 @@ export function renderClassAscii(
       let desiredSlotLeft = baselineSlotLeft.get(id)!
       if (blockMemberCount.get(blockKeyOf(id)) === 1) {
         const pset = parents.get(id)
+        // `level.get(pid)!`: every relationship endpoint is guaranteed a
+        // `classById`/`level` entry (the parser's `ensureClass` auto-
+        // creates an implicit class for any id used only as a
+        // relationship endpoint, never just a dangling reference — see
+        // `classById.has(...)`'s own guards elsewhere in this file, which
+        // protect a *different* case), so this is never actually missing.
         const qualifying = pset
-          ? [...pset].filter((pid) => (level.get(pid) ?? 0) < lv)
+          ? [...pset].filter((pid) => level.get(pid)! < lv)
           : []
         if (qualifying.length === 1) {
-          const parentPlaced = placed.get(qualifying[0]!)
-          if (parentPlaced) {
-            // "Center column" is always the box's own rendered center,
-            // never the reach-padded slot's — aligning to the slot center
-            // instead would visually misalign the boxes whenever a
-            // relationship's label overhang is asymmetric.
-            const desiredCenter =
-              parentPlaced.x + Math.floor(parentPlaced.width / 2)
-            desiredSlotLeft = desiredCenter - Math.floor(w / 2) - leftPad
-          }
+          // `placed.get(...)!`: `qualifying[0]` has a strictly-shallower
+          // level than `lv`, and this loop places every class of a level
+          // before moving to the next, so a strictly-shallower class is
+          // always already placed by the time this level is processed.
+          const parentPlaced = placed.get(qualifying[0]!)!
+          // "Center column" is always the box's own rendered center,
+          // never the reach-padded slot's — aligning to the slot center
+          // instead would visually misalign the boxes whenever a
+          // relationship's label overhang is asymmetric.
+          const desiredCenter =
+            parentPlaced.x + Math.floor(parentPlaced.width / 2)
+          desiredSlotLeft = desiredCenter - Math.floor(w / 2) - leftPad
         }
       }
 
