@@ -41,19 +41,14 @@
  * to establish the editor's starting state" -- exactly what a hydration
  * entry point's initial-mount logic is for (see this issue's own text). The
  * bootstrap effect below reproduces that sequence, since later steps depend
- * on earlier ones (a URL-hash theme overrides a saved theme, which overrides
- * the dark-mode-derived default):
+ * on earlier ones (a URL-hash theme overrides a saved theme):
  *
- * 1. Derive an initial diagram theme from dark/light mode (old
- *    `dark-mode.ts` module-top-level `applyColorMode(getIsDark())`).
+ * 1. No theme override by default (the editor's dark/light chrome toggle,
+ *    which used to derive an initial diagram theme from it, was removed).
  * 2. Restore this editor's own saved theme preference, if any (overrides
  *    step 1) -- see "Local, not shared" below for what this reads.
  * 3. Parse the URL hash, if any -- its source text wins over the default
- *    diagram, and its theme (if present) wins over step 2. *Any* hash
- *    source at all -- even one with no theme in it -- permanently disables
- *    the dark-mode-driven auto-theme for the rest of the session, matching
- *    `editor/js/init.ts`'s old unconditional `setDiagramThemeIsAuto(false)`
- *    inside its `if (hashSource)` branch.
+ *    diagram, and its theme (if present) wins over step 2.
  * 4. Dispatch the final theme once and set the textarea's initial value,
  *    then trigger the first render.
  *
@@ -83,10 +78,6 @@
  * editor, and picking one here no longer reaches anywhere else.
  */
 import { useLayoutEffect, useRef, type Dispatch } from 'react'
-import {
-  getIsDark,
-  subscribe as subscribeDarkMode,
-} from '../editor-dark-mode-state.ts'
 import type { EditorAction, EditorRefs, EditorState } from './editor-app.tsx'
 import { parseHash } from './editor-sharing.ts'
 import type { EditorThemeItem } from './editor-topbar.tsx'
@@ -94,10 +85,6 @@ import { readMermaidThemes } from './editor-rendering.ts'
 
 /** Duplicated verbatim in `editor-config.tsx` -- see that file's header comment for why the string can't just be imported from there (separate concern, no runtime coupling intended). */
 export const EDITOR_EFFECTIVE_THEME_EVENT = 'zm-editor-theme-changed'
-
-/** Mirrors `editor/js/dark-mode.ts`'s original constants exactly. */
-export const AUTO_DARK_DIAGRAM_THEME = 'zinc-dark'
-export const AUTO_LIGHT_DIAGRAM_THEME = ''
 
 /**
  * This editor's own diagram-theme preference key -- local to the editor,
@@ -147,9 +134,7 @@ export interface UseEditorThemeArgs {
  * `editor/js/init.ts`'s theme-related module-top-level equivalents. Call
  * once, unconditionally, from `<EditorApp>`'s own body, *after*
  * `useEditorRendering` (bootstrap calls `window.__editorRenderTrigger
- * .scheduleRender(0)`) and *after* `useEditorDarkMode` (bootstrap and the
- * dark-mode subscription both call `window.__editorDarkModeState.getIsDark()`
- * /`subscribe()`).
+ * .scheduleRender(0)`).
  */
 export function useEditorTheme({
   state,
@@ -248,8 +233,8 @@ export function useEditorTheme({
     const r = refs.current
     if (!r) return
 
-    // 1. Auto dark-mode-derived initial theme.
-    let theme = getIsDark() ? AUTO_DARK_DIAGRAM_THEME : AUTO_LIGHT_DIAGRAM_THEME
+    // 1. No theme override by default.
+    let theme = ''
 
     // 2. Restore this editor's own saved theme preference, if any -- see
     // this file's header comment, "Local, not shared."
@@ -301,18 +286,4 @@ export function useEditorTheme({
     // on every subsequent state change instead, since `state` is a new
     // object reference every render.
   }, [dispatch, refs])
-
-  // Dark/light toggle -- editor/js/dark-mode.ts's old
-  // `window.__editorDarkModeState.subscribe((dark) => applyColorMode(dark, true))`,
-  // `force: true` meaning *every* toggle re-derives the auto theme and wins
-  // over any manually-picked theme (confirmed by reading that file's old
-  // `applyColorMode` body -- not a guess).
-  useLayoutEffect(() => {
-    return subscribeDarkMode((dark) => {
-      dispatch({
-        type: 'SET_THEME',
-        theme: dark ? AUTO_DARK_DIAGRAM_THEME : AUTO_LIGHT_DIAGRAM_THEME,
-      })
-    })
-  }, [dispatch])
 }

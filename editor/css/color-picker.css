@@ -109,8 +109,9 @@
   width: 100%;
   aspect-ratio: 1;
   border-radius: 4px;
-  /* Was a fixed rgba(0,0,0,.12) -- invisible against a dark-mode popup.
-   * color-mix off --t-fg adapts to either chrome mode. */
+  /* Was a fixed rgba(0,0,0,.12) -- used to be invisible against the old
+   * dark chrome mode. color-mix off --t-fg reads correctly against the
+   * tool's fixed light chrome too. */
   border: 1px solid color-mix(in srgb, var(--t-fg) 20%, transparent);
   cursor: pointer;
   transition:

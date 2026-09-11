@@ -51,12 +51,10 @@
   justify-content: flex-end;
 }
 /* Was a hardcoded rgba(255,255,255,.2) plus a `:root.light` override meant
- * to swap it for rgba(0,0,0,.2) in light mode -- but nothing in the current
- * chrome-mode code (demo/components/editor-dark-mode.ts's
- * applyChromeColorMode) ever adds a `.light` class to :root; it only sets
- * --t-bg/--t-fg custom properties. The override was dead, and the base
- * rule was invisible in light mode. color-mix off --t-fg adapts to
- * whichever chrome mode is actually active. */
+ * to swap it for rgba(0,0,0,.2) in light mode -- but nothing ever added a
+ * `.light` class to :root. The override was dead, and the base rule was
+ * invisible in light mode. color-mix off --t-fg reads correctly against
+ * the tool's fixed light chrome. */
 .color-edit-btn:hover {
   border-color: color-mix(in srgb, var(--t-fg) 30%, var(--border));
 }
@@ -64,9 +62,9 @@
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  /* Was a fixed rgba(0,0,0,.15) -- invisible against a dark-mode panel
-   * (black-on-near-black). color-mix off --t-fg adapts to either chrome
-   * mode. */
+  /* Was a fixed rgba(0,0,0,.15) -- used to be invisible against the old
+   * dark chrome mode (black-on-near-black). color-mix off --t-fg reads
+   * correctly against the tool's fixed light chrome too. */
   border: 1px solid color-mix(in srgb, var(--t-fg) 25%, transparent);
   flex-shrink: 0;
   background: transparent;

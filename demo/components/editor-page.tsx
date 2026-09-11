@@ -49,12 +49,11 @@
  *
  * The new chrome's colours come from tokens.tsx's design-system palette,
  * which is *not* safe to load at `:root` here: editor/css/variables.css
- * already defines `--bg`, `--border`, and `--green` for its own light/dark
- * theming (derived from `--t-bg`/`--t-fg`, which the dark-mode toggle
- * rewrites at runtime), and tokens.tsx's `COLORS` reuses those exact three
- * names for unrelated values. Loading `designTokensCss()` at `:root` would
- * silently overwrite the tool's own theme variables and break the dark-mode
- * toggle. {@link editorPageCss} instead scopes the whole palette to
+ * already defines `--bg`, `--border`, and `--green` for its own theming
+ * (derived from `--t-bg`/`--t-fg`), and tokens.tsx's `COLORS` reuses those
+ * exact three names for unrelated values. Loading `designTokensCss()` at
+ * `:root` would silently overwrite the tool's own theme variables.
+ * {@link editorPageCss} instead scopes the whole palette to
  * `.zm-shell` — the wrapper around the nav/hero block and the one around
  * the feature-strip/footer block — so it cascades to their descendants
  * (Nav, Footer, Card, the icons) without ever reaching `:root` or the tool.
@@ -232,10 +231,17 @@ body {
  * overflow:hidden over an explicit height) so <EditorChrome>'s three
  * fragment children lay out exactly as before, just scoped to a card
  * instead of the whole viewport. Colours are literal hex (tokens.tsx's
- * COLORS), not var() — see the module doc comment for why. */
+ * COLORS), not var() — see the module doc comment for why -- except
+ * background, which is var(--t-bg) (the tool's own chrome token, fixed by
+ * editor/css/variables.css's :root default) rather than a literal: the
+ * card needs to paint an opaque surface of its own, since .topbar itself
+ * is background: transparent (editor/css/topbar.css) and would otherwise
+ * let this dark page's own body background (above) show straight
+ * through it. */
 .editor-tool-shell {
   display: flex;
   flex-direction: column;
+  background: var(--t-bg);
   height: min(720px, 82vh);
   min-height: 480px;
   max-width: ${LAYOUT.maxWidth}px;
@@ -293,10 +299,9 @@ body {
  * height overrides, so this doesn't need to be more specific than them,
  * just present. background: var(--t-bg) (not a literal hex, unlike this
  * card's border/shadow above) is deliberate: --t-bg is the *tool's* own
- * light/dark chrome token, correctly in scope here since .editor-tool-
- * shell is that token's own scope root, not the design-system palette's
- * -- see editor-dark-mode.ts's applyChromeColorMode. -webkit-full-screen
- * covers Safari < 16.4. */
+ * chrome token (editor/css/variables.css's :root default), correctly in
+ * scope here since .editor-tool-shell is that token's own scope root, not
+ * the design-system palette's. -webkit-full-screen covers Safari < 16.4. */
 .editor-tool-shell:fullscreen,
 .editor-tool-shell:-webkit-full-screen {
   max-width: none;

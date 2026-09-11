@@ -229,11 +229,11 @@ describe('<EditorApp> render pipeline (#810)', () => {
     expect(opts).toMatchObject({ bg: THEMES.nord.bg, fg: THEMES.nord.fg })
     // The diagram theme reaches the render call above, but the editor's own
     // chrome color is unchanged -- selecting a diagram theme is scoped to
-    // the diagram only (editor-dark-mode.ts's applyChromeColorMode() is the
-    // chrome's sole source of --t-bg/etc, keyed on the dark/light toggle,
-    // not on this theme dropdown). See demo/components/editor-theme.test.ts's
-    // "theme scoped to the Editor only" describe block for the same
-    // assertion from the theme-dropdown side.
+    // the diagram only; the chrome's --t-bg/etc are fixed by editor/css/
+    // variables.css's `:root` defaults, never written to inline. See
+    // demo/components/editor-theme.test.ts's "theme scoped to the Editor
+    // only" describe block for the same assertion from the theme-dropdown
+    // side.
     expect(document.documentElement.style.getPropertyValue('--t-bg')).toBe(
       chromeBgBefore,
     )
