@@ -330,24 +330,32 @@ ${MEDIA.mobile} {
 ${MEDIA.tablet} {
   .detail-row { flex-direction: column !important; }
   /*
-   * .code-card and .diagram-frame both get an inline flex: '1 1 0' (see
-   * the DiagramTypePage markup below) to split .detail-row's width evenly
+   * .code-card and .output-card (diagram-type-app.tsx's "Source → render"
+   * pair) both get an inline flex: '1 1 0' (see the DiagramTypeApp markup
+   * in diagram-type-app.tsx) to split .detail-row's width evenly
    * side-by-side above this breakpoint. Once .detail-row flips to a
-   * column here, that flex-basis: 0 combines with .code-card's
+   * column here, that flex-basis: 0 combines with each card's own
    * overflow: hidden to collapse it to ~0 height: a flex item's
    * automatic min-height (min-height: auto, letting it grow to fit
    * content) is spec'd to resolve to 0 whenever overflow isn't visible
    * (https://www.w3.org/TR/css-flexbox-1/#min-size-auto), so with no
    * explicit height on .detail-row to grow into, the item shrinks to
    * nothing instead of sizing to its content. overflow: hidden stays on
-   * .code-card (it clips the file-tab header's square corners to the
-   * card's own rounded ones) rather than being removed, and .diagram-frame
-   * doesn't set overflow so it never hit this; only .code-card needs the
-   * override. Switching to flex-basis: auto sizes both from their content
-   * instead of 0, which sidesteps the automatic-minimum substitution
-   * entirely rather than fighting it with a magic-number min-height.
+   * both cards (.code-card clips the file-tab header's square corners to
+   * the card's own rounded ones; .output-card clips DetailOutputPanel's
+   * SVG/ASCII toggle bar the same way) rather than being removed, so both
+   * need the override -- this rule used to name .diagram-frame instead of
+   * .output-card, back when that was the outer flex item's own class
+   * (before #989's SVG/ASCII toggle wrapped it in .output-card and
+   * demoted .diagram-frame to an inner div — see DetailOutputPanel/
+   * SvgOutput in diagram-detail-app.tsx); left unrenamed here, it stopped
+   * matching anything and the render panel collapsed to ~2px tall on any
+   * viewport at or below this breakpoint. Switching to flex-basis: auto
+   * sizes both from their content instead of 0, which sidesteps the
+   * automatic-minimum substitution entirely rather than fighting it with
+   * a magic-number min-height.
    */
-  .code-card, .diagram-frame { flex: 1 1 auto !important; }
+  .code-card, .output-card { flex: 1 1 auto !important; }
 }
 
 ${MEDIA.mobile} {

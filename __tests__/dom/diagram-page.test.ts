@@ -117,6 +117,53 @@ describe('DiagramTypePage (#821)', () => {
     expect(screen.getByText('Show 1 more example')).toBeInTheDocument()
   })
 
+  it("keeps the tablet/mobile flex-basis override targeting .output-card, not the stale .diagram-frame selector it renamed from", () => {
+    // Regression test for a live bug: DetailOutputPanel's SVG/ASCII toggle
+    // (#989) renamed the "Source → render" panel's own flex-item class from
+    // .diagram-frame to .output-card (.diagram-frame became an inner div,
+    // see diagram-detail-app.tsx's SvgOutput), but pageCss's `${MEDIA.tablet}`
+    // override -- which exists specifically to stop that panel collapsing to
+    // ~0 height once .detail-row flips to a column layout, see this file's
+    // own comment above `.code-card, .output-card { flex: 1 1 auto !important; }`
+    // -- still said `.diagram-frame`, so it silently stopped matching
+    // anything and the diagram panel disappeared below the tablet breakpoint
+    // (900px) in production. jsdom doesn't compute flex layout, so this
+    // can't assert the visual collapse directly -- it pins the emitted CSS
+    // text itself, the next best thing for a plain CSS-in-JS string bug.
+    render(
+      createElement(DiagramTypePage, {
+        label: 'Sequence diagram',
+        slug: 'sequence',
+        intro: 'Sequence diagrams show messages between participants.',
+        accent: 'cyan',
+        exampleHeading: 'An API handshake, message by message.',
+        sourceFilename: 'handshake.mmd',
+        title: 'Sequence diagram examples | Zombie Mermaid',
+        description: 'Rendered live in any of 15 built-in themes.',
+        canonical: 'https://example.test/diagrams/sequence.html',
+        cssHref: 'assets/diagram-page.css',
+        faviconHref: '../favicon.svg',
+        sourcePanelHtml:
+          '<pre class="shiki"><code>sequenceDiagram</code></pre>',
+        diagramHtml: '<svg data-diagram="sequence"></svg>',
+        asciiHtml: '<span style="color:#27272A">type-ascii-output</span>',
+        editorHref: '../editor#eyJzb3VyY2UiOiJ4In0=',
+        galleryItems: [],
+        types: TYPES,
+        themeDataScript: 'window.__diagramPageThemes = {"":{"bg":"#FFFFFF"}};',
+        clientScriptSrc: 'assets/diagram-page-client.js',
+      }),
+    )
+
+    const styleText = Array.from(document.querySelectorAll('style'))
+      .map((el) => el.textContent ?? '')
+      .join('\n')
+    expect(styleText).toMatch(
+      /\.code-card,\s*\.output-card\s*\{\s*flex:\s*1 1 auto !important;\s*\}/,
+    )
+    expect(styleText).not.toMatch(/\.code-card,\s*\.diagram-frame\s*\{/)
+  })
+
   it('renders both the wide and narrow source-panel/diagram-svg variants for an orientation-alternate type', () => {
     render(
       createElement(DiagramTypePage, {
