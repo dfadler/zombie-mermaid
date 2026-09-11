@@ -94,7 +94,8 @@ export const samples: Sample[] = [
   {
     title: 'Original Node Shapes',
     category: 'Flowchart',
-    description: 'Rectangle, rounded, diamond, stadium, and circle.',
+    description:
+      'Rectangle, rounded, diamond, stadium, and circle — the five shapes that cover most real flowcharts: a plain step, a start/end point, a decision, and a terminal marker.',
     source: `graph LR
   A[Rectangle] --> B(Rounded)
   B --> C{Diamond}
@@ -105,7 +106,7 @@ export const samples: Sample[] = [
     title: 'Batch 1 Shapes',
     category: 'Flowchart',
     description:
-      'Subroutine `[[text]]`, double circle `(((text)))`, and hexagon `{{text}}`.',
+      'Subroutine, double circle, and hexagon — three specialty shapes for a predefined process, a double terminal, or a preparation step, beyond the five most common ones in Original Node Shapes.',
     source: `graph LR
   A[[Subroutine]] --> B(((Double Circle)))
   B --> C{{Hexagon}}`,
@@ -114,7 +115,7 @@ export const samples: Sample[] = [
     title: 'Batch 2 Shapes',
     category: 'Flowchart',
     description:
-      'Cylinder `[(text)]`, asymmetric `>text]`, trapezoid `[/text\\]`, and inverse trapezoid `[\\text/]`.',
+      'Cylinder, asymmetric, trapezoid, and inverse trapezoid — four more specialty shapes, for a database, a flag or priority marker, or a manual operation, rounding out the full set alongside Batch 1 Shapes.',
     source: `graph LR
   A[(Database)] --> B>Flag Shape]
   B --> C[/Wider Bottom\\]
@@ -124,7 +125,8 @@ export const samples: Sample[] = [
     title: 'All 12 Flowchart Shapes',
     category: 'Flowchart',
     gallery: true,
-    description: 'Every supported flowchart shape in a single diagram.',
+    description:
+      'Every shape from Original Node Shapes and both Batch pages, chained into one reference diagram — the single chart to screenshot or copy from when you need to see all twelve at a glance instead of checking three separate pages.',
     source: `graph LR
   A[Rectangle] --> B(Rounded)
   B --> C{Diamond}
@@ -147,7 +149,8 @@ export const samples: Sample[] = [
     title: 'All Edge Styles',
     category: 'Flowchart',
     gallery: true,
-    description: 'Solid, dotted, and thick arrows with labels.',
+    description:
+      'Solid, dotted, and thick arrows side by side, each carrying its own label — the three edge weights compared directly, rather than picked from memory one at a time.',
     source: `graph TD
   A[Source] -->|solid| B[Target 1]
   A -.->|dotted| C[Target 2]
@@ -797,7 +800,7 @@ flowchart LR
     title: 'Sequence: Self-Messages with Notes',
     category: 'Sequence',
     description:
-      'Self-referencing messages inside alt blocks with notes — tests that notes clear self-message loops and stack without overlapping.',
+      'A self-message wrapped in a note inside a conditional block — useful for annotating a retry loop, an internal computation, or any step where a participant acts on itself without messaging anyone else.',
     source: `sequenceDiagram
   participant User
   participant Main as Main Process
@@ -994,7 +997,8 @@ flowchart LR
     title: 'Class: All 6 Relationship Types',
     category: 'Class',
     gallery: true,
-    description: 'Every relationship type in a single diagram for comparison.',
+    description:
+      "Inheritance, composition, aggregation, association, dependency, and realization, chained into one diagram — the reference chart for telling all six markers apart at a glance instead of checking each relationship's own page.",
     source: `classDiagram
   A <|-- B : inheritance
   C *-- D : composition
@@ -1207,7 +1211,8 @@ flowchart LR
     title: 'ER: All Cardinality Types',
     category: 'ER',
     gallery: true,
-    description: 'Every cardinality combination in one diagram.',
+    description:
+      "Every crow's-foot cardinality combination side by side — the reference chart for reading any combination at a glance instead of checking each relationship's own page.",
     source: `erDiagram
   A ||--|| B : one-to-one
   C ||--o{ D : one-to-many
@@ -1488,7 +1493,7 @@ flowchart LR
     title: 'Sequence: Alt/Else Long Label With Uninvolved Participant',
     category: 'Sequence',
     description:
-      "Regression coverage for #352/#387: a long alt/else condition label sits next to a participant (C) that has no messages inside the block. Widening the block wall to fit the label must not swallow C's lifeline.",
+      "A long alt/else condition label next to a participant with no messages inside that block — the block widens to fit the label without cutting off that participant's own lifeline, which matters once a real condition description runs longer than a word or two.",
     source: `sequenceDiagram
   participant A
   participant B
@@ -1504,7 +1509,7 @@ flowchart LR
     category: 'Sequence',
     gallery: true,
     description:
-      "Mermaid's own `create`/`destroy` example (#419): Carl and Donald appear at the message that creates them, Carl and Bob's lifelines end with a cross at the message that destroys them.",
+      "Mermaid's own create/destroy example: Carl and Donald appear at the message that creates them, and Carl and Bob's lifelines end with a cross at the message that destroys them — useful for showing a participant's actual lifetime instead of assuming every actor exists for the whole diagram.",
     source: `sequenceDiagram
   Alice->>Bob: Hello Bob, how are you ?
   Bob->>Alice: Fine, thank you. And you?
