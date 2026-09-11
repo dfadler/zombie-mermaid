@@ -151,12 +151,10 @@ export function DiagramTagApp({
         }}
       >
         <div
+          className="tag-result-grid"
           style={{
             maxWidth: `${LAYOUT.maxWidth}px`,
             margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, minmax(0,1fr))',
-            gap: `${SPACE['2xl']}px`,
           }}
         >
           {results.map((item) => (

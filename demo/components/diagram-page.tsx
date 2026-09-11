@@ -373,6 +373,28 @@ ${MEDIA.mobile} {
   .gallery-more summary { width: 100%; justify-content: center; }
 }
 
+/*
+ * The single-tag search page's cross-type result grid
+ * (diagram-tag-app.tsx, #991) -- a dedicated class rather than reusing
+ * .gallery-grid verbatim: that one is a fixed 3 columns, where a tag's
+ * result set (up to ~10 real samples today) reads better at 4 wide on
+ * desktop, still dropping to 2/1 at the same tablet/mobile breakpoints
+ * .gallery-grid already uses.
+ */
+.tag-result-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: ${SPACE['2xl']}px;
+}
+
+${MEDIA.tablet} {
+  .tag-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+${MEDIA.mobile} {
+  .tag-result-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+}
+
 ${MEDIA.tablet} {
   .detail-row { flex-direction: column !important; }
   /*

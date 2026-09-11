@@ -58,6 +58,10 @@ describe('TAG_RULES', () => {
     const nonIdentifying = TAG_RULES.find(
       (r) => r.slug === 'non-identifying-relationship',
     )
+    expect(
+      nonIdentifying,
+      'missing rule non-identifying-relationship',
+    ).toBeDefined()
     const matches = samples.filter((s) => nonIdentifying?.test(s))
     expect(matches.every((s) => s.category === 'ER')).toBe(true)
   })
