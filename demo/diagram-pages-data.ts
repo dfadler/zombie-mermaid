@@ -2,10 +2,11 @@
  * Content for the per-diagram-type/per-theme SEO landing pages (`pages.ts`).
  *
  * Each entry pairs one of the 6 diagram types this library renders with a
- * small, representative Mermaid source and a short, concrete intro
- * paragraph. `pages.ts` crosses this list with every key in `THEMES` (see
- * `packages/core/src/theme.ts`) to generate one page per (diagram type × theme)
- * combination.
+ * small, representative Mermaid source, a short, concrete intro paragraph,
+ * and a longer "About" paragraph (`about`) paraphrased from that type's own
+ * page in Mermaid's docs (`docsUrl`) for the page's "About" section. `pages.ts`
+ * crosses this list with every key in `THEMES` (see `packages/core/src/
+ * theme.ts`) to generate one page per (diagram type × theme) combination.
  *
  * `source` is looked up from `samples-data.ts` by title (via `sampleSource`
  * below) rather than duplicated as a hand-typed string literal — the
@@ -84,6 +85,28 @@ export interface DiagramTypeProfile {
    * type-specific so every page doesn't show the same filename.
    */
   sourceFilename: string
+  /**
+   * The "About" section's h2 — type-specific, in the same voice as
+   * `exampleHeading`, naming what that section actually covers (the
+   * notation's background and its key syntax constructs).
+   */
+  aboutHeading: string
+  /**
+   * The "About" section's one-paragraph deep-dive on this diagram type —
+   * longer and more syntax-specific than `intro` (which stays a short lede
+   * under the page `h1`). Paraphrased from the corresponding page under
+   * Mermaid's own docs (`docsUrl`), in this file's own voice rather than
+   * quoted verbatim.
+   */
+  about: string
+  /**
+   * The canonical Mermaid documentation page for this diagram type's
+   * syntax — the "About" section's outbound link target, and the
+   * `about` paragraph's source of truth. Points at mermaid.ai's hosted
+   * docs (the project's current home for what used to live at
+   * mermaid.js.org), not this repo's own docs.
+   */
+  docsUrl: string
 }
 
 export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
@@ -97,6 +120,10 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     accent: 'blue',
     exampleHeading: 'A deploy pipeline, start to finish.',
     sourceFilename: 'pipeline.mmd',
+    aboutHeading: 'Where flowcharts come from, and how the syntax works.',
+    about:
+      'Flowcharts represent a process as nodes and edges — a general-purpose diagramming notation that predates computing and is still the default way most teams sketch a sequence of steps and decisions. Mermaid’s syntax sets a graph direction (top-down, left-right, bottom-up, or right-left), connects nodes with arrow-style edges, and offers more than 30 node shapes, from a plain rectangle to a stadium, cylinder, or subroutine box. Subgraphs group related nodes into their own labeled box, and edges can carry labels, alternate styles, or be hidden entirely for layout control.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html',
   },
   {
     slug: 'state',
@@ -108,6 +135,10 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     accent: 'violet',
     exampleHeading: "A connection's full lifecycle, state by state.",
     sourceFilename: 'connection.mmd',
+    aboutHeading: 'Where state diagrams come from, and how the syntax works.',
+    about:
+      'State diagrams describe every state a system can be in and the transitions that move it from one to the next — a notation rooted in finite-state-machine theory and used anywhere behavior depends on history: a network connection, an order’s lifecycle, a UI component’s interaction states. Mermaid’s syntax marks the start and end of a flow with a `[*]` pseudostate, lets a composite state nest a whole sub-diagram inside a single box to model layered behavior, and supports choice points, forks, and joins for diagrams where more than one transition can happen at once.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/stateDiagram.html',
   },
   {
     slug: 'sequence',
@@ -119,6 +150,11 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     accent: 'cyan',
     exampleHeading: 'An authenticated API call, message by message.',
     sourceFilename: 'auth-flow.mmd',
+    aboutHeading:
+      'Where sequence diagrams come from, and how the syntax works.',
+    about:
+      'Sequence diagrams show messages passing between participants in the order they happen — the standard way software teams document an API call, an authentication handshake, or a trace across several services. Mermaid’s syntax defines participants as plain actors or typed as a boundary, database, or queue, then connects them with more than half a dozen arrow styles — solid, dotted, or crossed, synchronous or async — to encode exactly what kind of message is being sent. Activation bars mark how long a participant is doing work, and blocks like `alt`, `par`, and `loop` group messages into conditional, parallel, or repeated flows.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/sequenceDiagram.html',
   },
   {
     slug: 'class',
@@ -130,6 +166,10 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     accent: 'amber',
     exampleHeading: "A type's shape, one compartment at a time.",
     sourceFilename: 'shape.mmd',
+    aboutHeading: 'Where class diagrams come from, and how the syntax works.',
+    about:
+      'Class diagrams are UML’s notation for a type’s shape — its attributes, its methods, and how it relates to every other type in the system — the standard reference for object-oriented design docs and for translating a design straight into code. Mermaid’s syntax marks each member’s visibility with `+` (public), `-` (private), `#` (protected), or `~` (package), and distinguishes relationships like inheritance, composition, aggregation, and plain association, each with its own arrowhead. Classes can carry stereotypes such as `<<Interface>>` or `<<Abstract>>` and be grouped into namespaces for larger diagrams.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/classDiagram.html',
   },
   {
     slug: 'er',
@@ -141,6 +181,11 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     accent: 'pink',
     exampleHeading: "A schema's entities, and how they relate.",
     sourceFilename: 'schema.mmd',
+    aboutHeading: 'Where ER diagrams come from, and how the syntax works.',
+    about:
+      'Entity-relationship diagrams describe a database schema: the entities in a domain, the attributes each one carries, and the cardinality of the relationships that connect them. Mermaid’s syntax uses crow’s-foot notation to mark whether a relationship is one-to-one, one-to-many, or many-to-many, and a solid or dashed connecting line to distinguish identifying from non-identifying relationships. Attributes can declare a type, a name, and key markers — PK, FK, or UK — so a rendered diagram doubles as a readable schema reference, not just a shape.',
+    docsUrl:
+      'https://mermaid.ai/open-source/syntax/entityRelationshipDiagram.html',
   },
   {
     slug: 'xy-chart',
@@ -152,6 +197,10 @@ export const DIAGRAM_TYPE_PROFILES: DiagramTypeProfile[] = [
     accent: 'green',
     exampleHeading: 'Two series, one shared axis.',
     sourceFilename: 'chart.mmd',
+    aboutHeading: 'Where XY charts come from, and how the syntax works.',
+    about:
+      'XY charts plot data across two numeric axes — the one Mermaid diagram type that’s a data chart rather than a graph of nodes and edges, useful for a quick bar or line chart living alongside process diagrams in the same document. Mermaid’s syntax sets the chart’s orientation (vertical by default, or horizontal), titles and ranges for each axis, and any number of named `line` or `bar` series drawn from a plain array of numbers — mixed on the same chart if needed, with named series appearing automatically in a legend.',
+    docsUrl: 'https://mermaid.ai/open-source/syntax/xyChart.html',
   },
 ]
 

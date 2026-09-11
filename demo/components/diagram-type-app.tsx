@@ -584,6 +584,78 @@ function MoreExamplesSection({
 }
 
 /**
+ * The "About" section: a longer, syntax-specific paragraph on this diagram
+ * type (`DiagramTypeProfile.about`), paraphrased from Mermaid's own docs,
+ * plus an outbound link back to the real page it was drawn from
+ * (`docsUrl`). Sits after "Source → render" (the visual hook comes first)
+ * and before "Every example" — deeper explanatory content reads better
+ * once the page has already shown what the notation produces.
+ *
+ * `target="_blank" rel="noopener"` on the outbound link follows this
+ * file's existing convention for an external destination (see index-
+ * page.tsx's theme-showcase footnote link) rather than introducing a new
+ * one; `CTA` (primitives.tsx) has no target/rel props, so this is a plain
+ * styled `<a>`.
+ */
+function AboutSection({
+  aboutHeading,
+  about,
+  docsUrl,
+  accent,
+}: {
+  aboutHeading: string
+  about: string
+  docsUrl: string
+  accent: Accent
+}) {
+  return (
+    <div
+      className="section-px"
+      style={{
+        padding: `${SECTION_SPACE.default}px ${LAYOUT.gutter.desktop}px`,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: `${LAYOUT.maxWidth}px`,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: `${SPACE['4xl']}px`,
+        }}
+      >
+        <SectionEyebrow accent={accent}>About this notation</SectionEyebrow>
+        <h2 style={{ fontSize: '30px', letterSpacing: LETTER_SPACING.heading }}>
+          {aboutHeading}
+        </h2>
+        <p
+          style={{
+            fontSize: `${FONT_SIZE.bodySm}px`,
+            lineHeight: 1.7,
+            color: colorVar('--text-dim'),
+            maxWidth: '760px',
+          }}
+        >
+          {about}
+        </p>
+        <a
+          href={docsUrl}
+          target="_blank"
+          rel="noopener"
+          style={{
+            color: accentVar(accent),
+            fontSize: `${FONT_SIZE.bodySm}px`,
+            fontWeight: FONT_WEIGHT.bold,
+          }}
+        >
+          Read the full syntax reference in the Mermaid docs →
+        </a>
+      </div>
+    </div>
+  )
+}
+
+/**
  * `diagram-type-root`: id of the *hydration container*
  * `demo/diagram-type-client.tsx`'s `hydrateRoot()` call mounts onto — a
  * plain wrapper `<div>` `diagram-page.tsx`'s `DiagramTypePage` renders
@@ -613,6 +685,12 @@ export interface DiagramTypeAppProps {
   editorHref: string
   galleryItems: readonly GalleryItem[]
   types: readonly DiagramCrosslink[]
+  /** The "About" section's h2 — see `DiagramTypeProfile.aboutHeading`. */
+  aboutHeading: string
+  /** The "About" section's body paragraph — see `DiagramTypeProfile.about`. */
+  about: string
+  /** The "About" section's outbound link target — see `DiagramTypeProfile.docsUrl`. */
+  docsUrl: string
 }
 
 /**
@@ -637,6 +715,9 @@ export function DiagramTypeApp({
   editorHref,
   galleryItems,
   types,
+  aboutHeading,
+  about,
+  docsUrl,
 }: DiagramTypeAppProps) {
   return (
     <>
@@ -837,6 +918,12 @@ export function DiagramTypeApp({
         </div>
       </div>
 
+      <AboutSection
+        aboutHeading={aboutHeading}
+        about={about}
+        docsUrl={docsUrl}
+        accent={accent}
+      />
       <MoreExamplesSection label={label} items={galleryItems} accent={accent} />
       {/* ============ CROSS-LINKS ============ */}
       <div

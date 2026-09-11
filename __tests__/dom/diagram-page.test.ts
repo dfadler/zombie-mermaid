@@ -60,6 +60,10 @@ describe('DiagramTypePage (#821)', () => {
         accent: 'cyan',
         exampleHeading: 'An API handshake, message by message.',
         sourceFilename: 'handshake.mmd',
+        aboutHeading:
+          'Where sequence diagrams come from, and how the syntax works.',
+        about: 'Sequence diagrams show messages passing between participants.',
+        docsUrl: 'https://mermaid.ai/open-source/syntax/sequenceDiagram.html',
         title: 'Sequence diagram examples | Zombie Mermaid',
         description: 'Rendered live in any of 15 built-in themes.',
         canonical: 'https://example.test/diagrams/sequence.html',
@@ -117,6 +121,21 @@ describe('DiagramTypePage (#821)', () => {
     // The "Show N more" disclosure branch (7 gallery items > the 6-visible
     // cap) — see MoreExamplesSection's doc comment.
     expect(screen.getByText('Show 1 more example')).toBeInTheDocument()
+    // The "About" section (Mermaid-docs-derived copy) and its outbound link.
+    expect(
+      screen.getByRole('heading', {
+        name: 'Where sequence diagrams come from, and how the syntax works.',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Sequence diagrams show messages passing between participants.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /mermaid docs/i })).toHaveAttribute(
+      'href',
+      'https://mermaid.ai/open-source/syntax/sequenceDiagram.html',
+    )
   })
 
   it('keeps the tablet/mobile flex-basis override targeting .output-card, not the stale .diagram-frame selector it renamed from', () => {
@@ -140,6 +159,10 @@ describe('DiagramTypePage (#821)', () => {
         accent: 'cyan',
         exampleHeading: 'An API handshake, message by message.',
         sourceFilename: 'handshake.mmd',
+        aboutHeading:
+          'Where sequence diagrams come from, and how the syntax works.',
+        about: 'Sequence diagrams show messages passing between participants.',
+        docsUrl: 'https://mermaid.ai/open-source/syntax/sequenceDiagram.html',
         title: 'Sequence diagram examples | Zombie Mermaid',
         description: 'Rendered live in any of 15 built-in themes.',
         canonical: 'https://example.test/diagrams/sequence.html',
@@ -175,6 +198,9 @@ describe('DiagramTypePage (#821)', () => {
         accent: 'blue',
         exampleHeading: 'A deploy pipeline, start to finish.',
         sourceFilename: 'pipeline.mmd',
+        aboutHeading: 'Where flowcharts come from, and how the syntax works.',
+        about: 'Flowcharts represent a process as nodes and edges.',
+        docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html',
         title: 'Flowchart examples | Zombie Mermaid',
         description: 'Rendered live in any of 15 built-in themes.',
         canonical: 'https://example.test/diagrams/flowchart.html',

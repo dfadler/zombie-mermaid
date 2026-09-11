@@ -532,6 +532,12 @@ export interface DiagramTypePageProps {
   exampleHeading: string
   /** The source panel's file-tab label — see `DiagramTypeProfile.sourceFilename`. */
   sourceFilename: string
+  /** The "About" section's h2 — see `DiagramTypeProfile.aboutHeading`. */
+  aboutHeading: string
+  /** The "About" section's body paragraph — see `DiagramTypeProfile.about`. */
+  about: string
+  /** The "About" section's outbound link target — see `DiagramTypeProfile.docsUrl`. */
+  docsUrl: string
   title: string
   description: string
   canonical: string
@@ -593,6 +599,9 @@ export function DiagramTypePage({
   accent,
   exampleHeading,
   sourceFilename,
+  aboutHeading,
+  about,
+  docsUrl,
   title,
   description,
   canonical,
@@ -614,6 +623,9 @@ export function DiagramTypePage({
     accent,
     exampleHeading,
     sourceFilename,
+    aboutHeading,
+    about,
+    docsUrl,
     sourcePanelHtml,
     diagramHtml,
     asciiHtml,

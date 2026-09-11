@@ -80,6 +80,9 @@ const SINGLE_ORIENTATION_PROPS: DiagramTypeAppProps = {
     },
   ],
   types: [{ slug: 'sequence', label: 'Sequence diagram', accent: 'cyan' }],
+  aboutHeading: 'Where flowcharts come from, and how the syntax works.',
+  about: 'Flowcharts represent a process as nodes and edges.',
+  docsUrl: 'https://mermaid.ai/open-source/syntax/flowchart.html',
 }
 
 const ORIENTATION_ALTERNATE_PROPS: DiagramTypeAppProps = {
@@ -236,6 +239,17 @@ describe.each([
     ).toBeInTheDocument()
     expect(document.querySelector('.diagram-frame svg')).not.toBeNull()
     expect(document.querySelector('.gallery-thumb svg')).not.toBeNull()
+
+    expect(
+      screen.getByRole('heading', { name: props.aboutHeading }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(props.about)).toBeInTheDocument()
+    const docsLink = screen.getByRole('link', {
+      name: /mermaid docs/i,
+    })
+    expect(docsLink).toHaveAttribute('href', props.docsUrl)
+    expect(docsLink).toHaveAttribute('target', '_blank')
+    expect(docsLink).toHaveAttribute('rel', 'noopener')
   })
 
   it('switches the hero panel to ASCII and back on click (#989 part 2)', async () => {
