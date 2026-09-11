@@ -39,7 +39,7 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronRightIcon } from './icons.tsx'
 import { Card, CTA, type Accent, accentVar } from './primitives.tsx'
 import {
@@ -225,6 +225,52 @@ function SvgOutput({ svgHtml }: { svgHtml: OrientationVariants }) {
 }
 
 /**
+ * The fullscreen toggle's icon pair — four corner brackets, pointing
+ * outward to enter and inward to exit. Not canvas-sourced (unlike
+ * icons.tsx's set, see that module's header comment): these paths are
+ * reused verbatim from `editor-fullscreen.ts`'s own toggle (#980), which
+ * shipped an initial diagonal-arrows pair and replaced it (commit
+ * b3f10d0) after finding that pair too similar at small sizes to read as
+ * two distinct states — this component reuses the already-corrected,
+ * already-shipped pair rather than repeating that mistake or inventing a
+ * third design. Defined locally, not added to the shared icon set, for the
+ * same reason `FileTab` above is: a page under `diagrams/` draws its own
+ * copy rather than sharing a component across files that share nothing at
+ * runtime.
+ */
+function FullscreenIcon({ isFullscreen }: { isFullscreen: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {isFullscreen ? (
+        <>
+          <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+          <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+          <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+          <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+        </>
+      ) : (
+        <>
+          <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+          <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+          <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+          <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+        </>
+      )}
+    </svg>
+  )
+}
+
+/**
  * The "Source → render" panel's render half: a segmented SVG/ASCII toggle
  * (`.output-segment`/`.output-segment.active`, defined identically in
  * `diagram-page.tsx`'s `pageCss` — same classes `hero-output-panel.tsx`'s
@@ -248,10 +294,50 @@ export function DetailOutputPanel({
   asciiHtml: string
 }) {
   const [mode, setMode] = useState<'svg' | 'ascii'>('svg')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  // Anchors `.closest('.output-card')` below -- the header is that Card's
+  // own direct child (see the two call sites' `<Card className="output-
+  // card">` markup), not a ref threaded down from either page shell.
+  const headerRef = useRef<HTMLDivElement | null>(null)
+
+  // state.isFullscreen is never set optimistically from the click handler
+  // below -- only from this fullscreenchange listener reading
+  // document.fullscreenElement -- so it always reflects what the browser
+  // actually did, including cases the click handler doesn't control at
+  // all: Esc, the browser exiting on its own, or requestFullscreen()
+  // rejecting. Mirrors editor-fullscreen.ts's useEditorFullscreen (#980).
+  useEffect(() => {
+    const card = headerRef.current?.closest('.output-card')
+    if (!card) return
+    function onFullscreenChange() {
+      setIsFullscreen(document.fullscreenElement === card)
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () =>
+      document.removeEventListener('fullscreenchange', onFullscreenChange)
+  }, [])
+
+  function toggleFullscreen() {
+    const card = headerRef.current?.closest('.output-card')
+    if (!card) return
+    if (document.fullscreenElement === card) {
+      document.exitFullscreen().catch(() => {
+        // Rejected exit (e.g. already left some other way) -- the next
+        // fullscreenchange, if any, is still what isFullscreen syncs from.
+      })
+    } else {
+      card.requestFullscreen().catch(() => {
+        // Rejected entry (no user-activation, a permissions-policy block,
+        // ...) -- isFullscreen simply never flips, since no
+        // fullscreenchange fires for a request that never took effect.
+      })
+    }
+  }
 
   return (
     <>
       <div
+        ref={headerRef}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -276,27 +362,44 @@ export function DetailOutputPanel({
         <div
           style={{
             display: 'flex',
-            gap: '2px',
-            background: colorVar('--panel'),
-            borderRadius: '999px',
-            padding: '2px',
+            alignItems: 'center',
+            gap: `${SPACE.sm}px`,
           }}
         >
+          <div
+            style={{
+              display: 'flex',
+              gap: '2px',
+              background: colorVar('--panel'),
+              borderRadius: '999px',
+              padding: '2px',
+            }}
+          >
+            <button
+              type="button"
+              className={`output-segment${mode === 'svg' ? ' active' : ''}`}
+              aria-pressed={mode === 'svg'}
+              onClick={() => setMode('svg')}
+            >
+              SVG
+            </button>
+            <button
+              type="button"
+              className={`output-segment${mode === 'ascii' ? ' active' : ''}`}
+              aria-pressed={mode === 'ascii'}
+              onClick={() => setMode('ascii')}
+            >
+              ASCII
+            </button>
+          </div>
           <button
             type="button"
-            className={`output-segment${mode === 'svg' ? ' active' : ''}`}
-            aria-pressed={mode === 'svg'}
-            onClick={() => setMode('svg')}
+            className="output-fullscreen-btn"
+            title={isFullscreen ? 'Exit fullscreen' : 'View fullscreen'}
+            aria-pressed={isFullscreen}
+            onClick={toggleFullscreen}
           >
-            SVG
-          </button>
-          <button
-            type="button"
-            className={`output-segment${mode === 'ascii' ? ' active' : ''}`}
-            aria-pressed={mode === 'ascii'}
-            onClick={() => setMode('ascii')}
-          >
-            ASCII
+            <FullscreenIcon isFullscreen={isFullscreen} />
           </button>
         </div>
       </div>

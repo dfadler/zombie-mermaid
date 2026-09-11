@@ -462,7 +462,53 @@ ${MEDIA.mobile} {
   cursor: pointer;
 }
 .output-segment.active { background: ${colorVar('--panel-2')}; color: ${colorVar('--text')}; }
-.output-segment:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }`
+.output-segment:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
+
+/*
+ * The fullscreen toggle (diagram-detail-app.tsx's DetailOutputPanel,
+ * FullscreenIcon). A plain icon button beside the SVG/ASCII segments,
+ * sized to match their own ${FONT_SIZE.caption}px/14px-icon scale.
+ */
+.output-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  cursor: pointer;
+}
+.output-fullscreen-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel')}; }
+.output-fullscreen-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: 1px; }
+
+/*
+ * DetailOutputPanel's toggleFullscreen() requestFullscreen()s .output-card
+ * itself -- the browser then promotes it to the top layer and applies its
+ * own UA :fullscreen sizing, but author rules still outrank that default
+ * regardless of specificity, so this card's normal flex-basis/border
+ * layout above would otherwise keep confining it. Unlike editor-page.tsx's
+ * .editor-tool-shell:fullscreen precedent (#980), !important is required
+ * here, not just presence: Card's tone="glow" background and accent
+ * borderColor (primitives.tsx) are inline styles on this exact element,
+ * which plain CSS specificity can never beat. -webkit-full-screen covers
+ * Safari < 16.4.
+ */
+.output-card:fullscreen,
+.output-card:-webkit-full-screen {
+  flex: none !important;
+  width: 100%;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none;
+  margin: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  background: ${colorVar('--panel')} !important;
+}`
 }
 
 /** {@link pageCss} in a `<style>` element, for this page's `<head>`. */
