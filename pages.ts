@@ -57,9 +57,11 @@ import { renderHtmlDocument } from './demo/render-html.ts'
 import {
   DiagramDetailPage,
   DiagramHubPage,
+  DiagramTagPage,
   DiagramTypePage,
   type DiagramDetailCrosslink,
   type OrientationVariants,
+  type TagResultItem,
 } from './demo/components/diagram-page.tsx'
 import { THEMES } from '@zombie-mermaid/core'
 import {
@@ -67,6 +69,7 @@ import {
   allExamplesFor,
   sampleSlug,
 } from './demo/diagram-pages-data.ts'
+import { TAG_RULES } from './demo/diagram-tags.ts'
 import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
 import type { Sample } from './samples-data.ts'
 import { renderMermaidASCII, renderMermaidSVG } from './src/index.ts'
@@ -149,6 +152,20 @@ async function bundleDiagramDetailClient(): Promise<string> {
   )
 }
 
+/**
+ * Bundle `demo/diagram-tag-client.tsx` (zombie-mermaid#991) for the
+ * browser — mirrors `bundleDiagramHubClient()`'s reasoning (no live
+ * diagram to re-theme), reused unchanged across every generated tag page
+ * the same way `bundleDiagramDetailClient()`'s output is reused across
+ * every sample page.
+ */
+async function bundleDiagramTagClient(): Promise<string> {
+  return bundleForBrowser(
+    new URL('./demo/diagram-tag-client.tsx', import.meta.url).pathname,
+    { minify: true },
+  )
+}
+
 async function main(): Promise<void> {
   // Copy the demo's full stylesheet plus this page type's own small
   // supplement, same two-file split dashboard.ts already uses (dashboard.css
@@ -165,11 +182,13 @@ async function main(): Promise<void> {
     log: false,
   })
 
-  const [clientJs, hubClientScript, detailClientJs] = await Promise.all([
-    bundleDiagramTypeClient(),
-    bundleDiagramHubClient(),
-    bundleDiagramDetailClient(),
-  ])
+  const [clientJs, hubClientScript, detailClientJs, tagClientJs] =
+    await Promise.all([
+      bundleDiagramTypeClient(),
+      bundleDiagramHubClient(),
+      bundleDiagramDetailClient(),
+      bundleDiagramTagClient(),
+    ])
   await generatePage({
     outPath: new URL('./assets/diagram-page-client.js', OUT_DIR),
     content: clientJs,
@@ -178,6 +197,11 @@ async function main(): Promise<void> {
   await generatePage({
     outPath: new URL('./assets/diagram-detail-client.js', OUT_DIR),
     content: detailClientJs,
+    log: false,
+  })
+  await generatePage({
+    outPath: new URL('./assets/diagram-tag-client.js', OUT_DIR),
+    content: tagClientJs,
     log: false,
   })
 
@@ -215,6 +239,19 @@ async function main(): Promise<void> {
     label: p.label,
     accent: p.accent,
   }))
+
+  // Every real sample across every type, with its already-rendered SVG and
+  // its detail-page href (relative to diagrams/) -- accumulated across the
+  // per-type loop below, then used after that loop to build the single-tag
+  // search pages (#991), which are cross-type by design (see diagram-tag-
+  // app.tsx's own header comment) and so can't be generated inside a single
+  // type's own iteration.
+  const allSamplesFlat: {
+    sample: Sample
+    profile: (typeof DIAGRAM_TYPE_PROFILES)[number]
+    svgHtml: string
+    href: string
+  }[] = []
 
   for (const profile of DIAGRAM_TYPE_PROFILES) {
     const colors = DEFAULT_SWATCH
@@ -318,6 +355,18 @@ async function main(): Promise<void> {
       diagramHtml: cachedSvg(sample),
       href: `${profile.slug}/${sampleSlug(sample.title)}.html`,
     }))
+    // Same order as allSamples (both derived by .map() over it), so zip by
+    // index rather than re-searching galleryItems by title.
+    allSamples.forEach((sample, i) => {
+      const item = galleryItems[i]
+      if (!item) return // unreachable: galleryItems.length === allSamples.length
+      allSamplesFlat.push({
+        sample,
+        profile,
+        svgHtml: item.diagramHtml,
+        href: `../${item.href}`,
+      })
+    })
 
     // -- Specific-diagram detail pages (#989's part 1): one per real sample
     // of this type, e.g. diagrams/flowchart/ci-cd-pipeline.html.
@@ -354,6 +403,10 @@ async function main(): Promise<void> {
           }).replace(/[ \t]+$/gm, ''),
           editorHref: `../../editor#${editorHash(sample.source, DEFAULT_THEME_KEY)}`,
           moreFromType,
+          tags: TAG_RULES.filter((rule) => rule.test(sample)).map((rule) => ({
+            label: rule.label,
+            href: `../tag/${rule.slug}.html`,
+          })),
           title: `${sample.title} | ${profile.label} diagram | Zombie Mermaid`,
           description: `${sample.description} Rendered live as both SVG and ASCII by zombie-mermaid, free and open source.`,
           canonical: detailCanonical,
@@ -414,6 +467,46 @@ async function main(): Promise<void> {
     await generatePage({
       outPath: new URL(`./${profile.slug}.html`, OUT_DIR),
       content: html,
+      log: false,
+    })
+  }
+
+  // -- Single-tag search pages (#991): diagrams/tag/<slug>.html, one per
+  // TAG_RULES entry that actually matches at least one real sample --
+  // never the full rule list regardless of whether it matched anything,
+  // per docs/decisions/diagram-tag-search.md's "real matches only" rule.
+  for (const rule of TAG_RULES) {
+    const matches = allSamplesFlat.filter((entry) => rule.test(entry.sample))
+    if (matches.length === 0) continue
+
+    const tagCanonical = `${SITE_URL}/diagrams/tag/${rule.slug}.html`
+    sitemapUrls.push(tagCanonical)
+
+    const results: TagResultItem[] = matches.map((entry) => ({
+      title: entry.sample.title,
+      typeLabel: entry.profile.label,
+      typeAccent: entry.profile.accent,
+      href: entry.href,
+      diagramHtml: entry.svgHtml,
+    }))
+
+    const tagHtml = renderHtmlDocument(
+      createElement(DiagramTagPage, {
+        label: rule.label,
+        description: rule.description,
+        results,
+        title: `${rule.label} — Mermaid diagram examples | Zombie Mermaid`,
+        metaDescription: `${rule.description} ${results.length} real example${results.length === 1 ? '' : 's'} across every zombie-mermaid diagram type.`,
+        canonical: tagCanonical,
+        faviconHref: '../../favicon.svg',
+        cssHref: '../assets/diagram-page.css',
+        clientScriptSrc: '../assets/diagram-tag-client.js',
+      }),
+    )
+
+    await generatePage({
+      outPath: new URL(`./tag/${rule.slug}.html`, OUT_DIR),
+      content: tagHtml,
       log: false,
     })
   }

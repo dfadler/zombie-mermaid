@@ -40,6 +40,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DiagramDetailPage,
   DiagramHubPage,
+  DiagramTagPage,
   DiagramTypePage,
 } from '../../demo/components/diagram-page.tsx'
 
@@ -194,6 +195,7 @@ describe('DiagramDetailPage (#989)', () => {
     cssHref: '../assets/diagram-page.css',
     faviconHref: '../../favicon.svg',
     clientScriptSrc: '../assets/diagram-detail-client.js',
+    tags: [{ label: 'Subgraph', href: '../tag/subgraph.html' }],
   }
 
   it('renders the breadcrumb, heading, source, and the SVG output by default', () => {
@@ -222,6 +224,11 @@ describe('DiagramDetailPage (#989)', () => {
     expect(
       screen.getByRole('link', { name: 'Open in the live editor' }),
     ).toHaveAttribute('href', '../../editor#eyJzb3VyY2UiOiJ6In0=')
+    // Feature-tag pill (#991) -- links to that construct's tag page.
+    expect(screen.getByRole('link', { name: 'Subgraph' })).toHaveAttribute(
+      'href',
+      '../tag/subgraph.html',
+    )
   })
 
   // The SVG/ASCII toggle's actual click -> state-change behavior isn't
@@ -350,5 +357,84 @@ describe('DiagramHubPage (#821)', () => {
 
     expect(screen.queryByText('Pick a look')).toBeNull()
     expect(screen.queryByText('Live in every built-in theme.')).toBeNull()
+  })
+})
+
+describe('DiagramTagPage (#991)', () => {
+  it('renders the tag heading, description, example count, and cross-type result cards', () => {
+    render(
+      createElement(DiagramTagPage, {
+        label: 'Subgraph',
+        description:
+          'Grouping nodes inside a labeled `subgraph` container, for a diagram whose flow naturally breaks into stages or systems.',
+        results: [
+          {
+            title: 'Subgraphs',
+            typeLabel: 'Flowchart',
+            typeAccent: 'blue',
+            href: '../flowchart/subgraphs.html',
+            diagramHtml: '<svg data-diagram="subgraphs"></svg>',
+          },
+          {
+            title: 'CI/CD Pipeline',
+            typeLabel: 'Flowchart',
+            typeAccent: 'blue',
+            href: '../flowchart/ci-cd-pipeline.html',
+            diagramHtml: '<svg data-diagram="ci-cd"></svg>',
+          },
+        ],
+        title: 'Subgraph — Mermaid diagram examples | Zombie Mermaid',
+        metaDescription: 'Grouping nodes inside a labeled subgraph container.',
+        canonical: 'https://example.test/diagrams/tag/subgraph.html',
+        faviconHref: '../../favicon.svg',
+        cssHref: '../assets/diagram-page.css',
+        clientScriptSrc: '../assets/diagram-tag-client.js',
+      }),
+    )
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Subgraph' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Grouping nodes inside a labeled/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('2 examples across every diagram type'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Subgraphs/ })).toHaveAttribute(
+      'href',
+      '../flowchart/subgraphs.html',
+    )
+    expect(
+      document.querySelector('.gallery-thumb svg[data-diagram="ci-cd"]'),
+    ).not.toBeNull()
+  })
+
+  it('renders singular wording for a single result', () => {
+    render(
+      createElement(DiagramTagPage, {
+        label: 'Composite State',
+        description: 'A nested sub-state.',
+        results: [
+          {
+            title: 'State: Composite States',
+            typeLabel: 'State diagram',
+            typeAccent: 'violet',
+            href: '../state/state-composite-states.html',
+            diagramHtml: '<svg></svg>',
+          },
+        ],
+        title: 'Composite State | Zombie Mermaid',
+        metaDescription: 'A nested sub-state.',
+        canonical: 'https://example.test/diagrams/tag/composite-state.html',
+        faviconHref: '../../favicon.svg',
+        cssHref: '../assets/diagram-page.css',
+        clientScriptSrc: '../assets/diagram-tag-client.js',
+      }),
+    )
+
+    expect(
+      screen.getByText('1 example across every diagram type'),
+    ).toBeInTheDocument()
   })
 })

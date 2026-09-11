@@ -27,10 +27,14 @@
  * (`.output-segment` is defined identically in `diagram-page.tsx`'s
  * `pageCss`), but the outer chrome and props are this page's own.
  *
- * No per-sample feature tags (e.g. "Subgraph", "Decision diamond") yet —
- * those were illustrative on the design canvas, not real data; a real
- * construct taxonomy across all six diagram types is issue #991's job, not
- * this one's.
+ * Feature-tag pills (e.g. "Subgraph", "Decision Diamond") under the intro
+ * paragraph link to that construct's single-tag search page
+ * (`diagrams/tag/<slug>.html`, zombie-mermaid#991) — `demo/diagram-
+ * tags.ts`'s `TAG_RULES`, computed per sample at build time
+ * (`pages.ts`), not the five illustrative labels the design canvas drew
+ * for one Flowchart example. Renders nothing when a sample matches no
+ * rule (most don't need to — see that file's own doc comment on why the
+ * taxonomy stays modest).
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
@@ -359,6 +363,8 @@ export interface DiagramDetailAppProps {
   editorHref: string
   /** Other real samples for the same type (excluding this one), each already rendered — see `demo/diagram-pages-data.ts`'s `allExamplesFor`. */
   moreFromType: readonly DiagramDetailCrosslink[]
+  /** Every `demo/diagram-tags.ts` construct this sample's real source matches, each linking to its tag page (`../../tag/<slug>.html`) — see `pages.ts`'s generator. Empty when the sample matches no rule. */
+  tags: readonly { label: string; href: string }[]
 }
 
 /**
@@ -376,6 +382,7 @@ export function DiagramDetailApp({
   asciiHtml,
   editorHref,
   moreFromType,
+  tags,
 }: DiagramDetailAppProps) {
   return (
     <>
@@ -424,6 +431,32 @@ export function DiagramDetailApp({
           >
             {sampleDescription}
           </p>
+          {tags.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                gap: `${SPACE.sm}px`,
+                flexWrap: 'wrap',
+              }}
+            >
+              {tags.map((tag) => (
+                <a
+                  key={tag.href}
+                  href={tag.href}
+                  className="pill mono"
+                  style={{
+                    background: colorVar('--panel'),
+                    border: `1px solid ${colorVar('--border')}`,
+                    color: colorVar('--text-dim'),
+                    padding: '7px 14px',
+                    fontSize: `${FONT_SIZE.caption}px`,
+                  }}
+                >
+                  {tag.label}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
