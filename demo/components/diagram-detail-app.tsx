@@ -47,6 +47,7 @@ import {
   colorVar,
 } from './tokens.tsx'
 import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
+import type { OrientationVariants } from './diagram-type-app.tsx'
 
 export { HOME_HREF }
 
@@ -183,6 +184,43 @@ const ASCII_OUTPUT_STYLE = {
 }
 
 /**
+ * The toggle's SVG branch — a plain string renders as one `.diagram-frame`
+ * (every specific-diagram detail page); an `OrientationVariants` object
+ * renders both the wide and narrow markup as `diagram-type-app.tsx`'s own
+ * `OrientationBlock` does, letting the same `.orientation-variant` media
+ * query (bundled into every `diagrams/` page's stylesheet) pick the right
+ * one — reused rather than reimplemented, since the type page's hero
+ * diagram needs the identical wide/narrow behavior this component's SVG
+ * state already has today, just wrapped in the toggle.
+ */
+function SvgOutput({ svgHtml }: { svgHtml: OrientationVariants }) {
+  if (typeof svgHtml === 'string') {
+    return (
+      <div
+        className="diagram-frame"
+        style={{ width: '100%' }}
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+        dangerouslySetInnerHTML={{ __html: svgHtml }}
+      />
+    )
+  }
+  return (
+    <div className="diagram-frame" style={{ width: '100%' }}>
+      <div
+        className="orientation-variant orientation-wide"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+        dangerouslySetInnerHTML={{ __html: svgHtml.wide }}
+      />
+      <div
+        className="orientation-variant orientation-narrow"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
+        dangerouslySetInnerHTML={{ __html: svgHtml.narrow }}
+      />
+    </div>
+  )
+}
+
+/**
  * The "Source → render" panel's render half: a segmented SVG/ASCII toggle
  * (`.output-segment`/`.output-segment.active`, defined identically in
  * `diagram-page.tsx`'s `pageCss` — same classes `hero-output-panel.tsx`'s
@@ -190,12 +228,19 @@ const ASCII_OUTPUT_STYLE = {
  * over the two pre-rendered outputs. `useState` plus plain click handlers,
  * the same shape `HeroOutputPanel` already proves safe in a hydrated demo
  * page — not a new interactivity pattern for this codebase.
+ *
+ * `svgHtml` accepts `OrientationVariants` (not just a plain string) so
+ * `diagram-type-app.tsx`'s type-page hero can reuse this component
+ * unchanged for its own wide/narrow orientation-swapping "Source → render"
+ * diagram — see {@link SvgOutput} below. Every specific-diagram detail
+ * page (this file's own `DiagramDetailApp`) only ever passes a plain
+ * string; a single sample has no orientation alternate to swap between.
  */
-function DetailOutputPanel({
+export function DetailOutputPanel({
   svgHtml,
   asciiHtml,
 }: {
-  svgHtml: string
+  svgHtml: OrientationVariants
   asciiHtml: string
 }) {
   const [mode, setMode] = useState<'svg' | 'ascii'>('svg')
@@ -262,12 +307,7 @@ function DetailOutputPanel({
         }}
       >
         {mode === 'svg' ? (
-          // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidSVG output, never user input (see the file header)
-          <div
-            className="diagram-frame"
-            style={{ width: '100%' }}
-            dangerouslySetInnerHTML={{ __html: svgHtml }}
-          />
+          <SvgOutput svgHtml={svgHtml} />
         ) : (
           <pre
             className="mono"

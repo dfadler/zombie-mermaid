@@ -56,13 +56,15 @@ const SINGLE_ORIENTATION_PROPS: DiagramTypeAppProps = {
   exampleHeading: 'A deploy pipeline, start to finish.',
   sourceFilename: 'pipeline.mmd',
   sourcePanelHtml: '<pre class="shiki"><code>flowchart LR</code></pre>',
-  diagramHtml: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+  diagramHtml:
+    '<svg xmlns="http://www.w3.org/2000/svg" data-diagram="type-svg"></svg>',
+  asciiHtml: '<span style="color:#27272A">type-ascii-output</span>',
   editorHref: '../editor#test',
   galleryItems: [
     {
       title: 'Gallery sample',
       diagramHtml: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
-      editorHref: '../editor#gallery-test',
+      href: 'flowchart/gallery-sample.html',
     },
   ],
   types: [{ slug: 'sequence', label: 'Sequence diagram', accent: 'cyan' }],
@@ -183,6 +185,28 @@ describe.each([
     ).toBeInTheDocument()
     expect(document.querySelector('.diagram-frame svg')).not.toBeNull()
     expect(document.querySelector('.gallery-thumb svg')).not.toBeNull()
+  })
+
+  it('switches the hero panel to ASCII and back on click (#989 part 2)', async () => {
+    renderServerHtmlIntoDocument()
+    const container = document.getElementById(DIAGRAM_TYPE_ROOT_ID)
+    if (!container) throw new Error('test setup: root container missing')
+
+    act(() => {
+      root = hydrateRoot(container, createElement(DiagramTypeApp, props))
+    })
+
+    expect(document.querySelector('.diagram-frame svg')).not.toBeNull()
+    expect(screen.queryByText('type-ascii-output')).toBeNull()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'ASCII' }))
+    expect(screen.getByText('type-ascii-output')).toBeInTheDocument()
+    expect(document.querySelector('.diagram-frame svg')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'SVG' }))
+    expect(document.querySelector('.diagram-frame svg')).not.toBeNull()
+    expect(screen.queryByText('type-ascii-output')).toBeNull()
   })
 })
 

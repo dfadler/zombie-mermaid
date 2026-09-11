@@ -463,14 +463,17 @@ export interface DiagramTypePageProps {
   sourcePanelHtml: OrientationVariants
   /** The rendered SVG, one or two orientation variants. */
   diagramHtml: OrientationVariants
+  /** `renderMermaidASCII({ colorMode: 'html' })` output for this type's hero example — see `DetailOutputPanel`'s doc comment (diagram-detail-app.tsx). */
+  asciiHtml: string
   /** `../editor#<base64 payload>` — see pages.ts's `editorHash`. */
   editorHref: string
   /**
-   * The samples-data.ts#713 curation for this type (`sample.gallery ===
-   * true`), each already rendered — see `demo/diagram-pages-data.ts`'s
-   * `moreExamplesFor`. Renders as {@link MoreExamplesSection}, or not at
-   * all when empty (no type currently has zero, but the section degrades
-   * gracefully rather than assuming a non-empty array).
+   * Every real sample for this type (zombie-mermaid#989's part 2 — see
+   * `demo/diagram-pages-data.ts`'s `allExamplesFor`), each already
+   * rendered and linking to its own detail page. Renders as {@link
+   * MoreExamplesSection}, or not at all when empty (no type currently has
+   * zero, but the section degrades gracefully rather than assuming a
+   * non-empty array).
    */
   galleryItems: readonly GalleryItem[]
   /** Every diagram type (including this page's own), for the crosslink grid. */
@@ -508,6 +511,7 @@ export function DiagramTypePage({
   cssHref,
   sourcePanelHtml,
   diagramHtml,
+  asciiHtml,
   editorHref,
   galleryItems,
   types,
@@ -523,6 +527,7 @@ export function DiagramTypePage({
     sourceFilename,
     sourcePanelHtml,
     diagramHtml,
+    asciiHtml,
     editorHref,
     galleryItems,
     types,

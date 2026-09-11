@@ -66,6 +66,7 @@ describe('DiagramTypePage (#821)', () => {
         sourcePanelHtml:
           '<pre class="shiki"><code>sequenceDiagram</code></pre>',
         diagramHtml: '<svg data-diagram="sequence"></svg>',
+        asciiHtml: '<span style="color:#27272A">type-ascii-output</span>',
         editorHref: '../editor#eyJzb3VyY2UiOiJ4In0=',
         // 7 items (> GALLERY_VISIBLE_COUNT's 6) exercises the "Show N
         // more" <details> branch too, with N=1 covering the singular
@@ -82,7 +83,7 @@ describe('DiagramTypePage (#821)', () => {
         ].map((title, i) => ({
           title,
           diagramHtml: `<svg data-diagram="sequence-gallery-${i}"></svg>`,
-          editorHref: `../editor#gallery-${i}`,
+          href: `sequence/gallery-${i}.html`,
         })),
         types: TYPES,
         themeDataScript: 'window.__diagramPageThemes = {"":{"bg":"#FFFFFF"}};',
@@ -100,6 +101,17 @@ describe('DiagramTypePage (#821)', () => {
     expect(
       document.querySelector('.diagram-frame svg[data-diagram="sequence"]'),
     ).not.toBeNull()
+    // The output toggle (#989 part 2): SVG is the default-visible state,
+    // ASCII is present but not mounted until clicked (DetailOutputPanel
+    // renders one branch at a time) -- see diagram-type-hydration.test.ts
+    // for the real click-through-and-back interaction test.
+    expect(screen.getByRole('button', { name: 'SVG' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ASCII' })).toBeInTheDocument()
+    expect(screen.queryByText('type-ascii-output')).toBeNull()
+    // Gallery cards link to each sample's own detail page, not the editor.
+    expect(
+      screen.getByRole('link', { name: 'Actor Stick Figures' }),
+    ).toHaveAttribute('href', 'sequence/gallery-0.html')
     // The "Show N more" disclosure branch (7 gallery items > the 6-visible
     // cap) — see MoreExamplesSection's doc comment.
     expect(screen.getByText('Show 1 more example')).toBeInTheDocument()
@@ -127,6 +139,7 @@ describe('DiagramTypePage (#821)', () => {
           wide: '<svg data-diagram="flowchart-w"></svg>',
           narrow: '<svg data-diagram="flowchart-n"></svg>',
         },
+        asciiHtml: '<span style="color:#27272A">type-ascii-output</span>',
         editorHref: '../editor#eyJzb3VyY2UiOiJ5In0=',
         // Empty on purpose — exercises MoreExamplesSection's "renders
         // nothing" branch, the other half of what the sequence case above
