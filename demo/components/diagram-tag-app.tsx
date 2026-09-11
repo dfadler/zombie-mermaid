@@ -82,12 +82,19 @@ export const DIAGRAM_TAG_PROPS_ELEMENT_ID = 'diagram-tag-props'
 export interface DiagramTagAppProps {
   label: string
   description: string
+  /**
+   * The real Mermaid docs page (and, where one exists, anchor) documenting
+   * this construct — see `demo/diagram-tags.ts`'s `TagRule.docsUrl` doc
+   * comment for how each was chosen/verified.
+   */
+  docsUrl: string
   results: readonly TagResultItem[]
 }
 
 export function DiagramTagApp({
   label,
   description,
+  docsUrl,
   results,
 }: DiagramTagAppProps) {
   return (
@@ -141,6 +148,17 @@ export function DiagramTagApp({
           >
             {`${results.length} example${results.length === 1 ? '' : 's'} across every diagram type`}
           </p>
+          <a
+            href={docsUrl}
+            target="_blank"
+            rel="noopener"
+            style={{
+              fontSize: `${FONT_SIZE.bodySm}px`,
+              fontWeight: 700,
+            }}
+          >
+            Read more in the Mermaid docs →
+          </a>
         </div>
       </div>
 

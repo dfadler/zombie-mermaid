@@ -448,6 +448,8 @@ describe('DiagramTagPage (#991)', () => {
         label: 'Subgraph',
         description:
           'Grouping nodes inside a labeled `subgraph` container, for a diagram whose flow naturally breaks into stages or systems.',
+        docsUrl:
+          'https://mermaid.ai/open-source/syntax/flowchart.html#subgraphs',
         results: [
           {
             title: 'Subgraphs',
@@ -489,6 +491,10 @@ describe('DiagramTagPage (#991)', () => {
     expect(
       document.querySelector('.gallery-thumb svg[data-diagram="ci-cd"]'),
     ).not.toBeNull()
+    expect(screen.getByRole('link', { name: /mermaid docs/i })).toHaveAttribute(
+      'href',
+      'https://mermaid.ai/open-source/syntax/flowchart.html#subgraphs',
+    )
   })
 
   it('renders singular wording for a single result', () => {
@@ -496,6 +502,8 @@ describe('DiagramTagPage (#991)', () => {
       createElement(DiagramTagPage, {
         label: 'Composite State',
         description: 'A nested sub-state.',
+        docsUrl:
+          'https://mermaid.ai/open-source/syntax/stateDiagram.html#composite-states',
         results: [
           {
             title: 'State: Composite States',

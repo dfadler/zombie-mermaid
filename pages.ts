@@ -515,6 +515,7 @@ async function main(): Promise<void> {
       createElement(DiagramTagPage, {
         label: rule.label,
         description: rule.description,
+        docsUrl: rule.docsUrl,
         results,
         title: `${rule.label} — Mermaid diagram examples | Zombie Mermaid`,
         metaDescription: `${rule.description} ${results.length} real example${results.length === 1 ? '' : 's'} across every zombie-mermaid diagram type.`,
