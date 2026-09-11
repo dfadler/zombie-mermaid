@@ -24,7 +24,7 @@ hub or a single type page can.
 
 One wrong turn worth heading off explicitly: this is **not** blocked by
 [`no-script-interactivity.md`](./no-script-interactivity.md). That ADR
-scopes the `zombie-mermaid` *library's* rendered diagram output — zero
+scopes the `zombie-mermaid` _library's_ rendered diagram output — zero
 `<script>` in emitted SVG/ASCII, permanently — not the demo site's own UI.
 The site already ships client-side JS for its own chrome (the theme
 picker, the mobile nav toggle), so a client-side filter for the site's
