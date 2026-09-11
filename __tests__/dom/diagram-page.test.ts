@@ -38,6 +38,7 @@ import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
+  DiagramAllPage,
   DiagramDetailPage,
   DiagramHubPage,
   DiagramTagPage,
@@ -347,12 +348,18 @@ describe('DiagramHubPage (#821)', () => {
             count: 1,
           },
         ],
+        allHref: 'all.html',
       }),
     )
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Every diagram type.' }),
     ).toBeInTheDocument()
+
+    // #1001's "View all diagrams" CTA, alongside each row's own "View examples".
+    expect(
+      screen.getByRole('link', { name: /View all diagrams/ }),
+    ).toHaveAttribute('href', 'all.html')
 
     expect(
       screen.getByRole('heading', { level: 2, name: 'Flowchart' }),
@@ -399,6 +406,7 @@ describe('DiagramHubPage (#821)', () => {
             count: 24,
           },
         ],
+        allHref: 'all.html',
       }),
     )
 
@@ -483,5 +491,78 @@ describe('DiagramTagPage (#991)', () => {
     expect(
       screen.getByText('1 example across every diagram type'),
     ).toBeInTheDocument()
+  })
+})
+
+describe('DiagramAllPage (#1001)', () => {
+  it('renders every type section, grouped, with real cross-type result cards', () => {
+    render(
+      createElement(DiagramAllPage, {
+        totalCount: 3,
+        sections: [
+          {
+            slug: 'flowchart',
+            label: 'Flowchart',
+            accent: 'blue',
+            items: [
+              {
+                title: 'Simple Flow',
+                diagramHtml: '<svg data-diagram="simple-flow"></svg>',
+                href: 'flowchart/simple-flow.html',
+              },
+              {
+                title: 'Subgraphs',
+                diagramHtml: '<svg data-diagram="subgraphs"></svg>',
+                href: 'flowchart/subgraphs.html',
+              },
+            ],
+          },
+          {
+            slug: 'sequence',
+            label: 'Sequence diagram',
+            accent: 'cyan',
+            items: [
+              {
+                title: 'Sequence: Basic Messages',
+                diagramHtml: '<svg data-diagram="seq-basic"></svg>',
+                href: 'sequence/sequence-basic-messages.html',
+              },
+            ],
+          },
+        ],
+        title: 'Every diagram, one scroll | Zombie Mermaid',
+        description: 'All 3 real examples.',
+        canonical: 'https://example.test/diagrams/all.html',
+        cssHref: 'assets/diagram-page.css',
+        faviconHref: '../favicon.svg',
+      }),
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Every diagram, one scroll.',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/All 3 real examples/)).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Flowchart' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Sequence diagram' }),
+    ).toBeInTheDocument()
+
+    expect(screen.getByRole('link', { name: /Subgraphs/ })).toHaveAttribute(
+      'href',
+      'flowchart/subgraphs.html',
+    )
+    expect(
+      document.querySelector('.gallery-thumb svg[data-diagram="seq-basic"]'),
+    ).not.toBeNull()
+
+    // A "grouped by type" page shows each section's own count, not a single flat total.
+    expect(screen.getByText('2 examples')).toBeInTheDocument()
+    expect(screen.getByText('1 example')).toBeInTheDocument()
   })
 })
