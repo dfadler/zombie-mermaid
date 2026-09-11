@@ -131,6 +131,16 @@ interface ShowcaseEls {
    */
   asciiPre: HTMLElement | null
   asciiHtmlByTheme: Record<string, string> | null
+  /**
+   * Edge scroll-fade overlays for {@link asciiPre} -- mirrors
+   * `demo/components/fork-fixes-app.tsx`'s `AsciiWell`/`AsciiWellFade`,
+   * wired here via plain DOM ({@link updateAsciiFade}) instead of a React
+   * hook since this section never hydrates via React (see this file's
+   * header comment). Nullable alongside `asciiPre` for the same
+   * degrade-gracefully reason its own doc comment gives.
+   */
+  asciiFadeLeft: HTMLElement | null
+  asciiFadeRight: HTMLElement | null
 }
 
 /**
@@ -149,6 +159,27 @@ function readThemeShowcaseAsciiHtmlByTheme(): Record<string, string> | null {
   } catch {
     return null
   }
+}
+
+/**
+ * Toggles `els.asciiFadeLeft`/`asciiFadeRight`'s `.visible` class to match
+ * `els.asciiPre`'s current scroll position -- mirrors
+ * `demo/components/fork-fixes-app.tsx`'s `useScrollFadeVisibility` as a
+ * plain function instead of a React hook: `right` stays visible while
+ * there's more content to scroll into (including at rest, scrolled all the
+ * way to the start), `left` only once scrolled away from the start. The 1px
+ * slop absorbs the same sub-pixel `scrollLeft`/`scrollWidth` rounding that
+ * hook's own comment describes. A no-op if the fade markup isn't present
+ * (see {@link ShowcaseEls.asciiFadeLeft}'s doc comment).
+ */
+function updateAsciiFade(els: ShowcaseEls): void {
+  const { asciiPre, asciiFadeLeft, asciiFadeRight } = els
+  if (!asciiPre || !asciiFadeLeft || !asciiFadeRight) return
+  asciiFadeLeft.classList.toggle('visible', asciiPre.scrollLeft > 1)
+  asciiFadeRight.classList.toggle(
+    'visible',
+    asciiPre.scrollLeft + asciiPre.clientWidth < asciiPre.scrollWidth - 1,
+  )
 }
 
 /**
@@ -177,6 +208,11 @@ function applyTheme(
   const asciiHtml = els.asciiHtmlByTheme?.[themeKey]
   if (els.asciiPre && asciiHtml !== undefined) {
     els.asciiPre.innerHTML = asciiHtml
+    // A content swap can change scrollWidth without changing asciiPre's
+    // own box size, which is all the ResizeObserver wired in
+    // initThemeShowcase() actually watches -- so the fade visibility needs
+    // an explicit recheck here rather than relying on that observer alone.
+    updateAsciiFade(els)
   }
 
   els.pickerLabel.textContent = themeKey
@@ -186,8 +222,16 @@ function applyTheme(
   }
 }
 
-/** Queries the showcase's DOM refs and wires up the picker — a no-op (not a thrown error) if any expected element is missing, since this script has no other page to run on and a malformed/absent markup shouldn't break the rest of the page's client bundle. */
-function initThemeShowcase(): void {
+/**
+ * Queries the showcase's DOM refs and wires up the picker — a no-op (not a
+ * thrown error) if any expected element is missing, since this script has
+ * no other page to run on and a malformed/absent markup shouldn't break the
+ * rest of the page's client bundle. Returns the resolved {@link ShowcaseEls}
+ * (or `null` on that no-op path) so `initThemeShowcaseOutputToggle()` can
+ * recheck the ASCII scroll-fade after its own toggle switches the panel
+ * visible — see that call's own comment for why.
+ */
+function initThemeShowcase(): ShowcaseEls | null {
   const diagramCard = document.getElementById('theme-showcase-diagram-card')
   const burst = document.getElementById('theme-showcase-burst')
   const pickerWrapper = document.getElementById('theme-showcase-picker')
@@ -204,7 +248,7 @@ function initThemeShowcase(): void {
     !pickerLabel ||
     !pickerChip
   ) {
-    return
+    return null
   }
   const pickerOptions = Array.from(
     pickerPanel.querySelectorAll<HTMLElement>('[data-theme]'),
@@ -216,6 +260,26 @@ function initThemeShowcase(): void {
     pickerOptions,
     asciiPre: document.getElementById('theme-showcase-ascii'),
     asciiHtmlByTheme: readThemeShowcaseAsciiHtmlByTheme(),
+    asciiFadeLeft: document.getElementById('theme-showcase-ascii-fade-left'),
+    asciiFadeRight: document.getElementById(
+      'theme-showcase-ascii-fade-right',
+    ),
+  }
+
+  // Keeps the fade overlays in sync with scroll position and with the
+  // well's own box-size changes (e.g. a viewport resize). NOT the
+  // display:none -> display:block transition when the output toggle
+  // switches to ASCII -- empirically a ResizeObserver here doesn't reliably
+  // report that for a target that never had display:none set on itself,
+  // only on an ancestor -- so initThemeShowcaseOutputToggle() gets an
+  // explicit callback for that case instead (see its own doc comment), and
+  // applyTheme() rechecks explicitly for the innerHTML-swap case.
+  if (els.asciiPre && els.asciiFadeLeft && els.asciiFadeRight) {
+    updateAsciiFade(els)
+    els.asciiPre.addEventListener('scroll', () => updateAsciiFade(els), {
+      passive: true,
+    })
+    new ResizeObserver(() => updateAsciiFade(els)).observe(els.asciiPre)
   }
 
   const reduced =
@@ -230,6 +294,8 @@ function initThemeShowcase(): void {
     trigger: pickerTrigger,
     panel: pickerPanel,
   })
+
+  return els
 }
 
 /**
@@ -386,7 +452,16 @@ function setThemeShowcaseOutputMode(
   asciiBtn.setAttribute('aria-pressed', String(!isSvg))
 }
 
-function initThemeShowcaseOutputToggle(): void {
+/**
+ * @param onAsciiShown Called after a click switches to `'ascii'` mode --
+ *   lets {@link initThemeShowcase} recheck its scroll-fade overlays once
+ *   `#theme-showcase-ascii-wrap` actually has a box. Not something a
+ *   `ResizeObserver` on the `<pre>` can catch on its own: empirically (this
+ *   file's own testing, not just a spec reading) an ancestor's
+ *   `display:none` -> `display:block` doesn't reliably deliver a resize
+ *   entry for a descendant that never had `display:none` set on itself.
+ */
+function initThemeShowcaseOutputToggle(onAsciiShown?: () => void): void {
   const card = document.getElementById('theme-showcase-diagram-card')
   const svgBtn = document.getElementById('theme-showcase-output-svg')
   const asciiBtn = document.getElementById('theme-showcase-output-ascii')
@@ -395,14 +470,17 @@ function initThemeShowcaseOutputToggle(): void {
   svgBtn.addEventListener('click', () =>
     setThemeShowcaseOutputMode(card, svgBtn, asciiBtn, 'svg'),
   )
-  asciiBtn.addEventListener('click', () =>
-    setThemeShowcaseOutputMode(card, svgBtn, asciiBtn, 'ascii'),
-  )
+  asciiBtn.addEventListener('click', () => {
+    setThemeShowcaseOutputMode(card, svgBtn, asciiBtn, 'ascii')
+    onAsciiShown?.()
+  })
 }
 
 // Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job,
 // unrelated to the showcase below.
 initChromeTheme(THEMES)
 
-initThemeShowcase()
-initThemeShowcaseOutputToggle()
+const showcaseEls = initThemeShowcase()
+initThemeShowcaseOutputToggle(
+  showcaseEls ? () => updateAsciiFade(showcaseEls) : undefined,
+)

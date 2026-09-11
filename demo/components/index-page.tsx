@@ -468,15 +468,31 @@ function homePageCss(): string {
   border-radius: ${RADIUS.pill}px;
   padding: 2px;
 }
+/* Toggled by data-output-mode instead of .theme-showcase-ascii itself, so
+   the wrap's relatively-positioned box (needed to pin the fade overlays
+   below to its edges) exists only while the ASCII panel is the visible
+   one. */
+.theme-showcase-ascii-wrap { position: relative; display: none; min-width: 0; }
 /* No color/transition here, unlike the svg's .tsd-* classes -- every
    character is already wrapped in its own colored <span> by
    themeShowcaseAsciiHtmlByTheme's colorMode: 'html' render (see that
    const's own doc comment), and a theme pick swaps this element's whole
    innerHTML rather than smoothly transitioning a shared CSS custom
    property. color: var(--tsd-text) stays as a harmless fallback for any
-   plain (unspanned) whitespace text nodes in that HTML. */
+   plain (unspanned) whitespace text nodes in that HTML. background is a
+   deliberately slight color-mix() shift off the card's own var(--tsd-bg)
+   -- confirmed empirically (a headless-Chrome pixel diff during this
+   feature's own build) that without it, the scroll-fade below is
+   invisible: it fades to var(--tsd-bg) to blend into the surrounding
+   card, exactly like fork-fixes-app.tsx's AsciiWellFade fades into its
+   well's *own* card background -- but that only reads as a visible edge
+   in fork-fixes because its well already has a background distinct from
+   its card's. Here, before this rule, the well and the card were the
+   *same* color, so fading "into" it was a no-op. The 8% black mix (not a
+   fixed color) darkens relative to whatever var(--tsd-bg) currently is,
+   so it stays a plausible subtle inset on every theme, light or dark,
+   without hand-tuning per palette. */
 .theme-showcase-ascii {
-  display: none;
   margin: 0;
   width: 100%;
   overflow-x: auto;
@@ -485,9 +501,36 @@ function homePageCss(): string {
   font-size: ${FONT_SIZE.bodySm}px;
   line-height: 1.5;
   color: var(--tsd-text);
+  background: color-mix(in srgb, var(--tsd-bg) 92%, black 8%);
 }
 .theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-diagram { display: none; }
-.theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-ascii { display: block; }
+.theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-ascii-wrap { display: block; }
+/* Edge scroll-fade for .theme-showcase-ascii -- mirrors
+   demo/components/fork-fixes-app.tsx's AsciiWell/AsciiWellFade (same
+   32px width, same "paint an opaque overlay over the content, not a
+   background-image behind it" reasoning documented there), wired here via
+   plain DOM (demo/index-page-client.ts's updateAsciiFade()) instead of a
+   React hook since this section never hydrates via React -- see this
+   file's header comment. Fades into var(--tsd-bg) -- the card's
+   background, i.e. what's just outside the well -- matching
+   AsciiWellFade's own "ends in the well's containing card background"
+   choice, so it reads as the well dissolving into its frame rather than
+   an arbitrary tint, and stays correct across a live theme pick (driven
+   through that same custom property). Only legible because
+   .theme-showcase-ascii's own background (above) now differs from
+   var(--tsd-bg) -- see that rule's comment. .visible is toggled per-edge
+   by scroll position; a well that doesn't overflow shows neither. */
+.theme-showcase-ascii-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  pointer-events: none;
+  display: none;
+}
+.theme-showcase-ascii-fade.visible { display: block; }
+.theme-showcase-ascii-fade.left { left: 0; background: linear-gradient(to left, transparent, var(--tsd-bg)); }
+.theme-showcase-ascii-fade.right { right: 0; background: linear-gradient(to right, transparent, var(--tsd-bg)); }
 .tsd-node {
   fill: var(--tsd-node-fill);
   stroke: var(--tsd-node-stroke);
@@ -1117,12 +1160,24 @@ function ThemeShowcase() {
               Monitor
             </text>
           </svg>
-          <pre
-            id="theme-showcase-ascii"
-            className="theme-showcase-ascii mono"
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
-            dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
-          />
+          <div className="theme-showcase-ascii-wrap">
+            <pre
+              id="theme-showcase-ascii"
+              className="theme-showcase-ascii mono"
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
+              dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
+            />
+            <div
+              id="theme-showcase-ascii-fade-left"
+              className="theme-showcase-ascii-fade left"
+              aria-hidden="true"
+            />
+            <div
+              id="theme-showcase-ascii-fade-right"
+              className="theme-showcase-ascii-fade right"
+              aria-hidden="true"
+            />
+          </div>
         </div>
       </div>
 
