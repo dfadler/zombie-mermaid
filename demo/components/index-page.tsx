@@ -552,11 +552,6 @@ ${MEDIA.mobile} {
      double-count each panel's own padding/border on top of that 100%,
      since this codebase has no global box-sizing: border-box reset. */
   .hero-visual { flex-direction: column !important; align-items: stretch !important; }
-  /* hero-code-panel's own flex: 0 0 240px is a *row*-layout width basis --
-     flex-basis targets whichever axis is currently the main axis, so left
-     as-is it would try to make this 240px *tall* once the row above turns
-     this into a column. Reset it to a normal auto-sized block instead. */
-  .hero-code-panel { flex: 1 1 auto !important; }
   .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
   .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }

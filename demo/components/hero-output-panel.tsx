@@ -61,18 +61,27 @@ const TRAFFIC_LIGHT_COLORS = ['#ff6767', '#ffc85c', '#5ee08a']
  * The hero's fake "source code" panel — a fresh HTML/CSS rendition of the
  * same content `public/hero-visual.svg` draws as static SVG shapes, so it
  * can sit beside the real, interactive {@link HeroOutputPanel}.
+ *
+ * `overflowX: 'auto'`, same as {@link HERO_ASCII_STYLE}'s `<pre>`: this
+ * panel's `flex: '1 1 auto'` lets it shrink below its longest line's
+ * natural width on a narrow tablet row (it absorbs whatever width
+ * {@link HeroOutputPanel} no longer claims, but that can still be less than
+ * the code needs), and `white-space: 'pre'` below means that line can't
+ * wrap to compensate — scroll it internally rather than let it clip
+ * silently or push the row into a page-level horizontal overflow.
  */
 export function HeroCodePanel() {
   return (
     <div
       className="hero-code-panel"
       style={{
-        flex: '0 0 240px',
+        flex: '1 1 auto',
         minWidth: 0,
         background: colorVar('--panel'),
         border: `1.5px solid ${colorVar('--border')}`,
         borderRadius: `${RADIUS.xl}px`,
         padding: `${SPACE.xl}px ${SPACE['2xl']}px`,
+        overflowX: 'auto',
       }}
     >
       <div
@@ -169,13 +178,21 @@ export function HeroCodePanel() {
  * in `index-page.tsx`'s `homePageCss()` — actually animates; `hero-visual.svg`
  * has to restate that animation itself since an `<img>` can't inherit CSS
  * from its host page.
+ *
+ * `width`/`height` are the viewBox's own 306x324 (1 viewBox unit = 1px), not
+ * `width="100%"` — {@link HeroOutputPanel} sizes itself to this diagram's
+ * natural footprint rather than stretching to fill whatever space the flex
+ * row hands it (see that component's own doc comment), so the SVG needs a
+ * real intrinsic size for the panel to measure. `maxWidth: '100%'` still
+ * lets it shrink on a narrow viewport instead of overflowing.
  */
 function HeroFlowchartSvg() {
   return (
     <svg
       viewBox="374 36 306 324"
-      width="100%"
-      style={{ display: 'block' }}
+      width="306"
+      height="324"
+      style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
       role="img"
       aria-label="Start leads to a Deploy decision, which leads to Ship it or Iterate"
     >
@@ -356,6 +373,17 @@ export interface HeroOutputPanelProps {
  * plus plain click handlers — the same shape `nav.tsx`'s
  * `usePackageManagerInstall` already proves safe inside this hydrated app
  * (via `HeroInstall`), not a new interactivity pattern.
+ *
+ * `flex: '0 1 auto'`, not `'1 1 auto'` — this panel sizes itself to its
+ * content's natural width (driven by {@link HeroFlowchartSvg}'s fixed
+ * 306px), rather than growing to fill whatever space `.hero-visual`'s row
+ * has left over. `HeroCodePanel`'s `flex: '1 1 auto'` is the other half of
+ * this swap: it absorbs exactly the width this panel no longer claims,
+ * rather than sitting at a fixed 240px while this one stretched. Only
+ * `flex-shrink` stays nonzero, so a genuinely too-narrow row (the 900-1200px
+ * tablet band) shrinks the diagram rather than overflowing it — `index-
+ * page.tsx`'s mobile media block overrides this back to `1 1 auto` once the
+ * row becomes a column, same as it already does for `.hero-code-panel`.
  */
 export function HeroOutputPanel({ asciiHtml }: HeroOutputPanelProps) {
   const [mode, setMode] = useState<'svg' | 'ascii'>('svg')
@@ -364,7 +392,7 @@ export function HeroOutputPanel({ asciiHtml }: HeroOutputPanelProps) {
     <div
       className="hero-output-panel"
       style={{
-        flex: '1 1 auto',
+        flex: '0 1 auto',
         minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
