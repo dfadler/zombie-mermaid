@@ -33,9 +33,16 @@ import { createElement } from 'react'
 import { JSDOM } from 'jsdom'
 import { within } from '@testing-library/react'
 import { renderHtmlDocument } from '../demo/render-html.ts'
-import { IndexPage } from '../demo/components/index-page.tsx'
+import {
+  IndexPage,
+  THEME_SHOWCASE_MERMAID_SOURCE,
+} from '../demo/components/index-page.tsx'
 import { FORK_URL } from '../demo/components/site-chrome.tsx'
 import { THEMES } from '@zombie-mermaid/core'
+import {
+  renderMermaidASCII,
+  diagramColorsToAsciiTheme,
+} from '@zombie-mermaid/ascii-renderer'
 import { EditorPage } from '../demo/components/editor-page.tsx'
 import {
   ForkFixesPage,
@@ -258,6 +265,86 @@ describe('index.ts → index.html', () => {
     const burst = document.getElementById('theme-showcase-burst')
     expect(burst).toBeInTheDocument()
     expect(burst?.tagName.toLowerCase()).toBe('circle')
+  })
+
+  it('renders the theme showcase output toggle defaulted to SVG, with a real ASCII render behind it', () => {
+    const document = renderIndexPageDocument()
+
+    const card = document.getElementById('theme-showcase-diagram-card')
+    expect(card).toHaveAttribute('data-output-mode', 'svg')
+
+    const svgBtn = document.getElementById('theme-showcase-output-svg')
+    expect(svgBtn).toHaveAttribute('aria-pressed', 'true')
+    const asciiBtn = document.getElementById('theme-showcase-output-ascii')
+    expect(asciiBtn).toHaveAttribute('aria-pressed', 'false')
+
+    // Drift guard: the pre-rendered #theme-showcase-ascii block must be the
+    // real renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE) output, not
+    // hand-typed text that could silently fall out of sync with it.
+    const ascii = document.getElementById('theme-showcase-ascii')
+    expect(ascii).toBeInTheDocument()
+    const realAscii = renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+      colorMode: 'none',
+    })
+    for (const label of [
+      'Start',
+      'Auth?',
+      'Build',
+      'Test',
+      'Pipeline',
+      'Deploy?',
+      'Ship it',
+      'Rollback',
+      'Monitor',
+    ]) {
+      expect(realAscii).toContain(label)
+      expect(ascii?.textContent).toContain(label)
+    }
+  })
+
+  it('threads a real, per-role-colored ASCII render for every theme via #theme-showcase-ascii-props', () => {
+    const document = renderIndexPageDocument()
+
+    const propsEl = document.getElementById('theme-showcase-ascii-props')
+    expect(propsEl).toBeInTheDocument()
+    expect(propsEl?.getAttribute('type')).toBe('application/json')
+    const byTheme = JSON.parse(propsEl?.textContent ?? '{}') as Record<
+      string,
+      string
+    >
+
+    const themeKeys = Object.keys(THEMES)
+    expect(Object.keys(byTheme).sort()).toEqual(themeKeys.sort())
+
+    const dracula = THEMES.dracula
+    const nord = THEMES.nord
+    if (!dracula || !nord) throw new Error('test setup: missing theme(s)')
+
+    // Drift guard: each entry is the real colorMode:'html' render for that
+    // theme, not a flat/uncolored string -- distinct per-role <span
+    // style="color:..."> markup, not just the same plain text repeated 15
+    // times under different keys.
+    expect(byTheme.dracula).toContain('<span style="color:')
+    expect(byTheme.dracula).not.toBe(byTheme.nord)
+    expect(byTheme.dracula).toBe(
+      renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+        colorMode: 'html',
+        theme: diagramColorsToAsciiTheme(dracula),
+      }).replace(/[ \t]+$/gm, ''),
+    )
+    expect(byTheme.nord).toBe(
+      renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+        colorMode: 'html',
+        theme: diagramColorsToAsciiTheme(nord),
+      }).replace(/[ \t]+$/gm, ''),
+    )
+
+    // The initially server-rendered #theme-showcase-ascii block must match
+    // the default theme's own entry in that same map -- a visitor's first
+    // paint (before any client-side pick) shouldn't be a different render
+    // than what the picker would swap to for that same theme.
+    const ascii = document.getElementById('theme-showcase-ascii')
+    expect(ascii?.innerHTML).toBe(byTheme.dracula)
   })
 
   it('renders the theme showcase picker with a trigger and one option per theme', () => {
