@@ -26,6 +26,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import { findBoxRect } from './helpers/ascii-form.ts'
 
 const MVC_SOURCE = `classDiagram
   class Model {
@@ -85,17 +86,16 @@ describe('ASCII class diagram — detour-aware relationship label placement (iss
     const ascii = renderMermaidASCII(MVC_SOURCE, { colorMode: 'none' })
     const lines = ascii.split('\n')
 
-    // Model's top border row (e.g. "┌───────────────────────────┐│") gives
-    // its right-edge column directly. `refreshes` — the label for the
+    // Model's box right edge (column-based, not a literal-column-0
+    // assumption — issue #971 can legitimately shift Model's own column
+    // when it has a real single qualifying parent to align under, same as
+    // it does here against Controller). `refreshes` — the label for the
     // relationship that detours around Model to reach View — must land
-    // strictly to the right of that border on every row it occupies, never
+    // strictly to the right of that edge on every row it occupies, never
     // overlapping Model's own footprint the way the straight-line midpoint
     // used to (issue #487).
-    const modelTopRow = lines.findIndex(
-      (l, i) => /^┌─+┐/.test(l) && (lines[i + 1]?.includes('Model') ?? false),
-    )
-    expect(modelTopRow).toBeGreaterThanOrEqual(0)
-    const modelRightBorder = lines[modelTopRow]!.indexOf('┐')
+    const modelRect = findBoxRect(ascii, 'Model')
+    const modelRightBorder = modelRect.x1
     expect(modelRightBorder).toBeGreaterThan(0)
 
     const refreshesRow = lines.findIndex((l) => l.includes('refreshes'))
