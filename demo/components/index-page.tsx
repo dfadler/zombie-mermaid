@@ -552,6 +552,13 @@ ${MEDIA.mobile} {
      double-count each panel's own padding/border on top of that 100%,
      since this codebase has no global box-sizing: border-box reset. */
   .hero-visual { flex-direction: column !important; align-items: stretch !important; }
+  /* The install pill's full "npm install zombie-mermaid" text (plus the
+     manager-switcher prefix and copy glyph) is wider than .hero-copy at
+     this breakpoint even after hero-install.tsx's overflow-x: auto
+     fallback kicks in -- shrinking the pill's own padding/type here closes
+     most of that gap so the copy glyph stays on-screen without scrolling,
+     rather than leaving it reachable only via a tiny internal scrollbar. */
+  .hero-install-pill { padding: 8px 14px !important; font-size: 13px !important; }
   .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
   .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }

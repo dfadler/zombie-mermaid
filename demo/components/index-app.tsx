@@ -169,6 +169,15 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
             flexWrap: 'wrap',
             gap: `${SPACE['2xl']}px`,
             marginTop: `${SPACE.md}px`,
+            // A flex item's default min-width is `auto` (its content's
+            // intrinsic width) — without this, this row's own max-content
+            // width (the install pill and CTA laid out on one line, the
+            // hypothetical no-wrap case `min-width:auto` measures against)
+            // overrides `.hero-copy`'s `max-width: 100%` at narrow
+            // viewports and widens the whole page instead of letting
+            // `flexWrap: 'wrap'` do its job (zombie-mermaid, hero install
+            // pill mobile overflow).
+            minWidth: 0,
           }}
         >
           <HeroInstall />

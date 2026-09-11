@@ -92,6 +92,7 @@ import {
 import { useEditorButtons } from './editor-buttons.ts'
 import { useEditorDarkMode } from './editor-dark-mode.ts'
 import { useEditorConfig } from './editor-config.tsx'
+import { useEditorFullscreen } from './editor-fullscreen.ts'
 import {
   clampPadding,
   clampStroke,
@@ -267,6 +268,15 @@ export interface EditorState {
    * re-fire for an unchanged value).
    */
   toastNonce: number
+  /**
+   * Whether `.editor-tool-shell` is the page's native Fullscreen API
+   * element (`document.fullscreenElement`) -- see `editor-fullscreen.ts`'s
+   * `useEditorFullscreen`. Always kept in sync *from* `fullscreenchange`
+   * rather than set eagerly on click, so it reflects reality even when the
+   * browser exits fullscreen on its own (Esc, a shell-level gesture, or a
+   * `requestFullscreen()` promise rejection).
+   */
+  fullscreen: boolean
 }
 
 export const INITIAL_EDITOR_STATE: EditorState = {
@@ -289,6 +299,7 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   toastMessage: '',
   toastVisible: false,
   toastNonce: 0,
+  fullscreen: false,
 }
 
 export type EditorAction =
@@ -327,6 +338,7 @@ export type EditorAction =
   | { type: 'SET_EXPORT_DROPDOWN_OPEN'; open: boolean }
   | { type: 'SHOW_TOAST'; message: string }
   | { type: 'HIDE_TOAST' }
+  | { type: 'SET_FULLSCREEN'; fullscreen: boolean }
 
 export function editorReducer(
   state: EditorState,
@@ -401,6 +413,8 @@ export function editorReducer(
       }
     case 'HIDE_TOAST':
       return { ...state, toastVisible: false }
+    case 'SET_FULLSCREEN':
+      return { ...state, fullscreen: action.fullscreen }
   }
 }
 
@@ -487,6 +501,10 @@ export interface EditorRefs {
   themeBtnSwatch: HTMLElement
   themeDropdownBtn: HTMLElement
   themeDropdownWrap: HTMLElement
+  /** See `editor-fullscreen.ts`'s `useEditorFullscreen`. */
+  fullscreenBtn: HTMLElement
+  iconFullscreenEnter: SVGElement
+  iconFullscreenExit: SVGElement
 }
 
 /**
@@ -564,6 +582,15 @@ export function collectEditorRefs(): EditorRefs {
     themeBtnSwatch: requireEditorElement('theme-btn-swatch', HTMLElement),
     themeDropdownBtn: requireEditorElement('theme-dropdown-btn', HTMLElement),
     themeDropdownWrap: requireEditorElement('theme-dropdown-wrap', HTMLElement),
+    fullscreenBtn: requireEditorElement('fullscreen-btn', HTMLElement),
+    iconFullscreenEnter: requireEditorElement(
+      'icon-fullscreen-enter',
+      SVGElement,
+    ),
+    iconFullscreenExit: requireEditorElement(
+      'icon-fullscreen-exit',
+      SVGElement,
+    ),
   }
 }
 
@@ -646,6 +673,13 @@ export function EditorApp({ themes }: EditorAppProps) {
   useEditorExport({ state, dispatch, refs })
   useEditorToast({ state, dispatch })
   useEditorDarkMode({ state, dispatch, refs })
+
+  // The fullscreen toggle -- has no ordering dependency on any hook above or
+  // below (it neither reads nor writes anything they own), so its position
+  // in this list is arbitrary; kept next to useEditorDarkMode since both are
+  // simple topbar-button toggles with the same "click wires a DOM effect,
+  // an icon pair swaps on state" shape. See editor-fullscreen.ts.
+  useEditorFullscreen({ state, dispatch, refs })
 
   // zombie-mermaid#810: the render pipeline and URL-hash sharing, called
   // *after* useEditorDarkMode above -- applyThemeToPage's fallback branch
