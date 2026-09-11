@@ -109,6 +109,45 @@ const heroAsciiHtml = asciiToHtml(
   ),
 )
 
+/**
+ * {@link ThemeShowcase}'s own hand-kept-in-sync Mermaid source — mirrors
+ * the hand-drawn `#theme-showcase-diagram` svg's shapes/labels below
+ * (Start → Auth? → a Build/Test pipeline → Deploy?, with a Ship
+ * it/Rollback branch and a Monitor tap off the pipeline) node-for-node and
+ * label-for-label, the same "third hand-kept copy" tradeoff
+ * `HERO_MERMAID_SOURCE`'s own doc comment accepts. Referencing the
+ * `Pipeline` subgraph id directly in the surrounding edges (rather than a
+ * plain node inside it) is what keeps both `Build` and `Test` rendered
+ * inside the pipeline's ASCII box — routing an edge through a member node
+ * instead pulls that node out of the subgraph in this renderer's layout.
+ */
+export const THEME_SHOWCASE_MERMAID_SOURCE = `graph TD
+  Start --> Auth{Auth?}
+  Auth -->|ok| Pipeline
+  subgraph Pipeline
+    Build --> Test
+  end
+  Pipeline -->|pass| Deploy{Deploy?}
+  Deploy -->|yes| Ship[Ship it]
+  Deploy -->|no| Rollback
+  Pipeline --> Monitor
+`
+
+/**
+ * The theme showcase's real ASCII state — same `renderMermaidASCII()` +
+ * `asciiToHtml()` build-time pipeline as {@link heroAsciiHtml}, run against
+ * {@link THEME_SHOWCASE_MERMAID_SOURCE} instead. Unlike the hero panel this
+ * never re-renders per theme pick — `wireThemePicker()` (`demo/index-page-
+ * client.ts`) only ever swaps the `--tsd-*` CSS custom properties this
+ * static HTML already reads through the `.theme-showcase-ascii` class
+ * (`color: var(--tsd-text)`), so one build-time render covers every theme.
+ */
+const themeShowcaseAsciiHtml = asciiToHtml(
+  renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+    colorMode: 'none',
+  }).replace(/[ \t]+$/gm, ''),
+)
+
 const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid/'
 const OG_IMAGE_URL = 'https://dfadler.github.io/zombie-mermaid/og-image.png'
@@ -351,7 +390,7 @@ function homePageCss(): string {
   background: var(--tsd-bg);
   transition: background 500ms ease, border-color 500ms ease;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   overflow: hidden;
 }
 .theme-showcase-diagram {
@@ -361,6 +400,48 @@ function homePageCss(): string {
   display: block;
   margin: 0 auto;
 }
+/* -- Theme showcase output toggle: an "OUTPUT / SVG / ASCII" segmented
+   header mirroring the homepage hero's own HeroOutputPanel toggle
+   (hero-output-panel.tsx) -- same .output-segment/.output-segment.active
+   classes, but wired by plain DOM (demo/index-page-client.ts's
+   initThemeShowcaseOutputToggle()) rather than React state, matching how
+   the rest of this section's interactivity (the theme picker dropdown)
+   already avoids pulling react-dom/server into the client bundle -- see
+   this file's own header comment. */
+.theme-showcase-output-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${SPACE.md}px;
+  margin-bottom: ${SPACE.lg}px;
+}
+.theme-showcase-output-label {
+  font-size: ${FONT_SIZE.micro}px;
+  letter-spacing: ${LETTER_SPACING.eyebrow};
+  text-transform: uppercase;
+  color: var(--tsd-muted);
+}
+.theme-showcase-output-segments {
+  display: flex;
+  gap: 2px;
+  background: ${colorVar('--panel')};
+  border-radius: ${RADIUS.pill}px;
+  padding: 2px;
+}
+.theme-showcase-ascii {
+  display: none;
+  margin: 0;
+  width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  font-variant-ligatures: none;
+  font-size: ${FONT_SIZE.bodySm}px;
+  line-height: 1.5;
+  color: var(--tsd-text);
+  transition: color 500ms ease;
+}
+.theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-diagram { display: none; }
+.theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-ascii { display: block; }
 .tsd-node {
   fill: var(--tsd-node-fill);
   stroke: var(--tsd-node-stroke);
@@ -735,8 +816,30 @@ function ThemeShowcase() {
         <div
           id="theme-showcase-diagram-card"
           className="theme-showcase-diagram-card"
+          data-output-mode="svg"
           style={diagramCardStyle}
         >
+          <div className="theme-showcase-output-toggle">
+            <span className="theme-showcase-output-label">Output</span>
+            <div className="theme-showcase-output-segments">
+              <button
+                type="button"
+                id="theme-showcase-output-svg"
+                className="output-segment active"
+                aria-pressed="true"
+              >
+                SVG
+              </button>
+              <button
+                type="button"
+                id="theme-showcase-output-ascii"
+                className="output-segment"
+                aria-pressed="false"
+              >
+                ASCII
+              </button>
+            </div>
+          </div>
           <svg
             id="theme-showcase-diagram"
             className="theme-showcase-diagram"
@@ -961,6 +1064,12 @@ function ThemeShowcase() {
               Monitor
             </text>
           </svg>
+          <pre
+            id="theme-showcase-ascii"
+            className="theme-showcase-ascii mono"
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII() + asciiToHtml() output from this file's own THEME_SHOWCASE_MERMAID_SOURCE; never user input
+            dangerouslySetInnerHTML={{ __html: themeShowcaseAsciiHtml }}
+          />
         </div>
       </div>
 

@@ -6,7 +6,7 @@
  * the design canvas ("1e — Flow + Burst") pixel-for-pixel: no ambient
  * auto-cycle, the diagram only ever changes on a manual pick.
  *
- * Two concerns:
+ * Three concerns:
  *
  * 1. **Site chrome re-theming** — `initChromeTheme(THEMES)`
  *    (`demo/chrome-theme-client.ts`, #772/#783) still applies whatever
@@ -33,6 +33,19 @@
  *    `prefers-reduced-motion: reduce` only skips that flash and the
  *    diagram's own dashed-line flow animation — the picker itself keeps
  *    working (a click still re-themes instantly).
+ * 3. **Output toggle** — `initThemeShowcaseOutputToggle()` switches
+ *    `#theme-showcase-diagram-card` between its svg and (real,
+ *    `renderMermaidASCII()`-produced) ASCII states by flipping the card's
+ *    own `data-output-mode` attribute, mirroring the homepage hero's
+ *    `HeroOutputPanel` toggle (`hero-output-panel.tsx`) but as plain DOM
+ *    wiring instead of React state — same reasoning as the picker above:
+ *    this section stays outside both of `index-app.tsx`'s hydrated islands
+ *    specifically to keep `react-dom/server` out of the client bundle (see
+ *    `index-app.tsx`'s header comment), so nothing under `#theme-showcase`
+ *    can hydrate via React. The ASCII string itself never changes with the
+ *    picker above — `applyTheme()` only ever swaps `--tsd-*` custom
+ *    properties, which `.theme-showcase-ascii`'s `color: var(--tsd-text)`
+ *    already reads.
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
@@ -304,8 +317,48 @@ function wireThemePicker(
   }
 }
 
+/**
+ * Wires `#theme-showcase-diagram-card`'s "OUTPUT / SVG / ASCII" segmented
+ * toggle (`demo/components/index-page.tsx`'s `ThemeShowcase`): a click
+ * flips the card's `data-output-mode` attribute, which
+ * `.theme-showcase-diagram-card[data-output-mode='ascii']`'s CSS rules
+ * (same file) use to show/hide the svg vs. the pre-rendered
+ * `#theme-showcase-ascii` block. A no-op (not a thrown error) if any
+ * expected element is missing, matching {@link initThemeShowcase}'s own
+ * defensive style.
+ */
+/** Applies `mode` to the output toggle's three elements — a plain function taking already-narrowed elements as parameters rather than a closure over them, since TS control-flow narrowing of `getElementById`'s `| null` result doesn't persist into a nested function body. */
+function setThemeShowcaseOutputMode(
+  card: HTMLElement,
+  svgBtn: HTMLElement,
+  asciiBtn: HTMLElement,
+  mode: 'svg' | 'ascii',
+): void {
+  card.dataset.outputMode = mode
+  const isSvg = mode === 'svg'
+  svgBtn.classList.toggle('active', isSvg)
+  svgBtn.setAttribute('aria-pressed', String(isSvg))
+  asciiBtn.classList.toggle('active', !isSvg)
+  asciiBtn.setAttribute('aria-pressed', String(!isSvg))
+}
+
+function initThemeShowcaseOutputToggle(): void {
+  const card = document.getElementById('theme-showcase-diagram-card')
+  const svgBtn = document.getElementById('theme-showcase-output-svg')
+  const asciiBtn = document.getElementById('theme-showcase-output-ascii')
+  if (!card || !svgBtn || !asciiBtn) return
+
+  svgBtn.addEventListener('click', () =>
+    setThemeShowcaseOutputMode(card, svgBtn, asciiBtn, 'svg'),
+  )
+  asciiBtn.addEventListener('click', () =>
+    setThemeShowcaseOutputMode(card, svgBtn, asciiBtn, 'ascii'),
+  )
+}
+
 // Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job,
 // unrelated to the showcase below.
 initChromeTheme(THEMES)
 
 initThemeShowcase()
+initThemeShowcaseOutputToggle()

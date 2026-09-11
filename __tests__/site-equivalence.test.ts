@@ -33,9 +33,13 @@ import { createElement } from 'react'
 import { JSDOM } from 'jsdom'
 import { within } from '@testing-library/react'
 import { renderHtmlDocument } from '../demo/render-html.ts'
-import { IndexPage } from '../demo/components/index-page.tsx'
+import {
+  IndexPage,
+  THEME_SHOWCASE_MERMAID_SOURCE,
+} from '../demo/components/index-page.tsx'
 import { FORK_URL } from '../demo/components/site-chrome.tsx'
 import { THEMES } from '@zombie-mermaid/core'
+import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { EditorPage } from '../demo/components/editor-page.tsx'
 import {
   ForkFixesPage,
@@ -258,6 +262,41 @@ describe('index.ts → index.html', () => {
     const burst = document.getElementById('theme-showcase-burst')
     expect(burst).toBeInTheDocument()
     expect(burst?.tagName.toLowerCase()).toBe('circle')
+  })
+
+  it('renders the theme showcase output toggle defaulted to SVG, with a real ASCII render behind it', () => {
+    const document = renderIndexPageDocument()
+
+    const card = document.getElementById('theme-showcase-diagram-card')
+    expect(card).toHaveAttribute('data-output-mode', 'svg')
+
+    const svgBtn = document.getElementById('theme-showcase-output-svg')
+    expect(svgBtn).toHaveAttribute('aria-pressed', 'true')
+    const asciiBtn = document.getElementById('theme-showcase-output-ascii')
+    expect(asciiBtn).toHaveAttribute('aria-pressed', 'false')
+
+    // Drift guard: the pre-rendered #theme-showcase-ascii block must be the
+    // real renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE) output, not
+    // hand-typed text that could silently fall out of sync with it.
+    const ascii = document.getElementById('theme-showcase-ascii')
+    expect(ascii).toBeInTheDocument()
+    const realAscii = renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+      colorMode: 'none',
+    })
+    for (const label of [
+      'Start',
+      'Auth?',
+      'Build',
+      'Test',
+      'Pipeline',
+      'Deploy?',
+      'Ship it',
+      'Rollback',
+      'Monitor',
+    ]) {
+      expect(realAscii).toContain(label)
+      expect(ascii?.textContent).toContain(label)
+    }
   })
 
   it('renders the theme showcase picker with a trigger and one option per theme', () => {
