@@ -280,6 +280,57 @@ describe('ASCII sequence — notes do not collide with an unrelated lifeline', (
     expect(carolCol < noteRect.x0 || carolCol > noteRect.x1).toBe(true)
   })
 
+  // Fixed by issue #992: a single-actor `Note over` centers on that actor's
+  // own lifeline (`nx = llX[aIdx] - Math.floor(nWidth / 2)`), but neither
+  // half of that width was reserved during layout — so a note wider than
+  // the actor's own column spilled into whichever neighbor was closer,
+  // exactly the shape cases A-C above already fixed for `left`/`right`
+  // notes. This is the exact repro from the issue (two actors, a note over
+  // the first one). A *multi*-actor `Note over A,B` is unaffected —
+  // spanning both actors is its intended shape (see the "note over two
+  // actors" case below), not this bug.
+  it("single-actor 'over' note on the first actor does not overlap the next actor's lifeline (issue #992 repro)", () => {
+    const src = `sequenceDiagram
+  participant A as Alice
+  participant B as Bob
+  Note over A: ${LONG_LABEL}
+  A->>B: hi`
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    const noteRect = findBoxRect(ascii, LONG_LABEL)
+    const bobCol = lifelineColumn(ascii, 'Bob')
+    expect(bobCol < noteRect.x0 || bobCol > noteRect.x1).toBe(true)
+  })
+
+  // Same fix, but a middle actor: both halves of the note (left half toward
+  // Alice, right half toward Carol) need to be reserved, not just the
+  // leftmost-actor case above.
+  it("single-actor 'over' note on a middle actor does not overlap either neighbor's lifeline", () => {
+    const src = `sequenceDiagram
+  participant A as Alice
+  participant B as Bob
+  participant C as Carol
+  A->>B: hi
+  Note over B: ${LONG_LABEL}`
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    const noteRect = findBoxRect(ascii, LONG_LABEL)
+    const aliceCol = lifelineColumn(ascii, 'Alice')
+    const carolCol = lifelineColumn(ascii, 'Carol')
+    expect(aliceCol < noteRect.x0 || aliceCol > noteRect.x1).toBe(true)
+    expect(carolCol < noteRect.x0 || carolCol > noteRect.x1).toBe(true)
+  })
+
+  it("short single-actor 'over' note does not overlap the next actor", () => {
+    const src = `sequenceDiagram
+  participant A as Alice
+  participant B as Bob
+  Note over A: ok
+  A->>B: hi`
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    const noteRect = findBoxRect(ascii, 'ok')
+    const bobCol = lifelineColumn(ascii, 'Bob')
+    expect(bobCol < noteRect.x0 || bobCol > noteRect.x1).toBe(true)
+  })
+
   // Regression locks: short notes, which don't hit any of the three bugs
   // above, must keep rendering without collision.
   it('short note left of a middle actor does not overlap its left neighbor', () => {
