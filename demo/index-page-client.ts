@@ -42,10 +42,15 @@
  *    this section stays outside both of `index-app.tsx`'s hydrated islands
  *    specifically to keep `react-dom/server` out of the client bundle (see
  *    `index-app.tsx`'s header comment), so nothing under `#theme-showcase`
- *    can hydrate via React. The ASCII string itself never changes with the
- *    picker above — `applyTheme()` only ever swaps `--tsd-*` custom
- *    properties, which `.theme-showcase-ascii`'s `color: var(--tsd-text)`
- *    already reads.
+ *    can hydrate via React. Unlike the svg panel (a single `--tsd-*`
+ *    `setProperty()` call per role), the ASCII panel's colors are baked
+ *    into per-character `<span style="color:...">` markup at build time —
+ *    one full render per theme (`demo/components/index-page.tsx`'s
+ *    `themeShowcaseAsciiHtmlByTheme`), threaded down via
+ *    `#theme-showcase-ascii-props`'s `<script type="application/json">`
+ *    element — so `applyTheme()` re-themes it by replacing
+ *    `#theme-showcase-ascii`'s whole `innerHTML` with that theme's
+ *    pre-rendered entry, rather than swapping a CSS variable.
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
@@ -115,13 +120,45 @@ interface ShowcaseEls {
   pickerLabel: HTMLElement
   pickerChip: HTMLElement
   pickerOptions: HTMLElement[]
+  /**
+   * `#theme-showcase-ascii` and its per-theme pre-rendered HTML map (read
+   * from `#theme-showcase-ascii-props`, see this file's header comment) —
+   * both nullable rather than part of {@link initThemeShowcase}'s
+   * all-or-nothing required-elements check: the ASCII toggle is a separate
+   * feature from the svg re-theming this picker's whole job already is, so
+   * malformed/absent ASCII markup degrades to "the svg still re-themes,
+   * the ASCII panel just doesn't" rather than breaking the picker outright.
+   */
+  asciiPre: HTMLElement | null
+  asciiHtmlByTheme: Record<string, string> | null
+}
+
+/**
+ * Reads {@link themeShowcaseAsciiHtmlByTheme}'s full per-theme map back out
+ * of `#theme-showcase-ascii-props`'s `<script type="application/json">`
+ * element (`demo/components/index-page.tsx`'s `ThemeShowcase`) — `null` if
+ * the element is missing or its content isn't valid JSON, so a malformed
+ * page degrades gracefully (see {@link ShowcaseEls.asciiHtmlByTheme}'s own
+ * doc comment) instead of throwing.
+ */
+function readThemeShowcaseAsciiHtmlByTheme(): Record<string, string> | null {
+  const propsEl = document.getElementById('theme-showcase-ascii-props')
+  if (!propsEl?.textContent) return null
+  try {
+    return JSON.parse(propsEl.textContent) as Record<string, string>
+  } catch {
+    return null
+  }
 }
 
 /**
  * Re-themes the diagram via CSS custom properties on `els.diagramCard`
  * (read by `demo/components/index-page.tsx`'s `.tsd-*` classes through
- * `var()`) and syncs `ThemeShowcasePicker`'s own trigger label/chip and
- * each option's `aria-selected` to match.
+ * `var()`), swaps `els.asciiPre`'s whole `innerHTML` to `themeKey`'s
+ * pre-rendered entry in `els.asciiHtmlByTheme` (a no-op if either is
+ * `null` — see {@link ShowcaseEls.asciiPre}'s doc comment), and syncs
+ * `ThemeShowcasePicker`'s own trigger label/chip and each option's
+ * `aria-selected` to match.
  */
 function applyTheme(
   themeKey: string,
@@ -136,6 +173,11 @@ function applyTheme(
   els.diagramCard.style.setProperty('--tsd-label-text', colors.labelText)
   els.diagramCard.style.setProperty('--tsd-muted', colors.muted)
   els.diagramCard.style.setProperty('--tsd-arrow', colors.arrow)
+
+  const asciiHtml = els.asciiHtmlByTheme?.[themeKey]
+  if (els.asciiPre && asciiHtml !== undefined) {
+    els.asciiPre.innerHTML = asciiHtml
+  }
 
   els.pickerLabel.textContent = themeKey
   els.pickerChip.style.background = colors.arrow
@@ -172,6 +214,8 @@ function initThemeShowcase(): void {
     pickerLabel,
     pickerChip,
     pickerOptions,
+    asciiPre: document.getElementById('theme-showcase-ascii'),
+    asciiHtmlByTheme: readThemeShowcaseAsciiHtmlByTheme(),
   }
 
   const reduced =

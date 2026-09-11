@@ -50,7 +50,10 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import { renderToString } from 'react-dom/server'
-import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  renderMermaidASCII,
+  diagramColorsToAsciiTheme,
+} from '@zombie-mermaid/ascii-renderer'
 import { asciiToHtml } from '../../ascii-html.ts'
 import { escapeJsonForScriptTag } from '../format.ts'
 import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
@@ -120,8 +123,17 @@ const heroAsciiHtml = asciiToHtml(
  * plain node inside it) is what keeps both `Build` and `Test` rendered
  * inside the pipeline's ASCII box — routing an edge through a member node
  * instead pulls that node out of the subgraph in this renderer's layout.
+ *
+ * `graph LR`, not `graph TD` (the svg's own top-down shape): this box's
+ * job is filling the same landscape footprint the svg does inside
+ * `.theme-showcase-diagram-card`, and the ASCII renderer's TD layout for
+ * this graph comes out roughly 30 columns × 34 lines (tall and narrow,
+ * needing real vertical scroll to read) versus LR's ~84 × 20 (wide and
+ * short, matching the svg's own landscape proportions closely enough to
+ * read without scrolling in the common case). Same nodes/edges/labels
+ * either way -- only the layout direction differs from the svg.
  */
-export const THEME_SHOWCASE_MERMAID_SOURCE = `graph TD
+export const THEME_SHOWCASE_MERMAID_SOURCE = `graph LR
   Start --> Auth{Auth?}
   Auth -->|ok| Pipeline
   subgraph Pipeline
@@ -134,19 +146,47 @@ export const THEME_SHOWCASE_MERMAID_SOURCE = `graph TD
 `
 
 /**
- * The theme showcase's real ASCII state — same `renderMermaidASCII()` +
- * `asciiToHtml()` build-time pipeline as {@link heroAsciiHtml}, run against
- * {@link THEME_SHOWCASE_MERMAID_SOURCE} instead. Unlike the hero panel this
- * never re-renders per theme pick — `wireThemePicker()` (`demo/index-page-
- * client.ts`) only ever swaps the `--tsd-*` CSS custom properties this
- * static HTML already reads through the `.theme-showcase-ascii` class
- * (`color: var(--tsd-text)`), so one build-time render covers every theme.
+ * The theme showcase's real ASCII state — one `renderMermaidASCII()` call
+ * per {@link THEMES} entry, all at build time, each with `colorMode:
+ * 'html'` and a `theme` derived via `diagramColorsToAsciiTheme()` from
+ * that theme's own `DiagramColors` (the same colors the svg panel derives
+ * its `--tsd-*` custom properties from). Unlike {@link heroAsciiHtml}'s
+ * single `colorMode: 'none'` + flat CSS-color render, this gives every
+ * border/line/arrow/text role its own color per theme, matching the svg
+ * panel's own per-role distinction rather than tinting the whole ASCII
+ * block one flat color.
+ *
+ * Pre-rendered per theme, not re-rendered client-side on a pick:
+ * `renderMermaidASCII` pulls in the full `@zombie-mermaid/mermaid-parser`
+ * + `@zombie-mermaid/core` as real dependencies (see that package's own
+ * `package.json`), and importing it into the browser bundle just to
+ * re-color text on a click is exactly the bundle-bloat this section was
+ * designed to avoid — see `index-app.tsx`'s header comment on why
+ * `ThemeShowcase` stays out of both hydrated islands in the first place.
+ * `wireThemePicker()` (`demo/index-page-client.ts`) instead reads this
+ * same map (threaded through via the `#theme-showcase-ascii-props`
+ * `<script type="application/json">` element below) and swaps
+ * `#theme-showcase-ascii`'s `innerHTML` by theme key on every pick,
+ * mirroring how it already swaps the svg panel's `--tsd-*` properties.
+ *
+ * No `asciiToHtml()` pass on top (unlike {@link heroAsciiHtml}): that
+ * helper's job is terminal column-width correction for wide/CJK
+ * characters, and `colorMode: 'html'`'s own `escapeHtml()` (`ansi.ts`)
+ * already makes this safe to embed directly — running it through
+ * `asciiToHtml()` too would escape the `<span>` tags themselves as literal
+ * text, destroying the coloring. This diagram's labels are all plain
+ * ASCII, so there's no wide-char column math to correct for anyway.
  */
-const themeShowcaseAsciiHtml = asciiToHtml(
-  renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
-    colorMode: 'none',
-  }).replace(/[ \t]+$/gm, ''),
-)
+const themeShowcaseAsciiHtmlByTheme: Record<string, string> =
+  Object.fromEntries(
+    Object.entries(THEMES).map(([key, colors]) => [
+      key,
+      renderMermaidASCII(THEME_SHOWCASE_MERMAID_SOURCE, {
+        colorMode: 'html',
+        theme: diagramColorsToAsciiTheme(colors),
+      }).replace(/[ \t]+$/gm, ''),
+    ]),
+  )
 
 const NPM_URL = 'https://www.npmjs.com/package/zombie-mermaid'
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid/'
@@ -428,6 +468,13 @@ function homePageCss(): string {
   border-radius: ${RADIUS.pill}px;
   padding: 2px;
 }
+/* No color/transition here, unlike the svg's .tsd-* classes -- every
+   character is already wrapped in its own colored <span> by
+   themeShowcaseAsciiHtmlByTheme's colorMode: 'html' render (see that
+   const's own doc comment), and a theme pick swaps this element's whole
+   innerHTML rather than smoothly transitioning a shared CSS custom
+   property. color: var(--tsd-text) stays as a harmless fallback for any
+   plain (unspanned) whitespace text nodes in that HTML. */
 .theme-showcase-ascii {
   display: none;
   margin: 0;
@@ -438,7 +485,6 @@ function homePageCss(): string {
   font-size: ${FONT_SIZE.bodySm}px;
   line-height: 1.5;
   color: var(--tsd-text);
-  transition: color 500ms ease;
 }
 .theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-diagram { display: none; }
 .theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-ascii { display: block; }
@@ -734,6 +780,13 @@ function ThemeShowcase() {
   const theme = THEMES[THEME_SHOWCASE_DEFAULT_THEME]
   if (!theme) {
     throw new Error(`Unknown theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`)
+  }
+  const defaultAsciiHtml =
+    themeShowcaseAsciiHtmlByTheme[THEME_SHOWCASE_DEFAULT_THEME]
+  if (defaultAsciiHtml === undefined) {
+    throw new Error(
+      `No ASCII render for theme key: ${THEME_SHOWCASE_DEFAULT_THEME}`,
+    )
   }
   const colors = deriveShowcaseColors(theme)
   const diagramCardStyle: Record<string, string> = {
@@ -1067,11 +1120,32 @@ function ThemeShowcase() {
           <pre
             id="theme-showcase-ascii"
             className="theme-showcase-ascii mono"
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII() + asciiToHtml() output from this file's own THEME_SHOWCASE_MERMAID_SOURCE; never user input
-            dangerouslySetInnerHTML={{ __html: themeShowcaseAsciiHtml }}
+            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
+            dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
           />
         </div>
       </div>
+
+      {/*
+          Threads themeShowcaseAsciiHtmlByTheme's full per-theme map to
+          demo/index-page-client.ts's applyTheme() -- the same <script
+          type="application/json"> props-hydration technique
+          INDEX_HERO_PROPS_ELEMENT_ID uses above for IndexHeroApp, just
+          read by plain DOM code here instead of a React hydration call,
+          since ThemeShowcase itself is never hydrated (see this file's
+          header comment). Every key's value is this file's own build-time
+          renderMermaidASCII() output -- never user input.
+        */}
+      <script
+        type="application/json"
+        id="theme-showcase-ascii-props"
+        // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this file's own themeShowcaseAsciiHtmlByTheme, escaped with escapeJsonForScriptTag; never user input
+        dangerouslySetInnerHTML={{
+          __html: escapeJsonForScriptTag(
+            JSON.stringify(themeShowcaseAsciiHtmlByTheme),
+          ),
+        }}
+      />
 
       <div className="theme-showcase-footnote">
         Want to add your own? Every theme here is just three color roles —{' '}
