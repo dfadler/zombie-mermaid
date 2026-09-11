@@ -393,12 +393,30 @@ function homePageCss(): string {
   flex-direction: column;
   overflow: hidden;
 }
+/* -- theme-showcase-output-body: sizes itself to the svg's own 600x300
+   viewBox aspect ratio (2/1) from its own width alone, rather than from
+   whichever child (svg or ascii <pre>) happens to be visible -- this is
+   what keeps the card the same height in both output modes: the ASCII
+   <pre> is capped to this box's height and scrolls internally
+   (theme-showcase-ascii below) instead of stretching the card to its own
+   much taller natural content height. */
+.theme-showcase-output-body {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 2 / 1;
+  margin: 0 auto;
+  /* A flex item's default min-height is auto (its content's min-content
+     size), which -- same trap as HeroInstall's own row min-width comment
+     elsewhere in this file -- overrides aspect-ratio's own height the
+     moment the ascii <pre>'s real (much taller) content is the one
+     driving that min-content size. Without this, the ascii state grows
+     the card instead of scrolling inside it. */
+  min-height: 0;
+}
 .theme-showcase-diagram {
   width: 100%;
-  height: auto;
-  max-width: 560px;
+  height: 100%;
   display: block;
-  margin: 0 auto;
 }
 /* -- Theme showcase output toggle: an "OUTPUT / SVG / ASCII" segmented
    header mirroring the homepage hero's own HeroOutputPanel toggle
@@ -432,7 +450,8 @@ function homePageCss(): string {
   display: none;
   margin: 0;
   width: 100%;
-  overflow-x: auto;
+  height: 100%;
+  overflow: auto;
   white-space: pre;
   font-variant-ligatures: none;
   font-size: ${FONT_SIZE.bodySm}px;
@@ -840,236 +859,238 @@ function ThemeShowcase() {
               </button>
             </div>
           </div>
-          <svg
-            id="theme-showcase-diagram"
-            className="theme-showcase-diagram"
-            viewBox="0 0 600 300"
-            aria-hidden="true"
-          >
-            <defs>
-              <marker
-                id="theme-showcase-arrowhead"
-                markerWidth={7}
-                markerHeight={7}
-                refX={5}
-                refY={3.5}
-                orient="auto"
-              >
-                <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
-              </marker>
-            </defs>
-
-            <rect
-              className="tsd-node"
-              x={10}
-              y={130}
-              width={80}
-              height={40}
-              rx={10}
-            />
-            <text
-              className="tsd-node-text"
-              x={50}
-              y={154}
-              textAnchor="middle"
-              fontSize={12}
-            >
-              Start
-            </text>
-            <path
-              className="tsd-flow"
-              d="M90,150 L120,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-
-            <polygon
-              className="tsd-node"
-              points="160,120 190,150 160,180 130,150"
-            />
-            <text
-              className="tsd-node-text"
-              x={160}
-              y={154}
-              textAnchor="middle"
-              fontSize={10.5}
-            >
-              Auth?
-            </text>
-            <path
-              className="tsd-flow"
-              d="M190,150 L225,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={200} y={140} fontSize={9.5}>
-              ok
-            </text>
-
-            <rect
-              className="tsd-pipeline-box"
-              x={225}
-              y={95}
-              width={150}
-              height={110}
-              rx={10}
-            />
-            <text
-              className="tsd-label"
-              x={235}
-              y={112}
-              fontSize={9}
-              letterSpacing="0.08em"
-            >
-              PIPELINE
-            </text>
-            <rect
-              className="tsd-node"
-              x={245}
-              y={120}
-              width={110}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={140}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Build
-            </text>
-            <path
-              className="tsd-flow"
-              d="M300,152 L300,166"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <rect
-              className="tsd-node"
-              x={245}
-              y={168}
-              width={110}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={188}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Test
-            </text>
-
-            <path
-              className="tsd-flow"
-              d="M375,150 L410,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={382} y={142} fontSize={9.5}>
-              pass
-            </text>
-
-            <polygon
-              className="tsd-node"
-              points="445,120 480,150 445,180 410,150"
-            />
-            <text
-              className="tsd-node-text"
-              x={445}
-              y={154}
-              textAnchor="middle"
-              fontSize={10}
-            >
-              Deploy?
-            </text>
-            <circle
-              id="theme-showcase-burst"
-              className="theme-showcase-burst-ring"
+          <div className="theme-showcase-output-body">
+            <svg
+              id="theme-showcase-diagram"
+              className="theme-showcase-diagram"
+              viewBox="0 0 600 300"
               aria-hidden="true"
-              cx={445}
-              cy={150}
-              r={28}
-            />
-
-            <path
-              className="tsd-flow"
-              d="M476,138 C 486,116 488,98 500,90"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={452} y={108} fontSize={9.5}>
-              yes
-            </text>
-            <rect
-              className="tsd-node"
-              x={500}
-              y={68}
-              width={76}
-              height={40}
-              rx={9}
-            />
-            <text
-              className="tsd-node-text"
-              x={538}
-              y={92}
-              textAnchor="middle"
-              fontSize={11}
             >
-              Ship it
-            </text>
+              <defs>
+                <marker
+                  id="theme-showcase-arrowhead"
+                  markerWidth={7}
+                  markerHeight={7}
+                  refX={5}
+                  refY={3.5}
+                  orient="auto"
+                >
+                  <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
+                </marker>
+              </defs>
 
-            <path
-              className="tsd-rollback-path"
-              d="M476,162 C 486,184 488,202 500,210"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={452} y={200} fontSize={9.5}>
-              no
-            </text>
-            <rect
-              className="tsd-node-muted"
-              x={496}
-              y={192}
-              width={84}
-              height={40}
-              rx={9}
-            />
-            <text
-              className="tsd-node-text"
-              x={538}
-              y={216}
-              textAnchor="middle"
-              fontSize={10}
-            >
-              Rollback
-            </text>
+              <rect
+                className="tsd-node"
+                x={10}
+                y={130}
+                width={80}
+                height={40}
+                rx={10}
+              />
+              <text
+                className="tsd-node-text"
+                x={50}
+                y={154}
+                textAnchor="middle"
+                fontSize={12}
+              >
+                Start
+              </text>
+              <path
+                className="tsd-flow"
+                d="M90,150 L120,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
 
-            <path className="tsd-monitor-path" d="M300,200 L300,250" />
-            <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
-            <rect
-              className="tsd-node"
-              x={255}
-              y={252}
-              width={90}
-              height={32}
-              rx={7}
+              <polygon
+                className="tsd-node"
+                points="160,120 190,150 160,180 130,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={160}
+                y={154}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Auth?
+              </text>
+              <path
+                className="tsd-flow"
+                d="M190,150 L225,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={200} y={140} fontSize={9.5}>
+                ok
+              </text>
+
+              <rect
+                className="tsd-pipeline-box"
+                x={225}
+                y={95}
+                width={150}
+                height={110}
+                rx={10}
+              />
+              <text
+                className="tsd-label"
+                x={235}
+                y={112}
+                fontSize={9}
+                letterSpacing="0.08em"
+              >
+                PIPELINE
+              </text>
+              <rect
+                className="tsd-node"
+                x={245}
+                y={120}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={140}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Build
+              </text>
+              <path
+                className="tsd-flow"
+                d="M300,152 L300,166"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <rect
+                className="tsd-node"
+                x={245}
+                y={168}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={188}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Test
+              </text>
+
+              <path
+                className="tsd-flow"
+                d="M375,150 L410,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={382} y={142} fontSize={9.5}>
+                pass
+              </text>
+
+              <polygon
+                className="tsd-node"
+                points="445,120 480,150 445,180 410,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={445}
+                y={154}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Deploy?
+              </text>
+              <circle
+                id="theme-showcase-burst"
+                className="theme-showcase-burst-ring"
+                aria-hidden="true"
+                cx={445}
+                cy={150}
+                r={28}
+              />
+
+              <path
+                className="tsd-flow"
+                d="M476,138 C 486,116 488,98 500,90"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={108} fontSize={9.5}>
+                yes
+              </text>
+              <rect
+                className="tsd-node"
+                x={500}
+                y={68}
+                width={76}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={92}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Ship it
+              </text>
+
+              <path
+                className="tsd-rollback-path"
+                d="M476,162 C 486,184 488,202 500,210"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={200} fontSize={9.5}>
+                no
+              </text>
+              <rect
+                className="tsd-node-muted"
+                x={496}
+                y={192}
+                width={84}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={216}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Rollback
+              </text>
+
+              <path className="tsd-monitor-path" d="M300,200 L300,250" />
+              <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
+              <rect
+                className="tsd-node"
+                x={255}
+                y={252}
+                width={90}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={272}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Monitor
+              </text>
+            </svg>
+            <pre
+              id="theme-showcase-ascii"
+              className="theme-showcase-ascii mono"
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII() + asciiToHtml() output from this file's own THEME_SHOWCASE_MERMAID_SOURCE; never user input
+              dangerouslySetInnerHTML={{ __html: themeShowcaseAsciiHtml }}
             />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={272}
-              textAnchor="middle"
-              fontSize={10.5}
-            >
-              Monitor
-            </text>
-          </svg>
-          <pre
-            id="theme-showcase-ascii"
-            className="theme-showcase-ascii mono"
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII() + asciiToHtml() output from this file's own THEME_SHOWCASE_MERMAID_SOURCE; never user input
-            dangerouslySetInnerHTML={{ __html: themeShowcaseAsciiHtml }}
-          />
+          </div>
         </div>
       </div>
 
