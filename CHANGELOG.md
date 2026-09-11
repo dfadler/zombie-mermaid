@@ -1,5 +1,115 @@
 # Changelog
 
+## 2.2.2
+
+### Patch Changes
+
+- [#668](https://github.com/dfadler/zombie-mermaid/pull/668) [`921348f`](https://github.com/dfadler/zombie-mermaid/commit/921348fc17ee4ef0e7da6a5592986beef118526b) Thanks [@dfadler](https://github.com/dfadler)! - Add the six animated diagram-type icon components (flowchart, state, sequence, class, ER, XY chart) to the demo's icon set, each respecting `prefers-reduced-motion: reduce`. Refs [#597](https://github.com/dfadler/zombie-mermaid/issues/597).
+
+- [#778](https://github.com/dfadler/zombie-mermaid/pull/778) [`b38d3b8`](https://github.com/dfadler/zombie-mermaid/commit/b38d3b880b93af701a67b059f91ecee244043948) Thanks [@dfadler](https://github.com/dfadler)! - Fix the "See all samples" CTA on diagram-type pages (e.g. `diagrams/flowchart.html`) pointing at `../#samples-heading`, a fragment that no longer exists after the [#590](https://github.com/dfadler/zombie-mermaid/issues/590) Diagram-Native Showcase redesign replaced the old interactive sample gallery. It now points at the Diagrams hub (`diagrams/index.html`), matching the page's own breadcrumb.
+
+- [#963](https://github.com/dfadler/zombie-mermaid/pull/963) [`a1074a5`](https://github.com/dfadler/zombie-mermaid/commit/a1074a594964834d2f182c3ce2a8ba905f99a2ed) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII class-diagram cross-level relationship connectors corrupting an intervening class box's attribute/method text. A relationship between classes on different levels could jog horizontally past a taller, unrelated same-level box on its way to a child positioned far from its own parent's column — with no occupancy check, that jog silently overwrote whichever row it crossed. `src/ascii/class-diagram.ts` now snapshots occupied box cells and guards every cross-level line/corner/marker write against them (mirroring the `boxCells`/`setCGuarded` guard `er-diagram.ts` already has for issue [#350](https://github.com/dfadler/zombie-mermaid/issues/350)), so a mis-routed segment degrades to a gap in the line instead of corrupting a box.
+
+- [#957](https://github.com/dfadler/zombie-mermaid/pull/957) [`6f38486`](https://github.com/dfadler/zombie-mermaid/commit/6f3848677eb40295d830d167f70b9b33733a1b57) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII class-diagram relationship lines overlapping unrelated class
+  boxes. The "same level" routing branch (used when a relationship cycle,
+  e.g. `A --> B --> C --> A`, forces every class in the cycle onto one row)
+  computed its detour row only from the relationship's own two endpoints, so
+  a taller class sitting between them in that row could have the detour's
+  horizontal line drawn straight through its attribute/method rows instead
+  of beneath its box. `class-diagram.ts` now searches for such a same-row
+  obstruction and routes the detour below it, generalizing the occupancy
+  guard `er-diagram.ts` already has (`setCGuarded`/`boxCells`, from [#350](https://github.com/dfadler/zombie-mermaid/issues/350)) to
+  class diagrams. Part of [#953](https://github.com/dfadler/zombie-mermaid/issues/953).
+
+- [#790](https://github.com/dfadler/zombie-mermaid/pull/790) [`ddcd43b`](https://github.com/dfadler/zombie-mermaid/commit/ddcd43bb6a485d5d39ef9d1fad060c52ca41ee49) Thanks [@dfadler](https://github.com/dfadler)! - The class-diagram parser now detects and throws on malformed constructs instead of silently dropping or mis-parsing them: a dangling relationship arrow with no target (e.g. `Animal <|--`), an unsupported arrow shape, an unclosed `class X { ... }` body, an unclosed `(` in a method signature, and a malformed `<<...>>` annotation. Errors report a 1-based source line number (building on the position tracking added for [#760](https://github.com/dfadler/zombie-mermaid/issues/760)). Scoped the same way [#722](https://github.com/dfadler/zombie-mermaid/issues/722) scoped the ER and xychart-beta parsers: only lines that already look like an attempt at one of these constructs throw — genuinely unrelated syntax still falls through silently. No behavior change for valid input.
+
+- [#834](https://github.com/dfadler/zombie-mermaid/pull/834) [`bd0d884`](https://github.com/dfadler/zombie-mermaid/commit/bd0d884127944cbb386b8ccd9b19f66b70a36eba) Thanks [@dfadler](https://github.com/dfadler)! - Close out [#545](https://github.com/dfadler/zombie-mermaid/issues/545) (cross-arch Docker visual-regression parity spike) with a
+  flag-matched, same-commit confirmation: three full-suite runs on native arm64
+  with `CI=true` (843/843 passing in the final tally, baselines unchanged) plus
+  a real x86-CI comparison on the identical commit. Architecture is ruled out
+  as a driver of screenshot divergence for both the ASCII and SVG halves of the
+  suite. No source changes; docs only (research doc + decision amendment).
+
+- [#786](https://github.com/dfadler/zombie-mermaid/pull/786) [`8b96df3`](https://github.com/dfadler/zombie-mermaid/commit/8b96df33256ff2dfa7355be14b3e5c51671ef5d1) Thanks [@dfadler](https://github.com/dfadler)! - Fix the breadcrumb separator on the editor, blog, diagram (detail + hub), and fork-fixes pages, which rendered a literal `"/"` instead of the `ChevronRightIcon` the design canvas specifies — only the dashboard page used the chevron correctly. All five now render `Home › <page>` consistently, matching the dashboard's own `size={12}`/`strokeWidth={2.4}` usage.
+
+- [#754](https://github.com/dfadler/zombie-mermaid/pull/754) [`17637f9`](https://github.com/dfadler/zombie-mermaid/commit/17637f9d3058b4295010df69bbb0d2472cceda84) Thanks [@dfadler](https://github.com/dfadler)! - Register `flowchart` (and the `state` pipeline it shares) in the SVG (`src/diagram-registry.ts`) and ASCII (`src/ascii/registry.ts`) diagram-type registries — the last diagram type still handled by a fallback switch instead of a registry entry ([#533](https://github.com/dfadler/zombie-mermaid/issues/533), [#745](https://github.com/dfadler/zombie-mermaid/issues/745)). Extracted `renderFlowchartAscii` as its own ASCII entry point, matching every other diagram type's shape. Pure internal refactor — zero output change, confirmed byte-identical across SVG and ASCII render options.
+
+- [#718](https://github.com/dfadler/zombie-mermaid/pull/718) [`2d8160c`](https://github.com/dfadler/zombie-mermaid/commit/2d8160c34a71f61a723acf606dfc249fdf23d214) Thanks [@dfadler](https://github.com/dfadler)! - Add `fix_mermaid_sequence_activations`, an MCP tool that complements `check_mermaid_sequence_activations` by auto-fixing a dangling `activate X` (appending a matching `deactivate X`) where it's mechanically safe to do so; an unmatched `deactivate X` is reported but left for manual resolution. Closes the remaining "optionally proposes a fix" scope of [#539](https://github.com/dfadler/zombie-mermaid/issues/539).
+
+- [#678](https://github.com/dfadler/zombie-mermaid/pull/678) [`73703a7`](https://github.com/dfadler/zombie-mermaid/commit/73703a757f0916ecae84a51ad624520c71bb02fe) Thanks [@dfadler](https://github.com/dfadler)! - Fix the shared `Nav` component so the install pill no longer overlaps the "GitHub" link (and "Fork fixes"/the wordmark no longer wrap onto a second line) between roughly 901px and 1080px viewport width, by dropping the pill to its icon-only mobile form a little early in that range.
+
+- [#787](https://github.com/dfadler/zombie-mermaid/pull/787) [`8a6dead`](https://github.com/dfadler/zombie-mermaid/commit/8a6dead46f0bd121043136b1f4e6ec41dc26359f) Thanks [@dfadler](https://github.com/dfadler)! - Parser error messages now report the 1-based source line they came from (e.g. `Line 14: Invalid direction "SIDEWAYS" in header...`), instead of only quoting the offending statement's text back. `splitStatements`/`splitStatementsByLine` (`@zombie-mermaid/core`) now return `Statement[]`/`Statement[][]` (`{ text, line }`) instead of bare strings, threaded through all five diagram parsers (flowchart/state, sequence, class, ER, xychart) so every existing throw site can report position. Column position is left as a follow-up. No behavior change for valid input.
+
+- [#796](https://github.com/dfadler/zombie-mermaid/pull/796) [`32ff118`](https://github.com/dfadler/zombie-mermaid/commit/32ff11863e89c0a140730dd8263dc8a2dcb35e8b) Thanks [@dfadler](https://github.com/dfadler)! - Publish-prep only, per [#769](https://github.com/dfadler/zombie-mermaid/issues/769): the five internal `@zombie-mermaid/*` workspace
+  packages (`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`)
+  now have genuinely publishable `package.json` shapes — real `exports`/
+  `main`/`module`/`types` pointing at their own `dist/`, `publishConfig:
+{ access: "public", provenance: true }`, `"private"` removed — and each gets
+  its own independent Vite build (`packages/*/vite.config.ts`, via the shared
+  `vite.config.package.ts` factory), runnable standalone via the new
+  `build:packages` script.
+
+  **This is prep only. It does not change what `npm install zombie-mermaid`
+  resolves to.** The umbrella's own build (`vite.config.lib.ts`) still bundles
+  all five packages' source directly into `dist/index.js`/`dist/ascii.js`/
+  `dist/mcp.js`/`dist/cli.js`, exactly as before — none of the five packages
+  are wired in as external runtime dependencies, and none are published to
+  npm. Actually flipping that (declaring them as real `dependencies`,
+  externalizing them in the umbrella build, and locking all six packages to
+  one version via `.changeset/config.json`'s `fixed` group) is deferred to a
+  future PR, gated on completing npm's one-time trusted-publishing (OIDC)
+  setup for each of the five new package names — see RELEASING.md.
+
+  Two real, independent bugs surfaced while giving each package its own
+  build are fixed here regardless of the externalization question:
+  `packages/svg-renderer/src/elk-instance.ts` now restates `LayoutCache`'s
+  concrete shape locally (its `@internal` fields are trimmed from
+  `@zombie-mermaid/core`'s own published `.d.ts`), `packages/mcp/package.json`
+  gained its real transitive `@zombie-mermaid/svg-renderer`/`entities`
+  dependencies, and `packages/core/package.json` moved `elkjs` from
+  `devDependencies` to `dependencies` (it's part of `core`'s public types).
+
+- [#954](https://github.com/dfadler/zombie-mermaid/pull/954) [`a6c2ff4`](https://github.com/dfadler/zombie-mermaid/commit/a6c2ff4f6be9d50d1bc4842bb8ea5ae443fee301) Thanks [@dfadler](https://github.com/dfadler)! - Restore the readable TypeScript source that the published npm tarball
+  stopped shipping once [#769](https://github.com/dfadler/zombie-mermaid/issues/769)'s monorepo conversion moved the class/ER/
+  sequence/xychart parsers, the ASCII renderer, and the MCP server out of
+  root `src/` and into `packages/*/src/` — `package.json`'s `files` field
+  still only listed root `src/`, so those directories silently dropped out of
+  `npm pack` even though the compiled `dist/` bundle (which still inlines all
+  five packages) stayed complete and correct.
+
+  `files` now also lists `packages/{core,mermaid-parser,svg-renderer,
+ascii-renderer,mcp}/src/`. This is a stopgap: see RELEASING.md's `files`
+  stopgap note for why, and remove it as part of a major release once the
+  five packages are externalized and published on their own (RELEASING.md's
+  "Future: multi-package publish" section) — at that point their source no
+  longer needs to be duplicated inside the `zombie-mermaid` tarball.
+
+- [#748](https://github.com/dfadler/zombie-mermaid/pull/748) [`3c272aa`](https://github.com/dfadler/zombie-mermaid/commit/3c272aa40d95cb9aca83470f4febe8732dcb5e5c) Thanks [@dfadler](https://github.com/dfadler)! - Internal refactor: `runRender` (`src/cli/render.ts`) now resolves each output format's stdout-vs-file-vs-skip routing through a single shared `resolveTarget`/`emit` pair instead of re-implementing the same three-way branch separately for ascii/svg/html/png. No behavior change — same target resolution and output for every existing flag combination. Closes [#743](https://github.com/dfadler/zombie-mermaid/issues/743).
+
+- [#831](https://github.com/dfadler/zombie-mermaid/pull/831) [`a78dd04`](https://github.com/dfadler/zombie-mermaid/commit/a78dd0416f2dd5ef7d9b3cc04b50f15f93e90a3c) Thanks [@dfadler](https://github.com/dfadler)! - Add `docs/decisions/self-hosted-runner-docker-cache.md`, a no-go decision on evaluating a self-hosted GitHub Actions runner for a warm Docker cache ([#738](https://github.com/dfadler/zombie-mermaid/issues/738)): the ~92 seconds of extra aggregate runner time per run (the incremental ~23s/shard × 4-shard delta, not the full ~29.5s/shard init average) don't justify the operational burden and, more decisively, GitHub's own security guidance says self-hosted runners "should almost never be used for public repositories" since any PR can compromise the host — and `zombie-mermaid` is public. Docs-only, no workflow changes.
+
+- [#727](https://github.com/dfadler/zombie-mermaid/pull/727) [`d4e5fb5`](https://github.com/dfadler/zombie-mermaid/commit/d4e5fb506852cf437c900e5ea5b0030505640b50) Thanks [@dfadler](https://github.com/dfadler)! - Render self-loop edges (`B --> B`) in SVG flowchart and state-diagram output as a rounded loop beside the node, with the label placed clear of the curve, instead of a degenerate 4-point right-angle bracket sitting on top of the node. ELK has no native self-loop layout; self-loops are now excluded from the graph handed to ELK and their geometry is synthesized afterward from final node positions. Closes the follow-up identified in [#537](https://github.com/dfadler/zombie-mermaid/issues/537)'s research pass.
+
+- [#956](https://github.com/dfadler/zombie-mermaid/pull/956) [`610b749`](https://github.com/dfadler/zombie-mermaid/commit/610b749144ffab90f8d8428a4468af28a589fde9) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII sequence-diagram `Note left of`/`Note right of` boxes colliding with lifelines ([#953](https://github.com/dfadler/zombie-mermaid/issues/953) cases 3-5). Notes are now sized into the lifeline layout up front (mirroring how message labels already widen lifeline gaps) instead of only clamping the note's x-position after the fact, so a wide note no longer overwrites its own actor's lifeline, a neighboring actor's lifeline, or overflows into the next lifeline gap.
+
+- [#792](https://github.com/dfadler/zombie-mermaid/pull/792) [`c29e8d5`](https://github.com/dfadler/zombie-mermaid/commit/c29e8d5d9f60585314a0665afcaa376811b414e1) Thanks [@dfadler](https://github.com/dfadler)! - The sequence-diagram parser now detects syntactic errors in addition to its existing semantic checks: a malformed arrow (e.g. `Alice->>>Bob: Hello`, which previously silently created an actor literally named `">Bob"` instead of erroring) now throws instead of absorbing the malformed portion into an actor id; an `end` with nothing open to close now throws instead of being silently ignored; and a `loop`/`alt`/`opt`/`par`/`critical`/`break`/`rect`/`box` left unclosed at the end of the diagram now throws instead of being silently accepted as closed. Errors report a 1-based source line number (building on the position tracking added for [#760](https://github.com/dfadler/zombie-mermaid/issues/760)). No behavior change for valid input.
+
+- [#757](https://github.com/dfadler/zombie-mermaid/pull/757) [`acce3cf`](https://github.com/dfadler/zombie-mermaid/commit/acce3cf94a6087d0e8018a2fda8f86f3f362956a) Thanks [@dfadler](https://github.com/dfadler)! - Consolidate the four-call CSS composition (`designBaseCss()`, `primitivesCss()`, `navCss()`, `footerCss()`, in that cascade-required order) that blog.ts, dashboard.ts, fork-fixes.ts, `DiagramTypePage`/`DiagramHubPage`, and `IndexPage` each repeated behind a new `demo/components/shared-page-css.tsx` module (`sharedPageCss()` for the `.ts` generators, `<SharedPageStyles/>` for the React pages), replacing the ordering comment restated at each call site with one comment on the helper itself. Internal refactor only — every generated page's output is byte-for-byte unchanged. Closes [#751](https://github.com/dfadler/zombie-mermaid/issues/751).
+
+- [#735](https://github.com/dfadler/zombie-mermaid/pull/735) [`3aa3bab`](https://github.com/dfadler/zombie-mermaid/commit/3aa3babaa0cbb14a735818b2e4d1026dd5c11784) Thanks [@dfadler](https://github.com/dfadler)! - Fix two ASCII rendering fidelity bugs found by the weekly form-judge audit: a subgraph cluster label wider than its child nodes was truncated mid-word (e.g. "Processing Pipeline" became "Processing Pipe") instead of widening the box to fit; and two different class-diagram relationships converging on the same target class from different sources (e.g. `Teacher --> Course` and `Student --> Course`) collapsed onto the same connection column, making one connector look like it stopped short of its target instead of reaching it with its own arrowhead.
+
+- [#730](https://github.com/dfadler/zombie-mermaid/pull/730) [`8f68117`](https://github.com/dfadler/zombie-mermaid/commit/8f68117eebeb1376260fe0743032f685e021d182) Thanks [@dfadler](https://github.com/dfadler)! - Fix flowchart parsing so a vertex-chain statement split across lines — with the link operator (e.g. `==>`) leading the continuation line instead of trailing the previous one — no longer silently drops the continuation node(s)/edge(s) or falls back to a node's bare id as its label. Matches the exact repro from mermaid-js/mermaid#6049, which upstream Mermaid already renders correctly.
+
+- [#722](https://github.com/dfadler/zombie-mermaid/pull/722) [`42a3e13`](https://github.com/dfadler/zombie-mermaid/commit/42a3e13fc62dd7082a91948a3867f0207eaf43ca) Thanks [@dfadler](https://github.com/dfadler)! - Improve parse-error quality for xychart-beta and ER diagrams. The
+  xychart-beta parser now throws an actionable error naming the bad value
+  and its position when a `bar`/`line` series contains a non-numeric entry
+  (previously silently coerced to `NaN`), and when an `x-axis`/`y-axis`/
+  `bar`/`line`/`title` directive's syntax is malformed (previously silently
+  dropped, e.g. an unclosed bracket). The ER diagram parser now throws when
+  a relationship line has an invalid cardinality token or is missing its
+  `: label` (previously silently dropped the entire line, including both
+  entities), instead of accepting malformed input silently. Refs [#541](https://github.com/dfadler/zombie-mermaid/issues/541).
+
 ## 2.2.1
 
 ### Patch Changes
