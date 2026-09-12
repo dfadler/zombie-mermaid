@@ -42,6 +42,51 @@
   box-shadow: var(--shadow-minimal);
 }
 
+/* zombie-mermaid#976: the preview panel's SVG/ASCII output toggle --
+ * same pill shape as .zoom-controls above, mirroring the homepage's own
+ * .output-segment toggle (index-page.tsx's theme showcase,
+ * hero-output-panel.tsx) rather than inventing a third visual style for
+ * "pick one of two outputs." */
+.output-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--preview-bg3);
+  box-shadow: var(--shadow-minimal);
+  margin-left: 10px;
+}
+.output-segment {
+  border: none;
+  background: transparent;
+  color: var(--preview-fg3);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.output-segment:hover {
+  color: var(--preview-fg);
+}
+.output-segment.active {
+  color: var(--preview-fg);
+  background: color-mix(in srgb, var(--preview-fg) 5%, var(--preview-bg));
+}
+
+/* Zoom/pan act on the rendered <svg> element, which doesn't exist while
+ * ASCII output is showing (editor-rendering.ts's doRender renders a <pre>
+ * instead) -- editor-output-mode.ts's useEditorOutputMode sets this
+ * attribute on #panel-right. */
+.panel-right[data-output-mode='ascii'] .zoom-controls {
+  display: none;
+}
+
 /* Craft Agents PanelHeaderCenterButton style */
 /* Was opacity: 0.5 by default -- halving the contrast of an already-toned
  * icon color risks dropping below the 3:1 icon/UI floor depending on the
@@ -124,6 +169,24 @@
 .preview-inner svg {
   display: block;
   flex-shrink: 0;
+}
+
+/* zombie-mermaid#976: doRender() sets #preview-inner's innerHTML to this
+ * instead of a raw <svg> string while ASCII output is selected. No
+ * per-character color/transition rules here (unlike .tsd-* on the
+ * homepage) -- renderMermaidASCII's colorMode: 'html' output already
+ * wraps every character in its own colored <span> (see
+ * editor-rendering.ts's buildAsciiOptions doc comment); color below is
+ * just a harmless fallback for any plain (unspanned) whitespace text
+ * nodes in that HTML. */
+.ascii-output {
+  margin: 0;
+  white-space: pre;
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-ligatures: none;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--preview-fg);
 }
 
 .preview-error {
