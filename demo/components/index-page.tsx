@@ -461,12 +461,89 @@ function homePageCss(): string {
   text-transform: uppercase;
   color: var(--tsd-muted);
 }
+/* Groups the SVG/ASCII segmented control with the scale button (#987) so
+   .theme-showcase-output-toggle's own justify-content: space-between still
+   splits into exactly two sides -- the OUTPUT label, and everything else --
+   regardless of how many controls this side grows to. */
+.theme-showcase-output-controls {
+  display: flex;
+  align-items: center;
+  gap: ${SPACE.sm}px;
+}
 .theme-showcase-output-segments {
   display: flex;
   gap: 2px;
   background: ${colorVar('--panel')};
   border-radius: ${RADIUS.pill}px;
   padding: 2px;
+}
+/* -- Scale control (#987): a button that discloses a range slider, mirroring
+   .theme-showcase-picker's own trigger/panel disclosure pattern
+   (demo/index-page-client.ts's wireThemePicker) but scoped to a single
+   input -- no roving focus needed. Wired by
+   initThemeShowcaseScaleControl() in demo/index-page-client.ts, which
+   writes the slider's value to #theme-showcase-output-body's own
+   --tsd-scale custom property; .theme-showcase-output-body (below) reads it
+   via var() with a scale(1) fallback, the same "swap a variable, let CSS do
+   the rest" technique applyTheme() already uses for --tsd-bg etc. Zooms
+   from the center of the box (transform-origin: center, below) rather than
+   the top-left corner transform defaults to -- matching the issue's own
+   request. Deliberately no pan/scroll to reach content clipped by
+   .theme-showcase-diagram-card's own overflow: hidden once zoomed past 1 --
+   panning this panel is tracked separately, out of scope here, in #988. */
+.theme-showcase-scale { position: relative; }
+.theme-showcase-scale-trigger {
+  display: flex;
+  align-items: center;
+  gap: ${SPACE.xxs}px;
+  border: none;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  font-family: inherit;
+  font-size: ${FONT_SIZE.caption}px;
+  font-weight: 700;
+  padding: ${SPACE.xxs}px ${SPACE.md}px;
+  border-radius: ${RADIUS.pill}px;
+  cursor: pointer;
+}
+.theme-showcase-scale-trigger:hover,
+.theme-showcase-scale-trigger:focus-visible { color: ${colorVar('--text')}; outline: none; }
+.theme-showcase-scale.open .theme-showcase-scale-trigger { background: ${colorVar('--panel-2')}; color: ${colorVar('--text')}; }
+.theme-showcase-scale-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  align-items: center;
+  gap: ${SPACE.sm}px;
+  min-width: 180px;
+  padding: ${SPACE.sm}px ${SPACE.md}px;
+  border: 1.5px dashed ${colorVar('--border')};
+  border-radius: 4px;
+  background: ${colorVar('--panel')};
+}
+/* display: flex only applies while the panel is shown -- an unconditional
+   display: flex on the rule above would win over the hidden attribute's
+   user-agent display: none (an author rule always beats the UA
+   stylesheet, regardless of the [hidden] selector's own specificity), so
+   toggling panel.hidden in demo/index-page-client.ts would do nothing. */
+.theme-showcase-scale-panel:not([hidden]) { display: flex; }
+.theme-showcase-scale-slider { flex: 1; accent-color: ${colorVar('--cyan')}; }
+/* The trigger's own label (the current percentage, e.g. "100%") -- a
+   dedicated class rather than relying on .theme-showcase-scale-trigger's
+   own font-size so it can read slightly smaller than the SVG/ASCII segment
+   labels beside it, matching .theme-showcase-output-label's own micro
+   size. No color override: inherits .theme-showcase-scale-trigger's
+   color (and that rule's own :hover/:focus-visible color change) rather
+   than fixing one, since this is that button's only content. */
+.theme-showcase-scale-value { font-size: ${FONT_SIZE.micro}px; }
+/* Wraps the svg and the ASCII <pre> together (#987) so one scale slider
+   zooms either output identically -- see the scale control's own comment
+   above for the --tsd-scale custom property this reads. */
+.theme-showcase-output-body {
+  min-width: 0;
+  transform: scale(var(--tsd-scale, 1));
+  transform-origin: center;
 }
 /* Toggled by data-output-mode instead of .theme-showcase-ascii itself, so
    the wrap's relatively-positioned box (needed to pin the fade overlays
@@ -927,266 +1004,321 @@ function ThemeShowcase() {
         >
           <div className="theme-showcase-output-toggle">
             <span className="theme-showcase-output-label">Output</span>
-            <div className="theme-showcase-output-segments">
-              <button
-                type="button"
-                id="theme-showcase-output-svg"
-                className="output-segment active"
-                aria-pressed="true"
-              >
-                SVG
-              </button>
-              <button
-                type="button"
-                id="theme-showcase-output-ascii"
-                className="output-segment"
-                aria-pressed="false"
-              >
-                ASCII
-              </button>
+            <div className="theme-showcase-output-controls">
+              <div className="theme-showcase-output-segments">
+                <button
+                  type="button"
+                  id="theme-showcase-output-svg"
+                  className="output-segment active"
+                  aria-pressed="true"
+                >
+                  SVG
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-output-ascii"
+                  className="output-segment"
+                  aria-pressed="false"
+                >
+                  ASCII
+                </button>
+              </div>
+              {/*
+                  Scale control (#987) -- see .theme-showcase-scale's own CSS
+                  comment above for the disclosure pattern and the
+                  --tsd-scale custom property this writes/reads. Wired by
+                  initThemeShowcaseScaleControl() in
+                  demo/index-page-client.ts. min/max/step/default here must
+                  match that function's own SCALE_MIN/SCALE_MAX constants
+                  -- there's no shared module between this build-time file
+                  and the client bundle small enough to justify one (see
+                  this file's own header comment on why the two stay plain
+                  DOM + separate files).
+                */}
+              <div className="theme-showcase-scale" id="theme-showcase-scale">
+                <button
+                  type="button"
+                  id="theme-showcase-scale-trigger"
+                  className="theme-showcase-scale-trigger mono"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  aria-controls="theme-showcase-scale-panel"
+                  aria-label="Adjust diagram scale"
+                >
+                  <span
+                    id="theme-showcase-scale-value"
+                    className="theme-showcase-scale-value"
+                  >
+                    100%
+                  </span>
+                </button>
+                <div
+                  className="theme-showcase-scale-panel"
+                  id="theme-showcase-scale-panel"
+                  role="group"
+                  aria-label="Diagram scale"
+                  hidden
+                >
+                  <input
+                    type="range"
+                    id="theme-showcase-scale-slider"
+                    className="theme-showcase-scale-slider"
+                    min={0.5}
+                    max={2.5}
+                    step={0.1}
+                    defaultValue={1}
+                    aria-label="Diagram scale"
+                  />
+                </div>
+              </div>
             </div>
           </div>
-          <svg
-            id="theme-showcase-diagram"
-            className="theme-showcase-diagram"
-            viewBox="0 0 600 300"
-            aria-hidden="true"
+          <div
+            className="theme-showcase-output-body"
+            id="theme-showcase-output-body"
           >
-            <defs>
-              <marker
-                id="theme-showcase-arrowhead"
-                markerWidth={7}
-                markerHeight={7}
-                refX={5}
-                refY={3.5}
-                orient="auto"
+            <svg
+              id="theme-showcase-diagram"
+              className="theme-showcase-diagram"
+              viewBox="0 0 600 300"
+              aria-hidden="true"
+            >
+              <defs>
+                <marker
+                  id="theme-showcase-arrowhead"
+                  markerWidth={7}
+                  markerHeight={7}
+                  refX={5}
+                  refY={3.5}
+                  orient="auto"
+                >
+                  <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
+                </marker>
+              </defs>
+
+              <rect
+                className="tsd-node"
+                x={10}
+                y={130}
+                width={80}
+                height={40}
+                rx={10}
+              />
+              <text
+                className="tsd-node-text"
+                x={50}
+                y={154}
+                textAnchor="middle"
+                fontSize={12}
               >
-                <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
-              </marker>
-            </defs>
+                Start
+              </text>
+              <path
+                className="tsd-flow"
+                d="M90,150 L120,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
 
-            <rect
-              className="tsd-node"
-              x={10}
-              y={130}
-              width={80}
-              height={40}
-              rx={10}
-            />
-            <text
-              className="tsd-node-text"
-              x={50}
-              y={154}
-              textAnchor="middle"
-              fontSize={12}
-            >
-              Start
-            </text>
-            <path
-              className="tsd-flow"
-              d="M90,150 L120,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
+              <polygon
+                className="tsd-node"
+                points="160,120 190,150 160,180 130,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={160}
+                y={154}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Auth?
+              </text>
+              <path
+                className="tsd-flow"
+                d="M190,150 L225,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={200} y={140} fontSize={9.5}>
+                ok
+              </text>
 
-            <polygon
-              className="tsd-node"
-              points="160,120 190,150 160,180 130,150"
-            />
-            <text
-              className="tsd-node-text"
-              x={160}
-              y={154}
-              textAnchor="middle"
-              fontSize={10.5}
-            >
-              Auth?
-            </text>
-            <path
-              className="tsd-flow"
-              d="M190,150 L225,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={200} y={140} fontSize={9.5}>
-              ok
-            </text>
+              <rect
+                className="tsd-pipeline-box"
+                x={225}
+                y={95}
+                width={150}
+                height={110}
+                rx={10}
+              />
+              <text
+                className="tsd-label"
+                x={235}
+                y={112}
+                fontSize={9}
+                letterSpacing="0.08em"
+              >
+                PIPELINE
+              </text>
+              <rect
+                className="tsd-node"
+                x={245}
+                y={120}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={140}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Build
+              </text>
+              <path
+                className="tsd-flow"
+                d="M300,152 L300,166"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <rect
+                className="tsd-node"
+                x={245}
+                y={168}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={188}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Test
+              </text>
 
-            <rect
-              className="tsd-pipeline-box"
-              x={225}
-              y={95}
-              width={150}
-              height={110}
-              rx={10}
-            />
-            <text
-              className="tsd-label"
-              x={235}
-              y={112}
-              fontSize={9}
-              letterSpacing="0.08em"
-            >
-              PIPELINE
-            </text>
-            <rect
-              className="tsd-node"
-              x={245}
-              y={120}
-              width={110}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={140}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Build
-            </text>
-            <path
-              className="tsd-flow"
-              d="M300,152 L300,166"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <rect
-              className="tsd-node"
-              x={245}
-              y={168}
-              width={110}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={188}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Test
-            </text>
+              <path
+                className="tsd-flow"
+                d="M375,150 L410,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={382} y={142} fontSize={9.5}>
+                pass
+              </text>
 
-            <path
-              className="tsd-flow"
-              d="M375,150 L410,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={382} y={142} fontSize={9.5}>
-              pass
-            </text>
+              <polygon
+                className="tsd-node"
+                points="445,120 480,150 445,180 410,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={445}
+                y={154}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Deploy?
+              </text>
+              <circle
+                id="theme-showcase-burst"
+                className="theme-showcase-burst-ring"
+                aria-hidden="true"
+                cx={445}
+                cy={150}
+                r={28}
+              />
 
-            <polygon
-              className="tsd-node"
-              points="445,120 480,150 445,180 410,150"
-            />
-            <text
-              className="tsd-node-text"
-              x={445}
-              y={154}
-              textAnchor="middle"
-              fontSize={10}
-            >
-              Deploy?
-            </text>
-            <circle
-              id="theme-showcase-burst"
-              className="theme-showcase-burst-ring"
-              aria-hidden="true"
-              cx={445}
-              cy={150}
-              r={28}
-            />
+              <path
+                className="tsd-flow"
+                d="M476,138 C 486,116 488,98 500,90"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={108} fontSize={9.5}>
+                yes
+              </text>
+              <rect
+                className="tsd-node"
+                x={500}
+                y={68}
+                width={76}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={92}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Ship it
+              </text>
 
-            <path
-              className="tsd-flow"
-              d="M476,138 C 486,116 488,98 500,90"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={452} y={108} fontSize={9.5}>
-              yes
-            </text>
-            <rect
-              className="tsd-node"
-              x={500}
-              y={68}
-              width={76}
-              height={40}
-              rx={9}
-            />
-            <text
-              className="tsd-node-text"
-              x={538}
-              y={92}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Ship it
-            </text>
+              <path
+                className="tsd-rollback-path"
+                d="M476,162 C 486,184 488,202 500,210"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={200} fontSize={9.5}>
+                no
+              </text>
+              <rect
+                className="tsd-node-muted"
+                x={496}
+                y={192}
+                width={84}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={216}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Rollback
+              </text>
 
-            <path
-              className="tsd-rollback-path"
-              d="M476,162 C 486,184 488,202 500,210"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={452} y={200} fontSize={9.5}>
-              no
-            </text>
-            <rect
-              className="tsd-node-muted"
-              x={496}
-              y={192}
-              width={84}
-              height={40}
-              rx={9}
-            />
-            <text
-              className="tsd-node-text"
-              x={538}
-              y={216}
-              textAnchor="middle"
-              fontSize={10}
-            >
-              Rollback
-            </text>
-
-            <path className="tsd-monitor-path" d="M300,200 L300,250" />
-            <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
-            <rect
-              className="tsd-node"
-              x={255}
-              y={252}
-              width={90}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={272}
-              textAnchor="middle"
-              fontSize={10.5}
-            >
-              Monitor
-            </text>
-          </svg>
-          <div className="theme-showcase-ascii-wrap">
-            <pre
-              id="theme-showcase-ascii"
-              className="theme-showcase-ascii mono"
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
-              dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
-            />
-            <div
-              id="theme-showcase-ascii-fade-left"
-              className="theme-showcase-ascii-fade left"
-              aria-hidden="true"
-            />
-            <div
-              id="theme-showcase-ascii-fade-right"
-              className="theme-showcase-ascii-fade right"
-              aria-hidden="true"
-            />
+              <path className="tsd-monitor-path" d="M300,200 L300,250" />
+              <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
+              <rect
+                className="tsd-node"
+                x={255}
+                y={252}
+                width={90}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={272}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Monitor
+              </text>
+            </svg>
+            <div className="theme-showcase-ascii-wrap">
+              <pre
+                id="theme-showcase-ascii"
+                className="theme-showcase-ascii mono"
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
+                dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
+              />
+              <div
+                id="theme-showcase-ascii-fade-left"
+                className="theme-showcase-ascii-fade left"
+                aria-hidden="true"
+              />
+              <div
+                id="theme-showcase-ascii-fade-right"
+                className="theme-showcase-ascii-fade right"
+                aria-hidden="true"
+              />
+            </div>
           </div>
         </div>
       </div>

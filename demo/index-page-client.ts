@@ -51,6 +51,18 @@
  *    element — so `applyTheme()` re-themes it by replacing
  *    `#theme-showcase-ascii`'s whole `innerHTML` with that theme's
  *    pre-rendered entry, rather than swapping a CSS variable.
+ * 4. **Scale control (#987)** — `initThemeShowcaseScaleControl()` wires a
+ *    button next to the output toggle that discloses a range slider
+ *    (`#theme-showcase-scale-panel`), mirroring the theme picker's own
+ *    trigger/panel disclosure above but scoped to one input, no roving
+ *    focus needed. A slider `input` writes the chosen value to
+ *    `#theme-showcase-output-body`'s `--tsd-scale` custom property, which
+ *    `demo/components/index-page.tsx`'s `.theme-showcase-output-body` rule
+ *    reads via `var()` to apply `transform: scale(n)` — the same
+ *    "swap a variable, let CSS do the rest" technique {@link applyTheme}
+ *    already uses for `--tsd-bg` etc. Applies to whichever output (svg or
+ *    ASCII `<pre>`) is currently visible, since both live inside that one
+ *    wrapper.
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
@@ -474,6 +486,96 @@ function initThemeShowcaseOutputToggle(onAsciiShown?: () => void): void {
   })
 }
 
+/**
+ * `#theme-showcase-scale-slider`'s `min`/`max` (zombie-mermaid#987) —
+ * mirrored (not imported: see this file's header comment on why the
+ * build-time `index-page.tsx` and this client bundle stay separate) in
+ * that slider's own `min`/`max` JSX attributes in
+ * `demo/components/index-page.tsx`, which is what actually clamps the
+ * value a real drag can produce. These constants only guard the fallback
+ * path below (a non-finite `parseFloat` read, which a native range input
+ * should never produce, but this file's other init functions are
+ * similarly defensive about malformed/absent markup).
+ */
+const SCALE_MIN = 0.5
+const SCALE_MAX = 2.5
+
+/** `1` (100%) reads as a whole number; anything else keeps one decimal's worth of precision (matches the slider's own `step={0.1}`) without ever showing more than that. */
+function formatScalePercent(scale: number): string {
+  return `${Math.round(scale * 100)}%`
+}
+
+/**
+ * Wires `#theme-showcase-scale`'s disclosure button + range slider
+ * (zombie-mermaid#987): a click on `#theme-showcase-scale-trigger` toggles
+ * `#theme-showcase-scale-panel`'s visibility (mirroring
+ * {@link wireThemePicker}'s open/close handling — outside-click and Escape
+ * close it — but scoped to a single input, so no roving focus among
+ * options is needed here). Dragging `#theme-showcase-scale-slider` writes
+ * its value to `#theme-showcase-output-body`'s `--tsd-scale` custom
+ * property (read by that element's own CSS rule in
+ * `demo/components/index-page.tsx` to apply `transform: scale(n)`) and
+ * updates `#theme-showcase-scale-value`'s label to match. A no-op (not a
+ * thrown error) if any expected element is missing, matching
+ * {@link initThemeShowcase}'s own defensive style.
+ */
+function initThemeShowcaseScaleControl(): void {
+  const wrapper = document.getElementById('theme-showcase-scale')
+  const trigger = document.getElementById('theme-showcase-scale-trigger')
+  const panel = document.getElementById('theme-showcase-scale-panel')
+  const sliderEl = document.getElementById('theme-showcase-scale-slider')
+  const valueLabel = document.getElementById('theme-showcase-scale-value')
+  const body = document.getElementById('theme-showcase-output-body')
+  if (
+    !wrapper ||
+    !trigger ||
+    !panel ||
+    !sliderEl ||
+    !(sliderEl instanceof HTMLInputElement) ||
+    !valueLabel ||
+    !body
+  ) {
+    return
+  }
+  const slider = sliderEl
+
+  // An arrow function expression, not a nested `function` declaration --
+  // TS's control-flow narrowing of the `| null` guard above doesn't
+  // persist into a hoisted function declaration (it could, in principle,
+  // be invoked before the guard runs), but does persist into a `const`
+  // closure like this one, since `wrapper`/`trigger`/`panel` above can
+  // never be reassigned to `null` again.
+  const setOpen = (open: boolean): void => {
+    panel.hidden = !open
+    trigger.setAttribute('aria-expanded', String(open))
+    wrapper.classList.toggle('open', open)
+    if (open) slider.focus({ preventScroll: true })
+  }
+
+  trigger.addEventListener('click', () => setOpen(panel.hidden))
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || panel.hidden) return
+    setOpen(false)
+    trigger.focus({ preventScroll: true })
+  })
+  document.addEventListener('click', (e) => {
+    if (panel.hidden) return
+    const target = e.target
+    if (target instanceof Element && wrapper.contains(target)) return
+    setOpen(false)
+  })
+
+  slider.addEventListener('input', () => {
+    const raw = parseFloat(slider.value)
+    const scale = Number.isFinite(raw)
+      ? Math.max(SCALE_MIN, Math.min(SCALE_MAX, raw))
+      : 1
+    body.style.setProperty('--tsd-scale', String(scale))
+    valueLabel.textContent = formatScalePercent(scale)
+  })
+}
+
 // Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job,
 // unrelated to the showcase below.
 initChromeTheme(THEMES)
@@ -482,3 +584,4 @@ const showcaseEls = initThemeShowcase()
 initThemeShowcaseOutputToggle(
   showcaseEls ? () => updateAsciiFade(showcaseEls) : undefined,
 )
+initThemeShowcaseScaleControl()
