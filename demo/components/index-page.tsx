@@ -707,7 +707,17 @@ ${MEDIA.tablet} {
   .cli-mcp-row { flex-direction: column !important; }
   .gallery-grid { grid-template-columns: repeat(3, 1fr) !important; }
   .proof-grid { grid-template-columns: 1fr !important; }
-  .theme-showcase-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+  /* Collapsing to one column stacks the diagram card below the copy, so
+     the desktop-only spacing below (sized for a comfortable 2-column
+     layout: 100px section padding, a 64px inter-column gap, the card's
+     own margin-top on top of that gap, and an un-reset <h2> UA margin)
+     turns into a long stretch of empty background before any interactive
+     content -- tighten it here for the collapsed single-column flow. */
+  .theme-showcase { padding-top: ${SPACE['6xl']}px !important; padding-bottom: ${SPACE['6xl']}px !important; }
+  .theme-showcase-grid { grid-template-columns: 1fr !important; gap: ${SPACE['5xl']}px !important; }
+  .theme-showcase-grid h2 { margin: 0 !important; }
+  .theme-showcase-diagram-card { margin-top: 0 !important; }
+  .theme-showcase-footnote { margin-top: ${SPACE.lg}px !important; padding-top: ${SPACE.md}px !important; }
 }
 
 ${MEDIA.mobile} {
@@ -731,6 +741,10 @@ ${MEDIA.mobile} {
   .blog-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
   .blog-teaser-inner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
   .theme-showcase-mesh { width: 1100px !important; height: 900px !important; margin: -450px 0 0 -550px !important; }
+  /* Narrower still than the tablet trim above -- one more pass at the
+     same dead-scroll problem for the smallest viewports. */
+  .theme-showcase { padding-top: ${SPACE['3xl']}px !important; padding-bottom: ${SPACE['3xl']}px !important; }
+  .theme-showcase-grid { gap: ${SPACE.xl}px !important; }
 }`
 }
 
