@@ -48,16 +48,16 @@ import { siteOutDir } from './scripts/site-out-dir.ts'
 import { generatePage } from './scripts/generate-page.ts'
 
 /**
- * A fenced code block tagged with this language renders as an actual SVG
- * diagram (via the same renderMermaidSVG pages.ts uses for the per-type
- * gallery), instead of syntax-highlighted source. Plain ` ```mermaid `
- * fences deliberately keep rendering as source text — see
- * blog-posts/README.md's "Code blocks" section for why the two aren't
- * interchangeable (mainly: several posts' mermaid fences are the exact
- * source used to produce an adjacent before/after screenshot, or a repro
- * of an *upstream* bug that this fork's own renderer no longer has, so
- * auto-rendering them would show fixed/different output instead of the
- * thing being illustrated).
+ * A fenced code block tagged with this language renders as its
+ * syntax-highlighted source followed by an actual SVG diagram (via the same
+ * renderMermaidSVG pages.ts uses for the per-type gallery), back to back.
+ * Plain ` ```mermaid ` fences deliberately keep rendering as source text
+ * only, with no diagram — see blog-posts/README.md's "Code blocks" section
+ * for why the two aren't interchangeable (mainly: several posts' mermaid
+ * fences are the exact source used to produce an adjacent before/after
+ * screenshot, or a repro of an *upstream* bug that this fork's own renderer
+ * no longer has, so auto-rendering them would show fixed/different output
+ * instead of the thing being illustrated).
  */
 const MERMAID_RENDER_LANG = 'mermaid-render'
 
@@ -257,12 +257,21 @@ interface HighlightedCodeToken extends Tokens.Code {
 }
 
 /**
- * Renders a `mermaid-render`-tagged fence's source to an inline SVG
- * diagram, using the same options (colors) shape the per-diagram-type
- * gallery pages already render with (pages.ts) — see the DEFAULT_SWATCH
- * import above.
+ * Renders a `mermaid-render`-tagged fence to its syntax-highlighted source
+ * followed by the rendered SVG diagram, back to back — the diagram via the
+ * same options (colors) shape the per-diagram-type gallery pages already
+ * render with (pages.ts), see the DEFAULT_SWATCH import above. Showing the
+ * source alongside the render (rather than the render alone) means a reader
+ * doesn't need to go find the Mermaid source elsewhere to see what produced
+ * it; unlike a plain ` ```mermaid ` fence, this fence's whole point is that
+ * the diagram should render, so there's no "don't auto-render me" case to
+ * preserve here — see blog-posts/README.md's "Code blocks" section.
  */
-function renderMermaidDiagram(source: string, sourceFile: string): string {
+function renderMermaidDiagram(
+  source: string,
+  highlightedHtml: string,
+  sourceFile: string,
+): string {
   let svg: string
   try {
     svg = renderMermaidSVG(source.trim(), {
@@ -275,7 +284,7 @@ function renderMermaidDiagram(source: string, sourceFile: string): string {
       `${sourceFile}: a \`\`\`${MERMAID_RENDER_LANG} fence failed to render: ${message}`,
     )
   }
-  return `<div class="mermaid-diagram">${svg}</div>\n`
+  return `<div class="mermaid-render-block">${highlightedHtml}<div class="mermaid-diagram">${svg}</div></div>\n`
 }
 
 async function renderPostBody(
@@ -294,24 +303,31 @@ async function renderPostBody(
     walkTokens: async (token) => {
       if (token.type !== 'code') return
       const codeToken = token as HighlightedCodeToken
-      // Rendered as an SVG diagram below instead — no source highlighting needed.
-      if (codeToken.lang?.trim().toLowerCase() === MERMAID_RENDER_LANG) return
+      const isMermaidRender =
+        codeToken.lang?.trim().toLowerCase() === MERMAID_RENDER_LANG
       codeToken.highlightedHtml = await highlightCode(
         highlighter,
         codeToken.text,
-        codeToken.lang,
+        // Highlight a mermaid-render fence's source as plain `mermaid`
+        // syntax (shiki ships a grammar for it) rather than under its own
+        // build-only tag, which shiki wouldn't recognize as a language.
+        isMermaidRender ? 'mermaid' : codeToken.lang,
       )
     },
     renderer: {
       code(token) {
         const codeToken = token as HighlightedCodeToken
-        if (codeToken.lang?.trim().toLowerCase() === MERMAID_RENDER_LANG) {
-          return renderMermaidDiagram(codeToken.text, sourceFile)
-        }
         const highlightedHtml = codeToken.highlightedHtml
         if (highlightedHtml === undefined) {
           throw new Error(
             'code token rendered before walkTokens highlighted it',
+          )
+        }
+        if (codeToken.lang?.trim().toLowerCase() === MERMAID_RENDER_LANG) {
+          return renderMermaidDiagram(
+            codeToken.text,
+            highlightedHtml,
+            sourceFile,
           )
         }
         return highlightedHtml
