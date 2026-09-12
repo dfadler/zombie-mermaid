@@ -63,7 +63,7 @@ Closing #953 didn't stop anyone from looking at `class-diagram.ts` again.
 [#963](https://github.com/dfadler/zombie-mermaid/pull/963), merged nineteen
 minutes before #957, fixed a bug that wasn't part of #953 at all: a
 different branch of the same file, the one that routes a connector between
-two classes on *different* levels. Its "no collision" check tested whether
+two classes on _different_ levels. Its "no collision" check tested whether
 the source class's own lane column was clear across the row range — it never
 checked whether the horizontal jog connecting that column to the target's
 column was clear the whole way across. A taller, unrelated sibling sitting
@@ -103,7 +103,7 @@ show: a fix that got prototyped, tested, and rejected before the issue was
 even filed. The instinct is a barycenter reorder — a standard layered-graph
 technique, reorder each level's classes by the average relative position of
 their parents. It was tried first. Two things killed it: reordering only
-changes relative order *among siblings at the same level*, so it's a no-op
+changes relative order _among siblings at the same level_, so it's a no-op
 exactly where the repro above breaks (one occupant, nothing to reorder it
 against); and diffing all sixteen `classDiagram` samples in the catalog
 before/after the reorder produced zero output changes — none of them happen
