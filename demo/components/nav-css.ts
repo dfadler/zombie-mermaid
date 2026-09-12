@@ -304,6 +304,16 @@ html.mobile-nav-open {
   align-self: flex-start;
 }
 
+${MEDIA.mobile} {
+  /* Mirrors index-page.tsx's .hero-install-pill rule for the identical
+     narrow-viewport shape: "npm install zombie-mermaid" plus the copy glyph
+     can be wider than this panel's available column once side padding and
+     the watermark/links share it. Shrinking the pill's own padding/type
+     here closes most of that gap so the overflow-x: auto fallback on
+     nav.tsx's .mobile-install-pill itself rarely has to engage. */
+  .mobile-install-pill { padding: 8px 14px !important; font-size: 13px !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .menu-toggle .mnt-bar,
   .mobile-nav-panel,
