@@ -389,7 +389,7 @@ function homePageCss(): string {
   );
   filter: blur(120px);
   opacity: 0.5;
-  animation: themeShowcaseMeshSpin 60s linear infinite, themeShowcaseMeshRoam 34s ease-in-out infinite;
+  animation: themeShowcaseMeshSpin 30s linear infinite, themeShowcaseMeshRoam 17s ease-in-out infinite;
 }
 @keyframes themeShowcaseMeshSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes themeShowcaseMeshRoam {
@@ -398,16 +398,16 @@ function homePageCss(): string {
   66% { margin-left: -760px; margin-top: -820px; }
   100% { margin-left: -900px; margin-top: -700px; }
 }
-.theme-showcase-aurora { position: absolute; inset: -10%; animation: themeShowcaseHue 26s linear infinite; }
+.theme-showcase-aurora { position: absolute; inset: -10%; animation: themeShowcaseHue 13s linear infinite; }
 .theme-showcase-glow { position: absolute; border-radius: 50%; filter: blur(90px); mix-blend-mode: screen; }
 /* #bd93f9, not colorVar('--violet') (#a374e8) -- Main.dc.html has no
    --violet token at all; every violet in the canvas (here and the mesh
    gradient above) is this exact literal, matched rather than mapped onto
    this site's own (different) shared violet accent. */
-.theme-showcase-glow.g1 { width: 560px; height: 560px; background: #bd93f9; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 17s ease-in-out infinite alternate; }
-.theme-showcase-glow.g2 { width: 520px; height: 520px; background: ${colorVar('--cyan')}; opacity: 0.3; top: 6%; right: 0%; animation: themeShowcaseDrift2 21s ease-in-out infinite alternate; }
-.theme-showcase-glow.g3 { width: 480px; height: 480px; background: ${colorVar('--pink')}; opacity: 0.26; bottom: -14%; left: 20%; animation: themeShowcaseDrift3 24s ease-in-out infinite alternate; }
-.theme-showcase-glow.g4 { width: 500px; height: 500px; background: ${colorVar('--amber')}; opacity: 0.22; bottom: -6%; right: 12%; animation: themeShowcaseDrift4 19s ease-in-out infinite alternate; }
+.theme-showcase-glow.g1 { width: 560px; height: 560px; background: #bd93f9; opacity: 0.36; top: -10%; left: 2%; animation: themeShowcaseDrift1 8.5s ease-in-out infinite alternate; }
+.theme-showcase-glow.g2 { width: 520px; height: 520px; background: ${colorVar('--cyan')}; opacity: 0.3; top: 6%; right: 0%; animation: themeShowcaseDrift2 10.5s ease-in-out infinite alternate; }
+.theme-showcase-glow.g3 { width: 480px; height: 480px; background: ${colorVar('--pink')}; opacity: 0.26; bottom: -14%; left: 20%; animation: themeShowcaseDrift3 12s ease-in-out infinite alternate; }
+.theme-showcase-glow.g4 { width: 500px; height: 500px; background: ${colorVar('--amber')}; opacity: 0.22; bottom: -6%; right: 12%; animation: themeShowcaseDrift4 9.5s ease-in-out infinite alternate; }
 @keyframes themeShowcaseHue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 @keyframes themeShowcaseDrift1 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(150px,-85px) scale(1.14); } 100% { transform: translate(-85px,65px) scale(0.92); } }
 @keyframes themeShowcaseDrift2 { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(-130px,100px) scale(0.88); } 100% { transform: translate(85px,-75px) scale(1.1); } }
