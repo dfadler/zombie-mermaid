@@ -39,7 +39,7 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { ChevronRightIcon } from './icons.tsx'
 import { Card, CTA, type Accent, accentVar } from './primitives.tsx'
 import {
@@ -191,6 +191,112 @@ const ASCII_OUTPUT_STYLE = {
   minWidth: 0,
 }
 
+/** Width, in px, of {@link asciiFadeMask}'s fade at each edge — same value `fork-fixes-app.tsx`'s `AsciiWellFade`/`index-page.tsx`'s `.theme-showcase-ascii-fade` use for their own (differently-implemented) edge fades. */
+const ASCII_FADE_WIDTH = 32
+
+/**
+ * Builds the `mask-image`/`-webkit-mask-image` value that fades
+ * `.output-render-area`'s rendered pixels to real transparency at whichever
+ * edge(s) still have more ASCII content to scroll to — see
+ * <https://stackoverflow.com/q/9525215> for the technique. `undefined`
+ * (no mask at all) when neither edge needs one, matching
+ * {@link useAsciiScrollFade}'s "content that doesn't overflow shows no
+ * fade" behavior.
+ *
+ * Two earlier approaches were tried and dropped:
+ *
+ * 1. A painted overlay `<div>` fading `transparent` to an opaque color —
+ *    `transparent` is `rgba(0,0,0,0)`, transparent *black*, and gradients
+ *    interpolate each rgba channel independently rather than premultiplied,
+ *    so fading it into an opaque *white* (this pre's own background, see
+ *    {@link ASCII_OUTPUT_STYLE}'s doc comment) middled out through a
+ *    visibly muddy gray/black band. Every other fade on this site
+ *    (`.theme-showcase-ascii-fade`, `AsciiWellFade`) fades into a *dark*
+ *    color, where that artifact is invisible — this was the first one
+ *    fading into white, where it wasn't. Swapping in `rgba(255,255,255,0)`
+ *    as the transparent stop fixed that, but still required this overlay's
+ *    opaque end-color to exactly match whatever's beneath it — a mask
+ *    fades to *actual* transparency instead, needing no matching color at
+ *    all, on any background.
+ * 2. That overlay rendered as a child of `.output-render-area` itself (the
+ *    element that scrolls) — an absolutely positioned child of the *same*
+ *    element that scrolls is positioned within that element's own scrolled
+ *    coordinate space, so a plain `right: 0` drifted left with `scrollLeft`
+ *    instead of staying pinned to the visible edge (caught via
+ *    `getBoundingClientRect()` while scrolling, and by a screen recording
+ *    showing the fade sliding across the card and spilling past its
+ *    rounded corners into the dark chrome above/below). A mask applied
+ *    directly to `.output-render-area` sidesteps this too: like a
+ *    `background-image` without `background-attachment: local`, a mask is
+ *    positioned/sized relative to the masked element's own border box, not
+ *    the scrolled content inside it, so it stays pinned to the true visible
+ *    edges without needing a separate non-scrolling wrapper element at all.
+ */
+function asciiFadeMask(left: boolean, right: boolean): string | undefined {
+  if (!left && !right) return undefined
+  const stops = [
+    left ? 'transparent 0' : 'black 0',
+    ...(left ? [`black ${ASCII_FADE_WIDTH}px`] : []),
+    ...(right ? [`black calc(100% - ${ASCII_FADE_WIDTH}px)`] : []),
+    right ? 'transparent 100%' : 'black 100%',
+  ]
+  return `linear-gradient(to right, ${stops.join(', ')})`
+}
+
+/**
+ * Which edge {@link asciiFadeMask} should fade, tracking
+ * `.output-render-area`'s actual scroll position — same shape as
+ * `fork-fixes-app.tsx`'s `useScrollFadeVisibility`, duplicated here rather
+ * than imported since this page hydrates as its own independent client app
+ * (see `hero-output-panel.tsx`'s identical "own copy" precedent). `right`
+ * is true while there's more content to scroll into (including at rest),
+ * `left` once scrolled away from the start; a render area that doesn't
+ * overflow shows neither. `enabled` gates this off outside ASCII mode (the
+ * SVG state never needs it) and while fullscreen (the pan/zoom viewport
+ * there sets `overflow: hidden` and moves content via `transform`, not
+ * native scroll, so scroll-position tracking has nothing to measure) —
+ * both start `false` to match the pre-hydration SSR render, then the
+ * effect fills them in once enabled.
+ */
+function useAsciiScrollFade(
+  ref: RefObject<HTMLDivElement | null>,
+  enabled: boolean,
+): {
+  left: boolean
+  right: boolean
+} {
+  const [left, setLeft] = useState(false)
+  const [right, setRight] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!enabled || !el) {
+      setLeft(false)
+      setRight(false)
+      return
+    }
+
+    // 1px slop absorbs sub-pixel scrollLeft/scrollWidth rounding at a true
+    // edge, which would otherwise flicker the fade on/off spuriously.
+    function update() {
+      if (!el) return
+      setLeft(el.scrollLeft > 1)
+      setRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    }
+
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [ref, enabled])
+
+  return { left, right }
+}
+
 /**
  * The toggle's SVG branch — a plain string renders as one `.diagram-frame`
  * (every specific-diagram detail page); an `OrientationVariants` object
@@ -307,6 +413,11 @@ export function DetailOutputPanel({
   // attach here, and only while isFullscreen (that hook's own `active`
   // flag): the small inline panel stays a static centered preview.
   const renderAreaRef = useRef<HTMLDivElement | null>(null)
+  // Drives the ASCII edge fade -- see asciiFadeMask/useAsciiScrollFade.
+  const asciiFade = useAsciiScrollFade(
+    renderAreaRef,
+    mode === 'ascii' && !isFullscreen,
+  )
   const {
     viewport,
     isPanning,
@@ -465,6 +576,13 @@ export function DetailOutputPanel({
           display: 'flex',
           padding: `${SPACE['5xl']}px`,
           overflow: isFullscreen ? 'hidden' : 'auto',
+          // Edge scroll-fade for the ASCII state -- see asciiFadeMask's doc
+          // comment for why this is a mask, not a painted overlay div.
+          // `undefined` (both false, or outside ASCII mode/fullscreen --
+          // see useAsciiScrollFade's `enabled` gate) clears any mask, same
+          // as the property being unset.
+          WebkitMaskImage: asciiFadeMask(asciiFade.left, asciiFade.right),
+          maskImage: asciiFadeMask(asciiFade.left, asciiFade.right),
         }}
       >
         {/*
