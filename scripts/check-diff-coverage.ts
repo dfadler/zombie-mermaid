@@ -245,7 +245,7 @@ function main() {
   console.log(`\nDiff coverage meets the ${DIFF_THRESHOLD}% threshold.`)
 }
 
-// Only run when executed directly (`tsx check-diff-coverage.ts`), not when
+// Only run when executed directly (`tsx scripts/check-diff-coverage.ts`), not when
 // imported — e.g. by tests importing the exported pure functions above.
 const isMainModule =
   process.argv[1] !== undefined &&

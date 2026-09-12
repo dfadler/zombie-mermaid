@@ -38,7 +38,7 @@ function fmtPct(pct: number): string {
 
 const budgetFile = JSON.parse(
   await readFile(
-    new URL('../bundle-size-budget.json', import.meta.url),
+    new URL('./bundle-size-budget.json', import.meta.url),
     'utf-8',
   ),
 ) as BudgetFile
