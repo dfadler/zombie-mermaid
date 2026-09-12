@@ -19,7 +19,7 @@ within about two hours on the night of 2026-09-10. Thirteen hours after that,
 roughly twenty feature and fix PRs landed on the files that review had just
 reorganized — and none of them needed to touch the old shape again.
 
-## What was actually oversized
+## What was oversized
 
 Four files carried the bulk of the review's weight, and the numbers explain
 why they were in scope rather than any of the dozens of other components in
@@ -82,7 +82,7 @@ The umbrella split into three pieces, each its own PR:
   22 tags across all six diagram types, each detected mechanically from a
   sample's real Mermaid source via regex or keyword rules — not
   hand-assigned — with a small dev tool, `scripts/print-tag-coverage.ts`,
-  to print every rule's actual matches.
+  to print every rule's matches.
 - [#1010](https://github.com/dfadler/zombie-mermaid/pull/1010) added a
   "View all" single-scroll page across all 86 samples, reusing the
   fixed-aspect-ratio thumbnail frame that had already fixed an earlier
@@ -117,7 +117,7 @@ a render panel collapsing below 900px ([#1009](https://github.com/dfadler/zombie
 a scroll-fade missing from two different ASCII output wells ([#1006](https://github.com/dfadler/zombie-mermaid/pull/1006),
 [#1017](https://github.com/dfadler/zombie-mermaid/pull/1017)).
 
-## What the split actually bought
+## What the split bought
 
 None of that is a story about a refactor *preventing* bugs — the polish-fix
 list above is proof it didn't, and wasn't meant to. The actual claim is
