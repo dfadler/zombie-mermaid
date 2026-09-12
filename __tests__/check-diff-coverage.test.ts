@@ -4,7 +4,7 @@ import {
   parseChangedLinesFromDiff,
   parseLcovContent,
   computeDiffCoverage,
-} from '../check-diff-coverage.ts'
+} from '../scripts/check-diff-coverage.ts'
 
 describe('isTrackedTsFile', () => {
   it('accepts a .ts file directly under src/', () => {
@@ -298,7 +298,7 @@ describe('resolveBaseRef', () => {
     vi.doMock('node:child_process', () => ({
       execFileSync: vi.fn(() => ''), // every rev-parse succeeds
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBe('origin/main')
   })
 
@@ -312,7 +312,7 @@ describe('resolveBaseRef', () => {
         return ''
       }),
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBe('origin/main')
   })
 
@@ -323,7 +323,7 @@ describe('resolveBaseRef', () => {
         return ''
       }),
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBe('main')
   })
 
@@ -333,7 +333,7 @@ describe('resolveBaseRef', () => {
         throw new Error('unknown revision')
       }),
     }))
-    const { resolveBaseRef } = await import('../check-diff-coverage.ts')
+    const { resolveBaseRef } = await import('../scripts/check-diff-coverage.ts')
     expect(resolveBaseRef()).toBeNull()
   })
 })
