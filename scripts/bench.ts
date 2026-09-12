@@ -24,7 +24,7 @@
  * `{ parse, layout, render }` seam to hook (see diagram-registry.ts's
  * header comment on why the ASCII side has no shared `parse` step).
  *
- * Usage: tsx bench.ts [--json=<path>]
+ * Usage: tsx scripts/bench.ts [--json=<path>]
  *   --json   Also write a machine-readable summary (totals + per-category
  *            breakdown, including parseTotalMs/parseMs) to this path.
  *            Consumed by scripts/bench-compare.ts to gate CI against
@@ -35,9 +35,9 @@
 
 import { writeFile } from 'node:fs/promises'
 import { decodeXML } from 'entities'
-import { samples } from './samples-data.ts'
-import { renderMermaid } from './src/index.ts'
-import { diagramRegistry } from './src/diagram-registry.ts'
+import { samples } from '../samples-data.ts'
+import { renderMermaid } from '../src/index.ts'
+import { diagramRegistry } from '../src/diagram-registry.ts'
 import { detectDiagramType, splitStatements } from '@zombie-mermaid/core'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
