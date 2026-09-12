@@ -40,7 +40,7 @@ Useful scripts while developing (see `package.json` for the full list):
 - `scripts/docker-test-visual.sh` — run the ASCII half, the SVG half, or the full visual suite (`--suite ascii|svg|all`, default `all`) inside the font-corrected Linux container, against the `-chromium-linux.png` baselines CI gates on (needs Docker; see "Visual regression tests" below)
 - `pnpm run fork-fixes` — build `fork-fixes.html`; if you add or change a `render: 'ascii'` entry in `demo/fork-fixes-data.ts`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/` — those real-terminal screenshots are the before/after shown on that page, not a live render
 - `pnpm run lint` — ESLint
-- `pnpm run build` — build the publishable package with Vite's library mode (`vite build --app --config vite.config.lib.ts`; the config's header comment explains why it's one environment per entry point)
+- `pnpm run build` — build the publishable package with Vite's library mode (`vite build --app --config config/vite.config.lib.ts`; the config's header comment explains why it's one environment per entry point)
 - `pnpm run samples` — render the marketing home page (`index.ts`) to `index.html` (the script name predates #590's redesign; see that file's header comment)
 - `pnpm run editor` — build the live editor page (`editor.ts`) to `editor.html`
 - `pnpm run dashboard` — build the maintenance-transparency dashboard (`dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot. Its markup comes from React components in `demo/components/` rendered with `react-dom/server` (the [#423](https://github.com/dfadler/zombie-mermaid/issues/423) pilot); every `.tsx` file there must open with `/** @jsxRuntime automatic */` — see the `jsx` comment in `demo/tsconfig.json` for why
@@ -96,7 +96,7 @@ A reviewer should be able to read the reason without opening the issue. The desc
 
 ### Test coverage
 
-CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-26 the baseline is **78.74% statements / 67.91% branches / 83.22% functions / 80.58% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, kept a bit under the measured baseline as headroom) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
+CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-26 the baseline is **78.74% statements / 67.91% branches / 83.22% functions / 80.58% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `config/vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, kept a bit under the measured baseline as headroom) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
 
 ### Testing conventions for demo/editor components
 

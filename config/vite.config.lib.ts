@@ -66,7 +66,11 @@ import { basename, resolve } from 'node:path'
 import { defineConfig, type LibraryFormats, type Plugin } from 'vite'
 import dts from 'unplugin-dts/vite'
 
-const ROOT = import.meta.dirname
+// This file lives in config/, one level below the repo root (#997) — ROOT
+// points at the actual repo root so `root`, every resolved entry below, and
+// DIST all still resolve the same paths they did when this file lived at
+// the repo root itself.
+const ROOT = resolve(import.meta.dirname, '..')
 const DIST = resolve(ROOT, 'dist')
 
 // Both are real npm dependencies (see package.json) kept external rather

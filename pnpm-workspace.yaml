@@ -1,6 +1,6 @@
 # Workspace packages (zombie-mermaid#620's monorepo conversion). `packages/*`
 # are `"private": true` and bundled into the umbrella's `dist/` by
-# `vite.config.lib.ts`, so they are never published and never appear in the
+# `config/vite.config.lib.ts`, so they are never published and never appear in the
 # published `zombie-mermaid`'s runtime dependency tree — see #625.
 #
 # `.` (the repo root) is listed explicitly even though pnpm itself always

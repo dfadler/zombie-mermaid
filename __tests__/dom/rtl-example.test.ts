@@ -24,7 +24,7 @@
  * following the same three-step shape.
  *
  * The `// @vitest-environment jsdom` docblock above is what actually opts
- * this file into a live DOM — see `vitest.config.ts`'s comment for why
+ * this file into a live DOM — see `config/vitest.config.ts`'s comment for why
  * that's a per-file docblock rather than a directory glob. This file lives
  * under `__tests__/dom/` purely as a discoverability convention for future
  * jsdom-dependent tests, not because the directory itself does anything.
@@ -49,7 +49,7 @@ describe('React Testing Library pattern (example)', () => {
     render(createElement(Counter))
 
     const button = screen.getByRole('button', { name: 'Clicked 0 times' })
-    // jest-dom matcher, registered globally via vitest.setup.ts.
+    // jest-dom matcher, registered globally via config/vitest.setup.ts.
     expect(button).toBeInTheDocument()
 
     await user.click(button)
