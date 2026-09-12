@@ -140,4 +140,69 @@ describe('ASCII class diagram — multi-parent / overlap resolution (issue #972)
     expect(a.x0).toBe(0)
     expect(a.x1).toBeLessThan(b.x0)
   })
+
+  // Regression for a CodeRabbit finding on #972's own PR (thread
+  // PRRT_kwDOT5ndxc6hpu-C): two classes with no resolvable parents but the
+  // exact same (non-qualifying) parent-id set used to be merged into one
+  // joint placement unit the moment the *first* of them was reached in
+  // declaration order -- silently pulling an unrelated class declared
+  // *between* them ahead of its own position, since it hadn't been placed
+  // yet when the merged pair's combined placement consumed the columns it
+  // would have occupied.
+  it('an unrelated class declared between two same-parent-set siblings with no qualifying parent keeps its own declaration-order position', () => {
+    // Q and R share the exact same parent-id set ({P}), but P is at the
+    // same level as Q/R (a 3-way mutual-reference cycle), so neither
+    // qualifies -- both are "no resolvable parents" blocks on their own.
+    // Interloper is a plain, unrelated root declared between Q and R.
+    const src = `classDiagram
+  class P
+  class Q
+  class Interloper
+  class R
+  P --> Q
+  P --> R
+  Q --> P
+  R --> P`
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    const q = findBoxRect(ascii, 'Q')
+    const interloper = findBoxRect(ascii, 'Interloper')
+    const r = findBoxRect(ascii, 'R')
+    // Declared order Q, Interloper, R must survive as rendered left-to-right order.
+    expect(q.x1).toBeLessThan(interloper.x0)
+    expect(interloper.x1).toBeLessThan(r.x0)
+  })
+
+  // Regression for a CodeRabbit finding on #972's own PR (thread
+  // PRRT_kwDOT5ndxc6hpu-M): a multi-member block's desired left edge used
+  // to be derived from centering the *padded slot* span (every member's
+  // own reach padding, including the outermost edges with no neighbor to
+  // separate from) on the shared parent center, rather than the *visible
+  // box* span -- so a block whose first member has real reach padding
+  // (e.g. its own outgoing relationship carries a long label) and whose
+  // last member has none rendered visibly off-center from the parent it
+  // was supposed to align under.
+  it('a multi-child block with asymmetric reach padding on one child still visually centers on the shared parent', () => {
+    const src = `classDiagram
+  class Padding {
+    +String p0
+    +String p1
+    +String p2
+    +String p3
+  }
+  class Animal
+  class Dog
+  class Cat
+  class SomewhereElse
+  Animal <|-- Dog
+  Animal <|-- Cat
+  Dog --> SomewhereElse : a moderately long label`
+    const ascii = renderMermaidASCII(src, { useAscii: true })
+    const animal = findBoxRect(ascii, 'Animal')
+    const dog = findBoxRect(ascii, 'Dog')
+    const cat = findBoxRect(ascii, 'Cat')
+    const visibleBlockCenter = dog.x0 + Math.floor((cat.x1 - dog.x0 + 1) / 2)
+    expect(
+      Math.abs(visibleBlockCenter - boxCenter(animal)),
+    ).toBeLessThanOrEqual(1)
+  })
 })
