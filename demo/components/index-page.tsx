@@ -479,19 +479,15 @@ function homePageCss(): string {
    const's own doc comment), and a theme pick swaps this element's whole
    innerHTML rather than smoothly transitioning a shared CSS custom
    property. color: var(--tsd-text) stays as a harmless fallback for any
-   plain (unspanned) whitespace text nodes in that HTML. background is a
-   deliberately slight color-mix() shift off the card's own var(--tsd-bg)
-   -- confirmed empirically (a headless-Chrome pixel diff during this
-   feature's own build) that without it, the scroll-fade below is
-   invisible: it fades to var(--tsd-bg) to blend into the surrounding
-   card, exactly like fork-fixes-app.tsx's AsciiWellFade fades into its
-   well's *own* card background -- but that only reads as a visible edge
-   in fork-fixes because its well already has a background distinct from
-   its card's. Here, before this rule, the well and the card were the
-   *same* color, so fading "into" it was a no-op. The 8% black mix (not a
-   fixed color) darkens relative to whatever var(--tsd-bg) currently is,
-   so it stays a plausible subtle inset on every theme, light or dark,
-   without hand-tuning per palette. */
+   plain (unspanned) whitespace text nodes in that HTML. background is
+   var(--tsd-bg) -- the same property the svg panel's own
+   .theme-showcase-diagram-card rule reads, so toggling SVG/ASCII never
+   changes the panel's background: a color-mix() darken here was tried
+   to give the scroll-fade below something to fade into, but that made
+   every theme's ASCII output read as a visibly different, slightly
+   darker background than its own SVG output -- exactly the mismatch the
+   fade was meant to paper over. The fade below now carries its own tint
+   instead, so this rule can stay an exact match. */
 .theme-showcase-ascii {
   margin: 0;
   width: 100%;
@@ -501,7 +497,7 @@ function homePageCss(): string {
   font-size: ${FONT_SIZE.bodySm}px;
   line-height: 1.5;
   color: var(--tsd-text);
-  background: color-mix(in srgb, var(--tsd-bg) 92%, black 8%);
+  background: var(--tsd-bg);
 }
 .theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-diagram { display: none; }
 .theme-showcase-diagram-card[data-output-mode='ascii'] .theme-showcase-ascii-wrap { display: block; }
@@ -511,15 +507,15 @@ function homePageCss(): string {
    background-image behind it" reasoning documented there), wired here via
    plain DOM (demo/index-page-client.ts's updateAsciiFade()) instead of a
    React hook since this section never hydrates via React -- see this
-   file's header comment. Fades into var(--tsd-bg) -- the card's
-   background, i.e. what's just outside the well -- matching
-   AsciiWellFade's own "ends in the well's containing card background"
-   choice, so it reads as the well dissolving into its frame rather than
-   an arbitrary tint, and stays correct across a live theme pick (driven
-   through that same custom property). Only legible because
-   .theme-showcase-ascii's own background (above) now differs from
-   var(--tsd-bg) -- see that rule's comment. .visible is toggled per-edge
-   by scroll position; a well that doesn't overflow shows neither. */
+   file's header comment. Now that .theme-showcase-ascii's own background
+   is an exact var(--tsd-bg) match (above), fading into that same color
+   would be invisible, so the overlay fades into a color-mix() darken of
+   it instead -- an 8% black mix (not a fixed color) so it reads as a
+   plausible edge shadow on every theme, light or dark, without
+   hand-tuning per palette, while the well's base color stays untouched
+   and matches the svg panel everywhere it isn't actively cueing
+   scrollability. .visible is toggled per-edge by scroll position; a well
+   that doesn't overflow shows neither. */
 .theme-showcase-ascii-fade {
   position: absolute;
   top: 0;
@@ -529,8 +525,8 @@ function homePageCss(): string {
   display: none;
 }
 .theme-showcase-ascii-fade.visible { display: block; }
-.theme-showcase-ascii-fade.left { left: 0; background: linear-gradient(to left, transparent, var(--tsd-bg)); }
-.theme-showcase-ascii-fade.right { right: 0; background: linear-gradient(to right, transparent, var(--tsd-bg)); }
+.theme-showcase-ascii-fade.left { left: 0; background: linear-gradient(to left, transparent, color-mix(in srgb, var(--tsd-bg) 92%, black 8%)); }
+.theme-showcase-ascii-fade.right { right: 0; background: linear-gradient(to right, transparent, color-mix(in srgb, var(--tsd-bg) 92%, black 8%)); }
 .tsd-node {
   fill: var(--tsd-node-fill);
   stroke: var(--tsd-node-stroke);
