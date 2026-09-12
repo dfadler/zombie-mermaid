@@ -23,7 +23,13 @@
  * now, the same accepted tradeoff those two already make (see
  * `hero-visual.tsx`'s own header comment).
  */
-import { useState, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react'
 import {
   FONT_SIZE,
   LETTER_SPACING,
@@ -57,6 +63,77 @@ export const HERO_MERMAID_SOURCE = `graph TD
  */
 const TRAFFIC_LIGHT_COLORS = ['#ff6767', '#ffc85c', '#5ee08a']
 
+/** Width, in px, of {@link codeFadeMask}'s fade at each edge — same value `fork-fixes-app.tsx`'s `AsciiWellFade`/`diagram-detail-app.tsx`'s `asciiFadeMask`/`index-page.tsx`'s `.theme-showcase-ascii-fade` use for their own (differently-implemented) edge fades. */
+const CODE_FADE_WIDTH = 32
+
+/**
+ * Builds the `mask-image`/`-webkit-mask-image` value that fades
+ * {@link HeroCodePanel}'s rendered pixels to real transparency at whichever
+ * edge(s) still have more source scrolled out of view — same mask-based
+ * technique, and the same reasoning for preferring it over a painted
+ * overlay `<div>`, as `diagram-detail-app.tsx`'s `asciiFadeMask` (see that
+ * function's doc comment for the two approaches tried and dropped).
+ * `undefined` (no mask at all) when neither edge needs one, matching
+ * {@link useHorizontalScrollFade}'s "content that doesn't overflow shows no
+ * fade" behavior.
+ */
+function codeFadeMask(left: boolean, right: boolean): string | undefined {
+  if (!left && !right) return undefined
+  const stops = [
+    left ? 'transparent 0' : 'black 0',
+    ...(left ? [`black ${CODE_FADE_WIDTH}px`] : []),
+    ...(right ? [`black calc(100% - ${CODE_FADE_WIDTH}px)`] : []),
+    right ? 'transparent 100%' : 'black 100%',
+  ]
+  return `linear-gradient(to right, ${stops.join(', ')})`
+}
+
+/**
+ * Which edge {@link codeFadeMask} should fade, tracking
+ * {@link HeroCodePanel}'s own scroll position — same shape as
+ * `diagram-detail-app.tsx`'s `useAsciiScrollFade`, duplicated here rather
+ * than imported since this page hydrates as its own independent client app
+ * (see this file's header comment's "own copy" precedent). `right` is true
+ * while there's more source scrolled out of view to the right (including at
+ * rest, whenever the panel is narrower than its longest line), `left` once
+ * scrolled away from the start; a panel that doesn't overflow shows
+ * neither, so a wide-enough viewport (desktop) never renders a fade at all.
+ * Always enabled (unlike `useAsciiScrollFade`, this panel has no toggled-off
+ * or fullscreen state to gate against) — starts `false` to match the
+ * pre-hydration SSR render, then the effect fills it in once mounted.
+ */
+function useHorizontalScrollFade(ref: RefObject<HTMLDivElement | null>): {
+  left: boolean
+  right: boolean
+} {
+  const [left, setLeft] = useState(false)
+  const [right, setRight] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    // 1px slop absorbs sub-pixel scrollLeft/scrollWidth rounding at a true
+    // edge, which would otherwise flicker the fade on/off spuriously.
+    function update() {
+      if (!el) return
+      setLeft(el.scrollLeft > 1)
+      setRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    }
+
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [ref])
+
+  return { left, right }
+}
+
 /**
  * The hero's fake "source code" panel — a fresh HTML/CSS rendition of the
  * same content `public/hero-visual.svg` draws as static SVG shapes, so it
@@ -69,10 +146,24 @@ const TRAFFIC_LIGHT_COLORS = ['#ff6767', '#ffc85c', '#5ee08a']
  * the code needs), and `white-space: 'pre'` below means that line can't
  * wrap to compensate — scroll it internally rather than let it clip
  * silently or push the row into a page-level horizontal overflow.
+ *
+ * That internal scroll used to be silent — nothing distinguished "the line
+ * ends right at the edge" from "there's more, scroll to see it," so at the
+ * ~700-900px tablet band (where this panel's share of `.hero-visual`'s row
+ * is narrower than `HERO_MERMAID_SOURCE`'s longest line) it read as the
+ * text getting cut off mid-word (#1031). `codeFadeMask`/
+ * `useHorizontalScrollFade` add the same edge-fade affordance
+ * `diagram-detail-app.tsx`'s ASCII output panel already uses for the
+ * identical problem, so a fade — not a hard edge — is the last thing
+ * visible before the line continues off-screen.
  */
 export function HeroCodePanel() {
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const fade = useHorizontalScrollFade(scrollRef)
+
   return (
     <div
+      ref={scrollRef}
       className="hero-code-panel"
       style={{
         flex: '1 1 auto',
@@ -82,6 +173,11 @@ export function HeroCodePanel() {
         borderRadius: `${RADIUS.xl}px`,
         padding: `${SPACE.xl}px ${SPACE['2xl']}px`,
         overflowX: 'auto',
+        // Edge scroll-fade -- see codeFadeMask's doc comment for why this is
+        // a mask, not a painted overlay div. `undefined` (both false) clears
+        // any mask, same as the property being unset.
+        WebkitMaskImage: codeFadeMask(fade.left, fade.right),
+        maskImage: codeFadeMask(fade.left, fade.right),
       }}
     >
       <div
