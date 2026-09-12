@@ -67,6 +67,7 @@ import {
   DesignFontLinks,
   FONT_SIZE,
   MEDIA,
+  RADIUS,
   SPACE,
   colorVar,
 } from './tokens.tsx'
@@ -354,13 +355,32 @@ ${MEDIA.reducedMotion} {
   width: 100%;
   background: ${colorVar('--bg-soft')};
   border-bottom: 1px solid ${colorVar('--border')};
+  border-radius: ${RADIUS.lg}px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   padding: ${SPACE.md}px;
 }
-.gallery-thumb svg { width: 100%; height: 100%; display: block; }
+/*
+ * The visible white box is this <svg> itself -- every renderMermaidSVG
+ * output paints its own opaque background (style="...background:var(--bg)")
+ * rather than relying on an ancestor's fill, since the SVG is also used
+ * standalone (CLI/editor output) where no such ancestor exists. .gallery-
+ * thumb's own background sits a padding-width behind it and is a dark
+ * tone nearly matching the card (--bg-soft vs --panel) -- rounding *that*
+ * container (a prior version of this rule did) is invisible, since the
+ * white-cornered box a viewer actually sees is this svg. Radius matches
+ * .gallery-thumb's own so the two curves read as one continuous corner
+ * rather than nesting two different arcs.
+ */
+.gallery-thumb svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: ${RADIUS.lg}px;
+  overflow: hidden;
+}
 .gallery-label {
   padding: ${SPACE.xl}px ${SPACE['2xl']}px;
 }
