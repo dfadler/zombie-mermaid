@@ -234,7 +234,7 @@ describe('workspace package manifests', () => {
   // none has ever actually been published to npm. Externalizing them for
   // real is a separate, future PR gated on completing npm's one-time
   // trusted-publishing setup for each new package name — see
-  // RELEASING.md's "Future: multi-package publish" section.
+  // docs/RELEASING.md's "Future: multi-package publish" section.
   it.each(['core', 'mermaid-parser', 'svg-renderer', 'ascii-renderer', 'mcp'])(
     '%s is publish-ready in shape under the @zombie-mermaid/ scope (not yet externalized or published)',
     (pkg) => {

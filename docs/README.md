@@ -5,6 +5,8 @@ Single-topic files, plus two grouped directories: task-oriented walkthroughs in
 [guides/](guides/), and settled-decision records in [decisions/](decisions/).
 
 - [guides/](guides/) — task-oriented walkthroughs: browsing the samples, choosing a theme
+- [CLAUDE.md](CLAUDE.md) — project instructions for Claude Code, imported by the root `CLAUDE.md` stub
+- [RELEASING.md](RELEASING.md) — the changesets-based release flow and npm trusted-publishing setup
 - [brand.md](brand.md) — the two wordmark forms (`ZombieMermaid` in a logo lockup, `Zombie Mermaid` everywhere else) and what stays `zombie-mermaid`
 - [accessibility.md](accessibility.md) — the accessibility conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
 - [theming.md](theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
