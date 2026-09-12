@@ -18,7 +18,7 @@
  * longer matches anything actually exercised elsewhere.
  */
 
-import { samples, type Sample } from '../samples-data.ts'
+import { samples, type Sample } from '../site-src/samples-data.ts'
 import type { Accent } from './components/primitives.tsx'
 
 /**

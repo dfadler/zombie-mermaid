@@ -12,7 +12,7 @@ import {
   buildSoftwareApplicationJsonLd,
   type SoftwareApplicationPackageInfo,
 } from '../demo/format.ts'
-import { samples } from '../samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
 
 describe('formatDescription', () => {
   it('turns backtick spans into code elements', () => {

@@ -52,7 +52,7 @@ async function generateHtml(): Promise<string> {
 
   // Bundle the mermaid renderer for client-side SVG rendering
   const buildResult = await esbuild.build({
-    entryPoints: [new URL('./src/browser.ts', import.meta.url).pathname],
+    entryPoints: [new URL('../src/browser.ts', import.meta.url).pathname],
     bundle: true,
     platform: 'browser',
     format: 'esm',
@@ -1064,6 +1064,9 @@ if (window.__renderAllSvgs) window.__renderAllSvgs(window.__initThemeKey);
 }
 
 const html = await generateHtml()
-const outPath = new URL('./xychart-test.html', import.meta.url).pathname
+// Kept at the repo root (not site-src/) to match this file's pre-move
+// output location — xychart-test.html is a committed artifact tracked at
+// the repo root, unlike the other (gitignored) generator outputs.
+const outPath = new URL('../xychart-test.html', import.meta.url).pathname
 await writeFile(outPath, html)
 console.log(`Written to ${outPath} (${(html.length / 1024).toFixed(1)} KB)`)

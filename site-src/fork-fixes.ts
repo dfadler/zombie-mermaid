@@ -30,19 +30,19 @@ import { mkdir, readFile, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { createElement } from 'react'
-import { forkFixes, type ForkFix } from './demo/fork-fixes-data.ts'
+import { forkFixes, type ForkFix } from '../demo/fork-fixes-data.ts'
 import { asciiToHtml } from './ascii-html.ts'
-import { formatProse } from './demo/format.ts'
-import { renderHtmlDocument } from './demo/render-html.ts'
-import { sharedPageCss } from './demo/components/shared-page-css.tsx'
+import { formatProse } from '../demo/format.ts'
+import { renderHtmlDocument } from '../demo/render-html.ts'
+import { sharedPageCss } from '../demo/components/shared-page-css.tsx'
 import {
   ForkFixesPage,
   type FixSectionProps,
   type PanelContent,
-} from './demo/components/fork-fixes-page.tsx'
-import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { siteOutDir } from './scripts/site-out-dir.ts'
-import { generatePage } from './scripts/generate-page.ts'
+} from '../demo/components/fork-fixes-page.tsx'
+import { bundleForBrowser } from '../scripts/vite-bundle.ts'
+import { siteOutDir } from '../scripts/site-out-dir.ts'
+import { generatePage } from '../scripts/generate-page.ts'
 
 const exec = promisify(execFile)
 
@@ -56,7 +56,7 @@ const CACHE_DIR = new URL('./.fork-fixes-cache/', import.meta.url).pathname
  * PTY, not ascii-html.ts's browser approximation) and committed here.
  */
 const SCREENSHOTS_DIR = new URL(
-  './public/fork-fixes-screenshots/',
+  '../public/fork-fixes-screenshots/',
   import.meta.url,
 ).pathname
 
@@ -165,7 +165,7 @@ function renderWith(
 
 /** Render one fix both ways, capturing a throw as the result rather than failing. */
 async function renderFix(fix: ForkFix): Promise<RenderPair> {
-  const current = (await import('./src/index.ts')) as RendererModule
+  const current = (await import('../src/index.ts')) as RendererModule
   const previous = await loadRendererBefore(fix.fixCommit)
 
   const pair: RenderPair = { fix, before: '', after: '' }
@@ -287,7 +287,7 @@ function fixSectionProps(pair: RenderPair): FixSectionProps {
  */
 async function bundleForkFixesClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/fork-fixes-client.tsx', import.meta.url).pathname,
+    new URL('../demo/fork-fixes-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -328,7 +328,7 @@ async function generate(): Promise<string> {
   // file and why. This page no longer loads demo/styles.css's `--t-*`
   // theme system at all.
   const pageCss = await readFile(
-    new URL('./demo/fork-fixes.css', import.meta.url),
+    new URL('../demo/fork-fixes.css', import.meta.url),
     'utf8',
   )
   const styles = sharedPageCss(pageCss)
@@ -348,7 +348,7 @@ async function generate(): Promise<string> {
 console.log(`Rendering ${forkFixes.length} before/after pairs…`)
 const html = await generate()
 await generatePage({
-  outPath: new URL('./fork-fixes.html', siteOutDir(import.meta.url)),
+  outPath: new URL('./fork-fixes.html', siteOutDir()),
   content: html,
 })
 

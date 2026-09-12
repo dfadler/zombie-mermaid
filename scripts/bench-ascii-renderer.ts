@@ -21,7 +21,7 @@
  */
 
 import { writeFile } from 'node:fs/promises'
-import { samples } from '../samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 const jsonArg = process.argv.find((a) => a.startsWith('--json='))

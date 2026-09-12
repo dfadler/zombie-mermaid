@@ -27,8 +27,8 @@
  */
 import { expect, test } from '@playwright/test'
 import { renderMermaidSVG } from '../../src/index.ts'
-import { samples } from '../../samples-data.ts'
-import { xychartSamples } from '../../xychart-samples-data.ts'
+import { samples } from '../../site-src/samples-data.ts'
+import { xychartSamples } from '../../site-src/xychart-samples-data.ts'
 import { buildHarnessScript } from './helpers/build-harness.ts'
 import type {} from './helpers/harness-types.ts'
 

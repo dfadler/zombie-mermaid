@@ -5,8 +5,8 @@ description: |
   an ASCII-rendering change — as a real-terminal capture (via
   scripts/ascii-terminal-capture.sh), never a browser/HTML screenshot. Use
   this whenever the diff touches ASCII output — anything under
-  src/ascii/**, ascii-html.ts, src/cli.ts's ASCII path, demo/client.ts's
-  ASCII path (TERMINAL_ASCII_OPTS / applyWideCharWidths), index.ts's
+  src/ascii/**, site-src/ascii-html.ts, src/cli.ts's ASCII path, demo/client.ts's
+  ASCII path (TERMINAL_ASCII_OPTS / applyWideCharWidths), site-src/index.ts's
   `.ascii-panel` markup, scripts/visual-diff.ts,
   __tests__/visual/helpers/terminal-panel.ts, or
   __tests__/visual/ascii-samples.visual.test.ts and its baselines — and

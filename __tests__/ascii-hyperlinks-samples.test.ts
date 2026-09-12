@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { stripOsc8 } from '../packages/ascii-renderer/src/hyperlinks.ts'
-import { samples } from '../samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
 
 const OSC8_PREFIX = '\x1b]8;;'
 

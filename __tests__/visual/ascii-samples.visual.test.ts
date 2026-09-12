@@ -26,7 +26,7 @@
  */
 import { expect, test } from '@playwright/test'
 import { renderMermaidASCII } from '../../src/index.ts'
-import { samples } from '../../samples-data.ts'
+import { samples } from '../../site-src/samples-data.ts'
 import { escapeHtml } from '../../demo/format.ts'
 import { TERMINAL_ASCII_OPTS } from './helpers/terminal-panel.ts'
 import { buildHarnessScript } from './helpers/build-harness.ts'

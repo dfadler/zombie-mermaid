@@ -37,8 +37,8 @@ properties that make worktree cleanup easy to get wrong:
 ## ASCII rendering changes: the PR screenshot must be a real terminal, never the browser mockup
 
 Before attaching before/after screenshots to a PR/issue for any change touching
-ASCII output (`src/ascii/**`, `ascii-html.ts`, `src/cli.ts`'s ASCII path,
-`demo/client.ts`'s ASCII path, `index.ts`'s `.ascii-panel`,
+ASCII output (`src/ascii/**`, `site-src/ascii-html.ts`, `src/cli.ts`'s ASCII path,
+`demo/client.ts`'s ASCII path, `site-src/index.ts`'s `.ascii-panel`,
 `scripts/visual-diff.ts`, `__tests__/visual/helpers/terminal-panel.ts`, or
 `__tests__/visual/ascii-samples.visual.test.ts`), invoke the
 `verify-ascii-terminal` skill first. This is a hard requirement on the
@@ -49,7 +49,7 @@ headlessly, via `asciinema` + `agg`, so no GUI window ever opens — and its
 `.png` output is what gets attached. The Playwright visual-regression suite
 and `scripts/visual-diff.ts` (the tool CONTRIBUTING.md points to for a
 before/after report **during development**) both render ASCII output
-through `ascii-html.ts`'s HTML approximation of a terminal, never a real
+through `site-src/ascii-html.ts`'s HTML approximation of a terminal, never a real
 one — this repo has already shipped a bug (the `ascii-terminal-overflow-scroll`
 fix) in that approximation's chrome while the underlying renderer was fine
 — so they stay useful for iterating locally but must never supply the

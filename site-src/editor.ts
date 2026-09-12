@@ -45,15 +45,15 @@
 
 import { readFile } from 'node:fs/promises'
 import { createElement } from 'react'
-import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { siteOutDir } from './scripts/site-out-dir.ts'
-import { generatePage } from './scripts/generate-page.ts'
-import { EditorPage } from './demo/components/editor-page.tsx'
-import { type EditorThemeItem } from './demo/components/editor-topbar.tsx'
-import { renderHtmlDocument } from './demo/render-html.ts'
+import { bundleForBrowser } from '../scripts/vite-bundle.ts'
+import { siteOutDir } from '../scripts/site-out-dir.ts'
+import { generatePage } from '../scripts/generate-page.ts'
+import { EditorPage } from '../demo/components/editor-page.tsx'
+import { type EditorThemeItem } from '../demo/components/editor-topbar.tsx'
+import { renderHtmlDocument } from '../demo/render-html.ts'
 import { THEMES } from '@zombie-mermaid/core'
-import { THEME_LABELS } from './demo/theme-labels.ts'
-import { chromeThemeColorsScript } from './demo/chrome-theme-data.ts'
+import { THEME_LABELS } from '../demo/theme-labels.ts'
+import { chromeThemeColorsScript } from '../demo/chrome-theme-data.ts'
 
 // #688: THEME_LABELS used to be a second copy of demo/theme-labels.ts's
 // export, kept in sync only by a build-time guard here that threw if
@@ -64,7 +64,7 @@ import { chromeThemeColorsScript } from './demo/chrome-theme-data.ts'
 
 // ── File helpers ──────────────────────────────────────────────────────────────
 
-const editorDir = new URL('./editor/', import.meta.url).pathname
+const editorDir = new URL('../editor/', import.meta.url).pathname
 
 async function readEditorFile(relativePath: string): Promise<string> {
   return readFile(editorDir + relativePath, 'utf-8')
@@ -102,7 +102,7 @@ async function readCssFiles(): Promise<string> {
  */
 async function bundleEditorJs(): Promise<string> {
   return bundleForBrowser(
-    new URL('./editor/js/index.ts', import.meta.url).pathname,
+    new URL('../editor/js/index.ts', import.meta.url).pathname,
     { minify: false, treeshake: false },
   )
 }
@@ -113,7 +113,7 @@ async function bundleEditorJs(): Promise<string> {
 async function bundleBrowserScript(): Promise<string> {
   try {
     return await bundleForBrowser(
-      new URL('./src/browser.ts', import.meta.url).pathname,
+      new URL('../src/browser.ts', import.meta.url).pathname,
       { minify: true },
     )
   } catch (err) {
@@ -133,7 +133,7 @@ async function bundleBrowserScript(): Promise<string> {
  */
 async function bundleEditorClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/editor-client.tsx', import.meta.url).pathname,
+    new URL('../demo/editor-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -189,6 +189,6 @@ async function generateEditorHtml(): Promise<string> {
 
 const result = await generateEditorHtml()
 await generatePage({
-  outPath: new URL('./editor.html', siteOutDir(import.meta.url)),
+  outPath: new URL('./editor.html', siteOutDir()),
   content: result,
 })

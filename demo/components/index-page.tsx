@@ -54,7 +54,7 @@ import {
   renderMermaidASCII,
   diagramColorsToAsciiTheme,
 } from '@zombie-mermaid/ascii-renderer'
-import { asciiToHtml } from '../../ascii-html.ts'
+import { asciiToHtml } from '../../site-src/ascii-html.ts'
 import { escapeJsonForScriptTag } from '../format.ts'
 import { FORK_URL, HOME_HREF, ROOT_NAV_HREFS } from './site-chrome.tsx'
 import { NavMobileMenuScript } from './nav.tsx'

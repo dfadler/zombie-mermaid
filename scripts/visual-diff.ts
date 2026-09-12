@@ -26,10 +26,10 @@
 import { execFile, spawn } from 'node:child_process'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
-import { samples } from '../samples-data.ts'
-import { xychartSamples } from '../xychart-samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
+import { xychartSamples } from '../site-src/xychart-samples-data.ts'
 import { escapeHtml } from '../demo/format.ts'
-import { asciiToHtml } from '../ascii-html.ts'
+import { asciiToHtml } from '../site-src/ascii-html.ts'
 
 const exec = promisify(execFile)
 

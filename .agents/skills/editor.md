@@ -2,7 +2,7 @@
 name: zombie-mermaid-editor
 description: >-
   Architecture, patterns, and change guide for the zombie-mermaid live editor.
-  Use when modifying editor.ts, adding Config options, changing the UI, adding
+  Use when modifying site-src/editor.ts, adding Config options, changing the UI, adding
   export formats, wiring new diagram options, or debugging the editor page.
 ---
 
@@ -10,13 +10,13 @@ description: >-
 
 ## Key files
 
-The editor's CSS/JS source lives under `editor/` as modular partials that `editor.ts` concatenates in a fixed order; its markup lives in React components under `demo/components/`. `editor.ts` bundles the lot into one self-contained HTML file. Edit the partials/components, not `editor.ts`, for UI/CSS/JS changes.
+The editor's CSS/JS source lives under `editor/` as modular partials that `site-src/editor.ts` concatenates in a fixed order; its markup lives in React components under `demo/components/`. `site-src/editor.ts` bundles the lot into one self-contained HTML file. Edit the partials/components, not `site-src/editor.ts`, for UI/CSS/JS changes.
 
 | File                                                      | Role                                                                                                                                                                                                                    |
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `editor.ts`                                               | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`                                                                                                                       |
-| `editor/css/*.css`                                        | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (editor.ts)                                                                                                                                   |
-| `editor/js/*.js`                                          | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (editor.ts)                                                                                                                                 |
+| `site-src/editor.ts`                                      | Build script — reads the `editor/` partials below, bundles `src/browser.ts`, writes `editor.html`                                                                                                                       |
+| `editor/css/*.css`                                        | Modular stylesheets, concatenated in the order listed in `readCssFiles()` (site-src/editor.ts)                                                                                                                          |
+| `editor/js/*.js`                                          | Modular client-side JS, concatenated in the order listed in `readJsFiles()` (site-src/editor.ts)                                                                                                                        |
 | `demo/components/editor-topbar.tsx` / `editor-panels.tsx` | The page's markup, as React components: the topbar, the left panel (source editor + Config panel), and the right panel (preview). Composed by `demo/components/editor-page.tsx`. Replaced `editor/html/*.html` in #589. |
 | `editor/__tests__/`                                       | Vitest tests for the editor JS modules (jsdom environment) — see `state.ts`/`config.test.ts` etc.                                                                                                                       |
 | `editor.html`                                             | Generated output — never edit directly                                                                                                                                                                                  |
@@ -26,12 +26,12 @@ The editor's CSS/JS source lives under `editor/` as modular partials that `edito
 | `packages/core/src/theme.ts`                              | `THEMES`, `buildStyleBlock`, `svgOpenTag` — CSS variable system                                                                                                                                                         |
 | `packages/svg-renderer/src/styles.ts`                     | `STROKE_WIDTHS`, `FONT_SIZES` — hardcoded constants                                                                                                                                                                     |
 
-Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `samples-data.ts` only feeds the separate showcase page (`index.ts` → `index.html`, served at `/` by `vite.config.ts`).
+Note: the live editor does **not** currently have a sample-preset picker (no `SAMPLES` array). `site-src/samples-data.ts` only feeds the separate showcase page (`site-src/index.ts` → `index.html`, served at `/` by `vite.config.ts`).
 
 ## Build cycle
 
 ```
-editor.ts
+site-src/editor.ts
   ──esbuild.build──►         src/browser.ts bundle (inline JS)
   ──readCssFiles──►          editor/css/*.css concatenated
   ──readJsFiles──►           editor/js/*.js concatenated
@@ -43,23 +43,23 @@ Run manually:
 
 ```bash
 pnpm run editor   # generates editor.html once
-pnpm run dev      # watches src/ + editor/ + editor.ts, live-reloads browser
+pnpm run dev      # watches src/ + editor/ + site-src/editor.ts, live-reloads browser
 ```
 
-**Always rebuild after editing anything under `editor/` or `editor.ts`.** The HTML file is the deployed artifact.
+**Always rebuild after editing anything under `editor/` or `site-src/editor.ts`.** The HTML file is the deployed artifact.
 
 ---
 
 ## Architecture overview
 
-`editor.ts` is a TypeScript generator that:
+`site-src/editor.ts` is a TypeScript generator that:
 
 1. Calls `esbuild.build()` to bundle `src/browser.ts` → inline JS string
 2. Reads and concatenates the CSS/JS/HTML partials under `editor/`
 3. Constructs the full HTML page as a template literal
 4. Writes `editor.html`
 
-The generated page has **no runtime build step** — everything (renderer, UI logic, CSS) is inlined into one file — but the _source_ is modular; don't edit `editor.ts`'s template literal to change UI/logic, edit the relevant file under `editor/`.
+The generated page has **no runtime build step** — everything (renderer, UI logic, CSS) is inlined into one file — but the _source_ is modular; don't edit `site-src/editor.ts`'s template literal to change UI/logic, edit the relevant file under `editor/`.
 
 ### State model (in the client JS)
 
@@ -179,7 +179,7 @@ mySlider.addEventListener('input', function () {
 
 ## Sample presets
 
-The live editor currently has **no** built-in sample-preset picker (no `SAMPLES` array to edit). Presets by diagram category only exist on the separate showcase page — add/edit entries in `samples-data.ts`, which feeds `index.ts` → `index.html` (served at `/` by `vite.config.ts`), not the editor.
+The live editor currently has **no** built-in sample-preset picker (no `SAMPLES` array to edit). Presets by diagram category only exist on the separate showcase page — add/edit entries in `site-src/samples-data.ts`, which feeds `site-src/index.ts` → `index.html` (served at `/` by `vite.config.ts`), not the editor.
 
 ---
 

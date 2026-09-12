@@ -21,9 +21,9 @@
     "types": [],
     "noEmit": true,
     // ".." (repo root), not "." (this directory): demo/diagram-pages-data.ts
-    // imports ../samples-data.ts (a repo-root file, reused for real Mermaid
-    // examples rather than duplicating them) — under noEmit this only
-    // affects rootDir's own consistency check, not what actually gets
+    // imports ../site-src/samples-data.ts (a site-src/ file, reused for real
+    // Mermaid examples rather than duplicating them) — under noEmit this
+    // only affects rootDir's own consistency check, not what actually gets
     // checked, so widening it doesn't pull in extra files.
     "rootDir": "..",
     "declaration": false,

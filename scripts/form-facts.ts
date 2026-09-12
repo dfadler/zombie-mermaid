@@ -19,7 +19,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '../src/index.ts'
-import { samples } from '../samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
 import {
   startRealMermaid,
   renderRealMermaidSvg,

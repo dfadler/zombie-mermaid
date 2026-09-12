@@ -17,7 +17,7 @@
  * for the canonical column-counting rules this mirrors.
  */
 import { isWideChar } from '@zombie-mermaid/core'
-import { escapeHtml } from './demo/format.ts'
+import { escapeHtml } from '../demo/format.ts'
 
 const COMBINING_MARK_REGEX = /\p{Mn}|\p{Me}/u
 

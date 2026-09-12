@@ -45,15 +45,15 @@
 
 import { readFile } from 'node:fs/promises'
 import { createElement } from 'react'
-import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { siteOutDir } from './scripts/site-out-dir.ts'
-import { generatePage } from './scripts/generate-page.ts'
+import { bundleForBrowser } from '../scripts/vite-bundle.ts'
+import { siteOutDir } from '../scripts/site-out-dir.ts'
+import { generatePage } from '../scripts/generate-page.ts'
 import {
   escapeHtml,
   escapeJsonForScriptTag,
   stripShikiFenceLines,
-} from './demo/format.ts'
-import { renderHtmlDocument } from './demo/render-html.ts'
+} from '../demo/format.ts'
+import { renderHtmlDocument } from '../demo/render-html.ts'
 import {
   DiagramAllPage,
   DiagramDetailPage,
@@ -64,18 +64,18 @@ import {
   type DiagramDetailCrosslink,
   type OrientationVariants,
   type TagResultItem,
-} from './demo/components/diagram-page.tsx'
+} from '../demo/components/diagram-page.tsx'
 import { THEMES } from '@zombie-mermaid/core'
 import {
   DIAGRAM_TYPE_PROFILES,
   allExamplesFor,
   sampleSlug,
-} from './demo/diagram-pages-data.ts'
-import { TAG_RULES } from './demo/diagram-tags.ts'
-import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
+} from '../demo/diagram-pages-data.ts'
+import { TAG_RULES } from '../demo/diagram-tags.ts'
+import { DEFAULT_SWATCH } from '../demo/components/theme-picker.tsx'
 import type { Sample } from './samples-data.ts'
-import { renderMermaidASCII, renderMermaidSVG } from './src/index.ts'
-import type { RenderOptions } from './src/index.ts'
+import { renderMermaidASCII, renderMermaidSVG } from '../src/index.ts'
+import type { RenderOptions } from '../src/index.ts'
 import { diagramColorsToAsciiTheme } from '@zombie-mermaid/ascii-renderer'
 import { createHighlighter } from 'shiki'
 import {
@@ -83,12 +83,12 @@ import {
   withNarrowDirection,
   NARROW_DIRECTION,
   withUniqueSvgIds,
-} from './demo/diagram-orientation.ts'
+} from '../demo/diagram-orientation.ts'
 
 /** The live site's base URL (see README's "Live Demo" badge) — used for canonical links and sitemap.xml. */
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
 
-const OUT_DIR = new URL('./diagrams/', siteOutDir(import.meta.url))
+const OUT_DIR = new URL('./diagrams/', siteOutDir())
 
 /**
  * Every page renders with this theme initially; the picker switches from
@@ -125,7 +125,7 @@ function editorHash(source: string, theme: string): string {
  */
 async function bundleDiagramTypeClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/diagram-type-client.tsx', import.meta.url).pathname,
+    new URL('../demo/diagram-type-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -135,7 +135,7 @@ async function bundleDiagramTypeClient(): Promise<string> {
  * no live diagram to re-theme, so its bundle is much smaller. */
 async function bundleDiagramHubClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/diagram-hub-client.tsx', import.meta.url).pathname,
+    new URL('../demo/diagram-hub-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -149,7 +149,7 @@ async function bundleDiagramHubClient(): Promise<string> {
  */
 async function bundleDiagramDetailClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/diagram-detail-client.tsx', import.meta.url).pathname,
+    new URL('../demo/diagram-detail-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -163,7 +163,7 @@ async function bundleDiagramDetailClient(): Promise<string> {
  */
 async function bundleDiagramTagClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/diagram-tag-client.tsx', import.meta.url).pathname,
+    new URL('../demo/diagram-tag-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -173,7 +173,7 @@ async function bundleDiagramTagClient(): Promise<string> {
  * diagram to re-theme, a single page, so nothing to share bytes across). */
 async function bundleDiagramAllClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/diagram-all-client.tsx', import.meta.url).pathname,
+    new URL('../demo/diagram-all-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -185,8 +185,8 @@ async function main(): Promise<void> {
   // .theme-pill/.theme-bar rule "for free" instead of re-deriving them, so a
   // diagram page's chrome matches the main demo's exactly, not approximately.
   const [demoCss, pageCss] = await Promise.all([
-    readFile(new URL('./demo/styles.css', import.meta.url), 'utf8'),
-    readFile(new URL('./demo/diagram-page.css', import.meta.url), 'utf8'),
+    readFile(new URL('../demo/styles.css', import.meta.url), 'utf8'),
+    readFile(new URL('../demo/diagram-page.css', import.meta.url), 'utf8'),
   ])
   await generatePage({
     outPath: new URL('./assets/diagram-page.css', OUT_DIR),
@@ -614,7 +614,7 @@ ${sitemapUrls.map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`).join('\
 </urlset>
 `
   await generatePage({
-    outPath: new URL('./sitemap.xml', siteOutDir(import.meta.url)),
+    outPath: new URL('./sitemap.xml', siteOutDir()),
     content: sitemap,
     log: false,
   })
