@@ -36,6 +36,14 @@ import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
 export const ZOOM_MIN = 0.25
 export const ZOOM_MAX = 6
 const ZOOM_STEP = 1.25
+// The base editor-viewport.ts's own ctrl/cmd-wheel zoom uses (0.999) reads
+// as sluggish here -- confirmed by hands-on feedback after shipping this
+// feature -- so this viewer uses a stronger exponent instead of copying
+// that constant verbatim. ~3x more responsive per unit of wheel deltaY
+// (ln(0.997)/ln(0.999) ≈ 3): a single scroll-wheel notch (deltaY ~100-120)
+// now changes zoom by roughly 26-30%, and a trackpad pinch or two-finger
+// scroll (many small deltaY events) tracks noticeably faster too.
+const WHEEL_ZOOM_SENSITIVITY = 0.997
 
 export function clampZoom(scale: number): number {
   return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, scale))
@@ -230,7 +238,9 @@ export function useOutputPanelViewport({
         // doc comment describes.
         setViewport((v) => ({
           ...v,
-          scale: clampZoom(v.scale * Math.pow(0.999, e.deltaY)),
+          scale: clampZoom(
+            v.scale * Math.pow(WHEEL_ZOOM_SENSITIVITY, e.deltaY),
+          ),
         }))
       } else {
         setViewport((v) => ({ ...v, tx: v.tx - e.deltaX, ty: v.ty - e.deltaY }))
