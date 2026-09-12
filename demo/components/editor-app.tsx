@@ -245,8 +245,18 @@ export interface EditorState {
    * `editor-tabs.ts`/`editor-buttons.ts`/`editor-export.ts`/`editor-toast.ts`
    * for the effects that read/write them.
    */
-  /** Which panel is showing -- `editor/js/tabs.ts`'s old `.tab.active`/`data-panel`. */
-  activeTab: 'code' | 'config'
+  /**
+   * Which panel is showing -- `editor/js/tabs.ts`'s old `.tab.active`/
+   * `data-panel`. `'preview'` was added for the narrow-viewport
+   * single-panel layout (see `editor/css/panels.css`'s mobile media query):
+   * it's a third, mutually-exclusive tab alongside `'code'`/`'config'`,
+   * reachable only through the `.tab-group`'s "Preview" button that CSS
+   * shows only below the mobile breakpoint. `'code'`/`'config'` keep their
+   * exact original meaning and behavior at every width -- this is a pure
+   * extension of the union, not a change to what those two values do (see
+   * `editor-tabs.ts`'s sync effect).
+   */
+  activeTab: 'code' | 'config' | 'preview'
   /** `editor/js/export.ts`'s old `exportScale` module-level variable. */
   exportScale: number
   /** Whether the export dropdown (`#export-dropdown`) is open. */
@@ -328,7 +338,7 @@ export type EditorAction =
   | { type: 'SET_PADDING'; padding: number }
   | { type: 'SET_EDGE_STROKE'; value: number }
   | { type: 'SET_NODE_STROKE'; value: number }
-  | { type: 'SET_ACTIVE_TAB'; tab: 'code' | 'config' }
+  | { type: 'SET_ACTIVE_TAB'; tab: 'code' | 'config' | 'preview' }
   | { type: 'SET_EXPORT_SCALE'; scale: number }
   | { type: 'SET_EXPORT_DROPDOWN_OPEN'; open: boolean }
   | { type: 'SHOW_TOAST'; message: string }
@@ -746,7 +756,17 @@ function EditorChromeMarkup({
     <>
       <EditorTopbar themeItems={<EditorThemeItems themes={themes} />} />
 
-      <div className="main">
+      {/*
+       * data-active-tab: read only by editor/css/panels.css's mobile media
+       * query, to decide which of .panel-left/.panel-right is the single
+       * visible panel at narrow widths (both stay visible side by side
+       * above that breakpoint, where this attribute has no effect). Set
+       * directly from state.activeTab here rather than imperatively from
+       * editor-tabs.ts's effect -- .main already has state in scope, and
+       * this way the attribute is always in sync with the very first
+       * server-rendered markup, not just after a post-mount effect runs.
+       */}
+      <div className="main" data-active-tab={state.activeTab}>
         <EditorLeftPanel state={state} dispatch={dispatch} />
         <div className="resize-handle" id="resize-handle" />
         <EditorRightPanel />
