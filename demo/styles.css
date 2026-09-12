@@ -1347,6 +1347,15 @@ body.search-active .category-tabbar {
   min-height: 0;
   max-width: 100%;
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  /* Guards against a font whose calt feature fuses literal ASCII sequences
+   * (`--`, `->`, `!=`) into a single ligature glyph -- see
+   * docs/decisions/ascii-browser-font-investigation-978.md's Finding 2.
+   * No live page currently uses this rule (its only reader today is the
+   * Playwright suite's synthetic terminal-panel.ts markup, per that same
+   * doc's Finding 1), so this has no visible effect yet, but it matches
+   * .theme-showcase-ascii's existing guard and closes the gap before any
+   * future change actually loads a ligature-bearing font here. */
+  font-variant-ligatures: none;
   color: #e6edf3; /* fallback for glyphs the renderer leaves uncolored */
   background: transparent;
   scrollbar-color: #30363d transparent;
