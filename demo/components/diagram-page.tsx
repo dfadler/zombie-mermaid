@@ -486,6 +486,56 @@ ${MEDIA.mobile} {
 .output-fullscreen-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: 1px; }
 
 /*
+ * Zoom controls (DetailOutputPanel, only rendered while isFullscreen) --
+ * same segmented-pill chrome as .output-segment's own wrapper, sized to
+ * match .output-fullscreen-btn's 24px icon-button scale.
+ */
+.output-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: ${colorVar('--panel')};
+  border-radius: 999px;
+  padding: 2px;
+}
+.output-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  font-family: inherit;
+  font-size: ${FONT_SIZE.caption}px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.output-zoom-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel-2')}; }
+.output-zoom-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
+.output-zoom-reset {
+  width: auto;
+  padding: 0 ${SPACE.sm}px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 400;
+}
+
+/*
+ * The fullscreen render surface's own pan/zoom gesture affordance
+ * (output-panel-viewport.ts) -- .pannable/.panning are only applied while
+ * isFullscreen, matching that hook's own active-only scope. touch-action:
+ * none stops the browser's native touch scroll/pinch from competing with
+ * this component's own Pointer Event handling (both would otherwise try to
+ * interpret the same two-finger gesture).
+ */
+.output-render-area.pannable { touch-action: none; cursor: grab; }
+.output-render-area.pannable.panning { cursor: grabbing; }
+
+/*
  * DetailOutputPanel's toggleFullscreen() requestFullscreen()s .output-card
  * itself -- the browser then promotes it to the top layer and applies its
  * own UA :fullscreen sizing, but author rules still outrank that default
