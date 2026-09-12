@@ -548,7 +548,29 @@ function MobileNavPanel({
         ))}
       </div>
       <span className="mobile-install">
-        <Pill mono style={{ background: 'rgba(20,26,46,0.85)' }}>
+        <Pill
+          mono
+          className="mobile-install-pill"
+          style={{
+            background: 'rgba(20,26,46,0.85)',
+            // `.mobile-install`'s shrink-to-fit width already keeps this
+            // pill's *unbroken* content from widening the panel -- the
+            // command text wraps at the space rather than clipping once it
+            // no longer fits on one line. But nothing upstream stops the
+            // text from ever exceeding the panel's available width outright
+            // (a longer package name, a single unbreakable token, a
+            // pinch-zoomed/larger base font size). `overflow-x: auto` is
+            // the same fallback hero-install.tsx's own copy-target span
+            // already leans on for the identical "reachable via scroll
+            // rather than silently clipped" contract; `min-width: 0` lets
+            // this pill actually shrink below its content's natural width
+            // so that fallback can engage instead of overflowing
+            // `.mobile-install` outright.
+            minWidth: 0,
+            maxWidth: '100%',
+            overflowX: 'auto',
+          }}
+        >
           {installCommand}
           <CopyIcon size={COPY_ICON_SIZE} strokeWidth={COPY_ICON_STROKE} />
         </Pill>
