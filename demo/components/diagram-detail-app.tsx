@@ -52,6 +52,10 @@ import {
 } from './tokens.tsx'
 import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
 import type { OrientationVariants } from './diagram-type-app.tsx'
+import {
+  useOutputPanelViewport,
+  viewportTransform,
+} from './output-panel-viewport.ts'
 
 export { HOME_HREF }
 
@@ -299,6 +303,20 @@ export function DetailOutputPanel({
   // own direct child (see the two call sites' `<Card className="output-
   // card">` markup), not a ref threaded down from either page shell.
   const headerRef = useRef<HTMLDivElement | null>(null)
+  // The pan/zoom gesture surface -- output-panel-viewport.ts's listeners
+  // attach here, and only while isFullscreen (that hook's own `active`
+  // flag): the small inline panel stays a static centered preview.
+  const renderAreaRef = useRef<HTMLDivElement | null>(null)
+  const {
+    viewport,
+    isPanning,
+    zoomIn,
+    zoomOut,
+    reset: resetViewport,
+  } = useOutputPanelViewport({
+    active: isFullscreen,
+    containerRef: renderAreaRef,
+  })
 
   // state.isFullscreen is never set optimistically from the click handler
   // below -- only from this fullscreenchange listener reading
@@ -392,6 +410,38 @@ export function DetailOutputPanel({
               ASCII
             </button>
           </div>
+          {isFullscreen && (
+            <div
+              className="output-zoom-controls"
+              role="group"
+              aria-label="Zoom"
+            >
+              <button
+                type="button"
+                className="output-zoom-btn"
+                title="Zoom out"
+                onClick={zoomOut}
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className="output-zoom-btn output-zoom-reset"
+                title="Reset zoom"
+                onClick={resetViewport}
+              >
+                {Math.round(viewport.scale * 100)}%
+              </button>
+              <button
+                type="button"
+                className="output-zoom-btn"
+                title="Zoom in"
+                onClick={zoomIn}
+              >
+                +
+              </button>
+            </div>
+          )}
           <button
             type="button"
             className="output-fullscreen-btn"
@@ -404,11 +454,17 @@ export function DetailOutputPanel({
         </div>
       </div>
       <div
+        ref={renderAreaRef}
+        className={
+          isFullscreen
+            ? `output-render-area pannable${isPanning ? ' panning' : ''}`
+            : 'output-render-area'
+        }
         style={{
           flex: '1 1 auto',
           display: 'flex',
           padding: `${SPACE['5xl']}px`,
-          overflow: 'auto',
+          overflow: isFullscreen ? 'hidden' : 'auto',
         }}
       >
         {/*
@@ -429,7 +485,12 @@ export function DetailOutputPanel({
          * not negative, once it doesn't -- leaving the item at its
          * natural start position and fully reachable by scrolling.
          */}
-        <div style={{ margin: 'auto' }}>
+        <div
+          style={{
+            margin: 'auto',
+            transform: viewportTransform(viewport, isFullscreen),
+          }}
+        >
           {mode === 'svg' ? (
             <SvgOutput svgHtml={svgHtml} />
           ) : (
