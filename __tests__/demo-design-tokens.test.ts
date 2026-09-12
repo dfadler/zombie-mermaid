@@ -35,6 +35,7 @@ import {
   DesignTokensStyle,
   FONTS,
   LAYOUT,
+  LEGACY_BREAKPOINTS,
   MEDIA,
   RADIUS,
   colorVar,
@@ -148,6 +149,24 @@ describe('breakpoints', () => {
 
   it('gives each breakpoint band its own gutter', () => {
     expect(LAYOUT.gutter).toEqual({ desktop: 80, tablet: 32, mobile: 20 })
+  })
+})
+
+describe('LEGACY_BREAKPOINTS', () => {
+  // Pins the #1030 consolidation: the pre-redesign pages' breakpoints, one
+  // named constant per distinct pixel value. See
+  // __tests__/demo-legacy-breakpoints-sync.test.ts for the check that every
+  // tagged @media rule in the CSS files actually using these still matches.
+  it('names every distinct legacy breakpoint value', () => {
+    expect(LEGACY_BREAKPOINTS).toEqual({
+      mobile: 600,
+      tapTarget: 640,
+      diagramStack: 720,
+      compact: 768,
+      tablet: 900,
+      desktopMin: 1000,
+      desktopBelow: 1023,
+    })
   })
 })
 

@@ -65,13 +65,13 @@ body {
   padding: 2rem;
   padding-top: 0;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .content-wrapper {
     padding: 1rem;
     padding-top: 0;
   }
 }
-@media (min-width: 1000px) {
+@media (min-width: 1000px) /* LEGACY_BREAKPOINTS.desktopMin */ {
   .content-wrapper {
     padding: 3rem;
     padding-top: 0;
@@ -180,7 +180,7 @@ body::after {
 /* Below 1024px the category-tabbar (further down this file) also pins to
  * the viewport bottom to name the active category — sit just above it
  * instead of underneath, so neither is hidden by the other. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px) /* LEGACY_BREAKPOINTS.desktopBelow */ {
   .scroll-progress {
     /* 53px, not 52: the tabbar's 1px border-top adds to its rendered
      * height beyond its padding box. */
@@ -213,7 +213,7 @@ body::after {
   gap: 0.75rem;
   overflow: visible;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .theme-bar {
     padding: 0.5rem 1rem;
   }
@@ -246,7 +246,7 @@ body::after {
   gap: 0.3rem;
 }
 /* Hide inline theme pills on smaller screens, show only "15 Themes" dropdown */
-@media (max-width: 1024px) {
+@media (max-width: 1023px) /* LEGACY_BREAKPOINTS.desktopBelow */ {
   .theme-pills-inline {
     display: none;
   }
@@ -393,7 +393,7 @@ body::after {
   height: 16px;
   flex-shrink: 0;
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px) /* LEGACY_BREAKPOINTS.desktopBelow */ {
   .sidebar-toggle {
     display: flex;
   }
@@ -449,12 +449,12 @@ body::after {
   padding: 1.5rem 1rem 2rem 2rem;
   box-sizing: border-box;
 }
-@media (min-width: 1000px) {
+@media (min-width: 1000px) /* LEGACY_BREAKPOINTS.desktopMin */ {
   .sidebar {
     padding-left: 3rem;
   }
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px) /* LEGACY_BREAKPOINTS.desktopBelow */ {
   .sidebar-backdrop {
     display: none;
     position: fixed;
@@ -680,7 +680,7 @@ body.search-active .category-tabbar {
   gap: 1.75rem;
   padding: 0.5rem 0 2.5rem;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .hero-transform {
     flex-direction: column;
     align-items: center;
@@ -701,7 +701,7 @@ body.search-active .category-tabbar {
   display: flex;
   flex-direction: column;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .hero-code-panel {
     flex: none;
     width: 100%;
@@ -769,7 +769,7 @@ body.search-active .category-tabbar {
   gap: 0.5rem;
   padding: 0 0.25rem;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .hero-arrow {
     flex-direction: row-reverse;
     padding: 0.25rem 0;
@@ -787,7 +787,7 @@ body.search-active .category-tabbar {
   width: 3.5rem;
   height: 3.5rem;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .hero-arrow-icon {
     width: 2rem;
     height: 2rem;
@@ -828,7 +828,7 @@ body.search-active .category-tabbar {
     0 8px 24px rgba(0, 0, 0, 0.06);
   padding: 1.75rem;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .hero-diagram-panel {
     flex: none;
     width: 100%;
@@ -900,7 +900,7 @@ body.search-active .category-tabbar {
   align-items: start;
   min-height: 420px;
 }
-@media (max-width: 900px) {
+@media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .sample-content {
     grid-template-columns: 1fr;
   }
@@ -1191,7 +1191,7 @@ body.search-active .category-tabbar {
  * (measured 49x31px on a 375px viewport — see issue #285). Same breakpoint
  * the orientation-swap feature already uses, so the segmented toggle only
  * grows where the desktop layout has no room pressure to justify it. */
-@media (max-width: 640px) {
+@media (max-width: 640px) /* LEGACY_BREAKPOINTS.tapTarget */ {
   .seg-btn {
     min-height: 44px;
     display: inline-flex;
@@ -1244,7 +1244,7 @@ body.search-active .category-tabbar {
 .orientation-variant.orientation-wide {
   display: contents;
 }
-@media (max-width: 640px) {
+@media (max-width: 640px) /* LEGACY_BREAKPOINTS.tapTarget */ {
   .orientation-variant.orientation-wide {
     display: none;
   }
@@ -1434,7 +1434,7 @@ body.search-active .category-tabbar {
   padding: 6rem 2rem 2rem;
   text-align: left;
 }
-@media (min-width: 1000px) {
+@media (min-width: 1000px) /* LEGACY_BREAKPOINTS.desktopMin */ {
   .hero-header {
     padding: 6rem 3rem 2rem;
   }
@@ -1473,7 +1473,7 @@ body.search-active .category-tabbar {
   align-items: center;
   gap: 0.5rem;
 }
-@media (max-width: 768px) {
+@media (max-width: 768px) /* LEGACY_BREAKPOINTS.compact */ {
   .hero-buttons {
     flex-direction: column;
   }
@@ -1652,7 +1652,7 @@ body.search-active .category-tabbar {
 .category-tabbar {
   display: none;
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px) /* LEGACY_BREAKPOINTS.desktopBelow */ {
   .category-tabbar {
     display: flex;
     position: fixed;
@@ -1742,7 +1742,7 @@ body.search-active .category-tabbar {
   font-size: 12px;
   color: color-mix(in srgb, var(--t-fg) 50%, var(--t-bg));
 }
-@media (min-width: 1000px) {
+@media (min-width: 1000px) /* LEGACY_BREAKPOINTS.desktopMin */ {
   .site-footer {
     padding: 1.5rem 3rem 2rem;
   }
