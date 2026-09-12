@@ -1,5 +1,5 @@
 // Enforces a stricter coverage bar on new/changed code than the repo-wide
-// thresholds in vitest.config.ts. Those thresholds guard the whole codebase
+// thresholds in config/vitest.config.ts. Those thresholds guard the whole codebase
 // (including long-standing, hard-to-reach branches); this script only looks
 // at lines actually touched by the current diff and requires DIFF_THRESHOLD%
 // of them to be covered, so new work is held to a higher bar without forcing
@@ -14,7 +14,7 @@ import { readFileSync, existsSync } from 'node:fs'
 const DIFF_THRESHOLD = 90
 const LCOV_PATH = 'coverage/lcov.info'
 // Broad git pathspec for the diff itself (see getChangedLines) — narrowed to
-// vitest.config.ts's actual coverage.include pattern by isTrackedTsFile()
+// config/vitest.config.ts's actual coverage.include pattern by isTrackedTsFile()
 // below, so a package-root file outside <package>/src/ isn't counted here
 // when Vitest doesn't count it either.
 const DIFF_PATHS = ['src/', 'packages/']

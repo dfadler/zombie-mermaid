@@ -1,7 +1,15 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
-const ROOT = import.meta.dirname
+// This file lives in config/, one level below the repo root (#997) —
+// REPO_ROOT points at the actual root so the aliases below still resolve
+// `packages/*/src/index.ts` the same way they did when this file lived at
+// the repo root itself. `setupFiles` below is a separate case: Vitest
+// resolves that path against the *run's* root (repo root, since scripts
+// invoke `vitest -c config/vitest.config.ts` from there), not against this
+// config file's own directory — so it's spelled `./config/vitest.setup.ts`
+// rather than a `REPO_ROOT`-relative sibling reference.
+const REPO_ROOT = resolve(import.meta.dirname, '..')
 
 export default defineConfig({
   // As of #769, the five `@zombie-mermaid/*` packages' package.json
@@ -16,20 +24,20 @@ export default defineConfig({
   // rather than by two people remembering to update two files.
   resolve: {
     alias: {
-      '@zombie-mermaid/core': resolve(ROOT, 'packages/core/src/index.ts'),
+      '@zombie-mermaid/core': resolve(REPO_ROOT, 'packages/core/src/index.ts'),
       '@zombie-mermaid/mermaid-parser': resolve(
-        ROOT,
+        REPO_ROOT,
         'packages/mermaid-parser/src/index.ts',
       ),
       '@zombie-mermaid/svg-renderer': resolve(
-        ROOT,
+        REPO_ROOT,
         'packages/svg-renderer/src/index.ts',
       ),
       '@zombie-mermaid/ascii-renderer': resolve(
-        ROOT,
+        REPO_ROOT,
         'packages/ascii-renderer/src/index.ts',
       ),
-      '@zombie-mermaid/mcp': resolve(ROOT, 'packages/mcp/src/index.ts'),
+      '@zombie-mermaid/mcp': resolve(REPO_ROOT, 'packages/mcp/src/index.ts'),
     },
   },
   test: {
@@ -81,7 +89,7 @@ export default defineConfig({
     // file must open with `// @vitest-environment jsdom` as its first line;
     // omitting it fails loudly (`document is not defined`) rather than
     // silently passing under the wrong environment.
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: ['./config/vitest.setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

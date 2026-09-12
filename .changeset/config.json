@@ -17,9 +17,9 @@
     "package.json",
     "README.md",
     "LICENSE",
-    "vite.config.lib.ts",
+    "config/vite.config.lib.ts",
     "vite.config.package.ts",
     "tsconfig.json",
-    "tsconfig.build.json"
+    "config/tsconfig.build.json"
   ]
 }

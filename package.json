@@ -93,9 +93,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test": "vitest run -c config/vitest.config.ts",
+    "test:watch": "vitest -c config/vitest.config.ts",
+    "test:coverage": "vitest run -c config/vitest.config.ts --coverage",
     "test:visual": "playwright test",
     "test:visual:watch": "playwright test --ui",
     "test:visual:update": "playwright test --update-snapshots",
@@ -124,7 +124,7 @@
     "form-facts": "tsx scripts/form-facts.ts",
     "form-judge-prepare": "tsx scripts/form-judge-prepare.ts",
     "form-judge-finalize-cache": "tsx scripts/form-judge-finalize-cache.ts",
-    "build": "vite build --app --config vite.config.lib.ts",
+    "build": "vite build --app --config config/vite.config.lib.ts",
     "build:packages": "vite build --app --config packages/core/vite.config.ts && vite build --app --config packages/mermaid-parser/vite.config.ts && vite build --app --config packages/svg-renderer/vite.config.ts && vite build --app --config packages/ascii-renderer/vite.config.ts && vite build --app --config packages/mcp/vite.config.ts",
     "build:site": "rm -rf site && mkdir -p site && SITE_OUT_DIR=site tsx index.ts && SITE_OUT_DIR=site tsx editor.ts && SITE_OUT_DIR=site tsx fork-fixes.ts && SITE_OUT_DIR=site tsx pages.ts && SITE_OUT_DIR=site tsx blog.ts && SITE_OUT_DIR=site tsx dashboard.ts && cp -r public/* site/",
     "xychart-test": "tsx xychart-test.ts",

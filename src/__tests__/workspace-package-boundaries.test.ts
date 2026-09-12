@@ -226,7 +226,7 @@ describe('workspace package manifests', () => {
   // no longer `"private": true` — and its own independent build
   // (`packages/<name>/vite.config.ts`, via `vite.config.package.ts`).
   //
-  // That is preparation only. The umbrella (`vite.config.lib.ts`) still
+  // That is preparation only. The umbrella (`config/vite.config.lib.ts`) still
   // bundles all five packages' source directly into its own `dist/` (they
   // are absent from `isExternal` there, same as before #769) — none of
   // them is a real external `dependencies` entry of `zombie-mermaid`, none
