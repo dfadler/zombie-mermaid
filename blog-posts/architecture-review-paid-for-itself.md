@@ -119,7 +119,7 @@ a scroll-fade missing from two different ASCII output wells ([#1006](https://git
 
 ## What the split bought
 
-None of that is a story about a refactor *preventing* bugs — the polish-fix
+None of that is a story about a refactor _preventing_ bugs — the polish-fix
 list above is proof it didn't, and wasn't meant to. The actual claim is
 narrower and checkable: when [#979](https://github.com/dfadler/zombie-mermaid/pull/979)
 added the hero's output toggle, its diff touches a new,
@@ -137,7 +137,7 @@ revisiting the moment real work started depending on it.
 
 That's the same bet [this blog's post on refactor timing](/blog/refactor-after-the-audit-not-before.html)
 made about a different codebase layer back in August, restated with fresh
-evidence: an architecture review scoped to *only* reorganize, with an
+evidence: an architecture review scoped to _only_ reorganize, with an
 explicit rule against changing behavior while doing it, is the kind of work
-whose return shows up in what the next twenty PRs *don't* have to do. Here,
+whose return shows up in what the next twenty PRs _don't_ have to do. Here,
 that return arrived the same day.
