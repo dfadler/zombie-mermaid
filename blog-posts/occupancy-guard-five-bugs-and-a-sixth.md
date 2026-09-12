@@ -1,7 +1,7 @@
 ---
 title: The Occupancy Guard That Fixed Five Bugs and Found a Sixth
 date: 2026-09-11
-description: A release-readiness audit found five confirmed ASCII rendering bugs, closed within hours by generalizing an old guard pattern from the ER renderer — until the same review turned up a sixth bug the guard couldn't fix, because the guard was never the actual problem.
+description: A release-readiness audit found five confirmed ASCII rendering bugs, closed within hours by generalizing an old guard pattern from the ER renderer — until the same review turned up a sixth bug the guard couldn't fix, because the guard was never the problem.
 ---
 
 The [last post](/blog/why-i-forked-beautiful-mermaid.html) went up on 2026-09-10.
@@ -70,11 +70,11 @@ column was clear the whole way across. A taller, unrelated sibling sitting
 in between got its attribute rows silently overwritten by the jog, same
 failure mode as cases 1 and 2, different code path.
 
-Fixing #963 is what surfaced the actual problem. [#964](https://github.com/dfadler/zombie-mermaid/issues/964),
+Fixing #963 is what surfaced the deeper problem. [#964](https://github.com/dfadler/zombie-mermaid/issues/964),
 filed the same review pass, names it plainly: the jog is only that long in
 the first place because `class-diagram.ts`'s level-positioning loop packs
 each level's classes strictly left-to-right in declaration order, with zero
-reference to where any class's actual parent landed. A level with exactly
+reference to where any class's parent landed. A level with exactly
 one occupant always starts at column 0 — even when its real parent is
 sitting far to the right, one level up:
 
@@ -110,7 +110,7 @@ before/after the reorder produced zero output changes — none of them happen
 to hit the pattern it would have fixed. A standard technique, correctly
 implemented, that solves a problem this codebase doesn't actually have.
 
-The real fix needs actual x-coordinate placement, which is the same family
+The real fix needs x-coordinate placement, which is the same family
 of problem as Sugiyama/Brandes-Köpf layered-graph x-coordinate assignment —
 not a small tweak, and one that would shift box positions across every class
 diagram with more than one class per level. #964 scoped that as its own
@@ -151,7 +151,7 @@ folded it into the same gap-sizing pass, confirmed in a real terminal via
 `scripts/ascii-terminal-capture.sh`, not the browser's HTML approximation of
 one.
 
-## What the guard was actually for
+## What the guard was for
 
 The occupancy-guard pattern from #350 is the right fix for exactly one
 question: is this write about to land on top of something else? It answered
