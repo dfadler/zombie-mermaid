@@ -137,6 +137,28 @@ export function EditorRightPanel() {
     <div className="panel-right" id="panel-right">
       <div className="preview-toolbar">
         <span className="preview-label">Preview</span>
+        {/* zombie-mermaid#976: SVG/ASCII output toggle -- wired by
+            editor-output-mode.ts's useEditorOutputMode. Mirrors the
+            homepage's .output-segment toggle (index-page.tsx's theme
+            showcase, hero-output-panel.tsx). */}
+        <div className="output-toggle" id="output-toggle">
+          <button
+            type="button"
+            className="output-segment active"
+            id="output-mode-svg-btn"
+            aria-pressed="true"
+          >
+            SVG
+          </button>
+          <button
+            type="button"
+            className="output-segment"
+            id="output-mode-ascii-btn"
+            aria-pressed="false"
+          >
+            ASCII
+          </button>
+        </div>
         <div className="toolbar-spacer" />
         <div className="zoom-controls">
           <button className="toolbar-btn" id="zoom-out-btn" title="Zoom out">

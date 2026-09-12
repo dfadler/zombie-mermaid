@@ -26,15 +26,17 @@
  * anyway, harmlessly.
  */
 import { act, createElement } from 'react'
-import { render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   EditorApp,
   type EditorAppProps,
 } from '../../demo/components/editor-app.tsx'
 import {
+  buildAsciiOptions,
   buildOptions,
   escHtml,
+  extractDiagramColors,
   getPreviewSurfaceColors,
   hexToRgb,
 } from '../../demo/components/editor-rendering.ts'
@@ -58,6 +60,48 @@ function stubMermaid(
   const renderMermaidSVGAsync = vi.fn(renderImpl)
   window.__mermaid = { THEMES, renderMermaidSVGAsync }
   return renderMermaidSVGAsync
+}
+
+/**
+ * Like {@link stubMermaid}, plus the two ASCII-mode bridge functions
+ * (zombie-mermaid#976) -- needed by any test that switches
+ * `state.outputMode` to `'ascii'`, since `doRender`'s ASCII branch calls
+ * both. `diagramColorsToAsciiTheme` is stubbed as a thin passthrough
+ * (real shape asserted separately by `buildAsciiOptions`'s own unit
+ * tests below) so these RTL tests can assert on *its call arguments*
+ * without depending on the real `@zombie-mermaid/ascii-renderer` package.
+ */
+function stubMermaidWithAscii(
+  asciiImpl: (
+    source: string,
+    options: Record<string, unknown>,
+  ) => string = () => '<span class="a">ascii</span>',
+): {
+  renderMermaidSVGAsync: ReturnType<typeof vi.fn>
+  renderMermaidASCII: ReturnType<typeof vi.fn>
+  diagramColorsToAsciiTheme: ReturnType<typeof vi.fn>
+} {
+  const renderMermaidSVGAsync = vi.fn(
+    async () => '<svg data-mock-render="1"></svg>',
+  )
+  const renderMermaidASCII = vi.fn(asciiImpl)
+  const diagramColorsToAsciiTheme = vi.fn((colors: Record<string, string>) => ({
+    fg: colors.fg,
+    border: colors.fg,
+    line: colors.fg,
+    arrow: colors.fg,
+  }))
+  window.__mermaid = {
+    THEMES,
+    renderMermaidSVGAsync,
+    renderMermaidASCII,
+    diagramColorsToAsciiTheme,
+  }
+  return {
+    renderMermaidSVGAsync,
+    renderMermaidASCII,
+    diagramColorsToAsciiTheme,
+  }
 }
 
 /** Waits for the debounced/scheduled render (setTimeout-based) to settle -- mirrors the deleted harness's identical helper. */
@@ -131,6 +175,85 @@ describe('getPreviewSurfaceColors (preview panel follows the diagram theme)', ()
         config: { bg: '#custom' },
       }),
     ).toEqual({ bg: '#custom', fg: THEMES.nord.fg })
+  })
+})
+
+describe('extractDiagramColors (#976)', () => {
+  it('pulls the known color keys out and defaults bg/fg to the renderer default', () => {
+    expect(extractDiagramColors({})).toEqual({
+      bg: '#FFFFFF',
+      fg: '#27272A',
+      line: undefined,
+      accent: undefined,
+      muted: undefined,
+      surface: undefined,
+      border: undefined,
+    })
+  })
+
+  it('passes through every color key present, ignoring non-color keys', () => {
+    expect(
+      extractDiagramColors({
+        bg: '#111',
+        fg: '#222',
+        line: '#333',
+        accent: '#444',
+        muted: '#555',
+        surface: '#666',
+        border: '#777',
+        // SVG-only config-panel keys (font/padding) -- must not leak into
+        // the returned DiagramColors shape.
+        font: 'monospace',
+        padding: 40,
+      }),
+    ).toEqual({
+      bg: '#111',
+      fg: '#222',
+      line: '#333',
+      accent: '#444',
+      muted: '#555',
+      surface: '#666',
+      border: '#777',
+    })
+  })
+
+  it('ignores a non-string value for a color key (falls back for bg/fg)', () => {
+    expect(extractDiagramColors({ bg: 42, fg: null })).toEqual({
+      bg: '#FFFFFF',
+      fg: '#27272A',
+      line: undefined,
+      accent: undefined,
+      muted: undefined,
+      surface: undefined,
+      border: undefined,
+    })
+  })
+})
+
+describe('buildAsciiOptions (#976)', () => {
+  it('requests HTML color mode and derives the theme from the same colors buildOptions would use', () => {
+    const diagramColorsToAsciiTheme = vi.fn((colors: unknown) => ({
+      fg: '#stub',
+      border: '#stub',
+      line: '#stub',
+      arrow: '#stub',
+      __colorsSeen: colors,
+    }))
+    const opts = buildAsciiOptions({ diagramColorsToAsciiTheme }, THEMES, {
+      theme: 'nord',
+      config: { bg: '#custom' },
+    })
+    expect(opts.colorMode).toBe('html')
+    expect(diagramColorsToAsciiTheme).toHaveBeenCalledWith({
+      bg: '#custom',
+      fg: THEMES.nord.fg,
+      line: undefined,
+      accent: THEMES.nord.accent,
+      muted: undefined,
+      surface: undefined,
+      border: undefined,
+    })
+    expect(opts.theme).toMatchObject({ fg: '#stub' })
   })
 })
 
@@ -289,6 +412,106 @@ describe('<EditorApp> render pipeline (#810)', () => {
     )
     expect(panelRight.style.getPropertyValue('--preview-fg')).toBe(
       THEMES.nord.fg,
+    )
+  })
+})
+
+describe('<EditorApp> SVG/ASCII output toggle (#976)', () => {
+  it('defaults to SVG: the ASCII segment starts inactive and renderMermaidASCII is never called', async () => {
+    const { renderMermaidSVGAsync, renderMermaidASCII } = stubMermaidWithAscii()
+    render(createElement(EditorApp, PROPS))
+    await act(() => flushRenderTimers())
+
+    expect(renderMermaidSVGAsync).toHaveBeenCalled()
+    expect(renderMermaidASCII).not.toHaveBeenCalled()
+    expect(document.getElementById('output-mode-svg-btn')).toHaveClass('active')
+    expect(
+      document
+        .getElementById('output-mode-svg-btn')!
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+    expect(document.getElementById('output-mode-ascii-btn')).not.toHaveClass(
+      'active',
+    )
+  })
+
+  it('switches to ASCII on click, re-renders via renderMermaidASCII, and flips the toggle/panel state', async () => {
+    const { renderMermaidSVGAsync, renderMermaidASCII } = stubMermaidWithAscii()
+    render(createElement(EditorApp, PROPS))
+    await act(() => flushRenderTimers())
+    renderMermaidSVGAsync.mockClear()
+
+    await act(async () => {
+      fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
+      await flushRenderTimers()
+    })
+
+    expect(renderMermaidASCII).toHaveBeenCalledTimes(1)
+    expect(renderMermaidSVGAsync).not.toHaveBeenCalled()
+    expect(document.getElementById('preview-inner')!.innerHTML).toContain(
+      'class="ascii-output"',
+    )
+    expect(document.getElementById('preview-inner')!.innerHTML).toContain(
+      '<span class="a">ascii</span>',
+    )
+    expect(document.getElementById('output-mode-ascii-btn')).toHaveClass(
+      'active',
+    )
+    expect(
+      document
+        .getElementById('output-mode-ascii-btn')!
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+    expect(document.getElementById('output-mode-svg-btn')).not.toHaveClass(
+      'active',
+    )
+    expect(document.getElementById('panel-right')!.dataset.outputMode).toBe(
+      'ascii',
+    )
+  })
+
+  it('switching back to SVG re-renders via renderMermaidSVGAsync', async () => {
+    const { renderMermaidSVGAsync, renderMermaidASCII } = stubMermaidWithAscii()
+    render(createElement(EditorApp, PROPS))
+    await act(() => flushRenderTimers())
+
+    await act(async () => {
+      fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
+      await flushRenderTimers()
+    })
+    renderMermaidSVGAsync.mockClear()
+    renderMermaidASCII.mockClear()
+
+    await act(async () => {
+      fireEvent.click(document.getElementById('output-mode-svg-btn')!)
+      await flushRenderTimers()
+    })
+
+    expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    expect(renderMermaidASCII).not.toHaveBeenCalled()
+    expect(document.getElementById('preview-inner')!.innerHTML).toContain(
+      'data-mock-render',
+    )
+    expect(document.getElementById('panel-right')!.dataset.outputMode).toBe(
+      'svg',
+    )
+  })
+
+  it('shows an error status when the ASCII renderer throws, same as a rejected SVG render', async () => {
+    stubMermaidWithAscii(() => {
+      throw new Error('bad ascii diagram')
+    })
+    render(createElement(EditorApp, PROPS))
+    await act(() => flushRenderTimers())
+
+    await act(async () => {
+      fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
+      await flushRenderTimers()
+    })
+
+    expect(document.getElementById('status-text')!.textContent).toBe('Error')
+    expect(document.getElementById('preview-inner')!.innerHTML).toContain(
+      'bad ascii diagram',
     )
   })
 })

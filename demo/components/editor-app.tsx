@@ -92,6 +92,7 @@ import {
 import { useEditorButtons } from './editor-buttons.ts'
 import { useEditorConfig } from './editor-config.tsx'
 import { useEditorFullscreen } from './editor-fullscreen.ts'
+import { useEditorOutputMode } from './editor-output-mode.ts'
 import {
   clampPadding,
   clampStroke,
@@ -274,6 +275,19 @@ export interface EditorState {
    * `requestFullscreen()` promise rejection).
    */
   fullscreen: boolean
+  /**
+   * The preview panel's output format — `'svg'` (the tool's original,
+   * only mode) or `'ascii'` (zombie-mermaid#976). See
+   * `editor-output-mode.ts`'s `useEditorOutputMode` for the toggle buttons
+   * that write this and `editor-rendering.ts`'s `doRender` for the branch
+   * that reads it — that function already calls
+   * `mermaid.renderMermaidASCII()` through the exact same
+   * `window.__mermaid` bridge `renderMermaidSVGAsync` uses (see
+   * `src/browser.ts`, which has exposed `renderMermaidASCII` on that
+   * bridge since before this field existed), so switching modes needs no
+   * new client bundle weight.
+   */
+  outputMode: 'svg' | 'ascii'
 }
 
 export const INITIAL_EDITOR_STATE: EditorState = {
@@ -296,6 +310,7 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   toastVisible: false,
   toastNonce: 0,
   fullscreen: false,
+  outputMode: 'svg',
 }
 
 export type EditorAction =
@@ -334,6 +349,8 @@ export type EditorAction =
   | { type: 'SHOW_TOAST'; message: string }
   | { type: 'HIDE_TOAST' }
   | { type: 'SET_FULLSCREEN'; fullscreen: boolean }
+  /** zombie-mermaid#976: the preview panel's SVG/ASCII output toggle -- see `EditorState.outputMode`'s doc comment. */
+  | { type: 'SET_OUTPUT_MODE'; mode: 'svg' | 'ascii' }
 
 export function editorReducer(
   state: EditorState,
@@ -408,6 +425,8 @@ export function editorReducer(
       return { ...state, toastVisible: false }
     case 'SET_FULLSCREEN':
       return { ...state, fullscreen: action.fullscreen }
+    case 'SET_OUTPUT_MODE':
+      return { ...state, outputMode: action.mode }
   }
 }
 
@@ -504,6 +523,9 @@ export interface EditorRefs {
    * rest of the tool's chrome) follow the selected diagram theme.
    */
   panelRight: HTMLElement
+  /** Added by zombie-mermaid#976 -- see `editor-output-mode.ts`'s `useEditorOutputMode`. */
+  outputModeSvgBtn: HTMLElement
+  outputModeAsciiBtn: HTMLElement
 }
 
 /**
@@ -588,6 +610,11 @@ export function collectEditorRefs(): EditorRefs {
       SVGElement,
     ),
     panelRight: requireEditorElement('panel-right', HTMLElement),
+    outputModeSvgBtn: requireEditorElement('output-mode-svg-btn', HTMLElement),
+    outputModeAsciiBtn: requireEditorElement(
+      'output-mode-ascii-btn',
+      HTMLElement,
+    ),
   }
 }
 
@@ -674,6 +701,12 @@ export function EditorApp({ themes }: EditorAppProps) {
   // below (it neither reads nor writes anything they own), so its position
   // in this list is arbitrary. See editor-fullscreen.ts.
   useEditorFullscreen({ state, dispatch, refs })
+
+  // zombie-mermaid#976: the preview panel's SVG/ASCII output toggle. Runs
+  // just before useEditorRendering, which is the effect that actually
+  // reacts to state.outputMode by re-rendering -- see that hook's header
+  // comment.
+  useEditorOutputMode({ state, dispatch, refs })
 
   // zombie-mermaid#810: the render pipeline and URL-hash sharing. See
   // editor-rendering.ts's/editor-sharing.ts's header comments for what

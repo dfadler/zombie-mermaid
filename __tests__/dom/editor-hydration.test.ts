@@ -141,6 +141,8 @@ describe('collectEditorRefs (#806)', () => {
     expect(refs.resizeHandle.id).toBe('resize-handle')
     expect(refs.editorView.id).toBe('editor-view')
     expect(refs.configView.id).toBe('config-view')
+    expect(refs.outputModeSvgBtn.id).toBe('output-mode-svg-btn')
+    expect(refs.outputModeAsciiBtn.id).toBe('output-mode-ascii-btn')
   })
 
   it('throws a diagnosable error when a required element is missing', () => {
