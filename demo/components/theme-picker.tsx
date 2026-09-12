@@ -54,6 +54,7 @@ import {
   setTheme,
   subscribe,
 } from '../theme-state.ts'
+import { LEGACY_BREAKPOINTS } from './tokens.tsx'
 
 /** The `id` of the hydration root `ThemePickerIsland` renders `#theme-pills` as — load-bearing: a page must render exactly one. */
 export const THEME_PILLS_ROOT_ID = 'theme-pills'
@@ -111,7 +112,7 @@ export function themePickerCss(): string {
   display: flex;
   gap: 0.3rem;
 }
-@media (max-width: 1024px) {
+@media (max-width: ${LEGACY_BREAKPOINTS.desktopBelow}px) {
   .theme-pills-inline {
     display: none;
   }

@@ -170,7 +170,7 @@ h1 {
   min-width: 0;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 720px) /* LEGACY_BREAKPOINTS.diagramStack */ {
   .diagram-layout {
     flex-direction: column;
   }

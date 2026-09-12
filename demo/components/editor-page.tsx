@@ -136,7 +136,14 @@ import { NavMobileMenuScript, NavStyle } from './nav.tsx'
 import { NavIsland } from './nav-island.tsx'
 import { Footer, FooterStyle } from './footer.tsx'
 import { PrimitivesStyle } from './primitives-css.tsx'
-import { COLORS, FONT_WEIGHT, FONTS, LAYOUT, SECTION_SPACE } from './tokens.tsx'
+import {
+  BREAKPOINTS,
+  COLORS,
+  FONT_WEIGHT,
+  FONTS,
+  LAYOUT,
+  SECTION_SPACE,
+} from './tokens.tsx'
 
 /* -----------------------------------------------------------------
  * The new chrome's CSS
@@ -184,12 +191,6 @@ ${colors}
   color: var(--pink);
 }`
 }
-
-/** Mirrors tokens.tsx's `BREAKPOINTS.mobile` — kept literal so this file's
- * CSS text doesn't need a second import just for one number. */
-const BREAKPOINTS_MOBILE = 600
-/** Mirrors tokens.tsx's `BREAKPOINTS.tablet`. */
-const BREAKPOINTS_TABLET = 900
 
 /**
  * This page's own layout rules: the scoped palette (one `.zm-shell` class
@@ -264,7 +265,7 @@ body {
   isolation: isolate;
 }
 
-@media (max-width: ${BREAKPOINTS_TABLET}px) {
+@media (max-width: ${BREAKPOINTS.tablet}px) {
   .editor-tool-shell {
     height: min(640px, 78vh);
   }
@@ -276,7 +277,7 @@ body {
   }
 }
 
-@media (max-width: ${BREAKPOINTS_MOBILE}px) {
+@media (max-width: ${BREAKPOINTS.mobile}px) {
   .editor-tool-shell {
     height: min(560px, 74vh);
   }

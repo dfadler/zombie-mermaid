@@ -300,6 +300,75 @@ export const MEDIA = {
   reducedMotion: '@media (prefers-reduced-motion: reduce)',
 } as const
 
+/**
+ * Breakpoints for the site's older, pre-redesign pages — demo/styles.css,
+ * demo/dashboard.css, demo/diagram-page.css, demo/fork-fixes.css,
+ * demo/blog.css, and theme-picker.tsx's `themePickerCss()` — which (per this
+ * module's header comment) render through a different, deliberately
+ * disjoint styling system from {@link BREAKPOINTS} above.
+ *
+ * Consolidated here per #1030: those files previously hardcoded 8 scattered
+ * pixel values between them (600, 640, 720, 768, 900, 1000, 1023, and a
+ * stray 1024 — see `desktopBelow` below), each redefined per file with no
+ * shared source, so changing one meant hunting down every copy and hoping
+ * they stayed in sync. Every value here was audited against the CSS it
+ * gates before being named (see #1030's PR description) — several look
+ * close enough to be typos of each other but gate genuinely different
+ * content, so nothing was collapsed except the one confirmed drift
+ * (`desktopBelow`, previously 1023 in demo/styles.css and a stray, 1px-wider
+ * 1024 in theme-picker.tsx).
+ *
+ * TS consumers (theme-picker.tsx) import this object directly. The plain
+ * CSS files can't `import` a TS value into an `@media` condition — CSS
+ * custom properties don't resolve inside a media feature — so each rule
+ * instead keeps its literal pixel value (so the file stays valid,
+ * human-readable CSS on its own) and tags it with a trailing CSS comment
+ * naming the key below (see any rule in demo/styles.css for the exact
+ * form). `__tests__/demo-legacy-breakpoints-sync.test.ts` parses every
+ * tagged rule in those five files and fails if a tagged number ever drifts
+ * from the value here — the mechanical guarantee a comment alone can't give.
+ */
+export const LEGACY_BREAKPOINTS = {
+  /** 600px — grids drop to one/two columns, `.page-h1` shrinks. Same value
+   *  as {@link BREAKPOINTS}.mobile by coincidence, not shared design intent
+   *  — kept as its own key so a future change to one doesn't silently
+   *  move the other. Used by dashboard.css, fork-fixes.css, blog.css, and
+   *  styles.css's own `.page-h1`-equivalent rules. */
+  mobile: 600,
+  /** 640px — demo/styles.css only: raises the segmented-toggle tap target
+   *  to the 44px comfortable minimum and swaps in the narrow orientation
+   *  variant for a wide diagram (issue #285). */
+  tapTarget: 640,
+  /** 720px — demo/diagram-page.css only: stacks the source/diagram columns,
+   *  narrower than `compact` because the two-column layout needs more room
+   *  than a single block of prose does before it needs to give up. */
+  diagramStack: 720,
+  /** 768px — demo/styles.css only: tightens the content-wrapper/theme-bar
+   *  padding and stacks the hero-transform, hero-arrow, and hero-buttons
+   *  rows. */
+  compact: 768,
+  /** 900px — nav/grid content collapses to a single column. Same value as
+   *  {@link BREAKPOINTS}.tablet by coincidence (see `mobile` above). Used
+   *  by dashboard.css, fork-fixes.css, blog.css, and styles.css's
+   *  `.sample-content` grid. */
+  tablet: 900,
+  /** 1000px (min-width) — demo/styles.css only: the desktop padding bump
+   *  paired with `desktopBelow` below (the two overlap 1000-1023px by
+   *  design, not an off-by-one — see the `.content-wrapper` and `.sidebar`
+   *  rules). */
+  desktopMin: 1000,
+  /** 1023px (max-width, i.e. "below 1024px" — see the `.scroll-progress`
+   *  comment in demo/styles.css) — the sidebar becomes an off-canvas
+   *  drawer, the category tabbar and scroll-progress bar pin to the
+   *  viewport bottom, and the inline theme pills collapse to the "N
+   *  Themes" dropdown. demo/styles.css already wrote every one of these as
+   *  1023 except the last (theme-pills-inline), which used a stray,
+   *  1px-wider `max-width: 1024`; theme-picker.tsx's copy of that same rule
+   *  had drifted the same way. Both are standardized to 1023 here — a
+   *  behavior change only at exactly 1024px viewport width. */
+  desktopBelow: 1023,
+} as const
+
 /* -----------------------------------------------------------------
  * CSS emission
  * ----------------------------------------------------------------- */
