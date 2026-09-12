@@ -160,7 +160,13 @@ describe('EditorPage', () => {
     expect(shell).toMatch(
       /^<div class="editor-tool-shell"><div id="editor-root" style="display:contents">(?:<!--.*?-->)?<div class="topbar">/,
     )
-    expect(shell).toMatch(/<div class="main"><div class="panel-left"/)
+    // data-active-tab (added for the mobile single-panel layout -- see
+    // editor-app.tsx's EditorChromeMarkup doc comment) lands on `.main`
+    // itself, not a wrapper -- `.panel-left` is still `.main`'s immediate
+    // child with nothing in between.
+    expect(shell).toMatch(
+      /<div class="main" data-active-tab="code"><div class="panel-left"/,
+    )
     expect(shell).toMatch(
       /<div class="resize-handle" id="resize-handle"><\/div><div class="panel-right"/,
     )

@@ -146,3 +146,47 @@
    * nothing and the resize handle never actually highlighted. */
   background: var(--t-accent);
 }
+
+/* Narrow-viewport single-panel mode. .panel-left's own min-width:280px
+ * (declared above) already exceeds the space .editor-tool-shell has left
+ * after its border/padding on a ~375px phone -- .panel-right's own minimum
+ * content plus .resize-handle need room too -- so side-by-side stops being
+ * viable below this width; only one panel renders at a time instead,
+ * chosen by editor-topbar.tsx's Code/Config/Preview tabs via .main's
+ * data-active-tab attribute (see editor-app.tsx's EditorChromeMarkup doc
+ * comment). Mirrors BREAKPOINTS_MOBILE from demo/components/editor-page.tsx
+ * -- kept literal, see topbar.css's matching media query for why. */
+@media (max-width: 600px) {
+  .panel-left {
+    width: 100%;
+    min-width: 0;
+    border-right: none;
+    /* Hidden by default; the data-active-tab rules below re-show it for
+     * the Code/Config tabs. display:none (not visibility:hidden or
+     * opacity:0) so the inactive panel takes no layout space at all,
+     * rather than being merely invisible while still forcing overflow. */
+    display: none;
+  }
+
+  .panel-right {
+    width: 100%;
+    /* Same "not just visually hidden" reasoning as .panel-left above. */
+    display: none;
+  }
+
+  .main[data-active-tab='code'] .panel-left,
+  .main[data-active-tab='config'] .panel-left {
+    display: flex;
+  }
+
+  .main[data-active-tab='preview'] .panel-right {
+    display: flex;
+  }
+
+  /* The resize handle only makes sense when both panels are visible side
+   * by side -- with only one panel rendered at a time, hide it so it isn't
+   * shown, focusable, or draggable in single-panel mode. */
+  .resize-handle {
+    display: none;
+  }
+}
