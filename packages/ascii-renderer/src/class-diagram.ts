@@ -563,24 +563,36 @@ export function renderClassAscii(
     const group = levelGroups[lv]!
     if (group.length === 0) continue
 
-    // --- #970's block-based x-assignment (issue #971) ---
+    // --- #970's block-based x-assignment (issues #971, #972) ---
     // docs/decisions/ascii-class-diagram-x-coordinate-assignment-970.md.
     // Alignment blocks group classes at this level sharing the exact same
-    // parent-id set. This pass only computes a real desired position for a
-    // *singleton* block (no sibling here shares its exact parent set) with
-    // exactly one *qualifying* (strictly-shallower) parent — the #964
-    // repro exactly: a lone child aligns its box center under its already-
-    // placed parent's box center (levels are processed top-down, so a
-    // qualifying parent is always already in `placed` by the time it's
-    // read here). Every other shape — no parents, a parent set that's
-    // entirely same-level (a rootless relationship cycle, whose members
-    // still record each other as "parents" in `parents` even though
-    // nothing above them ever resolves), or more than one class sharing a
-    // parent set — has "no resolvable parents" and keeps its plain
-    // left-to-right baseline position as its desired position; #972 adds
-    // real desired-position computation for those remaining shapes
-    // (spreading multiple same-parent siblings around their shared center,
-    // and multi-parent mean-of-centers convergence).
+    // parent-id set, processed as a unit. A block's *qualifying* parents
+    // are the subset strictly shallower than this level — a parent at the
+    // same level (a rootless relationship cycle, whose members still
+    // record each other as "parents" in `parents` even though nothing
+    // above them ever resolves) never qualifies. A block with zero
+    // qualifying parents has "no resolvable parents" and every member
+    // keeps its plain left-to-right baseline position, computed
+    // individually (not as a joint unit — #971's exact per-class
+    // behavior, preserved verbatim for this shape, including when a
+    // no-resolvable-parents block's members happen not to be declaration-
+    // adjacent). A block with at least one qualifying parent computes a
+    // real desired center: the mean of its qualifying parents' own,
+    // already-placed box centers (a single qualifying parent's mean is
+    // just that parent's center — the #964 repro exactly, #971's case; a
+    // block of more than one class sharing that parent set spreads evenly
+    // by centering the block's *total* width on that shared center, #972's
+    // "multiple children of one parent" case; more than one qualifying
+    // parent averages their centers, #972's "converging edges" case).
+    // Either way, the block's desired *left* edge (its slot-space left,
+    // matching `currentX`'s role below) is `desiredCenter -
+    // floor(totalWidth / 2)` — floor chosen only for determinism. A single
+    // left-to-right compaction pass then resolves any collision between
+    // *any* two blocks' desired positions — universal across every block
+    // shape, not just multi-parent ones, since two independently-aligned
+    // singleton blocks can still want overlapping positions (#971) — by
+    // only ever pushing a block right of its desired position, never left,
+    // and never reordering blocks relative to each other.
     //
     // A class with no parents at all is always its own singleton block —
     // two unrelated roots must never be merged into one block just because
@@ -590,17 +602,35 @@ export function renderClassAscii(
       const pset = parents.get(id)
       return pset && pset.size > 0 ? [...pset].sort().join(',') : `root:${id}`
     }
-    const blockMemberCount = new Map<string, number>()
+    // Every member sharing a given block key, regardless of adjacency in
+    // `group` — looked up once a block is actually confirmed to have a
+    // shared center to align around (see the main loop below). Building
+    // this eagerly for every id up front, and processing every block's
+    // *entire* membership together the moment its first (in declaration
+    // order) member is reached — even for a block with no resolvable
+    // parents — used to silently reorder an unrelated class that was
+    // declared between two same-parent-set siblings ahead of it, moving it
+    // visually later than its own declaration position (caught in review
+    // on #972). The main loop below only merges members into one placement
+    // unit for a block that actually resolves to a shared center; a
+    // no-resolvable-parents "block" is never merged, so it can't reorder
+    // anything.
+    const blockMembers = new Map<string, string[]>()
     for (const id of group) {
       const key = blockKeyOf(id)
-      blockMemberCount.set(key, (blockMemberCount.get(key) ?? 0) + 1)
+      let members = blockMembers.get(key)
+      if (!members) {
+        members = []
+        blockMembers.set(key, members)
+      }
+      members.push(id)
     }
 
     // Baseline: today's plain left-to-right slot position for every class
     // in this level, computed exactly as the pre-#971 algorithm did — the
-    // fallback "desired position" for every block this pass doesn't
-    // resolve, and the starting point the compaction step below can only
-    // ever push right of, never left.
+    // fallback position for a no-resolvable-parents block's members, and
+    // the starting point the compaction step below can only ever push
+    // right of, never left.
     const baselineSlotLeft = new Map<string, number>()
     const slotWidthOf = new Map<string, number>()
     const leftPadOf = new Map<string, number>()
@@ -624,48 +654,13 @@ export function renderClassAscii(
     let currentX = 0
     let maxH = 0
 
-    for (const id of group) {
+    /** Places one class's box at slot-left `slotLeft`, advancing `currentX`/`maxH`/`maxSlotEnd`. */
+    const placeAt = (id: string, slotLeft: number): void => {
       const cls = classById.get(id)!
       const w = classBoxW.get(id)!
       const h = classBoxH.get(id)!
       const leftPad = leftPadOf.get(id)!
       const slotWidth = slotWidthOf.get(id)!
-
-      let desiredSlotLeft = baselineSlotLeft.get(id)!
-      if (blockMemberCount.get(blockKeyOf(id)) === 1) {
-        const pset = parents.get(id)
-        // `level.get(pid)!`: every relationship endpoint is guaranteed a
-        // `classById`/`level` entry (the parser's `ensureClass` auto-
-        // creates an implicit class for any id used only as a
-        // relationship endpoint, never just a dangling reference — see
-        // `classById.has(...)`'s own guards elsewhere in this file, which
-        // protect a *different* case), so this is never actually missing.
-        const qualifying = pset
-          ? [...pset].filter((pid) => level.get(pid)! < lv)
-          : []
-        if (qualifying.length === 1) {
-          // `placed.get(...)!`: `qualifying[0]` has a strictly-shallower
-          // level than `lv`, and this loop places every class of a level
-          // before moving to the next, so a strictly-shallower class is
-          // always already placed by the time this level is processed.
-          const parentPlaced = placed.get(qualifying[0]!)!
-          // "Center column" is always the box's own rendered center,
-          // never the reach-padded slot's — aligning to the slot center
-          // instead would visually misalign the boxes whenever a
-          // relationship's label overhang is asymmetric.
-          const desiredCenter =
-            parentPlaced.x + Math.floor(parentPlaced.width / 2)
-          desiredSlotLeft = desiredCenter - Math.floor(w / 2) - leftPad
-        }
-      }
-
-      // Compaction: a class may only be pushed right of its desired
-      // position (to avoid colliding with whatever was just placed before
-      // it), never left, and classes are never reordered relative to each
-      // other — `group` already preserves declaration order. `currentX`
-      // already carries the previous slot's right edge plus `hGap`, so
-      // this is exactly `max(desiredLeft, previousRightEdge + hGap, 0)`.
-      const slotLeft = Math.max(desiredSlotLeft, currentX, 0)
       placed.set(id, {
         cls,
         sections: classSections.get(id)!,
@@ -679,6 +674,102 @@ export function renderClassAscii(
       maxSlotEnd = Math.max(maxSlotEnd, slotLeft + slotWidth)
       currentX = slotLeft + slotWidth + hGap
       maxH = Math.max(maxH, h)
+    }
+
+    const placedThisLevel = new Set<string>()
+    for (const id of group) {
+      // Already placed as part of an earlier qualifying block's joint
+      // placement below (never true for a no-resolvable-parents id, which
+      // is always placed the moment the loop reaches it, in its own true
+      // declaration-order turn).
+      if (placedThisLevel.has(id)) continue
+
+      const key = blockKeyOf(id)
+      const pset = parents.get(id)
+      // `level.get(pid)!`: every relationship endpoint is guaranteed a
+      // `classById`/`level` entry (the parser's `ensureClass` auto-creates
+      // an implicit class for any id used only as a relationship endpoint,
+      // never just a dangling reference — see `classById.has(...)`'s own
+      // guards elsewhere in this file, which protect a *different* case),
+      // so this is never actually missing.
+      const qualifying = pset
+        ? [...pset].filter((pid) => level.get(pid)! < lv)
+        : []
+
+      if (qualifying.length === 0) {
+        // No resolvable parents: this id has no shared center to align
+        // around, so it is never merged into a joint block with the other
+        // members `blockKeyOf` groups it with — only *this* id is placed
+        // here, in its own true position in `group`'s declaration order,
+        // exactly matching #971's per-class behavior for this shape. Any
+        // other same-key member is placed independently, on its own later
+        // turn through this same loop — merging them together here would
+        // reorder whatever was declared between them ahead of its own
+        // declaration position (issue caught in #972's review).
+        const slotLeft = Math.max(baselineSlotLeft.get(id)!, currentX, 0)
+        placeAt(id, slotLeft)
+        placedThisLevel.add(id)
+        continue
+      }
+
+      // A block with a real shared center to align around *is* placed as
+      // a joint unit, gathering every member `blockKeyOf` groups with it
+      // regardless of adjacency in `group` — the whole reason to group
+      // same-parent-set siblings together in the first place.
+      const members = blockMembers.get(key)!
+
+      // `placed.get(...)!`: every id in `qualifying` has a strictly-
+      // shallower level than `lv`, and this loop places every class of a
+      // level before moving to the next, so a strictly-shallower class is
+      // always already placed by the time this level is processed.
+      // "Center column" is always a box's own rendered center, never the
+      // reach-padded slot's — aligning to the slot center instead would
+      // visually misalign the boxes whenever a relationship's label
+      // overhang is asymmetric.
+      const parentCenters = qualifying.map((pid) => {
+        const p = placed.get(pid)!
+        return p.x + Math.floor(p.width / 2)
+      })
+      const desiredCenter = Math.round(
+        parentCenters.reduce((sum, c) => sum + c, 0) / parentCenters.length,
+      )
+
+      let totalWidth = 0
+      for (let i = 0; i < members.length; i++) {
+        totalWidth += slotWidthOf.get(members[i]!)!
+        if (i < members.length - 1) totalWidth += hGap
+      }
+      // `totalWidth` is the *slot* span (every member's own reach padding
+      // included at both ends), but the thing that must visually center on
+      // `desiredCenter` is the *rendered box* span — from the first
+      // member's own box left edge to the last member's own box right
+      // edge, which excludes the outermost reach padding at each end (that
+      // padding only ever separates a box from a *neighbor*; at the
+      // block's own two ends there is no neighbor to separate from, so it
+      // just becomes asymmetric dead space that would otherwise skew the
+      // visible boxes off `desiredCenter` whenever the first member's
+      // leftPad differs from the last member's rightPad — e.g. one child
+      // has a long incoming label reserving room on its own left, the
+      // other has none). Subtracting them back out here, once, is cheaper
+      // than threading a separate "visible width" accumulator through the
+      // loop above (caught in #972's review).
+      const firstLeftPad = leftPadOf.get(members[0]!)!
+      const lastMember = members[members.length - 1]!
+      const lastRightPad =
+        slotWidthOf.get(lastMember)! -
+        leftPadOf.get(lastMember)! -
+        classBoxW.get(lastMember)!
+      const visibleWidth = totalWidth - firstLeftPad - lastRightPad
+      const blockDesiredLeft =
+        desiredCenter - firstLeftPad - Math.floor(visibleWidth / 2)
+      const blockActualLeft = Math.max(blockDesiredLeft, currentX, 0)
+
+      let memberX = blockActualLeft
+      for (const memberId of members) {
+        placeAt(memberId, memberX)
+        placedThisLevel.add(memberId)
+        memberX = currentX
+      }
     }
 
     currentY += maxH + vGap
