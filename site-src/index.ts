@@ -24,12 +24,12 @@ import {
   escapeJsonForScriptTag,
   buildSoftwareApplicationJsonLd,
   type SoftwareApplicationPackageInfo,
-} from './demo/format.ts'
-import { renderHtmlDocument } from './demo/render-html.ts'
-import { IndexPage } from './demo/components/index-page.tsx'
-import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { siteOutDir } from './scripts/site-out-dir.ts'
-import { generatePage } from './scripts/generate-page.ts'
+} from '../demo/format.ts'
+import { renderHtmlDocument } from '../demo/render-html.ts'
+import { IndexPage } from '../demo/components/index-page.tsx'
+import { bundleForBrowser } from '../scripts/vite-bundle.ts'
+import { siteOutDir } from '../scripts/site-out-dir.ts'
+import { generatePage } from '../scripts/generate-page.ts'
 
 /**
  * Bundle `demo/index-page-client.ts` for the browser (#759) — mirrors
@@ -44,7 +44,7 @@ import { generatePage } from './scripts/generate-page.ts'
  */
 async function bundleClientScript(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/index-page-client.ts', import.meta.url).pathname,
+    new URL('../demo/index-page-client.ts', import.meta.url).pathname,
     { minify: false },
   )
 }
@@ -61,7 +61,7 @@ async function bundleClientScript(): Promise<string> {
  */
 async function bundleIndexClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/index-client.tsx', import.meta.url).pathname,
+    new URL('../demo/index-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -78,7 +78,7 @@ async function bundleIndexClient(): Promise<string> {
  */
 async function buildJsonLd(): Promise<string> {
   const pkgRaw = await readFile(
-    new URL('./package.json', import.meta.url),
+    new URL('../package.json', import.meta.url),
     'utf8',
   )
   const pkg = JSON.parse(pkgRaw) as SoftwareApplicationPackageInfo
@@ -102,7 +102,7 @@ async function generateHtml(clientScript: string): Promise<string> {
   )
 }
 
-const outDir = siteOutDir(import.meta.url)
+const outDir = siteOutDir()
 
 const [indexClientScript, clientJs] = await Promise.all([
   bundleIndexClient(),

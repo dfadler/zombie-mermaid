@@ -33,19 +33,19 @@ import { readdir, readFile, rm } from 'node:fs/promises'
 import { Marked, type Tokens } from 'marked'
 import { createElement } from 'react'
 import { createHighlighter, type Highlighter } from 'shiki'
-import { escapeHtml } from './demo/format.ts'
-import { renderHtmlDocument } from './demo/render-html.ts'
+import { escapeHtml } from '../demo/format.ts'
+import { renderHtmlDocument } from '../demo/render-html.ts'
 import {
   BLOG_DESCRIPTION,
   BlogIndexPage,
   BlogPostPage,
-} from './demo/components/blog-page.tsx'
-import { sharedPageCss } from './demo/components/shared-page-css.tsx'
-import { DEFAULT_SWATCH } from './demo/components/theme-picker.tsx'
-import { renderMermaidSVG } from './src/index.ts'
-import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { siteOutDir } from './scripts/site-out-dir.ts'
-import { generatePage } from './scripts/generate-page.ts'
+} from '../demo/components/blog-page.tsx'
+import { sharedPageCss } from '../demo/components/shared-page-css.tsx'
+import { DEFAULT_SWATCH } from '../demo/components/theme-picker.tsx'
+import { renderMermaidSVG } from '../src/index.ts'
+import { bundleForBrowser } from '../scripts/vite-bundle.ts'
+import { siteOutDir } from '../scripts/site-out-dir.ts'
+import { generatePage } from '../scripts/generate-page.ts'
 
 /**
  * A fenced code block tagged with this language renders as its
@@ -76,8 +76,8 @@ const CODE_THEME = 'github-dark'
 /** The live site's base URL — matches pages.ts's SITE_URL (see that file's header comment). */
 const SITE_URL = 'https://dfadler.github.io/zombie-mermaid'
 
-const POSTS_DIR = new URL('./blog-posts/', import.meta.url)
-const OUT_DIR = new URL('./blog/', siteOutDir(import.meta.url))
+const POSTS_DIR = new URL('../blog-posts/', import.meta.url)
+const OUT_DIR = new URL('./blog/', siteOutDir())
 
 /** blog/index.html and blog/feed.xml already own these URLs. */
 const RESERVED_SLUGS = new Set(['index', 'feed'])
@@ -388,7 +388,7 @@ function rfc822Date(isoDate: string): string {
  */
 async function bundleBlogPostClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/blog-post-client.tsx', import.meta.url).pathname,
+    new URL('../demo/blog-post-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -398,7 +398,7 @@ async function bundleBlogPostClient(): Promise<string> {
  * doc comment for the identical reasoning. */
 async function bundleBlogIndexClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/blog-index-client.tsx', import.meta.url).pathname,
+    new URL('../demo/blog-index-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -419,7 +419,7 @@ async function main(): Promise<void> {
   // chrome, which blog-page.tsx no longer renders now that it uses the
   // shared Nav/Footer instead.
   const blogCss = await readFile(
-    new URL('./demo/blog.css', import.meta.url),
+    new URL('../demo/blog.css', import.meta.url),
     'utf8',
   )
   await generatePage({
@@ -526,7 +526,7 @@ ${feedItems}
   })
 
   // -- Append to the sitemap.xml pages.ts already wrote --
-  const sitemapPath = new URL('./sitemap.xml', siteOutDir(import.meta.url))
+  const sitemapPath = new URL('./sitemap.xml', siteOutDir())
   const existingSitemap = await readFile(sitemapPath, 'utf8')
   const newUrlLines = sitemapUrls
     .map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`)

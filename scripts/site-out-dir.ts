@@ -1,13 +1,18 @@
 /**
  * Resolves the directory a site generator writes its *output* into.
  *
- * Each of the six one-shot site generators (index.ts, editor.ts,
- * fork-fixes.ts, pages.ts, blog.ts, dashboard.ts) defaults to writing next
- * to itself — resolved relative to its own `import.meta.url`, i.e. the
- * repo root. `pnpm run dev` (vite.config.ts) and the standalone per-page
- * scripts (`pnpm run samples`/`editor`/`pages`/`blog`/`dashboard`/
- * `fork-fixes`) all depend on that default: they read generated output
- * straight from the repo root without passing anything special.
+ * Each of the six one-shot site generators (site-src/index.ts,
+ * site-src/editor.ts, site-src/fork-fixes.ts, site-src/pages.ts,
+ * site-src/blog.ts, site-src/dashboard.ts) defaults to writing to the repo
+ * root — deliberately *not* resolved relative to the generator's own
+ * `import.meta.url` (that would land in `site-src/` since #995 moved these
+ * generators there), but relative to this file's own location instead
+ * (`scripts/`, one level under the repo root), so the default stays stable
+ * regardless of which directory a generator itself lives in. `pnpm run dev`
+ * (vite.config.ts) and the standalone per-page scripts (`pnpm run
+ * samples`/`editor`/`pages`/`blog`/`dashboard`/`fork-fixes`) all depend on
+ * that default: they read generated output straight from the repo root
+ * without passing anything special.
  *
  * Setting the `SITE_OUT_DIR` env var (a path, absolute or resolved
  * relative to `process.cwd()`) redirects every generator's *output* to
@@ -19,13 +24,24 @@
  * `build:site` (package.json) sets `SITE_OUT_DIR=site` so every generator
  * writes directly into `site/`, eliminating the old
  * generate-at-repo-root-then-`mv` chain — see #829.
+ *
+ * Takes no arguments: prior to #995 this resolved the no-override default
+ * relative to a `generatorUrl` parameter (each caller passed its own
+ * `import.meta.url`), which is exactly the assumption the site-src/ move
+ * invalidated. Callers still exist only to compose paths off the returned
+ * base (`new URL('./relative/path', siteOutDir())`); trim any leftover
+ * `import.meta.url` argument at a call site rather than reintroducing it.
  */
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-export function siteOutDir(generatorUrl: string | URL): URL {
+/** Repo root, resolved relative to this file's own location (`scripts/`),
+ *  not the calling generator's — see the module comment above. */
+const REPO_ROOT = new URL('../', import.meta.url)
+
+export function siteOutDir(): URL {
   const override = process.env.SITE_OUT_DIR
-  if (!override) return new URL('./', generatorUrl)
+  if (!override) return REPO_ROOT
 
   const abs = resolve(process.cwd(), override)
   // The trailing slash is load-bearing: every caller does

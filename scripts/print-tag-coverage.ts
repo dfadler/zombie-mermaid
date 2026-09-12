@@ -7,7 +7,7 @@
  *
  * Usage: tsx scripts/print-tag-coverage.ts
  */
-import { samples } from '../samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
 import { TAG_RULES } from '../demo/diagram-tags.ts'
 
 for (const rule of TAG_RULES) {

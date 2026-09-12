@@ -7,7 +7,7 @@
  * even though vitest runs it happily.
  */
 import { describe, it, expect } from 'vitest'
-import { samples } from '../samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
 
 describe('docs/guides/samples.md sample counts', () => {
   /**

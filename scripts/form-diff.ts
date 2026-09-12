@@ -42,9 +42,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { renderMermaidASCII } from '../src/index.ts'
-import { samples, type Sample } from '../samples-data.ts'
+import { samples, type Sample } from '../site-src/samples-data.ts'
 import { escapeHtml } from '../demo/format.ts'
-import { asciiToHtml } from '../ascii-html.ts'
+import { asciiToHtml } from '../site-src/ascii-html.ts'
 import { startRealMermaid, renderRealMermaidSvg } from './lib/real-mermaid.ts'
 
 const categoryArg = process.argv.find((a) => a.startsWith('--category='))

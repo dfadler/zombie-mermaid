@@ -15,7 +15,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import { asciiToHtml } from '../../ascii-html.ts'
+import { asciiToHtml } from '../../site-src/ascii-html.ts'
 import {
   HERO_MERMAID_SOURCE,
   HeroCodePanel,

@@ -26,7 +26,7 @@
  */
 
 import { writeFile } from 'node:fs/promises'
-import { samples } from '../samples-data.ts'
+import { samples } from '../site-src/samples-data.ts'
 import { splitStatements, detectDiagramType } from '@zombie-mermaid/core'
 
 const jsonArg = process.argv.find((a) => a.startsWith('--json='))

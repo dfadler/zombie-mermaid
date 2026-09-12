@@ -27,7 +27,7 @@
  * out of scope here, but the same "real matches only" instinct applies to
  * single tags too: an unused rule just never produces a page).
  */
-import type { Sample } from '../samples-data.ts'
+import type { Sample } from '../site-src/samples-data.ts'
 
 export interface TagRule {
   /** URL slug, e.g. "subgraph" -> /diagrams/tag/subgraph.html. */

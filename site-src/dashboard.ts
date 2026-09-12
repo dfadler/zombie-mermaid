@@ -37,17 +37,17 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { createElement } from 'react'
-import dashboardData from './demo/dashboard-data.json' with { type: 'json' }
-import { DashboardPage } from './demo/components/dashboard-page.tsx'
-import { sharedPageCss } from './demo/components/shared-page-css.tsx'
+import dashboardData from '../demo/dashboard-data.json' with { type: 'json' }
+import { DashboardPage } from '../demo/components/dashboard-page.tsx'
+import { sharedPageCss } from '../demo/components/shared-page-css.tsx'
 import {
   parseDashboardData,
   type DashboardData,
-} from './demo/dashboard-model.ts'
-import { renderHtmlDocument } from './demo/render-html.ts'
-import { bundleForBrowser } from './scripts/vite-bundle.ts'
-import { siteOutDir } from './scripts/site-out-dir.ts'
-import { generatePage } from './scripts/generate-page.ts'
+} from '../demo/dashboard-model.ts'
+import { renderHtmlDocument } from '../demo/render-html.ts'
+import { bundleForBrowser } from '../scripts/vite-bundle.ts'
+import { siteOutDir } from '../scripts/site-out-dir.ts'
+import { generatePage } from '../scripts/generate-page.ts'
 
 /**
  * Bundle `demo/dashboard-client.tsx` (zombie-mermaid#799's hydration
@@ -82,7 +82,7 @@ import { generatePage } from './scripts/generate-page.ts'
  */
 async function bundleDashboardClient(): Promise<string> {
   return bundleForBrowser(
-    new URL('./demo/dashboard-client.tsx', import.meta.url).pathname,
+    new URL('../demo/dashboard-client.tsx', import.meta.url).pathname,
     { minify: true },
   )
 }
@@ -95,7 +95,7 @@ export {
   type DashboardData,
   type RepoStats,
   type RescuedIssue,
-} from './demo/dashboard-model.ts'
+} from '../demo/dashboard-model.ts'
 
 /**
  * Renders the complete dashboard document for `data`, styled by `css`.
@@ -125,7 +125,7 @@ export function renderDashboardHtml(
  */
 export async function generate(): Promise<string> {
   const [pageCss, clientScript] = await Promise.all([
-    readFile(new URL('./demo/dashboard.css', import.meta.url), 'utf8'),
+    readFile(new URL('../demo/dashboard.css', import.meta.url), 'utf8'),
     bundleDashboardClient(),
   ])
   const css = sharedPageCss(pageCss)
@@ -139,7 +139,7 @@ export async function generate(): Promise<string> {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const html = await generate()
   await generatePage({
-    outPath: new URL('./dashboard.html', siteOutDir(import.meta.url)),
+    outPath: new URL('./dashboard.html', siteOutDir()),
     content: html,
   })
 }

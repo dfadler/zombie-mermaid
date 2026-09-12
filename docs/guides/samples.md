@@ -35,7 +35,7 @@ browser.
 There is no "browse all the samples" experience anymore, in the browser or
 otherwise. The fuller sample library this section used to describe —
 roughly 90 diagrams covering every shape, edge type, and theme combination —
-still exists in the repo as [`samples-data.ts`](../../samples-data.ts), but
+still exists in the repo as [`samples-data.ts`](../../site-src/samples-data.ts), but
 it now only feeds the internal visual-test suite and
 `scripts/visual-diff.ts`'s local before/after report (see
 [CONTRIBUTING.md](../../CONTRIBUTING.md)); it isn't rendered anywhere on the
