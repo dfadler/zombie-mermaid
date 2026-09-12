@@ -136,7 +136,8 @@
     "fork-fixes": "tsx fork-fixes.ts",
     "dashboard": "tsx dashboard.ts",
     "dashboard:data": "tsx scripts/generate-dashboard-data.ts",
-    "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts"
+    "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
+    "audit:responsive": "tsx scripts/audit-responsive.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
