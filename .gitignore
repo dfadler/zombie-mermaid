@@ -13,6 +13,7 @@ fork-fixes.html
 diagrams/
 sitemap.xml
 dashboard.html
+xychart-test.html
 
 # index.ts's bundled client script (demo/index-page-client.ts, #759),
 # alongside index.html above -- mirrors diagrams/assets/ and blog/assets/,
