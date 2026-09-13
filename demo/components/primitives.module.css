@@ -24,6 +24,23 @@
   color: var(--cyan);
 }
 
-.mono {
+/*
+ * `body` in the selector is load-bearing, not decorative: a rendered SVG's
+ * own embedded <style> (packages/core/src/theme.ts's `.mono { font-family:
+ * 'JetBrains Mono', 'SF Mono', ... }`, present whenever the current sample's
+ * theme has a mono font configured — e.g. a class diagram's method
+ * signatures) isn't scoped to that <svg> — it's a plain global <style> tag
+ * inlined into the page body via `dangerouslySetInnerHTML`, so its bare
+ * `.mono` selector matches every `.mono`-classed element on the whole page,
+ * ASCII output included. That selector ties this rule's specificity exactly
+ * (both single-class), so whichever `<style>` tag is later in the document
+ * wins — always the SVG's, since it's inlined into body content after this
+ * page-level <style>. `body .mono` breaks that tie in this rule's favor
+ * regardless of document order, so every `.mono` consumer (ASCII wells, the
+ * breadcrumb, install pills, theme pickers, …) reliably gets the
+ * self-hosted `--font-mono` this repo now ships — see
+ * docs/decisions/ascii-browser-font-investigation-978.md.
+ */
+body .mono {
   font-family: var(--font-mono);
 }

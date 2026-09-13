@@ -7,6 +7,15 @@ considered — are posted on
 rather than carried inline here; this doc keeps only the decision and its
 consequences.
 
+**Status: implemented.** Recommendations 1-4 below shipped in
+[PR #1059](https://github.com/dfadler/zombie-mermaid/pull/1059), which also
+found and fixed two real bugs this investigation didn't anticipate — an
+SVG-embedded `.mono` style cascading over the page's own `.mono` on pages
+showing both SVG and ASCII output at once, and a font subset missing the
+default renderer's arrowhead/marker glyphs. The "Consequences" section
+below is left as originally written, describing this PR's own smaller
+scope at the time — see #1059 for what actually shipped.
+
 ## Context
 
 #978 asks whether this repo should ship a small, self-hosted, purpose-built

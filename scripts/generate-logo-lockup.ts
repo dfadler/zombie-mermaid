@@ -52,12 +52,12 @@ async function main(): Promise<void> {
   const dark = lockupSvg('#eef1fb')
 
   await writeFile(
-    new URL('../logo-lockup-light.svg', import.meta.url),
+    new URL('../public/logo-lockup-light.svg', import.meta.url),
     light,
     'utf8',
   )
   await writeFile(
-    new URL('../logo-lockup-dark.svg', import.meta.url),
+    new URL('../public/logo-lockup-dark.svg', import.meta.url),
     dark,
     'utf8',
   )
