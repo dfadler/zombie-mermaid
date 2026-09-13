@@ -51,7 +51,7 @@
  *    element — so `applyTheme()` re-themes it by replacing
  *    `#theme-showcase-ascii`'s whole `innerHTML` with that theme's
  *    pre-rendered entry, rather than swapping a CSS variable.
- * 4. **Zoom control: scale (#987) + pan (#988)** —
+ * 4. **Zoom control: scale (#987), pan (#988), and pinch-zoom** —
  *    `initThemeShowcaseZoomControl()` wires a button next to the output
  *    toggle that discloses a range slider (`#theme-showcase-scale-panel`),
  *    mirroring the theme picker's own trigger/panel disclosure above but
@@ -61,15 +61,18 @@
  *    `.theme-showcase-output-body` rule reads via `var()` to apply
  *    `transform: translate(...) scale(n)` — the same "swap a variable, let
  *    CSS do the rest" technique {@link applyTheme} already uses for
- *    `--tsd-bg` etc. The same function also wires mouse-drag, single-finger
- *    touch-drag, and trackpad two-finger wheel panning once zoomed past
- *    100%, writing `--tsd-pan-x`/`--tsd-pan-y` (the `translate(...)` half of
- *    that same rule) — clamped so the zoomed content's edge never pans past
- *    `#theme-showcase-diagram-card`'s own visible box. Both apply to
+ *    `--tsd-bg` etc. The same function also wires mouse-drag and single-
+ *    finger touch-drag panning once zoomed past 100% (writing
+ *    `--tsd-pan-x`/`--tsd-pan-y`, the `translate(...)` half of that same
+ *    rule, clamped so the zoomed content's edge never pans past
+ *    `#theme-showcase-diagram-card`'s own visible box), plus two-finger
+ *    touch pinch-to-zoom and trackpad ctrl/cmd-wheel pinch-to-zoom (both
+ *    drive the slider directly, so the displayed percentage always
+ *    matches), and trackpad two-finger wheel panning. All of it applies to
  *    whichever output (svg or ASCII `<pre>`) is currently visible, since
  *    both live inside that one wrapper. See `initThemeShowcaseZoomControl`'s
- *    own doc comment for why scale and pan share one function instead of
- *    splitting pan out on its own.
+ *    own doc comment for why scale, pan, and pinch-zoom share one function
+ *    instead of splitting into separate ones.
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
@@ -506,6 +509,42 @@ function initThemeShowcaseOutputToggle(onAsciiShown?: () => void): void {
  */
 const SCALE_MIN = 0.5
 const SCALE_MAX = 2.5
+/** Mirrors the slider's own `step={0.1}` JSX attribute -- see `SCALE_MIN`'s own comment on why this stays a mirrored constant rather than a shared import. A pinch or ctrl-wheel gesture computes a continuous scale value, but the slider element itself snaps any `.value` assignment to the nearest step -- without matching that here, the slider thumb's visible position could drift from the `--tsd-scale`/label value a gesture just set. */
+const SCALE_STEP = 0.1
+
+/**
+ * Trackpad pinch-to-zoom sensitivity for a ctrl/cmd-wheel event's `deltaY`
+ * (zombie-mermaid#988's gesture follow-up) -- the exact value
+ * `output-panel-viewport.ts`'s own `WHEEL_ZOOM_SENSITIVITY` uses, per that
+ * file's comment: a naive 1:1 `deltaY` reads as sluggish for this gesture,
+ * confirmed there by hands-on feedback after shipping that feature. Not
+ * imported from there (see `pointerDistance`/`pointerMidpoint` below for
+ * why this file can't import from that module at all).
+ */
+const WHEEL_ZOOM_SENSITIVITY = 0.997
+
+interface Point {
+  x: number
+  y: number
+}
+
+/**
+ * Euclidean distance between two points -- the pinch gesture's zoom
+ * signal. Same one-line math as `output-panel-viewport.ts`'s own exported
+ * `pointerDistance()`, duplicated rather than imported: that module's
+ * top-level `import ... from 'react'` (for its `useOutputPanelViewport`
+ * hook) would drag React into this file's bundle the moment anything is
+ * imported from it, even just these two pure functions -- exactly what
+ * this file's own header comment says to keep out.
+ */
+function pointerDistance(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y)
+}
+
+/** Midpoint between two points -- the pinch gesture's pan signal. Same math as `output-panel-viewport.ts`'s own `pointerMidpoint()`; see `pointerDistance` above for why it's duplicated, not imported. */
+function pointerMidpoint(a: Point, b: Point): Point {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+}
 
 /** `1` (100%) reads as a whole number; anything else keeps one decimal's worth of precision (matches the slider's own `step={0.1}`) without ever showing more than that. */
 function formatScalePercent(scale: number): string {
@@ -524,43 +563,44 @@ function formatScalePercent(scale: number): string {
  * `demo/components/index-page.tsx` to apply `transform: translate(...)
  * scale(n)`) and updates `#theme-showcase-scale-value`'s label to match.
  *
- * Also wires that same element's pan support (zombie-mermaid#988), sharing
- * this function rather than splitting into its own
- * `initThemeShowcasePan()`: pan's clamp range depends on the *live* scale
- * value (how far the zoomed content actually overflows
- * `#theme-showcase-diagram-card`'s box), so it needs the same `body`/`card`
- * references and must re-run its bounds check every time the slider's
- * `input` handler changes the scale — coordinating that across two
- * independent functions would mean either a second DOM lookup for state
- * that already lives here, or a custom event just to hand off "scale
- * changed." Two input paths, both writing to the same `panX`/`panY` state
- * and clamped to the same `maxPanX`/`maxPanY`:
- *   - mouse click-drag and single-finger touch-drag: one Pointer Event
- *     listener set (`pointerdown`/`pointermove`/`pointerup`/
- *     `pointercancel`), the same mouse+touch unification
- *     `output-panel-viewport.ts`'s `useOutputPanelViewport` already uses for
- *     the fullscreen diagram viewer's own pan+pinch — a more directly
- *     applicable prior art than `editor-viewport.ts`'s `scrollLeft`/
- *     `scrollTop` drag (which #988 itself points to, but which doesn't
- *     compose with this panel's `transform: scale()` zoom — see that
- *     issue's own "related prior art" note). Not reused directly: that
- *     hook is a React hook (`useState`/`useLayoutEffect`), and this section
- *     stays outside React hydration on purpose (see this file's header
- *     comment) — plus it self-owns zoom state via buttons, where this panel
- *     needs pan clamped to an *externally* slider-driven scale, and
- *     `output-panel-viewport.ts`'s own panning is deliberately unclamped
- *     (fine for its full-viewport overlay, not for this small showcase
- *     card). Only ever tracks one active pointer — a second simultaneous
- *     touch is ignored rather than treated as a pinch gesture, since #988's
- *     own scope is "single-finger drag" for touch, not pinch-to-zoom.
- *   - trackpad two-finger pan: a `wheel` event with `ctrlKey` false —
- *     every evergreen browser sets `ctrlKey` on the `wheel` event a
- *     trackpad's pinch-zoom gesture fires, and #987's slider is this
- *     panel's only zoom control, so a `ctrlKey` wheel event is left alone
- *     for the browser's own page-zoom instead of being reinterpreted as
- *     pan.
- * Panning is a no-op below 100% scale — `maxPanX`/`maxPanY` are computed
- * from how much `#theme-showcase-output-body`'s current (scaled)
+ * Also wires that same element's pan (zombie-mermaid#988) and pinch-zoom
+ * support, sharing this function rather than splitting into
+ * `initThemeShowcasePan()`/`initThemeShowcaseGestures()`: pan's clamp range
+ * depends on the *live* scale value (how far the zoomed content actually
+ * overflows `#theme-showcase-diagram-card`'s box), pinch-zoom needs to
+ * drive the exact same slider + `setScale()` the `input` handler above
+ * uses, and both a pinch and a plain drag are just two states of the same
+ * `pointers` map below — splitting any of this out would mean either a
+ * second DOM lookup for state that already lives here, or a custom event
+ * just to hand off "scale changed" or "gesture started." Three input
+ * paths, all reading/writing the same `panX`/`panY`/`pointers` state:
+ *   - mouse click-drag, single-finger touch-drag, and two-finger touch
+ *     pinch-zoom: one Pointer Event listener set (`pointerdown`/
+ *     `pointermove`/`pointerup`/`pointercancel`), gesture inferred purely
+ *     from how many pointers are down (0/1/2) — the same `pointers`-map
+ *     convention `output-panel-viewport.ts`'s `useOutputPanelViewport`
+ *     already uses for the fullscreen diagram viewer's own pan+pinch (see
+ *     `pointerDistance`'s own comment above for why that module's pinch
+ *     math is duplicated here, not imported) — a more directly applicable
+ *     prior art than `editor-viewport.ts`'s `scrollLeft`/`scrollTop` drag
+ *     (which #988 itself points to, but which doesn't compose with this
+ *     panel's `transform: scale()` zoom — see that issue's own "related
+ *     prior art" note). Not reused directly: that hook is a React hook
+ *     (`useState`/`useLayoutEffect`), and this section stays outside React
+ *     hydration on purpose (see this file's header comment) — plus it
+ *     self-owns zoom state via buttons, where this panel needs pinch to
+ *     drive an *externally* slider-owned scale, and its own panning is
+ *     deliberately unclamped (fine for its full-viewport overlay, not for
+ *     this small showcase card).
+ *   - trackpad two-finger pan: a plain `wheel` event (`ctrlKey` false).
+ *   - trackpad pinch-to-zoom: a `wheel` event with `ctrlKey` true — every
+ *     evergreen browser reports a trackpad pinch gesture as a `ctrlKey`
+ *     wheel event, the same convention `editor-viewport.ts`'s own ctrl/cmd-
+ *     wheel zoom and `output-panel-viewport.ts`'s own wheel handling both
+ *     already use in this repo.
+ * A lone pointer's drag is a no-op below 100% scale (nothing to reveal
+ * yet) — `maxPanX`/`maxPanY` are computed from how much
+ * `#theme-showcase-output-body`'s current (scaled)
  * `getBoundingClientRect()` overflows the card's own, which is zero once
  * nothing is clipped — and re-clamping on every scale change is also what
  * snaps `panX`/`panY` back to `(0, 0)` automatically when the slider
@@ -655,15 +695,29 @@ function initThemeShowcaseZoomControl(): void {
     body.classList.toggle('pannable', maxPanX > 0 || maxPanY > 0)
   }
 
-  slider.addEventListener('input', () => {
-    const raw = parseFloat(slider.value)
-    const scale = Number.isFinite(raw)
-      ? Math.max(SCALE_MIN, Math.min(SCALE_MAX, raw))
+  /** Reads the slider's current value as a number, matching the fallback `formatScalePercent`'s caller already relies on for a malformed/absent value. */
+  const currentScale = (): number => {
+    const raw = Number.parseFloat(slider.value)
+    return Number.isFinite(raw) ? raw : 1
+  }
+
+  const setScale = (scale: number): void => {
+    // Math.round(x * 10) / 10 rather than Math.round(x / SCALE_STEP) *
+    // SCALE_STEP -- both snap to the same 0.1 step, but the division form
+    // is more exposed to floating-point rounding error for a step this
+    // small (confirmed while building this: it occasionally produced a
+    // value like 1.7999999999999998).
+    const stepped = Number.isFinite(scale)
+      ? Math.round(scale * (1 / SCALE_STEP)) / (1 / SCALE_STEP)
       : 1
-    body.style.setProperty('--tsd-scale', String(scale))
-    valueLabel.textContent = formatScalePercent(scale)
+    const clamped = Math.max(SCALE_MIN, Math.min(SCALE_MAX, stepped))
+    slider.value = String(clamped)
+    body.style.setProperty('--tsd-scale', String(clamped))
+    valueLabel.textContent = formatScalePercent(clamped)
     recomputePanBounds()
-  })
+  }
+
+  slider.addEventListener('input', () => setScale(currentScale()))
 
   // Recomputes pan bounds on any resize of the card itself (a breakpoint
   // change, say) that isn't driven by the scale slider -- mirrors this
@@ -672,70 +726,131 @@ function initThemeShowcaseZoomControl(): void {
   // needs `maxPanX`/`maxPanY` (and thus a possible re-clamp) refreshed.
   new ResizeObserver(recomputePanBounds).observe(card)
 
-  // Mouse click-drag and single-finger touch-drag through one Pointer Event
-  // listener set (pointerdown/pointermove/pointerup/pointercancel), the same
-  // unification `output-panel-viewport.ts`'s useOutputPanelViewport uses for
-  // its fullscreen pan+pinch (a more mature prior art than editor-viewport.ts
-  // for this exact "translate() instead of scrollLeft/scrollTop" problem --
-  // see this function's own doc comment). Only ever tracks one active
-  // pointer: a second simultaneous touch is ignored outright rather than
-  // treated as a pinch gesture, since #988's own scope is "single-finger
-  // drag" for touch -- pinch-to-zoom isn't requested here, and this panel's
-  // only zoom control is #987's slider.
-  let activePointerId: number | null = null
-  let dragStart: { x: number; y: number; panX: number; panY: number } | null =
+  // Mouse click-drag, single-finger touch-drag, and two-finger touch
+  // pinch-zoom through one Pointer Event listener set (pointerdown/
+  // pointermove/pointerup/pointercancel) -- the same pointers-map
+  // convention `output-panel-viewport.ts`'s `useOutputPanelViewport` uses
+  // for its fullscreen pan+pinch (gesture inferred purely from how many
+  // pointers are currently down; see `pointerDistance`'s own comment above
+  // for why that module's logic is duplicated here, not imported).
+  // Adapted to drive #987's slider directly (via `setScale`) rather than
+  // owning zoom state independently, so the displayed percentage and
+  // slider thumb always match a pinch-driven zoom too, and to clamp pan to
+  // this panel's own box (that hook's own panning is deliberately
+  // unclamped -- fine for its full-viewport overlay, not for this small
+  // showcase card).
+  const pointers = new Map<number, Point>()
+  let panStart: { x: number; y: number; panX: number; panY: number } | null =
     null
+  let pinchStart: {
+    dist: number
+    mid: Point
+    scale: number
+    panX: number
+    panY: number
+  } | null = null
+
+  // (Re)snapshots the in-progress gesture from whatever pointers are
+  // currently down -- called both on a fresh pointerdown and when a pinch
+  // drops back to a single finger, so the remaining finger keeps panning
+  // from exactly where it already was instead of jumping (mirrors
+  // output-panel-viewport.ts's own beginGesture()). A single pointer only
+  // starts a pan when there's already somewhere to pan to (`maxPanX`/
+  // `maxPanY` > 0) -- unlike a pinch, which can always zoom in from
+  // scratch, a lone finger doing nothing at 100% scale has nothing to do.
+  const beginGesture = (): void => {
+    panStart = null
+    pinchStart = null
+    const [a, b] = pointers.values()
+    if (a && b) {
+      pinchStart = {
+        dist: pointerDistance(a, b),
+        mid: pointerMidpoint(a, b),
+        scale: currentScale(),
+        panX,
+        panY,
+      }
+    } else if (a && !b && (maxPanX > 0 || maxPanY > 0)) {
+      panStart = { x: a.x, y: a.y, panX, panY }
+    }
+  }
 
   const onPointerDown = (e: PointerEvent): void => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    if (activePointerId !== null) return
-    if (maxPanX <= 0 && maxPanY <= 0) return
-    activePointerId = e.pointerId
-    dragStart = { x: e.clientX, y: e.clientY, panX, panY }
+    if (pointers.size >= 2) return // no more than two active pointers -- a third finger is ignored
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
     try {
       // jsdom (this repo's DOM test environment) implements no
       // setPointerCapture at all, and a real browser can still throw for a
       // pointerId it doesn't recognize as currently active -- see
       // output-panel-viewport.ts's own identical try/catch for why this
       // stays optional rather than a hard dependency (losing capture just
-      // makes the drag slightly less forgiving about leaving `body`'s
-      // bounds, it doesn't stop panning from working).
+      // makes the gesture slightly less forgiving about leaving `body`'s
+      // bounds, it doesn't stop panning/pinching from working).
       body.setPointerCapture?.(e.pointerId)
     } catch {
       // See comment above -- capture is a nice-to-have.
     }
+    beginGesture()
+    if (!panStart && !pinchStart) return
     body.classList.add('panning')
-    e.preventDefault() // stop native text/image drag-select while panning
+    e.preventDefault() // stop native text/image drag-select while panning/pinching
   }
   const onPointerMove = (e: PointerEvent): void => {
-    if (e.pointerId !== activePointerId || !dragStart) return
-    panX = dragStart.panX + (e.clientX - dragStart.x)
-    panY = dragStart.panY + (e.clientY - dragStart.y)
-    clampPan()
-    applyPan()
-    e.preventDefault()
+    if (!pointers.has(e.pointerId)) return
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const [a, b] = pointers.values()
+    if (pinchStart && a && b) {
+      const start = pinchStart
+      setScale(start.scale * (pointerDistance(a, b) / start.dist))
+      const mid = pointerMidpoint(a, b)
+      panX = start.panX + (mid.x - start.mid.x)
+      panY = start.panY + (mid.y - start.mid.y)
+      clampPan()
+      applyPan()
+      e.preventDefault()
+    } else if (panStart && a && !b) {
+      const start = panStart
+      panX = start.panX + (a.x - start.x)
+      panY = start.panY + (a.y - start.y)
+      clampPan()
+      applyPan()
+      e.preventDefault()
+    }
   }
-  const endPan = (e: PointerEvent): void => {
-    if (e.pointerId !== activePointerId) return
-    activePointerId = null
-    dragStart = null
-    body.classList.remove('panning')
+  const endGesture = (e: PointerEvent): void => {
+    if (!pointers.has(e.pointerId)) return
+    pointers.delete(e.pointerId)
+    // Restart from whatever's left (one finger, or none) rather than just
+    // clearing -- see beginGesture's own comment. A pinch dropping to one
+    // finger keeps panning from exactly where it was, not from a jump.
+    beginGesture()
+    if (pointers.size === 0) body.classList.remove('panning')
   }
 
   body.addEventListener('pointerdown', onPointerDown)
   body.addEventListener('pointermove', onPointerMove)
-  body.addEventListener('pointerup', endPan)
-  body.addEventListener('pointercancel', endPan)
+  body.addEventListener('pointerup', endGesture)
+  body.addEventListener('pointercancel', endGesture)
 
-  // Trackpad two-finger pan (#988): a plain wheel event, deliberately
-  // separate from the Pointer Event set above -- a trackpad swipe fires
-  // wheel events, never pointer events, mirroring output-panel-viewport.ts's
-  // own wheel listener registered alongside (not instead of) its pointer
-  // listeners.
+  // Trackpad gestures: a plain wheel event, deliberately separate from the
+  // Pointer Event set above -- a trackpad swipe/pinch fires wheel events,
+  // never pointer events, mirroring output-panel-viewport.ts's own wheel
+  // listener registered alongside (not instead of) its pointer listeners.
+  // `ctrlKey` is how every evergreen browser reports a trackpad pinch as a
+  // wheel event -- the same convention editor-viewport.ts's own ctrl/cmd-
+  // wheel zoom and output-panel-viewport.ts's own onWheel both already
+  // use, so a `ctrlKey` wheel now zooms (matching that established
+  // convention) rather than being left for the browser's own page-zoom;
+  // a plain wheel (#988) still pans.
   body.addEventListener(
     'wheel',
     (e) => {
-      if (e.ctrlKey) return // pinch-zoom trackpad gesture -- leave for the browser's own page-zoom
+      if (e.ctrlKey) {
+        setScale(currentScale() * Math.pow(WHEEL_ZOOM_SENSITIVITY, e.deltaY))
+        e.preventDefault()
+        return
+      }
       if (maxPanX <= 0 && maxPanY <= 0) return
       panX -= e.deltaX
       panY -= e.deltaY

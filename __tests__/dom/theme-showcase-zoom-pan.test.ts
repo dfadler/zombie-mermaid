@@ -278,10 +278,49 @@ describe('initThemeShowcaseZoomControl: pan (#988)', () => {
     expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('10px')
   })
 
-  it('ignores a second simultaneous pointer instead of pinching (#988 is single-finger drag only)', async () => {
-    mockOverflow(200, 100)
+  it('a two-finger touch pinch zooms from 100% scale, keeping the slider and label in sync', async () => {
+    mockOverflow(0, 0) // nothing to pan yet -- proves pinch isn't gated by maxPanX/maxPanY the way a lone drag is
     await import('../../demo/index-page-client.ts')
-    setScale('2')
+
+    fireEvent.pointerDown(body(), {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 100,
+      clientY: 100,
+    })
+    fireEvent.pointerDown(body(), {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 200,
+      clientY: 100,
+    })
+    // Symmetric pinch-out about the same midpoint (150, 100) -- distance
+    // doubles (100 -> 200), midpoint doesn't move, isolating the zoom
+    // effect from any pan side effect.
+    fireEvent.pointerMove(body(), {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 50,
+      clientY: 100,
+    })
+    fireEvent.pointerMove(body(), {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 250,
+      clientY: 100,
+    })
+
+    expect(body().style.getPropertyValue('--tsd-scale')).toBe('2')
+    expect(slider().value).toBe('2')
+    expect(
+      document.getElementById('theme-showcase-scale-value')?.textContent,
+    ).toBe('200%')
+    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
+  })
+
+  it('a pinch also pans by how far its midpoint moves, clamped to maxPanX/maxPanY', async () => {
+    mockOverflow(200, 100) // maxPanX 100, maxPanY 50
+    await import('../../demo/index-page-client.ts')
 
     fireEvent.pointerDown(body(), {
       pointerId: 1,
@@ -292,25 +331,90 @@ describe('initThemeShowcaseZoomControl: pan (#988)', () => {
     fireEvent.pointerDown(body(), {
       pointerId: 2,
       pointerType: 'touch',
-      clientX: 50,
+      clientX: 100,
+      clientY: 0,
+    })
+    // Both fingers shift by the same +10000px -- distance (and thus scale)
+    // stays put, but the midpoint moves by 10000px, clamped to maxPanX.
+    fireEvent.pointerMove(body(), {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 10000,
       clientY: 0,
     })
     fireEvent.pointerMove(body(), {
       pointerId: 2,
       pointerType: 'touch',
-      clientX: 200,
+      clientX: 10100,
       clientY: 0,
     })
-    // Pointer 2 was never accepted as the active drag -- its move is ignored.
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
 
+    expect(body().style.getPropertyValue('--tsd-scale')).toBe('1')
+    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px')
+    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('0px')
+  })
+
+  it('dropping from two fingers to one continues panning from where it was, without a jump', async () => {
+    mockOverflow(200, 100) // maxPanX 100, maxPanY 50
+    await import('../../demo/index-page-client.ts')
+
+    fireEvent.pointerDown(body(), {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY: 0,
+    })
+    fireEvent.pointerDown(body(), {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 100,
+      clientY: 0,
+    })
     fireEvent.pointerMove(body(), {
       pointerId: 1,
       pointerType: 'touch',
-      clientX: 30,
+      clientX: 10000,
       clientY: 0,
     })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('30px')
+    fireEvent.pointerMove(body(), {
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 10100,
+      clientY: 0,
+    })
+    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px') // clamped, per the test above
+
+    fireEvent.pointerUp(body(), { pointerId: 2, pointerType: 'touch' })
+    // The remaining finger (id 1, last at x=10000) moves by -50 -- if
+    // beginGesture() restarted from a jump instead of the pan's actual
+    // current position, this would land somewhere other than 50px.
+    fireEvent.pointerMove(body(), {
+      pointerId: 1,
+      pointerType: 'touch',
+      clientX: 9950,
+      clientY: 0,
+    })
+    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('50px')
+  })
+
+  it('ctrl+wheel (trackpad pinch) zooms and keeps the slider/label in sync; a plain wheel still pans, not zooms', async () => {
+    mockOverflow(200, 100)
+    await import('../../demo/index-page-client.ts')
+    setScale('2') // something to pan into, so a plain wheel afterward has an observable effect
+
+    fireEvent.wheel(body(), { deltaY: -500, ctrlKey: true })
+    const scale = body().style.getPropertyValue('--tsd-scale')
+    expect(Number(scale)).toBeGreaterThan(2)
+    expect(slider().value).toBe(scale)
+    expect(
+      document.getElementById('theme-showcase-scale-value')?.textContent,
+    ).toBe(`${Math.round(Number(scale) * 100)}%`)
+
+    const panXBefore = body().style.getPropertyValue('--tsd-pan-x')
+    fireEvent.wheel(body(), { deltaX: 10, deltaY: 0, ctrlKey: false })
+    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-10px')
+    expect(body().style.getPropertyValue('--tsd-scale')).toBe(scale) // unchanged by the plain wheel
+    expect(panXBefore).not.toBe(body().style.getPropertyValue('--tsd-pan-x'))
   })
 
   it('a plain wheel event (trackpad two-finger pan) moves the content; ctrl+wheel (pinch-zoom) is left alone', async () => {
