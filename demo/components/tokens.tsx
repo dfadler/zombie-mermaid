@@ -23,6 +23,10 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
+import {
+  MONO_FONT_FACE_CSS,
+  MONO_FONT_FAMILY,
+} from './generated/mono-font-subset.ts'
 
 /* -----------------------------------------------------------------
  * Colour
@@ -106,14 +110,25 @@ export const ACCENTS = [
 export const DESIGN_FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap'
 
-/** The three font stacks, each with the canvas's own fallbacks. */
+/** The three font stacks, each with the canvas's own fallbacks.
+ *
+ * `mono` leads with {@link MONO_FONT_FAMILY} — the self-hosted, subsetted
+ * JetBrains Mono NL build `designTokensCss()` embeds via `@font-face`
+ * below — per docs/decisions/ascii-browser-font-investigation-978.md's
+ * recommendation 1/3: every page rendering ASCII output already reads
+ * `.mono`/`var(--font-mono)`, so pointing this one stack at the self-hosted
+ * family is the one change that fixes all of them, rather than a purely
+ * system-font stack that drifts per-viewer. The rest of the stack is
+ * unchanged, so a viewer whose browser can't load the embedded font (data:
+ * URIs are supported everywhere modern, but never say never) degrades
+ * exactly like it did before this change. */
 export const FONTS = {
   /** Headings and anything marked `.display`. */
   display: "'Space Grotesk', 'Plus Jakarta Sans', sans-serif",
   /** Body copy — the default for the whole page. */
   body: "'Plus Jakarta Sans', -apple-system, sans-serif",
   /** Code, CLI transcripts, and diagram source. */
-  mono: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+  mono: `'${MONO_FONT_FAMILY}', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace`,
 } as const
 
 /**
@@ -316,12 +331,20 @@ export const MEDIA = {
  * The colour half matches the design canvas's own `:root` exactly. The
  * `--font-*` half is this module's addition — the canvas repeats each stack
  * inline on `.dc-root` and `h1, h2, h3`; naming them changes no value.
+ *
+ * Also emits {@link MONO_FONT_FACE_CSS} ahead of the `:root` block — the
+ * `@font-face` rule embedding the self-hosted, subsetted JetBrains Mono NL
+ * build `FONTS.mono` names first (see that constant's doc comment). A
+ * `@font-face` rule can't live inside `:root {}` itself, so it's a sibling
+ * string rather than another custom property.
  */
 export function designTokensCss(): string {
   const colors = Object.entries(COLORS)
     .map(([name, value]) => `  ${name}: ${value};`)
     .join('\n')
-  return `:root {
+  return `${MONO_FONT_FACE_CSS}
+
+:root {
 ${colors}
   --font-display: ${FONTS.display};
   --font-body: ${FONTS.body};

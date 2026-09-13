@@ -22,17 +22,21 @@ const PANEL_MAX_WIDTH = '960px'
 
 /**
  * Cap on how long to wait for a mounted panel's web fonts (Inter, embedded
- * per-SVG by renderMermaidSVG; JetBrains Mono, from the injected demo
- * stylesheet) before screenshotting anyway.
+ * per-SVG by renderMermaidSVG; JetBrains Mono NL, embedded as a base64
+ * `@font-face` directly in the injected demo stylesheet — see
+ * demo/styles.css's `GENERATED MONO FONT FACE` block and
+ * scripts/build-mono-font-subset.ts) before screenshotting anyway.
  *
  * A screenshot taken while a web font is still loading captures the
  * fallback font mid-swap, which is exactly the kind of instability
  * `toMatchScreenshot()`'s stability detection keeps retrying against — on
- * a CI runner with a slow/blocked path to the Google Fonts CDN, every
- * single test in the file would otherwise burn its whole per-test timeout
- * retrying a page that never stabilizes. Capped, not awaited unconditionally,
- * so a fully broken network still produces a (fallback-font) screenshot
- * once, rather than hanging until Vitest's test timeout kills every test.
+ * a CI runner with a slow/blocked path to the Google Fonts CDN, Inter would
+ * otherwise make every single test in the file burn its whole per-test
+ * timeout retrying a page that never stabilizes (JetBrains Mono NL itself
+ * carries no such risk post-#978: the embedded data URI needs no network
+ * request at all). Capped, not awaited unconditionally, so a fully broken
+ * network still produces a (fallback-font) screenshot once, rather than
+ * hanging until Vitest's test timeout kills every test.
  */
 const FONT_WAIT_TIMEOUT_MS = 8000
 
