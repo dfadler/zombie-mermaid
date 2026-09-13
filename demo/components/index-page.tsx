@@ -447,8 +447,24 @@ function homePageCss(): string {
    initThemeShowcaseOutputToggle()) rather than React state, matching how
    the rest of this section's interactivity (the theme picker dropdown)
    already avoids pulling react-dom/server into the client bundle -- see
-   this file's own header comment. */
+   this file's own header comment.
+
+   position: relative + z-index: 2 are load-bearing, not decorative:
+   .theme-showcase-output-body (below) applies a translate()-then-scale()
+   transform, and any transform other than none gives an element its own
+   stacking context -- so once zoomed past 100% (#987) that body's
+   rendered box can grow past its own layout edge into this toggle row's
+   space, and being the *later* DOM sibling it would otherwise paint (and
+   hit-test) on top of these buttons despite this row visually sitting
+   "above" it in the card. Confirmed live: at 210% scale,
+   elementFromPoint() over the ASCII button returned the diagram svg, not
+   the button itself -- the scaled svg was silently swallowing the click.
+   Giving this row its own (unscaled) stacking context keeps it clickable
+   and on top regardless of how far the zoomed/panned (#988) content
+   bleeds toward it. */
 .theme-showcase-output-toggle {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
