@@ -477,20 +477,22 @@ function homePageCss(): string {
   border-radius: ${RADIUS.pill}px;
   padding: 2px;
 }
-/* -- Scale control (#987): a button that discloses a range slider, mirroring
-   .theme-showcase-picker's own trigger/panel disclosure pattern
-   (demo/index-page-client.ts's wireThemePicker) but scoped to a single
-   input -- no roving focus needed. Wired by
-   initThemeShowcaseScaleControl() in demo/index-page-client.ts, which
-   writes the slider's value to #theme-showcase-output-body's own
-   --tsd-scale custom property; .theme-showcase-output-body (below) reads it
-   via var() with a scale(1) fallback, the same "swap a variable, let CSS do
-   the rest" technique applyTheme() already uses for --tsd-bg etc. Zooms
-   from the center of the box (transform-origin: center, below) rather than
-   the top-left corner transform defaults to -- matching the issue's own
-   request. Deliberately no pan/scroll to reach content clipped by
-   .theme-showcase-diagram-card's own overflow: hidden once zoomed past 1 --
-   panning this panel is tracked separately, out of scope here, in #988. */
+/* -- Zoom control: scale (#987) + pan (#988). Scale is a button that
+   discloses a range slider, mirroring .theme-showcase-picker's own
+   trigger/panel disclosure pattern (demo/index-page-client.ts's
+   wireThemePicker) but scoped to a single input -- no roving focus needed.
+   Both scale and pan are wired by initThemeShowcaseZoomControl() in
+   demo/index-page-client.ts (one function -- see its own doc comment for
+   why), which writes to #theme-showcase-output-body's own --tsd-scale and
+   --tsd-pan-x/--tsd-pan-y custom properties; .theme-showcase-output-body
+   (below) reads them via var() with a translate(0, 0) scale(1) fallback,
+   the same "swap a variable, let CSS do the rest" technique applyTheme()
+   already uses for --tsd-bg etc. Zooms from the center of the box
+   (transform-origin: center, below) rather than the top-left corner
+   transform defaults to -- matching #987's own request. Pan (mouse drag,
+   single-finger touch, trackpad two-finger wheel) lets a visitor reach
+   content clipped by .theme-showcase-diagram-card's own overflow: hidden
+   once zoomed past 100%. */
 .theme-showcase-scale { position: relative; }
 .theme-showcase-scale-trigger {
   display: flex;
@@ -542,9 +544,17 @@ function homePageCss(): string {
    above for the --tsd-scale custom property this reads. */
 .theme-showcase-output-body {
   min-width: 0;
-  transform: scale(var(--tsd-scale, 1));
+  transform: translate(var(--tsd-pan-x, 0px), var(--tsd-pan-y, 0px)) scale(var(--tsd-scale, 1));
   transform-origin: center;
 }
+/* Pan cursor affordance (#988): .pannable is only set once
+   initThemeShowcaseZoomControl()'s recomputePanBounds() finds the zoomed
+   content actually overflows the card (i.e. there's somewhere to pan to) --
+   grab/grabbing mirrors common pan+zoom UI convention (maps, image
+   viewers). No cursor override at all below 100% scale, where a drag does
+   nothing. */
+.theme-showcase-output-body.pannable { cursor: grab; }
+.theme-showcase-output-body.pannable.panning { cursor: grabbing; }
 /* Toggled by data-output-mode instead of .theme-showcase-ascii itself, so
    the wrap's relatively-positioned box (needed to pin the fade overlays
    below to its edges) exists only while the ASCII panel is the visible
@@ -1024,10 +1034,11 @@ function ThemeShowcase() {
                 </button>
               </div>
               {/*
-                  Scale control (#987) -- see .theme-showcase-scale's own CSS
-                  comment above for the disclosure pattern and the
-                  --tsd-scale custom property this writes/reads. Wired by
-                  initThemeShowcaseScaleControl() in
+                  Zoom control: scale (#987) + pan (#988) -- see
+                  .theme-showcase-scale's own CSS comment above for the
+                  disclosure pattern and the --tsd-scale/--tsd-pan-x/
+                  --tsd-pan-y custom properties this writes/reads. Wired by
+                  initThemeShowcaseZoomControl() in
                   demo/index-page-client.ts. min/max/step/default here must
                   match that function's own SCALE_MIN/SCALE_MAX constants
                   -- there's no shared module between this build-time file

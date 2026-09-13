@@ -51,18 +51,25 @@
  *    element — so `applyTheme()` re-themes it by replacing
  *    `#theme-showcase-ascii`'s whole `innerHTML` with that theme's
  *    pre-rendered entry, rather than swapping a CSS variable.
- * 4. **Scale control (#987)** — `initThemeShowcaseScaleControl()` wires a
- *    button next to the output toggle that discloses a range slider
- *    (`#theme-showcase-scale-panel`), mirroring the theme picker's own
- *    trigger/panel disclosure above but scoped to one input, no roving
- *    focus needed. A slider `input` writes the chosen value to
- *    `#theme-showcase-output-body`'s `--tsd-scale` custom property, which
- *    `demo/components/index-page.tsx`'s `.theme-showcase-output-body` rule
- *    reads via `var()` to apply `transform: scale(n)` — the same
- *    "swap a variable, let CSS do the rest" technique {@link applyTheme}
- *    already uses for `--tsd-bg` etc. Applies to whichever output (svg or
- *    ASCII `<pre>`) is currently visible, since both live inside that one
- *    wrapper.
+ * 4. **Zoom control: scale (#987) + pan (#988)** —
+ *    `initThemeShowcaseZoomControl()` wires a button next to the output
+ *    toggle that discloses a range slider (`#theme-showcase-scale-panel`),
+ *    mirroring the theme picker's own trigger/panel disclosure above but
+ *    scoped to one input, no roving focus needed. A slider `input` writes
+ *    the chosen value to `#theme-showcase-output-body`'s `--tsd-scale`
+ *    custom property, which `demo/components/index-page.tsx`'s
+ *    `.theme-showcase-output-body` rule reads via `var()` to apply
+ *    `transform: translate(...) scale(n)` — the same "swap a variable, let
+ *    CSS do the rest" technique {@link applyTheme} already uses for
+ *    `--tsd-bg` etc. The same function also wires mouse-drag, single-finger
+ *    touch-drag, and trackpad two-finger wheel panning once zoomed past
+ *    100%, writing `--tsd-pan-x`/`--tsd-pan-y` (the `translate(...)` half of
+ *    that same rule) — clamped so the zoomed content's edge never pans past
+ *    `#theme-showcase-diagram-card`'s own visible box. Both apply to
+ *    whichever output (svg or ASCII `<pre>`) is currently visible, since
+ *    both live inside that one wrapper. See `initThemeShowcaseZoomControl`'s
+ *    own doc comment for why scale and pan share one function instead of
+ *    splitting pan out on its own.
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
@@ -514,18 +521,62 @@ function formatScalePercent(scale: number): string {
  * options is needed here). Dragging `#theme-showcase-scale-slider` writes
  * its value to `#theme-showcase-output-body`'s `--tsd-scale` custom
  * property (read by that element's own CSS rule in
- * `demo/components/index-page.tsx` to apply `transform: scale(n)`) and
- * updates `#theme-showcase-scale-value`'s label to match. A no-op (not a
- * thrown error) if any expected element is missing, matching
- * {@link initThemeShowcase}'s own defensive style.
+ * `demo/components/index-page.tsx` to apply `transform: translate(...)
+ * scale(n)`) and updates `#theme-showcase-scale-value`'s label to match.
+ *
+ * Also wires that same element's pan support (zombie-mermaid#988), sharing
+ * this function rather than splitting into its own
+ * `initThemeShowcasePan()`: pan's clamp range depends on the *live* scale
+ * value (how far the zoomed content actually overflows
+ * `#theme-showcase-diagram-card`'s box), so it needs the same `body`/`card`
+ * references and must re-run its bounds check every time the slider's
+ * `input` handler changes the scale — coordinating that across two
+ * independent functions would mean either a second DOM lookup for state
+ * that already lives here, or a custom event just to hand off "scale
+ * changed." Two input paths, both writing to the same `panX`/`panY` state
+ * and clamped to the same `maxPanX`/`maxPanY`:
+ *   - mouse click-drag and single-finger touch-drag: one Pointer Event
+ *     listener set (`pointerdown`/`pointermove`/`pointerup`/
+ *     `pointercancel`), the same mouse+touch unification
+ *     `output-panel-viewport.ts`'s `useOutputPanelViewport` already uses for
+ *     the fullscreen diagram viewer's own pan+pinch — a more directly
+ *     applicable prior art than `editor-viewport.ts`'s `scrollLeft`/
+ *     `scrollTop` drag (which #988 itself points to, but which doesn't
+ *     compose with this panel's `transform: scale()` zoom — see that
+ *     issue's own "related prior art" note). Not reused directly: that
+ *     hook is a React hook (`useState`/`useLayoutEffect`), and this section
+ *     stays outside React hydration on purpose (see this file's header
+ *     comment) — plus it self-owns zoom state via buttons, where this panel
+ *     needs pan clamped to an *externally* slider-driven scale, and
+ *     `output-panel-viewport.ts`'s own panning is deliberately unclamped
+ *     (fine for its full-viewport overlay, not for this small showcase
+ *     card). Only ever tracks one active pointer — a second simultaneous
+ *     touch is ignored rather than treated as a pinch gesture, since #988's
+ *     own scope is "single-finger drag" for touch, not pinch-to-zoom.
+ *   - trackpad two-finger pan: a `wheel` event with `ctrlKey` false —
+ *     every evergreen browser sets `ctrlKey` on the `wheel` event a
+ *     trackpad's pinch-zoom gesture fires, and #987's slider is this
+ *     panel's only zoom control, so a `ctrlKey` wheel event is left alone
+ *     for the browser's own page-zoom instead of being reinterpreted as
+ *     pan.
+ * Panning is a no-op below 100% scale — `maxPanX`/`maxPanY` are computed
+ * from how much `#theme-showcase-output-body`'s current (scaled)
+ * `getBoundingClientRect()` overflows the card's own, which is zero once
+ * nothing is clipped — and re-clamping on every scale change is also what
+ * snaps `panX`/`panY` back to `(0, 0)` automatically when the slider
+ * returns to 100%, with no separate "reset" path needed.
+ *
+ * A no-op (not a thrown error) if any expected element is missing,
+ * matching {@link initThemeShowcase}'s own defensive style.
  */
-function initThemeShowcaseScaleControl(): void {
+function initThemeShowcaseZoomControl(): void {
   const wrapper = document.getElementById('theme-showcase-scale')
   const trigger = document.getElementById('theme-showcase-scale-trigger')
   const panel = document.getElementById('theme-showcase-scale-panel')
   const sliderEl = document.getElementById('theme-showcase-scale-slider')
   const valueLabel = document.getElementById('theme-showcase-scale-value')
   const body = document.getElementById('theme-showcase-output-body')
+  const card = document.getElementById('theme-showcase-diagram-card')
   if (
     !wrapper ||
     !trigger ||
@@ -533,7 +584,8 @@ function initThemeShowcaseScaleControl(): void {
     !sliderEl ||
     !(sliderEl instanceof HTMLInputElement) ||
     !valueLabel ||
-    !body
+    !body ||
+    !card
   ) {
     return
   }
@@ -566,6 +618,43 @@ function initThemeShowcaseScaleControl(): void {
     setOpen(false)
   })
 
+  // Pan state (#988) -- see this function's own doc comment above for why
+  // it lives here instead of a separate initThemeShowcasePan().
+  let panX = 0
+  let panY = 0
+  let maxPanX = 0
+  let maxPanY = 0
+
+  const clampPan = (): void => {
+    panX = Math.min(maxPanX, Math.max(-maxPanX, panX))
+    panY = Math.min(maxPanY, Math.max(-maxPanY, panY))
+  }
+
+  const applyPan = (): void => {
+    body.style.setProperty('--tsd-pan-x', `${panX}px`)
+    body.style.setProperty('--tsd-pan-y', `${panY}px`)
+  }
+
+  /**
+   * `maxPanX`/`maxPanY` come from comparing the already-scaled
+   * `getBoundingClientRect()` of `body` against `card`'s own -- `translate`
+   * doesn't change an element's rendered width/height, only its position,
+   * so `bodyRect`'s size here already reflects the current `--tsd-scale`
+   * with no need to separately track or re-derive the raw scale factor.
+   * Re-clamping on every call is what snaps `panX`/`panY` back to
+   * `(0, 0)` once `maxPanX`/`maxPanY` shrink back to zero (scale back at
+   * 100%), with no separate reset path needed.
+   */
+  const recomputePanBounds = (): void => {
+    const cardRect = card.getBoundingClientRect()
+    const bodyRect = body.getBoundingClientRect()
+    maxPanX = Math.max(0, (bodyRect.width - cardRect.width) / 2)
+    maxPanY = Math.max(0, (bodyRect.height - cardRect.height) / 2)
+    clampPan()
+    applyPan()
+    body.classList.toggle('pannable', maxPanX > 0 || maxPanY > 0)
+  }
+
   slider.addEventListener('input', () => {
     const raw = parseFloat(slider.value)
     const scale = Number.isFinite(raw)
@@ -573,7 +662,89 @@ function initThemeShowcaseScaleControl(): void {
       : 1
     body.style.setProperty('--tsd-scale', String(scale))
     valueLabel.textContent = formatScalePercent(scale)
+    recomputePanBounds()
   })
+
+  // Recomputes pan bounds on any resize of the card itself (a breakpoint
+  // change, say) that isn't driven by the scale slider -- mirrors this
+  // file's other ResizeObserver use (updateAsciiFade's, above) for the same
+  // reason: a size change that isn't itself a `--tsd-scale` write still
+  // needs `maxPanX`/`maxPanY` (and thus a possible re-clamp) refreshed.
+  new ResizeObserver(recomputePanBounds).observe(card)
+
+  // Mouse click-drag and single-finger touch-drag through one Pointer Event
+  // listener set (pointerdown/pointermove/pointerup/pointercancel), the same
+  // unification `output-panel-viewport.ts`'s useOutputPanelViewport uses for
+  // its fullscreen pan+pinch (a more mature prior art than editor-viewport.ts
+  // for this exact "translate() instead of scrollLeft/scrollTop" problem --
+  // see this function's own doc comment). Only ever tracks one active
+  // pointer: a second simultaneous touch is ignored outright rather than
+  // treated as a pinch gesture, since #988's own scope is "single-finger
+  // drag" for touch -- pinch-to-zoom isn't requested here, and this panel's
+  // only zoom control is #987's slider.
+  let activePointerId: number | null = null
+  let dragStart: { x: number; y: number; panX: number; panY: number } | null =
+    null
+
+  const onPointerDown = (e: PointerEvent): void => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    if (activePointerId !== null) return
+    if (maxPanX <= 0 && maxPanY <= 0) return
+    activePointerId = e.pointerId
+    dragStart = { x: e.clientX, y: e.clientY, panX, panY }
+    try {
+      // jsdom (this repo's DOM test environment) implements no
+      // setPointerCapture at all, and a real browser can still throw for a
+      // pointerId it doesn't recognize as currently active -- see
+      // output-panel-viewport.ts's own identical try/catch for why this
+      // stays optional rather than a hard dependency (losing capture just
+      // makes the drag slightly less forgiving about leaving `body`'s
+      // bounds, it doesn't stop panning from working).
+      body.setPointerCapture?.(e.pointerId)
+    } catch {
+      // See comment above -- capture is a nice-to-have.
+    }
+    body.classList.add('panning')
+    e.preventDefault() // stop native text/image drag-select while panning
+  }
+  const onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId || !dragStart) return
+    panX = dragStart.panX + (e.clientX - dragStart.x)
+    panY = dragStart.panY + (e.clientY - dragStart.y)
+    clampPan()
+    applyPan()
+    e.preventDefault()
+  }
+  const endPan = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId) return
+    activePointerId = null
+    dragStart = null
+    body.classList.remove('panning')
+  }
+
+  body.addEventListener('pointerdown', onPointerDown)
+  body.addEventListener('pointermove', onPointerMove)
+  body.addEventListener('pointerup', endPan)
+  body.addEventListener('pointercancel', endPan)
+
+  // Trackpad two-finger pan (#988): a plain wheel event, deliberately
+  // separate from the Pointer Event set above -- a trackpad swipe fires
+  // wheel events, never pointer events, mirroring output-panel-viewport.ts's
+  // own wheel listener registered alongside (not instead of) its pointer
+  // listeners.
+  body.addEventListener(
+    'wheel',
+    (e) => {
+      if (e.ctrlKey) return // pinch-zoom trackpad gesture -- leave for the browser's own page-zoom
+      if (maxPanX <= 0 && maxPanY <= 0) return
+      panX -= e.deltaX
+      panY -= e.deltaY
+      clampPan()
+      applyPan()
+      e.preventDefault()
+    },
+    { passive: false },
+  )
 }
 
 // Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job,
@@ -584,4 +755,4 @@ const showcaseEls = initThemeShowcase()
 initThemeShowcaseOutputToggle(
   showcaseEls ? () => updateAsciiFade(showcaseEls) : undefined,
 )
-initThemeShowcaseScaleControl()
+initThemeShowcaseZoomControl()
