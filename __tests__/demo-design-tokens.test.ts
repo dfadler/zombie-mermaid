@@ -98,8 +98,13 @@ describe('designTokensCss', () => {
 
   it('emits a single :root block', () => {
     expect(css.match(/:root/g)).toHaveLength(1)
-    expect(css.startsWith(':root {')).toBe(true)
     expect(css.trimEnd().endsWith('}')).toBe(true)
+  })
+
+  it('emits the mono font @font-face ahead of the :root block', () => {
+    expect(css.match(/@font-face/g)).toHaveLength(1)
+    expect(css.startsWith('@font-face {')).toBe(true)
+    expect(css.indexOf('@font-face')).toBeLessThan(css.indexOf(':root'))
   })
 })
 
