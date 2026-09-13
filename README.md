@@ -1,15 +1,15 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="logo-lockup-dark.svg">
-  <img src="logo-lockup-light.svg" alt="ZombieMermaid" height="48">
+  <source media="(prefers-color-scheme: dark)" srcset="public/logo-lockup-dark.svg">
+  <img src="public/logo-lockup-light.svg" alt="ZombieMermaid" height="48">
 </picture>
 
 **Render Mermaid diagrams as beautiful SVGs or ASCII art**
 
 Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) that refuses to die.
 
-![Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself](hero.svg)
+![Raw Mermaid source rendering into a themed, animated diagram, drawn by zombie-mermaid itself](public/hero.svg)
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-view_the_sample_gallery-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/)
 [![Beautiful Mermaid Fork Fixes](https://img.shields.io/badge/Beautiful_Mermaid_Fork_Fixes-before%2Fafter_evidence-1f6feb?style=for-the-badge)](https://dfadler.github.io/zombie-mermaid/fork-fixes.html)

@@ -44,7 +44,7 @@ const BACKDROP_RADIUS = 20
 
 async function main(): Promise<void> {
   const srcPath = new URL('../public/hero-visual.svg', import.meta.url)
-  const outPath = new URL('../hero.svg', import.meta.url)
+  const outPath = new URL('../public/hero.svg', import.meta.url)
 
   const source = await readFile(srcPath, 'utf8')
 
