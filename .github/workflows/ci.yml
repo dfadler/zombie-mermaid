@@ -91,7 +91,7 @@ jobs:
           files: coverage/lcov.info
           fail_ci_if_error: true
 
-      # Repo-wide thresholds above (enforced by vitest.config.ts) cover the
+      # Repo-wide thresholds above (enforced by config/vitest.config.ts) cover the
       # whole codebase, including old, hard-to-reach branches. This holds
       # new/changed lines to a stricter 90% bar without requiring an
       # all-at-once cleanup of existing gaps.

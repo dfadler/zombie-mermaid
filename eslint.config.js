@@ -57,7 +57,7 @@ export default tseslint.config(
       // The live editor's client-side modules (#766).
       'editor/js/**/*.ts',
       'vite.config.ts',
-      'vite.config.lib.ts',
+      'config/vite.config.lib.ts',
       'index.ts',
       'fork-fixes.ts',
       'ascii-html.ts',
