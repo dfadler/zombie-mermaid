@@ -86,6 +86,14 @@
   box-shadow: var(--shadow-minimal);
 }
 
+/* Mobile-only third tab -- see editor-topbar.tsx's "Preview" button doc
+ * comment. Hidden above the mobile breakpoint, where .panel-left/
+ * .panel-right (editor/css/panels.css) are already visible side by side
+ * and a "Preview" tab to switch between them would be meaningless. */
+.tab-preview {
+  display: none;
+}
+
 .spacer {
   flex: 1;
 }
@@ -242,4 +250,29 @@
   opacity: 0.9;
   background: var(--t-fg);
   color: var(--t-bg);
+}
+
+/* Narrow-viewport layout: reveal the Preview tab and let the bar wrap
+ * instead of clipping the theme dropdown / Export Image button / fullscreen
+ * icon that .topbar's non-wrapping row (height:52px;flex-shrink:0, declared
+ * at the top of this file) has no room for at ~375px. Wrapping to a second
+ * row is the simplest fix that keeps every control visible and reachable
+ * without a new overflow-menu component -- see editor/css/panels.css's
+ * matching media query for the panel/tab-switching side of this same
+ * breakpoint. Mirrors BREAKPOINTS_MOBILE from
+ * demo/components/editor-page.tsx -- kept literal since editor/css/*.css is
+ * plain, unbundled CSS with no import of that TS constant (the same
+ * tradeoff editor-page.tsx's own BREAKPOINTS_MOBILE comment documents for
+ * its literal 600). */
+@media (max-width: 600px) {
+  .tab-preview {
+    display: inline-block;
+  }
+
+  .topbar {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+    padding: 0.5rem;
+  }
 }
