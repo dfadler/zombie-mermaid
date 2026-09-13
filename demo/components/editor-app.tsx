@@ -92,6 +92,7 @@ import {
 import { useEditorButtons } from './editor-buttons.ts'
 import { useEditorConfig } from './editor-config.tsx'
 import { useEditorFullscreen } from './editor-fullscreen.ts'
+import { useEditorOutputMode } from './editor-output-mode.ts'
 import {
   clampPadding,
   clampStroke,
@@ -245,8 +246,18 @@ export interface EditorState {
    * `editor-tabs.ts`/`editor-buttons.ts`/`editor-export.ts`/`editor-toast.ts`
    * for the effects that read/write them.
    */
-  /** Which panel is showing -- `editor/js/tabs.ts`'s old `.tab.active`/`data-panel`. */
-  activeTab: 'code' | 'config'
+  /**
+   * Which panel is showing -- `editor/js/tabs.ts`'s old `.tab.active`/
+   * `data-panel`. `'preview'` was added for the narrow-viewport
+   * single-panel layout (see `editor/css/panels.css`'s mobile media query):
+   * it's a third, mutually-exclusive tab alongside `'code'`/`'config'`,
+   * reachable only through the `.tab-group`'s "Preview" button that CSS
+   * shows only below the mobile breakpoint. `'code'`/`'config'` keep their
+   * exact original meaning and behavior at every width -- this is a pure
+   * extension of the union, not a change to what those two values do (see
+   * `editor-tabs.ts`'s sync effect).
+   */
+  activeTab: 'code' | 'config' | 'preview'
   /** `editor/js/export.ts`'s old `exportScale` module-level variable. */
   exportScale: number
   /** Whether the export dropdown (`#export-dropdown`) is open. */
@@ -274,6 +285,19 @@ export interface EditorState {
    * `requestFullscreen()` promise rejection).
    */
   fullscreen: boolean
+  /**
+   * The preview panel's output format — `'svg'` (the tool's original,
+   * only mode) or `'ascii'` (zombie-mermaid#976). See
+   * `editor-output-mode.ts`'s `useEditorOutputMode` for the toggle buttons
+   * that write this and `editor-rendering.ts`'s `doRender` for the branch
+   * that reads it — that function already calls
+   * `mermaid.renderMermaidASCII()` through the exact same
+   * `window.__mermaid` bridge `renderMermaidSVGAsync` uses (see
+   * `src/browser.ts`, which has exposed `renderMermaidASCII` on that
+   * bridge since before this field existed), so switching modes needs no
+   * new client bundle weight.
+   */
+  outputMode: 'svg' | 'ascii'
 }
 
 export const INITIAL_EDITOR_STATE: EditorState = {
@@ -296,6 +320,7 @@ export const INITIAL_EDITOR_STATE: EditorState = {
   toastVisible: false,
   toastNonce: 0,
   fullscreen: false,
+  outputMode: 'svg',
 }
 
 export type EditorAction =
@@ -328,12 +353,14 @@ export type EditorAction =
   | { type: 'SET_PADDING'; padding: number }
   | { type: 'SET_EDGE_STROKE'; value: number }
   | { type: 'SET_NODE_STROKE'; value: number }
-  | { type: 'SET_ACTIVE_TAB'; tab: 'code' | 'config' }
+  | { type: 'SET_ACTIVE_TAB'; tab: 'code' | 'config' | 'preview' }
   | { type: 'SET_EXPORT_SCALE'; scale: number }
   | { type: 'SET_EXPORT_DROPDOWN_OPEN'; open: boolean }
   | { type: 'SHOW_TOAST'; message: string }
   | { type: 'HIDE_TOAST' }
   | { type: 'SET_FULLSCREEN'; fullscreen: boolean }
+  /** zombie-mermaid#976: the preview panel's SVG/ASCII output toggle -- see `EditorState.outputMode`'s doc comment. */
+  | { type: 'SET_OUTPUT_MODE'; mode: 'svg' | 'ascii' }
 
 export function editorReducer(
   state: EditorState,
@@ -408,6 +435,8 @@ export function editorReducer(
       return { ...state, toastVisible: false }
     case 'SET_FULLSCREEN':
       return { ...state, fullscreen: action.fullscreen }
+    case 'SET_OUTPUT_MODE':
+      return { ...state, outputMode: action.mode }
   }
 }
 
@@ -504,6 +533,9 @@ export interface EditorRefs {
    * rest of the tool's chrome) follow the selected diagram theme.
    */
   panelRight: HTMLElement
+  /** Added by zombie-mermaid#976 -- see `editor-output-mode.ts`'s `useEditorOutputMode`. */
+  outputModeSvgBtn: HTMLElement
+  outputModeAsciiBtn: HTMLElement
 }
 
 /**
@@ -588,6 +620,11 @@ export function collectEditorRefs(): EditorRefs {
       SVGElement,
     ),
     panelRight: requireEditorElement('panel-right', HTMLElement),
+    outputModeSvgBtn: requireEditorElement('output-mode-svg-btn', HTMLElement),
+    outputModeAsciiBtn: requireEditorElement(
+      'output-mode-ascii-btn',
+      HTMLElement,
+    ),
   }
 }
 
@@ -675,6 +712,12 @@ export function EditorApp({ themes }: EditorAppProps) {
   // in this list is arbitrary. See editor-fullscreen.ts.
   useEditorFullscreen({ state, dispatch, refs })
 
+  // zombie-mermaid#976: the preview panel's SVG/ASCII output toggle. Runs
+  // just before useEditorRendering, which is the effect that actually
+  // reacts to state.outputMode by re-rendering -- see that hook's header
+  // comment.
+  useEditorOutputMode({ state, dispatch, refs })
+
   // zombie-mermaid#810: the render pipeline and URL-hash sharing. See
   // editor-rendering.ts's/editor-sharing.ts's header comments for what
   // these register.
@@ -746,7 +789,17 @@ function EditorChromeMarkup({
     <>
       <EditorTopbar themeItems={<EditorThemeItems themes={themes} />} />
 
-      <div className="main">
+      {/*
+       * data-active-tab: read only by editor/css/panels.css's mobile media
+       * query, to decide which of .panel-left/.panel-right is the single
+       * visible panel at narrow widths (both stay visible side by side
+       * above that breakpoint, where this attribute has no effect). Set
+       * directly from state.activeTab here rather than imperatively from
+       * editor-tabs.ts's effect -- .main already has state in scope, and
+       * this way the attribute is always in sync with the very first
+       * server-rendered markup, not just after a post-mount effect runs.
+       */}
+      <div className="main" data-active-tab={state.activeTab}>
         <EditorLeftPanel state={state} dispatch={dispatch} />
         <div className="resize-handle" id="resize-handle" />
         <EditorRightPanel />

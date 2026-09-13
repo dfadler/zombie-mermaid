@@ -257,4 +257,24 @@ describe('<EditorApp> export/copy actions (#809)', () => {
     fireEvent.keyDown(document, { key: 'c', ctrlKey: true })
     expect(screen.getByText('Render a diagram first.')).toBeInTheDocument()
   })
+
+  // zombie-mermaid#976: getSvgEl's "nothing to export" guard fires while
+  // ASCII output is showing too (#preview-inner holds a <pre>, not a
+  // <svg>), but with a message that tells the reader how to fix it instead
+  // of the generic "Render a diagram first." -- see editor-export.ts's
+  // getSvgEl doc comment.
+  it('shows an output-mode-aware toast when exporting while ASCII output is selected', () => {
+    render(createElement(EditorApp, PROPS))
+    // No seedRenderedSvg() -- ASCII mode never puts an <svg> in
+    // #preview-inner (see editor-rendering.ts's doRender), so the guard
+    // fires here even without a real ASCII render having run.
+    fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
+
+    fireEvent.click(document.getElementById('export-svg-btn')!)
+
+    expect(
+      screen.getByText('Switch to SVG output to export an image.'),
+    ).toBeInTheDocument()
+    expect(window.URL.createObjectURL).not.toHaveBeenCalled()
+  })
 })

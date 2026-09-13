@@ -35,13 +35,29 @@ export interface UseEditorExportArgs {
   refs: { current: EditorRefs | null }
 }
 
+/**
+ * `outputMode` (zombie-mermaid#976) only changes the toast copy, not the
+ * guard itself: PNG/SVG-file export, copy-image, and the size pills all
+ * operate on the rendered `<svg>` element, which simply doesn't exist in
+ * `#preview-inner` while ASCII output is showing (see
+ * `editor-rendering.ts`'s `doRender`) -- the exact same "nothing rendered
+ * yet" shape as an empty source, just for a different reason, so a reader
+ * gets a message that tells them how to fix it instead of the generic one.
+ */
 function getSvgEl(
   refs: EditorRefs,
   dispatch: Dispatch<EditorAction>,
+  outputMode: EditorState['outputMode'],
 ): SVGSVGElement | null {
   const el = refs.previewInner.querySelector<SVGSVGElement>('svg')
   if (!el) {
-    dispatch({ type: 'SHOW_TOAST', message: 'Render a diagram first.' })
+    dispatch({
+      type: 'SHOW_TOAST',
+      message:
+        outputMode === 'ascii'
+          ? 'Switch to SVG output to export an image.'
+          : 'Render a diagram first.',
+    })
     return null
   }
   return el
@@ -98,7 +114,7 @@ export function useEditorExport({
   const exportPNG = useRef((): void => {
     const r = refs.current
     if (!r) return
-    const svgEl = getSvgEl(r, dispatch)
+    const svgEl = getSvgEl(r, dispatch, stateRef.current.outputMode)
     if (!svgEl) return
     svgToPngBlob(
       svgEl,
@@ -124,7 +140,7 @@ export function useEditorExport({
   const exportSVG = useRef((): void => {
     const r = refs.current
     if (!r) return
-    const svgEl = getSvgEl(r, dispatch)
+    const svgEl = getSvgEl(r, dispatch, stateRef.current.outputMode)
     if (!svgEl) return
     const data = new XMLSerializer().serializeToString(svgEl)
     const blob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' })
@@ -141,7 +157,7 @@ export function useEditorExport({
   const copyImage = useRef((): void => {
     const r = refs.current
     if (!r) return
-    const svgEl = getSvgEl(r, dispatch)
+    const svgEl = getSvgEl(r, dispatch, stateRef.current.outputMode)
     if (!svgEl) return
     svgToPngBlob(
       svgEl,

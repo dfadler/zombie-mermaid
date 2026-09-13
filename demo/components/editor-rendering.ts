@@ -59,6 +59,21 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { EditorRefs, EditorState } from './editor-app.tsx'
 import { updateUrlHash } from './editor-sharing.ts'
+// Type-only -- erased at build time (tsconfig.json's verbatimModuleSyntax),
+// so this adds no runtime import and no client-bundle weight. The actual
+// renderMermaidASCII/diagramColorsToAsciiTheme *values* this file calls
+// come through window.__mermaid (see EditorMermaidBridge below), the same
+// bridge src/browser.ts already populates with both functions for every
+// consumer of that bundle (samples.html, and this editor) -- not a fresh
+// import of '@zombie-mermaid/ascii-renderer' into the client hydration
+// bundle. See this file's/index-page.tsx's own doc comments on why
+// pulling that package into a *second* client bundle just to re-render on
+// every keystroke would be real, avoidable bundle bloat.
+import type {
+  AsciiRenderOptions,
+  AsciiTheme,
+} from '@zombie-mermaid/ascii-renderer'
+import type { DiagramColors } from '@zombie-mermaid/core'
 
 declare global {
   interface Window {
@@ -89,6 +104,17 @@ interface EditorMermaidBridge {
     source: string,
     options: Record<string, unknown>,
   ) => Promise<string>
+  /**
+   * zombie-mermaid#976 -- already present on the real `window.__mermaid`
+   * bridge (`src/browser.ts`), just not typed here until now: nothing on
+   * this file's own client bundle read it before ASCII output mode
+   * existed. Synchronous, unlike `renderMermaidSVGAsync` -- see
+   * `packages/ascii-renderer/src/index.ts`'s own doc comment ("no async
+   * layout engine needed").
+   */
+  renderMermaidASCII: (source: string, options: AsciiRenderOptions) => string
+  /** zombie-mermaid#976 -- see {@link renderMermaidASCII}'s doc comment. */
+  diagramColorsToAsciiTheme: (colors: DiagramColors) => AsciiTheme
 }
 
 /** `window.__mermaid`, typed -- `src/browser.ts` attaches it at runtime with no ambient type in `demo/`'s own tsconfig (deliberately: that program bundles into the *published* package, see `editor/js/global.d.ts`'s historical note on the same split). Mirrors `editor-config.tsx`'s identical local-cast pattern. */
@@ -201,6 +227,61 @@ export function getPreviewSurfaceColors(
 }
 
 /**
+ * Pulls the `bg`/`fg`/`line`/`accent`/`muted`/`surface`/`border` keys back
+ * out of a {@link buildOptions} result -- that function's return type is a
+ * loose `Record<string, unknown>` (it also carries `state.config`'s
+ * SVG-only keys, like `font`/`padding`, once #808's config panel is in
+ * play), so this narrows it back down to the shape
+ * `diagramColorsToAsciiTheme()` actually needs. Exported for direct
+ * testing, mirroring this file's other small pure helpers.
+ */
+export function extractDiagramColors(
+  opts: Record<string, unknown>,
+): DiagramColors {
+  const str = (key: string): string | undefined =>
+    typeof opts[key] === 'string' ? (opts[key] as string) : undefined
+  return {
+    bg: str('bg') ?? DEFAULT_PREVIEW_COLORS.bg,
+    fg: str('fg') ?? DEFAULT_PREVIEW_COLORS.fg,
+    line: str('line'),
+    accent: str('accent'),
+    muted: str('muted'),
+    surface: str('surface'),
+    border: str('border'),
+  }
+}
+
+/**
+ * zombie-mermaid#976's ASCII-mode equivalent of {@link buildOptions} --
+ * `renderMermaidASCII`'s own `AsciiRenderOptions` shape is unrelated to the
+ * SVG renderer's (no `font`/`padding`/stroke knobs), so this deliberately
+ * does not reuse `state.config` wholesale the way `buildOptions` does. It
+ * reuses `buildOptions` only to get the *same* effective theme-or-override
+ * colors the SVG render would use ({@link extractDiagramColors} strips the
+ * SVG-only keys back out) -- so switching the output toggle mid-session
+ * shows the same colors in both modes -- then hands those to
+ * `diagramColorsToAsciiTheme()` via `colorMode: 'html'`, the same
+ * "colored HTML `<span>`s, safe to `innerHTML` directly" mode
+ * `index-page.tsx`'s theme showcase and hero panel already use for their
+ * own (pre-rendered) ASCII output.
+ *
+ * The config panel's padding/edge-stroke/node-stroke/font controls have no
+ * ASCII equivalent and are silently ignored here -- a documented v1
+ * limitation (see zombie-mermaid#976's PR description), not an oversight.
+ */
+export function buildAsciiOptions(
+  mermaid: Pick<EditorMermaidBridge, 'diagramColorsToAsciiTheme'>,
+  themes: Record<string, EditorMermaidTheme> | undefined,
+  state: Pick<EditorState, 'theme' | 'config'>,
+): AsciiRenderOptions {
+  const colors = extractDiagramColors(buildOptions(themes, state))
+  return {
+    colorMode: 'html',
+    theme: mermaid.diagramColorsToAsciiTheme(colors),
+  }
+}
+
+/**
  * Moved from `editor/js/rendering.ts`'s `doRender()` -- `refs`/`state` are
  * now parameters read fresh at call time (this is invoked from inside a
  * `setTimeout` callback, well after the render that scheduled it), instead
@@ -242,12 +323,36 @@ export async function doRender(
   const t0 = performance.now()
 
   try {
-    const svg = await mermaid.renderMermaidSVGAsync(
-      source,
-      buildOptions(mermaid.THEMES, state),
-    )
-    const ms = (performance.now() - t0).toFixed(0)
-    refs.previewInner.innerHTML = svg
+    let ms: string
+    if (state.outputMode === 'ascii') {
+      // Synchronous (see EditorMermaidBridge's doc comment) -- no `await`
+      // needed, unlike the SVG branch below. A malformed diagram throws
+      // here exactly like renderMermaidSVGAsync's rejection does, so the
+      // shared `catch` block below covers both output modes.
+      const ascii = mermaid.renderMermaidASCII(
+        source,
+        buildAsciiOptions(mermaid, mermaid.THEMES, state),
+      )
+      ms = (performance.now() - t0).toFixed(0)
+      // colorMode: 'html' output is already escaped by the renderer itself
+      // (ansi.ts's escapeHtml()) -- see buildAsciiOptions's doc comment and
+      // index-page.tsx's identical justification for its own pre-rendered
+      // ASCII HTML.
+      refs.previewInner.innerHTML =
+        '<pre class="ascii-output">' + ascii + '</pre>'
+    } else {
+      const svg = await mermaid.renderMermaidSVGAsync(
+        source,
+        buildOptions(mermaid.THEMES, state),
+      )
+      ms = (performance.now() - t0).toFixed(0)
+      refs.previewInner.innerHTML = svg
+    }
+    // No-ops in ASCII mode: refs.previewInner has no <svg> child, and both
+    // functions already null-guard on that (applyStrokeOverridesToSvg's
+    // `if (!svgEl) return`, applyZoomToDom's `if (svgEl) {...}` before its
+    // unconditional zoom-label write) -- see editor-config.tsx's/
+    // editor-viewport.ts's own doc comments for those guards.
     const svgEl = refs.previewInner.querySelector('svg')
     window.__editorConfigState.applyStrokeOverrides(svgEl)
     window.__editorViewportState.applyZoom()
@@ -322,9 +427,16 @@ export function useEditorRendering({
   // immediately behind it (the next effect, below) -- not the tool's own
   // surrounding UI -- see docs/decisions/theme-selector-shared-state.md's
   // amendment on scoping the editor's theme back down.
+  //
+  // state.outputMode is in this same dependency array (zombie-mermaid#976):
+  // toggling SVG/ASCII needs the exact same "re-render right now" behavior
+  // a theme change already gets -- editor-output-mode.ts's
+  // useEditorOutputMode only writes state.outputMode and syncs the toggle
+  // buttons' own DOM; it deliberately doesn't call scheduleRender itself,
+  // relying on this effect instead.
   useLayoutEffect(() => {
     scheduleRender(0)
-  }, [state.theme, scheduleRender])
+  }, [state.theme, state.outputMode, scheduleRender])
 
   // Keep the preview panel's own surface (toolbar/body/footer -- see
   // editor-panels.tsx's EditorRightPanel) in step with the selected diagram

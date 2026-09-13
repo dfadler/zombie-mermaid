@@ -576,6 +576,14 @@ export function DetailOutputPanel({
           display: 'flex',
           padding: `${SPACE['5xl']}px`,
           overflow: isFullscreen ? 'hidden' : 'auto',
+          // Matches DEFAULT_SWATCH.bg -- the same white renderMermaidSVG
+          // paints into the diagram's own background (and ASCII_OUTPUT_STYLE
+          // mirrors above) -- so the padding around the diagram/ASCII reads
+          // as one continuous surface instead of a dark gutter around a
+          // white card. Left unset in fullscreen: .output-card:fullscreen's
+          // own `background: var(--panel) !important` (pageCss) is the
+          // deliberate dark letterbox behind a panned/zoomed diagram there.
+          background: isFullscreen ? undefined : '#FFFFFF',
           // Edge scroll-fade for the ASCII state -- see asciiFadeMask's doc
           // comment for why this is a mask, not a painted overlay div.
           // `undefined` (both false, or outside ASCII mode/fullscreen --
