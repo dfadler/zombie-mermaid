@@ -64,8 +64,8 @@ export default tseslint.config(
       // pages.ts/blog.ts/dashboard.ts, which weren't individually listed
       // here before the move — a pre-existing gap, not new scope.
       'site-src/*.ts',
-      'bench.ts',
-      'check-diff-coverage.ts',
+      // bench.ts/check-diff-coverage.ts moved into scripts/ (#996) and are
+      // covered by the 'scripts/**/*.ts' glob below.
       'scripts/**/*.ts',
       '__tests__/**/*.ts',
     ],

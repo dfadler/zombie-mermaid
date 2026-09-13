@@ -29,10 +29,22 @@ import type { EditorAction, EditorRefs, EditorState } from './editor-app.tsx'
 declare global {
   interface Window {
     __editorTabsState: {
-      getActiveTab(): 'code' | 'config'
-      subscribe(listener: (tab: 'code' | 'config') => void): () => void
+      getActiveTab(): 'code' | 'config' | 'preview'
+      subscribe(
+        listener: (tab: 'code' | 'config' | 'preview') => void,
+      ): () => void
     }
   }
+}
+
+/** Resolves a `.tab` element's `data-panel` to one of the three valid tab
+ * values, matching `editor-topbar.tsx`'s three `data-panel` attributes
+ * (`"code"`/`"config"`/`"preview"`) and defaulting to `'code'` the same way
+ * the original two-tab code did for anything unrecognized. */
+function resolveTabPanel(tab: HTMLElement): 'code' | 'config' | 'preview' {
+  if (tab.dataset.panel === 'config') return 'config'
+  if (tab.dataset.panel === 'preview') return 'preview'
+  return 'code'
 }
 
 export interface UseEditorTabsArgs {
@@ -51,7 +63,9 @@ export function useEditorTabs({
   dispatch,
   refs,
 }: UseEditorTabsArgs): void {
-  const listeners = useRef(new Set<(tab: 'code' | 'config') => void>())
+  const listeners = useRef(
+    new Set<(tab: 'code' | 'config' | 'preview') => void>(),
+  )
   const stateRef = useRef(state)
   stateRef.current = state
 
@@ -75,7 +89,7 @@ export function useEditorTabs({
     if (!r) return
     const tabs = document.querySelectorAll<HTMLElement>('.tab')
     const onClick = (tab: HTMLElement) => () => {
-      const panel = tab.dataset.panel === 'config' ? 'config' : 'code'
+      const panel = resolveTabPanel(tab)
       dispatch({ type: 'SET_ACTIVE_TAB', tab: panel })
       for (const listener of listeners.current) listener(panel)
     }
@@ -99,14 +113,21 @@ export function useEditorTabs({
     const r = refs.current
     if (!r) return
     document.querySelectorAll<HTMLElement>('.tab').forEach((tab) => {
-      const panel = tab.dataset.panel === 'config' ? 'config' : 'code'
-      tab.classList.toggle('active', panel === state.activeTab)
+      tab.classList.toggle('active', resolveTabPanel(tab) === state.activeTab)
     })
+    // 'preview' deliberately falls through without touching
+    // editorView/configView/sourceToolbar: it's a narrow-viewport-only tab
+    // that swaps which of .panel-left/.panel-right is visible (see
+    // editor-app.tsx's data-active-tab and editor/css/panels.css's mobile
+    // media query) -- .panel-left itself is display:none at that width, so
+    // whichever of Code/Config was showing inside it stays exactly as it
+    // was, unaffected by Preview being selected. 'code'/'config' keep
+    // their original, unchanged behavior at every width.
     if (state.activeTab === 'code') {
       r.editorView.style.display = 'flex'
       r.configView.classList.remove('visible')
       r.sourceToolbar.style.display = ''
-    } else {
+    } else if (state.activeTab === 'config') {
       r.editorView.style.display = 'none'
       r.configView.classList.add('visible')
       r.sourceToolbar.style.display = 'none'

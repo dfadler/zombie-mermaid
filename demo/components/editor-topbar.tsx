@@ -183,6 +183,24 @@ export function EditorTopbar({ themeItems }: { themeItems: ReactNode }) {
         <button className="tab" id="tab-config" data-panel="config">
           Config
         </button>
+        {/*
+         * Mobile-only third tab (editor/css/topbar.css hides it above the
+         * mobile breakpoint, where the source/config panel and the preview
+         * are already visible side by side). Selecting it doesn't change
+         * which of Code/Config is showing inside the source panel -- it
+         * just switches .main's single visible panel to .panel-right, via
+         * data-active-tab (see editor-app.tsx's EditorChromeMarkup and
+         * editor/css/panels.css's mobile media query). Always rendered
+         * (never conditionally, based on viewport width) so server- and
+         * client-rendered markup match at hydration.
+         */}
+        <button
+          className="tab tab-preview"
+          id="tab-preview"
+          data-panel="preview"
+        >
+          Preview
+        </button>
       </div>
 
       <div className="spacer" />
