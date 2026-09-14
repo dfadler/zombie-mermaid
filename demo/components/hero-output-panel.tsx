@@ -24,6 +24,7 @@
  * `hero-visual.tsx`'s own header comment).
  */
 import { useRef, useState, type CSSProperties } from 'react'
+import { OutputModeToggle } from './output-mode-toggle.tsx'
 import {
   FONT_SIZE,
   LETTER_SPACING,
@@ -389,10 +390,10 @@ export interface HeroOutputPanelProps {
 }
 
 /**
- * The segmented "SVG / ASCII" toggle and its output body. Local `useState`
- * plus plain click handlers — the same shape `nav.tsx`'s
- * `usePackageManagerInstall` already proves safe inside this hydrated app
- * (via `HeroInstall`), not a new interactivity pattern.
+ * `output-mode-toggle.tsx`'s shared "SVG / ASCII" toggle plus this panel's
+ * own output body. Local `useState` drives the toggle — the same shape
+ * `nav.tsx`'s `usePackageManagerInstall` already proves safe inside this
+ * hydrated app (via `HeroInstall`), not a new interactivity pattern.
  *
  * `flex: '0 1 auto'`, not `'1 1 auto'` — this panel sizes itself to its
  * content's natural width (driven by {@link HeroFlowchartSvg}'s fixed
@@ -442,32 +443,7 @@ export function HeroOutputPanel({ asciiHtml }: HeroOutputPanelProps) {
         >
           Output
         </span>
-        <div
-          style={{
-            display: 'flex',
-            gap: '2px',
-            background: colorVar('--panel'),
-            borderRadius: `${RADIUS.pill}px`,
-            padding: '2px',
-          }}
-        >
-          <button
-            type="button"
-            className={`output-segment${mode === 'svg' ? ' active' : ''}`}
-            aria-pressed={mode === 'svg'}
-            onClick={() => setMode('svg')}
-          >
-            SVG
-          </button>
-          <button
-            type="button"
-            className={`output-segment${mode === 'ascii' ? ' active' : ''}`}
-            aria-pressed={mode === 'ascii'}
-            onClick={() => setMode('ascii')}
-          >
-            ASCII
-          </button>
-        </div>
+        <OutputModeToggle mode={mode} onChange={setMode} />
       </div>
       <div
         style={{

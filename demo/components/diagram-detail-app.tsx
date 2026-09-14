@@ -14,18 +14,18 @@
  * second one — this page is one level deeper in the same `diagrams/`
  * hierarchy, not a different product area.
  *
- * The SVG/ASCII toggle ({@link DetailOutputPanel}) is the same interaction
- * `hero-output-panel.tsx`'s `HeroOutputPanel` already ships on the home
- * page — a segmented `.output-segment`/`.output-segment.active` button
- * pair driven by local `useState`, not a new pattern. This is a separate
- * component rather than a direct reuse of `HeroOutputPanel`: that one
- * hardcodes the fixed hero diagram (`HeroFlowchartSvg`) and its own plain
- * bordered panel chrome, where this page needs an arbitrary per-sample
- * `svgHtml` and the accent-tinted `Card tone="glow"` treatment
+ * The SVG/ASCII toggle ({@link DetailOutputPanel}) renders the same
+ * `output-mode-toggle.tsx`'s `<OutputModeToggle>` that `hero-output-
+ * panel.tsx`'s `HeroOutputPanel` uses on the home page — driven here by
+ * this component's own local `useState`, which `OutputModeToggle`
+ * intentionally doesn't own (see that file's header comment). This is a
+ * separate component rather than a direct reuse of `HeroOutputPanel`: that
+ * one hardcodes the fixed hero diagram (`HeroFlowchartSvg`) and its own
+ * plain bordered panel chrome, where this page needs an arbitrary
+ * per-sample `svgHtml` and the accent-tinted `Card tone="glow"` treatment
  * `diagram-type-app.tsx`'s "Source → render" panel already established for
- * this page family — so the *toggle bar and class names* are reused
- * (`.output-segment` is defined identically in `diagram-page.tsx`'s
- * `pageCss`), but the outer chrome and props are this page's own.
+ * this page family — so only the *toggle itself* is shared; the outer
+ * chrome and props stay this page's own.
  *
  * Feature-tag pills (e.g. "Subgraph", "Decision Diamond") under the intro
  * paragraph link to that construct's single-tag search page
@@ -41,6 +41,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { ChevronRightIcon } from './icons.tsx'
+import { OutputModeToggle } from './output-mode-toggle.tsx'
 import { Card, CTA, type Accent, accentVar } from './primitives.tsx'
 import {
   FONT_SIZE,
@@ -276,13 +277,11 @@ function FullscreenIcon({ isFullscreen }: { isFullscreen: boolean }) {
 }
 
 /**
- * The "Source → render" panel's render half: a segmented SVG/ASCII toggle
- * (`.output-segment`/`.output-segment.active`, defined identically in
- * `diagram-page.tsx`'s `pageCss` — same classes `hero-output-panel.tsx`'s
- * `HeroOutputPanel` uses on the home page, see this file's header comment)
- * over the two pre-rendered outputs. `useState` plus plain click handlers,
- * the same shape `HeroOutputPanel` already proves safe in a hydrated demo
- * page — not a new interactivity pattern for this codebase.
+ * The "Source → render" panel's render half: `output-mode-toggle.tsx`'s
+ * shared `<OutputModeToggle>` (see this file's header comment) over the two
+ * pre-rendered outputs. `useState` owns the mode here, the same shape
+ * `hero-output-panel.tsx`'s `HeroOutputPanel` uses on the home page — not a
+ * new interactivity pattern for this codebase.
  *
  * `svgHtml` accepts `OrientationVariants` (not just a plain string) so
  * `diagram-type-app.tsx`'s type-page hero can reuse this component
@@ -391,32 +390,7 @@ export function DetailOutputPanel({
             gap: `${SPACE.sm}px`,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              gap: '2px',
-              background: colorVar('--panel'),
-              borderRadius: '999px',
-              padding: '2px',
-            }}
-          >
-            <button
-              type="button"
-              className={`output-segment${mode === 'svg' ? ' active' : ''}`}
-              aria-pressed={mode === 'svg'}
-              onClick={() => setMode('svg')}
-            >
-              SVG
-            </button>
-            <button
-              type="button"
-              className={`output-segment${mode === 'ascii' ? ' active' : ''}`}
-              aria-pressed={mode === 'ascii'}
-              onClick={() => setMode('ascii')}
-            >
-              ASCII
-            </button>
-          </div>
+          <OutputModeToggle mode={mode} onChange={setMode} />
           {isFullscreen && (
             <div
               className="output-zoom-controls"
