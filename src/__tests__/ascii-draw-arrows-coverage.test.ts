@@ -5,6 +5,21 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
+import {
+  unicodeArrowChar,
+  asciiArrowChar,
+} from '../../packages/ascii-renderer/src/draw-arrows.ts'
+import {
+  Up,
+  Down,
+  Left,
+  Right,
+  UpperRight,
+  UpperLeft,
+  LowerRight,
+  LowerLeft,
+  Middle,
+} from '../../packages/ascii-renderer/src/types.ts'
 
 describe('ASCII arrow drawing: no-arrow edges', () => {
   it('renders a solid no-arrow edge without an arrowhead in unicode mode', () => {
@@ -154,6 +169,47 @@ describe('ASCII arrow drawing: bidirectional edges', () => {
     expect(result).toContain('sync')
     expect(result).toContain('◄')
     expect(result).toContain('►')
+  })
+})
+
+describe('unicodeArrowChar / asciiArrowChar: direction-to-glyph mapping', () => {
+  // Direct unit coverage for every Direction, including LowerLeft — the
+  // ELK/pathfinder layout this module draws from only produces a diagonal
+  // direction via determinePath's rare Case-4 fallback, and every
+  // hand-written or gallery diagram that triggers it happens to need the
+  // target down-and-*right* of its source, never down-and-left. See
+  // issue #1062's drawArrowHead refactor.
+  it('maps all four orthogonal directions to filled triangles (unicode)', () => {
+    expect(unicodeArrowChar(Up)).toBe('▲')
+    expect(unicodeArrowChar(Down)).toBe('▼')
+    expect(unicodeArrowChar(Left)).toBe('◄')
+    expect(unicodeArrowChar(Right)).toBe('►')
+  })
+
+  it('maps all four diagonal directions to Arrows-block glyphs (unicode)', () => {
+    expect(unicodeArrowChar(UpperRight)).toBe('↗')
+    expect(unicodeArrowChar(UpperLeft)).toBe('↖')
+    expect(unicodeArrowChar(LowerRight)).toBe('↘')
+    expect(unicodeArrowChar(LowerLeft)).toBe('↙')
+  })
+
+  it('returns undefined for Middle (no arrowhead glyph)', () => {
+    expect(unicodeArrowChar(Middle)).toBeUndefined()
+    expect(asciiArrowChar(Middle)).toBeUndefined()
+  })
+
+  it('maps all four orthogonal directions to ASCII carets (ascii mode)', () => {
+    expect(asciiArrowChar(Up)).toBe('^')
+    expect(asciiArrowChar(Down)).toBe('v')
+    expect(asciiArrowChar(Left)).toBe('<')
+    expect(asciiArrowChar(Right)).toBe('>')
+  })
+
+  it('has no diagonal glyphs in ASCII mode', () => {
+    expect(asciiArrowChar(UpperRight)).toBeUndefined()
+    expect(asciiArrowChar(UpperLeft)).toBeUndefined()
+    expect(asciiArrowChar(LowerRight)).toBeUndefined()
+    expect(asciiArrowChar(LowerLeft)).toBeUndefined()
   })
 })
 

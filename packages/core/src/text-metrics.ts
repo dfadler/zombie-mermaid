@@ -274,12 +274,34 @@ function isGeometricShapesTextDefault(code: number): boolean {
 }
 
 /**
+ * Arrows-block glyphs that carry Extended_Pictographic (emoji-capable) but
+ * no default Emoji_Presentation, and render as a single narrow column in
+ * every real terminal — the same misclassification the Geometric Shapes
+ * block above hits. Covers:
+ *
+ * - ↖ U+2196, ↗ U+2197, ↘ U+2198, ↙ U+2199 — drawn by the ASCII renderer
+ *   itself for diagonal edge-routing arrowheads
+ *   (packages/ascii-renderer/src/draw-arrows.ts's `drawArrowHead`) in place
+ *   of the filled triangles (◢◣◤◥) JetBrains Mono NL has no glyph for at
+ *   all — see issue #1062.
+ * - ↔ U+2194, ↕ U+2195, ↩ U+21A9, ↪ U+21AA — not drawn by the renderer
+ *   itself, but reachable if a diagram author types one into node/edge/note
+ *   label text, which passes through to the ASCII grid verbatim.
+ */
+function isArrowsBlockTextDefault(code: number): boolean {
+  return (
+    (code >= 0x2194 && code <= 0x2199) || code === 0x21a9 || code === 0x21aa
+  )
+}
+
+/**
  * Check if a character is an emoji (fullwidth)
  */
 function isEmoji(char: string): boolean {
   if (EMOJI_PRESENTATION_REGEX.test(char)) return true
   const code = char.codePointAt(0)
   if (code !== undefined && isGeometricShapesTextDefault(code)) return false
+  if (code !== undefined && isArrowsBlockTextDefault(code)) return false
   return EXTENDED_PICTOGRAPHIC_REGEX.test(char)
 }
 

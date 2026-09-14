@@ -469,5 +469,18 @@ describe('isWideChar', () => {
     expect(isWideChar('◥')).toBe(false)
     expect(isWideChar('○')).toBe(false)
     expect(isWideChar('✕')).toBe(false)
+    // Diagonal edge-routing arrowheads (draw-arrows.ts's drawArrowHead) as
+    // of issue #1062 — JetBrains Mono NL has no glyph for the ◢◣◤◥ set
+    // above, so these Arrows-block glyphs are drawn instead.
+    expect(isWideChar('↖')).toBe(false)
+    expect(isWideChar('↗')).toBe(false)
+    expect(isWideChar('↘')).toBe(false)
+    expect(isWideChar('↙')).toBe(false)
+    // Same Arrows-block misclassification, not drawn by the renderer itself
+    // but reachable if typed into node/edge/note label text.
+    expect(isWideChar('↔')).toBe(false)
+    expect(isWideChar('↕')).toBe(false)
+    expect(isWideChar('↩')).toBe(false)
+    expect(isWideChar('↪')).toBe(false)
   })
 })
