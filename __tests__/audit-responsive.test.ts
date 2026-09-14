@@ -167,6 +167,39 @@ describe('findOverflowingElements', () => {
     expect(findOverflowingElements(0)).toHaveLength(1)
   })
 
+  it('does not flag a visually-hidden (sr-only) element clipped to a near-zero, out-of-flow box', () => {
+    // The false-positive lesson from zombie-mermaid#1055: `demo/styles.css`'s
+    // `.visually-hidden` (and the equivalent inline style in
+    // `demo/components/slot-number.tsx`) intentionally clips an element's
+    // rendered box to 1x1px via `position: absolute` + `overflow: hidden` +
+    // `clip: rect(0, 0, 0, 0)`, while `scrollWidth` still reflects its full
+    // (never-rendered) text content — by design, the same as any sr-only
+    // utility class. That mismatch can never be visible, so it must not be
+    // flagged.
+    document.body.innerHTML = '<span id="sr-only-value">334</span>'
+    const el = document.getElementById('sr-only-value')!
+    el.style.position = 'absolute'
+    setOverflowMetrics(el, { scrollWidth: 67, clientWidth: 1 })
+    Object.defineProperty(el, 'clientHeight', { value: 1, configurable: true })
+
+    expect(findOverflowingElements()).toEqual([])
+  })
+
+  it('still flags an out-of-flow element whose own box is not clipped to near-zero', () => {
+    // Guards against over-broadening the #1055 exception to every
+    // `position: absolute` element — only a near-zero *box* (both
+    // dimensions) is exempt, since that's the trait that guarantees nothing
+    // renders. A normally-sized absolutely-positioned element (e.g. a
+    // mispositioned tooltip or panel) with real overflow is still a bug.
+    document.body.innerHTML = '<div id="mispositioned-panel"></div>'
+    const el = document.getElementById('mispositioned-panel')!
+    el.style.position = 'absolute'
+    setOverflowMetrics(el, { scrollWidth: 500, clientWidth: 300 })
+    Object.defineProperty(el, 'clientHeight', { value: 40, configurable: true })
+
+    expect(findOverflowingElements()).toHaveLength(1)
+  })
+
   it('handles an SVG element (SVGAnimatedString className) without throwing', () => {
     document.body.innerHTML =
       '<svg id="diagram"><rect class="node-shape" /></svg>'
