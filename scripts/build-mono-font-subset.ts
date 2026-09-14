@@ -1,28 +1,52 @@
 /**
  * Subsets the vendored JetBrains Mono NL source
- * (third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf) down to
- * just the glyphs this site's ASCII output needs, and writes the result —
- * base64-encoded, so every consumer can embed it directly in a `<style>`
- * block with no extra network request or page-depth-relative `url()` to get
- * wrong — into two generated files:
+ * (third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf) into two
+ * independent, self-hosted `@font-face` embeds — base64-encoded, so every
+ * consumer can inline it directly in a `<style>` block with no extra network
+ * request or page-depth-relative `url()` to get wrong:
  *
- * 1. `demo/components/generated/mono-font-subset.ts` — the single source of
- *    truth, consumed by tokens.tsx's `designTokensCss()` so every
- *    DesignFontLinks-based page (index, fork-fixes, diagrams, blog,
- *    dashboard) gets the `@font-face` rule for free.
- * 2. `demo/styles.css`, between the `GENERATED MONO FONT FACE` markers —
- *    this file predates tokens.tsx's design system and is plain CSS (no
- *    module system to import the generated .ts constant from), but its own
- *    `.ascii-output`/`.terminal-window` rules are the only thing styling
- *    the Playwright visual-regression suite's synthetic terminal
- *    (`__tests__/visual/helpers/terminal-panel.ts`) — giving it the same
- *    self-hosted font keeps that suite's baseline honest about what a real
- *    page now renders, and incidentally removes that suite's dependency on
- *    whatever monospace font (if any) happens to be installed on the CI
- *    runner.
+ * 1. **The site subset** — every glyph this site's ASCII output actually
+ *    renders (Basic Latin, Latin-1 Supplement, Box Drawing, Block Elements,
+ *    Geometric Shapes, and a handful of standalone marker glyphs). Written
+ *    to two places:
+ *    - `demo/components/generated/mono-font-subset.ts` — the single source
+ *      of truth, consumed by tokens.tsx's `designTokensCss()` so every
+ *      DesignFontLinks-based page (index, fork-fixes, diagrams, blog,
+ *      dashboard) gets the `@font-face` rule for free.
+ *    - `demo/styles.css`, between the `GENERATED MONO FONT FACE` markers —
+ *      this file predates tokens.tsx's design system and is plain CSS (no
+ *      module system to import the generated .ts constant from), but its
+ *      own `.ascii-output`/`.terminal-window` rules are the only thing
+ *      styling the Playwright visual-regression suite's synthetic terminal
+ *      (`__tests__/visual/helpers/terminal-panel.ts`) — giving it the same
+ *      self-hosted font keeps that suite's baseline honest about what a
+ *      real page now renders, and incidentally removes that suite's
+ *      dependency on whatever monospace font (if any) happens to be
+ *      installed on the CI runner.
+ * 2. **The core SVG-mono subset** (#1061) — a much narrower Basic
+ *    Latin + Latin-1 Supplement subset, written to
+ *    `packages/core/src/generated/mono-font-subset.ts` and consumed by
+ *    `packages/core/src/theme.ts`'s `buildStyleBlock()` for the `.mono`
+ *    rule an SVG's own embedded `<style>` sets on class-diagram method
+ *    signatures / ER-diagram attribute types. That rule previously pointed
+ *    at a Google Fonts `@import` for 'JetBrains Mono' — a third-party CDN
+ *    fetch a *published library's default renderer* had no business making
+ *    (see #1061, filed as a follow-up from #1059's ASCII-side fix). A much
+ *    smaller subset than the site's is enough here: this text is
+ *    identifiers/type names, never box drawing or arrows, so the same
+ *    ranges Latin-1 prose needs (see the site subset's own comment on
+ *    "reasonable coverage for typical prose") are enough, without paying
+ *    the site subset's much larger box-drawing/geometric-shapes/arrows
+ *    payload in every SVG a downstream consumer renders. Embedding the
+ *    `@font-face` directly in the SVG's own `<style>` (rather than relying
+ *    on a host page's separate `<head>`, the way the site subset relies on
+ *    tokens.tsx) is also what makes a standalone SVG — the CLI's file
+ *    output, or a downstream consumer's SVG with no surrounding demo-site
+ *    chrome — render with the intended font with zero setup on the
+ *    consumer's part, and zero network dependency either way.
  *
  * Per docs/decisions/ascii-browser-font-investigation-978.md's recommendation
- * 2, the subset explicitly covers Basic Latin, Latin-1 Supplement, Box
+ * 2, the site subset explicitly covers Basic Latin, Latin-1 Supplement, Box
  * Drawing (U+2500–U+257F), and Block Elements (U+2580–U+259F) — checked
  * directly against the output rather than assumed, since at least one
  * common self-hosting shortcut (Fontsource's pre-split "latin" subset)
@@ -42,8 +66,8 @@
  * the per-viewer font drift this file exists to close, for glyphs that
  * appear on nearly every diagram. The extra ranges/codepoints below close
  * that gap; see `unicode-range` in {@link fontFaceCss} for the exact list,
- * generated from {@link UNICODE_RANGES}/{@link EXTRA_CODEPOINTS} rather
- * than hand-duplicated.
+ * generated from {@link SITE_UNICODE_RANGES}/{@link SITE_EXTRA_CODEPOINTS}
+ * rather than hand-duplicated.
  *
  * A handful of the audit's own findings (◢◣◤◥, ◸◹◺◿, ⬡) turned out to have
  * no glyph in JetBrains Mono NL v2.304 at all — checked directly via
@@ -77,18 +101,30 @@ import { readFile, writeFile } from 'node:fs/promises'
 import subsetFont from 'subset-font'
 import { create as createFont } from 'fontkit'
 
+/** fontkit ships no TypeScript types; this is the one method this script
+ * actually calls on the object `createFont()` returns. */
+interface GlyphAvailabilityCheck {
+  hasGlyphForCodePoint(cp: number): boolean
+}
+
 /** JetBrains's own family name for the ligature-free build, matching
  * `third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf`'s own
  * `name` table entry. This is the single source of truth for the family
- * name (written into the generated `MONO_FONT_FAMILY` export tokens.tsx
- * imports) — there's no separate copy elsewhere to drift out of sync with;
- * __tests__/generated-mono-font.test.ts checks it matches what
- * MONO_FONT_FACE_CSS's own `@font-face` rule declares. */
+ * name (written into every generated `MONO_FONT_FAMILY` export) — there's
+ * no separate copy elsewhere to drift out of sync with;
+ * __tests__/generated-mono-font.test.ts checks it matches what the site
+ * subset's own `MONO_FONT_FACE_CSS` `@font-face` rule declares. Both
+ * subsets share this exact family name deliberately: a browser merges
+ * multiple `@font-face` rules for the same family into one logical font,
+ * picking whichever rule's `unicode-range` covers a given character — so
+ * an SVG using the (narrower) core subset renders identically whether it's
+ * standalone or embedded in a page that's also loaded the (wider) site
+ * subset for the same family. */
 const FONT_FAMILY = 'JetBrains Mono NL'
 
-/** [start, end] Unicode code point ranges (inclusive) this subset covers —
- * see this file's header comment for why each one is here. */
-const UNICODE_RANGES: ReadonlyArray<readonly [number, number]> = [
+/** [start, end] Unicode code point ranges (inclusive) the site subset
+ * covers — see this file's header comment for why each one is here. */
+const SITE_UNICODE_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x0020, 0x007e], // Basic Latin (printable)
   [0x00a0, 0x00ff], // Latin-1 Supplement
   [0x2500, 0x257f], // Box Drawing
@@ -112,32 +148,49 @@ const UNICODE_RANGES: ReadonlyArray<readonly [number, number]> = [
 /** Standalone codepoints outside any range above worth its own entry —
  * each used by exactly one renderer feature, per the audit in this file's
  * header comment. */
-const EXTRA_CODEPOINTS: ReadonlyArray<number> = [
+const SITE_EXTRA_CODEPOINTS: ReadonlyArray<number> = [
   0x2016, // ‖ — double-line border glyph in useAscii:true mode (draw-boxes.ts/draw-lines.ts)
   0x2026, // … — class-diagram member-list truncation ellipsis (class-diagram.ts)
   0x2715, // ✕ — sequence-diagram lost-message / cross marker (sequence.ts/draw-arrows.ts)
   0x2b21, // ⬡ — hexagon-shape corner marker (shapes/hexagon.ts)
 ]
 
-/** Every codepoint {@link UNICODE_RANGES}/{@link EXTRA_CODEPOINTS} nominally
- * request, before checking which the source font can actually provide. */
-function wantedCodepoints(): number[] {
-  const codepoints: number[] = []
-  for (const [start, end] of UNICODE_RANGES) {
-    for (let cp = start; cp <= end; cp++) codepoints.push(cp)
-  }
-  codepoints.push(...EXTRA_CODEPOINTS)
-  return codepoints
-}
+/** [start, end] Unicode code point ranges the core SVG-mono subset covers
+ * (#1061) — deliberately just Basic Latin + Latin-1 Supplement. The `.mono`
+ * rule this subset backs (packages/core/src/theme.ts's `buildStyleBlock()`)
+ * only ever styles class-diagram method signatures and ER-diagram attribute
+ * types: plain identifiers and type names, never box drawing, block
+ * elements, geometric shapes, or arrows — so this subset skips every range
+ * the site subset needs only for ASCII-art glyphs, keeping the embed this
+ * repo bakes into *every* SVG a consumer renders as small as the actual
+ * `.mono` use case requires. */
+const CORE_UNICODE_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x0020, 0x007e], // Basic Latin (printable)
+  [0x00a0, 0x00ff], // Latin-1 Supplement — accented identifiers/labels
+]
 
 const hex = (cp: number) => cp.toString(16).toUpperCase().padStart(4, '0')
+
+/** Every codepoint a set of `ranges`/`extras` nominally requests, before
+ * checking which the source font can actually provide. */
+function wantedCodepoints(
+  ranges: ReadonlyArray<readonly [number, number]>,
+  extras: ReadonlyArray<number> = [],
+): number[] {
+  const codepoints: number[] = []
+  for (const [start, end] of ranges) {
+    for (let cp = start; cp <= end; cp++) codepoints.push(cp)
+  }
+  codepoints.push(...extras)
+  return codepoints
+}
 
 /** Filters `wanted` down to codepoints `font` actually has a glyph for,
  * logging (not throwing on) anything dropped — see this file's header
  * comment for why a missing glyph is a font-capability gap to report, not
  * a build failure. */
 function filterToAvailable(
-  font: { hasGlyphForCodePoint(cp: number): boolean },
+  font: GlyphAvailabilityCheck,
   wanted: number[],
 ): number[] {
   const available: number[] = []
@@ -202,7 +255,29 @@ function fontFaceCss(base64Woff2: string, available: number[]): string {
 }`
 }
 
-const GENERATED_TS_HEADER = `/**
+/** Subsets `source` down to `ranges`/`extras` and returns the base64 woff2
+ * payload plus the `@font-face` CSS it backs. */
+async function buildSubset(
+  source: Buffer,
+  font: GlyphAvailabilityCheck,
+  ranges: ReadonlyArray<readonly [number, number]>,
+  extras: ReadonlyArray<number> = [],
+): Promise<{ css: string; base64: string; woff2Bytes: number }> {
+  const available = filterToAvailable(font, wantedCodepoints(ranges, extras))
+  const subsetBuffer = await subsetFont(source, charsToSubset(available), {
+    targetFormat: 'woff2',
+    noHinting: true,
+    keepFeatures: [],
+  })
+  const base64 = subsetBuffer.toString('base64')
+  return {
+    css: fontFaceCss(base64, available),
+    base64,
+    woff2Bytes: subsetBuffer.length,
+  }
+}
+
+const SITE_GENERATED_TS_HEADER = `/**
  * GENERATED FILE — do not edit by hand.
  *
  * Regenerate with \`pnpm run build:mono-font\`
@@ -212,6 +287,23 @@ const GENERATED_TS_HEADER = `/**
  * Latin-1 Supplement, Box Drawing, Block Elements, Geometric Shapes, and a
  * handful of standalone marker glyphs) — see that script's header comment
  * and docs/decisions/ascii-browser-font-investigation-978.md.
+ */
+`
+
+const CORE_GENERATED_TS_HEADER = `/**
+ * GENERATED FILE — do not edit by hand.
+ *
+ * Regenerate with \`pnpm run build:mono-font\`
+ * (scripts/build-mono-font-subset.ts), which subsets
+ * third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf down to
+ * Basic Latin + Latin-1 Supplement — the self-hosted, embeddable
+ * \`@font-face\` packages/core/src/theme.ts's \`buildStyleBlock()\` inlines
+ * into an SVG's own \`<style>\` for its \`.mono\` rule (class-diagram method
+ * signatures, ER-diagram attribute types), replacing a Google Fonts CDN
+ * \`@import\` this library's SVG output previously depended on by default
+ * (#1061). See that script's header comment for why this subset is
+ * deliberately narrower than the site's own (demo/components/generated/
+ * mono-font-subset.ts).
  */
 `
 
@@ -235,29 +327,8 @@ function patchStylesCss(source: string, css: string): string {
   return `${before}${block}${after}`
 }
 
-async function main(): Promise<void> {
-  const srcPath = new URL(
-    '../third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf',
-    import.meta.url,
-  )
-  const source = await readFile(srcPath)
-
-  const font = createFont(source)
-  const available = filterToAvailable(font, wantedCodepoints())
-
-  const subsetBuffer = await subsetFont(source, charsToSubset(available), {
-    targetFormat: 'woff2',
-    noHinting: true,
-    keepFeatures: [],
-  })
-  const base64 = subsetBuffer.toString('base64')
-  const css = fontFaceCss(base64, available)
-
-  const genPath = new URL(
-    '../demo/components/generated/mono-font-subset.ts',
-    import.meta.url,
-  )
-  const genContent = `${GENERATED_TS_HEADER}
+function generatedTsContent(header: string, css: string): string {
+  return `${header}
 /** The self-hosted family name every consumer's font stack should list
  * first — matches this subset's own \`name\` table entry. */
 export const MONO_FONT_FAMILY = '${FONT_FAMILY}'
@@ -268,16 +339,54 @@ export const MONO_FONT_FAMILY = '${FONT_FAMILY}'
  * asset file). */
 export const MONO_FONT_FACE_CSS = \`${css}\`
 `
-  await writeFile(genPath, genContent, 'utf8')
+}
+
+async function main(): Promise<void> {
+  const srcPath = new URL(
+    '../third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf',
+    import.meta.url,
+  )
+  const source = await readFile(srcPath)
+  const font = createFont(source)
+
+  // --- Site subset (unchanged behavior) ---
+  const site = await buildSubset(
+    source,
+    font,
+    SITE_UNICODE_RANGES,
+    SITE_EXTRA_CODEPOINTS,
+  )
+
+  const siteGenPath = new URL(
+    '../demo/components/generated/mono-font-subset.ts',
+    import.meta.url,
+  )
+  const siteGenContent = generatedTsContent(SITE_GENERATED_TS_HEADER, site.css)
+  await writeFile(siteGenPath, siteGenContent, 'utf8')
 
   const stylesCssPath = new URL('../demo/styles.css', import.meta.url)
   const stylesCss = await readFile(stylesCssPath, 'utf8')
-  await writeFile(stylesCssPath, patchStylesCss(stylesCss, css), 'utf8')
+  await writeFile(stylesCssPath, patchStylesCss(stylesCss, site.css), 'utf8')
 
   console.log(
-    `Wrote ${genContent.length} bytes to demo/components/generated/mono-font-subset.ts ` +
-      `and patched demo/styles.css (subset: ${subsetBuffer.length} bytes woff2, ` +
-      `${base64.length} bytes base64)`,
+    `Wrote ${siteGenContent.length} bytes to demo/components/generated/mono-font-subset.ts ` +
+      `and patched demo/styles.css (subset: ${site.woff2Bytes} bytes woff2, ` +
+      `${site.base64.length} bytes base64)`,
+  )
+
+  // --- Core SVG-mono subset (#1061) ---
+  const core = await buildSubset(source, font, CORE_UNICODE_RANGES)
+
+  const coreGenPath = new URL(
+    '../packages/core/src/generated/mono-font-subset.ts',
+    import.meta.url,
+  )
+  const coreGenContent = generatedTsContent(CORE_GENERATED_TS_HEADER, core.css)
+  await writeFile(coreGenPath, coreGenContent, 'utf8')
+
+  console.log(
+    `Wrote ${coreGenContent.length} bytes to packages/core/src/generated/mono-font-subset.ts ` +
+      `(subset: ${core.woff2Bytes} bytes woff2, ${core.base64.length} bytes base64)`,
   )
 }
 
