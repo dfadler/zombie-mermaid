@@ -93,9 +93,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test": "vitest run -c config/vitest.config.ts",
+    "test:watch": "vitest -c config/vitest.config.ts",
+    "test:coverage": "vitest run -c config/vitest.config.ts --coverage",
     "test:visual": "playwright test",
     "test:visual:watch": "playwright test --ui",
     "test:visual:update": "playwright test --update-snapshots",
@@ -117,6 +117,7 @@
     "bench:mcp": "tsx scripts/bench-mcp.ts",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
+    "build:mono-font": "tsx scripts/build-mono-font-subset.ts && prettier --write demo/components/generated/mono-font-subset.ts demo/styles.css",
     "generate:logo-lockup": "tsx scripts/generate-logo-lockup.ts",
     "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
@@ -124,7 +125,7 @@
     "form-facts": "tsx scripts/form-facts.ts",
     "form-judge-prepare": "tsx scripts/form-judge-prepare.ts",
     "form-judge-finalize-cache": "tsx scripts/form-judge-finalize-cache.ts",
-    "build": "vite build --app --config vite.config.lib.ts",
+    "build": "vite build --app --config config/vite.config.lib.ts",
     "build:packages": "vite build --app --config packages/core/vite.config.ts && vite build --app --config packages/mermaid-parser/vite.config.ts && vite build --app --config packages/svg-renderer/vite.config.ts && vite build --app --config packages/ascii-renderer/vite.config.ts && vite build --app --config packages/mcp/vite.config.ts",
     "build:site": "rm -rf site && mkdir -p site && SITE_OUT_DIR=site tsx site-src/index.ts && SITE_OUT_DIR=site tsx site-src/editor.ts && SITE_OUT_DIR=site tsx site-src/fork-fixes.ts && SITE_OUT_DIR=site tsx site-src/pages.ts && SITE_OUT_DIR=site tsx site-src/blog.ts && SITE_OUT_DIR=site tsx site-src/dashboard.ts && cp -r public/* site/",
     "xychart-test": "tsx site-src/xychart-test.ts",
@@ -136,7 +137,8 @@
     "fork-fixes": "tsx site-src/fork-fixes.ts",
     "dashboard": "tsx site-src/dashboard.ts",
     "dashboard:data": "tsx scripts/generate-dashboard-data.ts",
-    "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts"
+    "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
+    "audit:responsive": "tsx scripts/audit-responsive.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -165,6 +167,7 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
+    "fontkit": "^2.0.4",
     "jsdom": "^30.0.1",
     "marked": "^18.0.11",
     "mermaid": "11.17.2",
@@ -172,6 +175,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "shiki": "^3.19.0",
+    "subset-font": "^2.7.0",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.68.0",

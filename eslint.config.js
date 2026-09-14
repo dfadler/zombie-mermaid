@@ -57,7 +57,7 @@ export default tseslint.config(
       // The live editor's client-side modules (#766).
       'editor/js/**/*.ts',
       'vite.config.ts',
-      'vite.config.lib.ts',
+      'config/vite.config.lib.ts',
       // The site-generator scripts (#995 moved these into site-src/ as a
       // unit) — samples-data.ts/xychart-samples-data.ts are excluded above
       // via the global `ignores` block instead. This glob also now covers

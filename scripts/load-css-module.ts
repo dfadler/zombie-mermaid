@@ -76,7 +76,7 @@ const CACHE_VERSION = 1
  * Resolves a `.module.css` URL to a real filesystem path.
  *
  * Vitest's jsdom test environment (this repo's marker for a test that
- * needs a live DOM — see vitest.config.ts's comment) transforms every
+ * needs a live DOM — see config/vitest.config.ts's comment) transforms every
  * module a jsdom-environment test reaches as if it will run in a real
  * browser. Part of that: Vite rewrites `import.meta.url` to a synthetic
  * dev-server URL (`http://localhost:<port>/<repo-relative-path>`) instead

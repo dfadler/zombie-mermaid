@@ -30,7 +30,7 @@
       // package's *built* dist/index.d.ts. That would make typecheck pass
       // or fail against stale/missing build output instead of the actual
       // source being edited, and would require a full package build before
-      // `tsc --noEmit` could even run. `tsconfig.build.json` (used only by
+      // `tsc --noEmit` could even run. `config/tsconfig.build.json` (used only by
       // the two vite lib builds' own dts-generation step) intentionally
       // does NOT carry this override — a real build's declaration output
       // must resolve these the same way a downstream consumer would: see
