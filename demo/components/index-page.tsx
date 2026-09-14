@@ -612,6 +612,14 @@ function homePageCss(): string {
 .theme-showcase-grid:-webkit-full-screen {
   display: flex !important;
   flex-direction: column !important;
+  /* Overrides the inline style's own alignItems: 'start' (meant for the
+     normal two-column *grid* layout's cross-axis) -- align-items applies
+     to flex containers too, and 'start' there means "don't stretch
+     children to the container's own width," the opposite of what this
+     single-column *flex* layout needs. Confirmed live: without this,
+     .theme-showcase-diagram-card computed to ~330px wide (its own content
+     width) instead of filling the fullscreen viewport. */
+  align-items: stretch !important;
   width: 100% !important;
   height: 100vh !important;
   height: 100dvh !important;
