@@ -314,9 +314,9 @@ describe('<EditorApp> render pipeline (#810)', () => {
     })
 
     await waitFor(() => {
-      expect(JSON.parse(decodeSource(window.location.hash.slice(1)))).toEqual(
-        { source: 'graph TD\n  A --> B' },
-      )
+      expect(JSON.parse(decodeSource(window.location.hash.slice(1)))).toEqual({
+        source: 'graph TD\n  A --> B',
+      })
     })
   })
 
@@ -327,9 +327,7 @@ describe('<EditorApp> render pipeline (#810)', () => {
     render(createElement(EditorApp, PROPS))
 
     await waitFor(() => {
-      expect(document.getElementById('status-text')!.textContent).toBe(
-        'Error',
-      )
+      expect(document.getElementById('status-text')!.textContent).toBe('Error')
     })
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'boom',
@@ -353,9 +351,7 @@ describe('<EditorApp> render pipeline (#810)', () => {
     })
 
     await waitFor(() => {
-      expect(document.getElementById('status-text')!.textContent).toBe(
-        'Ready',
-      )
+      expect(document.getElementById('status-text')!.textContent).toBe('Ready')
     })
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'Start typing to render your diagram',
@@ -528,9 +524,7 @@ describe('<EditorApp> SVG/ASCII output toggle (#976)', () => {
     fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
 
     await waitFor(() => {
-      expect(document.getElementById('status-text')!.textContent).toBe(
-        'Error',
-      )
+      expect(document.getElementById('status-text')!.textContent).toBe('Error')
     })
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'bad ascii diagram',
