@@ -34,7 +34,9 @@
  *                            serves — see DEFAULT_PAGES below). Not a glob:
  *                            these are server routes, not files on disk.
  *   --widths=<a,b,c>         Comma-separated viewport widths in px (default:
- *                            375,768,1440 — mobile/tablet/desktop).
+ *                            375,414,480,768,1024,1440 — mobile, two
+ *                            intermediate mobile/phablet widths, tablet,
+ *                            landscape tablet, and desktop — see #1033).
  *   --height=<n>             Viewport height in px (default: 900).
  *   --tolerance=<n>          Overflow tolerance in px before flagging, to
  *                            absorb sub-pixel layout jitter (default: 1).
@@ -48,6 +50,28 @@
  *                            wired up as a CI gate without changing this
  *                            script — see #1032's "doesn't need to be a CI
  *                            gate on day one").
+ *   --themes=<a,b,c>         Comma-separated built-in theme keys (see
+ *                            packages/core/src/theme.ts's THEMES) to
+ *                            spot-check on top of the default-theme audit
+ *                            above (default: dracula,github-light — one
+ *                            dark, one light, per #1033). Applied only to
+ *                            --theme-pages, not the full --pages matrix.
+ *   --theme-pages=<a,b,c>    Comma-separated route paths to run the theme
+ *                            spot-check against (default: /,/editor — the
+ *                            only templates that currently wire into
+ *                            demo/theme-state.ts's shared `mermaid-theme`
+ *                            localStorage preference, confirmed against a
+ *                            running dev server while building this: the
+ *                            diagram-type/dashboard/fork-fixes/blog
+ *                            templates render no theme picker today despite
+ *                            older code comments suggesting they once did).
+ *   --theme-widths=<a,b,c>   Comma-separated viewport widths for the theme
+ *                            spot-check (default: 375,414,480 — #1033 asks
+ *                            specifically whether theme choice affects
+ *                            layout "at narrow widths", so this stays a
+ *                            narrower matrix than --widths by default).
+ *   --skip-theme-check       Skip the theme spot-check entirely (default:
+ *                            runs it as part of every audit).
  *
  * This deliberately does not start the dev server itself: point --base-url
  * at whatever's already serving the pages (a `pnpm run dev` instance on any
@@ -59,9 +83,48 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Browser } from '@playwright/test'
+import type { Browser, BrowserContext, Page } from '@playwright/test'
 
-export const DEFAULT_WIDTHS = [375, 768, 1440]
+// 375 (mobile), 414 (large phone, e.g. iPhone Plus/Max widths), 480
+// (phablet), 768 (tablet portrait), 1024 (tablet landscape), 1440
+// (desktop) — broadened from the original 375/768/1440 per #1033, which
+// found the original three-width matrix skipped every intermediate width a
+// real device actually ships.
+export const DEFAULT_WIDTHS = [375, 414, 480, 768, 1024, 1440]
+
+/**
+ * Built-in theme keys (see `packages/core/src/theme.ts`'s `THEMES`)
+ * spot-checked by default: one dark, one light — matches #1033's own
+ * example pair rather than looping all 15, since the point is a spot-check
+ * for theme-driven *layout* differences (colors changing is expected and
+ * not what this audit looks for), not exhaustive per-theme coverage.
+ */
+export const DEFAULT_THEMES = ['dracula', 'github-light']
+
+/**
+ * Route paths the theme spot-check runs against by default. Kept separate
+ * from `DEFAULT_PAGES` (and deliberately not just "every page in
+ * `DEFAULT_PAGES`"): verified against a running `pnpm run dev` instance
+ * while building this feature that `/` (the homepage's theme showcase) and
+ * `/editor` are the only templates that currently read/write
+ * `demo/theme-state.ts`'s shared `mermaid-theme` localStorage preference —
+ * `/diagrams`, `/fork-fixes.html`, `/dashboard.html`, `/blog`, and
+ * individual diagram-type pages (e.g. `/diagrams/flowchart.html`) render no
+ * theme picker today, despite older code comments (see e.g.
+ * `demo/components/dashboard-app.tsx`, `demo/components/theme-picker.tsx`)
+ * describing a "Pick a look" `ThemePickerSection` that once appeared on
+ * every page. Pass `--theme-pages` to override if that changes.
+ */
+export const DEFAULT_THEME_PAGES = ['/', '/editor']
+
+/**
+ * Viewport widths the theme spot-check runs at by default — narrower than
+ * `DEFAULT_WIDTHS` on purpose, since #1033 asks specifically whether theme
+ * choice affects layout "at narrow widths" (a picker/dropdown control is
+ * the most likely place for a theme's swatch/label content to overflow a
+ * cramped mobile width), not a full re-run of the whole width matrix.
+ */
+export const DEFAULT_THEME_WIDTHS = [375, 414, 480]
 
 // Every page template this repo's dev server (vite.config.ts) serves. Each
 // diagram type (/diagrams/<slug>) and each blog post (/blog/<slug>) shares
@@ -90,6 +153,10 @@ export interface AuditOptions {
   screenshotDir: string | null
   outPath: string | null
   exitZero: boolean
+  themes: string[]
+  themePages: string[]
+  themeWidths: number[]
+  skipThemeCheck: boolean
 }
 
 const USAGE = `Usage: pnpm run audit:responsive -- [options]
@@ -103,6 +170,10 @@ Options:
   --screenshot-dir=<path>  Save a PNG for each flagged page/width only
   --out=<path>             Write the full JSON report to this path
   --exit-zero              Exit 0 even if findings are present
+  --themes=<a,b,c>         Theme keys to spot-check (default: ${DEFAULT_THEMES.join(',')})
+  --theme-pages=<a,b,c>    Pages to run the theme spot-check on (default: ${DEFAULT_THEME_PAGES.join(',')})
+  --theme-widths=<a,b,c>   Widths to run the theme spot-check at (default: ${DEFAULT_THEME_WIDTHS.join(',')})
+  --skip-theme-check       Skip the theme spot-check entirely
   -h, --help               Show this help
 `
 
@@ -112,23 +183,42 @@ function flagValue(args: string[], name: string): string | undefined {
   return match ? match.slice(prefix.length) : undefined
 }
 
+/** Parses a `--flag=a,b,c` string list, trimming whitespace and dropping empty entries. */
+function parseStringList(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/** Parses a `--flag=1,2,3` numeric list, dropping non-finite/non-positive entries. */
+function parseWidthList(raw: string): number[] {
+  return raw
+    .split(',')
+    .map((w) => Number(w.trim()))
+    .filter((w) => Number.isFinite(w) && w > 0)
+}
+
 /** Pure argv parser — kept separate from `main()` so it's directly testable. */
 export function parseArgs(argv: string[]): AuditOptions {
   const pagesRaw = flagValue(argv, 'pages')
-  const pages = pagesRaw
-    ? pagesRaw
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean)
-    : DEFAULT_PAGES
+  const pages = pagesRaw ? parseStringList(pagesRaw) : DEFAULT_PAGES
 
   const widthsRaw = flagValue(argv, 'widths')
-  const widths = widthsRaw
-    ? widthsRaw
-        .split(',')
-        .map((w) => Number(w.trim()))
-        .filter((w) => Number.isFinite(w) && w > 0)
-    : DEFAULT_WIDTHS
+  const widths = widthsRaw ? parseWidthList(widthsRaw) : DEFAULT_WIDTHS
+
+  const themesRaw = flagValue(argv, 'themes')
+  const themes = themesRaw ? parseStringList(themesRaw) : DEFAULT_THEMES
+
+  const themePagesRaw = flagValue(argv, 'theme-pages')
+  const themePages = themePagesRaw
+    ? parseStringList(themePagesRaw)
+    : DEFAULT_THEME_PAGES
+
+  const themeWidthsRaw = flagValue(argv, 'theme-widths')
+  const themeWidths = themeWidthsRaw
+    ? parseWidthList(themeWidthsRaw)
+    : DEFAULT_THEME_WIDTHS
 
   return {
     baseUrl: flagValue(argv, 'base-url') ?? DEFAULT_BASE_URL,
@@ -139,6 +229,10 @@ export function parseArgs(argv: string[]): AuditOptions {
     screenshotDir: flagValue(argv, 'screenshot-dir') ?? null,
     outPath: flagValue(argv, 'out') ?? null,
     exitZero: argv.includes('--exit-zero'),
+    themes,
+    themePages,
+    themeWidths,
+    skipThemeCheck: argv.includes('--skip-theme-check'),
   }
 }
 
@@ -262,6 +356,8 @@ export interface PageWidthResult {
   width: number
   findings: OverflowFinding[]
   screenshotPath?: string
+  /** Set only for a theme spot-check run — the non-default theme key that was active (see `--themes`/`--theme-pages`). Omitted for the default-theme audit. */
+  theme?: string
 }
 
 function slugify(pagePath: string): string {
@@ -273,7 +369,82 @@ function slugify(pagePath: string): string {
   return slug || 'root'
 }
 
-/** Drives `browser` across every page/width combination in `options`. */
+/**
+ * Runs the overflow audit for one page/width/theme combination.
+ *
+ * When `theme` is given, opens a dedicated `BrowserContext` with an
+ * `addInitScript` that sets `demo/theme-state.ts`'s `mermaid-theme`
+ * localStorage key *before* the page's own scripts run (Playwright
+ * guarantees init scripts execute ahead of any script already on the
+ * page) — the same mechanism `ThemeShowcasePicker`/the editor's own picker
+ * read on mount, so the page comes up already themed without needing a
+ * live UI interaction to select it. The default-theme case (`theme`
+ * undefined) skips the extra context entirely and reuses `browser`'s
+ * default one, matching this function's pre-#1033 behavior exactly.
+ */
+async function auditPageAtWidth(
+  browser: Browser,
+  options: AuditOptions,
+  pagePath: string,
+  width: number,
+  theme?: string,
+): Promise<PageWidthResult> {
+  const context: BrowserContext | null = theme
+    ? await browser.newContext()
+    : null
+  if (context && theme) {
+    await context.addInitScript((themeKey: string) => {
+      try {
+        window.localStorage.setItem('mermaid-theme', themeKey)
+      } catch {
+        // Storage unavailable (private mode, disabled, quota) — the page
+        // will just render its default theme; not this audit's concern.
+      }
+    }, theme)
+  }
+  const page: Page = context ? await context.newPage() : await browser.newPage()
+  try {
+    await page.setViewportSize({ width, height: options.height })
+    const url = new URL(pagePath, options.baseUrl).toString()
+    // 'load', not 'networkidle': this repo's dev server (vite.config.ts)
+    // holds its HMR websocket open for as long as a tab is connected, so
+    // a live dev-server page never goes network-idle — see this repo's
+    // CLAUDE.md ("Live reload keeps the connection open"). The generated
+    // pages are self-contained bundled HTML, so 'load' is already enough
+    // signal that the DOM this audit walks has settled.
+    await page.goto(url, { waitUntil: 'load' })
+    const findings = await page.evaluate(
+      findOverflowingElements,
+      options.tolerancePx,
+    )
+
+    const result: PageWidthResult = { page: pagePath, width, findings }
+    if (theme) result.theme = theme
+    if (findings.length > 0 && options.screenshotDir) {
+      await mkdir(options.screenshotDir, { recursive: true })
+      const screenshotPath = join(
+        options.screenshotDir,
+        `${slugify(pagePath)}-${width}${theme ? `-${theme}` : ''}.png`,
+      )
+      await page.screenshot({ path: screenshotPath, fullPage: true })
+      result.screenshotPath = screenshotPath
+    }
+    return result
+  } finally {
+    await page.close()
+    if (context) await context.close()
+  }
+}
+
+/**
+ * Drives `browser` across every page/width combination in `options.pages` x
+ * `options.widths`, then — unless `options.skipThemeCheck` — appends a
+ * second pass spot-checking `options.themes` on `options.themePages` at
+ * `options.themeWidths` (see #1033: does a non-default theme change layout,
+ * not just colors, at a narrow width). The two passes are independent: the
+ * theme spot-check runs on its own page/width matrix regardless of what
+ * `--pages`/`--widths` were set to.
+ */
 export async function runAudit(
   options: AuditOptions,
   browser: Browser,
@@ -282,35 +453,18 @@ export async function runAudit(
 
   for (const pagePath of options.pages) {
     for (const width of options.widths) {
-      const page = await browser.newPage()
-      try {
-        await page.setViewportSize({ width, height: options.height })
-        const url = new URL(pagePath, options.baseUrl).toString()
-        // 'load', not 'networkidle': this repo's dev server (vite.config.ts)
-        // holds its HMR websocket open for as long as a tab is connected, so
-        // a live dev-server page never goes network-idle — see this repo's
-        // CLAUDE.md ("Live reload keeps the connection open"). The generated
-        // pages are self-contained bundled HTML, so 'load' is already enough
-        // signal that the DOM this audit walks has settled.
-        await page.goto(url, { waitUntil: 'load' })
-        const findings = await page.evaluate(
-          findOverflowingElements,
-          options.tolerancePx,
-        )
+      results.push(await auditPageAtWidth(browser, options, pagePath, width))
+    }
+  }
 
-        const result: PageWidthResult = { page: pagePath, width, findings }
-        if (findings.length > 0 && options.screenshotDir) {
-          await mkdir(options.screenshotDir, { recursive: true })
-          const screenshotPath = join(
-            options.screenshotDir,
-            `${slugify(pagePath)}-${width}.png`,
+  if (!options.skipThemeCheck) {
+    for (const pagePath of options.themePages) {
+      for (const width of options.themeWidths) {
+        for (const theme of options.themes) {
+          results.push(
+            await auditPageAtWidth(browser, options, pagePath, width, theme),
           )
-          await page.screenshot({ path: screenshotPath, fullPage: true })
-          result.screenshotPath = screenshotPath
         }
-        results.push(result)
-      } finally {
-        await page.close()
       }
     }
   }
@@ -328,8 +482,9 @@ export function formatReport(results: PageWidthResult[]): string {
       result.findings.length === 0
         ? 'ok'
         : `${result.findings.length} finding(s)`
+    const themeSuffix = result.theme ? ` (theme: ${result.theme})` : ''
     lines.push(
-      `${result.page.padEnd(20)} @ ${String(result.width).padStart(5)}px  ${status}`,
+      `${result.page.padEnd(20)} @ ${String(result.width).padStart(5)}px${themeSuffix}  ${status}`,
     )
     for (const finding of result.findings) {
       totalFindings += 1

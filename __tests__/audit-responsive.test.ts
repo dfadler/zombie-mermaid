@@ -18,6 +18,9 @@ import {
   DEFAULT_BASE_URL,
   DEFAULT_HEIGHT,
   DEFAULT_PAGES,
+  DEFAULT_THEME_PAGES,
+  DEFAULT_THEME_WIDTHS,
+  DEFAULT_THEMES,
   DEFAULT_TOLERANCE_PX,
   DEFAULT_WIDTHS,
   findOverflowingElements,
@@ -52,6 +55,10 @@ describe('parseArgs', () => {
       screenshotDir: null,
       outPath: null,
       exitZero: false,
+      themes: DEFAULT_THEMES,
+      themePages: DEFAULT_THEME_PAGES,
+      themeWidths: DEFAULT_THEME_WIDTHS,
+      skipThemeCheck: false,
     })
   })
 
@@ -65,6 +72,10 @@ describe('parseArgs', () => {
       '--screenshot-dir=/tmp/shots',
       '--out=/tmp/report.json',
       '--exit-zero',
+      '--themes=nord,one-dark',
+      '--theme-pages=/,/diagrams',
+      '--theme-widths=320,414',
+      '--skip-theme-check',
     ])
 
     expect(options).toEqual({
@@ -76,6 +87,10 @@ describe('parseArgs', () => {
       screenshotDir: '/tmp/shots',
       outPath: '/tmp/report.json',
       exitZero: true,
+      themes: ['nord', 'one-dark'],
+      themePages: ['/', '/diagrams'],
+      themeWidths: [320, 414],
+      skipThemeCheck: true,
     })
   })
 
@@ -87,6 +102,16 @@ describe('parseArgs', () => {
   it('trims whitespace and drops empty entries from --pages', () => {
     const options = parseArgs(['--pages= / , /editor ,,'])
     expect(options.pages).toEqual(['/', '/editor'])
+  })
+
+  it('trims whitespace and drops empty entries from --themes', () => {
+    const options = parseArgs(['--themes= dracula , github-light ,,'])
+    expect(options.themes).toEqual(['dracula', 'github-light'])
+  })
+
+  it('drops non-finite/non-positive widths from --theme-widths', () => {
+    const options = parseArgs(['--theme-widths=375,notanumber,-10,0,480'])
+    expect(options.themeWidths).toEqual([375, 480])
   })
 })
 
@@ -215,5 +240,13 @@ describe('formatReport', () => {
     expect(report).toContain(
       'FAIL: 1 unhandled overflow finding(s) across 2 page/width combination(s).',
     )
+  })
+
+  it('labels a theme spot-check result with the active theme', () => {
+    const results: PageWidthResult[] = [
+      { page: '/', width: 414, findings: [], theme: 'dracula' },
+    ]
+    const report = formatReport(results)
+    expect(report).toContain('(theme: dracula)')
   })
 })
