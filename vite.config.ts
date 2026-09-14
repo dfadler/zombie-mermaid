@@ -183,12 +183,34 @@ function samplesRebuildPlugin(): Plugin {
       // errored out entirely on this page's large inlined stylesheet.
       server.middlewares.use(async (req, res, next) => {
         const url = (req.url ?? '/').split('?')[0]!
+
+        // /diagrams and /blog serve a *directory's* index.html
+        // (diagrams/index.html, blog/index.html), and those pages' CSS is
+        // included via a relative href (`assets/diagram-page.css`,
+        // `assets/blog.css`) so the built site stays portable to any
+        // hosted subpath — see pages.ts/blog.ts's own cssHref comments.
+        // A relative href only resolves correctly against a URL whose
+        // final segment is a trailing slash or filename, never a bare
+        // directory name: requesting the bare URL (no trailing slash)
+        // resolves `assets/blog.css` one directory too high and 404s,
+        // silently dropping the page's own layout CSS (zombie-mermaid#1058).
+        // Production (GitHub Pages) already 301-redirects a bare
+        // directory request to add the trailing slash (verified via
+        // `curl -I https://dfadler.github.io/zombie-mermaid/blog`), so
+        // mirror that here instead of serving the directory's content
+        // straight under the bare URL.
+        if (url === '/diagrams' || url === '/blog') {
+          res.statusCode = 301
+          res.setHeader('Location', `${url}/`)
+          res.end()
+          return
+        }
+
         let file: string | null = null
         if (url === '/' || url === '/index.html') file = 'index.html'
         else if (url === '/editor' || url === '/editor.html')
           file = 'editor.html'
-        else if (url === '/diagrams' || url === '/diagrams/')
-          file = 'diagrams/index.html'
+        else if (url === '/diagrams/') file = 'diagrams/index.html'
         else if (url.startsWith('/diagrams/')) {
           // pages.ts's own output tree (diagrams/**) — served straight from
           // disk, same as index.html/editor.html above. Guard against path
@@ -197,7 +219,7 @@ function samplesRebuildPlugin(): Plugin {
           if (!rel.includes('..')) file = rel
         } else if (url === '/fork-fixes.html') file = 'fork-fixes.html'
         else if (url === '/dashboard.html') file = 'dashboard.html'
-        else if (url === '/blog' || url === '/blog/') file = 'blog/index.html'
+        else if (url === '/blog/') file = 'blog/index.html'
         else if (url.startsWith('/blog/')) {
           // blog.ts's own output tree (blog/**: posts, index, feed.xml,
           // assets/blog.css) — same pattern as diagrams/** above, same
