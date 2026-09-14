@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
- * Guards `demo/index-page-client.ts`'s `initThemeShowcaseZoomControl()` --
- * scale (zombie-mermaid#987) and pan (zombie-mermaid#988), one function
- * (see that function's own doc comment for why they share it). The module
- * runs its wiring as side effects at import time (mirroring how it
- * actually runs on a real page load, and matching
+ * Guards `demo/index-page-client.ts`'s `initThemeShowcaseFullscreen()` --
+ * the fullscreen toggle plus, once fullscreen, scale (zombie-mermaid#987)
+ * and pan/pinch (zombie-mermaid#988). One function (see its own doc
+ * comment for why). The module runs its wiring as side effects at import
+ * time (mirroring how it actually runs on a real page load, and matching
  * `__tests__/demo-diagram-page-client.test.ts`'s own pattern for a
  * plain-DOM client module), so every test builds the minimal markup that
  * function expects *before* a fresh dynamic import -- `vi.resetModules()`
@@ -17,16 +17,25 @@
  * surface -- hero copy, blog links, etc.). `index-page-client.ts`'s own
  * header comment already notes `ThemeShowcase`'s client wiring predates
  * dedicated test coverage; a fixture with just the ids/classes
- * `initThemeShowcaseZoomControl()` reads keeps these tests focused on the
- * zoom+pan behavior itself rather than on reproducing that component.
+ * `initThemeShowcaseFullscreen()` reads keeps these tests focused on the
+ * fullscreen+zoom+pan behavior itself rather than on reproducing that
+ * component.
  *
- * jsdom implements `PointerEvent` but not `Element.prototype
- * .setPointerCapture` (confirmed directly against this repo's installed
- * jsdom version, same as `__tests__/dom/output-panel-viewport.test.ts`'s
- * own header comment) -- `index-page-client.ts`'s `body.setPointerCapture?.
- * (...)` call is exactly the optional-chaining guard that makes these
- * tests possible without a jsdom polyfill. `getBoundingClientRect` is
- * likewise mocked directly (jsdom does no real layout), the same technique
+ * `stubFullscreenApi()` below is `__tests__/dom/diagram-detail-fullscreen
+ * .test.ts`'s own helper, duplicated rather than shared (that file's own
+ * header comment on `output-panel-viewport.test.ts` explains the
+ * "independently-bundled pages/tests each keep their own copy" precedent
+ * this follows) -- jsdom implements `PointerEvent` but not
+ * `Element.prototype.requestFullscreen`/`document.exitFullscreen`/
+ * `document.fullscreenElement` at all, so both this file and that one stub
+ * them the same way. jsdom also implements `PointerEvent` but not
+ * `Element.prototype.setPointerCapture` (confirmed directly against this
+ * repo's installed jsdom version, same as
+ * `__tests__/dom/output-panel-viewport.test.ts`'s own header comment) --
+ * `index-page-client.ts`'s `body.setPointerCapture?.(...)` call is exactly
+ * the optional-chaining guard that makes the pan/pinch tests below
+ * possible without a jsdom polyfill. `getBoundingClientRect` is likewise
+ * mocked directly (jsdom does no real layout), the same technique
  * `__tests__/dom/editor-viewport.test.ts`'s resize-handle tests use --
  * `mockOverflow()` below simulates how much the (already-scaled)
  * `#theme-showcase-output-body` box overflows `#theme-showcase-diagram-
@@ -37,40 +46,35 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 function buildDom(): void {
   document.body.innerHTML = `
-    <div id="theme-showcase-diagram-card" data-output-mode="svg">
-      <div class="theme-showcase-output-toggle">
-        <div class="theme-showcase-scale" id="theme-showcase-scale">
-          <button
-            type="button"
-            id="theme-showcase-scale-trigger"
-            aria-haspopup="true"
-            aria-expanded="false"
-            aria-controls="theme-showcase-scale-panel"
-          >
-            <span id="theme-showcase-scale-value">100%</span>
-          </button>
-          <div
-            class="theme-showcase-scale-panel"
-            id="theme-showcase-scale-panel"
-            role="group"
-            hidden
-          >
-            <input
-              type="range"
-              id="theme-showcase-scale-slider"
-              min="0.5"
-              max="2.5"
-              step="0.1"
-              value="1"
-            />
+    <div id="theme-showcase-grid" class="theme-showcase-grid">
+      <div id="theme-showcase-diagram-card" data-output-mode="svg">
+        <div class="theme-showcase-output-toggle">
+          <div class="theme-showcase-output-controls">
+            <div class="theme-showcase-zoom-controls" id="theme-showcase-zoom-controls">
+              <button type="button" id="theme-showcase-zoom-out">−</button>
+              <button type="button" id="theme-showcase-zoom-reset">100%</button>
+              <button type="button" id="theme-showcase-zoom-in">+</button>
+            </div>
+            <button
+              type="button"
+              id="theme-showcase-fullscreen-trigger"
+              title="View fullscreen"
+              aria-pressed="false"
+            ></button>
           </div>
         </div>
-      </div>
-      <div class="theme-showcase-output-body" id="theme-showcase-output-body">
-        <svg id="theme-showcase-diagram"></svg>
+        <div class="theme-showcase-output-body" id="theme-showcase-output-body">
+          <svg id="theme-showcase-diagram"></svg>
+        </div>
       </div>
     </div>
   `
+}
+
+function grid(): HTMLElement {
+  const el = document.getElementById('theme-showcase-grid')
+  if (!el) throw new Error('missing grid')
+  return el
 }
 
 function card(): HTMLElement {
@@ -85,10 +89,79 @@ function body(): HTMLElement {
   return el
 }
 
-function slider(): HTMLInputElement {
-  const el = document.getElementById('theme-showcase-scale-slider')
-  if (!(el instanceof HTMLInputElement)) throw new Error('missing slider')
+function fullscreenBtn(): HTMLButtonElement {
+  const el = document.getElementById('theme-showcase-fullscreen-trigger')
+  if (!(el instanceof HTMLButtonElement)) throw new Error('missing trigger')
   return el
+}
+
+function zoomIn(): void {
+  fireEvent.click(document.getElementById('theme-showcase-zoom-in')!)
+}
+function zoomOut(): void {
+  fireEvent.click(document.getElementById('theme-showcase-zoom-out')!)
+}
+function zoomReset(): void {
+  fireEvent.click(document.getElementById('theme-showcase-zoom-reset')!)
+}
+function resetLabel(): string | null {
+  return document.getElementById('theme-showcase-zoom-reset')?.textContent ?? null
+}
+
+/**
+ * Stubs `Element.prototype.requestFullscreen`/`document.exitFullscreen`/
+ * `document.fullscreenElement` -- see this file's header comment. Every
+ * test that needs "fullscreen already active" calls `enterSettles(grid())`
+ * once up front rather than driving the trigger button itself (a separate
+ * `describe('fullscreen toggle')` block below covers that click ->
+ * requestFullscreen()/exitFullscreen() path directly).
+ */
+function stubFullscreenApi(): {
+  requestFullscreen: ReturnType<typeof vi.fn>
+  exitFullscreen: ReturnType<typeof vi.fn>
+  enterSettles: (el: Element) => void
+  exitSettles: () => void
+  restore: () => void
+} {
+  const originalRequest = Element.prototype.requestFullscreen
+  const originalExit = document.exitFullscreen
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    document,
+    'fullscreenElement',
+  )
+
+  let current: Element | null = null
+  Object.defineProperty(document, 'fullscreenElement', {
+    configurable: true,
+    get: () => current,
+  })
+
+  const requestFullscreen = vi.fn(() => Promise.resolve())
+  const exitFullscreen = vi.fn(() => Promise.resolve())
+  Element.prototype.requestFullscreen =
+    requestFullscreen as unknown as typeof Element.prototype.requestFullscreen
+  document.exitFullscreen =
+    exitFullscreen as unknown as typeof document.exitFullscreen
+
+  return {
+    requestFullscreen,
+    exitFullscreen,
+    enterSettles: (el: Element) => {
+      current = el
+      document.dispatchEvent(new Event('fullscreenchange'))
+    },
+    exitSettles: () => {
+      current = null
+      document.dispatchEvent(new Event('fullscreenchange'))
+    },
+    restore: () => {
+      Element.prototype.requestFullscreen = originalRequest
+      if (originalExit) document.exitFullscreen = originalExit
+      if (originalDescriptor) {
+        Object.defineProperty(document, 'fullscreenElement', originalDescriptor)
+      }
+    },
+  }
 }
 
 /**
@@ -112,12 +185,6 @@ function mockOverflow(overflowX: number, overflowY: number): void {
   } as DOMRect)
 }
 
-function setScale(value: string): void {
-  const el = slider()
-  el.value = value
-  fireEvent.input(el)
-}
-
 beforeEach(() => {
   vi.resetModules()
   buildDom()
@@ -128,68 +195,129 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('initThemeShowcaseZoomControl: scale (#987)', () => {
-  it('writes --tsd-scale and the percent label on slider input', async () => {
-    await import('../../demo/index-page-client.ts')
-    setScale('1.8')
-    expect(body().style.getPropertyValue('--tsd-scale')).toBe('1.8')
-    expect(
-      document.getElementById('theme-showcase-scale-value')?.textContent,
-    ).toBe('180%')
+describe('initThemeShowcaseFullscreen: fullscreen toggle', () => {
+  it('clicking the trigger requests fullscreen on #theme-showcase-grid', async () => {
+    const api = stubFullscreenApi()
+    try {
+      await import('../../demo/index-page-client.ts')
+      fireEvent.click(fullscreenBtn())
+      expect(api.requestFullscreen).toHaveBeenCalledTimes(1)
+      expect(api.requestFullscreen.mock.instances[0]).toBe(grid())
+    } finally {
+      api.restore()
+    }
   })
 
-  it('clamps an out-of-range value to SCALE_MIN/SCALE_MAX', async () => {
-    await import('../../demo/index-page-client.ts')
-    setScale('99')
-    expect(body().style.getPropertyValue('--tsd-scale')).toBe('2.5')
-    setScale('-5')
-    expect(body().style.getPropertyValue('--tsd-scale')).toBe('0.5')
+  it('clicking the trigger while fullscreen exits fullscreen', async () => {
+    const api = stubFullscreenApi()
+    try {
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      fireEvent.click(fullscreenBtn())
+      expect(api.exitFullscreen).toHaveBeenCalledTimes(1)
+    } finally {
+      api.restore()
+    }
+  })
+
+  it('fullscreenchange (not the click itself) syncs aria-pressed/data-fullscreen/title', async () => {
+    const api = stubFullscreenApi()
+    try {
+      await import('../../demo/index-page-client.ts')
+      fireEvent.click(fullscreenBtn())
+      // requestFullscreen()'s promise resolving doesn't itself flip state --
+      // only a real fullscreenchange does (see this function's own doc
+      // comment) -- so nothing has synced yet.
+      expect(fullscreenBtn().getAttribute('aria-pressed')).toBe('false')
+
+      api.enterSettles(grid())
+      expect(fullscreenBtn().getAttribute('aria-pressed')).toBe('true')
+      expect(fullscreenBtn().dataset.fullscreen).toBe('true')
+      expect(fullscreenBtn().title).toBe('Exit fullscreen')
+
+      api.exitSettles()
+      expect(fullscreenBtn().getAttribute('aria-pressed')).toBe('false')
+      expect(fullscreenBtn().dataset.fullscreen).toBe('false')
+      expect(fullscreenBtn().title).toBe('View fullscreen')
+    } finally {
+      api.restore()
+    }
+  })
+
+  it('resets scale and pan to identity on every fullscreenchange, entering or leaving', async () => {
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100)
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn()
+      expect(body().style.getPropertyValue('--tsd-scale')).not.toBe('1')
+
+      api.exitSettles()
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('1')
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
+
+      // And re-entering starts fresh too, not from wherever it was left.
+      api.enterSettles(grid())
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('1')
+    } finally {
+      api.restore()
+    }
   })
 })
 
-describe('initThemeShowcaseZoomControl: disclosure (pre-existing #987 behavior, guarded here since this function now also owns pan)', () => {
-  it('opens on trigger click (focusing the slider) and closes on Escape (refocusing the trigger)', async () => {
+describe('initThemeShowcaseFullscreen: zoom buttons (#987), fullscreen-gated', () => {
+  it('do nothing while not fullscreen', async () => {
     await import('../../demo/index-page-client.ts')
-    const trigger = document.getElementById(
-      'theme-showcase-scale-trigger',
-    ) as HTMLButtonElement
-    const panel = document.getElementById(
-      'theme-showcase-scale-panel',
-    ) as HTMLElement
-
-    expect(panel.hidden).toBe(true)
-    fireEvent.click(trigger)
-    expect(panel.hidden).toBe(false)
-    expect(trigger.getAttribute('aria-expanded')).toBe('true')
-    expect(document.activeElement).toBe(slider())
-
-    fireEvent.keyDown(document, { key: 'Escape' })
-    expect(panel.hidden).toBe(true)
-    expect(document.activeElement).toBe(trigger)
+    zoomIn()
+    expect(body().style.getPropertyValue('--tsd-scale')).toBe('')
+    expect(resetLabel()).toBe('100%')
   })
 
-  it('closes on outside click', async () => {
-    await import('../../demo/index-page-client.ts')
-    const trigger = document.getElementById(
-      'theme-showcase-scale-trigger',
-    ) as HTMLButtonElement
-    const panel = document.getElementById(
-      'theme-showcase-scale-panel',
-    ) as HTMLElement
+  it('zoom in/out step by ZOOM_STEP, snapped to the 0.1 step and clamped to [0.5, 2.5]', async () => {
+    const api = stubFullscreenApi()
+    try {
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
 
-    fireEvent.click(trigger)
-    expect(panel.hidden).toBe(false)
-    fireEvent.click(document.body)
-    expect(panel.hidden).toBe(true)
+      zoomIn()
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('1.3') // round(1 * 1.25, 0.1)
+      expect(resetLabel()).toBe('130%')
+
+      zoomOut()
+      zoomOut()
+      expect(Number(body().style.getPropertyValue('--tsd-scale'))).toBeLessThan(1)
+
+      for (let i = 0; i < 20; i++) zoomIn()
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('2.5')
+      for (let i = 0; i < 20; i++) zoomOut()
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('0.5')
+    } finally {
+      api.restore()
+    }
+  })
+
+  it('reset returns to 100%', async () => {
+    const api = stubFullscreenApi()
+    try {
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn()
+      zoomIn()
+      expect(body().style.getPropertyValue('--tsd-scale')).not.toBe('1')
+      zoomReset()
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('1')
+      expect(resetLabel()).toBe('100%')
+    } finally {
+      api.restore()
+    }
   })
 })
 
-describe('initThemeShowcaseZoomControl: pan (#988)', () => {
-  it('is a no-op at 100% scale -- no .pannable, drag never starts, --tsd-pan-x stays unset', async () => {
-    mockOverflow(0, 0)
+describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () => {
+  it('a drag does nothing while not fullscreen, even with room to pan', async () => {
+    mockOverflow(200, 100)
     await import('../../demo/index-page-client.ts')
-    setScale('1')
-    expect(body().classList.contains('pannable')).toBe(false)
 
     fireEvent.pointerDown(body(), {
       pointerId: 1,
@@ -205,259 +333,331 @@ describe('initThemeShowcaseZoomControl: pan (#988)', () => {
       clientX: 150,
       clientY: 100,
     })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
+    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('')
+  })
+
+  it('is a no-op at 100% scale even while fullscreen -- no .pannable, drag never starts', async () => {
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(0, 0)
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      expect(body().classList.contains('pannable')).toBe(false)
+
+      fireEvent.pointerDown(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+      })
+      expect(body().classList.contains('panning')).toBe(false)
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 150,
+        clientY: 100,
+      })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
+    } finally {
+      api.restore()
+    }
   })
 
   it('marks .pannable once zoomed content overflows the card, and mouse drag pans within bounds', async () => {
-    mockOverflow(200, 100) // maxPanX 100, maxPanY 50
-    await import('../../demo/index-page-client.ts')
-    setScale('2')
-    expect(body().classList.contains('pannable')).toBe(true)
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100) // maxPanX 100, maxPanY 50
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn()
+      expect(body().classList.contains('pannable')).toBe(true)
 
-    fireEvent.pointerDown(body(), {
-      pointerId: 1,
-      pointerType: 'mouse',
-      button: 0,
-      clientX: 100,
-      clientY: 100,
-    })
-    expect(body().classList.contains('panning')).toBe(true)
-    fireEvent.pointerMove(body(), {
-      pointerId: 1,
-      pointerType: 'mouse',
-      clientX: 140,
-      clientY: 130,
-    })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('40px')
-    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('30px')
+      fireEvent.pointerDown(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+      })
+      expect(body().classList.contains('panning')).toBe(true)
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 140,
+        clientY: 130,
+      })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('40px')
+      expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('30px')
 
-    fireEvent.pointerUp(body(), { pointerId: 1, pointerType: 'mouse' })
-    expect(body().classList.contains('panning')).toBe(false)
+      fireEvent.pointerUp(body(), { pointerId: 1, pointerType: 'mouse' })
+      expect(body().classList.contains('panning')).toBe(false)
+    } finally {
+      api.restore()
+    }
   })
 
   it('a mouse drag past the edge clamps to maxPanX/maxPanY, not past it', async () => {
-    mockOverflow(200, 100) // maxPanX 100, maxPanY 50
-    await import('../../demo/index-page-client.ts')
-    setScale('2')
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100) // maxPanX 100, maxPanY 50
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn()
 
-    fireEvent.pointerDown(body(), {
-      pointerId: 1,
-      pointerType: 'mouse',
-      button: 0,
-      clientX: 0,
-      clientY: 0,
-    })
-    fireEvent.pointerMove(body(), {
-      pointerId: 1,
-      pointerType: 'mouse',
-      clientX: 10000,
-      clientY: 10000,
-    })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px')
-    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('50px')
+      fireEvent.pointerDown(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        button: 0,
+        clientX: 0,
+        clientY: 0,
+      })
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 10000,
+        clientY: 10000,
+      })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px')
+      expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('50px')
+    } finally {
+      api.restore()
+    }
   })
 
   it('single-finger touch drag pans the same as mouse drag', async () => {
-    mockOverflow(200, 100)
-    await import('../../demo/index-page-client.ts')
-    setScale('2')
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100)
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn()
 
-    fireEvent.pointerDown(body(), {
-      pointerId: 5,
-      pointerType: 'touch',
-      clientX: 50,
-      clientY: 50,
-    })
-    fireEvent.pointerMove(body(), {
-      pointerId: 5,
-      pointerType: 'touch',
-      clientX: 20,
-      clientY: 60,
-    })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-30px')
-    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('10px')
+      fireEvent.pointerDown(body(), {
+        pointerId: 5,
+        pointerType: 'touch',
+        clientX: 50,
+        clientY: 50,
+      })
+      fireEvent.pointerMove(body(), {
+        pointerId: 5,
+        pointerType: 'touch',
+        clientX: 20,
+        clientY: 60,
+      })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-30px')
+      expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('10px')
+    } finally {
+      api.restore()
+    }
   })
 
-  it('a two-finger touch pinch zooms from 100% scale, keeping the slider and label in sync', async () => {
-    mockOverflow(0, 0) // nothing to pan yet -- proves pinch isn't gated by maxPanX/maxPanY the way a lone drag is
-    await import('../../demo/index-page-client.ts')
+  it('a two-finger touch pinch zooms from 100% scale, keeping the reset label in sync', async () => {
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(0, 0) // nothing to pan yet -- proves pinch isn't gated by maxPanX/maxPanY the way a lone drag is
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
 
-    fireEvent.pointerDown(body(), {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 100,
-      clientY: 100,
-    })
-    fireEvent.pointerDown(body(), {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 200,
-      clientY: 100,
-    })
-    // Symmetric pinch-out about the same midpoint (150, 100) -- distance
-    // doubles (100 -> 200), midpoint doesn't move, isolating the zoom
-    // effect from any pan side effect.
-    fireEvent.pointerMove(body(), {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 50,
-      clientY: 100,
-    })
-    fireEvent.pointerMove(body(), {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 250,
-      clientY: 100,
-    })
+      fireEvent.pointerDown(body(), {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 100,
+        clientY: 100,
+      })
+      fireEvent.pointerDown(body(), {
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: 200,
+        clientY: 100,
+      })
+      // Symmetric pinch-out about the same midpoint (150, 100) -- distance
+      // doubles (100 -> 200), midpoint doesn't move, isolating the zoom
+      // effect from any pan side effect.
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 50,
+        clientY: 100,
+      })
+      fireEvent.pointerMove(body(), {
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: 250,
+        clientY: 100,
+      })
 
-    expect(body().style.getPropertyValue('--tsd-scale')).toBe('2')
-    expect(slider().value).toBe('2')
-    expect(
-      document.getElementById('theme-showcase-scale-value')?.textContent,
-    ).toBe('200%')
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('2')
+      expect(resetLabel()).toBe('200%')
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
+    } finally {
+      api.restore()
+    }
   })
 
   it('a pinch also pans by how far its midpoint moves, clamped to maxPanX/maxPanY', async () => {
-    mockOverflow(200, 100) // maxPanX 100, maxPanY 50
-    await import('../../demo/index-page-client.ts')
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100) // maxPanX 100, maxPanY 50
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
 
-    fireEvent.pointerDown(body(), {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 0,
-      clientY: 0,
-    })
-    fireEvent.pointerDown(body(), {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 100,
-      clientY: 0,
-    })
-    // Both fingers shift by the same +10000px -- distance (and thus scale)
-    // stays put, but the midpoint moves by 10000px, clamped to maxPanX.
-    fireEvent.pointerMove(body(), {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 10000,
-      clientY: 0,
-    })
-    fireEvent.pointerMove(body(), {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 10100,
-      clientY: 0,
-    })
+      fireEvent.pointerDown(body(), {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 0,
+        clientY: 0,
+      })
+      fireEvent.pointerDown(body(), {
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: 100,
+        clientY: 0,
+      })
+      // Both fingers shift by the same +10000px -- distance (and thus scale)
+      // stays put, but the midpoint moves by 10000px, clamped to maxPanX.
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 10000,
+        clientY: 0,
+      })
+      fireEvent.pointerMove(body(), {
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: 10100,
+        clientY: 0,
+      })
 
-    expect(body().style.getPropertyValue('--tsd-scale')).toBe('1')
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px')
-    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('0px')
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('1')
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px')
+      expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('0px')
+    } finally {
+      api.restore()
+    }
   })
 
   it('dropping from two fingers to one continues panning from where it was, without a jump', async () => {
-    mockOverflow(200, 100) // maxPanX 100, maxPanY 50
-    await import('../../demo/index-page-client.ts')
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100) // maxPanX 100, maxPanY 50
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
 
-    fireEvent.pointerDown(body(), {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 0,
-      clientY: 0,
-    })
-    fireEvent.pointerDown(body(), {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 100,
-      clientY: 0,
-    })
-    fireEvent.pointerMove(body(), {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 10000,
-      clientY: 0,
-    })
-    fireEvent.pointerMove(body(), {
-      pointerId: 2,
-      pointerType: 'touch',
-      clientX: 10100,
-      clientY: 0,
-    })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px') // clamped, per the test above
+      fireEvent.pointerDown(body(), {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 0,
+        clientY: 0,
+      })
+      fireEvent.pointerDown(body(), {
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: 100,
+        clientY: 0,
+      })
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 10000,
+        clientY: 0,
+      })
+      fireEvent.pointerMove(body(), {
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: 10100,
+        clientY: 0,
+      })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px') // clamped, per the test above
 
-    fireEvent.pointerUp(body(), { pointerId: 2, pointerType: 'touch' })
-    // The remaining finger (id 1, last at x=10000) moves by -50 -- if
-    // beginGesture() restarted from a jump instead of the pan's actual
-    // current position, this would land somewhere other than 50px.
-    fireEvent.pointerMove(body(), {
-      pointerId: 1,
-      pointerType: 'touch',
-      clientX: 9950,
-      clientY: 0,
-    })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('50px')
+      fireEvent.pointerUp(body(), { pointerId: 2, pointerType: 'touch' })
+      // The remaining finger (id 1, last at x=10000) moves by -50 -- if
+      // beginGesture() restarted from a jump instead of the pan's actual
+      // current position, this would land somewhere other than 50px.
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 9950,
+        clientY: 0,
+      })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('50px')
+    } finally {
+      api.restore()
+    }
   })
 
-  it('ctrl+wheel (trackpad pinch) zooms and keeps the slider/label in sync; a plain wheel still pans, not zooms', async () => {
-    mockOverflow(200, 100)
-    await import('../../demo/index-page-client.ts')
-    setScale('2') // something to pan into, so a plain wheel afterward has an observable effect
+  it('ctrl+wheel (trackpad pinch) zooms and keeps the reset label in sync; a plain wheel still pans, not zooms', async () => {
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100)
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn() // something to pan into, so a plain wheel afterward has an observable effect
 
-    fireEvent.wheel(body(), { deltaY: -500, ctrlKey: true })
-    const scale = body().style.getPropertyValue('--tsd-scale')
-    expect(Number(scale)).toBeGreaterThan(2)
-    expect(slider().value).toBe(scale)
-    expect(
-      document.getElementById('theme-showcase-scale-value')?.textContent,
-    ).toBe(`${Math.round(Number(scale) * 100)}%`)
+      fireEvent.wheel(body(), { deltaY: -500, ctrlKey: true })
+      const scale = body().style.getPropertyValue('--tsd-scale')
+      expect(Number(scale)).toBeGreaterThan(1.3)
+      expect(resetLabel()).toBe(`${Math.round(Number(scale) * 100)}%`)
 
-    const panXBefore = body().style.getPropertyValue('--tsd-pan-x')
-    fireEvent.wheel(body(), { deltaX: 10, deltaY: 0, ctrlKey: false })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-10px')
-    expect(body().style.getPropertyValue('--tsd-scale')).toBe(scale) // unchanged by the plain wheel
-    expect(panXBefore).not.toBe(body().style.getPropertyValue('--tsd-pan-x'))
+      const panXBefore = body().style.getPropertyValue('--tsd-pan-x')
+      fireEvent.wheel(body(), { deltaX: 10, deltaY: 0, ctrlKey: false })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-10px')
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe(scale) // unchanged by the plain wheel
+      expect(panXBefore).not.toBe(body().style.getPropertyValue('--tsd-pan-x'))
+    } finally {
+      api.restore()
+    }
   })
 
   it('a plain wheel event (trackpad two-finger pan) moves the content; ctrl+wheel (pinch-zoom) is left alone', async () => {
-    mockOverflow(200, 100)
-    await import('../../demo/index-page-client.ts')
-    setScale('2')
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100)
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn()
 
-    fireEvent.wheel(body(), { deltaX: 20, deltaY: 10, ctrlKey: false })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-20px')
-    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('-10px')
-
-    fireEvent.wheel(body(), { deltaX: 5, deltaY: 5, ctrlKey: true })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-20px')
-    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('-10px')
+      fireEvent.wheel(body(), { deltaX: 20, deltaY: 10, ctrlKey: false })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-20px')
+      expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('-10px')
+    } finally {
+      api.restore()
+    }
   })
 
-  it('re-clamps pan back to (0, 0) and drops .pannable once the slider returns to 100%', async () => {
-    mockOverflow(200, 100)
-    await import('../../demo/index-page-client.ts')
-    setScale('2')
+  it('re-clamps pan back to (0, 0) and drops .pannable once zoomed back to 100%', async () => {
+    const api = stubFullscreenApi()
+    try {
+      mockOverflow(200, 100)
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+      zoomIn()
 
-    fireEvent.pointerDown(body(), {
-      pointerId: 1,
-      pointerType: 'mouse',
-      button: 0,
-      clientX: 0,
-      clientY: 0,
-    })
-    fireEvent.pointerMove(body(), {
-      pointerId: 1,
-      pointerType: 'mouse',
-      clientX: 100,
-      clientY: 0,
-    })
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px')
-    fireEvent.pointerUp(body(), { pointerId: 1, pointerType: 'mouse' })
+      fireEvent.pointerDown(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        button: 0,
+        clientX: 0,
+        clientY: 0,
+      })
+      fireEvent.pointerMove(body(), {
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: 100,
+        clientY: 0,
+      })
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('100px')
+      fireEvent.pointerUp(body(), { pointerId: 1, pointerType: 'mouse' })
 
-    // Simulates the real browser: the output body's rendered box shrinks
-    // back to the card's own size once --tsd-scale is back at 1.
-    mockOverflow(0, 0)
-    setScale('1')
-    expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
-    expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('0px')
-    expect(body().classList.contains('pannable')).toBe(false)
+      // Simulates the real browser: the output body's rendered box shrinks
+      // back to the card's own size once --tsd-scale is back at 1.
+      mockOverflow(0, 0)
+      zoomReset()
+      expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('0px')
+      expect(body().style.getPropertyValue('--tsd-pan-y')).toBe('0px')
+      expect(body().classList.contains('pannable')).toBe(false)
+    } finally {
+      api.restore()
+    }
   })
 })

@@ -51,28 +51,29 @@
  *    element — so `applyTheme()` re-themes it by replacing
  *    `#theme-showcase-ascii`'s whole `innerHTML` with that theme's
  *    pre-rendered entry, rather than swapping a CSS variable.
- * 4. **Zoom control: scale (#987), pan (#988), and pinch-zoom** —
- *    `initThemeShowcaseZoomControl()` wires a button next to the output
- *    toggle that discloses a range slider (`#theme-showcase-scale-panel`),
- *    mirroring the theme picker's own trigger/panel disclosure above but
- *    scoped to one input, no roving focus needed. A slider `input` writes
- *    the chosen value to `#theme-showcase-output-body`'s `--tsd-scale`
- *    custom property, which `demo/components/index-page.tsx`'s
- *    `.theme-showcase-output-body` rule reads via `var()` to apply
- *    `transform: translate(...) scale(n)` — the same "swap a variable, let
- *    CSS do the rest" technique {@link applyTheme} already uses for
- *    `--tsd-bg` etc. The same function also wires mouse-drag and single-
- *    finger touch-drag panning once zoomed past 100% (writing
- *    `--tsd-pan-x`/`--tsd-pan-y`, the `translate(...)` half of that same
- *    rule, clamped so the zoomed content's edge never pans past
- *    `#theme-showcase-diagram-card`'s own visible box), plus two-finger
- *    touch pinch-to-zoom and trackpad ctrl/cmd-wheel pinch-to-zoom (both
- *    drive the slider directly, so the displayed percentage always
- *    matches), and trackpad two-finger wheel panning. All of it applies to
+ * 4. **Fullscreen zoom: scale (#987), pan/pinch (#988)** —
+ *    `initThemeShowcaseFullscreen()` wires `#theme-showcase-fullscreen-
+ *    trigger`, a button beside the output toggle that
+ *    `requestFullscreen()`s `#theme-showcase-grid` (the picker column and
+ *    diagram card together — see that class's own CSS comment in
+ *    `demo/components/index-page.tsx` for the reflow this triggers). The
+ *    small inline card itself stays a static preview, matching
+ *    `diagram-detail-app.tsx`'s `DetailOutputPanel` own convention: all
+ *    zoom/pan/pinch interactivity is fullscreen-only. Once fullscreen,
+ *    `#theme-showcase-zoom-in`/`-out`/`-reset` write scale to
+ *    `#theme-showcase-output-body`'s `--tsd-scale` custom property (read
+ *    via `var()` to apply `transform: translate(...) scale(n)` — the same
+ *    "swap a variable, let CSS do the rest" technique {@link applyTheme}
+ *    already uses for `--tsd-bg` etc.), and mouse-drag, single-finger
+ *    touch-drag, two-finger touch pinch-zoom, trackpad wheel-pan, and
+ *    trackpad ctrl/cmd-wheel pinch-zoom all drive that same property plus
+ *    `--tsd-pan-x`/`--tsd-pan-y` (the `translate(...)` half of that rule),
+ *    clamped so the zoomed content's edge never pans past
+ *    `#theme-showcase-diagram-card`'s own visible box. All of it applies to
  *    whichever output (svg or ASCII `<pre>`) is currently visible, since
- *    both live inside that one wrapper. See `initThemeShowcaseZoomControl`'s
- *    own doc comment for why scale, pan, and pinch-zoom share one function
- *    instead of splitting into separate ones.
+ *    both live inside that one wrapper. See `initThemeShowcaseFullscreen`'s
+ *    own doc comment for why fullscreen, scale, pan, and pinch-zoom all
+ *    share one function instead of splitting into separate ones.
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
@@ -552,28 +553,52 @@ function formatScalePercent(scale: number): string {
 }
 
 /**
- * Wires `#theme-showcase-scale`'s disclosure button + range slider
- * (zombie-mermaid#987): a click on `#theme-showcase-scale-trigger` toggles
- * `#theme-showcase-scale-panel`'s visibility (mirroring
- * {@link wireThemePicker}'s open/close handling — outside-click and Escape
- * close it — but scoped to a single input, so no roving focus among
- * options is needed here). Dragging `#theme-showcase-scale-slider` writes
- * its value to `#theme-showcase-output-body`'s `--tsd-scale` custom
- * property (read by that element's own CSS rule in
- * `demo/components/index-page.tsx` to apply `transform: translate(...)
- * scale(n)`) and updates `#theme-showcase-scale-value`'s label to match.
+ * Trackpad-wheel-zoom step used for `#theme-showcase-zoom-in`/`-out`'s own
+ * discrete +/- clicks -- the same `1.25` `output-panel-viewport.ts`'s own
+ * `ZOOM_STEP` uses for its identical +/- buttons, duplicated rather than
+ * imported (see `pointerDistance`'s own comment above for why).
+ */
+const ZOOM_STEP = 1.25
+
+/**
+ * Wires `#theme-showcase-grid`'s fullscreen toggle
+ * (`#theme-showcase-fullscreen-trigger`) plus that fullscreen view's zoom
+ * (`#theme-showcase-zoom-in`/`-out`/`-reset`, zombie-mermaid#987) and pan/
+ * pinch (zombie-mermaid#988) support — all three share one function for
+ * the same reasons `output-panel-viewport.ts`'s `useOutputPanelViewport`
+ * bundles its own fullscreen-scoped zoom+pan: pan's clamp range depends on
+ * the *live* scale value, pinch-zoom needs to drive the exact same
+ * `setScale()` the +/- buttons use, and every one of these has to know
+ * whether the grid is actually fullscreen right now — splitting any piece
+ * out would mean either duplicating that `document.fullscreenElement`
+ * check in a second function or a custom event just to hand off state.
  *
- * Also wires that same element's pan (zombie-mermaid#988) and pinch-zoom
- * support, sharing this function rather than splitting into
- * `initThemeShowcasePan()`/`initThemeShowcaseGestures()`: pan's clamp range
- * depends on the *live* scale value (how far the zoomed content actually
- * overflows `#theme-showcase-diagram-card`'s box), pinch-zoom needs to
- * drive the exact same slider + `setScale()` the `input` handler above
- * uses, and both a pinch and a plain drag are just two states of the same
- * `pointers` map below — splitting any of this out would mean either a
- * second DOM lookup for state that already lives here, or a custom event
- * just to hand off "scale changed" or "gesture started." Three input
- * paths, all reading/writing the same `panX`/`panY`/`pointers` state:
+ * Requests fullscreen on `#theme-showcase-grid` itself, not just the
+ * diagram card, so the theme picker column comes along too -- a visitor
+ * gets picker + output toggle + zoom/pan together, not just a bigger
+ * diagram. `isFullscreenActive()` below is the single source of truth for
+ * "is this grid the fullscreen element right now," read from
+ * `document.fullscreenElement` (never set optimistically from a click
+ * handler) so it's correct regardless of *how* fullscreen was entered or
+ * left — a click on this trigger, Esc, the browser exiting on its own, or
+ * `requestFullscreen()` being rejected outright — mirroring
+ * `editor-fullscreen.ts`'s `useEditorFullscreen` (#980) and
+ * `diagram-detail-app.tsx`'s `DetailOutputPanel` (`toggleFullscreen`/its
+ * own `fullscreenchange` listener), the two prior instances of this exact
+ * pattern already in this repo.
+ *
+ * Scale, pan, and the pointer/pinch state map (`pointers`, `panStart`,
+ * `pinchStart`) all reset to identity on *every* `fullscreenchange` (entry
+ * or exit) -- entering or leaving fullscreen always starts from a clean
+ * slate, matching `useOutputPanelViewport`'s own identical behavior on its
+ * `active` flag flipping.
+ *
+ * Zoom/pan/pinch themselves are a no-op whenever `isFullscreenActive()` is
+ * false -- the small inline card stays a static preview (matching
+ * `DetailOutputPanel`'s own "small inline panel stays a static centered
+ * preview" convention), with all interactivity gated behind fullscreen.
+ * Three input paths once fullscreen, all reading/writing the same
+ * `panX`/`panY`/`pointers` state:
  *   - mouse click-drag, single-finger touch-drag, and two-finger touch
  *     pinch-zoom: one Pointer Event listener set (`pointerdown`/
  *     `pointermove`/`pointerup`/`pointercancel`), gesture inferred purely
@@ -587,11 +612,10 @@ function formatScalePercent(scale: number): string {
  *     panel's `transform: scale()` zoom — see that issue's own "related
  *     prior art" note). Not reused directly: that hook is a React hook
  *     (`useState`/`useLayoutEffect`), and this section stays outside React
- *     hydration on purpose (see this file's header comment) — plus it
- *     self-owns zoom state via buttons, where this panel needs pinch to
- *     drive an *externally* slider-owned scale, and its own panning is
- *     deliberately unclamped (fine for its full-viewport overlay, not for
- *     this small showcase card).
+ *     hydration on purpose (see this file's header comment) — plus its own
+ *     panning is deliberately unclamped (fine for its full-viewport
+ *     overlay, not for this card, which still confines the zoomed content
+ *     to its own box even fullscreen).
  *   - trackpad two-finger pan: a plain `wheel` event (`ctrlKey` false).
  *   - trackpad pinch-to-zoom: a `wheel` event with `ctrlKey` true — every
  *     evergreen browser reports a trackpad pinch gesture as a `ctrlKey`
@@ -603,60 +627,52 @@ function formatScalePercent(scale: number): string {
  * `#theme-showcase-output-body`'s current (scaled)
  * `getBoundingClientRect()` overflows the card's own, which is zero once
  * nothing is clipped — and re-clamping on every scale change is also what
- * snaps `panX`/`panY` back to `(0, 0)` automatically when the slider
- * returns to 100%, with no separate "reset" path needed.
+ * snaps `panX`/`panY` back to `(0, 0)` automatically once the scale
+ * returns to 100%, with no separate "reset" path needed for that specific
+ * case (on top of the unconditional fullscreenchange reset above).
  *
  * A no-op (not a thrown error) if any expected element is missing,
  * matching {@link initThemeShowcase}'s own defensive style.
  */
-function initThemeShowcaseZoomControl(): void {
-  const wrapper = document.getElementById('theme-showcase-scale')
-  const trigger = document.getElementById('theme-showcase-scale-trigger')
-  const panel = document.getElementById('theme-showcase-scale-panel')
-  const sliderEl = document.getElementById('theme-showcase-scale-slider')
-  const valueLabel = document.getElementById('theme-showcase-scale-value')
-  const body = document.getElementById('theme-showcase-output-body')
+function initThemeShowcaseFullscreen(): void {
+  const grid = document.getElementById('theme-showcase-grid')
   const card = document.getElementById('theme-showcase-diagram-card')
+  const body = document.getElementById('theme-showcase-output-body')
+  const fullscreenBtn = document.getElementById(
+    'theme-showcase-fullscreen-trigger',
+  )
+  const zoomInBtn = document.getElementById('theme-showcase-zoom-in')
+  const zoomOutBtn = document.getElementById('theme-showcase-zoom-out')
+  const zoomResetBtn = document.getElementById('theme-showcase-zoom-reset')
   if (
-    !wrapper ||
-    !trigger ||
-    !panel ||
-    !sliderEl ||
-    !(sliderEl instanceof HTMLInputElement) ||
-    !valueLabel ||
+    !grid ||
+    !card ||
     !body ||
-    !card
+    !fullscreenBtn ||
+    !zoomInBtn ||
+    !zoomOutBtn ||
+    !zoomResetBtn
   ) {
     return
   }
-  const slider = sliderEl
 
-  // An arrow function expression, not a nested `function` declaration --
-  // TS's control-flow narrowing of the `| null` guard above doesn't
-  // persist into a hoisted function declaration (it could, in principle,
-  // be invoked before the guard runs), but does persist into a `const`
-  // closure like this one, since `wrapper`/`trigger`/`panel` above can
-  // never be reassigned to `null` again.
-  const setOpen = (open: boolean): void => {
-    panel.hidden = !open
-    trigger.setAttribute('aria-expanded', String(open))
-    wrapper.classList.toggle('open', open)
-    if (open) slider.focus({ preventScroll: true })
+  const isFullscreenActive = (): boolean => document.fullscreenElement === grid
+
+  const toggleFullscreen = (): void => {
+    if (isFullscreenActive()) {
+      document.exitFullscreen().catch(() => {
+        // Rejected exit (e.g. already left some other way) -- the next
+        // fullscreenchange, if any, is still what state below syncs from.
+      })
+    } else {
+      grid.requestFullscreen().catch(() => {
+        // Rejected entry (no user-activation, a permissions-policy block,
+        // ...) -- isFullscreenActive() simply never flips, since no
+        // fullscreenchange fires for a request that never took effect.
+      })
+    }
   }
-
-  trigger.addEventListener('click', () => setOpen(panel.hidden))
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || panel.hidden) return
-    setOpen(false)
-    trigger.focus({ preventScroll: true })
-  })
-  document.addEventListener('click', (e) => {
-    if (panel.hidden) return
-    const target = e.target
-    if (target instanceof Element && wrapper.contains(target)) return
-    setOpen(false)
-  })
+  fullscreenBtn.addEventListener('click', toggleFullscreen)
 
   // Pan state (#988) -- see this function's own doc comment above for why
   // it lives here instead of a separate initThemeShowcasePan().
@@ -695,35 +711,50 @@ function initThemeShowcaseZoomControl(): void {
     body.classList.toggle('pannable', maxPanX > 0 || maxPanY > 0)
   }
 
-  /** Reads the slider's current value as a number, matching the fallback `formatScalePercent`'s caller already relies on for a malformed/absent value. */
-  const currentScale = (): number => {
-    const raw = Number.parseFloat(slider.value)
-    return Number.isFinite(raw) ? raw : 1
-  }
+  // Module-scope `slider.value` equivalent -- there's no slider anymore
+  // (#987's disclosure/range-input UI moved to the +/-/reset button group
+  // below, matching DetailOutputPanel's own fullscreen zoom controls), so
+  // the current scale is plain closure state instead of something read
+  // back off a DOM element.
+  let scale = 1
 
-  const setScale = (scale: number): void => {
+  const setScale = (next: number): void => {
     // Math.round(x * 10) / 10 rather than Math.round(x / SCALE_STEP) *
     // SCALE_STEP -- both snap to the same 0.1 step, but the division form
     // is more exposed to floating-point rounding error for a step this
     // small (confirmed while building this: it occasionally produced a
     // value like 1.7999999999999998).
-    const stepped = Number.isFinite(scale)
-      ? Math.round(scale * (1 / SCALE_STEP)) / (1 / SCALE_STEP)
+    const stepped = Number.isFinite(next)
+      ? Math.round(next * (1 / SCALE_STEP)) / (1 / SCALE_STEP)
       : 1
-    const clamped = Math.max(SCALE_MIN, Math.min(SCALE_MAX, stepped))
-    slider.value = String(clamped)
-    body.style.setProperty('--tsd-scale', String(clamped))
-    valueLabel.textContent = formatScalePercent(clamped)
+    scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, stepped))
+    body.style.setProperty('--tsd-scale', String(scale))
+    zoomResetBtn.textContent = formatScalePercent(scale)
     recomputePanBounds()
   }
 
-  slider.addEventListener('input', () => setScale(currentScale()))
+  // CSS alone (.theme-showcase-zoom-controls only displays while
+  // .theme-showcase-grid is :fullscreen) already keeps these three
+  // unreachable outside fullscreen for a real user -- a display: none
+  // button is neither clickable nor focusable. The isFullscreenActive()
+  // check below is defense in depth, not load-bearing: matches every other
+  // handler in this function, which never trusts CSS visibility alone.
+  zoomInBtn.addEventListener('click', () => {
+    if (isFullscreenActive()) setScale(scale * ZOOM_STEP)
+  })
+  zoomOutBtn.addEventListener('click', () => {
+    if (isFullscreenActive()) setScale(scale / ZOOM_STEP)
+  })
+  zoomResetBtn.addEventListener('click', () => {
+    if (isFullscreenActive()) setScale(1)
+  })
 
-  // Recomputes pan bounds on any resize of the card itself (a breakpoint
-  // change, say) that isn't driven by the scale slider -- mirrors this
-  // file's other ResizeObserver use (updateAsciiFade's, above) for the same
-  // reason: a size change that isn't itself a `--tsd-scale` write still
-  // needs `maxPanX`/`maxPanY` (and thus a possible re-clamp) refreshed.
+  // Recomputes pan bounds on any resize of the card itself (a viewport
+  // resize while fullscreen, a breakpoint change otherwise) that isn't
+  // driven by a zoom button -- mirrors this file's other ResizeObserver use
+  // (updateAsciiFade's, above) for the same reason: a size change that
+  // isn't itself a `--tsd-scale` write still needs `maxPanX`/`maxPanY`
+  // (and thus a possible re-clamp) refreshed.
   new ResizeObserver(recomputePanBounds).observe(card)
 
   // Mouse click-drag, single-finger touch-drag, and two-finger touch
@@ -766,7 +797,7 @@ function initThemeShowcaseZoomControl(): void {
       pinchStart = {
         dist: pointerDistance(a, b),
         mid: pointerMidpoint(a, b),
-        scale: currentScale(),
+        scale,
         panX,
         panY,
       }
@@ -776,6 +807,7 @@ function initThemeShowcaseZoomControl(): void {
   }
 
   const onPointerDown = (e: PointerEvent): void => {
+    if (!isFullscreenActive()) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
     if (pointers.size >= 2) return // no more than two active pointers -- a third finger is ignored
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -797,7 +829,7 @@ function initThemeShowcaseZoomControl(): void {
     e.preventDefault() // stop native text/image drag-select while panning/pinching
   }
   const onPointerMove = (e: PointerEvent): void => {
-    if (!pointers.has(e.pointerId)) return
+    if (!isFullscreenActive() || !pointers.has(e.pointerId)) return
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
     const [a, b] = pointers.values()
     if (pinchStart && a && b) {
@@ -846,8 +878,9 @@ function initThemeShowcaseZoomControl(): void {
   body.addEventListener(
     'wheel',
     (e) => {
+      if (!isFullscreenActive()) return
       if (e.ctrlKey) {
-        setScale(currentScale() * Math.pow(WHEEL_ZOOM_SENSITIVITY, e.deltaY))
+        setScale(scale * Math.pow(WHEEL_ZOOM_SENSITIVITY, e.deltaY))
         e.preventDefault()
         return
       }
@@ -860,6 +893,25 @@ function initThemeShowcaseZoomControl(): void {
     },
     { passive: false },
   )
+
+  // Entering or leaving fullscreen always starts from a clean slate --
+  // matches output-panel-viewport.ts's useOutputPanelViewport's identical
+  // behavior on its own `active` flag flipping. Also syncs
+  // #theme-showcase-fullscreen-trigger's data-fullscreen/aria-pressed/title
+  // from document.fullscreenElement, the only state fullscreenchange
+  // itself is trusted to report correctly (see this function's own doc
+  // comment on why isFullscreenActive() never gets set optimistically).
+  document.addEventListener('fullscreenchange', () => {
+    const active = isFullscreenActive()
+    fullscreenBtn.dataset.fullscreen = String(active)
+    fullscreenBtn.setAttribute('aria-pressed', String(active))
+    fullscreenBtn.title = active ? 'Exit fullscreen' : 'View fullscreen'
+    pointers.clear()
+    panStart = null
+    pinchStart = null
+    body.classList.remove('panning')
+    setScale(1)
+  })
 }
 
 // Site chrome (Nav/Footer/cards): demo/chrome-theme-client.ts's job,
@@ -870,4 +922,4 @@ const showcaseEls = initThemeShowcase()
 initThemeShowcaseOutputToggle(
   showcaseEls ? () => updateAsciiFade(showcaseEls) : undefined,
 )
-initThemeShowcaseZoomControl()
+initThemeShowcaseFullscreen()

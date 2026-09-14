@@ -493,84 +493,167 @@ function homePageCss(): string {
   border-radius: ${RADIUS.pill}px;
   padding: 2px;
 }
-/* -- Zoom control: scale (#987) + pan (#988). Scale is a button that
-   discloses a range slider, mirroring .theme-showcase-picker's own
-   trigger/panel disclosure pattern (demo/index-page-client.ts's
-   wireThemePicker) but scoped to a single input -- no roving focus needed.
-   Both scale and pan are wired by initThemeShowcaseZoomControl() in
-   demo/index-page-client.ts (one function -- see its own doc comment for
-   why), which writes to #theme-showcase-output-body's own --tsd-scale and
-   --tsd-pan-x/--tsd-pan-y custom properties; .theme-showcase-output-body
-   (below) reads them via var() with a translate(0, 0) scale(1) fallback,
-   the same "swap a variable, let CSS do the rest" technique applyTheme()
-   already uses for --tsd-bg etc. Zooms from the center of the box
-   (transform-origin: center, below) rather than the top-left corner
-   transform defaults to -- matching #987's own request. Pan (mouse drag,
-   single-finger touch, trackpad two-finger wheel) lets a visitor reach
-   content clipped by .theme-showcase-diagram-card's own overflow: hidden
-   once zoomed past 100%. */
-.theme-showcase-scale { position: relative; }
-.theme-showcase-scale-trigger {
-  display: flex;
+/* -- Fullscreen-only zoom: scale (#987) + pan/pinch (#988). Unlike this
+   section's original disclosure-slider design, zoom/pan only ever do
+   anything while .theme-showcase-grid is :fullscreen (below) -- the small
+   inline card stays a static preview, matching diagram-detail-app.tsx's
+   DetailOutputPanel own established convention for exactly this "small
+   preview, full interactivity only in fullscreen" split. Wired by
+   initThemeShowcaseFullscreen() in demo/index-page-client.ts, which writes
+   to #theme-showcase-output-body's own --tsd-scale and --tsd-pan-x/
+   --tsd-pan-y custom properties; .theme-showcase-output-body (below) reads
+   them via var() with a translate(0, 0) scale(1) fallback, the same "swap
+   a variable, let CSS do the rest" technique applyTheme() already uses for
+   --tsd-bg etc. Zooms from the center of the box (transform-origin:
+   center, below) rather than the top-left corner transform defaults to --
+   matching #987's own original request. Pan (mouse drag, single-finger
+   touch drag, two-finger touch pinch, trackpad wheel/ctrl-wheel) lets a
+   visitor reach content clipped by .theme-showcase-diagram-card's own
+   overflow: hidden once zoomed past 100%. */
+.theme-showcase-zoom-controls {
+  display: none;
   align-items: center;
-  gap: ${SPACE.xxs}px;
+  gap: 2px;
+  background: ${colorVar('--panel')};
+  border-radius: ${RADIUS.pill}px;
+  padding: 2px;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-zoom-controls,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-zoom-controls {
+  display: flex;
+}
+.theme-showcase-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border: none;
+  border-radius: ${RADIUS.pill}px;
   background: transparent;
   color: ${colorVar('--text-faint')};
   font-family: inherit;
   font-size: ${FONT_SIZE.caption}px;
   font-weight: 700;
-  padding: ${SPACE.xxs}px ${SPACE.md}px;
-  border-radius: ${RADIUS.pill}px;
+  line-height: 1;
   cursor: pointer;
 }
-.theme-showcase-scale-trigger:hover,
-.theme-showcase-scale-trigger:focus-visible { color: ${colorVar('--text')}; outline: none; }
-.theme-showcase-scale.open .theme-showcase-scale-trigger { background: ${colorVar('--panel-2')}; color: ${colorVar('--text')}; }
-.theme-showcase-scale-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 5;
-  align-items: center;
-  gap: ${SPACE.sm}px;
-  min-width: 180px;
-  padding: ${SPACE.sm}px ${SPACE.md}px;
-  border: 1.5px dashed ${colorVar('--border')};
-  border-radius: 4px;
-  background: ${colorVar('--panel')};
+.theme-showcase-zoom-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel-2')}; }
+.theme-showcase-zoom-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
+/* The reset button doubles as the current-percentage label (e.g. "100%"),
+   mirroring diagram-page.tsx's own .output-zoom-reset -- wider than the
+   plain +/- buttons and monospaced so the label doesn't jiggle the layout
+   as its digit count changes. */
+.theme-showcase-zoom-reset {
+  width: auto;
+  padding: 0 ${SPACE.sm}px;
+  font-weight: 400;
 }
-/* display: flex only applies while the panel is shown -- an unconditional
-   display: flex on the rule above would win over the hidden attribute's
-   user-agent display: none (an author rule always beats the UA
-   stylesheet, regardless of the [hidden] selector's own specificity), so
-   toggling panel.hidden in demo/index-page-client.ts would do nothing. */
-.theme-showcase-scale-panel:not([hidden]) { display: flex; }
-.theme-showcase-scale-slider { flex: 1; accent-color: ${colorVar('--cyan')}; }
-/* The trigger's own label (the current percentage, e.g. "100%") -- a
-   dedicated class rather than relying on .theme-showcase-scale-trigger's
-   own font-size so it can read slightly smaller than the SVG/ASCII segment
-   labels beside it, matching .theme-showcase-output-label's own micro
-   size. No color override: inherits .theme-showcase-scale-trigger's
-   color (and that rule's own :hover/:focus-visible color change) rather
-   than fixing one, since this is that button's only content. */
-.theme-showcase-scale-value { font-size: ${FONT_SIZE.micro}px; }
-/* Wraps the svg and the ASCII <pre> together (#987) so one scale slider
-   zooms either output identically -- see the scale control's own comment
-   above for the --tsd-scale custom property this reads. */
+/* The fullscreen toggle -- always visible (unlike the zoom controls above,
+   which only matter once already fullscreen). Both icon states
+   (theme-showcase-fullscreen-icon-enter/-exit) are always in the markup;
+   [data-fullscreen] on this same button (toggled by
+   initThemeShowcaseFullscreen()'s fullscreenchange listener) picks which
+   one shows. */
+.theme-showcase-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  cursor: pointer;
+}
+.theme-showcase-fullscreen-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel')}; }
+.theme-showcase-fullscreen-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: 1px; }
+.theme-showcase-fullscreen-icon-exit { display: none; }
+.theme-showcase-fullscreen-btn[data-fullscreen='true'] .theme-showcase-fullscreen-icon-enter { display: none; }
+.theme-showcase-fullscreen-btn[data-fullscreen='true'] .theme-showcase-fullscreen-icon-exit { display: block; }
+/* Wraps the svg and the ASCII <pre> together (#987) so one zoom control
+   zooms either output identically -- see the fullscreen zoom comment
+   above for the --tsd-scale/--tsd-pan-* custom properties this reads. */
 .theme-showcase-output-body {
   min-width: 0;
   transform: translate(var(--tsd-pan-x, 0px), var(--tsd-pan-y, 0px)) scale(var(--tsd-scale, 1));
   transform-origin: center;
 }
 /* Pan cursor affordance (#988): .pannable is only set once
-   initThemeShowcaseZoomControl()'s recomputePanBounds() finds the zoomed
+   initThemeShowcaseFullscreen()'s recomputePanBounds() finds the zoomed
    content actually overflows the card (i.e. there's somewhere to pan to) --
    grab/grabbing mirrors common pan+zoom UI convention (maps, image
-   viewers). No cursor override at all below 100% scale, where a drag does
-   nothing. */
-.theme-showcase-output-body.pannable { cursor: grab; }
+   viewers). touch-action: none (matching diagram-page.tsx's own
+   .output-render-area.pannable) stops a touchscreen's native scroll from
+   competing with this element's own Pointer Event pan/pinch handling --
+   safe to apply unconditionally here, unlike a plain inline panel, since
+   fullscreen is the only place .pannable is ever set at all. No cursor
+   override at all below 100% scale, where a drag does nothing. */
+.theme-showcase-output-body.pannable { cursor: grab; touch-action: none; }
 .theme-showcase-output-body.pannable.panning { cursor: grabbing; }
+/*
+ * initThemeShowcaseFullscreen()'s toggleFullscreen() requestFullscreen()s
+ * .theme-showcase-grid itself, not just the diagram card, so the theme
+ * picker column comes along too. The browser promotes it to the top layer
+ * with its own UA :fullscreen sizing, but author rules still outrank that
+ * default regardless of specificity -- mirrors diagram-page.tsx's own
+ * .output-card:fullscreen precedent, !important included for the same
+ * reason: .theme-showcase-grid's normal grid layout is entirely inline
+ * style, which plain CSS specificity can never beat. -webkit-full-screen
+ * covers Safari < 16.4. Reflows from the normal two-column grid to a
+ * single column (picker compact at top, diagram filling the rest) and
+ * hides .theme-showcase-blurb -- a fullscreen viewer has no room, or need,
+ * for the marketing copy above the picker.
+ */
+.theme-showcase-grid:fullscreen,
+.theme-showcase-grid:-webkit-full-screen {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: ${SPACE.xl}px !important;
+  gap: ${SPACE.lg}px !important;
+  background: ${colorVar('--panel')} !important;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-blurb,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-blurb {
+  display: none;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-picker-column,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-picker-column {
+  flex: 0 0 auto !important;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-diagram-card,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-diagram-card {
+  flex: 1 1 auto !important;
+  margin-top: 0 !important;
+  min-height: 0;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-diagram,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-diagram {
+  max-width: none;
+}
+/* Centers the (possibly zoomed/panned) svg or ASCII block within whatever
+   vertical space is left under the toggle row -- unlike diagram-page.tsx's
+   DetailOutputPanel, which needs a margin: auto trick to avoid clipping an
+   overflowing *scrolled* container (see that file's own comment),
+   .theme-showcase-output-body's overflow is entirely transform-driven
+   (never native scroll), so plain flex centering has no equivalent
+   clipping risk here. */
+.theme-showcase-grid:fullscreen .theme-showcase-output-body,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-output-body {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
 /* Toggled by data-output-mode instead of .theme-showcase-ascii itself, so
    the wrap's relatively-positioned box (needed to pin the fade overlays
    below to its edges) exists only while the ASCII panel is the visible
@@ -977,6 +1060,7 @@ function ThemeShowcase() {
       </div>
 
       <div
+        id="theme-showcase-grid"
         className="theme-showcase-grid"
         style={{
           position: 'relative',
@@ -996,29 +1080,44 @@ function ThemeShowcase() {
         }}
       >
         <div
+          className="theme-showcase-picker-column"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: `${SPACE.xl}px`,
           }}
         >
-          <SectionEyebrow>Live theme switching</SectionEyebrow>
-          <h2
-            style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}
-          >
-            Pick a theme. Watch it flow.
-          </h2>
-          <p
-            style={{
-              fontSize: `${FONT_SIZE.lead}px`,
-              color: colorVar('--text-dim'),
-              margin: 0,
-            }}
-          >
-            Fifteen palettes pulled from editors you already trust — Dracula,
-            Nord, Solarized, Catppuccin, Tokyo Night, and more — each tuned so
-            the diagram stays legible in every one.
-          </p>
+          {/*
+              .theme-showcase-blurb: everything above the picker -- hidden
+              by .theme-showcase-grid:fullscreen's own CSS (below) so the
+              fullscreen view is just the picker + diagram, matching
+              DetailOutputPanel's own minimal fullscreen chrome (no
+              marketing copy). ThemeShowcasePicker itself stays a sibling,
+              not nested in here, since it must stay visible fullscreen.
+            */}
+          <div className="theme-showcase-blurb">
+            <SectionEyebrow>Live theme switching</SectionEyebrow>
+            <h2
+              style={{
+                fontSize: '38px',
+                letterSpacing: LETTER_SPACING.heading,
+                marginTop: SPACE.xl,
+              }}
+            >
+              Pick a theme. Watch it flow.
+            </h2>
+            <p
+              style={{
+                fontSize: `${FONT_SIZE.lead}px`,
+                color: colorVar('--text-dim'),
+                margin: `${SPACE.xl}px 0 0`,
+              }}
+            >
+              Fifteen palettes pulled from editors you already trust —
+              Dracula, Nord, Solarized, Catppuccin, Tokyo Night, and more —
+              each tuned so the diagram stays legible in every one.
+            </p>
+          </div>
           <ThemeShowcasePicker />
         </div>
 
@@ -1050,54 +1149,106 @@ function ThemeShowcase() {
                 </button>
               </div>
               {/*
-                  Zoom control: scale (#987) + pan (#988) -- see
-                  .theme-showcase-scale's own CSS comment above for the
-                  disclosure pattern and the --tsd-scale/--tsd-pan-x/
-                  --tsd-pan-y custom properties this writes/reads. Wired by
-                  initThemeShowcaseZoomControl() in
-                  demo/index-page-client.ts. min/max/step/default here must
-                  match that function's own SCALE_MIN/SCALE_MAX constants
-                  -- there's no shared module between this build-time file
-                  and the client bundle small enough to justify one (see
-                  this file's own header comment on why the two stay plain
-                  DOM + separate files).
+                  Fullscreen-only zoom (#987 scale + #988 pan/pinch): the
+                  small inline card stays a static preview (matching
+                  diagram-detail-app.tsx's DetailOutputPanel own
+                  established convention -- see this file's own
+                  .theme-showcase-zoom-controls CSS comment below), so
+                  these three buttons only ever do anything while
+                  .theme-showcase-grid is :fullscreen. Always in the
+                  markup (not conditionally rendered -- this is plain
+                  DOM, not React) with visibility gated entirely by CSS.
+                  Wired by initThemeShowcaseFullscreen() in
+                  demo/index-page-client.ts.
                 */}
-              <div className="theme-showcase-scale" id="theme-showcase-scale">
+              <div
+                className="theme-showcase-zoom-controls"
+                id="theme-showcase-zoom-controls"
+                role="group"
+                aria-label="Zoom"
+              >
                 <button
                   type="button"
-                  id="theme-showcase-scale-trigger"
-                  className="theme-showcase-scale-trigger mono"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                  aria-controls="theme-showcase-scale-panel"
-                  aria-label="Adjust diagram scale"
+                  id="theme-showcase-zoom-out"
+                  className="theme-showcase-zoom-btn"
+                  title="Zoom out"
                 >
-                  <span
-                    id="theme-showcase-scale-value"
-                    className="theme-showcase-scale-value"
-                  >
-                    100%
-                  </span>
+                  −
                 </button>
-                <div
-                  className="theme-showcase-scale-panel"
-                  id="theme-showcase-scale-panel"
-                  role="group"
-                  aria-label="Diagram scale"
-                  hidden
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-reset"
+                  className="theme-showcase-zoom-btn theme-showcase-zoom-reset mono"
+                  title="Reset zoom"
                 >
-                  <input
-                    type="range"
-                    id="theme-showcase-scale-slider"
-                    className="theme-showcase-scale-slider"
-                    min={0.5}
-                    max={2.5}
-                    step={0.1}
-                    defaultValue={1}
-                    aria-label="Diagram scale"
-                  />
-                </div>
+                  100%
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-in"
+                  className="theme-showcase-zoom-btn"
+                  title="Zoom in"
+                >
+                  +
+                </button>
               </div>
+              {/*
+                  Fullscreen toggle: requestFullscreen()s .theme-showcase-
+                  grid (the picker's column and this diagram card both --
+                  see that class's own :fullscreen CSS comment below for
+                  why the whole grid, not just this card, is the target).
+                  Both icon states are always in the markup (mirroring the
+                  zoom controls above); [data-fullscreen] on this same
+                  button toggles which one shows. Paths reused verbatim
+                  from diagram-detail-app.tsx's FullscreenIcon (see that
+                  component's own doc comment on why -- an already-
+                  corrected, already-shipped design, not worth a second
+                  first draft) -- not imported from there since that file
+                  is a React component and this markup is plain JSX
+                  rendered at build time into static HTML.
+                */}
+              <button
+                type="button"
+                id="theme-showcase-fullscreen-trigger"
+                className="theme-showcase-fullscreen-btn"
+                title="View fullscreen"
+                aria-pressed="false"
+              >
+                <svg
+                  className="theme-showcase-fullscreen-icon-enter"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                  <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                  <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                </svg>
+                <svg
+                  className="theme-showcase-fullscreen-icon-exit"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                  <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                  <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                  <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                </svg>
+              </button>
             </div>
           </div>
           <div
