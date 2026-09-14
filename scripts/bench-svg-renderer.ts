@@ -35,8 +35,8 @@
 
 import { writeFile } from 'node:fs/promises'
 import { decodeXML } from 'entities'
-import { samples } from '../samples-data.ts'
-import type { Sample } from '../samples-data.ts'
+import { samples } from '../packages/site/samples-data.ts'
+import type { Sample } from '../packages/site/samples-data.ts'
 import {
   DEFAULTS,
   splitStatements,
