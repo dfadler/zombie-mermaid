@@ -16,6 +16,22 @@
  * (itself included) for a computed `overflow-x: auto`/`scroll` before
  * treating it as a genuine, unhandled overflow.
  *
+ * A third false-positive class was found the same way (zombie-mermaid#1055):
+ * the standard "visually hidden but still exposed to assistive tech"
+ * technique (`demo/styles.css`'s `.visually-hidden`, and the inline
+ * equivalent in `demo/components/slot-number.tsx`) clips an element to a
+ * `position: absolute`, 1×1px box via `overflow: hidden` + `clip: rect(0, 0,
+ * 0, 0)` while its full text content still determines `scrollWidth` — by
+ * design, the same way it does for any sr-only utility class (Bootstrap's
+ * `sr-only`, Tailwind's `sr-only`, the WAI-ARIA "invisible" techniques this
+ * pattern comes from). That mismatch is *never* visible: the element is
+ * removed from normal flow (`position: absolute`/`fixed`, so it can't push
+ * or spill onto anything) and its content is clipped to nothing, so there is
+ * no pixel on screen for the excess `scrollWidth` to occupy. The check below
+ * skips an element whose own clipped box is at most `tolerancePx` on a side
+ * once it's confirmed out of flow — the two properties that together
+ * guarantee the "overflow" can never actually render.
+ *
  * Uses Playwright (`@playwright/test`, already a devDependency for
  * `pnpm run test:visual`) to drive headless Chromium, rather than
  * reimplementing the original script's raw `WebSocket`-driven CDP client —
@@ -178,7 +194,9 @@ export interface OverflowFinding {
  * exceeds `tolerancePx` *and* nothing in its ancestor chain (itself
  * included) has a computed `overflow-x` of `auto`/`scroll` already — see
  * this file's header comment for why the ancestor check matters (a working
- * horizontal-scroll panel has this property on itself by design).
+ * horizontal-scroll panel has this property on itself by design) — *and*
+ * the element isn't a visually-hidden-but-accessible node clipped to a
+ * near-zero, out-of-flow box (see the header comment's `#1055` paragraph).
  */
 export function findOverflowingElements(
   tolerancePx: number = DEFAULT_TOLERANCE_PX,
@@ -201,6 +219,19 @@ export function findOverflowingElements(
       ancestor = ancestor.parentElement
     }
     if (handled) continue
+
+    // Standard sr-only technique: `position: absolute` takes the element
+    // out of flow (so it can't push a sibling or spill onto the page) and
+    // the box itself is clipped to at most `tolerancePx` on a side — so
+    // whatever `scrollWidth` its full text content implies is never a
+    // rendered pixel. `clientHeight` is checked too, not just width: the
+    // defining trait of this pattern is a near-zero *box*, not a narrow one.
+    const style = window.getComputedStyle(el)
+    const isOutOfFlow =
+      style.position === 'absolute' || style.position === 'fixed'
+    const isClippedToNothing =
+      el.clientWidth <= tolerancePx && el.clientHeight <= tolerancePx
+    if (isOutOfFlow && isClippedToNothing) continue
 
     // Builds a short, human-readable path to `el` for triage output.
     // Prefers an id, then a tag.class description, then falls back to a
