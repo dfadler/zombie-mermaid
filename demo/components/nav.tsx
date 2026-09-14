@@ -534,7 +534,9 @@ function MobileNavPanel({
     <nav className="mobile-nav-panel" aria-label={`${label} (mobile)`}>
       <MobileDiagramMotif />
       <div className="mobile-watermark">
-        <LogoMark size={MOBILE_WATERMARK_SIZE} />
+        <div className="mobile-watermark-mark">
+          <LogoMark size={MOBILE_WATERMARK_SIZE} />
+        </div>
       </div>
       <div className="mobile-links">
         {linkItems.map((item) => (

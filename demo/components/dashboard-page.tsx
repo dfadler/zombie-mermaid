@@ -148,6 +148,17 @@ export function DashboardPage({
             blog: ROUTES.blog,
             github: FORK_URL,
           }}
+          // The site header never shows the npm-install pill on any page --
+          // see index-page.tsx's matching installSlotKind="empty" comment.
+          // This page was missed when that rule went universal
+          // (zombie-mermaid#1053): left at the default `NavInstall` pill,
+          // it's the one page whose header renders it at every width,
+          // including mobile, where the brand link and the pill's
+          // non-shrinking package-manager-selector/divider segments
+          // together no longer fit a 375px bar -- a second, dashboard-only
+          // overflow alongside the shared mobile-nav-panel bug #1053 also
+          // fixes.
+          installSlotKind="empty"
         />
         {/*
             `overflow: hidden` used to live on the `.dc-root` div itself,
