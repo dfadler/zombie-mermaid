@@ -187,8 +187,8 @@ function readThemeShowcaseAsciiHtmlByTheme(): Record<string, string> | null {
 /**
  * Toggles `els.asciiFadeLeft`/`asciiFadeRight`'s `.visible` class to match
  * `els.asciiPre`'s current scroll position -- mirrors
- * `demo/components/fork-fixes-app.tsx`'s `useScrollFadeVisibility` as a
- * plain function instead of a React hook: `right` stays visible while
+ * `demo/components/use-scroll-fade.ts`'s `useScrollFade` as a plain
+ * function instead of a React hook: `right` stays visible while
  * there's more content to scroll into (including at rest, scrolled all the
  * way to the start), `left` only once scrolled away from the start. The 1px
  * slop absorbs the same sub-pixel `scrollLeft`/`scrollWidth` rounding that
