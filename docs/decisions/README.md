@@ -30,10 +30,3 @@ What was decided.
 
 What this rules out, what it trades off, what follows from it.
 ```
-
-## Self-review before opening the PR
-
-Before opening a PR that adds or edits a decision doc, walk through the
-checklist in
-[Self-review checklist for decision docs](decision-doc-self-review-checklist-977.md)
-against your own draft.
