@@ -72,13 +72,13 @@ button:focus-visible {
   height: auto;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .fix-card {
     padding: 28px !important;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
   .page-h1 {
     font-size: 32px !important;
   }

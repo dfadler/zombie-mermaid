@@ -42,14 +42,14 @@ p {
   font-size: 52px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
   .page-h1 {
     font-size: 34px;
   }
 }
 
 /* -- Featured post -- */
-@media (max-width: 900px) {
+@media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .featured-card {
     flex-direction: column !important;
     align-items: flex-start !important;
@@ -82,13 +82,13 @@ p {
 }
 
 /* -- Archive grid -- */
-@media (max-width: 900px) {
+@media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .archive-grid {
     grid-template-columns: 1fr 1fr !important;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
   .archive-grid {
     grid-template-columns: 1fr !important;
   }

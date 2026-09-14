@@ -24,13 +24,13 @@ body {
   min-height: 100vh;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .stats-grid {
     grid-template-columns: 1fr !important;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
   .page-h1 {
     font-size: 34px !important;
   }
