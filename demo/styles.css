@@ -1378,6 +1378,17 @@ body.search-active .category-tabbar {
   font-family:
     'JetBrains Mono NL', 'JetBrains Mono', 'Fira Code', 'Cascadia Code',
     monospace;
+  /* Guards against a font whose calt feature fuses literal ASCII sequences
+   * (`--`, `->`, `!=`) into a single ligature glyph -- see
+   * docs/decisions/ascii-browser-font-investigation-978.md and its linked
+   * issue notes. The self-hosted JetBrains Mono NL above ships with no
+   * ligature data at all, so this guards the fallback fonts in the chain
+   * (JetBrains Mono, Fira Code, Cascadia Code) if the self-hosted font
+   * ever fails to load. No live page currently uses this rule (its only
+   * reader today is the Playwright suite's synthetic terminal-panel.ts
+   * markup), so this has no visible effect yet, but it matches
+   * .theme-showcase-ascii's existing guard. */
+  font-variant-ligatures: none;
   color: #e6edf3; /* fallback for glyphs the renderer leaves uncolored */
   background: transparent;
   scrollbar-color: #30363d transparent;
