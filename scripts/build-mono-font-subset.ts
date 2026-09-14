@@ -49,12 +49,30 @@
  * no glyph in JetBrains Mono NL v2.304 at all — checked directly via
  * `fontkit`'s `hasGlyphForCodePoint` against the vendored source file,
  * rather than assumed from the Geometric Shapes block's nominal range.
- * This script filters every requested codepoint against that check and
- * logs anything dropped, so a future font update (which might add them)
- * doesn't need this file edited to pick them up, and a codepoint quietly
- * missing isn't mistaken for a codepoint deliberately left out. Dropped
- * codepoints keep falling back to the system font stack, exactly as they
- * did before this file existed — a font capability gap, not a regression.
+ * This script still filters every requested codepoint against that check
+ * and logs anything dropped, so a future font update (which might add a
+ * currently-missing glyph) doesn't need this file edited to pick it up,
+ * and a codepoint quietly missing isn't mistaken for a codepoint
+ * deliberately left out.
+ *
+ * Investigating that finding (issue #1062) turned up two different
+ * situations, not one:
+ * - ◸◹◺◿ and ⬡ were never actually reachable output: shapes/hexagon.ts and
+ *   shapes/special.ts's trapezoid renderers had moved to the
+ *   monospace-safe crop-corner/diagonal-slash style in shapes/corners.ts
+ *   (⌜⌝⌞⌟ and / \) well before this file was written, leaving only their
+ *   own doc comments (now fixed) still claiming the old glyphs — so there
+ *   was never a real fallback to fix here.
+ * - ◢◣◤◥ (diagonal edge-routing arrowheads, draw-arrows.ts's
+ *   `drawArrowHead`) were genuinely reachable and genuinely missing from
+ *   the font. Since no visually-equivalent filled-triangle glyph exists in
+ *   JetBrains Mono NL at any codepoint, `drawArrowHead` and canvas.ts's
+ *   `VERTICAL_FLIP_MAP` now draw ↖↗↘↙ (U+2196–U+2199, plain Arrows-block
+ *   glyphs the font does have) for diagonal edges instead — a different
+ *   visual style from the orthogonal ▲▼◄► set, but a real, correctly
+ *   directional glyph in the pinned font rather than an unpinned
+ *   system-font fallback. Already covered by the Arrows range below, so no
+ *   new range was needed.
  *
  * The renderer-structural audit above still isn't the whole picture: a
  * diagram author's own node/edge/note text passes straight through to the
@@ -97,16 +115,20 @@ const UNICODE_RANGES: ReadonlyArray<readonly [number, number]> = [
   // class/ER-diagram markers drawn by draw-arrows.ts/class-diagram.ts/
   // er-diagram.ts/shapes/** in the default (non-ASCII) render mode.
   [0x231c, 0x231f], // ⌜⌝⌞⌟ — subroutine-shape corner glyphs (shapes/corners.ts)
-  [0x2190, 0x21ff], // Arrows (→←↔↑↓…) — not drawn by the renderer itself,
-  // but a diagram author's own node/edge/note text passes straight through
-  // to the ASCII grid verbatim (e.g. samples-data.ts's own "Sequence:
-  // Self-Messages with Notes" writes a literal → in a message label).
-  // Unlike the renderer-structural glyphs above, label text is inherently
-  // open-ended — this range covers the common case (matching Latin-1
-  // Supplement's own "reasonable coverage for typical prose" scope, not a
-  // guarantee of every arrow variant); __tests__/generated-mono-font.test.ts
-  // still fails loudly, naming the exact codepoint and sample, if some
-  // future sample's text needs one this doesn't cover.
+  [0x2190, 0x21ff], // Arrows (→←↔↑↓…) — includes ↖↗↘↙ (U+2196–U+2199), the
+  // diagonal edge-routing arrowheads draw-arrows.ts's drawArrowHead draws
+  // in place of the filled triangles (◢◣◤◥) JetBrains Mono NL has no glyph
+  // for at all (see this file's header comment; issue #1062). The rest of
+  // the range isn't drawn by the renderer itself, but a diagram author's
+  // own node/edge/note text passes straight through to the ASCII grid
+  // verbatim (e.g. samples-data.ts's own "Sequence: Self-Messages with
+  // Notes" writes a literal → in a message label). Unlike the
+  // renderer-structural glyphs, label text is inherently open-ended — this
+  // range covers the common case (matching Latin-1 Supplement's own
+  // "reasonable coverage for typical prose" scope, not a guarantee of
+  // every arrow variant); __tests__/generated-mono-font.test.ts still
+  // fails loudly, naming the exact codepoint and sample, if some future
+  // sample's text needs one this doesn't cover.
 ]
 
 /** Standalone codepoints outside any range above worth its own entry —
@@ -116,7 +138,10 @@ const EXTRA_CODEPOINTS: ReadonlyArray<number> = [
   0x2016, // ‖ — double-line border glyph in useAscii:true mode (draw-boxes.ts/draw-lines.ts)
   0x2026, // … — class-diagram member-list truncation ellipsis (class-diagram.ts)
   0x2715, // ✕ — sequence-diagram lost-message / cross marker (sequence.ts/draw-arrows.ts)
-  0x2b21, // ⬡ — hexagon-shape corner marker (shapes/hexagon.ts)
+  // No entry for ⬡ (U+2B21, hexagon-shape corner marker): shapes/hexagon.ts
+  // hasn't actually emitted it since shapes/corners.ts moved to the
+  // monospace-safe crop-corner style (⌜⌝⌞⌟, already covered by the
+  // U+231C–U+231F range above) — see this file's header comment; issue #1062.
 ]
 
 /** Every codepoint {@link UNICODE_RANGES}/{@link EXTRA_CODEPOINTS} nominally

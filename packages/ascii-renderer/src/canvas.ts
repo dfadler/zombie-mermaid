@@ -540,10 +540,13 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Unicode arrows
   '▲': '▼',
   '▼': '▲',
-  '◤': '◣',
-  '◣': '◤',
-  '◥': '◢',
-  '◢': '◥',
+  // Diagonal arrowheads — U+2196–U+2199, not the filled triangles (◢◣◤◥),
+  // since JetBrains Mono NL has no glyph for those at all. See
+  // draw-arrows.ts's drawArrowHead and issue #1062.
+  '↖': '↙',
+  '↙': '↖',
+  '↗': '↘',
+  '↘': '↗',
   // ASCII arrows
   '^': 'v',
   v: '^',

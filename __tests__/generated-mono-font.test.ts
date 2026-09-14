@@ -28,26 +28,18 @@ import {
 } from '../demo/components/generated/mono-font-subset.ts'
 
 /**
- * Codepoints confirmed (scripts/build-mono-font-subset.ts's own build-time
- * check, via fontkit) to have no glyph in JetBrainsMonoNL-Regular.ttf
- * v2.304 at all — a font-capability gap, not a subsetting bug. Each is
- * used by exactly one renderer feature (diagonal edge routing corners,
- * hexagon-shape corner markers); they keep falling back to the system
- * font stack exactly as they did before this font existed. Update this
- * set (not the test's assertion) if a font upgrade ever adds them, or
- * drop an entry once it does.
+ * Codepoints allowed to be missing from JetBrainsMonoNL-Regular.ttf's cmap
+ * even though a gallery sample renders them — a font-capability gap, not a
+ * subsetting bug. Empty as of issue #1062: this used to list ◢◣◤◥ (diagonal
+ * edge-routing arrowheads) plus ◸◹◺◿ and ⬡ (never actually reachable
+ * output — see scripts/build-mono-font-subset.ts's header comment), but
+ * draw-arrows.ts's `drawArrowHead` now draws ↖↗↘↙ (U+2196–U+2199) instead
+ * of the missing ◢◣◤◥ triangles, and the corner-marker entries were
+ * removed as stale rather than fixed. Update this set (not the test's
+ * assertion) if a future font-capability gap needs one, or a future font
+ * upgrade fills a gap this set once had to name.
  */
-const KNOWN_MISSING_FROM_SOURCE_FONT = new Set([
-  0x25e2, // ◢
-  0x25e3, // ◣
-  0x25e4, // ◤
-  0x25e5, // ◥
-  0x25f8, // ◸
-  0x25f9, // ◹
-  0x25fa, // ◺
-  0x25ff, // ◿
-  0x2b21, // ⬡
-])
+const KNOWN_MISSING_FROM_SOURCE_FONT = new Set<number>([])
 
 function decodeEmbeddedFont() {
   const match = /base64,([A-Za-z0-9+/=]+)\)/.exec(MONO_FONT_FACE_CSS)

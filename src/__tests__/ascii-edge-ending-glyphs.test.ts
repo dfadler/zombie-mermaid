@@ -19,7 +19,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         A --o B
     `)
     expect(result).toContain('○')
-    expect(result).not.toMatch(/[►◄▲▼◢◣◤◥]/)
+    expect(result).not.toMatch(/[►◄▲▼◢◣◤◥↖↗↘↙]/)
   })
 
   it('draws an x glyph for --x in unicode mode', () => {
@@ -28,7 +28,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         A --x B
     `)
     expect(result).toContain('✕')
-    expect(result).not.toMatch(/[►◄▲▼◢◣◤◥]/)
+    expect(result).not.toMatch(/[►◄▲▼◢◣◤◥↖↗↘↙]/)
   })
 
   it('draws a circle glyph for --o in ascii mode', () => {
@@ -138,7 +138,7 @@ describe('ASCII flowchart edges: --o circle-end / --x cross-end glyphs', () => {
         F --o C
     `)
     expect(result).toContain('○')
-    expect(result).not.toMatch(/[►◄▲▼◢◣◤◥]/)
+    expect(result).not.toMatch(/[►◄▲▼◢◣◤◥↖↗↘↙]/)
   })
 
   // A mixed fan-in (one edge --o, another plain -->) has no single correct

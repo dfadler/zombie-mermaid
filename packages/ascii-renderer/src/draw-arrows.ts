@@ -325,7 +325,18 @@ export function markerArrowChar(
 
 /**
  * Draw the arrowhead at the end of an edge path.
- * Uses triangular Unicode symbols (▲▼◄►) or ASCII symbols (^v<>).
+ * Uses triangular Unicode symbols (▲▼◄►) for the four orthogonal
+ * directions, diagonal arrow symbols (↗↖↘↙) for the four diagonal ones, or
+ * ASCII symbols (^v<>) in ASCII mode.
+ *
+ * The diagonal glyphs are plain Arrows-block characters (U+2196–U+2199),
+ * not filled triangles like the orthogonal set — JetBrains Mono NL (this
+ * site's self-hosted ASCII font, see scripts/build-mono-font-subset.ts)
+ * has no glyph at all for the filled diagonal triangles (◢◣◤◥, U+25E2–
+ * U+25E5) that would otherwise match the orthogonal style; U+2196–U+2199
+ * are real, correctly-directional glyphs the font does have, which beats
+ * falling back to an unpinned system font for just these four characters.
+ * See issue #1062.
  *
  * `marker` overrides the directional triangle with a fixed circle/cross
  * glyph for `--o`/`--x` (flowchart) terminators — those are direction-
@@ -356,20 +367,20 @@ function drawArrowHead(
     else if (dirEquals(dir, Down)) char = '▼'
     else if (dirEquals(dir, Left)) char = '◄'
     else if (dirEquals(dir, Right)) char = '►'
-    else if (dirEquals(dir, UpperRight)) char = '◥'
-    else if (dirEquals(dir, UpperLeft)) char = '◤'
-    else if (dirEquals(dir, LowerRight)) char = '◢'
-    else if (dirEquals(dir, LowerLeft)) char = '◣'
+    else if (dirEquals(dir, UpperRight)) char = '↗'
+    else if (dirEquals(dir, UpperLeft)) char = '↖'
+    else if (dirEquals(dir, LowerRight)) char = '↘'
+    else if (dirEquals(dir, LowerLeft)) char = '↙'
     else {
       // Fallback
       if (dirEquals(fallbackDir, Up)) char = '▲'
       else if (dirEquals(fallbackDir, Down)) char = '▼'
       else if (dirEquals(fallbackDir, Left)) char = '◄'
       else if (dirEquals(fallbackDir, Right)) char = '►'
-      else if (dirEquals(fallbackDir, UpperRight)) char = '◥'
-      else if (dirEquals(fallbackDir, UpperLeft)) char = '◤'
-      else if (dirEquals(fallbackDir, LowerRight)) char = '◢'
-      else if (dirEquals(fallbackDir, LowerLeft)) char = '◣'
+      else if (dirEquals(fallbackDir, UpperRight)) char = '↗'
+      else if (dirEquals(fallbackDir, UpperLeft)) char = '↖'
+      else if (dirEquals(fallbackDir, LowerRight)) char = '↘'
+      else if (dirEquals(fallbackDir, LowerLeft)) char = '↙'
       else char = '●'
     }
   } else {

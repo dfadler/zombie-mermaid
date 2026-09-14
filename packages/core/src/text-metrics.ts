@@ -274,12 +274,32 @@ function isGeometricShapesTextDefault(code: number): boolean {
 }
 
 /**
+ * Diagonal Arrows-block glyphs (↖ U+2196, ↗ U+2197, ↘ U+2198, ↙ U+2199) the
+ * ASCII renderer draws for diagonal edge-routing arrowheads
+ * (packages/ascii-renderer/src/draw-arrows.ts's `drawArrowHead`) in place
+ * of the filled triangles (◢◣◤◥) JetBrains Mono NL has no glyph for at all
+ * — see issue #1062. Like the Geometric Shapes block above, these carry
+ * Extended_Pictographic (emoji-capable) but no default Emoji_Presentation,
+ * and render as a single narrow column in every real terminal.
+ *
+ * U+2194/U+2195/U+21A9/U+21AA (↔↕↩↪) share the same Extended_Pictographic
+ * status but aren't drawn by the renderer itself, so they're left
+ * unaddressed here — a diagram author could still type one into label text
+ * and hit the same misclassification, but that's a pre-existing gap this
+ * fix doesn't claim to close.
+ */
+function isDiagonalArrowTextDefault(code: number): boolean {
+  return code >= 0x2196 && code <= 0x2199
+}
+
+/**
  * Check if a character is an emoji (fullwidth)
  */
 function isEmoji(char: string): boolean {
   if (EMOJI_PRESENTATION_REGEX.test(char)) return true
   const code = char.codePointAt(0)
   if (code !== undefined && isGeometricShapesTextDefault(code)) return false
+  if (code !== undefined && isDiagonalArrowTextDefault(code)) return false
   return EXTENDED_PICTOGRAPHIC_REGEX.test(char)
 }
 

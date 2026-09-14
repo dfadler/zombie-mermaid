@@ -267,10 +267,14 @@ export const asymmetricRenderer: ShapeRenderer = {
 
 /**
  * Trapezoid shape renderer — wider at bottom.
- * Uses slope markers (◸◹) on top corners.
+ * Uses plain slash slope markers (/ \, see corners.ts's
+ * `SHAPE_CORNERS.trapezoid`) on top corners — not the ◸◹ corner-triangle
+ * glyphs this comment used to claim: JetBrains Mono NL has no glyph for
+ * those at all, and the renderer hasn't actually emitted them since
+ * corners.ts moved to the diagonal-slash style. See issue #1062.
  *
  * Renders as:
- *   ◸─────────◹
+ *   /─────────\
  *   │  Label  │
  *   └─────────┘
  */
@@ -291,12 +295,16 @@ export const trapezoidRenderer: ShapeRenderer = {
 
 /**
  * Trapezoid-alt shape renderer — wider at top.
- * Uses slope markers (◺◿) on bottom corners.
+ * Uses plain slash slope markers (\ /, see corners.ts's
+ * `SHAPE_CORNERS['trapezoid-alt']`) on bottom corners — not the ◺◿
+ * corner-triangle glyphs this comment used to claim: JetBrains Mono NL has
+ * no glyph for those at all, and the renderer hasn't actually emitted them
+ * since corners.ts moved to the diagonal-slash style. See issue #1062.
  *
  * Renders as:
  *   ┌─────────┐
  *   │  Label  │
- *   ◺─────────◿
+ *   \─────────/
  */
 export const trapezoidAltRenderer: ShapeRenderer = {
   getDimensions: getBoxDimensions,
