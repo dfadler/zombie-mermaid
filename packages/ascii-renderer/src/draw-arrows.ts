@@ -324,11 +324,12 @@ export function markerArrowChar(
 }
 
 /**
- * Draw the arrowhead at the end of an edge path.
- * Uses triangular Unicode symbols (▲▼◄►) for the four orthogonal
- * directions, diagonal arrow symbols (↗↖↘↙) for the four diagonal ones, or
- * ASCII symbols (^v<>) in ASCII mode.
+ * Maps a direction to its Unicode arrowhead glyph, or `undefined` for a
+ * direction with no arrowhead (`Middle`, or any other value this switch
+ * doesn't recognize) — callers decide the ultimate fallback.
  *
+ * Uses triangular Unicode symbols (▲▼◄►) for the four orthogonal
+ * directions and diagonal arrow symbols (↗↖↘↙) for the four diagonal ones.
  * The diagonal glyphs are plain Arrows-block characters (U+2196–U+2199),
  * not filled triangles like the orthogonal set — JetBrains Mono NL (this
  * site's self-hosted ASCII font, see scripts/build-mono-font-subset.ts)
@@ -338,8 +339,40 @@ export function markerArrowChar(
  * falling back to an unpinned system font for just these four characters.
  * See issue #1062.
  *
- * `marker` overrides the directional triangle with a fixed circle/cross
- * glyph for `--o`/`--x` (flowchart) terminators — those are direction-
+ * Exported (alongside {@link asciiArrowChar}) so tests can exercise every
+ * direction directly — the ELK/pathfinder layout this module actually
+ * draws from rarely if ever produces some direction combinations (e.g.
+ * `LowerLeft` only arises from determinePath's rare Case-4 diagonal
+ * fallback, and only for a specific relative source/target position no
+ * existing sample or hand-written diagram happens to trigger), which would
+ * otherwise leave this mapping's correctness for those directions unverified.
+ */
+export function unicodeArrowChar(dir: Direction): string | undefined {
+  if (dirEquals(dir, Up)) return '▲'
+  if (dirEquals(dir, Down)) return '▼'
+  if (dirEquals(dir, Left)) return '◄'
+  if (dirEquals(dir, Right)) return '►'
+  if (dirEquals(dir, UpperRight)) return '↗'
+  if (dirEquals(dir, UpperLeft)) return '↖'
+  if (dirEquals(dir, LowerRight)) return '↘'
+  if (dirEquals(dir, LowerLeft)) return '↙'
+  return undefined
+}
+
+/** ASCII-mode counterpart of {@link unicodeArrowChar} — orthogonal only, no diagonals. */
+export function asciiArrowChar(dir: Direction): string | undefined {
+  if (dirEquals(dir, Up)) return '^'
+  if (dirEquals(dir, Down)) return 'v'
+  if (dirEquals(dir, Left)) return '<'
+  if (dirEquals(dir, Right)) return '>'
+  return undefined
+}
+
+/**
+ * Draw the arrowhead at the end of an edge path.
+ *
+ * `marker` overrides the directional glyph with a fixed circle/cross glyph
+ * for `--o`/`--x` (flowchart) terminators — those are direction-
  * independent, so the direction computed below is only used to place it,
  * never to pick which glyph to draw. See issue #330.
  */
@@ -357,44 +390,21 @@ function drawArrowHead(
   let dir = determineDirection(from, lastPos)
   if (lastLine.length === 1 || dirEquals(dir, Middle)) dir = fallbackDir
 
-  let char: string
-
   const markerChar = markerArrowChar(graph.config.useAscii, marker)
+  let char: string
   if (markerChar !== undefined) {
     char = markerChar
   } else if (!graph.config.useAscii) {
-    if (dirEquals(dir, Up)) char = '▲'
-    else if (dirEquals(dir, Down)) char = '▼'
-    else if (dirEquals(dir, Left)) char = '◄'
-    else if (dirEquals(dir, Right)) char = '►'
-    else if (dirEquals(dir, UpperRight)) char = '↗'
-    else if (dirEquals(dir, UpperLeft)) char = '↖'
-    else if (dirEquals(dir, LowerRight)) char = '↘'
-    else if (dirEquals(dir, LowerLeft)) char = '↙'
-    else {
-      // Fallback
-      if (dirEquals(fallbackDir, Up)) char = '▲'
-      else if (dirEquals(fallbackDir, Down)) char = '▼'
-      else if (dirEquals(fallbackDir, Left)) char = '◄'
-      else if (dirEquals(fallbackDir, Right)) char = '►'
-      else if (dirEquals(fallbackDir, UpperRight)) char = '↗'
-      else if (dirEquals(fallbackDir, UpperLeft)) char = '↖'
-      else if (dirEquals(fallbackDir, LowerRight)) char = '↘'
-      else if (dirEquals(fallbackDir, LowerLeft)) char = '↙'
-      else char = '●'
-    }
+    // `dir` is only ever left unresolved (neither an orthogonal nor a
+    // diagonal Direction) when it was reassigned from `fallbackDir` above
+    // and `fallbackDir` is itself `Middle` — no current caller passes that;
+    // every drawArrow/draw-bundles.ts call site computes a real directional
+    // fallback. Kept as a safety net rather than a hard assumption.
+    char = unicodeArrowChar(dir) ?? unicodeArrowChar(fallbackDir) ?? '●'
   } else {
-    if (dirEquals(dir, Up)) char = '^'
-    else if (dirEquals(dir, Down)) char = 'v'
-    else if (dirEquals(dir, Left)) char = '<'
-    else if (dirEquals(dir, Right)) char = '>'
-    else {
-      if (dirEquals(fallbackDir, Up)) char = '^'
-      else if (dirEquals(fallbackDir, Down)) char = 'v'
-      else if (dirEquals(fallbackDir, Left)) char = '<'
-      else if (dirEquals(fallbackDir, Right)) char = '>'
-      else char = '*'
-    }
+    // Same defensive-only fallback as the unicode-mode branch above,
+    // mirrored for ASCII mode.
+    char = asciiArrowChar(dir) ?? asciiArrowChar(fallbackDir) ?? '*'
   }
 
   write(canvas, lastPos.x, lastPos.y, char)
