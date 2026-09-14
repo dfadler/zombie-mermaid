@@ -270,7 +270,11 @@ async function buildSubset(
     keepFeatures: [],
   })
   const base64 = subsetBuffer.toString('base64')
-  return { css: fontFaceCss(base64, available), base64, woff2Bytes: subsetBuffer.length }
+  return {
+    css: fontFaceCss(base64, available),
+    base64,
+    woff2Bytes: subsetBuffer.length,
+  }
 }
 
 const SITE_GENERATED_TS_HEADER = `/**
