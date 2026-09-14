@@ -395,16 +395,29 @@ function drawArrowHead(
   if (markerChar !== undefined) {
     char = markerChar
   } else if (!graph.config.useAscii) {
-    // `dir` is only ever left unresolved (neither an orthogonal nor a
-    // diagonal Direction) when it was reassigned from `fallbackDir` above
-    // and `fallbackDir` is itself `Middle` — no current caller passes that;
-    // every drawArrow/draw-bundles.ts call site computes a real directional
-    // fallback. Kept as a safety net rather than a hard assumption.
-    char = unicodeArrowChar(dir) ?? unicodeArrowChar(fallbackDir) ?? '●'
+    const resolved = unicodeArrowChar(dir)
+    // `resolved` is only ever undefined when `dir` itself is `Middle` (or
+    // an unrecognized Direction) — which, given the reassignment above,
+    // only happens when `fallbackDir` is itself `Middle`. No current
+    // caller passes that; every drawArrow/draw-bundles.ts call site
+    // computes a real directional fallback. Kept as a safety net rather
+    // than a hard assumption.
+    /* v8 ignore else */
+    if (resolved !== undefined) {
+      char = resolved
+    } else {
+      char = unicodeArrowChar(fallbackDir) ?? '●'
+    }
   } else {
+    const resolved = asciiArrowChar(dir)
     // Same defensive-only fallback as the unicode-mode branch above,
     // mirrored for ASCII mode.
-    char = asciiArrowChar(dir) ?? asciiArrowChar(fallbackDir) ?? '*'
+    /* v8 ignore else */
+    if (resolved !== undefined) {
+      char = resolved
+    } else {
+      char = asciiArrowChar(fallbackDir) ?? '*'
+    }
   }
 
   write(canvas, lastPos.x, lastPos.y, char)

@@ -289,7 +289,9 @@ function isGeometricShapesTextDefault(code: number): boolean {
  *   label text, which passes through to the ASCII grid verbatim.
  */
 function isArrowsBlockTextDefault(code: number): boolean {
-  return (code >= 0x2194 && code <= 0x2199) || code === 0x21a9 || code === 0x21aa
+  return (
+    (code >= 0x2194 && code <= 0x2199) || code === 0x21a9 || code === 0x21aa
+  )
 }
 
 /**
