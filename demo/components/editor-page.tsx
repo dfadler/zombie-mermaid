@@ -265,6 +265,17 @@ body {
   isolation: isolate;
 }
 
+/* The default 4-up column count lives here, not as an inline style on
+ * .editor-features-grid (editor-feature-strip.tsx) -- an inline style's
+ * specificity beats any stylesheet rule regardless of selector weight, so a
+ * grid-template-columns set via style={} would silently defeat both
+ * media-query overrides below and permanently lock the grid at 4 columns
+ * down to 375px, squeezing every card (and its heading/paragraph) into a
+ * sliver-width column (zombie-mermaid#1056). */
+.editor-features-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 @media (max-width: ${BREAKPOINTS.tablet}px) {
   .editor-tool-shell {
     height: min(640px, 78vh);
