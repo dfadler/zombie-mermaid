@@ -274,15 +274,15 @@ describe('initThemeShowcaseFullscreen: zoom buttons (#987), fullscreen-gated', (
     expect(resetLabel()).toBe('100%')
   })
 
-  it('zoom in/out step by ZOOM_STEP, snapped to the 0.1 step and clamped to [0.5, 2.5]', async () => {
+  it('zoom in/out step by ZOOM_STEP (unsnapped) and clamp to [0.5, 2.5]', async () => {
     const api = stubFullscreenApi()
     try {
       await import('../../demo/index-page-client.ts')
       api.enterSettles(grid())
 
       zoomIn()
-      expect(body().style.getPropertyValue('--tsd-scale')).toBe('1.3') // round(1 * 1.25, 0.1)
-      expect(resetLabel()).toBe('130%')
+      expect(body().style.getPropertyValue('--tsd-scale')).toBe('1.25') // 1 * ZOOM_STEP, no snapping
+      expect(resetLabel()).toBe('125%') // formatScalePercent still rounds for display
 
       zoomOut()
       zoomOut()
@@ -604,6 +604,38 @@ describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () =
       expect(body().style.getPropertyValue('--tsd-pan-x')).toBe('-10px')
       expect(body().style.getPropertyValue('--tsd-scale')).toBe(scale) // unchanged by the plain wheel
       expect(panXBefore).not.toBe(body().style.getPropertyValue('--tsd-pan-x'))
+    } finally {
+      api.restore()
+    }
+  })
+
+  it('cmd/meta+wheel (macOS trackpad pinch) zooms the same as ctrl+wheel', async () => {
+    const api = stubFullscreenApi()
+    try {
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+
+      fireEvent.wheel(body(), { deltaY: -500, metaKey: true })
+      expect(Number(body().style.getPropertyValue('--tsd-scale'))).toBeGreaterThan(1)
+    } finally {
+      api.restore()
+    }
+  })
+
+  it('repeated small wheel-zoom deltas accumulate instead of rounding back to the same value each time', async () => {
+    const api = stubFullscreenApi()
+    try {
+      await import('../../demo/index-page-client.ts')
+      api.enterSettles(grid())
+
+      // Each individual tick is small enough that, if setScale() re-snapped
+      // from the *previous already-applied* scale on every call (the bug
+      // this guards against), the value would round right back to 1 every
+      // time and never move at all.
+      for (let i = 0; i < 8; i++) {
+        fireEvent.wheel(body(), { deltaY: -10, ctrlKey: true })
+      }
+      expect(Number(body().style.getPropertyValue('--tsd-scale'))).toBeGreaterThan(1.2)
     } finally {
       api.restore()
     }

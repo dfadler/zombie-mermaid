@@ -497,21 +497,9 @@ function initThemeShowcaseOutputToggle(onAsciiShown?: () => void): void {
   })
 }
 
-/**
- * `#theme-showcase-scale-slider`'s `min`/`max` (zombie-mermaid#987) —
- * mirrored (not imported: see this file's header comment on why the
- * build-time `index-page.tsx` and this client bundle stay separate) in
- * that slider's own `min`/`max` JSX attributes in
- * `demo/components/index-page.tsx`, which is what actually clamps the
- * value a real drag can produce. These constants only guard the fallback
- * path below (a non-finite `parseFloat` read, which a native range input
- * should never produce, but this file's other init functions are
- * similarly defensive about malformed/absent markup).
- */
+/** How far `#theme-showcase-output-body` can zoom in/out (zombie-mermaid#987), via the +/-/reset buttons, pinch, or ctrl/cmd-wheel -- every one of those routes through `setScale()`'s own clamp to this range. */
 const SCALE_MIN = 0.5
 const SCALE_MAX = 2.5
-/** Mirrors the slider's own `step={0.1}` JSX attribute -- see `SCALE_MIN`'s own comment on why this stays a mirrored constant rather than a shared import. A pinch or ctrl-wheel gesture computes a continuous scale value, but the slider element itself snaps any `.value` assignment to the nearest step -- without matching that here, the slider thumb's visible position could drift from the `--tsd-scale`/label value a gesture just set. */
-const SCALE_STEP = 0.1
 
 /**
  * Trackpad pinch-to-zoom sensitivity for a ctrl/cmd-wheel event's `deltaY`
@@ -547,7 +535,7 @@ function pointerMidpoint(a: Point, b: Point): Point {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
 }
 
-/** `1` (100%) reads as a whole number; anything else keeps one decimal's worth of precision (matches the slider's own `step={0.1}`) without ever showing more than that. */
+/** Whole-percent display for the zoom-reset button's label -- `formatScalePercent(1.005)` reads as "101%", not "100.5%": the label is a rounded summary, not the precise applied `--tsd-scale` value. */
 function formatScalePercent(scale: number): string {
   return `${Math.round(scale * 100)}%`
 }
@@ -616,12 +604,14 @@ const ZOOM_STEP = 1.25
  *     panning is deliberately unclamped (fine for its full-viewport
  *     overlay, not for this card, which still confines the zoomed content
  *     to its own box even fullscreen).
- *   - trackpad two-finger pan: a plain `wheel` event (`ctrlKey` false).
- *   - trackpad pinch-to-zoom: a `wheel` event with `ctrlKey` true — every
- *     evergreen browser reports a trackpad pinch gesture as a `ctrlKey`
- *     wheel event, the same convention `editor-viewport.ts`'s own ctrl/cmd-
- *     wheel zoom and `output-panel-viewport.ts`'s own wheel handling both
- *     already use in this repo.
+ *   - trackpad two-finger pan: a plain `wheel` event (neither `ctrlKey` nor
+ *     `metaKey`).
+ *   - trackpad pinch-to-zoom: a `wheel` event with `ctrlKey` or `metaKey`
+ *     true — every evergreen browser reports a trackpad pinch gesture this
+ *     way (`ctrlKey` on Windows/Linux, `metaKey`/Cmd on macOS), the same
+ *     pair `editor-viewport.ts`'s own ctrl/cmd-wheel zoom and
+ *     `output-panel-viewport.ts`'s own wheel handling both already check in
+ *     this repo.
  * A lone pointer's drag is a no-op below 100% scale (nothing to reveal
  * yet) — `maxPanX`/`maxPanY` are computed from how much
  * `#theme-showcase-output-body`'s current (scaled)
@@ -718,16 +708,25 @@ function initThemeShowcaseFullscreen(): void {
   // back off a DOM element.
   let scale = 1
 
+  // No step-snapping here (a prior revision of this function rounded every
+  // setScale() call to the nearest 0.1, back when #987's UI was a range
+  // slider whose thumb needed to visually land on a step). Now that scale
+  // is driven by +/-/reset buttons and continuous gestures (pinch, wheel),
+  // nothing needs a stepped value at all -- and snapping every call was
+  // actively harmful for wheel-zoom specifically: since it always rounded
+  // from the *previous already-snapped* scale rather than an unsnapped
+  // accumulator, repeated small deltaY events (an ordinary trackpad pinch)
+  // could round right back to the same value forever, leaving zoom stuck.
+  // Confirmed by tracing it through: starting at scale=1, a wheel tick
+  // small enough to only nudge the raw value to ~1.03 rounds straight back
+  // to 1.0, and the next tick repeats identically since scale itself never
+  // moved. formatScalePercent()'s own Math.round is the only rounding left
+  // -- purely a display concern for the percentage label, not the applied
+  // --tsd-scale value.
   const setScale = (next: number): void => {
-    // Math.round(x * 10) / 10 rather than Math.round(x / SCALE_STEP) *
-    // SCALE_STEP -- both snap to the same 0.1 step, but the division form
-    // is more exposed to floating-point rounding error for a step this
-    // small (confirmed while building this: it occasionally produced a
-    // value like 1.7999999999999998).
-    const stepped = Number.isFinite(next)
-      ? Math.round(next * (1 / SCALE_STEP)) / (1 / SCALE_STEP)
+    scale = Number.isFinite(next)
+      ? Math.max(SCALE_MIN, Math.min(SCALE_MAX, next))
       : 1
-    scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, stepped))
     body.style.setProperty('--tsd-scale', String(scale))
     zoomResetBtn.textContent = formatScalePercent(scale)
     recomputePanBounds()
@@ -764,12 +763,11 @@ function initThemeShowcaseFullscreen(): void {
   // for its fullscreen pan+pinch (gesture inferred purely from how many
   // pointers are currently down; see `pointerDistance`'s own comment above
   // for why that module's logic is duplicated here, not imported).
-  // Adapted to drive #987's slider directly (via `setScale`) rather than
-  // owning zoom state independently, so the displayed percentage and
-  // slider thumb always match a pinch-driven zoom too, and to clamp pan to
-  // this panel's own box (that hook's own panning is deliberately
-  // unclamped -- fine for its full-viewport overlay, not for this small
-  // showcase card).
+  // Adapted to drive #987's `setScale()` directly rather than owning zoom
+  // state independently, so the zoom-reset button's percentage label
+  // always matches a pinch-driven zoom too, and to clamp pan to this
+  // panel's own box (that hook's own panning is deliberately unclamped --
+  // fine for its full-viewport overlay, not for this small showcase card).
   const pointers = new Map<number, Point>()
   let panStart: { x: number; y: number; panX: number; panY: number } | null =
     null
@@ -869,17 +867,18 @@ function initThemeShowcaseFullscreen(): void {
   // Pointer Event set above -- a trackpad swipe/pinch fires wheel events,
   // never pointer events, mirroring output-panel-viewport.ts's own wheel
   // listener registered alongside (not instead of) its pointer listeners.
-  // `ctrlKey` is how every evergreen browser reports a trackpad pinch as a
-  // wheel event -- the same convention editor-viewport.ts's own ctrl/cmd-
-  // wheel zoom and output-panel-viewport.ts's own onWheel both already
-  // use, so a `ctrlKey` wheel now zooms (matching that established
-  // convention) rather than being left for the browser's own page-zoom;
-  // a plain wheel (#988) still pans.
+  // `ctrlKey`/`metaKey` is how every evergreen browser reports a trackpad
+  // pinch as a wheel event -- `ctrlKey` on Windows/Linux trackpads, `metaKey`
+  // (Cmd) on macOS's own pinch-to-zoom convention -- the same pair
+  // editor-viewport.ts's own ctrl/cmd-wheel zoom and output-panel-
+  // viewport.ts's own onWheel both already check, so either now zooms
+  // (matching that established convention) rather than being left for the
+  // browser's own page-zoom; a plain wheel (#988) still pans.
   body.addEventListener(
     'wheel',
     (e) => {
       if (!isFullscreenActive()) return
-      if (e.ctrlKey) {
+      if (e.ctrlKey || e.metaKey) {
         setScale(scale * Math.pow(WHEEL_ZOOM_SENSITIVITY, e.deltaY))
         e.preventDefault()
         return
