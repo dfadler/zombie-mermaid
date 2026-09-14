@@ -31,22 +31,23 @@
  * ctrl/cmd-wheel zoom works) is treated as zoom.
  */
 import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import {
+  clampZoom as clampZoomInRange,
+  pointerDistance,
+  pointerMidpoint,
+  WHEEL_ZOOM_SENSITIVITY,
+  ZOOM_STEP,
+  type GesturePoint,
+} from './pan-zoom-gesture-math.ts'
+
+export { pointerDistance, pointerMidpoint }
 
 /** Mirrors `editor-viewport.ts`'s zoom clamp shape, tuned for this viewer (a rendered diagram, not the editor's own preview). */
 export const ZOOM_MIN = 0.25
 export const ZOOM_MAX = 6
-const ZOOM_STEP = 1.25
-// The base editor-viewport.ts's own ctrl/cmd-wheel zoom uses (0.999) reads
-// as sluggish here -- confirmed by hands-on feedback after shipping this
-// feature -- so this viewer uses a stronger exponent instead of copying
-// that constant verbatim. ~3x more responsive per unit of wheel deltaY
-// (ln(0.997)/ln(0.999) ≈ 3): a single scroll-wheel notch (deltaY ~100-120)
-// now changes zoom by roughly 26-30%, and a trackpad pinch or two-finger
-// scroll (many small deltaY events) tracks noticeably faster too.
-const WHEEL_ZOOM_SENSITIVITY = 0.997
 
 export function clampZoom(scale: number): number {
-  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, scale))
+  return clampZoomInRange(scale, ZOOM_MIN, ZOOM_MAX)
 }
 
 export interface OutputPanelViewport {
@@ -57,23 +58,8 @@ export interface OutputPanelViewport {
 
 export const IDENTITY_VIEWPORT: OutputPanelViewport = { scale: 1, tx: 0, ty: 0 }
 
-export interface ViewportPoint {
-  x: number
-  y: number
-}
-
-/** Euclidean distance between two active pointers — the pinch gesture's zoom signal. */
-export function pointerDistance(a: ViewportPoint, b: ViewportPoint): number {
-  return Math.hypot(a.x - b.x, a.y - b.y)
-}
-
-/** Midpoint between two active pointers — the pinch gesture's pan signal. */
-export function pointerMidpoint(
-  a: ViewportPoint,
-  b: ViewportPoint,
-): ViewportPoint {
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
-}
+/** This viewer's own alias for the shared gesture-math module's point shape. */
+export type ViewportPoint = GesturePoint
 
 /** CSS `transform` value for a given viewport -- `undefined` at rest (`active: false`) so the normal (non-fullscreen) panel keeps its plain, untransformed layout. */
 export function viewportTransform(

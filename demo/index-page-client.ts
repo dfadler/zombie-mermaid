@@ -77,6 +77,13 @@
  */
 import { initChromeTheme } from './chrome-theme-client.ts'
 import { THEMES, type DiagramColors } from '@zombie-mermaid/core'
+import {
+  pointerDistance,
+  pointerMidpoint,
+  WHEEL_ZOOM_SENSITIVITY,
+  ZOOM_STEP,
+  type GesturePoint,
+} from './components/pan-zoom-gesture-math.ts'
 
 /** How long `.theme-showcase-burst-ring.active` stays applied — must be >= its own CSS animation duration (650ms) so the animation is never cut off mid-flight. */
 const BURST_MS = 700
@@ -501,52 +508,13 @@ function initThemeShowcaseOutputToggle(onAsciiShown?: () => void): void {
 const SCALE_MIN = 0.5
 const SCALE_MAX = 2.5
 
-/**
- * Trackpad pinch-to-zoom sensitivity for a ctrl/cmd-wheel event's `deltaY`
- * (zombie-mermaid#988's gesture follow-up) -- the exact value
- * `output-panel-viewport.ts`'s own `WHEEL_ZOOM_SENSITIVITY` uses, per that
- * file's comment: a naive 1:1 `deltaY` reads as sluggish for this gesture,
- * confirmed there by hands-on feedback after shipping that feature. Not
- * imported from there (see `pointerDistance`/`pointerMidpoint` below for
- * why this file can't import from that module at all).
- */
-const WHEEL_ZOOM_SENSITIVITY = 0.997
-
-interface Point {
-  x: number
-  y: number
-}
-
-/**
- * Euclidean distance between two points -- the pinch gesture's zoom
- * signal. Same one-line math as `output-panel-viewport.ts`'s own exported
- * `pointerDistance()`, duplicated rather than imported: that module's
- * top-level `import ... from 'react'` (for its `useOutputPanelViewport`
- * hook) would drag React into this file's bundle the moment anything is
- * imported from it, even just these two pure functions -- exactly what
- * this file's own header comment says to keep out.
- */
-function pointerDistance(a: Point, b: Point): number {
-  return Math.hypot(a.x - b.x, a.y - b.y)
-}
-
-/** Midpoint between two points -- the pinch gesture's pan signal. Same math as `output-panel-viewport.ts`'s own `pointerMidpoint()`; see `pointerDistance` above for why it's duplicated, not imported. */
-function pointerMidpoint(a: Point, b: Point): Point {
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
-}
+/** This file's own alias for the shared gesture-math module's point shape. */
+type Point = GesturePoint
 
 /** Whole-percent display for the zoom-reset button's label -- `formatScalePercent(1.005)` reads as "101%", not "100.5%": the label is a rounded summary, not the precise applied `--tsd-scale` value. */
 function formatScalePercent(scale: number): string {
   return `${Math.round(scale * 100)}%`
 }
-
-/**
- * Trackpad-wheel-zoom step used for `#theme-showcase-zoom-in`/`-out`'s own
- * discrete +/- clicks -- the same `1.25` `output-panel-viewport.ts`'s own
- * `ZOOM_STEP` uses for its identical +/- buttons, duplicated rather than
- * imported (see `pointerDistance`'s own comment above for why).
- */
-const ZOOM_STEP = 1.25
 
 /**
  * Wires `#theme-showcase-grid`'s fullscreen toggle
@@ -592,10 +560,10 @@ const ZOOM_STEP = 1.25
  *     `pointermove`/`pointerup`/`pointercancel`), gesture inferred purely
  *     from how many pointers are down (0/1/2) — the same `pointers`-map
  *     convention `output-panel-viewport.ts`'s `useOutputPanelViewport`
- *     already uses for the fullscreen diagram viewer's own pan+pinch (see
- *     `pointerDistance`'s own comment above for why that module's pinch
- *     math is duplicated here, not imported) — a more directly applicable
- *     prior art than `editor-viewport.ts`'s `scrollLeft`/`scrollTop` drag
+ *     already uses for the fullscreen diagram viewer's own pan+pinch --
+ *     both share the same `pointerDistance`/`pointerMidpoint` math via
+ *     `pan-zoom-gesture-math.ts` — a more directly applicable prior art
+ *     than `editor-viewport.ts`'s `scrollLeft`/`scrollTop` drag
  *     (which #988 itself points to, but which doesn't compose with this
  *     panel's `transform: scale()` zoom — see that issue's own "related
  *     prior art" note). Not reused directly: that hook is a React hook
@@ -761,8 +729,8 @@ function initThemeShowcaseFullscreen(): void {
   // pointermove/pointerup/pointercancel) -- the same pointers-map
   // convention `output-panel-viewport.ts`'s `useOutputPanelViewport` uses
   // for its fullscreen pan+pinch (gesture inferred purely from how many
-  // pointers are currently down; see `pointerDistance`'s own comment above
-  // for why that module's logic is duplicated here, not imported).
+  // pointers are currently down; both share the same `pointerDistance`/
+  // `pointerMidpoint` math via `pan-zoom-gesture-math.ts`).
   // Adapted to drive #987's `setScale()` directly rather than owning zoom
   // state independently, so the zoom-reset button's percentage label
   // always matches a pinch-driven zoom too, and to clamp pan to this
