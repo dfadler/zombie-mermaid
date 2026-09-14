@@ -14,14 +14,14 @@
  * cmap, so a future renderer change that introduces a new decorative glyph
  * fails CI instead of silently drifting again. Lives here (not under
  * src/__tests__) for the same reason ascii-hyperlinks-samples.test.ts
- * does: it imports samples-data.ts from site-src/, outside `demo/
+ * does: it imports samples-data.ts from packages/site/, outside `demo/
  * tsconfig.json`'s and the package tsconfigs' `rootDir`.
  */
 import { describe, expect, it } from 'vitest'
 import { create as createFont } from 'fontkit'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { charDisplayWidth } from '../packages/ascii-renderer/src/display-width.ts'
-import { samples } from '../site-src/samples-data.ts'
+import { samples } from '../packages/site/samples-data.ts'
 import {
   MONO_FONT_FACE_CSS,
   MONO_FONT_FAMILY,

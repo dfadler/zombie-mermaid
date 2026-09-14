@@ -13,7 +13,7 @@ import {
   generate,
   renderDashboardHtml,
   type RepoStats,
-} from '../site-src/dashboard.ts'
+} from '../packages/site/dashboard.ts'
 import {
   DashboardApp,
   DASHBOARD_PROPS_ELEMENT_ID,

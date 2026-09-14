@@ -1,11 +1,11 @@
 /**
  * Resolves the directory a site generator writes its *output* into.
  *
- * Each of the six one-shot site generators (site-src/index.ts,
- * site-src/editor.ts, site-src/fork-fixes.ts, site-src/pages.ts,
- * site-src/blog.ts, site-src/dashboard.ts) defaults to writing to the repo
+ * Each of the six one-shot site generators (packages/site/index.ts,
+ * packages/site/editor.ts, packages/site/fork-fixes.ts, packages/site/pages.ts,
+ * packages/site/blog.ts, packages/site/dashboard.ts) defaults to writing to the repo
  * root — deliberately *not* resolved relative to the generator's own
- * `import.meta.url` (that would land in `site-src/` since #995 moved these
+ * `import.meta.url` (that would land in `packages/site/` since #995 moved these
  * generators there), but relative to this file's own location instead
  * (`scripts/`, one level under the repo root), so the default stays stable
  * regardless of which directory a generator itself lives in. `pnpm run dev`
@@ -27,7 +27,7 @@
  *
  * Takes no arguments: prior to #995 this resolved the no-override default
  * relative to a `generatorUrl` parameter (each caller passed its own
- * `import.meta.url`), which is exactly the assumption the site-src/ move
+ * `import.meta.url`), which is exactly the assumption the packages/site/ move
  * invalidated. Callers still exist only to compose paths off the returned
  * base (`new URL('./relative/path', siteOutDir())`); trim any leftover
  * `import.meta.url` argument at a call site rather than reintroducing it.

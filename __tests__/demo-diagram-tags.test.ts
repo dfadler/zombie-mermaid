@@ -12,7 +12,7 @@
  * `rootDir: "src"` — same reasoning as `demo-diagram-orientation.test.ts`.
  */
 import { describe, it, expect } from 'vitest'
-import { samples } from '../site-src/samples-data.ts'
+import { samples } from '../packages/site/samples-data.ts'
 import { TAG_RULES } from '../demo/diagram-tags.ts'
 
 describe('TAG_RULES', () => {
