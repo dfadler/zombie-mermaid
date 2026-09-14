@@ -130,3 +130,33 @@ describe('buildStyleBlock – font handling', () => {
     )
   })
 })
+
+describe('buildStyleBlock – mono font (#1061)', () => {
+  it('never reaches out to Google Fonts for the .mono rule', () => {
+    const block = buildStyleBlock('Inter', true)
+    // The main `font` still gets its own Google Fonts @import (unrelated to
+    // this regression test), but nothing in the block should ever request
+    // JetBrains Mono from a third-party CDN.
+    expect(block).not.toContain('fonts.googleapis.com/css2?family=JetBrains')
+  })
+
+  it('embeds a self-hosted @font-face as a base64 woff2 data URI for the mono font', () => {
+    const block = buildStyleBlock('Inter', true)
+    expect(block).toContain('@font-face')
+    expect(block).toContain('data:font/woff2;base64,')
+    expect(block).toContain("font-family: 'JetBrains Mono NL';")
+  })
+
+  it("leads the .mono rule's font stack with the self-hosted family name", () => {
+    const block = buildStyleBlock('Inter', true)
+    expect(block).toContain(
+      "  .mono { font-family: 'JetBrains Mono NL', 'SF Mono', 'Fira Code', ui-monospace, monospace; }",
+    )
+  })
+
+  it('emits neither the @font-face embed nor the .mono rule when hasMonoFont is false', () => {
+    const block = buildStyleBlock('Inter', false)
+    expect(block).not.toContain('@font-face')
+    expect(block).not.toContain('.mono')
+  })
+})
