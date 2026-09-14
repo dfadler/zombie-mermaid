@@ -70,7 +70,7 @@ describe('React Testing Library pattern (example)', () => {
 A few mechanical notes that aren't obvious from the example alone:
 
 - The `// @vitest-environment jsdom` docblock must be the file's first line.
-  `vitest.config.ts`'s default test environment is `node` (most of
+  `config/vitest.config.ts`'s default test environment is `node` (most of
   `__tests__/**` are plain string/attribute assertions against
   `renderToStaticMarkup` output with no reason to pay jsdom's setup cost);
   omitting the docblock fails loudly (`document is not defined`) rather than
@@ -79,7 +79,7 @@ A few mechanical notes that aren't obvious from the example alone:
   discoverability — that's a grep-able convention, not something enforced
   mechanically.
 - `@testing-library/jest-dom` matchers (`toBeInTheDocument()`, etc.) are
-  registered globally via `vitest.setup.ts`; no per-file import needed.
+  registered globally via `config/vitest.setup.ts`; no per-file import needed.
 
 ### Testing a hydrated component
 

@@ -29,7 +29,7 @@ The workspace also contains five internal `@zombie-mermaid/*` packages
 `packages/`) that #769 made publish-ready in shape. They are **not**
 published, not real runtime dependencies of `zombie-mermaid` yet, and not
 part of `.changeset/config.json`'s `fixed` group (still `[]`) — the
-umbrella's own build (`vite.config.lib.ts`) still bundles their source
+umbrella's own build (`config/vite.config.lib.ts`) still bundles their source
 directly into `dist/`, same as before #769. See "Future: multi-package
 publish" below.
 
@@ -121,7 +121,7 @@ own build still bundles all five directly into `dist/index.js`/`dist/ascii.js`/
 have ever been published to npm.
 
 Actually flipping this — externalizing the five packages in
-`vite.config.lib.ts`, declaring them as real `dependencies`, and locking all
+`config/vite.config.lib.ts`, declaring them as real `dependencies`, and locking all
 six packages to one version via the `fixed` group — is a separate, future
 PR. It is explicitly gated on completing the one-time npm trusted-publishing
 setup above, repeated once per new package name, **before** that PR merges:
