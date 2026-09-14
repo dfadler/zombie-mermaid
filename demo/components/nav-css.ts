@@ -275,13 +275,39 @@ html.mobile-nav-open {
   }
 }
 
+/*
+ * Split into an inset:0 clipping box (this rule) plus an inner
+ * .mobile-watermark-mark that carries the actual off-edge position and
+ * rotation (zombie-mermaid#1053). The mark's rotated, negatively-offset box
+ * was previously positioned directly by this class, which "worked" visually
+ * -- .mobile-nav-panel's own overflow:hidden clips it at the right place --
+ * but an element's scrollWidth reflects a descendant's pre-clip geometry
+ * regardless of an ancestor's overflow:hidden, and Chrome's scrollable-
+ * overflow calculation includes a transformed descendant's rotated bounding
+ * box too. Together those inflated .mobile-nav-panel's own scrollWidth by a
+ * constant 59px at every viewport width (the size of the fixed
+ * MOBILE_WATERMARK_SIZE box plus its rotation, neither of which scale with
+ * the viewport) even though nothing was ever visibly clipped wrong. Giving
+ * this outer box its own inset:0 + overflow:hidden means it -- not
+ * .mobile-nav-panel -- absorbs the mark's overflow: a nested overflow:hidden
+ * box's own (fixed, panel-bounded) border box is all an ancestor's overflow
+ * calculation sees, not what spills past it internally. Same visual clip
+ * boundary as before (this box's edges exactly match the panel's, since the
+ * panel is its containing block), zero rendered difference.
+ */
 .mobile-watermark {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mobile-watermark-mark {
   position: absolute;
   right: -${Math.round(MOBILE_WATERMARK_SIZE * 0.2)}px;
   bottom: -${Math.round(MOBILE_WATERMARK_SIZE * 0.15)}px;
   opacity: ${MOBILE_WATERMARK_OPACITY};
   transform: rotate(-8deg);
-  pointer-events: none;
 }
 
 .mobile-links {
