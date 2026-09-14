@@ -66,6 +66,19 @@ that may no longer contain a matching repro. See
 [#402](https://github.com/dfadler/zombie-mermaid/issues/402), which this
 requirement exists to close.
 
+## Decision docs: run the self-review checklist before opening the PR
+
+Before opening a PR that adds or edits a `docs/decisions/*.md` file, walk through
+the self-review checklist in
+[`docs/decisions/decision-doc-self-review-checklist-977.md`](docs/decisions/decision-doc-self-review-checklist-977.md#decision)
+against the draft — degenerate/edge-case inputs, boundary and off-by-one
+arithmetic, ambiguous terminology, claims about a sub-issue's scope, and cited
+precedent. This applies whether the doc was drafted by a human or an agent; an
+agent-authored draft just makes the checklist easier to silently skip. See
+[#1063](https://github.com/dfadler/zombie-mermaid/issues/1063) for why this
+pointer exists: writing the checklist down in a doc nothing links to doesn't
+make it get used.
+
 Before removing a worktree in this repo (`ExitWorktree`, or by hand), stop only the
 processes _you_ started for it — don't kill by port or by a generic name pattern
 alone, since another worktree (or the main checkout) can easily share the same
