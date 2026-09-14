@@ -31,16 +31,9 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
-import {
-  Fragment,
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-  type RefObject,
-} from 'react'
+import { Fragment, useRef, type CSSProperties, type ReactNode } from 'react'
 import { FORK_URL } from './site-chrome.tsx'
+import { useScrollFade } from './use-scroll-fade.ts'
 import {
   CheckIcon,
   ChevronRightIcon,
@@ -532,12 +525,13 @@ function AsciiWellFade({ side }: { side: 'left' | 'right' }) {
 }
 
 /**
- * Which edge fades {@link AsciiWell} should currently show, tracking the
- * well's actual scroll position rather than showing both unconditionally:
- * `right` is true while there's more content to scroll *into* (including
- * at rest, scrolled all the way to the start), `left` is true once the
- * well has been scrolled *away* from its start (so scrolling back is
- * possible). A well that doesn't overflow at all shows neither.
+ * {@link ASCII_WELL_STYLE}'s `<pre>`, framed with {@link AsciiWellFade}
+ * overlays that {@link useScrollFade} shows only on the edge(s) that still
+ * have more content past them — several fixes on this page render an ASCII
+ * diagram wider than its panel, and without this a reader can miss that the
+ * well scrolls at all, since nothing about a flush-cut edge says so. Pass
+ * exactly one of `text` (the `excerpt` panel kind) or `html` (the `ascii`
+ * kind's pre-rendered ascii-html.ts markup).
  *
  * Hydrated client-side only, mirroring this whole file's own hydration
  * boundary (see this file's header comment) — this page already ships
@@ -550,56 +544,10 @@ function AsciiWellFade({ side }: { side: 'left' | 'right' }) {
  * must stay meaningful standalone (a file on disk, inlined into a host
  * page, loaded via `<img>`, rasterized) — not to this demo site's own
  * chrome, which the site fully controls and already hydrates.
- *
- * SSR has no layout to measure, so both start `false`; the effect below
- * fills them in on mount (matching the pre-hydration render, so React
- * hydration sees no mismatch) and keeps them current on scroll/resize.
- */
-function useScrollFadeVisibility(ref: RefObject<HTMLPreElement | null>): {
-  left: boolean
-  right: boolean
-} {
-  const [left, setLeft] = useState(false)
-  const [right, setRight] = useState(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-
-    // A 1px slop absorbs the sub-pixel rounding browsers can leave in
-    // `scrollLeft`/`scrollWidth` at a true edge, which would otherwise
-    // flicker a fade on/off by a hair's width of "scroll" that isn't real.
-    function update() {
-      if (!el) return
-      setLeft(el.scrollLeft > 1)
-      setRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
-    }
-
-    update()
-    el.addEventListener('scroll', update, { passive: true })
-    const observer = new ResizeObserver(update)
-    observer.observe(el)
-    return () => {
-      el.removeEventListener('scroll', update)
-      observer.disconnect()
-    }
-  }, [ref])
-
-  return { left, right }
-}
-
-/**
- * {@link ASCII_WELL_STYLE}'s `<pre>`, framed with {@link AsciiWellFade}
- * overlays that {@link useScrollFadeVisibility} shows only on the edge(s)
- * that still have more content past them — several fixes on this page
- * render an ASCII diagram wider than its panel, and without this a reader
- * can miss that the well scrolls at all, since nothing about a flush-cut
- * edge says so. Pass exactly one of `text` (the `excerpt` panel kind) or
- * `html` (the `ascii` kind's pre-rendered ascii-html.ts markup).
  */
 function AsciiWell({ text, html }: { text?: string; html?: string }) {
   const ref = useRef<HTMLPreElement>(null)
-  const { left, right } = useScrollFadeVisibility(ref)
+  const { left, right } = useScrollFade(ref)
   return (
     <div style={{ position: 'relative', minWidth: 0 }}>
       {html === undefined ? (
