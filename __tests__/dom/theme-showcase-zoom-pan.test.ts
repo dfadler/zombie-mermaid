@@ -105,7 +105,9 @@ function zoomReset(): void {
   fireEvent.click(document.getElementById('theme-showcase-zoom-reset')!)
 }
 function resetLabel(): string | null {
-  return document.getElementById('theme-showcase-zoom-reset')?.textContent ?? null
+  return (
+    document.getElementById('theme-showcase-zoom-reset')?.textContent ?? null
+  )
 }
 
 /**
@@ -286,7 +288,9 @@ describe('initThemeShowcaseFullscreen: zoom buttons (#987), fullscreen-gated', (
 
       zoomOut()
       zoomOut()
-      expect(Number(body().style.getPropertyValue('--tsd-scale'))).toBeLessThan(1)
+      expect(Number(body().style.getPropertyValue('--tsd-scale'))).toBeLessThan(
+        1,
+      )
 
       for (let i = 0; i < 20; i++) zoomIn()
       expect(body().style.getPropertyValue('--tsd-scale')).toBe('2.5')
@@ -616,7 +620,9 @@ describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () =
       api.enterSettles(grid())
 
       fireEvent.wheel(body(), { deltaY: -500, metaKey: true })
-      expect(Number(body().style.getPropertyValue('--tsd-scale'))).toBeGreaterThan(1)
+      expect(
+        Number(body().style.getPropertyValue('--tsd-scale')),
+      ).toBeGreaterThan(1)
     } finally {
       api.restore()
     }
@@ -635,7 +641,9 @@ describe('initThemeShowcaseFullscreen: pan/pinch (#988), fullscreen-gated', () =
       for (let i = 0; i < 8; i++) {
         fireEvent.wheel(body(), { deltaY: -10, ctrlKey: true })
       }
-      expect(Number(body().style.getPropertyValue('--tsd-scale'))).toBeGreaterThan(1.2)
+      expect(
+        Number(body().style.getPropertyValue('--tsd-scale')),
+      ).toBeGreaterThan(1.2)
     } finally {
       api.restore()
     }

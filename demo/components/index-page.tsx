@@ -1121,9 +1121,9 @@ function ThemeShowcase() {
                 margin: `${SPACE.xl}px 0 0`,
               }}
             >
-              Fifteen palettes pulled from editors you already trust —
-              Dracula, Nord, Solarized, Catppuccin, Tokyo Night, and more —
-              each tuned so the diagram stays legible in every one.
+              Fifteen palettes pulled from editors you already trust — Dracula,
+              Nord, Solarized, Catppuccin, Tokyo Night, and more — each tuned so
+              the diagram stays legible in every one.
             </p>
           </div>
           <ThemeShowcasePicker />
