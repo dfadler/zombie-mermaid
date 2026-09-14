@@ -1,6 +1,6 @@
 ---
-"@zombie-mermaid/ascii-renderer": patch
-"@zombie-mermaid/core": patch
+'@zombie-mermaid/ascii-renderer': patch
+'@zombie-mermaid/core': patch
 ---
 
 Fix diagonal edge-routing arrowheads (`◢◣◤◥`) falling back to an unpinned
