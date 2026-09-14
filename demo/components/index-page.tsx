@@ -447,8 +447,24 @@ function homePageCss(): string {
    initThemeShowcaseOutputToggle()) rather than React state, matching how
    the rest of this section's interactivity (the theme picker dropdown)
    already avoids pulling react-dom/server into the client bundle -- see
-   this file's own header comment. */
+   this file's own header comment.
+
+   position: relative + z-index: 2 are load-bearing, not decorative:
+   .theme-showcase-output-body (below) applies a translate()-then-scale()
+   transform, and any transform other than none gives an element its own
+   stacking context -- so once zoomed past 100% (#987) that body's
+   rendered box can grow past its own layout edge into this toggle row's
+   space, and being the *later* DOM sibling it would otherwise paint (and
+   hit-test) on top of these buttons despite this row visually sitting
+   "above" it in the card. Confirmed live: at 210% scale,
+   elementFromPoint() over the ASCII button returned the diagram svg, not
+   the button itself -- the scaled svg was silently swallowing the click.
+   Giving this row its own (unscaled) stacking context keeps it clickable
+   and on top regardless of how far the zoomed/panned (#988) content
+   bleeds toward it. */
 .theme-showcase-output-toggle {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -461,12 +477,190 @@ function homePageCss(): string {
   text-transform: uppercase;
   color: var(--tsd-muted);
 }
+/* Groups the SVG/ASCII segmented control with the scale button (#987) so
+   .theme-showcase-output-toggle's own justify-content: space-between still
+   splits into exactly two sides -- the OUTPUT label, and everything else --
+   regardless of how many controls this side grows to. */
+.theme-showcase-output-controls {
+  display: flex;
+  align-items: center;
+  gap: ${SPACE.sm}px;
+}
 .theme-showcase-output-segments {
   display: flex;
   gap: 2px;
   background: ${colorVar('--panel')};
   border-radius: ${RADIUS.pill}px;
   padding: 2px;
+}
+/* -- Fullscreen-only zoom: scale (#987) + pan/pinch (#988). Unlike this
+   section's original disclosure-slider design, zoom/pan only ever do
+   anything while .theme-showcase-grid is :fullscreen (below) -- the small
+   inline card stays a static preview, matching diagram-detail-app.tsx's
+   DetailOutputPanel own established convention for exactly this "small
+   preview, full interactivity only in fullscreen" split. Wired by
+   initThemeShowcaseFullscreen() in demo/index-page-client.ts, which writes
+   to #theme-showcase-output-body's own --tsd-scale and --tsd-pan-x/
+   --tsd-pan-y custom properties; .theme-showcase-output-body (below) reads
+   them via var() with a translate(0, 0) scale(1) fallback, the same "swap
+   a variable, let CSS do the rest" technique applyTheme() already uses for
+   --tsd-bg etc. Zooms from the center of the box (transform-origin:
+   center, below) rather than the top-left corner transform defaults to --
+   matching #987's own original request. Pan (mouse drag, single-finger
+   touch drag, two-finger touch pinch, trackpad wheel/ctrl-wheel) lets a
+   visitor reach content clipped by .theme-showcase-diagram-card's own
+   overflow: hidden once zoomed past 100%. */
+.theme-showcase-zoom-controls {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  background: ${colorVar('--panel')};
+  border-radius: ${RADIUS.pill}px;
+  padding: 2px;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-zoom-controls,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-zoom-controls {
+  display: flex;
+}
+.theme-showcase-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: ${RADIUS.pill}px;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  font-family: inherit;
+  font-size: ${FONT_SIZE.caption}px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.theme-showcase-zoom-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel-2')}; }
+.theme-showcase-zoom-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
+/* The reset button doubles as the current-percentage label (e.g. "100%"),
+   mirroring diagram-page.tsx's own .output-zoom-reset -- wider than the
+   plain +/- buttons and monospaced so the label doesn't jiggle the layout
+   as its digit count changes. */
+.theme-showcase-zoom-reset {
+  width: auto;
+  padding: 0 ${SPACE.sm}px;
+  font-weight: 400;
+}
+/* The fullscreen toggle -- always visible (unlike the zoom controls above,
+   which only matter once already fullscreen). Both icon states
+   (theme-showcase-fullscreen-icon-enter/-exit) are always in the markup;
+   [data-fullscreen] on this same button (toggled by
+   initThemeShowcaseFullscreen()'s fullscreenchange listener) picks which
+   one shows. */
+.theme-showcase-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: ${colorVar('--text-faint')};
+  cursor: pointer;
+}
+.theme-showcase-fullscreen-btn:hover { color: ${colorVar('--text')}; background: ${colorVar('--panel')}; }
+.theme-showcase-fullscreen-btn:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: 1px; }
+.theme-showcase-fullscreen-icon-exit { display: none; }
+.theme-showcase-fullscreen-btn[data-fullscreen='true'] .theme-showcase-fullscreen-icon-enter { display: none; }
+.theme-showcase-fullscreen-btn[data-fullscreen='true'] .theme-showcase-fullscreen-icon-exit { display: block; }
+/* Wraps the svg and the ASCII <pre> together (#987) so one zoom control
+   zooms either output identically -- see the fullscreen zoom comment
+   above for the --tsd-scale/--tsd-pan-* custom properties this reads. */
+.theme-showcase-output-body {
+  min-width: 0;
+  transform: translate(var(--tsd-pan-x, 0px), var(--tsd-pan-y, 0px)) scale(var(--tsd-scale, 1));
+  transform-origin: center;
+}
+/* Pan cursor affordance (#988): .pannable is only set once
+   initThemeShowcaseFullscreen()'s recomputePanBounds() finds the zoomed
+   content actually overflows the card (i.e. there's somewhere to pan to) --
+   grab/grabbing mirrors common pan+zoom UI convention (maps, image
+   viewers). touch-action: none (matching diagram-page.tsx's own
+   .output-render-area.pannable) stops a touchscreen's native scroll from
+   competing with this element's own Pointer Event pan/pinch handling --
+   safe to apply unconditionally here, unlike a plain inline panel, since
+   fullscreen is the only place .pannable is ever set at all. No cursor
+   override at all below 100% scale, where a drag does nothing. */
+.theme-showcase-output-body.pannable { cursor: grab; touch-action: none; }
+.theme-showcase-output-body.pannable.panning { cursor: grabbing; }
+/*
+ * initThemeShowcaseFullscreen()'s toggleFullscreen() requestFullscreen()s
+ * .theme-showcase-grid itself, not just the diagram card, so the theme
+ * picker column comes along too. The browser promotes it to the top layer
+ * with its own UA :fullscreen sizing, but author rules still outrank that
+ * default regardless of specificity -- mirrors diagram-page.tsx's own
+ * .output-card:fullscreen precedent, !important included for the same
+ * reason: .theme-showcase-grid's normal grid layout is entirely inline
+ * style, which plain CSS specificity can never beat. -webkit-full-screen
+ * covers Safari < 16.4. Reflows from the normal two-column grid to a
+ * single column (picker compact at top, diagram filling the rest) and
+ * hides .theme-showcase-blurb -- a fullscreen viewer has no room, or need,
+ * for the marketing copy above the picker.
+ */
+.theme-showcase-grid:fullscreen,
+.theme-showcase-grid:-webkit-full-screen {
+  display: flex !important;
+  flex-direction: column !important;
+  /* Overrides the inline style's own alignItems: 'start' (meant for the
+     normal two-column *grid* layout's cross-axis) -- align-items applies
+     to flex containers too, and 'start' there means "don't stretch
+     children to the container's own width," the opposite of what this
+     single-column *flex* layout needs. Confirmed live: without this,
+     .theme-showcase-diagram-card computed to ~330px wide (its own content
+     width) instead of filling the fullscreen viewport. */
+  align-items: stretch !important;
+  width: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: ${SPACE.xl}px !important;
+  gap: ${SPACE.lg}px !important;
+  background: ${colorVar('--panel')} !important;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-blurb,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-blurb {
+  display: none;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-picker-column,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-picker-column {
+  flex: 0 0 auto !important;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-diagram-card,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-diagram-card {
+  flex: 1 1 auto !important;
+  margin-top: 0 !important;
+  min-height: 0;
+}
+.theme-showcase-grid:fullscreen .theme-showcase-diagram,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-diagram {
+  max-width: none;
+}
+/* Centers the (possibly zoomed/panned) svg or ASCII block within whatever
+   vertical space is left under the toggle row -- unlike diagram-page.tsx's
+   DetailOutputPanel, which needs a margin: auto trick to avoid clipping an
+   overflowing *scrolled* container (see that file's own comment),
+   .theme-showcase-output-body's overflow is entirely transform-driven
+   (never native scroll), so plain flex centering has no equivalent
+   clipping risk here. */
+.theme-showcase-grid:fullscreen .theme-showcase-output-body,
+.theme-showcase-grid:-webkit-full-screen .theme-showcase-output-body {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 /* Toggled by data-output-mode instead of .theme-showcase-ascii itself, so
    the wrap's relatively-positioned box (needed to pin the fade overlays
@@ -874,6 +1068,7 @@ function ThemeShowcase() {
       </div>
 
       <div
+        id="theme-showcase-grid"
         className="theme-showcase-grid"
         style={{
           position: 'relative',
@@ -893,29 +1088,44 @@ function ThemeShowcase() {
         }}
       >
         <div
+          className="theme-showcase-picker-column"
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: `${SPACE.xl}px`,
           }}
         >
-          <SectionEyebrow>Live theme switching</SectionEyebrow>
-          <h2
-            style={{ fontSize: '38px', letterSpacing: LETTER_SPACING.heading }}
-          >
-            Pick a theme. Watch it flow.
-          </h2>
-          <p
-            style={{
-              fontSize: `${FONT_SIZE.lead}px`,
-              color: colorVar('--text-dim'),
-              margin: 0,
-            }}
-          >
-            Fifteen palettes pulled from editors you already trust — Dracula,
-            Nord, Solarized, Catppuccin, Tokyo Night, and more — each tuned so
-            the diagram stays legible in every one.
-          </p>
+          {/*
+              .theme-showcase-blurb: everything above the picker -- hidden
+              by .theme-showcase-grid:fullscreen's own CSS (below) so the
+              fullscreen view is just the picker + diagram, matching
+              DetailOutputPanel's own minimal fullscreen chrome (no
+              marketing copy). ThemeShowcasePicker itself stays a sibling,
+              not nested in here, since it must stay visible fullscreen.
+            */}
+          <div className="theme-showcase-blurb">
+            <SectionEyebrow>Live theme switching</SectionEyebrow>
+            <h2
+              style={{
+                fontSize: '38px',
+                letterSpacing: LETTER_SPACING.heading,
+                marginTop: SPACE.xl,
+              }}
+            >
+              Pick a theme. Watch it flow.
+            </h2>
+            <p
+              style={{
+                fontSize: `${FONT_SIZE.lead}px`,
+                color: colorVar('--text-dim'),
+                margin: `${SPACE.xl}px 0 0`,
+              }}
+            >
+              Fifteen palettes pulled from editors you already trust — Dracula,
+              Nord, Solarized, Catppuccin, Tokyo Night, and more — each tuned so
+              the diagram stays legible in every one.
+            </p>
+          </div>
           <ThemeShowcasePicker />
         </div>
 
@@ -927,266 +1137,374 @@ function ThemeShowcase() {
         >
           <div className="theme-showcase-output-toggle">
             <span className="theme-showcase-output-label">Output</span>
-            <div className="theme-showcase-output-segments">
-              <button
-                type="button"
-                id="theme-showcase-output-svg"
-                className="output-segment active"
-                aria-pressed="true"
+            <div className="theme-showcase-output-controls">
+              <div className="theme-showcase-output-segments">
+                <button
+                  type="button"
+                  id="theme-showcase-output-svg"
+                  className="output-segment active"
+                  aria-pressed="true"
+                >
+                  SVG
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-output-ascii"
+                  className="output-segment"
+                  aria-pressed="false"
+                >
+                  ASCII
+                </button>
+              </div>
+              {/*
+                  Fullscreen-only zoom (#987 scale + #988 pan/pinch): the
+                  small inline card stays a static preview (matching
+                  diagram-detail-app.tsx's DetailOutputPanel own
+                  established convention -- see this file's own
+                  .theme-showcase-zoom-controls CSS comment below), so
+                  these three buttons only ever do anything while
+                  .theme-showcase-grid is :fullscreen. Always in the
+                  markup (not conditionally rendered -- this is plain
+                  DOM, not React) with visibility gated entirely by CSS.
+                  Wired by initThemeShowcaseFullscreen() in
+                  demo/index-page-client.ts.
+                */}
+              <div
+                className="theme-showcase-zoom-controls"
+                id="theme-showcase-zoom-controls"
+                role="group"
+                aria-label="Zoom"
               >
-                SVG
-              </button>
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-out"
+                  className="theme-showcase-zoom-btn"
+                  title="Zoom out"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-reset"
+                  className="theme-showcase-zoom-btn theme-showcase-zoom-reset mono"
+                  title="Reset zoom"
+                >
+                  100%
+                </button>
+                <button
+                  type="button"
+                  id="theme-showcase-zoom-in"
+                  className="theme-showcase-zoom-btn"
+                  title="Zoom in"
+                >
+                  +
+                </button>
+              </div>
+              {/*
+                  Fullscreen toggle: requestFullscreen()s .theme-showcase-
+                  grid (the picker's column and this diagram card both --
+                  see that class's own :fullscreen CSS comment below for
+                  why the whole grid, not just this card, is the target).
+                  Both icon states are always in the markup (mirroring the
+                  zoom controls above); [data-fullscreen] on this same
+                  button toggles which one shows. Paths reused verbatim
+                  from diagram-detail-app.tsx's FullscreenIcon (see that
+                  component's own doc comment on why -- an already-
+                  corrected, already-shipped design, not worth a second
+                  first draft) -- not imported from there since that file
+                  is a React component and this markup is plain JSX
+                  rendered at build time into static HTML.
+                */}
               <button
                 type="button"
-                id="theme-showcase-output-ascii"
-                className="output-segment"
+                id="theme-showcase-fullscreen-trigger"
+                className="theme-showcase-fullscreen-btn"
+                title="View fullscreen"
                 aria-pressed="false"
               >
-                ASCII
+                <svg
+                  className="theme-showcase-fullscreen-icon-enter"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                  <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                  <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                </svg>
+                <svg
+                  className="theme-showcase-fullscreen-icon-exit"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                  <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                  <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                  <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                </svg>
               </button>
             </div>
           </div>
-          <svg
-            id="theme-showcase-diagram"
-            className="theme-showcase-diagram"
-            viewBox="0 0 600 300"
-            aria-hidden="true"
+          <div
+            className="theme-showcase-output-body"
+            id="theme-showcase-output-body"
           >
-            <defs>
-              <marker
-                id="theme-showcase-arrowhead"
-                markerWidth={7}
-                markerHeight={7}
-                refX={5}
-                refY={3.5}
-                orient="auto"
+            <svg
+              id="theme-showcase-diagram"
+              className="theme-showcase-diagram"
+              viewBox="0 0 600 300"
+              aria-hidden="true"
+            >
+              <defs>
+                <marker
+                  id="theme-showcase-arrowhead"
+                  markerWidth={7}
+                  markerHeight={7}
+                  refX={5}
+                  refY={3.5}
+                  orient="auto"
+                >
+                  <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
+                </marker>
+              </defs>
+
+              <rect
+                className="tsd-node"
+                x={10}
+                y={130}
+                width={80}
+                height={40}
+                rx={10}
+              />
+              <text
+                className="tsd-node-text"
+                x={50}
+                y={154}
+                textAnchor="middle"
+                fontSize={12}
               >
-                <path className="tsd-arrow-fill" d="M0,0 L7,3.5 L0,7 Z" />
-              </marker>
-            </defs>
+                Start
+              </text>
+              <path
+                className="tsd-flow"
+                d="M90,150 L120,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
 
-            <rect
-              className="tsd-node"
-              x={10}
-              y={130}
-              width={80}
-              height={40}
-              rx={10}
-            />
-            <text
-              className="tsd-node-text"
-              x={50}
-              y={154}
-              textAnchor="middle"
-              fontSize={12}
-            >
-              Start
-            </text>
-            <path
-              className="tsd-flow"
-              d="M90,150 L120,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
+              <polygon
+                className="tsd-node"
+                points="160,120 190,150 160,180 130,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={160}
+                y={154}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Auth?
+              </text>
+              <path
+                className="tsd-flow"
+                d="M190,150 L225,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={200} y={140} fontSize={9.5}>
+                ok
+              </text>
 
-            <polygon
-              className="tsd-node"
-              points="160,120 190,150 160,180 130,150"
-            />
-            <text
-              className="tsd-node-text"
-              x={160}
-              y={154}
-              textAnchor="middle"
-              fontSize={10.5}
-            >
-              Auth?
-            </text>
-            <path
-              className="tsd-flow"
-              d="M190,150 L225,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={200} y={140} fontSize={9.5}>
-              ok
-            </text>
+              <rect
+                className="tsd-pipeline-box"
+                x={225}
+                y={95}
+                width={150}
+                height={110}
+                rx={10}
+              />
+              <text
+                className="tsd-label"
+                x={235}
+                y={112}
+                fontSize={9}
+                letterSpacing="0.08em"
+              >
+                PIPELINE
+              </text>
+              <rect
+                className="tsd-node"
+                x={245}
+                y={120}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={140}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Build
+              </text>
+              <path
+                className="tsd-flow"
+                d="M300,152 L300,166"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <rect
+                className="tsd-node"
+                x={245}
+                y={168}
+                width={110}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={188}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Test
+              </text>
 
-            <rect
-              className="tsd-pipeline-box"
-              x={225}
-              y={95}
-              width={150}
-              height={110}
-              rx={10}
-            />
-            <text
-              className="tsd-label"
-              x={235}
-              y={112}
-              fontSize={9}
-              letterSpacing="0.08em"
-            >
-              PIPELINE
-            </text>
-            <rect
-              className="tsd-node"
-              x={245}
-              y={120}
-              width={110}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={140}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Build
-            </text>
-            <path
-              className="tsd-flow"
-              d="M300,152 L300,166"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <rect
-              className="tsd-node"
-              x={245}
-              y={168}
-              width={110}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={188}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Test
-            </text>
+              <path
+                className="tsd-flow"
+                d="M375,150 L410,150"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={382} y={142} fontSize={9.5}>
+                pass
+              </text>
 
-            <path
-              className="tsd-flow"
-              d="M375,150 L410,150"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={382} y={142} fontSize={9.5}>
-              pass
-            </text>
+              <polygon
+                className="tsd-node"
+                points="445,120 480,150 445,180 410,150"
+              />
+              <text
+                className="tsd-node-text"
+                x={445}
+                y={154}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Deploy?
+              </text>
+              <circle
+                id="theme-showcase-burst"
+                className="theme-showcase-burst-ring"
+                aria-hidden="true"
+                cx={445}
+                cy={150}
+                r={28}
+              />
 
-            <polygon
-              className="tsd-node"
-              points="445,120 480,150 445,180 410,150"
-            />
-            <text
-              className="tsd-node-text"
-              x={445}
-              y={154}
-              textAnchor="middle"
-              fontSize={10}
-            >
-              Deploy?
-            </text>
-            <circle
-              id="theme-showcase-burst"
-              className="theme-showcase-burst-ring"
-              aria-hidden="true"
-              cx={445}
-              cy={150}
-              r={28}
-            />
+              <path
+                className="tsd-flow"
+                d="M476,138 C 486,116 488,98 500,90"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={108} fontSize={9.5}>
+                yes
+              </text>
+              <rect
+                className="tsd-node"
+                x={500}
+                y={68}
+                width={76}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={92}
+                textAnchor="middle"
+                fontSize={11}
+              >
+                Ship it
+              </text>
 
-            <path
-              className="tsd-flow"
-              d="M476,138 C 486,116 488,98 500,90"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={452} y={108} fontSize={9.5}>
-              yes
-            </text>
-            <rect
-              className="tsd-node"
-              x={500}
-              y={68}
-              width={76}
-              height={40}
-              rx={9}
-            />
-            <text
-              className="tsd-node-text"
-              x={538}
-              y={92}
-              textAnchor="middle"
-              fontSize={11}
-            >
-              Ship it
-            </text>
+              <path
+                className="tsd-rollback-path"
+                d="M476,162 C 486,184 488,202 500,210"
+                markerEnd="url(#theme-showcase-arrowhead)"
+              />
+              <text className="tsd-label" x={452} y={200} fontSize={9.5}>
+                no
+              </text>
+              <rect
+                className="tsd-node-muted"
+                x={496}
+                y={192}
+                width={84}
+                height={40}
+                rx={9}
+              />
+              <text
+                className="tsd-node-text"
+                x={538}
+                y={216}
+                textAnchor="middle"
+                fontSize={10}
+              >
+                Rollback
+              </text>
 
-            <path
-              className="tsd-rollback-path"
-              d="M476,162 C 486,184 488,202 500,210"
-              markerEnd="url(#theme-showcase-arrowhead)"
-            />
-            <text className="tsd-label" x={452} y={200} fontSize={9.5}>
-              no
-            </text>
-            <rect
-              className="tsd-node-muted"
-              x={496}
-              y={192}
-              width={84}
-              height={40}
-              rx={9}
-            />
-            <text
-              className="tsd-node-text"
-              x={538}
-              y={216}
-              textAnchor="middle"
-              fontSize={10}
-            >
-              Rollback
-            </text>
-
-            <path className="tsd-monitor-path" d="M300,200 L300,250" />
-            <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
-            <rect
-              className="tsd-node"
-              x={255}
-              y={252}
-              width={90}
-              height={32}
-              rx={7}
-            />
-            <text
-              className="tsd-node-text"
-              x={300}
-              y={272}
-              textAnchor="middle"
-              fontSize={10.5}
-            >
-              Monitor
-            </text>
-          </svg>
-          <div className="theme-showcase-ascii-wrap">
-            <pre
-              id="theme-showcase-ascii"
-              className="theme-showcase-ascii mono"
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
-              dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
-            />
-            <div
-              id="theme-showcase-ascii-fade-left"
-              className="theme-showcase-ascii-fade left"
-              aria-hidden="true"
-            />
-            <div
-              id="theme-showcase-ascii-fade-right"
-              className="theme-showcase-ascii-fade right"
-              aria-hidden="true"
-            />
+              <path className="tsd-monitor-path" d="M300,200 L300,250" />
+              <circle className="tsd-monitor-dot" cx={300} cy={250} r={3} />
+              <rect
+                className="tsd-node"
+                x={255}
+                y={252}
+                width={90}
+                height={32}
+                rx={7}
+              />
+              <text
+                className="tsd-node-text"
+                x={300}
+                y={272}
+                textAnchor="middle"
+                fontSize={10.5}
+              >
+                Monitor
+              </text>
+            </svg>
+            <div className="theme-showcase-ascii-wrap">
+              <pre
+                id="theme-showcase-ascii"
+                className="theme-showcase-ascii mono"
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time renderMermaidASCII({colorMode:'html'}) output from this file's own THEME_SHOWCASE_MERMAID_SOURCE, one entry of themeShowcaseAsciiHtmlByTheme; never user input
+                dangerouslySetInnerHTML={{ __html: defaultAsciiHtml }}
+              />
+              <div
+                id="theme-showcase-ascii-fade-left"
+                className="theme-showcase-ascii-fade left"
+                aria-hidden="true"
+              />
+              <div
+                id="theme-showcase-ascii-fade-right"
+                className="theme-showcase-ascii-fade right"
+                aria-hidden="true"
+              />
+            </div>
           </div>
         </div>
       </div>
