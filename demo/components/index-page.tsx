@@ -374,11 +374,16 @@ function homePageCss(): string {
 .theme-showcase-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .theme-showcase-mesh {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 1800px;
-  height: 1400px;
-  margin: -700px 0 0 -900px;
+  /* Fills .theme-showcase-bg exactly -- no static bleed -- so this layer's
+     own scrollWidth never exceeds its container's clientWidth (#1054).
+     .theme-showcase-bg's overflow: hidden clips paint either way, but an
+     element's scrollWidth reflects a clipped descendant's full laid-out
+     extent regardless of that clip, so the previous fixed 1800x1400 box
+     inflated .theme-showcase-bg's own scrollWidth at every breakpoint --
+     worst on tablet widths, which fell in the gap between this rule's old
+     desktop-sized default and the mobile-only override that used to live
+     in the mobile media-query block below. */
+  inset: 0;
   background: conic-gradient(
     from 0deg,
     color-mix(in srgb, #bd93f9 24%, transparent),
@@ -391,14 +396,32 @@ function homePageCss(): string {
   opacity: 0.5;
   animation: themeShowcaseMeshSpin 30s linear infinite, themeShowcaseMeshRoam 17s ease-in-out infinite;
 }
-@keyframes themeShowcaseMeshSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* rotate/translate as their own standalone CSS properties, not the
+   transform shorthand -- themeShowcaseMeshSpin and themeShowcaseMeshRoam
+   both run at once, and two simultaneous animations targeting the same
+   shorthand transform property don't compose (the later-declared one wins
+   outright). The standalone properties are independent and DO compose,
+   and -- unlike animating margin, which was tried here first -- neither
+   one participates in layout, so this drift can never inflate
+   .theme-showcase-mesh's own box past .theme-showcase-bg's edge (#1054):
+   it only ever repaints pixels that were already clipped by
+   .theme-showcase-bg's overflow: hidden. */
+@keyframes themeShowcaseMeshSpin { from { rotate: 0deg; } to { rotate: 360deg; } }
 @keyframes themeShowcaseMeshRoam {
-  0% { margin-left: -900px; margin-top: -700px; }
-  33% { margin-left: -1080px; margin-top: -560px; }
-  66% { margin-left: -760px; margin-top: -820px; }
-  100% { margin-left: -900px; margin-top: -700px; }
+  0% { translate: 0 0; }
+  33% { translate: -2% 2.5%; }
+  66% { translate: 2% -2%; }
+  100% { translate: 0 0; }
 }
-.theme-showcase-aurora { position: absolute; inset: -10%; animation: themeShowcaseHue 13s linear infinite; }
+/* inset: 0 (not the old -10%) for the same #1054 reason as the mesh above:
+   .theme-showcase-bg's scrollWidth reflects a direct child's full box
+   regardless of clipping, so a self-bleeding aurora inflated it even with
+   the mesh fixed. overflow: hidden here is new too -- it makes this its
+   own clip boundary so an oversized .theme-showcase-glow child (below)
+   only ever shows up in *this* element's own scrollWidth check, not in
+   .theme-showcase-bg's (mirrors how .theme-showcase-bg already isolates
+   .theme-showcase-mesh from the rest of the page). */
+.theme-showcase-aurora { position: absolute; inset: 0; overflow: hidden; animation: themeShowcaseHue 13s linear infinite; }
 .theme-showcase-glow { position: absolute; border-radius: 50%; filter: blur(90px); mix-blend-mode: screen; }
 /* #bd93f9, not colorVar('--violet') (#a374e8) -- Main.dc.html has no
    --violet token at all; every violet in the canvas (here and the mesh
@@ -934,7 +957,23 @@ ${MEDIA.mobile} {
   .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
   .blog-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
   .blog-teaser-inner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
-  .theme-showcase-mesh { width: 1100px !important; height: 900px !important; margin: -450px 0 0 -550px !important; }
+  /* .theme-showcase-mesh needs no override here any more -- its inset: 0
+     base rule already fills .theme-showcase-bg exactly at every width
+     (#1054). .theme-showcase-glow's fixed diameters do still need
+     shrinking below this breakpoint, though: .theme-showcase-aurora is
+     now sized to match .theme-showcase-bg exactly (inset: 0, no bleed --
+     also #1054), so at narrow phone widths (~375px) g1's 560px diameter
+     alone is wider than the whole aurora box it's positioned in, pushing
+     .theme-showcase-aurora's own scrollWidth past its clientWidth. These
+     sizes are picked with headroom below what the 375-600px range needs
+     to stay contained (worst case at 375px: g1 needs <=~367px, g2
+     <=~375px, g3 <=~300px, g4 <=~330px, given each one's own
+     top/left/right/bottom offset) -- not scaled to match desktop's visual
+     proportions, since this is an ambient decorative layer, not content. */
+  .theme-showcase-glow.g1 { width: 220px !important; height: 220px !important; }
+  .theme-showcase-glow.g2 { width: 200px !important; height: 200px !important; }
+  .theme-showcase-glow.g3 { width: 180px !important; height: 180px !important; }
+  .theme-showcase-glow.g4 { width: 190px !important; height: 190px !important; }
   /* Narrower still than the tablet trim above -- one more pass at the
      same dead-scroll problem for the smallest viewports. */
   .theme-showcase { padding-top: ${SPACE['3xl']}px !important; padding-bottom: ${SPACE['3xl']}px !important; }
