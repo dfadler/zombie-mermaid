@@ -99,13 +99,19 @@ export function EditorFeatureStrip() {
         </h2>
       </div>
 
+      {/* `grid-template-columns` is deliberately NOT set here as an inline
+       * style: an inline style's specificity beats any stylesheet rule
+       * regardless of selector weight, so it would permanently defeat
+       * editor-page.tsx's `.editor-features-grid` media-query overrides
+       * (zombie-mermaid#1056) and lock this grid at 4 columns down to
+       * mobile widths. The column count -- 4 by default, 2 at the tablet
+       * breakpoint, 1 at mobile -- lives entirely in that file's CSS. */}
       <div
         className="editor-features-grid"
         style={{
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
           gap: `${SPACE['3xl']}px`,
         }}
       >
