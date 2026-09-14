@@ -26,7 +26,7 @@
  * anyway, harmlessly.
  */
 import { act, createElement } from 'react'
-import { fireEvent, render } from '@testing-library/react'
+import { fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   EditorApp,
@@ -102,11 +102,6 @@ function stubMermaidWithAscii(
     renderMermaidASCII,
     diagramColorsToAsciiTheme,
   }
-}
-
-/** Waits for the debounced/scheduled render (setTimeout-based) to settle -- mirrors the deleted harness's identical helper. */
-function flushRenderTimers(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 20))
 }
 
 afterEach(() => {
@@ -265,9 +260,10 @@ describe('<EditorApp> render pipeline (#810)', () => {
   it('renders the default diagram on init with no theme options', async () => {
     const renderMermaidSVGAsync = stubMermaid()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
 
-    expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
     const [source, opts] = renderMermaidSVGAsync.mock.calls[0]!
     expect(source).toContain('graph TD')
     expect(opts).toEqual({})
@@ -280,41 +276,47 @@ describe('<EditorApp> render pipeline (#810)', () => {
   it('calls the renderer with the current editor source on typing', async () => {
     const renderMermaidSVGAsync = stubMermaid()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
     renderMermaidSVGAsync.mockClear()
 
     const textarea = document.getElementById(
       'code-editor',
     ) as HTMLTextAreaElement
     textarea.value = 'graph TD\n  A --> B'
-    await act(async () => {
+    act(() => {
       window.__editorRenderTrigger.scheduleRender(0)
-      await flushRenderTimers()
     })
 
-    expect(renderMermaidSVGAsync).toHaveBeenCalledWith(
-      'graph TD\n  A --> B',
-      {},
-    )
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledWith(
+        'graph TD\n  A --> B',
+        {},
+      )
+    })
   })
 
   it('updates the URL hash after a successful render', async () => {
     const renderMermaidSVGAsync = stubMermaid()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
     renderMermaidSVGAsync.mockClear()
 
     const textarea = document.getElementById(
       'code-editor',
     ) as HTMLTextAreaElement
     textarea.value = 'graph TD\n  A --> B'
-    await act(async () => {
+    act(() => {
       window.__editorRenderTrigger.scheduleRender(0)
-      await flushRenderTimers()
     })
 
-    expect(JSON.parse(decodeSource(window.location.hash.slice(1)))).toEqual({
-      source: 'graph TD\n  A --> B',
+    await waitFor(() => {
+      expect(JSON.parse(decodeSource(window.location.hash.slice(1)))).toEqual({
+        source: 'graph TD\n  A --> B',
+      })
     })
   })
 
@@ -323,9 +325,10 @@ describe('<EditorApp> render pipeline (#810)', () => {
       throw new Error('boom')
     })
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
 
-    expect(document.getElementById('status-text')!.textContent).toBe('Error')
+    await waitFor(() => {
+      expect(document.getElementById('status-text')!.textContent).toBe('Error')
+    })
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'boom',
     )
@@ -334,34 +337,39 @@ describe('<EditorApp> render pipeline (#810)', () => {
   it('shows the placeholder and resets status when the source is empty', async () => {
     const renderMermaidSVGAsync = stubMermaid()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
 
     const textarea = document.getElementById(
       'code-editor',
     ) as HTMLTextAreaElement
     textarea.value = '   '
     renderMermaidSVGAsync.mockClear()
-    await act(async () => {
+    act(() => {
       window.__editorRenderTrigger.scheduleRender(0)
-      await flushRenderTimers()
     })
 
+    await waitFor(() => {
+      expect(document.getElementById('status-text')!.textContent).toBe('Ready')
+    })
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'Start typing to render your diagram',
     )
-    expect(document.getElementById('status-text')!.textContent).toBe('Ready')
     expect(renderMermaidSVGAsync).not.toHaveBeenCalled()
   })
 
   it('re-renders the diagram (but not the editor chrome) when the diagram theme changes', async () => {
     const renderMermaidSVGAsync = stubMermaid()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
     renderMermaidSVGAsync.mockClear()
     const chromeBgBefore =
       document.documentElement.style.getPropertyValue('--t-bg')
 
-    await act(async () => {
+    act(() => {
       document
         .getElementById('theme-dropdown-btn')!
         .dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -369,10 +377,11 @@ describe('<EditorApp> render pipeline (#810)', () => {
         '.theme-dropdown-item[data-theme="nord"]',
       )!
       item.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await flushRenderTimers()
     })
 
-    expect(renderMermaidSVGAsync).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalled()
+    })
     const [, opts] = renderMermaidSVGAsync.mock.calls.at(-1)!
     expect(opts).toMatchObject({ bg: THEMES.nord.bg, fg: THEMES.nord.fg })
     // The diagram theme reaches the render call above, but the editor's own
@@ -391,11 +400,13 @@ describe('<EditorApp> render pipeline (#810)', () => {
   })
 
   it("re-colors the preview panel's own surface to match the selected diagram theme", async () => {
-    stubMermaid()
+    const renderMermaidSVGAsync = stubMermaid()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
 
-    await act(async () => {
+    act(() => {
       document
         .getElementById('theme-dropdown-btn')!
         .dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -403,13 +414,14 @@ describe('<EditorApp> render pipeline (#810)', () => {
         '.theme-dropdown-item[data-theme="nord"]',
       )!
       item.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await flushRenderTimers()
     })
 
     const panelRight = document.getElementById('panel-right')!
-    expect(panelRight.style.getPropertyValue('--preview-bg')).toBe(
-      THEMES.nord.bg,
-    )
+    await waitFor(() => {
+      expect(panelRight.style.getPropertyValue('--preview-bg')).toBe(
+        THEMES.nord.bg,
+      )
+    })
     expect(panelRight.style.getPropertyValue('--preview-fg')).toBe(
       THEMES.nord.fg,
     )
@@ -420,9 +432,10 @@ describe('<EditorApp> SVG/ASCII output toggle (#976)', () => {
   it('defaults to SVG: the ASCII segment starts inactive and renderMermaidASCII is never called', async () => {
     const { renderMermaidSVGAsync, renderMermaidASCII } = stubMermaidWithAscii()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
 
-    expect(renderMermaidSVGAsync).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalled()
+    })
     expect(renderMermaidASCII).not.toHaveBeenCalled()
     expect(document.getElementById('output-mode-svg-btn')).toHaveClass('active')
     expect(
@@ -438,15 +451,16 @@ describe('<EditorApp> SVG/ASCII output toggle (#976)', () => {
   it('switches to ASCII on click, re-renders via renderMermaidASCII, and flips the toggle/panel state', async () => {
     const { renderMermaidSVGAsync, renderMermaidASCII } = stubMermaidWithAscii()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
     renderMermaidSVGAsync.mockClear()
 
-    await act(async () => {
-      fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
-      await flushRenderTimers()
-    })
+    fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
 
-    expect(renderMermaidASCII).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(renderMermaidASCII).toHaveBeenCalledTimes(1)
+    })
     expect(renderMermaidSVGAsync).not.toHaveBeenCalled()
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'class="ascii-output"',
@@ -473,21 +487,22 @@ describe('<EditorApp> SVG/ASCII output toggle (#976)', () => {
   it('switching back to SVG re-renders via renderMermaidSVGAsync', async () => {
     const { renderMermaidSVGAsync, renderMermaidASCII } = stubMermaidWithAscii()
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
 
-    await act(async () => {
-      fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
-      await flushRenderTimers()
+    fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
+    await waitFor(() => {
+      expect(renderMermaidASCII).toHaveBeenCalledTimes(1)
     })
     renderMermaidSVGAsync.mockClear()
     renderMermaidASCII.mockClear()
 
-    await act(async () => {
-      fireEvent.click(document.getElementById('output-mode-svg-btn')!)
-      await flushRenderTimers()
-    })
+    fireEvent.click(document.getElementById('output-mode-svg-btn')!)
 
-    expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(renderMermaidSVGAsync).toHaveBeenCalledTimes(1)
+    })
     expect(renderMermaidASCII).not.toHaveBeenCalled()
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'data-mock-render',
@@ -502,14 +517,15 @@ describe('<EditorApp> SVG/ASCII output toggle (#976)', () => {
       throw new Error('bad ascii diagram')
     })
     render(createElement(EditorApp, PROPS))
-    await act(() => flushRenderTimers())
-
-    await act(async () => {
-      fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
-      await flushRenderTimers()
+    await waitFor(() => {
+      expect(document.getElementById('status-text')!.textContent).toBe('OK')
     })
 
-    expect(document.getElementById('status-text')!.textContent).toBe('Error')
+    fireEvent.click(document.getElementById('output-mode-ascii-btn')!)
+
+    await waitFor(() => {
+      expect(document.getElementById('status-text')!.textContent).toBe('Error')
+    })
     expect(document.getElementById('preview-inner')!.innerHTML).toContain(
       'bad ascii diagram',
     )
