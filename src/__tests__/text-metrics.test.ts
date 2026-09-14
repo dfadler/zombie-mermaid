@@ -476,5 +476,11 @@ describe('isWideChar', () => {
     expect(isWideChar('↗')).toBe(false)
     expect(isWideChar('↘')).toBe(false)
     expect(isWideChar('↙')).toBe(false)
+    // Same Arrows-block misclassification, not drawn by the renderer itself
+    // but reachable if typed into node/edge/note label text.
+    expect(isWideChar('↔')).toBe(false)
+    expect(isWideChar('↕')).toBe(false)
+    expect(isWideChar('↩')).toBe(false)
+    expect(isWideChar('↪')).toBe(false)
   })
 })
