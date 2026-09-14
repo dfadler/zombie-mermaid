@@ -242,7 +242,7 @@ Thank you Alexander for the excellent foundation!
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, the test/lint workflow, and how changesets and releases work ([RELEASING.md](RELEASING.md)). Security issues should go through [SECURITY.md](SECURITY.md) instead of a public issue. Released versions are tracked in [CHANGELOG.md](CHANGELOG.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, the test/lint workflow, and how changesets and releases work ([RELEASING.md](docs/RELEASING.md)). Security issues should go through [SECURITY.md](SECURITY.md) instead of a public issue. Released versions are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
