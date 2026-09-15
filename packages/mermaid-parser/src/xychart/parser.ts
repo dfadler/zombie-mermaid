@@ -48,7 +48,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
     const xCatMatch = line.match(/^x-axis\s+(?:"([^"]*)"\s*)?\[([^\]]+)\]/)
     if (xCatMatch) {
       if (xCatMatch[1]) xAxis.title = xCatMatch[1]
-      xAxis.categories = xCatMatch[2]!.split(',').map((s) => s.trim())
+      xAxis.categories = xCatMatch[2]!.split(',').map((s) => unquote(s.trim()))
       continue
     }
 
@@ -146,6 +146,20 @@ export function parseXYChart(lines: Statement[]): XYChart {
   }
 
   return { title, horizontal, xAxis, yAxis, series }
+}
+
+/**
+ * Strip one matching pair of leading/trailing double quotes from a category
+ * item, if present — mirroring how an axis *title* capture group already
+ * unquotes via its regex. `x-axis [A, B, C]` items are only split and
+ * trimmed, so a quoted item like `"CLI output / logs"` previously kept its
+ * literal quote characters in the rendered label. See issue #1087.
+ */
+function unquote(value: string): string {
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1)
+  }
+  return value
 }
 
 /**
