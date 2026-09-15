@@ -200,6 +200,73 @@ describe('findOverflowingElements', () => {
     expect(findOverflowingElements()).toHaveLength(1)
   })
 
+  it('does not flag overflow absorbed by a decorative full-bleed overlay ancestor (#1057)', () => {
+    // The false-positive lesson from zombie-mermaid#1057:
+    // demo/components/nav-css.ts's `.mobile-watermark` box (`position:
+    // absolute; inset: 0; overflow: hidden; pointer-events: none`) wraps a
+    // rotated, off-edge decorative mark so it -- not the outer nav panel --
+    // absorbs the mark's pre-clip scrollWidth, with zero rendered
+    // difference. jsdom doesn't expand the `inset` shorthand into its
+    // top/right/bottom/left longhands the way a real browser's
+    // getComputedStyle does (verified directly against jsdom), so the
+    // longhands are set individually here to simulate what Chromium
+    // actually reports for `inset: 0`.
+    document.body.innerHTML =
+      '<div id="overlay"><span id="mark">rotated mark</span></div>'
+    const overlay = document.getElementById('overlay')!
+    const mark = document.getElementById('mark')!
+    overlay.style.position = 'absolute'
+    overlay.style.top = '0px'
+    overlay.style.right = '0px'
+    overlay.style.bottom = '0px'
+    overlay.style.left = '0px'
+    overlay.style.overflowX = 'hidden'
+    overlay.style.pointerEvents = 'none'
+    setOverflowMetrics(mark, { scrollWidth: 434, clientWidth: 375 })
+    // The overlay's own box isn't overflowing relative to itself.
+    setOverflowMetrics(overlay, { scrollWidth: 375, clientWidth: 375 })
+
+    expect(findOverflowingElements()).toEqual([])
+  })
+
+  it('still flags overflow within a plain overflow:hidden ancestor missing the full decorative-overlay signal', () => {
+    // Guards against over-broadening the #1057 exception to every
+    // `overflow: hidden` ancestor: a container that's actually cutting off
+    // real, meaningful content (no `pointer-events: none`, not a full-bleed
+    // `inset: 0` overlay) must still be flagged -- that's exactly the
+    // class of bug this audit exists to catch, and a naive "treat hidden
+    // like auto/scroll" fix would have silently suppressed it.
+    document.body.innerHTML =
+      '<div id="clipped-content"><span id="text">important text</span></div>'
+    const clipper = document.getElementById('clipped-content')!
+    const text = document.getElementById('text')!
+    clipper.style.overflowX = 'hidden'
+    setOverflowMetrics(text, { scrollWidth: 500, clientWidth: 300 })
+    setOverflowMetrics(clipper, { scrollWidth: 300, clientWidth: 300 })
+
+    expect(findOverflowingElements()).toHaveLength(1)
+  })
+
+  it('still flags overflow within an inset:0 overflow:hidden ancestor that is not pointer-events:none', () => {
+    // Same #1057 guard from the interactive-content angle: a full-bleed
+    // absolutely-positioned overlay that *can* receive pointer input is not
+    // presumed decorative, so it's still flagged.
+    document.body.innerHTML =
+      '<div id="overlay"><span id="content">clickable content</span></div>'
+    const overlay = document.getElementById('overlay')!
+    const content = document.getElementById('content')!
+    overlay.style.position = 'absolute'
+    overlay.style.top = '0px'
+    overlay.style.right = '0px'
+    overlay.style.bottom = '0px'
+    overlay.style.left = '0px'
+    overlay.style.overflowX = 'hidden'
+    setOverflowMetrics(content, { scrollWidth: 500, clientWidth: 300 })
+    setOverflowMetrics(overlay, { scrollWidth: 300, clientWidth: 300 })
+
+    expect(findOverflowingElements()).toHaveLength(1)
+  })
+
   it('handles an SVG element (SVGAnimatedString className) without throwing', () => {
     document.body.innerHTML =
       '<svg id="diagram"><rect class="node-shape" /></svg>'

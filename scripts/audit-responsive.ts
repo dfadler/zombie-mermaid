@@ -32,6 +32,29 @@
  * once it's confirmed out of flow — the two properties that together
  * guarantee the "overflow" can never actually render.
  *
+ * A fourth false-positive class (zombie-mermaid#1057): `demo/components/
+ * nav-css.ts`'s `.mobile-watermark` wraps a rotated, off-edge decorative
+ * mark in its own `position: absolute; inset: 0; overflow: hidden;
+ * pointer-events: none` box specifically so *it* — not `.mobile-nav-panel`
+ * — absorbs the mark's pre-clip `scrollWidth` (see the large comment above
+ * that rule for the full history). Plain `overflow: hidden` is deliberately
+ * *not* treated as handled the way `auto`/`scroll` are: unlike a scroll
+ * container, a `hidden` ancestor could just as easily be genuinely cutting
+ * off meaningful content (a too-narrow real container clipping real text or
+ * an image), which is exactly the kind of bug this audit exists to catch —
+ * so blanket-trusting every `overflow: hidden` ancestor would suppress real
+ * findings, not just this one. The ancestor walk below instead recognizes
+ * only the narrow, `.mobile-watermark`-shaped combination that together
+ * guarantees nothing is actually being cut off: `overflow-x: hidden` *and*
+ * `pointer-events: none` (nothing interactive/informational lives here —
+ * it's decorative) *and* pinned exactly to its containing block on every
+ * side (`position: absolute`/`fixed` with `inset: 0`, i.e. computed
+ * `top`/`right`/`bottom`/`left` all `0px` — so this box's own size can never
+ * be "too narrow"; it's always exactly its container's size, a full-bleed
+ * overlay layer rather than a sized content box). An `overflow: hidden`
+ * container missing any one of those signals still falls through to being
+ * flagged, same as before.
+ *
  * Uses Playwright (`@playwright/test`, already a devDependency for
  * `pnpm run test:visual`) to drive headless Chromium, rather than
  * reimplementing the original script's raw `WebSocket`-driven CDP client —
@@ -305,8 +328,28 @@ export function findOverflowingElements(
     let handled = false
     let ancestor: Element | null = el
     while (ancestor) {
-      const overflowX = window.getComputedStyle(ancestor).overflowX
-      if (overflowX === 'auto' || overflowX === 'scroll') {
+      const ancestorStyle = window.getComputedStyle(ancestor)
+      if (
+        ancestorStyle.overflowX === 'auto' ||
+        ancestorStyle.overflowX === 'scroll'
+      ) {
+        handled = true
+        break
+      }
+      // Decorative full-bleed overlay exception (#1057) — see this
+      // function's header comment for the full reasoning. Only this exact
+      // signal combination counts; a bare `overflow: hidden` still falls
+      // through and gets flagged.
+      if (
+        ancestorStyle.overflowX === 'hidden' &&
+        ancestorStyle.pointerEvents === 'none' &&
+        (ancestorStyle.position === 'absolute' ||
+          ancestorStyle.position === 'fixed') &&
+        ancestorStyle.top === '0px' &&
+        ancestorStyle.right === '0px' &&
+        ancestorStyle.bottom === '0px' &&
+        ancestorStyle.left === '0px'
+      ) {
         handled = true
         break
       }
