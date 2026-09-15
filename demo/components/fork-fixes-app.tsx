@@ -757,7 +757,10 @@ export function FixSection({
   return (
     <section id={id}>
       <Card
-        padding={44}
+        // padding lives in fork-fixes.css instead of via this prop (which
+        // would render as an inline style) so the breakpoint overrides
+        // below can win via plain cascade order instead of needing
+        // !important to beat an inline style (zombie-mermaid#1080).
         className="fix-card"
         style={{
           display: 'flex',
@@ -826,7 +829,10 @@ export function FixSection({
           className="ba-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            // grid-template-columns lives in fork-fixes.css instead of
+            // here (not inline) so its mobile breakpoint override can win
+            // via plain cascade order instead of needing !important to
+            // beat this inline style (zombie-mermaid#1080).
             gap: `${SPACE['4xl']}px`,
           }}
         >
@@ -932,7 +938,10 @@ export function ForkFixesApp({ fixes }: ForkFixesAppProps) {
           <h1
             className="page-h1"
             style={{
-              fontSize: '48px',
+              // font-size lives in fork-fixes.css instead of here (not
+              // inline) so its mobile breakpoint override can win via
+              // plain cascade order instead of needing !important to beat
+              // this inline style (zombie-mermaid#1080).
               lineHeight: 1.1,
               letterSpacing: LETTER_SPACING.display,
               maxWidth: '820px',

@@ -10,6 +10,7 @@
  */
 import {
   MOBILE_WATERMARK_SIZE,
+  NAV_LINK_GAP,
   NAV_PAD_X,
   NAV_PAD_Y,
   NAV_ROOT_ID,
@@ -151,12 +152,21 @@ const MOBILE_PANEL_Z_INDEX = NAV_Z_INDEX - 1
  *
  * At 900px and below the links disappear and the bar tightens; at 600px and
  * below the install pill drops its text, leaving the copy glyph alone, and
- * the bar tightens again. Both are `!important` in the canvas because they
- * override the inline styles on the elements themselves, which is also why
- * they must survive into the emitted CSS rather than being folded into the
- * component's `style` objects. The mobile menu block follows the same
- * `!important` convention for the same reason (overriding the menu
- * toggle's inline `display: none`).
+ * the bar tightens again. The canvas originally spelled all of these
+ * `!important`, on the theory that they override inline styles on the
+ * elements themselves. As of zombie-mermaid#1080 that's true only for
+ * `.nav-install-copy`'s `min-width` (its base value is a per-render
+ * `calc()` of `install.widestCommand`'s length, computed in
+ * nav-install-popover.tsx — genuinely dynamic, so it can't be moved into
+ * this static stylesheet the way the others below were): `.nav-bar`'s
+ * padding, `.nav-links`'s display/align-items/gap, and `.menu-toggle`'s
+ * display now have their base (desktop) values declared here instead of as
+ * an inline style on the element, so these breakpoint rules win through
+ * plain cascade order like any other CSS rule. `.nav-npm-text` (no inline
+ * style of its own) and `.mobile-install-pill`'s padding/font-size
+ * (already losing only to `.pill`'s rule from primitivesCss(), which
+ * shared-page-css.tsx always emits *before* this module's output) never
+ * needed `!important` in the first place.
  *
  * Emit this once per page, after tokens.tsx's `designBaseCss()` and
  * primitives.tsx's `primitivesCss()` — the nav's pill is a `.pill`, and its
@@ -183,20 +193,51 @@ export function navCss(): string {
   font-family: var(--font-mono);
 }
 
+/*
+ * Base (desktop) values for the properties the breakpoint rules below
+ * override. These used to live only as inline styles on nav.tsx's
+ * elements, which forced every override to carry !important -- an inline
+ * style always outranks an external stylesheet rule regardless of
+ * specificity. Declaring the same values here instead lets the
+ * lower-viewport rules win through plain cascade order (zombie-mermaid#1080).
+ * Must be kept in sync with nav.tsx's own literals: .nav-links used
+ * 'display: flex; align-items: center; gap: ${NAV_LINK_GAP}px', and
+ * .menu-toggle used 'display: none'.
+ */
+.nav-bar {
+  padding: ${NAV_PAD_Y.desktop}px ${NAV_PAD_X.desktop}px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: ${NAV_LINK_GAP}px;
+}
+
+.menu-toggle {
+  display: none;
+}
+
 ${MEDIA.tablet} {
-  .nav-bar { padding: ${NAV_PAD_Y.tablet}px ${NAV_PAD_X.tablet}px !important; }
-  .nav-links { display: none !important; }
-  .menu-toggle { display: inline-flex !important; }
+  .nav-bar { padding: ${NAV_PAD_Y.tablet}px ${NAV_PAD_X.tablet}px; }
+  .nav-links { display: none; }
+  .menu-toggle { display: inline-flex; }
 }
 
 ${MEDIA.mobile} {
-  .nav-bar { padding: ${NAV_PAD_Y.mobile}px ${NAV_PAD_X.mobile}px !important; }
-  .nav-npm-text { display: none !important; }
+  .nav-bar { padding: ${NAV_PAD_Y.mobile}px ${NAV_PAD_X.mobile}px; }
+  /* .nav-npm-text carries no inline style of its own, so this never
+   * needed !important. */
+  .nav-npm-text { display: none; }
+  /* .nav-install-copy's min-width IS a per-render inline style (a
+   * dynamic calc() of install.widestCommand's length — see this file's
+   * header comment) that a static rule can't replace, so this one stays
+   * genuinely !important. */
   .nav-install-copy { min-width: 0 !important; }
 }
 
 @media (min-width: ${BREAKPOINTS.tablet + 1}px) and (max-width: ${NAV_CRAMPED_MAX}px) {
-  .nav-npm-text { display: none !important; }
+  .nav-npm-text { display: none; }
   .nav-install-copy { min-width: 0 !important; }
 }
 
@@ -209,8 +250,8 @@ ${MEDIA.mobile} {
  */
 @media (min-width: ${NAV_WIDE_MIN + 1}px) {
   .nav-bar {
-    padding-left: calc((100% - ${LAYOUT.maxWidth}px) / 2) !important;
-    padding-right: calc((100% - ${LAYOUT.maxWidth}px) / 2) !important;
+    padding-left: calc((100% - ${LAYOUT.maxWidth}px) / 2);
+    padding-right: calc((100% - ${LAYOUT.maxWidth}px) / 2);
   }
 }
 
@@ -336,26 +377,39 @@ ${MEDIA.mobile} {
      can be wider than this panel's available column once side padding and
      the watermark/links share it. Shrinking the pill's own padding/type
      here closes most of that gap so the overflow-x: auto fallback on
-     nav.tsx's .mobile-install-pill itself rarely has to engage. */
-  .mobile-install-pill { padding: 8px 14px !important; font-size: 13px !important; }
+     nav.tsx's .mobile-install-pill itself rarely has to engage.
+     No !important needed: .mobile-install-pill's padding/font-size come
+     from .pill's rule (primitives.module.css via primitivesCss()), never
+     an inline style, and shared-page-css.tsx always emits primitivesCss()
+     before this module's navCss() output — so this equal-specificity rule
+     already wins through plain cascade order. */
+  .mobile-install-pill { padding: 8px 14px; font-size: 13px; }
 }
 
+/* None of the three selectors below carry an inline style of their own —
+ * .mnt-bar's transition, .mobile-nav-panel's transition, and
+ * .mdb-edge's animation are each set by a plain class rule earlier in
+ * this same file — so this equal-specificity, later-declared rule already
+ * wins through plain cascade order without !important. */
 @media (prefers-reduced-motion: reduce) {
   .menu-toggle .mnt-bar,
   .mobile-nav-panel,
   .mobile-diagram-bg .mdb-edge {
-    transition-duration: 0.001ms !important;
-    animation: none !important;
+    transition-duration: 0.001ms;
+    animation: none;
   }
 }
 
 @media (min-width: ${BREAKPOINTS.tablet + 1}px) {
   /* Safety net for a viewport resize while the menu is open (e.g. a phone
    * rotated past the breakpoint) — the toggle that would close it is gone
-   * by then, since it's hidden by the rule above this block. */
+   * by then, since it's hidden by the rule above this block. No
+   * !important needed: .mobile-nav-panel.is-open's opacity/pointer-events
+   * come from a plain class rule above (never inline), and this
+   * equal-specificity rule is declared after it. */
   .mobile-nav-panel.is-open {
-    opacity: 0 !important;
-    pointer-events: none !important;
+    opacity: 0;
+    pointer-events: none;
   }
 }`
 }

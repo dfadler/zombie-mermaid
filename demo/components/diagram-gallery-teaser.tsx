@@ -58,7 +58,13 @@ export function DiagramGalleryTeaser() {
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(6, 1fr)',
+          // grid-template-columns lives in homePageCss() instead of here
+          // (not inline) so the breakpoint overrides can win via plain
+          // cascade order instead of needing !important to beat this
+          // inline style (zombie-mermaid#1080). Safe only because this
+          // component (DiagramGalleryTeaser) is rendered exclusively on
+          // the home page, the only page that loads homePageCss() — see
+          // that stylesheet's own comment on `.gallery-grid`.
           gap: `${SPACE['3xl']}px`,
         }}
       >

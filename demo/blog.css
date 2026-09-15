@@ -49,14 +49,27 @@ p {
 }
 
 /* -- Featured post -- */
+/* Base (desktop) align-items for `.featured-card`, declared here instead
+ * of as an inline style on blog-app.tsx's <Card> (as it was before) so the
+ * tablet override below can win via plain cascade order instead of
+ * needing !important to beat an inline style (zombie-mermaid#1080). Must
+ * be kept in sync with that component's own former inline literal. */
+.featured-card {
+  align-items: center;
+}
+
 @media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .featured-card {
-    flex-direction: column !important;
-    align-items: flex-start !important;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
+  /* .featured-visual has no inline `width` to fight (it's sized by
+   * `flex: 0 0 220px`, a main-axis property that only controls this
+   * item's height once .featured-card switches to a column above) -- this
+   * never needed !important. */
   .featured-visual {
-    width: 100% !important;
+    width: 100%;
     max-width: 360px;
   }
 }
@@ -82,15 +95,24 @@ p {
 }
 
 /* -- Archive grid -- */
+/* Base (desktop) grid-template-columns, declared here instead of as an
+ * inline style on blog-app.tsx's grid div (as it was before) so the
+ * breakpoint overrides below can win via plain cascade order instead of
+ * needing !important to beat an inline style (zombie-mermaid#1080). Must
+ * be kept in sync with that component's own former inline literal. */
+.archive-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 @media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .archive-grid {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
   .archive-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 }
 

@@ -24,23 +24,52 @@ body {
   min-height: 100vh;
 }
 
+/* Base (desktop) values for the properties the breakpoints below override.
+ * These used to live only as inline styles on dashboard-app.tsx's elements,
+ * which forced every override below to carry `!important` -- an inline
+ * style always outranks an external stylesheet rule regardless of
+ * specificity. Declaring the same values here instead lets the
+ * lower-viewport rules win through plain cascade order (zombie-mermaid#1080).
+ * Must be kept in sync with dashboard-app.tsx's own literals: FONT_SIZE.h1
+ * (tokens.tsx) is 38px, `.stats-grid`/`.metric-stats` both used a literal
+ * `1fr 1fr`/32px (SPACE['5xl']) grid, and `.rescued-card` centered its row
+ * with `align-items: center`. */
+.page-h1 {
+  font-size: 38px;
+}
+
+.stats-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.metric-stats {
+  gap: 32px;
+}
+
+.rescued-card {
+  align-items: center;
+}
+
 @media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .stats-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
   .page-h1 {
-    font-size: 34px !important;
+    font-size: 34px;
   }
 
   .rescued-card {
-    flex-direction: column !important;
-    align-items: flex-start !important;
+    /* flex-direction has no inline-style counterpart to fight -- `.card`
+     * (primitives.module.css) doesn't set it either, so this never needed
+     * !important; only align-items (above) did. */
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .metric-stats {
-    gap: 20px !important;
+    gap: 20px;
   }
 }

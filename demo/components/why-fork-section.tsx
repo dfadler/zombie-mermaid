@@ -84,7 +84,10 @@ export function WhyForkExistsSection() {
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: `${SPACE['3xl']}px auto 0 auto`,
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          // grid-template-columns lives in homePageCss() instead of here
+          // (not inline) so its tablet breakpoint override can win via
+          // plain cascade order instead of needing !important to beat
+          // this inline style (zombie-mermaid#1080).
           gap: `${SPACE['3xl']}px`,
         }}
       >

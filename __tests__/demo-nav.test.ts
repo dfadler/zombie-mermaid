@@ -85,21 +85,30 @@ const CANVAS_LINKS = [
 
 /**
  * The `.nav-bar` element's inline declarations, verbatim from every
- * canonical artboard.
+ * canonical artboard. `padding` is deliberately not here (as of
+ * zombie-mermaid#1080): it now lives in navCss()'s own `.nav-bar` base
+ * rule instead of inline, so its breakpoint overrides can win via plain
+ * cascade order instead of needing `!important` to beat an inline style —
+ * see the `responsive rules` describe block below for that coverage.
  */
 const CANVAS_BAR_STYLE = [
   'display:flex',
   'align-items:center',
   'justify-content:space-between',
-  'padding:22px 80px',
   'border-bottom:1px solid var(--border)',
   'background:rgba(10,13,22,0.85)',
   'position:relative',
   'z-index:10',
 ]
 
-/** The `.nav-links` container's inline declarations, verbatim. */
-const CANVAS_LINKS_STYLE = ['display:flex', 'align-items:center', 'gap:36px']
+/**
+ * The `.nav-links` container's inline declarations, verbatim. `gap` is
+ * deliberately not here (as of zombie-mermaid#1080): it now lives in
+ * navCss()'s own `.nav-links` base rule instead of inline, for the same
+ * reason `.nav-bar`'s padding does — see the `responsive rules` describe
+ * block below for that coverage.
+ */
+const CANVAS_LINKS_STYLE = ['display:flex', 'align-items:center']
 
 /** The brand row's inline declarations, verbatim. */
 const CANVAS_BRAND_STYLE = ['display:flex', 'align-items:center', 'gap:12px']
@@ -127,15 +136,15 @@ const CANVAS_MEDIA = {
   tablet: {
     prelude: '@media (max-width: 900px)',
     rules: [
-      '.nav-bar { padding: 16px 24px !important; }',
-      '.nav-links { display: none !important; }',
+      '.nav-bar { padding: 16px 24px; }',
+      '.nav-links { display: none; }',
     ],
   },
   mobile: {
     prelude: '@media (max-width: 600px)',
     rules: [
-      '.nav-bar { padding: 14px 20px !important; }',
-      '.nav-npm-text { display: none !important; }',
+      '.nav-bar { padding: 14px 20px; }',
+      '.nav-npm-text { display: none; }',
     ],
   },
 }
@@ -411,6 +420,22 @@ describe('responsive rules', () => {
     },
   )
 
+  // `.nav-bar`'s padding and `.nav-links`'s display/align-items/gap moved
+  // out of nav.tsx's inline styles and into these base (desktop) rules
+  // (zombie-mermaid#1080) — see CANVAS_BAR_STYLE/CANVAS_LINKS_STYLE's own
+  // comments above for why they're no longer asserted as inline styles.
+  it("declares .nav-bar's base padding outside any media query", () => {
+    expect(css.replace(/\s+/g, ' ')).toContain(
+      '.nav-bar { padding: 22px 80px; }',
+    )
+  })
+
+  it("declares .nav-links's base display/align-items/gap outside any media query", () => {
+    expect(css.replace(/\s+/g, ' ')).toContain(
+      '.nav-links { display: flex; align-items: center; gap: 36px; }',
+    )
+  })
+
   it('hides the links at the tablet breakpoint, not the mobile one', () => {
     const tablet = css.slice(
       css.indexOf(CANVAS_MEDIA.tablet.prelude),
@@ -445,9 +470,15 @@ describe('the mobile menu', () => {
     expect(html).toContain('class="menu-toggle"')
     expect(html).toContain('aria-expanded="false"')
     expect(html).toContain('aria-label="Menu"')
-    // Shown only via navCss()'s tablet-and-below rule — see "responsive
-    // rules" above for `.menu-toggle { display: inline-flex !important; }`.
-    expect(html).toMatch(/class="menu-toggle"[^>]*style="display:none/)
+    // Hidden by navCss()'s own `.menu-toggle { display: none; }` base rule
+    // rather than an inline style (zombie-mermaid#1080), so the button's
+    // own style attribute no longer carries `display` at all — shown only
+    // via navCss()'s tablet-and-below `.menu-toggle { display: inline-flex; }`
+    // override (see "responsive rules" below).
+    expect(html).toMatch(/class="menu-toggle"[^>]*style="[^"]*"/)
+    const styleMatch = html.match(/class="menu-toggle"[^>]*style="([^"]*)"/)
+    expect(styleMatch?.[1]).not.toContain('display')
+    expect(navCss()).toContain('.menu-toggle {\n  display: none;\n}')
   })
 
   it('renders the same five links as the desktop nav, in the same order', () => {

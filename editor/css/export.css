@@ -6,10 +6,16 @@
 .export-wrap .btn-primary:first-child {
   border-radius: 8px 0 0 8px;
 }
+/* Neither declaration below fights an inline style -- `.export-chevron`
+ * (editor-topbar.tsx's `<button className="btn btn-primary export-chevron">`)
+ * has none. Both are equal-specificity, single-class overrides of `.btn`'s
+ * own `border-radius: 8px`/`border: none` (topbar.css), and
+ * packages/site/editor.ts loads export.css strictly after topbar.css, so
+ * these already win through plain cascade order (zombie-mermaid#1080). */
 .export-chevron {
-  border-radius: 0 8px 8px 0 !important;
+  border-radius: 0 8px 8px 0;
   padding: 0 8px;
-  border-left: 1px solid color-mix(in srgb, var(--t-bg) 20%, var(--t-fg)) !important;
+  border-left: 1px solid color-mix(in srgb, var(--t-bg) 20%, var(--t-fg));
 }
 .export-dropdown {
   display: none;

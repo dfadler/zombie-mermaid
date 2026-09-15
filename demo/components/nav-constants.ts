@@ -53,6 +53,21 @@ export const NAV_Z_INDEX = 10
 export const MOBILE_WATERMARK_SIZE = 220
 
 /**
+ * Gap, in px, between the desktop nav links (`Nav`'s `.nav-links`, nav.tsx).
+ *
+ * The canvas declares `gap:36px`. 36 is not on tokens.tsx's spacing scale
+ * and nothing else in the artboards uses it, so it stays a literal here
+ * rather than becoming a step no other component would reference — the same
+ * call primitives.tsx makes for its 22px pill padding.
+ *
+ * Also read by {@link navCss} so `.nav-links`'s base `display`/
+ * `align-items`/`gap` can live in the stylesheet instead of as an inline
+ * style (zombie-mermaid#1080), letting the tablet-and-below rule that hides
+ * the links win through plain cascade order rather than `!important`.
+ */
+export const NAV_LINK_GAP = 36
+
+/**
  * `nav-root`: id of the *hydration container* every page's Nav-hydration
  * client script (`demo/nav-client.tsx`'s `hydrateNav()`) mounts onto — see
  * `demo/components/nav-island.tsx`'s `NavIsland`, which every page-level

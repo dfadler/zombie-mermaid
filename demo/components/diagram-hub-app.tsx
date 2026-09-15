@@ -106,7 +106,12 @@ function DiagramTypeRow({
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'flex',
-          flexDirection: isReversed ? 'row-reverse' : 'row',
+          // flex-direction lives in hubPageCss()'s `.type-row`/
+          // `.type-row.reverse` rules instead of here (not inline) --
+          // keyed off the same `reverse` modifier class this element
+          // already carries -- so the tablet breakpoint override can win
+          // via plain cascade order instead of needing !important to beat
+          // an inline style (zombie-mermaid#1080).
           alignItems: 'center',
           gap: `${SPACE['8xl']}px`,
         }}
@@ -116,8 +121,11 @@ function DiagramTypeRow({
           tone="glow"
           className="icon-panel icon-panel-fixed"
           style={{
-            flex: '0 0 460px',
-            height: '360px',
+            // flex-basis and height live in hubPageCss()'s
+            // `.icon-panel-fixed` rule instead of here (not inline) so
+            // the breakpoint overrides can win via plain cascade order
+            // instead of needing !important to beat this inline style
+            // (zombie-mermaid#1080).
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -264,7 +272,10 @@ export function DiagramHubApp({
           <h1
             className="page-h1"
             style={{
-              fontSize: `${FONT_SIZE.display}px`,
+              // font-size lives in hubPageCss() instead of here (not
+              // inline) so its mobile breakpoint override can win via
+              // plain cascade order instead of needing !important to beat
+              // this inline style (zombie-mermaid#1080).
               lineHeight: 1.08,
               letterSpacing: LETTER_SPACING.display,
               maxWidth: '820px',
