@@ -5,7 +5,8 @@
  * so a quoted item like `"CLI output / logs"` kept its literal quote
  * characters in the rendered label instead of being unquoted the way an
  * axis *title* already is. These tests assert each category item is
- * unquoted the same way.
+ * unquoted the same way, and that a comma embedded inside a quoted item
+ * (e.g. `"Jan, Feb"`) is treated as literal text rather than a delimiter.
  */
 import { describe, it, expect } from 'vitest'
 import { parseXYChart as parseXYChartStatements } from '@zombie-mermaid/mermaid-parser'
@@ -54,15 +55,24 @@ describe('parseXYChart – categorical x-axis quoting', () => {
     expect(chart.xAxis.categories).toEqual(['Jan', 'Feb', 'Mar'])
   })
 
-  it('does not strip a lone leading or trailing quote character', () => {
+  it('treats a comma inside a quoted item as literal text, not a delimiter', () => {
     const chart = parseXYChart([
       'xychart-beta',
-      'x-axis ["Jan, Feb"]',
-      'bar [1]',
+      'x-axis ["Jan, Feb", "Mar"]',
+      'bar [1, 2]',
     ])
-    // A single bracketed item that itself contains a comma splits into two
-    // pieces; neither piece is a fully-matched quoted pair, so both should
-    // be left as-is rather than have a stray quote silently dropped.
-    expect(chart.xAxis.categories).toEqual(['"Jan', 'Feb"'])
+    // A naive split(',') would break this into three pieces ('"Jan',
+    // ' Feb"', ' "Mar"') instead of two -- quoting a value that itself
+    // contains a comma is exactly the case quoting exists for.
+    expect(chart.xAxis.categories).toEqual(['Jan, Feb', 'Mar'])
+  })
+
+  it('handles multiple comma-containing quoted items in one list', () => {
+    const chart = parseXYChart([
+      'xychart-beta',
+      'x-axis ["A, B", "C, D, E", F]',
+      'bar [1, 2, 3]',
+    ])
+    expect(chart.xAxis.categories).toEqual(['A, B', 'C, D, E', 'F'])
   })
 })
