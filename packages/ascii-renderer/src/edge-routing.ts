@@ -773,9 +773,30 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   // This happens for edges crossing subgraph boundaries where A* can't find
   // a clear route. We create a direct path from source to target exit points
   // so arrowheads can still be rendered correctly.
+  //
+  // `[prefFrom, prefTo]` alone is a single non-axis-aligned (diagonal) grid
+  // segment whenever the two points differ on both axes. draw-lines.ts's
+  // drawLine never draws that as a straight diagonal — it draws it as an L,
+  // horizontal-first (see expandDiagonalSegments' own doc, and #418/#1083,
+  // which already had to special-case this same diagonal-vs-drawn-L gap for
+  // label placement and arrowhead direction respectively). Everything else
+  // that reasons about `edge.path` — in particular edge-cell-styles.ts's
+  // cross-style overlap detection, which walks `edge.path` via `pathCells`
+  // assuming it already matches the drawn geometry — implicitly assumes a
+  // path is axis-aligned. Left as a raw diagonal pair, `pathCells` walks a
+  // Bresenham diagonal that visits a completely different set of cells than
+  // the L drawLine actually draws, so two Case-4 edges (or a Case-4 edge and
+  // an ordinary routed one) whose *drawn* horizontal legs genuinely overlap
+  // are never flagged as a conflict, and the later-drawn edge's style
+  // silently overwrites the earlier one's on that shared row (#1067, "All
+  // Edge Styles": the dotted edge's horizontal leg rendered as the thick
+  // edge's heavy ━ instead of dashed). Expanding here — once, at the
+  // source — keeps every downstream consumer (drawing, label placement,
+  // conflict detection, corner glyphs) working from the same axis-aligned
+  // path instead of each needing its own diagonal-awareness.
   edge.startDir = preferredDir
   edge.endDir = preferredOppositeDir
-  edge.path = [prefFrom, prefTo]
+  edge.path = expandDiagonalSegments([prefFrom, prefTo])
 }
 
 /** Check whether grid column `x` falls inside any node's reserved 3-column block. */
