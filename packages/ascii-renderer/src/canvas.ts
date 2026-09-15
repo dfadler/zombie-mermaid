@@ -396,6 +396,64 @@ export function mergeJunctions(c1: string, c2: string): string {
 // ============================================================================
 
 /**
+ * Blank out (replace with a space) any cell in a *later* canvas that a
+ * *earlier* one in `canvases` already painted a non-space character into.
+ * Canvases are otherwise untouched — same length/shape, same content at
+ * every cell no earlier canvas has already claimed.
+ *
+ * `mergeCanvases` itself always lets the *last* non-space overlay win a
+ * shared cell (see its own doc), which is the right default for most of
+ * `draw.ts`'s layers (an arrowhead correctly overwrites the corner beneath
+ * it, a later label wins a real collision, etc.) — but for the *line*
+ * layer specifically, "last edge processed wins" is arbitrary and can pick
+ * the wrong one: `edge-cell-styles.ts`'s module doc already documents
+ * "first claim wins" as this renderer's intended rule for a cell two
+ * differently-styled, unrelated edges both route through (that module
+ * tracks exactly this to *detect* the conflict and trigger a reroute
+ * around it — see grid.ts's `rerouteAroundStyleConflicts`), but drawing
+ * itself never consulted that rule: every edge's line canvas painted in
+ * `graph.edges` order and `mergeCanvases` let whichever one came *last*
+ * silently overwrite an earlier edge's own, differently-styled glyph. Most
+ * of the time rerouting already prevents the two from sharing a cell at
+ * all, so this is a no-op; when it can't (e.g. a same-source fan-out with
+ * 3+ distinct styles has no fully conflict-free route among the routing
+ * candidates available — see #1067, "All Edge Styles"), applying "first
+ * claim wins" here at the character level, immediately before the line
+ * layer is merged, keeps whichever edge got there first rendered
+ * consistently in its own style instead of visibly switching styles
+ * mid-route where a later sibling's paint won by sheer draw order.
+ *
+ * Scoped to the line layer only (`draw.ts`'s `lineCanvases`) — corners,
+ * arrowheads, box-start connectors and labels are composited in their own
+ * later `mergeCanvases` passes with their existing (correct, layer-specific)
+ * merge semantics, untouched by this function.
+ */
+export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
+  const claimed = new Set<string>()
+  const result: Canvas[] = []
+  for (const canvas of canvases) {
+    const [maxX, maxY] = getCanvasSize(canvas)
+    // `copyCanvas` (despite its name) returns a *blank* canvas of the same
+    // size, not a clone of `canvas`'s content — see its own doc. Every cell
+    // must be written explicitly below, not just the ones this function
+    // blanks out.
+    const out = copyCanvas(canvas)
+    for (let x = 0; x <= maxX; x++) {
+      for (let y = 0; y <= maxY; y++) {
+        const c = canvas[x]?.[y]
+        if (c === undefined || c === ' ') continue
+        const key = `${x},${y}`
+        if (claimed.has(key)) continue
+        claimed.add(key)
+        out[x]![y] = c
+      }
+    }
+    result.push(out)
+  }
+  return result
+}
+
+/**
  * Merge overlay canvases onto a base canvas at the given offset.
  * Non-space characters in overlays overwrite the base.
  * When both characters are Unicode junction chars, they're merged intelligently.

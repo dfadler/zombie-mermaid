@@ -24,7 +24,7 @@ import type {
   AsciiSubgraph,
   EdgeBundle,
 } from './types.ts'
-import { mergeCanvases, write } from './canvas.ts'
+import { mergeCanvases, firstClaimWins, write } from './canvas.ts'
 import type { RoleCanvas, CharRole } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow } from './draw-arrows.ts'
@@ -270,8 +270,21 @@ export function drawGraph(graph: AsciiGraph): Canvas {
   // Merge edge layers in order and track roles
   // Note: arrowHeadStart is merged AFTER boxStart so bidirectional arrows
   // properly overwrite the box connector at the source end
-  graph.canvas = mergeCanvases(graph.canvas, zero, useAscii, ...lineCanvases)
-  fillRolesFromCanvases(graph.roleCanvas, lineCanvases, zero, 'line')
+  //
+  // `firstClaimWins` resolves any leftover cross-style overlap between two
+  // edges' own line canvases (see its doc) before they're merged onto the
+  // shared canvas — applied here, and not to the other edge layers below,
+  // because only the line layer has this "first claim wins" rule; corners,
+  // arrowheads, box-start connectors and labels keep mergeCanvases' normal
+  // last-overlay-wins behavior.
+  const resolvedLineCanvases = firstClaimWins(lineCanvases)
+  graph.canvas = mergeCanvases(
+    graph.canvas,
+    zero,
+    useAscii,
+    ...resolvedLineCanvases,
+  )
+  fillRolesFromCanvases(graph.roleCanvas, resolvedLineCanvases, zero, 'line')
 
   graph.canvas = mergeCanvases(graph.canvas, zero, useAscii, ...cornerCanvases)
   fillRolesFromCanvases(graph.roleCanvas, cornerCanvases, zero, 'corner')

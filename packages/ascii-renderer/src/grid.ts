@@ -36,7 +36,11 @@ import {
   createEdgeCellStyles,
   claimPathCells,
   findStyleConflict,
+  createEdgeCellOwners,
+  claimPathOwners,
+  findUnrelatedOverlap,
   type EdgeCellStyles,
+  type EdgeCellOwners,
 } from './edge-cell-styles.ts'
 import { drawBox } from './draw.ts'
 import { getShapeDimensions } from './shapes/index.ts'
@@ -223,25 +227,27 @@ const MAX_STYLE_CONFLICT_REROUTES = 8
 
 /**
  * After `edge` has been routed, check whether its path crosses a cell
- * already claimed by a *different*-style edge (see edge-cell-styles.ts) and,
- * if so, re-route it around the conflicting cell(s).
+ * already claimed by a *different*-style edge, or by an unrelated edge's
+ * run of cells long enough to read as one continuous connector (see
+ * edge-cell-styles.ts's two conflict checks) and, if so, re-route it around
+ * the conflicting cell(s).
  *
  * Works by temporarily adding the conflicting cell to `graph.grid` — the
  * same occupancy map A* already treats node cells as blocked through — so
  * `determinePath`'s A* search avoids it on the next attempt, then removing
  * that temporary block again once this edge is done (it must not
- * permanently block the cell for other, unrelated edges; only *style*
- * conflicts are meant to be avoided, not all future overlap).
+ * permanently block the cell for other, unrelated edges; only these two
+ * conflict shapes are meant to be avoided, not all future overlap).
  *
  * `nodeOnlyGrid` — not `graph.grid` — is what gets passed to
- * `findStyleConflict`'s "is this cell node-owned, and therefore not a real
- * conflict" check. This must be a separate, frozen-at-node-placement-time
- * grid: `graph.grid` gets `add`ed to right below for A*'s benefit, and if
- * the *conflict check* used that same live grid, a cell temporarily
- * blocked on attempt 1 would look node-occupied on attempt 2 — so if A*'s
- * direct-fallback (which ignores occupancy) routes right back through it,
- * the loop would wrongly see "no conflict" and stop, leaving the two
- * differently-styled edges still overlapping there. See
+ * `findStyleConflict`/`findUnrelatedOverlap`'s "is this cell node-owned, and
+ * therefore not a real conflict" check. This must be a separate,
+ * frozen-at-node-placement-time grid: `graph.grid` gets `add`ed to right
+ * below for A*'s benefit, and if the *conflict check* used that same live
+ * grid, a cell temporarily blocked on attempt 1 would look node-occupied on
+ * attempt 2 — so if A*'s direct-fallback (which ignores occupancy) routes
+ * right back through it, the loop would wrongly see "no conflict" and stop,
+ * leaving the two edges still overlapping there. See
  * ascii-edge-cross-style-overlap.test.ts's regression test for this exact
  * scenario.
  */
@@ -249,17 +255,15 @@ function rerouteAroundStyleConflicts(
   graph: AsciiGraph,
   edge: AsciiEdge,
   cellStyles: EdgeCellStyles,
+  cellOwners: EdgeCellOwners,
   nodeOnlyGrid: Grid,
 ): void {
   const temporarilyBlocked: GridCoord[] = []
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
-      const conflict = findStyleConflict(
-        nodeOnlyGrid,
-        cellStyles,
-        edge.path,
-        edge.style,
-      )
+      const conflict =
+        findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
+        findUnrelatedOverlap(nodeOnlyGrid, cellOwners, edge.path, edge)
       if (!conflict) return
       graph.grid.add(gridKey(conflict))
       temporarilyBlocked.push(conflict)
@@ -1164,20 +1168,29 @@ export function createMapping(graph: AsciiGraph): void {
   // `rerouteAroundStyleConflicts`'s doc for why the conflict check needs
   // this frozen copy instead of the live grid.
   const cellStyles = createEdgeCellStyles()
+  const cellOwners = createEdgeCellOwners()
   const nodeOnlyGrid = cloneGrid(graph.grid)
   for (const edge of graph.edges) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
       increaseGridSizeForPath(graph, edge.path)
       claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
+      claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
       determineLabelLine(graph, edge)
       continue
     }
 
     determinePath(graph, edge)
-    rerouteAroundStyleConflicts(graph, edge, cellStyles, nodeOnlyGrid)
+    rerouteAroundStyleConflicts(
+      graph,
+      edge,
+      cellStyles,
+      cellOwners,
+      nodeOnlyGrid,
+    )
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
+    claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
     determineLabelLine(graph, edge)
   }
 
