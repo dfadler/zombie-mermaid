@@ -164,7 +164,10 @@ export function RepoMetricsCard({
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gap: `${SPACE['5xl']}px`,
+          // gap lives in dashboard.css instead of here (not inline) so its
+          // mobile breakpoint override can win via plain cascade order
+          // instead of needing !important to beat this inline style
+          // (zombie-mermaid#1080).
         }}
       >
         {entries.map(([value, metricLabel]) => (
@@ -241,7 +244,10 @@ export function MetricsSection({ fork, upstream }: MetricsSectionProps) {
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          // grid-template-columns lives in dashboard.css instead of here
+          // (not inline) so its tablet breakpoint override can win via
+          // plain cascade order instead of needing !important to beat this
+          // inline style (zombie-mermaid#1080).
           gap: `${SPACE['5xl']}px`,
         }}
       >
@@ -293,7 +299,10 @@ export function RescuedTeaser() {
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'flex',
-          alignItems: 'center',
+          // align-items lives in dashboard.css instead of here (not
+          // inline) so its mobile breakpoint override can win via plain
+          // cascade order instead of needing !important to beat this
+          // inline style (zombie-mermaid#1080).
           justifyContent: 'space-between',
           gap: `${SPACE['3xl']}px`,
           background: `linear-gradient(90deg, ${colorVar('--panel')} 0%, ${colorVar('--panel-2')} 100%)`,
@@ -544,7 +553,10 @@ export function DashboardApp({ viewModel }: DashboardAppProps) {
             <h1
               className="page-h1"
               style={{
-                fontSize: `${FONT_SIZE.h1}px`,
+                // font-size lives in dashboard.css instead of here (not
+                // inline) so its mobile breakpoint override can win via
+                // plain cascade order instead of needing !important to
+                // beat this inline style (zombie-mermaid#1080).
                 lineHeight: 1.1,
                 letterSpacing: LETTER_SPACING.heading,
                 maxWidth: '820px',

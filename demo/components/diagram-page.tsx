@@ -428,13 +428,35 @@ ${MEDIA.mobile} {
   .tag-result-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
 }
 
+/*
+ * Base (desktop) values for the properties the breakpoint rules below
+ * override, declared here instead of as an inline style on the
+ * DiagramTypeApp/DiagramDetailApp markup (diagram-type-app.tsx,
+ * diagram-detail-app.tsx) that renders these classes, so those rules can
+ * win through plain cascade order instead of needing !important to beat
+ * an inline style (zombie-mermaid#1080). Must be kept in sync with those
+ * components' own former inline literals: .code-card/.output-card
+ * both used flex: '1 1 0', and .page-h1 used FONT_SIZE.display
+ * (${FONT_SIZE.display}px).
+ */
+.code-card,
+.output-card {
+  flex: 1 1 0;
+}
+
+.page-h1 {
+  font-size: ${FONT_SIZE.display}px;
+}
+
 ${MEDIA.tablet} {
-  .detail-row { flex-direction: column !important; }
+  /* .detail-row has no inline flex-direction to fight (see
+   * DiagramTypeApp/DiagramDetailApp's markup) -- this never needed
+   * !important. */
+  .detail-row { flex-direction: column; }
   /*
    * .code-card and .output-card (diagram-type-app.tsx's "Source → render"
-   * pair) both get an inline flex: '1 1 0' (see the DiagramTypeApp markup
-   * in diagram-type-app.tsx) to split .detail-row's width evenly
-   * side-by-side above this breakpoint. Once .detail-row flips to a
+   * pair) both get a base flex: 1 1 0 (above) to split .detail-row's width
+   * evenly side-by-side above this breakpoint. Once .detail-row flips to a
    * column here, that flex-basis: 0 combines with each card's own
    * overflow: hidden to collapse it to ~0 height: a flex item's
    * automatic min-height (min-height: auto, letting it grow to fit
@@ -456,11 +478,11 @@ ${MEDIA.tablet} {
    * automatic-minimum substitution entirely rather than fighting it with
    * a magic-number min-height.
    */
-  .code-card, .output-card { flex: 1 1 auto !important; }
+  .code-card, .output-card { flex: 1 1 auto; }
 }
 
 ${MEDIA.mobile} {
-  .page-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
+  .page-h1 { font-size: ${FONT_SIZE.h1Mobile}px; }
 }
 
 /*
@@ -851,14 +873,50 @@ function hubPageCss(): string {
   color: ${colorVar('--text-faint')};
 }
 
+/*
+ * Base (desktop) values for the properties the breakpoint rules below
+ * override, declared here instead of as an inline style on
+ * diagram-hub-app.tsx's markup, so those rules can win through plain
+ * cascade order instead of needing !important to beat an inline style
+ * (zombie-mermaid#1080). .type-row's row/row-reverse split now keys off
+ * the reverse modifier class that element already carries (previously
+ * an inline flexDirection ternary) rather than needing a dynamic value in
+ * this static stylesheet. Must be kept in sync with
+ * diagram-hub-app.tsx's own former inline literals: .icon-panel-fixed
+ * used flex: '0 0 460px' and height: '360px', and .page-h1 used
+ * FONT_SIZE.display (${FONT_SIZE.display}px).
+ */
+.type-row {
+  flex-direction: row;
+}
+
+.type-row.reverse {
+  flex-direction: row-reverse;
+}
+
+.icon-panel-fixed {
+  flex: 0 0 460px;
+  height: 360px;
+}
+
+.page-h1 {
+  font-size: ${FONT_SIZE.display}px;
+}
+
 ${MEDIA.tablet} {
-  .type-row { flex-direction: column !important; }
-  .icon-panel-fixed { flex: 1 1 auto !important; width: 100% !important; height: 280px !important; }
+  /* Matches .type-row.reverse's own specificity so this wins regardless
+   * of which direction the row started in. */
+  .type-row, .type-row.reverse { flex-direction: column; }
+  /* .icon-panel-fixed's width has no inline counterpart to fight (its
+   * horizontal size above this breakpoint comes from flex-basis, a
+   * main-axis property that only controls this item's height once
+   * .type-row switches to a column) -- this never needed !important. */
+  .icon-panel-fixed { flex: 1 1 auto; width: 100%; height: 280px; }
 }
 
 ${MEDIA.mobile} {
-  .page-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
-  .icon-panel-fixed { height: 220px !important; }
+  .page-h1 { font-size: ${FONT_SIZE.h1Mobile}px; }
+  .icon-panel-fixed { height: 220px; }
 }`
 }
 

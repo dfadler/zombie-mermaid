@@ -75,13 +75,7 @@ import { DiagramGalleryTeaser } from './diagram-gallery-teaser.tsx'
 import { ProofSection } from './proof-section.tsx'
 import { BlogTeaser } from './blog-teaser.tsx'
 import { CTA, SectionEyebrow } from './primitives.tsx'
-import {
-  LAYOUT,
-  LETTER_SPACING,
-  SECTION_SPACE,
-  SPACE,
-  colorVar,
-} from './tokens.tsx'
+import { LAYOUT, LETTER_SPACING, SPACE, colorVar } from './tokens.tsx'
 
 /**
  * `index-hero-root`: id of {@link IndexHeroApp}'s hydration container —
@@ -117,10 +111,11 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
       className="hero-row"
       style={{
         display: 'flex',
-        alignItems: 'center',
+        // align-items/gap/padding live in homePageCss() instead of here
+        // (not inline) so the hero-stack breakpoint overrides can win via
+        // plain cascade order instead of needing !important to beat an
+        // inline style (zombie-mermaid#1080).
         justifyContent: 'space-between',
-        gap: `${SPACE['7xl']}px`,
-        padding: `${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px`,
         maxWidth: `${LAYOUT.maxWidth}px`,
         margin: '0 auto',
         position: 'relative',
@@ -130,7 +125,10 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
       <div
         className="hero-copy"
         style={{
-          flex: '0 1 500px',
+          // flex lives in homePageCss() instead of here (not inline) so
+          // the hero-stack breakpoint override can win via plain cascade
+          // order instead of needing !important to beat an inline style
+          // (zombie-mermaid#1080).
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
@@ -143,7 +141,10 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
         <h1
           className="hero-h1"
           style={{
-            fontSize: '56px',
+            // font-size lives in homePageCss() instead of here (not
+            // inline) so its mobile breakpoint override can win via
+            // plain cascade order instead of needing !important to beat
+            // this inline style (zombie-mermaid#1080).
             lineHeight: 1.08,
             letterSpacing: LETTER_SPACING.display,
           }}
@@ -155,7 +156,11 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
             fontSize: '19px',
             lineHeight: 1.6,
             color: colorVar('--text-dim'),
-            maxWidth: '480px',
+            // max-width lives in homePageCss()'s `.hero-copy p` rule
+            // instead of here (not inline) so the hero-stack breakpoint
+            // override can win via plain cascade order instead of
+            // needing !important to beat this inline style
+            // (zombie-mermaid#1080).
           }}
         >
           zombie-mermaid renders Mermaid syntax into beautiful SVG or ASCII art
@@ -190,12 +195,14 @@ export function IndexHeroApp({ asciiHtml }: IndexHeroAppProps) {
       <div
         className="hero-visual"
         style={{
-          flex: '0 1 700px',
+          // flex/align-items live in homePageCss() instead of here (not
+          // inline) so the breakpoint overrides can win via plain
+          // cascade order instead of needing !important to beat an
+          // inline style (zombie-mermaid#1080).
           minWidth: 0,
           maxWidth: '100%',
           display: 'flex',
           gap: `${SPACE['3xl']}px`,
-          alignItems: 'flex-start',
         }}
       >
         <HeroCodePanel />

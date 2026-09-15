@@ -331,7 +331,10 @@ function FeaturedPost({ post }: { post: BlogPostSummary }) {
           padding={48}
           style={{
             display: 'flex',
-            alignItems: 'center',
+            // align-items lives in blog.css instead of here (not inline)
+            // so its tablet breakpoint override can win via plain cascade
+            // order instead of needing !important to beat this inline
+            // style (zombie-mermaid#1080).
             justifyContent: 'space-between',
             gap: `${SPACE['6xl']}px`,
           }}
@@ -467,7 +470,10 @@ function ArchiveSection({ posts }: { posts: readonly BlogPostSummary[] }) {
           className="archive-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            // grid-template-columns lives in blog.css instead of here (not
+            // inline) so its breakpoint overrides can win via plain
+            // cascade order instead of needing !important to beat this
+            // inline style (zombie-mermaid#1080).
             gap: `${SPACE['3xl'] + 4}px`,
           }}
         >

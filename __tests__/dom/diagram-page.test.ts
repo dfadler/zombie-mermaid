@@ -145,7 +145,7 @@ describe('DiagramTypePage (#821)', () => {
     // see diagram-detail-app.tsx's SvgOutput), but pageCss's `${MEDIA.tablet}`
     // override -- which exists specifically to stop that panel collapsing to
     // ~0 height once .detail-row flips to a column layout, see this file's
-    // own comment above `.code-card, .output-card { flex: 1 1 auto !important; }`
+    // own comment above `.code-card, .output-card { flex: 1 1 auto; }`
     // -- still said `.diagram-frame`, so it silently stopped matching
     // anything and the diagram panel disappeared below the tablet breakpoint
     // (900px) in production. jsdom doesn't compute flex layout, so this
@@ -183,8 +183,13 @@ describe('DiagramTypePage (#821)', () => {
     const styleText = Array.from(document.querySelectorAll('style'))
       .map((el) => el.textContent ?? '')
       .join('\n')
+    // No longer !important as of zombie-mermaid#1080: .code-card/.output-card's
+    // base flex: 1 1 0 now lives in a plain (non-inline) rule in this same
+    // stylesheet (see pageCss's own comment above it), so this
+    // equal-specificity, later-declared tablet override wins through plain
+    // cascade order instead.
     expect(styleText).toMatch(
-      /\.code-card,\s*\.output-card\s*\{\s*flex:\s*1 1 auto !important;\s*\}/,
+      /\.code-card,\s*\.output-card\s*\{\s*flex:\s*1 1 auto;\s*\}/,
     )
     expect(styleText).not.toMatch(/\.code-card,\s*\.diagram-frame\s*\{/)
   })

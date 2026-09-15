@@ -44,7 +44,10 @@ export function BlogTeaser() {
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'flex',
-          alignItems: 'center',
+          // align-items lives in homePageCss() instead of here (not
+          // inline) so its mobile breakpoint override can win via plain
+          // cascade order instead of needing !important to beat this
+          // inline style (zombie-mermaid#1080).
           justifyContent: 'space-between',
           gap: `${SPACE['5xl']}px`,
         }}
@@ -53,8 +56,10 @@ export function BlogTeaser() {
           className="blog-teaser-inner"
           style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: `${SPACE['4xl']}px`,
+            // align-items/gap live in homePageCss() instead of here (not
+            // inline) so its mobile breakpoint override can win via
+            // plain cascade order instead of needing !important to beat
+            // this inline style (zombie-mermaid#1080).
           }}
         >
           <Pill

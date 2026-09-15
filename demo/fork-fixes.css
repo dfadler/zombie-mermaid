@@ -17,9 +17,14 @@
        `dangerouslySetInnerHTML` (ascii-html.ts's `.fix-wide` spans, and a
        rendered SVG's own root element, neither of which fork-fixes-page.tsx
        can style directly); and
-     - the breakpoint overrides, which must win over an inline style by
-       width alone, and so carry `!important` for the same reason
-       nav.tsx's/footer.tsx's own responsive rules do.
+     - the base (desktop) values for `.fix-card`/`.ba-grid`/`.page-h1`'s
+       breakpoint-overridden properties (padding, grid-template-columns,
+       font-size) — declared here instead of as an inline style on those
+       elements so the breakpoint overrides below can win via plain
+       cascade order, without needing `!important` to beat an inline style
+       (zombie-mermaid#1080). Must be kept in sync with
+       fork-fixes-app.tsx's own former inline literals: `.fix-card`
+       44px padding, `.ba-grid`'s `1fr 1fr` columns, `.page-h1`'s 48px.
    ========================================================================== */
 
 *,
@@ -72,20 +77,32 @@ button:focus-visible {
   height: auto;
 }
 
+.fix-card {
+  padding: 44px;
+}
+
+.ba-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.page-h1 {
+  font-size: 48px;
+}
+
 @media (max-width: 900px) /* LEGACY_BREAKPOINTS.tablet */ {
   .fix-card {
-    padding: 28px !important;
+    padding: 28px;
   }
 }
 
 @media (max-width: 600px) /* LEGACY_BREAKPOINTS.mobile */ {
   .page-h1 {
-    font-size: 32px !important;
+    font-size: 32px;
   }
   .fix-card {
-    padding: 22px !important;
+    padding: 22px;
   }
   .ba-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 }

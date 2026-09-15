@@ -170,7 +170,10 @@ export function ProofSection() {
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          // grid-template-columns lives in homePageCss() instead of here
+          // (not inline) so its tablet breakpoint override can win via
+          // plain cascade order instead of needing !important to beat
+          // this inline style (zombie-mermaid#1080).
           gap: `${SPACE['7xl']}px`,
         }}
       >
@@ -235,7 +238,10 @@ export function ProofSection() {
           margin: `${SPACE['6xl']}px auto 0 auto`,
           padding: '32px 36px',
           display: 'flex',
-          alignItems: 'center',
+          // align-items lives in homePageCss() instead of here (not
+          // inline) so its mobile breakpoint override can win via plain
+          // cascade order instead of needing !important to beat this
+          // inline style (zombie-mermaid#1080).
           justifyContent: 'space-between',
           gap: `${SPACE['3xl']}px`,
           background:

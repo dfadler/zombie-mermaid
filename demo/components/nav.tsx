@@ -92,12 +92,7 @@ import {
   NavInstall,
 } from './nav-install-popover.tsx'
 import { navCss } from './nav-css.ts'
-import {
-  MOBILE_WATERMARK_SIZE,
-  NAV_PAD_X,
-  NAV_PAD_Y,
-  NAV_Z_INDEX,
-} from './nav-constants.ts'
+import { MOBILE_WATERMARK_SIZE, NAV_Z_INDEX } from './nav-constants.ts'
 import { NAV_MOBILE_MENU_SCRIPT } from './mobile-menu.client.ts'
 import {
   CopyIcon,
@@ -164,16 +159,6 @@ export const NAV_INSTALL_COMMAND = 'npm install zombie-mermaid'
 /* -----------------------------------------------------------------
  * Measurements
  * ----------------------------------------------------------------- */
-
-/**
- * The gap between two nav links, in px.
- *
- * The canvas declares `gap:36px`. 36 is not on tokens.tsx's spacing scale
- * and nothing else in the artboards uses it, so it stays a literal here
- * rather than becoming a step no other component would reference — the same
- * call primitives.tsx makes for its 22px pill padding.
- */
-const NAV_LINK_GAP = 36
 
 /** The brand mark's rendered size in px — 30 in every artboard's nav. */
 const LOGO_SIZE = 30
@@ -338,9 +323,10 @@ function NavBrand({ homeHref }: { homeHref?: string }) {
  * style ({@link ICON_STROKE_WIDTH}, {@link ICON_LINE_CAP}) so it still
  * reads as part of the same family.
  *
- * Hidden by default (`display: none`, desktop); `navCss()` shows it
- * `!important` at {@link BREAKPOINTS}.tablet and below, the same threshold
- * where `.nav-links` disappears.
+ * Hidden by default (`display: none`, declared in `navCss()` rather than
+ * inline — zombie-mermaid#1080); `navCss()` shows it at {@link
+ * BREAKPOINTS}.tablet and below, the same threshold where `.nav-links`
+ * disappears.
  */
 function MenuToggle() {
   return (
@@ -350,7 +336,10 @@ function MenuToggle() {
       aria-label="Menu"
       aria-expanded="false"
       style={{
-        display: 'none',
+        // display lives in nav-css.ts's navCss() instead of here (not
+        // inline) so the tablet-and-below rule that shows this button can
+        // win via plain cascade order instead of needing !important to
+        // beat this inline style (zombie-mermaid#1080).
         width: `${MOBILE_TOGGLE_SIZE}px`,
         height: `${MOBILE_TOGGLE_SIZE}px`,
         alignItems: 'center',
@@ -661,7 +650,13 @@ export function Nav({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: `${NAV_PAD_Y.desktop}px ${NAV_PAD_X.desktop}px`,
+    // padding lives in nav-css.ts's navCss() instead of here (not inline)
+    // so the breakpoint/wide-viewport overrides there can win via plain
+    // cascade order instead of needing !important to beat this inline
+    // style (zombie-mermaid#1080) — no caller passes its own `style.padding`
+    // to `<Nav>` today (see NavProps.style's own doc comment), so this
+    // doesn't lose the "a caller can override" contract that prop exists
+    // for; an inline `style.padding` would still win over the CSS rule.
     borderBottom: `1px solid ${colorVar('--border')}`,
     background: bgRgba(NAV_BG_ALPHA),
     position: sticky ? 'sticky' : 'relative',
@@ -685,9 +680,11 @@ export function Nav({
           className="nav-links"
           aria-label={label}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: `${NAV_LINK_GAP}px`,
+            // display/align-items/gap live in nav-css.ts's navCss()
+            // instead of here (not inline) so the tablet-and-below rule
+            // that hides the links can win via plain cascade order
+            // instead of needing !important to beat this inline style
+            // (zombie-mermaid#1080).
             // A page that overrides installSlot (any NavInstallSlotKind,
             // 'empty' included) leaves the trailing flex child with no
             // real content but the mobile-only MenuToggle, which is

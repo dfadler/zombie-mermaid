@@ -743,7 +743,11 @@ export function DiagramTypeApp({
           <h1
             className="page-h1"
             style={{
-              fontSize: `${FONT_SIZE.display}px`,
+              // font-size lives in diagram-page.tsx's pageCss() instead
+              // of here (not inline) so its mobile breakpoint override
+              // can win via plain cascade order instead of needing
+              // !important to beat this inline style
+              // (zombie-mermaid#1080).
               lineHeight: 1.08,
               letterSpacing: LETTER_SPACING.display,
               maxWidth: '820px',
@@ -807,7 +811,12 @@ export function DiagramTypeApp({
             <Card
               accent={accent}
               className="code-card"
-              style={{ flex: '1 1 0', minWidth: 0 }}
+              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // .output-card` rule instead of here (not inline) so the
+              // tablet breakpoint override can win via plain cascade
+              // order instead of needing !important to beat an inline
+              // style (zombie-mermaid#1080).
+              style={{ minWidth: 0 }}
             >
               <div
                 style={{
@@ -884,8 +893,12 @@ export function DiagramTypeApp({
               accent={accent}
               tone="glow"
               className="output-card"
+              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // .output-card` rule instead of here (not inline) so the
+              // tablet breakpoint override can win via plain cascade
+              // order instead of needing !important to beat an inline
+              // style (zombie-mermaid#1080).
               style={{
-                flex: '1 1 0',
                 minWidth: 0,
                 display: 'flex',
                 flexDirection: 'column',

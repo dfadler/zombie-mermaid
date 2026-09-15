@@ -111,7 +111,7 @@ const CANVAS_RESPONSIVE = {
   600: [
     '.section-px { padding-left: 20px !important; padding-right: 20px !important; }',
     '.footer-grid { grid-template-columns: 1fr !important; }',
-    '.footer-bottom-row { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }',
+    '.footer-bottom-row { flex-direction: column; align-items: flex-start; gap: 8px; }',
   ],
 }
 

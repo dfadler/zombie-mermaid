@@ -591,7 +591,11 @@ export function DiagramDetailApp({
           <h1
             className="page-h1"
             style={{
-              fontSize: `${FONT_SIZE.display}px`,
+              // font-size lives in diagram-page.tsx's pageCss() instead
+              // of here (not inline) so its mobile breakpoint override
+              // can win via plain cascade order instead of needing
+              // !important to beat this inline style
+              // (zombie-mermaid#1080).
               lineHeight: 1.08,
               letterSpacing: LETTER_SPACING.display,
               maxWidth: '820px',
@@ -668,7 +672,12 @@ export function DiagramDetailApp({
             <Card
               accent={accent}
               className="code-card"
-              style={{ flex: '1 1 0', minWidth: 0 }}
+              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // .output-card` rule instead of here (not inline) so the
+              // tablet breakpoint override can win via plain cascade
+              // order instead of needing !important to beat an inline
+              // style (zombie-mermaid#1080).
+              style={{ minWidth: 0 }}
             >
               <FileTab filename={sourceFilename} />
               <div
@@ -690,8 +699,19 @@ export function DiagramDetailApp({
               accent={accent}
               tone="glow"
               className="output-card"
+              // flex lives in diagram-page.tsx's pageCss() `.code-card,
+              // .output-card` rule instead of here (not inline) so the
+              // tablet breakpoint override can win via plain cascade
+              // order instead of needing !important to beat an inline
+              // style (zombie-mermaid#1080). The separate
+              // `.output-card:fullscreen` rule below that stays
+              // deliberately unaffected — its own `flex: none` remains
+              // `!important` rather than relying on that rule's already-
+              // higher specificity, since this element's `background`/
+              // `border-color` genuinely are still inline (Card's
+              // `tone="glow"`/`accent` props) and this pass doesn't
+              // re-verify that block beyond what it already documents.
               style={{
-                flex: '1 1 0',
                 minWidth: 0,
                 display: 'flex',
                 flexDirection: 'column',

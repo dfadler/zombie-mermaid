@@ -16,10 +16,11 @@
  *
  * The canvas authors this section as a `.section-px` wrapper with inline
  * padding, a `.footer-grid` of four columns, and a `.footer-bottom-row`, with
- * the responsive behaviour carried by three `!important` rules in the shared
- * `<helmet><style>` preamble. That split is reproduced exactly: layout that
- * never changes stays inline, and the three rules that must beat an inline
- * `grid-template-columns` / `flex-direction` live in {@link footerCss}.
+ * the responsive behaviour originally carried by three `!important` rules in
+ * the shared `<helmet><style>` preamble. That split is reproduced: layout
+ * that never changes stays inline, and the responsive overrides live in
+ * {@link footerCss} — see that function's own doc comment for which of them
+ * still need `!important` as of zombie-mermaid#1080 and why.
  *
  * Nothing on the site consumes this yet — wiring it into the pages is
  * #598-610's job. demo/components/site-chrome.tsx has its own, much smaller
@@ -166,10 +167,29 @@ const MARK_SIZE = 22
  * shared `<helmet><style>` preamble.
  *
  * Three rules, and only three — everything else about the footer is inline,
- * exactly as the canvas authors it. Each carries `!important` because it has
- * to beat the inline `grid-template-columns` / `flex-direction` on the
- * element it targets; that is the canvas's own reason for the flag, not a
- * specificity workaround added here.
+ * exactly as the canvas authors it. As of zombie-mermaid#1080, only two of
+ * the three still need `!important`:
+ *
+ * - `.section-px`'s padding-left/right: genuinely needs it. Every section
+ *   across every page sets its own inline `padding` shorthand (varying
+ *   per section, only the horizontal component — always
+ *   `LAYOUT.gutter.desktop` — is uniform), and a shorthand inline `padding`
+ *   outranks even a longhand `padding-left`/`padding-right` stylesheet rule
+ *   for those same two sides. Un-inlining this would mean touching every
+ *   `.section-px` call site across the whole site (dozens, in files well
+ *   outside this one) to split horizontal from vertical padding — out of
+ *   scope for this pass; left as a documented exception.
+ * - `.footer-grid`'s grid-template-columns: also genuinely needs it. The
+ *   inline value Footer (below) renders is *dynamic* — `2fr` plus one `1fr`
+ *   per `columns` entry, a count that varies per page (dashboard vs. the
+ *   default footer) — so there's no single static value this stylesheet,
+ *   generated independently of any particular page's `columns`, could
+ *   declare instead.
+ * - `.footer-bottom-row`: no longer needs it. `align-items` now has its
+ *   base (desktop) value declared here rather than as an inline style on
+ *   the element (see {@link Footer}), so its override below wins through
+ *   plain cascade order; `flex-direction`/`gap` never had an inline
+ *   value to fight in the first place.
  *
  * `.section-px` is the canvas's full-bleed gutter hook. It has no base rule
  * anywhere in the artboards — each section sets its own inline padding and
@@ -181,7 +201,11 @@ const MARK_SIZE = 22
  * Emit this once per page, after tokens.tsx's `designBaseCss()`.
  */
 export function footerCss(): string {
-  return `@media (max-width: ${BREAKPOINTS.tablet}px) {
+  return `.footer-bottom-row {
+  align-items: center;
+}
+
+@media (max-width: ${BREAKPOINTS.tablet}px) {
   .section-px {
     padding-left: ${LAYOUT.gutter.tablet}px !important;
     padding-right: ${LAYOUT.gutter.tablet}px !important;
@@ -203,9 +227,9 @@ export function footerCss(): string {
   }
 
   .footer-bottom-row {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: ${SPACE.xs}px !important;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: ${SPACE.xs}px;
   }
 }`
 }
@@ -447,7 +471,10 @@ export function Footer({
           borderTop: `1px solid ${colorVar('--border')}`,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          // align-items lives in footerCss() instead of here (not inline)
+          // so its mobile breakpoint override can win via plain cascade
+          // order instead of needing !important to beat this inline style
+          // (zombie-mermaid#1080).
         }}
       >
         <p style={BOTTOM_LINE_STYLE}>{copyright}</p>

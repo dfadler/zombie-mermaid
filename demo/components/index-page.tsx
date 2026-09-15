@@ -70,6 +70,7 @@ import {
   LETTER_SPACING,
   MEDIA,
   RADIUS,
+  SECTION_SPACE,
   SPACE,
   colorVar,
 } from './tokens.tsx'
@@ -891,10 +892,25 @@ ${MEDIA.reducedMotion} {
   .draw-line { animation: none; stroke-dashoffset: 0; }
   .relation-pulse { animation: none; }
   .bar-grow { animation: none; transform: scaleY(1); }
-  .theme-showcase-mesh, .theme-showcase-aurora, .theme-showcase-glow { animation: none !important; }
-  .theme-showcase-picker-panel { animation: none !important; }
-  .tsd-flow { animation: none !important; }
-  .theme-showcase-burst-ring.active { animation: none !important; opacity: 0 !important; }
+  /* .theme-showcase-mesh/.theme-showcase-aurora carry their animation
+   * directly on a bare single-class rule, so this equal-specificity,
+   * later-declared override already wins without !important.
+   * .theme-showcase-glow itself never sets animation at all -- only the
+   * more specific .theme-showcase-glow.g1-g4 variants do (each 2 classes,
+   * outranking a plain .theme-showcase-glow) -- so this lists all four
+   * explicitly to match that specificity instead of relying on
+   * !important (zombie-mermaid#1080). */
+  .theme-showcase-mesh, .theme-showcase-aurora,
+  .theme-showcase-glow.g1, .theme-showcase-glow.g2, .theme-showcase-glow.g3, .theme-showcase-glow.g4 { animation: none; }
+  /* .theme-showcase-picker-panel/.tsd-flow/.theme-showcase-burst-ring.active
+   * each carry their animation on that exact same selector already, so
+   * these equal-specificity, later-declared overrides win without
+   * !important too; .theme-showcase-burst-ring.active's opacity was
+   * already redundant with the unconditional opacity: 0 on the un-suffixed
+   * .theme-showcase-burst-ring base rule above. */
+  .theme-showcase-picker-panel { animation: none; }
+  .tsd-flow { animation: none; }
+  .theme-showcase-burst-ring.active { animation: none; opacity: 0; }
 }
 
 .output-segment {
@@ -911,52 +927,162 @@ ${MEDIA.reducedMotion} {
 .output-segment.active { background: ${colorVar('--panel-2')}; color: ${colorVar('--text')}; }
 .output-segment:focus-visible { outline: 2px solid ${colorVar('--cyan')}; outline-offset: -2px; }
 
+/*
+ * Base (desktop) values for the properties the breakpoint rules below
+ * override, declared here instead of as an inline style on the various
+ * home-page section components (index-app.tsx, why-fork-section.tsx,
+ * feature-pillars.tsx, diagram-gallery-teaser.tsx, proof-section.tsx,
+ * blog-teaser.tsx, and this file's own ThemeShowcase), so those rules can
+ * win through plain cascade order instead of needing !important to beat
+ * an inline style (zombie-mermaid#1080). Must be kept in sync with those
+ * components' own former inline literals: .hero-row used
+ * align-items: center, gap: ${SPACE['7xl']}px, and
+ * padding: ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px;
+ * .hero-copy/.hero-visual used flex: '0 1 500px'/'0 1 700px' and
+ * .hero-visual also align-items: flex-start; .hero-copy p used
+ * max-width: 480px; .hero-h1 used font-size: 56px;
+ * .why-fork-grid/.pillar-grid used repeat(3, minmax(0, 1fr));
+ * .gallery-grid used repeat(6, 1fr); .proof-grid used 1fr 1fr;
+ * .fixes-teaser-card/.blog-teaser-card/.blog-teaser-inner used
+ * align-items: center (.blog-teaser-inner also
+ * gap: ${SPACE['4xl']}px); .theme-showcase used
+ * padding: 100px 80px (top/bottom only -- left/right stay inline, see
+ * that element's own comment); .theme-showcase-grid used
+ * grid-template-columns: 1fr 1.05fr and gap: ${SPACE['8xl']}px; and
+ * .theme-showcase-grid h2 used margin-top: ${SPACE.xl}px.
+ */
+.hero-row {
+  align-items: center;
+  gap: ${SPACE['7xl']}px;
+  padding: ${SECTION_SPACE.loose}px ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.hero}px ${LAYOUT.gutter.desktop}px;
+}
+
+.hero-copy {
+  flex: 0 1 500px;
+}
+
+.hero-copy p {
+  max-width: 480px;
+}
+
+.hero-h1 {
+  font-size: 56px;
+}
+
+.hero-visual {
+  flex: 0 1 700px;
+  align-items: flex-start;
+}
+
+.why-fork-grid,
+.pillar-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gallery-grid {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.proof-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.fixes-teaser-card,
+.blog-teaser-card,
+.blog-teaser-inner {
+  align-items: center;
+}
+
+.blog-teaser-inner {
+  gap: ${SPACE['4xl']}px;
+}
+
+.theme-showcase {
+  padding-top: 100px;
+  padding-bottom: 100px;
+}
+
+.theme-showcase-grid {
+  grid-template-columns: 1fr 1.05fr;
+  gap: ${SPACE['8xl']}px;
+}
+
+.theme-showcase-grid h2 {
+  margin-top: ${SPACE.xl}px;
+}
+
 ${HERO_STACK_MEDIA} {
-  .hero-row { flex-direction: column !important; align-items: flex-start !important; padding-top: 64px !important; gap: 40px !important; }
-  .hero-copy { flex: 1 1 auto !important; max-width: 100% !important; }
-  .hero-copy p { max-width: 100% !important; }
-  .hero-visual { flex: 1 1 auto !important; width: 100% !important; max-width: 560px; }
+  /* .hero-row has no inline flex-direction to fight (see IndexHeroApp's
+   * markup) -- this never needed !important. */
+  .hero-row { flex-direction: column; align-items: flex-start; padding-top: 64px; gap: 40px; }
+  .hero-copy { flex: 1 1 auto; max-width: 100%; }
+  .hero-copy p { max-width: 100%; }
+  /* .hero-visual's width has no inline counterpart to fight (its
+   * horizontal size above this breakpoint comes from flex-basis, a
+   * main-axis property that only controls this item's height once
+   * .hero-row switches to a column) -- this never needed !important. */
+  .hero-visual { flex: 1 1 auto; width: 100%; max-width: 560px; }
 }
 
 ${MEDIA.tablet} {
-  .why-fork-grid { grid-template-columns: 1fr !important; }
-  .pillar-grid { grid-template-columns: 1fr !important; }
-  .cli-mcp-row { flex-direction: column !important; }
-  .gallery-grid { grid-template-columns: repeat(3, 1fr) !important; }
-  .proof-grid { grid-template-columns: 1fr !important; }
+  .why-fork-grid { grid-template-columns: 1fr; }
+  .pillar-grid { grid-template-columns: 1fr; }
+  /* .cli-mcp-row has no inline flex-direction to fight (see
+   * CliMcpSection's markup) -- this never needed !important. */
+  .cli-mcp-row { flex-direction: column; }
+  .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+  .proof-grid { grid-template-columns: 1fr; }
   /* Collapsing to one column stacks the diagram card below the copy, so
      the desktop-only spacing below (sized for a comfortable 2-column
      layout: 100px section padding, a 64px inter-column gap, the card's
      own margin-top on top of that gap, and an un-reset <h2> UA margin)
      turns into a long stretch of empty background before any interactive
      content -- tighten it here for the collapsed single-column flow. */
-  .theme-showcase { padding-top: ${SPACE['6xl']}px !important; padding-bottom: ${SPACE['6xl']}px !important; }
-  .theme-showcase-grid { grid-template-columns: 1fr !important; gap: ${SPACE['5xl']}px !important; }
-  .theme-showcase-grid h2 { margin: 0 !important; }
-  .theme-showcase-diagram-card { margin-top: 0 !important; }
-  .theme-showcase-footnote { margin-top: ${SPACE.lg}px !important; padding-top: ${SPACE.md}px !important; }
+  .theme-showcase { padding-top: ${SPACE['6xl']}px; padding-bottom: ${SPACE['6xl']}px; }
+  .theme-showcase-grid { grid-template-columns: 1fr; gap: ${SPACE['5xl']}px; }
+  .theme-showcase-grid h2 { margin: 0; }
+  /* .theme-showcase-diagram-card's inline style (diagramCardStyle) is
+   * only the --tsd-* custom properties the diagram itself reads -- no
+   * margin-top to fight, so this never needed !important. */
+  .theme-showcase-diagram-card { margin-top: 0; }
+  /* .theme-showcase-footnote's margin/padding-top are set by its own
+   * plain (non-inline) base rule above, so this equal-specificity,
+   * later-declared override already wins without !important. */
+  .theme-showcase-footnote { margin-top: ${SPACE.lg}px; padding-top: ${SPACE.md}px; }
 }
 
 ${MEDIA.mobile} {
-  .hero-row { padding: 48px 20px 56px 20px !important; }
-  .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px !important; }
+  .hero-row { padding: 48px 20px 56px 20px; }
+  .hero-h1 { font-size: ${FONT_SIZE.h1Mobile}px; }
   /* align-items: stretch (not the row layout's flex-start) so both panels
      fill the column's full width -- a "width: 100%" override here would
      double-count each panel's own padding/border on top of that 100%,
-     since this codebase has no global box-sizing: border-box reset. */
-  .hero-visual { flex-direction: column !important; align-items: stretch !important; }
+     since this codebase has no global box-sizing: border-box reset.
+     flex-direction has no inline counterpart to fight here (see the base
+     rule above) -- only align-items ever did. */
+  .hero-visual { flex-direction: column; align-items: stretch; }
   /* The install pill's full "npm install zombie-mermaid" text (plus the
      manager-switcher prefix and copy glyph) is wider than .hero-copy at
      this breakpoint even after hero-install.tsx's overflow-x: auto
      fallback kicks in -- shrinking the pill's own padding/type here closes
      most of that gap so the copy glyph stays on-screen without scrolling,
-     rather than leaving it reachable only via a tiny internal scrollbar. */
-  .hero-install-pill { padding: 8px 14px !important; font-size: 13px !important; }
-  .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .stat-row { flex-wrap: wrap !important; gap: 16px !important; }
-  .fixes-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
-  .blog-teaser-card { flex-direction: column !important; align-items: flex-start !important; }
-  .blog-teaser-inner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
+     rather than leaving it reachable only via a tiny internal scrollbar.
+     No !important needed: .hero-install-pill's padding/font-size come
+     from .pill's rule (primitives.module.css via primitivesCss()), never
+     an inline style, and shared-page-css.tsx always emits primitivesCss()
+     before this module's homePageCss() output -- so this
+     equal-specificity rule already wins through plain cascade order. */
+  .hero-install-pill { padding: 8px 14px; font-size: 13px; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+  /* .stat-row has no inline flex-wrap/gap to fight (see StatRow's markup
+   * in proof-section.tsx) -- this never needed !important. */
+  .stat-row { flex-wrap: wrap; gap: 16px; }
+  /* flex-direction has no inline counterpart to fight on any of these
+   * three (see proof-section.tsx/blog-teaser.tsx's markup) -- only
+   * align-items ever did (base rule above). */
+  .fixes-teaser-card { flex-direction: column; align-items: flex-start; }
+  .blog-teaser-card { flex-direction: column; align-items: flex-start; }
+  .blog-teaser-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
   /* .theme-showcase-mesh needs no override here any more -- its inset: 0
      base rule already fills .theme-showcase-bg exactly at every width
      (#1054). .theme-showcase-glow's fixed diameters do still need
@@ -969,15 +1095,18 @@ ${MEDIA.mobile} {
      to stay contained (worst case at 375px: g1 needs <=~367px, g2
      <=~375px, g3 <=~300px, g4 <=~330px, given each one's own
      top/left/right/bottom offset) -- not scaled to match desktop's visual
-     proportions, since this is an ambient decorative layer, not content. */
-  .theme-showcase-glow.g1 { width: 220px !important; height: 220px !important; }
-  .theme-showcase-glow.g2 { width: 200px !important; height: 200px !important; }
-  .theme-showcase-glow.g3 { width: 180px !important; height: 180px !important; }
-  .theme-showcase-glow.g4 { width: 190px !important; height: 190px !important; }
+     proportions, since this is an ambient decorative layer, not content.
+     No !important needed: each .theme-showcase-glow.gN selector below
+     matches its own base rule's specificity exactly (two classes each)
+     and is declared later, so plain cascade order already wins. */
+  .theme-showcase-glow.g1 { width: 220px; height: 220px; }
+  .theme-showcase-glow.g2 { width: 200px; height: 200px; }
+  .theme-showcase-glow.g3 { width: 180px; height: 180px; }
+  .theme-showcase-glow.g4 { width: 190px; height: 190px; }
   /* Narrower still than the tablet trim above -- one more pass at the
      same dead-scroll problem for the smallest viewports. */
-  .theme-showcase { padding-top: ${SPACE['3xl']}px !important; padding-bottom: ${SPACE['3xl']}px !important; }
-  .theme-showcase-grid { gap: ${SPACE.xl}px !important; }
+  .theme-showcase { padding-top: ${SPACE['3xl']}px; padding-bottom: ${SPACE['3xl']}px; }
+  .theme-showcase-grid { gap: ${SPACE.xl}px; }
 }`
 }
 
@@ -1091,7 +1220,13 @@ function ThemeShowcase() {
       className="section-px theme-showcase"
       style={{
         position: 'relative',
-        padding: '100px 80px',
+        // padding-top/bottom live in homePageCss() instead of here (not
+        // inline) so the breakpoint overrides can win via plain cascade
+        // order instead of needing !important to beat an inline style
+        // (zombie-mermaid#1080); left/right stay inline (`.section-px`'s
+        // own responsive narrowing, footerCss(), handles those instead).
+        paddingLeft: '80px',
+        paddingRight: '80px',
         borderTop: `1px solid ${colorVar('--border')}`,
         borderBottom: `1px solid ${colorVar('--border')}`,
       }}
@@ -1121,8 +1256,10 @@ function ThemeShowcase() {
           maxWidth: `${LAYOUT.maxWidth}px`,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: '1fr 1.05fr',
-          gap: `${SPACE['8xl']}px`,
+          // grid-template-columns/gap live in homePageCss() instead of
+          // here (not inline) so the breakpoint overrides can win via
+          // plain cascade order instead of needing !important to beat an
+          // inline style (zombie-mermaid#1080).
           alignItems: 'start',
         }}
       >
@@ -1148,7 +1285,11 @@ function ThemeShowcase() {
               style={{
                 fontSize: '38px',
                 letterSpacing: LETTER_SPACING.heading,
-                marginTop: SPACE.xl,
+                // margin-top lives in homePageCss()'s `.theme-showcase-grid
+                // h2` rule instead of here (not inline) so its tablet
+                // breakpoint override can win via plain cascade order
+                // instead of needing !important to beat this inline style
+                // (zombie-mermaid#1080).
               }}
             >
               Pick a theme. Watch it flow.
