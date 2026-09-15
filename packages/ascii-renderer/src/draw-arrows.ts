@@ -385,8 +385,18 @@ function drawArrowHead(
   const canvas = copyCanvas(graph.canvas)
   if (lastLine.length === 0) return canvas
 
-  const from = lastLine[0]!
+  // Direction is derived from the *final step* into `lastPos` (its
+  // immediate predecessor in `lastLine`), not from `lastLine`'s first
+  // point. Those coincide for an ordinary straight segment, but
+  // `determinePath`'s Case-4 diagonal fallback (edge-routing.ts) can hand
+  // drawLine a single non-axis-aligned pair, which it then draws as an L
+  // (horizontal run, then vertical run — see draw-lines.ts) folded into
+  // one `lastLine` array. Using the first point there would span both
+  // legs and read as diagonal even when the actual approach into the
+  // arrowhead is a plain orthogonal step. See issue #1083.
   const lastPos = lastLine[lastLine.length - 1]!
+  const from =
+    lastLine.length >= 2 ? lastLine[lastLine.length - 2]! : lastLine[0]!
   let dir = determineDirection(from, lastPos)
   if (lastLine.length === 1 || dirEquals(dir, Middle)) dir = fallbackDir
 
