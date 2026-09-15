@@ -48,7 +48,9 @@ export function parseXYChart(lines: Statement[]): XYChart {
     const xCatMatch = line.match(/^x-axis\s+(?:"([^"]*)"\s*)?\[([^\]]+)\]/)
     if (xCatMatch) {
       if (xCatMatch[1]) xAxis.title = xCatMatch[1]
-      xAxis.categories = xCatMatch[2]!.split(',').map((s) => s.trim())
+      xAxis.categories = splitCategoryList(xCatMatch[2]!).map((s) =>
+        unquote(s.trim()),
+      )
       continue
     }
 
@@ -146,6 +148,47 @@ export function parseXYChart(lines: Statement[]): XYChart {
   }
 
   return { title, horizontal, xAxis, yAxis, series }
+}
+
+/**
+ * Split a categorical x-axis bracket's comma-separated contents into raw
+ * item strings, treating a comma *inside* a double-quoted item as literal
+ * text rather than a delimiter. A naive `.split(',')` would break
+ * `["Jan, Feb", "Mar"]` into three pieces instead of two — quoting a value
+ * that itself contains a comma is exactly the case quoting exists for. Each
+ * returned raw item is still trimmed and unquoted by the caller.
+ */
+function splitCategoryList(str: string): string[] {
+  const items: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (const char of str) {
+    if (char === '"') {
+      inQuotes = !inQuotes
+      current += char
+    } else if (char === ',' && !inQuotes) {
+      items.push(current)
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  items.push(current)
+  return items
+}
+
+/**
+ * Strip one matching pair of leading/trailing double quotes from a category
+ * item, if present — mirroring how an axis *title* capture group already
+ * unquotes via its regex. `x-axis [A, B, C]` items are only split and
+ * trimmed, so a quoted item like `"CLI output / logs"` previously kept its
+ * literal quote characters in the rendered label. See issue #1087.
+ */
+function unquote(value: string): string {
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1)
+  }
+  return value
 }
 
 /**
