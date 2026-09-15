@@ -23,10 +23,7 @@ describe('parseXYChart – categorical x-axis quoting', () => {
       'x-axis ["Total used", "CLI output / logs"]',
       'bar [86, 18]',
     ])
-    expect(chart.xAxis.categories).toEqual([
-      'Total used',
-      'CLI output / logs',
-    ])
+    expect(chart.xAxis.categories).toEqual(['Total used', 'CLI output / logs'])
   })
 
   it('handles a mix of quoted and unquoted category items', () => {
