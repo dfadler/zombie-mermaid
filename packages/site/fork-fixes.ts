@@ -4,9 +4,12 @@
  * Usage: tsx fork-fixes.ts
  *
  * Every "before" is rendered by the project's *actual* renderer as it existed
- * immediately before the fix landed: the tree at `<fixCommit>^` is extracted
- * to a cache directory and imported. Nothing is hand-drawn or described from
- * memory.
+ * immediately before the fix landed: the tree at `<fixCommit>^` (`src/`, plus
+ * `packages/` and `tsconfig.json` when the commit postdates the monorepo
+ * split, #620) is extracted to a cache directory and rendered — in a
+ * separate `tsx` subprocess pinned to that tree's own tsconfig, not an
+ * in-process `import()` (see `renderBefore()`'s doc comment for why).
+ * Nothing is hand-drawn or described from memory.
  *
  * The generator FAILS if any pair renders identically. A before/after where
  * both halves look the same is worse than no showcase at all — it silently
@@ -78,26 +81,51 @@ interface RendererModule {
 }
 
 /**
- * Extract the source tree at `commit^` and return its renderer module.
+ * Extract the source tree at `commit^` into a cache directory and return
+ * that directory (not an imported module — see `renderBefore()` below for
+ * why this can no longer just `import()` it in-process).
  *
- * Export names have changed over the fork's life (`renderMermaidSync` predates
- * `renderMermaidSVG`), so the caller picks whichever the commit provides
- * rather than assuming today's names existed then.
+ * Also extracts `packages/` and `tsconfig.json` at the same revision when
+ * the commit postdates the monorepo split (#620) — a fix living inside one
+ * of the `@zombie-mermaid/*` workspace packages needs its own archived tree
+ * to render correctly, not just the umbrella's `src/`. A pre-split commit
+ * has no `packages/` at all, and `src` alone (its whole tree back then) is
+ * unaffected by the workspace-package problem this solves, since it has no
+ * `@zombie-mermaid/*` bare-specifier imports to get wrong.
  */
-async function loadRendererBefore(commit: string): Promise<RendererModule> {
+async function archiveCommitBefore(commit: string): Promise<string> {
   const dir = `${CACHE_DIR}${commit}`
-  if (!existsSync(dir)) {
-    await requireCommit(commit)
-    await mkdir(dir, { recursive: true })
-    // `git archive` writes a clean tree with no working-copy interference.
-    const { stdout } = await exec(
+  if (existsSync(dir)) return dir
+
+  await requireCommit(commit)
+  await mkdir(dir, { recursive: true })
+  // `git archive` writes a clean tree with no working-copy interference.
+  const { stdout } = await exec(
+    'sh',
+    ['-c', `git archive ${commit}^ src | tar -x -C ${JSON.stringify(dir)}`],
+    { maxBuffer: 64 * 1024 * 1024 },
+  )
+  if (stdout.trim()) console.log(stdout.trim())
+
+  const hasPackages = await exec('git', [
+    'cat-file',
+    '-e',
+    `${commit}^:packages`,
+  ])
+    .then(() => true)
+    .catch(() => false)
+  if (hasPackages) {
+    await exec(
       'sh',
-      ['-c', `git archive ${commit}^ src | tar -x -C ${JSON.stringify(dir)}`],
+      [
+        '-c',
+        `git archive ${commit}^ packages tsconfig.json | tar -x -C ${JSON.stringify(dir)}`,
+      ],
       { maxBuffer: 64 * 1024 * 1024 },
     )
-    if (stdout.trim()) console.log(stdout.trim())
   }
-  return (await import(`${dir}/src/index.ts`)) as RendererModule
+
+  return dir
 }
 
 /**
@@ -138,14 +166,17 @@ async function requireCommit(commit: string): Promise<void> {
 /**
  * Render `source` with whichever export the module provides for `mode`.
  *
+ * Used only for the "after" (current, in-process) render — the "before"
+ * render needs its own copy of this same logic inside
+ * `fork-fixes-render-before.ts`'s subprocess (see `renderBefore()`'s doc
+ * comment for why the two can't share a process, and its own header for
+ * why they can't easily share this function either).
+ *
  * The 'svg' branch's `{ bg: '#ffffff', fg: '#1a1a1a' }` is fixed, not
  * driven by the global theme picker `demo/components/theme-picker-
  * section.tsx` adds to this page (#687) — a deliberate #689 exception,
- * not an oversight: `mod` here can be the renderer as it existed at an
- * arbitrary historical commit (see `loadRendererBefore()` above), which
- * isn't guaranteed to support the same CSS custom-property contract
- * `themeCssVariables()` defines today, and this page's whole purpose is a
- * precise, stable before/after comparison, not a live showcase. See
+ * not an oversight: this page's whole purpose is a precise, stable
+ * before/after comparison, not a live showcase. See
  * `docs/decisions/theme-selector-shared-state.md`'s "#689" amendment.
  */
 function renderWith(
@@ -163,18 +194,65 @@ function renderWith(
   return fn(source, { colorMode: 'none' })
 }
 
+/** Absolute path to the sibling script `renderBefore()` runs as a subprocess. */
+const RENDER_BEFORE_SCRIPT = new URL(
+  './fork-fixes-render-before.ts',
+  import.meta.url,
+).pathname
+
+/** Local tsx binary, so this doesn't depend on `npx` resolving/downloading anything. */
+const TSX_BIN = new URL('../../node_modules/.bin/tsx', import.meta.url)
+  .pathname
+
+/**
+ * Render `source` against the archived pre-fix tree at `dir`, in a fresh
+ * `tsx` process pinned to that tree's own `tsconfig.json`.
+ *
+ * This has to be a subprocess, not an in-process `import(dir + '/src/
+ * index.ts')`: tsx resolves every `@zombie-mermaid/*` bare specifier
+ * through the nearest tsconfig.json's `compilerOptions.paths` (see that
+ * file's "Live-source overrides" comment) *before* consulting a package's
+ * own package.json or node_modules — and which tsconfig.json is "nearest"
+ * is fixed for tsx's whole process lifetime, set by whichever file tsx
+ * loaded first. Since `fork-fixes.ts` itself already locked onto the repo
+ * root's tsconfig.json (whose paths point at the live `packages/<name>/src`),
+ * no in-process import of the archived tree can ever resolve those bare
+ * specifiers to the archived packages — confirmed empirically while fixing
+ * issue #1087's false "renders identically" failure (see
+ * `archiveCommitBefore()` above): every in-process attempt rendered the
+ * *current* package regardless of what was actually archived on disk. A
+ * separate `tsx --tsconfig <dir>/tsconfig.json` process locks onto *that*
+ * tsconfig instead, whose paths (archived unchanged from the historical
+ * commit) point at `./packages/<name>/src/index.ts` relative to itself —
+ * i.e. the archived, pre-fix package.
+ */
+async function renderBefore(
+  dir: string,
+  source: string,
+  mode: 'svg' | 'ascii',
+): Promise<{ output: string } | { error: string }> {
+  const args = existsSync(`${dir}/tsconfig.json`)
+    ? ['--tsconfig', `${dir}/tsconfig.json`, RENDER_BEFORE_SCRIPT]
+    : [RENDER_BEFORE_SCRIPT]
+  const { stdout } = await exec(TSX_BIN, [...args, dir, source, mode], {
+    maxBuffer: 64 * 1024 * 1024,
+  })
+  return JSON.parse(stdout) as { output: string } | { error: string }
+}
+
 /** Render one fix both ways, capturing a throw as the result rather than failing. */
 async function renderFix(fix: ForkFix): Promise<RenderPair> {
   const current = (await import('../../src/index.ts')) as RendererModule
-  const previous = await loadRendererBefore(fix.fixCommit)
+  const dir = await archiveCommitBefore(fix.fixCommit)
 
   const pair: RenderPair = { fix, before: '', after: '' }
 
-  try {
-    pair.before = renderWith(previous, fix.source, fix.render)
-  } catch (err) {
+  const before = await renderBefore(dir, fix.source, fix.render)
+  if ('error' in before) {
     // A crash IS the before state for the crash fixes in this list.
-    pair.beforeError = err instanceof Error ? err.message : String(err)
+    pair.beforeError = before.error
+  } else {
+    pair.before = before.output
   }
 
   try {
