@@ -71,11 +71,14 @@ async function listSourceFiles(dir: string): Promise<string[]> {
  * substring that happens to contain the token (e.g. `gallery-card` for
  * `card`), and not an interpolated reference sitting next to a real literal
  * token (`` className={`${PRIMITIVES_CLASSES.card} gallery-card`} ``, where
- * neither whitespace-separated piece is the bare token `card`).
+ * neither whitespace-separated piece is the bare token `card`). Whitespace
+ * around the `=` (valid, if unusual, JSX — `className = "card"`) is
+ * tolerated rather than required to be absent, so reformatted-but-still-
+ * literal code doesn't silently escape the check.
  */
 function hasLiteralClassToken(content: string, token: string): boolean {
   const attrRe =
-    /className=(?:(["'])((?:(?!\1).)*)\1|\{\s*(["'`])((?:(?!\3).)*)\3\s*\})/g
+    /className\s*=\s*(?:(["'])((?:(?!\1).)*)\1|\{\s*(["'`])((?:(?!\3).)*)\3\s*\})/g
   for (const match of content.matchAll(attrRe)) {
     const value = match[2] ?? match[4]
     if (value !== undefined && value.split(/\s+/).includes(token)) return true
