@@ -60,17 +60,25 @@ async function listSourceFiles(dir: string): Promise<string[]> {
 }
 
 /**
- * True if `content` has a plain, quoted JSX `className="…"`/`className='…'`
- * attribute whose whitespace-separated tokens include `token` exactly.
- * Deliberately narrow: a migrated consumer's className is a JS expression
- * (`className={...}`), which this pattern never matches, so it flags only
- * the literal-string shape #969 set out to eliminate — not every substring
- * that happens to contain the token (e.g. `gallery-card` for `card`).
+ * True if `content` has a static JSX `className` value — a plain quoted
+ * attribute (`className="…"`/`className='…'`) or a string/no-substitution
+ * template literal in an expression container (`className={'…'}`/
+ * `className={`…`}`) — whose whitespace-separated tokens include `token`
+ * exactly. Deliberately narrow: a migrated consumer's className is a
+ * dynamic expression (`className={PRIMITIVES_CLASSES.card}`, or a template
+ * literal that interpolates one), which this pattern never matches, so it
+ * flags only the literal-string shape #969 set out to eliminate — not every
+ * substring that happens to contain the token (e.g. `gallery-card` for
+ * `card`), and not an interpolated reference sitting next to a real literal
+ * token (`` className={`${PRIMITIVES_CLASSES.card} gallery-card`} ``, where
+ * neither whitespace-separated piece is the bare token `card`).
  */
 function hasLiteralClassToken(content: string, token: string): boolean {
-  const attrRe = /className=(["'])((?:(?!\1).)*)\1/g
+  const attrRe =
+    /className=(?:(["'])((?:(?!\1).)*)\1|\{\s*(["'`])((?:(?!\3).)*)\3\s*\})/g
   for (const match of content.matchAll(attrRe)) {
-    if (match[2].split(/\s+/).includes(token)) return true
+    const value = match[2] ?? match[4]
+    if (value !== undefined && value.split(/\s+/).includes(token)) return true
   }
   return false
 }

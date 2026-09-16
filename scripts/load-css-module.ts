@@ -69,7 +69,7 @@
  */
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { basename, resolve as resolvePath } from 'node:path'
+import { basename, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build as viteBuild, type Plugin } from 'vite'
 
@@ -79,7 +79,7 @@ import { build as viteBuild, type Plugin } from 'vite'
  * a different virtual-entry shape) — folded into the cache key so a stale
  * cache from before the change is never reused.
  */
-const CACHE_VERSION = 2
+const CACHE_VERSION = 3
 
 /**
  * `.module.css` files (by basename) that have finished migrating every
@@ -92,6 +92,25 @@ const CACHE_VERSION = 2
 const HASHED_MODULE_CSS_BASENAMES = new Set(['primitives.module.css'])
 
 /**
+ * Vite passes `generateScopedName` the CSS file's absolute filesystem
+ * path — stable within one machine/checkout, but not across them (a CI
+ * runner's checkout root, a different contributor's clone, or even a
+ * sibling git worktree of this same repo all resolve to a different
+ * absolute path). Hashing that path directly made the hash itself
+ * non-reproducible: the committed `primitives-classes.ts` (generated on
+ * one machine) silently stopped matching a fresh `loadCssModule()` call
+ * computed on another — caught in review on #1095 by CI actually failing
+ * this way. Hashing the path relative to the repo root instead is stable
+ * everywhere this runs, since it depends only on the file's position in
+ * the repo, not where the repo itself happens to live on disk. `sep`
+ * normalizes to forward slashes so the hash doesn't also vary between a
+ * Windows contributor and everyone else.
+ */
+function repoRelativePosixPath(absolutePath: string): string {
+  return relative(REPO_ROOT, absolutePath).split(sep).join('/')
+}
+
+/**
  * A real content hash, not one of Vite's `[hash]`-token string patterns:
  * this function's output has to be reproducible outside a Vite build too
  * (see `scripts/generate-primitives-classes.ts`, which writes the
@@ -99,13 +118,13 @@ const HASHED_MODULE_CSS_BASENAMES = new Set(['primitives.module.css'])
  * Vite), and Vite's own token substitution is an internal implementation
  * detail of whichever CSS backend (PostCSS vs. `lightningcss`) is active,
  * not a documented, stable format to depend on. Six hex characters of a
- * sha256 of the file path, its source, and the class name is short enough
- * to stay readable in a `className` attribute while changing whenever any
- * of those three inputs does.
+ * sha256 of the file's repo-relative path, its source, and the class name
+ * is short enough to stay readable in a `className` attribute while
+ * changing whenever any of those three inputs does.
  */
 function hashedScopedName(name: string, filename: string, css: string): string {
   const hash = createHash('sha256')
-    .update(filename)
+    .update(repoRelativePosixPath(filename))
     .update('\0')
     .update(css)
     .update('\0')
@@ -152,6 +171,7 @@ function toFilePath(url: URL): string {
 }
 
 const CACHE_DIR = toFilePath(new URL('../.css-modules-cache/', import.meta.url))
+const REPO_ROOT = toFilePath(new URL('../', import.meta.url))
 
 export interface CssModuleResult<
   Classes extends Record<string, string> = Record<string, string>,
