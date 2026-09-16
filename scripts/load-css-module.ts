@@ -79,7 +79,7 @@ import { build as viteBuild, type Plugin } from 'vite'
  * a different virtual-entry shape) — folded into the cache key so a stale
  * cache from before the change is never reused.
  */
-const CACHE_VERSION = 3
+const CACHE_VERSION = 4
 
 /**
  * `.module.css` files (by basename) that have finished migrating every
@@ -96,49 +96,58 @@ const HASHED_MODULE_CSS_BASENAMES = new Set(['primitives.module.css'])
  * path — stable within one machine/checkout, but not across them (a CI
  * runner's checkout root, a different contributor's clone, or even a
  * sibling git worktree of this same repo all resolve to a different
- * absolute path). Hashing that path directly made the hash itself
- * non-reproducible: the committed `primitives-classes.ts` (generated on
- * one machine) silently stopped matching a fresh `loadCssModule()` call
- * computed on another — caught in review on #1095 by CI actually failing
- * this way. Hashing the path relative to the repo root instead is stable
- * everywhere this runs, since it depends only on the file's position in
- * the repo, not where the repo itself happens to live on disk. `sep`
- * normalizes to forward slashes so the hash doesn't also vary between a
- * Windows contributor and everyone else.
+ * absolute path). Hashing the path relative to the repo root instead is
+ * stable everywhere this runs, since it depends only on the file's
+ * position in the repo, not where the repo itself happens to live on
+ * disk. `sep` normalizes to forward slashes so the hash doesn't also vary
+ * between a Windows contributor and everyone else.
  */
 function repoRelativePosixPath(absolutePath: string): string {
   return relative(REPO_ROOT, absolutePath).split(sep).join('/')
 }
 
 /**
- * A real content hash, not one of Vite's `[hash]`-token string patterns:
- * this function's output has to be reproducible outside a Vite build too
- * (see `scripts/generate-primitives-classes.ts`, which writes the
- * committed classes map `primitives.tsx` imports without ever invoking
- * Vite), and Vite's own token substitution is an internal implementation
- * detail of whichever CSS backend (PostCSS vs. `lightningcss`) is active,
- * not a documented, stable format to depend on. Six hex characters of a
- * sha256 of the file's repo-relative path, its source, and the class name
- * is short enough to stay readable in a `className` attribute while
- * changing whenever any of those three inputs does.
+ * Builds the `generateScopedName` function Vite calls per class name,
+ * closing over `relativePath` and `rawSource` rather than trusting the
+ * `filename`/`css` arguments Vite's own callback provides.
+ *
+ * The callback's `css` argument is Vite's own *transformed* intermediate
+ * representation — an internal implementation detail of whichever CSS
+ * backend (PostCSS vs. `lightningcss`) is active, not the literal file
+ * bytes on disk. First fixing only the absolute-path input (see
+ * `repoRelativePosixPath`'s doc comment; caught in review on #1095 by CI
+ * failing) wasn't enough: CI kept computing a different hash than every
+ * local run, on a repo-relative path both agreed on — meaning `css`
+ * itself differs by platform/toolchain, not just `filename`. Hashing
+ * `rawSource` (the file's bytes, read directly via `readFile` before Vite
+ * ever touches them — see `loadCssModule` below) instead of Vite's `css`
+ * argument removes that entire axis of platform variance: the hash now
+ * depends only on inputs this module reads itself, byte-for-byte
+ * identical wherever the same git commit is checked out.
  */
-function hashedScopedName(name: string, filename: string, css: string): string {
-  const hash = createHash('sha256')
-    .update(repoRelativePosixPath(filename))
-    .update('\0')
-    .update(css)
-    .update('\0')
-    .update(name)
-    .digest('hex')
-    .slice(0, 6)
-  return `${name}_${hash}`
+function hashedScopedName(
+  relativePath: string,
+  rawSource: string,
+): (name: string) => string {
+  return (name: string): string => {
+    const hash = createHash('sha256')
+      .update(relativePath)
+      .update('\0')
+      .update(rawSource)
+      .update('\0')
+      .update(name)
+      .digest('hex')
+      .slice(0, 6)
+    return `${name}_${hash}`
+  }
 }
 
 function generateScopedNameFor(
   cssFilePath: string,
-): string | ((name: string, filename: string, css: string) => string) {
+  source: string,
+): string | ((name: string) => string) {
   return HASHED_MODULE_CSS_BASENAMES.has(basename(cssFilePath))
-    ? hashedScopedName
+    ? hashedScopedName(repoRelativePosixPath(cssFilePath), source)
     : '[local]'
 }
 
@@ -245,7 +254,7 @@ export async function loadCssModule<
       modules: {
         // See this file's header comment: hashing turns on per file, once
         // every consumer of that file's classes has migrated.
-        generateScopedName: generateScopedNameFor(cssFilePath),
+        generateScopedName: generateScopedNameFor(cssFilePath, source),
       },
     },
     build: {
