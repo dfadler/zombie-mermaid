@@ -3,11 +3,19 @@ import {
   createEdgeCellStyles,
   findStyleConflict,
   claimPathCells,
+  createEdgeCellOwners,
+  findUnrelatedOverlap,
+  claimPathOwners,
 } from '../../packages/ascii-renderer/src/edge-cell-styles.ts'
 import {
   createGrid,
   placeBlock,
 } from '../../packages/ascii-renderer/src/grid-occupancy.ts'
+import type {
+  AsciiEdge,
+  AsciiNode,
+} from '../../packages/ascii-renderer/src/types.ts'
+import { Down } from '../../packages/ascii-renderer/src/types.ts'
 
 describe('edge-cell-styles', () => {
   it('reports no conflict against an empty map', () => {
@@ -176,5 +184,101 @@ describe('edge-cell-styles', () => {
       'dotted',
     )
     expect(conflict).toEqual({ x: 5, y: 5 })
+  })
+})
+
+function makeNode(name: string): AsciiNode {
+  return {
+    name,
+    displayLabel: name,
+    shape: 'rectangle',
+    index: 0,
+    gridCoord: null,
+    drawingCoord: null,
+    drawing: null,
+    drawn: false,
+    styleClassName: '',
+    styleClass: { name: '', styles: {} },
+  }
+}
+
+function makeEdge(from: AsciiNode, to: AsciiNode): AsciiEdge {
+  return {
+    from,
+    to,
+    text: '',
+    path: [],
+    labelLine: [],
+    startDir: Down,
+    endDir: Down,
+    style: 'solid',
+    hasArrowStart: false,
+    hasArrowEnd: true,
+  }
+}
+
+describe('edge-cell-styles — chain overlap (multi-owner cells)', () => {
+  /**
+   * Regression for a CodeRabbit finding on PR #1093 (the #1067 fix):
+   * `claimPathOwners` originally stored only the *first* edge to claim a
+   * cell (`if (!owners.has(key)) owners.set(key, edge)`). When an edge
+   * unrelated to any chain claims a shared cell before the real chain
+   * partner does (an ordering `graph.edges` doesn't control), the chain
+   * partner's own claim was silently dropped — so `findUnrelatedOverlap`
+   * only ever saw the unrelated edge's claim, never found a chain pair, and
+   * missed the real overlap entirely. Cells must track every edge that
+   * claims them, not just the first.
+   */
+  it('detects a chain-pair overlap even when an unrelated edge claimed the corridor first', () => {
+    const grid = createGrid()
+    const owners = createEdgeCellOwners()
+
+    const a = makeNode('A')
+    const b = makeNode('B')
+    const c = makeNode('C')
+    const x = makeNode('X')
+    const y = makeNode('Y')
+
+    const edgeAB = makeEdge(a, b)
+    const edgeBC = makeEdge(b, c)
+    const edgeXY = makeEdge(x, y) // unrelated to the A->B->C chain
+
+    const corridor = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+    ]
+
+    // The unrelated edge claims the corridor first.
+    claimPathOwners(grid, owners, corridor, edgeXY)
+    // The true chain partner (A->B) also routes through it.
+    claimPathOwners(grid, owners, corridor, edgeAB)
+
+    // B->C, checked against the same corridor, must still find its A->B
+    // chain partner's overlap — not be hidden behind X->Y's earlier claim.
+    const conflict = findUnrelatedOverlap(grid, owners, corridor, edgeBC)
+    expect(conflict).toEqual({ x: 0, y: 0 })
+  })
+
+  it('still finds nothing when only an unrelated edge claimed the corridor', () => {
+    const grid = createGrid()
+    const owners = createEdgeCellOwners()
+
+    const b = makeNode('B')
+    const c = makeNode('C')
+    const x = makeNode('X')
+    const y = makeNode('Y')
+
+    const edgeBC = makeEdge(b, c)
+    const edgeXY = makeEdge(x, y)
+
+    const corridor = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+    ]
+
+    claimPathOwners(grid, owners, corridor, edgeXY)
+
+    expect(findUnrelatedOverlap(grid, owners, corridor, edgeBC)).toBeNull()
   })
 })

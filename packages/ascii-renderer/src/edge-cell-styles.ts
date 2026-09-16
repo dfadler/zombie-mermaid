@@ -30,7 +30,7 @@
 // just finds the identical cell again on every retry.
 // ============================================================================
 
-import type { AsciiEdgeStyle, GridCoord } from './types.ts'
+import type { AsciiEdge, AsciiEdgeStyle, GridCoord } from './types.ts'
 import { gridKey } from './types.ts'
 import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
 
@@ -77,5 +77,133 @@ export function claimPathCells(
     if (isOccupied(grid, cell)) continue
     const key = gridKey(cell)
     if (!cellStyles.has(key)) cellStyles.set(key, style)
+  }
+}
+
+// ============================================================================
+// Chain-edge overlap detection (independent of style)
+// ============================================================================
+//
+// The cross-*style* conflict above only fires when two overlapping edges
+// draw different characters — a same-style overlap silently draws the same
+// glyph twice, which this module's own doc calls harmless, and it usually
+// is: `analyzeEdgeBundles`'s own fan-in/fan-out trunk sharing is same-style
+// by construction, and a "complete bipartite" crossing like `A & B --> C &
+// D` (see ascii.test.ts's `ampersand_lhs_and_rhs` golden file) *deliberately*
+// routes two edges that share neither endpoint (`A --> D` and `B --> C`)
+// through the same shared crossbar — that is the intended, faithful
+// rendering of that shape, not a defect.
+//
+// It stops being harmless in one specific shape a plain "shares an
+// endpoint" check can't distinguish from that crossing pattern: a *chain*
+// through a shared intermediate node, `A --> B` then `B --> C`, each routed
+// independently. When their corners happen to coincide, `A`'s incoming leg
+// and `C`'s outgoing leg trace the exact same column/row beyond the shared,
+// node-owned port cell and read as one continuous `A --> C` connector
+// (#1067, "System Architecture": `Mobile App --> API Gateway` and
+// `API Gateway --> User Service` sharing one on-screen row with no visual
+// break, even though there is no `Mobile App --> User Service` edge in the
+// source). Unlike the crossing pattern above, a chain's two edges have no
+// reason to share open-space cells at all beyond that one port — so this
+// check is scoped *only* to chain pairs (`isChainPair` below), not to every
+// pair of edges that merely shares neither endpoint; widening it to that
+// general case is exactly what broke the ampersand golden file during this
+// fix's own development.
+
+/** Cells already claimed by drawn edges, keyed by "x,y", storing every edge
+ * (by reference) that drew there — independent of `EdgeCellStyles` above,
+ * which tracks *style* rather than edge identity.
+ *
+ * Stores a `Set`, not a single edge: `graph.edges` order means an edge
+ * unrelated to any chain can claim a cell before a real chain pair's own
+ * edges do, and a single-owner map would let that unrelated edge's claim
+ * hide the chain pair's overlap from `findUnrelatedOverlap` entirely. See
+ * that function's own doc.
+ */
+export type EdgeCellOwners = Map<string, Set<AsciiEdge>>
+
+export function createEdgeCellOwners(): EdgeCellOwners {
+  return new Map()
+}
+
+/**
+ * Whether `a` and `b` form a chain through a shared intermediate node: one
+ * edge's target is the other's source. Deliberately narrower than "shares
+ * any endpoint" — a fan-in/fan-out pair (shared `from` or shared `to`) is
+ * excluded on purpose, since that is exactly the shape a legitimate shared
+ * trunk (bundled or not — see module doc) already routes through common
+ * cells for.
+ */
+function isChainPair(a: AsciiEdge, b: AsciiEdge): boolean {
+  return a.to === b.from || b.to === a.from
+}
+
+/**
+ * Minimum number of open, non-node cells a chain pair must share before it
+ * counts as a real conflict. A single shared cell is an ordinary crossing
+ * (two independent lines passing through the same point, which still reads
+ * as two lines) — it takes a *run* of shared cells, long enough to read as
+ * one continuous connector, to actually mislead a reader. Chosen to be the
+ * smallest value that catches a shared corner-to-corner leg (at least 2
+ * collinear cells) while still letting a lone crossing through.
+ */
+const MIN_CHAIN_OVERLAP = 2
+
+/**
+ * The first open (non-node-occupied) cell in `path` already claimed by a
+ * different edge that forms a chain with `edge` (`isChainPair`) — but only
+ * once *that specific chain partner's* total overlap with `edge` reaches
+ * `MIN_CHAIN_OVERLAP` cells (see that constant's doc). Each distinct owner
+ * of a cell is checked and counted independently — a cell can hold several
+ * edges' claims (see `EdgeCellOwners`'s own doc), and an unrelated same-style
+ * edge sharing a cell must not hide a real chain partner's overlap that also
+ * claimed it. Returns `null` when no chain partner's overlap reaches the
+ * threshold.
+ */
+export function findUnrelatedOverlap(
+  grid: Grid,
+  owners: EdgeCellOwners,
+  path: readonly GridCoord[],
+  edge: AsciiEdge,
+): GridCoord | null {
+  const overlapCounts = new Map<AsciiEdge, number>()
+  const firstConflicts = new Map<AsciiEdge, GridCoord>()
+  for (const cell of pathCells(path)) {
+    if (isOccupied(grid, cell)) continue
+    const cellOwners = owners.get(gridKey(cell))
+    if (cellOwners === undefined) continue
+    for (const owner of cellOwners) {
+      if (owner === edge) continue
+      if (!isChainPair(owner, edge)) continue
+      overlapCounts.set(owner, (overlapCounts.get(owner) ?? 0) + 1)
+      if (!firstConflicts.has(owner)) firstConflicts.set(owner, cell)
+    }
+  }
+  for (const [owner, count] of overlapCounts) {
+    if (count >= MIN_CHAIN_OVERLAP) return firstConflicts.get(owner)!
+  }
+  return null
+}
+
+/**
+ * Record every open (non-node-occupied) cell in `path` as claimed by
+ * `edge`, alongside any edge(s) that already claimed it — see
+ * `EdgeCellOwners`'s own doc for why a cell can have more than one owner.
+ */
+export function claimPathOwners(
+  grid: Grid,
+  owners: EdgeCellOwners,
+  path: readonly GridCoord[],
+  edge: AsciiEdge,
+): void {
+  for (const cell of pathCells(path)) {
+    if (isOccupied(grid, cell)) continue
+    const key = gridKey(cell)
+    let cellOwners = owners.get(key)
+    if (cellOwners === undefined) {
+      cellOwners = new Set()
+      owners.set(key, cellOwners)
+    }
+    cellOwners.add(edge)
   }
 }
