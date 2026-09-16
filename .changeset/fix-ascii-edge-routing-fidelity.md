@@ -20,7 +20,7 @@ form-judge audit (#1067):
   direct `A --> C` edge in the source. Chain pairs that share 2+ open
   cells beyond their common node's own border are now detected and
   rerouted, the same way a cross-style conflict already was.
-- A cell overlap between two unrelated edges could be hidden by a *third*
+- A cell overlap between two unrelated edges could be hidden by a _third_
   edge that happened to claim the same cell first, since only one owner
   per cell was tracked; cells now track every edge that claims them.
 - Two plain box-drawing edges genuinely crossing perpendicular (one
