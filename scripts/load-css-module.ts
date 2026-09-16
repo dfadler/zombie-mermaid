@@ -146,6 +146,15 @@ function generateScopedNameFor(
   cssFilePath: string,
   source: string,
 ): string | ((name: string) => string) {
+  console.error('[DEBUG_CSS_HASH]', {
+    platform: process.platform,
+    cwd: process.cwd(),
+    cssFilePath,
+    REPO_ROOT,
+    relativePath: repoRelativePosixPath(cssFilePath),
+    sourceLength: source.length,
+    sourceSha256: createHash('sha256').update(source).digest('hex'),
+  })
   return HASHED_MODULE_CSS_BASENAMES.has(basename(cssFilePath))
     ? hashedScopedName(repoRelativePosixPath(cssFilePath), source)
     : '[local]'
