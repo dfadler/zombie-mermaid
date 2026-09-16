@@ -715,14 +715,23 @@ export function drawText(
 /**
  * Set the canvas size to fit all grid columns and rows.
  * Called after layout to ensure the canvas covers the full drawing area.
+ *
+ * `offsetX`/`offsetY` must be the same drawing-coordinate offset
+ * `gridToDrawingCoord` adds to every point it computes (`graph.offsetX`/
+ * `offsetY`, set by `offsetDrawingForSubgraphs`) — omitting them once left
+ * the canvas exactly that much too narrow/short, silently clipping any
+ * edge line whose drawing coordinate landed in the unreserved margin (see
+ * `createMapping`'s call site for the full story).
  */
 export function setCanvasSizeToGrid(
   canvas: Canvas,
   columnWidth: Map<number, number>,
   rowHeight: Map<number, number>,
+  offsetX = 0,
+  offsetY = 0,
 ): void {
-  let maxX = 0
-  let maxY = 0
+  let maxX = offsetX
+  let maxY = offsetY
   for (const w of columnWidth.values()) maxX += w
   for (const h of rowHeight.values()) maxY += h
   increaseSize(canvas, maxX - 1, maxY - 1)
@@ -730,15 +739,18 @@ export function setCanvasSizeToGrid(
 
 /**
  * Set the role canvas size to match the grid dimensions.
- * Should be called alongside setCanvasSizeToGrid.
+ * Should be called alongside setCanvasSizeToGrid, with the same
+ * `offsetX`/`offsetY` — see that function's doc.
  */
 export function setRoleCanvasSizeToGrid(
   roleCanvas: RoleCanvas,
   columnWidth: Map<number, number>,
   rowHeight: Map<number, number>,
+  offsetX = 0,
+  offsetY = 0,
 ): void {
-  let maxX = 0
-  let maxY = 0
+  let maxX = offsetX
+  let maxY = offsetY
   for (const w of columnWidth.values()) maxX += w
   for (const h of rowHeight.values()) maxY += h
   increaseRoleCanvasSize(roleCanvas, maxX - 1, maxY - 1)

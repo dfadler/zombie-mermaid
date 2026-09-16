@@ -1200,11 +1200,40 @@ export function createMapping(graph: AsciiGraph): void {
     node.drawing = drawBox(node, graph)
   }
 
-  // Set canvas size and compute subgraph bounding boxes
-  setCanvasSizeToGrid(graph.canvas, graph.columnWidth, graph.rowHeight)
-  setRoleCanvasSizeToGrid(graph.roleCanvas, graph.columnWidth, graph.rowHeight)
+  // Compute subgraph bounding boxes and the resulting drawing offset
+  // *before* sizing the canvas. `offsetDrawingForSubgraphs` can set
+  // `graph.offsetX`/`offsetY` to a positive shift (needed whenever a
+  // subgraph's own border padding would otherwise push its content
+  // negative) — every `gridToDrawingCoord` call, including the ones
+  // draw.ts makes later for edge lines, adds that offset to its result.
+  // Sizing the canvas *before* this offset is known (the previous order)
+  // left it too narrow/short by exactly `offsetX`/`offsetY`: node boxes
+  // were retroactively shifted to the correct position (see below), but
+  // nothing widened the canvas array to match, so any edge line whose
+  // drawing coordinate landed in that unreserved margin was silently
+  // dropped by `write()`'s out-of-bounds clip — invisible whenever
+  // nothing happened to route that close to the diagram's far edge, but
+  // a real, reproducible content loss once something did (see #1093,
+  // the `Error --> Idle : retry` edge in the "State: Composite States"
+  // sample, whose rerouted path was the first to reach it).
   calculateSubgraphBoundingBoxes(graph)
   offsetDrawingForSubgraphs(graph)
+
+  // Set canvas size, now covering the offset computed above.
+  setCanvasSizeToGrid(
+    graph.canvas,
+    graph.columnWidth,
+    graph.rowHeight,
+    graph.offsetX,
+    graph.offsetY,
+  )
+  setRoleCanvasSizeToGrid(
+    graph.roleCanvas,
+    graph.columnWidth,
+    graph.rowHeight,
+    graph.offsetX,
+    graph.offsetY,
+  )
 }
 
 // ============================================================================

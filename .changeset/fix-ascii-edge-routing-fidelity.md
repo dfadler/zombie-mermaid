@@ -20,3 +20,18 @@ form-judge audit (#1067):
   direct `A --> C` edge in the source. Chain pairs that share 2+ open
   cells beyond their common node's own border are now detected and
   rerouted, the same way a cross-style conflict already was.
+- A cell overlap between two unrelated edges could be hidden by a *third*
+  edge that happened to claim the same cell first, since only one owner
+  per cell was tracked; cells now track every edge that claims them.
+- Two plain box-drawing edges genuinely crossing perpendicular (one
+  edge's own `─`, another's own `│`) could have the second edge's
+  character silently dropped instead of merging into `┼`, once "first
+  claim wins" (above) started applying at the character level; it now
+  only suppresses a later character when the two wouldn't otherwise form
+  a meaningful crossing.
+- The canvas could be sized before a subgraph-driven drawing offset was
+  known, leaving it too narrow/short to fit content shifted into that
+  margin — an edge routed close enough to the diagram's far edge (as the
+  chain-pair reroute above can produce) had its line silently clipped,
+  leaving a disconnected corner with no line reaching its node. The
+  canvas is now sized after that offset is computed, including it.
