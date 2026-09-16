@@ -146,15 +146,6 @@ function generateScopedNameFor(
   cssFilePath: string,
   source: string,
 ): string | ((name: string) => string) {
-  console.error('[DEBUG_CSS_HASH]', {
-    platform: process.platform,
-    cwd: process.cwd(),
-    cssFilePath,
-    REPO_ROOT,
-    relativePath: repoRelativePosixPath(cssFilePath),
-    sourceLength: source.length,
-    sourceSha256: createHash('sha256').update(source).digest('hex'),
-  })
   return HASHED_MODULE_CSS_BASENAMES.has(basename(cssFilePath))
     ? hashedScopedName(repoRelativePosixPath(cssFilePath), source)
     : '[local]'
@@ -189,7 +180,24 @@ function toFilePath(url: URL): string {
 }
 
 const CACHE_DIR = toFilePath(new URL('../.css-modules-cache/', import.meta.url))
-const REPO_ROOT = toFilePath(new URL('../', import.meta.url))
+/**
+ * Deliberately `process.cwd()`, not `toFilePath(new URL('../',
+ * import.meta.url))` the way `CACHE_DIR` above computes a path relative to
+ * this file: Vite's dev-server module graph addresses a file outside
+ * whatever directory a jsdom-environment test transforms as its "root"
+ * with a `/@fs/<absolute path>` prefix, which `toFilePath`'s synthetic-URL
+ * fallback doesn't strip — confirmed empirically (a `demo-primitives.test.ts`
+ * CI run logged `import.meta.url` for *this* module, under jsdom, as
+ * `http://localhost:.../@fs/home/runner/work/.../scripts/load-css-module.ts`,
+ * producing a nonsense doubled `REPO_ROOT` and, with it, a wrong
+ * `repoRelativePosixPath()` — the actual cause of #1095's CI-only hash
+ * mismatch, which the repo-relative-path and raw-source fixes upstream of
+ * this comment didn't fix because both still measured "relative to" this
+ * broken value). `process.cwd()` sidesteps the whole `/@fs/` question: per
+ * `toFilePath`'s own doc comment, a real generator run and every Vitest
+ * process (jsdom or not) always start from the repo root already.
+ */
+const REPO_ROOT = process.cwd()
 
 export interface CssModuleResult<
   Classes extends Record<string, string> = Record<string, string>,
