@@ -427,9 +427,21 @@ export function mergeJunctions(c1: string, c2: string): string {
  * arrowheads, box-start connectors and labels are composited in their own
  * later `mergeCanvases` passes with their existing (correct, layer-specific)
  * merge semantics, untouched by this function.
+ *
+ * A claimed cell only suppresses a *later* canvas's character when the two
+ * wouldn't otherwise combine into something meaningful — i.e. when they
+ * aren't both plain Unicode junction characters (`isJunctionChar`). Two
+ * *different* junction characters at the same cell are usually a genuine
+ * perpendicular crossing (one edge's `─`, another's `│`), which `drawLine`
+ * relies on `mergeCanvases`'s own junction-merge logic to combine into `┼`
+ * — blanket-suppressing by coordinate alone would silently turn that
+ * crossing into whichever edge happened to draw first. Mixed-style
+ * characters (dashed `┄`/`┆`, heavy `━`/`┃`) are never junction chars, so
+ * they still fall through to plain first-claim suppression — the exact
+ * #1067 "All Edge Styles" scenario this function exists for.
  */
 export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
-  const claimed = new Set<string>()
+  const claimed = new Map<string, string>()
   const result: Canvas[] = []
   for (const canvas of canvases) {
     const [maxX, maxY] = getCanvasSize(canvas)
@@ -443,8 +455,22 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
         const c = canvas[x]?.[y]
         if (c === undefined || c === ' ') continue
         const key = `${x},${y}`
-        if (claimed.has(key)) continue
-        claimed.add(key)
+        const existing = claimed.get(key)
+        if (existing !== undefined) {
+          // A repeat of the *same* character (a collinear duplicate, e.g.
+          // two edges both drawing '─' through a shared trunk cell) is
+          // still a first-claim suppression, not a crossing — `mergeJunctions`
+          // has no entry for a character merged with itself and would just
+          // fall back to it, so letting it through would be a harmless but
+          // pointless no-op; treating it as "still claimed" keeps the rule
+          // simple and matches "collinear overlap" from the case that
+          // actually needs a merge (two *different* junction characters).
+          const isCrossing =
+            existing !== c && isJunctionChar(existing) && isJunctionChar(c)
+          if (!isCrossing) continue
+        } else {
+          claimed.set(key, c)
+        }
         out[x]![y] = c
       }
     }

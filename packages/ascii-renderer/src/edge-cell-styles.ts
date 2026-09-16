@@ -110,10 +110,17 @@ export function claimPathCells(
 // general case is exactly what broke the ampersand golden file during this
 // fix's own development.
 
-/** Cells already claimed by a drawn edge, keyed by "x,y", storing which
- * edge (by reference) drew there — independent of `EdgeCellStyles` above,
- * which tracks *style* rather than edge identity. */
-export type EdgeCellOwners = Map<string, AsciiEdge>
+/** Cells already claimed by drawn edges, keyed by "x,y", storing every edge
+ * (by reference) that drew there — independent of `EdgeCellStyles` above,
+ * which tracks *style* rather than edge identity.
+ *
+ * Stores a `Set`, not a single edge: `graph.edges` order means an edge
+ * unrelated to any chain can claim a cell before a real chain pair's own
+ * edges do, and a single-owner map would let that unrelated edge's claim
+ * hide the chain pair's overlap from `findUnrelatedOverlap` entirely. See
+ * that function's own doc.
+ */
+export type EdgeCellOwners = Map<string, Set<AsciiEdge>>
 
 export function createEdgeCellOwners(): EdgeCellOwners {
   return new Map()
@@ -145,10 +152,13 @@ const MIN_CHAIN_OVERLAP = 2
 /**
  * The first open (non-node-occupied) cell in `path` already claimed by a
  * different edge that forms a chain with `edge` (`isChainPair`) — but only
- * once the pair's total overlap reaches `MIN_CHAIN_OVERLAP` cells (see that
- * constant's doc). Returns `null` when the owning edge isn't a chain
- * partner, the overlap is only an incidental single-cell crossing, or there
- * is none.
+ * once *that specific chain partner's* total overlap with `edge` reaches
+ * `MIN_CHAIN_OVERLAP` cells (see that constant's doc). Each distinct owner
+ * of a cell is checked and counted independently — a cell can hold several
+ * edges' claims (see `EdgeCellOwners`'s own doc), and an unrelated same-style
+ * edge sharing a cell must not hide a real chain partner's overlap that also
+ * claimed it. Returns `null` when no chain partner's overlap reaches the
+ * threshold.
  */
 export function findUnrelatedOverlap(
   grid: Grid,
@@ -156,22 +166,29 @@ export function findUnrelatedOverlap(
   path: readonly GridCoord[],
   edge: AsciiEdge,
 ): GridCoord | null {
-  let firstConflict: GridCoord | null = null
-  let overlapCount = 0
+  const overlapCounts = new Map<AsciiEdge, number>()
+  const firstConflicts = new Map<AsciiEdge, GridCoord>()
   for (const cell of pathCells(path)) {
     if (isOccupied(grid, cell)) continue
-    const owner = owners.get(gridKey(cell))
-    if (owner === undefined || owner === edge) continue
-    if (!isChainPair(owner, edge)) continue
-    overlapCount++
-    if (firstConflict === null) firstConflict = cell
+    const cellOwners = owners.get(gridKey(cell))
+    if (cellOwners === undefined) continue
+    for (const owner of cellOwners) {
+      if (owner === edge) continue
+      if (!isChainPair(owner, edge)) continue
+      overlapCounts.set(owner, (overlapCounts.get(owner) ?? 0) + 1)
+      if (!firstConflicts.has(owner)) firstConflicts.set(owner, cell)
+    }
   }
-  return overlapCount >= MIN_CHAIN_OVERLAP ? firstConflict : null
+  for (const [owner, count] of overlapCounts) {
+    if (count >= MIN_CHAIN_OVERLAP) return firstConflicts.get(owner)!
+  }
+  return null
 }
 
 /**
  * Record every open (non-node-occupied) cell in `path` as claimed by
- * `edge`. First claim per cell wins, mirroring `claimPathCells` above.
+ * `edge`, alongside any edge(s) that already claimed it — see
+ * `EdgeCellOwners`'s own doc for why a cell can have more than one owner.
  */
 export function claimPathOwners(
   grid: Grid,
@@ -182,6 +199,11 @@ export function claimPathOwners(
   for (const cell of pathCells(path)) {
     if (isOccupied(grid, cell)) continue
     const key = gridKey(cell)
-    if (!owners.has(key)) owners.set(key, edge)
+    let cellOwners = owners.get(key)
+    if (cellOwners === undefined) {
+      cellOwners = new Set()
+      owners.set(key, cellOwners)
+    }
+    cellOwners.add(edge)
   }
 }
