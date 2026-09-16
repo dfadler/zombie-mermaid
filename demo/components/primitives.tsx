@@ -32,6 +32,7 @@ import type {
   MouseEventHandler,
   ReactNode,
 } from 'react'
+import { PRIMITIVES_CLASSES } from './generated/primitives-classes.ts'
 import { COLORS, FONT_WEIGHT, colorVar, type ColorToken } from './tokens.tsx'
 
 /* -----------------------------------------------------------------
@@ -103,25 +104,32 @@ const SOLID_INK = colorVar('--bg')
  * ----------------------------------------------------------------- */
 
 /**
- * The `.card`/`.pill`/`.section-eyebrow`/`.mono` rules these components
- * render against now live in `primitives-css.tsx` (zombie-mermaid#938,
- * part of the #931 umbrella — see that file for why it's a separate
- * module rather than living here alongside the components).
+ * The `.card`/`.pill`/`.section-eyebrow` rules these components render
+ * against live in `primitives-css.tsx` (zombie-mermaid#938, part of the
+ * #931 umbrella — see that file for why it's a separate module rather than
+ * living here alongside the components). `.mono` isn't among them — it's a
+ * page-wide utility class defined in tokens.tsx's `designBaseCss()`, see
+ * that function's doc comment.
  *
- * The class name *strings* below (`'card'`, `'pill'`, …) stay plain
- * literals rather than importing anything from `primitives-css.tsx`: this
+ * `PRIMITIVES_CLASSES` (imported above from `./generated/
+ * primitives-classes.ts`) rather than a plain string literal, because
+ * `primitives.module.css`'s classes are hashed (zombie-mermaid#969): this
  * file is shared between SSR (`*-page.tsx`) and browser-hydrated
  * (`*-app.tsx`) code — `Card`/`Pill`/`SectionEyebrow`/`CTA` all render
- * inside client bundles — and `primitives-css.tsx` resolves its stylesheet
- * through a real Vite build at module-load time, which depends on Node
- * built-ins (`vite`, transitively `esbuild`/`child_process`) that don't
- * exist in a browser. Importing from it here would drag that whole
- * dependency into every page's client bundle (verified empirically while
- * building this seam: `bundleForBrowser()` warned about `child_process`/
- * `fs`/`tty` being "externalized for browser compatibility" the one time
- * this file tried it). `primitives.module.css`'s selectors are unhashed by
- * design (see `scripts/load-css-module.ts`), so the literal here and the
- * compiled rule there are guaranteed to name the same class regardless.
+ * inside client bundles — and can't import `scripts/load-css-module.ts`
+ * (which `primitives-css.tsx` uses to compile the actual stylesheet)
+ * directly: that module resolves its build through Vite at module-load
+ * time, which depends on Node built-ins (`vite`, transitively `esbuild`/
+ * `child_process`) that don't exist in a browser. Importing from it here
+ * would drag that whole dependency into every page's client bundle
+ * (verified empirically while building the original unhashed seam:
+ * `bundleForBrowser()` warned about `child_process`/`fs`/`tty` being
+ * "externalized for browser compatibility" the one time this file tried
+ * it). The generated classes module has no such dependency — it's a plain
+ * object literal — so it's safe to import from both SSR and browser code,
+ * and it's guaranteed to match `primitives-css.tsx`'s compiled CSS because
+ * both are produced from the same `primitives.module.css` content (see
+ * `scripts/generate-primitives-classes.ts`'s header comment).
  */
 function classNames(...parts: (string | false | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
@@ -193,7 +201,7 @@ export function Card({
   if (padding !== undefined) cardStyle.padding = `${padding}px`
 
   const merged = { ...cardStyle, ...style }
-  const classes = classNames('card', className)
+  const classes = classNames(PRIMITIVES_CLASSES.card, className)
   return href === undefined ? (
     <div className={classes} style={merged}>
       {children}
@@ -303,7 +311,7 @@ export function Pill({
   if (fontSize !== undefined) pill.fontSize = `${fontSize}px`
   return (
     <span
-      className={classNames('pill', mono && 'mono', className)}
+      className={classNames(PRIMITIVES_CLASSES.pill, mono && 'mono', className)}
       style={{ ...pill, ...style }}
       role={role}
       tabIndex={tabIndex}
@@ -349,7 +357,7 @@ export function SectionEyebrow({
   const eyebrowStyle: CSSProperties = accent ? { color: accentVar(accent) } : {}
   return (
     <div
-      className={classNames('section-eyebrow', className)}
+      className={classNames(PRIMITIVES_CLASSES['section-eyebrow'], className)}
       style={{ ...eyebrowStyle, ...style }}
     >
       {children}
@@ -438,7 +446,7 @@ export function CTA({
   const pill = pillStyle(variant === 'ghost' ? 'outline' : 'solid', accent)
   return (
     <a
-      className={classNames('pill', className)}
+      className={classNames(PRIMITIVES_CLASSES.pill, className)}
       href={href}
       style={{ ...pill, ...style }}
     >

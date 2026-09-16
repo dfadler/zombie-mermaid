@@ -126,6 +126,17 @@ describe('designBaseCss', () => {
     expect(css).toContain('color: var(--cyan);')
     expect(css).toContain('color: var(--pink);')
   })
+
+  // zombie-mermaid#969: .mono moved here from primitives.module.css, which
+  // is now hashed — see this function's doc comment for why a page-wide
+  // utility class like .mono can never finish migrating every consumer to
+  // a classes map and so has to stay a plain, unhashed literal. `body
+  // .mono` (not bare `.mono`) is load-bearing for the same reason the doc
+  // comment gives: it needs strictly higher specificity than the bare
+  // `.mono` selector a rendered diagram's own embedded <style> can inject.
+  it('sets .mono to the self-hosted mono font stack, at body-scoped specificity', () => {
+    expect(css).toContain('body .mono {\n  font-family: var(--font-mono);\n}')
+  })
 })
 
 describe('typography', () => {

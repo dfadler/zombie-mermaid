@@ -447,6 +447,31 @@ ${colors}
  * one) it happened to inherit, on top of index-page.tsx's own 8px `body`
  * margin offset — both visible as the nav bar jumping on every navigation,
  * not just to/from the home page.
+ *
+ * `.mono` lives here rather than in `primitives.module.css` (which used to
+ * hold it, before zombie-mermaid#969 turned on hashing there) for the same
+ * reason `.display` already does: both are page-wide utility classes set
+ * as a plain string literal by dozens of unrelated files, not a
+ * component-private implementation detail. `.mono` specifically is also
+ * targeted by raw, unscoped `class="mono"` markup that
+ * `packages/core/src/theme.ts`/`packages/svg-renderer` write directly into
+ * generated SVG output — code with no relationship to this build at all —
+ * so it has to keep the literal name `mono` forever; hashing it here would
+ * silently stop matching that SVG-side selector. `body` in the selector is
+ * load-bearing, not decorative: that same SVG `<style>` (present whenever
+ * the current sample's theme has a mono font configured — e.g. a class
+ * diagram's method signatures) isn't scoped to the `<svg>` — it's a plain
+ * global `<style>` tag inlined into the page body via
+ * `dangerouslySetInnerHTML`, so its bare `.mono` selector matches every
+ * `.mono`-classed element on the whole page, ASCII output included. That
+ * selector ties this rule's specificity exactly (both single-class), so
+ * whichever `<style>` tag is later in the document wins — always the
+ * SVG's, since it's inlined into body content after this page-level
+ * `<style>`. `body .mono` breaks that tie in this rule's favor regardless
+ * of document order, so every `.mono` consumer (ASCII wells, the
+ * breadcrumb, install pills, theme pickers, …) reliably gets the
+ * self-hosted `--font-mono` this repo now ships — see
+ * docs/decisions/ascii-browser-font-investigation-978.md.
  */
 export function designBaseCss(): string {
   return `${designTokensCss()}
@@ -465,6 +490,10 @@ h3,
 .display {
   font-family: var(--font-display);
   font-weight: ${FONT_WEIGHT.bold};
+}
+
+body .mono {
+  font-family: var(--font-mono);
 }
 
 a {

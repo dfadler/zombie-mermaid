@@ -28,20 +28,29 @@
  * Modules implementation (scoped class names, real PostCSS/`lightningcss`
  * processing) instead of a hand-rolled template literal.
  *
- * ## Class names are left unhashed, deliberately
+ * ## Hashing turns on per file, not globally
  *
- * `generateScopedName: '[local]'` keeps every output class name
+ * `generateScopedName: '[local]'` keeps an output class name
  * byte-identical to the one written in the `.module.css` file — no content
  * hash suffix. That's the opposite of a typical CSS Modules setup, where
- * hashing is the whole point (collision-proof scoping). It's deliberate
- * here: #938 opens the seam for *one* `*Css()` function at a time, and this
- * repo's existing selectors (`.card`, `.pill`, `.section-eyebrow`, …) are
- * still referenced directly as string literals at call sites that haven't
- * been converted yet, and by tests. Hashing would silently break every one
- * of those until the whole component migrates in lockstep — exactly the
- * "convert everything in one PR" scope #938 explicitly defers. A future
- * PR that finishes converting a component's classes *and* every consumer
- * to import the classes map can safely turn hashing back on for that file.
+ * hashing is the whole point (collision-proof scoping). #938 started every
+ * file on `[local]` deliberately: it opened the seam for *one* `*Css()`
+ * function at a time, and this repo's existing selectors (`.card`, `.pill`,
+ * `.section-eyebrow`, …) were still referenced directly as string literals
+ * at call sites that hadn't converted yet, and by tests. Hashing would have
+ * silently broken every one of those until the whole component migrated in
+ * lockstep — exactly the "convert everything in one PR" scope #938
+ * explicitly deferred.
+ *
+ * `HASHED_MODULE_CSS_BASENAMES` below is the opt-in list of files that have
+ * since finished that migration (zombie-mermaid#969 turned on
+ * `primitives.module.css`, the first entry) — every consumer confirmed to
+ * import the compiled classes map rather than hardcode a selector string.
+ * A `.module.css` file not listed there still gets `[local]`. Adding a file
+ * to the list is therefore the actual "did we finish migrating" record this
+ * repo has, and `__tests__/css-module-classes-usage.test.ts` enforces it:
+ * it fails if any hashed file's source class names still show up as a bare
+ * string literal outside that file's own generated classes module.
  *
  * ## Disk cache
  *
@@ -60,7 +69,7 @@
  */
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { resolve as resolvePath } from 'node:path'
+import { basename, resolve as resolvePath } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build as viteBuild, type Plugin } from 'vite'
 
@@ -70,7 +79,49 @@ import { build as viteBuild, type Plugin } from 'vite'
  * a different virtual-entry shape) — folded into the cache key so a stale
  * cache from before the change is never reused.
  */
-const CACHE_VERSION = 1
+const CACHE_VERSION = 2
+
+/**
+ * `.module.css` files (by basename) that have finished migrating every
+ * consumer off string-literal class names and are safe to hash for real —
+ * see this file's header comment. Add a file here only once
+ * `__tests__/css-module-classes-usage.test.ts` (or an equivalent audit)
+ * confirms nothing outside its generated classes module still hardcodes
+ * one of its selectors.
+ */
+const HASHED_MODULE_CSS_BASENAMES = new Set(['primitives.module.css'])
+
+/**
+ * A real content hash, not one of Vite's `[hash]`-token string patterns:
+ * this function's output has to be reproducible outside a Vite build too
+ * (see `scripts/generate-primitives-classes.ts`, which writes the
+ * committed classes map `primitives.tsx` imports without ever invoking
+ * Vite), and Vite's own token substitution is an internal implementation
+ * detail of whichever CSS backend (PostCSS vs. `lightningcss`) is active,
+ * not a documented, stable format to depend on. Six hex characters of a
+ * sha256 of the file path, its source, and the class name is short enough
+ * to stay readable in a `className` attribute while changing whenever any
+ * of those three inputs does.
+ */
+function hashedScopedName(name: string, filename: string, css: string): string {
+  const hash = createHash('sha256')
+    .update(filename)
+    .update('\0')
+    .update(css)
+    .update('\0')
+    .update(name)
+    .digest('hex')
+    .slice(0, 6)
+  return `${name}_${hash}`
+}
+
+function generateScopedNameFor(
+  cssFilePath: string,
+): string | ((name: string, filename: string, css: string) => string) {
+  return HASHED_MODULE_CSS_BASENAMES.has(basename(cssFilePath))
+    ? hashedScopedName
+    : '[local]'
+}
 
 /**
  * Resolves a `.module.css` URL to a real filesystem path.
@@ -107,8 +158,9 @@ export interface CssModuleResult<
 > {
   /** The compiled stylesheet text, ready to embed in a `<style>` element. */
   css: string
-  /** Source class name -> output class name (identical today; see this
-   * module's header comment on why hashing is off). */
+  /** Source class name -> output class name — hashed or identical
+   * depending on whether this file is in `HASHED_MODULE_CSS_BASENAMES`;
+   * see this module's header comment. */
   classes: Classes
 }
 
@@ -171,9 +223,9 @@ export async function loadCssModule<
     plugins: [virtualEntryPlugin(cssFilePath)],
     css: {
       modules: {
-        // See this file's header comment: hashing stays off until every
-        // consumer of a given `*Css()` function's classes migrates.
-        generateScopedName: '[local]',
+        // See this file's header comment: hashing turns on per file, once
+        // every consumer of that file's classes has migrated.
+        generateScopedName: generateScopedNameFor(cssFilePath),
       },
     },
     build: {

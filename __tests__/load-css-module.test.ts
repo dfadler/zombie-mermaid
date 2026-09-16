@@ -18,26 +18,29 @@ const PRIMITIVES_MODULE_CSS = new URL(
 )
 
 describe('loadCssModule', () => {
-  it('resolves unhashed class names and the compiled stylesheet text', async () => {
+  it('resolves hashed class names and the compiled stylesheet text', async () => {
     const { css, classes } = await loadCssModule<{
       card: string
       pill: string
       'section-eyebrow': string
-      mono: string
     }>(PRIMITIVES_MODULE_CSS)
 
-    // Unhashed: see load-css-module.ts's header comment on why
-    // `generateScopedName: '[local]'` is deliberate for this seam's current
-    // scope — the output class name must equal the source selector.
-    expect(classes).toEqual({
-      card: 'card',
-      pill: 'pill',
-      'section-eyebrow': 'section-eyebrow',
-      mono: 'mono',
-    })
-    expect(css).toContain('.card {')
+    // Hashed: primitives.module.css is in load-css-module.ts's
+    // HASHED_MODULE_CSS_BASENAMES (zombie-mermaid#969) — every consumer
+    // migrated to importing this classes map, so the output class name is
+    // no longer required to equal the source selector. Each still starts
+    // with `<name>_` followed by six hex characters (see
+    // `hashedScopedName`'s doc comment).
+    for (const [name, output] of Object.entries(classes)) {
+      expect(output).toMatch(new RegExp(`^${name}_[0-9a-f]{6}$`))
+    }
+    expect(css).toContain(`.${classes.card} {`)
     expect(css).toContain('background: var(--panel);')
-    expect(css).toContain('.mono {')
+    // .mono isn't part of this file anymore — see primitives.module.css's
+    // own comment and tokens.tsx's designBaseCss(). (The compiled output
+    // still mentions ".mono" in that explanatory comment, so this checks
+    // for an actual rule rather than the substring.)
+    expect(css).not.toMatch(/\.mono\s*\{/)
   })
 
   it('serves a second call from the on-disk cache with an identical result', async () => {

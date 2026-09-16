@@ -19,6 +19,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
+import { PRIMITIVES_CLASSES } from '../demo/components/generated/primitives-classes.ts'
 import {
   NAV_INSTALL_COMMAND,
   NAV_ITEMS,
@@ -337,7 +338,7 @@ describe('the install pill', () => {
   })
 
   it('is a pill in the mono face', () => {
-    expect(render()).toContain('class="pill mono"')
+    expect(render()).toContain(`class="${PRIMITIVES_CLASSES.pill} mono"`)
   })
 
   it('keeps the command in its own span, which the 600px rule hides', () => {
@@ -370,7 +371,7 @@ describe('the install pill', () => {
     // merged after #759) always carries its own install pill regardless of
     // the desktop slot; see 'the mobile menu' below for that assertion.
     expect(header).not.toContain(NAV_INSTALL_COMMAND)
-    expect(header).not.toContain('class="pill mono"')
+    expect(header).not.toContain(`class="${PRIMITIVES_CLASSES.pill} mono"`)
   })
 
   it('desktop bar has no extra <button> beyond the menu toggle with installSlot set (#759)', () => {

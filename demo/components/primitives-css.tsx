@@ -29,11 +29,13 @@
  * `PrimitivesStyle()` — keeps that dependency out of every client bundle's
  * import graph entirely, rather than merely tree-shaken from it.
  *
- * `primitives.module.css`'s classes are unhashed
- * (`generateScopedName: '[local]'`, see `scripts/load-css-module.ts`), so
- * primitives.tsx's plain string literals (`'card'`, `'pill'`, …) and this
- * file's compiled stylesheet are guaranteed to name the same classes
- * without the two files needing to share any binding.
+ * `primitives.module.css`'s classes are hashed (zombie-mermaid#969; see
+ * `scripts/load-css-module.ts`'s `HASHED_MODULE_CSS_BASENAMES`), so the
+ * compiled stylesheet's selectors and primitives.tsx's className values
+ * only stay in sync because both are ultimately produced from this same
+ * file's content — primitives.tsx imports the committed classes map
+ * `scripts/generate-primitives-classes.ts` generates from it, rather than
+ * a literal string.
  *
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.

@@ -40,6 +40,7 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import { useEffect, useRef, useState } from 'react'
+import { PRIMITIVES_CLASSES } from './generated/primitives-classes.ts'
 import { ChevronRightIcon } from './icons.tsx'
 import { OutputModeToggle } from './output-mode-toggle.tsx'
 import { Card, CTA, type Accent, accentVar } from './primitives.tsx'
@@ -625,7 +626,7 @@ export function DiagramDetailApp({
                 <a
                   key={tag.href}
                   href={tag.href}
-                  className="pill mono"
+                  className={`${PRIMITIVES_CLASSES.pill} mono`}
                   style={{
                     background: colorVar('--panel'),
                     border: `1px solid ${colorVar('--border')}`,
@@ -769,7 +770,7 @@ export function DiagramDetailApp({
                 <a
                   key={item.title}
                   href={item.href}
-                  className="card gallery-card"
+                  className={`${PRIMITIVES_CLASSES.card} gallery-card`}
                   style={{ borderColor: colorVar('--border') }}
                 >
                   <div
