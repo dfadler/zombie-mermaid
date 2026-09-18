@@ -69,6 +69,11 @@ const DYNAMIC_IMPORT_RE = /\bimport\([ \t]*['"]([^'"]+)['"]/g
 function tsFilesUnder(dir: string): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir)) {
+    // Test files (packages/<name>/src/__tests__/) are not part of the
+    // package's own source graph this file is checking the shape of — they
+    // import vitest and the package's own public API from outside, neither
+    // of which belongs in the dependency/boundary assertions below.
+    if (entry === '__tests__') continue
     const path = join(dir, entry)
     if (statSync(path).isDirectory()) out.push(...tsFilesUnder(path))
     else if (path.endsWith('.ts')) out.push(path)
