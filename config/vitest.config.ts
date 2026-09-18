@@ -45,6 +45,8 @@ export default defineConfig({
       'src/__tests__/**/*.test.ts',
       'editor/__tests__/**/*.test.ts',
       '__tests__/**/*.test.ts',
+      'packages/*/src/__tests__/**/*.test.ts',
+      'packages/*/__tests__/**/*.test.ts',
     ],
     // The visual regression suite (__tests__/visual/) runs under
     // Playwright Test (`pnpm test:visual`, see playwright.config.ts), not
@@ -98,7 +100,7 @@ export default defineConfig({
       // thresholds below would measure a strictly smaller file set than
       // they were calibrated against.
       include: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
-      exclude: ['src/__tests__/**'],
+      exclude: ['src/__tests__/**', 'packages/*/src/__tests__/**'],
       thresholds: {
         statements: 88,
         branches: 77,

@@ -28,6 +28,14 @@ describe('isTrackedTsFile', () => {
     expect(isTrackedTsFile('src/__tests__/foo.test.ts')).toBe(false)
   })
 
+  // Tests colocated inside a workspace package (packages/<name>/src/__tests__/)
+  // must be excluded the same way as src/__tests__/ above.
+  it('rejects files under a workspace package __tests__/', () => {
+    expect(isTrackedTsFile('packages/core/src/__tests__/foo.test.ts')).toBe(
+      false,
+    )
+  })
+
   // config/vitest.config.ts's coverage.include only covers packages/*/src/**/*.ts —
   // a package-root file outside that must not be tracked here either, or
   // diff coverage and Vitest coverage disagree on what counts.

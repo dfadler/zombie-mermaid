@@ -19,7 +19,9 @@ const LCOV_PATH = 'coverage/lcov.info'
 // when Vitest doesn't count it either.
 const DIFF_PATHS = ['src/', 'packages/']
 const PACKAGE_SRC_PREFIX = /^packages\/[^/]+\/src\//
-const EXCLUDE_PREFIX = 'src/__tests__/'
+// Matches both src/__tests__/ and packages/<name>/src/__tests__/ — test
+// files are excluded regardless of which src/ tree they're colocated under.
+const EXCLUDE_TESTS_RE = /(^|\/)__tests__\//
 
 function git(args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8' })
@@ -54,7 +56,7 @@ export function isTrackedTsFile(path: string): boolean {
   return (
     (path.startsWith('src/') || PACKAGE_SRC_PREFIX.test(path)) &&
     path.endsWith('.ts') &&
-    !path.startsWith(EXCLUDE_PREFIX)
+    !EXCLUDE_TESTS_RE.test(path)
   )
 }
 
