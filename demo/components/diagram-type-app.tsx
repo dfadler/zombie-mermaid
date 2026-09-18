@@ -29,6 +29,7 @@
  * see the `jsx` comment in demo/tsconfig.json.
  */
 import type { CSSProperties, ReactNode } from 'react'
+import { PRIMITIVES_CLASSES } from './generated/primitives-classes.ts'
 import { FORK_URL, HOME_HREF } from './site-chrome.tsx'
 import { ChevronRightIcon } from './icons.tsx'
 import {
@@ -562,7 +563,7 @@ function MoreExamplesSection({
         {hidden.length > 0 && (
           <details className="gallery-more">
             <summary
-              className="pill"
+              className={PRIMITIVES_CLASSES.pill}
               style={{
                 background: 'transparent',
                 border: `1px solid ${accentVar(accent)}`,

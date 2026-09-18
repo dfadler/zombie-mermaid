@@ -18,6 +18,7 @@ import {
   SyncRenderIcon,
   ThemesIcon,
 } from './icons.tsx'
+import { PRIMITIVES_CLASSES } from './generated/primitives-classes.ts'
 import { Card } from './primitives.tsx'
 import {
   FONT_SIZE,
@@ -86,7 +87,7 @@ export function EditorFeatureStrip() {
           gap: `${SPACE.xl}px`,
         }}
       >
-        <span className="section-eyebrow">
+        <span className={PRIMITIVES_CLASSES['section-eyebrow']}>
           Everything a mermaid.live user expects
         </span>
         <h2

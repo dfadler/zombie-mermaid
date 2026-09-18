@@ -79,6 +79,23 @@ describe('EditorPage', () => {
     expect(html).toContain('.topbar { display: flex; }')
   })
 
+  // Regression coverage for zombie-mermaid#969: this page can't emit
+  // tokens.tsx's designBaseCss() (see scopedDesignTokensCss()'s doc
+  // comment on why — it would collide with the editor tool's own `:root`
+  // theme variables), so before #969 it relied on primitivesCss()'s old
+  // `body .mono` rule for EditorHero's breadcrumb font, purely because
+  // that rule happened to select on bare `body`. Once #969 moved `.mono`
+  // out of primitives.module.css for good, this page silently lost its
+  // only source for it — caught by a before/after screenshot showing the
+  // breadcrumb fall back to the body font. scopedDesignTokensCss() now
+  // carries its own `.mono` rule; this locks that in.
+  it('gives .mono its own font-family rule, scoped like designBaseCss() would', () => {
+    const html = render()
+    expect(html).toContain(
+      '.zm-shell .mono {\n  font-family: var(--font-mono);\n}',
+    )
+  })
+
   it('preserves each inlined script byte-for-byte via dangerouslySetInnerHTML', () => {
     // Deliberately includes the characters React would normally escape in a
     // text child (<, >, &, quotes) — the exact risk this page was chosen to

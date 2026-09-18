@@ -159,6 +159,20 @@ const ZM_SHELL = 'zm-shell'
  * every other redesigned page. A scoped equivalent of `designTokensCss()` +
  * `designBaseCss()` — see the module doc comment for why this page can't
  * use those directly.
+ *
+ * `.${selector} .mono` (zombie-mermaid#969) mirrors `designBaseCss()`'s own
+ * `body .mono` rule for the same reason that one exists — see its doc
+ * comment — but this page never emits `designBaseCss()`, so without a
+ * local copy `.mono`-classed elements here (the breadcrumb, `EditorHero`)
+ * would have no font-family rule at all and fall back to `--font-body`.
+ * Before #969, this worked by accident: `.mono`'s rule lived inside
+ * `primitivesCss()` instead, which this page also emits (`<PrimitivesStyle
+ * />` below) and which happens to select on bare `body`, so it matched
+ * regardless of this page's `.zm-shell` scoping. Now that `.mono` moved out
+ * of the CSS-Modules-hashed `primitives.module.css` for good, this page
+ * needs its own copy rather than continuing to depend on that
+ * coincidence. Two classes (`.${selector} .mono`) beats the SVG-embedded
+ * bare `.mono` selector on specificity alone, same as `body .mono` does.
  */
 function scopedDesignTokensCss(selector: string): string {
   const colors = Object.entries(COLORS)
@@ -180,6 +194,10 @@ ${colors}
 .${selector} .display {
   font-family: var(--font-display);
   font-weight: ${FONT_WEIGHT.bold};
+}
+
+.${selector} .mono {
+  font-family: var(--font-mono);
 }
 
 .${selector} a {

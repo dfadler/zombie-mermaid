@@ -34,6 +34,7 @@
 import { createElement } from 'react'
 import { render, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { PRIMITIVES_CLASSES } from '../demo/components/generated/primitives-classes.ts'
 import {
   ACCENTS,
   COLORS,
@@ -159,15 +160,18 @@ describe('primitivesCss', () => {
     }
   })
 
-  it('defines each base class exactly once', () => {
-    for (const selector of Object.keys(CANVAS_BASE_RULES)) {
-      expect(css.match(new RegExp(`\\.${selector} \\{`, 'g'))).toHaveLength(1)
+  it('defines each base class exactly once, under its hashed name', () => {
+    for (const selector of Object.keys(CANVAS_BASE_RULES) as Array<
+      keyof typeof PRIMITIVES_CLASSES
+    >) {
+      const hashed = PRIMITIVES_CLASSES[selector]
+      expect(css.match(new RegExp(`\\.${hashed} \\{`, 'g'))).toHaveLength(1)
     }
   })
 
-  it('points .mono at the tokens module font stack', () => {
-    expect(css).toContain('font-family: var(--font-mono);')
-  })
+  // .mono isn't part of primitives.module.css (zombie-mermaid#969 moved it
+  // to tokens.tsx's designBaseCss() — see that function's doc comment for
+  // why), so demo-design-tokens.test.ts covers it instead of here.
 
   // primitivesCss() now delegates to primitives.module.css — a real static
   // CSS file, through the CSS Modules seam in scripts/load-css-module.ts
@@ -210,7 +214,7 @@ describe('Card', () => {
     const { container } = renderComponent(Card, { children: 'Body' })
     const el = within(container).getByText('Body')
     expect(el.tagName).toBe('DIV')
-    expect(el.className).toBe('card')
+    expect(el.className).toBe(PRIMITIVES_CLASSES.card)
     expect(el.getAttribute('style')).toBeNull()
   })
 
@@ -269,7 +273,7 @@ describe('Card', () => {
     })
     const el = within(container).getByRole('link', { name: 'Flowchart' })
     expect(el.tagName).toBe('A')
-    expect(el.className).toBe('card crosslink-card')
+    expect(el.className).toBe(`${PRIMITIVES_CLASSES.card} crosslink-card`)
     expect(el.getAttribute('href')).toBe('#flowchart')
     expect(el.style.padding).toBe('22px')
   })
@@ -289,7 +293,7 @@ describe('Pill', () => {
   it('defaults to the muted treatment with no accent', () => {
     const { container } = renderComponent(Pill, { children: 'v1.2.0' })
     const el = within(container).getByText('v1.2.0')
-    expect(el.className).toBe('pill')
+    expect(el.className).toBe(PRIMITIVES_CLASSES.pill)
     expect(el.style.background).toBe('var(--panel)')
     expect(el.style.border).toBe('1px solid var(--border)')
     expect(el.style.color).toBe('var(--text-dim)')
@@ -347,7 +351,7 @@ describe('Pill', () => {
       children: 'npm install zombie-mermaid',
     })
     const el = within(container).getByText('npm install zombie-mermaid')
-    expect(el.className).toBe('pill mono')
+    expect(el.className).toBe(`${PRIMITIVES_CLASSES.pill} mono`)
     expect(el.style.fontSize).toBe('11px')
   })
 
@@ -369,7 +373,7 @@ describe('SectionEyebrow', () => {
     })
     const el = within(container).getByText('Diagrams')
     expect(el.tagName).toBe('DIV')
-    expect(el.className).toBe('section-eyebrow')
+    expect(el.className).toBe(PRIMITIVES_CLASSES['section-eyebrow'])
     expect(el.getAttribute('style')).toBeNull()
   })
 
@@ -395,7 +399,7 @@ describe('CTA', () => {
       name: 'View the live demo',
     })
     expect(el.tagName).toBe('A')
-    expect(el.className).toBe('pill')
+    expect(el.className).toBe(PRIMITIVES_CLASSES.pill)
     expect(el.getAttribute('href')).toBe('#demo')
     expect(el.style.background).toBe('var(--violet)')
     expect(el.style.color).toBe('var(--bg)')

@@ -28,20 +28,29 @@
  * Modules implementation (scoped class names, real PostCSS/`lightningcss`
  * processing) instead of a hand-rolled template literal.
  *
- * ## Class names are left unhashed, deliberately
+ * ## Hashing turns on per file, not globally
  *
- * `generateScopedName: '[local]'` keeps every output class name
+ * `generateScopedName: '[local]'` keeps an output class name
  * byte-identical to the one written in the `.module.css` file — no content
  * hash suffix. That's the opposite of a typical CSS Modules setup, where
- * hashing is the whole point (collision-proof scoping). It's deliberate
- * here: #938 opens the seam for *one* `*Css()` function at a time, and this
- * repo's existing selectors (`.card`, `.pill`, `.section-eyebrow`, …) are
- * still referenced directly as string literals at call sites that haven't
- * been converted yet, and by tests. Hashing would silently break every one
- * of those until the whole component migrates in lockstep — exactly the
- * "convert everything in one PR" scope #938 explicitly defers. A future
- * PR that finishes converting a component's classes *and* every consumer
- * to import the classes map can safely turn hashing back on for that file.
+ * hashing is the whole point (collision-proof scoping). #938 started every
+ * file on `[local]` deliberately: it opened the seam for *one* `*Css()`
+ * function at a time, and this repo's existing selectors (`.card`, `.pill`,
+ * `.section-eyebrow`, …) were still referenced directly as string literals
+ * at call sites that hadn't converted yet, and by tests. Hashing would have
+ * silently broken every one of those until the whole component migrated in
+ * lockstep — exactly the "convert everything in one PR" scope #938
+ * explicitly deferred.
+ *
+ * `HASHED_MODULE_CSS_BASENAMES` below is the opt-in list of files that have
+ * since finished that migration (zombie-mermaid#969 turned on
+ * `primitives.module.css`, the first entry) — every consumer confirmed to
+ * import the compiled classes map rather than hardcode a selector string.
+ * A `.module.css` file not listed there still gets `[local]`. Adding a file
+ * to the list is therefore the actual "did we finish migrating" record this
+ * repo has, and `__tests__/css-module-classes-usage.test.ts` enforces it:
+ * it fails if any hashed file's source class names still show up as a bare
+ * string literal outside that file's own generated classes module.
  *
  * ## Disk cache
  *
@@ -60,7 +69,7 @@
  */
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { resolve as resolvePath } from 'node:path'
+import { basename, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build as viteBuild, type Plugin } from 'vite'
 
@@ -70,7 +79,77 @@ import { build as viteBuild, type Plugin } from 'vite'
  * a different virtual-entry shape) — folded into the cache key so a stale
  * cache from before the change is never reused.
  */
-const CACHE_VERSION = 1
+const CACHE_VERSION = 4
+
+/**
+ * `.module.css` files (by basename) that have finished migrating every
+ * consumer off string-literal class names and are safe to hash for real —
+ * see this file's header comment. Add a file here only once
+ * `__tests__/css-module-classes-usage.test.ts` (or an equivalent audit)
+ * confirms nothing outside its generated classes module still hardcodes
+ * one of its selectors.
+ */
+const HASHED_MODULE_CSS_BASENAMES = new Set(['primitives.module.css'])
+
+/**
+ * Vite passes `generateScopedName` the CSS file's absolute filesystem
+ * path — stable within one machine/checkout, but not across them (a CI
+ * runner's checkout root, a different contributor's clone, or even a
+ * sibling git worktree of this same repo all resolve to a different
+ * absolute path). Hashing the path relative to the repo root instead is
+ * stable everywhere this runs, since it depends only on the file's
+ * position in the repo, not where the repo itself happens to live on
+ * disk. `sep` normalizes to forward slashes so the hash doesn't also vary
+ * between a Windows contributor and everyone else.
+ */
+function repoRelativePosixPath(absolutePath: string): string {
+  return relative(REPO_ROOT, absolutePath).split(sep).join('/')
+}
+
+/**
+ * Builds the `generateScopedName` function Vite calls per class name,
+ * closing over `relativePath` and `rawSource` rather than trusting the
+ * `filename`/`css` arguments Vite's own callback provides.
+ *
+ * The callback's `css` argument is Vite's own *transformed* intermediate
+ * representation — an internal implementation detail of whichever CSS
+ * backend (PostCSS vs. `lightningcss`) is active, not the literal file
+ * bytes on disk. First fixing only the absolute-path input (see
+ * `repoRelativePosixPath`'s doc comment; caught in review on #1095 by CI
+ * failing) wasn't enough: CI kept computing a different hash than every
+ * local run, on a repo-relative path both agreed on — meaning `css`
+ * itself differs by platform/toolchain, not just `filename`. Hashing
+ * `rawSource` (the file's bytes, read directly via `readFile` before Vite
+ * ever touches them — see `loadCssModule` below) instead of Vite's `css`
+ * argument removes that entire axis of platform variance: the hash now
+ * depends only on inputs this module reads itself, byte-for-byte
+ * identical wherever the same git commit is checked out.
+ */
+function hashedScopedName(
+  relativePath: string,
+  rawSource: string,
+): (name: string) => string {
+  return (name: string): string => {
+    const hash = createHash('sha256')
+      .update(relativePath)
+      .update('\0')
+      .update(rawSource)
+      .update('\0')
+      .update(name)
+      .digest('hex')
+      .slice(0, 6)
+    return `${name}_${hash}`
+  }
+}
+
+function generateScopedNameFor(
+  cssFilePath: string,
+  source: string,
+): string | ((name: string) => string) {
+  return HASHED_MODULE_CSS_BASENAMES.has(basename(cssFilePath))
+    ? hashedScopedName(repoRelativePosixPath(cssFilePath), source)
+    : '[local]'
+}
 
 /**
  * Resolves a `.module.css` URL to a real filesystem path.
@@ -101,14 +180,33 @@ function toFilePath(url: URL): string {
 }
 
 const CACHE_DIR = toFilePath(new URL('../.css-modules-cache/', import.meta.url))
+/**
+ * Deliberately `process.cwd()`, not `toFilePath(new URL('../',
+ * import.meta.url))` the way `CACHE_DIR` above computes a path relative to
+ * this file: Vite's dev-server module graph addresses a file outside
+ * whatever directory a jsdom-environment test transforms as its "root"
+ * with a `/@fs/<absolute path>` prefix, which `toFilePath`'s synthetic-URL
+ * fallback doesn't strip — confirmed empirically (a `demo-primitives.test.ts`
+ * CI run logged `import.meta.url` for *this* module, under jsdom, as
+ * `http://localhost:.../@fs/home/runner/work/.../scripts/load-css-module.ts`,
+ * producing a nonsense doubled `REPO_ROOT` and, with it, a wrong
+ * `repoRelativePosixPath()` — the actual cause of #1095's CI-only hash
+ * mismatch, which the repo-relative-path and raw-source fixes upstream of
+ * this comment didn't fix because both still measured "relative to" this
+ * broken value). `process.cwd()` sidesteps the whole `/@fs/` question: per
+ * `toFilePath`'s own doc comment, a real generator run and every Vitest
+ * process (jsdom or not) always start from the repo root already.
+ */
+const REPO_ROOT = process.cwd()
 
 export interface CssModuleResult<
   Classes extends Record<string, string> = Record<string, string>,
 > {
   /** The compiled stylesheet text, ready to embed in a `<style>` element. */
   css: string
-  /** Source class name -> output class name (identical today; see this
-   * module's header comment on why hashing is off). */
+  /** Source class name -> output class name — hashed or identical
+   * depending on whether this file is in `HASHED_MODULE_CSS_BASENAMES`;
+   * see this module's header comment. */
   classes: Classes
 }
 
@@ -171,9 +269,9 @@ export async function loadCssModule<
     plugins: [virtualEntryPlugin(cssFilePath)],
     css: {
       modules: {
-        // See this file's header comment: hashing stays off until every
-        // consumer of a given `*Css()` function's classes migrates.
-        generateScopedName: '[local]',
+        // See this file's header comment: hashing turns on per file, once
+        // every consumer of that file's classes has migrated.
+        generateScopedName: generateScopedNameFor(cssFilePath, source),
       },
     },
     build: {

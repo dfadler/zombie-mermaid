@@ -23,6 +23,7 @@
  * The `@jsxRuntime` pragma on line 1 is required in every .tsx file here —
  * see the `jsx` comment in demo/tsconfig.json.
  */
+import { PRIMITIVES_CLASSES } from './generated/primitives-classes.ts'
 import { ChevronRightIcon } from './icons.tsx'
 import { type Accent, accentVar } from './primitives.tsx'
 import {
@@ -117,7 +118,7 @@ export function DiagramTagApp({
           }}
         >
           <TagBreadcrumb label={label} />
-          <div className="section-eyebrow">Tag</div>
+          <div className={PRIMITIVES_CLASSES['section-eyebrow']}>Tag</div>
           <h1
             className="page-h1"
             style={{
@@ -179,7 +180,7 @@ export function DiagramTagApp({
             <a
               key={item.href}
               href={item.href}
-              className="card gallery-card"
+              className={`${PRIMITIVES_CLASSES.card} gallery-card`}
               style={{ borderColor: colorVar('--border') }}
             >
               <div
