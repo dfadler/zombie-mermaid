@@ -6,15 +6,8 @@ import {
   createPathBudget,
   DEFAULT_PATH_BUDGET,
 } from '../pathfinder.ts'
-import type {
-  GridCoord,
-  PathBudget,
-} from '../types.ts'
-import {
-  createGrid,
-  placeBlock,
-  type Grid,
-} from '../grid-occupancy.ts'
+import type { GridCoord, PathBudget } from '../types.ts'
+import { createGrid, placeBlock, type Grid } from '../grid-occupancy.ts'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
 /**

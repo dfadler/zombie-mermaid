@@ -1,18 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import {
-  stateStartRenderer,
-  stateEndRenderer,
-} from '../shapes/state.ts'
+import { stateStartRenderer, stateEndRenderer } from '../shapes/state.ts'
 import { canvasToString } from '../canvas.ts'
-import {
-  Up,
-  Down,
-  Left,
-  Right,
-  Middle,
-  UpperLeft,
-} from '../types.ts'
+import { Up, Down, Left, Right, Middle, UpperLeft } from '../types.ts'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
 
 const unicodeOptions: ShapeRenderOptions = { useAscii: false, padding: 1 }

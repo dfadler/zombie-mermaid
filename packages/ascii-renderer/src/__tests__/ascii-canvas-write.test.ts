@@ -12,12 +12,7 @@
  * replaced.
  */
 import { describe, it, expect } from 'vitest'
-import {
-  mkCanvas,
-  mkRoleCanvas,
-  write,
-  getCanvasSize,
-} from '../canvas.ts'
+import { mkCanvas, mkRoleCanvas, write, getCanvasSize } from '../canvas.ts'
 import type { CharRole } from '../types.ts'
 
 describe('canvas.ts write()', () => {

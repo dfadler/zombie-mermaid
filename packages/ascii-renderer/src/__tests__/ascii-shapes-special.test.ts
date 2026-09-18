@@ -7,12 +7,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { canvasToString } from '../canvas.ts'
-import {
-  Up,
-  Down,
-  Left,
-  Right,
-} from '../types.ts'
+import { Up, Down, Left, Right } from '../types.ts'
 import {
   subroutineRenderer,
   doublecircleRenderer,

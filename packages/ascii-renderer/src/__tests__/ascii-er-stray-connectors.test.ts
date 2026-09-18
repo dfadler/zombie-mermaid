@@ -8,10 +8,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import {
-  chooseFreeRow,
-  isRowFree,
-} from '../er-diagram.ts'
+import { chooseFreeRow, isRowFree } from '../er-diagram.ts'
 import { mkCanvas, write } from '../canvas.ts'
 import type { Canvas } from '../types.ts'
 

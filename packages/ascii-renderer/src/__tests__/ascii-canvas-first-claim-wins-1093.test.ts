@@ -20,11 +20,7 @@
  * `JUNCTION_CHARS`).
  */
 import { describe, it, expect } from 'vitest'
-import {
-  mkCanvas,
-  firstClaimWins,
-  mergeCanvases,
-} from '../canvas.ts'
+import { mkCanvas, firstClaimWins, mergeCanvases } from '../canvas.ts'
 import type { Canvas } from '../types.ts'
 
 function canvasWithChar(

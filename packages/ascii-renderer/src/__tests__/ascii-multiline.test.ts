@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import {
-  mkCanvas,
-  canvasToString,
-} from '../canvas.ts'
+import { mkCanvas, canvasToString } from '../canvas.ts'
 import {
   drawMultilineTextCentered,
   drawMultilineTextLeft,

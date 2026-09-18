@@ -7,14 +7,8 @@ import {
   findUnrelatedOverlap,
   claimPathOwners,
 } from '../edge-cell-styles.ts'
-import {
-  createGrid,
-  placeBlock,
-} from '../grid-occupancy.ts'
-import type {
-  AsciiEdge,
-  AsciiNode,
-} from '../types.ts'
+import { createGrid, placeBlock } from '../grid-occupancy.ts'
+import type { AsciiEdge, AsciiNode } from '../types.ts'
 import { Down } from '../types.ts'
 
 describe('edge-cell-styles', () => {

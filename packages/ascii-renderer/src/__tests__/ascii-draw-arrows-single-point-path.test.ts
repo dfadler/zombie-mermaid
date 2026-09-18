@@ -18,15 +18,8 @@
 import { describe, it, expect } from 'vitest'
 import { drawArrow } from '../draw-arrows.ts'
 import { Down } from '../types.ts'
-import {
-  mkCanvas,
-  mkRoleCanvas,
-} from '../canvas.ts'
-import type {
-  AsciiEdge,
-  AsciiGraph,
-  AsciiNode,
-} from '../types.ts'
+import { mkCanvas, mkRoleCanvas } from '../canvas.ts'
+import type { AsciiEdge, AsciiGraph, AsciiNode } from '../types.ts'
 import { createGrid } from '../grid-occupancy.ts'
 
 function makeNode(name: string, x: number, y: number): AsciiNode {

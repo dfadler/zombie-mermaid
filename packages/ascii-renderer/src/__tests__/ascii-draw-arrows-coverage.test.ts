@@ -5,10 +5,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import {
-  unicodeArrowChar,
-  asciiArrowChar,
-} from '../draw-arrows.ts'
+import { unicodeArrowChar, asciiArrowChar } from '../draw-arrows.ts'
 import {
   Up,
   Down,
