@@ -1,5 +1,12 @@
 # @zombie-mermaid/mcp
 
+## 2.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`43bac5a`](https://github.com/dfadler/zombie-mermaid/commit/43bac5abfb13064623ad94042b20ca9f4251fdaf)]:
+  - @zombie-mermaid/ascii-renderer@2.2.2
+
 ## 2.2.1
 
 ### Patch Changes
