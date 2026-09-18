@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fixSequenceActivationsHandler } from '../../packages/mcp/src/tools/fix-sequence-activations.ts'
+import { fixSequenceActivationsHandler } from '../tools/fix-sequence-activations.ts'
 
 interface FixReport {
   ok: boolean
