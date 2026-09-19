@@ -1,5 +1,41 @@
 # Changelog
 
+## 2.2.5
+
+### Patch Changes
+
+- [#1102](https://github.com/dfadler/zombie-mermaid/pull/1102) [`70c2e2a`](https://github.com/dfadler/zombie-mermaid/commit/70c2e2a401fe409b91c9de75a326bfd37481eb78) Thanks [@dfadler](https://github.com/dfadler)! - Pin the transitive `qs` dependency (pulled in via `@modelcontextprotocol/sdk`'s Express-based HTTP transport) to `^6.16.0`, fixing two moderate-severity advisories in `qs@6.15.3`: an array-limit bypass via bracket-key comma parsing ([GHSA-x5fp-wj9c-mxmx](https://github.com/advisories/GHSA-x5fp-wj9c-mxmx)) and a denial-of-service via attacker-controlled `isBuffer` ([GHSA-4mjr-xmp4-gh2g](https://github.com/advisories/GHSA-4mjr-xmp4-gh2g)).
+
+- [#1112](https://github.com/dfadler/zombie-mermaid/pull/1112) [`1983e94`](https://github.com/dfadler/zombie-mermaid/commit/1983e949e4250dd30e691b0e7d65544c68142f30) Thanks [@dfadler](https://github.com/dfadler)! - Implements the [#622](https://github.com/dfadler/zombie-mermaid/issues/622) publish strategy: `@zombie-mermaid/core`,
+  `@zombie-mermaid/mermaid-parser`, `@zombie-mermaid/svg-renderer`,
+  `@zombie-mermaid/ascii-renderer`, and `@zombie-mermaid/mcp` are now real,
+  independently-built dependencies of the published `zombie-mermaid` package
+  instead of bundled straight into its `dist/`. `dist/index.js`/`dist/ascii.js`/
+  `dist/mcp.js` are correspondingly much smaller — they now import those
+  packages rather than inline their compiled source.
+
+  This is a packaging change only: `zombie-mermaid`'s own public API (`.`,
+  `./ascii`, `./mcp`) and every documented export are unchanged, verified by
+  loading the built output and by the full existing test suite passing
+  unmodified. `.changeset/config.json`'s `fixed` group keeps all six packages
+  (this one plus the five above) on the same version going forward.
+
+  `@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer` are now
+  documented, standalone-usable packages (see their own READMEs) for anyone
+  who wants just ASCII rendering or just SVG layout/render primitives without
+  the full umbrella. `core`, `mermaid-parser`, and `mcp` stay internal-only:
+  published under the scope so the names can't be squatted, version-locked
+  with the rest, but with no standalone support commitment beyond backing the
+  umbrella (and, for `svg-renderer`/`ascii-renderer`, the two now-public
+  packages).
+
+- Updated dependencies [[`43bac5a`](https://github.com/dfadler/zombie-mermaid/commit/43bac5abfb13064623ad94042b20ca9f4251fdaf)]:
+  - @zombie-mermaid/ascii-renderer@2.2.5
+  - @zombie-mermaid/mcp@2.2.5
+  - @zombie-mermaid/core@2.2.5
+  - @zombie-mermaid/mermaid-parser@2.2.5
+  - @zombie-mermaid/svg-renderer@2.2.5
+
 ## 2.2.4
 
 ### Patch Changes
