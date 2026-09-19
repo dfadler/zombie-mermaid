@@ -1,4 +1,4 @@
-# Monorepo conversion: current status and the remaining publish-strategy decision
+# Monorepo conversion: current status and the implemented publish strategy
 
 This was requested as a pre-implementation proposal synthesizing #416, #620,
 #621, and #622 — written as if the package split were still a future

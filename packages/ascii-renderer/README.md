@@ -23,6 +23,8 @@ console.log(ascii)
 ```
 
 ```ts
+const text = 'graph LR\n  A --> B'
+
 renderMermaidASCII(text, {
   useAscii: false, // true = plain ASCII (+,-,|,>), false = Unicode box-drawing (┌,─,│,►)
   paddingX: 5,

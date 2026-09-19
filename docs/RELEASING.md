@@ -42,13 +42,20 @@ packages` pull request. That PR contains the version bump in
    all pending `.changeset/*.md` files, which it deletes.
 2. **No pending changesets, and the previous push was that Version PR being
    merged** — versions are already bumped, so instead of opening another PR,
-   the workflow runs `pnpm changeset publish`, which:
-   - publishes the package to npm (authenticated via OIDC trusted
+   the workflow runs `pnpm changeset publish`, which, for each package with
+   a pending version bump:
+   - publishes that package to npm (authenticated via OIDC trusted
      publishing, with [provenance](https://docs.npmjs.com/generating-provenance-statements)
      attached — see `publishConfig.provenance` in `package.json`)
-   - creates a git tag for the release (`vX.Y.Z`)
-   - creates a GitHub Release from the changelog entry (`create-github-releases: true`
-     in the workflow)
+   - creates a git tag for that package's release, named `<package
+name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
+     `@zombie-mermaid/core@2.2.5`) — not a single shared `vX.Y.Z` tag
+   - creates a GitHub Release from that package's changelog entry
+     (`create-github-releases: true` in the workflow)
+
+With `.changeset/config.json`'s `fixed` group locking all six packages to
+one version, a single release cuts six tags and six GitHub Releases in the
+same run — one per package, all sharing the same version number.
 
 In short: **merging the Version PR is what triggers the actual npm
 publish.** There's no separate "cut a release" step or GitHub Release to
@@ -118,9 +125,9 @@ then waits on a maintainer's separate, manual 2FA-backed approval before
 anything actually goes live) unless direct publish is explicitly also
 selected. This workflow's `pnpm changeset publish` step does a direct
 publish, not a staged one — if a newly-created config defaults to
-staged-only, that step will appear to succeed while the package silently
-sits unpublished, waiting on a manual approval nobody knows to give.
-Double-check this setting against npm's current
+staged-only, that step fails outright (npm rejects the direct `npm publish`
+call for that package) rather than silently succeeding, so the failure is
+visible in the workflow run. Double-check this setting against npm's current
 [trusted publishers docs](https://docs.npmjs.com/trusted-publishers/) rather
 than assuming the option is where this note describes it — npm has changed
 the default here before and may again.
