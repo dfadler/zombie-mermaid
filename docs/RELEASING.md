@@ -17,35 +17,17 @@ bump the package version, run:
 pnpm changeset
 ```
 
-This asks which kind of bump the change needs (patch/minor/major — this is
-still a single _published_ package, `zombie-mermaid`, so there's only one to
-pick) and for a short summary. It writes a markdown file under `.changeset/`
-— commit that file alongside your change. A PR can contain more than one
+This asks which package(s) to bump and which kind of bump the change needs
+(patch/minor/major), then for a short summary. As of #622, the workspace has
+six packages — `zombie-mermaid` and the five internal `@zombie-mermaid/*`
+packages it depends on (`core`, `mermaid-parser`, `svg-renderer`,
+`ascii-renderer`, `mcp`) — but `.changeset/config.json`'s `fixed` group
+locks all six to the same version, so picking any one of them (`zombie-mermaid`
+is simplest) bumps them all together at release time; you don't need to
+select all six by hand. It writes a markdown file under `.changeset/` —
+commit that file alongside your change. A PR can contain more than one
 changeset, and a changeset can be empty (`pnpm changeset add --empty`) for
 changes that don't need a release (docs, CI, tests).
-
-The workspace also contains five internal `@zombie-mermaid/*` packages
-(`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`, under
-`packages/`) that #769 made publish-ready in shape. They are **not**
-published, not real runtime dependencies of `zombie-mermaid` yet, and not
-part of `.changeset/config.json`'s `fixed` group (still `[]`) — the
-umbrella's own build (`config/vite.config.lib.ts`) still bundles their source
-directly into `dist/`, same as before #769. See "Future: multi-package
-publish" below.
-
-**`files` stopgap:** because that source lives under `packages/*/src/`
-instead of the root `src/`, and `package.json`'s `files` field only listed
-`src/`, `dist/`, `LICENSE`, and `README.md`, the published tarball quietly
-stopped shipping readable source for the class/ER/sequence/xychart parsers,
-the ASCII renderer, and the MCP server the moment #769 moved that code out
-of root `src/` — even though the compiled `dist/` output (which bundles all
-five packages) was and still is complete and correct. `package.json`'s
-`files` array now also lists `packages/{core,mermaid-parser,svg-renderer,
-ascii-renderer,mcp}/src/` to restore that parity as a stopgap. **Remove
-those five extra entries the same release that the "Future: multi-package
-publish" externalization below ships** (i.e. bump as a major, since at that
-point the five packages are published in their own right and no longer need
-their source duplicated inside the `zombie-mermaid` tarball).
 
 Not every change needs one — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
@@ -60,13 +42,20 @@ packages` pull request. That PR contains the version bump in
    all pending `.changeset/*.md` files, which it deletes.
 2. **No pending changesets, and the previous push was that Version PR being
    merged** — versions are already bumped, so instead of opening another PR,
-   the workflow runs `pnpm changeset publish`, which:
-   - publishes the package to npm (authenticated via OIDC trusted
+   the workflow runs `pnpm changeset publish`, which, for each package with
+   a pending version bump:
+   - publishes that package to npm (authenticated via OIDC trusted
      publishing, with [provenance](https://docs.npmjs.com/generating-provenance-statements)
      attached — see `publishConfig.provenance` in `package.json`)
-   - creates a git tag for the release (`vX.Y.Z`)
-   - creates a GitHub Release from the changelog entry (`create-github-releases: true`
-     in the workflow)
+   - creates a git tag for that package's release, named `<package
+name>@<version>` (e.g. `zombie-mermaid@2.2.5`,
+     `@zombie-mermaid/core@2.2.5`) — not a single shared `vX.Y.Z` tag
+   - creates a GitHub Release from that package's changelog entry
+     (`create-github-releases: true` in the workflow)
+
+With `.changeset/config.json`'s `fixed` group locking all six packages to
+one version, a single release cuts six tags and six GitHub Releases in the
+same run — one per package, all sharing the same version number.
 
 In short: **merging the Version PR is what triggers the actual npm
 publish.** There's no separate "cut a release" step or GitHub Release to
@@ -77,90 +66,81 @@ generated automatically as part of this flow.
 
 Trusted publishing has to be linked on the npm side before any of this can
 publish successfully. **This can only be done by whoever owns/administers
-the `zombie-mermaid` package on npmjs.com** (currently the fork maintainer),
-and only needs to be done once:
+each package on npmjs.com** (currently the fork maintainer), and only needs
+to be done once **per package name** — as of #622 that means **six separate
+packages**, not just `zombie-mermaid`:
 
-1. Sign in to [npmjs.com](https://www.npmjs.com/) and go to the `zombie-mermaid`
-   package's settings page: `https://www.npmjs.com/package/zombie-mermaid/access`
-   (if the package hasn't been published under this name before, trusted
-   publishing can instead be configured when the package is first created —
-   see npm's docs linked above if that's the situation).
-2. Find the **Trusted Publisher** section and add a GitHub Actions publisher
-   with these exact values (all fields are case-sensitive):
-   - **Organization or user:** `dfadler`
-   - **Repository:** `zombie-mermaid`
-   - **Workflow filename:** `publish.yml`
-   - **Environment name:** leave blank (this workflow doesn't use a GitHub
-     Environment)
-3. Save. From then on, npm will accept publishes for this package that come
-   from a GitHub Actions run of `dfadler/zombie-mermaid`'s `publish.yml`
-   workflow on `main`, authenticated via that run's OIDC token — no npm
-   token needed in CI.
-
-Until this is configured, the publish step in the workflow will fail
-authentication (`ENEEDAUTH` or similar) even though everything else in the
-pipeline succeeds. That's expected and isn't a bug in the workflow — it's
-this missing link.
-
-If an `NPM_TOKEN` repository secret still exists from the old release flow,
-it's no longer used anywhere in `publish.yml` and can be deleted from the
-repo's Actions secrets once trusted publishing is confirmed working.
-
-## Future: multi-package publish (deferred, not part of this setup yet)
-
-#769 made the five internal `@zombie-mermaid/*` packages under `packages/`
-(`core`, `mermaid-parser`, `svg-renderer`, `ascii-renderer`, `mcp`)
-publish-ready **in shape** — real `package.json` `name`/`exports`/`main`/
-`module`/`types` pointing at their own built `dist/`, `publishConfig:
-{ access: "public", provenance: true }`, `"private"` removed, and each has
-its own independent build (`packages/*/vite.config.ts`, runnable via
-`pnpm run build:packages`). **None of that is wired up yet**: the umbrella's
-own build still bundles all five directly into `dist/index.js`/`dist/ascii.js`/
-`dist/mcp.js` (they are not external `dependencies` of `zombie-mermaid`),
-`.changeset/config.json`'s `fixed` group is still `[]`, and none of the five
-have ever been published to npm.
-
-Actually flipping this — externalizing the five packages in
-`config/vite.config.lib.ts`, declaring them as real `dependencies`, and locking all
-six packages to one version via the `fixed` group — is a separate, future
-PR. It is explicitly gated on completing the one-time npm trusted-publishing
-setup above, repeated once per new package name, **before** that PR merges:
-
+- `zombie-mermaid`
 - `@zombie-mermaid/core`
 - `@zombie-mermaid/mermaid-parser`
 - `@zombie-mermaid/svg-renderer`
 - `@zombie-mermaid/ascii-renderer`
 - `@zombie-mermaid/mcp`
 
-The reason for the ordering: once `.changeset/config.json`'s `fixed` group
-locks these six packages together, `workspace:*` gets rewritten to a
-concrete version number at publish time regardless of whether that specific
-package's publish actually succeeds — so flipping the externalization
-before every one of these five names has trusted publishing configured
-would ship a `zombie-mermaid` npm package whose manifest points at
-dependencies that don't exist on the registry, breaking `npm install
-zombie-mermaid` for every consumer. Configure trusted publishing for all
-five names first (same steps as above, substituting the scoped package name
-and URL-encoding the `@`/`/`, e.g.
-`https://www.npmjs.com/package/@zombie-mermaid/core/access` — each can be
-configured independently and at different times), _then_ open the
-externalization PR.
+npm trusted publishing is configured per package name individually — there
+is no "cover the whole `@zombie-mermaid` scope at once" option — so this
+setup has to be repeated six times. All six are configured as of #622. For
+a package that ever needs reconfiguring, or a new package added later:
 
-When configuring trusted publishing for each of these five new package
-names, double-check the **Allowed actions** setting: make sure a direct
-**`npm publish`** is permitted, not only a staged one. npm's
+1. Sign in to [npmjs.com](https://www.npmjs.com/) and go to that package's
+   settings page: `https://www.npmjs.com/package/<name>/access` (URL-encode
+   the `@`/`/` in a scoped name, e.g.
+   `https://www.npmjs.com/package/@zombie-mermaid/core/access` — or navigate
+   there from the package's own page). If the package hasn't been published
+   under this name before, it needs one manual bootstrap publish first (a
+   plain, human-authenticated `npm publish` from a maintainer's machine) —
+   npm only exposes the Trusted Publisher UI on a package that already
+   exists.
+2. Find the **Trusted Publisher** section and add a GitHub Actions publisher
+   with these exact values (all fields are case-sensitive, and identical
+   across all six packages — only the package being configured changes):
+   - **Organization or user:** `dfadler`
+   - **Repository:** `zombie-mermaid`
+   - **Workflow filename:** `publish.yml`
+   - **Environment name:** leave blank (this workflow doesn't use a GitHub
+     Environment)
+3. Save. From then on, npm will accept publishes for that package that come
+   from a GitHub Actions run of `dfadler/zombie-mermaid`'s `publish.yml`
+   workflow on `main`, authenticated via that run's OIDC token — no npm
+   token needed in CI.
+
+Until this is configured **for a given package**, `pnpm changeset publish`
+will fail to publish _that_ package specifically (`ENEEDAUTH` or similar)
+even if the others succeed — `changesets/action` continues on to the next
+package rather than aborting the whole step, but the run as a whole will
+report the failure. That's expected and isn't a bug in the workflow — it's
+this missing link, and it's fine to configure multiple packages at different
+times (each unblocks itself independently).
+
+If an `NPM_TOKEN` repository secret still exists from the old release flow,
+it's no longer used anywhere in `publish.yml` and can be deleted from the
+repo's Actions secrets once trusted publishing is confirmed working.
+
+When configuring trusted publishing for any package (including a new one
+added in the future), double-check the **Allowed actions** setting: make
+sure a direct **`npm publish`** is permitted, not only a staged one. npm's
 trusted-publisher UI has, at various points, defaulted a _new_
 configuration to allow staged publishing only (`npm stage publish` — which
 then waits on a maintainer's separate, manual 2FA-backed approval before
 anything actually goes live) unless direct publish is explicitly also
-selected. The future externalization PR's `pnpm changeset publish` step
-does a direct publish, not a staged one — if a newly-created config for one
-of these five packages defaults to staged-only, that step will appear to
-succeed while the package silently sits unpublished, waiting on a manual
-approval nobody knows to give. Double-check this setting against npm's
-current [trusted publishers docs](https://docs.npmjs.com/trusted-publishers/)
-rather than assuming the option is where this note describes it — npm has
-changed the default here before and may again.
+selected. This workflow's `pnpm changeset publish` step does a direct
+publish, not a staged one — if a newly-created config defaults to
+staged-only, that step fails outright (npm rejects the direct `npm publish`
+call for that package) rather than silently succeeding, so the failure is
+visible in the workflow run. Double-check this setting against npm's current
+[trusted publishers docs](https://docs.npmjs.com/trusted-publishers/) rather
+than assuming the option is where this note describes it — npm has changed
+the default here before and may again.
+
+## Publishing `ascii-renderer` and `svg-renderer` standalone
+
+`@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer` are
+documented, standalone-usable packages — see their own `packages/*/README.md`
+— for anyone who wants just one renderer without the full `zombie-mermaid`
+umbrella. `core`, `mermaid-parser`, and `mcp` stay internal-only: published
+under the scope (so the names can't be squatted) and version-locked with the
+rest, but with no standalone support commitment beyond backing the umbrella
+and the two public renderer packages.
 
 ## Requirements this depends on
 
