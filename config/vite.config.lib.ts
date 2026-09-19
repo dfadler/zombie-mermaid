@@ -256,7 +256,7 @@ export default defineConfig({
         // each package's own `dist/index.d.ts` (built first; see the root
         // `build` script's order) — rather than tsconfig.json's live-source
         // `paths` overrides, which exist for typecheck/IDE use only.
-        tsconfigPath: resolve(ROOT, 'tsconfig.build.json'),
+        tsconfigPath: resolve(ROOT, 'config/tsconfig.build.json'),
         // Never process test files reachable via tsconfig's broad
         // `src/**/*` include — they aren't part of the public API and
         // some rely on devDependency-only ambient types (vitest, jsdom).

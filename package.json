@@ -77,7 +77,12 @@
   "bin": {
     "zombie-mermaid": "dist/cli.js"
   },
-  "files": ["src/", "dist/", "LICENSE", "README.md"],
+  "files": [
+    "src/",
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
   "packageManager": "pnpm@11.13.0",
   "engines": {
     "node": ">=22"
