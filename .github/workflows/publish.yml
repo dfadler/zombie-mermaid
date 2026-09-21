@@ -57,6 +57,9 @@ jobs:
       contents: write # changesets/action commits/pushes the Version PR and tags
       pull-requests: write # changesets/action opens/updates the Version PR
       id-token: write # required for npm trusted publishing (OIDC)
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      badge-changed: ${{ steps.badge-diff.outputs.changed }}
 
     steps:
       - name: Checkout
@@ -119,34 +122,90 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         run: pnpm run badge:bundle-size
 
-      - name: Commit bundle-size badge data
+      # main's branch protection now requires a PR plus 4 passing status
+      # checks ("test", "Build site generator check", "Semgrep SAST scan",
+      # "Changeset present") — this job's own `contents: write` token can no
+      # longer push straight to main (GH006, same failure dashboard-
+      # refresh.yml's header comment documents). See the run this broke on:
+      # https://github.com/dfadler/zombie-mermaid/actions/runs/35637842580
+      # Fixed the same way: hand the changed file to a separate job that
+      # opens a PR via the DASHBOARD_REFRESH_PAT secret instead of pushing
+      # directly (below).
+      - name: Check for badge change
+        id: badge-diff
         if: steps.changesets.outputs.published == 'true'
         run: |
           if git diff --quiet -- badges/bundle-size.json; then
             echo "Bundle size unchanged; nothing to commit."
-            exit 0
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Upload badge artifact
+        if: steps.badge-diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bundle-size-badge
+          path: badges/bundle-size.json
+          retention-days: 1
+
+  commit-badge-data:
+    name: Open bundle-size badge PR
+    needs: release
+    if: needs.release.outputs.published == 'true' && needs.release.outputs.badge-changed == 'true' && github.repository == 'dfadler/zombie-mermaid'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # pushes via DASHBOARD_REFRESH_PAT below, not the job token
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      # No `pnpm install` (or anything else that executes third-party code)
+      # in this job — same rationale as dashboard-refresh.yml's open-pr job:
+      # keeps the repo-writing PAT out of a job that runs arbitrary
+      # dependency lifecycle scripts.
+      - name: Download badge artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bundle-size-badge
+          path: badges
+
+      - name: Commit, push, and open PR
+        env:
+          GH_TOKEN: ${{ secrets.DASHBOARD_REFRESH_PAT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::DASHBOARD_REFRESH_PAT secret is not set — see dashboard-refresh.yml's header comment for why the default GITHUB_TOKEN can't be used here."
+            exit 1
+          fi
+
+          # Empty changeset satisfies the "Changeset present" required
+          # check without claiming a version bump — a badge-data update
+          # isn't itself a release-worthy change. Hand-written (not `pnpm
+          # changeset add --empty`) since this job has no changesets CLI
+          # installed (see step comment above).
+          mkdir -p .changeset
+          printf -- '---\n---\n' > ".changeset/bundle-size-badge-${GITHUB_RUN_ID}.md"
+
+          BRANCH="chore/bundle-size-badge-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add badges/bundle-size.json
+          git checkout -b "$BRANCH"
+          git add badges/bundle-size.json .changeset
           git commit -m 'chore: update bundle-size badge data'
 
-          # main can move between this job's initial checkout (fetch-depth: 0,
-          # at the top of this workflow) and this push — e.g. another PR
-          # merging while `pnpm test`/`pnpm run typecheck`/changesets/action
-          # run above. A plain `git push` would fail outright on a
-          # non-fast-forward. Retry a bounded number of times, rebasing this
-          # single commit onto the latest main each time, rather than failing
-          # the whole release job over a race with an unrelated merge.
-          max_attempts=5
-          attempt=1
-          until git push origin HEAD:main; do
-            if [ "$attempt" -ge "$max_attempts" ]; then
-              echo "Failed to push bundle-size badge update after $max_attempts attempts." >&2
-              exit 1
-            fi
-            echo "Push rejected (attempt $attempt/$max_attempts) — main moved; rebasing and retrying."
-            git fetch origin main
-            git rebase origin/main
-            attempt=$((attempt + 1))
-          done
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
+
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$BRANCH" \
+            --title 'chore: update bundle-size badge data' \
+            --body 'Automated bundle-size badge refresh after a release (publish.yml). Includes an empty changeset — this is a data update, not a release-worthy change. Merge once checks pass.'
