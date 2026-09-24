@@ -121,6 +121,7 @@
 
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { parseArgs as parseNodeArgs } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import type { Browser, BrowserContext, Page } from '@playwright/test'
 
@@ -216,12 +217,6 @@ Options:
   -h, --help               Show this help
 `
 
-function flagValue(args: string[], name: string): string | undefined {
-  const prefix = `--${name}=`
-  const match = args.find((a) => a.startsWith(prefix))
-  return match ? match.slice(prefix.length) : undefined
-}
-
 /** Parses a `--flag=a,b,c` string list, trimming whitespace and dropping empty entries. */
 function parseStringList(raw: string): string[] {
   return raw
@@ -238,40 +233,50 @@ function parseWidthList(raw: string): number[] {
     .filter((w) => Number.isFinite(w) && w > 0)
 }
 
+// node:util's parseArgs schema for every flag this script accepts. `strict:
+// false` (passed below) keeps this a drop-in for the old flagValue scanner,
+// which silently ignored anything it didn't recognize rather than throwing.
+const PARSE_ARGS_OPTIONS = {
+  'base-url': { type: 'string' },
+  pages: { type: 'string' },
+  widths: { type: 'string' },
+  height: { type: 'string' },
+  tolerance: { type: 'string' },
+  'screenshot-dir': { type: 'string' },
+  out: { type: 'string' },
+  'exit-zero': { type: 'boolean' },
+  themes: { type: 'string' },
+  'theme-pages': { type: 'string' },
+  'theme-widths': { type: 'string' },
+  'skip-theme-check': { type: 'boolean' },
+  help: { type: 'boolean', short: 'h' },
+} as const
+
 /** Pure argv parser — kept separate from `main()` so it's directly testable. */
 export function parseArgs(argv: string[]): AuditOptions {
-  const pagesRaw = flagValue(argv, 'pages')
-  const pages = pagesRaw ? parseStringList(pagesRaw) : DEFAULT_PAGES
-
-  const widthsRaw = flagValue(argv, 'widths')
-  const widths = widthsRaw ? parseWidthList(widthsRaw) : DEFAULT_WIDTHS
-
-  const themesRaw = flagValue(argv, 'themes')
-  const themes = themesRaw ? parseStringList(themesRaw) : DEFAULT_THEMES
-
-  const themePagesRaw = flagValue(argv, 'theme-pages')
-  const themePages = themePagesRaw
-    ? parseStringList(themePagesRaw)
-    : DEFAULT_THEME_PAGES
-
-  const themeWidthsRaw = flagValue(argv, 'theme-widths')
-  const themeWidths = themeWidthsRaw
-    ? parseWidthList(themeWidthsRaw)
-    : DEFAULT_THEME_WIDTHS
+  const { values } = parseNodeArgs({
+    args: argv,
+    options: PARSE_ARGS_OPTIONS,
+    strict: false,
+  })
 
   return {
-    baseUrl: flagValue(argv, 'base-url') ?? DEFAULT_BASE_URL,
-    pages,
-    widths,
-    height: Number(flagValue(argv, 'height') ?? DEFAULT_HEIGHT),
-    tolerancePx: Number(flagValue(argv, 'tolerance') ?? DEFAULT_TOLERANCE_PX),
-    screenshotDir: flagValue(argv, 'screenshot-dir') ?? null,
-    outPath: flagValue(argv, 'out') ?? null,
-    exitZero: argv.includes('--exit-zero'),
-    themes,
-    themePages,
-    themeWidths,
-    skipThemeCheck: argv.includes('--skip-theme-check'),
+    baseUrl: values['base-url'] ?? DEFAULT_BASE_URL,
+    pages: values.pages ? parseStringList(values.pages) : DEFAULT_PAGES,
+    widths: values.widths ? parseWidthList(values.widths) : DEFAULT_WIDTHS,
+    height: Number(values.height ?? DEFAULT_HEIGHT),
+    tolerancePx: Number(values.tolerance ?? DEFAULT_TOLERANCE_PX),
+    screenshotDir: values['screenshot-dir'] ?? null,
+    outPath: values.out ?? null,
+    exitZero: values['exit-zero'] === true,
+    themes: values.themes ? parseStringList(values.themes) : DEFAULT_THEMES,
+    themePages: values['theme-pages']
+      ? parseStringList(values['theme-pages'])
+      : DEFAULT_THEME_PAGES,
+    themeWidths: values['theme-widths']
+      ? parseWidthList(values['theme-widths'])
+      : DEFAULT_THEME_WIDTHS,
+    skipThemeCheck: values['skip-theme-check'] === true,
   }
 }
 
