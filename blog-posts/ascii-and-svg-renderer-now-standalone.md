@@ -1,7 +1,7 @@
 ---
 title: ascii-renderer and svg-renderer are now standalone packages
 date: 2026-09-21
-description: "@zombie-mermaid/ascii-renderer and @zombie-mermaid/svg-renderer are now documented, supported standalone packages on npm — install just the piece you need instead of the whole umbrella."
+description: '@zombie-mermaid/ascii-renderer and @zombie-mermaid/svg-renderer are now documented, supported standalone packages on npm — install just the piece you need instead of the whole umbrella.'
 ---
 
 If all you want from `zombie-mermaid` is terminal output, you no longer need
