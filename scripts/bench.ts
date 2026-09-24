@@ -9,8 +9,8 @@
  * part of the full parse+layout+render pipeline, so a parser-only
  * regression can get masked or diluted by layout/renderer variance in that
  * combined number (issue #876). `parseMs` re-runs just the diagram-type
- * detection + parse step that `src/diagram-registry.ts`'s `parse` field
- * performs for every registered type — `parseClassDiagram`,
+ * detection + parse step that `packages/svg-renderer/src/registry.ts`'s
+ * `parse` field performs for every registered type — `parseClassDiagram`,
  * `parseErDiagram`, `parseSequenceDiagram`, `parseXYChart` from
  * `@zombie-mermaid/mermaid-parser` for those four diagram types, and the
  * local `parseMermaid` (src/parser.ts) for flowchart/state — using the
@@ -21,8 +21,8 @@
  * isolates the parse *phase* from layout/render *within* one sample's
  * render pipeline. ASCII parsing isn't split out separately: each ASCII
  * renderer re-parses from raw text internally with no equivalent
- * `{ parse, layout, render }` seam to hook (see diagram-registry.ts's
- * header comment on why the ASCII side has no shared `parse` step).
+ * `{ parse, layout, render }` seam to hook (see registry.ts's header
+ * comment on why the ASCII side has no shared `parse` step).
  *
  * Usage: tsx scripts/bench.ts [--json=<path>]
  *   --json   Also write a machine-readable summary (totals + per-category
@@ -37,7 +37,7 @@ import { writeFile } from 'node:fs/promises'
 import { decodeXML } from 'entities'
 import { samples } from '../packages/site/samples-data.ts'
 import { renderMermaid } from '../src/index.ts'
-import { diagramRegistry } from '../src/diagram-registry.ts'
+import { diagramRegistry } from '../packages/svg-renderer/src/registry.ts'
 import { detectDiagramType, splitStatements } from '@zombie-mermaid/core'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
@@ -67,9 +67,9 @@ interface Result {
 /**
  * Runs just the parse phase for `source` — diagram-type detection plus that
  * type's `parse` step — via the same `diagramRegistry` lookup
- * `renderMermaidSVGRaw` (src/index.ts) uses for the real render, so this
- * measures the identical parse code path production takes rather than a
- * benchmark-only reimplementation.
+ * `renderMermaidSVG` (@zombie-mermaid/svg-renderer) uses for the real
+ * render, so this measures the identical parse code path production takes
+ * rather than a benchmark-only reimplementation.
  */
 function parseOnly(source: string): void {
   const decoded = decodeXML(source)

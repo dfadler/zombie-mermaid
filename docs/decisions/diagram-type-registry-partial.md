@@ -56,6 +56,31 @@ extras)` was extracted into its own `src/ascii/flowchart.ts`, mirroring
 > registries are now total over `DiagramType` — no fallback switch remains
 > in either `src/index.ts` or `src/ascii/index.ts`.
 
+> **Addendum 3 (issue #1111 — SVG registry moved into `svg-renderer`):** The
+> SVG half of the registry — `src/diagram-registry.ts` at the time this doc
+> and its addenda above were written — moved to
+> `packages/svg-renderer/src/registry.ts`, giving `@zombie-mermaid/svg-renderer`
+> its own `renderMermaidSVG(text, options)` front door for parity with
+> `@zombie-mermaid/ascii-renderer`'s `renderMermaidASCII`. This does **not**
+> reverse the decision above: the SVG and ASCII tables stay two separate
+> modules for exactly the import-cycle reason already documented (an ASCII
+> module importing the SVG table, or vice versa, reintroduces the cycle that
+> blocked the monorepo split) — moving the SVG half's *address* doesn't
+> change which package may import which. `flowchartModule.parse` still
+> reaches `parseMermaid` via a relative import into the umbrella's
+> `src/parser.ts` rather than a `@zombie-mermaid/*` package specifier,
+> mirroring the pre-existing pattern `packages/ascii-renderer/src/flowchart.ts`
+> already used for the same function on the ASCII side (see that file and
+> `packages/ascii-renderer/vite.config.ts`'s header) — flowchart/state
+> parsing was never in scope for extraction into `mermaid-parser`, and this
+> move doesn't change that. `src/index.ts` now re-exports
+> `renderMermaidSVG`/`renderMermaidSVGAsync`/`themeCssVariables` from
+> `@zombie-mermaid/svg-renderer` rather than keeping its own copy — the same
+> full-re-export shape `renderMermaidASCII` already has above. Zero behavior
+> change, confirmed by the full test suite (including the architecture-guard
+> test in `src/__tests__/ascii-package-boundary.test.ts`, updated to check
+> the new path) and typecheck/build.
+
 ## Context
 
 [#533](https://github.com/dfadler/zombie-mermaid/issues/533) observed that

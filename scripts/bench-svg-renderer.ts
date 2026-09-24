@@ -7,26 +7,27 @@
  *
  * `svg-renderer` owns layout + SVG emission for every diagram type —
  * including flowchart/state, via `layoutGraphSync`/`renderSvg` — see
- * src/diagram-registry.ts, which every type (flowchart included) is
- * registered in. Producing the *input* to layout/render still requires a
- * parsed diagram, which for flowchart/state comes from this repo's own
- * `src/parser.ts` (`parseMermaid`, out of scope — see #876) and for
- * class/ER/sequence/xychart comes from `@zombie-mermaid/mermaid-parser`
+ * packages/svg-renderer/src/registry.ts, which every type (flowchart
+ * included) is registered in. Producing the *input* to layout/render still
+ * requires a parsed diagram, which for flowchart/state comes from this
+ * repo's own `src/parser.ts` (`parseMermaid`, out of scope — see #876) and
+ * for class/ER/sequence/xychart comes from `@zombie-mermaid/mermaid-parser`
  * (already covered by bench-mermaid-parser.ts). That parse step runs
  * untimed here, exactly like bench-mermaid-parser.ts keeps
  * `splitStatements` untimed — only `layoutForSvg` + `renderSvg`, which is
  * svg-renderer's own code (the ELK-backed layout engine and every per-type
  * renderer), is measured.
  *
- * Reaches into `../src/diagram-registry.ts` (not a published package, but a
- * root-level module of this same repo, same as bench.ts already reaching
- * into `./src/index.ts`) for the `{ parse, layoutForSvg, renderSvg }` table
- * every diagram type is registered under — this is the same dispatch
- * `renderMermaidSVG` uses internally, so the isolated timing here reflects
- * the real per-type code path, not a hand-rolled approximation of it.
- * `buildColors`/`resolveSvgEmit` are reproduced inline below (deliberately
- * duplicated, not imported) since both are private to `src/index.ts`, which
- * this script does not otherwise need.
+ * Reaches into `../packages/svg-renderer/src/registry.ts` (not part of the
+ * package's public API — the front door's internal dispatch table, same as
+ * bench.ts already reaching into `./src/index.ts`) for the
+ * `{ parse, layoutForSvg, renderSvg }` table every diagram type is
+ * registered under — this is the same dispatch `renderMermaidSVG` uses
+ * internally, so the isolated timing here reflects the real per-type code
+ * path, not a hand-rolled approximation of it. `buildColors`/
+ * `resolveSvgEmit` are reproduced inline below (deliberately duplicated, not
+ * imported) since both are private to `packages/svg-renderer/src/index.ts`,
+ * which this script does not otherwise need.
  *
  * Usage: tsx scripts/bench-svg-renderer.ts [--json=<path>]
  *   --json   Also write a machine-readable summary to this path — see
@@ -51,8 +52,8 @@ import type {
   DiagramType,
 } from '@zombie-mermaid/core'
 import { resolveFontSizes } from '@zombie-mermaid/svg-renderer'
-import { diagramRegistry } from '../src/diagram-registry.ts'
-import type { SvgRenderContext } from '../src/diagram-registry.ts'
+import { diagramRegistry } from '../packages/svg-renderer/src/registry.ts'
+import type { SvgRenderContext } from '../packages/svg-renderer/src/registry.ts'
 
 const jsonArg = process.argv.find((a) => a.startsWith('--json='))
 const JSON_OUTPUT_PATH = jsonArg ? jsonArg.slice('--json='.length) : null
@@ -86,7 +87,7 @@ interface PackageBenchSummary {
 // Helpers
 // ============================================================================
 
-/** Mirrors the private `buildColors` in src/index.ts — see this file's header. */
+/** Mirrors the private `buildColors` in packages/svg-renderer/src/index.ts — see this file's header. */
 function buildColors(options: RenderOptions): DiagramColors {
   return {
     bg: options.bg ?? DEFAULTS.bg,
@@ -99,7 +100,7 @@ function buildColors(options: RenderOptions): DiagramColors {
   }
 }
 
-/** Mirrors the private `resolveSvgEmit` in src/index.ts — see this file's header. */
+/** Mirrors the private `resolveSvgEmit` in packages/svg-renderer/src/index.ts — see this file's header. */
 function resolveSvgEmit(options: RenderOptions): SvgEmitOptions {
   return {
     nonce: options.nonce,

@@ -260,18 +260,22 @@ describe('ascii-renderer package boundary (#623, moved under #767)', () => {
     )
   })
 
-  it('does not import back out of src/ascii/ into the umbrella registry', () => {
+  it('does not import back out of src/ascii/ into the SVG registry', () => {
     // The specific back-edge that made `ascii-renderer` un-extractable: the
     // shared registry imported `renderXYChartAscii`/`renderErAscii` out of
     // src/ascii/ while src/ascii/index.ts imported the registry back out of
     // src/. Split by renderer in #623 — src/ascii/registry.ts owns the ASCII
-    // half now, and this asserts the umbrella half stays unreachable.
-    expect(graph.all.has('src/diagram-registry.ts')).toBe(false)
+    // half now, and this asserts the SVG half stays unreachable. The SVG
+    // half itself moved from `src/diagram-registry.ts` to
+    // `packages/svg-renderer/src/registry.ts` under #1111 — a pure move, no
+    // import-graph change beyond adjusting relative-path depth, same as
+    // #767's earlier move of the ASCII entry.
+    expect(graph.all.has('packages/svg-renderer/src/registry.ts')).toBe(false)
   })
 
-  it('keeps the umbrella SVG registry free of ASCII imports (the other half of the cycle)', () => {
+  it('keeps the SVG registry free of ASCII imports (the other half of the cycle)', () => {
     const registry = readFileSync(
-      resolve(REPO_ROOT, 'src/diagram-registry.ts'),
+      resolve(REPO_ROOT, 'packages/svg-renderer/src/registry.ts'),
       'utf8',
     )
     const asciiImports = edgesOf(registry)
