@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hexagonRenderer } from '../shapes/hexagon.ts'
+import { hexagonRenderer } from '../shapes/index.ts'
 import { canvasToString } from '../canvas.ts'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
 
