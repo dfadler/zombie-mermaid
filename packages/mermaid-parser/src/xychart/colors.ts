@@ -82,27 +82,6 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Hex ↔ RGB conversion
-// ---------------------------------------------------------------------------
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  return [
-    parseInt(h.substring(0, 2), 16),
-    parseInt(h.substring(2, 4), 16),
-    parseInt(h.substring(4, 6), 16),
-  ]
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  const toHex = (v: number) =>
-    Math.round(Math.max(0, Math.min(255, v)))
-      .toString(16)
-      .padStart(2, '0')
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -116,26 +95,6 @@ export function isValidHex(color: string): boolean {
  */
 export function isDarkBackground(bgHex: string): boolean {
   return hexToHsl(bgHex)[2] < 50
-}
-
-/**
- * Mix two hex colors in RGB space.
- * `ratio` controls how much of `fgHex` shows: 0 = pure bg, 1 = pure fg.
- * Equivalent to alpha-compositing fg over bg at the given opacity.
- */
-export function mixHexColors(
-  bgHex: string,
-  fgHex: string,
-  ratio: number,
-): string {
-  const [br, bg, bb] = hexToRgb(bgHex)
-  const [fr, fg, fb] = hexToRgb(fgHex)
-  const inv = 1 - ratio
-  return rgbToHex(
-    br * inv + fr * ratio,
-    bg * inv + fg * ratio,
-    bb * inv + fb * ratio,
-  )
 }
 
 /**
