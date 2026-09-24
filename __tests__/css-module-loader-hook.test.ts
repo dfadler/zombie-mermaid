@@ -34,6 +34,12 @@ const REPO_ROOT = fileURLToPath(new URL('../', import.meta.url))
 const ENTRY = fileURLToPath(
   new URL('./fixtures/css-module-hook-entry.ts', import.meta.url),
 )
+const IMPORT_ENTRY = fileURLToPath(
+  new URL('./fixtures/css-module-import-entry.ts', import.meta.url),
+)
+const COMPOSES_ENTRY = fileURLToPath(
+  new URL('./fixtures/css-module-composes-entry.ts', import.meta.url),
+)
 const TSX_CLI = fileURLToPath(import.meta.resolve('tsx/cli'))
 // Not `import.meta.resolve('tsx')` — that resolves the package's `.` export
 // (`dist/loader.mjs`), not the CLI binary `package.json` scripts actually
@@ -98,5 +104,31 @@ describe('css-module loader hook', () => {
         stdio: ['ignore', 'pipe', 'pipe'],
       }),
     ).toThrowError(/ERR_UNKNOWN_FILE_EXTENSION/)
+  })
+
+  // Both of the next two guard the hook's fail-loud behavior for CSS
+  // Modules surface it doesn't fully implement (zombie-mermaid#1103's PR
+  // review) — confirming each throws, not just that it doesn't crash the
+  // process some other way, catches a regression back to silently
+  // producing an incomplete/wrong classes map or stylesheet.
+
+  it('fails loudly on a .module.css file with an @import rule, instead of silently bundling nothing', () => {
+    expect(() =>
+      execFileSync(TSX_CSS_WRAPPER, [IMPORT_ENTRY], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }),
+    ).toThrowError(/'@import' is not supported/)
+  })
+
+  it('fails loudly on a .module.css file using composes:, instead of silently dropping the composed class', () => {
+    expect(() =>
+      execFileSync(TSX_CSS_WRAPPER, [COMPOSES_ENTRY], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }),
+    ).toThrowError(/'composes:' is not supported/)
   })
 })

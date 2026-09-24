@@ -16,6 +16,7 @@
  * `.ts`/`.tsx` handling is untouched.
  */
 import { readFile } from 'node:fs/promises'
+import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { transform } from 'lightningcss'
 
@@ -50,13 +51,55 @@ function isModuleCss(url) {
   return url.endsWith('.module.css')
 }
 
+/**
+ * A conservative, comment-blind scan for a local `@import` rule. Lightning
+ * CSS's `transform()` (unlike its `bundle()`/`bundleAsync()` APIs) doesn't
+ * inline an `@import`'s rules into the compiled output — it leaves the
+ * at-rule as-is, so the `css` this hook exports would silently stop being
+ * the complete, self-contained stylesheet every existing consumer expects
+ * (the old `load-css-module.ts` bridge bundled `@import` transitively, via
+ * Vite's own `build()`). No `.module.css` file in this repo uses `@import`
+ * today (zombie-mermaid#1103's own scope note), so failing loudly here
+ * costs nothing yet and avoids a silently-incomplete stylesheet once one
+ * does — full bundling support is real, scoped follow-up work, not
+ * something to half-implement inline.
+ */
+const IMPORT_RULE_PATTERN = /@import\s/i
+
+/**
+ * True if any class this file exports composes another (`composes: foo`).
+ * Lightning CSS reports a composed reference in `info.composes`
+ * (zombie-mermaid#1103's review found this file previously read only
+ * `info.name`, silently dropping composition) — resolving local, global,
+ * and cross-file composition correctly is real follow-up work, so this
+ * hook fails loudly instead of exporting a classes map missing the
+ * composed styles a consumer's className would otherwise (wrongly) claim
+ * to include.
+ */
+function hasComposition(exports) {
+  return Object.values(exports ?? {}).some((info) => info.composes.length > 0)
+}
+
 export async function load(url, context, nextLoad) {
   if (!isModuleCss(url)) return nextLoad(url, context)
 
   const filePath = fileURLToPath(url)
   const source = await readFile(filePath)
-  const basename = filePath.split('/').pop() ?? filePath
-  const pattern = HASHED_MODULE_CSS_BASENAMES.has(basename)
+
+  if (IMPORT_RULE_PATTERN.test(source.toString('utf8'))) {
+    throw new Error(
+      `${filePath}: '@import' is not supported by the .module.css loader hook (zombie-mermaid#1103) — Lightning CSS's transform() doesn't bundle it, so the compiled stylesheet would be incomplete. Inline the imported rules, or extend the hook to use Lightning CSS's bundle()/bundleAsync() API instead.`,
+    )
+  }
+
+  // node:path's basename(), not a manual `split('/').pop()` — `fileURLToPath`
+  // returns a path in the host platform's own separator, which on Windows is
+  // a backslash that `split('/')` never matches, silently leaving the whole
+  // path as the "basename" and always missing HASHED_MODULE_CSS_BASENAMES
+  // (zombie-mermaid#1103's review caught this — the Vite re-exec path in
+  // vite.config.ts can reach this hook on Windows too).
+  const moduleBasename = basename(filePath)
+  const pattern = HASHED_MODULE_CSS_BASENAMES.has(moduleBasename)
     ? HASHED_PATTERN
     : UNHASHED_PATTERN
 
@@ -65,6 +108,12 @@ export async function load(url, context, nextLoad) {
     code: source,
     cssModules: { pattern },
   })
+
+  if (hasComposition(exports)) {
+    throw new Error(
+      `${filePath}: 'composes:' is not supported by the .module.css loader hook (zombie-mermaid#1103) — it would silently drop the composed class(es) from the exported classes map. Resolve the composition inline, or extend the hook to read Lightning CSS's CSSModuleExport.composes.`,
+    )
+  }
 
   /** @type {Record<string, string>} */
   const classes = {}
