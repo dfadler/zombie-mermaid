@@ -23,10 +23,9 @@
 // #624) call its primitives directly (zombie-mermaid#616), so it is part
 // of the public API alongside `elk-adapter-utils.ts`.
 //
-// `layout.ts` re-exports `layoutGraphSync` from `layout-engine.ts`, so the
-// two star-exports below resolve to one and the same binding — legal, and
-// not an ambiguous re-export. It stays a module of its own (rather than
-// being folded away here) because #625 is a move, not a redesign.
+// `layout.ts` used to be a thin re-export of `layoutGraphSync` from
+// `layout-engine.ts`; it was folded into `layout-engine.ts` directly
+// (#1109), so `layoutGraphSync` now comes from the one star-export below.
 //
 // `class/`, `er/`, `sequence/`, `xychart/` hold each diagram type's
 // renderer half (`layout.ts` + `renderer.ts`) — the other half
@@ -39,7 +38,6 @@
 
 export * from './edge-curves.ts'
 export * from './elk-instance.ts'
-export * from './layout.ts'
 export * from './layout-engine.ts'
 export * from './layout-engine/elk-adapter-utils.ts'
 export * from './layout-engine/elk-graph-builder.ts'
