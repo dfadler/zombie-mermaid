@@ -43,11 +43,28 @@ const ROOT = dirname(fileURLToPath(import.meta.url))
 // Resolve the local tsx CLI so rebuilds don't depend on PATH/.bin symlinks.
 const tsxCli = fileURLToPath(import.meta.resolve('tsx/cli'))
 
+/**
+ * Registers the `.module.css` loader hook (zombie-mermaid#1103) alongside
+ * tsx's own — via `NODE_OPTIONS`, not an extra `--import` argv flag on this
+ * spawn, because tsx's CLI re-execs a fresh child process to actually run
+ * the file; only `NODE_OPTIONS` (an env var) survives that re-exec, an
+ * argv flag given to *this* spawn wouldn't (confirmed empirically while
+ * building the hook). The path is relative to `cwd: ROOT` below, matching
+ * the package.json scripts' own `--import ./scripts/css-module-register.mjs`
+ * wiring. Appended to whatever `NODE_OPTIONS` this process already has,
+ * rather than replacing it, so an operator's own setting (e.g.
+ * `--max-old-space-size`) still applies.
+ */
+const cssModuleLoaderNodeOptions =
+  '--import ./scripts/css-module-register.mjs' +
+  (process.env.NODE_OPTIONS ? ` ${process.env.NODE_OPTIONS}` : '')
+
 function runTsx(file: string): Promise<number | null> {
   return new Promise((resolve) => {
     const proc = spawn(process.execPath, [tsxCli, file], {
       cwd: ROOT,
       stdio: 'inherit',
+      env: { ...process.env, NODE_OPTIONS: cssModuleLoaderNodeOptions },
     })
     proc.on('exit', (exitCode) => resolve(exitCode))
   })
