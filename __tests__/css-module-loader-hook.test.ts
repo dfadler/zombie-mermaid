@@ -12,13 +12,18 @@
  * pipeline runs this test file itself, so there's no way to exercise "does
  * a `.module.css` import resolve under a `tsx`-run script" without actually
  * spawning one. Exercises both invocation shapes this repo actually uses:
- * `package.json`'s scripts (`NODE_OPTIONS=... tsx <file>`, via the `tsx`
- * CLI bin) and vite.config.ts's dev-server re-exec (`node <tsx/cli path>
- * <file>`, with `NODE_OPTIONS` set on the spawn's `env` rather than passed
- * as an argv flag) — confirmed empirically while building the hook that
- * tsx's CLI re-execs a fresh child process to actually run the file, so an
- * `--import` argv flag given to the *outer* process doesn't survive that
- * re-exec the way an env var does.
+ * `package.json`'s scripts (`scripts/tsx-css.sh <file>`, which sets
+ * `NODE_OPTIONS` itself and execs the `tsx` CLI bin — see that script's own
+ * header comment for why it exists instead of repeating the
+ * `NODE_OPTIONS="--import ..."` prefix per script) and vite.config.ts's
+ * dev-server re-exec (`node <tsx/cli path> <file>`, with `NODE_OPTIONS` set
+ * on the spawn's `env` rather than passed as an argv flag — that path
+ * doesn't go through the wrapper script, since it deliberately avoids a
+ * `tsx`-on-`PATH` dependency, see vite.config.ts's own comment) —
+ * confirmed empirically while building the hook that tsx's CLI re-execs a
+ * fresh child process to actually run the file, so an `--import` argv flag
+ * given to the *outer* process doesn't survive that re-exec the way an env
+ * var does.
  */
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
@@ -34,6 +39,7 @@ const TSX_CLI = fileURLToPath(import.meta.resolve('tsx/cli'))
 // (`dist/loader.mjs`), not the CLI binary `package.json` scripts actually
 // invoke by name.
 const TSX_BIN = join(REPO_ROOT, 'node_modules/.bin/tsx')
+const TSX_CSS_WRAPPER = join(REPO_ROOT, 'scripts/tsx-css.sh')
 const NODE_OPTIONS = '--import ./scripts/css-module-register.mjs'
 
 interface FixtureOutput {
@@ -67,11 +73,10 @@ function assertFixtureOutput(stdout: string): void {
 }
 
 describe('css-module loader hook', () => {
-  it('resolves a .module.css import via the tsx CLI bin (package.json scripts’ invocation shape)', () => {
-    const stdout = execFileSync(TSX_BIN, [ENTRY], {
+  it('resolves a .module.css import via scripts/tsx-css.sh (package.json scripts’ actual invocation shape)', () => {
+    const stdout = execFileSync(TSX_CSS_WRAPPER, [ENTRY], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
-      env: { ...process.env, NODE_OPTIONS },
     })
     assertFixtureOutput(stdout)
   })
