@@ -14,6 +14,20 @@
  * specifier is handed straight through to whatever hook is registered
  * underneath this one (`nextLoad`) — chained after tsx's own hook, so its
  * `.ts`/`.tsx` handling is untouched.
+ *
+ * `compileModuleCss` below (this hook's actual compile step, minus the
+ * loader-hook plumbing) is also imported directly by
+ * `demo/components/primitives-css.tsx` and `scripts/
+ * generate-primitives-classes.ts` (zombie-mermaid#968) — Vitest's own
+ * bundler-based module graph (`vite-node`) intercepts a plain `.module.css`
+ * specifier with *its own* CSS Modules handling before this file's `load`
+ * hook (registered only via `node --import`/`NODE_OPTIONS`, which `vite-node`
+ * doesn't go through) ever sees it — confirmed empirically: under Vitest, a
+ * bare `import styles from './primitives.module.css'` resolves to Vite's own
+ * differently-hashed classes and no compiled-CSS-text export at all, not
+ * this hook's output. A direct function call sidesteps that split entirely
+ * — same Lightning CSS transform, same result, regardless of which runner
+ * imports it.
  */
 import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
@@ -80,10 +94,16 @@ function hasComposition(exports) {
   return Object.values(exports ?? {}).some((info) => info.composes.length > 0)
 }
 
-export async function load(url, context, nextLoad) {
-  if (!isModuleCss(url)) return nextLoad(url, context)
-
-  const filePath = fileURLToPath(url)
+/**
+ * Compiles a `.module.css` file at `filePath` (an absolute filesystem path)
+ * through Lightning CSS, the same way for every caller: this hook's own
+ * `load()`, and anything importing this function directly (see this file's
+ * header comment for why direct calls exist at all).
+ *
+ * @param {string} filePath
+ * @returns {Promise<{ css: string, classes: Record<string, string> }>}
+ */
+export async function compileModuleCss(filePath) {
   const source = await readFile(filePath)
 
   if (IMPORT_RULE_PATTERN.test(source.toString('utf8'))) {
@@ -92,9 +112,9 @@ export async function load(url, context, nextLoad) {
     )
   }
 
-  // node:path's basename(), not a manual `split('/').pop()` — `fileURLToPath`
-  // returns a path in the host platform's own separator, which on Windows is
-  // a backslash that `split('/')` never matches, silently leaving the whole
+  // node:path's basename(), not a manual `split('/').pop()` — a caller may
+  // pass a path in the host platform's own separator, which on Windows is a
+  // backslash that `split('/')` never matches, silently leaving the whole
   // path as the "basename" and always missing HASHED_MODULE_CSS_BASENAMES
   // (zombie-mermaid#1103's review caught this — the Vite re-exec path in
   // vite.config.ts can reach this hook on Windows too).
@@ -122,6 +142,14 @@ export async function load(url, context, nextLoad) {
   }
 
   const css = Buffer.from(code).toString('utf8')
+  return { css, classes }
+}
+
+export async function load(url, context, nextLoad) {
+  if (!isModuleCss(url)) return nextLoad(url, context)
+
+  const filePath = fileURLToPath(url)
+  const { css, classes } = await compileModuleCss(filePath)
   const moduleSource = `export const css = ${JSON.stringify(css)};\nexport default ${JSON.stringify(classes)};\n`
 
   return { format: 'module', source: moduleSource, shortCircuit: true }
