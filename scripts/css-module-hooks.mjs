@@ -30,9 +30,28 @@
  * imports it.
  */
 import { readFile } from 'node:fs/promises'
-import { basename } from 'node:path'
+import { basename, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { transform } from 'lightningcss'
+
+/**
+ * The repo root, used to turn an absolute `filePath` into a stable,
+ * checkout-independent one before handing it to Lightning CSS (see
+ * `compileModuleCss`'s `filename` comment for why).
+ *
+ * Deliberately `process.cwd()`, not something derived from this file's own
+ * `import.meta.url`: this module imports the bare `lightningcss` package, so
+ * Vite's dependency pre-bundling rewrites its `import.meta.url` to a
+ * synthetic `dist/index.js`-style path with no relation to this file's real
+ * on-disk location whenever it's reached indirectly under Vitest (e.g. via
+ * primitives-css.tsx, under demo-primitives.test.ts) — confirmed
+ * empirically, `new URL('..', import.meta.url)` in that case resolves
+ * nowhere near the repo root. Every caller here already runs with the repo
+ * root as its working directory (a `pnpm run` script, Vitest, or this
+ * hook's own `node --import` process), matching the same assumption
+ * primitives-css.tsx's `siblingCssPath()` already makes.
+ */
+const REPO_ROOT = process.cwd()
 
 /**
  * `.module.css` files (by basename) whose classes are scoped with a content
@@ -123,8 +142,19 @@ export async function compileModuleCss(filePath) {
     ? HASHED_PATTERN
     : UNHASHED_PATTERN
 
+  // Lightning CSS's `[hash]` is derived from the `filename` passed in, so an
+  // absolute `filePath` (which varies by checkout location — a different
+  // clone, a different CI runner, a different git worktree) would give the
+  // *same* CSS module a different hash per machine. That breaks the whole
+  // point of primitives-classes.ts's committed classes map (zombie-mermaid
+  // #968/#969): it's generated once and must keep matching whatever hash
+  // primitives-css.tsx computes live at SSR/build time, possibly on a
+  // different machine entirely. A repo-root-relative, forward-slash-
+  // normalized path keeps the hash identical across machines instead.
+  const relativeFilePath = relative(REPO_ROOT, filePath).split(sep).join('/')
+
   const { code, exports } = transform({
-    filename: filePath,
+    filename: relativeFilePath,
     code: source,
     cssModules: { pattern },
   })

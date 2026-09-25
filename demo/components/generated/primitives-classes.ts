@@ -10,7 +10,7 @@
 /** `primitives.module.css`'s source class name -> hashed output class
  * name, imported by primitives.tsx (browser-safe: no Node dependency). */
 export const PRIMITIVES_CLASSES = {
-  pill: 'pill__gQvWW',
-  card: 'card__gQvWW',
-  'section-eyebrow': 'section-eyebrow__gQvWW',
+  card: 'card_nBU7-G',
+  pill: 'pill_nBU7-G',
+  'section-eyebrow': 'section-eyebrow_nBU7-G',
 } as const
