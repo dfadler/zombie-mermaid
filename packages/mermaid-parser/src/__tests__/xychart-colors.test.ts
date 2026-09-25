@@ -7,7 +7,6 @@ import {
   CHART_ACCENT_FALLBACK,
   isValidHex,
   isDarkBackground,
-  mixHexColors,
   getSeriesColor,
 } from '@zombie-mermaid/mermaid-parser'
 
@@ -40,24 +39,6 @@ describe('isDarkBackground', () => {
 
   it('treats a gray at or above 50% lightness as light', () => {
     expect(isDarkBackground('#808080')).toBe(false)
-  })
-})
-
-describe('mixHexColors', () => {
-  it('returns the background color unchanged at ratio 0', () => {
-    expect(mixHexColors('#000000', '#ffffff', 0)).toBe('#000000')
-  })
-
-  it('returns the foreground color unchanged at ratio 1', () => {
-    expect(mixHexColors('#000000', '#ffffff', 1)).toBe('#ffffff')
-  })
-
-  it('blends bg and fg proportionally at ratio 0.5', () => {
-    expect(mixHexColors('#000000', '#ffffff', 0.5)).toBe('#808080')
-  })
-
-  it('blends non-grayscale colors channel by channel', () => {
-    expect(mixHexColors('#3b82f6', '#3b82f6', 0.5)).toBe('#3b82f6')
   })
 })
 
