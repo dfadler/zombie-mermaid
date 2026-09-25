@@ -1,5 +1,5 @@
 ---
-'@zombie-mermaid/core': minor
+'@zombie-mermaid/core': major
 ---
 
 Remove the unused `componentSpacing` field from `RenderOptions` /
