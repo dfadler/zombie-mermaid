@@ -200,10 +200,15 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
     // occupancy before choosing a jog row. Found by a differential search
     // over random small diagrams comparing the old (narrow) and fixed
     // (label-span-widened) occupancy ranges; this is the minimal case that
-    // reproduces it deterministically — DDDD--CCC's jog lands on a row
-    // that BB--A's own label already used, and without the widened check
-    // DDDD--CCC's own label ends up prefixed with a stray "│" bled through
-    // from BB--A's vertical stem.
+    // reproduces it deterministically — DDDD--CCC's jog used to land on the
+    // exact row BB--A's own label ("l1") already used, splicing the two
+    // together into one unbroken run ("l1longerlabelhere2") with no
+    // separator at all.
+    //
+    // Since #1119's fix (a label search also avoids a *different*
+    // relationship's own line, not just its own), DDDD--CCC's label
+    // relocates to its own row instead of sharing BB--A's — so the two
+    // no longer read as a single spliced word.
     const ascii = renderMermaidASCII(
       `erDiagram
         DDDD ||--o{ A : x0
@@ -211,14 +216,15 @@ describe('ASCII ER — relationships routed without colliding (issue #351)', () 
         DDDD ||--o{ CCC : longerlabelhere2`,
       { colorMode: 'none' },
     )
+    expect(ascii).toContain('longerlabelhere2')
+    expect(ascii).toContain('l1')
+    expect(ascii).not.toContain('l1longerlabelhere2')
     const lines = ascii.split('\n')
     const labelLine = lines.find((l) => l.includes('longerlabelhere2'))
     expect(labelLine).toBeDefined()
-    const idx = labelLine!.indexOf('longerlabelhere2')
-    // The characters immediately before the label must be plain fill dashes,
-    // not a stray "│" bled through from an unrelated relationship's
-    // vertical stem sharing this row.
-    expect(labelLine!.slice(Math.max(0, idx - 3), idx)).not.toContain('│')
+    // The label itself must render as one intact, uninterrupted word — not
+    // split by a stray line character routed through its middle.
+    expect(labelLine).not.toMatch(/longer[─│┊╌]/)
   })
 })
 

@@ -532,12 +532,38 @@ export function renderErAscii(
     y: number,
     minX: number,
     maxX: number,
+    avoidForeignLines: boolean,
   ): boolean {
     for (let i = 0; i < cells.length; i++) {
       const x = startX + i
       if (x < minX || x > maxX) continue
       if (isProtected(x, y) || rc[x]?.[y] === 'arrow') return false
       if (boxCells.has(`${x},${y}`)) return false
+    }
+    if (!avoidForeignLines) return true
+    // A cell already holding a *different* relationship's line reads as
+    // free above (isProtected only tracks text/border), so without this
+    // check the search below would happily park this relationship's label
+    // right beside someone else's line — visually implying the label
+    // describes that line's solid/dashed style instead of its own (issue
+    // #1119). currentRelLineCells (see setCGuarded) is this relationship's
+    // own line cells, drawn moments earlier in this same iteration — those
+    // stay allowed, matching the "label wins over the line beneath it" doc
+    // comment above. Checked a cell wider than the label's own text on each
+    // side (not just cells.length) so a foreign line stem passing just
+    // outside the label's own span doesn't end up flush against it either —
+    // narrower than that and the existing single-cell post-placement
+    // cleanup below can't fully clear it. Only enforced on this first
+    // (strict) search pass — see the two-pass loop below — a dense diagram
+    // with no foreign-line-free row anywhere in range falls back to the
+    // old, permissive check rather than dropping the label outright (a
+    // worse information loss than the visual ambiguity this guards
+    // against).
+    for (let x = startX - 2; x <= startX + cells.length; x++) {
+      if (x < minX - 2 || x > maxX + 1) continue
+      if (rc[x]?.[y] === 'line' && !currentRelLineCells.has(`${x},${y}`)) {
+        return false
+      }
     }
     return true
   }
@@ -596,6 +622,12 @@ export function renderErAscii(
     // relationships instead of a relationship and a box.
     if (role !== 'text' && rc[x]?.[y] === 'text') return
     setC(x, y, ch, role)
+    // Track this relationship's own line cells (see currentRelLineCells,
+    // reset per relationship below) so a later label-placement search can
+    // tell "sits on my own line" (fine) apart from "sits on a *different*
+    // relationship's line" (issue #1119 — a relocated label landing next to
+    // an unrelated line reads as describing that line's style instead).
+    if (role === 'line') currentRelLineCells.add(`${x},${y}`)
   }
 
   /**
@@ -822,7 +854,12 @@ export function renderErAscii(
     return entity.x + margin + Math.round(idx * step)
   }
 
+  // This relationship's own line cells, reset each iteration — see
+  // setCGuarded and canPlaceLabelLineAvoidingMarkers above.
+  let currentRelLineCells = new Set<string>()
+
   for (const rel of diagram.relationships) {
+    currentRelLineCells = new Set<string>()
     const e1 = placed.get(rel.entity1)
     const e2 = placed.get(rel.entity2)
     if (!e1 || !e2) continue
@@ -1419,37 +1456,47 @@ export function renderErAscii(
         // legitimately run its label past a box that never touched
         // startY/endY's naive band (#350). It also means clear of markers,
         // not just text/borders (#392) — before giving up.
+        // Two passes: first strict (also dodging a *different*
+        // relationship's own line — #1119), then permissive (the pre-#1119
+        // check) if nothing in range clears the strict bar. A dense diagram
+        // where every candidate row touches some other relationship's line
+        // would otherwise drop the label entirely — worse than the visual
+        // ambiguity the strict pass exists to avoid.
         let placedAtY: number | null = null
-        for (
-          let offset = 0;
-          offset <= endY - startY && placedAtY === null;
-          offset++
-        ) {
-          const candidates =
-            offset === 0
-              ? [naturalStartY]
-              : [naturalStartY + offset, naturalStartY - offset]
-          for (const candidateStart of candidates) {
-            if (
-              candidateStart < startY ||
-              candidateStart + blockHeight - 1 > endY
-            ) {
-              continue
-            }
-            const fits = cellsPerLine.every((cells, lineIdx) =>
-              canPlaceLabelLineAvoidingMarkers(
-                cells,
-                labelX,
-                candidateStart + lineIdx,
-                0,
-                lastLx,
-              ),
-            )
-            if (fits) {
-              placedAtY = candidateStart
-              break
+        for (const avoidForeignLines of [true, false]) {
+          for (
+            let offset = 0;
+            offset <= endY - startY && placedAtY === null;
+            offset++
+          ) {
+            const candidates =
+              offset === 0
+                ? [naturalStartY]
+                : [naturalStartY + offset, naturalStartY - offset]
+            for (const candidateStart of candidates) {
+              if (
+                candidateStart < startY ||
+                candidateStart + blockHeight - 1 > endY
+              ) {
+                continue
+              }
+              const fits = cellsPerLine.every((cells, lineIdx) =>
+                canPlaceLabelLineAvoidingMarkers(
+                  cells,
+                  labelX,
+                  candidateStart + lineIdx,
+                  0,
+                  lastLx,
+                  avoidForeignLines,
+                ),
+              )
+              if (fits) {
+                placedAtY = candidateStart
+                break
+              }
             }
           }
+          if (placedAtY !== null) break
         }
 
         if (placedAtY !== null) {
