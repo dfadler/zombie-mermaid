@@ -65,7 +65,7 @@ extras)` was extracted into its own `src/ascii/flowchart.ts`, mirroring
 > reverse the decision above: the SVG and ASCII tables stay two separate
 > modules for exactly the import-cycle reason already documented (an ASCII
 > module importing the SVG table, or vice versa, reintroduces the cycle that
-> blocked the monorepo split) — moving the SVG half's *address* doesn't
+> blocked the monorepo split) — moving the SVG half's _address_ doesn't
 > change which package may import which. `flowchartModule.parse` still
 > reaches `parseMermaid` via a relative import into the umbrella's
 > `src/parser.ts` rather than a `@zombie-mermaid/*` package specifier,
