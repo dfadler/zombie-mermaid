@@ -17,7 +17,7 @@
 //   core            -> nothing in this repo, only `elkjs` (type-only)
 //   mermaid-parser  -> `@zombie-mermaid/core`, nothing else
 //   svg-renderer    -> `@zombie-mermaid/core`, `@zombie-mermaid/mermaid-parser`,
-//                      and `elkjs`, nothing else
+//                      `elkjs`, and `entities`, nothing else
 //
 // `svg-renderer` depending on `mermaid-parser` (added under #624) is a new
 // edge, not a violation of the sink property above: it is an ordinary,
@@ -26,9 +26,13 @@
 // `mermaid-parser` itself stays a sink exactly like `core` — it does not
 // import `svg-renderer` back.
 //
-// None of the three may reach back into `src/` by relative path or by
-// importing `zombie-mermaid` itself — the umbrella depends on them, never
-// the reverse.
+// `core` and `mermaid-parser` may not reach back into `src/` by relative
+// path or by importing `zombie-mermaid` itself — the umbrella depends on
+// them, never the reverse. `svg-renderer` is the one exception, and only
+// through one known file: `registry.ts` reaches `parseMermaid` in the
+// umbrella's `src/parser.ts` (#1111), the same pre-existing boundary call
+// `ascii-renderer/src/flowchart.ts` already makes for the ASCII side — see
+// that describe block below for the full rationale.
 
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -212,15 +216,33 @@ describe('@zombie-mermaid/mermaid-parser is a workspace sink', () => {
 
 describe('@zombie-mermaid/svg-renderer depends only on core and mermaid-parser', () => {
   it('imports no workspace package other than @zombie-mermaid/core and @zombie-mermaid/mermaid-parser', () => {
+    // `entities` joined this list under #1111: `renderMermaidSVG`'s front
+    // door (moved here from the umbrella's src/index.ts, for parity with
+    // `@zombie-mermaid/ascii-renderer`'s `renderMermaidASCII`) decodes XML
+    // entities via `decodeXML` — see `packages/svg-renderer/src/index.ts`.
     expect(externalSpecifiers('svg-renderer')).toEqual([
       '@zombie-mermaid/core',
       '@zombie-mermaid/mermaid-parser',
       'elkjs',
+      'entities',
     ])
   })
 
-  it('never reaches outside its own src/ by relative path', () => {
-    expect(escapingRelativeImports('svg-renderer')).toEqual([])
+  it('reaches outside its own src/ only through the known src/parser.ts front door', () => {
+    // Under #1111, `packages/svg-renderer/src/registry.ts` reaches
+    // `parseMermaid` in the umbrella's `../../../src/parser.ts` for
+    // flowchart/state parsing — the same pre-existing, deliberate boundary
+    // call `packages/ascii-renderer/src/flowchart.ts` already makes for the
+    // ASCII side (see that file's header and vite.config.package.ts's own
+    // header for why the build bundles it in directly). `src/parser.ts`
+    // itself only needs `@zombie-mermaid/core` and
+    // `@zombie-mermaid/mermaid-parser` (see the 'workspace package
+    // manifests' describe block below for ascii-renderer's equivalent
+    // check) — both already required by svg-renderer's own source, so no
+    // manifest change beyond `entities` above is needed for this escape.
+    expect(escapingRelativeImports('svg-renderer')).toEqual([
+      'packages/svg-renderer/src/registry.ts -> ../../../src/parser.ts',
+    ])
   })
 })
 
