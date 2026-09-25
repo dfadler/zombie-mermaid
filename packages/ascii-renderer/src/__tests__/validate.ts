@@ -1,8 +1,7 @@
 /**
- * ASCII Rendering Validation Utilities
- *
- * Provides validation functions for ASCII diagram output,
- * including diagonal line detection to ensure orthogonal-only routing.
+ * ASCII rendering validation helpers used by the test suite to sanity-check
+ * rendered output (diagonal-line and orphaned-junction detection).
+ * Test-only — not part of the package's public render path.
  */
 
 /**
@@ -101,32 +100,6 @@ export function findDiagonalLines(asciiOutput: string): DiagonalPosition[] {
 }
 
 /**
- * Assert that ASCII output contains no diagonal lines.
- * Throws an error with detailed position information if diagonals are found.
- *
- * @param asciiOutput - The rendered ASCII diagram string
- * @param context - Optional context string for error message (e.g., diagram name)
- * @throws Error if diagonal characters are present
- */
-export function assertNoDiagonals(asciiOutput: string, context?: string): void {
-  if (!hasDiagonalLines(asciiOutput)) {
-    return
-  }
-
-  const positions = findDiagonalLines(asciiOutput)
-  const contextStr = context ? ` in "${context}"` : ''
-  const positionStr = positions
-    .map((p) => `  Line ${p.line}, Col ${p.col}: '${p.char}'`)
-    .join('\n')
-
-  throw new Error(
-    `Diagonal lines detected${contextStr}. ` +
-      `Edges must use orthogonal Manhattan routing (90° bends only).\n` +
-      `Found ${positions.length} diagonal character(s):\n${positionStr}`,
-  )
-}
-
-/**
  * Position of an orphaned tee/junction character in ASCII output.
  */
 export interface OrphanedJunctionPosition {
@@ -176,14 +149,4 @@ export function findOrphanedJunctions(
   }
 
   return positions
-}
-
-/**
- * Check if ASCII output contains any orphaned tee/junction characters.
- * Returns true if any are found (which is an error condition).
- *
- * @param asciiOutput - The rendered ASCII diagram string
- */
-export function hasOrphanedJunctions(asciiOutput: string): boolean {
-  return findOrphanedJunctions(asciiOutput).length > 0
 }

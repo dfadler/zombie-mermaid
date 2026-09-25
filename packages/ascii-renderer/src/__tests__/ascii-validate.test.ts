@@ -8,10 +8,8 @@ import {
   DIAGONAL_CHARS,
   hasDiagonalLines,
   findDiagonalLines,
-  assertNoDiagonals,
   findOrphanedJunctions,
-  hasOrphanedJunctions,
-} from '../validate.ts'
+} from './validate.ts'
 
 describe('DIAGONAL_CHARS', () => {
   it('exposes ascii, unicode, and combined character sets', () => {
@@ -87,35 +85,6 @@ describe('findDiagonalLines', () => {
       { line: 1, col: 3, char: '╱' },
       { line: 1, col: 7, char: '╲' },
     ])
-  })
-})
-
-describe('assertNoDiagonals', () => {
-  it('does not throw when there are no diagonals', () => {
-    expect(() => assertNoDiagonals('┌───┐\n│ A │\n└───┘')).not.toThrow()
-  })
-
-  it('throws with position details when diagonals are found', () => {
-    expect(() => assertNoDiagonals('a / b')).toThrow(
-      /Diagonal lines detected\. .*Found 1 diagonal character\(s\):\n\s*Line 1, Col 3: '\/'/s,
-    )
-  })
-
-  it('includes the context string in the error message when provided', () => {
-    expect(() => assertNoDiagonals('a / b', 'my-diagram')).toThrow(
-      /Diagonal lines detected in "my-diagram"\./,
-    )
-  })
-
-  it('omits the context clause when no context is provided', () => {
-    try {
-      assertNoDiagonals('a / b')
-      throw new Error('expected assertNoDiagonals to throw')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      expect(message).toContain('Diagonal lines detected. ')
-      expect(message).not.toContain(' in "')
-    }
   })
 })
 
@@ -206,15 +175,5 @@ describe('findOrphanedJunctions', () => {
       { line: 1, col: 2, char: '┬' },
       { line: 3, col: 2, char: '┴' },
     ])
-  })
-})
-
-describe('hasOrphanedJunctions', () => {
-  it('returns false when there are no orphaned junctions', () => {
-    expect(hasOrphanedJunctions('┌───┐\n│ A │\n└───┘')).toBe(false)
-  })
-
-  it('returns true when at least one orphaned junction is found', () => {
-    expect(hasOrphanedJunctions(' ┬ ')).toBe(true)
   })
 })
