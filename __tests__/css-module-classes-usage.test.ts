@@ -1,6 +1,6 @@
 /**
  * Enforces both halves of zombie-mermaid#969's acceptance criteria for
- * every `.module.css` file in `scripts/load-css-module.ts`'s
+ * every `.module.css` file in `scripts/css-module-hooks.mjs`'s
  * `HASHED_MODULE_CSS_BASENAMES`:
  *
  * 1. Its committed generated classes map (what a browser-safe consumer
@@ -22,7 +22,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { PRIMITIVES_CLASSES } from '../demo/components/generated/primitives-classes.ts'
-import { loadCssModule } from '../scripts/load-css-module.ts'
+import { compileModuleCss } from '../scripts/css-module-hooks.mjs'
 
 interface HashedModule {
   /** Repo-relative path to the `.module.css` source. */
@@ -33,8 +33,7 @@ interface HashedModule {
   committed: Record<string, string>
 }
 
-const REPO_ROOT_URL = new URL('../', import.meta.url)
-const REPO_ROOT = fileURLToPath(REPO_ROOT_URL)
+const REPO_ROOT = fileURLToPath(new URL('../', import.meta.url))
 
 const HASHED_MODULES: HashedModule[] = [
   {
@@ -89,8 +88,8 @@ function hasLiteralClassToken(content: string, token: string): boolean {
 describe('hashed .module.css classes stay in sync and unmigrated', () => {
   for (const mod of HASHED_MODULES) {
     it(`${mod.generatedPath} matches a fresh build of ${mod.cssPath}`, async () => {
-      const { classes } = await loadCssModule(
-        new URL(mod.cssPath, REPO_ROOT_URL),
+      const { classes } = await compileModuleCss(
+        path.join(REPO_ROOT, mod.cssPath),
       )
       expect(mod.committed).toEqual(classes)
     })

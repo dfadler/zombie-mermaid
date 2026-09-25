@@ -103,7 +103,15 @@ const CANVAS_BASE_RULES = {
   ],
   'section-eyebrow': [
     'text-transform: uppercase;',
-    'letter-spacing: 0.14em;',
+    // '.14em', not '0.14em' — Lightning CSS's transform() (zombie-mermaid#968
+    // replaced the old Vite build()-based bridge with it) re-serializes every
+    // value it parses, dropping a redundant leading zero as part of that —
+    // the artboards themselves spell out the full '0.14em' (see
+    // primitives.module.css and LETTER_SPACING.eyebrow, both still '0.14em'
+    // verbatim), but the *compiled* CSS this asserts against is Lightning
+    // CSS's output, not the source file's bytes. Equivalent CSS numbers
+    // either way.
+    'letter-spacing: .14em;',
     'font-size: 13px;',
     'font-weight: 700;',
     'color: var(--cyan);',
@@ -174,8 +182,8 @@ describe('primitivesCss', () => {
   // why), so demo-design-tokens.test.ts covers it instead of here.
 
   // primitivesCss() now delegates to primitives.module.css — a real static
-  // CSS file, through the CSS Modules seam in scripts/load-css-module.ts
-  // (zombie-mermaid#938) — which can't `import` tokens.tsx the way the old
+  // CSS file, through the CSS Modules seam in scripts/css-module-hooks.mjs
+  // (zombie-mermaid#938/#1103/#968) — which can't `import` tokens.tsx the way the old
   // template-literal implementation did, so its non-color values (radii,
   // spacing, type) are literals transcribed from these tokens rather than
   // references to them. This test is the backstop that documented tradeoff
@@ -190,7 +198,13 @@ describe('primitivesCss', () => {
     expect(css).toContain(`padding: ${SPACE.md}px 22px;`)
     expect(css).toContain(`font-size: ${FONT_SIZE.bodyLg}px;`)
     expect(css).toContain(`font-weight: ${FONT_WEIGHT.semibold};`)
-    expect(css).toContain(`letter-spacing: ${LETTER_SPACING.eyebrow};`)
+    // Lightning CSS drops the redundant leading zero when it re-serializes
+    // a value (see CANVAS_BASE_RULES's 'section-eyebrow' comment above) —
+    // LETTER_SPACING.eyebrow itself stays '0.14em', so this compares against
+    // its Lightning-CSS-normalized form rather than the token's own string.
+    expect(css).toContain(
+      `letter-spacing: ${LETTER_SPACING.eyebrow.replace(/^0\./, '.')};`,
+    )
     expect(css).toContain(`font-size: ${FONT_SIZE.label}px;`)
     expect(css).toContain(`font-weight: ${FONT_WEIGHT.bold};`)
   })
