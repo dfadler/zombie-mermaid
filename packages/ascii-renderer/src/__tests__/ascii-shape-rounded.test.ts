@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { roundedRenderer } from '../shapes/rounded.ts'
+import { roundedRenderer } from '../shapes/index.ts'
 import { canvasToString } from '../canvas.ts'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
 
