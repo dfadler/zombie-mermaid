@@ -292,8 +292,6 @@ export interface RenderOptions {
   nodeSpacing?: number
   /** Vertical spacing between layers. Default: 48. Flowchart/state diagrams only — class/ER diagrams use fixed internal spacing. */
   layerSpacing?: number
-  /** Currently unused — accepted for forward compatibility but not read anywhere. */
-  componentSpacing?: number
   /** Whether to bundle overlapping fan-out/fan-in edge paths into shared trunks to reduce visual clutter. Default: true */
   mergeEdges?: boolean
   /**
@@ -614,9 +612,7 @@ export type CommonRenderOptions = Pick<
  * Options applicable to flowchart (`graph` / `flowchart`) and state
  * (`stateDiagram-v2`) diagrams — both share `DiagramType: 'flowchart'` and
  * the same layout/render pipeline (src/layout-engine.ts, src/renderer.ts),
- * so they share one option shape. `componentSpacing` is currently a no-op
- * everywhere (accepted for forward compatibility only) but grouped here
- * since it's spacing-shaped like `padding`/`nodeSpacing`/`layerSpacing`.
+ * so they share one option shape.
  */
 export type FlowchartRenderOptions = CommonRenderOptions &
   Pick<
@@ -624,7 +620,6 @@ export type FlowchartRenderOptions = CommonRenderOptions &
     | 'padding'
     | 'nodeSpacing'
     | 'layerSpacing'
-    | 'componentSpacing'
     | 'mergeEdges'
     | 'direction'
     | 'curve'
