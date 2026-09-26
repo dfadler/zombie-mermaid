@@ -57,17 +57,29 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // the detour line, rather than inset into the detour's own row the
     // way the old inset positioning did. Checked separately below instead
     // of assuming they share a row.
-    expect(ascii).toContain('└─────────────── tracks ────────────┘')
+    //
+    // The detour line used to have "tracks" (MIDDLE_ENTITY--FIFTH_ENTITY's
+    // own label, a *different*, vertical relationship) embedded directly in
+    // its dashes, with no separator — the same label-lands-on-a-foreign-line
+    // defect issue #1119 fixes. "tracks" now relocates to its own row next
+    // to its own marker instead.
+    expect(ascii).toContain('└─────────────────│─────────────────┘')
     const lines = ascii.split('\n')
     const detourLineIndex = lines.findIndex((l) =>
-      l.includes('└─────────────── tracks ────────────┘'),
+      l.includes('└─────────────────│─────────────────┘'),
     )
     expect(detourLineIndex).toBeGreaterThan(0)
     // MIDDLE_ENTITY's "tracks" marker ('┼', flush against its own border)
     // sits on the row immediately above the detour line.
     expect(lines[detourLineIndex - 1]).toMatch(/┼/)
+    // "relates_to" (this detour's own label) sits on the row right below it.
+    expect(lines[detourLineIndex + 1]).toContain('relates_to')
     expect(ascii).toContain('relates_to')
     expect(ascii).toContain('tracks')
+    // "tracks" renders next to its own bottom marker ('○╟'), not spliced
+    // onto the unrelated detour line above.
+    const tracksLine = lines.find((l) => l.includes('tracks'))
+    expect(tracksLine).toContain('○╟')
     expect(ascii).not.toMatch(/[a-z]+[─│┊╌][a-z]+/)
   })
 

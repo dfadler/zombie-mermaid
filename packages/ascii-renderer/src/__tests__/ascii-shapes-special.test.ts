@@ -150,6 +150,41 @@ describe('cylinder shape [(text)]', () => {
     expect(out).toMatch(/'-+'/)
   })
 
+  it('draws a rim line distinguishing it from a plain rounded node (issue #1119)', () => {
+    // The actual flowchart drawing path (drawNode -> drawBoxWithGridDimensions
+    // in draw-boxes.ts) draws every node shape as a plain bordered rectangle
+    // with shape-specific corner glyphs — it never calls cylinderRenderer
+    // (exercised only in isolation, above), and cylinder's corners are
+    // identical to rounded's own (see corners.ts's SHAPE_CORNERS), so a
+    // cylinder rendered in a real flowchart used to be indistinguishable
+    // from a rounded node — a weekly form-judge audit flagged this exact
+    // regression (#1119). drawBoxWithGridDimensions now draws a rim line
+    // just inside the top and bottom border for 'cylinder' specifically,
+    // using the extra height getShapeDimensions already reserves for it.
+    const src = `flowchart TD
+  A(Rounded)
+  B[(Database)]`
+    const out = renderMermaidASCII(src, { useAscii: false })
+    const lines = out.split('\n')
+    const topBorderLineIdx = lines.findIndex((l) => l.includes('╭'))
+    const topBorderLine = lines[topBorderLineIdx]!
+    const roundedX = topBorderLine.indexOf('╭')
+    const roundedEndX = topBorderLine.indexOf('╮', roundedX)
+    const databaseX = topBorderLine.indexOf('╭', roundedX + 1)
+    const databaseEndX = topBorderLine.indexOf('╮', databaseX)
+    expect(roundedX).toBeGreaterThanOrEqual(0)
+    expect(databaseX).toBeGreaterThan(roundedEndX)
+
+    // Row just inside the top border: Rounded's own interior span is blank
+    // (no rim); Database's is a solid rule between its vertical borders.
+    const rimRow = lines[topBorderLineIdx + 1]!
+    const roundedRimSpan = rimRow.slice(roundedX + 1, roundedEndX)
+    expect(roundedRimSpan.trim()).toBe('')
+    const databaseRimSpan = rimRow.slice(databaseX + 1, databaseEndX)
+    expect(databaseRimSpan.length).toBeGreaterThan(0)
+    expect(databaseRimSpan).toMatch(/^─+$/)
+  })
+
   it('computes extra height for the curved top/bottom rows', () => {
     const dims = cylinderRenderer.getDimensions('DB', unicodeOpts)
     expect(dims.gridRows[0]).toBe(2)
