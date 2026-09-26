@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.0
+
+### Patch Changes
+
+- [#1127](https://github.com/dfadler/zombie-mermaid/pull/1127) [`2f5a8a7`](https://github.com/dfadler/zombie-mermaid/commit/2f5a8a75cfbf8727eea7a1ae68f31870a239d397) Thanks [@dfadler](https://github.com/dfadler)! - Move `zod` from a runtime `dependency` to a `devDependency`. It was never imported by any published source under `src/` — only by `demo/dashboard-model.ts` (site-generation tooling, not part of the published package) — and `@zombie-mermaid/mcp` (the only workspace package that actually needs `zod` at runtime) already declares it as its own dependency, so this has no effect on the `./mcp` entry point or the `mcp` CLI subcommand.
+- Updated dependencies [[`508b508`](https://github.com/dfadler/zombie-mermaid/commit/508b5083e74088b1a6163016b24cfc4c32f93ebb), [`0849aba`](https://github.com/dfadler/zombie-mermaid/commit/0849abafc62e6cd94e38318e9edf6fe27634b49a), [`d7777fe`](https://github.com/dfadler/zombie-mermaid/commit/d7777fe87a500c6b402c48b298d096f26ef6e130), [`c2a190d`](https://github.com/dfadler/zombie-mermaid/commit/c2a190df3c86e7b3394e853d437fc3d11b7634e4), [`d9e306f`](https://github.com/dfadler/zombie-mermaid/commit/d9e306f91003c9e47da10944833f76c2b87ace22)]:
+  - @zombie-mermaid/ascii-renderer@3.0.0
+  - @zombie-mermaid/core@3.0.0
+  - @zombie-mermaid/mermaid-parser@3.0.0
+  - @zombie-mermaid/svg-renderer@3.0.0
+  - @zombie-mermaid/mcp@3.0.0
+
 ## 2.2.6
 
 ### Patch Changes
