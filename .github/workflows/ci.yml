@@ -400,6 +400,18 @@ jobs:
     # to evaluate at all — a `needs` job otherwise inherits the "skip if any
     # dependency failed" default, which is exactly the case this job exists
     # to react to.
+    #
+    # Known gap (dfadler/zombie-mermaid#1138, review thread
+    # PRRT_kwDOT5ndxc6mRcXk): this condition does not exclude fork-authored
+    # PRs, but a fork-authored `pull_request` run gets a read-only
+    # GITHUB_TOKEN and no repo secrets regardless of the `permissions:` block
+    # below — so on a real fork PR, neither the `--attach` path nor the
+    # plain-text fallback below can post anything, and the job fails loudly
+    # (see "Build and post diff comment"'s final fallback) rather than
+    # silently succeeding with no comment. Closing that gap for real would
+    # need a separate `workflow_run`-triggered job that re-verifies the
+    # originating run before posting with a write-scoped token — deferred as
+    # a larger follow-up rather than folded into this job.
     if: always() && needs.visual-regression.result == 'failure' && github.event_name == 'pull_request' && github.repository == 'dfadler/zombie-mermaid'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -464,7 +476,8 @@ jobs:
           # dashboard-refresh.yml/bench-trend.yml already use for repo writes
           # rather than adding a new secret for this one purpose. It's also
           # unavailable on a fork-authored PR (forked `pull_request` runs get
-          # no repo secrets), which the fallback below handles.
+          # no repo secrets) — see this job's own header comment for what
+          # that means for the plain-text fallback below.
           ATTACH_PAT: ${{ secrets.DASHBOARD_REFRESH_PAT }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
@@ -514,21 +527,40 @@ jobs:
           done <<< "$diffs"
 
           run_url="https://github.com/${REPO}/actions/runs/${RUN_ID}"
-          body="${RUNNER_TEMP}/comment-body.md"
+
+          if [ "$total" -eq 0 ]; then
+            summary="The visual regression job failed, but no per-screenshot diff images were found in the failure artifacts — see [the workflow run](${run_url}) for the job log."
+          elif [ "$rows" -eq 0 ]; then
+            summary="${total} changed screenshot(s) detected, but none could be attached to this comment — see [the workflow run](${run_url}) for the full report."
+          else
+            summary="${rows} of ${total} changed screenshot(s) shown below (before / after / diff). [Full report, incl. any remaining diffs](${run_url})."
+          fi
+
+          # Two separate bodies: `body_plain` never references a local image
+          # path, so it's always safe to post on its own. `body_rich` adds
+          # the image table and is only ever posted together with
+          # `--attach` — without it, gh does not rewrite
+          # `![before](failures/...)` to an uploaded asset URL, so posting
+          # body_rich through the plain fallback would show broken images
+          # instead of a text-only notice.
+          body_plain="${RUNNER_TEMP}/comment-body-plain.md"
           {
             echo "$MARKER"
             echo "### Visual regression diff"
             echo
-            if [ "$rows" -gt 0 ]; then
-              echo "${rows} of ${total} changed screenshot(s) shown below (before / after / diff). [Full report, incl. any remaining diffs](${run_url})."
+            echo "$summary"
+          } > "$body_plain"
+
+          body_rich="${RUNNER_TEMP}/comment-body-rich.md"
+          if [ "$rows" -gt 0 ]; then
+            {
+              cat "$body_plain"
               echo
               echo "| Screenshot | Before | After | Diff |"
               echo "|---|---|---|---|"
               cat "$rows_file"
-            else
-              echo "${total} changed screenshot(s) detected, but none could be attached to this comment (see [the workflow run](${run_url}) for the full report)."
-            fi
-          } > "$body"
+            } > "$body_rich"
+          fi
 
           # Comments carrying the marker from a previous push to this PR —
           # collected before posting the new one so the new comment is never
@@ -541,7 +573,7 @@ jobs:
             # gh rewrites the local image paths in the body to the uploaded
             # asset URLs.
             if GH_TOKEN="$ATTACH_PAT" gh pr comment "$PR_NUMBER" --repo "$REPO" \
-                 --body-file "$body" "${attach_args[@]}"; then
+                 --body-file "$body_rich" "${attach_args[@]}"; then
               posted=true
             else
               echo "::warning::gh pr comment --attach failed — falling back to a text-only comment."
@@ -551,12 +583,19 @@ jobs:
           fi
 
           if [ "$posted" = false ]; then
-            gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file "$body"
+            if gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file "$body_plain"; then
+              posted=true
+            else
+              echo "::error::gh pr comment failed — most likely a fork-authored PR, where GitHub Actions gives pull_request runs a read-only token and no repo secrets, so neither the attach path nor this plain-text fallback can post. See this job's own header comment for the known limitation."
+              exit 1
+            fi
           fi
 
           # `--attach` only exists on `gh pr comment`, which cannot edit a
           # specific comment, so each run posts fresh and removes its
-          # predecessor(s).
+          # predecessor(s). Only reached once the new comment actually
+          # posted, so a failed post above leaves the last good comment in
+          # place instead of deleting it and leaving nothing.
           while IFS= read -r id; do
             [ -z "$id" ] && continue
             gh api --method DELETE "repos/${REPO}/issues/comments/${id}" || true
