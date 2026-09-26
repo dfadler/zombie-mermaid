@@ -451,8 +451,18 @@ describe('ASCII ER relationship routing — multi-row obstruction (CodeRabbit fo
       (l, i) => l.includes('┌') && lines[i + 1]?.includes('│ D'),
     )
     expect(dTopIdx, 'expected to find D’s top-border row').toBeGreaterThan(-1)
-    const dTopLine = lines[dTopIdx]!
-    const afterDBox = dTopLine.slice(dTopLine.indexOf('┐') + 1)
-    expect(afterDBox).toMatch(/[│╢╟○]/)
+    // Issue #1134 reordered ER attribute columns to type/name/keys, dropping
+    // the old format's fixed-width key prefix ('   ' when an attribute had
+    // no key) that every one of A/D/G's keyless attribute lines used to pay
+    // for unconditionally. That narrows all three boxes here enough that the
+    // "ag" bypass no longer needs to jog laterally past D on D's own
+    // top-border row — it now clears D vertically, with its downward-turn
+    // marker landing in the gap row directly above D's box instead. That gap
+    // row is still unambiguously outside D's box (which starts at dTopIdx),
+    // so a connector/marker character there is the same proof as before:
+    // the line was actually routed around D, not silently guarded away
+    // inside it (setCGuarded would leave no trace at all in that case).
+    const gapLine = lines[dTopIdx - 1]!
+    expect(gapLine).toMatch(/[│╢╟○┌└]/)
   })
 })

@@ -42,10 +42,22 @@ import { DEFAULT_PADDING_X, DEFAULT_PADDING_Y, paddingOffset } from './types.ts'
 // Entity box content
 // ============================================================================
 
-/** Format an attribute line: "PK type name" or "FK type name" etc. */
+/**
+ * Format an attribute line as "type name" or "type name PK" etc.
+ *
+ * Real mermaid's SVG lays attribute columns out left-to-right as
+ * type/name/keys (confirmed against `attribute-type`/`attribute-name`/
+ * `attribute-keys` x-coordinates in the form-judge report on issue #1119) —
+ * so the key column trails here too, rather than leading with a fixed-width
+ * prefix like the pre-#1134 "PK type name" order did. Nothing else in this
+ * file assumes a fixed-width key column: box width is just the widest
+ * rendered line (see measureMultiBox in draw-boxes.ts), so a trailing,
+ * unpadded key suffix sizes the box correctly with no extra alignment logic
+ * needed.
+ */
 function formatAttribute(attr: ErAttribute): string {
-  const keyStr = attr.keys.length > 0 ? attr.keys.join(',') + ' ' : '   '
-  return `${keyStr}${attr.type} ${attr.name}`
+  const keySuffix = attr.keys.length > 0 ? ' ' + attr.keys.join(',') : ''
+  return `${attr.type} ${attr.name}${keySuffix}`
 }
 
 /** Build sections for an entity box: [header], [attributes] */

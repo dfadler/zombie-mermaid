@@ -8,11 +8,11 @@ erDiagram
     string city
   }
 ---
-+----------------+          +------------------+    
-| PERSON         |          | ADDRESS          |    
-+----------------+-|------o<+------------------+    
-| PK string name | lives_at |    string street |    
-+----------------+          |    string city   |    
-                            +------------------+    
-                                                    
-                                                    
++----------------+          +---------------+    
+| PERSON         |          | ADDRESS       |    
++----------------+-|------o<+---------------+    
+| string name PK | lives_at | string street |    
++----------------+          | string city   |    
+                            +---------------+    
+                                                 
+                                                 
