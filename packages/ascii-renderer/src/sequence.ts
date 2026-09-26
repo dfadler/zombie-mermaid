@@ -96,6 +96,12 @@ export function renderSequenceAscii(
   const JB = useAscii ? '+' : '┴' // bottom junction on lifeline
   const JL = useAscii ? '+' : '├' // left junction
   const JR = useAscii ? '+' : '┤' // right junction
+  // Activation bar: the double-line glyph a lifeline gets while a
+  // participant is actively processing a call (issue #1133), overlaid in
+  // place of the plain lifeline `V`. Same Unicode/ASCII pairing draw-boxes.ts
+  // already uses for a double border (`║`/`‖` — see its `isDoubleBox`
+  // branch), reused here rather than inventing a second one.
+  const ACT = useAscii ? '‖' : '║'
 
   // ---- LAYOUT: compute lifeline X positions ----
 
@@ -850,10 +856,90 @@ export function renderSequenceAscii(
   }
   const lifelineBottom = (i: number) => destroyRow.get(i) ?? footerY
 
+  // ---- LAYOUT: activation intervals (rows where a lifeline is "active") ----
+  //
+  // Ports svg-renderer's layout.ts activation algorithm (its
+  // startActivation/endActivation/applyActivationEvents, ~lines 288-345) to
+  // row indices instead of y-pixels: a per-actor LIFO stack of open
+  // activations (start row pushed on `activate`, popped and closed into an
+  // interval on the matching `deactivate`), fed by both the standalone
+  // `activations` list and each message's inline `activate`/`deactivate`,
+  // plus a final pass closing anything still open at diagram end
+  // (unbalanced input) — same as the SVG layout's closing pass.
+  //
+  // Nesting depth (the SVG renderer's `depth`, used there to horizontally
+  // offset nested activation rects) isn't tracked here: the stack's LIFO
+  // order alone is enough to pair activate/deactivate correctly, and
+  // `isActiveAt` below only distinguishes "some activation covers this row"
+  // from "idle" — see the ACT-glyph comment there for why nesting doesn't
+  // get its own glyph.
+  const activationIntervals = new Map<
+    string,
+    Array<{ topRow: number; bottomRow: number }>
+  >()
+  const activationStacks = new Map<string, number[]>()
+
+  function startActivation(actorId: string, row: number): void {
+    const stack = activationStacks.get(actorId) ?? []
+    activationStacks.set(actorId, stack)
+    stack.push(row)
+  }
+  function endActivation(actorId: string, row: number): void {
+    const stack = activationStacks.get(actorId)
+    const startRow = stack?.pop()
+    if (startRow === undefined) return
+    const list = activationIntervals.get(actorId) ?? []
+    activationIntervals.set(actorId, list)
+    list.push({ topRow: startRow, bottomRow: row })
+  }
+
+  const activationEventsByAfterIndex = new Map<
+    number,
+    typeof diagram.activations
+  >()
+  for (const event of diagram.activations) {
+    const list = activationEventsByAfterIndex.get(event.afterIndex) ?? []
+    list.push(event)
+    activationEventsByAfterIndex.set(event.afterIndex, list)
+  }
+  function applyActivationEvents(afterIndex: number, row: number): void {
+    for (const event of activationEventsByAfterIndex.get(afterIndex) ?? []) {
+      if (event.kind === 'start') startActivation(event.actorId, row)
+      else endActivation(event.actorId, row)
+    }
+  }
+
+  applyActivationEvents(-1, headerBottom)
+  for (let m = 0; m < diagram.messages.length; m++) {
+    const msg = diagram.messages[m]!
+    const row = msgArrowY[m]!
+    if (msg.activate) startActivation(msg.to, row)
+    if (msg.deactivate) endActivation(msg.from, row)
+    applyActivationEvents(m, row)
+  }
+  // Unbalanced `activate` with no matching `deactivate`: close at the
+  // actor's own lifeline end, mirroring svg-renderer's layout.ts closing
+  // pass at the bottom of the message area.
+  for (const [actorId, stack] of activationStacks) {
+    if (stack.length === 0) continue
+    const bottomRow = lifelineBottom(actorIndexOf(actorId))
+    const list = activationIntervals.get(actorId) ?? []
+    activationIntervals.set(actorId, list)
+    for (const startRow of stack) list.push({ topRow: startRow, bottomRow })
+  }
+
+  /** Whether `actorId`'s lifeline is inside any activation at row `y`. */
+  function isActiveAt(actorId: string, y: number): boolean {
+    const intervals = activationIntervals.get(actorId)
+    if (!intervals) return false
+    return intervals.some((iv) => y >= iv.topRow && y <= iv.bottomRow)
+  }
+
   for (let i = 0; i < diagram.actors.length; i++) {
     const x = llX[i]!
+    const actorId = diagram.actors[i]!.id
     for (let y = lifelineTop(i); y <= lifelineBottom(i); y++) {
-      setC(x, y, V, 'line')
+      setC(x, y, isActiveAt(actorId, y) ? ACT : V, 'line')
     }
   }
 
