@@ -633,6 +633,31 @@ export function renderErAscii(
     // the same silent-corruption shape as issue #350, just between two
     // relationships instead of a relationship and a box.
     if (role !== 'text' && rc[x]?.[y] === 'text') return
+    // A same-family crossing (solid-over-solid, dashed-over-dashed, or
+    // either meeting a direction-agnostic corner/marker glyph — see
+    // lineStyleFamily) is always allowed to overwrite: two relationship
+    // lines crossing is normal, expected ER layout (see the doc comment
+    // above), and same-style glyphs look identical regardless of which
+    // relationship drew them. A *dashed* write landing on an already-drawn
+    // *solid* glyph is the one combination refused: without this, whichever
+    // relationship simply happened to be declared (and so drawn) later
+    // always won a shared cell regardless of which one it visually belongs
+    // to, so an identifying relationship's own solid line could end up
+    // showing a dashed glyph purely from draw order when it shared layout
+    // space with a non-identifying relationship (issue #1145). Solid takes
+    // precedence over dashed wherever they'd otherwise collide — not
+    // "whichever wrote first", which would just swap one order dependency
+    // for another — so the outcome is the same regardless of which
+    // relationship is declared first, mirroring how a label always wins
+    // over the line beneath it (the isProtected/canPlaceLabelLine guards
+    // above): a solid write always goes through, including over an
+    // existing dashed glyph.
+    if (
+      lineStyleFamily(ch) === 'dashed' &&
+      lineStyleFamily(canvas[x]?.[y]) === 'solid'
+    ) {
+      return
+    }
     setC(x, y, ch, role)
     // Track this relationship's own line cells (see currentRelLineCells,
     // reset per relationship below) so a later label-placement search can
@@ -753,6 +778,25 @@ export function renderErAscii(
   const V = useAscii ? '|' : '│'
   const dashH = useAscii ? '.' : '╌'
   const dashV = useAscii ? ':' : '┊'
+
+  /**
+   * Family a straight relationship-line glyph belongs to — 'solid' for an
+   * identifying relationship's H/V glyphs, 'dashed' for a non-identifying
+   * relationship's dashH/dashV glyphs, or undefined for anything else
+   * (corner glyphs from getCornerChar, crow's-foot markers, box borders,
+   * label text). Corners and markers are direction/role glyphs, not style
+   * glyphs — they look identical regardless of which relationship's style
+   * drew them, so they're deliberately excluded here rather than folded
+   * into either family; see setCGuarded's use of this for why that
+   * exclusion matters (issue #1145).
+   */
+  function lineStyleFamily(
+    ch: string | undefined,
+  ): 'solid' | 'dashed' | undefined {
+    if (ch === H || ch === V) return 'solid'
+    if (ch === dashH || ch === dashV) return 'dashed'
+    return undefined
+  }
 
   /**
    * Character for the single cell where a routed relationship's path turns

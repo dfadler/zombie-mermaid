@@ -322,4 +322,111 @@ describe('ASCII ER relationship draws do not overwrite existing text (issue #392
     expect(row![idx - 1]).toBe(' ')
     expect(row![idx + 'authors'.length]).toBe(' ')
   })
+
+  it('renders the "includes" line solid at its crossing with "ships-via", not dashed (issue #1145)', () => {
+    // Real catalog sample ("ER: Mixed Identifying & Non-Identifying").
+    // PRODUCT--LINE_ITEM ("includes", solid — identifying) and
+    // ORDER--SHIPMENT ("ships-via", dashed — non-identifying, detoured
+    // beneath LINE_ITEM which sits between ORDER and SHIPMENT in the same
+    // row) route through the same cell: ships-via's horizontal detour fill
+    // crosses directly through includes' vertical stem just below
+    // LINE_ITEM. setCGuarded now refuses to let a dashed write land on an
+    // already-drawn solid glyph there, so "includes" renders solid at the
+    // crossing rather than picking up ships-via's dash.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        ORDER ||--|{ LINE_ITEM : contains
+        ORDER ||..o{ SHIPMENT : ships-via
+        PRODUCT ||--o{ LINE_ITEM : includes
+        PRODUCT ||..o{ REVIEW : receives`,
+      { colorMode: 'none' },
+    )
+
+    const lines = ascii.split('\n')
+    // ships-via's detour fill sits one row below LINE_ITEM's own
+    // zero-many marker ('╢○', for "includes") — anchoring on that marker
+    // (unambiguous: it's only ever drawn once, at LINE_ITEM's own bottom
+    // edge) rather than searching for a '└...┘' corner pair directly,
+    // since every entity box's own border also has solid corners and a
+    // naive substring search can match those instead (they're a different
+    // row, but a row can contain more than one corner pair).
+    const markerRowIdx = lines.findIndex((l) => l.includes('╢○'))
+    expect(markerRowIdx).toBeGreaterThanOrEqual(0)
+    const detourRow = lines[markerRowIdx + 1]!
+    const detourStart = detourRow.indexOf('└╌')
+    const detourEnd = detourRow.indexOf('╌┘') + 1
+    expect(detourStart).toBeGreaterThanOrEqual(0)
+
+    // includes' own vertical stem (solid '│') crosses this same row exactly
+    // once, between the detour's two corners — that crossing cell must
+    // read as solid, not dashed.
+    const crossingIdx = detourRow.indexOf('│', detourStart)
+    expect(crossingIdx).toBeGreaterThan(detourStart)
+    expect(crossingIdx).toBeLessThan(detourEnd)
+    expect(detourRow[crossingIdx]).toBe('│')
+
+    // And the fill on either side of that crossing is still ships-via's own
+    // dashed glyph — the fix only protects the one style-conflicting cell,
+    // it doesn't let the solid write bleed into its neighbors.
+    expect(detourRow[crossingIdx - 1]).toBe('╌')
+    expect(detourRow[crossingIdx + 1]).toBe('╌')
+  })
+
+  it('never lets a later-drawn dashed relationship line overwrite an earlier solid one at their crossing (issue #1145)', () => {
+    // Same geometry as the sample above (same entities, same connections,
+    // same declaration/draw order — contains, ships-via, includes,
+    // receives), but with which relationship is solid vs. dashed flipped:
+    // "ships-via" is now identifying (solid, "--") and "includes" is now
+    // non-identifying (dashed, ".."). `rel.identifying` only selects which
+    // glyph set a relationship draws with — it doesn't affect any routing
+    // decision (obstruction detection, jog-row search, detour placement) —
+    // so this renders with the exact same cell layout as the original
+    // sample, just with the two relationships' styles swapped. That makes
+    // it a clean, order-preserving way to flip *which* style the
+    // later-drawn relationship carries, without perturbing the routing
+    // itself the way reordering the relationships outright would.
+    //
+    // ships-via (now solid) is still drawn before includes (now dashed) —
+    // same relationship order as above — so before the fix, includes'
+    // later dashed write unconditionally overwrote ships-via's
+    // already-drawn solid detour fill at their crossing cell, opening a
+    // single-character dashed gap in an otherwise solid line: exactly the
+    // "solid stem ends up showing a dashed glyph, purely from draw order"
+    // defect the issue describes. The fix refuses that overwrite, so the
+    // detour fill must now be solid all the way across, with no dashed
+    // character breaking it.
+    const ascii = renderMermaidASCII(
+      `erDiagram
+        ORDER ||--|{ LINE_ITEM : contains
+        ORDER ||--o{ SHIPMENT : ships-via
+        PRODUCT ||..o{ LINE_ITEM : includes
+        PRODUCT ||..o{ REVIEW : receives`,
+      { colorMode: 'none' },
+    )
+
+    const lines = ascii.split('\n')
+    // Same anchor as the test above: ships-via's detour fill sits one row
+    // below LINE_ITEM's zero-many marker. Anchoring there (rather than
+    // searching for a '└...┘' pair directly) avoids a false match against
+    // an entity box's own solid border elsewhere in the render — with the
+    // fill itself now solid too (styles swapped for this test), a naive
+    // substring search matches ORDER's own box border instead of the
+    // detour row.
+    const markerRowIdx = lines.findIndex((l) => l.includes('╢○'))
+    expect(markerRowIdx).toBeGreaterThanOrEqual(0)
+    const detourRow = lines[markerRowIdx + 1]!
+    const detourStart = detourRow.indexOf('└─') // index of the '└' corner
+    const detourEnd = detourRow.indexOf('─┘') + 1 // index of the '┘' corner
+    expect(detourStart).toBeGreaterThanOrEqual(0)
+    // Everything strictly between the two corners.
+    const fill = detourRow.slice(detourStart + 1, detourEnd)
+
+    // No dashed glyph ('┊', includes' own now-dashed vertical stem's
+    // style) may appear anywhere inside the solid detour fill.
+    expect(fill).not.toContain('┊')
+    // And the fill is unbroken solid line across its whole span (not, say,
+    // silently dropped to a blank gap instead of dashed — the crossing
+    // cell must still carry a line glyph, just the solid one).
+    expect(fill).toBe('─'.repeat(fill.length))
+  })
 })
