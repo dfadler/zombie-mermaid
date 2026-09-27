@@ -138,23 +138,42 @@ script's own process is attached to, which a container can't do.
    Mermaid source string covering it rather than skipping verification —
    pass a path to a `.mmd` file in that case instead of a numeric index.
 
-2. **Get the base-ref renderer without a full worktree.** Mirror
-   `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`):
+2. **Get the base-ref renderer without a full worktree.**
 
    ```bash
    mkdir -p tmp-base-ref
-   git archive main src | tar -x -C tmp-base-ref
+   git archive main src packages tsconfig.json | tar -x -C tmp-base-ref
    ```
 
-   pulls `src/` at the base commit into a scratch directory — no worktree
-   needed just to diff a renderer function. This is also why `src/cli.ts`
-   isn't the right tool for the "before" side: it reads `../package.json`
-   (for its `--version` string) relative to its own file, which the scratch
-   dir doesn't have. `scripts/ascii-render-runner.mjs` (what the capture
-   script runs inside the PTY) imports `renderMermaidASCII` directly
-   instead — the same function `cli.ts` itself calls — and skips the CLI
-   entirely on both sides. Delete `tmp-base-ref/` once done; it's a scratch
-   extraction, not something to commit.
+   pulls `src/`, every workspace `packages/*/src`, and `tsconfig.json` at the
+   base commit into a scratch directory — no worktree needed just to diff a
+   renderer function. All three are required, not just `src/`:
+   `renderMermaidASCII`'s implementation lives entirely under
+   `packages/ascii-renderer/src` (itself depending on `@zombie-mermaid/core`
+   and `@zombie-mermaid/mermaid-parser`), reached from `src/index.ts` only
+   through the bare specifier `@zombie-mermaid/ascii-renderer` —
+   `scripts/ascii-terminal-capture.sh` resolves that specifier by pointing
+   `tsx --tsconfig` at `tmp-base-ref/tsconfig.json`, so archiving `src/`
+   alone leaves it unresolved against the scratch dir and silently
+   re-resolves it against this repo's own `packages/` instead, making a
+   "before" capture identical to "after" for any change under
+   `packages/*/src` (see issue
+   [#1141](https://github.com/dfadler/zombie-mermaid/issues/1141)). This is
+   also why `src/cli.ts` isn't the right tool for the "before" side: it
+   reads `../package.json` (for its `--version` string) relative to its own
+   file, which the scratch dir doesn't have. `scripts/ascii-render-runner.mjs`
+   (what the capture script runs inside the PTY) imports `renderMermaidASCII`
+   directly instead — the same function `cli.ts` itself calls — and skips
+   the CLI entirely on both sides. Delete `tmp-base-ref/` once done; it's a
+   scratch extraction, not something to commit.
+
+   `scripts/visual-diff.ts`'s own extraction (`loadRendererAt`) still
+   archives `src/` alone and has the same unresolved-bare-specifier bug for
+   any package-level change — it's a separate, in-process `import()` rather
+   than a `tsx` subprocess this skill's `--tsconfig` fix doesn't reach. Keep
+   using it only for its documented purpose (a human-reviewable HTML report
+   during local iteration, per CONTRIBUTING.md), never as this skill's
+   before/after source.
 
 3. **Capture both sides** — replace `12` with the sample's actual index (or
    a `.mmd` file path for the inline-fallback case from step 1); the sample
