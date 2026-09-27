@@ -634,13 +634,24 @@ jobs:
           ids=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
             --jq ".[] | select(.body | startswith(\"${MARKER}\")) | select(.body | contains(\"${APPROVED_PENDING}\")) | .id" 2>/dev/null || true)
 
+          failed=false
           while IFS= read -r id; do
             [ -z "$id" ] && continue
             body_file="${RUNNER_TEMP}/resolved-comment-${id}.md"
             gh api "repos/${REPO}/issues/comments/${id}" --jq .body > "$body_file"
             sed -i "s/${APPROVED_PENDING}/${APPROVED_RESOLVED}/g" "$body_file"
-            gh api --method PATCH "repos/${REPO}/issues/comments/${id}" -f body=@"$body_file" || true
+            # -F (not -f) is required here: only -F/--field reads an "@path"
+            # value from a file — -f/--raw-field treats it as a literal
+            # string, which would PATCH the comment body to the literal text
+            # "@/path/to/body_file" instead of its contents.
+            if ! gh api --method PATCH "repos/${REPO}/issues/comments/${id}" -F body=@"$body_file"; then
+              echo "::error::failed to PATCH comment ${id} to resolved"
+              failed=true
+            fi
           done <<< "$ids"
+
+          [ "$failed" = true ] && exit 1
+          exit 0
 
   bench:
     name: Benchmark regression gate
