@@ -167,8 +167,19 @@ describe('ASCII ER relationship routing draws a corner glyph at each turn (issue
     // from a single shared-center bypass to two side-by-side ones; the
     // corner glyphs at the bypass's own turns are still there, just at the
     // updated column.
-    expect(ascii).toContain('┌─│──────────────────┘')
-    expect(ascii).toContain('○╟─────────────────┘')
+    //
+    // These two exact substrings shifted again with issue #1134's ER
+    // attribute-column reorder (type/name/keys instead of keys/type/name):
+    // A/D/G's boxes carry no keyed attributes here, so the old format's
+    // fixed-width key prefix ('   ' when absent) padded every attribute
+    // line by 3 unused columns; the reordered format only emits a key
+    // suffix when a key actually exists, so these now-narrower boxes shift
+    // the bypass's free-column search enough to change both jog rows'
+    // exact shape — each jog's two corners now land on the very same row
+    // (self-contained '┌'...'┘' runs) rather than sharing a row with a
+    // marker glyph the way the pre-#1134 geometry did.
+    expect(ascii).toContain('┌─────────────────────────┘')
+    expect(ascii).toContain('┌────────────────────┘')
     expect(ascii).toContain('ag')
   })
 
