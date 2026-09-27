@@ -32,6 +32,19 @@
  * `pnpm run build:site`'s `cp -r public/* site/` ships them automatically.
  * Re-run this script and commit the result whenever an ascii-mode entry's
  * source or fixCommit changes in demo/fork-fixes-data.ts.
+ *
+ * The "before" render (both the plain-text comparison and the screenshot
+ * itself) has to run in a `tsx --tsconfig <archived-dir>/tsconfig.json`
+ * subprocess, not an in-process `import()`: `renderMermaidASCII` lives under
+ * `packages/ascii-renderer/src`, reached only through the bare specifier
+ * `@zombie-mermaid/ascii-renderer`, which tsx resolves via whichever
+ * tsconfig.json it locked onto at process start — always this repo root's,
+ * for an in-process import, regardless of which archived `src/index.ts` you
+ * point at. See `packages/site/fork-fixes.ts`'s `renderBefore()` (the same
+ * fix, applied there after issue #1087) and issue #1141 (this bug's other
+ * instance, in scripts/ascii-terminal-capture.sh). `extractBefore()` below
+ * archives `packages/` and `tsconfig.json` alongside `src/` so the
+ * subprocess's tsconfig paths have something to resolve to.
  */
 
 import { execFile } from 'node:child_process'
@@ -52,11 +65,11 @@ const SCRATCH_DIR = new URL(
 const OUT_DIR = new URL('../public/fork-fixes-screenshots/', import.meta.url)
   .pathname
 const TSX_BIN = `${REPO_ROOT}node_modules/.bin/tsx`
-
-interface RendererModule {
-  renderMermaidASCII?: (source: string, options?: unknown) => string
-  renderMermaidAscii?: (source: string, options?: unknown) => string
-}
+/** Reused from fork-fixes.ts's own before/after split (see header comment). */
+const RENDER_BEFORE_SCRIPT = new URL(
+  '../packages/site/fork-fixes-render-before.ts',
+  import.meta.url,
+).pathname
 
 /** Mirrors fork-fixes.ts's own guard — see there for the full rationale. */
 async function requireCommit(commit: string): Promise<void> {
@@ -75,7 +88,13 @@ async function requireCommit(commit: string): Promise<void> {
   }
 }
 
-/** Extract `commit^`'s src/ tree and return its index.ts path. */
+/**
+ * Extract `commit^`'s src/, packages/, and tsconfig.json into a scratch dir
+ * and return its index.ts path. Mirrors fork-fixes.ts's `archiveCommitBefore()`
+ * exactly, including the `hasPackages` guard: an old fixCommit predating the
+ * packages/ split (#769/#1111) has no packages/ tree to archive, so this
+ * checks before requesting it rather than letting `git archive` fail.
+ */
 async function extractBefore(commit: string): Promise<string> {
   const dir = `${CACHE_DIR}${commit}`
   if (!existsSync(dir)) {
@@ -86,6 +105,24 @@ async function extractBefore(commit: string): Promise<string> {
       ['-c', `git archive ${commit}^ src | tar -x -C ${JSON.stringify(dir)}`],
       { maxBuffer: 64 * 1024 * 1024 },
     )
+
+    const hasPackages = await exec('git', [
+      'cat-file',
+      '-e',
+      `${commit}^:packages`,
+    ])
+      .then(() => true)
+      .catch(() => false)
+    if (hasPackages) {
+      await exec(
+        'sh',
+        [
+          '-c',
+          `git archive ${commit}^ packages tsconfig.json | tar -x -C ${JSON.stringify(dir)}`,
+        ],
+        { maxBuffer: 64 * 1024 * 1024 },
+      )
+    }
   }
   return `${dir}/src/index.ts`
 }
@@ -94,11 +131,34 @@ function maxLineWidth(text: string): number {
   return Math.max(...text.split('\n').map((line) => displayWidth(line)))
 }
 
+/** `<dir>/src/index.ts` -> `<dir>`, for locating that tree's own tsconfig.json. */
+function treeRootOf(indexPath: string): string {
+  return indexPath.replace(/\/src\/index\.ts$/, '')
+}
+
+/**
+ * Render one sample through `indexPath`'s renderer, always via a `tsx`
+ * subprocess pinned to that tree's own tsconfig.json (see header comment for
+ * why this can't be an in-process `import()`). For the "after" side,
+ * `indexPath` is this repo's own `src/index.ts` and that tsconfig.json is
+ * the same one tsx would discover by default anyway, so pinning it here
+ * changes nothing there — it's only load-bearing for an archived "before".
+ */
 async function renderPlain(indexPath: string, source: string): Promise<string> {
-  const mod = (await import(indexPath)) as RendererModule
-  const fn = mod.renderMermaidASCII ?? mod.renderMermaidAscii
-  if (!fn) throw new Error(`no ASCII renderer export found in ${indexPath}`)
-  return fn(source, { colorMode: 'none' })
+  const dir = treeRootOf(indexPath)
+  const tsconfigPath = `${dir}/tsconfig.json`
+  const args = existsSync(tsconfigPath)
+    ? ['--tsconfig', tsconfigPath, RENDER_BEFORE_SCRIPT, dir, source, 'ascii']
+    : [RENDER_BEFORE_SCRIPT, dir, source, 'ascii']
+  const { stdout } = await exec(TSX_BIN, args, {
+    maxBuffer: 64 * 1024 * 1024,
+  })
+  const result = JSON.parse(stdout) as
+    { ok: true; output: string } | { ok: false; error: string }
+  if (!result.ok) {
+    throw new Error(result.error)
+  }
+  return result.output
 }
 
 /**
@@ -137,6 +197,17 @@ process.stdout.write(render(${JSON.stringify(source)}, { colorMode: 'none' }) + 
 `
   await writeFile(runnerPath, runnerSrc, 'utf8')
 
+  // Same tsconfig pin as renderPlain() above, and for the same reason: this
+  // runner's own `import()` resolves @zombie-mermaid/* bare specifiers
+  // through whichever tsconfig.json the tsx process it runs in locked onto,
+  // which without this flag would always be this repo root's — silently
+  // screenshotting the current renderer for a "before" side too.
+  const dir = treeRootOf(indexPath)
+  const tsconfigPath = `${dir}/tsconfig.json`
+  const tsxCommand = existsSync(tsconfigPath)
+    ? `${TSX_BIN} --tsconfig ${tsconfigPath} ${runnerPath}`
+    : `${TSX_BIN} ${runnerPath}`
+
   const castPath = `${SCRATCH_DIR}${id}-${side}.cast`
   const gifPath = `${SCRATCH_DIR}${id}-${side}.gif`
   const framesDir = `${SCRATCH_DIR}${id}-${side}-frames`
@@ -146,7 +217,7 @@ process.stdout.write(render(${JSON.stringify(source)}, { colorMode: 'none' }) + 
     [
       'rec',
       '--command',
-      `${TSX_BIN} ${runnerPath}`,
+      tsxCommand,
       '--window-size',
       `${cols}x${rows}`,
       '--overwrite',

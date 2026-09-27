@@ -52,7 +52,21 @@ GUI window) and writes <output-prefix>.cast, .txt, and .png.
 
   <index-module-path>     Path to a src/index.ts exporting renderMermaidASCII
                            - the working tree's own, or a base ref's src/
-                           extracted via `git archive <ref> src | tar -x -C <dir>`.
+                           extracted via
+                           `git archive <ref> src packages tsconfig.json | tar -x -C <dir>`.
+                           renderMermaidASCII's implementation lives entirely
+                           under packages/ascii-renderer/src (imported via
+                           the bare specifier @zombie-mermaid/ascii-renderer,
+                           which itself imports @zombie-mermaid/core and
+                           @zombie-mermaid/mermaid-parser) - archiving only
+                           src/ leaves those bare imports unresolved against
+                           <dir> and silently re-resolves them against this
+                           repo's own packages/ instead (see issue #1141),
+                           making a "before" capture identical to "after"
+                           for any change under packages/*/src. tsconfig.json
+                           must be archived alongside them: this script reads
+                           it (via tsx --tsconfig) to resolve those bare
+                           imports within <dir> instead of this repo root.
   <sample-index-or-file>  Numeric index into the working tree's
                            samples-data.ts, or a path to a .mmd file.
   <output-prefix>         Output path prefix, e.g. /tmp/after -> /tmp/after.cast, .txt, .png
@@ -69,7 +83,8 @@ silently ignores a size flag it doesn't recognize (2.x took --cols/--rows,
 PR screenshots clipped to 80x24 (issue #483). The flag form is detected from
 `asciinema record --help` before recording, so both versions work.
 
-Exit codes: 0 ok; 1 the sample failed to render; 2 usage error; 4 a missing
+Exit codes: 0 ok; 1 the sample failed to render; 2 usage error (including
+<index-module-path>'s tree root missing its own tsconfig.json); 4 a missing
 or misbehaving dependency (asciinema, agg or docker, python3, tsx, or a
 recorded terminal size that doesn't match the requested one).
 
@@ -95,7 +110,7 @@ locally).
 
 Example (before/after a change, comparing against main):
   mkdir -p tmp-base-ref
-  git archive main src | tar -x -C tmp-base-ref
+  git archive main src packages tsconfig.json | tar -x -C tmp-base-ref
   scripts/ascii-terminal-capture.sh ./src/index.ts 12 /tmp/after
   scripts/ascii-terminal-capture.sh ./tmp-base-ref/src/index.ts 12 /tmp/before
   diff /tmp/before.txt /tmp/after.txt
@@ -174,6 +189,28 @@ if [ ! -x "$tsx" ]; then
   exit "$EXIT_DEPENDENCY"
 fi
 
+# <index-module-path> is always <tree-root>/src/index.ts, whether <tree-root>
+# is this repo root (the working tree) or a scratch dir a base ref was
+# archived into. renderMermaidASCII lives in @zombie-mermaid/ascii-renderer
+# (and that package itself imports @zombie-mermaid/core and
+# @zombie-mermaid/mermaid-parser) - all bare specifiers, resolved by tsx via
+# tsconfig.json's `paths`. Passing --tsconfig here pins that resolution to
+# <tree-root>'s own tsconfig.json instead of tsx's default lookup (nearest
+# tsconfig from cwd), which is always *this* repo root's tsconfig.json
+# regardless of <index-module-path> - so without this flag, a "before"
+# capture against an archived base ref silently re-resolves every
+# @zombie-mermaid/* import back to the current working tree's packages/,
+# making before == after for any change under packages/*/src (see issue
+# #1141). For the working tree case <tree-root> IS the repo root, so this is
+# a no-op there - the flag is only load-bearing for an archived ref.
+index_module_dir="$(cd "$(dirname "$index_module_path")" && pwd)"
+tree_root="$(cd "$index_module_dir/.." && pwd)"
+tsconfig_path="$tree_root/tsconfig.json"
+if [ ! -f "$tsconfig_path" ]; then
+  echo "missing $tsconfig_path: <index-module-path>'s tree root must have its own tsconfig.json alongside src/ - for a base-ref extraction, archive it too (see --help's example)" >&2
+  exit "$EXIT_USAGE"
+fi
+
 # asciinema renamed its size flags between major versions (2.x: --cols N
 # --rows M; 3.x: --window-size NxM) and silently ignores whichever form it
 # doesn't recognize - the recording just lands at the PTY's default 80x24.
@@ -196,7 +233,7 @@ fi
 # <index-module-path> the recording will, so a "before" capture against a
 # base ref is sized to that ref's output, not the working tree's.
 measure_status=0
-needed_size="$("$tsx" "$runner" --size "$index_module_path" "$sample_arg")" || measure_status=$?
+needed_size="$("$tsx" --tsconfig "$tsconfig_path" "$runner" --size "$index_module_path" "$sample_arg")" || measure_status=$?
 if [ "$measure_status" -ne 0 ]; then
   echo "could not render $sample_arg via $index_module_path to measure its terminal size (see above)" >&2
   if [ "$measure_status" -eq 2 ]; then
@@ -249,9 +286,9 @@ esac
 # command exits, there's no later terminal session to leave in a hidden-
 # cursor state - nothing depends on restoring it.
 # shellcheck disable=SC2016
-TSX="$tsx" RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
+TSX="$tsx" TSCONFIG_PATH="$tsconfig_path" RUNNER="$runner" INDEX_MODULE_PATH="$index_module_path" SAMPLE_ARG="$sample_arg" \
   asciinema record --overwrite --quiet \
-  -c 'printf "\033[?25l"; "$TSX" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
+  -c 'printf "\033[?25l"; "$TSX" --tsconfig "$TSCONFIG_PATH" "$RUNNER" "$INDEX_MODULE_PATH" "$SAMPLE_ARG"' \
   "${size_args[@]}" \
   "${out_prefix}.cast"
 
