@@ -1,0 +1,509 @@
+# Trusted poster for the visual-regression diff comment (zombie-mermaid#1139,
+# #1140). Runs as a `workflow_run` reaction to the `CI` workflow instead of
+# living inside ci.yml's own `pull_request`-triggered jobs, for one load-
+# bearing reason: a `workflow_run`-triggered workflow always executes the
+# copy of ITSELF committed on this repo's default branch, regardless of
+# which branch or fork triggered the originating run
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run
+# — "this event will only trigger a workflow run if the workflow file... is
+# on the default branch"). That's the same trust property
+# `pull_request_target` gives fork-fixes-nudge.yml, applied here to a
+# workflow that reacts to a *completed run* instead of the PR event itself.
+# Concretely, that buys:
+#   - repo secrets (the new VISUAL_REGRESSION_ATTACH_PAT — see #1140) ARE
+#     available here, even when the originating CI run was a fork-authored
+#     `pull_request` run that itself got no secrets and a read-only token.
+#   - the default GITHUB_TOKEN here is minted with THIS job's own declared
+#     `permissions:` (write), not the forced-read-only token a fork
+#     `pull_request` run gets — so even the plain-text (no-PAT) fallback can
+#     now post on a fork PR, closing the other half of #1139's gap.
+#   - this workflow never checks out or executes the PR's own code — it only
+#     reads (a) run/job/PR metadata from the GitHub API and (b) downloaded
+#     screenshot *artifacts*, treated as inert image bytes that are only
+#     ever referenced through validated, sanitized filenames, never
+#     executed, sourced, or eval'd.
+#
+# Supersedes ci.yml's old `visual-regression-comment` / `visual-regression-
+# resolved` jobs (removed in this same change), which only ever worked for
+# same-repository PRs — see PR #1138 (where they were added) and review
+# thread https://github.com/dfadler/zombie-mermaid/pull/1138#discussion_r4111697437
+# (the gap this workflow closes).
+#
+# ---
+#
+# Trust-boundary validation performed below, in order, before any
+# write-scoped credential or `gh pr comment`/`gh api` write call:
+#   1. `github.event.workflow_run.repository.full_name` must be exactly this
+#      repo — guards the same "someone forked zombie-mermaid and its own
+#      copy of this workflow also runs there, against their own repo's
+#      runs" case the `github.repository ==` guard handles elsewhere (see
+#      ci.yml's `test` job comment). For `workflow_run`, the base-repo field
+#      lives on the event payload, not `github.repository` (which here
+#      already refers to this workflow's own home repo).
+#   2. `github.event.workflow_run.event` must be `pull_request` — a push-to-
+#      main CI run has no PR to comment on.
+#   3. The run's jobs are re-fetched live via the Actions API
+#      (`GET /repos/.../actions/runs/{id}/jobs`) and filtered to the
+#      `Visual regression (SVG + ASCII screenshots) (*)` matrix jobs. Only
+#      their live-fetched conclusions decide whether this posts a diff
+#      comment, marks one resolved, or does nothing — never anything read
+#      out of an artifact, and never assumed from the overall run
+#      conclusion (which reflects every job in CI, not just this one, so
+#      e.g. a `lint` failure elsewhere must not trigger a diff comment).
+#   4. The pull request is resolved via
+#      `GET /repos/.../commits/{head_sha}/pulls` rather than trusting
+#      `workflow_run.pull_requests` — that array is widely reported
+#      (community-documented, not something independently re-verified
+#      against an official page here) as empty or stale for fork-authored
+#      PRs, and this design doesn't need to rely on it either way: the
+#      commits/.../pulls result is queried fresh and only accepted when
+#      exactly one OPEN pull request has that exact commit as its CURRENT
+#      head AND the same head repository as the triggering run AND this
+#      repo as its base — rejecting stale/ambiguous/cross-repo matches
+#      instead of guessing.
+#   5. Downloaded failure artifacts are validated before use: only files
+#      matching the expected `*-expected.png` / `*-actual.png` / `*-diff.png`
+#      naming convention, with filenames restricted to a safe character
+#      allowlist (guards shell/path handling against an attacker-chosen
+#      Playwright test name) and each file's real content verified to be a
+#      PNG by magic bytes, are ever attached or referenced — never executed,
+#      never sourced, and never used to pick which PR/job/run this posts to
+#      (that's fixed by steps 3-4 above, before any artifact is even
+#      downloaded).
+#
+# Residual gap, flagged rather than silently assumed away: a failure inside
+# this workflow (e.g. every posting attempt failing) surfaces as a failed
+# run of THIS workflow in the Actions tab, the same way the job it replaces
+# already worked for the same-repo case — but because `workflow_run` runs
+# are not the PR's own checks, that failure does not show up as a red check
+# on the PR itself. A maintainer watching Actions (or #1139/#1140's own
+# follow-through) is the backstop; closing that visibility gap further
+# (e.g. a commit status on the PR's head SHA) is left as a follow-up rather
+# than folded into this change.
+name: Post visual regression comment
+
+# zizmor flags `workflow_run` generically as "almost always used insecurely"
+# (https://docs.zizmor.sh/audits/#dangerous-triggers) because the common
+# misuse is checking out and building/running PR-controlled code under the
+# elevated token this trigger grants. This workflow deliberately never does
+# that: it has no `actions/checkout` step at all, and the only
+# PR-influenced inputs it reads (screenshot artifacts, via `gh run
+# download`) are treated as inert bytes — validated by filename allowlist
+# and PNG magic bytes, then only ever passed to `gh pr comment --attach`/
+# embedded as markdown image paths, never executed, sourced, or
+# interpreted as code. See this file's own header comment for the full
+# trust-boundary validation this job performs before it does anything
+# write-scoped.
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: ['CI']
+    types: [completed]
+
+# One in-flight poster per originating run — a manual rerun of the same CI
+# run would otherwise race itself.
+concurrency:
+  group: visual-regression-post-comment-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+# No top-level write permissions — each job/step below requests exactly
+# what it needs (see the `post-comment` job's own `permissions:` block).
+permissions:
+  contents: read
+
+jobs:
+  post-comment:
+    name: Validate run and post/update diff comment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # See header comment: (1) same-repo guard — this workflow only acts on
+    # runs that belong to THIS repo, not a downstream fork's own copy of
+    # ci.yml; (2) only react to pull_request-triggered CI runs, which are
+    # the only ones with a PR to comment on.
+    if: >-
+      github.event.workflow_run.repository.full_name == 'dfadler/zombie-mermaid' &&
+      github.event.workflow_run.event == 'pull_request'
+    permissions:
+      contents: read
+      actions: read # list this run's jobs and download its artifacts
+      pull-requests: write # post/update/delete this workflow's own PR comment
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+      MARKER: '<!-- visual-regression-diff-report -->'
+      # Each row attaches 3 images (before/after/diff); this bounds both
+      # comment length and upload time. Remaining diffs are still visible
+      # in the full Playwright report linked from the comment. Matches
+      # ci.yml's original MAX_DIFF_ROWS (#1138).
+      MAX_DIFF_ROWS: '6'
+      APPROVED_PENDING: '⬜ Pending'
+      APPROVED_RESOLVED: '✅ Resolved'
+      # `gh pr comment --attach` (uploads local files as PR-comment images)
+      # shipped in gh 2.99.0 (2026-09-01) —
+      # https://github.blog/changelog/2026-09-01-github-cli-media-in-issues-pull-requests-and-comments/
+      # `ubuntu-latest` isn't guaranteed to carry that yet, so this is
+      # checked and installed below rather than assumed (same as #1138's
+      # original job).
+      GH_MIN_VERSION: '2.99.0'
+
+    steps:
+      # Step 3 of the header comment's validation list: figure out whether
+      # the visual-regression matrix job(s) in the ORIGINATING run actually
+      # failed, succeeded, or neither (skipped/cancelled/timed out/still
+      # missing) — never trust the overall run conclusion, since that
+      # reflects every job in ci.yml (lint, bench, semgrep, ...), not just
+      # this one.
+      - name: Determine visual-regression job outcome
+        id: vr
+        run: |
+          set -uo pipefail
+
+          jobs_json=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs?per_page=100" --paginate 2>/dev/null || true)
+          if [ -z "$jobs_json" ]; then
+            echo "::warning::Could not list jobs for run ${RUN_ID} — treating as nothing-to-do."
+            echo "result=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # `gh api --paginate` on a non-array top-level response (this
+          # endpoint returns {total_count, jobs: [...]}) emits one such
+          # object per page concatenated — jq's `-s` (slurp) plus `.[].jobs`
+          # below flattens that back into a single job list regardless of
+          # whether one page or several came back.
+          conclusions=$(printf '%s' "$jobs_json" | jq -s -r \
+            '[.[] | .jobs[]? | select(.name | startswith("Visual regression (SVG + ASCII screenshots)"))] | .[].conclusion')
+
+          if [ -z "$conclusions" ]; then
+            echo "No visual-regression job found in run ${RUN_ID} (e.g. the workflow failed before it started, or was cancelled early) — nothing to do."
+            echo "result=none" >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$conclusions" | grep -qx 'failure'; then
+            echo "result=failure" >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$conclusions" | grep -qvx 'success'; then
+            # Some shard is neither success nor failure (cancelled,
+            # timed_out, skipped, action_required, null, ...) — ambiguous,
+            # so don't post a diff comment (nothing definitively failed)
+            # and don't mark anything resolved either (not definitively
+            # all-green). Conservative no-op.
+            echo "Visual-regression shard(s) in a non-terminal/ambiguous state ($(printf '%s' "$conclusions" | tr '\n' ',')) — treating as nothing-to-do."
+            echo "result=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Step 4 of the header comment's validation list.
+      - name: Resolve the pull request for this run's head commit
+        id: pr
+        if: steps.vr.outputs.result != 'none'
+        run: |
+          set -uo pipefail
+
+          if [ -z "${HEAD_SHA:-}" ] || [ -z "${HEAD_REPO:-}" ] || [ "$HEAD_REPO" = "null" ]; then
+            echo "::error::workflow_run is missing head_sha/head_repository (possibly a deleted fork/branch) — refusing to guess which PR to post to."
+            exit 1
+          fi
+
+          # GitHub's REST API for finding a PR from a commit — used instead
+          # of workflow_run.pull_requests, which is reported unreliable for
+          # fork-authored PRs (see this file's header comment) and isn't
+          # needed here regardless, since every candidate below is
+          # independently re-validated against HEAD_SHA/HEAD_REPO/REPO.
+          raw=$(gh api "repos/${REPO}/commits/${HEAD_SHA}/pulls")
+
+          pr_number=$(printf '%s' "$raw" | jq -r --arg sha "$HEAD_SHA" --arg headrepo "$HEAD_REPO" --arg baserepo "$REPO" '
+            [ .[] | select(.state == "open")
+                  | select(.head.sha == $sha)
+                  | select(.head.repo != null and .head.repo.full_name == $headrepo)
+                  | select(.base.repo.full_name == $baserepo)
+            ] as $matches
+            | if ($matches | length) == 1 then $matches[0].number else empty end
+          ')
+
+          if [ -z "${pr_number:-}" ]; then
+            candidate_count=$(printf '%s' "$raw" | jq 'length')
+            echo "::error::Could not uniquely resolve an open pull request for head commit ${HEAD_SHA} in ${HEAD_REPO} (base ${REPO}) — found ${candidate_count} raw candidate(s) via the commits/.../pulls API, 0 or >1 after filtering to an exact head-sha/head-repo/base-repo match. Refusing to guess; not posting."
+            exit 1
+          fi
+
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
+
+      # zizmor flags this step's GITHUB_PATH write as `github-env`
+      # ("write to GITHUB_PATH may allow code execution" —
+      # https://docs.zizmor.sh/audits/#github-env), a generic warning about
+      # PATH manipulation being able to redirect later unqualified command
+      # lookups to attacker-controlled binaries. Nothing written here is
+      # PR/artifact-influenced: `GH_MIN_VERSION` is a hardcoded literal
+      # above, the download URL is a fixed github.com/cli/cli releases path
+      # built only from that literal, and the appended directory is the
+      # extracted tarball's own known-shape path — none of it derives from
+      # the untrusted run/PR/artifact data this workflow otherwise treats
+      # as data-not-code (see the trust-boundary list in this file's header
+      # comment).
+      - name: Ensure gh supports --attach
+        if: steps.vr.outputs.result == 'failure'
+        run: | # zizmor: ignore[github-env]
+          set -uo pipefail
+          current=$(gh --version 2>/dev/null | head -1 | awk '{print $3}')
+          echo "Runner gh version: ${current:-none}"
+          oldest=$(printf '%s\n%s\n' "$GH_MIN_VERSION" "${current:-0.0.0}" | sort -V | head -1)
+          if [ "$oldest" = "$GH_MIN_VERSION" ] && [ -n "$current" ]; then
+            echo "gh is new enough."
+            exit 0
+          fi
+          echo "Installing gh ${GH_MIN_VERSION}..."
+          tarball="gh_${GH_MIN_VERSION}_linux_amd64"
+          curl -fsSL \
+            "https://github.com/cli/cli/releases/download/v${GH_MIN_VERSION}/${tarball}.tar.gz" \
+            -o "${RUNNER_TEMP}/gh.tar.gz"
+          tar -xzf "${RUNNER_TEMP}/gh.tar.gz" -C "${RUNNER_TEMP}"
+          echo "${RUNNER_TEMP}/${tarball}/bin" >> "$GITHUB_PATH"
+
+      # One artifact per failed shard, same naming ci.yml's `visual-
+      # regression` job already uploads
+      # (`visual-regression-failures-<shardIndex>`). `gh run download`
+      # (rather than actions/download-artifact) is used deliberately here:
+      # it downloads straight from a specific OTHER run
+      # (`${RUN_ID}`, the originating CI run, not this job's own run) using
+      # this job's own authenticated `gh`, with no extra action pin to
+      # audit for cross-run-download support. Each matching artifact lands
+      # in its own `failures/<artifact-name>/` subdirectory (gh's default,
+      # since there is no merge-multiple flag) — harmless here, since every
+      # lookup below (`find failures -iname '*-diff.png'`) is already
+      # recursive.
+      - name: Download failure artifacts
+        if: steps.vr.outputs.result == 'failure'
+        run: |
+          set -uo pipefail
+          mkdir -p failures
+          if ! gh run download "${RUN_ID}" --repo "${REPO}" --pattern 'visual-regression-failures-*' --dir failures; then
+            echo "::warning::No failure artifacts found for run ${RUN_ID}, or the download failed — will still attempt a text-only comment noting the failure."
+          fi
+
+      # Untrusted-artifact handling (step 5 of the header comment): the
+      # filenames and bytes below originated inside a `pull_request` run
+      # that may have run attacker-controlled test code (a fork PR's own
+      # Playwright tests choose screenshot/test names). Nothing here
+      # executes, sources, or interprets that content — it is only ever
+      # (a) matched against a strict filename allowlist, (b) checked for a
+      # real PNG signature, and (c) passed to `gh pr comment --attach`/
+      # markdown-embedded as inert image bytes.
+      - name: Build and post diff comment
+        if: steps.vr.outputs.result == 'failure'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          # The asset-upload endpoint behind `--attach` rejects the Actions
+          # installation token (ghs_*) client-side; it accepts an OAuth
+          # token or a classic/fine-grained PAT (cli/cli#14495, cli/cli#14309)
+          # — never a GitHub App installation token, which is what
+          # `github.token`/`GITHUB_TOKEN` always is. Dedicated PAT per
+          # #1140, scoped only to this job's `gh pr comment`/`gh api
+          # issues/comments` calls — see this repo's README/issue #1140 for
+          # what a human still needs to do to create and set this secret.
+          # Unlike ci.yml's old job, this one no longer NEEDS a PAT to post
+          # at all on a fork PR: the plain-text fallback below uses
+          # `github.token`, which — because this workflow runs in the
+          # trusted `workflow_run` context — already has this job's
+          # declared `pull-requests: write`, regardless of whether the
+          # originating PR was fork-authored. The PAT is only required for
+          # the richer `--attach` (image) path.
+          ATTACH_PAT: ${{ secrets.VISUAL_REGRESSION_ATTACH_PAT }}
+        run: |
+          set -uo pipefail
+
+          is_safe_filename() {
+            case "$1" in
+              '') return 1 ;;
+              *[!A-Za-z0-9._-]*) return 1 ;;
+              *) return 0 ;;
+            esac
+          }
+
+          is_png() {
+            # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A.
+            sig=$(head -c 8 "$1" 2>/dev/null | od -An -tx1 | tr -d ' \n')
+            [ "$sig" = "89504e470d0a1a0a" ]
+          }
+
+          # Playwright's toHaveScreenshot failure output, per test:
+          # <name>-expected.png (baseline), <name>-actual.png (this run),
+          # <name>-diff.png (highlighted pixel diff).
+          diffs=$(find failures -iname '*-diff.png' 2>/dev/null | sort || true)
+
+          rows_file="${RUNNER_TEMP}/diff-rows.md"
+          : > "$rows_file"
+          attach_args=()
+          rows=0
+          total=0
+          max_image_bytes=10485760 # gh/GitHub's own attachment cap
+
+          while IFS= read -r diff; do
+            [ -z "$diff" ] && continue
+            total=$((total + 1))
+            [ "$rows" -ge "$MAX_DIFF_ROWS" ] && continue
+
+            base="${diff%-diff.png}"
+            expected="${base}-expected.png"
+            actual="${base}-actual.png"
+            name=$(basename "$base")
+            diff_name=$(basename "$diff")
+            expected_name=$(basename "$expected")
+            actual_name=$(basename "$actual")
+
+            skip=false
+            for fname in "$diff_name" "$expected_name" "$actual_name"; do
+              if ! is_safe_filename "$fname"; then
+                echo "::warning::filename '$fname' contains characters outside the safe allowlist — skipping $name"
+                skip=true
+              fi
+            done
+            [ "$skip" = true ] && continue
+
+            for img in "$expected" "$actual" "$diff"; do
+              if [ ! -f "$img" ]; then
+                echo "::warning::missing $img — skipping $name"
+                skip=true
+              elif [ "$(stat -c%s "$img")" -gt "$max_image_bytes" ]; then
+                echo "::warning::$img exceeds the 10 MB attachment limit — skipping $name"
+                skip=true
+              elif ! is_png "$img"; then
+                echo "::warning::$img does not have a valid PNG signature — refusing to attach untrusted non-image content, skipping $name"
+                skip=true
+              fi
+            done
+            [ "$skip" = true ] && continue
+
+            code_name="\`$name\`" # backtick-wrapped, built outside the printf format string to avoid shellcheck SC2016 (backticks in a single-quoted format string look like an unintended command substitution)
+            printf '| %s | ![before](%s) | ![after](%s) | ![diff](%s) | %s |\n' \
+              "$code_name" "$expected" "$actual" "$diff" "$APPROVED_PENDING" >> "$rows_file"
+            attach_args+=(--attach "$expected" --attach "$actual" --attach "$diff")
+            rows=$((rows + 1))
+          done <<< "$diffs"
+
+          run_url="https://github.com/${REPO}/actions/runs/${RUN_ID}"
+
+          if [ "$total" -eq 0 ]; then
+            summary="The visual regression job failed, but no per-screenshot diff images were found in (or survived validation of) the failure artifacts — see [the workflow run](${run_url}) for the job log."
+          elif [ "$rows" -eq 0 ]; then
+            summary="${total} changed screenshot(s) detected, but none could be attached to this comment — see [the workflow run](${run_url}) for the full report."
+          else
+            summary="${rows} of ${total} changed screenshot(s) shown below (before / after / diff). [Full report, incl. any remaining diffs](${run_url})."
+          fi
+
+          # Two separate bodies: `body_plain` never references a local
+          # image path, so it's always safe to post on its own. `body_rich`
+          # adds the image table and is only ever posted together with
+          # `--attach` — without it, gh does not rewrite
+          # `![before](failures/...)` to an uploaded asset URL, so posting
+          # body_rich through the plain fallback would show broken images
+          # instead of a text-only notice.
+          body_plain="${RUNNER_TEMP}/comment-body-plain.md"
+          {
+            echo "$MARKER"
+            echo "### Visual regression diff"
+            echo
+            echo "$summary"
+          } > "$body_plain"
+
+          body_rich="${RUNNER_TEMP}/comment-body-rich.md"
+          if [ "$rows" -gt 0 ]; then
+            {
+              cat "$body_plain"
+              echo
+              echo "| Screenshot | Before | After | Diff | Approved |"
+              echo "|---|---|---|---|---|"
+              cat "$rows_file"
+            } > "$body_rich"
+          fi
+
+          # Comments carrying the marker from a previous push to this PR —
+          # collected before posting the new one so the new comment is
+          # never a deletion candidate.
+          stale_ids=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" 2>/dev/null || true)
+
+          posted=false
+          if [ "$rows" -gt 0 ] && [ -n "${ATTACH_PAT:-}" ]; then
+            # gh rewrites the local image paths in the body to the uploaded
+            # asset URLs.
+            if GH_TOKEN="$ATTACH_PAT" gh pr comment "$PR_NUMBER" --repo "$REPO" \
+                 --body-file "$body_rich" "${attach_args[@]}"; then
+              posted=true
+            else
+              echo "::warning::gh pr comment --attach failed — falling back to a text-only comment."
+            fi
+          elif [ "$rows" -gt 0 ]; then
+            echo "::warning::VISUAL_REGRESSION_ATTACH_PAT is not set — see #1140. Posting without attached images."
+          fi
+
+          if [ "$posted" = false ]; then
+            # github.token (this job's own write-scoped token — see the
+            # ATTACH_PAT env comment above) is sufficient here, on both
+            # same-repo and fork-authored PRs, because this workflow runs
+            # in the trusted workflow_run context rather than the
+            # originating PR's own (possibly read-only, fork) context.
+            if gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file "$body_plain"; then
+              posted=true
+            else
+              echo "::error::gh pr comment failed for PR ${PR_NUMBER} in ${REPO} — see the job log above for the underlying gh error."
+              exit 1
+            fi
+          fi
+
+          # `--attach` only exists on `gh pr comment`, which cannot edit a
+          # specific comment, so each run posts fresh and removes its
+          # predecessor(s). Only reached once the new comment actually
+          # posted, so a failed post above leaves the last good comment in
+          # place instead of deleting it and leaving nothing.
+          while IFS= read -r id; do
+            [ -z "$id" ] && continue
+            gh api --method DELETE "repos/${REPO}/issues/comments/${id}" || true
+          done <<< "$stale_ids"
+
+      # Mirror image of "Build and post diff comment" above: flips any
+      # earlier diff comment's "⬜ Pending" cells to "✅ Resolved" in place
+      # once the visual-regression job passes on a later push. Matches on
+      # the MARKER alone (not on APPROVED_PENDING) so a comment posted
+      # before the Approved column existed — or the table-less "no diffs
+      # found"/"nothing attachable" text-only case — still gets marked
+      # resolved instead of being silently skipped forever.
+      - name: Flip pending diff comment(s) to resolved
+        if: steps.vr.outputs.result == 'success'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -uo pipefail
+
+          # Only the MARKER, and not already resolved — keeps this
+          # idempotent across repeat "success" runs (e.g. a second push
+          # with no new failure in between) instead of re-appending a
+          # resolved banner onto an already-resolved comment.
+          ids=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --jq ".[] | select(.body | startswith(\"${MARKER}\")) | select(.body | contains(\"${APPROVED_RESOLVED}\") | not) | .id" 2>/dev/null || true)
+
+          failed=false
+          while IFS= read -r id; do
+            [ -z "$id" ] && continue
+            body_file="${RUNNER_TEMP}/resolved-comment-${id}.md"
+            gh api "repos/${REPO}/issues/comments/${id}" --jq .body > "$body_file"
+            if grep -qF "$APPROVED_PENDING" "$body_file"; then
+              sed -i "s/${APPROVED_PENDING}/${APPROVED_RESOLVED}/g" "$body_file"
+            else
+              # Legacy comment predating the Approved column, or the
+              # table-less case — no per-row cell to flip, so append a
+              # one-line resolved banner instead.
+              printf '\n%s — a later push made the visual regression suite pass.\n' \
+                "$APPROVED_RESOLVED" >> "$body_file"
+            fi
+            # -F (not -f) is required here: only -F/--field reads an
+            # "@path" value from a file — -f/--raw-field treats it as a
+            # literal string, which would PATCH the comment body to the
+            # literal text "@/path/to/body_file" instead of its contents.
+            if ! gh api --method PATCH "repos/${REPO}/issues/comments/${id}" -F body=@"$body_file"; then
+              echo "::error::failed to PATCH comment ${id} to resolved"
+              failed=true
+            fi
+          done <<< "$ids"
+
+          [ "$failed" = true ] && exit 1
+          exit 0
