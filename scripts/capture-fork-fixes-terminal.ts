@@ -94,25 +94,36 @@ async function requireCommit(commit: string): Promise<void> {
  * exactly, including the `hasPackages` guard: an old fixCommit predating the
  * packages/ split (#769/#1111) has no packages/ tree to archive, so this
  * checks before requesting it rather than letting `git archive` fail.
+ *
+ * Checks for the *specific files* a complete extraction needs, not just
+ * that `dir` exists: a directory left behind by a run that predates this
+ * function's packages/tsconfig.json archiving (or one interrupted between
+ * the two `git archive` calls) would otherwise look "already populated"
+ * and get reused as-is - silently resolving @zombie-mermaid/* bare
+ * specifiers against the working tree instead of the archived commit,
+ * exactly the bug this whole extraction exists to avoid (see issue #1141).
  */
 async function extractBefore(commit: string): Promise<string> {
   const dir = `${CACHE_DIR}${commit}`
-  if (!existsSync(dir)) {
+  const hasPackages = await exec('git', [
+    'cat-file',
+    '-e',
+    `${commit}^:packages`,
+  ])
+    .then(() => true)
+    .catch(() => false)
+  const isComplete =
+    existsSync(`${dir}/src/index.ts`) &&
+    (!hasPackages || existsSync(`${dir}/tsconfig.json`))
+  if (!isComplete) {
     await requireCommit(commit)
+    await rm(dir, { recursive: true, force: true })
     await mkdir(dir, { recursive: true })
     await exec(
       'sh',
       ['-c', `git archive ${commit}^ src | tar -x -C ${JSON.stringify(dir)}`],
       { maxBuffer: 64 * 1024 * 1024 },
     )
-
-    const hasPackages = await exec('git', [
-      'cat-file',
-      '-e',
-      `${commit}^:packages`,
-    ])
-      .then(() => true)
-      .catch(() => false)
     if (hasPackages) {
       await exec(
         'sh',
