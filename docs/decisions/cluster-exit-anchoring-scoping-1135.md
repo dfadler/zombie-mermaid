@@ -35,7 +35,7 @@ the diagram source means.
    outgoing edge to another member (`pool[pool.length - 1]` after
    filtering, deterministic but **independent of which outgoing edge
    triggered the lookup**). Two outgoing edges from the same cluster
-   therefore both resolve to the *same* stand-in node, e.g. both
+   therefore both resolve to the _same_ stand-in node, e.g. both
    `Processing --> Done` and `Processing --> Error` become edges from
    `execute` once converted, indistinguishable from two ordinary edges
    that both happen to start at node `execute`.
@@ -52,7 +52,7 @@ the diagram source means.
      (since `execute` is the cluster's only/bottommost member) — looking,
      coincidentally, like a cluster-boundary transition.
    - `execute → Error` (down-and-right, since `Error` sits to the
-     lower-right of `Done`) instead exits `execute`'s own *right* wall
+     lower-right of `Done`) instead exits `execute`'s own _right_ wall
      first, then bends down outside the cluster — visibly punching through
      `execute`'s own border rather than the cluster's.
 
@@ -77,7 +77,7 @@ flowchart TD
 ```
 
 This confirms the bug is a general limitation of how the ASCII renderer
-routes edges leaving *any* cluster/subgraph with more than one outgoing
+routes edges leaving _any_ cluster/subgraph with more than one outgoing
 edge to differently-positioned targets, shared by every diagram type that
 goes through the flowchart/subgraph ASCII path — not something introduced
 by, or specific to, state-diagram composite states.
@@ -85,7 +85,7 @@ by, or specific to, state-diagram composite states.
 ## Why no minimal patch is proposed
 
 Real mermaid gets this right because dagre lays out a cluster used as an
-edge endpoint as a compound/virtual node and clips *every* edge crossing
+edge endpoint as a compound/virtual node and clips _every_ edge crossing
 that cluster's boundary to the boundary itself, consistently, regardless
 of the edge's actual target offset. The ASCII renderer has no equivalent
 concept anywhere in its pipeline: `resolveSubgraphEndpoint` deliberately
@@ -137,5 +137,5 @@ against #1135.
   not just the state-diagram case that surfaced it.
 - Does not change `resolveSubgraphEndpoint`'s existing behavior (issue
   #65's stand-in-node approach) — a real fix would build on top of it
-  (still need *a* stand-in node per cluster per direction for the
+  (still need _a_ stand-in node per cluster per direction for the
   converter's edge list) rather than replace it.
