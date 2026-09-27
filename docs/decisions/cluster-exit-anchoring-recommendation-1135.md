@@ -85,7 +85,7 @@ asserted once.
 (`if (edge.text.length > 0) return false`), with the comment "labels would
 overlap at the junction." That's a real design constraint the existing
 feature was built around, not an incidental gate. I then read
-`draw-bundles.ts` end to end to check what happens if a labeled edge *were*
+`draw-bundles.ts` end to end to check what happens if a labeled edge _were_
 bundled. The trunk-drawing function's own comment says: "Label canvas
 (bundled edges typically don't have labels, but handle it)" — followed by
 `const labelCanvas = copyCanvas(graph.canvas)`, i.e. an unmodified copy.
@@ -94,7 +94,7 @@ That is the entire "handling." Nothing in `draw-bundles.ts` calls
 edges use lives in `edge-routing.ts` and is never invoked for a bundle.
 So "multiple lines converging on one cell need one correctly-composed
 glyph, not whichever edge drew last" (Option 2's own framing) is true and
-solved — for the *path/corner* glyphs. It is not true for labels: that
+solved — for the _path/corner_ glyphs. It is not true for labels: that
 problem hasn't been solved, attempted, or partially built; it's absent.
 Option 2's plan proposes feeding labeled edges (the actual #1135 shape)
 through this machinery. Its own risk section calls the label question
@@ -109,7 +109,7 @@ All three plans add a tag at the point `resolveSubgraphEndpoint` fires
 whether this is avoidable — e.g., via the existing `getNodeSubgraph(graph,
 node)` helper (`grid.ts`), already used by `edge-bundling.ts` to find which
 subgraph a node belongs to. It can't be: `getNodeSubgraph` tells you a node
-is a member of subgraph X, but not whether a *specific edge* into/out of
+is a member of subgraph X, but not whether a _specific edge_ into/out of
 that node was originally addressed to the cluster id (`Processing --> Done`)
 or was a genuine direct edge from that same member node
 (`execute --> Done`) — after conversion both produce a structurally
@@ -118,7 +118,7 @@ itself operates purely on the raw parsed `MermaidGraph`/`MermaidSubgraph`
 (matching id strings), so the only point where "this edge was
 cluster-addressed" is knowable is the instant `resolveSubgraphEndpoint`
 resolves it — exactly what all three plans do. Option 3's "the ambiguity
-*is* the root cause" framing is the correct diagnosis, and it applies
+_is_ the root cause" framing is the correct diagnosis, and it applies
 equally to Option 1 and Option 2, which already build the tag in from the
 start rather than trying to avoid it.
 
@@ -152,7 +152,7 @@ exists to fix — otherwise the two boxes can disagree in exactly the
 multi-subgraph layouts most likely to also have multi-exit clusters. This
 should be checked explicitly, not folded into the plan's generic "derive
 both from one shared traversal helper" mitigation, since that mitigation as
-worded doesn't obviously cover a *timing* mismatch (one box adjusted post
+worded doesn't obviously cover a _timing_ mismatch (one box adjusted post
 hoc, one not).
 
 ### `territory.ts` is a real, available, but unwired tool (relevant to both surviving options' "v1 limitation" open questions)
@@ -193,7 +193,7 @@ returns every cell it touches, specifically built for exactly this kind of
 "does this path collide with that one" check. So Option 3's "collisions
 with other edges' already-computed paths... would require a full re-scan of
 every edge's path to build ad hoc occupancy" is accurate about needing the
-re-scan, but the primitive it would re-scan *with* already exists and is
+re-scan, but the primitive it would re-scan _with_ already exists and is
 tested — this is a real but bounded cost, as the plan itself says, not a
 from-scratch build. This doesn't change Option 3's bottom line: the other
 two collision sources it identifies (subgraph walls, labels) have no
