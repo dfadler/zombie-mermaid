@@ -40,11 +40,13 @@ function onRectBoundary(point: Point, node: PositionedNode): boolean {
   const top = node.y
   const bottom = node.y + node.height
   const onHorizontal =
-    (Math.abs(point.y - top) <= EPSILON || Math.abs(point.y - bottom) <= EPSILON) &&
+    (Math.abs(point.y - top) <= EPSILON ||
+      Math.abs(point.y - bottom) <= EPSILON) &&
     point.x >= left - EPSILON &&
     point.x <= right + EPSILON
   const onVertical =
-    (Math.abs(point.x - left) <= EPSILON || Math.abs(point.x - right) <= EPSILON) &&
+    (Math.abs(point.x - left) <= EPSILON ||
+      Math.abs(point.x - right) <= EPSILON) &&
     point.y >= top - EPSILON &&
     point.y <= bottom + EPSILON
   return onHorizontal || onVertical
@@ -140,7 +142,9 @@ describe('nested-subgraph cross-hierarchy edge container offsets', () => {
   })
 
   it('falls back to owning-array offsets for a plain root-level edge (no container tag)', () => {
-    const result = layoutGraphSync(parseMermaid('flowchart LR\n  a["A"] -->|yes| b["B"]'))
+    const result = layoutGraphSync(
+      parseMermaid('flowchart LR\n  a["A"] -->|yes| b["B"]'),
+    )
     expectEdgesMeetNodes(result)
     expect(result.edges[0]!.labelPosition).toBeDefined()
   })
