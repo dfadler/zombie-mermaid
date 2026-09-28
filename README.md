@@ -27,7 +27,13 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 
 ### Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=lukilabs/beautiful-mermaid,dfadler/zombie-mermaid&type=Date)](https://star-history.com/#lukilabs/beautiful-mermaid&dfadler/zombie-mermaid&Date)
+<a href="https://star-history.com/#lukilabs/beautiful-mermaid&dfadler/zombie-mermaid&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=lukilabs/beautiful-mermaid,dfadler/zombie-mermaid&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=lukilabs/beautiful-mermaid,dfadler/zombie-mermaid&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=lukilabs/beautiful-mermaid,dfadler/zombie-mermaid&type=Date" width="600" />
+  </picture>
+</a>
 
 ## Why This Fork Exists
 
