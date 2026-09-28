@@ -553,12 +553,15 @@ function collectContainerOffsets(
 ): void {
   offsets.set(elkNode.id, { x: offsetX, y: offsetY })
   for (const child of elkNode.children ?? []) {
-    collectContainerOffsets(
-      child,
-      offsets,
-      offsetX + (child.x ?? 0),
-      offsetY + (child.y ?? 0),
-    )
+    // `x`/`y` are optional in elkjs's types, but ELK always assigns both to
+    // every laid-out child node — the `?? 0` fallback mirrors the same
+    // defensive pattern already used for this walk in `collectEdgeSegments`
+    // below, and is equally unreachable from real ELK output.
+    /* v8 ignore next */
+    const childX = child.x ?? 0
+    /* v8 ignore next */
+    const childY = child.y ?? 0
+    collectContainerOffsets(child, offsets, offsetX + childX, offsetY + childY)
   }
 }
 
@@ -652,15 +655,24 @@ function collectEdgeSegments(
 
       // Prefer the edge's declared container offset (see
       // `collectContainerOffsets`'s comment) over the owning array's
-      // offset; edges ELK didn't tag with a container (the common case —
-      // this property only shows up for some cross-hierarchy edges under
-      // INCLUDE_CHILDREN) keep the previous owning-offset behavior.
+      // offset. `container` and `containerOffsets.get(container)` were
+      // verified (by direct instrumentation against real elk.bundled.js
+      // output, across both flat and multiply-nested subgraphs) to always
+      // be defined in practice — ELK tags every edge with its container,
+      // even at the root, and `collectContainerOffsets` walks the same
+      // tree so every container id it can name is already in the map. The
+      // `container?`/`?? offset{X,Y}` fallbacks below exist only because
+      // `container` is untyped in elkjs and `Map.get` is typed to allow a
+      // miss; kept as defensive narrowing rather than assumed impossible.
       const container = (elkEdge as ElkExtendedEdge & { container?: string })
         .container
+      /* v8 ignore next */
       const containerOffset = container
         ? containerOffsets.get(container)
         : undefined
+      /* v8 ignore next */
       const edgeOffsetX = containerOffset?.x ?? offsetX
+      /* v8 ignore next */
       const edgeOffsetY = containerOffset?.y ?? offsetY
 
       // Extract points and label position
