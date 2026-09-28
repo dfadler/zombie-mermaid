@@ -1,6 +1,6 @@
 {
   "name": "@zombie-mermaid/core",
-  "version": "2.2.6",
+  "version": "3.0.0",
   "license": "MIT",
   "description": "Shared types, theme, and text/statement utilities used by every zombie-mermaid renderer.",
   "repository": {
