@@ -1,5 +1,26 @@
 # @zombie-mermaid/ascii-renderer
 
+## 3.0.0
+
+### Patch Changes
+
+- [#1132](https://github.com/dfadler/zombie-mermaid/pull/1132) [`508b508`](https://github.com/dfadler/zombie-mermaid/commit/508b5083e74088b1a6163016b24cfc4c32f93ebb) Thanks [@dfadler](https://github.com/dfadler)! - Fix two ASCII structural-fidelity bugs found by the weekly form-judge audit ([#1119](https://github.com/dfadler/zombie-mermaid/issues/1119)):
+
+  - A cylinder (database) node rendered identically to a plain rounded node — same corner glyphs, no cylinder-specific marker — because the flowchart drawing path never used the existing `cylinderRenderer`'s rim-line rendering at all; it draws every shape as a bordered rectangle with shape-specific corner glyphs only, and cylinder's corners were identical to rounded's. Cylinder nodes now get a rim line just inside the top and bottom border, using height already reserved for it.
+  - An ER relationship's label could land directly beside (or, with a short label, directly inside) a _different_ relationship's already-drawn connector line, when that spot was otherwise the label's natural placement. Since the foreign line's role wasn't checked as an obstacle, the label search treated it as free space — misleadingly implying the label described that line's solid/dashed style instead of its own. The label search now also avoids a different relationship's own line, falling back to the old, permissive placement only when no row in range clears that stricter bar — so a label is relocated rather than dropped.
+
+- [#1137](https://github.com/dfadler/zombie-mermaid/pull/1137) [`451b981`](https://github.com/dfadler/zombie-mermaid/commit/451b98195e3370eb4a3beb66071396d5c616dbad) Thanks [@dfadler](https://github.com/dfadler)! - Fix ER diagram attribute columns rendering in the wrong left-to-right order, found by the weekly form-judge audit ([#1119](https://github.com/dfadler/zombie-mermaid/issues/1119)). An attribute like `int id PK` rendered as `PK int id` — keys, then type, then name — while real mermaid's SVG lays these columns out as type, name, then keys. Attribute lines now render as `int id PK`, matching that order; a keyless attribute also no longer reserves unused padding for an empty key column.
+
+- [#1136](https://github.com/dfadler/zombie-mermaid/pull/1136) [`0849aba`](https://github.com/dfadler/zombie-mermaid/commit/0849abafc62e6cd94e38318e9edf6fe27634b49a) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII sequence diagrams not rendering activation bars. A lifeline now switches to a double-line glyph (`║`, or `‖` in `useAscii` mode) for the rows where that participant is actively processing a call — driven by `activate`/`deactivate` statements or the `+`/`-` arrow shorthand — instead of drawing a uniform `│` for its full span regardless of activation state.
+
+- [#1153](https://github.com/dfadler/zombie-mermaid/pull/1153) [`28698cd`](https://github.com/dfadler/zombie-mermaid/commit/28698cd7d706bb429f56edc0d38a185fde65120e) Thanks [@dfadler](https://github.com/dfadler)! - Fix ER diagram relationship lines rendering with the wrong solid/dashed style where two relationships' lines cross ([#1145](https://github.com/dfadler/zombie-mermaid/issues/1145)).
+
+  Two relationship lines are allowed to cross in normal ER layout, but the collision guard only protected already-placed label text from being overwritten — it didn't protect an already-drawn line glyph from a _different_ relationship's differently-styled line landing on the same cell. Whichever relationship happened to be declared (and so drawn) later in the diagram won the cell outright, regardless of style, so an identifying (solid) relationship's own line could end up showing a dashed glyph purely from draw order. A dashed write can no longer overwrite an already-drawn solid glyph, so the result no longer depends on declaration order; two same-styled lines crossing are still drawn as before.
+
+- Updated dependencies [[`d7777fe`](https://github.com/dfadler/zombie-mermaid/commit/d7777fe87a500c6b402c48b298d096f26ef6e130), [`c2a190d`](https://github.com/dfadler/zombie-mermaid/commit/c2a190df3c86e7b3394e853d437fc3d11b7634e4)]:
+  - @zombie-mermaid/core@3.0.0
+  - @zombie-mermaid/mermaid-parser@3.0.0
+
 ## 2.2.6
 
 ### Patch Changes
