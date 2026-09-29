@@ -293,6 +293,33 @@ describe('renderMermaidSVG – custom class names on rendered elements', () => {
     expect(svg).toContain('<g class="node highlight" data-id="B"')
   })
 
+  // Upstream lukilabs/beautiful-mermaid#81: a className with no matching
+  // classDef must still reach the `class` attribute so consumers can style it
+  // with their own CSS.
+  it('emits class names from `:::` and `class X name` even with no classDef', () => {
+    const svg = renderMermaidSVG(`graph LR
+    A[Start]:::foo --> B[End]
+    A --> C[Other]
+    class B bar`)
+    expect(svg).toContain('<g class="node foo" data-id="A"')
+    expect(svg).toContain('<g class="node bar" data-id="B"')
+    expect(svg).toContain('<g class="node" data-id="C"')
+  })
+
+  it('drops class names that are not valid CSS identifiers instead of emitting them', () => {
+    const svg = renderMermaidSVG(`graph LR
+    A --> B
+    A --> C
+    class A 1bad
+    class B foo.bar
+    class C ok_name`)
+    expect(svg).toContain('<g class="node" data-id="A"')
+    expect(svg).toContain('<g class="node" data-id="B"')
+    expect(svg).toContain('<g class="node ok_name" data-id="C"')
+    expect(svg).not.toContain('1bad')
+    expect(svg).not.toContain('foo.bar')
+  })
+
   it('renders only the base class when no custom class is assigned (no regression)', () => {
     const svg = renderMermaidSVG('graph LR\n  A[Start] --> B[End]')
     expect(svg).toContain('<g class="node" data-id="A"')
