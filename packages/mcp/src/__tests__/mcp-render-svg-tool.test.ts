@@ -15,10 +15,15 @@ import {
   rmSync,
   existsSync,
 } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
-import { renderSvgHandler, renderSvgInputShape } from '../tools/render-svg.ts'
+import {
+  renderSvgHandler,
+  renderSvgInputShape,
+  writeAll,
+} from '../tools/render-svg.ts'
 
 const DIAGRAM = 'graph LR\n  A --> B'
 
@@ -170,9 +175,40 @@ describe('outputPath', () => {
     expect(result.isError).toBe(true)
   })
 
+  it.skipIf(process.platform === 'win32')(
+    'refuses a FIFO without blocking on the open',
+    () => {
+      execFileSync('mkfifo', [join(dir, 'f.svg')])
+      const result = renderSvgHandler({ diagram: DIAGRAM, outputPath: 'f.svg' })
+      expect(result.isError).toBe(true)
+    },
+  )
+
   it('does not write anything when the diagram itself is invalid', () => {
     const result = renderSvgHandler({ diagram: '', outputPath: 'bad.svg' })
     expect(existsSync(join(dir, 'bad.svg'))).toBe(false)
     expect(result.isError).toBe(true)
+  })
+})
+
+describe('writeAll', () => {
+  it('continues after a short write until every byte is written', () => {
+    const calls: Array<[number, number]> = []
+    const write = ((_fd: number, _b: Buffer, off: number, len: number) => {
+      calls.push([off, len])
+      return Math.min(3, len)
+    }) as unknown as typeof import('node:fs').writeSync
+    writeAll(1, Buffer.from('0123456789'), write)
+    expect(calls).toEqual([
+      [0, 10],
+      [3, 7],
+      [6, 4],
+      [9, 1],
+    ])
+  })
+
+  it('throws when a write makes no progress', () => {
+    const write = (() => 0) as unknown as typeof import('node:fs').writeSync
+    expect(() => writeAll(1, Buffer.from('abc'), write)).toThrow('no progress')
   })
 })

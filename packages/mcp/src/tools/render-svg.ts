@@ -125,6 +125,24 @@ function isInside(base: string, target: string): boolean {
 }
 
 /**
+ * Writes every byte of `bytes` to `fd` from position 0, continuing after a
+ * short write and throwing if a write makes no progress, so a full disk can't
+ * leave a truncated SVG that is reported as saved. `write` is injectable for tests.
+ */
+export function writeAll(
+  fd: number,
+  bytes: Buffer,
+  write: typeof writeSync = writeSync,
+): void {
+  let offset = 0
+  while (offset < bytes.length) {
+    const written = write(fd, bytes, offset, bytes.length - offset, offset)
+    if (written === 0) throw new Error('SVG write made no progress')
+    offset += written
+  }
+}
+
+/**
  * Write `svg` to `outputPath` under the server's working directory, or throw
  * a descriptive Error. Safety model (all checks run before any byte is
  * written):
@@ -177,7 +195,12 @@ export function writeSvgFile(
   }
   const fd = openSync(
     finalPath,
-    constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW,
+    // O_NONBLOCK keeps a FIFO with no reader from blocking this synchronous
+    // open (and the whole server); the `fstat` check below then rejects it.
+    constants.O_WRONLY |
+      constants.O_CREAT |
+      constants.O_NOFOLLOW |
+      constants.O_NONBLOCK,
     0o644,
   )
   try {
@@ -186,7 +209,7 @@ export function writeSvgFile(
     }
     ftruncateSync(fd, 0)
     const bytes = Buffer.from(svg, 'utf8')
-    writeSync(fd, bytes, 0, bytes.length, 0)
+    writeAll(fd, bytes)
     return { saved: finalPath, size: bytes.length }
   } finally {
     closeSync(fd)
