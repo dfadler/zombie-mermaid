@@ -135,7 +135,7 @@ jobs:
         id: badge-diff
         if: steps.changesets.outputs.published == 'true'
         run: |
-          if git diff --quiet -- badges/bundle-size.json; then
+          if git diff --quiet -- badges && [ -z "$(git ls-files --others --exclude-standard badges)" ]; then
             echo "Bundle size unchanged; nothing to commit."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -147,7 +147,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: bundle-size-badge
-          path: badges/bundle-size.json
+          path: badges/bundle-size*.json
           retention-days: 1
 
   commit-badge-data:
@@ -198,7 +198,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add badges/bundle-size.json .changeset
+          git add badges .changeset
           git commit -m 'chore: update bundle-size badge data'
 
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"

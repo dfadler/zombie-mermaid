@@ -9,8 +9,10 @@
  * not "hand-edit a URL in README.md".
  *
  * Measures the gzipped size of `dist/index.js` — the main ESM entry point
- * (`import { renderMermaid } from 'zombie-mermaid'`), i.e. the number most
- * consumers actually experience. This intentionally does *not* duplicate
+ * (`import { renderMermaid } from 'zombie-mermaid'`) — together with the
+ * workspace packages it imports (see TARGETS below), i.e. the number most
+ * consumers actually experience, plus the same figure for each standalone
+ * renderer package. This intentionally does *not* duplicate
  * scripts/check-bundle-size.ts's multi-file budget/gate logic (added by
  * issue #293, gzip-checking dist/index.{js,cjs}, dist/ascii.{js,cjs}, and
  * dist/cli.js against bundle-size-budget.json) — that script's job is
@@ -31,37 +33,65 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { gzipSync } from 'node:zlib'
 
-const ENTRY_POINT = 'dist/index.js'
-const OUTPUT_PATH = 'badges/bundle-size.json'
+// One badge per published package that advertises a size. Since the monorepo
+// split, each package's `dist/index.js` is a thin entry that imports the
+// other workspace packages as externals, so a package's own file understates
+// what a consumer installs (the umbrella's is ~4 KB). Each badge therefore
+// gzips the package's entry concatenated with the entries of every
+// `@zombie-mermaid/*` package it (transitively) imports. Third-party
+// dependencies (e.g. `elkjs`) are left out.
+const CORE = 'packages/core/dist/index.js'
+const PARSER = 'packages/mermaid-parser/dist/index.js'
+const ASCII = 'packages/ascii-renderer/dist/index.js'
+const SVG = 'packages/svg-renderer/dist/index.js'
+
+const TARGETS = [
+  {
+    entries: ['dist/index.js', CORE, PARSER, ASCII, SVG],
+    output: 'badges/bundle-size.json',
+    label: 'zombie-mermaid gzip',
+  },
+  {
+    entries: [ASCII, CORE, PARSER],
+    output: 'badges/bundle-size-ascii-renderer.json',
+    label: 'ascii-renderer gzip',
+  },
+  {
+    entries: [SVG, CORE, PARSER],
+    output: 'badges/bundle-size-svg-renderer.json',
+    label: 'svg-renderer gzip',
+  },
+]
 
 function fmtKB(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`
 }
 
-let raw: Buffer
-try {
-  raw = await readFile(new URL(`../${ENTRY_POINT}`, import.meta.url))
-} catch {
-  console.error(`Could not read ${ENTRY_POINT} — run \`pnpm run build\` first.`)
-  process.exit(1)
-}
-
-const gzipSize = gzipSync(raw).length
-const message = fmtKB(gzipSize)
-
-// shields.io endpoint badge schema: https://shields.io/badges/endpoint-badge
-const badge = {
-  schemaVersion: 1,
-  label: 'zombie-mermaid gzip',
-  message,
-  color: 'blue',
-}
-
 await mkdir(new URL('../badges', import.meta.url), { recursive: true })
-await writeFile(
-  new URL(`../${OUTPUT_PATH}`, import.meta.url),
-  JSON.stringify(badge, null, 2) + '\n',
-  'utf-8',
-)
 
-console.log(`${ENTRY_POINT}: ${message} gzipped -> wrote ${OUTPUT_PATH}`)
+for (const { entries, output, label } of TARGETS) {
+  const parts: Buffer[] = []
+  for (const entry of entries) {
+    try {
+      parts.push(await readFile(new URL(`../${entry}`, import.meta.url)))
+    } catch {
+      console.error(`Could not read ${entry} — run \`pnpm run build\` first.`)
+      process.exit(1)
+    }
+  }
+
+  const message = fmtKB(gzipSync(Buffer.concat(parts)).length)
+
+  // shields.io endpoint badge schema: https://shields.io/badges/endpoint-badge
+  const badge = { schemaVersion: 1, label, message, color: 'blue' }
+
+  await writeFile(
+    new URL(`../${output}`, import.meta.url),
+    JSON.stringify(badge, null, 2) + '\n',
+    'utf-8',
+  )
+
+  console.log(
+    `${label}: ${message} (${entries.length} files) -> wrote ${output}`,
+  )
+}
