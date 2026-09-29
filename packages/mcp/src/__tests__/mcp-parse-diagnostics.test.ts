@@ -73,7 +73,7 @@ describe.each([
       const [message, json, ...rest] = blocks(result)
       expect(rest).toEqual([])
       // Existing message text is untouched.
-      expect(message).toMatch(new RegExp(`^${prefix}: Line ${line}: `))
+      expect(message?.startsWith(`${prefix}: Line ${line}: `)).toBe(true)
       const parsed = JSON.parse(json ?? '')
       expect(parsed.diagnostics).toHaveLength(1)
       expect(parsed.diagnostics[0]).toMatchObject({ line, sourceLine })
