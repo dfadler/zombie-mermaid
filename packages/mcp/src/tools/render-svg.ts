@@ -7,6 +7,7 @@
 // ============================================================================
 
 import { z } from 'zod'
+import { renderErrorResult } from './parse-diagnostics.ts'
 import {
   closeSync,
   constants,
@@ -246,14 +247,10 @@ export function renderSvgHandler(input: RenderSvgToolArgs): CallToolResult {
     }
     return { content: [{ type: 'text', text: svg }] }
   } catch (err) {
-    return {
-      isError: true,
-      content: [
-        {
-          type: 'text',
-          text: `Failed to render diagram to SVG: ${err instanceof Error ? err.message : String(err)}`,
-        },
-      ],
-    }
+    return renderErrorResult(
+      'Failed to render diagram to SVG',
+      err,
+      input.diagram,
+    )
   }
 }
