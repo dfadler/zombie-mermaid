@@ -488,7 +488,7 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     if (stateAliasMatch) {
       const label = normalizeBrTags(stateAliasMatch[1]!)
       const id = stateAliasMatch[2]!
-      registerStateNode(graph, compositeStack, { id, label, shape: 'rounded' })
+      registerStateDescription(graph, compositeStack, id, label)
       continue
     }
 
@@ -579,7 +579,7 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     if (stateDescMatch) {
       const id = stateDescMatch[1]!
       const label = normalizeBrTags(stateDescMatch[2]!.trim())
-      registerStateNode(graph, compositeStack, { id, label, shape: 'rounded' })
+      registerStateDescription(graph, compositeStack, id, label)
       continue
     }
   }
@@ -594,6 +594,22 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   }
 
   return graph
+}
+
+/**
+ * Register a state with an explicit description (`s1 : text` or
+ * `state "text" as s1`). Unlike a bare reference, this replaces the
+ * placeholder label an earlier `s1 --> s2` or `s1:::name` gave the node.
+ */
+function registerStateDescription(
+  graph: MermaidGraph,
+  compositeStack: MermaidSubgraph[],
+  id: string,
+  label: string,
+): void {
+  const existing = graph.nodes.get(id)
+  if (existing) existing.label = label
+  registerStateNode(graph, compositeStack, { id, label, shape: 'rounded' })
 }
 
 /** Register a state node and track in composite state if applicable */

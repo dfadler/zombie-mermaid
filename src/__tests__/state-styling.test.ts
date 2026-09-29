@@ -88,4 +88,63 @@ describe('state diagram styling (#1171)', () => {
     expect(styled).not.toContain('::foo')
     expect(styled).toBe(plain)
   })
+
+  it('accepts spaces around commas: `class A, B foo` (documented form)', () => {
+    const g = parseMermaid(`stateDiagram-v2
+  A --> B
+  class A, B foo`)
+    expect(g.classAssignments.get('A')).toBe('foo')
+    expect(g.classAssignments.get('B')).toBe('foo')
+    expect([...g.nodes.keys()]).toEqual(['A', 'B'])
+  })
+
+  it('an explicit description after `S:::foo` replaces the placeholder label', () => {
+    const g = parseMermaid(`stateDiagram-v2
+  S:::foo
+  S : Ready`)
+    expect(g.nodes.get('S')?.label).toBe('Ready')
+    expect(g.classAssignments.get('S')).toBe('foo')
+  })
+
+  it('a `state "Ready" as S` alias after `S:::foo` replaces the placeholder label', () => {
+    const g = parseMermaid(`stateDiagram-v2
+  S:::foo
+  state "Ready" as S`)
+    expect(g.nodes.get('S')?.label).toBe('Ready')
+  })
+
+  it('a description after a transition still sets the label', () => {
+    const g = parseMermaid(`stateDiagram-v2
+  A --> B
+  A : desc`)
+    expect(g.nodes.get('A')?.label).toBe('desc')
+  })
+
+  it('shorthand or class on a composite state does not create a node', () => {
+    const g = parseMermaid(`stateDiagram-v2
+  state Comp {
+    X --> Y
+  }
+  Comp:::foo
+  class Comp foo
+  A --> Comp`)
+    expect(g.nodes.has('Comp')).toBe(false)
+    expect(g.subgraphs.map((sg) => sg.id)).toEqual(['Comp'])
+  })
+
+  it('bare shorthand inside a composite state registers the node there', () => {
+    const g = parseMermaid(`stateDiagram-v2
+  state Comp {
+    X:::foo
+  }`)
+    expect(g.subgraphs[0]!.nodeIds).toContain('X')
+    expect(g.classAssignments.get('X')).toBe('foo')
+  })
+
+  it('a target-side shorthand alone (no source class) is applied', () => {
+    const g = parseMermaid(`stateDiagram-v2
+  A --> B:::foo`)
+    expect(g.classAssignments.has('A')).toBe(false)
+    expect(g.classAssignments.get('B')).toBe('foo')
+  })
 })
