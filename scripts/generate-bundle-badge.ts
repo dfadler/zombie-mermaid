@@ -52,7 +52,7 @@ const message = fmtKB(gzipSize)
 // shields.io endpoint badge schema: https://shields.io/badges/endpoint-badge
 const badge = {
   schemaVersion: 1,
-  label: 'bundle size (gzip)',
+  label: 'zombie-mermaid gzip',
   message,
   color: 'blue',
 }
