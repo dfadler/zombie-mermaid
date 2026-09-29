@@ -18,7 +18,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 [![CI](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml/badge.svg)](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/dfadler/zombie-mermaid/branch/main/graph/badge.svg)](https://codecov.io/gh/dfadler/zombie-mermaid)
 [![Bundle Size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size)
-[![Socket Security](https://socket.dev/api/badge/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
+[![Socket Security](https://badge.socket.dev/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
