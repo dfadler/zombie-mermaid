@@ -47,9 +47,12 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 ### Bundle Size
 
 The **Bundle Size** badge above tracks the gzipped size of `zombie-mermaid`'s
-main entry point (`dist/index.js`) and updates automatically with every
-release — the same badge/CI-tracked pattern already backing the coverage and
-CI status badges. Need ASCII rendering only? `import { renderMermaidASCII }
+main entry point (`dist/index.js`) together with the `@zombie-mermaid/*`
+workspace packages it imports (third-party dependencies such as ELK.js are not
+counted), and updates automatically with every release — the same
+badge/CI-tracked pattern already backing the coverage and CI status badges.
+The standalone renderer packages under [Packages](#packages) get the same
+measurement for their own dependency closure. Need ASCII rendering only? `import { renderMermaidASCII }
 from 'zombie-mermaid/ascii'` skips [ELK.js](https://github.com/kieler/elkjs),
 the layout engine the SVG renderer depends on, for a substantially smaller
 bundle.
@@ -218,8 +221,10 @@ the package.
 
 This repo is a pnpm-workspace monorepo. Most consumers only need the umbrella `zombie-mermaid` package above; internally it's built from workspace packages under `packages/`, all published under the `@zombie-mermaid` npm scope and version-locked with it:
 
-- **[`@zombie-mermaid/ascii-renderer`](packages/ascii-renderer)** — the ASCII/Unicode renderer, published standalone for anyone who wants terminal output without `svg-renderer`'s `elkjs` dependency. The exact code `zombie-mermaid/ascii` re-exports.
-- **[`@zombie-mermaid/svg-renderer`](packages/svg-renderer)** — the ELK.js-backed SVG layout and rendering engine, also published standalone.
+- **[`@zombie-mermaid/ascii-renderer`](packages/ascii-renderer)** — the ASCII/Unicode renderer, published standalone for anyone who wants terminal output without `svg-renderer`'s `elkjs` dependency. The exact code `zombie-mermaid/ascii` re-exports.  
+  [![npm](https://img.shields.io/npm/v/@zombie-mermaid/ascii-renderer.svg)](https://www.npmjs.com/package/@zombie-mermaid/ascii-renderer) [![gzip size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-ascii-renderer.json)](#bundle-size)
+- **[`@zombie-mermaid/svg-renderer`](packages/svg-renderer)** — the ELK.js-backed SVG layout and rendering engine, also published standalone.  
+  [![npm](https://img.shields.io/npm/v/@zombie-mermaid/svg-renderer.svg)](https://www.npmjs.com/package/@zombie-mermaid/svg-renderer) [![gzip size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-svg-renderer.json)](#bundle-size)
 - `@zombie-mermaid/core`, `@zombie-mermaid/mermaid-parser`, `@zombie-mermaid/mcp` — shared types/theming, the diagram parsers, and the MCP server implementation, respectively. Published under the scope (so the names can't be squatted) and version-locked with the rest, but internal-only: no standalone support commitment beyond backing the umbrella and the two renderer packages above.
 
 See [docs/decisions/monorepo-conversion.md](docs/decisions/monorepo-conversion.md) for the full package-split and publish-strategy history.
