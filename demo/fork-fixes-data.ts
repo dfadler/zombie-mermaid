@@ -423,4 +423,17 @@ export const forkFixes: ForkFix[] = [
     lookFor:
       'Before: "thick" sits glued to the dotted edge’s ┆ column. After: it sits on the thick edge’s own ┃ line, like "dotted" does on its ┆ line.',
   },
+  {
+    id: 'state-classdef-styling',
+    title: 'State diagrams ignored classDef, class, and ::: styling',
+    symptom:
+      'State diagrams silently dropped `classDef`, `class A,B name`, and `State:::name`, and `S1:::foo --> S2` swallowed S1 into a bogus `::foo --> S2` state, so styled states rendered unstyled with a stray label.',
+    source:
+      'stateDiagram-v2\n  classDef hot fill:#f00,color:#fff\n  classDef cool fill:#39f,color:#fff\n  [*] --> S1:::hot\n  S1 --> S2\n  S2:::cool --> S3\n  class S3 hot',
+    fixCommit: 'f01ed876',
+    pr: 1178,
+    render: 'svg',
+    lookFor:
+      'Before: a stray `::hot` label on the first transition and no colors. After: S1 and S3 are red, S2 is blue.',
+  },
 ]
