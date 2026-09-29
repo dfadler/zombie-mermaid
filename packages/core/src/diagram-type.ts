@@ -10,8 +10,22 @@
 
 import { splitStatements } from './statements.ts'
 
+/**
+ * Every diagram type this library can detect and route to a renderer — the
+ * runtime source of truth `DiagramType` is derived from, so consumers that
+ * need to enumerate the types (e.g. the MCP `list_diagram_types` tool) never
+ * keep a duplicate list that could drift.
+ */
+export const DIAGRAM_TYPES = [
+  'flowchart',
+  'sequence',
+  'class',
+  'er',
+  'xychart',
+] as const
+
 /** The diagram types this library can detect and route to a renderer. */
-export type DiagramType = 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart'
+export type DiagramType = (typeof DIAGRAM_TYPES)[number]
 
 /**
  * Detect the diagram type from the mermaid source text.
