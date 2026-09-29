@@ -21,9 +21,7 @@ describe('renderSvgHandler', () => {
   it('renders a valid diagram to an SVG string', () => {
     const result = renderSvgHandler({ diagram: 'graph LR\n  A --> B' })
     expect(result.isError).toBeUndefined()
-    // Block 0 is the unchanged message; a second block carries the line
-    // diagnostics (see mcp-parse-diagnostics.test.ts).
-    expect(result.content).toHaveLength(2)
+    expect(result.content).toHaveLength(1)
     const [content] = result.content
     if (content?.type !== 'text') {
       throw new Error('Expected text content')
