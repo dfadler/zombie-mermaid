@@ -15,8 +15,9 @@
 // ============================================================================
 
 import { parseMermaid } from '../../../src/parser.ts'
-import { withDirectionOverride } from '@zombie-mermaid/core'
-import type { Direction } from '@zombie-mermaid/core'
+import { withDirectionOverride, splitStatements } from '@zombie-mermaid/core'
+import type { Direction, MermaidGraph } from '@zombie-mermaid/core'
+import { parseC4Diagram, c4ToGraph } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
 import { drawGraph } from './draw.ts'
@@ -56,8 +57,43 @@ export function renderFlowchartAscii(
 ): string {
   // `extras.direction` replaces the parsed top-level direction before
   // layout; see packages/core/src/direction-override.ts.
-  const parsed = withDirectionOverride(parseMermaid(text), extras.direction)
+  return renderGraphAscii(
+    withDirectionOverride(parseMermaid(text), extras.direction),
+    config,
+    colorMode,
+    theme,
+    extras,
+  )
+}
 
+/**
+ * Render a C4 diagram to ASCII/Unicode text art by lowering it to the
+ * flowchart model (see `c4ToGraph`) and reusing the flowchart pipeline.
+ */
+export function renderC4Ascii(
+  text: string,
+  config: AsciiConfig,
+  colorMode: ColorMode,
+  theme: AsciiTheme,
+  extras: FlowchartAsciiExtras = {},
+): string {
+  const graph = c4ToGraph(parseC4Diagram(splitStatements(text)))
+  return renderGraphAscii(
+    withDirectionOverride(graph, extras.direction),
+    config,
+    colorMode,
+    theme,
+    extras,
+  )
+}
+
+function renderGraphAscii(
+  parsed: MermaidGraph,
+  config: AsciiConfig,
+  colorMode: ColorMode,
+  theme: AsciiTheme,
+  extras: FlowchartAsciiExtras,
+): string {
   // Normalize direction for grid layout.
   // BT is laid out as TD then flipped vertically after drawing.
   // RL is treated as LR (full RL support not yet implemented).

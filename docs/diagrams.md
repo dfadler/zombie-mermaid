@@ -678,6 +678,32 @@ The chart renderer follows a clean, minimal design philosophy, originally inspir
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
 
+## C4 Diagrams
+
+`C4Context`, `C4Container`, `C4Component`, `C4Dynamic` and `C4Deployment` diagrams render in both SVG and ASCII.
+
+```
+C4Container
+  Person(user, "User")
+  System_Boundary(shop, "Shop") {
+    Container(web, "Web App", "React", "Storefront")
+    ContainerDb(db, "Database", "PostgreSQL")
+  }
+  Rel(user, web, "Browses")
+  Rel(web, db, "Reads/writes", "SQL")
+```
+
+Supported: `Person`, `System`, `Container`, `Component` (plus `Db`, `Queue` and `_Ext` variants), `Boundary`/`Enterprise_Boundary`/`System_Boundary`/`Container_Boundary`, `Deployment_Node`/`Node`/`Node_L`/`Node_R`, `Rel`, `BiRel`, directional `Rel_*` aliases, `RelIndex`, and `title`.
+
+C4 diagrams are lowered to the flowchart model and laid out by the flowchart engine, so `direction` (default top-to-bottom) and the theme options apply as they do for flowcharts.
+
+Known limitations:
+
+- Directional hints (`Rel_U`, `Rel_R`, …) are parsed but do not steer layout.
+- `UpdateElementStyle`, `UpdateRelStyle`, `UpdateLayoutConfig`, legends and tags are accepted and ignored. Elements use the standard C4 palette.
+- A relationship cannot start or end at a populated boundary; connect the elements inside it.
+- The diagram `title` is parsed but not drawn; pass the `title` render option for an accessible name.
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
