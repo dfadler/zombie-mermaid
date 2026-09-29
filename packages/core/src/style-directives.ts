@@ -68,6 +68,9 @@ export function tryApplyClassDef(
 /**
  * `class A,B className` — attach a style class to one or more nodes.
  *
+ * Whitespace around commas is allowed (`class A, B foo`) — the state-diagram
+ * docs show that form (`class Moving, Crash movement`).
+ *
  * Allows an optional trailing semicolon (`class A,B foo;`) — Mermaid treats
  * it as valid/optional, and `classDef`/`style` already tolerate it via their
  * `(.+)$` capture. Without this, the semicolon form fails to match here and
@@ -79,7 +82,9 @@ export function tryApplyClassAssignment(
   line: string,
   target: StyleDirectives,
 ): boolean {
-  const match = line.match(/^class\s+([\w,-]+)\s+([\w-]+)\s*;?\s*$/)
+  const match = line.match(
+    /^class\s+([\w-]+(?:\s*,\s*[\w-]+)*)\s+([\w-]+)\s*;?\s*$/,
+  )
   if (!match) return false
   const className = match[2]!
   for (const id of match[1]!.split(',')) {

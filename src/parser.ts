@@ -371,6 +371,9 @@ function parseFlowchart(lines: Statement[]): MermaidGraph {
 //   state CompositeState {
 //     inner1 --> inner2
 //   }
+//   classDef name fill:#f00      (style class — shared helpers)
+//   class s1,s2 name
+//   s1:::name --> s2             (inline class shorthand)
 // ============================================================================
 
 function parseStateDiagram(lines: Statement[]): MermaidGraph {
@@ -397,6 +400,14 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   for (let i = 1; i < lines.length; i++) {
     const stmt = lines[i]!
     const line = stmt.text
+
+    // --- classDef / class assignment / style — shared with the flowchart and
+    // class-diagram parsers, see packages/core/src/style-directives.ts.
+    // Mermaid can't style `[*]` or composite states yet, so an assignment to
+    // one of those ids is stored but never matches a rendered node. ---
+    if (tryApplyClassDef(line, graph)) continue
+    if (tryApplyClassAssignment(line, graph)) continue
+    if (tryApplyStyleStatement(line, graph)) continue
 
     // --- direction override ---
     const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
@@ -477,7 +488,7 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     if (stateAliasMatch) {
       const label = normalizeBrTags(stateAliasMatch[1]!)
       const id = stateAliasMatch[2]!
-      registerStateNode(graph, compositeStack, { id, label, shape: 'rounded' })
+      registerStateDescription(graph, compositeStack, id, label)
       continue
     }
 
@@ -491,13 +502,15 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
      * rather than needing flowchart's separate pre-arrow scan.
      */
     const transitionMatch = line.match(
-      /^(\[\*\]|[\w\p{L}-]+)\s*(?:([\w-]+)@)?-->\s*(\[\*\]|[\w\p{L}-]+)(?:\s*:\s*(.+))?$/u,
+      /^(\[\*\]|[\w\p{L}-]+)(?::::([\w][\w-]*))?\s*(?:([\w-]+)@)?-->\s*(\[\*\]|[\w\p{L}-]+)(?::::([\w][\w-]*))?(?:\s*:\s*(.+))?$/u,
     )
     if (transitionMatch) {
       let sourceId = transitionMatch[1]!
-      const edgeId = transitionMatch[2]
-      let targetId = transitionMatch[3]!
-      const rawTransitionLabel = transitionMatch[4]?.trim()
+      const sourceClass = transitionMatch[2]
+      const edgeId = transitionMatch[3]
+      let targetId = transitionMatch[4]!
+      const targetClass = transitionMatch[5]
+      const rawTransitionLabel = transitionMatch[6]?.trim()
       const edgeLabel = rawTransitionLabel
         ? normalizeBrTags(rawTransitionLabel)
         : undefined
@@ -529,6 +542,14 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
         ensureStateNode(graph, compositeStack, targetId)
       }
 
+      // `S1:::name --> S2:::name` — inline class shorthand on either end
+      if (sourceClass !== undefined) {
+        graph.classAssignments.set(sourceId, sourceClass)
+      }
+      if (targetClass !== undefined) {
+        graph.classAssignments.set(targetId, targetClass)
+      }
+
       graph.edges.push({
         source: sourceId,
         target: targetId,
@@ -541,17 +562,54 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
       continue
     }
 
+    // --- bare class shorthand: `S2:::name`. Must precede the description
+    // rule below, which would otherwise read it as `S2 : ::name`. ---
+    const stateClassMatch = line.match(/^([\w\p{L}-]+):::([\w][\w-]*)\s*$/u)
+    if (stateClassMatch) {
+      const id = stateClassMatch[1]!
+      if (!compositeStateIds.has(id)) {
+        ensureStateNode(graph, compositeStack, id)
+      }
+      graph.classAssignments.set(id, stateClassMatch[2]!)
+      continue
+    }
+
     // --- state description: `s1 : Description` ---
     const stateDescMatch = line.match(/^([\w\p{L}-]+)\s*:\s*(.+)$/u)
     if (stateDescMatch) {
       const id = stateDescMatch[1]!
       const label = normalizeBrTags(stateDescMatch[2]!.trim())
-      registerStateNode(graph, compositeStack, { id, label, shape: 'rounded' })
+      registerStateDescription(graph, compositeStack, id, label)
       continue
     }
   }
 
+  // `class S2 foo` on a state that no transition mentions still declares it
+  // (Mermaid creates the state on first reference). Composite ids are skipped:
+  // they render as clusters, not nodes.
+  for (const id of graph.classAssignments.keys()) {
+    if (!graph.nodes.has(id) && !compositeStateIds.has(id)) {
+      ensureStateNode(graph, [], id)
+    }
+  }
+
   return graph
+}
+
+/**
+ * Register a state with an explicit description (`s1 : text` or
+ * `state "text" as s1`). Unlike a bare reference, this replaces the
+ * placeholder label an earlier `s1 --> s2` or `s1:::name` gave the node.
+ */
+function registerStateDescription(
+  graph: MermaidGraph,
+  compositeStack: MermaidSubgraph[],
+  id: string,
+  label: string,
+): void {
+  const existing = graph.nodes.get(id)
+  if (existing) existing.label = label
+  registerStateNode(graph, compositeStack, { id, label, shape: 'rounded' })
 }
 
 /** Register a state node and track in composite state if applicable */
