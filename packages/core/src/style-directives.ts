@@ -82,7 +82,9 @@ export function tryApplyClassAssignment(
   line: string,
   target: StyleDirectives,
 ): boolean {
-  const match = line.match(/^class\s+([\w-]+(?:\s*,\s*[\w-]+)*)\s+([\w-]+)\s*;?\s*$/)
+  const match = line.match(
+    /^class\s+([\w-]+(?:\s*,\s*[\w-]+)*)\s+([\w-]+)\s*;?\s*$/,
+  )
   if (!match) return false
   const className = match[2]!
   for (const id of match[1]!.split(',')) {
