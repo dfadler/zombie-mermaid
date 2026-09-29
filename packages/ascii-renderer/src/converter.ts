@@ -86,9 +86,13 @@ export function convertToAsciiGraph(
 
   // Build edges with resolved node references
   const edges: AsciiEdge[] = []
+  // Edges addressed from a subgraph id, resolved to AsciiSubgraph objects
+  // below once those exist — see AsciiEdge.clusterSource.
+  const clusterSourced = new Map<AsciiEdge, MermaidSubgraph>()
   for (const mEdge of parsed.edges) {
     let sourceId = mEdge.source
     let targetId = mEdge.target
+    let clusterMSg: MermaidSubgraph | undefined
 
     if (subgraphIds.has(sourceId)) {
       const mSg = subgraphById.get(sourceId)
@@ -96,6 +100,7 @@ export function convertToAsciiGraph(
         ? resolveSubgraphEndpoint(mSg, parsed, 'exit')
         : undefined
       if (resolved) sourceId = resolved
+      clusterMSg = resolved ? mSg : undefined
     }
     if (subgraphIds.has(targetId)) {
       const mSg = subgraphById.get(targetId)
@@ -109,7 +114,7 @@ export function convertToAsciiGraph(
     const to = nodeMap.get(targetId)
     if (!from || !to) continue
 
-    edges.push({
+    const asciiEdge: AsciiEdge = {
       from,
       to,
       text: mEdge.label ? stripFormattingTags(mEdge.label) : '',
@@ -124,7 +129,9 @@ export function convertToAsciiGraph(
         ? { startMarker: mEdge.startMarker }
         : {}),
       ...(mEdge.endMarker !== undefined ? { endMarker: mEdge.endMarker } : {}),
-    })
+    }
+    edges.push(asciiEdge)
+    if (clusterMSg) clusterSourced.set(asciiEdge, clusterMSg)
   }
 
   // Convert subgraphs recursively
@@ -138,6 +145,15 @@ export function convertToAsciiGraph(
   // The TS parser adds referenced nodes to all subgraphs they appear in,
   // which causes incorrect bounding boxes when nodes span subgraph boundaries.
   deduplicateSubgraphNodes(parsed.subgraphs, subgraphs, nodeMap)
+
+  if (clusterSourced.size > 0) {
+    const sgMap = new Map<MermaidSubgraph, AsciiSubgraph>()
+    buildSgMap(parsed.subgraphs, subgraphs, sgMap)
+    for (const [edge, mSg] of clusterSourced) {
+      const sg = sgMap.get(mSg)
+      if (sg) edge.clusterSource = sg
+    }
+  }
 
   /*
    * `classDef default` is Mermaid's implicit base style for every node, not

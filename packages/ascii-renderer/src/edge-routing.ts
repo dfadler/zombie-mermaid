@@ -30,6 +30,7 @@ import {
 import { routeEdge, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 import { displayWidth } from './display-width.ts'
+import { buildClusterExitRoute } from './cluster-boundary.ts'
 import { isOccupied, pathCells } from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
@@ -654,6 +655,33 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
 
+  // An edge leaving a cluster that engaged cluster-boundary routing (see
+  // cluster-boundary.ts) takes the cluster's shared exit instead of the
+  // ordinary search below. Dispatching here, in determinePath, rather than
+  // in createMapping's loop, means rerouteAroundStyleConflicts' re-calls
+  // keep the cluster shape too. The label is placed directly, like a
+  // parallel lane's, and determineLabelLine skips the edge — see its guard.
+  const clusterPlan = edge.clusterSource
+    ? graph.clusterExitPlans?.get(edge.clusterSource)
+    : undefined
+  if (clusterPlan?.edges.has(edge)) {
+    const route = buildClusterExitRoute(graph, clusterPlan, edge)
+    if (route) {
+      edge.startDir = route.startDir
+      edge.endDir = route.endDir
+      edge.path = route.path
+      if (edge.text.length > 0) {
+        applyLabelLine(graph, edge, route.labelSegment, displayWidth(edge.text))
+      }
+      return
+    }
+    // The outside leg can no longer be routed (a style-conflict reroute
+    // blocked its way). Drop this edge from the plan so it, and
+    // determineLabelLine, treat it as an ordinary edge from here on.
+    clusterPlan.edges.delete(edge)
+    edge.labelLine = []
+  }
+
   // Edges after the first in a true-parallel (same source AND target) group
   // skip the normal preferred/alternative search entirely: that search
   // would just find the identical center path every sibling edge shares,
@@ -848,6 +876,15 @@ function findNonNodeColumn(
 export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   if (edge.text.length === 0) return
   if (edge.parallelLane && edge.parallelLane.index > 0) return
+  // Likewise a cluster-exit edge: determinePath placed its label directly
+  // on the first segment outside the cluster. The width-based search below
+  // would centre it on the stub, i.e. on the cluster wall.
+  if (
+    edge.clusterSource &&
+    graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge)
+  ) {
+    return
+  }
 
   const lenLabel = displayWidth(edge.text)
 

@@ -25,6 +25,7 @@ import {
 } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
+import { planClusterExits, widenClusterGutters } from './cluster-boundary.ts'
 import {
   isBlockFree,
   placeBlock,
@@ -1142,6 +1143,12 @@ export function createMapping(graph: AsciiGraph): void {
   // identical center path (see #329).
   assignParallelEdgeLanes(graph)
 
+  // Give edges that leave a cluster through a shared exit (2+ of them) a
+  // common flow-side stub — see cluster-boundary.ts. Needs the lane tags
+  // above (parallel-lane edges keep lane routing) and the final node
+  // placement, and runs before any edge is routed.
+  planClusterExits(graph)
+
   // Analyze edges for bundling (parallel links like A & B --> C)
   // This groups edges that share sources or targets for cleaner visualization
   graph.bundles = analyzeEdgeBundles(graph)
@@ -1217,6 +1224,16 @@ export function createMapping(graph: AsciiGraph): void {
   // the `Error --> Idle : retry` edge in the "State: Composite States"
   // sample, whose rerouted path was the first to reach it).
   calculateSubgraphBoundingBoxes(graph)
+  // A cluster-exit gutter narrower than its cluster's drawn wall (padding,
+  // nesting, or LR label widening) is widened here, where the wall is first
+  // known. Widening only shifts what lies past the gutter, so node drawing
+  // coordinates are refreshed and the boxes recomputed once.
+  if (widenClusterGutters(graph)) {
+    for (const node of graph.nodes) {
+      node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+    }
+    calculateSubgraphBoundingBoxes(graph)
+  }
   offsetDrawingForSubgraphs(graph)
 
   // Set canvas size, now covering the offset computed above.

@@ -215,6 +215,42 @@ export interface AsciiEdge {
    * keeping every lane in the group on a genuinely distinct path.
    */
   parallelLane?: { index: number; total: number; usedOffsets: Set<number> }
+  /**
+   * The subgraph this edge was originally addressed *from* (`Processing -->
+   * Done` where `Processing` is a subgraph id), before the converter
+   * redirected `from` to a stand-in member node (see
+   * `resolveSubgraphEndpoint`). Unset for an ordinary edge, including a
+   * direct edge from that same member node — the two are otherwise
+   * indistinguishable once converted. Consumed by cluster-boundary.ts.
+   */
+  clusterSource?: AsciiSubgraph
+}
+
+/**
+ * Grid-space extent of a subgraph's member nodes, inclusive on both ends
+ * (a node's 3x3 block spans `gridCoord.x .. gridCoord.x + 2`).
+ */
+export interface ClusterGridBox {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+/**
+ * Routing plan for one subgraph whose 2+ outgoing edges share an exit. Built
+ * once by `planClusterExits` (cluster-boundary.ts) before per-edge routing;
+ * absent for every subgraph that doesn't engage, which keeps its edges on
+ * the ordinary routing path byte for byte.
+ */
+export interface ClusterExitPlan {
+  box: ClusterGridBox
+  /** The stand-in member node every edge in `edges` departs from. */
+  anchor: AsciiNode
+  /** Gutter cell just past the cluster's flow-side wall, in the anchor's column/row. */
+  gutter: GridCoord
+  /** Edges that route through the shared stub. */
+  edges: Set<AsciiEdge>
 }
 
 /** A subgraph container with bounding box for rendering. */
@@ -318,6 +354,8 @@ export interface AsciiGraph {
    * PathBudget for details.
    */
   pathBudget?: PathBudget
+  /** Engaged cluster-exit plans, keyed by subgraph. Set by createMapping. */
+  clusterExitPlans?: Map<AsciiSubgraph, ClusterExitPlan>
 }
 
 // ============================================================================
