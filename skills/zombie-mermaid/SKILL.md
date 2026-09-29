@@ -111,9 +111,14 @@ ships as an MCP server on stdio:
 }
 ```
 
-Three tools, all taking a `diagram` string:
+Tools (all but the `list_*` ones take a `diagram` string):
 
-- `render_mermaid_svg` — plus `theme`, `transparent`, `font`.
+- `render_mermaid_svg` — plus `theme`, `transparent`, `font`, `bg`/`fg` (hex
+  overrides on top of the theme), and `outputPath` (write to a `.svg` file
+  under the server's working directory and return `{ saved, size }` instead
+  of the SVG text).
+- `list_themes` / `list_diagram_types` — take no arguments; return the valid
+  `theme` names and the supported diagram types as JSON.
 - `render_mermaid_ascii` — plus `useAscii` (plain `+-|>` instead of Unicode
   box-drawing), `paddingX`, `paddingY`, `boxBorderPadding`. Never emits ANSI
   color, so the result pastes cleanly into a chat context.

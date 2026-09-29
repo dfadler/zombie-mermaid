@@ -7,6 +7,24 @@
 // ============================================================================
 
 import { z } from 'zod'
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  ftruncateSync,
+  lstatSync,
+  openSync,
+  realpathSync,
+  writeSync,
+} from 'node:fs'
+import {
+  basename,
+  dirname,
+  extname,
+  isAbsolute,
+  relative,
+  resolve,
+} from 'node:path'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { renderMermaidSVG } from '../../../../src/index.ts'
 import { THEMES } from '@zombie-mermaid/core'
@@ -28,7 +46,7 @@ function toNonEmptyStringTuple(values: string[]): [string, ...string[]] {
 
 const themeNames = toNonEmptyStringTuple(Object.keys(THEMES))
 
-export const renderSvgInputShape = {
+const baseShape = {
   diagram: z
     .string()
     .min(1, 'diagram must not be empty')
@@ -53,16 +71,132 @@ export const renderSvgInputShape = {
     .describe('Font family for diagram text. Default: "Inter".'),
 }
 
+/** `#rgb` or `#rrggbb` — the forms the renderer's color math accepts. */
+const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+
+export const renderSvgInputShape = {
+  ...baseShape,
+  bg: z
+    .string()
+    .regex(HEX_COLOR, 'bg must be a hex color like #fff or #1a1b26')
+    .optional()
+    .describe(
+      'Background color override as hex (#rgb or #rrggbb). Applied on top ' +
+        'of the theme.',
+    ),
+  fg: z
+    .string()
+    .regex(HEX_COLOR, 'fg must be a hex color like #000 or #c0caf5')
+    .optional()
+    .describe(
+      'Foreground/text color override as hex (#rgb or #rrggbb). Applied on ' +
+        'top of the theme.',
+    ),
+  outputPath: z
+    .string()
+    .min(1, 'outputPath must not be empty')
+    .optional()
+    .describe(
+      'Write the SVG to this file instead of returning it, and return ' +
+        '{ saved, size } (absolute path, bytes). Must end in .svg and ' +
+        "resolve inside the MCP server's working directory; the parent " +
+        'directory must already exist; symlinks and non-regular files are ' +
+        'refused. An existing .svg file at the path is overwritten.',
+    ),
+}
+
 export interface RenderSvgToolArgs {
   diagram: string
   theme?: string | undefined
   transparent?: boolean | undefined
   font?: string | undefined
+  bg?: string | undefined
+  fg?: string | undefined
+  outputPath?: string | undefined
+}
+
+/**
+ * True if `target` is `base` itself or lies beneath it. Uses `relative()` so
+ * `..` traversal and sibling-prefix tricks (`/work` vs `/work-evil`) both fail.
+ */
+function isInside(base: string, target: string): boolean {
+  const rel = relative(base, target)
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+/**
+ * Write `svg` to `outputPath` under the server's working directory, or throw
+ * a descriptive Error. Safety model (all checks run before any byte is
+ * written):
+ *
+ *  1. The path is resolved to absolute against `process.cwd()` and must end
+ *     in `.svg` (case-insensitive).
+ *  2. It must lie inside the real (symlink-resolved) working directory, after
+ *     resolving `..` lexically AND after resolving symlinks on the parent
+ *     directory, so a symlinked directory can't redirect the write elsewhere.
+ *  3. The parent directory must already exist (nothing is created).
+ *  4. The file itself is opened with `O_NOFOLLOW`, so a symlink at the final
+ *     component is refused even if swapped in after the check; an existing
+ *     target must be a regular file (never a directory, FIFO, device, ...)
+ *     and is only truncated after that `fstat` confirms it.
+ */
+export function writeSvgFile(
+  outputPath: string,
+  svg: string,
+): { saved: string; size: number } {
+  const base = realpathSync(process.cwd())
+  const target = resolve(base, outputPath)
+  if (extname(target).toLowerCase() !== '.svg') {
+    throw new Error('outputPath must end in .svg')
+  }
+  if (!isInside(base, target)) {
+    throw new Error(
+      'outputPath must resolve inside the MCP server working directory',
+    )
+  }
+  let realParent: string
+  try {
+    realParent = realpathSync(dirname(target))
+  } catch {
+    throw new Error('outputPath parent directory does not exist')
+  }
+  if (!isInside(base, realParent)) {
+    throw new Error(
+      'outputPath resolves outside the working directory via a symlink',
+    )
+  }
+  const finalPath = resolve(realParent, basename(target))
+  try {
+    if (lstatSync(finalPath).isSymbolicLink()) {
+      throw new Error('outputPath must not be a symlink')
+    }
+  } catch (err) {
+    if (!(err instanceof Error && 'code' in err && err.code === 'ENOENT')) {
+      throw err
+    }
+  }
+  const fd = openSync(
+    finalPath,
+    constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW,
+    0o644,
+  )
+  try {
+    if (!fstatSync(fd).isFile()) {
+      throw new Error('outputPath exists and is not a regular file')
+    }
+    ftruncateSync(fd, 0)
+    const bytes = Buffer.from(svg, 'utf8')
+    writeSync(fd, bytes, 0, bytes.length, 0)
+    return { saved: finalPath, size: bytes.length }
+  } finally {
+    closeSync(fd)
+  }
 }
 
 /**
  * MCP tool handler for `render_mermaid_svg`. Renders Mermaid source to a
- * self-contained SVG string, returned as `text` content — SVG is XML text,
+ * self-contained SVG string (or, with `outputPath`, a `{ saved, size }` JSON
+ * report after writing it to disk), returned as `text` content — SVG is XML text,
  * not the raster image the `image` content type expects.
  *
  * Catches rendering errors (e.g. invalid Mermaid syntax) and returns them
@@ -79,7 +213,14 @@ export function renderSvgHandler(input: RenderSvgToolArgs): CallToolResult {
       ...themeColors,
       transparent: input.transparent,
       font: input.font,
+      // Only set when provided so an absent override never clobbers the theme.
+      ...(input.bg !== undefined ? { bg: input.bg } : {}),
+      ...(input.fg !== undefined ? { fg: input.fg } : {}),
     })
+    if (input.outputPath !== undefined) {
+      const saved = writeSvgFile(input.outputPath, svg)
+      return { content: [{ type: 'text', text: JSON.stringify(saved) }] }
+    }
     return { content: [{ type: 'text', text: svg }] }
   } catch (err) {
     return {
