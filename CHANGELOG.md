@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.1.0
+
+### Patch Changes
+
+- Updated dependencies [[`1357207`](https://github.com/dfadler/zombie-mermaid/commit/1357207528b0cfee8fa7fb43513813a5f714a36e), [`14c5945`](https://github.com/dfadler/zombie-mermaid/commit/14c59452176f73e171aa459f69d2cee2ad7e7b34)]:
+  - @zombie-mermaid/mcp@3.1.0
+  - @zombie-mermaid/core@3.1.0
+  - @zombie-mermaid/svg-renderer@3.1.0
+  - @zombie-mermaid/ascii-renderer@3.1.0
+  - @zombie-mermaid/mermaid-parser@3.1.0
+
 ## 3.0.0
 
 ### Patch Changes
