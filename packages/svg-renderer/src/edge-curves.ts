@@ -10,10 +10,11 @@
 // ============================================================================
 
 import type { Point, CurveStyle } from '@zombie-mermaid/core'
+import { f } from '@zombie-mermaid/core'
 
 /** `M x y` for the first point. */
 function moveTo(p: Point): string {
-  return `M ${p.x} ${p.y}`
+  return f`M ${p.x} ${p.y}`
 }
 
 /** Straight segments through every point — the historical default. */
@@ -22,7 +23,7 @@ function linearPath(points: Point[]): string {
     moveTo(points[0]!) +
     points
       .slice(1)
-      .map((p) => ` L ${p.x} ${p.y}`)
+      .map((p) => f` L ${p.x} ${p.y}`)
       .join('')
   )
 }
@@ -51,14 +52,14 @@ function basisPath(points: Point[]): string {
 
   /** One B-spline segment across three successive control points. */
   const segment = (p0: Point, p1: Point, p2: Point): string =>
-    ` C ${(2 * p0.x + p1.x) / 3} ${(2 * p0.y + p1.y) / 3},` +
-    ` ${(p0.x + 2 * p1.x) / 3} ${(p0.y + 2 * p1.y) / 3},` +
-    ` ${(p0.x + 4 * p1.x + p2.x) / 6} ${(p0.y + 4 * p1.y + p2.y) / 6}`
+    f` C ${(2 * p0.x + p1.x) / 3} ${(2 * p0.y + p1.y) / 3},` +
+    f` ${(p0.x + 2 * p1.x) / 3} ${(p0.y + 2 * p1.y) / 3},` +
+    f` ${(p0.x + 4 * p1.x + p2.x) / 6} ${(p0.y + 4 * p1.y + p2.y) / 6}`
 
   // Lead-in to the first knot, one sixth of the way along the opening leg.
   parts.push(
-    ` L ${(5 * points[0]!.x + points[1]!.x) / 6}` +
-      ` ${(5 * points[0]!.y + points[1]!.y) / 6}`,
+    f` L ${(5 * points[0]!.x + points[1]!.x) / 6}` +
+      f` ${(5 * points[0]!.y + points[1]!.y) / 6}`,
   )
 
   for (let i = 2; i < points.length; i++) {
@@ -67,7 +68,7 @@ function basisPath(points: Point[]): string {
 
   // d3 closes by feeding the last point twice, then drawing to it.
   parts.push(segment(points[points.length - 2]!, last, last))
-  parts.push(` L ${last.x} ${last.y}`)
+  parts.push(f` L ${last.x} ${last.y}`)
 
   return parts.join('')
 }
@@ -109,7 +110,7 @@ function naturalPath(points: Point[]): string {
     // A zero-length leg means duplicated routed points; there is no corner
     // to round, so pass straight through.
     if (inLen === 0 || outLen === 0) {
-      parts.push(` L ${corner.x} ${corner.y}`)
+      parts.push(f` L ${corner.x} ${corner.y}`)
       continue
     }
 
@@ -123,12 +124,12 @@ function naturalPath(points: Point[]): string {
     const endY = corner.y + ((next.y - corner.y) / outLen) * radius
 
     // Straight up to the fillet, then a quadratic through the corner.
-    parts.push(` L ${startX} ${startY}`)
-    parts.push(` Q ${corner.x} ${corner.y}, ${endX} ${endY}`)
+    parts.push(f` L ${startX} ${startY}`)
+    parts.push(f` Q ${corner.x} ${corner.y}, ${endX} ${endY}`)
   }
 
   const last = points[points.length - 1]!
-  parts.push(` L ${last.x} ${last.y}`)
+  parts.push(f` L ${last.x} ${last.y}`)
 
   return parts.join('')
 }
@@ -155,17 +156,17 @@ function stepPath(points: Point[], where: 'mid' | 'before' | 'after'): string {
     const b = points[i + 1]!
 
     if (i === lastIndex - 1) {
-      parts.push(` L ${b.x} ${b.y}`)
+      parts.push(f` L ${b.x} ${b.y}`)
       break
     }
 
     if (where === 'before') {
-      parts.push(` L ${a.x} ${b.y} L ${b.x} ${b.y}`)
+      parts.push(f` L ${a.x} ${b.y} L ${b.x} ${b.y}`)
     } else if (where === 'after') {
-      parts.push(` L ${b.x} ${a.y} L ${b.x} ${b.y}`)
+      parts.push(f` L ${b.x} ${a.y} L ${b.x} ${b.y}`)
     } else {
       const midY = (a.y + b.y) / 2
-      parts.push(` L ${a.x} ${midY} L ${b.x} ${midY} L ${b.x} ${b.y}`)
+      parts.push(f` L ${a.x} ${midY} L ${b.x} ${midY} L ${b.x} ${b.y}`)
     }
   }
 

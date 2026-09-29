@@ -163,7 +163,10 @@ describe('edge curve styles (#198 row 9)', () => {
    * diagram traces the path Mermaid would draw, so an approximation that
    * merely looks smooth is still wrong. These values were taken from
    * d3-shape 3.2.0's own `curveBasis` output for the same points — d3
-   * serializes at 3 decimals, hence the rounding.
+   * serializes at 3 decimals; `pointsToPath` itself now rounds every
+   * coordinate to 2 decimals via the `f` tagged template (ported from
+   * lukilabs/beautiful-mermaid#77), so the expected values below are d3's
+   * reference geometry rounded to that same coarser precision.
    *
    * An earlier implementation led in at the midpoint `(p0 + p1) / 2` and
    * emitted a single cubic ending at `(p1 + p2) / 2`; it satisfied every
@@ -172,15 +175,15 @@ describe('edge curve styles (#198 row 9)', () => {
   it('matches d3 curveBasis geometry exactly', () => {
     const round = (d: string) =>
       (d.match(/[MLC]|-?\d+(?:\.\d+)?/g) ?? []).map((t) =>
-        /[MLC]/.test(t) ? t : +(+t).toFixed(3),
+        /[MLC]/.test(t) ? t : +(+t).toFixed(2),
       )
 
     // prettier-ignore
     expect(round(pointsToPath(points, 'basis'))).toEqual([
       'M', 0, 0,
-      'L', 1.667, 1.667,
-      'C', 3.333, 3.333, 6.667, 6.667, 10, 6.667,
-      'C', 13.333, 6.667, 16.667, 3.333, 18.333, 1.667,
+      'L', 1.67, 1.67,
+      'C', 3.33, 3.33, 6.67, 6.67, 10, 6.67,
+      'C', 13.33, 6.67, 16.67, 3.33, 18.33, 1.67,
       'L', 20, 0,
     ])
   })
