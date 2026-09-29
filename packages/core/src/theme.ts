@@ -13,6 +13,7 @@
 
 import { escapeXml, escapeAttr } from './multiline-utils.ts'
 import { parseHexColor } from './color-utils.ts'
+import { f } from './render-utils.ts'
 import {
   MONO_FONT_FAMILY as SVG_MONO_FONT_FAMILY,
   MONO_FONT_FACE_CSS as SVG_MONO_FONT_FACE_CSS,
@@ -705,8 +706,8 @@ export function svgOpenTag(
   }
 
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
-    `width="${width}" height="${height}"${a11yAttrs}${styleAttr}>` +
+    f`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
+    f`width="${width}" height="${height}"${a11yAttrs}${styleAttr}>` +
     titleEl
   )
 }

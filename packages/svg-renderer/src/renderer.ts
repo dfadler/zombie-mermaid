@@ -20,6 +20,7 @@ import {
   escapeAttr,
   safeHref,
   sanitizeClassName,
+  f,
 } from '@zombie-mermaid/core'
 import type { FontSizes } from './styles.ts'
 import {
@@ -215,7 +216,7 @@ function arrowMarkerDefs(): string {
  * IDs are suffixed with a sanitized color string to avoid collisions.
  */
 function arrowMarkerDefsForColor(color: string): string {
-  return arrowMarkerPair(escapeAttr(color), `-${markerSuffix(color)}`)
+  return arrowMarkerPair(escapeAttr(color), f`-${markerSuffix(color)}`)
 }
 
 /**
@@ -233,16 +234,16 @@ function arrowMarkerPair(color: string, idSuffix: string): string {
   // Pull arrowhead back slightly (refX = w - 1) to prevent clipping at node boundaries.
   const refX = w - 1
   // Both fill and a thin stroke for better definition at small sizes.
-  const style = `fill="${color}" stroke="${color}" stroke-width="0.75" stroke-linejoin="round"`
-  const polygon = `<polygon points="0 0, ${w} ${h / 2}, 0 ${h}" ${style} />`
+  const style = f`fill="${color}" stroke="${color}" stroke-width="0.75" stroke-linejoin="round"`
+  const polygon = f`<polygon points="0 0, ${w} ${h / 2}, 0 ${h}" ${style} />`
   const marker = (id: string, orient: string) =>
-    `  <marker id="${id}" markerWidth="${w}" markerHeight="${h}" refX="${refX}" refY="${h / 2}" orient="${orient}">` +
-    `\n    ${polygon}` +
+    f`  <marker id="${id}" markerWidth="${w}" markerHeight="${h}" refX="${refX}" refY="${h / 2}" orient="${orient}">` +
+    f`\n    ${polygon}` +
     `\n  </marker>`
   return (
-    marker(`arrowhead${idSuffix}`, 'auto') +
+    marker(f`arrowhead${idSuffix}`, 'auto') +
     '\n' +
-    marker(`arrowhead-start${idSuffix}`, 'auto-start-reverse')
+    marker(f`arrowhead-start${idSuffix}`, 'auto-start-reverse')
   )
 }
 
@@ -269,19 +270,19 @@ function renderGroup(
   // data-id: original Mermaid subgraph ID
   // data-label: display label (may differ from ID)
   parts.push(
-    `<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
+    f`<g class="subgraph" data-id="${escapeAttr(group.id)}" data-label="${escapeAttr(group.label)}">`,
   )
 
   // Outer rectangle
   parts.push(
-    `  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
-      `rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+    f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
+      f`rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
   // Header band
   parts.push(
-    `  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
-      `rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+    f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${headerHeight}" ` +
+      f`rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
   // Header label (supports multi-line via <br> tags)
@@ -292,7 +293,7 @@ function renderGroup(
         group.x + 12,
         group.y + headerHeight / 2,
         fontSizes.groupHeader,
-        `font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+        f`font-size="${fontSizes.groupHeader}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
       ),
   )
 
@@ -356,13 +357,13 @@ function renderEdge(
   // Build marker attributes based on arrow direction flags
   // Use color-specific markers when edge has a custom stroke from linkStyle
   const suffix = edge.inlineStyle?.stroke
-    ? `-${markerSuffix(edge.inlineStyle.stroke)}`
+    ? f`-${markerSuffix(edge.inlineStyle.stroke)}`
     : ''
   let markers = ''
   if (!invisible) {
-    if (edge.hasArrowEnd) markers += ` marker-end="url(#arrowhead${suffix})"`
+    if (edge.hasArrowEnd) markers += f` marker-end="url(#arrowhead${suffix})"`
     if (edge.hasArrowStart)
-      markers += ` marker-start="url(#arrowhead-start${suffix})"`
+      markers += f` marker-start="url(#arrowhead-start${suffix})"`
   }
 
   // Semantic data attributes for edge identification and inspection:
@@ -374,20 +375,20 @@ function renderEdge(
   const dataAttrs = [
     // An animated edge (`e1@{ animate: true }`, with animation enabled)
     // carries an extra class; its keyframes live in the shared style block.
-    `class="edge${animate ? ' edge-animated' : ''}"`,
-    `data-from="${escapeAttr(edge.source)}"`,
-    `data-to="${escapeAttr(edge.target)}"`,
-    `data-style="${edge.style}"`,
-    `data-arrow-start="${edge.hasArrowStart}"`,
-    `data-arrow-end="${edge.hasArrowEnd}"`,
+    f`class="edge${animate ? ' edge-animated' : ''}"`,
+    f`data-from="${escapeAttr(edge.source)}"`,
+    f`data-to="${escapeAttr(edge.target)}"`,
+    f`data-style="${edge.style}"`,
+    f`data-arrow-start="${edge.hasArrowStart}"`,
+    f`data-arrow-end="${edge.hasArrowEnd}"`,
   ]
   if (edge.label) {
-    dataAttrs.push(`data-label="${escapeAttr(edge.label)}"`)
+    dataAttrs.push(f`data-label="${escapeAttr(edge.label)}"`)
   }
   if (edge.id) {
     // Mermaid edge id (`A e1@--> B`), used to target the edge from CSS and
     // to attach the animation below.
-    dataAttrs.push(`data-id="${escapeAttr(edge.id)}"`)
+    dataAttrs.push(f`data-id="${escapeAttr(edge.id)}"`)
   }
 
   // Marching ants need a dash pattern to march; supply one only when the
@@ -395,19 +396,19 @@ function renderEdge(
   const animatedDash = animate && !dashArray ? ' stroke-dasharray="8 6"' : ''
 
   const geometry = curved
-    ? `d="${pointsToPath(edge.points, curve)}"`
-    : `points="${pointsToPolylinePath(edge.points)}"`
+    ? f`d="${pointsToPath(edge.points, curve)}"`
+    : f`points="${pointsToPolylinePath(edge.points)}"`
 
   return (
-    `<${curved ? 'path' : 'polyline'} ${dataAttrs.join(' ')} ${geometry} ` +
-    `fill="none" stroke="${strokeColor}" ` +
-    `stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers} />`
+    f`<${curved ? 'path' : 'polyline'} ${dataAttrs.join(' ')} ${geometry} ` +
+    f`fill="none" stroke="${strokeColor}" ` +
+    f`stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers} />`
   )
 }
 
 /** Convert points to SVG polyline points attribute: "x1,y1 x2,y2 ..." */
 function pointsToPolylinePath(points: Point[]): string {
-  return points.map((p) => `${p.x},${p.y}`).join(' ')
+  return points.map((p) => f`${p.x},${p.y}`).join(' ')
 }
 
 // `_font` isn't read here but is kept to match the `(entity, font)` signature
@@ -444,15 +445,15 @@ function renderEdgeLabel(
     fontSizes.edgeLabel,
     padding,
     // Use --_text-sec for better contrast (was --_text-muted)
-    `text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
+    f`text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-sec)"`,
     // Increased stroke width from 0.5 to 1 for better label separation from edges
     `rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1"`,
   )
 
   // Semantic wrapper: links label to its edge via data-from/data-to
   return (
-    `<g class="edge-label" data-from="${escapeAttr(edge.source)}" data-to="${escapeAttr(edge.target)}" data-label="${escapeAttr(label)}">\n` +
-    `  ${content.replace(/\n/g, '\n  ')}\n` +
+    f`<g class="edge-label" data-from="${escapeAttr(edge.source)}" data-to="${escapeAttr(edge.target)}" data-label="${escapeAttr(label)}">\n` +
+    f`  ${content.replace(/\n/g, '\n  ')}\n` +
     `</g>`
   )
 }
@@ -471,7 +472,7 @@ function requirePoint(points: Point[], index: number): Point {
     // Unreachable — both call sites in edgeMidpoint only ever pass indices
     // in [0, points.length - 1].
     /* v8 ignore next */
-    throw new Error(`edgeMidpoint: missing point at index ${index}`)
+    throw new Error(f`edgeMidpoint: missing point at index ${index}`)
   }
   return point
 }
@@ -539,14 +540,14 @@ function renderNode(
   // This enables reliable node identification without heuristics
   const parts: string[] = []
   const safeClassName = sanitizeClassName(node.className)
-  const classAttr = safeClassName ? `node ${safeClassName}` : 'node'
+  const classAttr = safeClassName ? f`node ${safeClassName}` : 'node'
 
   const interaction = node.interaction
   const groupAttrs = [
-    `class="${classAttr}"`,
-    `data-id="${escapeAttr(node.id)}"`,
-    `data-label="${escapeAttr(node.label)}"`,
-    `data-shape="${node.shape}"`,
+    f`class="${classAttr}"`,
+    f`data-id="${escapeAttr(node.id)}"`,
+    f`data-label="${escapeAttr(node.label)}"`,
+    f`data-shape="${node.shape}"`,
   ]
   /*
    * `click A call fn()` is deliberately absent from the markup. This renderer
@@ -558,7 +559,7 @@ function renderNode(
    * attribute once emitted here was removed in #216 — see
    * docs/decisions/no-script-interactivity.md.
    */
-  parts.push(`<g ${groupAttrs.join(' ')}>`)
+  parts.push(f`<g ${groupAttrs.join(' ')}>`)
 
   // An href becomes a real SVG link, which needs no script to work.
   // `interactivity: 'none'` strips it — a link is meaningless in
@@ -567,21 +568,21 @@ function renderNode(
   const indent = href ? '    ' : '  '
   if (href) {
     const targetAttr = interaction?.target
-      ? ` target="${escapeAttr(interaction.target)}"`
+      ? f` target="${escapeAttr(interaction.target)}"`
       : ''
-    parts.push(`  <a href="${escapeAttr(href)}"${targetAttr}>`)
+    parts.push(f`  <a href="${escapeAttr(href)}"${targetAttr}>`)
   }
 
   if (linksEnabled && interaction?.tooltip) {
     // <title> is SVG's native tooltip — no script, no CSS. Gated by
     // linksEnabled alongside href above: both come from the same `click`
     // statement, and 'none' strips both.
-    parts.push(`${indent}<title>${escapeXml(interaction.tooltip)}</title>`)
+    parts.push(f`${indent}<title>${escapeXml(interaction.tooltip)}</title>`)
   }
 
-  parts.push(`${indent}${shape.replace(/\n/g, `\n${indent}`)}`)
+  parts.push(f`${indent}${shape.replace(/\n/g, f`\n${indent}`)}`)
   if (label) {
-    parts.push(`${indent}${label.replace(/\n/g, `\n${indent}`)}`)
+    parts.push(f`${indent}${label.replace(/\n/g, f`\n${indent}`)}`)
   }
 
   if (href) parts.push('  </a>')
@@ -700,8 +701,8 @@ function renderRect(
   sw: string,
 ): string {
   return (
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
-    `rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
+    f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -715,8 +716,8 @@ function renderRoundedRect(
   sw: string,
 ): string {
   return (
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
-    `rx="6" ry="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
+    f`rx="6" ry="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -731,8 +732,8 @@ function renderStadium(
 ): string {
   const r = h / 2
   return (
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
-    `rx="${r}" ry="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
+    f`rx="${r}" ry="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -749,8 +750,8 @@ function renderCircle(
   const cy = y + h / 2
   const r = Math.min(w, h) / 2
   return (
-    `<circle cx="${cx}" cy="${cy}" r="${r}" ` +
-    `fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<circle cx="${cx}" cy="${cy}" r="${r}" ` +
+    f`fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -768,13 +769,13 @@ function renderDiamond(
   const hw = w / 2
   const hh = h / 2
   const points = [
-    `${cx},${cy - hh}`, // top
-    `${cx + hw},${cy}`, // right
-    `${cx},${cy + hh}`, // bottom
-    `${cx - hw},${cy}`, // left
+    f`${cx},${cy - hh}`, // top
+    f`${cx + hw},${cy}`, // right
+    f`${cx},${cy + hh}`, // bottom
+    f`${cx - hw},${cy}`, // left
   ].join(' ')
 
-  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 // --- Batch 1 shapes ---
@@ -791,12 +792,12 @@ function renderSubroutine(
 ): string {
   const inset = 8 // distance from edge to inner vertical line
   return (
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
-    `rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
-    `\n<line x1="${x + inset}" y1="${y}" x2="${x + inset}" y2="${y + h}" ` +
-    `stroke="${stroke}" stroke-width="${sw}" />` +
-    `\n<line x1="${x + w - inset}" y1="${y}" x2="${x + w - inset}" y2="${y + h}" ` +
-    `stroke="${stroke}" stroke-width="${sw}" />`
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ` +
+    f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
+    f`\n<line x1="${x + inset}" y1="${y}" x2="${x + inset}" y2="${y + h}" ` +
+    f`stroke="${stroke}" stroke-width="${sw}" />` +
+    f`\n<line x1="${x + w - inset}" y1="${y}" x2="${x + w - inset}" y2="${y + h}" ` +
+    f`stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -815,10 +816,10 @@ function renderDoubleCircle(
   const outerR = Math.min(w, h) / 2
   const innerR = outerR - 5 // 5px gap between rings
   return (
-    `<circle cx="${cx}" cy="${cy}" r="${outerR}" ` +
-    `fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
-    `\n<circle cx="${cx}" cy="${cy}" r="${innerR}" ` +
-    `fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<circle cx="${cx}" cy="${cy}" r="${outerR}" ` +
+    f`fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
+    f`\n<circle cx="${cx}" cy="${cy}" r="${innerR}" ` +
+    f`fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -834,15 +835,15 @@ function renderHexagon(
 ): string {
   const inset = h / 4 // horizontal inset for the angled sides
   const points = [
-    `${x + inset},${y}`, // top-left
-    `${x + w - inset},${y}`, // top-right
-    `${x + w},${y + h / 2}`, // mid-right
-    `${x + w - inset},${y + h}`, // bottom-right
-    `${x + inset},${y + h}`, // bottom-left
-    `${x},${y + h / 2}`, // mid-left
+    f`${x + inset},${y}`, // top-left
+    f`${x + w - inset},${y}`, // top-right
+    f`${x + w},${y + h / 2}`, // mid-right
+    f`${x + w - inset},${y + h}`, // bottom-right
+    f`${x + inset},${y + h}`, // bottom-left
+    f`${x},${y + h / 2}`, // mid-left
   ].join(' ')
 
-  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 // --- Batch 2 shapes ---
@@ -864,17 +865,17 @@ function renderCylinder(
 
   return (
     // Body rectangle (no top border — covered by top ellipse)
-    `<rect x="${x}" y="${bodyTop}" width="${w}" height="${bodyH}" ` +
-    `fill="${fill}" stroke="none" />` +
+    f`<rect x="${x}" y="${bodyTop}" width="${w}" height="${bodyH}" ` +
+    f`fill="${fill}" stroke="none" />` +
     // Left and right body borders
-    `\n<line x1="${x}" y1="${bodyTop}" x2="${x}" y2="${bodyTop + bodyH}" stroke="${stroke}" stroke-width="${sw}" />` +
-    `\n<line x1="${x + w}" y1="${bodyTop}" x2="${x + w}" y2="${bodyTop + bodyH}" stroke="${stroke}" stroke-width="${sw}" />` +
+    f`\n<line x1="${x}" y1="${bodyTop}" x2="${x}" y2="${bodyTop + bodyH}" stroke="${stroke}" stroke-width="${sw}" />` +
+    f`\n<line x1="${x + w}" y1="${bodyTop}" x2="${x + w}" y2="${bodyTop + bodyH}" stroke="${stroke}" stroke-width="${sw}" />` +
     // Bottom ellipse (half visible)
-    `\n<ellipse cx="${cx}" cy="${y + h - ry}" rx="${w / 2}" ry="${ry}" ` +
-    `fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
+    f`\n<ellipse cx="${cx}" cy="${y + h - ry}" rx="${w / 2}" ry="${ry}" ` +
+    f`fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />` +
     // Top ellipse (full, on top)
-    `\n<ellipse cx="${cx}" cy="${bodyTop}" rx="${w / 2}" ry="${ry}" ` +
-    `fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`\n<ellipse cx="${cx}" cy="${bodyTop}" rx="${w / 2}" ry="${ry}" ` +
+    f`fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -890,14 +891,14 @@ function renderAsymmetric(
 ): string {
   const indent = 12 // how far the point indents
   const points = [
-    `${x + indent},${y}`, // top-left (indented)
-    `${x + w},${y}`, // top-right
-    `${x + w},${y + h}`, // bottom-right
-    `${x + indent},${y + h}`, // bottom-left (indented)
-    `${x},${y + h / 2}`, // left point
+    f`${x + indent},${y}`, // top-left (indented)
+    f`${x + w},${y}`, // top-right
+    f`${x + w},${y + h}`, // bottom-right
+    f`${x + indent},${y + h}`, // bottom-left (indented)
+    f`${x},${y + h / 2}`, // left point
   ].join(' ')
 
-  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 /** Trapezoid [/text\]: wider bottom, narrower top */
@@ -912,13 +913,13 @@ function renderTrapezoid(
 ): string {
   const inset = w * 0.15 // top edge is narrower by this amount on each side
   const points = [
-    `${x + inset},${y}`, // top-left (indented)
-    `${x + w - inset},${y}`, // top-right (indented)
-    `${x + w},${y + h}`, // bottom-right (full width)
-    `${x},${y + h}`, // bottom-left (full width)
+    f`${x + inset},${y}`, // top-left (indented)
+    f`${x + w - inset},${y}`, // top-right (indented)
+    f`${x + w},${y + h}`, // bottom-right (full width)
+    f`${x},${y + h}`, // bottom-left (full width)
   ].join(' ')
 
-  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 /** Trapezoid-alt [\text/]: wider top, narrower bottom */
@@ -933,13 +934,13 @@ function renderTrapezoidAlt(
 ): string {
   const inset = w * 0.15 // bottom edge is narrower
   const points = [
-    `${x},${y}`, // top-left (full width)
-    `${x + w},${y}`, // top-right (full width)
-    `${x + w - inset},${y + h}`, // bottom-right (indented)
-    `${x + inset},${y + h}`, // bottom-left (indented)
+    f`${x},${y}`, // top-left (full width)
+    f`${x + w},${y}`, // top-right (full width)
+    f`${x + w - inset},${y + h}`, // bottom-right (indented)
+    f`${x + inset},${y + h}`, // bottom-left (indented)
   ].join(' ')
 
-  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 /**
@@ -960,13 +961,13 @@ function renderParallelogram(
 ): string {
   const inset = w * 0.15
   const points = [
-    `${x + inset},${y}`, // top-left (shifted right)
-    `${x + w},${y}`, // top-right
-    `${x + w - inset},${y + h}`, // bottom-right (shifted left)
-    `${x},${y + h}`, // bottom-left
+    f`${x + inset},${y}`, // top-left (shifted right)
+    f`${x + w},${y}`, // top-right
+    f`${x + w - inset},${y + h}`, // bottom-right (shifted left)
+    f`${x},${y + h}`, // bottom-left
   ].join(' ')
 
-  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 /** Parallelogram-alt [\text\]: leans left — the mirror of renderParallelogram. */
@@ -981,13 +982,13 @@ function renderParallelogramAlt(
 ): string {
   const inset = w * 0.15
   const points = [
-    `${x},${y}`, // top-left
-    `${x + w - inset},${y}`, // top-right (shifted left)
-    `${x + w},${y + h}`, // bottom-right
-    `${x + inset},${y + h}`, // bottom-left (shifted right)
+    f`${x},${y}`, // top-left
+    f`${x + w - inset},${y}`, // top-right (shifted left)
+    f`${x + w},${y + h}`, // bottom-right
+    f`${x + inset},${y + h}`, // bottom-left (shifted right)
   ].join(' ')
 
-  return `<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
+  return f`<polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" />`
 }
 
 // --- Expanded-syntax shapes (`A@{ shape: ... }`) ---
@@ -999,7 +1000,7 @@ function renderParallelogramAlt(
 
 /** Shared attribute string for a filled, stroked path. */
 function shapeAttrs(fill: string, stroke: string, sw: string): string {
-  return `fill="${fill}" stroke="${stroke}" stroke-width="${sw}"`
+  return f`fill="${fill}" stroke="${stroke}" stroke-width="${sw}"`
 }
 
 /**
@@ -1024,9 +1025,9 @@ function renderDocument(
   // height. Ending the curve anywhere else makes every document node
   // visibly lopsided.
   const d =
-    `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${base} ` +
-    `C ${x + w * 0.75} ${base + waveH * 1.8} ${x + w * 0.25} ${base - waveH * 0.8} ${x} ${base} Z`
-  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+    f`M ${x} ${y} L ${x + w} ${y} L ${x + w} ${base} ` +
+    f`C ${x + w * 0.75} ${base + waveH * 1.8} ${x + w * 0.25} ${base - waveH * 0.8} ${x} ${base} Z`
+  return f`<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /** Stacked document / process: offset copies behind the front shape. */
@@ -1048,15 +1049,15 @@ function renderStacked(
   // Two offset copies behind, back to front.
   for (let i = 2; i >= 1; i--) {
     parts.push(
-      `<rect x="${x + offset * i}" y="${y + offset * (2 - i)}" width="${frontW}" height="${frontH}" ` +
-        `${shapeAttrs(fill, stroke, sw)} />`,
+      f`<rect x="${x + offset * i}" y="${y + offset * (2 - i)}" width="${frontW}" height="${frontH}" ` +
+        f`${shapeAttrs(fill, stroke, sw)} />`,
     )
   }
 
   parts.push(
     isDocument
       ? renderDocument(x, y + offset * 2, frontW, frontH, fill, stroke, sw)
-      : `<rect x="${x}" y="${y + offset * 2}" width="${frontW}" height="${frontH}" ${shapeAttrs(fill, stroke, sw)} />`,
+      : f`<rect x="${x}" y="${y + offset * 2}" width="${frontW}" height="${frontH}" ${shapeAttrs(fill, stroke, sw)} />`,
   )
 
   return parts.join('\n')
@@ -1074,13 +1075,13 @@ function renderCard(
 ): string {
   const notch = Math.min(14, w * 0.12, h * 0.3)
   const points = [
-    `${x + notch},${y}`,
-    `${x + w},${y}`,
-    `${x + w},${y + h}`,
-    `${x},${y + h}`,
-    `${x},${y + notch}`,
+    f`${x + notch},${y}`,
+    f`${x + w},${y}`,
+    f`${x + w},${y + h}`,
+    f`${x},${y + h}`,
+    f`${x},${y + notch}`,
   ].join(' ')
-  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
+  return f`<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /** Lined process: rectangle with a vertical rule inset from the left edge. */
@@ -1095,8 +1096,8 @@ function renderLinedProcess(
 ): string {
   const inset = Math.min(12, w * 0.12)
   return (
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
-    `<line x1="${x + inset}" y1="${y}" x2="${x + inset}" y2="${y + h}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    f`<line x1="${x + inset}" y1="${y}" x2="${x + inset}" y2="${y + h}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -1112,8 +1113,8 @@ function renderDividedProcess(
 ): string {
   const split = y + Math.min(16, h * 0.3)
   return (
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
-    `<line x1="${x}" y1="${split}" x2="${x + w}" y2="${split}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    f`<line x1="${x}" y1="${split}" x2="${x + w}" y2="${split}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -1130,9 +1131,9 @@ function renderWindowPane(
   const vx = x + Math.min(16, w * 0.16)
   const hy = y + Math.min(14, h * 0.28)
   return (
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
-    `<line x1="${vx}" y1="${y}" x2="${vx}" y2="${y + h}" stroke="${stroke}" stroke-width="${sw}" />\n` +
-    `<line x1="${x}" y1="${hy}" x2="${x + w}" y2="${hy}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    f`<line x1="${vx}" y1="${y}" x2="${vx}" y2="${y + h}" stroke="${stroke}" stroke-width="${sw}" />\n` +
+    f`<line x1="${x}" y1="${hy}" x2="${x + w}" y2="${hy}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -1148,9 +1149,9 @@ function renderTriangle(
   flipped: boolean,
 ): string {
   const points = flipped
-    ? [`${x},${y}`, `${x + w},${y}`, `${x + w / 2},${y + h}`]
-    : [`${x + w / 2},${y}`, `${x + w},${y + h}`, `${x},${y + h}`]
-  return `<polygon points="${points.join(' ')}" ${shapeAttrs(fill, stroke, sw)} />`
+    ? [f`${x},${y}`, f`${x + w},${y}`, f`${x + w / 2},${y + h}`]
+    : [f`${x + w / 2},${y}`, f`${x + w},${y + h}`, f`${x},${y + h}`]
+  return f`<polygon points="${points.join(' ')}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /** Filled circle (junction): a solid dot, so it takes the stroke color as fill. */
@@ -1162,7 +1163,7 @@ function renderFilledCircle(
   stroke: string,
 ): string {
   const r = Math.min(w, h) / 2 - 2
-  return `<circle cx="${x + w / 2}" cy="${y + h / 2}" r="${r}" fill="${stroke}" stroke="${stroke}" />`
+  return f`<circle cx="${x + w / 2}" cy="${y + h / 2}" r="${r}" fill="${stroke}" stroke="${stroke}" />`
 }
 
 /** Crossed circle (summary): circle with an X through it. */
@@ -1181,9 +1182,9 @@ function renderCrossedCircle(
   // Cross arms meet the circumference at 45°, so offset by r/√2.
   const d = r / Math.SQRT2
   return (
-    `<circle cx="${cx}" cy="${cy}" r="${r}" ${shapeAttrs(fill, stroke, sw)} />\n` +
-    `<line x1="${cx - d}" y1="${cy - d}" x2="${cx + d}" y2="${cy + d}" stroke="${stroke}" stroke-width="${sw}" />\n` +
-    `<line x1="${cx + d}" y1="${cy - d}" x2="${cx - d}" y2="${cy + d}" stroke="${stroke}" stroke-width="${sw}" />`
+    f`<circle cx="${cx}" cy="${cy}" r="${r}" ${shapeAttrs(fill, stroke, sw)} />\n` +
+    f`<line x1="${cx - d}" y1="${cy - d}" x2="${cx + d}" y2="${cy + d}" stroke="${stroke}" stroke-width="${sw}" />\n` +
+    f`<line x1="${cx + d}" y1="${cy - d}" x2="${cx - d}" y2="${cy + d}" stroke="${stroke}" stroke-width="${sw}" />`
   )
 }
 
@@ -1196,7 +1197,7 @@ function renderForkJoin(
   stroke: string,
 ): string {
   const barH = Math.min(8, h)
-  return `<rect x="${x}" y="${y + (h - barH) / 2}" width="${w}" height="${barH}" fill="${stroke}" stroke="${stroke}" />`
+  return f`<rect x="${x}" y="${y + (h - barH) / 2}" width="${w}" height="${barH}" fill="${stroke}" stroke="${stroke}" />`
 }
 
 /** Notched pentagon (loop limit): both top corners clipped. */
@@ -1211,14 +1212,14 @@ function renderNotchedPentagon(
 ): string {
   const notch = Math.min(14, w * 0.12, h * 0.3)
   const points = [
-    `${x + notch},${y}`,
-    `${x + w - notch},${y}`,
-    `${x + w},${y + notch}`,
-    `${x + w},${y + h}`,
-    `${x},${y + h}`,
-    `${x},${y + notch}`,
+    f`${x + notch},${y}`,
+    f`${x + w - notch},${y}`,
+    f`${x + w},${y + notch}`,
+    f`${x + w},${y + h}`,
+    f`${x},${y + h}`,
+    f`${x},${y + notch}`,
   ].join(' ')
-  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
+  return f`<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /** Sloped rectangle (manual input): top edge slopes up to the right. */
@@ -1233,12 +1234,12 @@ function renderSlopedRectangle(
 ): string {
   const slope = Math.min(12, h * 0.3)
   const points = [
-    `${x},${y + slope}`,
-    `${x + w},${y}`,
-    `${x + w},${y + h}`,
-    `${x},${y + h}`,
+    f`${x},${y + slope}`,
+    f`${x + w},${y}`,
+    f`${x + w},${y + h}`,
+    f`${x},${y + h}`,
   ].join(' ')
-  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
+  return f`<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /** Flag / paper tape: wavy top and bottom edges. */
@@ -1253,11 +1254,11 @@ function renderFlag(
 ): string {
   const waveH = Math.min(8, h * 0.14)
   const d =
-    `M ${x} ${y + waveH} ` +
-    `C ${x + w * 0.25} ${y - waveH} ${x + w * 0.75} ${y + waveH * 2} ${x + w} ${y + waveH} ` +
-    `L ${x + w} ${y + h - waveH} ` +
-    `C ${x + w * 0.75} ${y + h + waveH} ${x + w * 0.25} ${y + h - waveH * 2} ${x} ${y + h - waveH} Z`
-  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+    f`M ${x} ${y + waveH} ` +
+    f`C ${x + w * 0.25} ${y - waveH} ${x + w * 0.75} ${y + waveH * 2} ${x + w} ${y + waveH} ` +
+    f`L ${x + w} ${y + h - waveH} ` +
+    f`C ${x + w * 0.75} ${y + h + waveH} ${x + w * 0.25} ${y + h - waveH * 2} ${x} ${y + h - waveH} Z`
+  return f`<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /** Bow-tie rectangle (stored data): left and right edges curve inward. */
@@ -1272,11 +1273,11 @@ function renderBowTie(
 ): string {
   const bow = Math.min(14, w * 0.12)
   const d =
-    `M ${x + bow} ${y} L ${x + w} ${y} ` +
-    `Q ${x + w - bow * 1.4} ${y + h / 2} ${x + w} ${y + h} ` +
-    `L ${x + bow} ${y + h} ` +
-    `Q ${x + bow * 1.4} ${y + h / 2} ${x + bow} ${y} Z`
-  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+    f`M ${x + bow} ${y} L ${x + w} ${y} ` +
+    f`Q ${x + w - bow * 1.4} ${y + h / 2} ${x + w} ${y + h} ` +
+    f`L ${x + bow} ${y + h} ` +
+    f`Q ${x + bow * 1.4} ${y + h / 2} ${x + bow} ${y} Z`
+  return f`<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /** Delay / half-rounded rectangle: the right end is a semicircle. */
@@ -1292,10 +1293,10 @@ function renderHalfRounded(
   const r = h / 2
   const straight = Math.max(0, w - r)
   const d =
-    `M ${x} ${y} L ${x + straight} ${y} ` +
-    `A ${r} ${r} 0 0 1 ${x + straight} ${y + h} ` +
-    `L ${x} ${y + h} Z`
-  return `<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
+    f`M ${x} ${y} L ${x + straight} ${y} ` +
+    f`A ${r} ${r} 0 0 1 ${x + straight} ${y + h} ` +
+    f`L ${x} ${y + h} Z`
+  return f`<path d="${d}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 /**
@@ -1320,28 +1321,28 @@ function renderBraces(
   // what a brace annotation means. The rect stays only to reserve the
   // label area; `_fill` is deliberately unused.
   const parts = [
-    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none" />`,
+    f`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="none" />`,
   ]
 
   const leftBrace =
-    `M ${x + armW} ${y} Q ${x} ${y} ${x} ${y + h * 0.25} ` +
-    `Q ${x} ${y + h / 2} ${x - armW * 0.4} ${y + h / 2} ` +
-    `Q ${x} ${y + h / 2} ${x} ${y + h * 0.75} ` +
-    `Q ${x} ${y + h} ${x + armW} ${y + h}`
+    f`M ${x + armW} ${y} Q ${x} ${y} ${x} ${y + h * 0.25} ` +
+    f`Q ${x} ${y + h / 2} ${x - armW * 0.4} ${y + h / 2} ` +
+    f`Q ${x} ${y + h / 2} ${x} ${y + h * 0.75} ` +
+    f`Q ${x} ${y + h} ${x + armW} ${y + h}`
   const rightBrace =
-    `M ${x + w - armW} ${y} Q ${x + w} ${y} ${x + w} ${y + h * 0.25} ` +
-    `Q ${x + w} ${y + h / 2} ${x + w + armW * 0.4} ${y + h / 2} ` +
-    `Q ${x + w} ${y + h / 2} ${x + w} ${y + h * 0.75} ` +
-    `Q ${x + w} ${y + h} ${x + w - armW} ${y + h}`
+    f`M ${x + w - armW} ${y} Q ${x + w} ${y} ${x + w} ${y + h * 0.25} ` +
+    f`Q ${x + w} ${y + h / 2} ${x + w + armW * 0.4} ${y + h / 2} ` +
+    f`Q ${x + w} ${y + h / 2} ${x + w} ${y + h * 0.75} ` +
+    f`Q ${x + w} ${y + h} ${x + w - armW} ${y + h}`
 
   if (side === 'left' || side === 'both') {
     parts.push(
-      `<path d="${leftBrace}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`,
+      f`<path d="${leftBrace}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`,
     )
   }
   if (side === 'right' || side === 'both') {
     parts.push(
-      `<path d="${rightBrace}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`,
+      f`<path d="${rightBrace}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`,
     )
   }
 
@@ -1359,15 +1360,15 @@ function renderBolt(
   sw: string,
 ): string {
   const points = [
-    `${x + w * 0.42},${y}`,
-    `${x + w},${y}`,
-    `${x + w * 0.62},${y + h * 0.42}`,
-    `${x + w},${y + h * 0.42}`,
-    `${x + w * 0.3},${y + h}`,
-    `${x + w * 0.5},${y + h * 0.55}`,
-    `${x},${y + h * 0.55}`,
+    f`${x + w * 0.42},${y}`,
+    f`${x + w},${y}`,
+    f`${x + w * 0.62},${y + h * 0.42}`,
+    f`${x + w},${y + h * 0.42}`,
+    f`${x + w * 0.3},${y + h}`,
+    f`${x + w * 0.5},${y + h * 0.55}`,
+    f`${x},${y + h * 0.55}`,
   ].join(' ')
-  return `<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
+  return f`<polygon points="${points}" ${shapeAttrs(fill, stroke, sw)} />`
 }
 
 // --- Batch 3: State diagram pseudostates ---
@@ -1377,7 +1378,7 @@ function renderStateStart(x: number, y: number, w: number, h: number): string {
   const cx = x + w / 2
   const cy = y + h / 2
   const r = Math.min(w, h) / 2 - 2
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--_text)" stroke="none" />`
+  return f`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--_text)" stroke="none" />`
 }
 
 /** State end: bullseye — outer ring + inner filled circle using primary text color */
@@ -1387,9 +1388,9 @@ function renderStateEnd(x: number, y: number, w: number, h: number): string {
   const outerR = Math.min(w, h) / 2 - 2
   const innerR = outerR - 4
   return (
-    `<circle cx="${cx}" cy="${cy}" r="${outerR}" ` +
-    `fill="none" stroke="var(--_text)" stroke-width="${STROKE_WIDTHS.innerBox * 2}" />` +
-    `\n<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="var(--_text)" stroke="none" />`
+    f`<circle cx="${cx}" cy="${cy}" r="${outerR}" ` +
+    f`fill="none" stroke="var(--_text)" stroke-width="${STROKE_WIDTHS.innerBox * 2}" />` +
+    f`\n<circle cx="${cx}" cy="${cy}" r="${innerR}" fill="var(--_text)" stroke="none" />`
   )
 }
 
@@ -1423,7 +1424,7 @@ function renderNodeLabel(
       getReadableTextColor(node.inlineStyle?.fill, 'var(--_text)'),
   )
 
-  let attrs = `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
+  let attrs = f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="${textColor}"`
 
   // Per-node font-family override (from `style A font-family:...` or
   // classDef/class). Emitted as an inline `style` attribute rather than a
@@ -1436,7 +1437,7 @@ function renderNodeLabel(
   // keeps falling back to the global font stack. See issue #57.
   const fontFamily = node.inlineStyle?.['font-family']
   if (fontFamily) {
-    attrs += ` style="font-family: ${escapeAttr(fontFamily)};"`
+    attrs += f` style="font-family: ${escapeAttr(fontFamily)};"`
   }
 
   return renderMultilineText(node.label, cx, cy, fontSizes.nodeLabel, attrs)
@@ -1480,6 +1481,6 @@ export function withDataSrc(
   if (source === undefined) return svgTag
   return svgTag.replace(
     '<svg ',
-    `<svg data-src="${escapeMultilineAttr(source)}" `,
+    f`<svg data-src="${escapeMultilineAttr(source)}" `,
   )
 }

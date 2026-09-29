@@ -13,6 +13,7 @@ import {
   escapeXml as escapeXmlUtil,
   escapeAttr,
   measureMultilineText,
+  f,
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import {
@@ -144,19 +145,19 @@ function renderEntityBox(
 
   // Semantic wrapper with entity metadata
   parts.push(
-    `<g class="entity" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}">`,
+    f`<g class="entity" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}">`,
   )
 
   // Outer rectangle
   parts.push(
-    `  <rect x="${x}" y="${y}" width="${width}" height="${height}" ` +
-      `rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${height}" ` +
+      f`rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
   // Header background
   parts.push(
-    `  <rect x="${x}" y="${y}" width="${width}" height="${headerHeight}" ` +
-      `rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${headerHeight}" ` +
+      f`rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
   // Entity name (supports multi-line via <br> tags)
@@ -167,15 +168,15 @@ function renderEntityBox(
         x + width / 2,
         y + headerHeight / 2,
         fontSizes.nodeLabel,
-        `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="var(--_text)"`,
+        f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="var(--_text)"`,
       ),
   )
 
   // Divider
   const attrTop = y + headerHeight
   parts.push(
-    `  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-      `stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
+      f`stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
   )
 
   // Attribute rows
@@ -190,8 +191,8 @@ function renderEntityBox(
   // Empty row placeholder when no attributes
   if (attributes.length === 0) {
     parts.push(
-      `  <text x="${x + width / 2}" y="${attrTop + rowHeight / 2}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        `font-size="${ER_FONT.attrSize}" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>`,
+      f`  <text x="${x + width / 2}" y="${attrTop + rowHeight / 2}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
+        f`font-size="${ER_FONT.attrSize}" fill="var(--_text-faint)" font-style="italic">(no attributes)</text>`,
     )
   }
 
@@ -220,7 +221,7 @@ function renderAttribute(
   if (attr.comment && attr.comment.length > 0) {
     // Replace <br> with newlines for tooltip display
     const tooltipText = attr.comment.replace(/<br\s*\/?>/gi, '\n')
-    parts.push(`<g><title>${escapeXml(tooltipText)}</title>`)
+    parts.push(f`<g><title>${escapeXml(tooltipText)}</title>`)
   }
 
   // Key badges on the left (keep proportional font — they're visual tags, not code)
@@ -230,29 +231,29 @@ function renderAttribute(
     keyWidth =
       estimateTextWidth(keyText, ER_FONT.keySize, ER_FONT.keyWeight) + 8
     parts.push(
-      `<rect x="${boxX + 6}" y="${y - 7}" width="${keyWidth}" height="14" rx="2" ry="2" ` +
+      f`<rect x="${boxX + 6}" y="${y - 7}" width="${keyWidth}" height="14" rx="2" ry="2" ` +
         `fill="var(--_key-badge)" />`,
     )
     parts.push(
-      `<text x="${boxX + 6 + keyWidth / 2}" y="${y}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        `font-size="${ER_FONT.keySize}" font-weight="${ER_FONT.keyWeight}" fill="var(--_text-sec)">${attr.keys.join(',')}</text>`,
+      f`<text x="${boxX + 6 + keyWidth / 2}" y="${y}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
+        f`font-size="${ER_FONT.keySize}" font-weight="${ER_FONT.keyWeight}" fill="var(--_text-sec)">${attr.keys.join(',')}</text>`,
     )
   }
 
   // Type (left-aligned after keys, monospace with syntax highlighting)
   const typeX = boxX + 8 + (keyWidth > 0 ? keyWidth + 6 : 0)
   parts.push(
-    `<text x="${typeX}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
-      `font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
-      `<tspan fill="var(--_text-muted)">${escapeXml(attr.type)}</tspan></text>`,
+    f`<text x="${typeX}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
+      f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
+      f`<tspan fill="var(--_text-muted)">${escapeXml(attr.type)}</tspan></text>`,
   )
 
   // Name (right-aligned, monospace with syntax highlighting)
   const nameX = boxX + boxWidth - 8
   parts.push(
-    `<text x="${nameX}" y="${y}" class="mono" text-anchor="end" dy="${TEXT_BASELINE_SHIFT}" ` +
-      `font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
-      `<tspan fill="var(--_text-sec)">${escapeXml(attr.name)}</tspan></text>`,
+    f`<text x="${nameX}" y="${y}" class="mono" text-anchor="end" dy="${TEXT_BASELINE_SHIFT}" ` +
+      f`font-size="${ER_FONT.attrSize}" font-weight="${ER_FONT.attrWeight}">` +
+      f`<tspan fill="var(--_text-sec)">${escapeXml(attr.name)}</tspan></text>`,
   )
 
   // Close the group if we opened one
@@ -273,23 +274,23 @@ function renderAttribute(
 function renderRelationshipLine(rel: PositionedErRelationship): string {
   if (rel.points.length < 2) return ''
 
-  const pathData = rel.points.map((p) => `${p.x},${p.y}`).join(' ')
+  const pathData = rel.points.map((p) => f`${p.x},${p.y}`).join(' ')
   const dashArray = !rel.identifying ? ' stroke-dasharray="6 4"' : ''
 
   // Semantic data attributes for relationship inspection
-  const labelAttr = rel.label ? ` data-label="${escapeAttr(rel.label)}"` : ''
+  const labelAttr = rel.label ? f` data-label="${escapeAttr(rel.label)}"` : ''
   const dataAttrs = [
     'class="er-relationship"',
-    `data-entity1="${escapeAttr(rel.entity1)}"`,
-    `data-entity2="${escapeAttr(rel.entity2)}"`,
-    `data-cardinality1="${rel.cardinality1}"`,
-    `data-cardinality2="${rel.cardinality2}"`,
-    `data-identifying="${rel.identifying}"`,
+    f`data-entity1="${escapeAttr(rel.entity1)}"`,
+    f`data-entity2="${escapeAttr(rel.entity2)}"`,
+    f`data-cardinality1="${rel.cardinality1}"`,
+    f`data-cardinality2="${rel.cardinality2}"`,
+    f`data-identifying="${rel.identifying}"`,
   ]
 
   return (
-    `<polyline ${dataAttrs.join(' ')}${labelAttr} points="${pathData}" fill="none" stroke="var(--_line)" ` +
-    `stroke-width="${STROKE_WIDTHS.connector}"${dashArray} />`
+    f`<polyline ${dataAttrs.join(' ')}${labelAttr} points="${pathData}" fill="none" stroke="var(--_line)" ` +
+    f`stroke-width="${STROKE_WIDTHS.connector}"${dashArray} />`
   )
 }
 
@@ -312,14 +313,14 @@ function renderRelationshipLabel(
   const bgH = metrics.height + 6
 
   return (
-    `<rect x="${mid.x - bgW / 2}" y="${mid.y - bgH / 2}" width="${bgW}" height="${bgH}" rx="2" ry="2" ` +
+    f`<rect x="${mid.x - bgW / 2}" y="${mid.y - bgH / 2}" width="${bgW}" height="${bgH}" rx="2" ry="2" ` +
     `fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />` +
-    `\n${renderMultilineText(
+    f`\n${renderMultilineText(
       rel.label,
       mid.x,
       mid.y,
       fontSizes.edgeLabel,
-      `text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      f`text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
     )}`
   )
 }
@@ -389,17 +390,17 @@ function renderCrowsFoot(
   if (hasOneLine) {
     const halfW = 6
     parts.push(
-      `<line x1="${tipX + px * halfW}" y1="${tipY + py * halfW}" ` +
-        `x2="${tipX - px * halfW}" y2="${tipY - py * halfW}" ` +
-        `stroke="var(--_line)" stroke-width="${sw}" />`,
+      f`<line x1="${tipX + px * halfW}" y1="${tipY + py * halfW}" ` +
+        f`x2="${tipX - px * halfW}" y2="${tipY - py * halfW}" ` +
+        f`stroke="var(--_line)" stroke-width="${sw}" />`,
     )
     // Second line slightly back for "exactly one" emphasis
     const line2X = tipX - ux * 4
     const line2Y = tipY - uy * 4
     parts.push(
-      `<line x1="${line2X + px * halfW}" y1="${line2Y + py * halfW}" ` +
-        `x2="${line2X - px * halfW}" y2="${line2Y - py * halfW}" ` +
-        `stroke="var(--_line)" stroke-width="${sw}" />`,
+      f`<line x1="${line2X + px * halfW}" y1="${line2Y + py * halfW}" ` +
+        f`x2="${line2X - px * halfW}" y2="${line2Y - py * halfW}" ` +
+        f`stroke="var(--_line)" stroke-width="${sw}" />`,
     )
   }
 
@@ -412,21 +413,21 @@ function renderCrowsFoot(
     // Three lines from tip to back, fanning out
     parts.push(
       // Top fan line
-      `<line x1="${cfTipX + px * fanW}" y1="${cfTipY + py * fanW}" ` +
-        `x2="${backX}" y2="${backY}" ` +
-        `stroke="var(--_line)" stroke-width="${sw}" />`,
+      f`<line x1="${cfTipX + px * fanW}" y1="${cfTipY + py * fanW}" ` +
+        f`x2="${backX}" y2="${backY}" ` +
+        f`stroke="var(--_line)" stroke-width="${sw}" />`,
     )
     parts.push(
       // Center line
-      `<line x1="${cfTipX}" y1="${cfTipY}" ` +
-        `x2="${backX}" y2="${backY}" ` +
-        `stroke="var(--_line)" stroke-width="${sw}" />`,
+      f`<line x1="${cfTipX}" y1="${cfTipY}" ` +
+        f`x2="${backX}" y2="${backY}" ` +
+        f`stroke="var(--_line)" stroke-width="${sw}" />`,
     )
     parts.push(
       // Bottom fan line
-      `<line x1="${cfTipX - px * fanW}" y1="${cfTipY - py * fanW}" ` +
-        `x2="${backX}" y2="${backY}" ` +
-        `stroke="var(--_line)" stroke-width="${sw}" />`,
+      f`<line x1="${cfTipX - px * fanW}" y1="${cfTipY - py * fanW}" ` +
+        f`x2="${backX}" y2="${backY}" ` +
+        f`stroke="var(--_line)" stroke-width="${sw}" />`,
     )
   }
 
@@ -436,8 +437,8 @@ function renderCrowsFoot(
     const circleX = point.x - ux * circleOffset
     const circleY = point.y - uy * circleOffset
     parts.push(
-      `<circle cx="${circleX}" cy="${circleY}" r="4" ` +
-        `fill="var(--bg)" stroke="var(--_line)" stroke-width="${sw}" />`,
+      f`<circle cx="${circleX}" cy="${circleY}" r="4" ` +
+        f`fill="var(--bg)" stroke="var(--_line)" stroke-width="${sw}" />`,
     )
   }
 
