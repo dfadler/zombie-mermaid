@@ -21,7 +21,9 @@ describe('renderSvgHandler', () => {
   it('renders a valid diagram to an SVG string', () => {
     const result = renderSvgHandler({ diagram: 'graph LR\n  A --> B' })
     expect(result.isError).toBeUndefined()
-    expect(result.content).toHaveLength(1)
+    // Block 0 is the unchanged message; a second block carries the line
+    // diagnostics (see mcp-parse-diagnostics.test.ts).
+    expect(result.content).toHaveLength(2)
     const [content] = result.content
     if (content?.type !== 'text') {
       throw new Error('Expected text content')
@@ -83,7 +85,9 @@ describe('renderSvgHandler', () => {
   it('returns an MCP tool error instead of throwing on invalid Mermaid syntax', () => {
     const result = renderSvgHandler({ diagram: 'this is not mermaid {{{' })
     expect(result.isError).toBe(true)
-    expect(result.content).toHaveLength(1)
+    // Block 0 is the unchanged message; a second block carries the line
+    // diagnostics (see mcp-parse-diagnostics.test.ts).
+    expect(result.content).toHaveLength(2)
     const [content] = result.content
     if (content?.type !== 'text') {
       throw new Error('Expected text content')
