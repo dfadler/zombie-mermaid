@@ -163,15 +163,36 @@ describe('C4 SVG layout (Mermaid grid)', () => {
     expect(third!.curve).toBeDefined()
   })
 
-  it('puts a relationship label at the middle of its chord', () => {
+  it('starts a relationship label at the middle of its chord', () => {
     const p = layout(`C4Context
   System(a, "A")
   System(b, "B")
   Rel(a, b, "label", "tech")`)
     const rel = p.relationships[0]!
     const [s, e] = rel.points
-    expect(rel.labelPosition!.x).toBeCloseTo((s!.x + e!.x) / 2, 5)
+    const midX = (s!.x + e!.x) / 2
+    // Mermaid gives its text routine the midpoint as the block's left edge, so
+    // the label is centred half its own width to the right of it.
+    expect(rel.labelPosition!.x).toBeGreaterThan(midX + 5)
+    expect(rel.labelPosition!.x).toBeLessThan(midX + 40)
     expect(rel.labelPosition!.y).toBeCloseTo((s!.y + e!.y) / 2, 5)
+    // The technology is centred on its own, at least as far along.
+    expect(rel.technologyX!).toBeGreaterThanOrEqual(rel.labelPosition!.x)
+  })
+
+  it('leaves a person along the drawn head and pill, not the box around them', () => {
+    const p = layout(`C4Context
+  Person(u, "Customer", "Buys things")
+  System(s, "Shop", "Online store")
+  Rel(u, s, "Orders from")`)
+    const u = el(p, 'u')
+    const start = p.relationships[0]!.points[0]!
+    const headCx = u.x + u.width / 2
+    const headCy = u.y + 49.68
+    // Mermaid's line leaves on the head circle (in its own drawing, at 295.7),
+    // well inside the box's right edge rather than in the air beside the head.
+    expect(start.x).toBeLessThan(u.x + u.width - 40)
+    expect(Math.hypot(start.x - headCx, start.y - headCy)).toBeCloseTo(49.68, 0)
   })
 
   it('routes a relationship that ends on a populated boundary to its frame', () => {

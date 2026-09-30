@@ -118,6 +118,8 @@ export interface PositionedC4Relationship extends C4Relationship {
   curve?: Point
   /** Centre of the label block, when the relationship has label text. */
   labelPosition?: Point
+  /** Centre x of the `[technology]` line, which Mermaid lays out on its own. */
+  technologyX?: number
 }
 
 export interface PositionedC4Diagram {

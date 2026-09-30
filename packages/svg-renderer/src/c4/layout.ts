@@ -17,6 +17,7 @@ import type { Point, RenderOptions } from '@zombie-mermaid/core'
 import {
   C4,
   C4_TEXT_WIDTH,
+  c4PersonGeometry,
   c4ShapeSize,
   c4TextWidth,
   wrapToWidth,
@@ -311,6 +312,58 @@ function rectIntersect(box: Placed, toward: Point): Point {
   return { x: cx + sx, y: cy + sy }
 }
 
+/**
+ * Where the line from a person's centre toward `toward` leaves the figure,
+ * which is a round head over a pill, not the box around both (Mermaid clips
+ * a relationship against what is drawn).
+ */
+function personIntersect(box: Placed, toward: Point): Point {
+  const g = c4PersonGeometry(box.width)
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  const headY = box.y + g.drop + g.headRadius
+  const pillTop = box.y + C4.personPillTop + g.drop
+  const pillBottom = box.y + box.height + g.drop
+  const inside = (x: number, y: number): boolean => {
+    if (Math.hypot(x - cx, y - headY) <= g.headRadius) return true
+    if (y < pillTop || y > pillBottom) return false
+    // Round the pill's ends: each is a circle of radius `rx` (clamped).
+    const r = Math.min(g.rx, (pillBottom - pillTop) / 2)
+    const left = box.x + r
+    const right = box.x + box.width - r
+    const nearY = Math.min(Math.max(y, pillTop + r), pillBottom - r)
+    const nearX = Math.min(Math.max(x, left), right)
+    return (
+      x >= box.x &&
+      x <= box.x + box.width &&
+      Math.hypot(x - nearX, y - nearY) <= r
+    )
+  }
+  const len = Math.hypot(toward.x - cx, toward.y - cy)
+  if (len === 0 || !inside(cx, cy)) return rectIntersect(box, toward)
+  const ux = (toward.x - cx) / len
+  const uy = (toward.y - cy) / len
+  const at = (t: number): boolean => inside(cx + ux * t, cy + uy * t)
+  let lo = 0
+  let hi = 0.5
+  while (at(hi) && hi < box.width + box.height) {
+    lo = hi
+    hi += 0.5
+  }
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2
+    if (at(mid)) lo = mid
+    else hi = mid
+  }
+  return { x: cx + ux * lo, y: cy + uy * lo }
+}
+
+function leave(box: Placed, toward: Point): Point {
+  return (box as Partial<MeasuredElement>).el?.kind === 'person'
+    ? personIntersect(box, toward)
+    : rectIntersect(box, toward)
+}
+
 const centre = (b: Placed): Point => ({
   x: b.x + b.width / 2,
   y: b.y + b.height / 2,
@@ -324,8 +377,8 @@ function routeRelationship(
 ): PositionedC4Relationship {
   const a = boxes.get(rel.from)!
   const b = boxes.get(rel.to)!
-  const start = rectIntersect(a, centre(b))
-  const end = rectIntersect(b, centre(a))
+  const start = leave(a, centre(b))
+  const end = leave(b, centre(a))
   const dx = end.x - start.x
   const dy = end.y - start.y
   const shifted = (p: Point): Point => ({ x: p.x, y: p.y + shift })
@@ -342,10 +395,23 @@ function routeRelationship(
     })
   }
   if (c4RelLabelLines(rel).length > 0) {
-    out.labelPosition = shifted({
+    const mid = {
       x: Math.min(start.x, end.x) + Math.abs(dx) / 2,
       y: Math.min(start.y, end.y) + Math.abs(dy) / 2,
-    })
+    }
+    // Mermaid hands its text routine the chord midpoint as the block's left
+    // edge and centres the text in the block's width, so a label starts at
+    // the midpoint and runs along the line rather than sitting on it.
+    const head = c4RelLabelLines(rel)[0]
+    const hasHead = rel.label !== '' || rel.index !== undefined
+    const labelWidth = hasHead
+      ? c4TextWidth(head ?? '', C4.messageSize, 400)
+      : 0
+    out.labelPosition = shifted({ x: mid.x + labelWidth / 2, y: mid.y })
+    if (rel.technology) {
+      const techWidth = c4TextWidth(`[${rel.technology}]`, C4.messageSize, 400)
+      out.technologyX = mid.x + Math.max(labelWidth, techWidth) / 2
+    }
   }
   return out
 }

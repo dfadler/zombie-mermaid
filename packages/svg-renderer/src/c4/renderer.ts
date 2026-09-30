@@ -349,7 +349,7 @@ function renderRelationshipLabel(rel: PositionedC4Relationship): string {
     parts.push(
       centred(
         line,
-        x,
+        isTech && rel.technologyX !== undefined ? rel.technologyX : x,
         cy,
         C4.messageSize,
         isTech
