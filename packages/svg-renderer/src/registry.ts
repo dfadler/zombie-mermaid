@@ -54,6 +54,8 @@ import {
   parseErDiagram,
   parseSequenceDiagram,
   parseClassDiagram,
+  parseArchitecture,
+  architectureToGraph,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -64,6 +66,7 @@ import type {
   PositionedSequenceDiagram,
   ClassDiagram,
   PositionedClassDiagram,
+  ArchitectureDiagram,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -324,6 +327,32 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
 }
 
 /**
+ * Architecture diagrams are lowered to the flowchart model
+ * (`architectureToGraph` in `@zombie-mermaid/mermaid-parser`) and ride the
+ * flowchart layout + renderer, so this module is `flowchartModule` with a
+ * different `parse`. The lowered graph carries no `%%{init}%%` config, so
+ * `curve` is `options.curve` or 'linear'.
+ */
+const architectureModule: DiagramModule<
+  ArchitectureDiagram,
+  PositionedFlowchart
+> = {
+  type: 'architecture',
+  parse: parseArchitecture,
+  layoutForSvg(diagram, options) {
+    const graph = withDirectionOverride(
+      architectureToGraph(diagram),
+      options.direction,
+    )
+    return {
+      graph: layoutGraphSync(graph, options),
+      curve: options.curve ?? 'linear',
+    }
+  },
+  renderSvg: flowchartModule.renderSvg,
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -348,4 +377,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   sequence: sequenceModule,
   class: classModule,
   flowchart: flowchartModule,
+  architecture: architectureModule,
 }

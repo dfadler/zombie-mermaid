@@ -678,6 +678,41 @@ The chart renderer follows a clean, minimal design philosophy, originally inspir
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
 
+## Architecture Diagrams
+
+`architecture-beta` (and the bare `architecture` header) follows
+[Mermaid's syntax](https://mermaid.ai/open-source/syntax/architecture.html):
+
+```mermaid
+architecture-beta
+  group api(cloud)[API]
+  service db(database)[Database] in api
+  service server(server)[Server] in api
+  service client(internet)[Client]
+  db:L -- R:server
+  server:T <--> B:client
+```
+
+Supported: `group`, `service` and `junction` (with `in <group>` nesting and
+optional `(icon)` / `[Title]`), edges with port sides and `--`, `-->`, `<--`,
+`<-->`, and the `{group}` modifier (the edge attaches to the service's
+enclosing group). A statement the parser does not understand is an error with
+its line number, not silently dropped.
+
+The diagram is lowered to the flowchart model and drawn by the flowchart
+layout, so it is not positioned on Mermaid's port grid:
+
+- Ports only choose the flow direction (left-to-right unless more edges use
+  top/bottom ports) and which way each edge points in the layout, so
+  `db:L -- R:server` still puts `server` left of `db`. Exact placement is the
+  flowchart layout's.
+- Icons are not drawn. `database` and `disk` give a cylinder, `cloud` a
+  stadium, `internet` a circle; any other icon (including custom `"pack:name"`
+  icons) gives a rectangle.
+- `align row` / `align column` are accepted and ignored.
+- ASCII draws a junction as an empty box and, like any flowchart, can mis-place
+  nodes when sibling groups are joined by cross-group edges.
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive

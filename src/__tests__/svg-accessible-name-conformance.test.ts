@@ -69,6 +69,8 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
   er: 'erDiagram\n  CUSTOMER ||--o{ ORDER : places',
   xychart:
     'xychart-beta\n  x-axis [jan, feb]\n  y-axis "Revenue" 0 --> 120\n  bar [50, 60]',
+  architecture:
+    'architecture-beta\n  service a[A]\n  service b[B]\n  a:R -- L:b',
 }
 
 /**

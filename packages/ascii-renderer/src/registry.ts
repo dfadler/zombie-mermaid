@@ -37,6 +37,7 @@ import { renderErAscii } from './er-diagram.ts'
 import { renderSequenceAscii } from './sequence.ts'
 import { renderClassAscii } from './class-diagram.ts'
 import { renderFlowchartAscii } from './flowchart.ts'
+import { renderArchitectureAscii } from './architecture.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -85,4 +86,6 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
     renderClassAscii(text, config, colorMode, theme, extras),
   flowchart: (text, config, colorMode, theme, extras) =>
     renderFlowchartAscii(text, config, colorMode, theme, extras),
+  architecture: (text, config, colorMode, theme, extras) =>
+    renderArchitectureAscii(text, config, colorMode, theme, extras),
 }
