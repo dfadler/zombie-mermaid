@@ -227,3 +227,85 @@ describe('C4 ASCII rendering', () => {
     expect(renderMermaidASCII(SRC)).toBe(renderMermaidASCII(SRC))
   })
 })
+
+describe('relationship labels stay readable', () => {
+  /** The rows between the box holding `upper` and the next box below it. */
+  function between(out: string, upper: string): string[] {
+    const lines = out.split('\n')
+    const top = lines.findIndex((l) => l.includes(upper))
+    const bottom = lines.findIndex((l, i) => i > top && /└─/.test(l))
+    const next = lines.findIndex((l, i) => i > bottom && /┌─/.test(l))
+    return lines.slice(bottom + 1, next)
+  }
+
+  const DYNAMIC = `C4Dynamic
+  Person(u, "User")
+  System(a, "App")
+  System(b, "Backend")
+  Rel(u, a, "Clicks")
+  Rel(a, b, "Requests")
+  Rel_Back(b, a, "Responds")
+  BiRel(u, b, "Streams")`
+
+  it('gives every label on a crowded gap its own room and leaves the routes whole', () => {
+    const out = renderMermaidASCII(DYNAMIC)
+    for (const word of [
+      '1:',
+      'Clicks',
+      '2:',
+      'Requests',
+      '3:',
+      'Responds',
+      '4:',
+      'Streams',
+    ]) {
+      expect(out, word).toContain(word)
+    }
+    // Two routes run side by side from App to Backend; a label drawn over
+    // either would break the pair on its row (arrowhead rows excepted).
+    const gap = between(out, 'App')
+    expect(gap.length).toBeGreaterThanOrEqual(6)
+    for (const row of gap.filter((l) => !/[▼▲]/.test(l))) {
+      expect(row, row).toContain('││')
+    }
+  })
+
+  it('wraps a long label beside its route instead of drawing it over the route', () => {
+    const out = renderMermaidASCII(`C4Container
+  Container(w, "Web", "React")
+  Container(a, "API", "Node")
+  Rel(w, a, "Calls the API with a long label", "JSON/HTTPS")`)
+    for (const word of [
+      'Calls',
+      'the',
+      'API',
+      'with',
+      'a',
+      'long',
+      'label',
+      '[JSON/HTTPS]',
+    ]) {
+      expect(out, word).toContain(word)
+    }
+    // The route is one unbroken vertical line between the boxes: its column
+    // (where the arrowhead lands) holds a line or the arrowhead on every row.
+    const gap = between(out, 'Web').filter((l) => l.trim() !== '')
+    const col = gap.map((l) => l.indexOf('▼')).find((c) => c >= 0)!
+    expect(col).toBeGreaterThanOrEqual(0)
+    for (const row of gap) expect('│▼').toContain(row[col] ?? ' ')
+  })
+
+  it('grows a gap with the labels that cross it', () => {
+    const rows = (labels: number): number => {
+      const rels = Array.from(
+        { length: labels },
+        (_, i) => `Rel(a, b, "label ${i}")`,
+      )
+      const out = renderMermaidASCII(
+        `C4Context\n  System(a, "A")\n  System(b, "B")\n  ${rels.join('\n  ')}`,
+      )
+      return between(out, 'A').length
+    }
+    expect(rows(4)).toBeGreaterThan(rows(1))
+  })
+})

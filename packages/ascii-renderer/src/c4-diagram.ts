@@ -65,6 +65,8 @@ interface BNode {
   kind: 'b'
   b: C4Boundary
   rows: Item[][]
+  /** Rows of free space after each row but the last (see `verticalGaps`). */
+  vgaps: number[]
   headerH: number
   order: number
   rank: number
@@ -238,6 +240,7 @@ export function renderC4Ascii(
         kind: 'b',
         b,
         rows: [],
+        vgaps: [],
         headerH,
         order: Number.MAX_SAFE_INTEGER,
         rank: ranks.get(b.alias) ?? 0,
@@ -255,6 +258,7 @@ export function renderC4Ascii(
       kind: 'b',
       b,
       rows: [],
+      vgaps: [],
       headerH,
       order: 0,
       rank: 0,
@@ -264,12 +268,13 @@ export function renderC4Ascii(
     // BT flips every level, not just the root, or a boundary's contents
     // would still flow downward inside an upward diagram.
     if (diagram.direction === 'BT') node.rows.reverse()
+    node.vgaps = verticalGaps(node.rows, diagram, vGap)
     bNodes.set(b.alias, node)
     const flat = node.rows.flat()
     node.order = Math.min(...flat.map((i) => i.order))
     node.rank = Math.min(...flat.map((i) => i.rank))
     // Sized below, once children are (children were sized on creation).
-    sizeBoundary(node, hGap, vGap)
+    sizeBoundary(node, hGap)
     return node
   }
   const topBoundaries = diagram.boundaries.map(buildBoundary)
@@ -281,12 +286,19 @@ export function renderC4Ascii(
   ]
   const rootRows = layoutRows(rootItems, diagram)
   if (diagram.direction === 'BT') rootRows.reverse()
+  const rootVGaps = verticalGaps(rootRows, diagram, vGap)
 
   // -- Place -------------------------------------------------------------
   const titleRows = diagram.title ? 2 : 0
-  const placeRows = (rows: Item[][], x0: number, y0: number, width: number) => {
+  const placeRows = (
+    rows: Item[][],
+    vgaps: number[],
+    x0: number,
+    y0: number,
+    width: number,
+  ) => {
     let y = y0
-    for (const row of rows) {
+    for (const [ri, row] of rows.entries()) {
       const gaps = rowGaps(row, diagram, hGap)
       const rowW = row.reduce((s, i) => s + i.box.w, 0) + sum(gaps)
       let x = x0 + Math.floor((width - rowW) / 2)
@@ -295,14 +307,20 @@ export function renderC4Ascii(
         placeItem(item, x, y + Math.floor((rowH - item.box.h) / 2))
         x += item.box.w + (gaps[k] ?? 0)
       })
-      y += rowH + vGap
+      y += rowH + (vgaps[ri] ?? 0)
     }
   }
   const placeItem = (item: Item, x: number, y: number) => {
     item.box.x = x
     item.box.y = y
     if (item.kind === 'b' && item.rows.length > 0) {
-      placeRows(item.rows, x + 2, y + item.headerH + 2, item.box.w - 4)
+      placeRows(
+        item.rows,
+        item.vgaps,
+        x + 2,
+        y + item.headerH + 2,
+        item.box.w - 4,
+      )
     }
   }
   const rootW = Math.max(
@@ -311,7 +329,7 @@ export function renderC4Ascii(
         r.reduce((s, i) => s + i.box.w, 0) + sum(rowGaps(r, diagram, hGap)),
     ),
   )
-  placeRows(rootRows, MARGIN, MARGIN + titleRows, rootW)
+  placeRows(rootRows, rootVGaps, MARGIN, MARGIN + titleRows, rootW)
 
   // -- Canvas ------------------------------------------------------------
   let maxX = 0
@@ -553,19 +571,22 @@ export function renderC4Ascii(
     const lines = c4RelLabelLines(rel)
     if (lines.length === 0) continue
     // A label wider than any free spot beside its route is wrapped narrower
-    // before giving up, so a relationship never loses its text.
+    // first; only when no wrapping fits beside the route does it sit on the
+    // line itself, which breaks that line (or a neighbour) for its width.
     const widest = Math.max(...lines.map(displayWidth))
     const attempts = [lines]
-    for (const w of [18, 12, 8]) {
+    for (const w of [18, 12, 8, 6]) {
       if (widest > w) {
         attempts.push(
           lines.flatMap((l, i) => (i === 0 ? wrapC4Text(l, w) : [l])),
         )
       }
     }
-    for (const attempt of attempts) {
-      if (placeLabel(attempt, path, isFree, canOverwrite, putText)) break
-    }
+    const place = (onLine: boolean) =>
+      attempts.some((a) =>
+        placeLabel(a, path, isFree, canOverwrite, putText, onLine),
+      )
+    if (!place(false)) place(true)
   }
 
   return canvasToString(canvas, { roleCanvas: roles, colorMode, theme })
@@ -645,14 +666,14 @@ function layoutRows(items: Item[], diagram: C4Diagram): Item[][] {
   return rows
 }
 
-function sizeBoundary(n: BNode, hGap: number, vGap: number): void {
+function sizeBoundary(n: BNode, hGap: number): void {
   let w = 0
   // Top border, header rows, then one free row for edges to enter through.
   let h = n.headerH + 2
-  for (const row of n.rows) {
-    const rw = sum(row.map((i) => i.box.w)) + (row.length - 1) * hGap
+  for (const [i, row] of n.rows.entries()) {
+    const rw = sum(row.map((it) => it.box.w)) + (row.length - 1) * hGap
     w = Math.max(w, rw)
-    h += Math.max(...row.map((i) => i.box.h)) + vGap
+    h += Math.max(...row.map((it) => it.box.h)) + (n.vgaps[i] ?? 0)
   }
   const label = Math.max(
     displayWidth(n.b.label),
@@ -660,7 +681,49 @@ function sizeBoundary(n: BNode, hGap: number, vGap: number): void {
   )
   n.box.w = Math.max(w, label) + 4
   // One free row below the last row, then the bottom border.
-  n.box.h = h - vGap + 2
+  n.box.h = h + 2
+}
+
+/** Every alias an item holds: an element's own, or a boundary's and its contents'. */
+function aliasesOf(item: Item, out = new Set<string>()): Set<string> {
+  if (item.kind === 'el') {
+    out.add(item.el.alias)
+  } else {
+    out.add(item.b.alias)
+    for (const r of item.rows) for (const it of r) aliasesOf(it, out)
+  }
+  return out
+}
+
+/**
+ * Rows of free space after each row (all but the last). At least `vGap`, and
+ * more when labelled relationships cross the gap, so each label gets a row of
+ * its own beside its route instead of being wrapped or stacked on another.
+ * A relationship is counted in every gap it crosses.
+ */
+function verticalGaps(
+  rows: Item[][],
+  diagram: C4Diagram,
+  vGap: number,
+): number[] {
+  const rowOf = new Map<string, number>()
+  rows.forEach((row, i) => {
+    for (const item of row) for (const a of aliasesOf(item)) rowOf.set(a, i)
+  })
+  const need: number[] = rows.map(() => 0)
+  for (const rel of diagram.relationships) {
+    const a = rowOf.get(rel.from)
+    const b = rowOf.get(rel.to)
+    if (a === undefined || b === undefined || a === b) continue
+    const lines = c4RelLabelLines(rel).length
+    if (lines === 0) continue
+    // One row per label line, plus a blank row to keep it off the next, in
+    // every gap the route crosses (its label may land in any of them).
+    for (let g = Math.min(a, b); g < Math.max(a, b); g++) {
+      need[g] = need[g]! + lines + 1
+    }
+  }
+  return rows.slice(0, -1).map((_, i) => Math.max(vGap, need[i]! + 1))
 }
 
 // ---------------------------------------------------------------------------
@@ -944,6 +1007,7 @@ function placeLabel(
   isFree: (x: number, y: number) => boolean,
   canOverwrite: (x: number, y: number) => boolean,
   putText: (x: number, y: number, s: string, role: CharRole) => void,
+  onLine: boolean,
 ): boolean {
   const widths = lines.map(displayWidth)
   const fits = (cand: [number, number][]) =>
@@ -957,7 +1021,9 @@ function placeLabel(
     Array.from({ length: len }, (_, i) => i).sort(
       (a, b) => Math.abs(a - len / 2) - Math.abs(b - len / 2),
     )
-  for (const seg of segments(path).sort((a, b) => b.len - a.len)) {
+  for (const seg of onLine
+    ? []
+    : segments(path).sort((a, b) => b.len - a.len)) {
     for (const t of byMid(seg.len)) {
       const candidates: [number, number][][] = []
       if (seg.horizontal) {
@@ -999,7 +1065,9 @@ function placeLabel(
         if (!canOverwrite(x + i, y)) return false
       return true
     })
-  for (const seg of segments(path).sort((a, b) => b.len - a.len)) {
+  for (const seg of onLine
+    ? segments(path).sort((a, b) => b.len - a.len)
+    : []) {
     for (const t of byMid(seg.len)) {
       const cand: [number, number][] = lines.map((_, k) =>
         seg.horizontal
