@@ -78,13 +78,22 @@ jobs:
       # needs one to record. `script` allocates a PTY around the whole run.
       - name: Compare real-PTY captures against goldens
         id: compare
-        run: script -qefc "scripts/ascii-pty-snapshot.sh --out-dir pty-snapshot-out" /dev/null
+        # The recording's terminal escape sequences are echoed by `script`
+        # itself, so its stdout is discarded and the script's own summary is
+        # written to a file and printed afterwards.
+        run: |
+          rc=0
+          script -qefc "scripts/ascii-pty-snapshot.sh --out-dir pty-snapshot-out >pty-snapshot-summary.txt 2>&1" /dev/null >/dev/null || rc=$?
+          cat pty-snapshot-summary.txt
+          exit "$rc"
 
       - name: Upload captures and diffs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ascii-pty-snapshot-out
-          path: pty-snapshot-out/
+          path: |
+            pty-snapshot-out/
+            pty-snapshot-summary.txt
           retention-days: 14
           if-no-files-found: ignore
