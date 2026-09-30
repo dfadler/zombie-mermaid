@@ -1,0 +1,17 @@
+# PROPOSAL (#1151 Option B prototype): curated real-PTY snapshot samples.
+# Format: <samples-data.ts index> :: <exact sample title> :: <why it is here>
+# __tests__/ascii-pty-snapshot-samples.test.ts fails if an index stops
+# matching its title (e.g. samples-data.ts was reordered).
+1 :: Simple Flow :: baseline flowchart, box drawing + arrows
+6 :: All Edge Styles :: edge glyph variety (dotted, thick, arrowheads)
+12 :: linkStyle: Color-Coded Edges :: ANSI color through a real TTY
+16 :: Subgraphs :: cluster borders and junctions
+21 :: CI/CD Pipeline :: large mixed-shape flowchart
+30 :: State: Composite States :: nested state boxes
+32 :: State: CJK State Names :: wide (double-cell) glyphs
+35 :: Sequence: Actor Stick Figures :: actor glyphs and lifelines
+37 :: Sequence: Activation Boxes :: overlapping box and line glyphs
+54 :: Class: Inheritance (<|--) :: class boxes and relation heads
+67 :: ER: Attribute Keys (PK, FK, UK) :: ER tables with key columns
+79 :: XY: Simple Bar Chart :: block/bar glyphs
+82 :: XY: Horizontal Bars :: horizontal bar glyphs
