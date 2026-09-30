@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, renderMermaidASCII } from '../index.ts'
 
-// Every `RenderOptions.direction` through the dedicated C4 renderers: the
-// layout flips with it, and so must the arrowheads, which are placed from the
-// route's end points rather than by SVG markers. A regression here (a head on
-// the wrong end after a flip, a label landing on another label or on a box)
-// only shows up in some orientations, so each check runs in all four.
+// `RenderOptions.direction` through the C4 renderers.
+//
+// SVG follows Mermaid's C4 renderer, which has no direction: shapes are placed
+// in rows in declaration order, so the option changes nothing. What must hold
+// in every direction is that each arrowhead sits on the right end of its
+// relationship (`Rel` at `to`, `Rel_Back` at `from`, `BiRel` at both).
+//
+// ASCII keeps its own layout: top to bottom, `BT` flips it, and `LR`/`RL`
+// render like `TB`.
 
 const DIRECTIONS = ['TB', 'BT', 'LR', 'RL'] as const
 type Dir = (typeof DIRECTIONS)[number]
@@ -22,142 +26,79 @@ const SOURCE = `C4Context
   Rel_Back(a, d, "Sends to")
   BiRel(b, d, "Syncs")`
 
-interface Rect {
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
 const svgOf = (dir: Dir): string => renderMermaidSVG(SOURCE, { direction: dir })
 
-/** Bounding box per element: a `<rect>`, or a cylinder's ellipses. */
-function elementBoxes(svg: string): Map<string, Rect> {
-  const out = new Map<string, Rect>()
-  const groups = svg.split('<g class="c4-element"').slice(1)
-  for (const g of groups) {
-    const id = /data-id="([^"]+)"/.exec(g)![1]!
-    const body = g.slice(0, g.indexOf('</g>'))
-    const rect =
-      /<rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)"/.exec(
-        body,
-      )
-    if (rect) {
-      out.set(id, { x: +rect[1]!, y: +rect[2]!, w: +rect[3]!, h: +rect[4]! })
-      continue
-    }
-    const ell =
-      /<ellipse cx="([\d.-]+)" cy="([\d.-]+)" rx="([\d.-]+)" ry="([\d.-]+)"/.exec(
-        body,
-      )
-    if (ell) {
-      const cx = +ell[1]!
-      const rx = +ell[3]!
-      const ry = +ell[4]!
-      const ys = [...body.matchAll(/ cy="([\d.-]+)"/g)].map((m) => +m[1]!)
-      const top = Math.min(...ys) - ry
-      const bottom = Math.max(...ys) + ry
-      out.set(id, { x: cx - rx, y: top, w: rx * 2, h: bottom - top })
-    }
-  }
-  return out
-}
-
-interface Route {
+interface Line {
   from: string
   to: string
-  points: [number, number][]
+  start: [number, number]
+  end: [number, number]
 }
 
-function routes(svg: string): Route[] {
+/** Each relationship's end points, read from its path (`M sx,sy L|Q ... ex,ey`). */
+function lines(svg: string): Line[] {
   return [
     ...svg.matchAll(
-      /<polyline class="c4-relationship" data-from="([^"]+)" data-to="([^"]+)"[^>]*?points="([^"]+)"/g,
+      /<path class="c4-relationship" data-from="([^"]+)" data-to="([^"]+)"[^>]* d="([^"]+)"/g,
     ),
-  ].map((m) => ({
-    from: m[1]!,
-    to: m[2]!,
-    points: m[3]!
-      .split(' ')
-      .map((p) => p.split(',').map(Number) as [number, number]),
-  }))
+  ].map((m) => {
+    const nums = m[3]!.match(/-?[\d.]+/g)!.map(Number)
+    return {
+      from: m[1]!,
+      to: m[2]!,
+      start: [nums[0]!, nums[1]!],
+      end: [nums[nums.length - 2]!, nums[nums.length - 1]!],
+    }
+  })
 }
 
-/** Arrowhead tips (the first vertex of each `var(--_arrow)` polygon). */
+/** Arrowhead tips: the first vertex of each arrowhead polygon. */
 function tips(svg: string): [number, number][] {
   return [
     ...svg.matchAll(
-      /<polygon points="([\d.-]+),([\d.-]+) [^"]*" fill="var\(--_arrow\)"/g,
+      /<polygon class="c4-arrowhead" points="(-?[\d.]+),(-?[\d.]+) /g,
     ),
-  ].map((m) => [+m[1]!, +m[2]!])
+  ].map((m) => [Number(m[1]), Number(m[2])])
 }
 
 const near = (p: [number, number], q: [number, number]): boolean =>
-  Math.hypot(p[0] - q[0], p[1] - q[1]) < 1
-
-const overlap = (a: Rect, b: Rect): boolean =>
-  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+  Math.abs(p[0] - q[0]) < 1 && Math.abs(p[1] - q[1]) < 1
 
 describe.each(DIRECTIONS)('C4 SVG, direction %s', (dir) => {
   const svg = svgOf(dir)
-  const byPair = (from: string, to: string): Route => {
-    const r = routes(svg).find((x) => x.from === from && x.to === to)
-    if (!r) throw new Error(`no route ${from} -> ${to}`)
-    return r
+  const line = (from: string, to: string): Line => {
+    const l = lines(svg).find((x) => x.from === from && x.to === to)
+    if (!l) throw new Error(`no relationship ${from} -> ${to}`)
+    return l
   }
-  const tipsNear = (p: [number, number]): number =>
+  const headsAt = (p: [number, number]): number =>
     tips(svg).filter((t) => near(t, p)).length
 
   it('puts the arrowhead at "to" for Rel', () => {
-    const r = byPair('a', 'b')
-    expect(tipsNear(r.points.at(-1)!)).toBe(1)
-    expect(tipsNear(r.points[0]!)).toBe(0)
+    const l = line('a', 'b')
+    expect(headsAt(l.end)).toBe(1)
+    expect(headsAt(l.start)).toBe(0)
   })
 
   it('puts the arrowhead at "from" for Rel_Back', () => {
-    const r = byPair('a', 'd')
-    expect(tipsNear(r.points[0]!)).toBe(1)
-    expect(tipsNear(r.points.at(-1)!)).toBe(0)
+    const l = line('a', 'd')
+    expect(headsAt(l.start)).toBe(1)
+    expect(headsAt(l.end)).toBe(0)
   })
 
   it('puts an arrowhead at both ends for BiRel', () => {
-    const r = byPair('b', 'd')
-    expect(tipsNear(r.points[0]!)).toBe(1)
-    expect(tipsNear(r.points.at(-1)!)).toBe(1)
+    const l = line('b', 'd')
+    expect(headsAt(l.start)).toBe(1)
+    expect(headsAt(l.end)).toBe(1)
   })
 
   it('draws one arrowhead per Rel and two for BiRel', () => {
     expect(tips(svg)).toHaveLength(1 + 1 + 1 + 2)
   })
 
-  it('lays the Rel chain out along the direction', () => {
-    const boxes = elementBoxes(svg)
-    const a = boxes.get('a')!
-    const b = boxes.get('b')!
-    const before = {
-      TB: a.y + a.h <= b.y,
-      BT: b.y + b.h <= a.y,
-      LR: a.x + a.w <= b.x,
-      RL: b.x + b.w <= a.x,
-    }
-    expect(before[dir]).toBe(true)
-  })
-
-  it('keeps relationship labels off each other and off the boxes', () => {
-    const labels = [
-      ...svg.matchAll(
-        /<g class="c4-relationship-label"[^>]*>\s*<rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)"/g,
-      ),
-    ].map((m) => ({ x: +m[1]!, y: +m[2]!, w: +m[3]!, h: +m[4]! }))
-    expect(labels).toHaveLength(4)
-    for (let i = 0; i < labels.length; i++) {
-      for (let j = i + 1; j < labels.length; j++) {
-        expect(overlap(labels[i]!, labels[j]!)).toBe(false)
-      }
-      for (const [id, box] of elementBoxes(svg)) {
-        expect(overlap(labels[i]!, box), `label ${i} over ${id}`).toBe(false)
-      }
-    }
+  it('is the same drawing in every direction', () => {
+    const strip = (s: string) => s.replace(/zm-title-\d+/g, 'zm-title')
+    expect(strip(svg)).toBe(strip(svgOf('TB')))
   })
 })
 
@@ -188,8 +129,8 @@ describe('C4 ASCII orientations', () => {
   })
 
   it('flips the contents of a boundary too in BT', () => {
-    const lines = ascii('BT').split('\n')
-    const at = (re: RegExp) => lines.findIndex((l) => re.test(l))
+    const rows = ascii('BT').split('\n')
+    const at = (re: RegExp) => rows.findIndex((l) => re.test(l))
     // B -> C flows upward, so C sits above B inside the frame.
     expect(at(/│ +C +│/)).toBeLessThan(at(/│ +B +│/))
   })

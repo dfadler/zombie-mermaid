@@ -3,7 +3,7 @@ import { splitStatements } from '@zombie-mermaid/core'
 import { parseC4Diagram } from '@zombie-mermaid/mermaid-parser'
 import type { PositionedC4Diagram } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../../../../src/index.ts'
-import { layoutC4DiagramSync, routeManualEdge } from '../c4/layout.ts'
+import { layoutC4DiagramSync } from '../c4/layout.ts'
 
 function layout(src: string, direction?: 'LR'): PositionedC4Diagram {
   const d = parseC4Diagram(splitStatements(src))
@@ -12,67 +12,98 @@ function layout(src: string, direction?: 'LR'): PositionedC4Diagram {
 
 const el = (p: PositionedC4Diagram, alias: string) =>
   p.elements.find((e) => e.alias === alias)!
-const centerY = (e: { y: number; height: number }) => e.y + e.height / 2
 const centerX = (e: { x: number; width: number }) => e.x + e.width / 2
 
-describe('C4 SVG layout', () => {
-  it('places Rel_D targets below and Rel_U targets above their source', () => {
-    const p = layout(`C4Context
+// The layout follows Mermaid's own C4 renderer: shapes go in rows in
+// declaration order, relationships are drawn afterwards and move nothing.
+describe('C4 SVG layout (Mermaid grid)', () => {
+  const SYSTEMS = (n: number) =>
+    `C4Context\n${Array.from({ length: n }, (_, i) => `  System(s${i}, "S${i}")`).join('\n')}`
+
+  it('fills a row left to right in declaration order, four to a row', () => {
+    const p = layout(SYSTEMS(5))
+    const xs = [0, 1, 2, 3, 4].map((i) => el(p, `s${i}`).x)
+    // Columns are one shape plus two margins apart: 216 + 100.
+    expect(xs[1]! - xs[0]!).toBeCloseTo(316, 0)
+    expect(xs[2]! - xs[1]!).toBeCloseTo(316, 0)
+    expect(xs[3]! - xs[2]!).toBeCloseTo(316, 0)
+    const ys = [0, 1, 2, 3].map((i) => el(p, `s${i}`).y)
+    expect(new Set(ys).size).toBe(1)
+    // The fifth wraps to the next row, back under the first.
+    expect(el(p, 's4').x).toBeCloseTo(xs[0]!, 0)
+    expect(el(p, 's4').y).toBeGreaterThan(ys[0]! + 60)
+  })
+
+  it('ignores Rel_U/D/L/R hints and the direction, as Mermaid does', () => {
+    const plain = `C4Context
   System(a, "A")
   System(b, "B")
   System(c, "C")
-  Rel_D(a, b, "down")
-  Rel_U(a, c, "up")`)
-    expect(centerY(el(p, 'b'))).toBeGreaterThan(centerY(el(p, 'a')))
-    expect(centerY(el(p, 'c'))).toBeLessThan(centerY(el(p, 'a')))
+  Rel(a, b, "x")
+  Rel(a, c, "y")`
+    const hinted = plain
+      .replace('Rel(a, b', 'Rel_D(a, b')
+      .replace('Rel(a, c', 'Rel_U(a, c')
+    const pos = (p: PositionedC4Diagram) =>
+      p.elements.map((e) => [e.alias, e.x, e.y])
+    expect(pos(layout(hinted))).toEqual(pos(layout(plain)))
+    expect(pos(layout(plain, 'LR'))).toEqual(pos(layout(plain)))
   })
 
-  it('puts Rel_R / Rel_L pairs side by side in the same row, in hint order', () => {
-    const right = layout(`C4Context
-  Person(p, "P")
-  System(a, "A")
-  System(b, "B")
-  Rel(p, a, "x")
-  Rel_R(a, b, "right")`)
-    expect(centerY(el(right, 'a'))).toBeCloseTo(centerY(el(right, 'b')), 0)
-    expect(centerX(el(right, 'a'))).toBeLessThan(centerX(el(right, 'b')))
-
-    const left = layout(`C4Context
-  Person(p, "P")
-  System(a, "A")
-  System(b, "B")
-  Rel(p, a, "x")
-  Rel_L(a, b, "left")`)
-    expect(centerY(el(left, 'a'))).toBeCloseTo(centerY(el(left, 'b')), 0)
-    expect(centerX(el(left, 'b'))).toBeLessThan(centerX(el(left, 'a')))
-  })
-
-  it('leaves room for a side-by-side hint label between the two boxes', () => {
+  it('widens a shape whose text is wider than the standard width', () => {
     const p = layout(`C4Context
-  System(a, "A")
-  System(b, "B")
-  Rel_R(a, b, "a fairly long relationship label")`)
-    const a = el(p, 'a')
-    const b = el(p, 'b')
-    expect(b.x - (a.x + a.width)).toBeGreaterThan(150)
-    const [start, end] = p.relationships[0]!.points
-    expect(start!.x).toBeCloseTo(a.x + a.width, 0)
-    expect(end!.x).toBeCloseTo(b.x, 0)
+  Person(a, "Personal Banking Customer", "A customer of the bank")
+  System(b, "B")`)
+    expect(el(p, 'a').width).toBeGreaterThan(216)
+    expect(el(p, 'b').width).toBe(216)
+    // The next shape moves right by the same amount.
+    expect(el(p, 'b').x - (el(p, 'a').x + el(p, 'a').width)).toBeCloseTo(100, 0)
   })
 
-  it('swaps the meaning of the axes when laid out left to right', () => {
-    const p = layout(
-      `C4Context
-  System(a, "A")
-  System(b, "B")
-  Rel_R(a, b, "r")`,
-      'LR',
+  it('wraps a long name to the text width and grows the box by a line', () => {
+    const one = layout('C4Context\nSystem(a, "Banking Banking Banking")')
+    const two = layout(
+      'C4Context\nSystem(a, "Banking Banking Banking Banking")',
     )
-    // Along the flow axis: a hint is a layering constraint, so no manual route.
-    expect(centerX(el(p, 'b'))).toBeGreaterThan(centerX(el(p, 'a')))
+    expect(el(one, 'a').nameLines).toHaveLength(1)
+    expect(el(two, 'a').nameLines).toHaveLength(2)
+    expect(el(two, 'a').height - el(one, 'a').height).toBeCloseTo(15.35, 1)
   })
 
-  it('keeps nested elements inside their boundaries', () => {
+  it('gives shapes the heights Mermaid does', () => {
+    const p = layout(`C4Container
+  System(plain, "Plain")
+  System(desc, "Described", "One line")
+  ContainerDb(db, "DB", "PG", "Rows")
+  ContainerQueue(q, "Q", "Kafka")`)
+    expect(el(p, 'plain').height).toBeCloseTo(71.07, 0)
+    expect(el(p, 'desc').height).toBeCloseTo(88.2, 0)
+    expect(el(p, 'db').height).toBeCloseTo(115.8, 0)
+    expect(el(p, 'q').height).toBeCloseTo(41.07, 0)
+  })
+
+  it('reproduces the size and frame of a real Mermaid render', () => {
+    // The context sample, measured on Mermaid 11.17.2.
+    const p = layout(`C4Context
+  title System Context for Internet Banking
+  Person(customer, "Personal Banking Customer", "A customer of the bank")
+  Enterprise_Boundary(b0, "Bank") {
+    System(banking, "Internet Banking System", "Lets customers view accounts")
+    SystemDb(ledger, "Ledger", "Stores transactions")
+  }
+  System_Ext(mail, "E-mail System", "Sends e-mails")
+  Rel(customer, banking, "Uses", "HTTPS")`)
+    expect(p.width).toBeCloseTo(932, -1)
+    expect(p.height).toBeCloseTo(888.4, -1)
+    const frame = p.boundaries[0]!
+    expect(frame.x).toBeCloseTo(150, 0)
+    expect(frame.width).toBeCloseTo(632, 0)
+    expect(frame.height).toBeCloseTo(265.8, 0)
+    expect(centerX(el(p, 'banking'))).toBeCloseTo(308, 0)
+    expect(centerX(el(p, 'ledger'))).toBeCloseTo(624, 0)
+  })
+
+  it('puts two boundaries on a row and keeps nested elements inside', () => {
     const p = layout(`C4Container
   Boundary(outer, "Outer", "System") {
     Boundary(inner, "Inner") {
@@ -80,9 +111,16 @@ describe('C4 SVG layout', () => {
     }
     Container(b, "B", "Go")
   }
+  Boundary(other, "Other") {
+    Container(c, "C", "Go")
+  }
+  Boundary(third, "Third") {
+    Container(d, "D", "Go")
+  }
   Rel(a, b, "x")`)
-    const outer = p.boundaries.find((b) => b.alias === 'outer')!
-    const inner = p.boundaries.find((b) => b.alias === 'inner')!
+    const by = (alias: string) => p.boundaries.find((b) => b.alias === alias)!
+    const outer = by('outer')
+    const inner = by('inner')
     expect(outer.depth).toBe(0)
     expect(inner.depth).toBe(1)
     // Outer boundaries are listed first so inner ones paint on top.
@@ -101,9 +139,42 @@ describe('C4 SVG layout', () => {
     expect(inside(inner, el(p, 'a'))).toBe(true)
     expect(inside(outer, el(p, 'b'))).toBe(true)
     expect(inside(inner, el(p, 'b'))).toBe(false)
+    // Mermaid lays boundaries out two to a row: the third starts a new row.
+    expect(by('other').y).toBeCloseTo(outer.y, 0)
+    expect(by('other').x).toBeGreaterThan(outer.x + outer.width)
+    expect(by('third').y).toBeGreaterThan(outer.y + outer.height)
   })
 
-  it('routes a relationship that ends on a populated boundary', () => {
+  it('draws the first relationship straight and later ones as curves', () => {
+    const p = layout(`C4Context
+  System(a, "A")
+  System(b, "B")
+  System(c, "C")
+  Rel(a, b, "first")
+  Rel(a, c, "second")
+  Rel(b, c, "third")`)
+    const [first, second, third] = p.relationships
+    expect(first!.curve).toBeUndefined()
+    const [s, e] = second!.points
+    expect(second!.curve).toEqual({
+      x: s!.x + (e!.x - s!.x) / 4,
+      y: s!.y + (e!.y - s!.y) / 2,
+    })
+    expect(third!.curve).toBeDefined()
+  })
+
+  it('puts a relationship label at the middle of its chord', () => {
+    const p = layout(`C4Context
+  System(a, "A")
+  System(b, "B")
+  Rel(a, b, "label", "tech")`)
+    const rel = p.relationships[0]!
+    const [s, e] = rel.points
+    expect(rel.labelPosition!.x).toBeCloseTo((s!.x + e!.x) / 2, 5)
+    expect(rel.labelPosition!.y).toBeCloseTo((s!.y + e!.y) / 2, 5)
+  })
+
+  it('routes a relationship that ends on a populated boundary to its frame', () => {
     const p = layout(`C4Context
   System(o, "O")
   Boundary(b, "B") {
@@ -113,64 +184,20 @@ describe('C4 SVG layout', () => {
     const rel = p.relationships[0]!
     const b = p.boundaries[0]!
     const end = rel.points[rel.points.length - 1]!
-    expect(rel.points.length).toBeGreaterThanOrEqual(2)
-    expect(end.y).toBeCloseTo(b.y, 0)
+    const onFrame =
+      Math.abs(end.x - b.x) < 1 ||
+      Math.abs(end.x - (b.x + b.width)) < 1 ||
+      Math.abs(end.y - b.y) < 1 ||
+      Math.abs(end.y - (b.y + b.height)) < 1
+    expect(onFrame).toBe(true)
   })
 
-  it('shifts everything below a title', () => {
+  it('shifts everything below a title, as Mermaid does', () => {
     const plain = layout('C4Context\nSystem(a, "A")')
     const titled = layout('C4Context\ntitle T\nSystem(a, "A")')
-    expect(el(titled, 'a').y).toBeGreaterThan(el(plain, 'a').y)
+    expect(el(titled, 'a').y - el(plain, 'a').y).toBeCloseTo(60, 0)
     expect(titled.titlePosition).toBeDefined()
-    expect(titled.height).toBeGreaterThan(plain.height)
-  })
-
-  it('places every relationship label inside the canvas', () => {
-    const p = layout(`C4Context
-  System(a, "A")
-  System(b, "B")
-  Rel(a, b, "label", "tech")`)
-    const rel = p.relationships[0]!
-    expect(rel.labelPosition).toBeDefined()
-    expect(rel.labelPosition!.x).toBeLessThanOrEqual(p.width)
-    expect(rel.labelPosition!.y).toBeLessThanOrEqual(p.height)
-  })
-})
-
-describe('routeManualEdge', () => {
-  const box = (x: number, y: number) => ({ x, y, width: 100, height: 50 })
-  it('runs straight between side-by-side boxes', () => {
-    expect(routeManualEdge(box(0, 0), box(200, 10))).toEqual([
-      { x: 100, y: 30 },
-      { x: 200, y: 30 },
-    ])
-    expect(routeManualEdge(box(200, 10), box(0, 0))).toEqual([
-      { x: 200, y: 30 },
-      { x: 100, y: 30 },
-    ])
-  })
-  it('runs straight between stacked boxes', () => {
-    expect(routeManualEdge(box(0, 0), box(10, 200))).toEqual([
-      { x: 55, y: 50 },
-      { x: 55, y: 200 },
-    ])
-    expect(routeManualEdge(box(10, 200), box(0, 0))).toEqual([
-      { x: 55, y: 200 },
-      { x: 55, y: 50 },
-    ])
-  })
-  it('bends between diagonal boxes', () => {
-    const wide = routeManualEdge(box(0, 0), box(400, 100))
-    expect(wide).toHaveLength(4)
-    expect(wide[0]!.x).toBe(100)
-    expect(wide[3]!.x).toBe(400)
-    const tall = routeManualEdge(box(0, 0), box(150, 400))
-    expect(tall).toHaveLength(4)
-    expect(tall[0]!.y).toBe(50)
-    expect(tall[3]!.y).toBe(400)
-    // Mirrored: target up-left of source.
-    expect(routeManualEdge(box(400, 100), box(0, 0))[0]!.x).toBe(400)
-    expect(routeManualEdge(box(150, 400), box(0, 0))[0]!.y).toBe(400)
+    expect(titled.height - plain.height).toBeCloseTo(60, 0)
   })
 })
 
@@ -189,12 +216,13 @@ describe('C4 SVG rendering', () => {
   BiRel(web, q, "Publishes")
   Rel(web, db, "Reads")`
 
-  it('draws a person glyph (head + shoulders) only for persons', () => {
+  it('draws a person as a pill with a round head, only for persons', () => {
     const svg = renderMermaidSVG(SRC)
-    expect(svg.match(/class="c4-person-glyph"/g)).toHaveLength(2)
-    expect(svg).toContain('<circle')
+    // One circle per person (the user and the external partner).
+    expect(svg.match(/<circle/g)).toHaveLength(2)
+    expect(svg).not.toContain('c4-person-glyph')
     expect(renderMermaidSVG('C4Context\nSystem(s, "S")')).not.toContain(
-      'c4-person-glyph',
+      '<circle',
     )
   })
 
@@ -218,7 +246,7 @@ describe('C4 SVG rendering', () => {
     expect(+path[2]!).toBeLessThan(cx - rx)
   })
 
-  it('uses the C4 palette by kind, lighter for external elements', () => {
+  it('uses Mermaid’s palette by kind, lighter for external elements', () => {
     const svg = renderMermaidSVG(SRC)
     expect(svg).toContain('#08427b') // person
     expect(svg).toContain('#686868') // external person
@@ -244,6 +272,21 @@ describe('C4 SVG rendering', () => {
     )
     expect(svg.match(/<polygon/g)).toHaveLength(1)
     expect(bi.match(/<polygon/g)).toHaveLength(2)
+  })
+
+  it('draws the first relationship as a line and the rest as quadratic curves', () => {
+    const svg = renderMermaidSVG(`C4Context
+  System(a, "A")
+  System(b, "B")
+  System(c, "C")
+  Rel(a, b, "one")
+  Rel(a, c, "two")`)
+    const ds = [
+      ...svg.matchAll(/<path class="c4-relationship"[^>]* d="([^"]+)"/g),
+    ]
+    expect(ds).toHaveLength(2)
+    expect(ds[0]![1]).toMatch(/^M [\d.-]+,[\d.-]+ L /)
+    expect(ds[1]![1]).toMatch(/^M [\d.-]+,[\d.-]+ Q /)
   })
 
   it('escapes user text', () => {

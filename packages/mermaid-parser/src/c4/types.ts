@@ -103,10 +103,19 @@ export interface PositionedC4Boundary {
   height: number
   /** Nesting depth, 0 for a top-level boundary. */
   depth: number
+  /** Centre line of the title, below the frame's top edge (Mermaid's layout). */
+  labelY?: number
+  /** Centre line of the `[type]` text, below the frame's top edge. */
+  typeY?: number
+  /** Centre line of the description (deployment nodes), below the top edge. */
+  descrY?: number
 }
 
 export interface PositionedC4Relationship extends C4Relationship {
+  /** The start and end of the line (a straight chord when `curve` is unset). */
   points: Point[]
+  /** Control point of a quadratic curve from the first to the last point. */
+  curve?: Point
   /** Centre of the label block, when the relationship has label text. */
   labelPosition?: Point
 }

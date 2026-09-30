@@ -331,13 +331,10 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
 const c4Module: DiagramModule<C4Diagram, PositionedC4Diagram> = {
   type: 'c4',
   parse: parseC4Diagram,
-  // `options.direction` sets the diagram's top-level direction (C4 sources
-  // have no direction statement of their own) before layout.
+  // Mermaid's C4 renderer has no direction: shapes are placed in rows in
+  // declaration order, so `options.direction` does not apply to the SVG.
   layoutForSvg(diagram, options) {
-    return layoutC4DiagramSync(
-      withDirectionOverride(diagram, options.direction),
-      options,
-    )
+    return layoutC4DiagramSync(diagram, options)
   },
   renderSvg(positioned, ctx) {
     return renderC4Svg(

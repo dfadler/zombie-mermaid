@@ -141,11 +141,11 @@ describe('upstream #71: relationships', () => {
   const two = 'System(a, "A")\n  System(b, "B")'
 
   // The dedicated renderer draws arrowheads as polygons rather than SVG
-  // markers, so these assert the polyline plus one polygon head per end.
-  it('renders relationship arrows as a polyline with an arrowhead', () => {
+  // markers, so these assert the line plus one polygon head per end.
+  it('renders relationship arrows as a line with an arrowhead', () => {
     const svg = svgOf(`C4Context\n  ${two}\n  Rel(a, b, "Uses")`)
-    expect(svg).toContain('<polyline')
-    expect(svg.match(/<polygon [^>]*fill="var\(--_arrow\)"/g)).toHaveLength(1)
+    expect(svg).toContain('<path class="c4-relationship"')
+    expect(svg.match(/<polygon class="c4-arrowhead"/g)).toHaveLength(1)
   })
 
   it('renders relationship technology in brackets', () => {
@@ -156,16 +156,20 @@ describe('upstream #71: relationships', () => {
 
   it('draws arrowheads at both ends for BiRel', () => {
     const svg = svgOf(`C4Context\n  ${two}\n  BiRel(a, b, "Sync")`)
-    expect(svg.match(/<polygon [^>]*fill="var\(--_arrow\)"/g)).toHaveLength(2)
+    expect(svg.match(/<polygon class="c4-arrowhead"/g)).toHaveLength(2)
   })
 
-  // Known gap: the hint is honoured for layering, but this asserts the old
-  // lowering design's `class="edge"` markup, so it stays skipped.
-  it.skip('honours Rel_U by placing the target above the source', () => {
-    const svg = svgOf(`C4Context\n  ${two}\n  Rel_U(a, b, "Notifies")`)
-    const pts = /class="edge"[^>]*points="([^"]+)"/.exec(svg)![1]!
-    const ys = pts.split(' ').map((p) => Number(p.split(',')[1]))
-    expect(ys[ys.length - 1]!).toBeLessThan(ys[0]!)
+  // Mermaid accepts Rel_U/D/L/R but places shapes by declaration order only,
+  // so a hint must not move anything.
+  it('leaves placement alone for Rel_U, as Mermaid does', () => {
+    const plain = svgOf(`C4Context\n  ${two}\n  Rel(a, b, "Notifies")`)
+    const hinted = svgOf(`C4Context\n  ${two}\n  Rel_U(a, b, "Notifies")`)
+    const boxes = (svg: string) =>
+      [...svg.matchAll(/<rect x="([\d.-]+)" y="([\d.-]+)"/g)].map((m) => [
+        m[1],
+        m[2],
+      ])
+    expect(boxes(hinted)).toEqual(boxes(plain))
   })
 })
 
