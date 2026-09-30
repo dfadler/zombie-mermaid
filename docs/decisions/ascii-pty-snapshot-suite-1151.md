@@ -38,7 +38,7 @@ Implemented as a prototype in this PR; every file is removable in one commit.
   (flowchart, edge styles, subgraphs, state, CJK wide glyphs, sequence, class,
   ER, XY), each with a one-line reason. Not the ~90 catalog.
 - **Goldens.** `__tests__/ascii-pty-snapshots/<index>-<slug>.{txt,png}`, 26
-  files, 204 KB total. The `.txt` (terminal text as recorded through the PTY)
+  files, 232 KB total. The `.txt` (terminal text as recorded through the PTY)
   is compared exactly; the `.png` is compared with a small pixel tolerance.
   Keeping both separates the failure classes: `.txt` differs means the
   renderer's output changed, `.png`-only differs means rasterization, font or
