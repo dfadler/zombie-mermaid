@@ -33,9 +33,9 @@ import { mountAndMeasure } from './helpers/ascii-measure.ts'
 /**
  * Minimum blank gap between a line's ink and adjacent text ink, in CSS px.
  * Measured over the 212 connector/text pairs in the samples: `main`'s original
- * CSS (6.72x8.74px cell, line-height 1.3) had a median gap of 2.4px and a worst
- * of 0.75px for text without a descender; the 15px-row regression this guards
- * against had a median of 0.1px and overlapped by up to 0.75px.
+ * CSS (6.72x14.56px cell, line-height 1.3) had a median gap of 2.4px and a
+ * worst of 0.75px for text without a descender; the 15px-row regression this
+ * guards against had a median of 0.1px and overlapped by up to 0.75px.
  */
 const MIN_GAP_CSS_PX = 1
 /**
