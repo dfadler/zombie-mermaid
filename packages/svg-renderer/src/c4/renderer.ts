@@ -274,8 +274,11 @@ function renderRelationshipLine(rel: PositionedC4Relationship): string {
   const line =
     f`<polyline ${attrs.join(' ')} points="${pts.map((p) => f`${p.x},${p.y}`).join(' ')}" fill="none" ` +
     f`stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector + 0.25}" stroke-linejoin="round" />`
-  const heads = [arrowHead(pts[pts.length - 1]!, pts[pts.length - 2]!)]
-  if (rel.bidirectional) heads.push(arrowHead(pts[0]!, pts[1]!))
+  const endHead = arrowHead(pts[pts.length - 1]!, pts[pts.length - 2]!)
+  const startHead = arrowHead(pts[0]!, pts[1]!)
+  const heads = rel.bidirectional
+    ? [endHead, startHead]
+    : [rel.reversed ? startHead : endHead]
   return [line, ...heads].filter(Boolean).join('\n')
 }
 

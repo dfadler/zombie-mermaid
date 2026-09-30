@@ -137,7 +137,13 @@ describe('parseC4Diagram', () => {
         bidirectional: false,
       },
       { from: 'a', to: 'b', label: 'Syncs', bidirectional: true },
-      { from: 'b', to: 'a', label: 'Replies', bidirectional: false },
+      {
+        from: 'b',
+        to: 'a',
+        label: 'Replies',
+        bidirectional: false,
+        reversed: true,
+      },
       { from: 'a', to: 'b', label: 'First', bidirectional: false, index: '1' },
     ])
   })

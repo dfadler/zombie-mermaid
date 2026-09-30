@@ -272,9 +272,13 @@ describe('upstream #71: relationships', () => {
     expect(d.relationships[0]).toMatchObject({ direction: 'D' })
   })
 
-  it('parses Rel_Back without reversing the declared endpoints', () => {
+  it('parses Rel_Back keeping the declared endpoints, flagged reversed', () => {
     const d = parse(`C4Context\n  ${two}\n  Rel_Back(a, b, "Returns")`)
-    expect(d.relationships[0]).toMatchObject({ from: 'a', to: 'b' })
+    expect(d.relationships[0]).toMatchObject({
+      from: 'a',
+      to: 'b',
+      reversed: true,
+    })
   })
 
   it('parses BiRel as one bidirectional relationship', () => {

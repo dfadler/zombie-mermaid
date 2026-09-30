@@ -491,12 +491,14 @@ export function renderC4Ascii(
     routed.push({ rel, path })
     stamp(path, masks)
     const last = path[path.length - 1]!
-    arrows.set(
-      `${last[0]},${last[1]}`,
-      arrowChar(towardBox(last, b.box), useAscii),
-    )
-    if (rel.bidirectional) {
-      const first = path[0]!
+    const first = path[0]!
+    if (!rel.reversed || rel.bidirectional) {
+      arrows.set(
+        `${last[0]},${last[1]}`,
+        arrowChar(towardBox(last, b.box), useAscii),
+      )
+    }
+    if (rel.bidirectional || rel.reversed) {
       arrows.set(
         `${first[0]},${first[1]}`,
         arrowChar(towardBox(first, a.box), useAscii),

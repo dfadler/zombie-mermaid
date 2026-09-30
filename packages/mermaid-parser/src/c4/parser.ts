@@ -225,6 +225,7 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
         bidirectional: name === 'BiRel',
       }
       if (a[3]) r.technology = a[3]
+      if (name === 'Rel_Back') r.reversed = true
       if (indexed && args[0]) r.index = args[0]
       const hint = REL_HINTS[name]
       if (hint) r.layout = hint

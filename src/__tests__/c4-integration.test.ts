@@ -139,3 +139,29 @@ describe('C4 ASCII rendering', () => {
     )
   })
 })
+
+describe('Rel_Back arrow direction', () => {
+  const src = `C4Context
+  System(a, "A")
+  System(b, "B")
+  Rel_Back(a, b, "Returns")`
+
+  it('puts the SVG arrowhead at the declared "from" end', () => {
+    const svg = renderMermaidSVG(src)
+    const line = /<polyline class="c4-relationship"[^>]*points="([^"]+)"/.exec(
+      svg,
+    )![1]!
+    const [sx, sy] = line.split(' ')[0]!.split(',').map(Number) as [
+      number,
+      number,
+    ]
+    const tip = /<polygon points="([\d.]+),([\d.]+) /.exec(svg)!
+    expect(Math.hypot(Number(tip[1]) - sx, Number(tip[2]) - sy)).toBeLessThan(1)
+  })
+
+  it('draws exactly one ASCII arrowhead, pointing up at "from"', () => {
+    const out = renderMermaidASCII(src)
+    expect(out).toContain('▲')
+    expect(out).not.toContain('▼')
+  })
+})
