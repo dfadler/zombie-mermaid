@@ -33,8 +33,8 @@ interface Probe {
 // would read as a gap at the clip edge.
 test.use({ viewport: { width: 3000, height: 1200 } })
 
-// 8 CSS px cells are a whole number of device pixels at these scale factors
-// (a 1.1 or 1.75 display would not be, and no CSS can fix that).
+// 9 CSS px cells are a whole number of device pixels at these scale factors
+// (a 1.25, 1.5 or 1.1 display would not be, and no CSS can fix that).
 const DEVICE_SCALE_FACTORS = [1, 2]
 
 for (const dpr of DEVICE_SCALE_FACTORS) {

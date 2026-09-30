@@ -1366,21 +1366,24 @@ body.search-active .category-tabbar {
 }
 .ascii-output {
   padding: 1rem;
-  /* Integer-pixel terminal cell. JetBrains Mono's advance is 0.6em and
-   * Chromium snaps font sizes to 0.01px, so 13.33px gives 7.998px and 13.34px
-   * gives 8.004px, never exactly 8. Adjacent glyphs then land on fractional
-   * pixels, and box-drawing/block characters show hairline seams a real terminal
-   * (integer-pixel cells) does not. The 0.002px of letter-spacing closes the
-   * gap to exactly 8px. */
-  font-size: 13.33px;
-  letter-spacing: 0.002px;
-  /* 17px is the only integer row height that satisfies both probes at this
-   * font size: ascii-seams.visual.test.ts fails at 18px (vertical box lines and
-   * full blocks stop joining) and ascii-legibility.visual.test.ts fails at
-   * 16px and below. JetBrains Mono's box glyphs are ~1.32em (~17.6px here)
-   * tall, so a shorter row makes them overshoot into neighbouring rows: at
-   * 15px a connector ended flush against the label text it passes ("Wes|t"). */
-  line-height: 17px;
+  /* A 9px terminal cell: an exact, ODD number of pixels. JetBrains Mono's
+   * advance is 0.6em, so 15px gives exactly 9px with no letter-spacing
+   * correction (unlike a 7px or 8px cell, where Chromium's 0.01px font-size
+   * steps cannot hit the width exactly). Exact matters because a fractional pitch
+   * puts glyph edges mid-pixel and box/block characters show hairline seams a
+   * terminal does not. Odd matters because a vertical stroke is centred in its
+   * cell: at 9px (or 7px) the centre falls in the middle of a pixel column, so the
+   * stroke is one crisp column, while at 8px (or 10px) it falls on a pixel
+   * boundary and is split across two, which reads as a blurry, beaded line.
+   * Measured on the stroke: 9px gives 54/220/54 across the three columns, 8px
+   * gives 146/146. */
+  font-size: 15px;
+  /* 19px is the only integer row height that satisfies both probes at this font
+   * size: ascii-legibility.visual.test.ts fails at 18px (a connector ends flush
+   * against the label text it passes, "Wes|t") and ascii-seams.visual.test.ts
+   * fails at 20px and above (vertical box lines and full blocks stop joining).
+   * JetBrains Mono's box glyphs are ~1.32em (~19.8px here) tall. */
+  line-height: 19px;
   overflow: auto; /* fallback for a context with no .ascii-active override (e.g. print styles);
      the ASCII view is the .output-panel.ascii-active case above in practice, which renders
      at natural height with no scrollbar instead */
