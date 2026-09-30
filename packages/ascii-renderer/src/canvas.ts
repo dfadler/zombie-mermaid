@@ -642,6 +642,11 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Unicode junctions (T-pieces flip vertically)
   '┬': '┴',
   '┴': '┬',
+  // Rounded corners (rounded rectangle, cylinder caps)
+  '╭': '╰',
+  '╰': '╭',
+  '╮': '╯',
+  '╯': '╮',
   // Box-start junctions (exit points from node boxes)
   '╵': '╷',
   '╷': '╵',
@@ -652,24 +657,104 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
  * Reverses row order within each column and remaps directional characters
  * (arrows, corners, junctions) so they point the correct way after flip.
  *
+ * Cells `roleCanvas` marks as `'text'` (node/edge labels) are never remapped:
+ * a label containing `v` or `^` is prose, not an arrowhead. Call
+ * `mirrorTextBlocksVertically` first so multi-line labels keep reading order.
+ *
  * Used to transform a TD-rendered canvas into BT output.
- * Mutates the canvas in place and returns it.
+ * Mutates the canvas in place and returns it. `roleCanvas` must still be
+ * unflipped when this runs.
  */
-export function flipCanvasVertically(canvas: Canvas): Canvas {
-  // Reverse each column array (Y-axis flip in column-major layout)
-  for (const col of canvas) {
-    col.reverse()
-  }
-
+export function flipCanvasVertically(
+  canvas: Canvas,
+  roleCanvas?: RoleCanvas,
+): Canvas {
   // Remap directional characters that change meaning after vertical flip
-  for (const col of canvas) {
+  for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
+      if (roleCanvas?.[x]?.[y] === 'text') continue
       const flipped = VERTICAL_FLIP_MAP[ch]
       if (flipped) col[y] = flipped
     }
   }
 
+  // Reverse each column array (Y-axis flip in column-major layout)
+  for (const col of canvas) {
+    col.reverse()
+  }
+
   return canvas
+}
+
+/**
+ * Pre-compensate multi-line labels for a following vertical flip: reverse the
+ * row order of each block of `'text'` cells within its own bounding box, so
+ * that after `flipCanvasVertically` its lines read top-to-bottom again while
+ * the block itself still lands at the mirrored position.
+ *
+ * A block is an 8-connected group of text cells; the lines of one label are
+ * vertically adjacent and centered, so they connect. `linkCanvas` is permuted
+ * identically to `canvas`. Mutates in place; call before the flips, while
+ * every canvas is still unflipped.
+ */
+export function mirrorTextBlocksVertically(
+  canvas: Canvas,
+  roleCanvas: RoleCanvas,
+  linkCanvas?: (string | null)[][],
+): void {
+  // Collect every block before moving any: a moved cell can land on a
+  // position the scan hasn't reached yet and would be found a second time.
+  const blocks: { cells: [number, number][]; ySum: number }[] = []
+  const seen = new Set<string>()
+  for (const [x0, col] of roleCanvas.entries()) {
+    for (const [y0, role] of col.entries()) {
+      if (role !== 'text' || seen.has(`${x0},${y0}`)) continue
+
+      // Flood-fill this block.
+      const cells: [number, number][] = []
+      const stack: [number, number][] = [[x0, y0]]
+      seen.add(`${x0},${y0}`)
+      let minY = y0
+      let maxY = y0
+      while (stack.length > 0) {
+        const [cx, cy] = stack.pop()!
+        cells.push([cx, cy])
+        minY = Math.min(minY, cy)
+        maxY = Math.max(maxY, cy)
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const nx = cx + dx
+            const ny = cy + dy
+            const key = `${nx},${ny}`
+            if (seen.has(key) || roleCanvas[nx]?.[ny] !== 'text') continue
+            seen.add(key)
+            stack.push([nx, ny])
+          }
+        }
+      }
+      if (minY !== maxY) blocks.push({ cells, ySum: minY + maxY })
+    }
+  }
+
+  // Move every cell to its row-mirrored position within its block.
+  for (const { cells, ySum } of blocks) {
+    moveCells(canvas, cells, ySum, ' ')
+    moveCells(roleCanvas, cells, ySum, null)
+    if (linkCanvas) moveCells(linkCanvas, cells, ySum, null)
+  }
+}
+
+function moveCells<T>(
+  layer: T[][],
+  cells: [number, number][],
+  ySum: number,
+  empty: T,
+): void {
+  const saved = cells.map(([cx, cy]) => layer[cx]![cy]!)
+  for (const [cx, cy] of cells) layer[cx]![cy] = empty
+  for (const [i, [cx, cy]] of cells.entries()) {
+    layer[cx]![ySum - cy] = saved[i]!
+  }
 }
 
 /**
