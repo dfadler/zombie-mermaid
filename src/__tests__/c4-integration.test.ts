@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, renderMermaidASCII } from '../index.ts'
 
 // End-to-end coverage for C4 diagrams through both front doors (the
-// dedicated C4 renderers, not the flowchart pipeline). Prior art:
-// lukilabs/beautiful-mermaid#34 / #71 (fixtures are re-written, not copied).
+// dedicated C4 renderers, not the flowchart pipeline). The fixtures ported
+// from lukilabs/beautiful-mermaid#71 live in c4-upstream-integration.test.ts.
 
 const CONTEXT = `C4Context
   title System Context for Internet Banking
