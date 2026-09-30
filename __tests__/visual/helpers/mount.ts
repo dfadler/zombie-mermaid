@@ -22,8 +22,8 @@ const PANEL_MAX_WIDTH = '960px'
 
 /**
  * The ASCII panel's own cap. A terminal panel is `columns x cell width` wide
- * (8px per column now that `.ascii-output` uses an exact 8px cell), so the
- * widest sample ("All 12 Flowchart Shapes", 210 columns) needs 1680px;
+ * (7px per column now that `.ascii-output` uses an exact 7px cell), so the
+ * widest sample ("All 12 Flowchart Shapes", 210 columns) needs 1470px;
  * ascii-seams.visual.test.ts fails if any sample outgrows this cap. Capping it at the
  * SVG panels' 960px silently clipped the right side of "XY: Numeric X-Axis"
  * and "All 12 Flowchart Shapes" in their baselines (`.ascii-output` scrolls
