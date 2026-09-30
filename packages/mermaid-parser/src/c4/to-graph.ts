@@ -39,19 +39,21 @@ function wrap(text: string, width: number): string[] {
   return out
 }
 
+/**
+ * The type line Mermaid draws under an element's name: external, database and
+ * queue variants share their base kind's line.
+ */
 function kindLabel(el: C4Element): string {
-  const ext = el.external ? 'External ' : ''
-  const suffix =
-    el.shape === 'db' ? ' Database' : el.shape === 'queue' ? ' Queue' : ''
+  const tech = el.technology ? `: ${el.technology}` : ''
   switch (el.kind) {
     case 'person':
-      return `${ext}Person`
+      return 'Person'
     case 'system':
-      return `${ext}System${suffix}`
+      return 'Software System'
     case 'container':
-      return `${ext}Container${suffix}${el.technology ? `: ${el.technology}` : ''}`
+      return `Container${tech}`
     case 'component':
-      return `${ext}Component${suffix}${el.technology ? `: ${el.technology}` : ''}`
+      return `Component${tech}`
   }
 }
 

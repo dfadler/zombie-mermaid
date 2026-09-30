@@ -135,11 +135,60 @@ describe('parseC4Diagram', () => {
         label: 'Calls',
         technology: 'HTTPS',
         bidirectional: false,
+        index: '1',
       },
-      { from: 'a', to: 'b', label: 'Syncs', bidirectional: true },
-      { from: 'b', to: 'a', label: 'Replies', bidirectional: false },
-      { from: 'a', to: 'b', label: 'First', bidirectional: false, index: '1' },
+      { from: 'a', to: 'b', label: 'Syncs', bidirectional: true, index: '2' },
+      {
+        from: 'b',
+        to: 'a',
+        label: 'Replies',
+        bidirectional: false,
+        index: '3',
+      },
+      { from: 'a', to: 'b', label: 'First', bidirectional: false, index: '4' },
     ])
+  })
+
+  it('numbers relationships by position in C4Dynamic only, ignoring the RelIndex argument (as Mermaid does)', () => {
+    const src = (head: string) => `${head}
+  System(a, "A")
+  System(b, "B")
+  RelIndex(9, a, b, "First")
+  Rel(b, a, "Second")`
+    const dyn = parse(src('C4Dynamic')).relationships.map((r) => r.index)
+    expect(dyn).toEqual(['1', '2'])
+    const ctx = parse(src('C4Context')).relationships.map((r) => r.index)
+    expect(ctx).toEqual([undefined, undefined])
+  })
+
+  it("gives every boundary Mermaid's type text", () => {
+    const d = parse(`C4Deployment
+  Enterprise_Boundary(e, "E") {
+    System_Boundary(s, "S") {
+      Container_Boundary(c, "C") {
+        Boundary(g, "G")
+        Boundary(t, "T", "region")
+        Node(n, "N")
+        Deployment_Node(m, "M", "Ubuntu")
+      }
+    }
+  }`)
+    const types = new Map<string, string | undefined>()
+    const walk = (bs: typeof d.boundaries): void =>
+      bs.forEach((b) => {
+        types.set(b.alias, b.type)
+        walk(b.children)
+      })
+    walk(d.boundaries)
+    expect(Object.fromEntries(types)).toEqual({
+      e: 'ENTERPRISE',
+      s: 'SYSTEM',
+      c: 'CONTAINER',
+      g: 'system',
+      t: 'region',
+      n: 'node',
+      m: 'Ubuntu',
+    })
   })
 
   it('silently ignores style and layout macros', () => {
@@ -198,9 +247,9 @@ describe('c4ToGraph', () => {
     expect(g.nodes.get('p')!.label).toBe('User\n[Person]')
     expect(g.nodes.get('db')).toMatchObject({ shape: 'cylinder' })
     expect(g.nodes.get('db')!.label).toBe(
-      'DB\n[Container Database: Postgres]\n\nStores rows',
+      'DB\n[Container: Postgres]\n\nStores rows',
     )
-    expect(g.nodes.get('x')!.label).toContain('[External Container: Go]')
+    expect(g.nodes.get('x')!.label).toContain('[Container: Go]')
     expect(g.classAssignments.get('p')).toBe('c4Person')
     expect(g.classAssignments.get('db')).toBe('c4Element')
     expect(g.classAssignments.get('x')).toBe('c4External')
@@ -231,7 +280,7 @@ describe('c4ToGraph', () => {
   BiRel(b, a, "Sync")`),
     )
     expect(g.subgraphs).toEqual([
-      { id: 'sb', label: 'Sys', nodeIds: ['a', 'b'], children: [] },
+      { id: 'sb', label: 'Sys\n[SYSTEM]', nodeIds: ['a', 'b'], children: [] },
     ])
     expect(g.edges[0]).toMatchObject({
       source: 'a',

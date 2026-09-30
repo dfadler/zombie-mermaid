@@ -46,6 +46,11 @@ const ELEMENT_NAME = /^(Person|System|Container|Component)(Db|Queue)?(_Ext)?$/
 const BOUNDARY_NAME =
   /^(?:Boundary|Enterprise_Boundary|System_Boundary|Container_Boundary)$/
 const NODE_NAME = /^(?:Deployment_Node|Node|Node_L|Node_R)$/
+const BOUNDARY_TYPES: Record<string, string> = {
+  Enterprise_Boundary: 'ENTERPRISE',
+  System_Boundary: 'SYSTEM',
+  Container_Boundary: 'CONTAINER',
+}
 const REL_NAME =
   /^(Rel|BiRel|Rel_U|Rel_Up|Rel_D|Rel_Down|Rel_L|Rel_Left|Rel_R|Rel_Right|Rel_Back|RelIndex)$/
 
@@ -186,9 +191,14 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
         elementAliases: [],
         children: [],
       }
-      // Only deployment nodes and the generic `Boundary` take a type arg;
-      // System_/Container_/Enterprise_Boundary have (alias, label) only.
-      if (args[2] && (isNode || name === 'Boundary')) boundary.type = args[2]
+      // Mermaid labels every frame with a type: the macro's own for the
+      // typed boundaries, else the explicit argument, else a default.
+      // (System_/Container_/Enterprise_Boundary take no type arg.)
+      const typed = BOUNDARY_TYPES[name]
+      if (typed) boundary.type = typed
+      else if (args[2] && (isNode || name === 'Boundary'))
+        boundary.type = args[2]
+      else boundary.type = isNode ? 'node' : 'system'
       if (isNode && args[3]) boundary.description = args[3]
       const parent = stack.at(-1)
       if (parent) parent.children.push(boundary)
@@ -212,7 +222,6 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
         bidirectional: name === 'BiRel',
       }
       if (a[3]) r.technology = a[3]
-      if (indexed && args[0]) r.index = args[0]
       diagram.relationships.push(r)
       continue
     }
@@ -224,6 +233,13 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
     throw new Error(
       `C4 diagram: boundary "${stack.at(-1)!.alias}" is missing its closing "}"`,
     )
+  }
+  // Mermaid ignores RelIndex's index argument: in C4Dynamic every relationship
+  // is numbered by its position in the source, and no other variant numbers.
+  if (diagram.variant === 'dynamic') {
+    diagram.relationships.forEach((r, i) => {
+      r.index = String(i + 1)
+    })
   }
   for (const r of diagram.relationships) {
     for (const end of [r.from, r.to]) {

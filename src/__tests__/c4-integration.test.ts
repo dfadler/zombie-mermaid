@@ -60,8 +60,8 @@ describe('C4 SVG rendering', () => {
     for (const text of [
       'Web App',
       '[Container: React]',
-      '[Container Database: PostgreSQL]',
-      '[External System]',
+      '[Container: PostgreSQL]',
+      '[Software System]',
       'Shop',
       'Calls [JSON/HTTPS]',
     ]) {

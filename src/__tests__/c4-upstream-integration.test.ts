@@ -76,7 +76,7 @@ describe('upstream #71: element types', () => {
       'C4Container\n  ContainerDb(db, "Database", "PostgreSQL")',
     )
     expect(svg).toContain('Database')
-    expect(svg).toContain('[Container Database: PostgreSQL]')
+    expect(svg).toContain('[Container: PostgreSQL]')
     expect(svg).toContain('<ellipse')
   })
 
@@ -91,7 +91,7 @@ describe('upstream #71: element types', () => {
   it('renders external elements with the muted external fill', () => {
     const svg = svgOf('C4Context\n  System_Ext(ext, "External System")')
     expect(svg).toContain('External System')
-    expect(svg).toContain('[External System]')
+    expect(svg).toContain('[Software System]')
     expect(svg).toContain('#999999')
   })
 })
