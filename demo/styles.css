@@ -1366,8 +1366,15 @@ body.search-active .category-tabbar {
 }
 .ascii-output {
   padding: 1rem;
-  font-size: 0.7rem;
-  line-height: 1.3;
+  /* Integer-pixel terminal cell. JetBrains Mono's advance is 0.6em and
+   * Chromium snaps font sizes to 0.01px, so 13.33px gives 7.998px and 13.34px
+   * gives 8.004px, never exactly 8. Adjacent glyphs then land on fractional
+   * pixels, and box-drawing/block characters show hairline seams a real terminal
+   * (integer-pixel cells) does not. The 0.002px of letter-spacing closes the
+   * gap to exactly 8px. */
+  font-size: 13.33px;
+  letter-spacing: 0.002px;
+  line-height: 15px;
   overflow: auto; /* fallback for a context with no .ascii-active override (e.g. print styles);
      the ASCII view is the .output-panel.ascii-active case above in practice, which renders
      at natural height with no scrollbar instead */
