@@ -261,6 +261,9 @@ export function renderC4Ascii(
       box: { x: 0, y: 0, w: 0, h: 0 },
     }
     node.rows = layoutRows(items, diagram)
+    // BT flips every level, not just the root, or a boundary's contents
+    // would still flow downward inside an upward diagram.
+    if (diagram.direction === 'BT') node.rows.reverse()
     bNodes.set(b.alias, node)
     const flat = node.rows.flat()
     node.order = Math.min(...flat.map((i) => i.order))
@@ -549,7 +552,20 @@ export function renderC4Ascii(
   for (const { rel, path } of routed) {
     const lines = c4RelLabelLines(rel)
     if (lines.length === 0) continue
-    placeLabel(lines, path, isFree, canOverwrite, putText)
+    // A label wider than any free spot beside its route is wrapped narrower
+    // before giving up, so a relationship never loses its text.
+    const widest = Math.max(...lines.map(displayWidth))
+    const attempts = [lines]
+    for (const w of [18, 12, 8]) {
+      if (widest > w) {
+        attempts.push(
+          lines.flatMap((l, i) => (i === 0 ? wrapC4Text(l, w) : [l])),
+        )
+      }
+    }
+    for (const attempt of attempts) {
+      if (placeLabel(attempt, path, isFree, canOverwrite, putText)) break
+    }
   }
 
   return canvasToString(canvas, { roleCanvas: roles, colorMode, theme })
@@ -928,7 +944,7 @@ function placeLabel(
   isFree: (x: number, y: number) => boolean,
   canOverwrite: (x: number, y: number) => boolean,
   putText: (x: number, y: number, s: string, role: CharRole) => void,
-): void {
+): boolean {
   const widths = lines.map(displayWidth)
   const fits = (cand: [number, number][]) =>
     cand.every(([x, y], k) => {
@@ -970,7 +986,7 @@ function placeLabel(
       for (const cand of candidates) {
         if (fits(cand)) {
           cand.forEach(([x, y], k) => putText(x, y, lines[k]!, 'text'))
-          return
+          return true
         }
       }
     }
@@ -995,8 +1011,9 @@ function placeLabel(
       )
       if (overLine(cand)) {
         cand.forEach(([x, y], k) => putText(x, y, lines[k]!, 'text'))
-        return
+        return true
       }
     }
   }
+  return false
 }
