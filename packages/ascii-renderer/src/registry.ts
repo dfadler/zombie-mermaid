@@ -36,7 +36,8 @@ import { renderXYChartAscii } from './xychart.ts'
 import { renderErAscii } from './er-diagram.ts'
 import { renderSequenceAscii } from './sequence.ts'
 import { renderClassAscii } from './class-diagram.ts'
-import { renderFlowchartAscii, renderC4Ascii } from './flowchart.ts'
+import { renderFlowchartAscii } from './flowchart.ts'
+import { renderC4Ascii } from './c4-diagram.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`

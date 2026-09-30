@@ -30,7 +30,7 @@
 
 export * from './c4/parser.ts'
 export * from './c4/types.ts'
-export * from './c4/to-graph.ts'
+export * from './c4/format.ts'
 
 export * from './class/parser.ts'
 export * from './class/types.ts'

@@ -55,7 +55,6 @@ import {
   parseSequenceDiagram,
   parseClassDiagram,
   parseC4Diagram,
-  c4ToGraph,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -67,6 +66,7 @@ import type {
   ClassDiagram,
   PositionedClassDiagram,
   C4Diagram,
+  PositionedC4Diagram,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -76,6 +76,8 @@ import { layoutSequenceDiagram } from './sequence/layout.ts'
 import { renderSequenceSvg } from './sequence/renderer.ts'
 import { layoutClassDiagramSync } from './class/layout.ts'
 import { renderClassSvg } from './class/renderer.ts'
+import { layoutC4DiagramSync } from './c4/layout.ts'
+import { renderC4Svg } from './c4/renderer.ts'
 import { layoutGraphSync } from './layout-engine.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
 import { parseMermaid } from '../../../src/parser.ts'
@@ -326,24 +328,30 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
   },
 }
 
-/**
- * C4 diagrams are lowered to the flowchart model (`c4ToGraph` in
- * `@zombie-mermaid/mermaid-parser`) and ride the flowchart layout + renderer,
- * so this module is `flowchartModule` with a different `parse`. The lowered
- * graph carries no `%%{init}%%` config, so `curve` is `options.curve` or
- * 'linear'.
- */
-const c4Module: DiagramModule<C4Diagram, PositionedFlowchart> = {
+const c4Module: DiagramModule<C4Diagram, PositionedC4Diagram> = {
   type: 'c4',
   parse: parseC4Diagram,
+  // `options.direction` sets the diagram's top-level direction (C4 sources
+  // have no direction statement of their own) before layout.
   layoutForSvg(diagram, options) {
-    const graph = withDirectionOverride(c4ToGraph(diagram), options.direction)
-    return {
-      graph: layoutGraphSync(graph, options),
-      curve: options.curve ?? 'linear',
-    }
+    return layoutC4DiagramSync(
+      withDirectionOverride(diagram, options.direction),
+      options,
+    )
   },
-  renderSvg: flowchartModule.renderSvg,
+  renderSvg(positioned, ctx) {
+    return renderC4Svg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
 }
 
 /**

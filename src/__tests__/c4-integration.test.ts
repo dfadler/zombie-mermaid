@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidSVG, renderMermaidASCII } from '../index.ts'
 
-// End-to-end coverage for C4 diagrams through both front doors. Prior art:
-// lukilabs/beautiful-mermaid#34 / #71 (fixtures are re-written for this
-// fork's flowchart-lowering design, not copied).
+// End-to-end coverage for C4 diagrams through both front doors (the
+// dedicated C4 renderers, not the flowchart pipeline). Prior art:
+// lukilabs/beautiful-mermaid#34 / #71 (fixtures are re-written, not copied).
 
 const CONTEXT = `C4Context
   title System Context for Internet Banking
@@ -63,7 +63,8 @@ describe('C4 SVG rendering', () => {
       '[Container Database: PostgreSQL]',
       '[External System]',
       'Shop',
-      'Calls [JSON/HTTPS]',
+      'Calls',
+      '[JSON/HTTPS]',
     ]) {
       expect(svg).toContain(text)
     }

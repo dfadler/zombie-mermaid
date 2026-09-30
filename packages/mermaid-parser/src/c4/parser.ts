@@ -4,6 +4,7 @@ import type {
   C4Diagram,
   C4Element,
   C4ElementKind,
+  C4LayoutHint,
   C4ElementShape,
   C4Relationship,
   C4Variant,
@@ -24,8 +25,9 @@ import type {
 //   RelIndex (index, from, to, label, techn)
 //   title <text>
 //
-// Accepted and ignored (styling / layout hints this renderer does not
-// honor): UpdateElementStyle, UpdateRelStyle, UpdateLayoutConfig, LAYOUT_*,
+// `Rel_U/D/L/R` record a placement hint (`C4Relationship.layout`) the
+// renderers use to steer layout. Accepted and ignored (styling / layout
+// config this renderer does not honor): UpdateElementStyle, UpdateRelStyle, UpdateLayoutConfig, LAYOUT_*,
 // SHOW_LEGEND, SHOW_FLOATING_LEGEND, AddElementTag, AddRelTag,
 // AddBoundaryTag, RoleTag. Named arguments (`$tags="x"`, `$link=...`) are
 // dropped.
@@ -48,6 +50,17 @@ const BOUNDARY_NAME =
 const NODE_NAME = /^(?:Deployment_Node|Node|Node_L|Node_R)$/
 const REL_NAME =
   /^(Rel|BiRel|Rel_U|Rel_Up|Rel_D|Rel_Down|Rel_L|Rel_Left|Rel_R|Rel_Right|Rel_Back|RelIndex)$/
+
+const REL_HINTS: Record<string, C4LayoutHint> = {
+  Rel_U: 'up',
+  Rel_Up: 'up',
+  Rel_D: 'down',
+  Rel_Down: 'down',
+  Rel_L: 'left',
+  Rel_Left: 'left',
+  Rel_R: 'right',
+  Rel_Right: 'right',
+}
 
 function unquote(a: string): string {
   const t = a.trim()
@@ -213,6 +226,8 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
       }
       if (a[3]) r.technology = a[3]
       if (indexed && args[0]) r.index = args[0]
+      const hint = REL_HINTS[name]
+      if (hint) r.layout = hint
       diagram.relationships.push(r)
       continue
     }

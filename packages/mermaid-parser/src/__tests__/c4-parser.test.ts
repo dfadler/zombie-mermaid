@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { splitStatements } from '@zombie-mermaid/core'
-import { parseC4Diagram, c4ToGraph } from '../index.ts'
+import { parseC4Diagram } from '../index.ts'
 
 const parse = (src: string) => parseC4Diagram(splitStatements(src))
 
@@ -142,6 +142,34 @@ describe('parseC4Diagram', () => {
     ])
   })
 
+  it('records Rel_U/D/L/R placement hints and leaves the rest unhinted', () => {
+    const d = parse(`C4Context
+  System(a, "A")
+  System(b, "B")
+  Rel_U(a, b, "1")
+  Rel_Up(a, b, "2")
+  Rel_D(a, b, "3")
+  Rel_Down(a, b, "4")
+  Rel_L(a, b, "5")
+  Rel_Left(a, b, "6")
+  Rel_R(a, b, "7")
+  Rel_Right(a, b, "8")
+  Rel(a, b, "9")
+  Rel_Back(a, b, "10")`)
+    expect(d.relationships.map((r) => r.layout)).toEqual([
+      'up',
+      'up',
+      'down',
+      'down',
+      'left',
+      'left',
+      'right',
+      'right',
+      undefined,
+      undefined,
+    ])
+  })
+
   it('silently ignores style and layout macros', () => {
     const d = parse(`C4Context
   System(a, "A")
@@ -183,87 +211,5 @@ describe('parseC4Diagram', () => {
         /unbalanced quotes/,
       )
     })
-  })
-})
-
-describe('c4ToGraph', () => {
-  it('lowers elements to labelled nodes with C4 shapes and classes', () => {
-    const g = c4ToGraph(
-      parse(`C4Container
-  Person(p, "User")
-  ContainerDb(db, "DB", "Postgres", "Stores rows")
-  Container_Ext(x, "Ext", "Go")`),
-    )
-    expect(g.nodes.get('p')).toMatchObject({ shape: 'rounded' })
-    expect(g.nodes.get('p')!.label).toBe('User\n[Person]')
-    expect(g.nodes.get('db')).toMatchObject({ shape: 'cylinder' })
-    expect(g.nodes.get('db')!.label).toBe(
-      'DB\n[Container Database: Postgres]\n\nStores rows',
-    )
-    expect(g.nodes.get('x')!.label).toContain('[External Container: Go]')
-    expect(g.classAssignments.get('p')).toBe('c4Person')
-    expect(g.classAssignments.get('db')).toBe('c4Element')
-    expect(g.classAssignments.get('x')).toBe('c4External')
-    expect([...g.classDefs.keys()].sort()).toEqual(
-      ['c4External', 'c4Element', 'c4Person'].sort(),
-    )
-  })
-
-  it('wraps long descriptions', () => {
-    const g = c4ToGraph(
-      parse(
-        'C4Context\nSystem(s, "S", "one two three four five six seven eight nine ten")',
-      ),
-    )
-    const lines = g.nodes.get('s')!.label.split('\n')
-    expect(lines.length).toBeGreaterThan(4)
-    expect(Math.max(...lines.map((l) => l.length))).toBeLessThanOrEqual(32)
-  })
-
-  it('lowers boundaries to nested subgraphs and relationships to edges', () => {
-    const g = c4ToGraph(
-      parse(`C4Container
-  System_Boundary(sb, "Sys") {
-    Container(a, "A", "Go")
-    Container(b, "B", "Go")
-  }
-  Rel(a, b, "Calls", "gRPC")
-  BiRel(b, a, "Sync")`),
-    )
-    expect(g.subgraphs).toEqual([
-      { id: 'sb', label: 'Sys', nodeIds: ['a', 'b'], children: [] },
-    ])
-    expect(g.edges[0]).toMatchObject({
-      source: 'a',
-      target: 'b',
-      label: 'Calls [gRPC]',
-      hasArrowStart: false,
-      hasArrowEnd: true,
-    })
-    expect(g.edges[1]).toMatchObject({ hasArrowStart: true, hasArrowEnd: true })
-  })
-
-  it('lowers an empty boundary to a plain box', () => {
-    const g = c4ToGraph(
-      parse(`C4Deployment
-  Deployment_Node(n, "Server", "Ubuntu")
-  Container(app, "App", "Java")
-  Rel(app, n, "runs on")`),
-    )
-    expect(g.subgraphs).toEqual([])
-    expect(g.nodes.get('n')!.label).toBe('Server\n[Ubuntu]')
-  })
-
-  it('rejects relationships that touch a populated boundary', () => {
-    expect(() =>
-      c4ToGraph(
-        parse(`C4Context
-  Boundary(b, "B") {
-    System(s, "S")
-  }
-  System(o, "O")
-  Rel(o, b, "x")`),
-      ),
-    ).toThrow(/relationships to or from a boundary \("b"\)/)
   })
 })
