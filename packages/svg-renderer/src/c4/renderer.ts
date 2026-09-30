@@ -225,15 +225,19 @@ function cylinderShape(el: PositionedC4Element, pal: C4Palette): string[] {
   ]
 }
 
+/**
+ * A pipe on its side, as Mermaid draws it: rounded at the left, with the
+ * ellipse face showing at the right end.
+ */
 function queueShape(el: PositionedC4Element, pal: C4Palette): string[] {
   const { x, y, width: w, height: h } = el
   const rx = C4.queueCap
   const ry = h / 2
   const sw = STROKE_WIDTHS.outerBox + 0.5
   return [
-    f`  <path d="M ${x + rx} ${y} H ${x + w - rx} A ${rx} ${ry} 0 0 1 ${x + w - rx} ${y + h} H ${x + rx} A ${rx} ${ry} 0 0 1 ${x + rx} ${y} Z" ` +
+    f`  <path d="M ${x + w - rx} ${y} H ${x + rx} A ${rx} ${ry} 0 0 0 ${x + rx} ${y + h} H ${x + w - rx} Z" ` +
       f`fill="${pal.fill}" stroke="${pal.stroke}" stroke-width="${sw}" />`,
-    f`  <ellipse cx="${x + rx}" cy="${y + ry}" rx="${rx}" ry="${ry}" fill="${pal.fill}" ` +
+    f`  <ellipse cx="${x + w - rx}" cy="${y + ry}" rx="${rx}" ry="${ry}" fill="${pal.fill}" ` +
       f`stroke="${pal.stroke}" stroke-width="${sw}" />`,
   ]
 }

@@ -205,6 +205,19 @@ describe('C4 SVG rendering', () => {
     expect(svg).toContain('data-shape="queue"')
   })
 
+  it("shows a queue's ellipse face at its right end, as Mermaid does", () => {
+    const svg = renderMermaidSVG('C4Container\nContainerQueue(q, "Events")')
+    expect(svg).toContain('data-shape="queue"')
+    const ell = /<ellipse cx="([\d.-]+)" cy="[\d.-]+" rx="([\d.-]+)"/.exec(svg)!
+    const path = /<path d="M ([\d.-]+) [\d.-]+ H ([\d.-]+) A/.exec(svg)!
+    const cx = +ell[1]!
+    const rx = +ell[2]!
+    // The body starts at the face centre (right) and runs left to its
+    // rounded end.
+    expect(+path[1]!).toBeCloseTo(cx, 1)
+    expect(+path[2]!).toBeLessThan(cx - rx)
+  })
+
   it('uses the C4 palette by kind, lighter for external elements', () => {
     const svg = renderMermaidSVG(SRC)
     expect(svg).toContain('#08427b') // person
