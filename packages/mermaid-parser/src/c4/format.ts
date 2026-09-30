@@ -23,31 +23,35 @@ export function wrapC4Text(text: string, width: number): string[] {
   return out
 }
 
+const STEREOTYPES: Record<C4Element['kind'], string> = {
+  person: 'Person',
+  system: 'Software System',
+  container: 'Container',
+  component: 'Component',
+}
+
 /**
- * The bracketed type line under an element's name, e.g. `[Person]`,
- * `[External System]`, `[Container Database: PostgreSQL]`.
+ * The bracketed type line under an element's name, as Mermaid draws it:
+ * `[Person]`, `[Software System]`, `[Container: PostgreSQL]`. External,
+ * database and queue variants share their base kind's line; the fill and the
+ * shape tell them apart.
  */
 export function c4TypeLine(el: C4Element): string {
-  const ext = el.external ? 'External ' : ''
-  const suffix =
-    el.shape === 'db' ? ' Database' : el.shape === 'queue' ? ' Queue' : ''
-  const kind = el.kind.charAt(0).toUpperCase() + el.kind.slice(1)
   const tech =
     (el.kind === 'container' || el.kind === 'component') && el.technology
       ? `: ${el.technology}`
       : ''
-  const noun = el.kind === 'person' ? kind : `${kind}${suffix}`
-  return `[${ext}${noun}${tech}]`
+  return `[${STEREOTYPES[el.kind]}${tech}]`
 }
 
-/** A boundary's type line (`[Enterprise]`, `[Ubuntu]`), when it has a type. */
+/** A boundary's type line (`[ENTERPRISE]`, `[Ubuntu]`), when it has a type. */
 export function c4BoundaryTypeLine(b: C4Boundary): string | undefined {
   return b.type ? `[${b.type}]` : undefined
 }
 
 /**
- * The text lines of a relationship label: the label itself (prefixed with the
- * `RelIndex` sequence number, if any), then the technology in brackets on its
+ * The text lines of a relationship label: the label itself (prefixed with its
+ * sequence number in a C4Dynamic diagram), then the technology in brackets on its
  * own line. Empty when the relationship has neither.
  */
 export function c4RelLabelLines(rel: C4Relationship): string[] {

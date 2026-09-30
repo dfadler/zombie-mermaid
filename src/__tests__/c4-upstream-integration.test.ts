@@ -76,7 +76,7 @@ describe('upstream #71: element types', () => {
       'C4Container\n  ContainerDb(db, "Database", "PostgreSQL")',
     )
     expect(svg).toContain('Database')
-    expect(svg).toContain('[Container Database: PostgreSQL]')
+    expect(svg).toContain('[Container: PostgreSQL]')
     expect(svg).toContain('<ellipse')
   })
 
@@ -91,7 +91,7 @@ describe('upstream #71: element types', () => {
   it('renders external elements with the muted external fill', () => {
     const svg = svgOf('C4Context\n  System_Ext(ext, "External System")')
     expect(svg).toContain('External System')
-    expect(svg).toContain('[External System]')
+    expect(svg).toContain('[Software System]')
     expect(svg).toContain('#999999')
   })
 })
@@ -115,14 +115,13 @@ describe('upstream #71: boundaries', () => {
     expect(svg).toContain('[region]')
   })
 
-  // Known gap: the boundary macro kind is not kept, so it is not shown as
-  // "[System Boundary]", and the frame is solid rather than dashed.
-  it.skip('renders the boundary macro kind and a dashed border', () => {
+  // Mermaid labels a System_Boundary "[SYSTEM]" (not "[System Boundary]").
+  it('renders the boundary type and a dashed border', () => {
     const svg = svgOf(`C4Context
   System_Boundary(sb, "My System") {
     System(s, "S")
   }`)
-    expect(svg).toContain('[System Boundary]')
+    expect(svg).toContain('[SYSTEM]')
     expect(svg).toContain('stroke-dasharray')
   })
 

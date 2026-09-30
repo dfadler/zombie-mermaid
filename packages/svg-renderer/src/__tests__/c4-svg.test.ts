@@ -219,7 +219,7 @@ describe('C4 SVG rendering', () => {
     expect(svg).toContain('>Shop</text>')
     expect(svg).toContain('[HTTPS]')
     expect(svg).toContain('[Container: React]')
-    expect(svg).toContain('[External Person]')
+    expect(svg).toContain('[Person]')
   })
 
   it('puts arrowheads at both ends of a BiRel and one end otherwise', () => {

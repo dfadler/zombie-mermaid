@@ -333,6 +333,9 @@ export function renderC4Ascii(
       cx++
     }
   }
+  const borders: number[][] = Array.from({ length: width + 1 }, () =>
+    new Array<number>(height + 1).fill(0),
+  )
   const blocked: boolean[][] = Array.from({ length: width + 1 }, () =>
     new Array<boolean>(height + 1).fill(false),
   )
@@ -361,6 +364,14 @@ export function renderC4Ascii(
     const [tl, tr, bl, br] = useAscii
       ? ['+', '+', '+', '+']
       : ['╭', '╮', '╰', '╯']
+    for (let i = 0; i < w; i++) {
+      borders[x + i]![y]! |= BORDER_H
+      borders[x + i]![y + h - 1]! |= BORDER_H
+    }
+    for (let j = 0; j < h; j++) {
+      borders[x]![y + j]! |= BORDER_V
+      borders[x + w - 1]![y + j]! |= BORDER_V
+    }
     for (let i = 1; i < w - 1; i++) {
       put(x + i, y, H, 'border')
       put(x + i, y + h - 1, H, 'border')
@@ -484,12 +495,12 @@ export function renderC4Ascii(
     const path = findPath(
       a.box,
       b.box,
-      { width, height, blocked, masks, arrows },
+      { width, height, blocked, masks, arrows, borders },
       extraBlocked,
     )
     if (!path) continue
     routed.push({ rel, path })
-    stamp(path, masks)
+    stamp(path, masks, a.box, b.box)
     const last = path[path.length - 1]!
     const first = path[0]!
     if (!rel.reversed || rel.bidirectional) {
@@ -644,6 +655,10 @@ const U = 1
 const D = 2
 const L = 4
 const R = 8
+// Boundary frame cell kinds, so a route can be kept off a frame it would
+// otherwise run along and hide.
+const BORDER_H = 1
+const BORDER_V = 2
 
 interface Grid {
   width: number
@@ -651,6 +666,8 @@ interface Grid {
   blocked: boolean[][]
   masks: number[][]
   arrows: Map<string, string>
+  /** Boundary frame cells: `BORDER_H` / `BORDER_V` per cell. */
+  borders: number[][]
 }
 
 function towardBox(cell: [number, number], box: Box): number {
@@ -701,7 +718,12 @@ function isCorner(mask: number): boolean {
 }
 
 /** Record a path's connections, including the stub toward each end box. */
-function stamp(path: [number, number][], masks: number[][]): void {
+function stamp(
+  path: [number, number][],
+  masks: number[][],
+  fromBox: Box,
+  toBox: Box,
+): void {
   const dirBetween = (a: [number, number], b: [number, number]) =>
     b[0] > a[0] ? R : b[0] < a[0] ? L : b[1] > a[1] ? D : U
   const opposite = (d: number) => (d === U ? D : d === D ? U : d === L ? R : L)
@@ -710,6 +732,12 @@ function stamp(path: [number, number][], masks: number[][]): void {
     if (i > 0) masks[x]![y]! |= opposite(dirBetween(path[i - 1]!, path[i]!))
     if (i < path.length - 1) masks[x]![y]! |= dirBetween(path[i]!, path[i + 1]!)
   }
+  // The end cells sit one step outside their boxes; connect them to the box
+  // edge so a route that turns right away doesn't look detached.
+  const first = path[0]!
+  const last = path[path.length - 1]!
+  masks[first[0]]![first[1]]! |= towardBox(first, fromBox)
+  masks[last[0]]![last[1]]! |= towardBox(last, toBox)
 }
 
 interface Node {
@@ -826,6 +854,14 @@ function findPath(
       if (grid.arrows.has(`${nx},${ny}`)) continue
       let step = 1
       if (cur.dir !== 0 && cur.dir !== d) step += 2
+      const onBorder = grid.borders[nx]![ny]!
+      if (onBorder !== 0) {
+        const horizontal = d === L || d === R
+        if (
+          horizontal ? (onBorder & BORDER_H) !== 0 : (onBorder & BORDER_V) !== 0
+        )
+          step += 12
+      }
       const m = grid.masks[nx]![ny]!
       if (m !== 0) {
         const horizontal = d === L || d === R

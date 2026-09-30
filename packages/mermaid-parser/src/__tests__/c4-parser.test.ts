@@ -135,17 +135,61 @@ describe('parseC4Diagram', () => {
         label: 'Calls',
         technology: 'HTTPS',
         bidirectional: false,
+        index: '1',
       },
-      { from: 'a', to: 'b', label: 'Syncs', bidirectional: true },
+      { from: 'a', to: 'b', label: 'Syncs', bidirectional: true, index: '2' },
       {
         from: 'b',
         to: 'a',
         label: 'Replies',
         bidirectional: false,
         reversed: true,
+        index: '3',
       },
-      { from: 'a', to: 'b', label: 'First', bidirectional: false, index: '1' },
+      { from: 'a', to: 'b', label: 'First', bidirectional: false, index: '4' },
     ])
+  })
+
+  it('numbers relationships by position in C4Dynamic only, ignoring the RelIndex argument (as Mermaid does)', () => {
+    const src = (head: string) => `${head}
+  System(a, "A")
+  System(b, "B")
+  RelIndex(9, a, b, "First")
+  Rel(b, a, "Second")`
+    const dyn = parse(src('C4Dynamic')).relationships.map((r) => r.index)
+    expect(dyn).toEqual(['1', '2'])
+    const ctx = parse(src('C4Context')).relationships.map((r) => r.index)
+    expect(ctx).toEqual([undefined, undefined])
+  })
+
+  it("gives every boundary Mermaid's type text", () => {
+    const d = parse(`C4Deployment
+  Enterprise_Boundary(e, "E") {
+    System_Boundary(s, "S") {
+      Container_Boundary(c, "C") {
+        Boundary(g, "G")
+        Boundary(t, "T", "region")
+        Node(n, "N")
+        Deployment_Node(m, "M", "Ubuntu")
+      }
+    }
+  }`)
+    const types = new Map<string, string | undefined>()
+    const walk = (bs: typeof d.boundaries): void =>
+      bs.forEach((b) => {
+        types.set(b.alias, b.type)
+        walk(b.children)
+      })
+    walk(d.boundaries)
+    expect(Object.fromEntries(types)).toEqual({
+      e: 'ENTERPRISE',
+      s: 'SYSTEM',
+      c: 'CONTAINER',
+      g: 'system',
+      t: 'region',
+      n: 'node',
+      m: 'Ubuntu',
+    })
   })
 
   it('records Rel_U/D/L/R placement hints and leaves the rest unhinted', () => {
