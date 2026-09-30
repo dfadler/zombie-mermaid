@@ -22,6 +22,7 @@ export const DIAGRAM_TYPES = [
   'class',
   'er',
   'xychart',
+  'archimate',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -40,6 +41,7 @@ export function detectDiagramType(text: string): DiagramType {
   const firstLine = splitStatements(text)[0]?.text.toLowerCase() ?? ''
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
+  if (/^archimate-layered\s*$/.test(firstLine)) return 'archimate'
   if (/^sequencediagram\s*$/.test(firstLine)) return 'sequence'
   if (/^classdiagram\s*$/.test(firstLine)) return 'class'
   if (/^erdiagram\s*$/.test(firstLine)) return 'er'

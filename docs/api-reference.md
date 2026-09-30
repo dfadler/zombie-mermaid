@@ -72,6 +72,8 @@ Two more advanced options exist — `fontSizes` (per-element font size overrides
 
 **XY Charts:** Diagrams starting with `xychart-beta` are auto-detected — no separate function needed. The `accent` color option drives the chart series color palette.
 
+**ArchiMate:** Diagrams starting with `archimate-layered` are auto-detected and rendered through the flowchart pipeline (SVG and ASCII) — see [diagrams.md](diagrams.md#archimate-diagrams).
+
 ## `renderMermaidSVGAsync(text, options?): Promise<string>`
 
 Async version of `renderMermaidSVG()`. Same output, returns a `Promise<string>`. Useful in async server handlers or data loaders.

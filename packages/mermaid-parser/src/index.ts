@@ -28,6 +28,10 @@
 // creating a cycle — see `packages/core/src/direction.ts`'s header.
 // ============================================================================
 
+export * from './archimate/parser.ts'
+export * from './archimate/types.ts'
+export * from './archimate/to-graph.ts'
+
 export * from './class/parser.ts'
 export * from './class/types.ts'
 export * from './class/format.ts'

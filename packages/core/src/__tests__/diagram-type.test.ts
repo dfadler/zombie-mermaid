@@ -8,6 +8,14 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('classDiagram\nclass Foo')).toBe('class')
     expect(detectDiagramType('erDiagram\nFOO ||--o{ BAR : has')).toBe('er')
     expect(detectDiagramType('xychart-beta\nx-axis [a, b]')).toBe('xychart')
+    expect(detectDiagramType('archimate-layered\nbusiness:')).toBe('archimate')
+  })
+
+  it('detects the archimate header case-insensitively and rejects near-misses', () => {
+    expect(detectDiagramType('ArchiMate-Layered\nbusiness:')).toBe('archimate')
+    expect(detectDiagramType('archimate-layered;business:')).toBe('archimate')
+    expect(detectDiagramType('archimate\nbusiness:')).toBe('flowchart')
+    expect(detectDiagramType('archimate-layered-foo')).toBe('flowchart')
   })
 
   it('isolates the header on a semicolon-separated single line', () => {

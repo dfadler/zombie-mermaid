@@ -678,6 +678,42 @@ The chart renderer follows a clean, minimal design philosophy, originally inspir
 - **Full theme support** — All 15 built-in themes (and custom themes) apply to charts. The accent color drives the entire series color palette
 - **Live theme switching** — Chart series colors are CSS custom properties (`--xychart-color-N`), so theme changes apply instantly without re-rendering
 
+## ArchiMate Diagrams
+
+`archimate-layered` diagrams render in both SVG and ASCII. Mermaid has no
+ArchiMate diagram, so this syntax is not Mermaid's: it is the DSL proposed in
+[lukilabs/beautiful-mermaid#34](https://github.com/lukilabs/beautiful-mermaid/pull/34),
+using element and relationship names from the ArchiMate 3.2 specification.
+
+```
+archimate-layered
+  business:
+    actor Customer
+    service "Online Banking" as OB
+  application:
+    component "Web App" as WA
+  technology:
+    node "App Server" as AS
+  Customer -->|serving| OB
+  WA -->|realization| OB
+  AS -->|serving| WA
+```
+
+- **Layers:** `strategy:`, `motivation:`, `business:`, `application:`, `technology:`, `physical:`, `implementation:`. They always stack in that order, top to bottom, whatever order you write them in.
+- **Elements**, inside a layer block: `type alias`, `type "Label" as alias`, or `type "Label"` (the id is the label with spaces as `_`). Types: business `actor role process function service object event interface collaboration interaction contract representation product`; application `component dataObject` plus the shared `collaboration interface function interaction process event service`; technology `node device systemSoftware artifact communicationNetwork path` plus the shared ones; strategy `resource capability valueStream courseOfAction`; motivation `stakeholder driver assessment goal outcome principle requirement constraint meaning value`; physical `equipment facility distributionNetwork material`; implementation `workPackage deliverable implementationEvent plateau gap`. Any type is accepted in any layer block.
+- **Relationships**, anywhere after the header: `a -->|type| b`, where `type` is `composition aggregation assignment realization serving access influence triggering flow specialization association`, or `a --> b` for association. Write them in the direction the relationship holds (`AS -->|serving| WA`); they may point up the layer stack.
+
+Each element shows its name and a `«Type»` line, in the layer's ArchiMate colour. Relationships are labelled with their type; realization, access, influence and flow are dotted.
+
+ArchiMate diagrams are lowered to the flowchart model and laid out by the flowchart engine (see [the decision record](decisions/archimate-lowering-1167.md)), so `direction` and the theme options apply as they do for flowcharts. A malformed statement (unknown layer, element type or relationship type, a duplicate id, a relationship to an undeclared element) is an error naming its line.
+
+Known limitations:
+
+- Relationships are not drawn with the ArchiMate markers (diamonds, hollow triangles, the assignment dot); the label names the type. Elements have approximate shapes and no icons.
+- The ASCII renderer draws no layer bands, because its layout cannot place sibling subgraphs joined by edges; layers are conveyed by vertical order and the `«Business Service»`-style type line.
+- Layer order is a strong layout hint, not a guarantee, for diagrams with many cross-layer cycles.
+- Element types are not checked against the layer's ArchiMate metamodel, nor relationship endpoints against the permitted source/target types.
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
