@@ -73,12 +73,11 @@ interface Edge {
 function edges(svg: string): Edge[] {
   return [...svg.matchAll(/<polyline class="edge"([^>]*)>/g)].map((m) => {
     const attrs = m[1]!
-    const get = (k: string) => new RegExp(`${k}="([^"]*)"`).exec(attrs)?.[1]
     return {
-      from: get('data-from')!,
-      to: get('data-to')!,
-      start: get('data-arrow-start') === 'true',
-      end: get('data-arrow-end') === 'true',
+      from: /data-from="([^"]*)"/.exec(attrs)![1]!,
+      to: /data-to="([^"]*)"/.exec(attrs)![1]!,
+      start: /data-arrow-start="true"/.test(attrs),
+      end: /data-arrow-end="true"/.test(attrs),
       markerStart: attrs.includes('marker-start='),
       markerEnd: attrs.includes('marker-end='),
     }
