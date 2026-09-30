@@ -1374,7 +1374,12 @@ body.search-active .category-tabbar {
    * gap to exactly 8px. */
   font-size: 13.33px;
   letter-spacing: 0.002px;
-  line-height: 15px;
+  /* 17px: the tallest row that still lets vertical box lines and full blocks
+   * join (ascii-seams.visual.test.ts fails at 18px), which leaves the most
+   * room around text. JetBrains Mono's box glyphs are ~1.32em (~17.6px here)
+   * tall, so a shorter row makes them overshoot into neighbouring rows: at
+   * 15px a connector ended flush against the label text it passes ("Wes|t"). */
+  line-height: 17px;
   overflow: auto; /* fallback for a context with no .ascii-active override (e.g. print styles);
      the ASCII view is the .output-panel.ascii-active case above in practice, which renders
      at natural height with no scrollbar instead */

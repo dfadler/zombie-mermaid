@@ -22,8 +22,8 @@ import { mountAndMeasure } from './helpers/ascii-measure.ts'
 const MIN_SEAM_RATIO = Number(process.env.SEAM_RATIO ?? 0.9)
 
 interface Probe {
-  /** h: ─ next to ─, v: │ above │, b: █ next to █ */
-  kind: 'h' | 'v' | 'b'
+  /** h: ─ next to ─, v: │ above │, b: █ next to █, w: █ above █ */
+  kind: 'h' | 'v' | 'b' | 'w'
   row: number
   col: number
   ch: string
@@ -68,6 +68,8 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
           const below = at.get(`${c.row + 1},${c.col}`)
           if (c.ch === '│' && below?.ch === '│' && below.color === c.color)
             probes.push({ kind: 'v', row: c.row, col: c.col, ch: c.ch })
+          if (c.ch === '█' && below?.ch === '█' && below.color === c.color)
+            probes.push({ kind: 'w', row: c.row, col: c.col, ch: c.ch })
         }
         test.skip(probes.length === 0, 'no adjacent line glyphs')
 
@@ -120,6 +122,24 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
                   lo = Math.min(lo, dist(xb - 1, y), dist(xb, y))
                 ratio = lo / s
                 detail = ` px[${xb - 2}..${xb + 1}]@mid=${[-2, -1, 0, 1].map((k) => dist(xb + k, Math.round(y0 + m.lineH / 2))).join(',')} s=${s}`
+              } else if (p.kind === 'w') {
+                // block above block: the seam is the dimmest pixel straddling
+                // the shared horizontal edge, over the middle columns
+                const s = dist(
+                  Math.round(x0 + m.cellW / 2),
+                  Math.round(y0 + m.lineH / 2),
+                )
+                if (s < 8) continue
+                const yb = Math.round(y0 + m.lineH)
+                let lo = s
+                for (
+                  let x = Math.ceil(x0 + 0.3 * m.cellW);
+                  x < x0 + 0.7 * m.cellW;
+                  x++
+                )
+                  lo = Math.min(lo, dist(x, yb - 1), dist(x, yb))
+                ratio = lo / s
+                detail = ` py[${yb - 2}..${yb + 1}]@mid=${[-2, -1, 0, 1].map((k) => dist(Math.round(x0 + m.cellW / 2), yb + k)).join(',')} s=${s}`
               } else if (p.kind === 'h') {
                 // stroke row: brightest pixel row down the middle of the cell
                 // stroke row = the row with the highest median intensity across
