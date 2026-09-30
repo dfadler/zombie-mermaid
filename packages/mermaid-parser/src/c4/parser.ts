@@ -222,6 +222,7 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
         bidirectional: name === 'BiRel',
       }
       if (a[3]) r.technology = a[3]
+      if (name === 'Rel_Back') r.reversed = true
       diagram.relationships.push(r)
       continue
     }

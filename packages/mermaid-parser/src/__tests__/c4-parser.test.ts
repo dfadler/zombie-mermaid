@@ -143,6 +143,7 @@ describe('parseC4Diagram', () => {
         to: 'a',
         label: 'Replies',
         bidirectional: false,
+        reversed: true,
         index: '3',
       },
       { from: 'a', to: 'b', label: 'First', bidirectional: false, index: '4' },
@@ -236,6 +237,24 @@ describe('parseC4Diagram', () => {
 })
 
 describe('c4ToGraph', () => {
+  it('draws Rel_Back with the arrowhead at the declared "from" end', () => {
+    const g = c4ToGraph(
+      parse(`C4Context
+  System(a, "A")
+  System(b, "B")
+  Rel(a, b, "Plain")
+  Rel_Back(a, b, "Back")
+  BiRel(a, b, "Both")`),
+    )
+    expect(
+      g.edges.map((e) => [e.source, e.target, e.hasArrowStart, e.hasArrowEnd]),
+    ).toEqual([
+      ['a', 'b', false, true],
+      ['a', 'b', true, false],
+      ['a', 'b', true, true],
+    ])
+  })
+
   it('lowers elements to labelled nodes with C4 shapes and classes', () => {
     const g = c4ToGraph(
       parse(`C4Container

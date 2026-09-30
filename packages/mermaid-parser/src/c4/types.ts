@@ -41,6 +41,11 @@ export interface C4Relationship {
   technology?: string
   /** `BiRel`: arrowheads at both ends. */
   bidirectional: boolean
+  /**
+   * `Rel_Back`: the arrowhead points at `from` instead of `to`. `from`/`to`
+   * stay as declared, so layout still follows them.
+   */
+  reversed?: boolean
   /** `RelIndex(n, ...)` in C4Dynamic diagrams. */
   index?: string
 }

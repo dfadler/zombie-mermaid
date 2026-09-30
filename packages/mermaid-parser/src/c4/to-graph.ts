@@ -150,8 +150,10 @@ export function c4ToGraph(diagram: C4Diagram): MermaidGraph {
       source: r.from,
       target: r.to,
       style: 'solid',
-      hasArrowStart: r.bidirectional,
-      hasArrowEnd: true,
+      // Rel_Back keeps its endpoints (so layout is unchanged) and moves the
+      // arrowhead to the `from` end, as Mermaid draws it.
+      hasArrowStart: r.bidirectional || r.reversed === true,
+      hasArrowEnd: r.bidirectional || r.reversed !== true,
     }
     if (parts.length > 0) edge.label = parts.join(' ')
     return edge
