@@ -34,6 +34,8 @@
  *                             asciinema spawns inherits) rather than argv so
  *                             scripts/ascii-terminal-capture.sh's positional
  *                             interface stays unchanged.
+ *   ASCII_RENDER_THEME        Optional THEMES key (e.g. `github-dark`) to render
+ *                             with that theme's colors; see its handling below.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -94,6 +96,26 @@ if (rawOptions !== undefined && rawOptions !== '') {
     process.exit(2)
   }
   extraOptions = parsed
+}
+
+// ASCII_RENDER_THEME=<THEMES key> renders with that theme's colors (the
+// renderer's default palette has dark text meant for light terminals, which
+// is unreadable on a dark capture background). An explicit `theme` in
+// ASCII_RENDER_OPTIONS wins. Sizing runs with colors off, so it's unaffected.
+const themeName = process.env.ASCII_RENDER_THEME
+if (themeName && extraOptions.theme === undefined && !sizeOnly) {
+  const { THEMES } = await import(
+    pathToFileURL(resolve('packages/core/src/theme.ts')).href
+  )
+  const { diagramColorsToAsciiTheme } = await import(
+    pathToFileURL(resolve('packages/ascii-renderer/src/ansi.ts')).href
+  )
+  const colors = THEMES[themeName]
+  if (colors === undefined) {
+    console.error(`usage: unknown ASCII_RENDER_THEME '${themeName}'`)
+    process.exit(2)
+  }
+  extraOptions = { ...extraOptions, theme: diagramColorsToAsciiTheme(colors) }
 }
 
 if (sizeOnly) {

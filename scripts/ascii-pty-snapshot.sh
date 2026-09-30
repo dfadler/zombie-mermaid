@@ -105,6 +105,9 @@ export ASCII_AGG_DOCKER_IMAGE="${ASCII_AGG_DOCKER_IMAGE:-$DEFAULT_AGG_IMAGE}"
 # these, and a developer's shell may set different values than CI's.
 export TERM=xterm-256color COLORTERM=truecolor
 unset NO_COLOR FORCE_COLOR
+# The capture rasterizes on agg's github-dark background; the renderer's
+# default text color (#27272a) is invisible there, so use the matching theme.
+export ASCII_RENDER_THEME=github-dark
 
 # Compare two PNGs; prints the differing-pixel fraction, or "size-mismatch".
 # Writes <diff-out> (changed pixels in red) when they differ.
