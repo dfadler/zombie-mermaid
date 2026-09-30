@@ -54,6 +54,9 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
           return
         }
         const m = await mountAndMeasure(page, html)
+        // A scrolling panel screenshots only its visible part; probes beyond
+        // it would read background and be skipped without saying so.
+        expect(m.clipped, 'mockup panel is clipped horizontally').toBe(false)
         const at = new Map(m.cells.map((c) => [`${c.row},${c.col}`, c]))
         const probes: Probe[] = []
         for (const c of m.cells) {
