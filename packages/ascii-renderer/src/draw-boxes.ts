@@ -118,6 +118,7 @@ function drawBoxWithGridDimensions(node: AsciiNode, graph: AsciiGraph): Canvas {
   const lines = splitLines(label)
   const textCenterY = from.y + Math.floor(h / 2)
   const startY = textCenterY - Math.floor((lines.length - 1) / 2)
+  node.labelRows = { top: startY, bottom: startY + lines.length - 1 }
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!

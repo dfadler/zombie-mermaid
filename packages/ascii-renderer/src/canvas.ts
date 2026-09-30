@@ -10,6 +10,7 @@ import type {
   Canvas,
   DrawingCoord,
   RoleCanvas,
+  LabelRect,
   CharRole,
   AsciiTheme,
   ColorMode,
@@ -642,6 +643,11 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Unicode junctions (T-pieces flip vertically)
   '┬': '┴',
   '┴': '┬',
+  // Rounded corners (rounded rectangle, cylinder caps)
+  '╭': '╰',
+  '╰': '╭',
+  '╮': '╯',
+  '╯': '╮',
   // Box-start junctions (exit points from node boxes)
   '╵': '╷',
   '╷': '╵',
@@ -652,24 +658,88 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
  * Reverses row order within each column and remaps directional characters
  * (arrows, corners, junctions) so they point the correct way after flip.
  *
+ * Cells `roleCanvas` marks as `'text'` (node/edge labels) are never remapped:
+ * a label containing `v` or `^` is prose, not an arrowhead. Call
+ * `mirrorLabelRows` first so multi-line labels keep reading order.
+ *
  * Used to transform a TD-rendered canvas into BT output.
- * Mutates the canvas in place and returns it.
+ * Mutates the canvas in place and returns it. `roleCanvas` must still be
+ * unflipped when this runs.
  */
-export function flipCanvasVertically(canvas: Canvas): Canvas {
-  // Reverse each column array (Y-axis flip in column-major layout)
-  for (const col of canvas) {
-    col.reverse()
-  }
-
+export function flipCanvasVertically(
+  canvas: Canvas,
+  roleCanvas?: RoleCanvas,
+): Canvas {
   // Remap directional characters that change meaning after vertical flip
-  for (const col of canvas) {
+  for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
+      if (roleCanvas?.[x]?.[y] === 'text') continue
       const flipped = VERTICAL_FLIP_MAP[ch]
       if (flipped) col[y] = flipped
     }
   }
 
+  // Reverse each column array (Y-axis flip in column-major layout)
+  for (const col of canvas) {
+    col.reverse()
+  }
+
   return canvas
+}
+
+/**
+ * Pre-compensate multi-line labels for a following vertical flip: within each
+ * label rectangle, reverse the row order of the `'text'` cells, so that after
+ * `flipCanvasVertically` the label's lines read top-to-bottom again while the
+ * label itself still lands at the mirrored position.
+ *
+ * The rectangles come from `drawGraph` (it knows which rows each label was
+ * drawn on), so blank lines inside a label and lines of different widths need
+ * no special handling. `linkCanvas` is permuted identically to `canvas`.
+ * Mutates in place; call before the flips, while every canvas is still
+ * unflipped.
+ */
+export function mirrorLabelRows(
+  canvas: Canvas,
+  roleCanvas: RoleCanvas,
+  labelRects: LabelRect[],
+  linkCanvas?: (string | null)[][],
+): void {
+  // Collect every cell before moving any, so a moved cell is never re-read.
+  const moves: { cells: [number, number][]; ySum: number }[] = []
+  const seen = new Set<string>()
+  for (const { x0, y0, x1, y1 } of labelRects) {
+    if (y0 === y1) continue
+    const cells: [number, number][] = []
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        const key = `${x},${y}`
+        if (roleCanvas[x]?.[y] !== 'text' || seen.has(key)) continue
+        seen.add(key)
+        cells.push([x, y])
+      }
+    }
+    moves.push({ cells, ySum: y0 + y1 })
+  }
+
+  for (const { cells, ySum } of moves) {
+    moveCells(canvas, cells, ySum, ' ')
+    moveCells(roleCanvas, cells, ySum, null)
+    if (linkCanvas) moveCells(linkCanvas, cells, ySum, null)
+  }
+}
+
+function moveCells<T>(
+  layer: T[][],
+  cells: [number, number][],
+  ySum: number,
+  empty: T,
+): void {
+  const saved = cells.map(([cx, cy]) => layer[cx]![cy]!)
+  for (const [cx, cy] of cells) layer[cx]![cy] = empty
+  for (const [i, [cx, cy]] of cells.entries()) {
+    layer[cx]![ySum - cy] = saved[i]!
+  }
 }
 
 /**

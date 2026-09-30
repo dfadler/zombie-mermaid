@@ -25,7 +25,7 @@ import type {
   EdgeBundle,
 } from './types.ts'
 import { mergeCanvases, firstClaimWins, write } from './canvas.ts'
-import type { RoleCanvas, CharRole } from './types.ts'
+import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow } from './draw-arrows.ts'
 import {
@@ -106,6 +106,25 @@ function fillRolesFromCanvases(
   }
 }
 
+/** Bounding rectangle of a canvas's non-space cells, or null if it has none. */
+function textBounds(canvas: Canvas): LabelRect | null {
+  let rect: LabelRect | null = null
+  for (const [x, col] of canvas.entries()) {
+    for (const [y, ch] of col.entries()) {
+      if (ch === ' ') continue
+      rect = rect
+        ? {
+            x0: Math.min(rect.x0, x),
+            x1: Math.max(rect.x1, x),
+            y0: Math.min(rect.y0, y),
+            y1: Math.max(rect.y1, y),
+          }
+        : { x0: x, x1: x, y0: y, y1: y }
+    }
+  }
+  return rect
+}
+
 /**
  * Special handling for node boxes: border chars get 'border' role, text gets 'text' role.
  * Detects text by checking if character is alphanumeric or common punctuation.
@@ -147,6 +166,8 @@ function fillRolesForNodeBox(
  * Also fills the roleCanvas with character roles for colored output.
  */
 export function drawGraph(graph: AsciiGraph): Canvas {
+  const labelRects: LabelRect[] = []
+  graph.labelRects = labelRects
   const useAscii = graph.config.useAscii
   const zero: DrawingCoord = { x: 0, y: 0 }
 
@@ -171,6 +192,24 @@ export function drawGraph(graph: AsciiGraph): Canvas {
       )
       // Node boxes: detect border vs text characters
       fillRolesForNodeBox(graph.roleCanvas, node.drawing, node.drawingCoord)
+      if (node.labelRows) {
+        // Every non-space cell on a label row between the side borders is
+        // label text, even a `-` or `|` that isBorderChar would call a border.
+        const { x: ox, y: oy } = node.drawingCoord
+        const rect: LabelRect = {
+          x0: ox + 1,
+          x1: ox + node.drawing.length - 2,
+          y0: oy + node.labelRows.top,
+          y1: oy + node.labelRows.bottom,
+        }
+        labelRects.push(rect)
+        for (let x = rect.x0; x <= rect.x1; x++) {
+          for (let y = rect.y0; y <= rect.y1; y++) {
+            const ch = graph.canvas[x]?.[y]
+            if (ch && ch !== ' ') setRole(graph.roleCanvas, x, y, 'text')
+          }
+        }
+      }
       node.drawn = true
     }
   }
@@ -323,6 +362,10 @@ export function drawGraph(graph: AsciiGraph): Canvas {
 
   graph.canvas = mergeCanvases(graph.canvas, zero, useAscii, ...labelCanvases)
   fillRolesFromCanvases(graph.roleCanvas, labelCanvases, zero, 'text')
+  for (const labelC of labelCanvases) {
+    const rect = textBounds(labelC)
+    if (rect) labelRects.push(rect)
+  }
 
   // Draw subgraph labels last (on top)
   for (const sg of graph.subgraphs) {
