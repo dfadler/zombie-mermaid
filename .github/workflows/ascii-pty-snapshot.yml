@@ -57,13 +57,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # asciinema comes from Ubuntu's archive (2.x on 24.04; the capture
-      # script handles both the 2.x and 3.x size flags). Pillow does the
-      # crop and diff; pinned so the PNG diff can't shift under us.
+      # Ubuntu's apt asciinema is 2.4.0, which has no size flags, so the
+      # capture script refuses it (exit 4, found by the first run of this
+      # prototype). Use the 3.x release binary, pinned by sha256 (the digest
+      # GitHub publishes for the v3.2.1 asset, same version the goldens were
+      # generated with). Pillow is pinned so the PNG diff can't shift.
       - name: Install asciinema and Pillow
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends asciinema
+          curl -fsSL -o asciinema https://github.com/asciinema/asciinema/releases/download/v3.2.1/asciinema-x86_64-unknown-linux-gnu
+          echo "1b405bbda565b33c3c4718de67fedc3535580603c0694b1ff3fb04f363430a20  asciinema" | sha256sum -c -
+          sudo install -m 0755 asciinema /usr/local/bin/asciinema
           python3 -m pip install --user 'pillow==12.3.0'
 
       - name: Pre-pull the pinned agg image
