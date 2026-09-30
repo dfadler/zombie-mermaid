@@ -205,10 +205,9 @@ export function parseC4Diagram(lines: Statement[]): C4Diagram {
         elementAliases: [],
         children: [],
       }
-      // Only deployment nodes and the generic `Boundary` take a type arg;
-      // System_/Container_/Enterprise_Boundary have (alias, label) only.
       // Mermaid labels every frame with a type: the macro's own for the
       // typed boundaries, else the explicit argument, else a default.
+      // (System_/Container_/Enterprise_Boundary take no type arg.)
       const typed = BOUNDARY_TYPES[name]
       if (typed) boundary.type = typed
       else if (args[2] && (isNode || name === 'Boundary'))
