@@ -506,17 +506,21 @@ function roundedRightBarPath(
 }
 
 // ============================================================================
-// Smooth line interpolation — Natural cubic spline
+// Smooth line interpolation — monotone cubic (Fritsch-Carlson / PCHIP)
 //
-// Computes the mathematically smoothest curve through all data points by
-// minimizing total curvature (integrated second derivative). Treats y as a
-// function of x, so the curve can never go backwards.
+// A natural cubic spline is smooth but not shape-preserving: near a sharp
+// spike it overshoots the data, drawing a peak above the maximum or a dip
+// below the minimum (even below a zero baseline). Monotone cubic
+// interpolation keeps each segment monotone between its two points and puts a
+// flat tangent at every local extremum, so the curve never leaves the range of
+// the data. y is treated as a function of x, so the curve never goes backwards.
 //
-// Algorithm: tridiagonal system for second derivatives (Thomas algorithm),
-// then convert each cubic segment to SVG cubic Bezier commands.
+// Each cubic segment is converted to an SVG cubic Bezier command.
 // ============================================================================
 
-function smoothCurvePath(points: Array<{ x: number; y: number }>): string {
+export function smoothCurvePath(
+  points: Array<{ x: number; y: number }>,
+): string {
   if (points.length === 0) return ''
   if (points.length === 1) return `M${r(points[0]!.x)},${r(points[0]!.y)}`
   if (points.length === 2) {
@@ -526,12 +530,10 @@ function smoothCurvePath(points: Array<{ x: number; y: number }>): string {
   const n = points.length
 
   // From here on, n >= 3 (the n <= 2 cases returned above). Every index used
-  // below — including offsets like i-1/i+1 and n-2 — is bound by a `< n - 1`
-  // or `< n` loop condition, or is a fixed offset from n itself, into arrays
-  // sized exactly `n` or `n - 1`. Non-null assertions on those accesses are
-  // the same bounds-checked idiom as loop-index array access elsewhere in
-  // this codebase and are left as-is (justified, not asserting past a real
-  // gap in type info).
+  // below is bound by a `< n - 1` or `< n` loop condition, or is a fixed
+  // offset from n itself, into arrays sized exactly `n` or `n - 1`.
+  // Non-null assertions on those accesses are the same bounds-checked idiom as
+  // loop-index array access elsewhere in this codebase.
 
   // 1. Interval widths and secant slopes
   const h: number[] = []
@@ -541,37 +543,26 @@ function smoothCurvePath(points: Array<{ x: number; y: number }>): string {
     delta.push(h[i]! === 0 ? 0 : (points[i + 1]!.y - points[i]!.y) / h[i]!)
   }
 
-  // 2. Solve tridiagonal system for second derivatives c[] (natural boundary: c[0] = c[n-1] = 0)
-  const c = new Array<number>(n).fill(0)
-  if (n > 2) {
-    // Forward elimination
-    const cp = new Array<number>(n).fill(0) // modified upper diagonal
-    const dp = new Array<number>(n).fill(0) // modified right-hand side
-    for (let i = 1; i < n - 1; i++) {
-      const diag = 2 * (h[i - 1]! + h[i]!)
-      const rhs = 3 * (delta[i]! - delta[i - 1]!)
-      if (i === 1) {
-        cp[i] = h[i]! / diag
-        dp[i] = rhs / diag
-      } else {
-        const w = diag - h[i - 1]! * cp[i - 1]!
-        cp[i] = h[i]! / w
-        dp[i] = (rhs - h[i - 1]! * dp[i - 1]!) / w
-      }
-    }
-    // Back substitution
-    for (let i = n - 2; i >= 1; i--) {
-      c[i] = dp[i]! - cp[i]! * c[i + 1]!
-    }
-  }
-
-  // 3. Compute first derivatives (slopes) at each knot
+  // 2. Tangent at each knot (Fritsch-Carlson). Interior: weighted harmonic
+  //    mean of the adjacent secants, or 0 at a local extremum / flat run.
   const slopes = new Array<number>(n).fill(0)
-  for (let i = 0; i < n - 1; i++) {
-    slopes[i] = delta[i]! - (h[i]! * (2 * c[i]! + c[i + 1]!)) / 3
+  for (let i = 1; i < n - 1; i++) {
+    const d0 = delta[i - 1]!
+    const d1 = delta[i]!
+    if (d0 * d1 <= 0) continue
+    const w1 = 2 * h[i]! + h[i - 1]!
+    const w2 = h[i]! + 2 * h[i - 1]!
+    slopes[i] = (w1 + w2) / (w1 / d0 + w2 / d1)
   }
-  // Slope at last point: derivative of last segment at its end
-  slopes[n - 1] = delta[n - 2]! + (h[n - 2]! * c[n - 2]!) / 3
+  // Ends: one-sided three-point estimate, clamped so it can't overshoot.
+  const endSlope = (h0: number, h1: number, d0: number, d1: number): number => {
+    let m = ((2 * h0 + h1) * d0 - h0 * d1) / (h0 + h1)
+    if (m * d0 <= 0) m = 0
+    else if (d0 * d1 <= 0 && Math.abs(m) > 3 * Math.abs(d0)) m = 3 * d0
+    return m
+  }
+  slopes[0] = endSlope(h[0]!, h[1]!, delta[0]!, delta[1]!)
+  slopes[n - 1] = endSlope(h[n - 2]!, h[n - 3]!, delta[n - 2]!, delta[n - 3]!)
 
   // 4. Convert to cubic Bezier — control points strictly between endpoints in x
   let path = `M${r(points[0]!.x)},${r(points[0]!.y)}`
