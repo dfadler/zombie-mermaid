@@ -203,6 +203,12 @@ function buildClassElkGraph(
         padding: CLS.padding,
       }),
       'elk.edgeLabels.placement': 'CENTER',
+      // Mermaid lays disconnected components out left to right in
+      // declaration order (#1249). ELK's default packs components by size
+      // into rows, which reorders them; laying them out as one graph with
+      // model order as the tie-break keeps source order.
+      'elk.separateConnectedComponents': 'false',
+      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     },
     children,
     edges,
