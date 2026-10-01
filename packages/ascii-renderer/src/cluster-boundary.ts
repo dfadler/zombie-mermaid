@@ -234,7 +234,14 @@ export function widenClusterGutters(graph: AsciiGraph): boolean {
   if (!plans) return false
   const vertical = graph.config.graphDirection !== 'LR'
   let changed = false
-  for (const [sg, plan] of plans) {
+  // Outermost first: widening an inner cluster's gutter shifts the columns
+  // (rows) of any enclosing cluster's wall and gutter, so an outer plan
+  // checked earlier would measure against a stale wall (#1213). Array.sort
+  // is stable, so same-depth plans keep edge order.
+  const ordered = [...plans].sort(
+    ([a], [b]) => subgraphDepth(a) - subgraphDepth(b),
+  )
+  for (const [sg, plan] of ordered) {
     const wall = vertical ? sg.maxY : sg.maxX
     const sizes = vertical ? graph.rowHeight : graph.columnWidth
     const index = vertical ? plan.gutter.y : plan.gutter.x
@@ -245,6 +252,13 @@ export function widenClusterGutters(graph: AsciiGraph): boolean {
     }
   }
   return changed
+}
+
+/** Number of enclosing subgraphs (`parent` links) above `sg`. */
+function subgraphDepth(sg: AsciiSubgraph): number {
+  let depth = 0
+  for (let p = sg.parent; p; p = p.parent) depth++
+  return depth
 }
 
 /**
