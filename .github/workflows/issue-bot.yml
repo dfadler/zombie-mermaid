@@ -11,6 +11,6 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
-    uses: dfadler/issue-bot/.github/workflows/reusable.yml@778495b3d77158d2ed1f3c596f50bc2664f11386 # v1.3.0
+    uses: dfadler/issue-bot/.github/workflows/reusable.yml@473c2eb4abbfb2be1980251f93ac6c9b2e3997c1 # v1.5.0
     with:
-      ref: 778495b3d77158d2ed1f3c596f50bc2664f11386 # v1.3.0
+      ref: 473c2eb4abbfb2be1980251f93ac6c9b2e3997c1 # v1.5.0
