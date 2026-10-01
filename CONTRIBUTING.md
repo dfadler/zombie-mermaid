@@ -12,7 +12,7 @@ cd zombie-mermaid
 pnpm install
 ```
 
-Requires Node 22+ (`engines.node` in `package.json`; CI runs Node 22) and pnpm. The repo pins `packageManager` in `package.json`, and `corepack enable` will pick that up automatically.
+Requires Node 22+ (`engines.node` in `package.json`; CI runs Node 22) and pnpm. The repo pins `packageManager` in `package.json`, and `corepack enable` will pick that up automatically. A `.nvmrc` at the repo root pins the supported Node major (22); run `nvm use` (or `fnm use`) in the checkout to switch to it.
 
 Start the dev server with `pnpm run dev`. It serves `/` (the marketing home page) and `/editor` (the live editor) with live reload, on port 3456 by default. Set `PORT` (for example `PORT=3457 pnpm run dev`) if that port is taken or you run several checkouts at once.
 
