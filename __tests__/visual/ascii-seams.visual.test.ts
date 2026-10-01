@@ -33,9 +33,14 @@ interface Probe {
 // would read as a gap at the clip edge.
 test.use({ viewport: { width: 3000, height: 1200 } })
 
-// 7 CSS px cells are a whole number of device pixels at these scale factors
-// (a 1.25, 1.5 or 1.1 display would not be, and no CSS can fix that).
-const DEVICE_SCALE_FACTORS = [1, 2]
+// Default run: 1x and 2x. Set SEAM_DPRS (e.g. SEAM_DPRS=1.25,1.5) to probe other
+// display scales. At fractional scales (measured at 1.1, 1.25, 1.5 and 1.75) the
+// six `█` samples (the XY charts) fail whatever the cell width (7, 8 and 9px
+// alike): solid bars show hairline seams at 75-81% of the fill, while line glyphs
+// pass. So the default run stays at 1x and 2x, where the whole suite passes.
+const DEVICE_SCALE_FACTORS = (process.env.SEAM_DPRS ?? '1,2')
+  .split(',')
+  .map(Number)
 
 for (const dpr of DEVICE_SCALE_FACTORS) {
   test.describe(`ASCII mockup line seams @${dpr}x`, () => {
