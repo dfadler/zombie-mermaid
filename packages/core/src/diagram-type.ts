@@ -22,6 +22,8 @@ export const DIAGRAM_TYPES = [
   'class',
   'er',
   'xychart',
+  'architecture',
+
   'c4',
 ] as const
 
@@ -41,6 +43,8 @@ export function detectDiagramType(text: string): DiagramType {
   const firstLine = splitStatements(text)[0]?.text.toLowerCase() ?? ''
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
+  if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'
+
   if (
     /^c4(?:context|container|component|dynamic|deployment)\s*$/.test(firstLine)
   )

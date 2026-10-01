@@ -65,7 +65,7 @@ export { toDirection } from '@zombie-mermaid/core'
  * way sequence/class/ER/xychart were before issue #541.
  */
 const SUPPORTED_HEADERS =
-  '"graph <dir>"/"flowchart <dir>" (dir: TD, TB, LR, BT, RL), "stateDiagram-v2", "sequenceDiagram", "classDiagram", "erDiagram", "xychart-beta", "C4Context"/"C4Container"/"C4Component"/"C4Dynamic"/"C4Deployment"'
+  '"graph <dir>"/"flowchart <dir>" (dir: TD, TB, LR, BT, RL), "stateDiagram-v2", "sequenceDiagram", "classDiagram", "erDiagram", "xychart-beta", "C4Context"/"C4Container"/"C4Component"/"C4Dynamic"/"C4Deployment", "architecture-beta"'
 
 /**
  * Best-guess canonical header for a header line that looks like an attempt

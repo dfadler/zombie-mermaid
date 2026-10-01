@@ -16,7 +16,7 @@
 
 import { parseMermaid } from '../../../src/parser.ts'
 import { withDirectionOverride } from '@zombie-mermaid/core'
-import type { Direction } from '@zombie-mermaid/core'
+import type { Direction, MermaidGraph } from '@zombie-mermaid/core'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
 import { drawGraph } from './draw.ts'
@@ -57,8 +57,26 @@ export function renderFlowchartAscii(
 ): string {
   // `extras.direction` replaces the parsed top-level direction before
   // layout; see packages/core/src/direction-override.ts.
-  const parsed = withDirectionOverride(parseMermaid(text), extras.direction)
+  return renderGraphAscii(
+    withDirectionOverride(parseMermaid(text), extras.direction),
+    config,
+    colorMode,
+    theme,
+    extras,
+  )
+}
 
+/**
+ * Render an already-parsed graph to ASCII text art. Shared by the diagram
+ * types that lower to the flowchart model (see `renderArchitectureAscii`).
+ */
+export function renderGraphAscii(
+  parsed: MermaidGraph,
+  config: AsciiConfig,
+  colorMode: ColorMode,
+  theme: AsciiTheme,
+  extras: FlowchartAsciiExtras,
+): string {
   // Normalize direction for grid layout.
   // BT is laid out as TD then flipped vertically after drawing.
   // RL is treated as LR (full RL support not yet implemented).
