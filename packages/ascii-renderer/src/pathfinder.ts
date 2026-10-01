@@ -120,6 +120,13 @@ export function heuristic(a: GridCoord, b: GridCoord): number {
 // A* pathfinding
 // ============================================================================
 
+/**
+ * Per-bend tie-break cost for `preferStraight` searches. Far below one step
+ * (a path would need ~1000 bends to outweigh a single extra cell), so it
+ * only chooses between routes of equal length.
+ */
+const BEND_EPSILON = 0.001
+
 /** 4-directional movement (no diagonals in grid pathfinding). */
 const MOVE_DIRS: GridCoord[] = [
   { x: 1, y: 0 },
@@ -189,6 +196,7 @@ export function getPath(
   from: GridCoord,
   to: GridCoord,
   budget?: PathBudget,
+  preferStraight = false,
 ): GridCoord[] | null {
   if (budget && budget.remaining <= 0) {
     return null
@@ -249,7 +257,13 @@ export function getPath(
         continue
       }
 
-      const newCost = currentCost + 1
+      // With `preferStraight`, a bend costs a hair more than a straight
+      // step, so among equally short routes the one with fewest turns wins
+      // instead of whichever a heap tie surfaces (a staircase).
+      const prev = preferStraight ? cameFrom.get(gridKey(current)) : null
+      const bends =
+        prev && (current.x - prev.x !== dir.x || current.y - prev.y !== dir.y)
+      const newCost = currentCost + 1 + (bends ? BEND_EPSILON : 0)
       const nextKey = gridKey(next)
       const existingCost = costSoFar.get(nextKey)
 
@@ -443,6 +457,12 @@ export function routeEdge(
   }
   const path =
     tryDirectPath(graph, from, to, dir) ??
-    getPath(graph.grid, from, to, graph.pathBudget)
+    getPath(
+      graph.grid,
+      from,
+      to,
+      graph.pathBudget,
+      graph.preferStraightRoutes === true,
+    )
   return path ? mergePath(path) : null
 }

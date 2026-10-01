@@ -449,7 +449,15 @@ function drawCorners(graph: AsciiGraph, path: GridCoord[]): Canvas {
 
     let corner: string
     if (!graph.config.useAscii) {
-      if (
+      if (dirEquals(prevDir, nextDir)) {
+        // A collinear interior point is not a bend. Ordinary paths are
+        // merged (mergePath) so never have one; a cluster-exit path keeps
+        // its gutter point when the target lies straight ahead
+        // (cluster-boundary.ts). The line layer leaves this cell blank
+        // (lines stop short of path vertices), so draw the straight glyph;
+        // a sibling's fan-out corner here then merges into a tee.
+        corner = dirEquals(prevDir, Up) || dirEquals(prevDir, Down) ? '│' : '─'
+      } else if (
         (dirEquals(prevDir, Right) && dirEquals(nextDir, Down)) ||
         (dirEquals(prevDir, Up) && dirEquals(nextDir, Left))
       ) {
@@ -496,10 +504,18 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
   )
 }
 
-/** Draw edge label text centered on the widest path segment. */
-function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
-  const canvas = copyCanvas(graph.canvas)
-  if (edge.text.length === 0) return canvas
+/**
+ * Where an edge's label goes, as the drawing-space cells its lines start at.
+ * `null` for an unlabeled edge. The single source of truth for label
+ * placement: `drawArrowLabel` draws from it, and cluster-boundary.ts
+ * measures it to size a cluster-exit gutter that keeps the label clear of
+ * the cluster wall and the arrowhead.
+ */
+export function edgeLabelPlacement(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number; text: string }[] | null {
+  if (edge.text.length === 0) return null
 
   const drawingLine = lineToDrawing(graph, edge.labelLine)
 
@@ -520,16 +536,67 @@ function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
 
   // Only a genuine reciprocal pair (A-->B alongside B-->A) needs its label
   // pulled toward its own target instead of its own source — see #530 and
-  // drawTextOnLine's doc comment below. A lone vertical edge keeps the
+  // labelTextPlacement's doc comment below. A lone vertical edge keeps the
   // original "precede the arrow, near the source" placement.
-  const pullTowardTarget = hasReciprocalPartner(graph, edge)
+  //
+  // A TD cluster-exit edge whose first outside leg is vertical (its target
+  // lies straight below the stub) also pulls toward its target: the fan-out
+  // siblings put their labels on the gutter row, and a near-source label
+  // here would land on that same row, so `done` and `fail` would read as one
+  // run (`done────fail`). Pulled down, each label sits on its own segment.
+  const pullTowardTarget =
+    hasReciprocalPartner(graph, edge) ||
+    (graph.config.graphDirection !== 'LR' &&
+      edge.clusterSource !== undefined &&
+      graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  drawTextOnLine(canvas, drawingLine, edge.text, isUpwardEdge, pullTowardTarget)
+  return clearOfClusterWalls(
+    graph,
+    labelTextPlacement(drawingLine, edge.text, isUpwardEdge, pullTowardTarget),
+    drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+  )
+}
+
+/**
+ * Keep label text off a cluster's side walls. A line running one character
+ * from a wall (an outside edge passing beside a cluster) centres a label
+ * wider than that on the line, which overwrites the wall cell and leaves a
+ * gap in it. Slide the text to the line's own side of the wall instead. Only for a
+ * vertical line (`lineX`; a horizontal one is meant to cross the wall), and
+ * a label whose line sits on the wall itself, or that doesn't reach a wall,
+ * is left alone.
+ */
+function clearOfClusterWalls(
+  graph: AsciiGraph,
+  placement: { x: number; y: number; text: string }[],
+  lineX: number | undefined,
+): { x: number; y: number; text: string }[] {
+  if (lineX === undefined) return placement
+  return placement.map((item) => {
+    const width = displayWidth(item.text)
+    let { x } = item
+    for (const sg of graph.subgraphs) {
+      if (item.y <= sg.minY || item.y >= sg.maxY) continue
+      for (const wall of [sg.minX, sg.maxX]) {
+        if (wall < x || wall >= x + width || lineX === wall) continue
+        x = lineX > wall ? wall + 1 : wall - width
+      }
+    }
+    return x === item.x ? item : { ...item, x }
+  })
+}
+
+/** Draw edge label text centered on the widest path segment. */
+function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
+  const canvas = copyCanvas(graph.canvas)
+  for (const { x, y, text } of edgeLabelPlacement(graph, edge) ?? []) {
+    drawText(canvas, { x, y }, text)
+  }
   return canvas
 }
 
 /**
- * Draw text centered on a line segment defined by two drawing coordinates.
+ * Place text centered on a line segment defined by two drawing coordinates.
  * Supports multi-line labels.
  *
  * When isUpwardEdge is provided, offsets the label vertically to prevent
@@ -552,14 +619,13 @@ function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
  * partner) keeps the original near-source placement so its label still
  * reads as "preceding" its own arrow rather than crowding the arrowhead.
  */
-function drawTextOnLine(
-  canvas: Canvas,
+function labelTextPlacement(
   line: DrawingCoord[],
   label: string,
   isUpwardEdge?: boolean,
   pullTowardTarget = false,
-): void {
-  if (line.length < 2) return
+): { x: number; y: number; text: string }[] {
+  if (line.length < 2) return []
   const minX = Math.min(line[0]!.x, line[1]!.x)
   const maxX = Math.max(line[0]!.x, line[1]!.x)
   const minY = Math.min(line[0]!.y, line[1]!.y)
@@ -585,9 +651,9 @@ function drawTextOnLine(
   const lines = splitLines(label)
   const startY = middleY - Math.floor((lines.length - 1) / 2)
 
-  for (let i = 0; i < lines.length; i++) {
-    const lineText = lines[i]!
-    const startX = middleX - Math.floor(displayWidth(lineText) / 2)
-    drawText(canvas, { x: startX, y: startY + i }, lineText)
-  }
+  return lines.map((lineText, i) => ({
+    x: middleX - Math.floor(displayWidth(lineText) / 2),
+    y: startY + i,
+    text: lineText,
+  }))
 }
