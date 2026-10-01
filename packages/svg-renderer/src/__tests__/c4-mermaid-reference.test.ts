@@ -12,9 +12,9 @@ import { layoutC4DiagramSync } from '../c4/layout.ts'
 // direction), so a constant tuned to one sample cannot satisfy all of them.
 //
 // Vertical numbers depend only on heights and gaps, so they must agree to a
-// few pixels. Horizontal ones depend on text widths, which this package
-// estimates (Mermaid measures them in a browser), and relationship ends depend
-// on each shape's own outline, so those get a wider allowance.
+// few pixels. Horizontal ones depend on text widths, which this package sums
+// from Arial advances (Mermaid measures them in a browser), and relationship
+// ends depend on each shape's own outline, so those get a wider allowance.
 interface Reference {
   name: string
   source: string
@@ -32,7 +32,7 @@ const cases: Reference[] = JSON.parse(
 )
 
 const Y = 3
-const X = 11
+const X = 2
 const LINE = 16
 const LABEL = 10
 
