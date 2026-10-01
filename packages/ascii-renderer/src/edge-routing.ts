@@ -523,7 +523,19 @@ function buildParallelLanePath(
           { x: laneCross, y: fromAttach.y },
           { x: laneCross, y: toAttach.y },
         ]
-    const wideCandidate = mergePath([fromAttach, ...wideLabelSegment, toAttach])
+    // End the lane with the same one-gutter-cell approach every other edge
+    // makes into its target (`toGutter` -> `toAttach`), instead of running
+    // the last leg along the target's own border, where it drew a stray
+    // arrowhead/junction on the border cell itself (#1230).
+    const wideCandidate = mergePath([
+      fromAttach,
+      wideLabelSegment[0],
+      horizontalDeparture
+        ? { x: toGutter.x, y: laneMain }
+        : { x: laneCross, y: toGutter.y },
+      toGutter,
+      toAttach,
+    ])
     if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
