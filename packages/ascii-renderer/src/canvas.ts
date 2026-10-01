@@ -16,7 +16,7 @@ import type {
   ColorMode,
 } from './types.ts'
 import { colorizeLine, DEFAULT_ASCII_THEME } from './ansi.ts'
-import { toDisplayCells } from './display-width.ts'
+import { toDisplayCells, WIDE_CHAR_PLACEHOLDER } from './display-width.ts'
 import { joinWithLinks } from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
 
@@ -750,6 +750,157 @@ export function flipRoleCanvasVertically(roleCanvas: RoleCanvas): RoleCanvas {
   for (const col of roleCanvas) {
     col.reverse()
   }
+  return roleCanvas
+}
+
+// ============================================================================
+// Canvas horizontal flip — used for RL (right-to-left) direction support.
+//
+// RL is laid out as LR and the finished canvas is mirrored left-to-right,
+// remapping glyphs whose meaning depends on the X-axis. The counterpart of the
+// vertical flip above.
+// ============================================================================
+
+/**
+ * Characters that change meaning when the X-axis is flipped. Symmetric
+ * characters (─, │, ┬, ┴, ┼, ╵, ╷) are unchanged.
+ */
+const HORIZONTAL_FLIP_MAP: Record<string, string> = {
+  // Arrowheads
+  '►': '◄',
+  '◄': '►',
+  '>': '<',
+  '<': '>',
+  // Diagonal arrowheads (U+2196-U+2199)
+  '↖': '↗',
+  '↗': '↖',
+  '↙': '↘',
+  '↘': '↙',
+  // Corners
+  '┌': '┐',
+  '┐': '┌',
+  '└': '┘',
+  '┘': '└',
+  // Junctions (T-pieces flip horizontally)
+  '├': '┤',
+  '┤': '├',
+  // Rounded corners
+  '╭': '╮',
+  '╮': '╭',
+  '╰': '╯',
+  '╯': '╰',
+  // Double-line corners and junctions
+  '╔': '╗',
+  '╗': '╔',
+  '╚': '╝',
+  '╝': '╚',
+  '╟': '╢',
+  '╢': '╟',
+  // Corner brackets
+  '⌜': '⌝',
+  '⌝': '⌜',
+  '⌞': '⌟',
+  '⌟': '⌞',
+  // Slanted strokes and triangles
+  '╱': '╲',
+  '╲': '╱',
+  '/': '\\',
+  '\\': '/',
+  '◢': '◣',
+  '◣': '◢',
+  '◤': '◥',
+  '◥': '◤',
+  '◸': '◹',
+  '◹': '◸',
+  '◺': '◿',
+  '◿': '◺',
+}
+
+/**
+ * Flip the canvas horizontally (mirror across the vertical center).
+ * Reverses column order and remaps directional characters so arrows point
+ * the other way and corners mirror correctly.
+ *
+ * Cells `roleCanvas` marks as `'text'` are never remapped: a label containing
+ * `<` or `/` is prose, not an arrowhead. Call `mirrorLabelColumns` first so
+ * labels keep reading left-to-right.
+ *
+ * Used to transform an LR-rendered canvas into RL output. Mutates the canvas
+ * in place and returns it. `roleCanvas` must still be unflipped when this runs.
+ */
+export function flipCanvasHorizontally(
+  canvas: Canvas,
+  roleCanvas?: RoleCanvas,
+): Canvas {
+  for (const [x, col] of canvas.entries()) {
+    for (const [y, ch] of col.entries()) {
+      if (roleCanvas?.[x]?.[y] === 'text') continue
+      const flipped = HORIZONTAL_FLIP_MAP[ch]
+      if (flipped) col[y] = flipped
+    }
+  }
+  canvas.reverse()
+  return canvas
+}
+
+/**
+ * Pre-compensate labels for a following horizontal flip: within each label
+ * rectangle, reflect the `'text'` cells across the rectangle's vertical
+ * center, so that after `flipCanvasHorizontally` each label lands at its
+ * mirrored position but still reads left-to-right (wide-character placeholder
+ * cells keep their order too, since the two reflections cancel). `linkCanvas`
+ * is permuted identically. Mutates in place; call before the flips.
+ */
+export function mirrorLabelColumns(
+  canvas: Canvas,
+  roleCanvas: RoleCanvas,
+  labelRects: LabelRect[],
+  linkCanvas?: (string | null)[][],
+): void {
+  const moves: { cells: [number, number][]; xSum: number }[] = []
+  const seen = new Set<string>()
+  for (const { x0, y0, x1, y1 } of labelRects) {
+    if (x0 === x1) continue
+    const cells: [number, number][] = []
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        const key = `${x},${y}`
+        // A wide glyph's placeholder cell is '' and carries no role of its
+        // own, but it must travel with the glyph it follows.
+        const isText =
+          roleCanvas[x]?.[y] === 'text' ||
+          canvas[x]?.[y] === WIDE_CHAR_PLACEHOLDER
+        if (!isText || seen.has(key)) continue
+        seen.add(key)
+        cells.push([x, y])
+      }
+    }
+    moves.push({ cells, xSum: x0 + x1 })
+  }
+
+  for (const { cells, xSum } of moves) {
+    moveCellsX(canvas, cells, xSum, ' ')
+    moveCellsX(roleCanvas, cells, xSum, null)
+    if (linkCanvas) moveCellsX(linkCanvas, cells, xSum, null)
+  }
+}
+
+function moveCellsX<T>(
+  layer: T[][],
+  cells: [number, number][],
+  xSum: number,
+  empty: T,
+): void {
+  const saved = cells.map(([cx, cy]) => layer[cx]![cy]!)
+  for (const [cx, cy] of cells) layer[cx]![cy] = empty
+  for (const [i, [cx, cy]] of cells.entries()) {
+    layer[xSum - cx]![cy] = saved[i]!
+  }
+}
+
+/** Flip the role canvas horizontally to match flipCanvasHorizontally. */
+export function flipRoleCanvasHorizontally(roleCanvas: RoleCanvas): RoleCanvas {
+  roleCanvas.reverse()
   return roleCanvas
 }
 
