@@ -33,12 +33,16 @@ import {
  * this one rather than following that picker. Originally
  * `TERMINAL_PALETTE` in the now-deleted demo/client.ts.
  */
+// These are the built-in `zinc-dark` theme's values (packages/core/src/theme.ts),
+// kept as literals so the baselines do not move if that theme is retuned.
+// Only bg and fg are given: every role color (border, line, arrow) is derived
+// from them, which yields light lines (#89898b) and near-white arrowheads
+// (#d8d8d9), the closest built-in match to the bright, single-color look these
+// baselines had while they were accidentally uncolored. The panel's own
+// background stays the terminal chrome's `#0d1117` (demo/styles.css).
 const TERMINAL_PALETTE = {
-  bg: '#0d1117',
-  fg: '#e6edf3',
-  line: '#3d444d',
-  accent: '#4493f8',
-  muted: '#9198a1',
+  bg: '#18181B',
+  fg: '#FAFAFA',
 }
 
 export const TERMINAL_ASCII_OPTS: AsciiRenderOptions = {
