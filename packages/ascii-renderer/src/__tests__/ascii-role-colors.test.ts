@@ -61,9 +61,12 @@ const THEME_WITHOUT_OPTIONAL_ROLES: AsciiTheme = {
   bg: '#000000',
 }
 
+/** Role given to a glyph that carries no color at all. */
+const UNCOLORED = 'uncolored'
+
 interface Cell {
   ch: string
-  /** Role name, or the raw hex when it is none of ROLE_COLORS. */
+  /** Role name, the raw hex when it is none of ROLE_COLORS, or UNCOLORED. */
   role: string
 }
 
@@ -72,21 +75,36 @@ const decode = (s: string): string =>
 
 const hex2 = (n: number): string => n.toString(16).padStart(2, '0')
 
-/** Every colored, non-space glyph in the output, with the role its color maps to. */
-function coloredCells(output: string, mode: 'html' | 'truecolor'): Cell[] {
+/**
+ * Every non-space glyph in the output, with the role its color maps to, or
+ * UNCOLORED when the glyph carries no color. Uncolored glyphs must be kept: a
+ * role that loses its color emits its glyphs bare, and a parser that skipped
+ * them would let every per-glyph assertion pass with nothing left to check.
+ */
+function glyphCells(output: string, mode: 'html' | 'truecolor'): Cell[] {
   const cells: Cell[] = []
-  const push = (hex: string, text: string): void => {
-    const role = ROLE_BY_HEX.get(hex.toLowerCase()) ?? hex.toLowerCase()
+  const push = (hex: string | undefined, text: string): void => {
+    const role =
+      hex === undefined
+        ? UNCOLORED
+        : (ROLE_BY_HEX.get(hex.toLowerCase()) ?? hex.toLowerCase())
     for (const ch of text) if (ch.trim() !== '') cells.push({ ch, role })
   }
   if (mode === 'html') {
-    const span = /<span style="color:(#[0-9a-fA-F]{6})[^"]*">([^<]*)<\/span>/g
-    for (const m of output.matchAll(span)) push(m[1]!, decode(m[2]!))
+    // <span style="color:#rrggbb...">text</span>, or bare text between spans
+    const part =
+      /<span style="color:(#[0-9a-fA-F]{6})[^"]*">([^<]*)<\/span>|([^<]+)/g
+    for (const m of output.matchAll(part)) {
+      if (m[1] === undefined) push(undefined, decode(m[3]!))
+      else push(m[1], decode(m[2]!))
+    }
   } else {
-    // ESC [ 38;2;R;G;B m <text> ESC [ 0 m
-    const sgr = /\x1b\[38;2;(\d+);(\d+);(\d+)m([^\x1b]*)\x1b\[0m/g
-    for (const m of output.matchAll(sgr))
-      push(`#${hex2(+m[1]!)}${hex2(+m[2]!)}${hex2(+m[3]!)}`, m[4]!)
+    // ESC [ 38;2;R;G;B m <text> ESC [ 0 m, or bare text between them
+    const part = /\x1b\[38;2;(\d+);(\d+);(\d+)m([^\x1b]*)\x1b\[0m|([^\x1b]+)/g
+    for (const m of output.matchAll(part)) {
+      if (m[1] === undefined) push(undefined, m[5]!)
+      else push(`#${hex2(+m[1])}${hex2(+m[2]!)}${hex2(+m[3]!)}`, m[4]!)
+    }
   }
   return cells
 }
@@ -108,20 +126,23 @@ const ALNUM = /^[\p{L}\p{N}]$/u
 for (const mode of ['html', 'truecolor'] as const) {
   describe(`ASCII role colors (${mode})`, () => {
     const render = (src: string, theme: AsciiTheme = THEME): Cell[] =>
-      coloredCells(renderMermaidASCII(src, { theme, colorMode: mode }), mode)
+      glyphCells(renderMermaidASCII(src, { theme, colorMode: mode }), mode)
 
     for (const [name, src] of Object.entries(DIAGRAMS)) {
       describe(name, () => {
         const cells = render(src)
 
-        it('uses only the theme role colors', () => {
+        it('colors every glyph with one of the theme role colors', () => {
+          // Includes UNCOLORED: a glyph with no color at all is a failure too.
           const stray = cells.filter((c) => !(c.role in ROLE_COLORS))
           expect(stray).toEqual([])
         })
 
         it('draws letters and digits in the text color', () => {
-          const wrong = cells.filter((c) => ALNUM.test(c.ch) && c.role !== 'fg')
-          expect(wrong).toEqual([])
+          const letters = cells.filter((c) => ALNUM.test(c.ch))
+          // Guard against passing with nothing to check.
+          expect(letters.length).toBeGreaterThan(0)
+          expect(letters.filter((c) => c.role !== 'fg')).toEqual([])
         })
 
         it('draws arrowheads in the arrow color, and only arrowheads', () => {
