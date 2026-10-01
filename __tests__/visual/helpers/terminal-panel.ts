@@ -43,6 +43,13 @@ const TERMINAL_PALETTE = {
 
 export const TERMINAL_ASCII_OPTS: AsciiRenderOptions = {
   theme: diagramColorsToAsciiTheme(TERMINAL_PALETTE),
+  // These tests render in Node and mount the string in a browser. `auto` (the
+  // default) resolves to 'html' only when there is no `process` object, i.e.
+  // inside a browser; in Node with piped stdout it resolves to 'none', which
+  // draws plain uncolored text with no spans. The suite did render in the
+  // browser (where `auto` meant 'html') until the move to Playwright Test, and
+  // silently lost all of its color coverage when rendering moved to Node.
+  colorMode: 'html',
 }
 
 /** Split text into grapheme clusters — mirrors `graphemes` in demo/client.ts. */
