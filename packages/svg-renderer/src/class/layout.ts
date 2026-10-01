@@ -347,13 +347,26 @@ export function layoutClassDiagramSync(
   return extractClassLayout(result, diagram, classSizes, noteSizes)
 }
 
+/**
+ * Width of a member line sized for the worst-case glyph advance.
+ *
+ * The mono face advances 0.6em per glyph (6.6px at the 11px member size), but
+ * browsers that don't position glyphs at subpixel offsets (headless Chromium
+ * on Linux, notably) round each advance to a whole pixel, so a long member
+ * draws up to 0.4px per character wider than `estimateMonoTextWidth` says and
+ * ran into the box's right border (#1238). Rounding the advance up here keeps
+ * the full `CLS.boxPadX` of right padding whichever way the font is rasterized.
+ */
+function memberTextWidth(text: string): number {
+  return text.length * Math.ceil(estimateMonoTextWidth('M', CLS.memberFontSize))
+}
+
 /** Calculate the max width of a list of class members (uses mono metrics) */
 function maxMemberWidth(members: ClassMember[]): number {
   if (members.length === 0) return 0
   let maxW = 0
   for (const m of members) {
-    const text = formatClassMember(m)
-    const w = estimateMonoTextWidth(text, CLS.memberFontSize)
+    const w = memberTextWidth(formatClassMember(m))
     if (w > maxW) maxW = w
   }
   return maxW
