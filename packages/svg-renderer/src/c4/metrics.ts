@@ -112,8 +112,6 @@ export function c4PersonGeometry(width: number): {
   rx: number
   headRadius: number
   pillTop: number
-  /** How far the whole figure is drawn below its layout box. */
-  drop: number
 } {
   const scale = width / C4.width
   return {
@@ -121,7 +119,6 @@ export function c4PersonGeometry(width: number): {
     headRadius: C4.personHeadRadius * scale,
     pillTop:
       C4.personPillTop + C4.personPillTopPerExtraWidth * (width - C4.width),
-    drop: (C4.personPillTopPerExtraWidth * (width - C4.width)) / 2,
   }
 }
 
@@ -187,9 +184,8 @@ export function c4ShapeSize(
   if (el.kind === 'person') {
     return {
       width,
-      // Mermaid lays rows out with the standard rise; a wider person is only
-      // drawn a little lower (see `c4PersonGeometry`).
-      height: C4.personPillTop + boxHeight,
+      // The head rises above the pill, which is as tall as the text needs.
+      height: c4PersonGeometry(width).pillTop + boxHeight,
       textHeight,
     }
   }

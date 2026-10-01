@@ -188,7 +188,7 @@ function renderElement(el: PositionedC4Element): string {
   if (el.kind === 'person') {
     parts.push(...personShape(el, pal))
     const g = c4PersonGeometry(w)
-    top = y + g.drop + g.pillTop + C4.shapePadding
+    top = y + g.pillTop + C4.shapePadding
   } else if (el.shape === 'db') {
     parts.push(...cylinderShape(el, pal))
     const { ry } = c4CylinderCap(w)
@@ -252,8 +252,8 @@ function renderElement(el: PositionedC4Element): string {
 /** A rounded pill with a round head rising out of its top, as Mermaid draws a person. */
 function personShape(el: PositionedC4Element, pal: C4Palette): string[] {
   const { x, width: w } = el
-  const { rx, headRadius, pillTop: rise, drop } = c4PersonGeometry(w)
-  const y = el.y + drop
+  const { rx, headRadius, pillTop: rise } = c4PersonGeometry(w)
+  const y = el.y
   const cx = x + w / 2
   const pillTop = y + rise
   const pillHeight = el.y + el.height - pillTop

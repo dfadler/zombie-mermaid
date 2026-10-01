@@ -321,9 +321,9 @@ function personIntersect(box: Placed, toward: Point): Point {
   const g = c4PersonGeometry(box.width)
   const cx = box.x + box.width / 2
   const cy = box.y + box.height / 2
-  const headY = box.y + g.drop + g.headRadius
-  const pillTop = box.y + C4.personPillTop + g.drop
-  const pillBottom = box.y + box.height + g.drop
+  const headY = box.y + g.headRadius
+  const pillTop = box.y + g.pillTop
+  const pillBottom = box.y + box.height
   const inside = (x: number, y: number): boolean => {
     if (Math.hypot(x - cx, y - headY) <= g.headRadius) return true
     if (y < pillTop || y > pillBottom) return false
