@@ -31,6 +31,11 @@ export interface Measured {
   defaultColor: string
   /** computed background color of the mockup's <pre> */
   background: string
+  /**
+   * The <pre> scrolls horizontally, so part of the diagram is not visible in
+   * a screenshot. Pixel-based checks would read background there.
+   */
+  clipped: boolean
 }
 
 export async function mountAndMeasure(
@@ -115,6 +120,7 @@ export async function mountAndMeasure(
       originX,
       originY,
       defaultColor: toHex(cs.color),
+      clipped: pre.scrollWidth > pre.clientWidth + 1,
       // the <pre> itself is transparent; the color is painted by an ancestor
       background: (() => {
         for (let el: Element | null = pre; el; el = el.parentElement) {
