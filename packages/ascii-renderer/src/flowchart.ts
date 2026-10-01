@@ -23,10 +23,17 @@ import { drawGraph } from './draw.ts'
 import {
   canvasToString,
   flipCanvasVertically,
+  flipCanvasHorizontally,
   mirrorLabelRows,
+  mirrorLabelColumns,
   flipRoleCanvasVertically,
+  flipRoleCanvasHorizontally,
 } from './canvas.ts'
-import { buildNodeLinkCanvas, flipLinkCanvasVertically } from './hyperlinks.ts'
+import {
+  buildNodeLinkCanvas,
+  flipLinkCanvasHorizontally,
+  flipLinkCanvasVertically,
+} from './hyperlinks.ts'
 import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
 
 /**
@@ -79,7 +86,7 @@ export function renderGraphAscii(
 ): string {
   // Normalize direction for grid layout.
   // BT is laid out as TD then flipped vertically after drawing.
-  // RL is treated as LR (full RL support not yet implemented).
+  // RL is laid out as LR, then flipped horizontally after drawing.
   if (parsed.direction === 'LR' || parsed.direction === 'RL') {
     config.graphDirection = 'LR'
   } else {
@@ -108,6 +115,19 @@ export function renderGraphAscii(
     flipCanvasVertically(graph.canvas, graph.roleCanvas)
     flipRoleCanvasVertically(graph.roleCanvas)
     if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
+  }
+
+  // RL: flip the finished canvas horizontally so the flow runs right→left.
+  if (parsed.direction === 'RL') {
+    mirrorLabelColumns(
+      graph.canvas,
+      graph.roleCanvas,
+      graph.labelRects ?? [],
+      linkCanvas,
+    )
+    flipCanvasHorizontally(graph.canvas, graph.roleCanvas)
+    flipRoleCanvasHorizontally(graph.roleCanvas)
+    if (linkCanvas) flipLinkCanvasHorizontally(linkCanvas)
   }
 
   return canvasToString(graph.canvas, {
