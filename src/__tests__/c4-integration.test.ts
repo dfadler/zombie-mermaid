@@ -89,17 +89,13 @@ describe('C4 SVG rendering', () => {
     expect(plain).not.toContain('<ellipse')
   })
 
-  it('honors the direction option', () => {
-    const tb = renderMermaidSVG(COMPONENT)
-    const lr = renderMermaidSVG(COMPONENT, { direction: 'LR' })
-    const size = (s: string) =>
-      s
-        .match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)!
-        .slice(1)
-        .map(Number) as [number, number]
-    const [tbW, tbH] = size(tb)
-    const [lrW, lrH] = size(lr)
-    expect(lrW / lrH).toBeGreaterThan(tbW / tbH)
+  it('ignores the direction option in SVG, as Mermaid has none for C4', () => {
+    // Shapes are placed in rows in declaration order, whatever the direction.
+    const strip = (svg: string) => svg.replace(/zm-title-\d+/g, 'zm-title')
+    const tb = strip(renderMermaidSVG(COMPONENT))
+    for (const direction of ['BT', 'LR', 'RL'] as const) {
+      expect(strip(renderMermaidSVG(COMPONENT, { direction }))).toBe(tb)
+    }
   })
 
   it('surfaces parse errors with a line number', () => {
@@ -148,14 +144,12 @@ describe('Rel_Back arrow direction', () => {
 
   it('puts the SVG arrowhead at the declared "from" end', () => {
     const svg = renderMermaidSVG(src)
-    const line = /<polyline class="c4-relationship"[^>]*points="([^"]+)"/.exec(
+    const d =
+      /<path class="c4-relationship"[^>]* d="M ([\d.-]+),([\d.-]+) /.exec(svg)!
+    const [sx, sy] = [Number(d[1]), Number(d[2])]
+    const tip = /<polygon class="c4-arrowhead" points="([\d.]+),([\d.]+) /.exec(
       svg,
-    )![1]!
-    const [sx, sy] = line.split(' ')[0]!.split(',').map(Number) as [
-      number,
-      number,
-    ]
-    const tip = /<polygon points="([\d.]+),([\d.]+) /.exec(svg)!
+    )!
     expect(Math.hypot(Number(tip[1]) - sx, Number(tip[2]) - sy)).toBeLessThan(1)
   })
 
