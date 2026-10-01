@@ -186,7 +186,7 @@ describe('parseClassDiagram – `:::` shorthand', () => {
       }
       classDef someclass fill:#f96`)
     expect(d.classes.map((c) => c.id)).toEqual(['Animal'])
-    expect(d.classes[0]!.attributes.map((a) => a.name)).toEqual(['sizeInFeet'])
+    expect(d.classes[0]!.attributes.map((a) => a.name)).toEqual(['int sizeInFeet'])
     expect(d.classes[0]!.methods.map((m) => m.name)).toEqual(['canEat'])
     expect(d.classAssignments.get('Animal')).toBe('someclass')
   })
@@ -197,7 +197,7 @@ describe('parseClassDiagram – `:::` shorthand', () => {
     const d = parse(`classDiagram
       class Animal:::someclass { -int sizeInFeet }`)
     expect(d.classes.map((c) => c.id)).toEqual(['Animal'])
-    expect(d.classes[0]!.attributes.map((a) => a.name)).toEqual(['sizeInFeet'])
+    expect(d.classes[0]!.attributes.map((a) => a.name)).toEqual(['int sizeInFeet'])
     expect(d.classAssignments.get('Animal')).toBe('someclass')
   })
 

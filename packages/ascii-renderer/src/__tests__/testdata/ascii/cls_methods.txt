@@ -10,8 +10,8 @@ classDiagram
 +------------------------------+    
 | BankAccount                  |    
 +------------------------------+    
-| + owner: String              |    
-| - balance: int               |    
+| + String owner               |    
+| - int balance                |    
 +------------------------------+    
 | + deposit(int amount): void  |    
 | + withdraw(int amount): bool |    
