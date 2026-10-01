@@ -58,12 +58,14 @@ screenshot that ends up in a PR/issue body for this category of change.
 The mockup's own fidelity is checked separately, by tests rather than by
 eye: `__tests__/visual/ascii-geometry.visual.test.ts` (every glyph sits in the
 right cell with the right color, against an `@xterm/headless` oracle),
-`ascii-seams.visual.test.ts` (adjacent line and block glyphs join) and
-`ascii-legibility.visual.test.ts` (connectors keep clear of text). A change that
+`ascii-seams.visual.test.ts` (adjacent line and block glyphs join),
+`ascii-legibility.visual.test.ts` (connectors keep clear of text) and
+`ascii-crispness.visual.test.ts` (vertical strokes are one crisp pixel column,
+not split across two). A change that
 only touches the mockup (`.ascii-output` CSS in `demo/styles.css`,
 `packages/site/ascii-html.ts`'s chrome, the visual helpers) leaves what a
 terminal prints unchanged, so a real-terminal capture would show nothing: for
-those, run the three tests and attach before/after mockup screenshots, each
+those, run the four tests and attach before/after mockup screenshots, each
 labeled as a browser mockup, not a terminal. Any change to what the renderer
 emits still needs the real-terminal image above. A real-PTY golden suite was
 considered and not adopted (#1151, #1186).
