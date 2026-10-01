@@ -46,8 +46,9 @@ import {
   requireCardinalDirection,
   requireGridCoord,
 } from './types.ts'
-import { routeEdge } from './pathfinder.ts'
-import { isFree } from './grid-occupancy.ts'
+import { routeEdge, mergePath } from './pathfinder.ts'
+import { isFree, pathCells } from './grid-occupancy.ts'
+import { interiorCellsClearOfNodes } from './edge-routing.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { edgeLabelPlacement } from './draw-arrows.ts'
 import { displayWidth } from './display-width.ts'
@@ -116,12 +117,25 @@ export function buildClusterExitRoute(
   // as its own segment (below the wall) rather than one long segment that
   // starts at the anchor and centres on the wall.
   const path = [face, ...outside]
+  // Beside a lane group (#1182) the shared fan-out run also carries the
+  // lane siblings' drops, so a label centred on it would read as naming
+  // them too. Put each exit's label on its own final leg instead. Plans
+  // without a lane group keep the first outside segment.
+  const own = planHasLaneGroup(plan)
   return {
     path,
     startDir,
     endDir,
-    labelSegment: [path[1]!, path[2]!],
+    labelSegment: own
+      ? [path[path.length - 2]!, path[path.length - 1]!]
+      : [path[1]!, path[2]!],
   }
+}
+
+/** Whether any exit in `plan` is a parallel-lane sibling (#329, #1182). */
+export function planHasLaneGroup(plan: ClusterExitPlan): boolean {
+  for (const edge of plan.edges) if (edge.parallelLane) return true
+  return false
 }
 
 /**
@@ -186,19 +200,13 @@ function planOne(
     if (group) group.push(edge)
     else laneGroups.set(edge.parallelLane.usedOffsets, [edge])
   }
-  const eligible = routable.filter((edge) => {
+  let eligible = routable.filter((edge) => {
     if (!edge.parallelLane) return true
     return laneGroups
       .get(edge.parallelLane.usedOffsets)!
       .every((sibling) => routableSet.has(sibling))
   })
-
-  // The 2+ threshold counts a lane group once: its siblings leave together
-  // down the same trunk, so on their own they have no fan-out to organise.
-  const exits = new Set<unknown>(
-    eligible.map((edge) => edge.parallelLane?.usedOffsets ?? edge),
-  )
-  if (exits.size < 2) return null
+  if (eligible.length === 0) return null
 
   // Every eligible edge shares one stand-in node (resolveSubgraphEndpoint
   // is deterministic per cluster) and therefore one stub.
@@ -211,9 +219,35 @@ function planOne(
     : { x: box.maxX + 1, y: anchorCoord.y + 1 }
   const face = gridCoordDirection(anchorCoord, vertical ? Down : Right)
 
-  // The stub must be a clear straight run from the face to the gutter: the
-  // box can contain foreign nodes, and a non-bottom anchor can have another
-  // member below it.
+  // A lane group also needs a free side face on its target for each
+  // sibling past the first (`clusterLaneSideRoute`); a group that can't get
+  // one (three or more siblings, a target against the layout edge) keeps
+  // today's routing like any other ineligible group.
+  const trial: ClusterExitPlan = {
+    box,
+    anchor,
+    gutter,
+    edges: new Set(eligible),
+  }
+  const unroutable = new Set<Set<number>>()
+  for (const edge of eligible) {
+    const lane = edge.parallelLane
+    if (lane && lane.index > 0 && !clusterLaneSideRoute(graph, trial, edge)) {
+      unroutable.add(lane.usedOffsets)
+    }
+  }
+  eligible = eligible.filter(
+    (edge) =>
+      !edge.parallelLane || !unroutable.has(edge.parallelLane.usedOffsets),
+  )
+
+  // The 2+ threshold counts a lane group once: its siblings leave together
+  // down the same trunk, so on their own they have no fan-out to organise.
+  const exits = new Set<unknown>(
+    eligible.map((edge) => edge.parallelLane?.usedOffsets ?? edge),
+  )
+  if (exits.size < 2) return null
+
   const stubLen = vertical ? gutter.y - face.y : gutter.x - face.x
   for (let i = 1; i <= stubLen; i++) {
     const cell: GridCoord = vertical
@@ -234,6 +268,81 @@ function planOne(
   }
 
   return plan
+}
+
+/**
+ * A lane sibling's leg from the gutter cell to a face of the target that the
+ * first lane (which enters the flow-side face) leaves free: in TD the
+ * target's right face, then its left; in LR its bottom face, then its top.
+ * The lane drops through the gutter column (row) beside the target and
+ * enters that face, so the arrowhead lands one cell outside the border. The
+ * ordinary lane builder instead runs its last approach along the target's
+ * own border column (row), overwriting the border. Sibling `index` 1 takes
+ * the near side, 2 the far side; null when that face has no gutter cell
+ * (the target is against the layout edge) or the leg isn't clear of other
+ * nodes, or for any further sibling.
+ */
+export function clusterLaneSideRoute(
+  graph: AsciiGraph,
+  plan: ClusterExitPlan,
+  edge: AsciiEdge,
+): {
+  path: GridCoord[]
+  endDir: Direction
+  labelSegment: [GridCoord, GridCoord]
+} | null {
+  const vertical = graph.config.graphDirection !== 'LR'
+  const index = edge.parallelLane!.index
+  if (index > 2) return null
+  const to = requireGridCoord(edge.to)
+  const gutter = plan.gutter
+  // Cross-axis position of the target's centre, and whether the gutter
+  // lies on its low or high side.
+  const centre = vertical ? to.x + 1 : to.y + 1
+  const gutterCross = vertical ? gutter.x : gutter.y
+  const high = {
+    lane: (vertical ? to.x : to.y) + 3,
+    attach: (vertical ? to.x : to.y) + 2,
+    dir: vertical ? Left : Up,
+  }
+  const low = {
+    lane: (vertical ? to.x : to.y) - 1,
+    attach: vertical ? to.x : to.y,
+    dir: vertical ? Right : Down,
+  }
+  const sides = gutterCross >= centre ? [high, low] : [low, high]
+  const side = sides[index - 1]!
+  const known = (vertical ? graph.columnWidth : graph.rowHeight).has(side.lane)
+  if (!known || side.lane < 0 || side.lane === gutterCross) return null
+
+  const path: GridCoord[] = vertical
+    ? mergePath([
+        gutter,
+        { x: side.lane, y: gutter.y },
+        { x: side.lane, y: to.y + 1 },
+        { x: side.attach, y: to.y + 1 },
+      ])
+    : mergePath([
+        gutter,
+        { x: gutter.x, y: side.lane },
+        { x: to.x + 1, y: side.lane },
+        { x: to.x + 1, y: side.attach },
+      ])
+  if (
+    !interiorCellsClearOfNodes(graph, pathCells(path), [edge.from, edge.to])
+  ) {
+    return null
+  }
+  const labelSegment: [GridCoord, GridCoord] = vertical
+    ? [
+        { x: side.lane, y: gutter.y },
+        { x: side.lane, y: to.y },
+      ]
+    : [
+        { x: gutter.x, y: side.lane },
+        { x: to.x, y: side.lane },
+      ]
+  return { path, endDir: side.dir, labelSegment }
 }
 
 /** Safety bound on one-character gutter widenings per cluster. */

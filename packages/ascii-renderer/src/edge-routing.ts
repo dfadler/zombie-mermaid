@@ -33,6 +33,7 @@ import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 import { displayWidth } from './display-width.ts'
 import {
   buildClusterExitRoute,
+  clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
 import { isOccupied, pathCells } from './grid-occupancy.ts'
@@ -251,7 +252,7 @@ function isCellInNodeBlock(node: AsciiNode, cell: GridCoord): boolean {
  *    Only a *different*, unrelated node's block is a genuine collision
  *    there.
  */
-function interiorCellsClearOfNodes(
+export function interiorCellsClearOfNodes(
   graph: AsciiGraph,
   cells: readonly GridCoord[],
   ownNodes: readonly AsciiNode[] = [],
@@ -634,10 +635,10 @@ function buildParallelLanePath(
 
 /**
  * Route for a lane sibling (`parallelLane.index > 0`) of an engaged cluster
- * exit: the shared stub to the gutter, then the ordinary lane builder with
- * the gutter cell as its origin, so the lane's offset and label segment lie
- * outside the cluster wall instead of on it. Same shape as
- * `buildClusterExitRoute`'s result.
+ * exit: the shared stub to the gutter, then a leg that ends on the target's
+ * side face (see `clusterLaneSideRoute`), so the lane's drop and label lie
+ * outside the cluster wall and its arrowhead sits beside the target's border
+ * rather than on it. Same shape as `buildClusterExitRoute`'s result.
  */
 function buildClusterLaneRoute(
   graph: AsciiGraph,
@@ -648,6 +649,17 @@ function buildClusterLaneRoute(
   const startDir = vertical ? Down : Right
   const endDir = vertical ? Up : Left
   const face = gridCoordDirection(requireGridCoord(plan.anchor), startDir)
+  const side = clusterLaneSideRoute(graph, plan, edge)
+  if (side) {
+    return {
+      path: [face, ...side.path],
+      startDir,
+      endDir: side.endDir,
+      labelSegment: side.labelSegment,
+    }
+  }
+  // No free side face (a third sibling, or a target against the layout
+  // edge): fall back to the ordinary lane builder from the gutter cell.
   const lane = buildParallelLanePath(
     graph,
     edge,
@@ -656,22 +668,11 @@ function buildClusterLaneRoute(
     edge.parallelLane!.index,
     plan.gutter,
   )
-  // In LR the lane's label segment is a horizontal run that starts on the
-  // gutter column, where the other exits' vertical legs (and their labels)
-  // run. Start it one grid column further out so the text stays clear.
-  const [from, to] = lane.labelSegment
-  const labelSegment: [GridCoord, GridCoord] =
-    !vertical &&
-    from.y === to.y &&
-    from.x === plan.gutter.x &&
-    to.x > from.x + 1
-      ? [{ x: from.x + 1, y: from.y }, to]
-      : lane.labelSegment
   return {
     path: [face, ...lane.path],
     startDir,
     endDir,
-    labelSegment,
+    labelSegment: lane.labelSegment,
   }
 }
 

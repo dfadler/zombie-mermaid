@@ -124,4 +124,200 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
       }
     },
   )
+
+  // A third sibling has no free side face left on the target, so the group
+  // keeps today's routing rather than running a lane along a node border.
+  it.each(['TD', 'LR'] as const)(
+    '%s: a three-sibling lane group does not engage the cluster',
+    (dir) => {
+      const src = `${head(dir)}  S -->|third| T\n  S -->|other| U\n  S -->|more| V\n`
+      const graph = convertToAsciiGraph(parseMermaid(src), {
+        useAscii: false,
+        paddingX: 6,
+        paddingY: 5,
+        boxBorderPadding: 1,
+        graphDirection: dir,
+      })
+      createMapping(graph)
+      const plan = [...(graph.clusterExitPlans?.values() ?? [])][0]
+      expect(plan).toBeDefined()
+      expect([...plan!.edges].some((e) => e.parallelLane)).toBe(false)
+    },
+  )
+
+  describe('node borders and label placement', () => {
+    const NODE_NAMES = ['Start', 'a', 'T', 'U', 'V']
+
+    // Where `name` sits as a whole token (not inside a longer word).
+    const findToken = (
+      lines: string[],
+      name: string,
+    ): { row: number; col: number } | undefined => {
+      for (const [row, text] of lines.entries()) {
+        let from = 0
+        for (;;) {
+          const col = text.indexOf(name, from)
+          if (col < 0) break
+          const before = text[col - 1] ?? ' '
+          const after = text[col + name.length] ?? ' '
+          if (!/\w/.test(before) && !/\w/.test(after)) return { row, col }
+          from = col + 1
+        }
+      }
+      return undefined
+    }
+
+    const boxProblems = (
+      lines: string[],
+      useAscii: boolean,
+      others: number,
+    ): string[] => {
+      const problems: string[] = []
+      const at = (r: number, c: number): string => lines[r]?.[c] ?? ' '
+      const corners = useAscii ? ['+', '+', '+', '+'] : ['┌', '┐', '└', '┘']
+      // What an edge may legitimately merge into on each kind of border cell.
+      const horizontalOk = useAscii ? '-+' : '─┬┴┼'
+      const verticalOk = useAscii ? '|+' : '│├┤┼'
+      for (const name of NODE_NAMES.slice(0, 3 + others)) {
+        const tok = findToken(lines, name)
+        if (!tok) {
+          problems.push(`${name}: not found`)
+          continue
+        }
+        const { row, col } = tok
+        let left = col
+        while (left > 0 && !'│|├┤+'.includes(at(row, left))) left--
+        let right = col
+        while (
+          right < (lines[row]?.length ?? 0) &&
+          !'│|├┤+'.includes(at(row, right))
+        )
+          right++
+        let top = row - 1
+        while (top > 0 && at(top, col) === ' ') top--
+        let bottom = row + 1
+        while (bottom < lines.length && at(bottom, col) === ' ') bottom++
+        const where = `${name} (box rows ${top}-${bottom}, cols ${left}-${right})`
+        const cs = [
+          at(top, left),
+          at(top, right),
+          at(bottom, left),
+          at(bottom, right),
+        ]
+        for (const [i, glyph] of cs.entries()) {
+          if (glyph !== corners[i]) {
+            problems.push(
+              `${where}: corner ${i} is '${glyph}', expected '${corners[i]}'`,
+            )
+          }
+        }
+        for (let c = left + 1; c < right; c++) {
+          for (const r of [top, bottom]) {
+            if (!horizontalOk.includes(at(r, c))) {
+              problems.push(
+                `${where}: border cell (${r},${c}) is '${at(r, c)}'`,
+              )
+            }
+          }
+        }
+        for (let r = top + 1; r < bottom; r++) {
+          for (const c of [left, right]) {
+            if (!verticalOk.includes(at(r, c))) {
+              problems.push(`${where}: wall cell (${r},${c}) is '${at(r, c)}'`)
+            }
+          }
+        }
+      }
+      return problems
+    }
+
+    // Every node box keeps its four corners and its walls: an edge may
+    // merge a junction into a border but never replace a corner or put an
+    // arrowhead on it. The second lane used to run its last approach along
+    // T's own border (left wall in LR, top wall in TD).
+    it.each(CASES)('%s: every node box border is intact', (_n, dir, others) => {
+      for (const useAscii of [false, true]) {
+        expect(
+          boxProblems(
+            render(source(dir, others), useAscii),
+            useAscii,
+            others.length,
+          ),
+        ).toEqual([])
+      }
+    })
+
+    // Two edge labels on one row need clear line between them, or they
+    // read as one run ("other-more").
+    it.each(CASES)('%s: no two labels abut on a row', (_n, dir, others) => {
+      for (const useAscii of [false, true]) {
+        const lines = render(source(dir, others), useAscii)
+        const words = ['first', 'second', ...others]
+        for (const [r, text] of lines.entries()) {
+          const spans = words
+            .map((w) => [text.indexOf(w), w.length] as const)
+            .filter(([i]) => i >= 0)
+            .sort((x, y) => x[0] - y[0])
+          for (let i = 1; i < spans.length; i++) {
+            const prev = spans[i - 1]!
+            const gap = spans[i]![0] - (prev[0] + prev[1])
+            expect(
+              gap,
+              `row ${r} (ascii=${useAscii}):\n${text}`,
+            ).toBeGreaterThanOrEqual(2)
+          }
+        }
+      }
+    })
+
+    // Each exit's label sits on that exit's own final leg, never on a run
+    // another edge shares or owns.
+    it.each(LR_CASES)('%s: each label is on its own leg', (_n, dir, others) => {
+      const lines = render(source(dir, others))
+      const rowOf = (w: string): string => lines.find((l) => l.includes(w))!
+      expect(rowOf('first')).toContain('T')
+      expect(rowOf('first')).not.toContain('second')
+      for (const [i, o] of others.entries()) {
+        expect(rowOf(o), o).toContain('UVW'[i]!)
+      }
+      // The second lane's label is on a row that carries no other label
+      // and no node, below T.
+      const secondRow = rowOf('second')
+      for (const w of ['first', ...others, 'T', 'U', 'V']) {
+        expect(secondRow, w).not.toContain(w)
+      }
+      // ...and it starts a line cell clear of the junction it turns off.
+      expect(secondRow[secondRow.indexOf('second') - 1]).toBe('─')
+      expect(lines.findIndex((l) => l.includes('second'))).toBeGreaterThan(
+        lines.findIndex((l) => l.includes('T')),
+      )
+    })
+
+    // TD: every exit drops from the shared fan-out row, and nothing is
+    // written on that row between the trunk and the last drop - so the
+    // second lane visibly leaves the trunk's fan-out, not another edge's
+    // labelled run.
+    it.each(TD_CASES)(
+      '%s: the second lane leaves the unlabelled shared fan-out',
+      (_n, dir, others) => {
+        for (const useAscii of [false, true]) {
+          const lines = render(source(dir, others), useAscii)
+          const start = findToken(lines, 'Start')!
+          const trunk = start.col + 2
+          const second = findToken(lines, 'second')!
+          const secondCol = second.col + 3
+          const vertical = useAscii ? '|' : '│'
+          let r = second.row - 1
+          while (lines[r]?.[secondCol] === vertical) r--
+          const fanOut = lines[r]!
+          expect(fanOut, 'fan-out row').not.toMatch(/[a-z]/)
+          expect(fanOut[trunk], 'fan-out row meets the trunk').not.toBe(' ')
+          expect(
+            fanOut[secondCol],
+            'second lane starts on the fan-out row',
+          ).not.toBe(' ')
+        }
+      },
+    )
+  })
 })
