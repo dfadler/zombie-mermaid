@@ -13,6 +13,9 @@ import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { parseMermaid } from '../../../../src/parser.ts'
 import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping } from '../grid.ts'
+import { planClusterExits } from '../cluster-boundary.ts'
+import { determinePath } from '../edge-routing.ts'
+import { gridKey } from '../types.ts'
 import type { AsciiConfig } from '../types.ts'
 
 const render = (src: string, opts: Record<string, unknown> = {}): string[] =>
@@ -398,5 +401,209 @@ describe('cluster-exit anchoring: BT and ASCII modes', () => {
     expect(text).toContain('done')
     expect(text).toContain('fail')
     expect((text.match(/v/g) ?? []).length).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('cluster-exit anchoring: eligibility edge cases', () => {
+  const engagedEdgeCounts = (src: string): number[] =>
+    [...(layout(src).clusterExitPlans?.values() ?? [])].map((p) => p.edges.size)
+
+  it('a self-loop on the cluster is not an exit: the other two still engage', () => {
+    const src = `flowchart TD
+  subgraph S
+    a
+  end
+  S --> S
+  S --> C
+  S --> D
+`
+    expect(engagedEdgeCounts(src)).toEqual([2])
+    expect(() => render(src)).not.toThrow()
+  })
+
+  it('an edge into the cluster’s own member is not an exit', () => {
+    const src = `flowchart TD
+  subgraph S
+    a
+  end
+  S --> a
+  S --> C
+  S --> D
+`
+    expect(engagedEdgeCounts(src)).toEqual([2])
+  })
+
+  it('an exit with a single eligible edge is left on ordinary routing', () => {
+    const src = `flowchart TD
+  subgraph S
+    a
+  end
+  S --> C
+  S --> S
+`
+    expect(layout(src).clusterExitPlans).toBeUndefined()
+  })
+
+  it('a multi-member cluster plans its stub from the stand-in node', () => {
+    const src = `flowchart TD
+  subgraph S
+    a --> b
+  end
+  S --> C
+  S --> D
+`
+    expect(engagedEdgeCounts(src)).toEqual([2])
+    const lines = render(src)
+    expect(wallRow(lines)).toBeGreaterThan(-1)
+  })
+
+  it('a foreign node inside the cluster box blocks the stub: no plan, no throw', () => {
+    const src = `flowchart TD
+  subgraph S
+    a
+    b
+  end
+  subgraph T
+    x
+  end
+  a --> x
+  S --> C
+  S --> D
+`
+    const graph = layout(src)
+    // Whether the stub is clear depends on the layout; either way the
+    // render must succeed and draw both exits' arrowheads.
+    for (const plan of graph.clusterExitPlans?.values() ?? []) {
+      expect(plan.edges.size).toBeGreaterThanOrEqual(2)
+    }
+    expect(() => render(src)).not.toThrow()
+  })
+
+  it('nested clusters that both engage: widening clears each wall (LR, long labels)', () => {
+    const src = `flowchart LR
+  subgraph Outer [A very long outer label here]
+    subgraph Inner [Another very long inner label]
+      a --> b
+    end
+  end
+  Inner --> C
+  Inner --> D
+  Outer --> E
+  Outer --> F
+`
+    expect(layout(src).clusterExitPlans?.size).toBe(2)
+    const text = render(src).join('\n')
+    for (const id of ['C', 'D', 'E', 'F']) expect(text).toContain(id)
+  })
+})
+
+describe('cluster-exit anchoring: planner guards (graph mutated after layout)', () => {
+  const TWIN = `flowchart TD
+  subgraph S
+    a --> b
+  end
+  S --> C
+  S --> D
+`
+  /** A laid-out graph with its engaged plan cleared, ready to re-plan. */
+  function replanTarget() {
+    const graph = layout(TWIN)
+    const sg = graph.subgraphs[0]!
+    const exits = graph.edges.filter((e) => e.clusterSource === sg)
+    graph.clusterExitPlans = undefined
+    return { graph, sg, exits }
+  }
+
+  it('baseline: re-planning the untouched layout engages both exits', () => {
+    const { graph } = replanTarget()
+    planClusterExits(graph)
+    expect(graph.clusterExitPlans?.size).toBe(1)
+  })
+
+  it('a member without a grid coordinate is skipped when measuring the box', () => {
+    const { graph, sg } = replanTarget()
+    const dropped = sg.nodes.find((n) => n !== sg.nodes[0])!
+    const saved = dropped.gridCoord
+    dropped.gridCoord = null
+    try {
+      expect(() => planClusterExits(graph)).not.toThrow()
+    } finally {
+      dropped.gridCoord = saved
+    }
+  })
+
+  it('a cluster none of whose members were placed gets no plan', () => {
+    const { graph, sg } = replanTarget()
+    for (const n of sg.nodes) n.gridCoord = null
+    planClusterExits(graph)
+    expect(graph.clusterExitPlans).toBeUndefined()
+  })
+
+  it('an edge whose target was never placed is not eligible', () => {
+    const { graph, exits } = replanTarget()
+    exits[0]!.to.gridCoord = null
+    planClusterExits(graph)
+    expect(graph.clusterExitPlans).toBeUndefined()
+  })
+
+  it('an edge whose source is not a member of the cluster is not eligible', () => {
+    const { graph, sg, exits } = replanTarget()
+    sg.nodes = sg.nodes.filter((n) => n !== exits[0]!.from)
+    planClusterExits(graph)
+    expect(graph.clusterExitPlans).toBeUndefined()
+  })
+
+  it('exits that do not share one stand-in node do not engage', () => {
+    const { graph, sg, exits } = replanTarget()
+    const other = sg.nodes.find((n) => n !== exits[0]!.from)!
+    exits[1]!.from = other
+    planClusterExits(graph)
+    expect(graph.clusterExitPlans).toBeUndefined()
+  })
+
+  it('a stub blocked by a foreign cell is rejected', () => {
+    const { graph, sg, exits } = replanTarget()
+    const anchor = exits[0]!.from.gridCoord!
+    // The gutter cell: one row below the lowest member, in the stub's column.
+    const boxMaxY = Math.max(...sg.nodes.map((n) => n.gridCoord!.y + 2))
+    graph.grid.add(gridKey({ x: anchor.x + 1, y: boxMaxY + 1 }))
+    planClusterExits(graph)
+    expect(graph.clusterExitPlans).toBeUndefined()
+  })
+
+  /**
+   * Fill the band between the cluster and the targets (everything on the
+   * rows above the targets except the gutter cell itself), so the outside
+   * leg to a target that is not directly below the gutter has no route.
+   */
+  function blockBand(
+    graph: ReturnType<typeof layout>,
+    gutter: { x: number; y: number },
+    toY: number,
+  ): void {
+    for (let x = 0; x <= 14; x++) {
+      for (let y = gutter.y - 2; y < toY; y++) {
+        if (x === gutter.x && y === gutter.y) continue
+        graph.grid.add(gridKey({ x, y }))
+      }
+    }
+  }
+
+  it('an unroutable outside leg rejects the whole plan (all-or-nothing)', () => {
+    const { graph, exits } = replanTarget()
+    const far = exits.find((e) => e.to.gridCoord!.x > 2)!
+    blockBand(graph, { x: 1, y: 7 }, far.to.gridCoord!.y)
+    planClusterExits(graph)
+    expect(graph.clusterExitPlans).toBeUndefined()
+  })
+
+  it('determinePath drops an engaged edge whose outside leg became unroutable', () => {
+    const graph = layout(TWIN)
+    const [plan] = [...graph.clusterExitPlans!.values()]
+    const edge = [...plan!.edges].find((e) => e.to.gridCoord!.x > 2)!
+    blockBand(graph, plan!.gutter, edge.to.gridCoord!.y)
+    expect(() => determinePath(graph, edge)).not.toThrow()
+    expect(plan!.edges.has(edge)).toBe(false)
+    expect(edge.labelLine).toEqual([])
   })
 })
