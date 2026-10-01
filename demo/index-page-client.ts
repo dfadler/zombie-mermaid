@@ -387,7 +387,9 @@ function wireThemePicker(
   }
 
   trigger.addEventListener('click', () => {
-    setOpen(panel.hidden)
+    // TS 6's DOM lib types `hidden` as `boolean | 'until-found'`; any value
+    // other than `false` means the panel is currently closed.
+    setOpen(panel.hidden !== false)
   })
 
   // ArrowUp/ArrowDown/Home/End roving focus among the panel's own option
