@@ -82,13 +82,10 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const yTicks = niceTickValues(yRange.min, yRange.max)
+  const yLabels = formatTickLabels(yTicks)
   const maxYLabelWidth = Math.max(
-    ...yTicks.map((v) =>
-      estimateTextWidth(
-        formatTickValue(v),
-        XY.axisLabelFontSize,
-        XY.axisLabelFontWeight,
-      ),
+    ...yLabels.map((label) =>
+      estimateTextWidth(label, XY.axisLabelFontSize, XY.axisLabelFontWeight),
     ),
     XY.yLabelWidth,
   )
@@ -127,8 +124,8 @@ function layoutVertical(chart: XYChart): PositionedXYChart {
   const xTicks = buildXTicks(chart, xScale, top + plotH, bandWidth)
 
   // Y-axis ticks
-  const yAxisTicks: AxisTick[] = yTicks.map((v) => ({
-    label: formatTickValue(v),
+  const yAxisTicks: AxisTick[] = yTicks.map((v, i) => ({
+    label: yLabels[i]!,
     x: left,
     y: yScale(v),
     tx: left - XY.tickLength,
@@ -251,6 +248,7 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const valueTicks = niceTickValues(yRange.min, yRange.max)
+  const valueLabels = formatTickLabels(valueTicks)
 
   // Compute category label widths for left margin
   const dataCount = getDataCount(chart)
@@ -293,8 +291,8 @@ function layoutHorizontal(chart: XYChart): PositionedXYChart {
   const catScale = (i: number) => top + (i + 0.5) * bandHeight
 
   // X-axis (bottom): value ticks
-  const xTicks: AxisTick[] = valueTicks.map((v) => ({
-    label: formatTickValue(v),
+  const xTicks: AxisTick[] = valueTicks.map((v, i) => ({
+    label: valueLabels[i]!,
     x: valueScale(v),
     y: top + plotH,
     tx: valueScale(v),
@@ -606,7 +604,7 @@ function layoutLines(
 }
 
 /** Generate "nice" tick values for a numeric range */
-function niceTickValues(min: number, max: number): number[] {
+export function niceTickValues(min: number, max: number): number[] {
   const range = max - min
   if (range <= 0) return [min]
 
@@ -626,6 +624,24 @@ function niceTickValues(min: number, max: number): number[] {
     ticks.push(Math.round(v * 1e10) / 1e10) // avoid floating-point noise
   }
   return ticks
+}
+
+/**
+ * Format a set of evenly-spaced tick values with enough decimal places to
+ * keep every label distinct. Precision comes from the tick step, not the
+ * magnitude of the value: a 0.5 step around 100 needs one decimal, or
+ * 99.5 and 100.5 both collapse into neighbouring whole numbers.
+ */
+export function formatTickLabels(ticks: number[]): string[] {
+  const step = ticks.length > 1 ? Math.abs(ticks[1]! - ticks[0]!) : 0
+  // The -1e-9 keeps an exact power-of-ten step (0.1) from rounding up
+  const decimals =
+    step > 0 && step < 1 ? Math.ceil(-Math.log10(step) - 1e-9) : 0
+  return ticks.map((v) =>
+    Number.isInteger(v) && decimals === 0
+      ? String(v)
+      : String(Number(v.toFixed(decimals))),
+  )
 }
 
 function formatTickValue(v: number): string {
