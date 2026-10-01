@@ -14,6 +14,10 @@
 # real regression involved (issue #551, issue #849; see CONTRIBUTING.md's
 # "Visual regression tests" section, darwin caveat).
 #
+# The clash is per family: JetBrainsMono and JetBrainsMonoNL are different
+# families, so a variable JetBrainsMono next to static JetBrainsMonoNL files is
+# not a duplicate. Files are grouped by family before comparing.
+#
 # This is a macOS-only, contributor-machine-local concern - not something CI
 # can check - so run it manually as a pre-flight step before generating or
 # comparing local `-darwin` baselines. It is informational, not a CI gate.
@@ -43,6 +47,10 @@ Book and the OS's own font matcher draw from - and classifies each as
 `fc-list | grep -i jetbrains` for duplicate family entries, or the
 duplicate-font warning in macOS Font Book, but works without fontconfig
 installed.
+
+A clash is a variable and a static file of the SAME family, for example
+variable JetBrainsMono with static JetBrainsMono-Regular. A different family
+(JetBrainsMonoNL) next to it does not count.
 
 Run this before generating or comparing local -darwin baselines. It is
 NOT wired into CI or any npm script as a hard gate: this is a macOS-only,
@@ -86,43 +94,71 @@ default_font_dirs="/Library/Fonts:/System/Library/Fonts:/System/Library/Fonts/Su
 font_dirs="${FONT_DIRS:-$default_font_dirs}"
 
 # Static weight instances name the weight (and optionally Italic) in the
-# filename; the variable font instead carries a `[wght]` (or "VariableFont")
-# marker and no weight suffix.
-static_weight_pattern='-(Thin|ExtraLight|Light|Regular|Medium|SemiBold|Bold|ExtraBold|Black)(Italic)?\.(ttf|otf)$'
+# filename; a plain `-Italic` file is the static Regular Italic. The variable
+# font instead carries a `[wght]` (or "VariableFont") marker and no weight
+# suffix.
+static_weight_pattern='-((Thin|ExtraLight|Light|Regular|Medium|SemiBold|Bold|ExtraBold|Black)(Italic)?|Italic)\.(ttf|otf)$'
 variable_marker_pattern='(\[wght\]|VariableFont)'
 
-variable_files=()
-static_files=()
-other_files=()
+# Reduce a filename to its lowercased family: JetBrainsMono[wght].ttf,
+# JetBrainsMono-Italic[wght].ttf and JetBrainsMono-Bold.ttf are all
+# "jetbrainsmono"; JetBrainsMonoNL-Regular.ttf is "jetbrainsmononl".
+family_of() {
+  printf '%s' "$1" |
+    sed -E \
+      -e 's/\.(ttf|otf)$//' \
+      -e 's/(-Italic)?(\[wght\]|-?VariableFont.*)$//' \
+      -e 's/-((Thin|ExtraLight|Light|Regular|Medium|SemiBold|Bold|ExtraBold|Black)(Italic)?|Italic)$//' |
+    tr '[:upper:]' '[:lower:]'
+}
+
+# One tab-separated "family kind path" line per classified file, and the
+# paths of files that could not be classified. Plain strings rather than
+# arrays: macOS ships bash 3.2, where expanding an empty array under `set -u`
+# is an "unbound variable" error.
+records=""
+others=""
 
 IFS=':' read -r -a dirs <<<"$font_dirs"
-for dir in "${dirs[@]}"; do
+for dir in ${dirs[@]+"${dirs[@]}"}; do
   [ -d "$dir" ] || continue
   while IFS= read -r -d '' file; do
     basename_file="$(basename "$file")"
     if [[ "$basename_file" =~ $variable_marker_pattern ]]; then
-      variable_files+=("$file")
+      records+="$(family_of "$basename_file")"$'\t'"variable"$'\t'"$file"$'\n'
     elif [[ "$basename_file" =~ $static_weight_pattern ]]; then
-      static_files+=("$file")
+      records+="$(family_of "$basename_file")"$'\t'"static"$'\t'"$file"$'\n'
     else
-      other_files+=("$file")
+      others+="$file"$'\n'
     fi
   done < <(find "$dir" -maxdepth 1 -type f -iname '*jetbrainsmono*' -print0 2>/dev/null)
 done
 
-if [ "${#variable_files[@]}" -gt 0 ] && [ "${#static_files[@]}" -gt 0 ]; then
-  printf '%s: found both a variable and static JetBrains Mono font installed - this is a confirmed cause of spurious -chromium-darwin.png visual-regression failures (issue #551, issue #849).\n\n' "$SCRIPT_NAME" >&2
-  printf 'Variable font file(s):\n' >&2
-  printf '  %s\n' "${variable_files[@]}" >&2
-  printf '\nStatic weight file(s):\n' >&2
-  printf '  %s\n' "${static_files[@]}" >&2
-  printf '\nFix: remove the static weight files (typically the ones to delete,\nkeeping the variable font) or vice versa, so only one instance of the\nfamily remains installed, then re-run this check. See CONTRIBUTING.md'"'"'s\nvisual-regression darwin caveat for detail.\n' >&2
+# Families that have both a variable and a static file.
+clash_families="$(
+  printf '%s' "$records" |
+    awk -F'\t' '
+      { seen[$1 SUBSEP $2] = 1; fam[$1] = 1 }
+      END { for (f in fam) if (seen[f SUBSEP "variable"] && seen[f SUBSEP "static"]) print f }' |
+    sort
+)"
+
+if [ -n "$clash_families" ]; then
+  printf '%s: found both a variable and static install of the same JetBrains Mono family - this is a confirmed cause of spurious -chromium-darwin.png visual-regression failures (issue #551, issue #849).\n' "$SCRIPT_NAME" >&2
+  while IFS= read -r family; do
+    printf '\nFamily "%s":\n  Variable font file(s):\n' "$family" >&2
+    printf '%s' "$records" | awk -F'\t' -v f="$family" '$1 == f && $2 == "variable" { print "    " $3 }' >&2
+    printf '  Static weight file(s):\n' >&2
+    printf '%s' "$records" | awk -F'\t' -v f="$family" '$1 == f && $2 == "static" { print "    " $3 }' >&2
+  done <<<"$clash_families"
+  printf '\nFix: for each family above, remove the static weight files (typically the ones to delete,\nkeeping the variable font) or vice versa, so only one instance of the\nfamily remains installed, then re-run this check. See CONTRIBUTING.md'"'"'s\nvisual-regression darwin caveat for detail.\n' >&2
   exit "$EXIT_FAILURE"
 fi
 
-if [ "${#other_files[@]}" -gt 0 ] && { [ "${#variable_files[@]}" -gt 0 ] || [ "${#static_files[@]}" -gt 0 ]; }; then
+if [ -n "$others" ] && [ -n "$records" ]; then
   printf '%s: found JetBrains Mono file(s) this script could not classify by filename alongside a classified one - inspect manually:\n' "$SCRIPT_NAME" >&2
-  printf '  %s\n' "${other_files[@]}" "${variable_files[@]}" "${static_files[@]}" >&2
+  printf '%s' "$others" | sed 's/^/  /' >&2
+  printf '%s' "$records" | awk -F'\t' '{ print "  " $3 }' >&2
 fi
 
 printf '%s: no variable+static JetBrains Mono duplicate install found.\n' "$SCRIPT_NAME"
