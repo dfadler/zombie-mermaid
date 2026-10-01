@@ -384,6 +384,15 @@ export function drawGraph(graph: AsciiGraph): Canvas {
     )
     graph.canvas = mergeCanvases(graph.canvas, offset, useAscii, labelCanvas)
     fillRolesFromCanvas(graph.roleCanvas, labelCanvas, offset, 'text')
+    const titleRect = textBounds(labelCanvas)
+    if (titleRect) {
+      labelRects.push({
+        x0: titleRect.x0 + offset.x,
+        x1: titleRect.x1 + offset.x,
+        y0: titleRect.y0 + offset.y,
+        y1: titleRect.y1 + offset.y,
+      })
+    }
     // mergeCanvases treats an overlay's space characters as transparent (so
     // sparse edge/arrow layers don't blank each other out) — but the title's
     // own footprint should win outright, including cells whose character is
