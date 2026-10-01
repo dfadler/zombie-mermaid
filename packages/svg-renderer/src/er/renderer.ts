@@ -38,6 +38,15 @@ import type { FontSizes } from '../styles.ts'
 //   4. Relationship labels
 // ============================================================================
 
+/**
+ * Relationship-label text: `--fg` mixed into `--bg` at this percentage.
+ * The shared `--_text-muted` (40%) is ~2.4:1 on the default white theme and
+ * `--_text-sec` (60%) is ~4.1:1, both under the WCAG AA 4.5:1 text minimum;
+ * 70% is ~5.6:1 while still reading as secondary to the entity names (#1244).
+ * Local to ER so other diagram types keep their tuned text hierarchy.
+ */
+const ER_EDGE_LABEL_FG_PERCENT = 70
+
 /** Font sizes specific to ER diagrams */
 const ER_FONT = {
   attrSize: 11,
@@ -320,7 +329,7 @@ function renderRelationshipLabel(
       mid.x,
       mid.y,
       fontSizes.edgeLabel,
-      f`text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      f`text-anchor="middle" font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="color-mix(in srgb, var(--fg) ${ER_EDGE_LABEL_FG_PERCENT}%, var(--bg))"`,
     )}`
   )
 }
