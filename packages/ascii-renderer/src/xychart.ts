@@ -146,7 +146,7 @@ function renderVertical(
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const yTicks = niceTickValues(yRange.min, yRange.max)
-  const yLabels = yTicks.map((v) => formatTickValue(v))
+  const yLabels = formatTickLabels(yTicks)
   const yGutter = Math.max(...yLabels.map((l) => l.length)) + 1
 
   const plotW = Math.max(PLOT_WIDTH, dataCount * 6)
@@ -224,11 +224,11 @@ function renderVertical(
   // Origin
   set(canvas, roles, xAxisRow, plotLeft - 1, ch.origin, 'border')
 
-  for (const tick of yTicks) {
+  for (const [ti, tick] of yTicks.entries()) {
     const row = valueToRow(tick)
     if (row < 0 || row >= plotH) continue
     const displayRow = plotTop + (plotH - 1 - row)
-    const label = formatTickValue(tick)
+    const label = yLabels[ti]!
     // Tick mark on axis
     set(
       canvas,
@@ -395,6 +395,7 @@ function renderHorizontal(
     throw new Error('XY chart: y-axis range was not set by the parser')
   }
   const valueTicks = niceTickValues(yRange.min, yRange.max)
+  const valueLabels = formatTickLabels(valueTicks)
   const catLabels = getCategoryLabels(chart, dataCount)
   const catGutter = Math.max(...catLabels.map((l) => l.length)) + 1
 
@@ -469,11 +470,11 @@ function renderHorizontal(
   for (let c = plotLeft; c < plotLeft + plotW; c++) {
     set(canvas, roles, xAxisRow, c, ch.hLine, 'border')
   }
-  for (const tick of valueTicks) {
+  for (const [ti, tick] of valueTicks.entries()) {
     const cx = valueToCol(tick)
     if (cx < plotLeft || cx >= plotLeft + plotW) continue
     set(canvas, roles, xAxisRow, cx, ch.xTick, 'border')
-    const label = formatTickValue(tick)
+    const label = valueLabels[ti]!
     writeText(
       canvas,
       roles,
@@ -1077,6 +1078,24 @@ function niceTickValues(min: number, max: number): number[] {
     ticks.push(Math.round(v * 1e10) / 1e10)
   }
   return ticks
+}
+
+/**
+ * Format a set of evenly-spaced tick values with enough decimal places to
+ * keep every label distinct. Precision comes from the tick step, not the
+ * magnitude of the value: a 0.5 step around 100 needs one decimal, or
+ * 99.5 and 100.5 both collapse into neighbouring whole numbers.
+ */
+function formatTickLabels(ticks: number[]): string[] {
+  const step = ticks.length > 1 ? Math.abs(ticks[1]! - ticks[0]!) : 0
+  // The -1e-9 keeps an exact power-of-ten step (0.1) from rounding up
+  const decimals =
+    step > 0 && step < 1 ? Math.ceil(-Math.log10(step) - 1e-9) : 0
+  return ticks.map((v) =>
+    Number.isInteger(v) && decimals === 0
+      ? String(v)
+      : String(Number(v.toFixed(decimals))),
+  )
 }
 
 function formatTickValue(v: number): string {

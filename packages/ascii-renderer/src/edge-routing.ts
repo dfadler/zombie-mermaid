@@ -12,6 +12,7 @@ import type {
   AsciiEdge,
   AsciiGraph,
   AsciiNode,
+  ClusterExitPlan,
 } from './types.ts'
 import {
   Up,
@@ -30,7 +31,11 @@ import {
 import { routeEdge, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 import { displayWidth } from './display-width.ts'
-import { buildClusterExitRoute } from './cluster-boundary.ts'
+import {
+  buildClusterExitRoute,
+  clusterLaneSideRoute,
+  type ClusterExitRoute,
+} from './cluster-boundary.ts'
 import { isOccupied, pathCells } from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
@@ -247,7 +252,7 @@ function isCellInNodeBlock(node: AsciiNode, cell: GridCoord): boolean {
  *    Only a *different*, unrelated node's block is a genuine collision
  *    there.
  */
-function interiorCellsClearOfNodes(
+export function interiorCellsClearOfNodes(
   graph: AsciiGraph,
   cells: readonly GridCoord[],
   ownNodes: readonly AsciiNode[] = [],
@@ -627,6 +632,37 @@ function buildParallelLanePath(
 // ============================================================================
 
 /**
+ * Route for a lane sibling (`parallelLane.index > 0`) of an engaged cluster
+ * exit: the shared stub to the gutter, then a leg that ends on the target's
+ * side face (see `clusterLaneSideRoute`), so the lane's drop and label lie
+ * outside the cluster wall and its arrowhead sits beside the target's border
+ * rather than on it. Same shape as `buildClusterExitRoute`'s result, or null
+ * when no side route is clear.
+ */
+function buildClusterLaneRoute(
+  graph: AsciiGraph,
+  plan: ClusterExitPlan,
+  edge: AsciiEdge,
+): ClusterExitRoute | null {
+  const vertical = graph.config.graphDirection !== 'LR'
+  const startDir = vertical ? Down : Right
+  const face = gridCoordDirection(requireGridCoord(plan.anchor), startDir)
+  const side = clusterLaneSideRoute(graph, plan, edge)
+  // planClusterExits only engages a lane group whose siblings all have a
+  // side route, so this is null only when a style-conflict reroute has
+  // temporarily blocked a cell on it; the caller then routes the edge
+  // ordinarily, as it does when `buildClusterExitRoute` returns null.
+  /* v8 ignore next */
+  if (!side) return null
+  return {
+    path: [face, ...side.path],
+    startDir,
+    endDir: side.endDir,
+    labelSegment: side.labelSegment,
+  }
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -665,7 +701,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     ? graph.clusterExitPlans?.get(edge.clusterSource)
     : undefined
   if (clusterPlan?.edges.has(edge)) {
-    const route = buildClusterExitRoute(graph, clusterPlan, edge)
+    const route =
+      edge.parallelLane && edge.parallelLane.index > 0
+        ? buildClusterLaneRoute(graph, clusterPlan, edge)
+        : buildClusterExitRoute(graph, clusterPlan, edge)
     if (route) {
       edge.startDir = route.startDir
       edge.endDir = route.endDir

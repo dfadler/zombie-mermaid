@@ -60,12 +60,108 @@ export interface SubgraphLabelCell {
   y: number
 }
 
-/** Draw a subgraph label centered in its header area. Supports multi-line labels. */
+/**
+ * Glyphs that make up a vertical edge stroke (solid, dashed, thick, ASCII)
+ * plus the crossing junction. A canvas cell holding one of these in a title
+ * row means an edge runs through that row of the frame (#1222).
+ */
+const VERTICAL_STROKES = new Set([
+  '│',
+  '┃',
+  '║',
+  '┆',
+  '┊',
+  '|',
+  ':',
+  '‖',
+  '┼',
+  '╋',
+])
+
+/** True when `ch` is part of a vertical edge stroke. */
+export function isVerticalStroke(ch: string | undefined): boolean {
+  return ch !== undefined && VERTICAL_STROKES.has(ch)
+}
+
+/**
+ * Choose where a title line starts so a vertical edge entering the frame
+ * stays continuous through the title row (#1222). `blocked(x)` says whether
+ * column `x` (frame-local) carries an edge stroke on this row.
+ *
+ * Preference order, nearest to the centred start `want` within each tier:
+ *   1. the title slides aside, one clear column between it and the stroke;
+ *   2. the same with no gap (the title abuts the stroke);
+ *   3. every stroke column lands on a literal space in the title, so the
+ *      stroke splits it between two words ("Layer│Three") without losing a
+ *      character;
+ *   4. otherwise `want` — the title wins and the stroke is hidden behind it,
+ *      because overwriting a letter would garble the text.
+ */
+function pickTitleStart(
+  cells: readonly string[],
+  want: number,
+  width: number,
+  blocked: (x: number) => boolean,
+): number | null {
+  const clash = (start: number, spacesOk: boolean, gap: number): boolean => {
+    for (let x = start - gap; x < start + cells.length + gap; x++) {
+      if (x < 1 || x >= width || !blocked(x)) continue
+      const cell = cells[x - start]
+      if (!(spacesOk && cell === ' ')) return true
+    }
+    return false
+  }
+  if (!clash(want, false, 0)) return want
+  const last = Math.max(1, width - cells.length)
+  for (const [spacesOk, gap] of [
+    [false, 1],
+    [false, 0],
+    [true, 0],
+  ] as const) {
+    let best = -1
+    for (let s = 1; s <= last; s++) {
+      if (clash(s, spacesOk, gap)) continue
+      if (best < 0 || Math.abs(s - want) < Math.abs(best - want)) best = s
+    }
+    if (best >= 0) return best
+  }
+  return null
+}
+
+/** The centred start column of a title line in a frame `width` wide. */
+function centredStart(cells: readonly string[], width: number): number {
+  return Math.max(1, 1 + Math.ceil((width - 1 - cells.length) / 2))
+}
+
+/**
+ * Whether `line` can be placed in a frame `width` wide without hiding or
+ * overwriting a vertical stroke (tiers 1-3 of `pickTitleStart`). Grid layout
+ * uses this to decide whether a frame needs widening (#1222).
+ */
+export function titleAvoidsStrokes(
+  line: string,
+  width: number,
+  blocked: (x: number) => boolean,
+): boolean {
+  const cells = toDisplayCells(line)
+  return (
+    pickTitleStart(cells, centredStart(cells, width), width, blocked) !== null
+  )
+}
+
+/**
+ * Draw a subgraph label centered in its header area. Supports multi-line labels.
+ *
+ * `isStroke(x, y)` (frame-local coordinates, optional) reports whether a
+ * vertical edge stroke already occupies that cell; the title then slides
+ * aside or splits around it instead of hiding the edge (see `pickTitleStart`).
+ */
 // `_graph` isn't read here but is kept to match the `(sg, graph)` signature
 // shared by the other `draw*` subgraph helpers in this file.
 export function drawSubgraphLabel(
   sg: AsciiSubgraph,
   _graph: AsciiGraph,
+  isStroke: (x: number, y: number) => boolean = () => false,
 ): [Canvas, DrawingCoord, SubgraphLabelCell[]] {
   const width = sg.maxX - sg.minX
   const height = sg.maxY - sg.minY
@@ -90,15 +186,19 @@ export function drawSubgraphLabel(
     // entirely for even-length labels in an odd-width interior.
     let labelX = 1 + Math.ceil((width - 1 - displayWidth(line)) / 2)
     if (labelX < 1) labelX = 1
+    const cells = toDisplayCells(line)
+    labelX =
+      pickTitleStart(cells, labelX, width, (x) => isStroke(x, labelY)) ?? labelX
 
     // Unlike `write()`'s own bounds (inclusive of the canvas edge — correct
     // for the border-drawing calls in `drawSubgraphBox` above, which write
     // the border itself at x == width / y == height), the label must stay
     // strictly inside the border, so this loop enforces the tighter,
     // exclusive bound itself rather than relying on `write()`'s clip.
-    const cells = toDisplayCells(line)
     for (let j = 0; j < cells.length; j++) {
       if (labelX + j >= width || labelY >= height) continue
+      // A space of the title sitting on an edge stroke leaves the stroke be.
+      if (cells[j] === ' ' && isStroke(labelX + j, labelY)) continue
       write(canvas, labelX + j, labelY, cells[j]!)
       footprint.push({ x: labelX + j, y: labelY })
     }

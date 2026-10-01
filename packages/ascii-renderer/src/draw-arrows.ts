@@ -550,11 +550,47 @@ export function edgeLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  return clearOfClusterWalls(
+  return clearOfLaneJunction(
     graph,
-    labelTextPlacement(drawingLine, edge.text, isUpwardEdge, pullTowardTarget),
-    drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+    edge,
+    clearOfClusterWalls(
+      graph,
+      labelTextPlacement(
+        drawingLine,
+        edge.text,
+        isUpwardEdge,
+        pullTowardTarget,
+      ),
+      drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+    ),
   )
+}
+
+/**
+ * In LR, a lane sibling of an engaged cluster exit (#1182) turns off the
+ * gutter column's vertical and runs its label along the horizontal that
+ * follows. Centred on a short run the text can start on that column and
+ * overwrite the junction, so keep it one line cell clear. Everything else
+ * is returned untouched.
+ */
+function clearOfLaneJunction(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const plan = edge.clusterSource
+    ? graph.clusterExitPlans?.get(edge.clusterSource)
+    : undefined
+  if (
+    graph.config.graphDirection !== 'LR' ||
+    !plan?.edges.has(edge) ||
+    !edge.parallelLane ||
+    edge.parallelLane.index === 0
+  ) {
+    return placement
+  }
+  const minX = gridToDrawingCoord(graph, plan.gutter).x + 2
+  return placement.map((item) => (item.x < minX ? { ...item, x: minX } : item))
 }
 
 /**

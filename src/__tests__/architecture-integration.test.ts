@@ -200,8 +200,8 @@ describe('architecture-beta nested groups and junctions', () => {
   })
 
   // https://github.com/dfadler/zombie-mermaid/issues/1197: a back-edge across
-  // sibling groups throws in the ASCII grid router. Unskip once fixed.
-  it.skip('ASCII renders a back-edge across sibling groups (#1197)', () => {
+  // sibling groups used to throw in the ASCII grid layout.
+  it('ASCII renders a back-edge across sibling groups (#1197)', () => {
     const out = renderMermaidASCII(`architecture-beta
   group g1(cloud)[G1]
   group g2(cloud)[G2]
@@ -212,6 +212,6 @@ describe('architecture-beta nested groups and junctions', () => {
   a:R --> L:b
   b:R --> L:c
   c:B --> B:a`)
-    expect(out).toContain('G3')
+    for (const g of ['G1', 'G2', 'G3']) expect(out).toContain(g)
   })
 })
