@@ -127,6 +127,19 @@ closes the failure mode rather than just moving it. `asciinema record`
 itself still runs locally either way — it drives the real PTY this
 script's own process is attached to, which a container can't do.
 
+**Smooth lines: `ASCII_RASTERISER=chromium`.** agg draws the horizontal arm of
+a box junction (`┼`, `├`) a pixel or more off the plain `─` bar, so an edge
+that crosses a frame wall shows a small step in the PNG even though the
+characters are correct (measured in
+`docs/research/ascii-capture-smoothing/README.md`). When the screenshot has to
+show clean lines, set `ASCII_RASTERISER=chromium` on the capture command: the
+recording is still a real PTY and is replayed through `@xterm/headless`
+(real terminal emulation) before Chromium draws the cell grid, so only the
+glyph rasterizer changes. It needs `node`, the repo's `@xterm/headless` and
+Playwright Chromium instead of `agg`, writes the PNG at 2x, and can't be
+combined with `ASCII_AGG_RUNTIME=docker`. Use the same rasteriser for both
+the before and the after capture so the two are comparable.
+
 ## Procedure
 
 1. **Pick a sample.** Reuse an existing entry from `samples-data.ts` if one

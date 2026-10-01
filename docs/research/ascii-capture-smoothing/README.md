@@ -29,16 +29,19 @@ U+2500 U+253C U+2500 U+25BA`), all standard box-drawing characters. `main` emits
    Chromium (JetBrains Mono and Menlo, 14/16/18px, device scale 1x and 2x): the plain and junction
    bars have identical rows in all 12 cases.
 
-## Prototype
+## Implementation
 
-`cast-to-png.mjs` replays the real-PTY `.cast` through `@xterm/headless` (the terminal emulation is
-still real) and rasterises the cell grid with Chromium, one absolutely positioned cell per glyph.
-On the #1278 captures the crossings are smooth (no step at `┼`/`├`). Wide glyphs are given two
-cells, but that is untested. Run it on any `.cast` the capture script writes:
+`scripts/ascii-cast-to-png.mjs` replays the real-PTY `.cast` through `@xterm/headless` (the terminal
+emulation is still real) and rasterises the cell grid with Chromium, one absolutely positioned cell
+per glyph. `scripts/ascii-terminal-capture.sh` runs it when `ASCII_RASTERISER=chromium` is set (agg
+stays the default):
 
 ```bash
-node docs/research/ascii-capture-smoothing/cast-to-png.mjs sample.cast sample.png
+ASCII_RASTERISER=chromium scripts/ascii-terminal-capture.sh ./src/index.ts 12 /tmp/after
 ```
+
+On the #1278 captures the crossings are smooth (no step at `┼`/`├`). Wide glyphs get two cells
+(checked on a Japanese flowchart: the box walls stay aligned). The PNG is rendered at 2x with agg's github-dark colours.
 
 ## Not done / open
 
@@ -48,11 +51,10 @@ node docs/research/ascii-capture-smoothing/cast-to-png.mjs sample.cast sample.pn
 - **Policy:** CLAUDE.md requires real-PTY captures, not the HTML mockup, for ASCII PR screenshots.
   This pipeline keeps the real PTY and terminal emulation and only swaps the glyph rasteriser, but
   the policy text should say so if it is adopted.
-- **Prototype gaps:** ANSI-palette colours aren't mapped (the capture script uses truecolor, so
-  samples are fine), and there is no auto-crop.
+- **Colours:** ANSI-palette colours are mapped to a github-dark-style table, but no capture so far
+  has used them (the recordings are uncoloured), so that path is untested.
 - **Renderer-side option (not needed):** drawing frame-wall crossings with plain `─`/`│` would hide
   the artefact but lose the crossing cue, and it would change goldens. Finding 1 shows the output
   isn't broken, so I'd not do it.
-- **Next step if adopted:** add a `--rasteriser chromium` mode to `scripts/ascii-terminal-capture.sh`
-  (keeping agg as the default until the PNGs are compared on a few more samples), and update the
-  `verify-ascii-terminal` skill.
+- **Next step:** compare the two rasterisers on a few more samples (sequence, state) before
+  considering making Chromium the default.
