@@ -336,10 +336,14 @@ function renderClassBox(
   return parts.join('\n')
 }
 
+/** Heavier weight for the visibility marker so `~` stays distinct from `-` (#1237) */
+const VISIBILITY_MARKER_WEIGHT = 700
+
 /**
  * Render a single class member with syntax highlighting.
  * Uses <tspan> elements to color each part of the member differently:
- *   - visibility symbol (+/-/#/~) → textFaint
+ *   - visibility symbol (+/-/#/~) → textSecondary, bold (faint at weight 400
+ *     made `~` read like `-` at 1x, #1237)
  *   - member name (incl. parens for methods) → textSecondary
  *   - colon separator → textFaint
  *   - type annotation → textMuted
@@ -368,7 +372,7 @@ function renderMember(
 
   if (member.visibility) {
     spans.push(
-      f`<tspan fill="${faint}">${escapeXml(member.visibility)} </tspan>`,
+      f`<tspan fill="${secondary}" font-weight="${VISIBILITY_MARKER_WEIGHT}">${escapeXml(member.visibility)}</tspan><tspan fill="${faint}"> </tspan>`,
     )
   }
 
