@@ -25,8 +25,8 @@ walls. Confirmed general (not state-diagram-specific) with a plain
 flowchart repro. Real mermaid avoids this because dagre clips every edge
 crossing a compound cluster boundary to the boundary itself; the ASCII
 renderer has no equivalent concept, and adding one is a structural change
-to code shared by every diagram type routed through the flowchart/
-subgraph path — too large a risk surface for a minimal patch.
+to code shared by everything routed through the flowchart/subgraph path
+(flowchart and state diagrams; see Blast radius below) — too large a risk surface for a minimal patch.
 
 Full investigation (confirmed repro, step-by-step root cause trace, the
 plain-flowchart repro, and the reasoning against a minimal patch):
@@ -58,10 +58,22 @@ against #1135.
   readable and the labeled target is unambiguous).
 - Any future "fix cluster edge exit anchoring" work should treat this as
   the design starting point rather than re-deriving the root cause, and
-  should scope test coverage across flowchart, state, and any other
-  diagram type that routes through `draw-subgraphs.ts`/`pathfinder.ts`,
-  not just the state-diagram case that surfaced it.
+  should scope test coverage across flowchart and state diagrams, not
+  just the state-diagram case that surfaced it (see Blast radius).
 - Does not change `resolveSubgraphEndpoint`'s existing behavior (issue
   #65's stand-in-node approach) — a real fix would build on top of it
   (still need _a_ stand-in node per cluster per direction for the
   converter's edge list) rather than replace it.
+
+## Blast radius (confirmed in #1183)
+
+Flowchart and state diagrams only. `flowchart.ts` is the sole caller of
+`convertToAsciiGraph` and `createMapping` (grep of `packages/`, `src/`,
+`demo/`, `scripts/`), and it renders both diagram types. Class and ER
+renderers do not import the converter, grid, pathfinder or edge-routing
+modules; their only link to `draw-subgraphs.ts` is transitive through
+`draw.ts`, for its multi-box helpers, and they never call the subgraph
+drawers. Real renders confirm it: a `classDiagram` with two `namespace`
+blocks draws no namespace box at all (classes only), and ER has no
+grouping construct to parse. Earlier text (in this doc and in #1156, both now corrected) that named
+class-with-namespaces and composite ER as affected was wrong.
