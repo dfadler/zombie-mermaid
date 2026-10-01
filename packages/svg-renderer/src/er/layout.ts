@@ -126,6 +126,10 @@ function buildErElkGraph(
         padding: ER.padding,
       }),
       'elk.edgeLabels.placement': 'CENTER',
+      // Keep declaration order as the crossing-minimization tie-break and
+      // center children under their parents, as official Mermaid does.
+      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
     },
     children,
     edges,

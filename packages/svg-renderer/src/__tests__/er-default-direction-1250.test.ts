@@ -40,4 +40,30 @@ describe('ER default layout direction (#1250)', () => {
     )
     expect(dx).toBeGreaterThan(dy)
   })
+
+  it('keeps declaration order within a layer and centers a shared child', () => {
+    const svg = renderMermaidSVG(`erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  ORDER ||--|{ LINE_ITEM : contains
+  PRODUCT ||--o{ LINE_ITEM : includes`)
+    const box = (id: string): { left: number; right: number } => {
+      const m = svg.match(
+        new RegExp(
+          `data-id="${id}"[^>]*>\\s*<rect x="([\\d.]+)"[^>]*width="([\\d.]+)"`,
+        ),
+      )
+      expect(m).not.toBeNull()
+      const x = Number(m?.[1])
+      return { left: x, right: x + Number(m?.[2]) }
+    }
+    const order = box('ORDER')
+    const product = box('PRODUCT')
+    const lineItem = box('LINE_ITEM')
+    // ORDER is declared before PRODUCT, so it sits to its left.
+    expect(order.left).toBeLessThan(product.left)
+    // LINE_ITEM sits between its two parents, not off to one side.
+    const mid = (lineItem.left + lineItem.right) / 2
+    expect(mid).toBeGreaterThan(order.left)
+    expect(mid).toBeLessThan(product.right)
+  })
 })
