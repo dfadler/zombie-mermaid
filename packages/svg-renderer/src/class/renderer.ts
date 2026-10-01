@@ -162,12 +162,12 @@ function relationshipMarkerDefs(): string {
     `  <marker id="cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">` +
     `\n    <polygon points="0 0, 12 5, 0 10" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />` +
     `\n  </marker>` +
-    // Filled diamond (composition) — points at source
-    `\n  <marker id="cls-composition" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto-start-reverse">` +
+    // Filled diamond (composition) — tip sits on the endpoint, body runs along the line
+    `\n  <marker id="cls-composition" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">` +
     `\n    <polygon points="6 0, 12 5, 6 10, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="1" />` +
     `\n  </marker>` +
-    // Hollow diamond (aggregation) — points at source
-    `\n  <marker id="cls-aggregation" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto-start-reverse">` +
+    // Hollow diamond (aggregation) — tip sits on the endpoint, body runs along the line
+    `\n  <marker id="cls-aggregation" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">` +
     `\n    <polygon points="6 0, 12 5, 6 10, 0 5" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />` +
     `\n  </marker>` +
     // Open arrow (association, dependency)
