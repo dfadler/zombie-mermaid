@@ -16,9 +16,11 @@
 import { describe, it, expect } from 'vitest'
 import {
   renderMermaidASCII,
+  diagramColorsToAsciiTheme,
   DEFAULT_ASCII_THEME,
   type AsciiTheme,
 } from '@zombie-mermaid/ascii-renderer'
+import { CHART_ACCENT_FALLBACK } from '@zombie-mermaid/mermaid-parser'
 
 /** One distinct, easy-to-tell-apart color per role. */
 const ROLE_COLORS = {
@@ -226,3 +228,101 @@ for (const mode of ['html', 'truecolor'] as const) {
     })
   })
 }
+
+// ---------------------------------------------------------------------------
+// The accent role. Charts do not take it from `getRoleColor`: xychart.ts has
+// its own series-color derivation (`getSeriesColors`) and its own copy of the
+// role-to-color mapping (`roleToHex`) for axes, grid and labels, so neither is
+// covered by the tests above.
+// ---------------------------------------------------------------------------
+
+const ONE_BAR_SERIES = 'xychart-beta\n  x-axis [A, B, C]\n  bar [3, 5, 2]'
+const TWO_BAR_SERIES =
+  'xychart-beta\n  title "Sales"\n  x-axis [Q1, Q2, Q3, Q4]\n  bar [200, 250, 300, 280]\n  bar [230, 280, 320, 350]'
+const TWO_LINE_SERIES =
+  'xychart-beta\n  x-axis [A, B, C, D]\n  line [3, 5, 2, 6]\n  line [1, 2, 4, 3]'
+
+/** A role-color theme without an accent, to exercise the chart's fallback. */
+const THEME_WITHOUT_ACCENT: AsciiTheme = {
+  fg: ROLE_COLORS.fg,
+  border: ROLE_COLORS.border,
+  line: ROLE_COLORS.line,
+  arrow: ROLE_COLORS.arrow,
+  bg: '#000000',
+  corner: ROLE_COLORS.corner,
+  junction: ROLE_COLORS.junction,
+}
+
+for (const mode of ['html', 'truecolor'] as const) {
+  describe(`xychart accent and role colors (${mode})`, () => {
+    const render = (src: string, theme: AsciiTheme = THEME): Cell[] =>
+      glyphCells(renderMermaidASCII(src, { theme, colorMode: mode }), mode)
+    const colorsOf = (cells: Cell[], glyphs: string): Set<string> =>
+      new Set(cells.filter((c) => glyphs.includes(c.ch)).map((c) => c.role))
+
+    it('draws a single bar series in exactly the accent color', () => {
+      const bars = render(ONE_BAR_SERIES).filter((c) => c.ch === '█')
+      expect(bars.length).toBeGreaterThan(0)
+      expect(colorsOf(bars, '█')).toEqual(new Set(['accent']))
+    })
+
+    it('draws series 0 in the accent and later series in a different derived color', () => {
+      const barColors = colorsOf(render(TWO_BAR_SERIES), '█')
+      expect(barColors.size).toBe(2)
+      expect(barColors.has('accent')).toBe(true)
+      // The other series is a derived shade: neither the accent nor any role color.
+      const derived = [...barColors].filter((r) => r !== 'accent')
+      expect(derived).toHaveLength(1)
+      expect(derived[0]! in ROLE_COLORS).toBe(false)
+      expect(derived[0]).toMatch(/^#[0-9a-f]{6}$/)
+    })
+
+    it('draws line series with the same accent and derived colors', () => {
+      const cells = render(TWO_LINE_SERIES)
+      const lineGlyphs = '─╭│╮╯╰'
+      const roles = colorsOf(cells, lineGlyphs)
+      expect(roles.has('accent')).toBe(true)
+      // Series 0 (accent), series 1 (derived), and the axis (border): the same
+      // glyphs appear in all three, so the accent is not the border color.
+      expect([...roles].some((r) => !(r in ROLE_COLORS))).toBe(true)
+      expect(roles.has('border')).toBe(true)
+      expect(ROLE_COLORS.accent).not.toBe(ROLE_COLORS.border)
+    })
+
+    it('draws the axes in the border color, the grid in the line color and labels in the text color', () => {
+      const cells = render(ONE_BAR_SERIES)
+      expect(colorsOf(cells, '│┤┼┬─')).toEqual(new Set(['border']))
+      expect(colorsOf(cells, '·')).toEqual(new Set(['line']))
+      const labels = cells.filter((c) => ALNUM.test(c.ch))
+      expect(labels.length).toBeGreaterThan(0)
+      expect(labels.every((c) => c.role === 'fg')).toBe(true)
+    })
+
+    it('falls back to the default chart blue when the theme has no accent', () => {
+      const bars = render(ONE_BAR_SERIES, THEME_WITHOUT_ACCENT).filter(
+        (c) => c.ch === '█',
+      )
+      expect(bars.length).toBeGreaterThan(0)
+      expect(colorsOf(bars, '█')).toEqual(
+        new Set([CHART_ACCENT_FALLBACK.toLowerCase()]),
+      )
+    })
+  })
+}
+
+describe('diagramColorsToAsciiTheme accent', () => {
+  const colors = { bg: '#000000', fg: '#ffffff' }
+
+  it('passes the accent through and uses it for arrowheads', () => {
+    const theme = diagramColorsToAsciiTheme({ ...colors, accent: '#123456' })
+    expect(theme.accent).toBe('#123456')
+    expect(theme.arrow).toBe('#123456')
+  })
+
+  it('derives the arrow color from fg and bg when there is no accent', () => {
+    const theme = diagramColorsToAsciiTheme(colors)
+    expect(theme.accent).toBeUndefined()
+    expect(theme.arrow).not.toBe(theme.fg)
+    expect(theme.arrow).toMatch(/^#[0-9a-fA-F]{6}$/)
+  })
+})
