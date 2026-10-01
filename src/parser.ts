@@ -1223,9 +1223,12 @@ function consumeNode(
     }
   }
 
-  // Bare node reference — only register if node doesn't exist yet.
-  // If it already exists, do NOT track it in the current subgraph;
-  // nodes belong to the subgraph where they're first defined.
+  // Bare node reference — register it if the node doesn't exist yet.
+  // If it already exists, it stays in the subgraph that claimed it first
+  // (nodes belong to the subgraph where they're first defined). A node that
+  // no subgraph has claimed yet (declared earlier at the top level, e.g.
+  // `X --> A` before `subgraph SA; A; end`) is adopted by the current one,
+  // as Mermaid does; otherwise the frame would come out empty (#1289).
   if (id === null) {
     const bareMatch = remaining.match(BARE_NODE_REGEX)
     if (bareMatch) {
@@ -1236,6 +1239,8 @@ function consumeNode(
           label: id,
           shape: 'rectangle',
         })
+      } else if (!isClaimedBySubgraph(graph, subgraphStack, id)) {
+        trackInSubgraph(subgraphStack, id)
       }
       remaining = remaining.slice(bareMatch[0].length)
     }
@@ -1268,6 +1273,17 @@ function registerNode(
     graph.nodes.set(node.id, node)
   }
   trackInSubgraph(subgraphStack, node.id)
+}
+
+/** True when any finished or still-open subgraph already lists `nodeId`. */
+function isClaimedBySubgraph(
+  graph: MermaidGraph,
+  subgraphStack: MermaidSubgraph[],
+  nodeId: string,
+): boolean {
+  const claims = (sg: MermaidSubgraph): boolean =>
+    sg.nodeIds.includes(nodeId) || sg.children.some(claims)
+  return graph.subgraphs.some(claims) || subgraphStack.some(claims)
 }
 
 /** Add node ID to the innermost subgraph if we're inside one */
