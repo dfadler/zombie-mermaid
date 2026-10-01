@@ -510,31 +510,31 @@ function buildParallelLanePath(
     const laneMain = fromAttach.y + offset
     const laneCross = fromAttach.x + offset
 
-    // Candidate U ("underside", horizontal graphs only): leave the source's
-    // bottom face and enter the target's bottom face, so this lane gets its
-    // own arrowhead (`▲`) instead of merging into the first edge's run,
-    // where the first edge's label hides the junction cell.
-    if (horizontalDeparture) {
-      const fromBottom = gridCoordDirection(requireGridCoord(edge.from), Down)
-      const toBottom = gridCoordDirection(requireGridCoord(edge.to), Down)
-      const laneRow = Math.max(fromBottom.y, toBottom.y) + offset - 1
-      const undersideLabelSegment: [GridCoord, GridCoord] = [
-        { x: fromBottom.x, y: laneRow },
-        { x: toBottom.x, y: laneRow },
-      ]
-      const undersidePath = mergePath([
-        fromBottom,
-        ...undersideLabelSegment,
-        toBottom,
-      ])
-      if (
-        interiorCellsClearOfNodes(graph, pathCells(undersidePath), ownNodes)
-      ) {
+    // Candidate U ("side lane"): leave the source's side face and enter the
+    // target's matching side face (bottom in horizontal graphs, right in
+    // vertical ones), so this lane gets its own arrowhead instead of backing
+    // into the first edge's run, where the first edge's label hides the
+    // junction cell.
+    {
+      const sideDir = horizontalDeparture ? Down : Right
+      const fromSide = gridCoordDirection(requireGridCoord(edge.from), sideDir)
+      const toSide = gridCoordDirection(requireGridCoord(edge.to), sideDir)
+      const sideLabelSegment: [GridCoord, GridCoord] = horizontalDeparture
+        ? [
+            { x: fromSide.x, y: Math.max(fromSide.y, toSide.y) + offset - 1 },
+            { x: toSide.x, y: Math.max(fromSide.y, toSide.y) + offset - 1 },
+          ]
+        : [
+            { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: fromSide.y },
+            { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: toSide.y },
+          ]
+      const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
+      if (interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)) {
         usedOffsets.add(offset)
         return {
-          path: undersidePath,
-          labelSegment: undersideLabelSegment,
-          faces: { startDir: Down, endDir: Down },
+          path: sidePath,
+          labelSegment: sideLabelSegment,
+          faces: { startDir: sideDir, endDir: sideDir },
         }
       }
     }

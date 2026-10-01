@@ -3,8 +3,9 @@
  * nodes (`a -->|first| T` then `a -->|second| T`) used to run its last leg
  * along the target's own border, drawing a stray arrowhead and junction on
  * the border cell (`┌────◄──┬────┘` in TD, `▲`/`├` on the left border in LR).
- * The lane now ends with the same one-cell approach every other edge makes
- * into its target, so the target's border stays a plain box edge.
+ * Later lanes now run down/under the nodes and enter the target's side face
+ * (right in TD, bottom in LR) with their own arrowhead, so the target's
+ * border stays a plain box edge and every edge visibly ends at the target.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -31,19 +32,22 @@ function boxRows(lines: string[]): string[] {
 
 describe('parallel lanes keep the target border clean (#1230)', () => {
   for (const count of [2, 3, 4]) {
-    it(`TD, ${count} lanes: the target's top border is a plain box edge`, () => {
+    it(`TD, ${count} lanes: later lanes enter the target's right face with their own arrowhead`, () => {
       const lines = render(lanes('TD', count), false)
-      expect(lines.join('\n')).not.toContain('◄')
       const rows = boxRows(lines)
-      expect(rows[0]!.trim()).toBe('┌───────┐')
-      // Every lane arrives through one arrowhead above the border.
+      // The top border is a plain box edge; the lanes arrive at the right face.
+      expect(rows[0]!.trim().slice(0, 9)).toBe('┌───────┐')
+      expect(rows[2]!.trim()).toMatch(/^│ {3}T {3}│◄[─┬┴┤┘┐┼]+$/)
+      expect(lines.join('\n').match(/◄/g)).toHaveLength(1)
       expect(lines.join('\n').match(/▼/g)).toHaveLength(2)
     })
 
-    it(`TD, ${count} lanes, ASCII mode: the target's top border is a plain box edge`, () => {
+    it(`TD, ${count} lanes, ASCII mode: later lanes enter the target's right face with their own arrowhead`, () => {
       const lines = render(lanes('TD', count), true)
-      expect(lines.join('\n')).not.toContain('<')
-      expect(boxRows(lines)[0]!.trim()).toBe('+-------+')
+      const rows = boxRows(lines)
+      expect(rows[0]!.trim().slice(0, 9)).toBe('+-------+')
+      expect(rows[2]!.trim()).toMatch(/^\| {3}T {3}\|<[-+]+$/)
+      expect(lines.join('\n').match(/</g)).toHaveLength(1)
     })
   }
 
