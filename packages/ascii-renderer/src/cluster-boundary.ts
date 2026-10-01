@@ -62,7 +62,7 @@ export interface ClusterExitRoute {
 }
 
 /** Grid-space extent of a subgraph's nodes, or null for an empty cluster. */
-function clusterGridBox(sg: AsciiSubgraph): ClusterGridBox | null {
+export function clusterGridBox(sg: AsciiSubgraph): ClusterGridBox | null {
   let box: ClusterGridBox | null = null
   for (const node of sg.nodes) {
     const gc = node.gridCoord

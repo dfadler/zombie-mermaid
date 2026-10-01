@@ -27,6 +27,11 @@ import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
 import { planClusterExits, widenClusterGutters } from './cluster-boundary.ts'
 import {
+  blockUnrelatedFrames,
+  unblock,
+  widenFrameGutters,
+} from './frame-avoidance.ts'
+import {
   isBlockFree,
   placeBlock,
   cloneGrid,
@@ -1184,6 +1189,7 @@ export function createMapping(graph: AsciiGraph): void {
   const cellStyles = createEdgeCellStyles()
   const cellOwners = createEdgeCellOwners()
   const nodeOnlyGrid = cloneGrid(graph.grid)
+  const frameAvoidingEdges = new Set<AsciiEdge>()
   for (const edge of graph.edges) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
@@ -1194,6 +1200,11 @@ export function createMapping(graph: AsciiGraph): void {
       continue
     }
 
+    // Keep the route out of frames it has no endpoint in (#1197).
+    const { added: frameCells, engaged } = blockUnrelatedFrames(graph, edge)
+    if (engaged) frameAvoidingEdges.add(edge)
+    const prevStraight = graph.preferStraightRoutes
+    if (engaged) graph.preferStraightRoutes = true
     determinePath(graph, edge)
     rerouteAroundStyleConflicts(
       graph,
@@ -1202,6 +1213,8 @@ export function createMapping(graph: AsciiGraph): void {
       cellOwners,
       nodeOnlyGrid,
     )
+    graph.preferStraightRoutes = prevStraight
+    unblock(graph, frameCells)
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
@@ -1241,6 +1254,15 @@ export function createMapping(graph: AsciiGraph): void {
     }
     calculateSubgraphBoundingBoxes(graph)
   }
+  // A title-widened frame can reach past the gap column an avoiding edge
+  // runs in; widen the gap until the edge clears the wall (#1197).
+  const refreshBoxes = (): void => {
+    for (const node of graph.nodes) {
+      node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+    }
+    calculateSubgraphBoundingBoxes(graph)
+  }
+  widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
   offsetDrawingForSubgraphs(graph)
 
   // Set canvas size, now covering the offset computed above.
