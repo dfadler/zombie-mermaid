@@ -172,7 +172,9 @@ test.describe('ASCII mockup text legibility', () => {
         const shots: string[] = []
         for (const g of geo)
           shots.push(
-            (await page.screenshot({ clip: g.clip })).toString('base64'),
+            (await page.screenshot({ clip: g.clip, fullPage: true })).toString(
+              'base64',
+            ),
           )
         await style.evaluate((el) => el.remove())
         return shots

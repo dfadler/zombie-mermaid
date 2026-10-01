@@ -193,7 +193,7 @@ for (const dpr of DEVICE_SCALE_FACTORS) {
               worst = Math.min(worst, ratio)
               if (ratio < minRatio)
                 out.push(
-                  `${p.ch} r${p.row} c${p.col}: ${ratio.toFixed(2)} edge@${(p.kind === 'h' ? x0 + m.cellW : y0 + m.lineH).toFixed(2)}${detail}`,
+                  `${p.ch} r${p.row} c${p.col}: ${ratio.toFixed(2)} edge@${(p.kind === 'h' || p.kind === 'b' ? x0 + m.cellW : y0 + m.lineH).toFixed(2)}${detail}`,
                 )
             }
             return { out, worst }
