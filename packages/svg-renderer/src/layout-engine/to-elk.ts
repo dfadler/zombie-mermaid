@@ -31,13 +31,15 @@ import {
 
 /**
  * ELK layer constraint for a top-level `[*]` marker: the start marker is
- * pinned to the first layer and the end marker to a layer of its own after
- * every other node, so back-edges can't drag either into the middle (#1240).
- * Keyed by node shape.
+ * pinned to the first layer so a back-edge can't drag it into the middle
+ * (#1240). The end marker is deliberately left unconstrained: it settles in
+ * the layer right after the state(s) that transition into it, instead of a
+ * layer of its own after every other node (`LAST_SEPARATE`), which drew
+ * `Closed --> [*]` as a long line down the page edge when `Closed` is near
+ * the top. Keyed by node shape.
  */
 const STATE_MARKER_LAYER_CONSTRAINT: Partial<Record<string, string>> = {
   'state-start': 'FIRST',
-  'state-end': 'LAST_SEPARATE',
 }
 
 /**
@@ -482,8 +484,9 @@ export function mermaidToElk(
         opts.fontSizes.nodeLabel,
       )
       const leaf = buildElkLeafNode(id, size, node.label)
-      // A top-level `[*]` marks where reading starts (or ends): pin it to the
-      // first (or last) layer so a back-edge can't drag it into the middle.
+      // A top-level start `[*]` marks where reading starts: pin it to the
+      // first layer so a back-edge can't drag it into the middle. The end
+      // marker stays free (see STATE_MARKER_LAYER_CONSTRAINT).
       const pin = isFlatStateGraph(graph)
         ? STATE_MARKER_LAYER_CONSTRAINT[node.shape]
         : undefined
