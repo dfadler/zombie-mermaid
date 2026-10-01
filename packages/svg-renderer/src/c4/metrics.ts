@@ -60,14 +60,17 @@ export const C4 = {
   cornerRadius: 12,
   strokeWidth: 2,
   /**
-   * Person proportions at the standard width (Mermaid scales the pill's
-   * corners and head with the width, and the head's rise a little faster).
+   * Person proportions, from Mermaid's person shape: the pill's corner is
+   * 17.7% of the width (at most 45% of the pill's height), the head's radius
+   * is 23% of the width clamped to 16..56, and the head overlaps the pill by
+   * 27% of its radius.
    */
-  personRx: 38.232,
-  personHeadRadius: 49.68,
-  /** Distance from the top of a person to the top of its pill (under the head). */
-  personPillTop: 85.946,
-  personPillTopPerExtraWidth: 0.4,
+  personRx: 0.177,
+  personRxMaxOfHeight: 0.45,
+  personHeadRatio: 0.23,
+  personHeadMin: 16,
+  personHeadMax: 56,
+  personHeadOverlap: 0.27,
   /** Cylinder height lost where its text block meets the lower ellipse. */
   dbTrim: 3.91,
   /** Queue height over its text block. */
@@ -107,18 +110,29 @@ export function wrapToWidth(
   return lines
 }
 
-/** A person's pill corner, head radius and pill top for a box of this width. */
-export function c4PersonGeometry(width: number): {
+/**
+ * A person's pill corner, head radius and pill top for a box of this width
+ * (and, when known, this height: a short pill gets smaller corners).
+ */
+export function c4PersonGeometry(
+  width: number,
+  height?: number,
+): {
   rx: number
   headRadius: number
   pillTop: number
 } {
-  const scale = width / C4.width
+  const headRadius = Math.min(
+    Math.max(width * C4.personHeadRatio, C4.personHeadMin),
+    C4.personHeadMax,
+  )
+  // The head's diameter less the part that overlaps the pill.
+  const pillTop = headRadius * (2 - C4.personHeadOverlap)
+  const pillHeight = height === undefined ? Infinity : height - pillTop
   return {
-    rx: C4.personRx * scale,
-    headRadius: C4.personHeadRadius * scale,
-    pillTop:
-      C4.personPillTop + C4.personPillTopPerExtraWidth * (width - C4.width),
+    rx: Math.min(width * C4.personRx, pillHeight * C4.personRxMaxOfHeight),
+    headRadius,
+    pillTop,
   }
 }
 
