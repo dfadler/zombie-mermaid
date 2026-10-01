@@ -970,6 +970,48 @@ function placeReachableChildren(
 }
 
 /**
+ * After `node` is moved off a frame (#1283), bring along a parent that only
+ * feeds `node`: a free-standing root (no incoming edge, in no subgraph) is
+ * moved to the same cross-axis slot, so `W --> Y` keeps dropping straight down
+ * instead of wrapping around from W's side. A parent with any other role is
+ * left where it is.
+ */
+function alignSoleParent(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  placed: GridCoord,
+  lr: boolean,
+): void {
+  const parents = new Set(
+    graph.edges
+      .filter((e) => e.to === node && e.from !== node)
+      .map((e) => e.from),
+  )
+  if (parents.size !== 1) return
+  const [parent] = [...parents]
+  const gc = parent!.gridCoord
+  if (!gc || isNodeInAnySubgraph(graph, parent!)) return
+  if (
+    graph.edges.some(
+      (e) => e.to === parent || (e.from === parent && e.to !== node),
+    )
+  ) {
+    return
+  }
+  if (lr ? gc.y === placed.y : gc.x === placed.x) return
+  for (let dx = 0; dx < NODE_BLOCK_SIZE; dx++) {
+    for (let dy = 0; dy < NODE_BLOCK_SIZE; dy++) {
+      graph.grid.delete(gridKey({ x: gc.x + dx, y: gc.y + dy }))
+    }
+  }
+  reserveSpotInGrid(
+    graph,
+    parent!,
+    lr ? { x: gc.x, y: placed.y } : { x: placed.x, y: gc.y },
+  )
+}
+
+/**
  * Move any node that is not a member of a subgraph out of that subgraph's
  * grid span (#1252). A frame is drawn around the grid box of its members, and
  * level-based placement can drop an unrelated node into a column the box
@@ -1004,11 +1046,12 @@ function separateNonMembersFromFrames(graph: AsciiGraph): void {
             graph.grid.delete(gridKey({ x: gc.x + dx, y: gc.y + dy }))
           }
         }
-        reserveSpotInGrid(
+        const placed = reserveSpotInGrid(
           graph,
           node,
           lr ? { x: gc.x, y: box.maxY + 2 } : { x: box.maxX + 2, y: gc.y },
         )
+        alignSoleParent(graph, node, placed, lr)
         moved = true
       }
     }
