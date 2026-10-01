@@ -930,24 +930,13 @@ export function createMapping(graph: AsciiGraph): void {
     targetBasedRoots,
   )
 
-  // Filter out subgraph nodes that have incoming edges from external sources.
-  // This handles the case where subgraph is declared before external nodes
-  // (e.g., `subgraph s; A-->B; end; X-->A` - A shouldn't be a root, X should).
-  const rootNodes = initialRoots.filter((node) => {
-    const nodeSg = getNodeSubgraph(graph, node)
-    if (!nodeSg) return true // external nodes: keep as roots
-
-    // Check if this subgraph node has incoming edges from outside its subgraph
-    for (const edge of graph.edges) {
-      if (edge.to === node) {
-        const sourceSg = getNodeSubgraph(graph, edge.from)
-        if (sourceSg !== nodeSg) {
-          return false // has external incoming edge → not a root
-        }
-      }
-    }
-    return true
-  })
+  // No "has an incoming edge from outside its subgraph" filter is applied to
+  // `initialRoots`: a true root is never an edge target (bar a self-loop, which
+  // stays inside its own subgraph), so such a filter could only ever drop a
+  // *pseudo*-root — and for a cycle across sibling subgraphs (`A --> C --> E
+  // --> A`, each in its own subgraph) that is the component's only seed, so
+  // dropping it left the whole component unplaced (#1197).
+  const rootNodes = initialRoots
 
   // Defer root nodes that belong to a subgraph which has OTHER members that
   // are (a) not roots themselves and (b) not even reachable from this root
