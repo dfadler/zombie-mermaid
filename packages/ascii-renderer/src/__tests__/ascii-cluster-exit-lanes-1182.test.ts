@@ -72,7 +72,7 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
         }
         for (const node of ['T', 'U', 'V'].slice(0, 1 + others.length)) {
           expect(
-            lines.filter((l) => new RegExp(`\\b${node}\\b`).test(l)),
+            lines.filter((l) => l.split(/\W+/).includes(node)),
             node,
           ).toHaveLength(1)
         }
