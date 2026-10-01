@@ -570,6 +570,15 @@ function titleRequiredWidth(sg: AsciiSubgraph): number {
   )
 }
 
+/** Leftmost drawing column of any member node (nested ones included). */
+function memberDrawingMinX(sg: AsciiSubgraph): number {
+  let minX = Infinity
+  for (const m of collectSubgraphMembers(sg)) {
+    if (m.drawingCoord) minX = Math.min(minX, m.drawingCoord.x)
+  }
+  return minX
+}
+
 /** Grid box spanned by all of a subgraph's members, nested ones included. */
 function memberGridBox(
   sg: AsciiSubgraph,
@@ -623,7 +632,16 @@ export function widenGapsForFrameTitles(graph: AsciiGraph): boolean {
         const deficit = a.maxX + 2 - b.minX
         if (deficit <= 0) continue
         const bothRoot = a.parent === null && b.parent === null
-        if (bothRoot && b.maxX - (a.maxX + 2) >= titleRequiredWidth(b)) continue
+        // Pushing `b`'s left wall is only safe while the wall stays clear of
+        // its own members: `b` narrowed up to a member's border would put the
+        // wall on the node box (#1288), so widen the gap instead.
+        if (
+          bothRoot &&
+          b.maxX - (a.maxX + 2) >= titleRequiredWidth(b) &&
+          a.maxX + 2 < memberDrawingMinX(b)
+        ) {
+          continue
+        }
         const boxA = memberGridBox(a)
         const boxB = memberGridBox(b)
         if (!boxA || !boxB || boxA.maxX + 1 >= boxB.minX) continue
