@@ -17,7 +17,9 @@ import type { Point, RenderOptions } from '@zombie-mermaid/core'
 import {
   C4,
   C4_TEXT_WIDTH,
+  c4CylinderCap,
   c4PersonGeometry,
+  c4QueueCap,
   c4ShapeSize,
   c4TextWidth,
   wrapToWidth,
@@ -313,55 +315,150 @@ function rectIntersect(box: Placed, toward: Point): Point {
 }
 
 /**
- * Where the line from a person's centre toward `toward` leaves the figure,
- * which is a round head over a pill, not the box around both (Mermaid clips
- * a relationship against what is drawn).
+ * Where a line from the centre of a person toward `toward` leaves the figure.
+ * Mermaid clips against the polygon it builds for the person (a round head
+ * over a rounded body, 24 points on the head and 12 on each body corner), so
+ * this builds the same polygon and returns the crossing nearest `toward`.
  */
 function personIntersect(box: Placed, toward: Point): Point {
-  const g = c4PersonGeometry(box.width)
+  const g = c4PersonGeometry(box.width, box.height)
   const cx = box.x + box.width / 2
   const cy = box.y + box.height / 2
-  const headY = box.y + g.headRadius
-  const pillTop = box.y + g.pillTop
-  const pillBottom = box.y + box.height
-  const inside = (x: number, y: number): boolean => {
-    if (Math.hypot(x - cx, y - headY) <= g.headRadius) return true
-    if (y < pillTop || y > pillBottom) return false
-    // Round the pill's ends: each is a circle of radius `rx` (clamped).
-    const r = Math.min(g.rx, (pillBottom - pillTop) / 2)
-    const left = box.x + r
-    const right = box.x + box.width - r
-    const nearY = Math.min(Math.max(y, pillTop + r), pillBottom - r)
-    const nearX = Math.min(Math.max(x, left), right)
-    return (
-      x >= box.x &&
-      x <= box.x + box.width &&
-      Math.hypot(x - nearX, y - nearY) <= r
-    )
-  }
-  const len = Math.hypot(toward.x - cx, toward.y - cy)
-  if (len === 0 || !inside(cx, cy)) return rectIntersect(box, toward)
-  const ux = (toward.x - cx) / len
-  const uy = (toward.y - cy) / len
-  const at = (t: number): boolean => inside(cx + ux * t, cy + uy * t)
-  let lo = 0
-  let hi = 0.5
-  while (at(hi) && hi < box.width + box.height) {
-    lo = hi
-    hi += 0.5
-  }
-  for (let i = 0; i < 30; i++) {
-    const mid = (lo + hi) / 2
-    if (at(mid)) lo = mid
-    else hi = mid
-  }
-  return { x: cx + ux * lo, y: cy + uy * lo }
+  const w = box.width
+  const h = box.height
+  const headCentre = -h / 2 + g.headRadius
+  const bodyTop = -h / 2 + g.pillTop
+  const br = g.rx
+  // `n` points on the circle at (ox, oy), sweeping from angle `from` to `to`
+  // in degrees, with Mermaid's sign convention (`generateCirclePoints`).
+  const arc = (
+    ox: number,
+    oy: number,
+    r: number,
+    n: number,
+    from: number,
+    to: number,
+  ): Point[] =>
+    Array.from({ length: n }, (_, i) => {
+      const a = ((from + (i * (to - from)) / (n - 1)) * Math.PI) / 180
+      return { x: ox - r * Math.cos(a), y: oy - r * Math.sin(a) }
+    })
+  // Where the head meets the body's top edge, below the head's centre.
+  const phi =
+    (Math.asin(Math.min(1, (bodyTop - headCentre) / g.headRadius)) * 180) /
+    Math.PI
+  const outline: Point[] = [
+    ...arc(0, headCentre, g.headRadius, 24, 180 + phi, -phi),
+    ...arc(-w / 2 + br, bodyTop + br, br, 12, 90, 0),
+    ...arc(-w / 2 + br, h / 2 - br, br, 12, 360, 270),
+    ...arc(w / 2 - br, h / 2 - br, br, 12, 270, 180),
+    ...arc(w / 2 - br, bodyTop + br, br, 12, 180, 90),
+  ]
+  return nearestCrossing(
+    { x: cx, y: cy },
+    toward,
+    outline.map((p) => ({ x: cx + p.x, y: cy + p.y })),
+  )
+}
+
+/**
+ * The crossing of segment `from`-`toward` with an edge `q1`-`q2`, as Mermaid's
+ * (dagre's) `intersectLine` computes it: it adds half the determinant before
+ * dividing, which rounds the result by up to half a pixel.
+ */
+function lineCrossing(
+  from: Point,
+  toward: Point,
+  q1: Point,
+  q2: Point,
+): Point | undefined {
+  const a1 = toward.y - from.y
+  const b1 = from.x - toward.x
+  const c1 = toward.x * from.y - from.x * toward.y
+  const r3 = a1 * q1.x + b1 * q1.y + c1
+  const r4 = a1 * q2.x + b1 * q2.y + c1
+  if (r3 !== 0 && r4 !== 0 && r3 * r4 > 0) return undefined
+  const a2 = q2.y - q1.y
+  const b2 = q1.x - q2.x
+  const c2 = q2.x * q1.y - q1.x * q2.y
+  const r1 = a2 * from.x + b2 * from.y + c2
+  const r2 = a2 * toward.x + b2 * toward.y + c2
+  if (r1 !== 0 && r2 !== 0 && r1 * r2 > 0) return undefined
+  const denom = a1 * b2 - a2 * b1
+  if (denom === 0) return undefined
+  const offset = Math.abs(denom / 2)
+  let num = b1 * c2 - b2 * c1
+  const x = num < 0 ? (num - offset) / denom : (num + offset) / denom
+  num = a2 * c1 - a1 * c2
+  const y = num < 0 ? (num - offset) / denom : (num + offset) / denom
+  return { x, y }
+}
+
+/** The crossing of segment `from`-`toward` with the polygon nearest `toward`. */
+function nearestCrossing(from: Point, toward: Point, poly: Point[]): Point {
+  let best: Point | undefined
+  let bestDist = Infinity
+  poly.forEach((p, i) => {
+    const hit = lineCrossing(from, toward, p, poly[(i + 1) % poly.length]!)
+    if (!hit) return
+    const d = Math.hypot(hit.x - toward.x, hit.y - toward.y)
+    if (d < bestDist) {
+      best = hit
+      bestDist = d
+    }
+  })
+  return best ?? from
+}
+
+/** Slack for deciding that a point sits exactly on a box edge. */
+const EDGE = 1e-6
+
+/**
+ * A cylinder (`SystemDb`, `ContainerDb`) clips like Mermaid's: the point on
+ * the bounding rectangle, then moved along the curve of the top or bottom cap
+ * where the line meets a cap rather than the straight side.
+ */
+function cylinderIntersect(box: Placed, toward: Point): Point {
+  const pos = rectIntersect(box, toward)
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  const { rx, ry } = c4CylinderCap(box.width)
+  const x = pos.x - cx
+  const onCap =
+    Math.abs(x) < box.width / 2 - EDGE ||
+    (Math.abs(Math.abs(x) - box.width / 2) <= EDGE &&
+      Math.abs(pos.y - cy) > box.height / 2 - ry)
+  if (rx === 0 || !onCap) return pos
+  const under = ry * ry * (1 - (x * x) / (rx * rx))
+  let drop = ry - (under > 0 ? Math.sqrt(under) : under)
+  if (toward.y - cy > 0) drop = -drop
+  return { x: pos.x, y: pos.y + drop }
+}
+
+/** The same for a queue (`SystemQueue`, `ContainerQueue`), a cylinder on its side. */
+function queueIntersect(box: Placed, toward: Point): Point {
+  const pos = rectIntersect(box, toward)
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  const { rx, ry } = c4QueueCap(box.height)
+  const y = pos.y - cy
+  const onCap =
+    Math.abs(y) < box.height / 2 - EDGE ||
+    (Math.abs(Math.abs(y) - box.height / 2) <= EDGE &&
+      Math.abs(pos.x - cx) > box.width / 2 - rx)
+  if (ry === 0 || !onCap) return pos
+  const under = rx * rx * (1 - (y * y) / (ry * ry))
+  let drop = rx - Math.sqrt(Math.abs(under))
+  if (toward.x - cx > 0) drop = -drop
+  return { x: pos.x + drop, y: pos.y }
 }
 
 function leave(box: Placed, toward: Point): Point {
-  return (box as Partial<MeasuredElement>).el?.kind === 'person'
-    ? personIntersect(box, toward)
-    : rectIntersect(box, toward)
+  const el = (box as Partial<MeasuredElement>).el
+  if (el?.kind === 'person') return personIntersect(box, toward)
+  if (el?.shape === 'db') return cylinderIntersect(box, toward)
+  if (el?.shape === 'queue') return queueIntersect(box, toward)
+  return rectIntersect(box, toward)
 }
 
 const centre = (b: Placed): Point => ({
