@@ -12,6 +12,7 @@ import type {
   AsciiEdge,
   AsciiGraph,
   AsciiNode,
+  ClusterExitPlan,
 } from './types.ts'
 import {
   Up,
@@ -30,7 +31,10 @@ import {
 import { routeEdge, mergePath } from './pathfinder.ts'
 import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 import { displayWidth } from './display-width.ts'
-import { buildClusterExitRoute } from './cluster-boundary.ts'
+import {
+  buildClusterExitRoute,
+  type ClusterExitRoute,
+} from './cluster-boundary.ts'
 import { isOccupied, pathCells } from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
@@ -443,11 +447,13 @@ function buildParallelLanePath(
   preferredDir: Direction,
   preferredOppositeDir: Direction,
   laneIndex: number,
+  origin?: GridCoord,
 ): ParallelLaneRoute {
-  const fromAttach = gridCoordDirection(
-    requireGridCoord(edge.from),
-    preferredDir,
-  )
+  // `origin` replaces the source node's attachment point: a cluster-exit
+  // lane (cluster-boundary.ts) starts at the cluster's gutter cell, past the
+  // wall, rather than at the stand-in member node.
+  const fromAttach =
+    origin ?? gridCoordDirection(requireGridCoord(edge.from), preferredDir)
   const toAttach = gridCoordDirection(
     requireGridCoord(edge.to),
     preferredOppositeDir,
@@ -627,6 +633,49 @@ function buildParallelLanePath(
 // ============================================================================
 
 /**
+ * Route for a lane sibling (`parallelLane.index > 0`) of an engaged cluster
+ * exit: the shared stub to the gutter, then the ordinary lane builder with
+ * the gutter cell as its origin, so the lane's offset and label segment lie
+ * outside the cluster wall instead of on it. Same shape as
+ * `buildClusterExitRoute`'s result.
+ */
+function buildClusterLaneRoute(
+  graph: AsciiGraph,
+  plan: ClusterExitPlan,
+  edge: AsciiEdge,
+): ClusterExitRoute {
+  const vertical = graph.config.graphDirection !== 'LR'
+  const startDir = vertical ? Down : Right
+  const endDir = vertical ? Up : Left
+  const face = gridCoordDirection(requireGridCoord(plan.anchor), startDir)
+  const lane = buildParallelLanePath(
+    graph,
+    edge,
+    startDir,
+    endDir,
+    edge.parallelLane!.index,
+    plan.gutter,
+  )
+  // In LR the lane's label segment is a horizontal run that starts on the
+  // gutter column, where the other exits' vertical legs (and their labels)
+  // run. Start it one grid column further out so the text stays clear.
+  const [from, to] = lane.labelSegment
+  const labelSegment: [GridCoord, GridCoord] =
+    !vertical &&
+    from.y === to.y &&
+    from.x === plan.gutter.x &&
+    to.x > from.x + 1
+      ? [{ x: from.x + 1, y: from.y }, to]
+      : lane.labelSegment
+  return {
+    path: [face, ...lane.path],
+    startDir,
+    endDir,
+    labelSegment,
+  }
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -665,7 +714,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     ? graph.clusterExitPlans?.get(edge.clusterSource)
     : undefined
   if (clusterPlan?.edges.has(edge)) {
-    const route = buildClusterExitRoute(graph, clusterPlan, edge)
+    const route =
+      edge.parallelLane && edge.parallelLane.index > 0
+        ? buildClusterLaneRoute(graph, clusterPlan, edge)
+        : buildClusterExitRoute(graph, clusterPlan, edge)
     if (route) {
       edge.startDir = route.startDir
       edge.endDir = route.endDir

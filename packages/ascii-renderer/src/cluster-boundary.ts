@@ -127,7 +127,7 @@ export function buildClusterExitRoute(
 /**
  * Decide which subgraphs engage and record their plans in
  * `graph.clusterExitPlans`. Call after node placement, column widths and
- * `assignParallelEdgeLanes` (its lane tags decide eligibility), and before
+ * `assignParallelEdgeLanes` (its lane tags group the siblings that join a plan whole), and before
  * the per-edge routing loop.
  */
 export function planClusterExits(graph: AsciiGraph): void {
@@ -158,11 +158,11 @@ function planOne(
   const box = clusterGridBox(sg)
   if (!box) return null
 
-  const eligible = candidates.filter((edge) => {
+  const routable = candidates.filter((edge) => {
     const from = edge.from.gridCoord
     const to = edge.to.gridCoord
     if (!from || !to) return false
-    if (edge.parallelLane || edge.bundle || edge.from === edge.to) return false
+    if (edge.bundle || edge.from === edge.to) return false
     // The stand-in must really sit inside this cluster's box, and the
     // target outside it.
     if (!sg.nodes.includes(edge.from) || sg.nodes.includes(edge.to)) {
@@ -172,7 +172,33 @@ function planOne(
     // sideways targets keep today's routing.
     return vertical ? to.y > box.maxY + 1 : to.x > box.maxX + 1
   })
-  if (eligible.length < 2) return null
+
+  // A parallel-lane group (same stand-in and target, #329) joins the plan
+  // only whole: every sibling must be eligible, or lane routing and the
+  // plan would disagree about the group (a direct `a --> T` beside
+  // `S --> T` shares the group but isn't cluster-addressed). Such a group
+  // keeps today's routing, as does any edge that is a lane sibling of one.
+  const routableSet = new Set(routable)
+  const laneGroups = new Map<Set<number>, AsciiEdge[]>()
+  for (const edge of graph.edges) {
+    if (!edge.parallelLane) continue
+    const group = laneGroups.get(edge.parallelLane.usedOffsets)
+    if (group) group.push(edge)
+    else laneGroups.set(edge.parallelLane.usedOffsets, [edge])
+  }
+  const eligible = routable.filter((edge) => {
+    if (!edge.parallelLane) return true
+    return laneGroups
+      .get(edge.parallelLane.usedOffsets)!
+      .every((sibling) => routableSet.has(sibling))
+  })
+
+  // The 2+ threshold counts a lane group once: its siblings leave together
+  // down the same trunk, so on their own they have no fan-out to organise.
+  const exits = new Set<unknown>(
+    eligible.map((edge) => edge.parallelLane?.usedOffsets ?? edge),
+  )
+  if (exits.size < 2) return null
 
   // Every eligible edge shares one stand-in node (resolveSubgraphEndpoint
   // is deterministic per cluster) and therefore one stub.

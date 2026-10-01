@@ -199,14 +199,13 @@ describe('cluster-exit anchoring: engagement and fallbacks', () => {
     expect(graph.clusterExitPlans).toBeUndefined()
   })
 
-  it('parallel-lane siblings keep lane routing (only one eligible edge remains)', () => {
+  it('lane siblings alone (no other exit) do not engage; they keep lane routing', () => {
     const graph = layout(`flowchart TD
   subgraph S
     a
   end
   S -->|x| C
   S -->|y| C
-  S --> D
 `)
     expect(graph.clusterExitPlans).toBeUndefined()
     const lanes = graph.edges.filter((e) => e.parallelLane)

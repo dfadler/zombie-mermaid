@@ -550,11 +550,66 @@ export function edgeLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  return clearOfClusterWalls(
+  return clearOfClusterExitLabels(
     graph,
-    labelTextPlacement(drawingLine, edge.text, isUpwardEdge, pullTowardTarget),
-    drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+    edge,
+    clearOfClusterWalls(
+      graph,
+      labelTextPlacement(
+        drawingLine,
+        edge.text,
+        isUpwardEdge,
+        pullTowardTarget,
+      ),
+      drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+    ),
   )
+}
+
+/**
+ * In LR, a lane sibling of an engaged cluster exit (#1182) runs its label
+ * along a horizontal row that starts on the gutter column, where the other
+ * exits' vertical legs carry their own labels centred on that column. Slide
+ * the lane label right of any of those it would overwrite. Everything else
+ * is returned untouched.
+ */
+function clearOfClusterExitLabels(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const plan = edge.clusterSource
+    ? graph.clusterExitPlans?.get(edge.clusterSource)
+    : undefined
+  if (
+    graph.config.graphDirection !== 'LR' ||
+    !plan?.edges.has(edge) ||
+    !edge.parallelLane ||
+    edge.parallelLane.index === 0
+  ) {
+    return placement
+  }
+  const others = [...plan.edges].filter(
+    (other) => other !== edge && !other.parallelLane && other.text.length > 0,
+  )
+  return placement.map((item) => {
+    let x = item.x
+    for (let pass = 0; pass < others.length; pass++) {
+      for (const other of others) {
+        for (const o of edgeLabelPlacement(graph, other) ?? []) {
+          const oEnd = o.x + displayWidth(o.text)
+          if (
+            o.y === item.y &&
+            o.x - 1 < x + displayWidth(item.text) &&
+            oEnd + 1 > x
+          ) {
+            x = oEnd + 2
+          }
+        }
+      }
+    }
+    return x === item.x ? item : { ...item, x }
+  })
 }
 
 /**
