@@ -127,10 +127,14 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
 
   // A third sibling has no free side face left on the target, so the group
   // keeps today's routing rather than running a lane along a node border.
-  it.each(['TD', 'LR'] as const)(
-    '%s: a three-sibling lane group does not engage the cluster',
-    (dir) => {
-      const src = `${head(dir)}  S -->|third| T\n  S -->|other| U\n  S -->|more| V\n`
+  it.each([
+    ['TD', ''],
+    ['LR', ''],
+    ['TD', '  S -->|fourth| T\n'],
+  ] as const)(
+    '%s: a three- or four-sibling lane group does not engage the cluster (%j)',
+    (dir, extra) => {
+      const src = `${head(dir)}  S -->|third| T\n${extra}  S -->|other| U\n  S -->|more| V\n`
       const graph = convertToAsciiGraph(parseMermaid(src), {
         useAscii: false,
         paddingX: 6,
@@ -144,6 +148,22 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
       expect([...plan!.edges].some((e) => e.parallelLane)).toBe(false)
     },
   )
+
+  // A lane label short enough to sit clear of the junction unaided.
+  it('LR: a short second-lane label keeps its place beside the junction', () => {
+    const src = `flowchart LR
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|a1| T
+  S -->|b1| T
+  S -->|other| U
+`
+    const lines = render(src)
+    const row = lines.find((l) => l.includes('b1'))!
+    expect(row[row.indexOf('b1') - 1]).toBe('─')
+  })
 
   describe('node borders and label placement', () => {
     const NODE_NAMES = ['Start', 'a', 'T', 'U', 'V']
@@ -170,7 +190,7 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
     const boxProblems = (
       lines: string[],
       useAscii: boolean,
-      others: number,
+      names: string[],
     ): string[] => {
       const problems: string[] = []
       const at = (r: number, c: number): string => lines[r]?.[c] ?? ' '
@@ -178,7 +198,7 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
       // What an edge may legitimately merge into on each kind of border cell.
       const horizontalOk = useAscii ? '-+' : '─┬┴┼'
       const verticalOk = useAscii ? '|+' : '│├┤┼'
-      for (const name of NODE_NAMES.slice(0, 3 + others)) {
+      for (const name of names) {
         const tok = findToken(lines, name)
         if (!tok) {
           problems.push(`${name}: not found`)
@@ -241,11 +261,43 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
           boxProblems(
             render(source(dir, others), useAscii),
             useAscii,
-            others.length,
+            NODE_NAMES.slice(0, 3 + others.length),
           ),
         ).toEqual([])
       }
     })
+
+    // With the other exits declared first the target of the lane group sits
+    // past the trunk, so the second lane takes the target's near (low) side.
+    it.each(['TD', 'LR'] as const)(
+      '%s, other exits first: lane enters a side face, labels clear',
+      (dir) => {
+        const src = `flowchart ${dir}
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|other| U
+  S -->|first| T
+  S -->|second| T
+  S -->|more| V
+`
+        for (const useAscii of [false, true]) {
+          const lines = render(src, useAscii)
+          expect(boxProblems(lines, useAscii, NODE_NAMES)).toEqual([])
+          for (const [r, text] of lines.entries()) {
+            const spans = ['other', 'first', 'second', 'more']
+              .map((w) => [text.indexOf(w), w.length] as const)
+              .filter(([i]) => i >= 0)
+              .sort((x, y) => x[0] - y[0])
+            for (let i = 1; i < spans.length; i++) {
+              const gap = spans[i]![0] - (spans[i - 1]![0] + spans[i - 1]![1])
+              expect(gap, `row ${r}`).toBeGreaterThanOrEqual(2)
+            }
+          }
+        }
+      },
+    )
 
     // Two edge labels on one row need clear line between them, or they
     // read as one run ("other-more").

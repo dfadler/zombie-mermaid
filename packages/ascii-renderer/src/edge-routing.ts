@@ -448,13 +448,11 @@ function buildParallelLanePath(
   preferredDir: Direction,
   preferredOppositeDir: Direction,
   laneIndex: number,
-  origin?: GridCoord,
 ): ParallelLaneRoute {
-  // `origin` replaces the source node's attachment point: a cluster-exit
-  // lane (cluster-boundary.ts) starts at the cluster's gutter cell, past the
-  // wall, rather than at the stand-in member node.
-  const fromAttach =
-    origin ?? gridCoordDirection(requireGridCoord(edge.from), preferredDir)
+  const fromAttach = gridCoordDirection(
+    requireGridCoord(edge.from),
+    preferredDir,
+  )
   const toAttach = gridCoordDirection(
     requireGridCoord(edge.to),
     preferredOppositeDir,
@@ -638,41 +636,29 @@ function buildParallelLanePath(
  * exit: the shared stub to the gutter, then a leg that ends on the target's
  * side face (see `clusterLaneSideRoute`), so the lane's drop and label lie
  * outside the cluster wall and its arrowhead sits beside the target's border
- * rather than on it. Same shape as `buildClusterExitRoute`'s result.
+ * rather than on it. Same shape as `buildClusterExitRoute`'s result, or null
+ * when no side route is clear.
  */
 function buildClusterLaneRoute(
   graph: AsciiGraph,
   plan: ClusterExitPlan,
   edge: AsciiEdge,
-): ClusterExitRoute {
+): ClusterExitRoute | null {
   const vertical = graph.config.graphDirection !== 'LR'
   const startDir = vertical ? Down : Right
-  const endDir = vertical ? Up : Left
   const face = gridCoordDirection(requireGridCoord(plan.anchor), startDir)
   const side = clusterLaneSideRoute(graph, plan, edge)
-  if (side) {
-    return {
-      path: [face, ...side.path],
-      startDir,
-      endDir: side.endDir,
-      labelSegment: side.labelSegment,
-    }
-  }
-  // No free side face (a third sibling, or a target against the layout
-  // edge): fall back to the ordinary lane builder from the gutter cell.
-  const lane = buildParallelLanePath(
-    graph,
-    edge,
-    startDir,
-    endDir,
-    edge.parallelLane!.index,
-    plan.gutter,
-  )
+  // planClusterExits only engages a lane group whose siblings all have a
+  // side route, so this is null only when a style-conflict reroute has
+  // temporarily blocked a cell on it; the caller then routes the edge
+  // ordinarily, as it does when `buildClusterExitRoute` returns null.
+  /* v8 ignore next */
+  if (!side) return null
   return {
-    path: [face, ...lane.path],
+    path: [face, ...side.path],
     startDir,
-    endDir,
-    labelSegment: lane.labelSegment,
+    endDir: side.endDir,
+    labelSegment: side.labelSegment,
   }
 }
 

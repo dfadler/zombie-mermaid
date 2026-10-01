@@ -328,6 +328,11 @@ export function clusterLaneSideRoute(
         { x: to.x + 1, y: side.lane },
         { x: to.x + 1, y: side.attach },
       ])
+  // The leg runs through the gutter beside the target, which no node block
+  // reaches in the layouts the planner produces; checked anyway so a
+  // surprising layout falls back to ordinary routing instead of crossing a
+  // node.
+  /* v8 ignore next 5 */
   if (
     !interiorCellsClearOfNodes(graph, pathCells(path), [edge.from, edge.to])
   ) {
