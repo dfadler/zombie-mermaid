@@ -134,7 +134,12 @@ function drawnEdgeCells(src: string) {
             continue
           }
           if (x > sg.minX && x < sg.maxX && y > sg.minY && y < sg.maxY) {
-            out.push({ edge: `${edge.from.name}->${edge.to.name}`, x, y, sg: sg.name })
+            out.push({
+              edge: `${edge.from.name}->${edge.to.name}`,
+              x,
+              y,
+              sg: sg.name,
+            })
           }
         }
       }
