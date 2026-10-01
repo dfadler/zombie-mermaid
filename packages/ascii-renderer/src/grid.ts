@@ -524,10 +524,11 @@ function calculateSubgraphBoundingBox(
 
   // Extra room asked for by `widenFramesForTitleStrokes` (#1222).
   const room = sg.titleRoom ?? 0
-  if (room > 0) {
-    sg.minX -= Math.floor(room / 2)
-    sg.maxX += room - Math.floor(room / 2)
-  }
+  // Added on the right only: the title then sits to the right of an edge
+  // entering at the node column, so the edge and the title both stay whole
+  // (#1248). Splitting the room across both sides would move the frame wall
+  // away from the edge by the same amount the title needs to clear it.
+  if (room > 0) sg.maxX += room
 }
 
 /** Ensure non-overlapping root subgraphs have minimum spacing. */
@@ -560,6 +561,87 @@ function ensureSubgraphSpacing(graph: AsciiGraph): void {
       }
     }
   }
+}
+
+/** Columns a frame needs (`maxX - minX`) so its longest title line fits. */
+function titleRequiredWidth(sg: AsciiSubgraph): number {
+  return (
+    Math.max(0, ...splitLines(sg.name).map((line) => displayWidth(line))) + 1
+  )
+}
+
+/** Grid box spanned by all of a subgraph's members, nested ones included. */
+function memberGridBox(
+  sg: AsciiSubgraph,
+): { minX: number; minY: number; maxX: number; maxY: number } | null {
+  let box: { minX: number; minY: number; maxX: number; maxY: number } | null =
+    null
+  for (const m of collectSubgraphMembers(sg)) {
+    const gc = m.gridCoord
+    if (!gc) continue
+    box = box
+      ? {
+          minX: Math.min(box.minX, gc.x),
+          minY: Math.min(box.minY, gc.y),
+          maxX: Math.max(box.maxX, gc.x + 2),
+          maxY: Math.max(box.maxY, gc.y + 2),
+        }
+      : { minX: gc.x, minY: gc.y, maxX: gc.x + 2, maxY: gc.y + 2 }
+  }
+  return box
+}
+
+/**
+ * Widen the grid gap between two side-by-side frames that a wide title made
+ * touch (#1254, #1248). A frame grows past its nodes to fit its title (or the
+ * room `widenFramesForTitleStrokes` gives it), into the gap beside it.
+ *
+ * - Root frames: `ensureSubgraphSpacing` separates touching ones by moving the
+ *   right one's left wall, which narrows it; when its title needed that width
+ *   the title is clipped ("Layer Two" -> "Layer T"). Widening the gap keeps
+ *   both frames at their natural width instead. Frames whose title still fits
+ *   after being pushed are left to `ensureSubgraphSpacing` as before.
+ * - Nested sibling frames: nothing separates them, so they overlapped and
+ *   their walls and nodes tangled. They get the same gap widening, always.
+ *
+ * Returns whether any column changed; drawing coordinates and boxes are
+ * recomputed here.
+ */
+export function widenGapsForFrameTitles(graph: AsciiGraph): boolean {
+  const framed = graph.subgraphs.filter((sg) => sg.nodes.length > 0)
+  const related = (a: AsciiSubgraph, b: AsciiSubgraph): boolean =>
+    isAncestorOrSelf(a, b) || isAncestorOrSelf(b, a)
+  let changed = false
+  for (let pass = 0; pass < 64; pass++) {
+    // Raw boxes, before `ensureSubgraphSpacing` moves any wall.
+    for (const sg of graph.subgraphs) calculateSubgraphBoundingBox(graph, sg)
+    let widened = false
+    for (const a of framed) {
+      for (const b of framed) {
+        if (related(a, b) || !(a.minX < b.minX)) continue
+        if (!(a.minY < b.maxY && a.maxY > b.minY)) continue
+        const deficit = a.maxX + 2 - b.minX
+        if (deficit <= 0) continue
+        const bothRoot = a.parent === null && b.parent === null
+        if (bothRoot && b.maxX - (a.maxX + 2) >= titleRequiredWidth(b)) continue
+        const boxA = memberGridBox(a)
+        const boxB = memberGridBox(b)
+        if (!boxA || !boxB || boxA.maxX + 1 >= boxB.minX) continue
+        const col = boxA.maxX + 1
+        graph.columnWidth.set(col, (graph.columnWidth.get(col) ?? 0) + deficit)
+        for (const node of graph.nodes) {
+          node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+        }
+        widened = true
+        changed = true
+        break
+      }
+      if (widened) break
+    }
+    if (!widened) break
+  }
+  calculateSubgraphBoundingBoxes(graph)
+  return changed
 }
 
 export function calculateSubgraphBoundingBoxes(graph: AsciiGraph): void {
@@ -887,6 +969,53 @@ function placeReachableChildren(
   }
 }
 
+/**
+ * Move any node that is not a member of a subgraph out of that subgraph's
+ * grid span (#1252). A frame is drawn around the grid box of its members, and
+ * level-based placement can drop an unrelated node into a column the box
+ * spans (`Y` in `W --> Y --> Sub`, which only has an edge *into* the
+ * cluster, lands beside `A` because both sit one level below their roots),
+ * so the frame swallowed it. The node is released and re-reserved just past
+ * the box's far edge on the cross axis (right in TD, below in LR), sliding on
+ * as `reserveSpotInGrid` always does if that slot is taken. Repeats until no
+ * frame holds a non-member, since the new slot can fall inside another frame.
+ */
+function separateNonMembersFromFrames(graph: AsciiGraph): void {
+  const lr = graph.config.graphDirection === 'LR'
+  for (let pass = 0; pass < graph.nodes.length + 1; pass++) {
+    let moved = false
+    for (const sg of graph.subgraphs) {
+      const members = collectSubgraphMembers(sg)
+      const box = memberGridBox(sg)
+      if (!box) continue
+      for (const node of graph.nodes) {
+        const gc = node.gridCoord
+        if (!gc || members.includes(node)) continue
+        if (
+          gc.x + 2 < box.minX ||
+          gc.x > box.maxX ||
+          gc.y + 2 < box.minY ||
+          gc.y > box.maxY
+        ) {
+          continue
+        }
+        for (let dx = 0; dx < NODE_BLOCK_SIZE; dx++) {
+          for (let dy = 0; dy < NODE_BLOCK_SIZE; dy++) {
+            graph.grid.delete(gridKey({ x: gc.x + dx, y: gc.y + dy }))
+          }
+        }
+        reserveSpotInGrid(
+          graph,
+          node,
+          lr ? { x: gc.x, y: box.maxY + 2 } : { x: box.maxX + 2, y: gc.y },
+        )
+        moved = true
+      }
+    }
+    if (!moved) return
+  }
+}
+
 // ============================================================================
 // Main layout orchestrator
 // ============================================================================
@@ -1142,6 +1271,8 @@ export function createMapping(graph: AsciiGraph): void {
   // above since it wasn't on the grid yet — give the traversal another pass.
   placeReachableChildren(graph, highestPositionPerLevel)
 
+  separateNonMembersFromFrames(graph)
+
   // Compute column widths and row heights
   for (const node of graph.nodes) {
     setColumnWidth(graph, node)
@@ -1252,6 +1383,9 @@ export function createMapping(graph: AsciiGraph): void {
   // the `Error --> Idle : retry` edge in the "State: Composite States"
   // sample, whose rerouted path was the first to reach it).
   calculateSubgraphBoundingBoxes(graph)
+  // Keep side-by-side frames at their natural width when a wide title makes
+  // them touch (#1254).
+  widenGapsForFrameTitles(graph)
   // A cluster-exit gutter narrower than its cluster's drawn wall (padding,
   // nesting, or LR label widening) is widened here, where the wall is first
   // known. Widening only shifts what lies past the gutter, so node drawing
@@ -1274,7 +1408,15 @@ export function createMapping(graph: AsciiGraph): void {
   // A title that would still hide an entering edge gets room (#1222). Runs
   // after the gutters so avoiding edges are already outside the frames; the
   // wider walls may need the gap widened once more.
-  widenFramesForTitleStrokes(graph, refreshBoxes)
+  // Each trial width also re-clears the avoiding edges: left where they were,
+  // they fall inside the growing frame and read as title collisions, so the
+  // frame over-widens (Layer Two came out 24 wide for a 9-wide title).
+  widenFramesForTitleStrokes(graph, () => {
+    refreshBoxes()
+    widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
+  })
+  // The room a frame was given may reach its neighbour; open the gap (#1248).
+  widenGapsForFrameTitles(graph)
   widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
   offsetDrawingForSubgraphs(graph)
 

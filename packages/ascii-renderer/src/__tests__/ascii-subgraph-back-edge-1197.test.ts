@@ -52,20 +52,14 @@ describe('#1197: cycle across sibling subgraphs', () => {
           }
         })
       }
-      // A mutual `A --> B`, `B --> A` pair with labels shares one corridor and
-      // the label overwrites the next frame's title — an independent
-      // edge-routing defect that also reproduces on main when an unrelated root
-      // seeds the layout, so it is not asserted here.
-      const mutualLabelled =
-        name.startsWith('two sibling') && name.endsWith('labelled')
-      if (!mutualLabelled) {
-        it('every declared subgraph title is drawn', () => {
-          const out = renderMermaidASCII(src, { colorMode: 'none' })
-          for (const m of src.matchAll(/subgraph \w+\[(\w+)\]/g)) {
-            expect(out).toContain(m[1]!)
-          }
-        })
-      }
+      // Edge labels stay off frame title rows (#1254), so the mutual
+      // labelled pair keeps its titles too.
+      it('every declared subgraph title is drawn', () => {
+        const out = renderMermaidASCII(src, { colorMode: 'none' })
+        for (const m of src.matchAll(/subgraph \w+\[(\w+)\]/g)) {
+          expect(out).toContain(m[1]!)
+        }
+      })
     })
   }
 
@@ -89,10 +83,8 @@ E --> A`
       ['Layer Two', 'C'],
       ['Layer Three', 'E'],
     ] as const) {
-      // a forward edge entering the frame may split the title (#1222)
-      const titleRow = out.findIndex((ln) =>
-        ln.replace(/│/g, ' ').includes(title),
-      )
+      // the title is never split by an edge entering the frame (#1248)
+      const titleRow = out.findIndex((ln) => ln.includes(title))
       const nodeRow = out.findIndex((ln) =>
         new RegExp(`│\\s+${id}\\s+[│├]`).test(ln),
       )

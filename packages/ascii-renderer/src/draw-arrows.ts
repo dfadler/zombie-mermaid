@@ -553,17 +553,60 @@ export function edgeLabelPlacement(
   return clearOfLaneJunction(
     graph,
     edge,
-    clearOfClusterWalls(
+    clearOfSubgraphTitles(
       graph,
-      labelTextPlacement(
-        drawingLine,
-        edge.text,
-        isUpwardEdge,
-        pullTowardTarget,
+      clearOfClusterWalls(
+        graph,
+        labelTextPlacement(
+          drawingLine,
+          edge.text,
+          isUpwardEdge,
+          pullTowardTarget,
+        ),
+        drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
       ),
-      drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+      drawingLine,
     ),
   )
+}
+
+/**
+ * Keep label text off a subgraph's title rows (#1254). A label centred on a
+ * vertical run that crosses a frame's header replaces a letter of the title
+ * (`Two` -> `Txo`). Each line that lands on a title row, or the top border
+ * above it, inside the frame's columns moves to the nearest row of its own segment that no title uses; a
+ * label with no such row, or that touches no title, is left alone.
+ */
+function clearOfSubgraphTitles(
+  graph: AsciiGraph,
+  placement: { x: number; y: number; text: string }[],
+  line: DrawingCoord[],
+): { x: number; y: number; text: string }[] {
+  if (line.length < 2 || graph.subgraphs.length === 0) return placement
+  const loY = Math.min(line[0]!.y, line[1]!.y)
+  const hiY = Math.max(line[0]!.y, line[1]!.y)
+  const hitsTitle = (item: { x: number; y: number; text: string }, y: number) =>
+    graph.subgraphs.some((sg) => {
+      if (sg.nodes.length === 0) return false
+      const rows = splitLines(sg.name).length
+      return (
+        y >= sg.minY &&
+        y <= sg.minY + rows &&
+        item.x <= sg.maxX &&
+        item.x + displayWidth(item.text) - 1 >= sg.minX
+      )
+    })
+  return placement.map((item) => {
+    if (!hitsTitle(item, item.y)) return item
+    let best: number | null = null
+    for (let y = loY + 1; y < hiY; y++) {
+      if (hitsTitle(item, y)) continue
+      if (best === null || Math.abs(y - item.y) < Math.abs(best - item.y)) {
+        best = y
+      }
+    }
+    return best === null ? item : { ...item, y: best }
+  })
 }
 
 /**

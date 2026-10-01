@@ -91,11 +91,12 @@ export function isVerticalStroke(ch: string | undefined): boolean {
  * Preference order, nearest to the centred start `want` within each tier:
  *   1. the title slides aside, one clear column between it and the stroke;
  *   2. the same with no gap (the title abuts the stroke);
- *   3. every stroke column lands on a literal space in the title, so the
- *      stroke splits it between two words ("Layer│Three") without losing a
- *      character;
- *   4. otherwise `want` — the title wins and the stroke is hidden behind it,
- *      because overwriting a letter would garble the text.
+ *   3. otherwise `null` — the title would have to split or hide behind the
+ *      stroke. Grid layout widens the frame on the side away from the stroke
+ *      until a tier above fits (`widenFramesForTitleStrokes`, #1248); only
+ *      if no width up to the cap works does the caller fall back to `want`,
+ *      where the title wins and the stroke is hidden behind it, because
+ *      overwriting a letter would garble the text.
  */
 function pickTitleStart(
   cells: readonly string[],
@@ -103,24 +104,21 @@ function pickTitleStart(
   width: number,
   blocked: (x: number) => boolean,
 ): number | null {
-  const clash = (start: number, spacesOk: boolean, gap: number): boolean => {
+  const clash = (start: number, gap: number): boolean => {
     for (let x = start - gap; x < start + cells.length + gap; x++) {
-      if (x < 1 || x >= width || !blocked(x)) continue
-      const cell = cells[x - start]
-      if (!(spacesOk && cell === ' ')) return true
+      if (x < 1 || x >= width) continue
+      if (blocked(x)) return true
     }
     return false
   }
-  if (!clash(want, false, 0)) return want
+  // The centred start only stands when it keeps a clear column on each side;
+  // abutting a stroke reads as the title being part of a narrow box (`│Two│`).
+  if (!clash(want, 1)) return want
   const last = Math.max(1, width - cells.length)
-  for (const [spacesOk, gap] of [
-    [false, 1],
-    [false, 0],
-    [true, 0],
-  ] as const) {
+  for (const gap of [1, 0]) {
     let best = -1
     for (let s = 1; s <= last; s++) {
-      if (clash(s, spacesOk, gap)) continue
+      if (clash(s, gap)) continue
       if (best < 0 || Math.abs(s - want) < Math.abs(best - want)) best = s
     }
     if (best >= 0) return best
@@ -134,9 +132,10 @@ function centredStart(cells: readonly string[], width: number): number {
 }
 
 /**
- * Whether `line` can be placed in a frame `width` wide without hiding or
- * overwriting a vertical stroke (tiers 1-3 of `pickTitleStart`). Grid layout
- * uses this to decide whether a frame needs widening (#1222).
+ * Whether `line` can be placed in a frame `width` wide with a clear column
+ * between it and every vertical stroke (tier 1 of `pickTitleStart`); abutting
+ * a stroke does not count. Grid layout uses this to decide whether a frame
+ * needs widening (#1222).
  */
 export function titleAvoidsStrokes(
   line: string,
@@ -144,9 +143,18 @@ export function titleAvoidsStrokes(
   blocked: (x: number) => boolean,
 ): boolean {
   const cells = toDisplayCells(line)
-  return (
-    pickTitleStart(cells, centredStart(cells, width), width, blocked) !== null
+  const start = pickTitleStart(
+    cells,
+    centredStart(cells, width),
+    width,
+    blocked,
   )
+  if (start === null) return false
+  // Whether the start it picked keeps the clear column (tier 1), or only abuts.
+  for (let x = start - 1; x < start + cells.length + 1; x++) {
+    if (x >= 1 && x < width && blocked(x)) return false
+  }
+  return true
 }
 
 /**
@@ -154,7 +162,7 @@ export function titleAvoidsStrokes(
  *
  * `isStroke(x, y)` (frame-local coordinates, optional) reports whether a
  * vertical edge stroke already occupies that cell; the title then slides
- * aside or splits around it instead of hiding the edge (see `pickTitleStart`).
+ * aside instead of hiding or splitting around the edge (see `pickTitleStart`).
  */
 // `_graph` isn't read here but is kept to match the `(sg, graph)` signature
 // shared by the other `draw*` subgraph helpers in this file.
