@@ -116,4 +116,17 @@ describe('composite state diagrams read in source order (#1287)', () => {
       endOf(g),
     ])
   })
+
+  it('a composite no transition names keeps the chain in order and is still laid out', () => {
+    const g = layout(`stateDiagram-v2
+  state Orphan {
+    p --> q
+  }
+  [*] --> A
+  A --> B
+  B --> [*]`)
+    expectAscendingY(g, [startOf(g), node(g, 'A'), node(g, 'B'), endOf(g)])
+    expect(node(g, 'p')).toBeDefined()
+    expect(node(g, 'q').y).toBeGreaterThan(node(g, 'p').y)
+  })
 })
