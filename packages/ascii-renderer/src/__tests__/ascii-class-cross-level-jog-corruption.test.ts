@@ -78,12 +78,12 @@ ${manyAttrs('b', 6)}
   RightSrc --> Kid`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectAllPresentOnce(ascii, [
-      '+ b0: String',
-      '+ b1: String',
-      '+ b2: String',
-      '+ b3: String',
-      '+ b4: String',
-      '+ b5: String',
+      '+ String b0',
+      '+ String b1',
+      '+ String b2',
+      '+ String b3',
+      '+ String b4',
+      '+ String b5',
     ])
     expectNoBoxOverlap(ascii, ['Left', 'TallMid', 'RightSrc', 'Kid'])
   })
@@ -114,7 +114,7 @@ ${manyAttrs('b', 6)}
     expect(
       ascii,
       '"+ b4: String" was overwritten by Root->Kid\'s jog',
-    ).toContain('+ b4: String')
+    ).toContain('+ String b4')
   })
 
   it('deeper tree: a tall level-0 sibling between a level-1 source and its level-2 grandchild', () => {
@@ -130,12 +130,12 @@ ${manyAttrs('b', 6)}
   Kid1 --> GrandKid`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectAllPresentOnce(ascii, [
-      '+ b0: String',
-      '+ b1: String',
-      '+ b2: String',
-      '+ b3: String',
-      '+ b4: String',
-      '+ b5: String',
+      '+ String b0',
+      '+ String b1',
+      '+ String b2',
+      '+ String b3',
+      '+ String b4',
+      '+ String b5',
     ])
     expectNoBoxOverlap(ascii, ['A', 'TallMid', 'B', 'Kid1', 'GrandKid'])
   })
@@ -151,12 +151,12 @@ ${manyAttrs('d', 6)}
   RightSrc <|-- Kid`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectAllPresentOnce(ascii, [
-      '+ d0: String',
-      '+ d1: String',
-      '+ d2: String',
-      '+ d3: String',
-      '+ d4: String',
-      '+ d5: String',
+      '+ String d0',
+      '+ String d1',
+      '+ String d2',
+      '+ String d3',
+      '+ String d4',
+      '+ String d5',
     ])
     expectNoBoxOverlap(ascii, ['Left', 'TallMid', 'RightSrc', 'Kid'])
   })

@@ -12,9 +12,9 @@ import { layoutC4DiagramSync } from '../c4/layout.ts'
 // direction), so a constant tuned to one sample cannot satisfy all of them.
 //
 // Vertical numbers depend only on heights and gaps, so they must agree to a
-// few pixels. Horizontal ones depend on text widths, which this package
-// estimates (Mermaid measures them in a browser), and relationship ends depend
-// on each shape's own outline, so those get a wider allowance.
+// few pixels. Horizontal ones depend on text widths, which this package sums
+// from Arial advances (Mermaid measures them in a browser), and relationship
+// ends follow each shape's own outline, as Mermaid's do.
 interface Reference {
   name: string
   source: string
@@ -32,8 +32,16 @@ const cases: Reference[] = JSON.parse(
 )
 
 const Y = 3
-const X = 11
-const LINE = 16
+const X = 2
+const LINE = 3
+// Relationships whose end this package cannot place within LINE, with the
+// reason. Each is a limit of the shape outline, not of the text widths.
+const WIDER_LINE = 9
+const WIDER: Record<string, number[]> = {
+  // A line that skims along the top of a person's body, where the pill meets
+  // the head: 0.25px of height moves where it crosses by about 8px.
+  'v02-person-targets': [3],
+}
 const LABEL = 10
 
 describe('C4 SVG layout against Mermaid on varied diagrams', () => {
@@ -63,11 +71,12 @@ describe('C4 SVG layout against Mermaid on varied diagrams', () => {
         const r = ref.relationships[i]!
         const [s, e] = rel.points
         const got = [s!.x, s!.y, e!.x, e!.y]
+        const limit = WIDER[ref.name]?.includes(i + 1) ? WIDER_LINE : LINE
         got.forEach((v, k) => {
           expect(
             Math.abs(v - r.line[k]!),
             `relationship ${i + 1} line[${k}]`,
-          ).toBeLessThan(LINE)
+          ).toBeLessThan(limit)
         })
         if (r.label && rel.labelPosition) {
           expect(
