@@ -37,7 +37,7 @@ properties that make worktree cleanup easy to get wrong:
 ## ASCII rendering changes: the PR screenshot must be a real terminal; mockup-only changes use the probes
 
 Before attaching before/after screenshots to a PR/issue for any change touching
-ASCII output (`src/ascii/**`, `packages/site/ascii-html.ts`, `src/cli.ts`'s ASCII path,
+ASCII output (`packages/ascii-renderer/**`, `packages/site/ascii-html.ts`, `src/cli.ts`'s ASCII path,
 `demo/client.ts`'s ASCII path, `packages/site/index.ts`'s `.ascii-panel`,
 `scripts/visual-diff.ts`, `__tests__/visual/helpers/terminal-panel.ts`, or
 `__tests__/visual/ascii-samples.visual.test.ts`), invoke the
