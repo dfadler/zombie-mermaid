@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { parseMermaid } from '../../../../src/parser.ts'
 import { convertToAsciiGraph } from '../converter.ts'
-import { createMapping } from '../grid.ts'
+import { createMapping, gridToDrawingCoord } from '../grid.ts'
 import { planClusterExits } from '../cluster-boundary.ts'
 import { determinePath } from '../edge-routing.ts'
 import { gridKey } from '../types.ts'
@@ -494,6 +494,33 @@ describe('cluster-exit anchoring: eligibility edge cases', () => {
     expect(layout(src).clusterExitPlans?.size).toBe(2)
     const text = render(src).join('\n')
     for (const id of ['C', 'D', 'E', 'F']) expect(text).toContain(id)
+  })
+
+  it('outer cluster wall is checked after inner widening shifts it (#1213)', () => {
+    // Outer has a member (z) right of Inner, so widening Inner's gutter
+    // shifts Outer's wall. Outer's gutter must be checked against that final
+    // wall, which needs Outer processed before Inner.
+    const src = `flowchart LR
+  subgraph Outer [A very long outer label here]
+    subgraph Inner [Inner label]
+      a
+    end
+    b --> z
+  end
+  Inner --> C
+  Inner --> D
+  Outer --> E
+  Outer --> F
+`
+    const graph = layout(src)
+    expect(graph.clusterExitPlans?.size).toBe(2)
+    for (const [sg, plan] of graph.clusterExitPlans ?? []) {
+      expect(gridToDrawingCoord(graph, plan.gutter).x).toBeGreaterThan(sg.maxX)
+    }
+    // Rendered: Outer's exits share one trunk past the wall (┼ then ┬)
+    // instead of fanning out of the wall column itself.
+    const zRow = render(src).find((l) => l.includes('z'))
+    expect(zRow).toMatch(/┼─+┬/)
   })
 })
 
