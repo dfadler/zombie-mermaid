@@ -29,7 +29,7 @@ commit that file alongside your change. A PR can contain more than one
 changeset, and a changeset can be empty (`pnpm changeset add --empty`) for
 changes that don't need a release (docs, CI, tests).
 
-Not every change needs one — see [CONTRIBUTING.md](./CONTRIBUTING.md).
+Not every change needs one — see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## What happens on merge to `main`
 

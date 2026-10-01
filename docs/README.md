@@ -5,6 +5,8 @@ Single-topic files, plus two grouped directories: task-oriented walkthroughs in
 [guides/](guides/), and settled-decision records in [decisions/](decisions/).
 
 - [guides/](guides/) — task-oriented walkthroughs: browsing the samples, choosing a theme
+- [development-scripts.md](development-scripts.md) — the less common `package.json` scripts: site generators, benchmarks, bundle-size and coverage checks
+- [visual-regression.md](visual-regression.md) — the Playwright screenshot suite: ASCII mockup fidelity probes, the containerized Linux baselines, and darwin font pitfalls
 - [RELEASING.md](RELEASING.md) — the changesets-based release flow and npm trusted-publishing setup
 - [brand.md](brand.md) — the two wordmark forms (`ZombieMermaid` in a logo lockup, `Zombie Mermaid` everywhere else) and what stays `zombie-mermaid`
 - [accessibility.md](accessibility.md) — the accessibility conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
