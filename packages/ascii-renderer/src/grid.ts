@@ -27,6 +27,12 @@ import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
 import { planClusterExits, widenClusterGutters } from './cluster-boundary.ts'
 import {
+  blockUnrelatedFrames,
+  unblock,
+  widenFrameGutters,
+  widenFramesForTitleStrokes,
+} from './frame-avoidance.ts'
+import {
   isBlockFree,
   placeBlock,
   cloneGrid,
@@ -515,6 +521,13 @@ function calculateSubgraphBoundingBox(
     sg.minX -= extraLeft
     sg.maxX += extraRight
   }
+
+  // Extra room asked for by `widenFramesForTitleStrokes` (#1222).
+  const room = sg.titleRoom ?? 0
+  if (room > 0) {
+    sg.minX -= Math.floor(room / 2)
+    sg.maxX += room - Math.floor(room / 2)
+  }
 }
 
 /** Ensure non-overlapping root subgraphs have minimum spacing. */
@@ -930,24 +943,13 @@ export function createMapping(graph: AsciiGraph): void {
     targetBasedRoots,
   )
 
-  // Filter out subgraph nodes that have incoming edges from external sources.
-  // This handles the case where subgraph is declared before external nodes
-  // (e.g., `subgraph s; A-->B; end; X-->A` - A shouldn't be a root, X should).
-  const rootNodes = initialRoots.filter((node) => {
-    const nodeSg = getNodeSubgraph(graph, node)
-    if (!nodeSg) return true // external nodes: keep as roots
-
-    // Check if this subgraph node has incoming edges from outside its subgraph
-    for (const edge of graph.edges) {
-      if (edge.to === node) {
-        const sourceSg = getNodeSubgraph(graph, edge.from)
-        if (sourceSg !== nodeSg) {
-          return false // has external incoming edge → not a root
-        }
-      }
-    }
-    return true
-  })
+  // No "has an incoming edge from outside its subgraph" filter is applied to
+  // `initialRoots`: a true root is never an edge target (bar a self-loop, which
+  // stays inside its own subgraph), so such a filter could only ever drop a
+  // *pseudo*-root — and for a cycle across sibling subgraphs (`A --> C --> E
+  // --> A`, each in its own subgraph) that is the component's only seed, so
+  // dropping it left the whole component unplaced (#1197).
+  const rootNodes = initialRoots
 
   // Defer root nodes that belong to a subgraph which has OTHER members that
   // are (a) not roots themselves and (b) not even reachable from this root
@@ -1195,6 +1197,7 @@ export function createMapping(graph: AsciiGraph): void {
   const cellStyles = createEdgeCellStyles()
   const cellOwners = createEdgeCellOwners()
   const nodeOnlyGrid = cloneGrid(graph.grid)
+  const frameAvoidingEdges = new Set<AsciiEdge>()
   for (const edge of graph.edges) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
@@ -1205,6 +1208,11 @@ export function createMapping(graph: AsciiGraph): void {
       continue
     }
 
+    // Keep the route out of frames it has no endpoint in (#1197).
+    const { added: frameCells, engaged } = blockUnrelatedFrames(graph, edge)
+    if (engaged) frameAvoidingEdges.add(edge)
+    const prevStraight = graph.preferStraightRoutes
+    if (engaged) graph.preferStraightRoutes = true
     determinePath(graph, edge)
     rerouteAroundStyleConflicts(
       graph,
@@ -1213,6 +1221,8 @@ export function createMapping(graph: AsciiGraph): void {
       cellOwners,
       nodeOnlyGrid,
     )
+    graph.preferStraightRoutes = prevStraight
+    unblock(graph, frameCells)
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
@@ -1252,6 +1262,20 @@ export function createMapping(graph: AsciiGraph): void {
     }
     calculateSubgraphBoundingBoxes(graph)
   }
+  // A title-widened frame can reach past the gap column an avoiding edge
+  // runs in; widen the gap until the edge clears the wall (#1197).
+  const refreshBoxes = (): void => {
+    for (const node of graph.nodes) {
+      node.drawingCoord = gridToDrawingCoord(graph, requireGridCoord(node))
+    }
+    calculateSubgraphBoundingBoxes(graph)
+  }
+  widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
+  // A title that would still hide an entering edge gets room (#1222). Runs
+  // after the gutters so avoiding edges are already outside the frames; the
+  // wider walls may need the gap widened once more.
+  widenFramesForTitleStrokes(graph, refreshBoxes)
+  widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
   offsetDrawingForSubgraphs(graph)
 
   // Set canvas size, now covering the offset computed above.

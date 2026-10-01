@@ -37,7 +37,11 @@ import {
   drawBundledEdgeArrowheadStart,
   drawJunctionCharacter,
 } from './draw-bundles.ts'
-import { drawSubgraphBox, drawSubgraphLabel } from './draw-subgraphs.ts'
+import {
+  drawSubgraphBox,
+  drawSubgraphLabel,
+  isVerticalStroke,
+} from './draw-subgraphs.ts'
 
 export {
   drawNode,
@@ -370,7 +374,14 @@ export function drawGraph(graph: AsciiGraph): Canvas {
   // Draw subgraph labels last (on top)
   for (const sg of graph.subgraphs) {
     if (sg.nodes.length === 0) continue
-    const [labelCanvas, offset, footprint] = drawSubgraphLabel(sg, graph)
+    const [labelCanvas, offset, footprint] = drawSubgraphLabel(
+      sg,
+      graph,
+      (x, y) =>
+        isVerticalStroke(graph.canvas[x + sg.minX]?.[y + sg.minY]) &&
+        // continues below, so it is an edge passing through, not a stray glyph
+        (graph.canvas[x + sg.minX]?.[y + sg.minY + 1] ?? ' ') !== ' ',
+    )
     graph.canvas = mergeCanvases(graph.canvas, offset, useAscii, labelCanvas)
     fillRolesFromCanvas(graph.roleCanvas, labelCanvas, offset, 'text')
     // mergeCanvases treats an overlay's space characters as transparent (so
