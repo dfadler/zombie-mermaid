@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest'
 import {
   parseClassDiagram,
   parseGenericTypes,
+  formatClassMember,
 } from '@zombie-mermaid/mermaid-parser'
 import { splitStatements } from '@zombie-mermaid/core'
 
@@ -102,7 +103,29 @@ describe('parseClassDiagram – inline attributes', () => {
       Animal : +int age`)
     const cls = d.classes.find((c) => c.id === 'Animal')!
     expect(cls.attributes).toHaveLength(2)
-    expect(cls.attributes[0]!.name).toBe('name')
+    expect(cls.attributes[0]!.name).toBe('String name')
+  })
+})
+
+// ============================================================================
+// Attribute token order (#1265): Mermaid renders attribute text verbatim
+// ============================================================================
+
+describe('parseClassDiagram – attribute text is kept verbatim (#1265)', () => {
+  it.each([
+    ['-data Map', '-', 'data Map'],
+    ['+String name', '+', 'String name'],
+    ['+name: Type', '+', 'name: Type'],
+    ['#count', '#', 'count'],
+  ])('%s keeps its written order', (src, visibility, display) => {
+    const d = parse(`classDiagram
+      class Model {
+        ${src}
+      }`)
+    const attr = d.classes[0]!.attributes[0]!
+    expect(attr.visibility).toBe(visibility)
+    expect(attr.type).toBeUndefined()
+    expect(formatClassMember(attr)).toBe(`${visibility} ${display}`)
   })
 })
 
@@ -280,8 +303,8 @@ describe('parseClassDiagram – generic types in members', () => {
       }`)
     const attr = d.classes[0]!.attributes[0]!
     expect(attr.visibility).toBe('-')
-    expect(attr.type).toBe('List<Observer>')
-    expect(attr.name).toBe('observers')
+    expect(attr.type).toBeUndefined()
+    expect(attr.name).toBe('List<Observer> observers')
   })
 
   it('converts multi-argument and nested attribute generics', () => {
@@ -291,10 +314,8 @@ describe('parseClassDiagram – generic types in members', () => {
         +List~List~int~~ matrix
       }`)
     const [handlers, matrix] = d.classes[0]!.attributes
-    expect(handlers!.type).toBe('Map<String,Handler>')
-    expect(handlers!.name).toBe('handlers')
-    expect(matrix!.type).toBe('List<List<int>>')
-    expect(matrix!.name).toBe('matrix')
+    expect(handlers!.name).toBe('Map<String,Handler> handlers')
+    expect(matrix!.name).toBe('List<List<int>> matrix')
   })
 
   it('converts generics in method params and return types', () => {
@@ -315,13 +336,12 @@ describe('parseClassDiagram – generic types in members', () => {
       }`)
     const attr = d.classes[0]!.attributes[0]!
     expect(attr.visibility).toBe('~')
-    expect(attr.type).toBe('List<Entry>')
-    expect(attr.name).toBe('entries')
+    expect(attr.name).toBe('List<Entry> entries')
   })
 
   it('converts generics in inline member syntax', () => {
     const d = parse(`classDiagram
       Store : -List~Item~ items`)
-    expect(d.classes[0]!.attributes[0]!.type).toBe('List<Item>')
+    expect(d.classes[0]!.attributes[0]!.name).toBe('List<Item> items')
   })
 })
