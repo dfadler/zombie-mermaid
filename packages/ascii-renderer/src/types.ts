@@ -144,6 +144,12 @@ export interface AsciiNode {
   drawingCoord: DrawingCoord | null
   drawing: Canvas | null
   drawn: boolean
+  /**
+   * Rows of `drawing` holding the label's lines (inclusive), set by drawBox.
+   * Lets the BT flip restore the label's reading order exactly, rather than
+   * inferring which text cells belong to one label.
+   */
+  labelRows?: { top: number; bottom: number }
   styleClassName: string
   styleClass: AsciiStyleClass
 }
@@ -327,6 +333,14 @@ export interface AsciiConfig {
   graphDirection: 'LR' | 'TD'
 }
 
+/** Inclusive bounding rectangle of one label on the canvas. */
+export interface LabelRect {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+}
+
 /** Full ASCII graph state used during layout and rendering. */
 export interface AsciiGraph {
   nodes: AsciiNode[]
@@ -334,6 +348,12 @@ export interface AsciiGraph {
   canvas: Canvas
   /** Role canvas — tracks the role of each character for colored output. */
   roleCanvas: RoleCanvas
+  /**
+   * Bounding rectangles (canvas coords, inclusive) of every node and edge
+   * label, recorded by drawGraph. Text cells inside one rectangle are one
+   * label; `mirrorLabelRows` uses them to pre-compensate the BT flip.
+   */
+  labelRects?: LabelRect[]
   /** Grid occupancy map — tracks which "x,y" cells are reserved. */
   grid: Grid
   columnWidth: Map<number, number>
