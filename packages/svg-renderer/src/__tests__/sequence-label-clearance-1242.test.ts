@@ -13,22 +13,28 @@ function lifelineSegments(
   actor: string,
 ): Array<{ x: number; y1: number; y2: number }> {
   const out: Array<{ x: number; y1: number; y2: number }> = []
-  const re = new RegExp(
-    `<line class="lifeline" data-actor="${actor}" x1="([\\d.]+)" y1="([\\d.]+)" x2="[\\d.]+" y2="([\\d.]+)"`,
-    'g',
-  )
+  const re =
+    /<line class="lifeline" data-actor="([^"]*)" x1="([\d.]+)" y1="([\d.]+)" x2="[\d.]+" y2="([\d.]+)"/g
   for (const m of svg.matchAll(re)) {
-    out.push({ x: Number(m[1]), y1: Number(m[2]), y2: Number(m[3]) })
+    if (m[1] !== actor) continue
+    out.push({ x: Number(m[2]), y1: Number(m[3]), y2: Number(m[4]) })
   }
   return out
 }
 
 /** Centre y of the `<text>` whose content is `label`. */
 function textY(svg: string, label: string): number {
-  const m = svg.match(
-    new RegExp(`<text [^>]*y="([\\d.]+)"[^>]*>${label}</text>`),
-  )
-  return Number(m?.[1])
+  for (const m of svg.matchAll(
+    /<text [^>]*y="([\d.]+)"[^>]*>([^<]*)<\/text>/g,
+  )) {
+    if (m[2] === label) return Number(m[1])
+  }
+  return NaN
+}
+
+/** True when no lifeline segment of `actor` covers height `y`. */
+function lifelineClearAt(svg: string, actor: string, y: number): boolean {
+  return lifelineSegments(svg, actor).every((s) => y < s.y1 || y > s.y2)
 }
 
 describe('lifelines stay out of message labels (#1242)', () => {
@@ -42,11 +48,8 @@ describe('lifelines stay out of message labels (#1242)', () => {
 
   it('cuts the crossed lifeline around the label instead of running through it', () => {
     const labelY = textY(svg, 'label crossing the middle lifeline')
-    const segments = lifelineSegments(svg, 'B')
-    expect(segments.length).toBeGreaterThan(1)
-    for (const s of segments) {
-      expect(labelY >= s.y1 && labelY <= s.y2).toBe(false)
-    }
+    expect(lifelineSegments(svg, 'B').length).toBeGreaterThan(1)
+    expect(lifelineClearAt(svg, 'B', labelY)).toBe(true)
   })
 
   it('leaves a lifeline whole where no label crosses it', () => {
@@ -66,10 +69,57 @@ describe('lifelines stay out of message labels (#1242)', () => {
       /<g class="block"[^>]*>\s*<rect x="([\d.]+)" y="([\d.]+)"/,
     )
     const blockY = Number(rect?.[2])
-    const segments = lifelineSegments(blockSvg, 'A')
-    for (const s of segments) {
-      expect(blockY + 9 >= s.y1 && blockY + 9 <= s.y2).toBe(false)
-    }
+    expect(lifelineSegments(blockSvg, 'A').length).toBeGreaterThan(1)
+    expect(lifelineClearAt(blockSvg, 'A', blockY + 9)).toBe(true)
+  })
+
+  it('cuts a lifeline beside a self-message label', () => {
+    const selfSvg = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  A->>A: a long self message label crossing B
+  A->>B: after`)
+    const y = textY(selfSvg, 'a long self message label crossing B')
+    expect(lifelineSegments(selfSvg, 'B').length).toBeGreaterThan(1)
+    expect(lifelineClearAt(selfSvg, 'B', y)).toBe(true)
+  })
+
+  it('cuts lifelines around a bare divider label', () => {
+    const divSvg = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  alt first
+    A->>B: x
+  else other case
+    B->>A: y
+  end`)
+    const y = textY(divSvg, '[other case]')
+    expect(lifelineSegments(divSvg, 'A').length).toBeGreaterThan(1)
+    expect(lifelineClearAt(divSvg, 'A', y)).toBe(true)
+  })
+
+  it('ignores unlabeled blocks and dividers', () => {
+    const bareSvg = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  loop
+    B->>A: ping
+  else
+    A->>B: pong
+  end`)
+    expect(lifelineSegments(bareSvg, 'A').length).toBeGreaterThan(0)
+    expect(lifelineSegments(bareSvg, 'B').length).toBeGreaterThan(0)
+  })
+
+  it('never drops a lifeline entirely, even under a label taller than it', () => {
+    const lines = Array.from({ length: 8 }, (_, i) => `l${i}`).join('<br/>')
+    const tall = renderMermaidSVG(`sequenceDiagram
+  participant A
+  participant B
+  participant C
+  A->>C: ${lines}`)
+    // The label spans B's whole lifeline; B keeps one uncut line.
+    expect(lifelineSegments(tall, 'B')).toHaveLength(1)
   })
 })
 
