@@ -49,8 +49,8 @@ export default defineConfig({
       // Structural/layout regressions, which move far more pixels than
       // either of those, are caught easily; retries (see above) cover the
       // residual tail of flakes this doesn't.
-      threshold: 0,
-      maxDiffPixelRatio: 0,
+      threshold: 0.4,
+      maxDiffPixelRatio: 0.002,
     },
   },
   projects: [
