@@ -102,7 +102,7 @@ function pickTitleStart(
   want: number,
   width: number,
   blocked: (x: number) => boolean,
-): number {
+): number | null {
   const clash = (start: number, spacesOk: boolean, gap: number): boolean => {
     for (let x = start - gap; x < start + cells.length + gap; x++) {
       if (x < 1 || x >= width || !blocked(x)) continue
@@ -125,7 +125,28 @@ function pickTitleStart(
     }
     if (best >= 0) return best
   }
-  return want
+  return null
+}
+
+/** The centred start column of a title line in a frame `width` wide. */
+function centredStart(cells: readonly string[], width: number): number {
+  return Math.max(1, 1 + Math.ceil((width - 1 - cells.length) / 2))
+}
+
+/**
+ * Whether `line` can be placed in a frame `width` wide without hiding or
+ * overwriting a vertical stroke (tiers 1-3 of `pickTitleStart`). Grid layout
+ * uses this to decide whether a frame needs widening (#1222).
+ */
+export function titleAvoidsStrokes(
+  line: string,
+  width: number,
+  blocked: (x: number) => boolean,
+): boolean {
+  const cells = toDisplayCells(line)
+  return (
+    pickTitleStart(cells, centredStart(cells, width), width, blocked) !== null
+  )
 }
 
 /**
@@ -166,7 +187,8 @@ export function drawSubgraphLabel(
     let labelX = 1 + Math.ceil((width - 1 - displayWidth(line)) / 2)
     if (labelX < 1) labelX = 1
     const cells = toDisplayCells(line)
-    labelX = pickTitleStart(cells, labelX, width, (x) => isStroke(x, labelY))
+    labelX =
+      pickTitleStart(cells, labelX, width, (x) => isStroke(x, labelY)) ?? labelX
 
     // Unlike `write()`'s own bounds (inclusive of the canvas edge — correct
     // for the border-drawing calls in `drawSubgraphBox` above, which write

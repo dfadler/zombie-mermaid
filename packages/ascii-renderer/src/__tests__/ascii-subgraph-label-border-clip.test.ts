@@ -121,13 +121,15 @@ describe('ASCII subgraph label does not truncate a label wider than its child no
   D --> F[Sink]`
     const output = renderMermaidASCII(mermaid)
 
-    expect(output).toContain('Processing Pipeline')
+    // A forward edge entering the frame may split the title on its space (#1222).
+    const flat = output.replace(/│/g, ' ')
+    expect(flat).toContain('Processing Pipeline')
     expect(output).not.toContain('Processing Pipe│')
     expect(output).not.toContain('Processing Pipe\n')
 
     const titleLine = output
       .split('\n')
-      .find((l) => l.includes('Processing Pipeline'))
+      .find((l) => l.replace(/│/g, ' ').includes('Processing Pipeline'))
     expect(titleLine).toBeDefined()
     // The label sits fully inside the border on both sides, not clipped
     // against (or spilling onto) either one.

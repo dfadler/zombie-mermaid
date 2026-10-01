@@ -30,6 +30,7 @@ import {
   blockUnrelatedFrames,
   unblock,
   widenFrameGutters,
+  widenFramesForTitleStrokes,
 } from './frame-avoidance.ts'
 import {
   isBlockFree,
@@ -519,6 +520,13 @@ function calculateSubgraphBoundingBox(
     const extraRight = extra - extraLeft
     sg.minX -= extraLeft
     sg.maxX += extraRight
+  }
+
+  // Extra room asked for by `widenFramesForTitleStrokes` (#1222).
+  const room = sg.titleRoom ?? 0
+  if (room > 0) {
+    sg.minX -= Math.floor(room / 2)
+    sg.maxX += room - Math.floor(room / 2)
   }
 }
 
@@ -1262,6 +1270,11 @@ export function createMapping(graph: AsciiGraph): void {
     }
     calculateSubgraphBoundingBoxes(graph)
   }
+  widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
+  // A title that would still hide an entering edge gets room (#1222). Runs
+  // after the gutters so avoiding edges are already outside the frames; the
+  // wider walls may need the gap widened once more.
+  widenFramesForTitleStrokes(graph, refreshBoxes)
   widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
   offsetDrawingForSubgraphs(graph)
 

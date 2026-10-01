@@ -271,6 +271,11 @@ export interface AsciiSubgraph {
   maxY: number
   /** Optional direction override for layout within this subgraph (LR or TD). */
   direction?: 'LR' | 'TD'
+  /**
+   * Extra interior columns added (split across both sides) so the title can
+   * clear a vertical edge entering the frame (#1222). Set by layout only.
+   */
+  titleRoom?: number
 }
 
 // ============================================================================

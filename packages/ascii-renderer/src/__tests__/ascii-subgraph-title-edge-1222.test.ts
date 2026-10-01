@@ -31,6 +31,12 @@ const cases: Case[] = [
     right: 'Three',
   },
   {
+    name: 'a title filling the frame widens it so the stroke lands on a space',
+    src: chain('Layer Two', 'Layer Three'),
+    left: 'Layer',
+    right: 'Two',
+  },
+  {
     name: 'short title slides aside',
     src: 'graph TD\nsubgraph O[Outer]\nsubgraph I1[In1]\nA\nend\nsubgraph I2[In2]\nB\nend\nend\nsubgraph P[Pee]\nC\nend\nA --> B\nB --> C\nC --> A',
     left: 'In2',
@@ -85,9 +91,16 @@ describe('#1222: forward edge stays continuous through a frame title row', () =>
     expect(out).toContain('│ Backend │')
   })
 
-  it('keeps a title intact when the stroke cannot avoid a letter', () => {
-    const src = chain('Layer Two', 'Layer Three')
+  it('does not resize a frame that has no collision', () => {
+    const src =
+      'graph TD\nsubgraph F[Frontend]\nA[React App] --> B[State Manager]\nend\nsubgraph K[Backend]\nC[API Server]\nend\nB --> C'
     const out = renderMermaidASCII(src, { colorMode: 'none' })
-    expect(out).toContain('│Layer Two│')
+    expect(out.split('\n')[0]).toBe('┌───────────────────┐')
+  })
+
+  it('leaves LR frames alone (edges enter on the node row)', () => {
+    const src = chain('Layer Two', 'Layer Three').replace('TD', 'LR')
+    const out = renderMermaidASCII(src, { colorMode: 'none' })
+    expect(out).not.toMatch(/Layer│/)
   })
 })

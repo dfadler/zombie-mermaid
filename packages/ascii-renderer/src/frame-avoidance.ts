@@ -30,6 +30,8 @@ import type { AsciiEdge, AsciiGraph, AsciiSubgraph } from './types.ts'
 import { gridKey } from './types.ts'
 import { clusterGridBox } from './cluster-boundary.ts'
 import { gridToDrawingCoord } from './grid.ts'
+import { splitLines } from './multiline-utils.ts'
+import { titleAvoidsStrokes } from './draw-subgraphs.ts'
 
 /** Safety bound on widening passes. */
 const MAX_PASSES = 16
@@ -164,4 +166,70 @@ function findViolation(
     }
   }
   return null
+}
+
+/** Cap on extra columns per frame; a title never needs more than this. */
+const MAX_TITLE_ROOM = 4
+
+/**
+ * Widen a titled frame, by the fewest columns, when a vertical edge enters it
+ * through a title row and the title cannot be placed without hiding the
+ * stroke or overwriting a letter (#1222). `drawSubgraphLabel` slides the
+ * title aside or splits it on a space; this only fires when neither works
+ * (the title fills the interior and the stroke lands on a letter), by giving
+ * the frame `titleRoom` extra columns. Frames with no collision are never
+ * touched. Vertical flow only: in LR edges enter on the node row.
+ * `recompute` refreshes frame boxes between steps.
+ */
+export function widenFramesForTitleStrokes(
+  graph: AsciiGraph,
+  recompute: () => void,
+): void {
+  if (graph.config.graphDirection === 'LR') return
+  const gaveUp = new Set<AsciiSubgraph>()
+  for (let pass = 0; pass < graph.subgraphs.length; pass++) {
+    const sg = graph.subgraphs.find(
+      (s) =>
+        s.nodes.length > 0 && !gaveUp.has(s) && hasTitleCollision(graph, s),
+    )
+    if (!sg) return
+    // Grow one column at a time and stop at the first width that works. If
+    // none up to the cap does (a short title that fits on neither side of the
+    // stroke), the frame keeps its size and the title wins as before.
+    for (let room = 1; room <= MAX_TITLE_ROOM; room++) {
+      sg.titleRoom = room
+      recompute()
+      if (!hasTitleCollision(graph, sg)) break
+      if (room === MAX_TITLE_ROOM) {
+        sg.titleRoom = 0
+        recompute()
+        gaveUp.add(sg)
+      }
+    }
+  }
+}
+
+function hasTitleCollision(graph: AsciiGraph, sg: AsciiSubgraph): boolean {
+  const width = sg.maxX - sg.minX
+  const lines = splitLines(sg.name)
+  for (let i = 0; i < lines.length; i++) {
+    const rowY = sg.minY + 1 + i
+    const strokes = new Set<number>()
+    for (const edge of graph.edges) {
+      for (let k = 1; k < edge.path.length; k++) {
+        const a = edge.path[k - 1]!
+        const b = edge.path[k]!
+        if (a.x !== b.x || a.y === b.y) continue
+        const ax = gridToDrawingCoord(graph, a)
+        const bx = gridToDrawingCoord(graph, b)
+        if (rowY < Math.min(ax.y, bx.y) || rowY > Math.max(ax.y, bx.y)) continue
+        if (ax.x > sg.minX && ax.x < sg.maxX) strokes.add(ax.x - sg.minX)
+      }
+    }
+    if (strokes.size === 0) continue
+    if (!titleAvoidsStrokes(lines[i]!, width, (x) => strokes.has(x))) {
+      return true
+    }
+  }
+  return false
 }
