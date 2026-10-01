@@ -30,6 +30,54 @@ import {
 } from './elk-graph-builder.ts'
 
 /**
+ * ELK layer constraint for a top-level `[*]` marker: the start marker is
+ * pinned to the first layer and the end marker to a layer of its own after
+ * every other node, so back-edges can't drag either into the middle (#1240).
+ * Keyed by node shape.
+ */
+const STATE_MARKER_LAYER_CONSTRAINT: Partial<Record<string, string>> = {
+  'state-start': 'FIRST',
+  'state-end': 'LAST_SEPARATE',
+}
+
+/**
+ * Root-graph ELK options applied to state diagrams only (flowcharts keep
+ * their tuned defaults).
+ *
+ * - `cycleBreaking: MODEL_ORDER` reverses the edge that points *against*
+ *   declaration order instead of whichever edge ELK's greedy heuristic picks.
+ *   The greedy default reversed the main chain of `[*] --> Idle`,
+ *   `Idle --> Active`, `Active --> Idle`, drawing it bottom-to-top with the
+ *   start marker beside a state.
+ * - `postCompaction: NONE`: LEFT_RIGHT_CONSTRAINT_LOCKING compaction slides
+ *   nodes sideways after edges are routed, which leaves state edges ending
+ *   in a horizontal run along the target's top border (arrowhead sideways).
+ */
+const STATE_LAYOUT_OPTIONS: LayoutOptions = {
+  'elk.layered.cycleBreaking.strategy': 'MODEL_ORDER',
+  'elk.layered.compaction.postCompaction.strategy': 'NONE',
+}
+
+/**
+ * Whether `graph` is a flat `stateDiagram` (it has `[*]` markers, the only
+ * thing that distinguishes a state graph from a flowchart here, and no
+ * composite states).
+ *
+ * Composite states are left on the previous options on purpose: their
+ * subgraph compound nodes are appended after the top-level leaf nodes, so a
+ * `MODEL_ORDER` cycle break reads every edge into a composite as a back-edge
+ * and draws such diagrams upside down. Giving composites the same treatment
+ * needs the model order reworked first; see #1240.
+ */
+function isFlatStateGraph(graph: MermaidGraph): boolean {
+  if (graph.subgraphs.length > 0) return false
+  for (const node of graph.nodes.values()) {
+    if (node.shape === 'state-start' || node.shape === 'state-end') return true
+  }
+  return false
+}
+
+/**
  * Convert a Mermaid direction to an ELK direction, flowchart/state-style
  * (no direction at all → `DOWN`; see `ELK_DIRECTION_FALLBACK`).
  *
@@ -325,6 +373,7 @@ export function mermaidToElk(
     'elk.layered.compaction.postCompaction.strategy':
       'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+    ...(isFlatStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
     // Use INCLUDE_CHILDREN otherwise (simpler cross-hierarchy edge routing)
@@ -432,7 +481,16 @@ export function mermaidToElk(
         node.shape,
         opts.fontSizes.nodeLabel,
       )
-      rootChildren.push(buildElkLeafNode(id, size, node.label))
+      const leaf = buildElkLeafNode(id, size, node.label)
+      // A top-level `[*]` marks where reading starts (or ends): pin it to the
+      // first (or last) layer so a back-edge can't drag it into the middle.
+      const pin = isFlatStateGraph(graph)
+        ? STATE_MARKER_LAYER_CONSTRAINT[node.shape]
+        : undefined
+      if (pin !== undefined) {
+        leaf.layoutOptions = { 'elk.layered.layering.layerConstraint': pin }
+      }
+      rootChildren.push(leaf)
     }
   }
 
