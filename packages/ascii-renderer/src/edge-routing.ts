@@ -440,6 +440,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
 interface ParallelLaneRoute {
   path: GridCoord[]
   labelSegment: [GridCoord, GridCoord]
+  /** Set when the lane leaves/enters different faces than the caller asked for. */
+  faces?: { startDir: Direction; endDir: Direction }
 }
 
 function buildParallelLanePath(
@@ -507,6 +509,35 @@ function buildParallelLanePath(
     if (usedOffsets.has(offset)) continue
     const laneMain = fromAttach.y + offset
     const laneCross = fromAttach.x + offset
+
+    // Candidate U ("underside", horizontal graphs only): leave the source's
+    // bottom face and enter the target's bottom face, so this lane gets its
+    // own arrowhead (`▲`) instead of merging into the first edge's run,
+    // where the first edge's label hides the junction cell.
+    if (horizontalDeparture) {
+      const fromBottom = gridCoordDirection(requireGridCoord(edge.from), Down)
+      const toBottom = gridCoordDirection(requireGridCoord(edge.to), Down)
+      const laneRow = Math.max(fromBottom.y, toBottom.y) + offset - 1
+      const undersideLabelSegment: [GridCoord, GridCoord] = [
+        { x: fromBottom.x, y: laneRow },
+        { x: toBottom.x, y: laneRow },
+      ]
+      const undersidePath = mergePath([
+        fromBottom,
+        ...undersideLabelSegment,
+        toBottom,
+      ])
+      if (
+        interiorCellsClearOfNodes(graph, pathCells(undersidePath), ownNodes)
+      ) {
+        usedOffsets.add(offset)
+        return {
+          path: undersidePath,
+          labelSegment: undersideLabelSegment,
+          faces: { startDir: Down, endDir: Down },
+        }
+      }
+    }
 
     // Candidate A ("wide"): travel the offset lane across the *full*
     // node-to-node span (fromAttach.x..toAttach.x, or the vertical
@@ -777,6 +808,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       edge.parallelLane.index,
     )
     edge.path = route.path
+    if (route.faces) {
+      edge.startDir = route.faces.startDir
+      edge.endDir = route.faces.endDir
+    }
     if (edge.text.length > 0) {
       applyLabelLine(graph, edge, route.labelSegment, displayWidth(edge.text))
     }

@@ -48,18 +48,20 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
   }
 
   for (const count of [2, 3]) {
-    it(`LR, ${count} lanes: the target's left border carries no arrowhead or junction`, () => {
+    it(`LR, ${count} lanes: later lanes run under the nodes and enter the target's bottom face with their own arrowhead`, () => {
       const lines = render(lanes('LR', count), false)
       const text = lines.join('\n')
-      expect(text).not.toContain('▲')
+      expect(text.match(/▲/g)).toHaveLength(1)
+      // The target's left border stays a plain box edge.
       const row = lines.find((l) => l.includes('│ T │'))!
       const col = row.indexOf('│ T │')
-      for (const line of lines) {
-        const ch = line[col]
-        if (ch !== undefined && ch !== ' ') {
-          expect('┌│└').toContain(ch)
-        }
+      const top = lines.findIndex((l) => l.includes('┌───┐', col))
+      const bottom = lines.findIndex((l) => l.includes('└───┘', col))
+      for (const line of lines.slice(top, bottom + 1)) {
+        expect('┌│└').toContain(line[col]!)
       }
+      // The arrowhead sits directly under T's bottom border, in T's centre column.
+      expect(lines[bottom + 1]![col + 2]).toBe('▲')
     })
   }
 })
