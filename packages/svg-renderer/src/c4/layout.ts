@@ -131,9 +131,9 @@ interface MeasuredElement extends Placed {
 }
 
 function measureElement(el: C4Element): MeasuredElement {
-  const nameLines = wrapToWidth(el.label, C4_TEXT_WIDTH, C4.nameSize, 700)
+  const nameLines = wrapToWidth(el.label, C4_TEXT_WIDTH, C4.nameSize)
   const descriptionLines = el.description
-    ? wrapToWidth(el.description, C4_TEXT_WIDTH, C4.descrSize, 400)
+    ? wrapToWidth(el.description, C4_TEXT_WIDTH, C4.descrSize)
     : []
   const textWidth = Math.max(
     ...nameLines.map((l) => c4TextWidth(l, C4.nameSize, 700)),

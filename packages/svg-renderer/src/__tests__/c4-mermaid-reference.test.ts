@@ -12,9 +12,9 @@ import { layoutC4DiagramSync } from '../c4/layout.ts'
 // direction), so a constant tuned to one sample cannot satisfy all of them.
 //
 // Vertical numbers depend only on heights and gaps, so they must agree to a
-// few pixels. Horizontal ones depend on text widths, which this package
-// estimates (Mermaid measures them in a browser), so those get a wider
-// allowance. Relationship ends follow each shape's own outline, as Mermaid's do.
+// few pixels. Horizontal ones depend on text widths, which this package sums
+// from Arial advances (Mermaid measures them in a browser), and relationship
+// ends follow each shape's own outline, as Mermaid's do.
 interface Reference {
   name: string
   source: string
@@ -32,17 +32,15 @@ const cases: Reference[] = JSON.parse(
 )
 
 const Y = 3
-const X = 11
+const X = 2
 const LINE = 3
 // Relationships whose end this package cannot place within LINE, with the
-// reason. Each is a limit of the estimate, not of the shape outline.
+// reason. Each is a limit of the shape outline, not of the text widths.
 const WIDER_LINE = 9
 const WIDER: Record<string, number[]> = {
   // A line that skims along the top of a person's body, where the pill meets
   // the head: 0.25px of height moves where it crosses by about 8px.
   'v02-person-targets': [3],
-  // Ends on a shape whose width the text estimate gets about 10px wrong.
-  'v04-nested': [3],
 }
 const LABEL = 10
 
