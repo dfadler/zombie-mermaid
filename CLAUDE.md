@@ -34,7 +34,7 @@ properties that make worktree cleanup easy to get wrong:
   resolves) — as a background `Bash` process, and track that PID yourself; nothing
   else will.
 
-## ASCII rendering changes: the PR screenshot must be a real terminal, never the browser mockup
+## ASCII rendering changes: the PR screenshot must be a real terminal; mockup-only changes use the probes
 
 Before attaching before/after screenshots to a PR/issue for any change touching
 ASCII output (`src/ascii/**`, `packages/site/ascii-html.ts`, `src/cli.ts`'s ASCII path,
@@ -54,6 +54,19 @@ one — this repo has already shipped a bug (the `ascii-terminal-overflow-scroll
 fix) in that approximation's chrome while the underlying renderer was fine
 — so they stay useful for iterating locally but must never supply the
 screenshot that ends up in a PR/issue body for this category of change.
+
+The mockup's own fidelity is checked separately, by tests rather than by
+eye: `__tests__/visual/ascii-geometry.visual.test.ts` (every glyph sits in the
+right cell with the right color, against an `@xterm/headless` oracle),
+`ascii-seams.visual.test.ts` (adjacent line and block glyphs join) and
+`ascii-legibility.visual.test.ts` (connectors keep clear of text). A change that
+only touches the mockup (`.ascii-output` CSS in `demo/styles.css`,
+`packages/site/ascii-html.ts`'s chrome, the visual helpers) leaves what a
+terminal prints unchanged, so a real-terminal capture would show nothing: for
+those, run the three tests and attach before/after mockup screenshots, each
+labeled as a browser mockup, not a terminal. Any change to what the renderer
+emits still needs the real-terminal image above. A real-PTY golden suite was
+considered and not adopted (#1151, #1186).
 
 Whenever a PR or issue includes a "Visual verification" (or equivalent
 before/after) section for this category of change, paste the exact Mermaid
