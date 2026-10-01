@@ -630,3 +630,119 @@ describe('chain-overlap threshold only tightens for engaged cluster exits', () =
     expect(out).not.toContain('a┌')
   })
 })
+
+describe('cluster-exit anchoring: shape of the whole composite-states render', () => {
+  // The "State: Composite States" sample: two cluster exits (`done`, `fail`)
+  // plus `retry`, an outside edge from `Error` back up to `Idle` that runs
+  // alongside the cluster.
+  const COMPOSITE_SAMPLE = `stateDiagram-v2
+  [*] --> Idle
+  Idle --> Processing : submit
+  state Processing {
+    parse --> validate
+    validate --> execute
+  }
+  Processing --> Complete : done
+  Processing --> Error : fail
+  Error --> Idle : retry
+  Complete --> [*]
+`
+
+  // A flowchart whose outside edge (`Aux`..`Last` chain) and `retry` pass the
+  // cluster, with `Idle --> Aux` forcing `retry` to hug the cluster wall.
+  const WALL_HUGGER = `flowchart TD
+  Start --> Idle
+  Idle --> Processing
+  Idle --> Aux
+  subgraph Processing
+    a --> b
+    b --> c
+  end
+  Aux --> Cache
+  Cache --> Last
+  Processing -->|done| Done
+  Processing -->|fail| Error
+  Error -->|retry| Idle
+  Last --> Done
+`
+
+  /** Rows strictly between the first `┌…┐` top wall and its `└…┘` bottom wall. */
+  const clusterBody = (lines: string[]) => {
+    const top = lines.findIndex((l) => /^┌─/.test(l))
+    const bottom = lines.findIndex((l) => /^└[─┼┬┴┤├]+┘/.test(l))
+    expect(top).toBeGreaterThan(-1)
+    expect(bottom).toBeGreaterThan(top)
+    return {
+      rightCol: lines[top]!.indexOf('┐'),
+      rows: lines.slice(top + 1, bottom),
+    }
+  }
+
+  it.each([
+    ['composite sample', COMPOSITE_SAMPLE],
+    ['outside edge hugging the wall', WALL_HUGGER],
+  ])(
+    '%s: both side walls are intact on every cluster row (no label overwrites one)',
+    (_name, src) => {
+      const lines = render(src)
+      const { rightCol, rows } = clusterBody(lines)
+      expect(rows.length).toBeGreaterThan(0)
+      for (const row of rows) {
+        expect(row[0]).toBe('│')
+        expect(row[rightCol]).toBe('│')
+      }
+      // The `retry` label is still drawn, outside the wall.
+      const retryRow = lines.find((l) => l.includes('retry'))!
+      expect(retryRow.indexOf('retry')).toBeGreaterThan(rightCol)
+    },
+  )
+
+  it('retry runs as one clean route, not a staircase hugging the cluster', () => {
+    const graph = layout(COMPOSITE_SAMPLE.replace(/\n$/, ''))
+    const retry = graph.edges.find((e) => e.text === 'retry')!
+    // Out of Error's side, one vertical run, into Idle's side: at most two
+    // bends, i.e. four merged points. The staircase had ten.
+    expect(retry.path.length).toBeLessThanOrEqual(4)
+
+    // Rendered: one column of `│` right of the cluster carries the run.
+    const lines = render(COMPOSITE_SAMPLE)
+    const { rightCol } = clusterBody(lines)
+    const idleRow = lines.findIndex((l) => l.includes('retry'))
+    const columns = new Set<number>()
+    // Beside the cluster body, where the run used to jog.
+    for (const row of lines.slice(idleRow + 1, wallRow(lines))) {
+      const col = row.indexOf('│', rightCol + 1)
+      if (col > -1) columns.add(col)
+    }
+    expect([...columns]).toHaveLength(1)
+  })
+
+  it('done and fail labels do not share a row (no `done────fail` run)', () => {
+    const lines = render(COMPOSITE_SAMPLE)
+    const doneRow = lines.findIndex((l) => l.includes('done'))
+    const failRow = lines.findIndex((l) => l.includes('fail'))
+    expect(doneRow).toBeGreaterThan(-1)
+    expect(failRow).toBeGreaterThan(-1)
+    expect(doneRow).not.toBe(failRow)
+    expect(lines.join('\n')).not.toMatch(/done─+fail/)
+  })
+
+  it('3-exit cluster: every exit label sits on its own row', () => {
+    const lines = render(`stateDiagram-v2
+  state Processing {
+    parse --> execute
+  }
+  Processing --> Complete : done
+  Processing --> Error : fail
+  Processing --> Aborted : abort
+`)
+    const rows = ['done', 'fail', 'abort'].map((t) =>
+      lines.findIndex((l) => l.includes(t)),
+    )
+    expect(rows.every((r) => r > -1)).toBe(true)
+    // `fail` and `abort` fan out on the gutter row together, as before; the
+    // straight-ahead `done` is the one that must leave it.
+    expect(rows[0]).not.toBe(rows[1])
+    expect(rows[0]).not.toBe(rows[2])
+  })
+})

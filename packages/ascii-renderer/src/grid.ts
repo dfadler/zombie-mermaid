@@ -260,6 +260,13 @@ function rerouteAroundStyleConflicts(
   nodeOnlyGrid: Grid,
 ): void {
   const temporarilyBlocked: GridCoord[] = []
+  // Each reroute blocks one conflict cell, and the A* search around it
+  // picks an arbitrary one of many equally short detours — in practice a
+  // staircase hugging the cluster wall (#1148's `retry` edge). Prefer fewest
+  // bends instead. Scoped to graphs with an engaged cluster exit so every
+  // other graph's reroutes stay byte for byte as before.
+  const straighten = (graph.clusterExitPlans?.size ?? 0) > 0
+  if (straighten) graph.preferStraightRoutes = true
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
@@ -281,6 +288,7 @@ function rerouteAroundStyleConflicts(
       determinePath(graph, edge)
     }
   } finally {
+    if (straighten) graph.preferStraightRoutes = false
     for (const cell of temporarilyBlocked) graph.grid.delete(gridKey(cell))
   }
 }

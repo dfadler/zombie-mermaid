@@ -374,6 +374,12 @@ export interface AsciiGraph {
    * PathBudget for details.
    */
   pathBudget?: PathBudget
+  /**
+   * While set, A* breaks ties between equally short routes by fewest bends
+   * (see getPath's `preferStraight`). Raised only around style-conflict
+   * reroutes in graphs with an engaged cluster exit — see grid.ts.
+   */
+  preferStraightRoutes?: boolean
   /** Engaged cluster-exit plans, keyed by subgraph. Set by createMapping. */
   clusterExitPlans?: Map<AsciiSubgraph, ClusterExitPlan>
 }
