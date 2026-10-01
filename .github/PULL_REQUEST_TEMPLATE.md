@@ -18,7 +18,7 @@
 - [ ] `pnpm run format:check` passes
 - [ ] `pnpm exec tsc --noEmit` passes
 - [ ] `pnpm test` passes
-- [ ] `CHANGELOG.md` updated under `[Unreleased]` (if applicable)
+- [ ] Changeset added with `pnpm changeset` if this touches published code (never hand-edit `CHANGELOG.md`; see CONTRIBUTING.md's "Changesets")
 - [ ] If this fixes a bug with a visible rendering change (SVG or ASCII), added a `demo/fork-fixes-data.ts` entry (see CONTRIBUTING.md's "Adding a fork-fixes entry") — otherwise N/A
 - [ ] Linked issue (if any): Closes #
 

@@ -2,6 +2,8 @@
 
 `zombie-mermaid` is a maintained fork of [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid). It exists because upstream development has stalled — this repo pulls in upstream fixes, gives stuck upstream PRs a home, and actually ships releases. Contributions of both kinds (new fixes, and ports of things stuck upstream) are welcome.
 
+New here? Issues labeled [`good first issue`](https://github.com/dfadler/zombie-mermaid/labels/good%20first%20issue) or [`help wanted`](https://github.com/dfadler/zombie-mermaid/labels/help%20wanted) are the best places to start. Questions about setup or workflow are welcome as issues too.
+
 ## Getting set up
 
 ```bash
@@ -10,7 +12,9 @@ cd zombie-mermaid
 pnpm install
 ```
 
-Requires Node 22+ and pnpm (the repo pins `packageManager` in `package.json`; `corepack enable` will pick that up automatically). A `.nvmrc` at the repo root pins the supported Node major (22); run `nvm use` (or `fnm use`) in the checkout to switch to it.
+Requires Node 22+ (`engines.node` in `package.json`; CI runs Node 22) and pnpm. The repo pins `packageManager` in `package.json`, and `corepack enable` will pick that up automatically. A `.nvmrc` at the repo root pins the supported Node major (22); run `nvm use` (or `fnm use`) in the checkout to switch to it.
+
+Start the dev server with `pnpm run dev`. It serves `/` (the marketing home page) and `/editor` (the live editor) with live reload, on port 3456 by default. Set `PORT` (for example `PORT=3457 pnpm run dev`) if that port is taken or you run several checkouts at once.
 
 ### Malware protection for installs (Aikido Safe Chain)
 
@@ -29,59 +33,59 @@ Restart your terminal afterward, then verify it's active with `pnpm safe-chain-v
 
 Full Aikido SCA/secrets scanning as a CI/dashboard product is a separate, paid-account feature and is intentionally not wired into this repo's CI — see the note in `.github/workflows/ci.yml` next to the Semgrep job.
 
-Useful scripts while developing (see `package.json` for the full list):
+## Project layout
 
-- `pnpm test` — run the unit/integration test suite once (Vitest)
-- `pnpm run test:watch` — Vitest in watch mode
-- `pnpm run test:coverage` — Vitest with coverage
-- `pnpm run test:visual` — visual regression suite (real-browser screenshots of every sample; see "Visual regression tests" below)
-- `pnpm run test:visual:update` — regenerate visual baselines after an intentional rendering change
-- `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
-- `scripts/docker-test-visual.sh` — run the ASCII half, the SVG half, or the full visual suite (`--suite ascii|svg|all`, default `all`) inside the font-corrected Linux container, against the `-chromium-linux.png` baselines CI gates on (needs Docker; see "Visual regression tests" below)
-- `pnpm run fork-fixes` — build `fork-fixes.html`; if you add or change a `render: 'ascii'` entry in `demo/fork-fixes-data.ts`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/` — those real-terminal screenshots are the before/after shown on that page, not a live render
-- `pnpm run lint` — ESLint
-- `pnpm run build` — build the publishable package with Vite's library mode (`vite build --app --config config/vite.config.lib.ts`; the config's header comment explains why it's one environment per entry point)
-- `pnpm run samples` — render the marketing home page (`packages/site/index.ts`) to `index.html` (the script name predates #590's redesign; see that file's header comment)
-- `pnpm run editor` — build the live editor page (`packages/site/editor.ts`) to `editor.html`
-- `pnpm run dashboard` — build the maintenance-transparency dashboard (`packages/site/dashboard.ts`) to `dashboard.html`, reading the committed `demo/dashboard-data.json` snapshot. Its markup comes from React components in `demo/components/` rendered with `react-dom/server` (the [#423](https://github.com/dfadler/zombie-mermaid/issues/423) pilot); every `.tsx` file there must open with `/** @jsxRuntime automatic */` — see the `jsx` comment in `demo/tsconfig.json` for why
-- `pnpm run dashboard:data` — refresh that snapshot via the `gh` CLI (needs `gh auth status` to be logged in); not run by `build:site` or the `test`/`ci.yml` jobs, but runs on its own weekly schedule via `.github/workflows/dashboard-refresh.yml` (see that file), which commits the refreshed snapshot to `main` automatically if it changed — you shouldn't normally need to run this by hand
-- `pnpm run fork-fixes` — render the fork-fixes showcase (`packages/site/fork-fixes.ts`) to `fork-fixes.html`; see "Adding a fork-fixes entry" below
-- `pnpm run blog` — render the blog (`packages/site/blog.ts`) from `blog-posts/*.md` to `blog/`; must run after `pnpm run pages` in `build:site` since it appends to the `sitemap.xml` that `packages/site/pages.ts` generates. See `blog-posts/README.md` for the post frontmatter format.
-- `pnpm run dev` — Vite dev server with live reload (`vite.config.ts`); serves `/` (marketing home page) and `/editor` (live editor), rebuilding on relevant file changes
-- `pnpm run audit:responsive -- --base-url=<url>` — responsive-overflow audit: drives headless Chromium (Playwright) across every page template at a set of viewport widths (default 375/414/480/768/1024/1440) and flags elements with unhandled horizontal overflow (`scrollWidth > clientWidth` with no ancestor already handling it via `overflow-x: auto`/`scroll`). Also spot-checks a couple of non-default built-in themes (default `dracula`/`github-light`) on the pages that expose a theme picker, at narrow widths, to catch theme-driven layout differences (not just color) — see `--themes`/`--theme-pages`/`--theme-widths`/`--skip-theme-check`. Point `--base-url` at a running `pnpm run dev` instance or a static server over built output; `--screenshot-dir` saves a PNG only for flagged page/width combinations, for triaging real bugs vs. false positives. See `scripts/audit-responsive.ts`'s header comment for the full flag list and the false-positive lesson (zombie-mermaid#1032) behind its flagging rule.
-- `pnpm run badge:bundle-size` — regenerate `badges/bundle-size.json` (the README's Bundle Size badge data) from the built `dist/index.js` (run `pnpm run build` first). Wired into `.github/workflows/publish.yml` to run automatically after every npm publish — you shouldn't normally need to run this by hand.
-- `pnpm run bench` — render benchmarks (full end-to-end SVG + ASCII render time)
-- `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
-- `pnpm run bench:core` / `bench:mermaid-parser` / `bench:svg-renderer` / `bench:ascii-renderer` — isolated per-package benchmarks that time only one package's own code (see each script's header comment for exactly what's included), so a regression can be attributed to a specific package instead of just "render got slower"
-- `pnpm run bench:package-compare -- <current.json> --baseline=<path>` — the per-package analog of `bench:compare`; no-ops until a maintainer seeds that package's baseline from a real CI run (same reasoning as `bench-baseline.json` — see `scripts/bench-package-compare.ts`'s header)
-- `pnpm run bench:history:append` — append a `bench.ts --json=` summary to the tracked trend history (`bench-history.jsonl`); wired into `.github/workflows/bench-trend.yml`'s weekly schedule (not every push to `main`, and not on PRs) — you shouldn't normally need to run this by hand
-- `pnpm run bench:trend` — print how the combined render total (and each category) has moved across the most recent entries in `bench-history.jsonl`, for a "weeks/months of drift" view that complements `bench:compare`'s single current-vs-baseline check
-- `pnpm run bench:mcp` — benchmark the `packages/mcp` server's own request/response overhead (Zod validation, tool dispatch, transport round-trip) by driving a real MCP `Client` against `createMcpServer()` over `InMemoryTransport`; reports mean/median/p95 latency per tool. Supports `--json=<path>` in `bench.ts`'s own summary shape, `--iterations=<n>` (default 50), and `--warmup=<n>` (default 5)
-- `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
-- `pnpm run format` — format the codebase with Prettier
-- `pnpm run format:check` — check formatting without writing changes
+This is a pnpm workspace. The published `zombie-mermaid` package and five internal `@zombie-mermaid/*` packages are versioned together.
 
-Type-check with:
+- `src/`: the published package's entry points (`index.ts`, `ascii-entry.ts`, `browser.ts`, `mcp-entry.ts`) and the `zombie-mermaid` CLI (`src/cli.ts`, `src/cli/`).
+- `packages/mermaid-parser/`: parsing of every supported diagram type.
+- `packages/svg-renderer/`: layout and SVG rendering.
+- `packages/ascii-renderer/`: ASCII/Unicode rendering (the terminal output, `renderMermaidASCII`).
+- `packages/core/`: shared types, theming, and text metrics.
+- `packages/mcp/`: the MCP server.
+- `packages/site/`: generators for the home page, editor, fork-fixes showcase, dashboard, and blog.
+- `demo/` and `editor/`: the React code behind those pages.
+- `__tests__/`: repo-level tests, including `__tests__/visual/` (the Playwright screenshot suite). Package tests live next to their source, in `src/__tests__/` and `packages/*/src/__tests__/`.
+- `docs/`: reference docs; `docs/decisions/` holds short records of settled decisions. `scripts/` holds repo tooling; `blog-posts/` holds the blog's Markdown.
 
-```bash
-pnpm exec tsc --noEmit
-```
+## Useful scripts
+
+Everyday commands are `pnpm test`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run format`, `pnpm run build`, and `pnpm run dev`. [docs/development-scripts.md](docs/development-scripts.md) lists every `package.json` script with a description; it's generated, and CI fails if it goes stale.
+
+## Reporting issues
+
+Use the issue templates (bug report, feature request) and include the smallest Mermaid source that reproduces the problem. The [label list](https://github.com/dfadler/zombie-mermaid/labels) is the source of truth for which labels exist.
+
+Security problems (for example crashes or hangs on adversarial diagram input, or output that injects markup into the SVG) should not go in a public issue. Follow [SECURITY.md](SECURITY.md).
 
 ## Before opening a PR
 
-Double-check the base repository in GitHub's compare view: it should be `dfadler/zombie-mermaid`, not the upstream `lukilabs/beautiful-mermaid`. GitHub's "Contribute" button on a fork often defaults to the upstream repo, which is almost never what you want here — CI and publishing are wired up on this fork, not upstream, and only run when `github.repository == 'dfadler/zombie-mermaid'` (see `.github/workflows/ci.yml` and `publish.yml`).
+Double-check the base repository in GitHub's compare view: it should be `dfadler/zombie-mermaid`, not the upstream `lukilabs/beautiful-mermaid`. GitHub's "Contribute" button on a fork often defaults to the upstream repo, which is almost never what you want here: CI and publishing are wired up on this fork, not upstream, and only run when `github.repository == 'dfadler/zombie-mermaid'` (see `.github/workflows/ci.yml` and `publish.yml`).
 
-CI (`.github/workflows/ci.yml`) runs on every push and PR against `main` and must pass:
+Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert. Fill in the [PR template](.github/PULL_REQUEST_TEMPLATE.md) and link the issue it closes (`Closes #123`). Commit and PR titles in this repo's history are short, imperative, and usually carry a conventional prefix such as `fix(ascii):`, `test(visual):`, `docs:`, or `chore:`; no tooling enforces it.
 
-1. `pnpm install --frozen-lockfile`
-2. `pnpm run test:coverage`
-3. `pnpm exec tsc --noEmit`
-4. `pnpm run test:visual` (a separate CI job, sharded 4-way for wall-clock speed, and run inside the pinned `mcr.microsoft.com/playwright` image rather than on a bare runner; locally it needs `pnpm exec playwright install --with-deps chromium` first — see "Visual regression tests" below)
-5. `scripts/check-snapshot-allowlist.sh` (guards against a new whole-tree snapshot or string-pin test creeping into demo/editor component tests outside a reviewed allow-list — see "Testing conventions for demo/editor components" below)
+CI (`.github/workflows/ci.yml`) runs on every push and PR against `main`; its job list is the source of truth for what must pass. A few jobs need contributor action:
 
-Run those locally first, along with `pnpm run lint` and `pnpm run format:check` — both also run in CI and will fail the build on violations. Please also add or update tests under `src/**` for any behavioral change — this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs — but for ASCII output specifically, a passing visual-regression check is not the same as a real-terminal check; see the caveat in "Visual regression tests" below before treating it as final proof.
+- `test` includes `pnpm run coverage:diff`: new and changed lines need 90% coverage. It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
+- `visual-regression` is the Playwright suite; see "Visual regression tests" below.
+- `semgrep` is a SAST scan against Semgrep's free public rulesets. If it flags something in your PR, either fix the underlying issue or, for a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line explaining why. Don't disable the rule repo-wide.
+- `changeset` requires a changeset when you change anything that ships (see "Changesets" below).
 
-CI also runs a `semgrep` SAST scan job (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account/token involved) that fails the build on findings. If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why — don't disable the rule repo-wide.
+Run `pnpm run test:coverage`, `pnpm run typecheck`, `pnpm run lint`, and `pnpm run format:check` locally first. Please also add or update tests for any behavioral change (package tests live in `src/__tests__/` and `packages/*/src/__tests__/`): this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs. For ASCII output specifically, a passing visual-regression check is not the same as a real-terminal check; see "Visual regression tests" below.
+
+### Changesets
+
+Version bumps and `CHANGELOG.md` entries are generated by [Changesets](https://github.com/changesets/changesets) from the changeset files that PRs add. Don't edit `CHANGELOG.md` or bump versions by hand in a feature PR. If your PR touches anything that ships (`src/`, `packages/`, `package.json`, the build config), run:
+
+```bash
+pnpm changeset
+```
+
+and commit the generated file under `.changeset/` alongside your change. CI's `changeset` job fails a PR that changes published files without one. A PR that only touches `demo/` is exempt, and docs-only, CI-only, and test-only PRs don't touch the published surface; `pnpm changeset add --empty` records an empty changeset if one is still wanted. See [RELEASING.md](./docs/RELEASING.md) for the full release flow (what happens on merge to `main`, and the npm trusted-publishing setup it depends on). That part is maintainer-only.
+
+### Documentation, accessibility, and decisions
+
+Update the relevant file under `docs/` (or `README.md`) when you change documented behavior; [docs/README.md](docs/README.md) is the index. Rendered output has accessibility expectations: check [docs/accessibility.md](docs/accessibility.md) for what's guaranteed and CI-enforced before changing markup or colors. `docs/decisions/` holds rare, short records of settled decisions. Add one only when it closes off an alternative someone would plausibly re-propose (see its [README](docs/decisions/README.md)), and walk through [the self-review checklist](docs/decisions/decision-doc-self-review-checklist-977.md) before opening that PR.
 
 ### Mutation and reassignment
 
@@ -97,7 +101,7 @@ A reviewer should be able to read the reason without opening the issue. The desc
 
 ### Test coverage
 
-CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. As of 2026-08-26 the baseline is **78.74% statements / 67.91% branches / 83.22% functions / 80.58% lines**. Coverage thresholds are enforced via `coverage.thresholds` in `config/vitest.config.ts` (statements 75% / branches 62% / functions 81% / lines 77%, kept a bit under the measured baseline as headroom) — `pnpm run test:coverage` fails the build if coverage drops below these, so it's a hard gate against silent regression, not just visibility.
+CI runs `pnpm run test:coverage` (instead of plain `pnpm test`) and uploads the `coverage/` directory (HTML report + `lcov.info`) as a workflow artifact on every run, so you can download and browse it from the Actions run summary. The repo-wide floor is `coverage.thresholds` in `config/vitest.config.ts`, kept a bit under the measured baseline as headroom; `pnpm run test:coverage` fails the build if coverage drops below it, so it's a hard gate against silent regression, not just visibility. On top of that, `pnpm run coverage:diff` holds new and changed lines to a stricter 90%.
 
 ### Testing conventions for demo/editor components
 
@@ -115,21 +119,7 @@ run in CI, fails on a new `toMatchSnapshot`/`toMatchFileSnapshot`/
 
 ### Visual regression tests
 
-`__tests__/visual/*.visual.test.ts` render every sample in `packages/site/samples-data.ts` and `packages/site/xychart-samples-data.ts` in a real headless Chromium page — SVG output directly, ASCII output inside the same terminal-window chrome the live demo uses — and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. This catches regressions a string/snapshot comparison can't: a clipped label, a broken viewBox, a color resolving to the wrong palette entry, box-drawing glyphs misaligning at a given font.
-
-**For ASCII samples, a green run here is not proof a real terminal renders the change correctly.** The `.terminal-window` chrome is `packages/site/ascii-html.ts`'s HTML/CSS _approximation_ of a terminal, rendered inside a browser — it reimplements column-width math (`applyWideCharWidths`) rather than using an actual PTY, so it can drift from what `renderMermaidASCII` produces in a real shell. `ascii-terminal-overflow-scroll` shipped exactly that kind of bug: a regression in the HTML mockup's CSS that this suite didn't catch, while the underlying renderer was fine the whole time — and the reverse (a real-terminal-only regression this mockup can't see) is just as possible. If your change touches anything ASCII-related, verify it in an actual terminal before trusting this suite's screenshots as final proof — a Claude Code session in this repo should invoke the `verify-ascii-terminal` skill (`.claude/skills/verify-ascii-terminal/`) first; without that tooling, run `zombie-mermaid render --ascii` (or call `renderMermaidASCII` directly) in a real shell on both sides of the change and compare by eye.
-
-`__tests__/visual/ascii-geometry.visual.test.ts` narrows that gap without goldens or a PTY. It feeds each sample's truecolor ANSI output through [`@xterm/headless`](https://www.npmjs.com/package/@xterm/headless) (a real terminal emulator) to get the authoritative cell grid, then measures where Chromium actually drew each glyph of the HTML mockup and asserts, per cell: same character, same column and row derived from the drawn pixel position, x/y on the cell lattice, wide glyphs exactly two cells wide, and the same foreground color. It proves the mockup's cell geometry and colors match a terminal's; it cannot prove glyph shapes or antialiasing do. A color bug in code shared by the ANSI and HTML paths (for example the theme-to-hex mapping) changes both sides equally and is not caught there. `packages/ascii-renderer/src/__tests__/ascii-role-colors.test.ts` covers the role-to-color mapping directly, and the screenshot suite cannot: it gives every role (text, border, line, arrow, corner, junction, accent) its own distinct color and asserts, glyph by glyph and in both `html` and `truecolor` output, which role each glyph landed on (for example that `│` is the border color in a box and the line color on an edge). The screenshot suite's tolerance is tuned for font jitter, so mapping the `line` role to the border color failed 0 of its 90 ASCII samples; breaking the mapping of any one of the text, border, line, arrow, corner or junction roles fails that unit test. XY charts have their own color paths (`getSeriesColors` for bars and lines, and a second copy of the role mapping, `roleToHex`, for axes, grid and labels), so the same test also pins the accent: a single series is exactly the accent, series 0 of several is the accent and later ones a derived shade, a theme with no accent falls back to the default chart blue, and `diagramColorsToAsciiTheme` passes the accent through and uses it for arrowheads.
-
-`__tests__/visual/ascii-seams.visual.test.ts` is its companion for line joins: it screenshots the mockup (at 1x, 1.25x, 1.5x and 2x device scale) and, for each pair of adjacent same-colored `─`, `│` or `█` glyphs, checks that the pixels straddling their shared edge keep at least 90% of the stroke's own intensity. A terminal draws these to fill their cell, so a hairline gap is a fidelity loss the geometry test cannot see. That is why `.ascii-output` in `demo/styles.css` uses an exact 7px cell: JetBrains Mono's advance is 0.6em and Chromium snaps font sizes to 0.01px, so `11.67px` gives 7.002px, and a fractional pitch puts glyph edges mid-pixel and dims one pixel column at every seam. The `-0.002px` of `letter-spacing` closes the last gap (without it the drift accumulates across a wide diagram and 13 samples fail). The cell is also deliberately an **odd** number of pixels: a vertical stroke is centred in its cell, so at 7px it lands in the middle of one pixel column (measured across three columns: 18/220/18), while at an even width such as 8px it sits on a pixel boundary and is split across two (146/146), which reads as a blurry, beaded line. If you change that font, size, or letter-spacing, this test is what tells you the cell is still integral. The default run is 1x, 1.25x, 1.5x and 2x; set `SEAM_DPRS` (for example `SEAM_DPRS=1.1,1.75`) to probe other display scales. Fractional scales matter for solid bars: a browser draws each `█` as an anti-aliased glyph, so where a cell edge falls inside a device pixel the two neighbours each cover part of it and composite to `1-(1-a)·a` of the fill (75% at a half-pixel edge, 81% at a quarter), a hairline seam, whatever the cell width. `htmlSpan` in `packages/ascii-renderer/src/ansi.ts` therefore gives a run made only of `█` a background of its own color, which the browser snaps to whole device pixels; with it the probe passes at 1, 1.1, 1.25, 1.5, 1.75 and 2x (measured on macOS), and without it the six `█` XY-chart samples fail at every fractional scale. The background is about one device pixel taller than the glyph's ink, so a bar's top and bottom edge row is full intensity instead of half. Half blocks (`▀`, `▄`) and shade characters are not backed, and the probe does not check them.
-
-`__tests__/visual/ascii-legibility.visual.test.ts` guards the opposite side of the same knob: `line-height`. The renderer interrupts a connector where a label sits on it, so a line ends directly above and below a letter; JetBrains Mono's box glyphs are ~1.32em tall, so a row that is too short makes them overshoot into the text row and touch it (a connector reading as `Wes|t`). For every vertical-stub box glyph directly above or below a letter or digit, the test renders the page twice (box glyphs only, then everything else only, which separates line ink from text ink whatever the colors) at 8x device scale clipped to the pair, and requires at least 1 CSS px of blank gap between them. At 1x both edges anti-alias to whole pixels, so a real ~1.6 px gap can read as 0, which is why it does not run at 1x. A descender letter (`g j p q y`) directly above a line reaches the cell bottom by design, so it only has to be no worse than the original spacing (-0.5 px). Together with the seam probe this pins `.ascii-output`'s row height: the seam probe fails above 15px, this one fails at 14px and below. It does not check horizontal gaps (a `─` running into a letter) or anything besides connector/text pairs.
-
-`__tests__/visual/ascii-crispness.visual.test.ts` is the third guard on the cell, for the even-width blur the seam test's comments describe but nothing measured. For every isolated `│` in the middle of a vertical run (same-colored `│` above and below, nothing beside it) it screenshots the mockup (1x and 2x) and computes the stroke's effective width on the pixel row through the cell's middle: total intensity across the cell's interior columns divided by the brightest column, in CSS px. A perfect one-pixel line is 1.0 and an even split across two pixels is 2.0. A sample fails when the median over its strokes is above 1.25 (`CRISP_MAX_WIDTH` overrides, `CRISP_DPRS` picks the scales). Measured on macOS: the 7px cell gives 1.14 (1x) and 1.16 (2x); an 8px cell 2.00 and 1.32; a 9px cell 1.45-1.48. It only looks at `│`, so it says nothing about horizontal strokes, and the threshold was calibrated on macOS at 1x and 2x only.
-
-They run under [Playwright Test](https://playwright.dev/docs/test-intro) (`playwright.config.ts`), not Vitest — deliberately: an earlier Vitest-browser-mode implementation hit an unfixed, still-open upstream bug (Node↔browser tester sessions could go silently unresponsive with no run-level timeout, hanging CI forever) that reproduced even on Vitest's pre-release fix line. Playwright Test drives the browser entirely from Node (rendering itself already happens in Node — `renderMermaidSVG`/`renderMermaidASCII` are plain string functions — and only DOM mounting runs in the browser, via the bundled harness in `__tests__/visual/helpers/`), so there's no such bridge to hang on. See [#299](https://github.com/dfadler/zombie-mermaid/issues/299) for the full investigation.
-
-Separate from the fast node/jsdom unit suite, and needs a Chromium binary installed once:
+`__tests__/visual/*.visual.test.ts` render every sample in `packages/site/samples-data.ts` and `packages/site/xychart-samples-data.ts` in a real headless Chromium page and screenshot-diff each one against a committed baseline PNG under `__tests__/visual/__screenshots__/`. They run under Playwright Test (`playwright.config.ts`), not Vitest, and need a Chromium binary installed once:
 
 ```bash
 pnpm exec playwright install --with-deps chromium
@@ -142,53 +132,13 @@ After an intentional rendering change, regenerate baselines and review the new P
 pnpm run test:visual:update
 ```
 
-Baseline filenames are suffixed with browser + platform (e.g. `-chromium-darwin.png` / `-chromium-linux.png`), so a macOS dev machine and the Linux CI runner keep separate baselines rather than fighting over one — CI generates and commits its own the same way a local run does, there's no cross-platform bootstrapping needed.
+That only rewrites the baselines for the platform you run it on (`-chromium-darwin.png` on macOS). The `-chromium-linux.png` baselines are what CI gates on; if CI fails on one, take the new PNGs from the failing run's `visual-regression-failures-<shard>` artifacts. A macOS contributor can check the Linux baselines locally with `scripts/docker-test-visual.sh` (needs Docker).
 
-Don't trust a **stock** `mcr.microsoft.com/playwright:*` Docker container as a stand-in for CI when checking whether a `-chromium-linux.png` baseline is stale — confirmed in [#326](https://github.com/dfadler/zombie-mermaid/issues/326) to render the ASCII/terminal-panel samples ~100px wider than CI actually does, and later measured at 88 of 90 ASCII samples mismatching. The cause is now known and fixed: the stock image ships no DejaVu family, so generic `monospace` falls back to a CJK face that draws box-drawing glyphs at full width ([#614](https://github.com/dfadler/zombie-mermaid/issues/614), `docs/research/614-docker-font-parity.md`). Installing `fonts-dejavu-core` restores the resolution a bare `ubuntu-latest` runner uses, which is what produced the committed baselines — build `docker/visual-regression.Dockerfile` (it asserts `fc-match monospace` resolves to DejaVu at build time) rather than using the stock tag. The CI job itself now runs the same font-parity fix inside a separate, chromium-only image (`docker/visual-regression-chromium.Dockerfile`, adopted in [#868](https://github.com/dfadler/zombie-mermaid/issues/868)); see `.github/workflows/ci.yml`'s `visual-regression` job and `docs/research/549-ci-container-migration.md`/`docs/research/737-chromium-only-image-pull-timing.md`. That image is what publishes the `visual-regression-chromium-only` entry under this repo's GitHub **Packages** tab (`ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only`) — built and pushed manually via the `workflow_dispatch`-only [visual-regression-chromium-image.yml](.github/workflows/visual-regression-chromium-image.yml) workflow, not on every push, so re-run it by hand (and re-pin `ci.yml`'s digest comment) whenever the Dockerfile or pinned Playwright/base-image version changes.
+**For ASCII changes, a green visual run is not proof that a real terminal renders the change correctly.** The suite renders ASCII through an HTML approximation of a terminal, which has drifted from a real PTY before. For any change to what the ASCII renderer emits, capture the before/after PR screenshot with `scripts/ascii-terminal-capture.sh` (a headless real-PTY capture; `--help` lists the prerequisites such as `asciinema` and `agg`). In a Claude Code session in this repo, invoke the `verify-ascii-terminal` skill (`.claude/skills/verify-ascii-terminal/`) instead. Never use the Playwright screenshots or `pnpm run visual-diff` output as an ASCII PR's screenshot; they stay useful for iterating locally.
 
-Architecture was once a live variable for the SVG half: an earlier, un-flag-matched **native arm64** container run against the shared x86 baselines produced ~5% intermittent SVG mismatches, over a different set of samples each run ([#615](https://github.com/dfadler/zombie-mermaid/issues/615)). A follow-up spike matched real CI's own flags (`CI=true`, so `playwright.config.ts` applies `retries: 2`) and diffed the exact same commit against a real, concurrently-running x86 CI run: 843/843 executions passed in the final tally on native arm64, while that same-commit CI run showed _more_ jitter than any of the quiet-host arm64 runs ([#545](https://github.com/dfadler/zombie-mermaid/issues/545), `docs/research/545-crossarch-ci-flag-matched-confirmation.md`). **Architecture is ruled out** as a driver of divergence for both halves of the suite once flags are matched.
+Whatever kind of change produced them, a PR or issue's "Visual verification" (or equivalent before/after) section must include the exact Mermaid source used to produce both renders, inline in a fenced ` ```mermaid ` code block directly after that heading and before the before/after image table. Without it the screenshots can't be verified from the PR body alone; see [#402](https://github.com/dfadler/zombie-mermaid/issues/402).
 
-A different question — whether native macOS Playwright (the actual generator of the `-chromium-darwin.png` baselines) matches the container's output — was answered once the SVG half of the local wrapper existed to make the comparison practical ([#551](https://github.com/dfadler/zombie-mermaid/issues/551), `docs/research/551-native-vs-container-svg-parity.md`): a real, systematic, non-noise difference exists, driven by the two OSes resolving the renderer's font stack (`'Inter', system-ui, sans-serif`, and `'JetBrains Mono', ..., monospace` for class-diagram code text) to genuinely different typefaces (macOS's own San Francisco vs. the container's DejaVu Sans/DejaVu Sans Mono font layer) — 41% of samples showed a cross-platform diff that clearly exceeded the container's own measured run-to-run jitter, including several samples that were byte-identical across two independent container runs while still differing from native macOS by a reproducible amount. **The `-linux`/`-darwin` split stays as-is**: no consolidation (a real fraction of samples would either fail permanently or force the suite's tolerance to loosen suite-wide), and no architecture-based rename either, since architecture isn't the driver and the current naming already reflects the one that is (OS/font-rendering environment). So for a _suspected-stale SVG baseline_, still prefer an actual CI run (or its `visual-regression-failures-<shard>` artifacts — the job is sharded 4-way, so a failure can land in any one of them) over a local container run when in doubt.
-
-#### Checking the Linux baselines locally (containerized)
-
-A macOS contributor _can_ check the Linux baselines — the ones CI actually gates on, which a local `pnpm run test:visual` never touches because it compares against `-chromium-darwin.png`:
-
-```bash
-scripts/docker-test-visual.sh                  # build the image if needed, then run the full suite (ASCII + SVG)
-scripts/docker-test-visual.sh --suite ascii    # only __tests__/visual/ascii-samples.visual.test.ts
-scripts/docker-test-visual.sh --suite svg      # only __tests__/visual/svg-samples.visual.test.ts
-scripts/docker-test-visual.sh --help           # options, exit codes, and the full rationale
-```
-
-It syncs a copy of your working tree (uncommitted changes included) into a cache directory outside the repo, runs the container as your own UID/GID so nothing it writes is root-owned, and never mounts the repo writable — so it cannot modify a committed baseline. The container run sets `CI=true`, matching real CI's own flags (see above). `--update-snapshots` is rejected outright: the committed PNGs are the measuring instrument for #614/#615/#545, and regenerating them from a container destroys that. Failure diffs and the HTML report land in the cache directory, whose path the script prints.
-
-**The wrapper originally covered ASCII only** ([#550](https://github.com/dfadler/zombie-mermaid/issues/550)) — the `--suite svg`/`--suite all` options above were added in [#837](https://github.com/dfadler/zombie-mermaid/issues/837), once #545's flag-matched spike closed out the #615 concern above. [#549](https://github.com/dfadler/zombie-mermaid/issues/549) (`.github/workflows/ci.yml`'s `visual-regression` job) runs a font-corrected image in real CI — since [#868](https://github.com/dfadler/zombie-mermaid/issues/868), a chromium-only build rather than this wrapper's multi-browser one, though both apply the same DejaVu font-parity fix — see `docs/research/549-ci-container-migration.md`. A suspected-stale SVG `-chromium-linux.png` is still worth cross-checking against a real CI run when the local container result is surprising, the same way you would for any other flaky-prone screenshot test. The full reasoning is in the "#545 closed, architecture ruled out" 2026-09-09 amendment to [`docs/decisions/playwright-docker-image-visual-regression.md`](./docs/decisions/playwright-docker-image-visual-regression.md) (see the later "#551 answered" amendment there for the native-vs-container question).
-
-Font rasterization has genuine run-to-run jitter (see the comments in `playwright.config.ts` next to `expect.toHaveScreenshot`), so the comparison tolerance is deliberately looser than a byte-for-byte diff and CI retries a failing test twice before calling it a real failure. If you're touching rendering code, verify a real regression still fails clearly rather than just tightening tolerances until things pass.
-
-The darwin side has its own analogous false-positive: if a large, cross-category swath of `-chromium-darwin.png` baselines fails locally with the _same_ diff shape — actual images consistently 20-40px taller than expected, with box widths, text, and connector positions otherwise pixel-identical (i.e. a uniform vertical drift that compounds toward the bottom of the image, not a localized content change) — that's a local font-rendering artifact, not real staleness, especially if CI on that exact commit is green. One confirmed cause: having both a variable JetBrains Mono font file (e.g. `JetBrainsMono[wght].ttf`) and its separate static weight instances (`JetBrainsMono-Regular.ttf`, etc.) installed under the same family name, which confuses Chromium's font matching and shifts line-height slightly from whatever produced the committed baseline. Before regenerating darwin baselines over a suspected regression, reproduce on a clean, unmodified `main` checkout first — if the same broad set of files fails there too while `main`'s own CI run is green, treat it as a local-environment problem to fix (e.g. de-duplicating the font install), not a baseline to update.
-
-**Checking for the variable+static JetBrains Mono duplicate specifically** ([#849](https://github.com/dfadler/zombie-mermaid/issues/849)): run `scripts/check-jetbrains-mono-duplicates.sh` before generating or comparing local `-darwin` baselines — it scans the standard macOS font directories for JetBrains Mono files and exits non-zero if it finds both a variable file and separate static weight instances installed under the same family. It's a pre-flight sanity check you run yourself, not a CI gate (this is a macOS-only, contributor-machine-local concern; see `scripts/check-jetbrains-mono-duplicates.sh --help`). Without the script, the same thing is checkable by hand two ways:
-
-- `fc-list | grep -i jetbrains` (if you have fontconfig installed, e.g. via Homebrew) — a healthy install shows one JetBrains Mono entry per style; a duplicate install shows the family resolving from more than one file.
-- macOS Font Book (`Applications/Font Book.app`) — search "JetBrains Mono"; Font Book flags duplicate font files with a warning icon and lets you resolve duplicates directly (**Edit → Resolve Duplicates**, or select the duplicate and **File → Remove Font**).
-
-To fix it, remove one of the two installs — keep the variable font (`JetBrainsMono[wght].ttf`) and delete the static weight files (`JetBrainsMono-Regular.ttf`, `JetBrainsMono-Bold.ttf`, etc.), since the variable font alone covers every weight. If you installed via `brew install --cask font-jetbrains-mono`, check what the cask actually placed under `~/Library/Fonts` or `/Library/Fonts`; if a second install came from somewhere else (a manual download, another cask, a project-bundled copy), remove that one instead of fighting the cask-managed copy. Re-run `scripts/check-jetbrains-mono-duplicates.sh` (or `fc-list`/Font Book) to confirm only one instance remains, then regenerate the local baselines.
-
-For a broader, human-reviewable sweep — not a pass/fail gate, just "what does my in-progress change actually alter" — run `pnpm run visual-diff`. It renders the full catalog with the working tree's renderer against a base ref (`--base=<ref>`, default `main`) into `visual-diff.html`, showing only samples whose output actually differs.
-
-**`visual-diff.html` and the Playwright baselines above are for iterating locally — never for the before/after screenshot in a PR/issue body when the change touches ASCII output.** Both render ASCII through `packages/site/ascii-html.ts`'s HTML/CSS approximation of a terminal, not a real one, and this repo has already shipped a bug in that approximation's chrome while the underlying renderer was fine. For an ASCII-affecting change, capture the actual PR screenshot with `scripts/ascii-terminal-capture.sh` instead, which renders through a real PTY headlessly (via `asciinema` + `agg` — `brew install asciinema agg && pip3 install pillow` once) and produces a `.png` straight from that real-terminal recording. The recording terminal auto-sizes to fit the sample (never smaller than 100x40; pass explicit `[cols] [rows]` only to force a size), and the script verifies the recorded size from the `.cast` header and fails rather than silently producing a clipped screenshot - see [#483](https://github.com/dfadler/zombie-mermaid/issues/483) for the 80x24-clipped PR screenshots that check exists to prevent. Also install the rasterizer's preferred font once (`brew install --cask font-jetbrains-mono`): `agg` silently falls back to the next font in its list when one is missing, and on a machine without JetBrains Mono that fallback (Menlo) renders box-drawing junction glyphs like `┬` with a visible notch artifact — no error, just a subtly wrong screenshot. Alternatively, set `ASCII_AGG_RUNTIME=docker` (needs `docker` on PATH, no local `agg`/font install) to run agg's own maintainer-published Docker image instead, which bundles JetBrains Mono directly and so can't hit that fallback at all — see [#552](https://github.com/dfadler/zombie-mermaid/issues/552). See `scripts/ascii-terminal-capture.sh --help` for usage, or the `verify-ascii-terminal` skill for the full procedure.
-
-Whatever kind of change produced them, a PR/issue's "Visual verification" (or
-equivalent before/after) section must include the exact Mermaid source used
-to produce both renders, inline in a fenced ` ```mermaid ` code block
-directly after that heading and before the before/after image table — not
-just a link to a sample index or a separate issue's reproduction. Without the
-inline source, the screenshots aren't verifiable from the PR/issue body
-alone; see [#402](https://github.com/dfadler/zombie-mermaid/issues/402).
-
-Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert.
+The rest, including how the mockup's fidelity is tested, the containerized Linux workflow, and the darwin font pitfalls (such as a duplicate JetBrains Mono install, which `scripts/check-jetbrains-mono-duplicates.sh` detects), is in [docs/visual-regression.md](docs/visual-regression.md).
 
 ## Porting fixes from upstream
 
@@ -202,7 +152,7 @@ This is the part that makes this fork different from a typical project. Two situ
 - Keep the original author's name in the commit (`git cherry-pick -x` preserves the source SHA in the message; `--signoff` or a `Co-authored-by:` trailer preserves credit if you had to rewrite the patch).
 - If the upstream PR was abandoned or blocked upstream, say so briefly — it helps reviewers understand why the fix is landing here instead of there.
 
-Either way, add a changeset (see below) describing what changed and, where relevant, that it originated upstream.
+Either way, add a changeset (see "Changesets" above) describing what changed and, where relevant, that it originated upstream.
 
 ### Adding a fork-fixes entry
 
@@ -212,6 +162,7 @@ Either way, add a changeset (see below) describing what changed and, where relev
 - If the fix is _not_ visible in rendered output (an internal refactor, a type-only fix, a performance fix, a fix to something other than the renderer itself), skip the entry — there's nothing for the showcase to demonstrate.
 - The PR template's checklist has a line for this; check it or explain why it doesn't apply.
 - A PR labeled `bug` that doesn't touch `demo/fork-fixes-data.ts` gets an automated, non-blocking reminder comment (`.github/workflows/fork-fixes-nudge.yml`) — a nudge to consider adding an entry, not a merge gate. It's fine to ignore when the fix genuinely has no visible rendering change.
+- If the entry has `render: 'ascii'`, also re-run `tsx scripts/capture-fork-fixes-terminal.ts` (needs `asciinema`, `agg`, and `ffmpeg` on PATH) and commit the regenerated PNGs under `public/fork-fixes-screenshots/`. Those real-terminal screenshots are the before/after shown on that page, not a live render.
 
 ### Staying aware of upstream changes
 
@@ -219,13 +170,7 @@ Either way, add a changeset (see below) describing what changed and, where relev
 
 ## Releasing
 
-Version bumps and `CHANGELOG.md` entries are generated by [Changesets](https://github.com/changesets/changesets), not hand-edited. If your change is worth calling out in the changelog, run:
-
-```bash
-pnpm changeset
-```
-
-and commit the generated file under `.changeset/` alongside your change. See [RELEASING.md](./docs/RELEASING.md) for the full release flow (what happens on merge to `main`, and the npm trusted-publishing setup it depends on) — that part is maintainer-only, but the `pnpm changeset` step above is what contributors are expected to do.
+Contributors don't cut releases. Merging a PR with a changeset lets the release automation open (or update) a "Version Packages" PR; a maintainer merging that PR publishes to npm. See "Changesets" above for your part and [RELEASING.md](./docs/RELEASING.md) for the full flow.
 
 ## Code of conduct
 
