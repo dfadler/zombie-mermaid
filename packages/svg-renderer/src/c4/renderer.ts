@@ -23,6 +23,7 @@ import type { FontSizes } from '../styles.ts'
 import {
   C4,
   c4CylinderCap,
+  c4DescriptionHeight,
   c4Palette,
   c4PersonGeometry,
   c4QueueCap,
@@ -230,18 +231,20 @@ function renderElement(el: PositionedC4Element): string {
     ),
   )
   cursor += C4.typeLine
-  for (const line of el.descriptionLines) {
+  el.descriptionLines.forEach((line, i) => {
+    // The first line is as tall as Mermaid measures a one-line text; each
+    // wrapped line after it is one `1.1em` row.
     parts.push(
       centred(
         line,
         textCx,
-        cursor + C4.descrLine / 2,
+        cursor + C4.descrLine / 2 + i * C4.descrExtraLine,
         C4.descrSize,
         f`fill="${pal.text}"`,
       ),
     )
-    cursor += C4.descrLine
-  }
+  })
+  cursor += c4DescriptionHeight(el.descriptionLines.length)
   parts.push('</g>')
   return parts.join('\n')
 }

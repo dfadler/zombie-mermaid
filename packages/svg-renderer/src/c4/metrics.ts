@@ -39,6 +39,8 @@ export const C4 = {
   nameLine: 15.35,
   typeLine: 15.72,
   descrLine: 17.1,
+  /** Each wrapped description line after the first (one `1.1em` row). */
+  descrExtraLine: 12.48,
   /**
    * Mermaid's text is about 8% narrower than this package's width estimate
    * (its font is Open Sans, this package's is Inter); fitted on a measured
@@ -47,8 +49,8 @@ export const C4 = {
   textScale: 0.922,
   // Heights Mermaid measures for a boundary's heading text (fitted): the
   // title at 16px bold, the `[type]` at 14px, a description at 12px.
-  boundaryLabelHeight: 21.8,
-  boundaryTypeHeight: 16.8,
+  boundaryLabelHeight: 18,
+  boundaryTypeHeight: 16.1,
   boundaryDescrHeight: 14.4,
   /** Height Mermaid reserves for the unnamed root boundary's heading. */
   rootHeadingHeight: 47,
@@ -135,7 +137,16 @@ export function c4TextBlockHeight(
   nameLines: number,
   descriptionLines: number,
 ): number {
-  return nameLines * C4.nameLine + C4.typeLine + descriptionLines * C4.descrLine
+  return (
+    nameLines * C4.nameLine +
+    C4.typeLine +
+    c4DescriptionHeight(descriptionLines)
+  )
+}
+
+/** Height of a description wrapped to this many lines. */
+export function c4DescriptionHeight(lines: number): number {
+  return lines === 0 ? 0 : C4.descrLine + (lines - 1) * C4.descrExtraLine
 }
 
 /** Cylinder cap radii for a box of this width: `rx` across, `ry` down. */
