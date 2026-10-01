@@ -489,16 +489,45 @@ function getCategoryLabels(chart: XYChart, count: number): string[] {
   return Array.from({ length: count }, (_, i) => String(i + 1))
 }
 
+/** Minimum clear space between two neighbouring x-axis labels. */
+const X_LABEL_MIN_GAP = 8
+
+/**
+ * Step between shown x-axis labels: 1 when every pair of neighbouring labels
+ * keeps `X_LABEL_MIN_GAP` of clear space, otherwise the smallest n for which
+ * every pair of shown (every n-th) labels does. Checked pairwise on the real
+ * widths so one long label doesn't thin out an otherwise roomy axis.
+ */
+export function xLabelStep(labels: string[], bandWidth: number): number {
+  const widths = labels.map((l) =>
+    estimateTextWidth(l, XY.axisLabelFontSize, XY.axisLabelFontWeight),
+  )
+  for (let step = 1; step < labels.length; step++) {
+    let fits = true
+    for (let i = 0; i + step < labels.length; i += step) {
+      const gap = step * bandWidth - (widths[i]! + widths[i + step]!) / 2
+      if (gap < X_LABEL_MIN_GAP) {
+        fits = false
+        break
+      }
+    }
+    if (fits) return step
+  }
+  return Math.max(1, labels.length)
+}
+
 function buildXTicks(
   chart: XYChart,
   xScale: (i: number) => number,
   axisY: number,
-  _bandWidth: number,
+  bandWidth: number,
 ): AxisTick[] {
   const count = getDataCount(chart)
   const labels = getCategoryLabels(chart, count)
+  const step = xLabelStep(labels, bandWidth)
+  // Dropped labels keep their tick mark but render no text.
   return labels.map((label, i) => ({
-    label,
+    label: i % step === 0 ? label : '',
     x: xScale(i),
     y: axisY,
     tx: xScale(i),
