@@ -252,7 +252,7 @@ function renderElement(el: PositionedC4Element): string {
 /** A rounded pill with a round head rising out of its top, as Mermaid draws a person. */
 function personShape(el: PositionedC4Element, pal: C4Palette): string[] {
   const { x, width: w } = el
-  const { rx, headRadius, pillTop: rise } = c4PersonGeometry(w)
+  const { rx, headRadius, pillTop: rise } = c4PersonGeometry(w, el.height)
   const y = el.y
   const cx = x + w / 2
   const pillTop = y + rise

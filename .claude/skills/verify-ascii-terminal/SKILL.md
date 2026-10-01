@@ -5,7 +5,7 @@ description: |
   an ASCII-rendering change — as a real-terminal capture (via
   scripts/ascii-terminal-capture.sh), never a browser/HTML screenshot. Use
   this whenever the diff touches ASCII output — anything under
-  src/ascii/**, packages/site/ascii-html.ts, src/cli.ts's ASCII path, demo/client.ts's
+  packages/ascii-renderer/**, packages/site/ascii-html.ts, src/cli.ts's ASCII path, demo/client.ts's
   ASCII path (TERMINAL_ASCII_OPTS / applyWideCharWidths), packages/site/index.ts's
   `.ascii-panel` markup, scripts/visual-diff.ts,
   __tests__/visual/helpers/terminal-panel.ts, or
@@ -34,10 +34,10 @@ metadata:
 
 This library has two independent ASCII "renderers" a change can affect:
 
-1. **The terminal itself** — `renderMermaidASCII` (`src/ascii/index.ts`),
+1. **The terminal itself** — `renderMermaidASCII` (`packages/ascii-renderer/src/index.ts`),
    consumed via the real CLI (`src/cli.ts` → `zombie-mermaid render --ascii`).
    Column widths, line-wrapping, and color all resolve against a real PTY:
-   `detectColorMode()` (`src/ascii/ansi.ts`) inspects `process.stdout.isTTY`,
+   `detectColorMode()` (`packages/ascii-renderer/src/ansi.ts`) inspects `process.stdout.isTTY`,
    `COLORTERM`, and `TERM` to pick `truecolor`/`ansi256`/`ansi16`/`none`, and
    a real terminal gives every wide (CJK/emoji) glyph exactly two columns.
 2. **The browser mockup** — `ascii-html.ts` / `demo/client.ts`'s

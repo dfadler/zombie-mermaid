@@ -8,12 +8,13 @@ import type {
   PositionedNote,
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
-import { boxLabelHeight } from './layout.ts'
+import { ACTOR_LABEL_OFFSET, boxLabelHeight } from './layout.ts'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
   buildStyleBlock,
   renderMultilineText,
+  measureMultilineText,
   escapeAttr,
   f,
 } from '@zombie-mermaid/core'
@@ -104,9 +105,11 @@ export function renderSequenceSvg(
     parts.push(renderBlock(block, fontSizes))
   }
 
-  // 2. Lifelines (dashed vertical lines from actor to bottom)
+  // 2. Lifelines (dashed vertical lines from actor to bottom), interrupted
+  //    where a message / block label sits on them so no line runs through text
+  const labelBoxes = collectLabelBoxes(diagram, fontSizes)
   for (const lifeline of diagram.lifelines) {
-    parts.push(renderLifeline(lifeline))
+    parts.push(renderLifeline(lifeline, labelBoxes))
   }
 
   // 3. Activation boxes
@@ -195,7 +198,7 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
         renderMultilineText(
           label,
           x,
-          y + height + 14,
+          y + height + ACTOR_LABEL_OFFSET,
           fontSizes.nodeLabel,
           f`font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
         ),
@@ -223,15 +226,152 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
   return parts.join('\n')
 }
 
+/** Self-message loop width, height, and the gap before its label, in px. */
+const SELF_LOOP_WIDTH = 30
+const SELF_LOOP_HEIGHT = 20
+const SELF_LABEL_PADDING = 8
+
+/** How far above its arrow a message label's centre sits, in px. */
+const MESSAGE_LABEL_RISE = 10
+
+/** Height of a block's type-label tab, in px. */
+const BLOCK_TAB_HEIGHT = 18
+
+/** A rectangle some text occupies; lifelines are cut around it. */
+interface LabelBox {
+  x0: number
+  x1: number
+  y0: number
+  y1: number
+}
+
+/** Breathing room kept between a label and the lifeline segments around it. */
+const LIFELINE_LABEL_PAD_X = 3
+const LIFELINE_LABEL_PAD_Y = 2
+
+/** Lifeline fragments shorter than this are dropped rather than drawn as a stub. */
+const LIFELINE_MIN_SEGMENT = 3
+
 /**
- * Render a lifeline (dashed vertical line from actor to bottom).
+ * Footprints of every text label a lifeline can run through: message labels
+ * (above the arrow, or beside a self-message loop), the block type tab, and
+ * block divider (`else` / `and`) labels. Mirrors the positions
+ * {@link renderMessage} and {@link renderBlock} draw them at (#1242).
+ */
+function collectLabelBoxes(
+  diagram: PositionedSequenceDiagram,
+  fontSizes: FontSizes,
+): LabelBox[] {
+  const boxes: LabelBox[] = []
+  const measure = (text: string) =>
+    measureMultilineText(text, fontSizes.edgeLabel, FONT_WEIGHTS.edgeLabel)
+  const centred = (text: string, cx: number, cy: number) => {
+    const m = measure(text)
+    boxes.push({
+      x0: cx - m.width / 2,
+      x1: cx + m.width / 2,
+      y0: cy - m.height / 2,
+      y1: cy + m.height / 2,
+    })
+  }
+  const startAnchored = (text: string, x: number, cy: number) => {
+    const m = measure(text)
+    boxes.push({
+      x0: x,
+      x1: x + m.width,
+      y0: cy - m.height / 2,
+      y1: cy + m.height / 2,
+    })
+  }
+
+  for (const msg of diagram.messages) {
+    if (!msg.label) continue
+    if (msg.isSelf) {
+      startAnchored(
+        msg.label,
+        msg.x1 + SELF_LOOP_WIDTH + SELF_LABEL_PADDING,
+        msg.y + SELF_LOOP_HEIGHT / 2,
+      )
+    } else {
+      centred(msg.label, (msg.x1 + msg.x2) / 2, msg.y - MESSAGE_LABEL_RISE)
+    }
+  }
+
+  for (const block of diagram.blocks) {
+    const tab = `${block.type}${block.label ? ` [${block.label}]` : ''}`
+    const tabWidth =
+      estimateTextWidth(
+        tab.split('\n')[0] ?? '',
+        fontSizes.edgeLabel,
+        FONT_WEIGHTS.groupHeader,
+      ) + 16
+    boxes.push({
+      x0: block.x,
+      x1: block.x + tabWidth,
+      y0: block.y,
+      y1: block.y + BLOCK_TAB_HEIGHT,
+    })
+    for (const divider of block.dividers) {
+      if (!divider.label) continue
+      startAnchored(`[${divider.label}]`, block.x + 8, divider.y + 14)
+    }
+  }
+  return boxes
+}
+
+/**
+ * The y-ranges of `lifeline` left after cutting out every label box it
+ * crosses, as `[y0, y1]` pairs top to bottom.
+ */
+function lifelineSegments(
+  lifeline: Lifeline,
+  labelBoxes: readonly LabelBox[],
+): Array<[number, number]> {
+  const cuts = labelBoxes
+    .filter(
+      (b) =>
+        lifeline.x > b.x0 - LIFELINE_LABEL_PAD_X &&
+        lifeline.x < b.x1 + LIFELINE_LABEL_PAD_X &&
+        b.y1 + LIFELINE_LABEL_PAD_Y > lifeline.topY &&
+        b.y0 - LIFELINE_LABEL_PAD_Y < lifeline.bottomY,
+    )
+    .map((b): [number, number] => [
+      b.y0 - LIFELINE_LABEL_PAD_Y,
+      b.y1 + LIFELINE_LABEL_PAD_Y,
+    ])
+    .sort((a, b) => a[0] - b[0])
+
+  const segments: Array<[number, number]> = []
+  let cursor = lifeline.topY
+  for (const [c0, c1] of cuts) {
+    if (c0 - cursor >= LIFELINE_MIN_SEGMENT) segments.push([cursor, c0])
+    cursor = Math.max(cursor, c1)
+  }
+  if (lifeline.bottomY - cursor >= LIFELINE_MIN_SEGMENT) {
+    segments.push([cursor, lifeline.bottomY])
+  }
+  // A lifeline entirely under a label (or otherwise shorter than a stub)
+  // would vanish; keep it whole rather than drop the participant's line.
+  return segments.length > 0 ? segments : [[lifeline.topY, lifeline.bottomY]]
+}
+
+/**
+ * Render a lifeline (dashed vertical line from actor to bottom), as one
+ * `<line>` per stretch between label boxes it would otherwise pass through.
  * Includes data-actor to link to its actor.
  */
-function renderLifeline(lifeline: Lifeline): string {
-  const line =
-    f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
-    f`x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
-    `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`
+function renderLifeline(
+  lifeline: Lifeline,
+  labelBoxes: readonly LabelBox[],
+): string {
+  const line = lifelineSegments(lifeline, labelBoxes)
+    .map(
+      ([y0, y1]) =>
+        f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
+        f`x1="${lifeline.x}" y1="${y0}" x2="${lifeline.x}" y2="${y1}" ` +
+        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`,
+    )
+    .join('\n')
   if (!lifeline.destroyed) return line
   // `destroy X`: the lifeline ends at the destroying message's row, marked
   // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
@@ -287,9 +427,9 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
   if (msg.isSelf) {
     // Self-message: curved loop going right and back
     // Loop dimensions - loopH is fixed, loopW provides minimum clearance
-    const loopW = 30
-    const loopH = 20
-    const labelPadding = 8 // Space between loop and label
+    const loopW = SELF_LOOP_WIDTH
+    const loopH = SELF_LOOP_HEIGHT
+    const labelPadding = SELF_LABEL_PADDING // Space between loop and label
     parts.push(
       f`  <polyline points="${msg.x1},${msg.y} ${msg.x1 + loopW},${msg.y} ${msg.x1 + loopW},${msg.y + loopH} ${msg.x2},${msg.y + loopH}" ` +
         f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
@@ -318,7 +458,7 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
         renderMultilineText(
           msg.label,
           midX,
-          msg.y - 10,
+          msg.y - MESSAGE_LABEL_RISE,
           fontSizes.edgeLabel,
           f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
         ),
@@ -455,7 +595,7 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
       fontSizes.edgeLabel,
       FONT_WEIGHTS.groupHeader,
     ) + 16
-  const tabHeight = 18
+  const tabHeight = BLOCK_TAB_HEIGHT
 
   parts.push(
     f`  <rect x="${block.x}" y="${block.y}" width="${tabWidth}" height="${tabHeight}" ` +

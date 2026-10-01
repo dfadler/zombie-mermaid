@@ -1,5 +1,6 @@
 import type { C4Element } from '@zombie-mermaid/mermaid-parser'
 import { estimateTextWidth } from '../styles.ts'
+import { arialAdvance } from './arial-widths.ts'
 
 // ============================================================================
 // C4 SVG geometry, shared by the layout (which sizes and places shapes) and
@@ -9,8 +10,8 @@ import { estimateTextWidth } from '../styles.ts'
 // The numbers follow Mermaid 11.17's C4 renderer: its default `c4` config for
 // spacing, and sizes fitted to what it draws for each shape (a fixed 216px
 // width, 20px padding, a 14px name, a 0.75em type line and a 0.82em
-// description). Text is measured with this package's own width estimate
-// instead of the browser, so sizes agree with Mermaid's to within a few pixels.
+// description). Text is measured by summing Arial advances instead of in the
+// browser, which matches the recorded Mermaid diagrams to a fraction of a pixel.
 // ============================================================================
 
 export const C4 = {
@@ -42,9 +43,8 @@ export const C4 = {
   /** Each wrapped description line after the first (one `1.1em` row). */
   descrExtraLine: 12.48,
   /**
-   * Mermaid's text is about 8% narrower than this package's width estimate
-   * (its font is Open Sans, this package's is Inter); fitted on a measured
-   * name.
+   * For text outside printable ASCII, which has no Arial advance table:
+   * Arial is about 8% narrower than this package's width estimate (Inter).
    */
   textScale: 0.922,
   // Heights Mermaid measures for a boundary's heading text (fitted): the
@@ -60,14 +60,17 @@ export const C4 = {
   cornerRadius: 12,
   strokeWidth: 2,
   /**
-   * Person proportions at the standard width (Mermaid scales the pill's
-   * corners and head with the width, and the head's rise a little faster).
+   * Person proportions, from Mermaid's person shape: the pill's corner is
+   * 17.7% of the width (at most 45% of the pill's height), the head's radius
+   * is 23% of the width clamped to 16..56, and the head overlaps the pill by
+   * 27% of its radius.
    */
-  personRx: 38.232,
-  personHeadRadius: 49.68,
-  /** Distance from the top of a person to the top of its pill (under the head). */
-  personPillTop: 85.946,
-  personPillTopPerExtraWidth: 0.4,
+  personRx: 0.177,
+  personRxMaxOfHeight: 0.45,
+  personHeadRatio: 0.23,
+  personHeadMin: 16,
+  personHeadMax: 56,
+  personHeadOverlap: 0.27,
   /** Cylinder height lost where its text block meets the lower ellipse. */
   dbTrim: 3.91,
   /** Queue height over its text block. */
@@ -75,27 +78,27 @@ export const C4 = {
 } as const
 
 /**
- * Width the text of an element wraps to. Fitted to Mermaid: a 173px name
- * stays on one line and a 231px one wraps, and a 188px name stays on one.
+ * Width the text of an element wraps to: the shape's width less its padding
+ * on both sides (Mermaid's `c4LabelHelper`).
  */
-export const C4_TEXT_WIDTH = C4.width - C4.shapePadding
+export const C4_TEXT_WIDTH = C4.width - 2 * C4.shapePadding
 
-/** Greedy word wrap by estimated pixel width. */
+/**
+ * Greedy word wrap by estimated pixel width. Mermaid decides where to break
+ * with the text at regular weight and draws a name in bold afterwards, so a
+ * bold name can come out wider than the limit.
+ */
 export function wrapToWidth(
   text: string,
   maxWidth: number,
   fontSize: number,
-  weight: number,
 ): string[] {
   const lines: string[] = []
   for (const paragraph of text.split('\n')) {
     let cur = ''
     for (const word of paragraph.split(/\s+/).filter(Boolean)) {
       const next = cur ? `${cur} ${word}` : word
-      if (
-        cur &&
-        estimateTextWidth(next, fontSize, weight) * C4.textScale > maxWidth
-      ) {
+      if (cur && c4TextWidth(next, fontSize, 400) > maxWidth) {
         lines.push(cur)
         cur = word
       } else {
@@ -107,18 +110,29 @@ export function wrapToWidth(
   return lines
 }
 
-/** A person's pill corner, head radius and pill top for a box of this width. */
-export function c4PersonGeometry(width: number): {
+/**
+ * A person's pill corner, head radius and pill top for a box of this width
+ * (and, when known, this height: a short pill gets smaller corners).
+ */
+export function c4PersonGeometry(
+  width: number,
+  height?: number,
+): {
   rx: number
   headRadius: number
   pillTop: number
 } {
-  const scale = width / C4.width
+  const headRadius = Math.min(
+    Math.max(width * C4.personHeadRatio, C4.personHeadMin),
+    C4.personHeadMax,
+  )
+  // The head's diameter less the part that overlaps the pill.
+  const pillTop = headRadius * (2 - C4.personHeadOverlap)
+  const pillHeight = height === undefined ? Infinity : height - pillTop
   return {
-    rx: C4.personRx * scale,
-    headRadius: C4.personHeadRadius * scale,
-    pillTop:
-      C4.personPillTop + C4.personPillTopPerExtraWidth * (width - C4.width),
+    rx: Math.min(width * C4.personRx, pillHeight * C4.personRxMaxOfHeight),
+    headRadius,
+    pillTop,
   }
 }
 
@@ -158,13 +172,25 @@ export function c4QueueCap(height: number): { rx: number; ry: number } {
   return { rx: ry / (2.5 + height / 50), ry }
 }
 
-/** Estimated width of a text line as Mermaid would measure it. */
+/**
+ * Estimated width of a text line as Mermaid would measure it: sans-serif
+ * advances for printable ASCII, this package's own estimate (scaled to match)
+ * for anything else.
+ */
 export function c4TextWidth(
   text: string,
   fontSize: number,
   weight: number,
 ): number {
-  return estimateTextWidth(text, fontSize, weight) * C4.textScale
+  let width = 0
+  for (const ch of text) {
+    const em = arialAdvance(ch, weight >= 600)
+    width +=
+      em === undefined
+        ? estimateTextWidth(ch, fontSize, weight) * C4.textScale
+        : em * fontSize
+  }
+  return width
 }
 
 /**

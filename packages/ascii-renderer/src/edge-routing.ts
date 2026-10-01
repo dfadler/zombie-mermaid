@@ -440,6 +440,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
 interface ParallelLaneRoute {
   path: GridCoord[]
   labelSegment: [GridCoord, GridCoord]
+  /** Set when the lane leaves/enters different faces than the caller asked for. */
+  faces?: { startDir: Direction; endDir: Direction }
 }
 
 function buildParallelLanePath(
@@ -508,6 +510,35 @@ function buildParallelLanePath(
     const laneMain = fromAttach.y + offset
     const laneCross = fromAttach.x + offset
 
+    // Candidate U ("side lane"): leave the source's side face and enter the
+    // target's matching side face (bottom in horizontal graphs, right in
+    // vertical ones), so this lane gets its own arrowhead instead of backing
+    // into the first edge's run, where the first edge's label hides the
+    // junction cell.
+    {
+      const sideDir = horizontalDeparture ? Down : Right
+      const fromSide = gridCoordDirection(requireGridCoord(edge.from), sideDir)
+      const toSide = gridCoordDirection(requireGridCoord(edge.to), sideDir)
+      const sideLabelSegment: [GridCoord, GridCoord] = horizontalDeparture
+        ? [
+            { x: fromSide.x, y: Math.max(fromSide.y, toSide.y) + offset - 1 },
+            { x: toSide.x, y: Math.max(fromSide.y, toSide.y) + offset - 1 },
+          ]
+        : [
+            { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: fromSide.y },
+            { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: toSide.y },
+          ]
+      const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
+      if (interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)) {
+        usedOffsets.add(offset)
+        return {
+          path: sidePath,
+          labelSegment: sideLabelSegment,
+          faces: { startDir: sideDir, endDir: sideDir },
+        }
+      }
+    }
+
     // Candidate A ("wide"): travel the offset lane across the *full*
     // node-to-node span (fromAttach.x..toAttach.x, or the vertical
     // equivalent). Its middle segment is always genuinely wide (it spans
@@ -523,7 +554,19 @@ function buildParallelLanePath(
           { x: laneCross, y: fromAttach.y },
           { x: laneCross, y: toAttach.y },
         ]
-    const wideCandidate = mergePath([fromAttach, ...wideLabelSegment, toAttach])
+    // End the lane with the same one-gutter-cell approach every other edge
+    // makes into its target (`toGutter` -> `toAttach`), instead of running
+    // the last leg along the target's own border, where it drew a stray
+    // arrowhead/junction on the border cell itself (#1230).
+    const wideCandidate = mergePath([
+      fromAttach,
+      wideLabelSegment[0],
+      horizontalDeparture
+        ? { x: toGutter.x, y: laneMain }
+        : { x: laneCross, y: toGutter.y },
+      toGutter,
+      toAttach,
+    ])
     if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
@@ -765,6 +808,10 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       edge.parallelLane.index,
     )
     edge.path = route.path
+    if (route.faces) {
+      edge.startDir = route.faces.startDir
+      edge.endDir = route.faces.endDir
+    }
     if (edge.text.length > 0) {
       applyLabelLine(graph, edge, route.labelSegment, displayWidth(edge.text))
     }
