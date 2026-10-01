@@ -115,6 +115,7 @@
     "build:mono-font": "tsx scripts/build-mono-font-subset.ts && prettier --write demo/components/generated/mono-font-subset.ts demo/styles.css packages/core/src/generated/mono-font-subset.ts",
     "generate:primitives-classes": "tsx scripts/generate-primitives-classes.ts && prettier --write demo/components/generated/primitives-classes.ts",
     "generate:logo-lockup": "tsx scripts/generate-logo-lockup.ts",
+    "docs:scripts": "tsx scripts/generate-development-scripts-doc.ts && prettier --write docs/development-scripts.md",
     "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
     "form-diff": "tsx scripts/form-diff.ts",

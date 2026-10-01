@@ -50,23 +50,11 @@ This is a pnpm workspace. The published `zombie-mermaid` package and five intern
 
 ## Useful scripts
 
-`package.json` has the full list; [docs/development-scripts.md](docs/development-scripts.md) covers the less common ones (site generators, benchmarks, bundle-size and coverage checks).
-
-- `pnpm test`: run the unit/integration test suite once (Vitest)
-- `pnpm run test:watch`: Vitest in watch mode
-- `pnpm run test:coverage`: Vitest with coverage
-- `pnpm run typecheck`: type-check the library, `demo/`, and `editor/` configs
-- `pnpm run lint`: ESLint
-- `pnpm run format` / `pnpm run format:check`: Prettier, writing or checking
-- `pnpm run build`: build the publishable packages and the library bundle
-- `pnpm run samples`: render the marketing home page (`packages/site/index.ts`) to `index.html`
-- `pnpm run test:visual` / `pnpm run test:visual:update`: the visual regression suite and its baseline regeneration (see "Visual regression tests" below)
-- `pnpm run visual-diff`: render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
-- `pnpm run fork-fixes`: build the fork-fixes showcase (see "Adding a fork-fixes entry" below)
+Everyday commands are `pnpm test`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run format`, `pnpm run build`, and `pnpm run dev`. [docs/development-scripts.md](docs/development-scripts.md) lists every `package.json` script with a description; it's generated, and CI fails if it goes stale.
 
 ## Reporting issues
 
-Use the issue templates (bug report, feature request) and include the smallest Mermaid source that reproduces the problem. Labels in use include `bug`, `enhancement`, `documentation`, `accessibility`, `good first issue`, and `help wanted`.
+Use the issue templates (bug report, feature request) and include the smallest Mermaid source that reproduces the problem. The [label list](https://github.com/dfadler/zombie-mermaid/labels) is the source of truth for which labels exist.
 
 Security problems (for example crashes or hangs on adversarial diagram input, or output that injects markup into the SVG) should not go in a public issue. Follow [SECURITY.md](SECURITY.md).
 
@@ -76,15 +64,12 @@ Double-check the base repository in GitHub's compare view: it should be `dfadler
 
 Keep PRs focused: one fix or feature per PR is much easier to review and, if needed, to revert. Fill in the [PR template](.github/PULL_REQUEST_TEMPLATE.md) and link the issue it closes (`Closes #123`). Commit and PR titles in this repo's history are short, imperative, and usually carry a conventional prefix such as `fix(ascii):`, `test(visual):`, `docs:`, or `chore:`; no tooling enforces it.
 
-CI (`.github/workflows/ci.yml`) runs on every push and PR against `main`. These jobs must pass:
+CI (`.github/workflows/ci.yml`) runs on every push and PR against `main`; its job list is the source of truth for what must pass. A few jobs need contributor action:
 
-1. `test`: `pnpm install --frozen-lockfile`, `pnpm run test:coverage`, `pnpm run coverage:diff` (new and changed lines need 90% coverage), `pnpm run lint`, `scripts/check-snapshot-allowlist.sh` (guards against a new whole-tree snapshot or string-pin test creeping into demo/editor component tests outside a reviewed allow-list; see "Testing conventions for demo/editor components" below), `pnpm run typecheck`, and `pnpm run format:check`
-2. `build-site`: `pnpm run build:site`, to check that the site generators still run
-3. `visual-regression`: the Playwright suite, sharded 4-way and run inside a pinned, chromium-only Playwright container image; see "Visual regression tests" below
-4. `bench`: the benchmark regression gate (`pnpm run bench` with `bench:compare`, plus per-package benchmarks)
-5. `bundle-size`: `pnpm run build` then `pnpm run check:bundle-size`
-6. `semgrep`: a SAST scan (`semgrep scan --config auto --error` against Semgrep's free public rulesets, no account or token involved). If it flags something in your PR, either fix the underlying issue or, if it's a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line with a comment explaining why. Don't disable the rule repo-wide.
-7. `changeset`: a changeset must be present (see "Changesets" below)
+- `test` includes `pnpm run coverage:diff`: new and changed lines need 90% coverage. It also runs `scripts/check-snapshot-allowlist.sh` (see "Testing conventions for demo/editor components" below).
+- `visual-regression` is the Playwright suite; see "Visual regression tests" below.
+- `semgrep` is a SAST scan against Semgrep's free public rulesets. If it flags something in your PR, either fix the underlying issue or, for a genuine false positive, add a scoped `// nosemgrep: <rule-id>` comment on the flagged line explaining why. Don't disable the rule repo-wide.
+- `changeset` requires a changeset when you change anything that ships (see "Changesets" below).
 
 Run `pnpm run test:coverage`, `pnpm run typecheck`, `pnpm run lint`, and `pnpm run format:check` locally first. Please also add or update tests for any behavioral change (package tests live in `src/__tests__/` and `packages/*/src/__tests__/`): this is a parser/renderer library, and regressions are easy to introduce silently in layout or parsing code. If the change alters rendered SVG or ASCII output, update the visual baselines too (`pnpm run test:visual:update`) and commit the changed PNGs. For ASCII output specifically, a passing visual-regression check is not the same as a real-terminal check; see "Visual regression tests" below.
 
