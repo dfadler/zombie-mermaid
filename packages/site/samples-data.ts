@@ -1522,4 +1522,126 @@ flowchart LR
   destroy Bob
   Bob->>Alice: I agree`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  C4 — appended at the end for the same flat-index baseline-filename
+  //  reason as the Sequence entries above (see #1217).
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    title: 'C4: System Context',
+    category: 'C4',
+    description:
+      'A C4 System Context diagram: a person, an internal system in an enterprise boundary, and an external system, joined by labelled relationships.',
+    source: `C4Context
+  title System Context for Internet Banking
+  Person(customer, "Personal Banking Customer", "A customer of the bank")
+  Enterprise_Boundary(b0, "Bank") {
+    System(banking, "Internet Banking System", "Lets customers view accounts")
+    SystemDb(ledger, "Ledger", "Stores transactions")
+  }
+  System_Ext(mail, "E-mail System", "Sends e-mails")
+  Rel(customer, banking, "Uses", "HTTPS")
+  Rel(banking, ledger, "Reads from and writes to")
+  Rel_Back(customer, mail, "Sends e-mails to")
+  Rel(banking, mail, "Sends e-mail using")`,
+  },
+  {
+    title: 'C4: Container With Boundary And BiRel',
+    category: 'C4',
+    description:
+      'A C4 Container diagram: a system boundary holding containers, a database and a queue, with a bidirectional relationship and an external system.',
+    source: `C4Container
+  Person(user, "User")
+  System_Boundary(sys, "Shop") {
+    Container(web, "Web App", "React", "Storefront")
+    Container(api, "API", "Node.js", "Business logic")
+    ContainerDb(db, "Database", "PostgreSQL", "Orders")
+    ContainerQueue(q, "Events", "Kafka")
+  }
+  System_Ext(pay, "Payments")
+  Rel(user, web, "Browses")
+  Rel(web, api, "Calls", "JSON/HTTPS")
+  Rel(api, db, "Reads/writes", "SQL")
+  BiRel(api, q, "Publishes", "AMQP")
+  Rel(api, pay, "Charges cards")`,
+  },
+  {
+    title: 'C4: Nested Boundaries Component',
+    category: 'C4',
+    description:
+      'A C4 Component diagram with a boundary nested inside another boundary, plus components wired to a database outside both.',
+    source: `C4Component
+  Container_Boundary(api, "API Application") {
+    Boundary(web, "Web Layer") {
+      Component(ctl, "Controller", "Express", "Routes requests")
+    }
+    Component(svc, "Service", "TypeScript", "Business rules")
+  }
+  ContainerDb(db, "Database", "Postgres")
+  Rel(ctl, svc, "Uses")
+  BiRel(svc, db, "Reads and writes", "SQL")`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Architecture — appended at the end for the same flat-index
+  //  baseline-filename reason as the Sequence entries above (see #1218).
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    title: 'Architecture: Services And Edge Sides',
+    category: 'Architecture',
+    description:
+      'architecture-beta services only (no groups), joined on all four sides (L/R/T/B), with plain and arrowed edges and a mix of built-in and unknown icons.',
+    source: `architecture-beta
+  service db(database)[Database]
+  service disk(disk)[Disk]
+  service server(server)[Server]
+  service cloud(cloud)[Cloud]
+  service web(internet)[Web]
+  service mystery(not-a-real-icon)[Unknown Icon]
+  service bare[No Icon]
+  db:R -- L:server
+  server:R --> L:cloud
+  server:B -- T:disk
+  cloud:T <-- B:web
+  web:R <--> L:mystery
+  disk:R -- L:bare`,
+  },
+  {
+    title: 'Architecture: Nested Groups And Junction',
+    category: 'Architecture',
+    description:
+      'architecture-beta groups nested two deep, with a junction fanning one edge out to two services.',
+    source: `architecture-beta
+  group cloud(cloud)[Cloud]
+  group api(server)[API Tier] in cloud
+  group data(database)[Data Tier] in cloud
+  service gw(internet)[Gateway] in api
+  service app(server)[App] in api
+  service db(database)[Primary DB] in data
+  service replica(disk)[Replica] in data
+  junction fan in cloud
+  service client(internet)[Client]
+  client:R --> L:gw
+  gw:R -- L:app
+  app:R -- L:fan
+  fan:R --> L:db
+  fan:B --> T:replica`,
+  },
+  {
+    title: 'Architecture: Group-To-Group Edges',
+    category: 'Architecture',
+    description:
+      'architecture-beta edges attached to a service\'s enclosing group with the {group} modifier, on one or both ends.',
+    source: `architecture-beta
+  group front(cloud)[Frontend]
+  group back(server)[Backend]
+  group store(database)[Storage]
+  service ui(internet)[UI] in front
+  service api(server)[API] in back
+  service jobs(server)[Jobs] in back
+  service db(database)[Postgres] in store
+  ui{group}:R --> L:api{group}
+  api:B -- T:db{group}
+  jobs:R --> L:db`,
+  },
 ]
