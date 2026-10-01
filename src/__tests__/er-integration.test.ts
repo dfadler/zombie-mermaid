@@ -126,13 +126,13 @@ describe('renderMermaidSVG – ER diagrams', () => {
     expect(coordsTB).not.toEqual(coordsLR)
   })
 
-  it('an explicit `direction LR` matches the pre-existing default layout (byte-for-byte)', () => {
+  it('an explicit `direction TB` matches the default layout (byte-for-byte; official Mermaid defaults to top-to-bottom, #1250)', () => {
     const rest = `A ||--o{ B : links`
     const svgDefault = renderMermaidSVG(`erDiagram\n      ${rest}`)
-    const svgLR = renderMermaidSVG(
-      `erDiagram\n      direction LR\n      ${rest}`,
+    const svgTB = renderMermaidSVG(
+      `erDiagram\n      direction TB\n      ${rest}`,
     )
-    expect(svgDefault).toBe(svgLR)
+    expect(svgDefault).toBe(svgTB)
   })
 
   it('renders a complete e-commerce schema', () => {
@@ -313,6 +313,7 @@ function closestPolylineDistance(
 describe('renderMermaidSVG – ER label positioning (straight lines)', () => {
   it('label is between the two entity boxes horizontally', () => {
     const svg = renderMermaidSVG(`erDiagram
+      direction LR
       TEACHER }|--o{ COURSE : teaches`)
 
     const boxes = extractEntityBoxes(svg)
@@ -331,6 +332,7 @@ describe('renderMermaidSVG – ER label positioning (straight lines)', () => {
 
   it('label has minimum clearance from entity box edges', () => {
     const svg = renderMermaidSVG(`erDiagram
+      direction LR
       A ||--o{ B : links`)
 
     const boxes = extractEntityBoxes(svg)
@@ -350,6 +352,7 @@ describe('renderMermaidSVG – ER label positioning (straight lines)', () => {
 
   it('label is approximately at the horizontal midpoint of the gap', () => {
     const svg = renderMermaidSVG(`erDiagram
+      direction LR
       CUSTOMER ||--o{ ORDER : places`)
 
     const boxes = extractEntityBoxes(svg)
