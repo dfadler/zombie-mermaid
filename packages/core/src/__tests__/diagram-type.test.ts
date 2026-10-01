@@ -10,6 +10,24 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('xychart-beta\nx-axis [a, b]')).toBe('xychart')
   })
 
+  it('detects every C4 variant header, case-insensitively', () => {
+    for (const header of [
+      'C4Context',
+      'C4Container',
+      'C4Component',
+      'C4Dynamic',
+      'C4Deployment',
+      'c4context',
+    ]) {
+      expect(detectDiagramType(`${header}\nPerson(a, "A")`)).toBe('c4')
+    }
+    expect(detectDiagramType('C4Context;Person(a, "A")')).toBe('c4')
+  })
+
+  it('does not match an unknown C4 variant', () => {
+    expect(detectDiagramType('C4Foo\nPerson(a, "A")')).toBe('flowchart')
+  })
+
   it('isolates the header on a semicolon-separated single line', () => {
     expect(detectDiagramType('sequenceDiagram;A->>B: Hi')).toBe('sequence')
     expect(detectDiagramType('classDiagram;class Foo')).toBe('class')

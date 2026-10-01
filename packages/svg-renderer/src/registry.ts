@@ -54,6 +54,7 @@ import {
   parseErDiagram,
   parseSequenceDiagram,
   parseClassDiagram,
+  parseC4Diagram,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -64,6 +65,8 @@ import type {
   PositionedSequenceDiagram,
   ClassDiagram,
   PositionedClassDiagram,
+  C4Diagram,
+  PositionedC4Diagram,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -73,6 +76,8 @@ import { layoutSequenceDiagram } from './sequence/layout.ts'
 import { renderSequenceSvg } from './sequence/renderer.ts'
 import { layoutClassDiagramSync } from './class/layout.ts'
 import { renderClassSvg } from './class/renderer.ts'
+import { layoutC4DiagramSync } from './c4/layout.ts'
+import { renderC4Svg } from './c4/renderer.ts'
 import { layoutGraphSync } from './layout-engine.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
 import { parseMermaid } from '../../../src/parser.ts'
@@ -323,6 +328,29 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
   },
 }
 
+const c4Module: DiagramModule<C4Diagram, PositionedC4Diagram> = {
+  type: 'c4',
+  parse: parseC4Diagram,
+  // Mermaid's C4 renderer has no direction: shapes are placed in rows in
+  // declaration order, so `options.direction` does not apply to the SVG.
+  layoutForSvg(diagram, options) {
+    return layoutC4DiagramSync(diagram, options)
+  },
+  renderSvg(positioned, ctx) {
+    return renderC4Svg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
 /**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
@@ -348,4 +376,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   sequence: sequenceModule,
   class: classModule,
   flowchart: flowchartModule,
+  c4: c4Module,
 }

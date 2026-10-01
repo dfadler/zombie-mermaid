@@ -58,7 +58,13 @@ let stylesInjected = false
 function ensureStylesInjected(): void {
   if (stylesInjected) return
   const style = document.createElement('style')
-  style.textContent = demoStylesheet as string
+  // The demo page draws 64px scroll-fade overlays (`body::before` at the top,
+  // `body::after` at the bottom, both `position: fixed`) over its content. They
+  // are page chrome, not part of a panel, but a screenshot of a panel taken in
+  // the 720px test viewport caught them: the top 42px of every panel (its
+  // title bar and first row) was faded, and panels taller than ~656px got a
+  // second fade band over rows 656-719. Hide them so a screenshot is the panel.
+  style.textContent = `${demoStylesheet as string}\nbody::before, body::after { display: none !important; }`
   document.head.appendChild(style)
   stylesInjected = true
 }
