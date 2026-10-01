@@ -85,7 +85,7 @@
   ],
   "packageManager": "pnpm@11.13.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "test": "vitest run -c config/vitest.config.ts",

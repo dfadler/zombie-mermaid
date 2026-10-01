@@ -77,8 +77,8 @@ LABEL org.opencontainers.image.description="Chromium-only Playwright image for t
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Node 24 (Active LTS), matching the "node-version:
-# '24'" pin every ci.yml job already uses. (package.json "engines".node stays >=22,
-# the consumer-facing floor.)
+# '24'" pin every ci.yml job already uses. (package.json "engines".node is also
+# >=24.)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
