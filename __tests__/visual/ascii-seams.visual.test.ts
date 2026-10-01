@@ -33,12 +33,15 @@ interface Probe {
 // would read as a gap at the clip edge.
 test.use({ viewport: { width: 3000, height: 1200 } })
 
-// Default run: 1x and 2x. Set SEAM_DPRS (e.g. SEAM_DPRS=1.25,1.5) to probe other
-// display scales. At fractional scales (measured at 1.1, 1.25, 1.5 and 1.75) the
-// six `█` samples (the XY charts) fail whatever the cell width (7, 8 and 9px
-// alike): solid bars show hairline seams at 75-81% of the fill, while line glyphs
-// pass. So the default run stays at 1x and 2x, where the whole suite passes.
-const DEVICE_SCALE_FACTORS = (process.env.SEAM_DPRS ?? '1,2')
+// Default run: 1x, 1.25x, 1.5x and 2x (the common 100/125/150/200% display
+// scales). Set SEAM_DPRS (e.g. SEAM_DPRS=1.1,1.75) to probe others. Fractional
+// scales matter for solid bars: a browser draws each `█` as an anti-aliased
+// glyph, so where a cell edge falls inside a device pixel two neighbours each
+// cover part of it and composite to 75-81% of the fill (a hairline seam).
+// Without the same-color background `htmlSpan` gives a run of `█`
+// (packages/ascii-renderer/src/ansi.ts), the six XY chart samples fail at every
+// fractional scale whatever the cell width.
+const DEVICE_SCALE_FACTORS = (process.env.SEAM_DPRS ?? '1,1.25,1.5,2')
   .split(',')
   .map(Number)
 
