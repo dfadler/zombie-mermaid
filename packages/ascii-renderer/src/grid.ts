@@ -1408,7 +1408,13 @@ export function createMapping(graph: AsciiGraph): void {
   // A title that would still hide an entering edge gets room (#1222). Runs
   // after the gutters so avoiding edges are already outside the frames; the
   // wider walls may need the gap widened once more.
-  widenFramesForTitleStrokes(graph, refreshBoxes)
+  // Each trial width also re-clears the avoiding edges: left where they were,
+  // they fall inside the growing frame and read as title collisions, so the
+  // frame over-widens (Layer Two came out 24 wide for a 9-wide title).
+  widenFramesForTitleStrokes(graph, () => {
+    refreshBoxes()
+    widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)
+  })
   // The room a frame was given may reach its neighbour; open the gap (#1248).
   widenGapsForFrameTitles(graph)
   widenFrameGutters(graph, frameAvoidingEdges, refreshBoxes)

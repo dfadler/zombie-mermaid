@@ -195,21 +195,28 @@ export function widenFramesForTitleStrokes(
   for (let pass = 0; pass < graph.subgraphs.length; pass++) {
     const sg = graph.subgraphs.find(
       (s) =>
-        s.nodes.length > 0 && !gaveUp.has(s) && hasTitleCollision(graph, s),
+        s.nodes.length > 0 && !gaveUp.has(s) && hasTitleCollision(graph, s, 1),
     )
     if (!sg) return
-    // Grow one column at a time and stop at the first width that works. If
-    // none up to the cap does, the frame keeps its size and the title wins.
+    // Grow one column at a time and stop at the first width that works,
+    // wanting a clear column between title and stroke first (a title abutting
+    // the stroke reads as a narrow box, `│Two│`) and settling for abutting
+    // only when no width up to the cap leaves a gap. If neither works the
+    // frame keeps its size and the title wins.
     const cap = titleWidth(sg) + TITLE_ROOM_SLACK
-    for (let room = 1; room <= cap; room++) {
-      sg.titleRoom = room
-      recompute()
-      if (!hasTitleCollision(graph, sg)) break
-      if (room === cap) {
-        sg.titleRoom = 0
+    let fitted = false
+    for (const minGap of [1, 0] as const) {
+      for (let room = 1; room <= cap && !fitted; room++) {
+        sg.titleRoom = room
         recompute()
-        gaveUp.add(sg)
+        fitted = !hasTitleCollision(graph, sg, minGap)
       }
+      if (fitted) break
+    }
+    if (!fitted) {
+      sg.titleRoom = 0
+      recompute()
+      gaveUp.add(sg)
     }
   }
 }
@@ -218,7 +225,11 @@ function titleWidth(sg: AsciiSubgraph): number {
   return Math.max(0, ...splitLines(sg.name).map((l) => displayWidth(l)))
 }
 
-function hasTitleCollision(graph: AsciiGraph, sg: AsciiSubgraph): boolean {
+function hasTitleCollision(
+  graph: AsciiGraph,
+  sg: AsciiSubgraph,
+  minGap: 0 | 1,
+): boolean {
   const width = sg.maxX - sg.minX
   const lines = splitLines(sg.name)
   for (let i = 0; i < lines.length; i++) {
@@ -236,7 +247,7 @@ function hasTitleCollision(graph: AsciiGraph, sg: AsciiSubgraph): boolean {
       }
     }
     if (strokes.size === 0) continue
-    if (!titleAvoidsStrokes(lines[i]!, width, (x) => strokes.has(x))) {
+    if (!titleAvoidsStrokes(lines[i]!, width, (x) => strokes.has(x), minGap)) {
       return true
     }
   }

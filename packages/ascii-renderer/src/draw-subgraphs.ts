@@ -111,7 +111,9 @@ function pickTitleStart(
     }
     return false
   }
-  if (!clash(want, 0)) return want
+  // The centred start only stands when it keeps a clear column on each side;
+  // abutting a stroke reads as the title being part of a narrow box (`│Two│`).
+  if (!clash(want, 1)) return want
   const last = Math.max(1, width - cells.length)
   for (const gap of [1, 0]) {
     let best = -1
@@ -138,11 +140,22 @@ export function titleAvoidsStrokes(
   line: string,
   width: number,
   blocked: (x: number) => boolean,
+  minGap: 0 | 1 = 0,
 ): boolean {
   const cells = toDisplayCells(line)
-  return (
-    pickTitleStart(cells, centredStart(cells, width), width, blocked) !== null
+  const start = pickTitleStart(
+    cells,
+    centredStart(cells, width),
+    width,
+    blocked,
   )
+  if (start === null) return false
+  if (minGap === 0) return true
+  // Whether the start it picked keeps the clear column (tier 1), or only abuts.
+  for (let x = start - 1; x < start + cells.length + 1; x++) {
+    if (x >= 1 && x < width && blocked(x)) return false
+  }
+  return true
 }
 
 /**

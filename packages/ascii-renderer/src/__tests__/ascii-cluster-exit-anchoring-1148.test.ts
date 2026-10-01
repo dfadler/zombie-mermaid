@@ -717,9 +717,13 @@ describe('cluster-exit anchoring: shape of the whole composite-states render', (
         expect(row[0]).toBe('│')
         expect(row[rightCol]).toBe('│')
       }
-      // The `retry` label is still drawn, outside the wall.
+      // The `retry` label is still drawn, never inside a cluster row's walls.
+      // On a row above the cluster it may sit right of the wall column, which
+      // a title-widened frame can now reach.
       const retryRow = lines.find((l) => l.includes('retry'))!
-      expect(retryRow.indexOf('retry')).toBeGreaterThan(rightCol)
+      expect(
+        !rows.includes(retryRow) || retryRow.indexOf('retry') > rightCol,
+      ).toBe(true)
     },
   )
 
