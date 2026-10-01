@@ -132,15 +132,15 @@ function centredStart(cells: readonly string[], width: number): number {
 }
 
 /**
- * Whether `line` can be placed in a frame `width` wide without hiding,
- * splitting or overwriting a vertical stroke (tiers 1-2 of `pickTitleStart`). Grid layout
- * uses this to decide whether a frame needs widening (#1222).
+ * Whether `line` can be placed in a frame `width` wide with a clear column
+ * between it and every vertical stroke (tier 1 of `pickTitleStart`); abutting
+ * a stroke does not count. Grid layout uses this to decide whether a frame
+ * needs widening (#1222).
  */
 export function titleAvoidsStrokes(
   line: string,
   width: number,
   blocked: (x: number) => boolean,
-  minGap: 0 | 1 = 0,
 ): boolean {
   const cells = toDisplayCells(line)
   const start = pickTitleStart(
@@ -150,7 +150,6 @@ export function titleAvoidsStrokes(
     blocked,
   )
   if (start === null) return false
-  if (minGap === 0) return true
   // Whether the start it picked keeps the clear column (tier 1), or only abuts.
   for (let x = start - 1; x < start + cells.length + 1; x++) {
     if (x >= 1 && x < width && blocked(x)) return false

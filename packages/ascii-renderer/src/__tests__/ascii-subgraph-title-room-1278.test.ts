@@ -58,8 +58,9 @@ describe('title room beside an entering stroke (#1278)', () => {
     'keeps a clear column between the stroke and "%s"',
     (title) => {
       const line = row(out, title)
-      expect(line).toMatch(new RegExp(`[│┼] ${title}`))
-      expect(line).not.toMatch(new RegExp(`[│┼]${title}`))
+      // A stroke, one blank cell, then the title: never stroke-then-title.
+      const before = line.slice(0, line.indexOf(title))
+      expect(before).toMatch(/[│┼] $/)
     },
   )
 
