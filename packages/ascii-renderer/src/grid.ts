@@ -264,7 +264,17 @@ function rerouteAroundStyleConflicts(
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
         findStyleConflict(nodeOnlyGrid, cellStyles, edge.path, edge.style) ??
-        findUnrelatedOverlap(nodeOnlyGrid, cellOwners, edge.path, edge)
+        findUnrelatedOverlap(
+          nodeOnlyGrid,
+          cellOwners,
+          edge.path,
+          edge,
+          (owner) =>
+            owner.clusterSource !== undefined &&
+            graph.clusterExitPlans
+              ?.get(owner.clusterSource)
+              ?.edges.has(owner) === true,
+        )
       if (!conflict) return
       graph.grid.add(gridKey(conflict))
       temporarilyBlocked.push(conflict)

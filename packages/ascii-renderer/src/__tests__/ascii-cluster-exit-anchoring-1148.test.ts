@@ -607,3 +607,26 @@ describe('cluster-exit anchoring: planner guards (graph mutated after layout)', 
     expect(edge.labelLine).toEqual([])
   })
 })
+
+describe('chain-overlap threshold only tightens for engaged cluster exits', () => {
+  // `A --> X` is cluster-addressed but the only exit of A, so no plan is
+  // made and it routes ordinarily. The chain partner `A --> a1` (via `Y`)
+  // sharing a single open cell with it is an ordinary crossing, exactly as
+  // on main (threshold 2) — it must not be rerouted into a garbled box.
+  const SINGLE_EXIT = `flowchart LR
+  subgraph A
+    a1
+  end
+  A --> X
+  A --> a1
+  Y --> A
+`
+
+  it('a single-exit cluster edge keeps the ordinary 2-cell chain threshold', () => {
+    const graph = layout(SINGLE_EXIT)
+    expect(graph.clusterExitPlans).toBeUndefined()
+    const out = render(SINGLE_EXIT).join('\n')
+    expect(out).toContain('│ a1 ├')
+    expect(out).not.toContain('a┌')
+  })
+})

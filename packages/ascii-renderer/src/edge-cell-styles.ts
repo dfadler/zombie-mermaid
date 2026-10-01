@@ -156,9 +156,14 @@ const MIN_CHAIN_OVERLAP = 2
  * through that same face (`Error --> Idle` after `Processing --> Error`)
  * then retraces the leg and reads as a continuation of it, at just one
  * shared cell. For such an owner one shared cell is already a conflict.
+ * Only an owner whose cluster-exit plan is active qualifies: an edge merely
+ * addressed from a cluster (single exit, rejected plan) routes ordinarily.
  */
-function chainOverlapThreshold(owner: AsciiEdge): number {
-  return owner.clusterSource ? 1 : MIN_CHAIN_OVERLAP
+function chainOverlapThreshold(
+  owner: AsciiEdge,
+  isActiveClusterExit: (edge: AsciiEdge) => boolean,
+): number {
+  return isActiveClusterExit(owner) ? 1 : MIN_CHAIN_OVERLAP
 }
 
 /**
@@ -177,6 +182,7 @@ export function findUnrelatedOverlap(
   owners: EdgeCellOwners,
   path: readonly GridCoord[],
   edge: AsciiEdge,
+  isActiveClusterExit: (edge: AsciiEdge) => boolean = () => false,
 ): GridCoord | null {
   const overlapCounts = new Map<AsciiEdge, number>()
   const firstConflicts = new Map<AsciiEdge, GridCoord>()
@@ -192,7 +198,8 @@ export function findUnrelatedOverlap(
     }
   }
   for (const [owner, count] of overlapCounts) {
-    if (count >= chainOverlapThreshold(owner)) return firstConflicts.get(owner)!
+    if (count >= chainOverlapThreshold(owner, isActiveClusterExit))
+      return firstConflicts.get(owner)!
   }
   return null
 }
