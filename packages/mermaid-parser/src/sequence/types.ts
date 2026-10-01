@@ -216,6 +216,8 @@ export interface Activation {
   topY: number
   bottomY: number
   width: number
+  /** Nesting level on this actor's lifeline: 0 for the outermost bar, 1 for a bar opened while one is already active, and so on */
+  depth: number
 }
 
 export interface PositionedBlock {

@@ -10,7 +10,7 @@ cd zombie-mermaid
 pnpm install
 ```
 
-Requires Node 22+ and pnpm (the repo pins `packageManager` in `package.json`; `corepack enable` will pick that up automatically).
+Requires Node 22+ and pnpm (the repo pins `packageManager` in `package.json`; `corepack enable` will pick that up automatically). A `.nvmrc` at the repo root pins the supported Node major (22); run `nvm use` (or `fnm use`) in the checkout to switch to it.
 
 ### Malware protection for installs (Aikido Safe Chain)
 

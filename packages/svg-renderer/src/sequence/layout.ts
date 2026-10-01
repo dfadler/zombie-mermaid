@@ -292,7 +292,9 @@ export function layoutSequenceDiagram(
     { startY: number; depth: number }[]
   >()
   const activations: Activation[] = []
-  const nestingOffset = 4 // Horizontal offset per nesting level
+  // Horizontal offset per nesting level: half a bar, as official Mermaid does,
+  // so a nested bar overlaps its parent by half instead of hiding behind it.
+  const nestingOffset = seq.activationWidth / 2
 
   /** Open an activation bar on `actorId` at row `y` (stacks for nesting). */
   function startActivation(actorId: string, y: number): void {
@@ -320,6 +322,7 @@ export function layoutSequenceDiagram(
       topY: startY,
       bottomY: y,
       width: seq.activationWidth,
+      depth,
     })
   }
 
@@ -488,9 +491,16 @@ export function layoutSequenceDiagram(
         topY: startY,
         bottomY: messageY - seq.messageRowHeight / 2,
         width: seq.activationWidth,
+        depth,
       })
     }
   }
+
+  // Paint outer bars before the bars nested inside them. Bars are pushed in
+  // close order, so an inner one otherwise precedes (and is covered by) its
+  // parent, which closes later. Array#sort is stable, so equal depths keep
+  // their order.
+  activations.sort((a, b) => a.depth - b.depth)
 
   // 4. Position blocks (loop/alt/opt)
   const blocks: PositionedBlock[] = diagram.blocks.map((block) => {

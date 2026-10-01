@@ -293,6 +293,7 @@ export function renderXYChartSvg(
 
   // 5. Axis labels (no axis lines, no tick marks — just floating labels)
   for (const tick of chart.xAxis.ticks) {
+    if (tick.label === '') continue // dropped by the layout's overlap step
     parts.push(
       `<text x="${tick.labelX}" y="${tick.labelY}" text-anchor="${tick.textAnchor}" ` +
         `font-size="${CHART_FONT.labelSize}" font-weight="${CHART_FONT.labelWeight}" ` +
