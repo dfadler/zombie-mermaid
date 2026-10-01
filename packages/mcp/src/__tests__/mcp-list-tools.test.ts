@@ -38,6 +38,7 @@ describe('list_diagram_types', () => {
       class: 'classDiagram\nclass Foo',
       er: 'erDiagram\nFOO ||--o{ BAR : has',
       xychart: 'xychart-beta\nx-axis [a, b]',
+      c4: 'C4Context\nPerson(a, "A")',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {

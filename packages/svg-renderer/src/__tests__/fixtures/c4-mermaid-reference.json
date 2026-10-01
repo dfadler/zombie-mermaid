@@ -1,0 +1,626 @@
+[
+  {
+    "name": "v00-context",
+    "source": "C4Context\n  title System Context for Internet Banking\n  Person(customer, \"Personal Banking Customer\", \"A customer of the bank\")\n  Enterprise_Boundary(b0, \"Bank\") {\n    System(banking, \"Internet Banking System\", \"Lets customers view accounts\")\n    SystemDb(ledger, \"Ledger\", \"Stores transactions\")\n  }\n  System_Ext(mail, \"E-mail System\", \"Sends e-mails\")\n  Rel(customer, banking, \"Uses\", \"HTTPS\")\n  Rel(banking, ledger, \"Reads from and writes to\")\n  Rel(banking, mail, \"Sends e-mail using\", \"SMTP\")\n  Rel_Back(customer, mail, \"Sends e-mails to\")\n",
+    "width": 932,
+    "height": 888.4,
+    "elements": {
+      "customer": [263.8, 326.3],
+      "mail": [585.5, 281.1],
+      "banking": [308, 666.8],
+      "ledger": [624, 680.5]
+    },
+    "relationships": [
+      {
+        "line": [275.8, 415.9, 302.3, 622.6],
+        "label": [302.5, 519.2]
+      },
+      {
+        "line": [416, 671.5, 516, 675.8],
+        "label": [532.5, 673.7]
+      },
+      {
+        "line": [339.8, 622.6, 553.7, 325.3],
+        "label": [497.8, 474]
+      },
+      {
+        "line": [305.9, 321, 477.5, 296.3],
+        "label": [436.2, 308.6]
+      }
+    ]
+  },
+  {
+    "name": "v01-grid",
+    "source": "C4Context\n  title Nine systems, three rows\n  Person(p1, \"Alice\", \"Admin\")\n  Person(p2, \"Bob\", \"Customer with a rather long description that has to wrap across lines\")\n  System(s1, \"Alpha\")\n  System_Ext(s2, \"Beta Payments Gateway\", \"Third party\")\n  SystemDb(s3, \"Gamma Store\", \"Keeps data\")\n  SystemQueue(s4, \"Delta Bus\", \"Moves events\")\n  System(s5, \"Epsilon\")\n  System(s6, \"Zeta\")\n  System(s7, \"Eta\")\n  Rel(p1, s1, \"Manages\")\n  Rel(p2, s2, \"Pays with\")\n  Rel(s1, s3, \"Reads from\", \"SQL\")\n  Rel(s4, s5, \"Delivers to\")\n  Rel(s6, p1, \"Notifies\")\n  Rel(s7, s3, \"Backs up\")\n",
+    "width": 1487.8,
+    "height": 923.3,
+    "elements": {
+      "p1": [258, 324],
+      "p2": [574, 336.6],
+      "s1": [890, 272.6],
+      "s2": [1206, 281.1],
+      "s3": [258, 594.1],
+      "s4": [585.9, 565.4],
+      "s5": [913.8, 571.9],
+      "s6": [1229.8, 571.9],
+      "s7": [258, 787.7]
+    },
+    "relationships": [
+      {
+        "line": [293.8, 321.6, 782, 281.4],
+        "label": [562.4, 301.5]
+      },
+      {
+        "line": [664.8, 329.2, 1098, 290.6],
+        "label": [906.9, 309.9]
+      },
+      {
+        "line": [820, 308.3, 366, 555],
+        "label": [624, 431.6]
+      },
+      {
+        "line": [705.8, 567.8, 805.8, 569.8],
+        "label": [784.3, 568.8]
+      },
+      {
+        "line": [1121.8, 544.3, 365.2, 351.7],
+        "label": [763.5, 448]
+      },
+      {
+        "line": [258, 752, 258, 652],
+        "label": [282.5, 702]
+      }
+    ]
+  },
+  {
+    "name": "v02-person-targets",
+    "source": "C4Context\n  Person(a, \"Ann\")\n  Person_Ext(b, \"Ben\", \"Outside the company\")\n  System(s, \"Portal\", \"The website\")\n  Rel(s, a, \"Emails\")\n  Rel(b, s, \"Visits\")\n  Rel_Back(a, b, \"Replies to\")\n  BiRel(a, s, \"Chats with\")\n",
+    "width": 1148,
+    "height": 451,
+    "elements": {
+      "a": [258, 255.5],
+      "b": [574, 264],
+      "s": [890, 221.1]
+    },
+    "relationships": [
+      {
+        "line": [782, 227, 300.1, 253.7],
+        "label": [559.1, 240.4]
+      },
+      {
+        "line": [611.7, 259.5, 782, 235.8],
+        "label": [710.8, 247.6]
+      },
+      {
+        "line": [297.8, 257.1, 525.1, 263.2],
+        "label": [438, 260.1]
+      },
+      {
+        "line": [300.1, 253.7, 782, 227],
+        "label": [569.1, 240.4]
+      }
+    ]
+  },
+  {
+    "name": "v03-directions",
+    "source": "C4Context\n  System(c, \"Centre\")\n  System(n, \"North\")\n  System(e, \"East\")\n  System(w, \"West\")\n  System(s, \"South\")\n  System(ne, \"North East\")\n  Rel(c, n, \"to north\")\n  Rel(c, e, \"to east\")\n  Rel(c, w, \"to west\")\n  Rel(c, s, \"to south\")\n  Rel(ne, c, \"diagonal in\")\n  Rel(w, e, \"across\")\n",
+    "width": 1464,
+    "height": 519.5,
+    "elements": {
+      "c": [258, 212.6],
+      "n": [574, 212.6],
+      "e": [890, 212.6],
+      "w": [1206, 212.6],
+      "s": [258, 383.9],
+      "ne": [574, 383.9]
+    },
+    "relationships": [
+      {
+        "line": [366, 212.6, 466, 212.6],
+        "label": [436.5, 212.6]
+      },
+      {
+        "line": [366, 212.6, 782, 212.6],
+        "label": [592, 212.6]
+      },
+      {
+        "line": [366, 212.6, 1098, 212.6],
+        "label": [751, 212.6]
+      },
+      {
+        "line": [258, 248.3, 258, 348.3],
+        "label": [279.5, 298.3]
+      },
+      {
+        "line": [508.3, 348.3, 323.7, 248.3],
+        "label": [445, 298.3]
+      },
+      {
+        "line": [1098, 212.6, 998, 212.6],
+        "label": [1065.5, 212.6]
+      }
+    ]
+  },
+  {
+    "name": "v04-nested",
+    "source": "C4Context\n  Enterprise_Boundary(e1, \"Acme Corp\") {\n    Person(p, \"Staff\")\n    System_Boundary(sb1, \"Billing\") {\n      System(b1, \"Invoices\", \"Makes invoices\")\n      System(b2, \"Ledger\")\n    }\n    System_Boundary(sb2, \"Support\") {\n      System(t1, \"Tickets\")\n      System(t2, \"Chat\", \"Live chat widget\")\n      System(t3, \"Knowledge base with a long name\")\n    }\n  }\n  Enterprise_Boundary(e2, \"Partner Co\") {\n    System_Ext(x, \"Partner API\")\n  }\n  Rel(p, b1, \"Raises\")\n  Rel(b1, b2, \"Posts to\")\n  Rel(t1, x, \"Escalates to\", \"HTTPS\")\n  Rel(p, t2, \"Talks in\")\n",
+    "width": 1459.5,
+    "height": 1244.2,
+    "elements": {
+      "p": [308, 312.5],
+      "b1": [358, 642.1],
+      "b2": [358, 821.9],
+      "t1": [724, 633.6],
+      "t2": [724, 813.4],
+      "t3": [729.8, 1000.8],
+      "x": [1151.5, 269.6]
+    },
+    "relationships": [
+      {
+        "line": [320.4, 391.2, 351.3, 598],
+        "label": [354.3, 494.6]
+      },
+      {
+        "line": [358, 686.3, 358, 786.3],
+        "label": [379.5, 736.3]
+      },
+      {
+        "line": [765.8, 598, 1109.7, 305.3],
+        "label": [970.3, 451.6]
+      },
+      {
+        "line": [373.5, 391.2, 687.4, 769.3],
+        "label": [550.4, 580.3]
+      }
+    ]
+  },
+  {
+    "name": "v05-containers",
+    "source": "C4Container\n  title Containers with every shape\n  Person(u, \"Shopper\")\n  System_Boundary(sys, \"Store\") {\n    Container(web, \"Web App\", \"React\", \"Storefront and checkout flows for shoppers\")\n    Container(api, \"API\", \"Node.js\", \"Business logic\")\n    ContainerDb(db, \"Database\", \"Postgres\", \"Orders\")\n    ContainerQueue(q, \"Events\", \"Kafka\", \"Domain events\")\n    Container_Ext(m, \"Mailer\", \"SaaS\")\n    ComponentDb(cdb, \"Cache\", \"Redis\")\n  }\n  Rel(u, web, \"Browses\", \"HTTPS\")\n  Rel(web, api, \"Calls\", \"JSON\")\n  Rel(api, db, \"Reads/writes\", \"SQL\")\n  BiRel(api, q, \"Publishes/consumes\", \"AMQP\")\n  Rel(q, m, \"Triggers\")\n  Rel(api, cdb, \"Caches in\")\n  Rel_Back(u, m, \"Sends mail to\")\n",
+    "width": 1587.8,
+    "height": 1065.5,
+    "elements": {
+      "u": [258, 315.5],
+      "web": [308, 651.4],
+      "api": [624, 645.1],
+      "db": [940, 658.9],
+      "q": [1267.9, 630],
+      "m": [308, 852.4],
+      "cdb": [624, 866.2]
+    },
+    "relationships": [
+      {
+        "line": [270.1, 394.2, 300.5, 601],
+        "label": [308.3, 497.6]
+      },
+      {
+        "line": [416, 649.2, 516, 647.3],
+        "label": [479.5, 648.2]
+      },
+      {
+        "line": [732, 649.8, 832, 654.2],
+        "label": [816.5, 652]
+      },
+      {
+        "line": [732, 642.6, 1148, 632.9],
+        "label": [995, 637.7]
+      },
+      {
+        "line": [1153.6, 657.8, 416, 827.4],
+        "label": [806.8, 742.6]
+      },
+      {
+        "line": [624, 689.2, 624, 816.8],
+        "label": [650.5, 753]
+      },
+      {
+        "line": [265.8, 394.2, 304.7, 816.8],
+        "label": [321.7, 605.5]
+      }
+    ]
+  },
+  {
+    "name": "v06-component",
+    "source": "C4Component\n  Container_Boundary(api, \"API Application\") {\n    Component(sign, \"Sign-in controller\", \"Spring MVC\", \"Lets users sign in\")\n    Component(sec, \"Security component\", \"Spring Bean\", \"Checks credentials and rate-limits repeated attempts\")\n    ComponentQueue(jobs, \"Jobs\", \"SQS\")\n    Component_Ext(ext, \"Identity provider\", \"OIDC\")\n  }\n  ContainerDb(db, \"Database\", \"Oracle\")\n  Rel(sign, sec, \"Uses\")\n  Rel(sec, db, \"Reads from\", \"JDBC\")\n  Rel(sec, ext, \"Delegates to\", \"HTTPS\")\n  Rel(sign, jobs, \"Enqueues\")\n",
+    "width": 1582.6,
+    "height": 733.5,
+    "elements": {
+      "db": [258, 226.3],
+      "sign": [308, 526.8],
+      "sec": [624, 533.1],
+      "jobs": [949.3, 503.2],
+      "ext": [1274.6, 518.2]
+    },
+    "relationships": [
+      {
+        "line": [416, 528.9, 516, 530.9],
+        "label": [479.5, 529.9]
+      },
+      {
+        "line": [563.8, 482.6, 316.8, 273],
+        "label": [471.3, 377.8]
+      },
+      {
+        "line": [732, 530.6, 1166.6, 520.6],
+        "label": [982.8, 525.6]
+      },
+      {
+        "line": [416, 522.8, 832.1, 507.5],
+        "label": [651.1, 515.1]
+      }
+    ]
+  },
+  {
+    "name": "v07-dynamic",
+    "source": "C4Dynamic\n  Person(c, \"Customer\")\n  Container(w, \"Web\")\n  Container(a, \"API\")\n  ContainerDb(d, \"DB\")\n  Rel(c, w, \"Opens\")\n  Rel(w, a, \"Requests\", \"JSON\")\n  Rel(a, d, \"Reads\")\n  Rel_Back(w, a, \"Returns data\")\n",
+    "width": 1464,
+    "height": 434,
+    "elements": {
+      "c": [258, 255.5],
+      "w": [574, 212.5],
+      "a": [890, 212.5],
+      "d": [1206, 226.3]
+    },
+    "relationships": [
+      {
+        "line": [302.2, 250.1, 466, 227.2],
+        "label": [408.6, 238.6]
+      },
+      {
+        "line": [682, 212.5, 782, 212.5],
+        "label": [773, 212.5]
+      },
+      {
+        "line": [998, 217.2, 1098, 221.6],
+        "label": [1072, 219.4]
+      }
+    ]
+  },
+  {
+    "name": "v08-deployment",
+    "source": "C4Deployment\n  Deployment_Node(dc, \"Data centre\", \"Linux\") {\n    Deployment_Node(srv, \"Server\", \"Ubuntu 22.04\") {\n      Container(app, \"App\", \"Java\", \"Serves requests\")\n    }\n    Deployment_Node(dbn, \"DB host\", \"Postgres 15\") {\n      ContainerDb(db, \"Database\", \"SQL\")\n    }\n  }\n  Rel(app, db, \"Reads from\", \"JDBC\")\n",
+    "width": 1082,
+    "height": 589.6,
+    "elements": {
+      "app": [358, 335],
+      "db": [724, 340.3]
+    },
+    "relationships": [
+      {
+        "line": [466, 336.6, 616, 338.7],
+        "label": [572, 337.7]
+      }
+    ]
+  },
+  {
+    "name": "v09-long",
+    "source": "C4Context\n  Person(p, \"A person whose name is unusually long and needs wrapping\")\n  System(s, \"Short\")\n  System(t, \"Another system with a long name\", \"And a description that keeps going for several lines so the box has to grow taller than usual\")\n  Rel(p, s, \"A relationship label that is very long indeed, longer than the gap between the boxes\", \"HTTPS/JSON over a long technology name\")\n  Rel(s, t, \"\")\n  Rel(t, p, \"Back\")\n",
+    "width": 1154.8,
+    "height": 464.9,
+    "elements": {
+      "p": [258, 270.9],
+      "s": [574, 212.6],
+      "t": [893.4, 241.5]
+    },
+    "relationships": [
+      {
+        "line": [303.2, 263.2, 466, 232.6],
+        "label": [605.6, 247.9]
+      },
+      {
+        "line": [682, 222.4, 782, 231.4],
+        "label": [732, 226.9]
+      },
+      {
+        "line": [782, 246.6, 345.5, 267.4],
+        "label": [577.3, 257]
+      }
+    ]
+  },
+  {
+    "name": "v10-many-rels",
+    "source": "C4Context\n  System(a, \"A\")\n  System(b, \"B\")\n  System(c, \"C\")\n  System(d, \"D\")\n  System(e, \"E\")\n  Rel(a, b, \"1\")\n  Rel(a, c, \"2\")\n  Rel(a, d, \"3\")\n  Rel(a, e, \"4\")\n  Rel(b, c, \"5\")\n  Rel(b, d, \"6\")\n  Rel(c, e, \"7\")\n  Rel(e, a, \"8\")\n  Rel(d, a, \"9\")\n",
+    "width": 1464,
+    "height": 519.5,
+    "elements": {
+      "a": [258, 212.6],
+      "b": [574, 212.6],
+      "c": [890, 212.6],
+      "d": [1206, 212.6],
+      "e": [258, 383.9]
+    },
+    "relationships": [
+      {
+        "line": [366, 212.6, 466, 212.6],
+        "label": [419.5, 212.6]
+      },
+      {
+        "line": [366, 212.6, 782, 212.6],
+        "label": [577.5, 212.6]
+      },
+      {
+        "line": [366, 212.6, 1098, 212.6],
+        "label": [735.5, 212.6]
+      },
+      {
+        "line": [258, 248.3, 258, 348.3],
+        "label": [261.5, 298.3]
+      },
+      {
+        "line": [682, 212.6, 782, 212.6],
+        "label": [735.5, 212.6]
+      },
+      {
+        "line": [682, 212.6, 1098, 212.6],
+        "label": [893.5, 212.6]
+      },
+      {
+        "line": [782, 241.9, 366, 354.6],
+        "label": [577.5, 298.3]
+      },
+      {
+        "line": [258, 348.3, 258, 248.3],
+        "label": [261.5, 298.3]
+      },
+      {
+        "line": [1098, 212.6, 366, 212.6],
+        "label": [735.5, 212.6]
+      }
+    ]
+  },
+  {
+    "name": "v11-mixed-ext",
+    "source": "C4Context\n  Person_Ext(a, \"External person\")\n  SystemDb_Ext(b, \"External DB\")\n  SystemQueue_Ext(c, \"External queue\")\n  SystemDb(d, \"Internal DB\")\n  SystemQueue(e, \"Internal queue\")\n  Person(f, \"Internal person\")\n  Rel(a, b, \"x\")\n  Rel(c, d, \"y\")\n  Rel(e, f, \"z\")\n  Rel(f, a, \"w\")\n",
+    "width": 1482.6,
+    "height": 691,
+    "elements": {
+      "a": [258, 255.5],
+      "b": [574, 226.4],
+      "c": [899.3, 197.6],
+      "d": [1224.6, 226.4],
+      "e": [267.3, 454.6],
+      "f": [592.6, 512.5]
+    },
+    "relationships": [
+      {
+        "line": [301, 252.1, 466, 236.3],
+        "label": [386.5, 244.2]
+      },
+      {
+        "line": [1015.8, 208, 1116.6, 216.8],
+        "label": [1069.2, 212.4]
+      },
+      {
+        "line": [377, 475.3, 548.3, 505],
+        "label": [465.7, 490.2]
+      },
+      {
+        "line": [544.3, 475.6, 352.8, 328.4],
+        "label": [453.1, 402]
+      }
+    ]
+  },
+  {
+    "name": "v12-boundary-rows",
+    "source": "C4Context\n  System_Boundary(b1, \"One\") {\n    System(a1, \"A1\")\n    System(a2, \"A2\")\n  }\n  System_Boundary(b2, \"Two\") {\n    System(c1, \"C1\")\n  }\n  System_Boundary(b3, \"Three\") {\n    System(d1, \"D1\")\n    System(d2, \"D2\")\n    System(d3, \"D3\")\n    System(d4, \"D4\")\n    System(d5, \"D5\")\n  }\n  Person(p, \"Loose\")\n  Rel(a1, c1, \"x\")\n  Rel(d3, a2, \"y\")\n  Rel(p, d1, \"z\")\n",
+    "width": 982,
+    "height": 1946.8,
+    "elements": {
+      "p": [258, 255.5],
+      "a1": [308, 576.6],
+      "a2": [308, 747.9],
+      "c1": [674, 576.6],
+      "d1": [308, 1076.1],
+      "d2": [308, 1247.4],
+      "d3": [308, 1418.6],
+      "d4": [308, 1589.9],
+      "d5": [308, 1761.1]
+    },
+    "relationships": [
+      {
+        "line": [416, 576.6, 566, 576.6],
+        "label": [494, 576.6]
+      },
+      {
+        "line": [308, 1383, 308, 783.5],
+        "label": [311, 1083.3]
+      },
+      {
+        "line": [263.3, 334.2, 305.8, 1040.5],
+        "label": [287.5, 687.4]
+      }
+    ]
+  },
+  {
+    "name": "v13-b1",
+    "source": "C4Context\n  System_Boundary(b, \"B\") {\n    System(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 455.3,
+    "elements": {
+      "a": [308, 269.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v14-b2",
+    "source": "C4Context\n  Enterprise_Boundary(e, \"E\") {\n    System_Boundary(b, \"B\") {\n      System(a, \"A\")\n    }\n  }\n",
+    "width": 716,
+    "height": 562.3,
+    "elements": {
+      "a": [358, 326.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v15-person-b",
+    "source": "C4Context\n  Person(p, \"P\")\n  System_Boundary(b, \"B\") {\n    System(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 762.3,
+    "elements": {
+      "p": [258, 255.5],
+      "a": [308, 576.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v16-person-only",
+    "source": "C4Context\n  Person(p, \"P\")\n",
+    "width": 516,
+    "height": 434,
+    "elements": {
+      "p": [258, 255.5]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v17-db-only",
+    "source": "C4Context\n  SystemDb(d, \"D\")\n",
+    "width": 516,
+    "height": 375.8,
+    "elements": {
+      "d": [258, 226.4]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v18-queue-only",
+    "source": "C4Context\n  SystemQueue(d, \"D\")\n",
+    "width": 534.6,
+    "height": 318.3,
+    "elements": {
+      "d": [267.3, 197.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v19-person-descr",
+    "source": "C4Context\n  Person(p, \"P\", \"Some description\")\n",
+    "width": 516,
+    "height": 451,
+    "elements": {
+      "p": [258, 264]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v20-db-descr",
+    "source": "C4Context\n  SystemDb(d, \"D\", \"Some description\")\n",
+    "width": 516,
+    "height": 392.8,
+    "elements": {
+      "d": [258, 234.9]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v21-b-descr",
+    "source": "C4Context\n  System_Boundary(b, \"B\", \"A description of the boundary\") {\n    System(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 455.3,
+    "elements": {
+      "a": [308, 269.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v22-b-below",
+    "source": "C4Context\n  System_Boundary(b, \"B\") {\n    System(a, \"A\")\n  }\n  System(z, \"Z\")\n",
+    "width": 616,
+    "height": 676.5,
+    "elements": {
+      "z": [258, 212.6],
+      "a": [308, 490.9]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v23-ent-B",
+    "source": "C4Context\n  Enterprise_Boundary(b, \"B\") {\n    System(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 455.3,
+    "elements": {
+      "a": [308, 269.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v24-sys-Bank",
+    "source": "C4Context\n  System_Boundary(b, \"Bank\") {\n    System(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 455.3,
+    "elements": {
+      "a": [308, 269.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v25-plain",
+    "source": "C4Context\n  Boundary(b, \"B\") {\n    System(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 455.3,
+    "elements": {
+      "a": [308, 269.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v26-cont",
+    "source": "C4Container\n  Container_Boundary(b, \"B\") {\n    Container(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 455.1,
+    "elements": {
+      "a": [308, 269.5]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v27-ent-Bank",
+    "source": "C4Context\n  Enterprise_Boundary(b, \"Bank\") {\n    System(a, \"A\")\n  }\n",
+    "width": 616,
+    "height": 455.3,
+    "elements": {
+      "a": [308, 269.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v28-person-2name",
+    "source": "C4Context\n  Person(p, \"Personal Banking Customer\", \"A customer of the bank\")\n",
+    "width": 527.5,
+    "height": 455.6,
+    "elements": {
+      "p": [263.8, 266.3]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v29-person-3name",
+    "source": "C4Context\n  Person(p, \"A person whose name is unusually long and needs wrapping to lines\")\n",
+    "width": 516,
+    "height": 464.9,
+    "elements": {
+      "p": [258, 270.9]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v30-person-wide",
+    "source": "C4Context\n  Person(p, \"Customer\", \"A description that is long enough to wrap into three lines at the standard width of a shape\")\n",
+    "width": 516,
+    "height": 476.3,
+    "elements": {
+      "p": [258, 276.6]
+    },
+    "relationships": []
+  },
+  {
+    "name": "v31-sys-2name",
+    "source": "C4Context\n  System(p, \"Personal Banking Customer\", \"A customer of the bank\")\n",
+    "width": 527.5,
+    "height": 365.3,
+    "elements": {
+      "p": [263.8, 221.1]
+    },
+    "relationships": []
+  }
+]
