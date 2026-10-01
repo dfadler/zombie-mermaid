@@ -31,6 +31,7 @@ import { gridKey } from './types.ts'
 import { clusterGridBox } from './cluster-boundary.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { splitLines } from './multiline-utils.ts'
+import { displayWidth } from './display-width.ts'
 import { titleAvoidsStrokes } from './draw-subgraphs.ts'
 
 /** Safety bound on widening passes. */
@@ -168,17 +169,21 @@ function findViolation(
   return null
 }
 
-/** Cap on extra columns per frame; a title never needs more than this. */
-const MAX_TITLE_ROOM = 4
+/**
+ * Cap on extra columns per frame, beyond the widest title line. The title
+ * has to clear the entering stroke, which can sit anywhere in the frame, so
+ * the room needed scales with the title rather than being a small constant.
+ */
+const TITLE_ROOM_SLACK = 4
 
 /**
  * Widen a titled frame, by the fewest columns, when a vertical edge enters it
- * through a title row and the title cannot be placed without hiding the
- * stroke or overwriting a letter (#1222). `drawSubgraphLabel` slides the
- * title aside or splits it on a space; this only fires when neither works
- * (the title fills the interior and the stroke lands on a letter), by giving
- * the frame `titleRoom` extra columns. Frames with no collision are never
- * touched. Vertical flow only: in LR edges enter on the node row.
+ * through a title row and the title cannot sit beside the stroke (#1222,
+ * #1248). `drawSubgraphLabel` slides the title aside; this fires when it
+ * cannot (the title is wider than the space on either side of the stroke),
+ * by giving the frame `titleRoom` extra columns on the right, so the title
+ * stays whole and the edge stays continuous rather than splitting the title.
+ * Frames with no collision are never touched. Vertical flow only: in LR edges enter on the node row.
  * `recompute` refreshes frame boxes between steps.
  */
 export function widenFramesForTitleStrokes(
@@ -194,19 +199,23 @@ export function widenFramesForTitleStrokes(
     )
     if (!sg) return
     // Grow one column at a time and stop at the first width that works. If
-    // none up to the cap does (a short title that fits on neither side of the
-    // stroke), the frame keeps its size and the title wins as before.
-    for (let room = 1; room <= MAX_TITLE_ROOM; room++) {
+    // none up to the cap does, the frame keeps its size and the title wins.
+    const cap = titleWidth(sg) + TITLE_ROOM_SLACK
+    for (let room = 1; room <= cap; room++) {
       sg.titleRoom = room
       recompute()
       if (!hasTitleCollision(graph, sg)) break
-      if (room === MAX_TITLE_ROOM) {
+      if (room === cap) {
         sg.titleRoom = 0
         recompute()
         gaveUp.add(sg)
       }
     }
   }
+}
+
+function titleWidth(sg: AsciiSubgraph): number {
+  return Math.max(0, ...splitLines(sg.name).map((l) => displayWidth(l)))
 }
 
 function hasTitleCollision(graph: AsciiGraph, sg: AsciiSubgraph): boolean {

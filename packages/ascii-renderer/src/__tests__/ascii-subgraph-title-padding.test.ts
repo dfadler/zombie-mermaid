@@ -43,14 +43,17 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
     const secondLine = findTitleLine(output, 'Second')
 
     // Both title rows must start with a border char followed by at least
-    // one space before the label text — never `│First` or `│Second`.
+    // one space before the label text — never `│First` or `│Second`. The
+    // connector entering TWO runs through the title row, so TWO's title sits
+    // beside it (the frame is widened to fit, #1248) instead of being split by
+    // it or glued to the left border.
     expect(firstLine).toMatch(/^│ First/)
-    expect(secondLine).toMatch(/^│ Second/)
+    expect(secondLine).toMatch(/^│ +│Second/)
 
     // Exact known-good output (captured from a real renderMermaidASCII run;
     // not fabricated) — locks in the fix precisely.
-    expect(firstLine).toBe('│ First │')
-    expect(secondLine).toBe('│ Second│')
+    expect(firstLine.trimEnd()).toBe('│ First │')
+    expect(secondLine).toBe('│   │Second│')
   })
 
   it('still centers a title symmetrically when the label/width parity allows it', () => {
@@ -58,7 +61,7 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
     // padding on both sides — this must remain unaffected by the fix.
     const output = renderMermaidASCII(mermaid)
     const firstLine = findTitleLine(output, 'First')
-    expect(firstLine).toBe('│ First │')
+    expect(firstLine.trimEnd()).toBe('│ First │')
   })
 
   it('does not require a subgraph-to-subgraph connector to reproduce — it is a general centering parity issue', () => {
