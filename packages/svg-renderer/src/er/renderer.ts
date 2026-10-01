@@ -331,7 +331,7 @@ function renderRelationshipLabel(
  * Crow's foot notation:
  *   'one':       ─║─   (single vertical line)
  *   'zero-one':  ─o║─  (circle + single line)
- *   'many':      ─╢─   (crow's foot + single line)
+ *   'many':      ─╢─   (crow's foot + bar)
  *   'zero-many': ─o╣─  (circle + crow's foot)
  */
 function renderCardinality(rel: PositionedErRelationship): string {
@@ -427,6 +427,19 @@ function renderCrowsFoot(
       // Bottom fan line
       f`<line x1="${cfTipX - px * fanW}" y1="${cfTipY - py * fanW}" ` +
         f`x2="${backX}" y2="${backY}" ` +
+        f`stroke="var(--_line)" stroke-width="${sw}" />`,
+    )
+  }
+
+  // Bar across the foot's convergence point: distinguishes one-or-many
+  // from a bare crow's foot (#1233)
+  if (cardinality === 'many') {
+    const barX = point.x - ux * 20
+    const barY = point.y - uy * 20
+    const halfW = 6
+    parts.push(
+      f`<line x1="${barX + px * halfW}" y1="${barY + py * halfW}" ` +
+        f`x2="${barX - px * halfW}" y2="${barY - py * halfW}" ` +
         f`stroke="var(--_line)" stroke-width="${sw}" />`,
     )
   }
