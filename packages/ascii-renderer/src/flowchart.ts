@@ -23,6 +23,7 @@ import { drawGraph } from './draw.ts'
 import {
   canvasToString,
   flipCanvasVertically,
+  mirrorLabelRows,
   flipRoleCanvasVertically,
 } from './canvas.ts'
 import { buildNodeLinkCanvas, flipLinkCanvasVertically } from './hyperlinks.ts'
@@ -98,7 +99,13 @@ export function renderGraphAscii(
   // BT: flip the finished canvas vertically so the flow runs bottom→top.
   // The grid layout ran as TD; flipping + character remapping produces BT.
   if (parsed.direction === 'BT') {
-    flipCanvasVertically(graph.canvas)
+    mirrorLabelRows(
+      graph.canvas,
+      graph.roleCanvas,
+      graph.labelRects ?? [],
+      linkCanvas,
+    )
+    flipCanvasVertically(graph.canvas, graph.roleCanvas)
     flipRoleCanvasVertically(graph.roleCanvas)
     if (linkCanvas) flipLinkCanvasVertically(linkCanvas)
   }

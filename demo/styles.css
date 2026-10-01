@@ -1366,8 +1366,24 @@ body.search-active .category-tabbar {
 }
 .ascii-output {
   padding: 1rem;
-  font-size: 0.7rem;
-  line-height: 1.3;
+  /* A 7px terminal cell: an exact, ODD number of pixels. JetBrains Mono's
+   * advance is 0.6em and Chromium snaps font sizes to 0.01px, so 11.67px gives
+   * 7.002px; the -0.002px of letter-spacing closes the gap to exactly 7px (without
+   * it the drift accumulates across a wide diagram and ascii-seams.visual.test.ts
+   * fails). Exact matters because a fractional pitch puts glyph edges mid-pixel and
+   * box/block characters show hairline seams a terminal does not. Odd matters
+   * because a vertical stroke is centred in its cell: at 7px (or 9px) the centre
+   * falls in the middle of a pixel column, so the stroke is one crisp column, while
+   * at 8px (or 10px) it falls on a pixel boundary and is split across two, which
+   * reads as a blurry, beaded line. Measured on the stroke: 7px gives 18/220/18
+   * across the three columns, 8px gives 146/146. */
+  font-size: 11.67px;
+  letter-spacing: -0.002px;
+  /* 15px is the only integer row height that satisfies both probes at this font
+   * size: ascii-seams.visual.test.ts fails at 16px (vertical box lines and full
+   * blocks stop joining) and ascii-legibility.visual.test.ts fails at 14px (a
+   * connector ends flush against the label text it passes, "Wes|t"). */
+  line-height: 15px;
   overflow: auto; /* fallback for a context with no .ascii-active override (e.g. print styles);
      the ASCII view is the .output-panel.ascii-active case above in practice, which renders
      at natural height with no scrollbar instead */

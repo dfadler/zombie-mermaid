@@ -713,6 +713,33 @@ layout, so it is not positioned on Mermaid's port grid:
 - ASCII draws a junction as an empty box and, like any flowchart, can mis-place
   nodes when sibling groups are joined by cross-group edges.
 
+## C4 Diagrams
+
+`C4Context`, `C4Container`, `C4Component`, `C4Dynamic` and `C4Deployment` diagrams render in both SVG and ASCII.
+
+```
+C4Container
+  Person(user, "User")
+  System_Boundary(shop, "Shop") {
+    Container(web, "Web App", "React", "Storefront")
+    ContainerDb(db, "Database", "PostgreSQL")
+  }
+  Rel(user, web, "Browses")
+  Rel(web, db, "Reads/writes", "SQL")
+```
+
+Supported: `Person`, `System`, `Container`, `Component` (plus `Db`, `Queue` and `_Ext` variants), `Boundary`/`Enterprise_Boundary`/`System_Boundary`/`Container_Boundary`, `Deployment_Node`/`Node`/`Node_L`/`Node_R`, `Rel`, `BiRel`, directional `Rel_*` aliases, `RelIndex`, and `title`.
+
+C4 diagrams have their own renderers (they are not lowered to the flowchart model): persons get a head-and-shoulders glyph, databases a cylinder, queues a pipe, external elements the muted C4 palette, and boundaries and deployment nodes a dashed frame with a title. Relationship labels show the label and, on its own line, the `[technology]`. A `title` is drawn at the top. `Rel` endpoints may be populated boundaries. `RenderOptions.direction` re-orients the SVG layout (default top-to-bottom).
+
+Layout hints: `Rel_D`/`Rel_U` are layering constraints (the target sits below/above the source) in both renderers. `Rel_R`/`Rel_L` place the two elements side by side in one row, source left/right of target: exact in ASCII; in SVG the ELK layered engine cannot guarantee a shared layer, so it is a strong nudge (the two share predecessors and are ordered) that holds unless other relationships pull them apart. In a left-to-right SVG layout the axes swap.
+
+Known limitations:
+
+- ASCII output is always top-to-bottom (`BT` reverses the rows; `LR`/`RL` are laid out top-to-bottom).
+- `UpdateElementStyle`, `UpdateRelStyle`, `UpdateLayoutConfig`, legends and tags are accepted and ignored. Elements use the standard C4 palette.
+- A relationship from an element to itself is not drawn in ASCII.
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
