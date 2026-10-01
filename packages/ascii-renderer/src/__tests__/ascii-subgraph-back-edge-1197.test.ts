@@ -89,7 +89,10 @@ E --> A`
       ['Layer Two', 'C'],
       ['Layer Three', 'E'],
     ] as const) {
-      const titleRow = out.findIndex((ln) => ln.includes(title))
+      // a forward edge entering the frame may split the title (#1222)
+      const titleRow = out.findIndex((ln) =>
+        ln.replace(/│/g, ' ').includes(title),
+      )
       const nodeRow = out.findIndex((ln) =>
         new RegExp(`│\\s+${id}\\s+[│├]`).test(ln),
       )
