@@ -229,7 +229,7 @@ jobs:
       # (picking the `platform.architecture == "amd64"` entry) after
       # dispatching .github/workflows/visual-regression-chromium-image.yml
       # to publish a new build.
-      image: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only@sha256:18abee4dc9528886c8b0e1a9ef8ae562ca68d1761c610f594370f60003f86c28 # built from docker/visual-regression-chromium.Dockerfile at commit 17903fa (v1.62.1-jammy, chromium-only)
+      image: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only@sha256:aa9d5b32ea243e0f6880c5ad7b4fbb1ab863e97d271a215f5bd966aa58a605d5 # built from docker/visual-regression-chromium.Dockerfile at commit bb5b296 (v1.62.1-jammy, chromium-only, Node 24)
       options: --ipc=host
     # Splits the ~280 screenshot tests across 4 parallel runners via
     # Playwright's own --shard flag. Each shard still runs at
