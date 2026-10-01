@@ -10,6 +10,26 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('xychart-beta\nx-axis [a, b]')).toBe('xychart')
   })
 
+  it('detects architecture diagrams under both header spellings', () => {
+    expect(detectDiagramType('architecture-beta\nservice a')).toBe(
+      'architecture',
+    )
+    expect(detectDiagramType('architecture\nservice a')).toBe('architecture')
+    expect(detectDiagramType('Architecture-Beta\nservice a')).toBe(
+      'architecture',
+    )
+    expect(detectDiagramType('architecture-beta;service a')).toBe(
+      'architecture',
+    )
+  })
+
+  it('does not match an architecture header with an unsupported suffix', () => {
+    expect(detectDiagramType('architecture-foo\nservice a')).toBe('flowchart')
+    expect(detectDiagramType('architecture-beta TB\nservice a')).toBe(
+      'flowchart',
+    )
+  })
+
   it('detects every C4 variant header, case-insensitively', () => {
     for (const header of [
       'C4Context',

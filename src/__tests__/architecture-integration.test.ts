@@ -135,3 +135,83 @@ describe('architecture-beta rendering', () => {
     expect(out).toContain('Beta')
   })
 })
+
+const NESTED = `architecture-beta
+  group api(cloud)[API]
+  group inner(cloud)[Inner] in api
+  service a[Alpha] in inner
+  service b[Beta] in api
+  junction j in api
+  a:R -- L:j
+  j:R --> L:b`
+
+describe('architecture-beta nested groups and junctions', () => {
+  it('SVG draws nested groups and a junction dot', () => {
+    const svg = renderMermaidSVG(NESTED)
+    expect(svg).toContain('data-id="api" data-label="API"')
+    expect(svg).toContain('data-id="inner" data-label="Inner"')
+    expect(svg).toContain(
+      'data-id="j" data-label="" data-shape="filled-circle"',
+    )
+    expect(svg.match(/class="subgraph"/g)).toHaveLength(2)
+    expect(svg.match(/class="edge"/g)).toHaveLength(2)
+    // The inner group is drawn after (on top of) its parent.
+    expect(svg.indexOf('data-id="api"')).toBeLessThan(
+      svg.indexOf('data-id="inner"'),
+    )
+  })
+
+  it('ASCII draws the inner group inside the outer one', () => {
+    const lines = renderMermaidASCII(NESTED).split('\n')
+    const find = (s: string) => lines.find((l) => l.includes(s))!
+    // The outer border encloses the inner box: both its left and right
+    // borders flank the inner group's own title row.
+    expect(find('API')).toMatch(/^│\s+API\s+│$/)
+    expect(find('Inner')).toMatch(/^│\s*│\s+Inner\s+│/)
+    expect(find('Inner')).toMatch(/│$/)
+    expect(find('Alpha')).toMatch(/^│\s*│\s*│\s+Alpha/)
+    expect(find('Beta')).toMatch(/^│.*Beta.*│$/)
+  })
+
+  it('ASCII draws a junction as a small box and keeps its edge arrow', () => {
+    const out = renderMermaidASCII(NESTED)
+    expect(out).toContain('●')
+    expect(out).toContain('►')
+  })
+
+  it('SVG and ASCII both render {group} edges', () => {
+    const src = `architecture-beta
+  group g(cloud)[Group]
+  service a[Alpha] in g
+  service b[Beta]
+  a{group}:R --> L:b`
+    expect(renderMermaidSVG(src)).toContain('data-id="g"')
+    const out = renderMermaidASCII(src)
+    expect(out).toContain('Group')
+    expect(out).toContain('Beta')
+  })
+
+  it('SVG reversed edges still render', () => {
+    const svg = renderMermaidSVG(
+      'architecture-beta\nservice a[Alpha]\nservice b[Beta]\na:L --> R:b',
+    )
+    expect(svg).toContain('data-id="a"')
+    expect(svg.match(/class="edge"/g)).toHaveLength(1)
+  })
+
+  // https://github.com/dfadler/zombie-mermaid/issues/1197: a back-edge across
+  // sibling groups throws in the ASCII grid router. Unskip once fixed.
+  it.skip('ASCII renders a back-edge across sibling groups (#1197)', () => {
+    const out = renderMermaidASCII(`architecture-beta
+  group g1(cloud)[G1]
+  group g2(cloud)[G2]
+  group g3(cloud)[G3]
+  service a(server)[A] in g1
+  service b(server)[B] in g2
+  service c(server)[C] in g3
+  a:R --> L:b
+  b:R --> L:c
+  c:B --> B:a`)
+    expect(out).toContain('G3')
+  })
+})
