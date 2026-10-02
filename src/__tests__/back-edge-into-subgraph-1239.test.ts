@@ -94,7 +94,8 @@ describe('routeBackEdgesIntoGroups', () => {
   })
 
   it('moves the label onto the cross run', () => {
-    const t = node('T', 20, 100)
+    // Target column is inside the source's, so only the up-and-across route fits.
+    const t = node('T', 80, 100)
     const e = edge(
       'S',
       'T',
@@ -103,14 +104,79 @@ describe('routeBackEdgesIntoGroups', () => {
         [150, 260],
         [340, 260],
         [340, -20],
-        [70, -20],
-        [70, 100],
+        [130, -20],
+        [130, 100],
       ],
       'No',
     )
     routeBackEdgesIntoGroups([e], [group(0, 0, 300, 200)], [t, S], 'TD')
-    // A quarter of the way from x=150 to the target's centre x=70.
-    expect(e.labelPosition).toEqual({ x: 130, y: 214 })
+    // A quarter of the way from x=150 to the target's centre x=130.
+    expect(e.labelPosition).toEqual({ x: 145, y: 214 })
+  })
+
+  describe('leaving by the source side', () => {
+    // T's column (centre x=70) is clear of S (x 100..200), so the edge can
+    // leave S's left side, run across and go straight up into T.
+    const T2 = node('T', 20, 100)
+    const loop2 = (label?: string): PositionedEdge =>
+      edge(
+        'S',
+        'T',
+        [
+          [150, 300],
+          [150, 260],
+          [340, 260],
+          [340, -20],
+          [70, -20],
+          [70, 100],
+        ],
+        label,
+      )
+
+    it('takes the side route when it crosses fewer edges', () => {
+      const e = loop2('No')
+      // An edge crossing the up-and-across route's cross run (y=214).
+      const other = edge('X', 'Y', [
+        [110, 190],
+        [110, 240],
+      ])
+      routeBackEdgesIntoGroups(
+        [e, other],
+        [group(0, 0, 300, 200)],
+        [T2, S],
+        'TD',
+      )
+      expect(e.points).toEqual([
+        { x: 100, y: 320 },
+        { x: 70, y: 320 },
+        { x: 70, y: 140 },
+      ])
+      // Midway up the vertical run, in the space beside the group.
+      expect(e.labelPosition).toEqual({ x: 70, y: 260 })
+    })
+
+    it('takes the up-and-across route when the side route crosses more', () => {
+      const e = loop2()
+      // An edge crossing the side route's vertical run, nothing on the other.
+      const other = edge('X', 'Y', [
+        [40, 250],
+        [90, 250],
+      ])
+      routeBackEdgesIntoGroups(
+        [e, other],
+        [group(0, 0, 300, 200)],
+        [T2, S],
+        'TD',
+      )
+      expect(e.points[0]).toEqual({ x: 150, y: 300 })
+      expect(e.points).toHaveLength(4)
+    })
+
+    it('prefers the shorter route when they cross equally', () => {
+      const e = loop2()
+      routeBackEdgesIntoGroups([e], [group(0, 0, 300, 200)], [T2, S], 'TD')
+      expect(e.points).toHaveLength(3)
+    })
   })
 
   it('works for left-to-right flow', () => {
@@ -240,11 +306,38 @@ describe('CI/CD sample', () => {
     expect(length).toBeLessThan(ci.height)
   })
 
-  it('keeps the label off the Build Image to Deploy Staging edge', () => {
+  it('crosses no other edge', () => {
+    // The route used to run along the base of the subgraph and across the
+    // Build Image to Deploy Staging edge, which read as Build Image feeding it.
+    type P = { x: number; y: number }
+    const turn = (o: P, a: P, b: P): number =>
+      (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+    const cross = (a: P, b: P, c: P, d: P): boolean =>
+      turn(a, b, c) * turn(a, b, d) < 0 && turn(c, d, a) * turn(c, d, b) < 0
+    for (const other of p.edges.filter((e) => e !== fd)) {
+      for (let i = 0; i + 1 < fd.points.length; i++) {
+        for (let j = 0; j + 1 < other.points.length; j++) {
+          const hit = cross(
+            fd.points[i]!,
+            fd.points[i + 1]!,
+            other.points[j]!,
+            other.points[j + 1]!,
+          )
+          expect(hit, `crosses ${other.source}->${other.target}`).toBe(false)
+        }
+      }
+    }
+  })
+
+  it('puts the label clear of every node', () => {
     const label = fd.labelPosition!
-    const ce = p.edges.find((e) => e.source === 'C' && e.target === 'E')!
-    const x = ce.points[0]!.x
-    // Label is about 40px wide.
-    expect(Math.abs(label.x - x)).toBeGreaterThan(24)
+    for (const n of p.nodes) {
+      const inside =
+        label.x > n.x - 20 &&
+        label.x < n.x + n.width + 20 &&
+        label.y > n.y - 10 &&
+        label.y < n.y + n.height + 10
+      expect(inside, `label overlaps ${n.id}`).toBe(false)
+    }
   })
 })

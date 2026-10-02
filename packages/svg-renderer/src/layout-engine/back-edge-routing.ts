@@ -99,6 +99,52 @@ function segmentHitsBox(a: FlowPoint, b: FlowPoint, box: FlowBox): boolean {
   )
 }
 
+interface Candidate {
+  route: FlowPoint[]
+  label: FlowPoint
+}
+
+function pathLength(route: FlowPoint[]): number {
+  return route.reduce(
+    (sum, p, i) =>
+      i === 0
+        ? 0
+        : sum +
+          Math.abs(p.f - route[i - 1]!.f) +
+          Math.abs(p.c - route[i - 1]!.c),
+    0,
+  )
+}
+
+/** Sign of the turn a-b-c in flow space. */
+function turn(a: FlowPoint, b: FlowPoint, c: FlowPoint): number {
+  return (b.f - a.f) * (c.c - a.c) - (b.c - a.c) * (c.f - a.f)
+}
+
+/** Whether the segments a-b and c-d properly cross (touching ends don't count). */
+function segmentsCross(
+  a: FlowPoint,
+  b: FlowPoint,
+  c: FlowPoint,
+  d: FlowPoint,
+): boolean {
+  return turn(a, b, c) * turn(a, b, d) < 0 && turn(c, d, a) * turn(c, d, b) < 0
+}
+
+/** How many times `route` crosses the polylines in `others`. */
+function countCrossings(route: FlowPoint[], others: FlowPoint[][]): number {
+  let n = 0
+  for (let i = 0; i + 1 < route.length; i++) {
+    for (const other of others) {
+      for (let j = 0; j + 1 < other.length; j++) {
+        if (segmentsCross(route[i]!, route[i + 1]!, other[j]!, other[j + 1]!))
+          n++
+      }
+    }
+  }
+  return n
+}
+
 /**
  * Replace each back edge that loops around the upstream end of a subgraph
  * with a short route entering through the subgraph's downstream wall.
@@ -142,37 +188,70 @@ export function routeBackEdgesIntoGroups(
     if (!pts.some((p) => p.f < gb.f0)) continue
 
     const start = pts[0]!
-    const crossF = gb.f1 + WALL_GAP
-    if (crossF > start.f - MIN_SOURCE_RUN) continue
-
     const targetC = (t.c0 + t.c1) / 2
-    const route: FlowPoint[] = [
-      start,
-      { f: crossF, c: start.c },
-      { f: crossF, c: targetC },
-      { f: t.f1, c: targetC },
-    ]
+    const candidates: Candidate[] = []
 
-    // Keep ELK's route unless the new one is clear of every other node.
+    // Out of the source's side, across to the target's column, then straight
+    // up into the target. Only possible when the target's column is clear of
+    // the source, and the cleanest route when it applies: one bend, and it
+    // stays out of the way of the edge that leaves the subgraph.
+    const sideC = targetC < s.c0 ? s.c0 : targetC > s.c1 ? s.c1 : undefined
+    const midF = (s.f0 + s.f1) / 2
+    if (sideC !== undefined && midF > t.f1 + MIN_SOURCE_RUN) {
+      candidates.push({
+        route: [
+          { f: midF, c: sideC },
+          { f: midF, c: targetC },
+          { f: t.f1, c: targetC },
+        ],
+        label: { f: (gb.f1 + midF) / 2, c: targetC },
+      })
+    }
+
+    // Up from the source to just past the wall, across, and up into the target.
+    const crossF = gb.f1 + WALL_GAP
+    if (crossF <= start.f - MIN_SOURCE_RUN) {
+      candidates.push({
+        route: [
+          start,
+          { f: crossF, c: start.c },
+          { f: crossF, c: targetC },
+          { f: t.f1, c: targetC },
+        ],
+        // A quarter of the way along the cross run from the source end: the
+        // middle of the run is where it usually crosses the edge leaving the
+        // subgraph, and a label there would sit on top of that edge.
+        label: {
+          f: crossF,
+          c: start.c + (targetC - start.c) * LABEL_RUN_FRACTION,
+        },
+      })
+    }
+
+    // Keep ELK's route unless a new one is clear of every other node. Of the
+    // clear ones, take the one that crosses the fewest other edges.
     const blockers = nodes
       .filter((n) => n.id !== source.id && n.id !== target.id)
       .map(axes.box)
-    const clear = route.every((p, i) => {
-      const next = route[i + 1]
-      if (!next) return true
-      return !blockers.some((b) => segmentHitsBox(p, next, b))
-    })
-    if (!clear) continue
+    const others = edges
+      .filter((e) => e !== edge)
+      .map((e) => e.points.map(axes.toFlow))
+    const best = candidates
+      .filter(({ route }) =>
+        route.every((p, i) => {
+          const next = route[i + 1]
+          return !next || !blockers.some((b) => segmentHitsBox(p, next, b))
+        }),
+      )
+      .map((c) => ({
+        c,
+        crossings: countCrossings(c.route, others),
+        length: pathLength(c.route),
+      }))
+      .sort((a, b) => a.crossings - b.crossings || a.length - b.length)[0]
+    if (!best) continue
 
-    edge.points = route.map(axes.toPoint)
-    if (edge.label) {
-      // On the cross run, a quarter of the way from the source end: the middle
-      // of the run is where this edge usually crosses the edge leaving the
-      // subgraph, and a label there would sit on top of that edge.
-      edge.labelPosition = axes.toPoint({
-        f: crossF,
-        c: start.c + (targetC - start.c) * LABEL_RUN_FRACTION,
-      })
-    }
+    edge.points = best.c.route.map(axes.toPoint)
+    if (edge.label) edge.labelPosition = axes.toPoint(best.c.label)
   }
 }
