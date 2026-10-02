@@ -274,6 +274,7 @@ export function orderSiblings(
   subgraphs: readonly MermaidSubgraph[],
   layer: ReadonlyMap<string, number>,
   keys: Map<string, number>,
+  connected: (a: MermaidSubgraph, b: MermaidSubgraph) => boolean = () => false,
 ): void {
   const span = (sg: MermaidSubgraph): [number, number] | undefined => {
     const layers = [...membersOf(sg)]
@@ -308,6 +309,11 @@ export function orderSiblings(
   }
   for (const group of groups) {
     if (group.length < 2) continue
+    // Subgraphs with edges running both ways between them sit where the layout
+    // put them, as in mermaid.js; the rest take the reversed order.
+    if (group.some((a, i) => group.slice(i + 1).some((b) => connected(a, b)))) {
+      continue
+    }
     // Declaration order, last to first, is left to right.
     const want = [...group].sort(
       (a, b) => subgraphs.indexOf(b) - subgraphs.indexOf(a),
@@ -320,7 +326,9 @@ export function orderSiblings(
       }
     })
   }
-  for (const sg of subgraphs) orderSiblings(sg.children, layer, keys)
+  for (const sg of subgraphs) {
+    orderSiblings(sg.children, layer, keys, connected)
+  }
 }
 
 /**
@@ -493,7 +501,10 @@ function overlaps(
     const near = (box: Box): number => (useX ? box.x : box.y)
     const far = (box: Box): number =>
       useX ? box.x + box.width : box.y + box.height
-    const first = near(aDrawn) <= near(bDrawn) ? aDrawn : bDrawn
+    // The one centred first comes first (a box can start above a node it
+    // overlaps and still end before it).
+    const centre = (box: Box): number => (near(box) + far(box)) / 2
+    const first = centre(aDrawn) <= centre(bDrawn) ? aDrawn : bDrawn
     requests.push({
       axis: useX ? 'x' : 'y',
       amount: isAcross ? acrossBy : alongBy,
@@ -576,7 +587,14 @@ export function layoutCompoundFlat(
   const keys = new Map<string, number>(
     first.nodes.map((n) => [n.id, crossOf(n.id)]),
   )
-  orderSiblings(graph.subgraphs, layer, keys)
+  const joins = (a: MermaidSubgraph, b: MermaidSubgraph): boolean => {
+    const inA = membersOf(a)
+    const inB = membersOf(b)
+    const run = (from: Set<string>, to: Set<string>): boolean =>
+      graph.edges.some((e) => from.has(e.source) && to.has(e.target))
+    return run(inA, inB) && run(inB, inA)
+  }
+  orderSiblings(graph.subgraphs, layer, keys, joins)
   for (const g of plan.ghosts) {
     const sg = clusters.find((c) => c.id === g.subgraph)!
     const at = [...membersOf(sg)]
@@ -803,11 +821,14 @@ function routeDetached(
 
 /**
  * Open up `request.amount` px (and a little slack) between two boxes that sit
- * too close, by moving everything from the cut line on, right where the first
- * of them ends, along by that much: the nodes, and the edges' points, so an
- * edge that crosses the cut just gets longer (the segments stay straight and
- * square). A node that straddles the cut stays put; whatever it was beside
- * moves away from it, never into it.
+ * too close, by moving everything from the first node beyond the cut line (where
+ * the first of them ends) along by that much: those nodes, and the edges'
+ * points that are as far along as they are, so an edge that crosses the cut
+ * just gets longer (the segments stay straight and square). An edge's bends in
+ * the gap between the cut and those nodes stay where they are, close to the
+ * first box, so a bus that fans out of a node stays clear of the boxes below.
+ * A node that straddles the cut stays put; whatever it was beside moves away
+ * from it, never into it.
  */
 function openRoom(
   request: RoomRequest,
@@ -816,11 +837,11 @@ function openRoom(
 ): void {
   const { axis, amount, after: cut } = request
   const by = amount + SPACING_SLACK
-  for (const n of nodes) {
-    if (n[axis] >= cut) n[axis] += by
-  }
+  const beyond = nodes.filter((n) => n[axis] >= cut)
+  const gapEnd = Math.min(...beyond.map((n) => n[axis]))
+  for (const n of beyond) n[axis] += by
   const shift = (p: Point): void => {
-    if (p[axis] >= cut) p[axis] += by
+    if (p[axis] >= gapEnd) p[axis] += by
   }
   for (const e of edges) {
     e.points.forEach(shift)

@@ -26,7 +26,7 @@
 import { writeFile } from 'node:fs/promises'
 import type { Page } from '@playwright/test'
 import { parseMermaid } from '../src/index.ts'
-import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
+import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
 import { samples } from '../packages/site/samples-data.ts'
 import {
   TABLE_HEADER,
@@ -90,7 +90,7 @@ async function measureOfficial(
 
 /** Box of every node and subgraph in our own layout of `source`. */
 function measureOurs(source: string): LayoutBoxes {
-  const positioned = layoutGraphSync(parseMermaid(source))
+  const positioned = layoutFlowchartSync(parseMermaid(source))
   const nodes: Record<string, Box> = {}
   for (const n of positioned.nodes) {
     nodes[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height }

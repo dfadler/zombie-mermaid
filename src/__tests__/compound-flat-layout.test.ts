@@ -308,6 +308,12 @@ describe('orderSiblings', () => {
     expect(keys.get('b2')!).toBeLessThan(keys.get('a2')!)
   })
 
+  it('leaves siblings with edges running both ways between them where they are', () => {
+    const keys = sideBySide()
+    orderSiblings([a, b], layer, keys, () => true)
+    expect(keys).toEqual(sideBySide())
+  })
+
   it('moves each subgraph as a whole, keeping its own nodes in their order', () => {
     const keys = sideBySide()
     orderSiblings([a, b], layer, keys)
@@ -552,6 +558,56 @@ describe('layoutFlowchartSync: room between boxes does not stretch the boxes', (
   })
 })
 
+describe('layoutFlowchartSync: edges stay joined to their nodes after room is opened', () => {
+  const SAMPLES = [
+    ['CI/CD', CI_CD],
+    [
+      'Nested Subgraphs',
+      'graph TD\n  subgraph Cloud\n    subgraph us-east [US East Region]\n      A[Web Server] --> B[App Server]\n    end\n    subgraph us-west [US West Region]\n      C[Web Server] --> D[App Server]\n    end\n  end\n  E[Load Balancer] --> A\n  E --> C',
+    ],
+    [
+      'Subgraphs',
+      'graph TD\n  subgraph Frontend\n    A[React App] --> B[State Manager]\n  end\n  subgraph Backend\n    C[API Server] --> D[Database]\n  end\n  B --> C',
+    ],
+  ] as const
+
+  const onBoundary = (
+    pt: { x: number; y: number },
+    n: PositionedNode,
+  ): boolean => {
+    // A diamond's edges meet its slopes, not its bounding box.
+    if (n.shape === 'diamond') return true
+    const tol = 1.5
+    const inside =
+      pt.x > n.x + tol &&
+      pt.x < n.x + n.width - tol &&
+      pt.y > n.y + tol &&
+      pt.y < n.y + n.height - tol
+    const near =
+      pt.x >= n.x - tol &&
+      pt.x <= n.x + n.width + tol &&
+      pt.y >= n.y - tol &&
+      pt.y <= n.y + n.height + tol
+    return near && !inside
+  }
+
+  it.each(SAMPLES)(
+    '%s: every edge starts on its source and ends on its target',
+    (_, source) => {
+      const p = layoutFlowchartSync(graphOf(source))
+      for (const e of p.edges) {
+        const s = p.nodes.find((n) => n.id === e.source)!
+        const t = p.nodes.find((n) => n.id === e.target)!
+        expect(onBoundary(e.points[0]!, s), `${e.source} start`).toBe(true)
+        expect(
+          onBoundary(e.points[e.points.length - 1]!, t),
+          `${e.target} end`,
+        ).toBe(true)
+      }
+    },
+  )
+})
+
 describe('routeInnerEdge', () => {
   const node = (
     id: string,
@@ -771,6 +827,15 @@ describe('layoutFlowchartSync: other shapes of subgraph diagram', () => {
       FONT_WEIGHTS.groupHeader,
     ).width
     expect(group.width).toBeGreaterThanOrEqual(title + 24)
+  })
+
+  it('keeps two clusters with edges both ways in the order the layout gave them, as mermaid.js does', () => {
+    const [, source] = cases[1]!
+    const p = layoutFlowchartSync(graphOf(source))
+    const left = p.groups.find((q) => q.id === 'l')!
+    const right = p.groups.find((q) => q.id === 'r')!
+    // `l` is declared first, and mermaid.js draws it on the left here.
+    expect(left.x).toBeLessThan(right.x)
   })
 
   it('arranges "outsiders on both sides" with the side node beside the box', () => {
