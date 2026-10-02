@@ -118,15 +118,18 @@ function buildErElkGraph(
     id: 'root',
     layoutOptions: {
       ...baseElkLayoutOptions({
-        // A source with no `direction` statement lays out left-to-right —
-        // ER's own default, unlike flowchart/class's DOWN. See
-        // ELK_DIRECTION_FALLBACK.
+        // A source with no `direction` statement lays out top-to-bottom,
+        // as official Mermaid does (#1250). See ELK_DIRECTION_FALLBACK.
         direction: directionToElk(diagram.direction, ELK_DIRECTION_FALLBACK.er),
         nodeSpacing: ER.nodeSpacing,
         layerSpacing: ER.layerSpacing,
         padding: ER.padding,
       }),
       'elk.edgeLabels.placement': 'CENTER',
+      // Keep declaration order as the crossing-minimization tie-break and
+      // center children under their parents, as official Mermaid does.
+      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
     },
     children,
     edges,
