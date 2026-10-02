@@ -89,10 +89,12 @@ export function convertToAsciiGraph(
   // Edges addressed from a subgraph id, resolved to AsciiSubgraph objects
   // below once those exist — see AsciiEdge.clusterSource.
   const clusterSourced = new Map<AsciiEdge, MermaidSubgraph>()
+  const clusterTargeted = new Map<AsciiEdge, MermaidSubgraph>()
   for (const mEdge of parsed.edges) {
     let sourceId = mEdge.source
     let targetId = mEdge.target
     let clusterMSg: MermaidSubgraph | undefined
+    let clusterTargetMSg: MermaidSubgraph | undefined
 
     if (subgraphIds.has(sourceId)) {
       const mSg = subgraphById.get(sourceId)
@@ -108,6 +110,7 @@ export function convertToAsciiGraph(
         ? resolveSubgraphEndpoint(mSg, parsed, 'entry')
         : undefined
       if (resolved) targetId = resolved
+      clusterTargetMSg = resolved ? mSg : undefined
     }
 
     const from = nodeMap.get(sourceId)
@@ -132,6 +135,7 @@ export function convertToAsciiGraph(
     }
     edges.push(asciiEdge)
     if (clusterMSg) clusterSourced.set(asciiEdge, clusterMSg)
+    if (clusterTargetMSg) clusterTargeted.set(asciiEdge, clusterTargetMSg)
   }
 
   // Convert subgraphs recursively
@@ -146,12 +150,16 @@ export function convertToAsciiGraph(
   // which causes incorrect bounding boxes when nodes span subgraph boundaries.
   deduplicateSubgraphNodes(parsed.subgraphs, subgraphs, nodeMap)
 
-  if (clusterSourced.size > 0) {
+  if (clusterSourced.size > 0 || clusterTargeted.size > 0) {
     const sgMap = new Map<MermaidSubgraph, AsciiSubgraph>()
     buildSgMap(parsed.subgraphs, subgraphs, sgMap)
     for (const [edge, mSg] of clusterSourced) {
       const sg = sgMap.get(mSg)
       if (sg) edge.clusterSource = sg
+    }
+    for (const [edge, mSg] of clusterTargeted) {
+      const sg = sgMap.get(mSg)
+      if (sg) edge.clusterTarget = sg
     }
   }
 

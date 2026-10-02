@@ -230,6 +230,13 @@ export interface AsciiEdge {
    * indistinguishable once converted. Consumed by cluster-boundary.ts.
    */
   clusterSource?: AsciiSubgraph
+  /**
+   * The subgraph this edge was originally addressed *to* (`X --> Sub` where
+   * `Sub` is a subgraph id), before the converter redirected `to` to the
+   * cluster's entry member. Unset for an ordinary edge, including a direct
+   * edge to that same member. Consumed by the level placement in grid.ts.
+   */
+  clusterTarget?: AsciiSubgraph
 }
 
 /**
