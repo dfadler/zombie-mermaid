@@ -132,6 +132,62 @@ export function buildClusterExitRoute(
   }
 }
 
+/** Shape of an edge entering a cluster; see `buildClusterEntryRoute`. */
+export interface ClusterEntryRoute {
+  path: GridCoord[]
+  startDir: Direction
+  endDir: Direction
+}
+
+/**
+ * Route an edge addressed to a subgraph id (`Y --> Sub`) to the cluster's
+ * flow-side wall rather than on to the entry member inside it, as real
+ * mermaid does. The path runs from the source's flow-side face to a gutter
+ * cell in the row (column) just outside the wall, in the source's own
+ * column (row) clamped into the cluster's span; drawing then stops the
+ * arrow at the wall (`drawPath`'s end override).
+ *
+ * Null leaves the edge on ordinary routing: no cluster, a source that is
+ * inside it, beside it, or past it, a bundled edge, or a gutter cell that
+ * isn't free or reachable.
+ */
+export function buildClusterEntryRoute(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): ClusterEntryRoute | null {
+  const sg = edge.clusterTarget
+  if (!sg || edge.bundle || edge.from === edge.to) return null
+  const box = clusterGridBox(sg)
+  const from = edge.from.gridCoord
+  if (!box || !from) return null
+  if (sg.nodes.includes(edge.from) || !sg.nodes.includes(edge.to)) return null
+
+  const vertical = graph.config.graphDirection !== 'LR'
+  // The gutter row (column) must lie strictly past the source's block.
+  if (vertical ? from.y + 2 >= box.minY - 1 : from.x + 2 >= box.minX - 1) {
+    return null
+  }
+
+  const clamp = (v: number, lo: number, hi: number): number =>
+    Math.min(Math.max(v, lo), hi)
+  const gutter: GridCoord = vertical
+    ? { x: clamp(from.x + 1, box.minX + 1, box.maxX - 1), y: box.minY - 1 }
+    : { x: box.minX - 1, y: clamp(from.y + 1, box.minY + 1, box.maxY - 1) }
+  if (!isFree(graph.grid, gutter)) return null
+
+  const startDir = vertical ? Down : Right
+  const endDir = vertical ? Up : Left
+  const face = gridCoordDirection(from, startDir)
+  const path = routeEdge(
+    graph,
+    face,
+    gutter,
+    requireCardinalDirection(startDir),
+  )
+  if (!path || path.length < 2) return null
+  return { path, startDir, endDir }
+}
+
 /** Whether any exit in `plan` is a parallel-lane sibling (#329, #1182). */
 export function planHasLaneGroup(plan: ClusterExitPlan): boolean {
   for (const edge of plan.edges) if (edge.parallelLane) return true

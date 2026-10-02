@@ -39,13 +39,13 @@ describe('ASCII: a non-member moved off a frame keeps its parent aligned (#1283)
   it('keeps W directly above Y in TD', () => {
     const graph = layout(
       `graph TD
-X-->Sub
-W-->Y
-Y-->Sub
 subgraph Sub
 A-->B
 A-->C
-end`,
+end
+X-->A
+W-->Y
+Y-->A`,
       'TD',
     )
     expect(grid(graph, 'W').x).toBe(grid(graph, 'Y').x)
@@ -60,13 +60,13 @@ end`,
   it('keeps W level with Y in LR', () => {
     const graph = layout(
       `graph LR
-X-->Sub
-W-->Y
-Y-->Sub
 subgraph Sub
 A-->B
 A-->C
-end`,
+end
+X-->A
+W-->Y
+Y-->A`,
       'LR',
     )
     expect(grid(graph, 'W').y).toBe(grid(graph, 'Y').y)
@@ -78,33 +78,30 @@ A-->C
 end`
 
   it('leaves a parent with two children where it is', () => {
-    const base = layout(
-      `graph TD\nX-->Sub\nW-->Y\nW-->Q\nY-->Sub${frame}`,
-      'TD',
-    )
+    const base = layout(`graph TD${frame}\nX-->A\nW-->Y\nW-->Q\nY-->A`, 'TD')
     expect(grid(base, 'W').x).not.toBe(grid(base, 'Y').x)
   })
 
   it('leaves a parent that has its own incoming edge where it is', () => {
-    const g = layout(`graph TD\nX-->Sub\nR-->W\nW-->Y\nY-->Sub${frame}`, 'TD')
+    const g = layout(`graph TD${frame}\nX-->A\nR-->W\nW-->Y\nY-->A`, 'TD')
     expect(g.nodes.every((n) => n.gridCoord)).toBe(true)
   })
 
   it('does not move anything when Y has two parents', () => {
-    const g = layout(`graph TD\nX-->Sub\nW-->Y\nV-->Y\nY-->Sub${frame}`, 'TD')
+    const g = layout(`graph TD${frame}\nX-->A\nW-->Y\nV-->Y\nY-->A`, 'TD')
     expect(grid(g, 'W').x).not.toBe(grid(g, 'Y').x)
   })
 
   it('leaves a parent that is itself in a subgraph alone', () => {
     const g = layout(
-      `graph TD\nX-->Sub\nsubgraph Other\nW\nend\nW-->Y\nY-->Sub${frame}`,
+      `graph TD${frame}\nX-->A\nsubgraph Other\nW\nend\nW-->Y\nY-->A`,
       'TD',
     )
     expect(g.nodes.every((n) => n.gridCoord)).toBe(true)
   })
 
   it('leaves a parent that is already aligned in place', () => {
-    const g = layout(`graph TD\nX-->Sub\nZ\nW-->Y\nY-->Sub${frame}`, 'TD')
+    const g = layout(`graph TD${frame}\nX-->A\nZ\nW-->Y\nY-->A`, 'TD')
     expect(grid(g, 'W').x).toBe(grid(g, 'Y').x)
     expect(grid(g, 'W').y).toBeLessThan(grid(g, 'Y').y)
   })
