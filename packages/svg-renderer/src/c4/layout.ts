@@ -513,6 +513,90 @@ function routeRelationship(
   return out
 }
 
+/** A text line's box: centre x, centre y, width and height. */
+interface TextBox {
+  cx: number
+  cy: number
+  w: number
+  h: number
+}
+
+/** Clear space kept between a label and a shape or another label. */
+const LABEL_CLEARANCE = 2
+/** Extra space kept between a label and a shape, for the arrowhead. */
+const SHAPE_CLEARANCE = 6
+/** How far along the chord each trial position is from the last. */
+const LABEL_STEP = 2
+
+/** The boxes a relationship's label lines occupy, as the renderer draws them. */
+function labelBoxes(rel: PositionedC4Relationship, dx: number): TextBox[] {
+  const pos = rel.labelPosition
+  if (!pos) return []
+  return c4RelLabelLines(rel).map((line, i, all) => {
+    const isTech = rel.technology !== undefined && i === all.length - 1
+    return {
+      cx:
+        (isTech && rel.technologyX !== undefined ? rel.technologyX : pos.x) +
+        dx,
+      cy: pos.y + (i === 0 ? 0 : C4.messageSize + 5),
+      w: c4TextWidth(line, C4.messageSize, 400),
+      h: C4.messageSize,
+    }
+  })
+}
+
+const boxesOverlap = (a: TextBox, b: TextBox): boolean =>
+  Math.abs(a.cx - b.cx) < (a.w + b.w) / 2 + LABEL_CLEARANCE &&
+  Math.abs(a.cy - b.cy) < (a.h + b.h) / 2 + LABEL_CLEARANCE
+
+/**
+ * Mermaid starts a label at the chord's midpoint, so a label can land on a
+ * shape the line passes beside or through (#1290). Slide it along the chord,
+ * nearest the midpoint first, to the first spot clear of every shape and of
+ * the labels already placed; if there is none, leave it where Mermaid does.
+ */
+function clearLabel(
+  rel: PositionedC4Relationship,
+  shapes: TextBox[],
+  placed: TextBox[],
+): void {
+  const start = rel.points[0]
+  const end = rel.points[rel.points.length - 1]
+  if (!rel.labelPosition || !start || !end) return
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const len = Math.hypot(dx, dy)
+  if (len === 0) return
+  const ux = dx / len
+  const uy = dy / len
+  const clear = (t: number): TextBox[] | undefined => {
+    const boxes = labelBoxes(rel, t * ux).map((b) => ({
+      ...b,
+      cy: b.cy + t * uy,
+    }))
+    const hit = boxes.some((b) =>
+      [...shapes, ...placed].some((o) => boxesOverlap(b, o)),
+    )
+    return hit ? undefined : boxes
+  }
+  for (let t = 0; t <= len / 2; t += LABEL_STEP) {
+    for (const s of t === 0 ? [1] : [1, -1]) {
+      const boxes = clear(s * t)
+      if (!boxes) continue
+      if (t !== 0) {
+        rel.labelPosition = {
+          x: rel.labelPosition.x + s * t * ux,
+          y: rel.labelPosition.y + s * t * uy,
+        }
+        if (rel.technologyX !== undefined) rel.technologyX += s * t * ux
+      }
+      placed.push(...boxes)
+      return
+    }
+  }
+  placed.push(...labelBoxes(rel, 0))
+}
+
 /** Lay out a parsed C4 diagram the way Mermaid's C4 renderer does. */
 export function layoutC4DiagramSync(
   diagram: C4Diagram,
@@ -563,6 +647,15 @@ export function layoutC4DiagramSync(
   const relationships = diagram.relationships.map((r, i) =>
     routeRelationship(r, i, boxes, shift),
   )
+  const shapeBoxes: TextBox[] = elements.map((e) => ({
+    cx: e.x + e.width / 2,
+    cy: e.y + e.height / 2,
+    // Padded so a label also keeps off the arrowhead that ends a line on it.
+    w: e.width + 2 * SHAPE_CLEARANCE,
+    h: e.height + 2 * SHAPE_CLEARANCE,
+  }))
+  const placedLabels: TextBox[] = []
+  for (const r of relationships) clearLabel(r, shapeBoxes, placedLabels)
 
   const width = layout.maxX + C4.diagramMarginX
   const height = layout.maxY + C4.diagramMarginY + titleExtra

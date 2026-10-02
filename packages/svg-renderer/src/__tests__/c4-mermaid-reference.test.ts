@@ -79,14 +79,24 @@ describe('C4 SVG layout against Mermaid on varied diagrams', () => {
           ).toBeLessThan(limit)
         })
         if (r.label && rel.labelPosition) {
-          expect(
-            Math.abs(rel.labelPosition.x - r.label[0]),
-            `relationship ${i + 1} label x`,
-          ).toBeLessThan(LABEL)
-          expect(
-            Math.abs(rel.labelPosition.y - r.label[1]),
-            `relationship ${i + 1} label y`,
-          ).toBeLessThan(LABEL)
+          // Mermaid's label can sit on a shape; this package slides it along
+          // the chord to clear it (#1290). That is the one allowed difference:
+          // the label may move along the line but not off it.
+          const dx = e!.x - s!.x
+          const dy = e!.y - s!.y
+          const len = Math.hypot(dx, dy)
+          const across = (p: { x: number; y: number }): number =>
+            ((p.x - s!.x) * dy - (p.y - s!.y) * dx) / len
+          const ref0 = { x: r.label[0], y: r.label[1] }
+          const moved =
+            Math.abs(rel.labelPosition.x - ref0.x) >= LABEL ||
+            Math.abs(rel.labelPosition.y - ref0.y) >= LABEL
+          if (moved) {
+            expect(
+              Math.abs(across(rel.labelPosition) - across(ref0)),
+              `relationship ${i + 1} label is off the chord`,
+            ).toBeLessThan(LABEL)
+          }
         }
       })
     })
