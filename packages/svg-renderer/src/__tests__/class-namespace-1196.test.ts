@@ -153,4 +153,13 @@ note for A "hello"`)
       end.y <= a.y + a.height + tol
     expect(touchesA).toBe(true)
   })
+
+  it('lays out a note that has no link', () => {
+    const q = layout(`classDiagram
+namespace Core {
+  class A
+}
+note "free floating"`)
+    expect(q.notes[0]!.linkPoints).toBeUndefined()
+  })
 })
