@@ -10,6 +10,7 @@ import {
   NODE_PADDING,
   STROKE_WIDTHS,
   ARROW_HEAD,
+  buildSvgStyleBlock,
 } from '@zombie-mermaid/svg-renderer'
 import {
   THEMES,
@@ -87,12 +88,23 @@ describe('buildStyleBlock', () => {
   })
 
   it('includes mono font class when requested', () => {
-    const withMono = buildStyleBlock('Inter', true)
+    const withMono = buildSvgStyleBlock('Inter', true)
     expect(withMono).toContain('.mono')
     expect(withMono).toContain('JetBrains Mono')
 
     const withoutMono = buildStyleBlock('Inter', false)
     expect(withoutMono).not.toContain('.mono')
+  })
+
+  it('embeds the self-hosted mono subset as a base64 woff2 data URI (#1061)', () => {
+    const block = buildSvgStyleBlock('Inter', true)
+    expect(block).toContain('@font-face')
+    expect(block).toContain('data:font/woff2;base64,')
+    expect(block).toContain("font-family: 'JetBrains Mono NL';")
+    expect(block).toContain(
+      "  .mono { font-family: 'JetBrains Mono NL', 'SF Mono', 'Fira Code', ui-monospace, monospace; }",
+    )
+    expect(block).not.toContain('fonts.googleapis.com/css2?family=JetBrains')
   })
 })
 

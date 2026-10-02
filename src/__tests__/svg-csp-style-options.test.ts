@@ -28,6 +28,7 @@ import {
   themeStyleDeclarations,
   THEMES,
 } from '@zombie-mermaid/core'
+import { buildSvgStyleBlock } from '@zombie-mermaid/svg-renderer'
 import type { DiagramColors, RenderOptions } from '@zombie-mermaid/core'
 import { renderMermaidSVG, themeCssVariables } from '../index.ts'
 
@@ -114,7 +115,7 @@ describe('buildStyleBlock – nonce', () => {
   })
 
   it('opens with a nonced <style> when a nonce is given', () => {
-    const block = buildStyleBlock('Inter', true, 'abc123')
+    const block = buildSvgStyleBlock('Inter', true, 'abc123')
     expect(block.startsWith('<style nonce="abc123">\n')).toBe(true)
     expect(block.endsWith('</style>')).toBe(true)
   })

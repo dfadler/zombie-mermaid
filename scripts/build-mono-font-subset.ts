@@ -25,7 +25,7 @@
  *      installed on the CI runner.
  * 2. **The core SVG-mono subset** (#1061) — a much narrower Basic
  *    Latin + Latin-1 Supplement subset, written to
- *    `packages/core/src/generated/mono-font-subset.ts` and consumed by
+ *    `packages/svg-renderer/src/generated/mono-font-subset.ts` and consumed by
  *    `packages/core/src/theme.ts`'s `buildStyleBlock()` for the `.mono`
  *    rule an SVG's own embedded `<style>` sets on class-diagram method
  *    signatures / ER-diagram attribute types. That rule previously pointed
@@ -182,7 +182,7 @@ const SITE_EXTRA_CODEPOINTS: ReadonlyArray<number> = [
 
 /** [start, end] Unicode code point ranges the core SVG-mono subset covers
  * (#1061) — deliberately just Basic Latin + Latin-1 Supplement. The `.mono`
- * rule this subset backs (packages/core/src/theme.ts's `buildStyleBlock()`)
+ * rule this subset backs (packages/svg-renderer/src/styles.ts's `buildSvgStyleBlock()`)
  * only ever styles class-diagram method signatures and ER-diagram attribute
  * types: plain identifiers and type names, never box drawing, block
  * elements, geometric shapes, or arrows — so this subset skips every range
@@ -322,7 +322,7 @@ const CORE_GENERATED_TS_HEADER = `/**
  * (scripts/build-mono-font-subset.ts), which subsets
  * third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf down to
  * Basic Latin + Latin-1 Supplement — the self-hosted, embeddable
- * \`@font-face\` packages/core/src/theme.ts's \`buildStyleBlock()\` inlines
+ * \`@font-face\` packages/svg-renderer/src/styles.ts's \`buildSvgStyleBlock()\` inlines
  * into an SVG's own \`<style>\` for its \`.mono\` rule (class-diagram method
  * signatures, ER-diagram attribute types), replacing a Google Fonts CDN
  * \`@import\` this library's SVG output previously depended on by default
@@ -403,14 +403,14 @@ async function main(): Promise<void> {
   const core = await buildSubset(source, font, CORE_UNICODE_RANGES)
 
   const coreGenPath = new URL(
-    '../packages/core/src/generated/mono-font-subset.ts',
+    '../packages/svg-renderer/src/generated/mono-font-subset.ts',
     import.meta.url,
   )
   const coreGenContent = generatedTsContent(CORE_GENERATED_TS_HEADER, core.css)
   await writeFile(coreGenPath, coreGenContent, 'utf8')
 
   console.log(
-    `Wrote ${coreGenContent.length} bytes to packages/core/src/generated/mono-font-subset.ts ` +
+    `Wrote ${coreGenContent.length} bytes to packages/svg-renderer/src/generated/mono-font-subset.ts ` +
       `(subset: ${core.woff2Bytes} bytes woff2, ${core.base64.length} bytes base64)`,
   )
 }

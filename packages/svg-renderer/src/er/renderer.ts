@@ -8,7 +8,6 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
-  buildStyleBlock,
   renderMultilineText,
   escapeXml as escapeXmlUtil,
   escapeAttr,
@@ -17,6 +16,7 @@ import {
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import {
+  buildSvgStyleBlock,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
@@ -99,7 +99,7 @@ export function renderErSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
   parts.push('<defs>')
   parts.push('</defs>') // No marker defs — we draw crow's foot inline
 

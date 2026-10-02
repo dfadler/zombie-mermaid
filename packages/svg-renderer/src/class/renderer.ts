@@ -10,7 +10,6 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
-  buildStyleBlock,
   getReadableTextColor,
   sanitizeClassName,
   renderMultilineText,
@@ -21,6 +20,7 @@ import {
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import {
+  buildSvgStyleBlock,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
@@ -110,7 +110,7 @@ export function renderClassSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
   parts.push('<defs>')
   parts.push(relationshipMarkerDefs())
   parts.push('</defs>')
