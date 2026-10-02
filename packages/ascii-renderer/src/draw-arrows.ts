@@ -55,6 +55,7 @@ export function drawArrow(
     graph,
     edge.path,
     edge.style,
+    clusterWallEnd(graph, edge),
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -153,6 +154,26 @@ function reverseDirection(dir: Direction): Direction {
 }
 
 /**
+ * Where a cluster-entry edge (`edge.clusterEntered`) ends: on the cluster's
+ * flow-side wall, in the column (row) of its gutter cell, so the arrowhead
+ * lands one cell outside it. Undefined for every other edge, and when the
+ * wall isn't past the gutter cell (the path then ends where it is).
+ */
+function clusterWallEnd(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): DrawingCoord | undefined {
+  const sg = edge.clusterTarget
+  const last = edge.path[edge.path.length - 1]
+  if (!edge.clusterEntered || !sg || !last) return undefined
+  const end = gridToDrawingCoord(graph, last)
+  if (graph.config.graphDirection === 'LR') {
+    return sg.minX > end.x ? { x: sg.minX, y: end.y } : undefined
+  }
+  return sg.minY > end.y ? { x: end.x, y: sg.minY } : undefined
+}
+
+/**
  * Draw the path lines for an edge.
  * Returns the canvas, the coordinates drawn for each segment, and the direction of each segment.
  */
@@ -160,6 +181,7 @@ function drawPath(
   graph: AsciiGraph,
   path: GridCoord[],
   style: AsciiEdgeStyle = 'solid',
+  endOverride?: DrawingCoord,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -171,7 +193,10 @@ function drawPath(
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
     const prevDC = gridToDrawingCoord(graph, previousCoord)
-    const nextDC = gridToDrawingCoord(graph, nextCoord)
+    const nextDC =
+      endOverride && i === path.length - 1
+        ? endOverride
+        : gridToDrawingCoord(graph, nextCoord)
 
     if (drawingCoordEquals(prevDC, nextDC)) {
       previousCoord = nextCoord

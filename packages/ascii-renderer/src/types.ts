@@ -237,6 +237,13 @@ export interface AsciiEdge {
    * edge to that same member. Consumed by the level placement in grid.ts.
    */
   clusterTarget?: AsciiSubgraph
+  /**
+   * Set when `determinePath` gave this edge the cluster-entry shape: the path
+   * ends at a gutter cell just outside `clusterTarget`'s flow-side wall, and
+   * the arrow is drawn up to that wall instead of on into the frame. See
+   * `buildClusterEntryRoute`.
+   */
+  clusterEntered?: boolean
 }
 
 /**

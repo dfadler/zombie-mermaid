@@ -48,12 +48,12 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
     // beside it (the frame is widened to fit, #1248) instead of being split by
     // it or glued to the left border.
     expect(firstLine).toMatch(/^│ First/)
-    expect(secondLine).toMatch(/^│ +│ Second/)
+    expect(secondLine).toMatch(/^│ Second/)
 
     // Exact known-good output (captured from a real renderMermaidASCII run;
     // not fabricated) — locks in the fix precisely.
     expect(firstLine.trimEnd()).toBe('│ First │')
-    expect(secondLine).toBe('│   │ Second│')
+    expect(secondLine).toBe('│ Second│')
   })
 
   it('still centers a title symmetrically when the label/width parity allows it', () => {
