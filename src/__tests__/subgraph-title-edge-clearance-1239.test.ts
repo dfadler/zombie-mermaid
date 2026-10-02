@@ -231,6 +231,37 @@ describe('subgraph title clearance (#1239)', () => {
       expect(e.points.some(besideGroup)).toBe(true)
     })
 
+    it('detours when the target node is unknown', () => {
+      const e = edge(down(120))
+      routeEdgesAroundGroupTitles([e], [group], [])
+      expectDetour(e)
+    })
+
+    it('detours down the right side when the segment is nearer the right wall', () => {
+      // A long title leaves no room right of the text, so shifting is out and
+      // x=300 (of a box spanning 100..400, text running past it) is nearer
+      // the right wall.
+      const wide = { ...group, label: 'A very long subgraph title '.repeat(2) }
+      const e = edge(down(300))
+      routeEdgesAroundGroupTitles([e], [wide], [target])
+      const right = wide.x + wide.width
+      expect(e.points.some((p) => p.x > right && p.y >= wide.y - 10)).toBe(true)
+      expect(e.points[e.points.length - 1]).toEqual({ x: 300, y: 160 })
+    })
+
+    it('starts the detour at the bend when it is already close above the box', () => {
+      const e = edge([
+        { x: 20, y: 95 },
+        { x: 120, y: 95 },
+        { x: 120, y: 160 },
+      ])
+      routeEdgesAroundGroupTitles([e], [group], [])
+      // No extra approach point: the bend itself is the start of the detour.
+      expect(e.points[1]).toEqual({ x: 120, y: 95 })
+      expect(e.points[2]!.y).toBe(95)
+      expect(e.points[2]!.x).toBeLessThan(group.x)
+    })
+
     it('leaves a segment right of the title text untouched', () => {
       const pts = down(300)
       const e = edge(pts.map((p) => ({ ...p })))
