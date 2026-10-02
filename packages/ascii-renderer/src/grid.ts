@@ -1023,13 +1023,17 @@ function placeReachableChildren(
 /**
  * Sources of edges the author addressed to a subgraph id that the converter
  * redirected onto `node`, the cluster's entry member. Empty for every other
- * node, so graphs without subgraph-addressed targets are untouched.
+ * node, so graphs without subgraph-addressed targets are untouched. A source
+ * inside the cluster is not one of them: an internal edge says nothing about
+ * where the cluster sits, and counting it would push the entry member below
+ * its own member (the same rule `buildClusterEntryRoute` applies).
  */
 function clusterEntrySources(graph: AsciiGraph, node: AsciiNode): AsciiNode[] {
   const sources: AsciiNode[] = []
   for (const edge of graph.edges) {
     if (edge.to !== node || !edge.clusterTarget) continue
     if (edge.from === node || sources.includes(edge.from)) continue
+    if (collectSubgraphMembers(edge.clusterTarget).includes(edge.from)) continue
     sources.push(edge.from)
   }
   return sources

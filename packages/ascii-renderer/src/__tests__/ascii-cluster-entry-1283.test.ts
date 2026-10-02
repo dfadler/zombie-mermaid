@@ -231,6 +231,18 @@ describe('ASCII: edge cases of the cluster-entry shape (#1283)', () => {
     expect(out).not.toContain('Sub')
   })
 
+  it('does not count an edge from inside the cluster as a source to clear', () => {
+    // B is placed first (it has its own parent Q). B --> Sub is internal, so
+    // it must not push the entry member A below B (its own
+    // successor).
+    const graph = layout(
+      `graph TD\nX-->Sub\nQ-->B\nsubgraph Sub\nA-->B\nend\nB-->Sub`,
+    )
+    expect(node(graph, 'A').gridCoord!.y).not.toBeGreaterThan(
+      node(graph, 'B').gridCoord!.y,
+    )
+  })
+
   it('places every node for a member that points at its own cluster', () => {
     const graph = layout(`graph TD\nsubgraph Sub\nA-->B\nend\nA-->Sub`)
     expect(graph.nodes.every((n) => n.gridCoord)).toBe(true)
