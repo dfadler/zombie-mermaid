@@ -36,7 +36,7 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
   end
   ONE --> TWO`
 
-  it('never glues a subgraph title to its left border, even when a connector column runs through the title row', () => {
+  it('never glues a subgraph title to its left border, even when a connector column ends at the frame', () => {
     const output = renderMermaidASCII(mermaid)
 
     const firstLine = findTitleLine(output, 'First')
@@ -44,17 +44,16 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
 
     // Both title rows must start with a border char followed by at least
     // one space before the label text — never `│First` or `│Second`. The
-    // connector entering TWO runs through the title row, so TWO's title sits
-    // beside it (the frame is widened to fit, #1248) instead of being split by
-    // it or glued to the left border.
+    // connector entering TWO stops at its wall (#1283) instead of running
+    // through the title row, so no stroke crosses TWO's title and it is
+    // centred like any other, never glued to the left border.
     expect(firstLine).toMatch(/^│ First/)
-    expect(secondLine).toMatch(/^│ +│ Second/)
+    expect(secondLine).toMatch(/^│ Second/)
 
     // Exact known-good output (captured from a real renderMermaidASCII run;
     // not fabricated) — locks in the fix precisely.
     expect(firstLine.trimEnd()).toBe('│ First │')
-    // (TWO keeps a clear column after the title too, #1285.)
-    expect(secondLine).toBe('│   │ Second │')
+    expect(secondLine).toBe('│ Second│')
   })
 
   it('still centers a title symmetrically when the label/width parity allows it', () => {

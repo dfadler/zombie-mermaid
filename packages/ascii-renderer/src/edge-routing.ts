@@ -33,6 +33,7 @@ import { getNodeSubgraph, requireGridCoord } from './grid.ts'
 import { displayWidth } from './display-width.ts'
 import {
   buildClusterExitRoute,
+  buildClusterEntryRoute,
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
@@ -762,6 +763,32 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     // determineLabelLine, treat it as an ordinary edge from here on.
     clusterPlan.edges.delete(edge)
     edge.labelLine = []
+  }
+
+  // An edge addressed to a subgraph id ends at the cluster's wall, not at
+  // the member the converter stood in for it. Falls through to ordinary
+  // routing when the cluster-entry shape doesn't fit (see
+  // buildClusterEntryRoute); a style-conflict reroute re-enters here.
+  if (edge.clusterTarget) {
+    const route = buildClusterEntryRoute(graph, edge)
+    if (route) {
+      edge.startDir = route.startDir
+      edge.endDir = route.endDir
+      edge.path = route.path
+      edge.clusterEntered = true
+      // The arrow runs on to the wall, past the gutter cell, so the
+      // label's column needs room for the text, the arrowhead and the wall.
+      const gutter = route.path[route.path.length - 1]!
+      if (edge.text.length > 0 && graph.config.graphDirection === 'LR') {
+        const current = graph.columnWidth.get(gutter.x) ?? 0
+        graph.columnWidth.set(
+          gutter.x,
+          Math.max(current, displayWidth(edge.text) + 5),
+        )
+      }
+      return
+    }
+    edge.clusterEntered = false
   }
 
   // Edges after the first in a true-parallel (same source AND target) group

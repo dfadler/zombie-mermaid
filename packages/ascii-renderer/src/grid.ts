@@ -904,9 +904,15 @@ function placeReachableChildren(
   graph: AsciiGraph,
   highestPositionPerLevel: number[],
 ): void {
+  // Set once a pass stalls with children still held back for a cluster
+  // entry (see `clusterEntrySources`): their sources can't all be placed
+  // first (a back-edge into the cluster), so they go in on what is known.
+  let forceHeld = false
+  const reservedSlot = new Set<AsciiNode>()
   let progressed = true
   while (progressed) {
     progressed = false
+    let held = false
 
     // Visit already-placed nodes in cross-axis order (left-to-right for TD,
     // top-to-bottom for LR) rather than raw `graph.nodes` declaration
@@ -942,6 +948,26 @@ function placeReachableChildren(
       for (const child of children) {
         if (child.gridCoord !== null) continue // already placed
 
+        // An edge addressed to a subgraph (`Y --> Sub`) must land the whole
+        // cluster below its source, as real mermaid ranks the cluster as
+        // one node. Hold the entry member until every such source is on the
+        // grid, then place it past the deepest one.
+        const entrySources = clusterEntrySources(graph, child)
+        if (!forceHeld && entrySources.some((s) => s.gridCoord === null)) {
+          held = true
+          // Keep the slot the held child would have taken at this level, so
+          // a sibling placed meanwhile stays in line with its own parent
+          // and the held child's edge drops through the gap.
+          if (!reservedSlot.has(child)) {
+            reservedSlot.add(child)
+            const level =
+              graph.config.graphDirection === 'LR' ? gc.x + 4 : gc.y + 4
+            highestPositionPerLevel[level] =
+              (highestPositionPerLevel[level] ?? 0) + 4
+          }
+          continue
+        }
+
         // Determine direction for this edge (parent -> child)
         // Use subgraph direction only if both are in the same subgraph with override
         const parentSg = getNodeSubgraph(graph, node)
@@ -951,7 +977,17 @@ function placeReachableChildren(
             ? parentSg.direction
             : graph.config.graphDirection
 
-        const childLevel = edgeDir === 'LR' ? gc.x + 4 : gc.y + 4
+        let childLevel = edgeDir === 'LR' ? gc.x + 4 : gc.y + 4
+        if (edgeDir === graph.config.graphDirection) {
+          for (const source of entrySources) {
+            const sgc = source.gridCoord
+            if (!sgc) continue
+            childLevel = Math.max(
+              childLevel,
+              edgeDir === 'LR' ? sgc.x + 4 : sgc.y + 4,
+            )
+          }
+        }
 
         // Determine position based on direction context
         let highestPosition: number
@@ -977,7 +1013,30 @@ function placeReachableChildren(
         progressed = true
       }
     }
+    if (!progressed && held && !forceHeld) {
+      forceHeld = true
+      progressed = true
+    }
   }
+}
+
+/**
+ * Sources of edges the author addressed to a subgraph id that the converter
+ * redirected onto `node`, the cluster's entry member. Empty for every other
+ * node, so graphs without subgraph-addressed targets are untouched. A source
+ * inside the cluster is not one of them: an internal edge says nothing about
+ * where the cluster sits, and counting it would push the entry member below
+ * its own member (the same rule `buildClusterEntryRoute` applies).
+ */
+function clusterEntrySources(graph: AsciiGraph, node: AsciiNode): AsciiNode[] {
+  const sources: AsciiNode[] = []
+  for (const edge of graph.edges) {
+    if (edge.to !== node || !edge.clusterTarget) continue
+    if (edge.from === node || sources.includes(edge.from)) continue
+    if (collectSubgraphMembers(edge.clusterTarget).includes(edge.from)) continue
+    sources.push(edge.from)
+  }
+  return sources
 }
 
 /**
