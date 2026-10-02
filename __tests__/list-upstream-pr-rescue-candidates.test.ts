@@ -172,10 +172,14 @@ describe('toMarkdownTable', () => {
   })
 
   it('strips control, bidi and zero-width characters', () => {
-    const title = 'a\x1b]52;c;ZXZpbA==\x07b‮c​d⁦e'
+    // Built from code points so this file never contains literal bidi or
+    // zero-width characters (Trojan Source; Semgrep blocks them).
+    const [rlo, zwsp, lri] = [0x202e, 0x200b, 0x2066].map((c) =>
+      String.fromCodePoint(c),
+    )
+    const title = `a\x1b]52;c;ZXZpbA==\x07b${rlo}c${zwsp}d${lri}e`
     const row = toMarkdownTable([{ ...base, title }]).split('\n')[2]!
-    // eslint-disable-next-line no-control-regex -- asserting these are gone
-    expect(row).not.toMatch(/[\x00-\x08\x0b-\x1f\x7f‮​⁦]/)
+    expect(row).not.toMatch(/\p{Cc}|\p{Cf}/u)
     expect(row).toContain('`a]52;c;ZXZpbA==bcde`')
   })
 
