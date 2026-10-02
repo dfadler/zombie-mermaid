@@ -623,7 +623,18 @@ export function widenGapsForFrameTitles(graph: AsciiGraph): boolean {
         const deficit = a.maxX + 2 - b.minX
         if (deficit <= 0) continue
         const bothRoot = a.parent === null && b.parent === null
-        if (bothRoot && b.maxX - (a.maxX + 2) >= titleRequiredWidth(b)) continue
+        // The pushed wall must also stay clear of b's own nodes: a wall pushed
+        // onto a node's left edge draws a junction over its box corner (#1288).
+        const pushedWall = a.maxX + 2
+        const nodesClearWall = collectSubgraphMembers(b).every(
+          (m) => !m.drawingCoord || m.drawingCoord.x > pushedWall,
+        )
+        if (
+          bothRoot &&
+          nodesClearWall &&
+          b.maxX - pushedWall >= titleRequiredWidth(b)
+        )
+          continue
         const boxA = memberGridBox(a)
         const boxB = memberGridBox(b)
         if (!boxA || !boxB || boxA.maxX + 1 >= boxB.minX) continue
