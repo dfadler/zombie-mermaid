@@ -22,8 +22,14 @@ import type { MermaidGraph } from '@zombie-mermaid/core'
 /**
  * Indices into `graph.edges` of the edges a depth-first walk reverses.
  * Self-loops are never back edges here; layout handles them on their own.
+ *
+ * `walkOrder` is the order the walk starts from; it defaults to the graph's
+ * node order, which is mermaid's (first appearance in the source).
  */
-export function findBackEdgeIndexes(graph: MermaidGraph): Set<number> {
+export function findBackEdgeIndexes(
+  graph: MermaidGraph,
+  walkOrder?: Iterable<string>,
+): Set<number> {
   const outEdges = new Map<string, number[]>()
   graph.edges.forEach((edge, index) => {
     if (edge.source === edge.target) return
@@ -37,7 +43,7 @@ export function findBackEdgeIndexes(graph: MermaidGraph): Set<number> {
   const onStack = new Set<string>()
 
   // Iterative, so a long chain can't overflow the call stack.
-  for (const root of graph.nodes.keys()) {
+  for (const root of walkOrder ?? graph.nodes.keys()) {
     if (visited.has(root)) continue
     const stack: Array<{ node: string; next: number }> = [
       { node: root, next: 0 },

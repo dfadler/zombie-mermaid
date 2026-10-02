@@ -81,7 +81,7 @@ import { layoutClassDiagramSync } from './class/layout.ts'
 import { renderClassSvg } from './class/renderer.ts'
 import { layoutC4DiagramSync } from './c4/layout.ts'
 import { renderC4Svg } from './c4/renderer.ts'
-import { layoutGraphSync } from './layout-engine.ts'
+import { layoutFlowchartSync, layoutGraphSync } from './layout-engine.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
 import { parseMermaid } from '../../../src/parser.ts'
 
@@ -309,7 +309,7 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
     // see the doc comment on `PositionedFlowchart` above.
     const graph = withDirectionOverride(diagram, options.direction)
     return {
-      graph: layoutGraphSync(graph, options),
+      graph: layoutFlowchartSync(graph, options),
       curve: options.curve ?? diagram.initConfig?.curve ?? 'linear',
     }
   },
