@@ -8,7 +8,7 @@
  * pins the specific wrong behavior, not just "it works now".
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidASCII, renderMermaidSVG } from '../index.ts'
 
 /** Parse one flowchart statement and return the resulting graph. */

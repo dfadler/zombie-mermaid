@@ -32,7 +32,7 @@ import {
   layoutErDiagramSync,
   layoutXYChart,
 } from '@zombie-mermaid/svg-renderer'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import {
   parseSequenceDiagram,
   parseClassDiagram,

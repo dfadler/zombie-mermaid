@@ -22,8 +22,8 @@ import {
   matchExpandedBlock,
   parseExpandedMeta,
   resolveShapeName,
-} from '@zombie-mermaid/mermaid-parser'
-import type { ExpandedNodeMeta } from '@zombie-mermaid/mermaid-parser'
+} from './expanded-shapes.ts'
+import type { ExpandedNodeMeta } from './expanded-shapes.ts'
 /** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
 function stripWrappingQuotes(s: string): string {
   const t = s.trim()

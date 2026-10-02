@@ -10,7 +10,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import { parseMermaid } from '../../../../src/parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping, gridToDrawingCoord } from '../grid.ts'
 import { planClusterExits } from '../cluster-boundary.ts'

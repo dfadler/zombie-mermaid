@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
 
 interface Point {

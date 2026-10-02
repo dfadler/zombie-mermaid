@@ -10,7 +10,7 @@
  * - Comments and error cases
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 // `isDirection` moved to @zombie-mermaid/core under #625; `toDirection`
 // followed it under #624 once `er/parser.ts` (now
 // packages/mermaid-parser/src/er/parser.ts) became a second caller that
