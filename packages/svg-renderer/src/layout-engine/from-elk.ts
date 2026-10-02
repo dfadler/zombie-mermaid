@@ -23,6 +23,7 @@ import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
 import { routeBackEdgesIntoGroups } from './back-edge-routing.ts'
+import { snapEdgesToDiamondVertices } from './diamond-vertex-snap.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -221,6 +222,10 @@ export function elkToPositioned(
   if (mergeEdges) {
     bundleEdgePaths(edges, nodes, groups, graph.direction)
   }
+
+  // Aim an edge that meets a diamond straight on at its vertex, so clipping
+  // lands it there and not on a slope (#1239).
+  snapEdgesToDiamondVertices(edges, nodes)
 
   // Apply shape-aware edge clipping for non-rectangular shapes.
   // ELK treats all nodes as rectangles, so we need to clip edge endpoints
