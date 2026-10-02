@@ -170,9 +170,11 @@ async function main(): Promise<number> {
           failing.push(`${sample.title} (${Math.round(low * 100)}%)`)
         }
       } catch (err) {
-        rows.push(
-          `ERR  ${sample.title}: ${(err as Error).message.split('\n')[0]}`,
-        )
+        const message = (err as Error).message.split('\n')[0]
+        rows.push(`ERR  ${sample.title}: ${message}`)
+        if (args.failBelow !== undefined) {
+          failing.push(`${sample.title} (error)`)
+        }
       }
     }
   } finally {
