@@ -17,9 +17,18 @@
  * Flags:
  *   --json   print the raw candidate array as JSON instead of a Markdown table
  *   --limit  cap how many PRs to fetch (default 100)
+ *   --seen=<file>  only report PRs whose number isn't in this JSON array of
+ *            already-triaged PR numbers (missing file = nothing seen yet)
+ *   --write-seen  with --seen, rewrite that file with every currently-open
+ *            PR number (sorted), so closed/merged upstream PRs drop out
+ *
+ * `.github/workflows/upstream-pr-rescue.yml` runs this weekly with
+ * `--seen=docs/promotion/upstream-pr-seen.json --write-seen` and opens a PR
+ * when new candidates show up.
  */
 
 import { execFile } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
@@ -112,6 +121,30 @@ export async function fetchRescueCandidates(
     .sort((a, b) => b.ageDays - a.ageDays)
 }
 
+/** Candidates whose PR number isn't in `seen`. */
+export function filterUnseen(
+  candidates: RescueCandidate[],
+  seen: readonly number[],
+): RescueCandidate[] {
+  const seenSet = new Set(seen)
+  return candidates.filter((c) => !seenSet.has(c.number))
+}
+
+function readSeen(path: string): number[] {
+  let text: string
+  try {
+    text = readFileSync(path, 'utf8')
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw err
+  }
+  const parsed: unknown = JSON.parse(text)
+  if (!Array.isArray(parsed) || !parsed.every((n) => typeof n === 'number')) {
+    throw new Error(`${path} must be a JSON array of PR numbers`)
+  }
+  return parsed
+}
+
 function toMarkdownTable(candidates: RescueCandidate[]): string {
   const header =
     '| PR | Age (days) | Author | Title | +/- | Files | Draft | Mergeable |\n' +
@@ -129,7 +162,18 @@ export async function main() {
   const limitArg = args.find((a) => a.startsWith('--limit='))
   const limit = limitArg ? Number(limitArg.split('=')[1]) : 100
 
-  const candidates = await fetchRescueCandidates(limit)
+  const seenArg = args.find((a) => a.startsWith('--seen='))
+  const seenPath = seenArg ? seenArg.slice('--seen='.length) : undefined
+  const writeSeen = args.includes('--write-seen')
+  if (writeSeen && !seenPath)
+    throw new Error('--write-seen requires --seen=<file>')
+
+  const all = await fetchRescueCandidates(limit)
+  const candidates = seenPath ? filterUnseen(all, readSeen(seenPath)) : all
+  if (seenPath && writeSeen) {
+    const numbers = all.map((c) => c.number).sort((a, b) => a - b)
+    writeFileSync(seenPath, JSON.stringify(numbers, null, 2) + '\n')
+  }
 
   if (asJson) {
     console.log(JSON.stringify(candidates, null, 2))
@@ -140,10 +184,10 @@ export async function main() {
     `## Upstream PR-rescue candidates (${UPSTREAM.owner}/${UPSTREAM.name})\n`,
   )
   console.log(
-    `${candidates.length} open PR(s), oldest first. Generated ${new Date().toISOString()}.\n`,
+    `${candidates.length} ${seenPath ? 'new ' : ''}open PR(s), oldest first. Generated ${new Date().toISOString()}.\n`,
   )
   if (candidates.length === 0) {
-    console.log('No open PRs upstream.')
+    console.log(seenPath ? 'No new PRs upstream.' : 'No open PRs upstream.')
     return
   }
   console.log(toMarkdownTable(candidates))

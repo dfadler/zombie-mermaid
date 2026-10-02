@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   UPSTREAM,
   fetchRescueCandidates,
+  filterUnseen,
+  type RescueCandidate,
   type GhFn,
 } from '../scripts/list-upstream-pr-rescue-candidates.ts'
 
@@ -104,5 +106,18 @@ describe('fetchRescueCandidates', () => {
     expect(args).toContain('list')
     expect(args).toContain(`${UPSTREAM.owner}/${UPSTREAM.name}`)
     expect(args).toContain('42')
+  })
+})
+
+describe('filterUnseen', () => {
+  const cand = (number: number) => ({ number }) as RescueCandidate
+
+  it('drops candidates whose number is already seen, keeping order', () => {
+    const result = filterUnseen([cand(3), cand(1), cand(2)], [1, 2])
+    expect(result.map((c) => c.number)).toEqual([3])
+  })
+
+  it('returns everything when nothing has been seen', () => {
+    expect(filterUnseen([cand(1), cand(2)], [])).toHaveLength(2)
   })
 })
