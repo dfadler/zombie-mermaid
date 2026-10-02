@@ -97,7 +97,7 @@ const ASSUMED_SLOPE = 0.25
 const MIN_SLOPE = 0.02
 
 /** Space kept between a box and the nodes and boxes around it, in px. */
-const BOX_CLEARANCE = 12
+const BOX_CLEARANCE = 40
 
 /** Left and right room the title text needs inside its box, in px. */
 const TITLE_INSET = 12
