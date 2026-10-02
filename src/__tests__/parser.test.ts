@@ -1131,6 +1131,33 @@ describe('parseMermaid – subgraphs', () => {
     expect(outer.nodeIds).toContain('D')
   })
 
+  it('adopts a bare node declared earlier outside any subgraph (#1289)', () => {
+    const g = parseMermaid(`graph TD
+      X --> A
+      X --> B
+      subgraph SA[Alpha]
+        A
+      end
+      subgraph SB[Beta]
+        B
+      end`)
+    expect(g.subgraphs.find((sg) => sg.id === 'SA')!.nodeIds).toEqual(['A'])
+    expect(g.subgraphs.find((sg) => sg.id === 'SB')!.nodeIds).toEqual(['B'])
+  })
+
+  it('keeps an already-claimed node in its first subgraph when later bare-referenced (#1289)', () => {
+    const g = parseMermaid(`graph TD
+      subgraph S1
+        A
+      end
+      subgraph S2
+        A
+        B
+      end`)
+    expect(g.subgraphs.find((sg) => sg.id === 'S1')!.nodeIds).toEqual(['A'])
+    expect(g.subgraphs.find((sg) => sg.id === 'S2')!.nodeIds).toEqual(['B'])
+  })
+
   it('does NOT track nodes in subgraphs where they are merely referenced (regression)', () => {
     // This diagram has cross-subgraph edges:
     // - B is defined in "clients" but referenced in "services"
