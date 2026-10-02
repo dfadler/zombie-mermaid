@@ -30,6 +30,7 @@ import {
   ARROW_HEAD,
 } from './styles.ts'
 import { pointsToPath } from './edge-curves.ts'
+import { edgeCrossesTitle, titleGapMask, titleTextBoxes } from './title-gaps.ts'
 
 // ============================================================================
 // SVG renderer — converts a PositionedGraph into an SVG string.
@@ -143,6 +144,19 @@ export function renderSvg(
   for (const color of customStrokeColors) {
     parts.push(arrowMarkerDefsForColor(color))
   }
+  // An edge that crosses a subgraph's title text is not painted over the text
+  // (#1239). The mask is only emitted when some edge does, so a diagram with
+  // no such edge is unchanged.
+  const titleBoxes = titleTextBoxes(graph.groups, fontSizes)
+  const crossingEdges = new Set(
+    graph.edges.filter((e) => edgeCrossesTitle(e, titleBoxes)),
+  )
+  let titleGapMaskId: string | undefined
+  if (crossingEdges.size > 0) {
+    const mask = titleGapMask(titleBoxes, graph.width, graph.height)
+    titleGapMaskId = mask.id
+    parts.push(mask.markup)
+  }
   parts.push('</defs>')
 
   // 1. Subgraph backgrounds (group rectangles with header bands)
@@ -153,7 +167,14 @@ export function renderSvg(
   // 2. Edges (paths — rendered behind nodes)
   // Each edge is a <path> with semantic data-* attributes
   for (const edge of graph.edges) {
-    parts.push(renderEdge(edge, curve, animationEnabled))
+    parts.push(
+      renderEdge(
+        edge,
+        curve,
+        animationEnabled,
+        crossingEdges.has(edge) ? titleGapMaskId : undefined,
+      ),
+    )
   }
 
   // 3. Edge labels (positioned at midpoint of edge)
@@ -315,6 +336,7 @@ function renderEdge(
   edge: PositionedEdge,
   curve: CurveStyle,
   animationEnabled: boolean = true,
+  titleGapMaskId?: string,
 ): string {
   if (edge.points.length < 2) return ''
 
@@ -402,7 +424,9 @@ function renderEdge(
   return (
     f`<${curved ? 'path' : 'polyline'} ${dataAttrs.join(' ')} ${geometry} ` +
     f`fill="none" stroke="${strokeColor}" ` +
-    f`stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers} />`
+    f`stroke-width="${strokeWidth}"${dashArray}${animatedDash}${markers}` +
+    (titleGapMaskId ? f` mask="url(#${titleGapMaskId})"` : '') +
+    ' />'
   )
 }
 
