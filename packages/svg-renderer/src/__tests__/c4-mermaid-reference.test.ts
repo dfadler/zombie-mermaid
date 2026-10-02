@@ -43,6 +43,11 @@ const WIDER: Record<string, number[]> = {
   'v02-person-targets': [3],
 }
 const LABEL = 10
+// Deliberate difference (#1209): Mermaid merges two relationships with the
+// same from/to (the later one wins, one line drawn). This package draws both,
+// so a relationship the author wrote is never dropped. Each entry is a case
+// where Mermaid drew `n` lines for a source with `n + 1` relationships.
+const DUPLICATE_PAIRS = new Set(['v07-dynamic'])
 
 describe('C4 SVG layout against Mermaid on varied diagrams', () => {
   it('covers a spread of diagrams', () => {
@@ -64,9 +69,24 @@ describe('C4 SVG layout against Mermaid on varied diagrams', () => {
         expect(Math.abs(cy - r[1]), `${e.alias} centre y`).toBeLessThan(Y)
       }
 
-      // Mermaid merges two relationships between the same pair; this draws
-      // both, so the lines only line up when the counts agree.
-      if (ref.relationships.length !== d.relationships.length) return
+      // Mermaid merges duplicate pairs and this package draws both (see
+      // DUPLICATE_PAIRS), so the lines only line up when the counts agree.
+      // A count mismatch is only allowed for a listed case, and there it must
+      // be exactly the duplicate that is drawn extra.
+      if (DUPLICATE_PAIRS.has(ref.name)) {
+        expect(d.relationships.length, 'both duplicate lines drawn').toBe(
+          ref.relationships.length + 1,
+        )
+        const pairs = d.relationships.map((r) => `${r.from}>${r.to}`)
+        expect(
+          new Set(pairs).size,
+          'a pair is drawn twice, as written',
+        ).toBeLessThan(pairs.length)
+        return
+      }
+      expect(d.relationships.length, 'relationship count').toBe(
+        ref.relationships.length,
+      )
       d.relationships.forEach((rel, i) => {
         const r = ref.relationships[i]!
         const [s, e] = rel.points

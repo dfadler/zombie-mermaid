@@ -739,6 +739,7 @@ Known limitations:
 - ASCII output is always top-to-bottom (`BT` reverses the rows; `LR`/`RL` are laid out top-to-bottom).
 - `UpdateElementStyle`, `UpdateRelStyle`, `UpdateLayoutConfig`, legends and tags are accepted and ignored. Elements use the standard C4 palette.
 - A relationship from an element to itself is not drawn in ASCII.
+- Two relationships with the same `from` and `to` (for example `Rel(a, b, ...)` and `Rel_Back(a, b, ...)`) are both drawn. Mermaid merges them and draws only the later one; we keep both so nothing the author wrote is dropped (#1209).
 
 ## Accessibility
 
