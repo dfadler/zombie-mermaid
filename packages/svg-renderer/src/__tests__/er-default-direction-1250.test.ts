@@ -47,11 +47,11 @@ describe('ER default layout direction (#1250)', () => {
   ORDER ||--|{ LINE_ITEM : contains
   PRODUCT ||--o{ LINE_ITEM : includes`)
     const box = (id: string): { left: number; right: number } => {
-      const m = svg.match(
-        new RegExp(
-          `data-id="${id}"[^>]*>\\s*<rect x="([\\d.]+)"[^>]*width="([\\d.]+)"`,
-        ),
-      )
+      const start = svg.indexOf(`data-id="${id}"`)
+      expect(start).toBeGreaterThanOrEqual(0)
+      const m = svg
+        .slice(start)
+        .match(/>\s*<rect x="([\d.]+)"[^>]*width="([\d.]+)"/)
       expect(m).not.toBeNull()
       const x = Number(m?.[1])
       return { left: x, right: x + Number(m?.[2]) }
