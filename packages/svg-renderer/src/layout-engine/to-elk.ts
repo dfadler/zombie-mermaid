@@ -18,6 +18,7 @@ import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
 import { measureMultilineText } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 import { findBackEdgeIndexes } from './back-edges.ts'
+import type { LayoutHints } from './layout-hints.ts'
 import {
   ELK_DIRECTION_FALLBACK,
   INLINE_CENTERED_EDGE_LABEL,
@@ -68,12 +69,19 @@ const STATE_LAYOUT_OPTIONS: LayoutOptions = {
  * first-mention position (see `firstMentionRank`), so `MODEL_ORDER` reads
  * them in source order instead of after every leaf (#1287).
  */
-function isStateGraph(graph: MermaidGraph): boolean {
+export function isStateGraph(graph: MermaidGraph): boolean {
   for (const node of graph.nodes.values()) {
     if (node.shape === 'state-start' || node.shape === 'state-end') return true
   }
   return false
 }
+
+/**
+ * Room a subgraph's box leaves around its contents, in px. The top is the
+ * title bar (28) plus a gap (16) to match the bottom. Shared with the compound
+ * layout, which draws the boxes itself.
+ */
+export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 
 const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
 
@@ -86,13 +94,18 @@ const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
  * graph with a subgraph direction override goes through hop edges and ports
  * that this does not rewrite.
  */
-export function edgesReversedForLayout(graph: MermaidGraph): Set<number> {
+export function edgesReversedForLayout(
+  graph: MermaidGraph,
+  hints?: LayoutHints,
+): Set<number> {
+  // Worked out once per graph object, by whichever of `mermaidToElk` (which
+  // has the hints) and `elkToPositioned` (which doesn't need them) asks first.
   let set = reversedCache.get(graph)
   if (!set) {
     set =
       isStateGraph(graph) || hasAnyDirectionOverride(graph.subgraphs)
         ? new Set()
-        : findBackEdgeIndexes(graph)
+        : findBackEdgeIndexes(graph, hints?.walkOrder)
     reversedCache.set(graph, set)
   }
   return set
@@ -239,7 +252,7 @@ const ROOT_CONTAINER = ' root'
  * compound node's own `elk.direction`) for exactly the diagrams that need
  * `SEPARATE` the most.
  */
-function hasAnyDirectionOverride(subgraphs: MermaidSubgraph[]): boolean {
+export function hasAnyDirectionOverride(subgraphs: MermaidSubgraph[]): boolean {
   for (const sg of subgraphs) {
     if (sg.direction !== undefined) return true
     if (hasAnyDirectionOverride(sg.children)) return true
@@ -314,10 +327,16 @@ function commonPrefixLength(a: string[], b: string[]): number {
  */
 export function mermaidToElk(
   graph: MermaidGraph,
-  opts: Required<
+  givenOpts: Required<
     Pick<RenderOptions, 'font' | 'padding' | 'nodeSpacing' | 'layerSpacing'>
   > & { fontSizes: FontSizes },
+  hints?: LayoutHints,
 ): ElkGraphNode {
+  const opts = {
+    ...givenOpts,
+    nodeSpacing: givenOpts.nodeSpacing + (hints?.extraNodeSpacing ?? 0),
+    layerSpacing: givenOpts.layerSpacing + (hints?.extraLayerSpacing ?? 0),
+  }
   // Collect all node IDs that belong to subgraphs
   const subgraphNodeIds = new Set<string>()
   const subgraphIds = new Set<string>()
@@ -408,6 +427,11 @@ export function mermaidToElk(
     'elk.layered.compaction.postCompaction.strategy':
       'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+    // Every layer keeps the nodes in the order the graph lists them: the
+    // compound layout relies on it to keep a subgraph's nodes together.
+    ...(hints?.forceNodeOrder
+      ? { 'elk.layered.crossingMinimization.forceNodeModelOrder': 'true' }
+      : {}),
     ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
@@ -415,6 +439,14 @@ export function mermaidToElk(
     'elk.hierarchyHandling': hasDirectionOverride
       ? 'SEPARATE'
       : 'INCLUDE_CHILDREN',
+  }
+  if (hints?.extraLayerSpacing) {
+    // Between two layers that many edges run through, the gap is the routing
+    // channel, not the node spacing, so widen what is kept around the channel
+    // too (it counts once on each side).
+    rootLayoutOptions['elk.layered.spacing.edgeNodeBetweenLayers'] = String(
+      12 + hints.extraLayerSpacing / 2,
+    )
   }
 
   // Ports to declare on each subgraph's ELK node, keyed by subgraph ID.
@@ -516,6 +548,8 @@ export function mermaidToElk(
         node.shape,
         opts.fontSizes.nodeLabel,
       )
+      const fixedWidth = hints?.fixedWidths?.get(id)
+      if (fixedWidth !== undefined) size.width = fixedWidth
       const leaf = buildElkLeafNode(id, size, node.label)
       // A top-level start `[*]` marks where reading starts: pin it to the
       // first layer so a back-edge can't drag it into the middle. The end
@@ -599,18 +633,24 @@ export function mermaidToElk(
   // excluded — ELK has no native self-loop layout and produces a degenerate
   // zero-length-span polyline for them; from-elk.ts synthesizes a proper
   // side loop for these once node positions are known instead.
-  const reversed = edgesReversedForLayout(graph)
+  const reversed = edgesReversedForLayout(graph, hints)
   for (const { index, edge } of edgesBySubgraph.get(null)!) {
     if (edge.source === edge.target) continue
-    rootEdges.push(
-      buildElkEdge({
-        id: `e${index}`,
-        source: reversed.has(index) ? edge.target : edge.source,
-        target: reversed.has(index) ? edge.source : edge.target,
-        label: edge.label,
-        labelStyle: edgeLabelStyle(opts),
-      }),
-    )
+    const elkEdge = buildElkEdge({
+      id: `e${index}`,
+      source: reversed.has(index) ? edge.target : edge.source,
+      target: reversed.has(index) ? edge.source : edge.target,
+      label: edge.label,
+      labelStyle: edgeLabelStyle(opts),
+    })
+    if (hints?.looseEdges?.has(index)) {
+      // Priority 0: the straightening pass leaves this edge alone.
+      elkEdge.layoutOptions = {
+        ...elkEdge.layoutOptions,
+        'elk.layered.priority.straightness': '0',
+      }
+    }
+    rootEdges.push(elkEdge)
   }
 
   if (hasDirectionOverride) {
@@ -689,8 +729,7 @@ function subgraphToElk(
     direction: directionToElk(effectiveDirection),
     nodeSpacing: opts.nodeSpacing,
     layerSpacing: opts.layerSpacing,
-    // Top = headerHeight(28) + gap(16) to match bottom padding
-    padding: { top: 44, left: 16, bottom: 16, right: 16 },
+    padding: SUBGRAPH_PADDING,
   })
 
   // Ports, built before children/edges since they don't depend on them.
