@@ -107,6 +107,9 @@ describe('subgraph title clearance (#1239)', () => {
       height: 200,
       children: [],
     }
+    // A point on the detour down the side of the box (the edge's own first
+    // point also lies left of the box, but far above it).
+    const besideGroup = (p: Point) => p.x < group.x && p.y >= group.y - 10
     const target: PositionedNode = {
       id: 'b',
       label: 'B',
@@ -145,13 +148,87 @@ describe('subgraph title clearance (#1239)', () => {
       const narrow = { ...target, width: 30 }
       const e = edge(down(120))
       routeEdgesAroundGroupTitles([e], [group], [narrow])
-      expect(e.points.some((p) => p.x < group.x)).toBe(true)
+      expect(e.points.some(besideGroup)).toBe(true)
       expect(e.points[e.points.length - 1]).toEqual({ x: 120, y: 160 })
       for (let i = 0; i + 1 < e.points.length; i++) {
         expect(segmentHitsTitle(e.points[i]!, e.points[i + 1]!, group)).toBe(
           false,
         )
       }
+    })
+
+    const expectDetour = (e: PositionedEdge) => {
+      expect(e.points.some(besideGroup)).toBe(true)
+      expect(e.points[e.points.length - 1]).toEqual({ x: 120, y: 160 })
+      for (let i = 0; i + 1 < e.points.length; i++) {
+        expect(segmentHitsTitle(e.points[i]!, e.points[i + 1]!, group)).toBe(
+          false,
+        )
+      }
+    }
+
+    it('shifts a segment that is followed by a horizontal run', () => {
+      const e = edge([
+        { x: 20, y: 60 },
+        { x: 120, y: 60 },
+        { x: 120, y: 160 },
+        { x: 200, y: 160 },
+      ])
+      routeEdgesAroundGroupTitles([e], [group], [target])
+      expect(e.points).toHaveLength(4)
+      expect(e.points[1]!.x).toBe(e.points[2]!.x)
+      expect(e.points[1]!.x).toBeGreaterThan(textBox(group).right)
+      expect(e.points[3]).toEqual({ x: 200, y: 160 })
+    })
+
+    it('detours when the segment is followed by another vertical run', () => {
+      const e = edge([
+        { x: 20, y: 60 },
+        { x: 120, y: 60 },
+        { x: 120, y: 160 },
+        { x: 120, y: 200 },
+      ])
+      routeEdgesAroundGroupTitles([e], [group], [target])
+      expect(e.points.some(besideGroup)).toBe(true)
+      expect(e.points[e.points.length - 1]).toEqual({ x: 120, y: 200 })
+    })
+
+    it('detours when the segment is the first of the edge', () => {
+      const e = edge([
+        { x: 120, y: 60 },
+        { x: 120, y: 160 },
+      ])
+      routeEdgesAroundGroupTitles([e], [group], [target])
+      expectDetour(e)
+    })
+
+    it('detours when the segment is not fed by a horizontal run', () => {
+      const e = edge([
+        { x: 120, y: 20 },
+        { x: 120, y: 60 },
+        { x: 120, y: 160 },
+      ])
+      routeEdgesAroundGroupTitles([e], [group], [target])
+      expectDetour(e)
+    })
+
+    it('detours when another node sits where the shifted segment would run', () => {
+      const blocker: PositionedNode = {
+        ...target,
+        id: 'c',
+        x: 150,
+        y: 140,
+        width: 100,
+        height: 20,
+      }
+      const e = edge([
+        { x: 20, y: 60 },
+        { x: 120, y: 60 },
+        { x: 120, y: 200 },
+        { x: 200, y: 200 },
+      ])
+      routeEdgesAroundGroupTitles([e], [group], [target, blocker])
+      expect(e.points.some(besideGroup)).toBe(true)
     })
 
     it('leaves a segment right of the title text untouched', () => {
