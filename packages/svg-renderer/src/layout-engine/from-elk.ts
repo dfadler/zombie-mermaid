@@ -745,7 +745,7 @@ function collectAllSubgraphIds(sg: MermaidSubgraph, out: Set<string>): void {
  * Resolve inline styles for an edge from linkStyles map.
  * Default link style is applied first, then index-specific overrides.
  */
-function resolveEdgeStyle(
+export function resolveEdgeStyle(
   edgeIndex: number,
   graph: MermaidGraph,
 ): Record<string, string> | undefined {

@@ -46,6 +46,8 @@ import { measureMultilineText } from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
 import { ARROW_HEAD, FONT_WEIGHTS } from '../styles.ts'
 import { DEFAULTS } from './constants.ts'
+import { resolveEdgeStyle } from './from-elk.ts'
+import { labelSpot, routeInnerEdge } from './inner-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
 import {
   SUBGRAPH_PADDING,
@@ -584,6 +586,7 @@ export function layoutCompoundFlat(
   const settle = (
     extraNodeSpacing: number,
     extraLayerSpacing: number,
+    detachedEdges: ReadonlySet<number>,
   ):
     | PositionedGraph
     | { room: { cross: number; along: number } }
@@ -604,6 +607,7 @@ export function layoutCompoundFlat(
         extraLayerSpacing,
         fixedWidths,
         looseEdges,
+        detachedEdges,
         walkOrder: realOrder,
         forceNodeOrder: true,
       })
@@ -621,9 +625,15 @@ export function layoutCompoundFlat(
       )
       if (stuck) return undefined
       if (penetration.size === 0) {
-        return room.cross > 0 || room.along > 0
-          ? { room }
-          : assemble(laidOut, [...real.values()], groups)
+        if (room.cross > 0 || room.along > 0) return { room }
+        const inner = routeDetached(
+          graph,
+          detachedEdges,
+          real,
+          groups,
+          clusters,
+        )
+        return inner && assemble(laidOut, [...real.values()], groups, inner)
       }
       if (round === MAX_WIDENINGS) return undefined
       for (const [id, overlap] of penetration) {
@@ -645,16 +655,131 @@ export function layoutCompoundFlat(
   // Normally the gaps ELK leaves are enough. Boxes side by side, or one above
   // another, need their paddings' worth more: give them what they asked for and
   // try again.
-  let nodeSpacing = 0
-  let layerSpacing = 0
-  for (let attempt = 0; attempt <= MAX_SPACING_ATTEMPTS; attempt++) {
-    const result = settle(nodeSpacing, layerSpacing)
-    if (!result) return undefined
-    if ('nodes' in result) return result
-    nodeSpacing += result.room.cross + SPACING_SLACK
-    layerSpacing += result.room.along + SPACING_SLACK
+  const solve = (
+    detached: ReadonlySet<number>,
+  ): PositionedGraph | undefined => {
+    let nodeSpacing = 0
+    let layerSpacing = 0
+    for (let attempt = 0; attempt <= MAX_SPACING_ATTEMPTS; attempt++) {
+      const result = settle(nodeSpacing, layerSpacing, detached)
+      if (!result) return undefined
+      if ('nodes' in result) return result
+      nodeSpacing += result.room.cross + SPACING_SLACK
+      layerSpacing += result.room.along + SPACING_SLACK
+    }
+    return undefined
   }
-  return undefined
+
+  // Edges inside a box that would have to go round a spine are drawn by hand
+  // (see `inner-edges.ts`); if one can't be routed, lay them out as usual.
+  const detached = detachableEdges(graph, plan, layer, clusters)
+  return (detached.size > 0 ? solve(detached) : undefined) ?? solve(new Set())
+}
+
+/**
+ * The edges between two members of a subgraph that span a layer where it has
+ * only a spine node, and whose ends each keep some other edge to hold them in
+ * place without it.
+ */
+function detachableEdges(
+  graph: MermaidGraph,
+  plan: SpinePlan,
+  layer: ReadonlyMap<string, number>,
+  clusters: MermaidSubgraph[],
+): Set<number> {
+  const spans = clusters.map((sg) => {
+    const inside = membersOf(sg)
+    const layers = new Set(
+      [...inside].filter((id) => layer.has(id)).map((id) => layer.get(id)!),
+    )
+    return { inside, layers }
+  })
+  const through = (edge: MermaidEdge): boolean => {
+    const from = layer.get(edge.source)
+    const to = layer.get(edge.target)
+    if (from === undefined || to === undefined || edge.source === edge.target) {
+      return false
+    }
+    return spans.some(
+      ({ inside, layers }) =>
+        inside.has(edge.source) &&
+        inside.has(edge.target) &&
+        Array.from(
+          { length: Math.max(0, Math.abs(to - from) - 1) },
+          (_, i) => Math.min(from, to) + 1 + i,
+        ).some((l) => !layers.has(l)),
+    )
+  }
+  const detached = new Set<number>()
+  graph.edges.forEach((edge, index) => {
+    if (through(edge)) detached.add(index)
+  })
+  // What holds each node in place: the edges that stay, and the spine's chain.
+  const held = new Map<string, number>()
+  const hold = (e: { source: string; target: string }): void => {
+    if (e.source === e.target) return
+    held.set(e.source, (held.get(e.source) ?? 0) + 1)
+    held.set(e.target, (held.get(e.target) ?? 0) + 1)
+  }
+  graph.edges.forEach((e, i) => {
+    if (!detached.has(i)) hold(e)
+  })
+  plan.edges.forEach(hold)
+  for (const i of [...detached]) {
+    const e = graph.edges[i]!
+    if (!held.get(e.source) || !held.get(e.target)) detached.delete(i)
+  }
+  return detached
+}
+
+/**
+ * Draw the detached edges inside the innermost box that holds both ends.
+ * `undefined` if one has no clear route.
+ */
+function routeDetached(
+  graph: MermaidGraph,
+  detached: ReadonlySet<number>,
+  nodes: ReadonlyMap<string, PositionedNode>,
+  groups: PositionedGroup[],
+  clusters: MermaidSubgraph[],
+): PositionedEdge[] | undefined {
+  const boxes = new Map(flattenGroups(groups).map((g) => [g.id, g]))
+  const out: PositionedEdge[] = []
+  for (const index of detached) {
+    const edge = graph.edges[index]!
+    const source = nodes.get(edge.source)
+    const target = nodes.get(edge.target)
+    const home = clusters
+      .filter((sg) => {
+        const inside = membersOf(sg)
+        return inside.has(edge.source) && inside.has(edge.target)
+      })
+      .sort((a, b) => membersOf(a).size - membersOf(b).size)[0]
+    const box = home && boxes.get(home.id)
+    if (!source || !target || !box) return undefined
+    const points = routeInnerEdge(
+      source,
+      target,
+      [...nodes.values()].filter((n) => n !== source && n !== target),
+      box,
+      graph.direction,
+    )
+    if (!points) return undefined
+    out.push({
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      style: edge.style,
+      hasArrowStart: edge.hasArrowStart,
+      hasArrowEnd: edge.hasArrowEnd,
+      points,
+      labelPosition: edge.label ? labelSpot(points) : undefined,
+      inlineStyle: resolveEdgeStyle(index, graph),
+      id: edge.id,
+      animate: edge.animate,
+    })
+  }
+  return out
 }
 
 /** The result of the last layout without the scaffolding, moved and sized to fit what is left. */
@@ -662,10 +787,12 @@ function assemble(
   laidOut: PositionedGraph,
   nodes: PositionedNode[],
   groups: PositionedGroup[],
+  extraEdges: PositionedEdge[],
 ): PositionedGraph {
-  const edges: PositionedEdge[] = laidOut.edges.filter(
-    (e) => !isSpine(e.source) && !isSpine(e.target),
-  )
+  const edges: PositionedEdge[] = [
+    ...laidOut.edges.filter((e) => !isSpine(e.source) && !isSpine(e.target)),
+    ...extraEdges,
+  ]
   const all = flattenGroups(groups)
   const xs = [
     ...nodes.map((n) => n.x),

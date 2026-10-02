@@ -13,6 +13,11 @@ export interface LayoutHints {
    */
   looseEdges?: ReadonlySet<number>
   /**
+   * Indices of real edges to leave out of the layout. The caller draws them
+   * itself, so ELK doesn't route them round the helper nodes.
+   */
+  detachedEdges?: ReadonlySet<number>
+  /**
    * The order a back-edge search starts from, when it must differ from the
    * graph's node order (which is also the order ELK is given the nodes in).
    */

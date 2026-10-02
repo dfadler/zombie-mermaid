@@ -18,6 +18,10 @@ import {
   orderSiblings,
   planSpines,
 } from '../../packages/svg-renderer/src/layout-engine/compound-flat.ts'
+import {
+  labelSpot,
+  routeInnerEdge,
+} from '../../packages/svg-renderer/src/layout-engine/inner-edges.ts'
 import { measureMultilineText } from '@zombie-mermaid/core'
 import {
   FONT_SIZES,
@@ -25,6 +29,7 @@ import {
 } from '../../packages/svg-renderer/src/styles.ts'
 import type {
   MermaidGraph,
+  PositionedNode,
   MermaidSubgraph,
   PositionedGraph,
   PositionedGroup,
@@ -451,6 +456,168 @@ describe('layoutFlowchartSync: the CI/CD sample', () => {
       expect(node(id).x).toBeGreaterThanOrEqual(ci.x)
       expect(node(id).x + node(id).width).toBeLessThanOrEqual(ci.x + ci.width)
     }
+  })
+})
+
+describe('layoutFlowchartSync: edges inside a box stay inside it', () => {
+  const p = layoutFlowchartSync(graphOf(CI_CD))
+  const ci = p.groups[0]!
+  const edge = (source: string, target: string) =>
+    p.edges.find((e) => e.source === source && e.target === target)!
+
+  it.each([
+    ['B', 'D'],
+    ['D', 'A'],
+  ])('draws %s to %s within the box, not round the outside of it', (a, b) => {
+    for (const pt of edge(a, b).points) {
+      expect(pt.x).toBeGreaterThanOrEqual(ci.x)
+      expect(pt.x).toBeLessThanOrEqual(ci.x + ci.width)
+    }
+  })
+
+  it('does not run any edge through a node it does not join', () => {
+    for (const e of p.edges) {
+      for (let i = 1; i < e.points.length; i++) {
+        const a = e.points[i - 1]!
+        const b = e.points[i]!
+        const seg = {
+          x: Math.min(a.x, b.x),
+          y: Math.min(a.y, b.y),
+          width: Math.abs(a.x - b.x),
+          height: Math.abs(a.y - b.y),
+        }
+        for (const n of p.nodes) {
+          if (n.id === e.source || n.id === e.target) continue
+          expect(intersects(seg, n), `${e.source}->${e.target} / ${n.id}`).toBe(
+            false,
+          )
+        }
+      }
+    }
+  })
+
+  it('leaves the canvas no wider than the column beside the box and the box', () => {
+    const columnRight = Math.max(
+      ...['E', 'F', 'G'].map((id) => {
+        const n = p.nodes.find((q) => q.id === id)!
+        return n.x + n.width
+      }),
+    )
+    expect(p.width).toBeLessThan(ci.x + ci.width + columnRight / 2)
+  })
+
+  it('labels the edge on its own path', () => {
+    const e = edge('B', 'D')
+    expect(e.label).toBe('No')
+    expect(e.points).toContainEqual(
+      expect.objectContaining({ x: expect.any(Number) }),
+    )
+    expect(e.labelPosition).toEqual(labelSpot(e.points))
+  })
+})
+
+describe('routeInnerEdge', () => {
+  const node = (
+    id: string,
+    x: number,
+    y: number,
+    width = 100,
+    height = 40,
+    shape: PositionedNode['shape'] = 'rectangle',
+  ): PositionedNode => ({ id, label: id, shape, x, y, width, height })
+  const bounds = { x: 0, y: 0, width: 400, height: 600 }
+
+  it('runs straight down between two nodes in line', () => {
+    const pts = routeInnerEdge(
+      node('a', 100, 20),
+      node('b', 100, 300),
+      [],
+      bounds,
+      'TD',
+    )!
+    expect(pts).toHaveLength(2)
+    expect(pts[0]!.x).toBe(pts[1]!.x)
+    expect(pts[0]!.y).toBe(60)
+    expect(pts[1]!.y).toBe(300)
+  })
+
+  it('goes round a node in the way instead of through it', () => {
+    const blocker = node('c', 100, 150, 120)
+    const pts = routeInnerEdge(
+      node('a', 100, 20, 100, 40, 'diamond'),
+      node('b', 100, 300),
+      [blocker],
+      bounds,
+      'TD',
+    )!
+    expect(pts.length).toBeGreaterThan(2)
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1]!
+      const b = pts[i]!
+      expect(
+        intersects(
+          {
+            x: Math.min(a.x, b.x),
+            y: Math.min(a.y, b.y),
+            width: Math.abs(a.x - b.x),
+            height: Math.abs(a.y - b.y),
+          },
+          blocker,
+        ),
+      ).toBe(false)
+    }
+  })
+
+  it('hooks up the side for an edge against the flow, ending in the target', () => {
+    const target = node('a', 100, 20)
+    const pts = routeInnerEdge(
+      node('b', 100, 300),
+      target,
+      [node('c', 100, 150)],
+      bounds,
+      'TD',
+    )!
+    const last = pts[pts.length - 1]!
+    expect(last.y).toBeGreaterThan(target.y)
+    expect(last.y).toBeLessThan(target.y + target.height)
+    expect([target.x, target.x + target.width]).toContain(last.x)
+  })
+
+  it('works along x for LR and mirrors for BT', () => {
+    const lr = routeInnerEdge(
+      node('a', 20, 100),
+      node('b', 300, 100),
+      [],
+      { x: 0, y: 0, width: 600, height: 400 },
+      'LR',
+    )!
+    expect(lr[0]!.y).toBe(lr[1]!.y)
+    expect(lr[0]!.x).toBe(120)
+    const bt = routeInnerEdge(
+      node('a', 100, 300),
+      node('b', 100, 20),
+      [],
+      bounds,
+      'BT',
+    )!
+    expect(bt[0]!.y).toBe(300)
+    expect(bt[1]!.y).toBe(60)
+  })
+
+  it('gives up when nothing fits inside the box, or the nodes overlap along the flow', () => {
+    const wall = node('w', 0, 150, 400)
+    expect(
+      routeInnerEdge(
+        node('a', 100, 20),
+        node('b', 100, 300),
+        [wall],
+        bounds,
+        'TD',
+      ),
+    ).toBeUndefined()
+    expect(
+      routeInnerEdge(node('a', 0, 20), node('b', 200, 30), [], bounds, 'TD'),
+    ).toBeUndefined()
   })
 })
 

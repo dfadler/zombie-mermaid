@@ -636,6 +636,7 @@ export function mermaidToElk(
   const reversed = edgesReversedForLayout(graph, hints)
   for (const { index, edge } of edgesBySubgraph.get(null)!) {
     if (edge.source === edge.target) continue
+    if (hints?.detachedEdges?.has(index)) continue
     const elkEdge = buildElkEdge({
       id: `e${index}`,
       source: reversed.has(index) ? edge.target : edge.source,
