@@ -127,4 +127,30 @@ namespace Two {
   it('leaves diagrams without namespaces unframed', () => {
     expect(layout('classDiagram\nA --> B').namespaces).toEqual([])
   })
+
+  it('returns no frames for an empty diagram', () => {
+    expect(layout('classDiagram').namespaces).toEqual([])
+  })
+
+  it('keeps a note link attached to a class inside a namespace', () => {
+    const q = layout(`classDiagram
+namespace Core {
+  class A
+  class B
+}
+A --> B
+note for A "hello"`)
+    const a = q.classes.find((c) => c.id === 'A')!
+    const note = q.notes[0]!
+    expect(note.linkPoints).toBeDefined()
+    const pts = note.linkPoints!
+    const end = pts[pts.length - 1]!
+    const tol = 1.5
+    const touchesA =
+      end.x >= a.x - tol &&
+      end.x <= a.x + a.width + tol &&
+      end.y >= a.y - tol &&
+      end.y <= a.y + a.height + tol
+    expect(touchesA).toBe(true)
+  })
 })
