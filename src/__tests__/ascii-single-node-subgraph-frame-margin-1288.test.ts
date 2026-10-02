@@ -56,4 +56,23 @@ describe('ASCII: single-node subgraph frames keep a margin around the node (#128
     // No junction glyph may replace a node box's left corner.
     expect(lines.some((l) => /│ [├┤┼]───┐/.test(l))).toBe(false)
   })
+
+  it('keeps pushing the wall (no extra gap) when the wide-titled frame has room', () => {
+    // The right frame's title is wide, so after the left wall push it still
+    // fits and stays clear of its node: the original narrowing path applies.
+    const out = renderMermaidASCII(`graph TD
+  subgraph SA[Alpha Gamma Delta Long]
+    A
+  end
+  subgraph SB[Beta]
+    B
+  end
+  X-->A
+  X-->B`)
+    expect(out).toContain('Alpha Gamma Delta Long')
+    expect(out).toContain('Beta')
+    // Frames stay separated by a blank column, not touching.
+    expect(out).toMatch(/┐ ┌─/)
+    expect(out.match(/┌───┐/g)).toHaveLength(3)
+  })
 })
