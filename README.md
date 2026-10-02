@@ -48,11 +48,14 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 
 The **Bundle Size** badge above tracks the gzipped size of `zombie-mermaid`'s
 main entry point (`dist/index.js`) together with the `@zombie-mermaid/*`
-workspace packages it imports (third-party dependencies such as ELK.js are not
-counted), and updates automatically with every release — the same
-badge/CI-tracked pattern already backing the coverage and CI status badges.
-The standalone renderer packages under [Packages](#packages) get the same
-measurement for their own dependency closure. Need ASCII rendering only? `import { renderMermaidASCII }
+workspace packages it imports, **plus the SVG renderer's third-party
+dependencies** ([ELK.js](https://github.com/kieler/elkjs) and `entities`,
+which make up most of the SVG renderer's real weight), and updates
+automatically with every release — the same badge/CI-tracked pattern already
+backing the coverage and CI status badges. The standalone renderer packages
+under [Packages](#packages) get the same measurement for their own dependency
+closure: the SVG badge is labelled "incl. deps" because it counts ELK.js and
+`entities`, while the ASCII renderer has no third-party dependencies to count. Need ASCII rendering only? `import { renderMermaidASCII }
 from 'zombie-mermaid/ascii'` skips [ELK.js](https://github.com/kieler/elkjs),
 the layout engine the SVG renderer depends on, for a substantially smaller
 bundle.
