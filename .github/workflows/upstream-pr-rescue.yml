@@ -154,23 +154,30 @@ jobs:
 
           # The artifact was produced by a job that ran third-party code, so
           # treat it as hostile: validate its shape before using any of it.
-          jq -e 'type == "array" and length <= 1000 and all(.[]; type == "number" and . == floor and . > 0)' \
+          # `-s` + `length == 1`: exactly one root document. Without it
+          # `jq -e` reports only the last document's result, so a bad
+          # document followed by a good one would pass.
+          jq -s -e 'length == 1 and (.[0] | type == "array" and length <= 1000 and all(.[]; type == "number" and . == floor and . > 0))' \
             out/upstream-pr-seen.json > /dev/null \
             || { echo "::error::upstream-pr-seen.json failed validation"; exit 1; }
-          jq -e 'type == "array" and length >= 1 and length <= 200 and all(.[];
+          jq -s -e 'length == 1 and (.[0] | type == "array" and length >= 1 and length <= 200 and all(.[];
               (.number | type == "number" and . == floor and . > 0)
               and (.author | type == "string" and test("^([A-Za-z0-9][A-Za-z0-9-]{0,38}(\\[bot\\])?|app/[A-Za-z0-9-]{1,39})$"))
               and (.mergeable | IN("MERGEABLE", "CONFLICTING", "UNKNOWN"))
               and (.ageDays | type == "number") and (.additions | type == "number")
               and (.deletions | type == "number") and (.changedFiles | type == "number")
-              and (.isDraft | type == "boolean"))' \
+              and (.isDraft | type == "boolean")))' \
             out/candidates.json > /dev/null \
             || { echo "::error::candidates.json failed validation"; exit 1; }
 
           # One open rescue PR at a time: until it's merged, main's seen-file
           # is unchanged, so another PR would just repeat its candidates.
-          EXISTING="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json headRefName \
-            --jq '[.[] | select(.headRefName | startswith("chore/upstream-pr-candidates-"))] | length')"
+          # Match on the head repo owner too, so a fork PR that merely uses
+          # this branch-name prefix can't suppress the weekly PR; and look
+          # past gh's default 30 results.
+          EXISTING="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 500 \
+            --json headRefName,headRepositoryOwner \
+            --jq '[.[] | select((.headRefName | startswith("chore/upstream-pr-candidates-")) and .headRepositoryOwner.login == "'"$GITHUB_REPOSITORY_OWNER"'")] | length')"
           if [ "$EXISTING" -gt 0 ]; then
             echo "A rescue-candidates PR is already open; skipping."
             exit 0

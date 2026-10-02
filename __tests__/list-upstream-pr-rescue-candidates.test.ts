@@ -96,6 +96,28 @@ describe('fetchRescueCandidates', () => {
     expect(candidates).toEqual([])
   })
 
+  it('throws instead of returning a list that may be truncated at --limit', async () => {
+    const pr = (number: number) => ({
+      number,
+      title: 't',
+      url: 'u',
+      createdAt: '2026-01-01T00:00:00Z',
+      isDraft: false,
+      mergeable: 'MERGEABLE',
+      additions: 1,
+      deletions: 0,
+      changedFiles: 1,
+      labels: [],
+      author: { login: 'a', name: null },
+    })
+    const ghFn = ghOnce([pr(1), pr(2)])
+
+    await expect(fetchRescueCandidates(2, ghFn, NOW)).rejects.toThrow(
+      /truncated/,
+    )
+    await expect(fetchRescueCandidates(3, ghFn, NOW)).resolves.toHaveLength(2)
+  })
+
   it('calls gh pr list against the upstream repo with the requested limit', async () => {
     const ghFn = ghOnce([])
 

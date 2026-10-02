@@ -24,7 +24,7 @@
  *
  * Flags:
  *   --json   print the raw candidate array as JSON instead of a Markdown table
- *   --limit  cap how many PRs to fetch (default 100)
+ *   --limit  cap how many PRs to fetch (default 1000; errors if the list is truncated)
  *   --seen=<file>  only report PRs whose number isn't in this JSON array of
  *            already-triaged PR numbers (missing file = nothing seen yet)
  *   --write-seen  with --seen, rewrite that file with every currently-open
@@ -91,7 +91,7 @@ export interface RescueCandidate {
  * framing ("the oldest over half a year old").
  */
 export async function fetchRescueCandidates(
-  limit = 100,
+  limit = 1000,
   ghFn: GhFn = gh,
   now: Date = new Date(),
 ): Promise<RescueCandidate[]> {
@@ -108,6 +108,13 @@ export async function fetchRescueCandidates(
     'number,title,author,createdAt,url,additions,deletions,changedFiles,isDraft,mergeable,labels',
   ])
   const raw = JSON.parse(stdout) as RawPr[]
+  // `gh pr list` stops silently at --limit. A truncated list would make
+  // --write-seen drop triaged PRs and hide untriaged ones, so fail instead.
+  if (raw.length >= limit) {
+    throw new Error(
+      `gh returned ${raw.length} PRs (the --limit); the list may be truncated. Re-run with a higher --limit.`,
+    )
+  }
 
   return raw
     .map((pr) => ({
@@ -184,7 +191,7 @@ export async function main() {
   const args = process.argv.slice(2)
   const asJson = args.includes('--json')
   const limitArg = args.find((a) => a.startsWith('--limit='))
-  const limit = limitArg ? Number(limitArg.split('=')[1]) : 100
+  const limit = limitArg ? Number(limitArg.split('=')[1]) : 1000
 
   const seenArg = args.find((a) => a.startsWith('--seen='))
   const seenPath = seenArg ? seenArg.slice('--seen='.length) : undefined
