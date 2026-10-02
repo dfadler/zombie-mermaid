@@ -522,14 +522,13 @@ export function mermaidToElk(
   // child nodes were inserted, sibling subgraphs under the same parent end
   // up in reversed declaration order — see issue #444.
   //
-  // Deliberately scoped to *only* the sibling-subgraph reversal, not a
-  // wholesale "all clusters before all leaves" reordering (which mermaid's
-  // own mechanism also does, globally): moving the whole subgraphs group
-  // ahead of top-level leaf nodes changed which edge in a cycle ELK treats
-  // as a feedback edge for a sample mixing top-level leaves and a
-  // subgraph in a cyclic flow (e.g. "CI/CD Pipeline"), reordering the
-  // entire rank structure rather than just left-right sibling position —
-  // a much bigger, unreviewed blast radius than the reported bug needs.
+  // The subgraphs group as a whole is then moved ahead of the top-level
+  // leaves for flowcharts (below), which is also what mermaid does. That was
+  // once held back as too large a change for #444 because it changes which
+  // edge ELK treats as the feedback edge in a cyclic flow; #1239 wants
+  // exactly that, since the old order inverted the CI/CD sample. Across every
+  // sample only CI/CD changes layout (Nested Subgraphs, Subgraph Direction
+  // Override and the architecture sample only reorder nodes in the output).
   const stateGraph = isStateGraph(graph)
   const leafCount = rootChildren.length
   // State diagrams read in source order, so composites keep forward
@@ -549,6 +548,16 @@ export function mermaidToElk(
         graph.direction,
       ),
     )
+  }
+  if (!stateGraph) {
+    // Subgraph compounds go ahead of the top-level leaves, as in mermaid.js
+    // (see above). `considerModelOrder` reads child order, so a leaf that a
+    // subgraph member feeds (`C --> E` with `E` declared outside the
+    // subgraph) must come after the subgraph. Left after it, that edge points
+    // against model order and cycle breaking reverses it, drawing the whole
+    // diagram upside down (#1239: CI/CD sample, Deploy Staging above the
+    // pipeline that feeds it).
+    rootChildren.unshift(...rootChildren.splice(leafCount))
   }
   if (stateGraph && graph.subgraphs.length > 0) {
     // ELK's MODEL_ORDER cycle breaking and crossing minimisation follow the
