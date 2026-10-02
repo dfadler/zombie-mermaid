@@ -1,5 +1,28 @@
 # @zombie-mermaid/ascii-renderer
 
+## 4.0.0
+
+### Patch Changes
+
+- [#1259](https://github.com/dfadler/zombie-mermaid/pull/1259) [`9d18ee7`](https://github.com/dfadler/zombie-mermaid/commit/9d18ee79afb97e7d360e4314532126c39048280a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts and state diagrams: `RL` direction now flows right to left (the source node on the right, arrowheads pointing left), mirroring the `LR` layout, instead of being drawn identically to `LR`. Labels and subgraph titles keep reading left to right. Closes [#1231](https://github.com/dfadler/zombie-mermaid/issues/1231).
+
+- [#1301](https://github.com/dfadler/zombie-mermaid/pull/1301) [`f6eb9e2`](https://github.com/dfadler/zombie-mermaid/commit/f6eb9e258aa7a51b3155e31e67b2fa712eca9916) Thanks [@dfadler](https://github.com/dfadler)! - ASCII subgraph frames: when a non-member node is moved off a frame, a free-standing parent that only feeds it moves to the same column (row in LR), so `W --> Y` drops straight down instead of wrapping around from W's side.
+
+- [#1273](https://github.com/dfadler/zombie-mermaid/pull/1273) [`d1d1ca4`](https://github.com/dfadler/zombie-mermaid/commit/d1d1ca4a3ecc68a41769e0911c98ddca60c90de1) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: the second parallel edge between two nodes no longer draws a stray arrowhead and junction on the target's border. It now runs down (top-down graphs) or under (left-right graphs) the nodes and enters the target's side face with its own arrowhead.
+
+- [#1300](https://github.com/dfadler/zombie-mermaid/pull/1300) [`4b2e887`](https://github.com/dfadler/zombie-mermaid/commit/4b2e887d6329e6923468a9e7baf80d327fb82891) Thanks [@dfadler](https://github.com/dfadler)! - ASCII subgraphs in a stacked layout: a back edge running beside a frame now keeps a clear column from the wall instead of running against it, and a title widened for an entering stroke keeps a clear column before the right wall. Closes [#1285](https://github.com/dfadler/zombie-mermaid/issues/1285).
+
+- [#1304](https://github.com/dfadler/zombie-mermaid/pull/1304) [`bcdf5aa`](https://github.com/dfadler/zombie-mermaid/commit/bcdf5aa2aca2ed79d3f92fa3fae37ad75b152f23) Thanks [@dfadler](https://github.com/dfadler)! - ASCII flowcharts: an edge addressed to a subgraph id (`Y --> Sub`) now ends at the frame's wall instead of crossing it and ending on a member inside, and the subgraph is placed past the sources of such edges, so `W --> Y --> Sub` no longer lands Y beside the frame with a sideways edge across its wall.
+
+- [#1278](https://github.com/dfadler/zombie-mermaid/pull/1278) [`bddc87f`](https://github.com/dfadler/zombie-mermaid/commit/bddc87f2bf9a7e82b3fa33d6a7cd245dfb60639b) Thanks [@dfadler](https://github.com/dfadler)! - ASCII subgraph frames: an edge entering a titled frame no longer splits the title (`Layer│Two`); the frame widens so the title sits beside the edge. A node that is not a member of a subgraph is no longer drawn inside its frame. An edge label no longer overwrites a letter of a frame title, and a frame is widened rather than clipping a title wider than its nodes (`Layer T`).
+
+- [#1302](https://github.com/dfadler/zombie-mermaid/pull/1302) [`02b9efb`](https://github.com/dfadler/zombie-mermaid/commit/02b9efba372f288c6f3670fcc69fb11e76015f0a) Thanks [@dfadler](https://github.com/dfadler)! - In ASCII output, a subgraph wall that gets pushed outward by an edge no longer lands on its node's box, so the edge joins the wall cleanly instead of colliding with the node border.
+
+- [#1303](https://github.com/dfadler/zombie-mermaid/pull/1303) [`618923e`](https://github.com/dfadler/zombie-mermaid/commit/618923e0f51503bff2ba79cae91ddabf2283b035) Thanks [@dfadler](https://github.com/dfadler)! - Class diagram ASCII output now draws `namespace Name { ... }` blocks as a titled frame around their member classes. Members of a namespace are kept next to each other in their row, a relationship crossing a frame keeps its stroke, and the title slides clear of it.
+- Updated dependencies [[`20db743`](https://github.com/dfadler/zombie-mermaid/commit/20db743be4508a59d57bfe81a97fb916910b2a54), [`c7d9704`](https://github.com/dfadler/zombie-mermaid/commit/c7d9704c9cbc9f39d3408a0d4cac124e2e1852dc), [`89e915f`](https://github.com/dfadler/zombie-mermaid/commit/89e915ff838a140dbac4bc6452e4460cf766693c), [`7e4db32`](https://github.com/dfadler/zombie-mermaid/commit/7e4db3206ab61740b54f427003ab3fb248001d66)]:
+  - @zombie-mermaid/mermaid-parser@4.0.0
+  - @zombie-mermaid/core@4.0.0
+
 ## 3.2.0
 
 ### Minor Changes
