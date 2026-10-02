@@ -134,7 +134,8 @@
     "dashboard": "scripts/tsx-css.sh packages/site/dashboard.ts",
     "dashboard:data": "tsx scripts/generate-dashboard-data.ts",
     "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
-    "audit:responsive": "tsx scripts/audit-responsive.ts"
+    "audit:responsive": "tsx scripts/audit-responsive.ts",
+    "layout:oracle": "tsx scripts/layout-oracle.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

@@ -140,6 +140,18 @@ Whatever kind of change produced them, a PR or issue's "Visual verification" (or
 
 The rest, including how the mockup's fidelity is tested, the containerized Linux workflow, and the darwin font pitfalls (such as a duplicate JetBrains Mono install, which `scripts/check-jetbrains-mono-duplicates.sh` detects), is in [docs/visual-regression.md](docs/visual-regression.md).
 
+### Layout fidelity against official mermaid
+
+The visual tests catch a render _changing_; they don't say whether it is _right_. For flowcharts, `pnpm run layout:oracle` renders every sample through real mermaid.js (headless Chromium, same prerequisite as above) and through our layout engine, and prints how often the two agree on the arrangement: for every pair of nodes, whether both put one above, below or beside the other, plus whether each node sits inside the same subgraph boxes. A row at 100% means the same arrangement, whatever the font and padding differences; a low one is a sample whose layout differs from what mermaid draws.
+
+```bash
+pnpm run layout:oracle                         # every flowchart sample
+pnpm run layout:oracle -- --filter=ci/cd       # one sample
+pnpm run layout:oracle -- --fail-below=90      # exit 1 if any sample's lowest figure is under 90%
+```
+
+Run it before and after a change to layout (`packages/svg-renderer/src/layout-engine/`) and put the rows that moved in the PR. It's a diagnostic, not a CI gate: it needs a Chromium install and a real browser render. See the header of `scripts/layout-oracle.ts` for what it does and doesn't compare.
+
 ## Porting fixes from upstream
 
 This is the part that makes this fork different from a typical project. Two situations come up:
