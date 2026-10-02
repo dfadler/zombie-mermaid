@@ -71,4 +71,41 @@ end`,
     )
     expect(grid(graph, 'W').y).toBe(grid(graph, 'Y').y)
   })
+  const frame = `
+subgraph Sub
+A-->B
+A-->C
+end`
+
+  it('leaves a parent with two children where it is', () => {
+    const base = layout(
+      `graph TD\nX-->Sub\nW-->Y\nW-->Q\nY-->Sub${frame}`,
+      'TD',
+    )
+    expect(grid(base, 'W').x).not.toBe(grid(base, 'Y').x)
+  })
+
+  it('leaves a parent that has its own incoming edge where it is', () => {
+    const g = layout(`graph TD\nX-->Sub\nR-->W\nW-->Y\nY-->Sub${frame}`, 'TD')
+    expect(g.nodes.every((n) => n.gridCoord)).toBe(true)
+  })
+
+  it('does not move anything when Y has two parents', () => {
+    const g = layout(`graph TD\nX-->Sub\nW-->Y\nV-->Y\nY-->Sub${frame}`, 'TD')
+    expect(grid(g, 'W').x).not.toBe(grid(g, 'Y').x)
+  })
+
+  it('leaves a parent that is itself in a subgraph alone', () => {
+    const g = layout(
+      `graph TD\nX-->Sub\nsubgraph Other\nW\nend\nW-->Y\nY-->Sub${frame}`,
+      'TD',
+    )
+    expect(g.nodes.every((n) => n.gridCoord)).toBe(true)
+  })
+
+  it('leaves a parent that is already aligned in place', () => {
+    const g = layout(`graph TD\nX-->Sub\nZ\nW-->Y\nY-->Sub${frame}`, 'TD')
+    expect(grid(g, 'W').x).toBe(grid(g, 'Y').x)
+    expect(grid(g, 'W').y).toBeLessThan(grid(g, 'Y').y)
+  })
 })
