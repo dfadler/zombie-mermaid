@@ -332,11 +332,7 @@ export function mermaidToElk(
   > & { fontSizes: FontSizes },
   hints?: LayoutHints,
 ): ElkGraphNode {
-  const opts = {
-    ...givenOpts,
-    nodeSpacing: givenOpts.nodeSpacing + (hints?.extraNodeSpacing ?? 0),
-    layerSpacing: givenOpts.layerSpacing + (hints?.extraLayerSpacing ?? 0),
-  }
+  const opts = givenOpts
   // Collect all node IDs that belong to subgraphs
   const subgraphNodeIds = new Set<string>()
   const subgraphIds = new Set<string>()
@@ -440,15 +436,6 @@ export function mermaidToElk(
       ? 'SEPARATE'
       : 'INCLUDE_CHILDREN',
   }
-  if (hints?.extraLayerSpacing) {
-    // Between two layers that many edges run through, the gap is the routing
-    // channel, not the node spacing, so widen what is kept around the channel
-    // too (it counts once on each side).
-    rootLayoutOptions['elk.layered.spacing.edgeNodeBetweenLayers'] = String(
-      12 + hints.extraLayerSpacing / 2,
-    )
-  }
-
   // Ports to declare on each subgraph's ELK node, keyed by subgraph ID.
   const portsBySubgraph = new Map<string, Set<string>>()
   // Hop/bridge edges to inject into each container's own `edges` array.

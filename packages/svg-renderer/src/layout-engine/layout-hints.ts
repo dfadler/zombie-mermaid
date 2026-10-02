@@ -22,10 +22,6 @@ export interface LayoutHints {
    * graph's node order (which is also the order ELK is given the nodes in).
    */
   walkOrder?: readonly string[]
-  /** Added to the gap ELK keeps between neighbouring nodes in a layer, in px. */
-  extraNodeSpacing?: number
-  /** Added to the gap ELK keeps between layers, in px. */
-  extraLayerSpacing?: number
   /** Keep every layer's nodes in the order the graph lists them. */
   forceNodeOrder?: boolean
 }

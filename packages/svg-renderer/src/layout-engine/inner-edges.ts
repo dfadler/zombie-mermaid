@@ -18,14 +18,20 @@ import type { Direction, Point, PositionedNode } from '@zombie-mermaid/core'
 /** Room kept between a route and the nodes it passes, in px. */
 const CLEARANCE = 10
 
+/** Least distance between two routes that run side by side, in px. */
+const PARALLEL_GAP = 14
+
 /** How far an edge runs out of a node before turning, in px. */
 const STUB = 14
 
 /** Room kept between a route and the box's border, in px. */
-const BORDER_INSET = 6
+const BORDER_INSET = 10
 
 /** Cost of each bend, in px of extra length, so a straighter route wins. */
 const BEND_COST = 24
+
+/** Extra cost of leaving a decision by its bottom vertex, in px. */
+const DECISION_STEM = 400
 
 /** Shapes whose whole edge is a straight side an edge can leave from anywhere. */
 const FLAT_SIDED = new Set(['rectangle', 'rounded', 'subroutine'])
@@ -87,6 +93,36 @@ const grow = (s: Span, by: number): Span => ({
   c1: s.c1 + by,
 })
 
+/** The (a, c) of a point in `frame`. */
+function toPt(frame: Frame, p: Point): Pt {
+  const s = frame.span({ x: p.x, y: p.y, width: 0, height: 0 })
+  return { a: s.a0, c: s.c0 }
+}
+
+/** Whether the segment `p`-`q` runs beside a segment of `path`, closer than `PARALLEL_GAP`. */
+function runsAlong(p: Pt, q: Pt, path: readonly Pt[]): boolean {
+  const flowwise = p.c === q.c
+  for (let i = 1; i < path.length; i++) {
+    const r = path[i - 1]!
+    const t = path[i]!
+    if ((r.c === t.c) !== flowwise) continue
+    if (flowwise) {
+      const apart = Math.abs(p.c - r.c)
+      const shared =
+        Math.min(Math.max(p.a, q.a), Math.max(r.a, t.a)) -
+        Math.max(Math.min(p.a, q.a), Math.min(r.a, t.a))
+      if (apart < PARALLEL_GAP && shared > 0) return true
+    } else {
+      const apart = Math.abs(p.a - r.a)
+      const shared =
+        Math.min(Math.max(p.c, q.c), Math.max(r.c, t.c)) -
+        Math.max(Math.min(p.c, q.c), Math.min(r.c, t.c))
+      if (apart < PARALLEL_GAP && shared > 0) return true
+    }
+  }
+  return false
+}
+
 /** The path with repeated points and points in the middle of a straight run removed. */
 function simplify(path: Pt[]): Pt[] {
   const out: Pt[] = []
@@ -130,6 +166,7 @@ export function routeInnerEdge(
   others: readonly PositionedNode[],
   bounds: BoxLike,
   direction: Direction,
+  drawn: readonly (readonly Point[])[] = [],
 ): Point[] | undefined {
   const frame = frameFor(direction)
   const S = frame.span(source)
@@ -145,6 +182,7 @@ export function routeInnerEdge(
     c0: inner.c0 + BORDER_INSET,
     c1: inner.c1 - BORDER_INSET,
   }
+  const before = drawn.map((path) => path.map((p) => toPt(frame, p)))
   const blocks = others.map((n) => grow(frame.span(n), CLEARANCE))
   const mid = (s: Span): number => (s.c0 + s.c1) / 2
   const midA = (s: Span): number => (s.a0 + s.a1) / 2
@@ -163,6 +201,7 @@ export function routeInnerEdge(
       if (p.a !== q.a && p.c !== q.c) return false
       if (blocks.some((b) => crosses(p, q, b))) return false
       if (crosses(p, q, S) || crosses(p, q, T)) return false
+      if (before.some((path) => runsAlong(p, q, path))) return false
     }
     return true
   }
@@ -218,6 +257,19 @@ export function routeInnerEdge(
           { a: T.a0, c: mid(T) },
         ])
       }
+      // Out of the source's side and down: for a decision, whose other
+      // branches leave by the bottom.
+      const side = c >= S.c1 ? S.c1 : c <= S.c0 ? S.c0 : undefined
+      if (side !== undefined) {
+        const down = within(target, T, c)
+          ? [{ a: T.a0, c }]
+          : [
+              { a: a2, c },
+              { a: a2, c: mid(T) },
+              { a: T.a0, c: mid(T) },
+            ]
+        routes.push([{ a: midA(S), c: side }, { a: midA(S), c }, ...down])
+      }
     }
   } else {
     for (const c of candidates) {
@@ -247,7 +299,11 @@ export function routeInnerEdge(
   for (const route of routes) {
     const path = simplify(route)
     if (path.length < 2 || !valid(path)) continue
-    const cost = length(path) + BEND_COST * (path.length - 2)
+    // A decision's branches fan out of its sides; leaving by the bottom only
+    // when nothing else fits.
+    const stem =
+      source.shape === 'diamond' && path[0]!.a === S.a1 ? DECISION_STEM : 0
+    const cost = length(path) + BEND_COST * (path.length - 2) + stem
     if (cost < bestCost) {
       best = path
       bestCost = cost

@@ -506,6 +506,15 @@ describe('layoutFlowchartSync: edges inside a box stay inside it', () => {
     expect(p.width).toBeLessThan(ci.x + ci.width + columnRight / 2)
   })
 
+  it('keeps the two inside edges apart where they run side by side', () => {
+    const xs = (a: string, b: string) =>
+      edge(a, b).points.flatMap((pt, i, all) =>
+        i > 0 && all[i - 1]!.x === pt.x ? [pt.x] : [],
+      )
+    for (const x of xs('B', 'D'))
+      for (const y of xs('D', 'A')) expect(Math.abs(x - y)).toBeGreaterThan(12)
+  })
+
   it('labels the edge on its own path', () => {
     const e = edge('B', 'D')
     expect(e.label).toBe('No')
@@ -513,6 +522,33 @@ describe('layoutFlowchartSync: edges inside a box stay inside it', () => {
       expect.objectContaining({ x: expect.any(Number) }),
     )
     expect(e.labelPosition).toEqual(labelSpot(e.points))
+  })
+})
+
+describe('layoutFlowchartSync: room between boxes does not stretch the boxes', () => {
+  const SUBGRAPHS = `graph TD
+  subgraph Frontend
+    A[React App] --> B[State Manager]
+  end
+  subgraph Backend
+    C[API Server] --> D[Database]
+  end
+  B --> C`
+  const gap = (p: PositionedGraph, a: string, b: string): number => {
+    const n = (id: string) => p.nodes.find((q) => q.id === id)!
+    return n(b).y - (n(a).y + n(a).height)
+  }
+  const g = graphOf(SUBGRAPHS)
+  const nested = layoutGraphSync(g)
+  const flat = layoutFlowchartSync(g)
+
+  it('keeps the gap inside a box as small as the nested layout has it', () => {
+    expect(gap(flat, 'A', 'B')).toBeLessThanOrEqual(gap(nested, 'A', 'B') + 2)
+    expect(gap(flat, 'C', 'D')).toBeLessThanOrEqual(gap(nested, 'C', 'D') + 2)
+  })
+
+  it('still keeps the two boxes clear of each other', () => {
+    expectBoxesClear(SUBGRAPHS, flat)
   })
 })
 

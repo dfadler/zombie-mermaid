@@ -38,6 +38,7 @@ import type {
   MermaidNode,
   MermaidSubgraph,
   PositionedEdge,
+  Point,
   PositionedGraph,
   PositionedGroup,
   PositionedNode,
@@ -61,6 +62,16 @@ export type LayoutFn = (
   hints?: LayoutHints,
 ) => PositionedGraph
 
+/**
+ * Room two boxes (or a box and a node) that are too close ask for: `amount` px
+ * more along `axis`, opened at `after`, where the first of them ends.
+ */
+interface RoomRequest {
+  axis: 'x' | 'y'
+  amount: number
+  after: number
+}
+
 /** Prefix of the ids of the spine nodes, which no real node may share. */
 const SPINE_PREFIX = '__zm_spine__'
 
@@ -70,8 +81,8 @@ const SPINE_MIN_WIDTH = 8
 /** How many times the spine nodes are widened before giving up. */
 const MAX_WIDENINGS = 6
 
-/** How many times the gaps between nodes and layers are widened for touching boxes. */
-const MAX_SPACING_ATTEMPTS = 3
+/** How many times room is opened between boxes that sit too close. */
+const MAX_ROOM_STEPS = 12
 
 /** Slack added to the room two boxes ask for, in px. */
 const SPACING_SLACK = 4
@@ -437,7 +448,7 @@ function overlaps(
 ): {
   penetration: Map<string, number>
   stuck: boolean
-  room: { cross: number; along: number }
+  requests: RoomRequest[]
 } {
   const vertical = isVertical(direction)
   const members = new Map(
@@ -445,7 +456,7 @@ function overlaps(
   )
   const penetration = new Map<string, number>()
   let stuck = false
-  const room = { cross: 0, along: 0 }
+  const requests: RoomRequest[] = []
   const cross = (b: Box): [number, number] =>
     vertical ? [b.x, b.x + b.width] : [b.y, b.y + b.height]
   const along = (b: Box): [number, number] =>
@@ -466,13 +477,28 @@ function overlaps(
     overlap(along(a), along(b)) > 0 ? overlap(cross(a), cross(b)) : 0
   const all = flattenGroups(groups)
   const wide = new Map(all.map((g) => [g, grown(g)]))
-  /** Ask for the room that separates `a` from `b`, along or across, whichever is less. */
-  const needRoom = (a: Box, b: Box): void => {
+  /**
+   * Ask for the room that separates `a` from `b`, along or across, whichever is
+   * less. `a` and `b` are the boxes as drawn (the clearance is in the overlap
+   * measured here, not in them); whichever comes first gets the room opened
+   * after it, see `openRoom`.
+   */
+  const needRoom = (a: Box, b: Box, aDrawn: Box, bDrawn: Box): void => {
     const acrossBy = overlap(cross(a), cross(b))
     const alongBy = overlap(along(a), along(b))
     if (acrossBy <= 0 || alongBy <= 0) return
-    if (acrossBy <= alongBy) room.cross = Math.max(room.cross, acrossBy)
-    else room.along = Math.max(room.along, alongBy)
+    const isAcross = acrossBy <= alongBy
+    // Final coordinates: x across a vertical flow, y along it.
+    const useX = isAcross === vertical
+    const near = (box: Box): number => (useX ? box.x : box.y)
+    const far = (box: Box): number =>
+      useX ? box.x + box.width : box.y + box.height
+    const first = near(aDrawn) <= near(bDrawn) ? aDrawn : bDrawn
+    requests.push({
+      axis: useX ? 'x' : 'y',
+      amount: isAcross ? acrossBy : alongBy,
+      after: far(first),
+    })
   }
   for (const group of all) {
     const inside = members.get(group.id)!
@@ -487,7 +513,7 @@ function overlaps(
         memberLayers.has(layer.get(id)!) ||
         !withinSpan(layers, layer.get(id)!)
       ) {
-        needRoom(wide.get(group)!, node)
+        needRoom(wide.get(group)!, node, group, node)
         continue
       }
       const pen = hit(wide.get(group)!, node)
@@ -507,10 +533,10 @@ function overlaps(
       const a = all[i]!
       const b = all[j]!
       if (contains(a, b) || contains(b, a)) continue
-      needRoom(wide.get(a)!, b)
+      needRoom(wide.get(a)!, b, a, b)
     }
   }
-  return { penetration, stuck, room }
+  return { penetration, stuck, requests }
 }
 
 // ============================================================================
@@ -584,13 +610,8 @@ export function layoutCompoundFlat(
    * wrong, and `undefined` if it can't be fixed.
    */
   const settle = (
-    extraNodeSpacing: number,
-    extraLayerSpacing: number,
     detachedEdges: ReadonlySet<number>,
-  ):
-    | PositionedGraph
-    | { room: { cross: number; along: number } }
-    | undefined => {
+  ): PositionedGraph | undefined => {
     // How much wider each subgraph's spine nodes are than their minimum, and
     // how far the box reached into a neighbour at the width before.
     const widen = new Map<string, number>()
@@ -603,8 +624,6 @@ export function layoutCompoundFlat(
         ]),
       )
       const laidOut = layout(augmented, {
-        extraNodeSpacing,
-        extraLayerSpacing,
         fixedWidths,
         looseEdges,
         detachedEdges,
@@ -614,8 +633,8 @@ export function layoutCompoundFlat(
       const real = new Map(
         laidOut.nodes.filter((n) => !isSpine(n.id)).map((n) => [n.id, n]),
       )
-      const groups = buildGroups(graph.subgraphs, real, fontSizes)
-      const { penetration, stuck, room } = overlaps(
+      let groups = buildGroups(graph.subgraphs, real, fontSizes)
+      let found = overlaps(
         groups,
         graph.subgraphs,
         real,
@@ -623,9 +642,26 @@ export function layoutCompoundFlat(
         new Set(spineNodes.keys()),
         layer,
       )
+      const { penetration, stuck } = found
       if (stuck) return undefined
       if (penetration.size === 0) {
-        if (room.cross > 0 || room.along > 0) return { room }
+        // Boxes that sit too close: open up room between them.
+        for (let i = 0; found.requests.length > 0; i++) {
+          if (i === MAX_ROOM_STEPS) return undefined
+          const request = found.requests.reduce((a, b) =>
+            b.amount > a.amount ? b : a,
+          )
+          openRoom(request, [...real.values()], laidOut.edges)
+          groups = buildGroups(graph.subgraphs, real, fontSizes)
+          found = overlaps(
+            groups,
+            graph.subgraphs,
+            real,
+            graph.direction,
+            new Set(spineNodes.keys()),
+            layer,
+          )
+        }
         const inner = routeDetached(
           graph,
           detachedEdges,
@@ -652,28 +688,10 @@ export function layoutCompoundFlat(
     }
   }
 
-  // Normally the gaps ELK leaves are enough. Boxes side by side, or one above
-  // another, need their paddings' worth more: give them what they asked for and
-  // try again.
-  const solve = (
-    detached: ReadonlySet<number>,
-  ): PositionedGraph | undefined => {
-    let nodeSpacing = 0
-    let layerSpacing = 0
-    for (let attempt = 0; attempt <= MAX_SPACING_ATTEMPTS; attempt++) {
-      const result = settle(nodeSpacing, layerSpacing, detached)
-      if (!result) return undefined
-      if ('nodes' in result) return result
-      nodeSpacing += result.room.cross + SPACING_SLACK
-      layerSpacing += result.room.along + SPACING_SLACK
-    }
-    return undefined
-  }
-
   // Edges inside a box that would have to go round a spine are drawn by hand
   // (see `inner-edges.ts`); if one can't be routed, lay them out as usual.
   const detached = detachableEdges(graph, plan, layer, clusters)
-  return (detached.size > 0 ? solve(detached) : undefined) ?? solve(new Set())
+  return (detached.size > 0 ? settle(detached) : undefined) ?? settle(new Set())
 }
 
 /**
@@ -763,6 +781,7 @@ function routeDetached(
       [...nodes.values()].filter((n) => n !== source && n !== target),
       box,
       graph.direction,
+      out.map((e) => e.points),
     )
     if (!points) return undefined
     out.push({
@@ -780,6 +799,33 @@ function routeDetached(
     })
   }
   return out
+}
+
+/**
+ * Open up `request.amount` px (and a little slack) between two boxes that sit
+ * too close, by moving everything from the cut line on, right where the first
+ * of them ends, along by that much: the nodes, and the edges' points, so an
+ * edge that crosses the cut just gets longer (the segments stay straight and
+ * square). A node that straddles the cut stays put; whatever it was beside
+ * moves away from it, never into it.
+ */
+function openRoom(
+  request: RoomRequest,
+  nodes: PositionedNode[],
+  edges: PositionedEdge[],
+): void {
+  const { axis, amount, after: cut } = request
+  const by = amount + SPACING_SLACK
+  for (const n of nodes) {
+    if (n[axis] >= cut) n[axis] += by
+  }
+  const shift = (p: Point): void => {
+    if (p[axis] >= cut) p[axis] += by
+  }
+  for (const e of edges) {
+    e.points.forEach(shift)
+    if (e.labelPosition) shift(e.labelPosition)
+  }
 }
 
 /** The result of the last layout without the scaffolding, moved and sized to fit what is left. */
