@@ -34,6 +34,56 @@ describe('ASCII: stacked frames keep clear columns beside walls and titles (#128
     expect(lines.some((l) => l.includes('││'))).toBe(false)
   })
 
+  it('keeps a clear column when the edge runs left of a frame it passes', () => {
+    const out = renderMermaidASCII(`graph TD
+subgraph S1[One]
+ a
+end
+subgraph S2[Two]
+ b
+end
+subgraph S3[Three]
+ c
+end
+a --> b
+b --> c
+a --> x
+a --> c`)
+    const trimmed = out
+      .split('\n')
+      .map((l) => l.trimEnd())
+      .join('\n')
+    expect(trimmed).toBe(
+      [
+        '┌───────┐',
+        '│  One  │',
+        '│       │',
+        '│       │',
+        '│ ┌───┐ │',
+        '│ │   │ │',
+        '│ │ a ├─┼───────────┬───────────┐',
+        '│ │   │ │           │           │',
+        '│ └─┬─┘ │           │           │',
+        '│   │   │           │           │',
+        '└───┼───┘           │           │',
+        '    │               │           │',
+        '    │               │           │',
+        '    │       ┌───────┼─────┐     │',
+        '┌───┼─────┐ │       │     │ ┌───┼───────┐',
+        '│   │ Two │ │       │     │ │   │ Three │',
+        '│   │     │ │       │     │ │   │       │',
+        '│   ▼     │ │       ▼     │ │   ▼       │',
+        '│ ┌───┐   │ │     ┌───┐   │ │ ┌───┐     │',
+        '│ │   │   │ │     │   │   │ │ │   │     │',
+        '│ │ b ├───┼─┘     │ x │   └─┼►│ c │     │',
+        '│ │   │   │       │   │     │ │   │     │',
+        '│ └───┘   │       └───┘     │ └───┘     │',
+        '│         │                 │           │',
+        '└─────────┘                 └───────────┘',
+      ].join('\n'),
+    )
+  })
+
   it('keeps a clear column between a widened title and the right wall', () => {
     for (const title of ['Layer Two', 'Layer Three']) {
       const line = lines.find((l) => l.includes(title))!
