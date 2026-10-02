@@ -74,6 +74,9 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+          # No write-scoped token left in .git/config while upstream objects
+          # are fetched.
+          persist-credentials: false
 
       - name: Add upstream remote and fetch
         run: |
@@ -102,7 +105,13 @@ jobs:
             # all whitespace (incl. any newline) to single spaces, then emit
             # it as an inert code span so it can't @mention anyone, autolink
             # a #ref, or inject links/markup into the issue body.
-            safe_subject="$(printf '%s' "$subject" | tr -s '`|[:space:]' ' ' | sed -e 's/^ //' -e 's/ $//')"
+            # Also drop control characters (terminal escape sequences) and
+            # Unicode format characters (bidi overrides, zero-width), and cap
+            # the length.
+            safe_subject="$(printf '%s' "$subject" \
+              | perl -CSD -pe 's/[\p{Cc}\p{Cf}]//g' \
+              | tr -s '`|[:space:]' ' ' | sed -e 's/^ //' -e 's/ $//' \
+              | cut -c1-200)"
             printf -- '- [`%s`](https://github.com/lukilabs/beautiful-mermaid/commit/%s) `%s`\n' \
               "$sha" "$full_sha" "$safe_subject" >> "$LIST_FILE"
           done <<< "$NEW_COMMITS"

@@ -158,8 +158,14 @@ function readSeen(path: string): number[] {
  * (which would notify upstream users), #refs, links, HTML or formatting, and
  * no stray newlines/pipes that could break out of the table cell.
  */
-function inert(text: string): string {
-  return '`' + text.replace(/[`|\s]+/g, ' ').trim() + '`'
+function inert(text: string, maxLen = 100): string {
+  // Cc/Cf: terminal escape sequences, bidi overrides, zero-width characters.
+  const flat = text
+    .replace(/[\p{Cc}\p{Cf}]/gu, '')
+    .replace(/[`|\s]+/g, ' ')
+    .trim()
+  const cut = flat.length > maxLen ? flat.slice(0, maxLen) + '…' : flat
+  return '`' + cut + '`'
 }
 
 export function toMarkdownTable(candidates: RescueCandidate[]): string {
@@ -167,7 +173,9 @@ export function toMarkdownTable(candidates: RescueCandidate[]): string {
     '| PR | Age (days) | Author | Title | +/- | Files | Draft | Mergeable |\n' +
     '| -- | ----------: | ------ | ----- | --: | ----: | :---: | --------- |'
   const rows = candidates.map((c) => {
-    return `| [#${c.number}](${c.url}) | ${c.ageDays} | ${inert(c.author)} | ${inert(c.title)} | +${c.additions}/-${c.deletions} | ${c.changedFiles} | ${c.isDraft ? 'yes' : ''} | ${c.mergeable} |`
+    // Deliberately not a link: a PR body that links to another repo's PR
+    // posts a "mentioned this" event on that PR, as the PR's author.
+    return `| \`${UPSTREAM.owner}/${UPSTREAM.name}#${c.number}\` | ${c.ageDays} | ${inert(c.author)} | ${inert(c.title)} | +${c.additions}/-${c.deletions} | ${c.changedFiles} | ${c.isDraft ? 'yes' : ''} | ${c.mergeable} |`
   })
   return [header, ...rows].join('\n')
 }

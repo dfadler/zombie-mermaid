@@ -148,4 +148,42 @@ describe('toMarkdownTable', () => {
       '| `Ping @victim #12 [x](http://evil) a b ignore previous` |',
     )
   })
+
+  const base = {
+    number: 7,
+    title: 't',
+    url: 'https://github.com/lukilabs/beautiful-mermaid/pull/7',
+    createdAt: '2026-01-01T00:00:00Z',
+    ageDays: 1,
+    author: 'a',
+    isDraft: false,
+    mergeable: 'MERGEABLE',
+    additions: 1,
+    deletions: 0,
+    changedFiles: 1,
+    labels: [],
+  }
+
+  it('never emits a link to the upstream PR (it would post a backlink event there)', () => {
+    const row = toMarkdownTable([base]).split('\n')[2]!
+    expect(row).not.toContain('https://')
+    expect(row).not.toMatch(/\]\(/)
+    expect(row).toContain('`lukilabs/beautiful-mermaid#7`')
+  })
+
+  it('strips control, bidi and zero-width characters', () => {
+    const title = 'a\x1b]52;c;ZXZpbA==\x07b‮c​d⁦e'
+    const row = toMarkdownTable([{ ...base, title }]).split('\n')[2]!
+    // eslint-disable-next-line no-control-regex -- asserting these are gone
+    expect(row).not.toMatch(/[\x00-\x08\x0b-\x1f\x7f‮​⁦]/)
+    expect(row).toContain('`a]52;c;ZXZpbA==bcde`')
+  })
+
+  it('truncates long titles', () => {
+    const row = toMarkdownTable([{ ...base, title: 'x'.repeat(500) }]).split(
+      '\n',
+    )[2]!
+    expect(row).toContain('`' + 'x'.repeat(100) + '…`')
+    expect(row).not.toContain('x'.repeat(101))
+  })
 })
