@@ -50,10 +50,11 @@ export type ElkDirection = 'DOWN' | 'UP' | 'LEFT' | 'RIGHT'
  * - **C4** — `DOWN`. `C4Diagram.direction` is never set by the parser (C4
  *   sources have no direction statement), only by `RenderOptions.direction`,
  *   so an unset one is the top-down layout every C4 diagram is drawn in.
- * - **ER** — `RIGHT`. An ER diagram's `direction` is optional
+ * - **ER** — `DOWN`. An ER diagram's `direction` is optional
  *   (`ErDiagram.direction?`), left `undefined` when the source has no
- *   `direction` statement, and this renderer has always laid those out
- *   left-to-right. `direction TB`/`LR`/`BT`/`RL` in the source (or
+ *   `direction` statement, and official Mermaid lays those out top-to-bottom
+ *   (#1250; this renderer used to lay them out left-to-right).
+ *   `direction TB`/`LR`/`BT`/`RL` in the source (or
  *   `RenderOptions.direction`, applied via `withDirectionOverride`) still
  *   wins over it.
  *
@@ -67,7 +68,7 @@ export const ELK_DIRECTION_FALLBACK = {
   flowchart: 'DOWN',
   state: 'DOWN',
   class: 'DOWN',
-  er: 'RIGHT',
+  er: 'DOWN',
   c4: 'DOWN',
 } as const satisfies Record<string, ElkDirection>
 

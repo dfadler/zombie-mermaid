@@ -14,6 +14,7 @@ import type {
   ClassMember,
   PositionedClassDiagram,
   PositionedClassNode,
+  PositionedClassNamespace,
   PositionedClassNote,
   PositionedClassRelationship,
 } from '@zombie-mermaid/mermaid-parser'
@@ -36,6 +37,7 @@ import {
   buildElkEdge,
   buildElkLeafNode,
   directionToElk,
+  elkPadding,
 } from '../layout-engine/elk-graph-builder.ts'
 import { measureMultilineText, resolveNodeStyle } from '@zombie-mermaid/core'
 
@@ -56,6 +58,11 @@ export const CLS = {
   /** Horizontal / vertical padding inside a note box, around its text */
   notePadX: 10,
   notePadY: 6,
+  /** Space reserved above a namespace's classes for its title */
+  namespaceTitleHeight: 28,
+  /** Padding between a namespace frame and its classes (other three sides) */
+  namespacePad: 16,
+  namespaceTitleFontSize: 12,
 } as const
 
 /**
@@ -83,6 +90,41 @@ type ClassSizeMap = Map<
   }
 >
 
+/** Layout id for the i-th namespace; contains a space, so it can't match a class id. */
+function classNamespaceId(index: number): string {
+  return `namespace ${index}`
+}
+
+/** A namespace that has at least one member class, ready for layout. */
+interface LayoutNamespace {
+  id: string
+  name: string
+  classIds: string[]
+}
+
+/**
+ * Namespaces to draw: members that aren't classes of the diagram are dropped,
+ * a class claimed by two namespaces stays in the first (ELK nodes have one
+ * parent), and a namespace left with no members is skipped.
+ */
+function resolveNamespaces(diagram: ClassDiagram): LayoutNamespace[] {
+  const known = new Set(diagram.classes.map((c) => c.id))
+  const claimed = new Set<string>()
+  const out: LayoutNamespace[] = []
+  for (const [i, ns] of diagram.namespaces.entries()) {
+    const classIds: string[] = []
+    for (const id of ns.classIds) {
+      if (!known.has(id) || claimed.has(id)) continue
+      claimed.add(id)
+      classIds.push(id)
+    }
+    if (classIds.length > 0) {
+      out.push({ id: classNamespaceId(i), name: ns.name, classIds })
+    }
+  }
+  return out
+}
+
 /** Size of each note box, keyed by its layout id. */
 type NoteSizeMap = Map<string, { width: number; height: number }>
 
@@ -90,7 +132,12 @@ type NoteSizeMap = Map<string, { width: number; height: number }>
 function buildClassElkGraph(
   diagram: ClassDiagram,
   options: ClassRenderOptions,
-): { elkGraph: ElkNode; classSizes: ClassSizeMap; noteSizes: NoteSizeMap } {
+): {
+  elkGraph: ElkNode
+  classSizes: ClassSizeMap
+  noteSizes: NoteSizeMap
+  namespaces: LayoutNamespace[]
+} {
   const classSizes: ClassSizeMap = new Map()
   const noteSizes: NoteSizeMap = new Map()
   const fontSizes = resolveFontSizes(options.fontSizes)
@@ -137,9 +184,44 @@ function buildClassElkGraph(
   // Iterate classSizes directly (populated above, in diagram.classes order)
   // rather than looking each class back up by id — sidesteps needing an
   // assertion or invariant check for a lookup that can't actually miss.
+  const namespaces = resolveNamespaces(diagram)
+  const namespaceOf = new Map<string, string>()
+  for (const ns of namespaces) {
+    for (const id of ns.classIds) namespaceOf.set(id, ns.id)
+  }
+  const namespaceNodes = new Map<string, ElkNode>()
   const children: ElkNode[] = []
+  for (const ns of namespaces) {
+    // Wide enough for the title; ELK grows it to fit the classes inside.
+    const titleW =
+      estimateTextWidth(
+        ns.name,
+        CLS.namespaceTitleFontSize,
+        FONT_WEIGHTS.groupHeader,
+      ) +
+      CLS.namespacePad * 2
+    const node: ElkNode = {
+      id: ns.id,
+      children: [],
+      layoutOptions: {
+        'elk.padding': elkPadding({
+          top: CLS.namespaceTitleHeight + CLS.namespacePad / 2,
+          left: CLS.namespacePad,
+          bottom: CLS.namespacePad,
+          right: CLS.namespacePad,
+        }),
+        'elk.nodeSize.constraints': 'MINIMUM_SIZE',
+        'elk.nodeSize.minimum': `(${Math.ceil(titleW)}, 0)`,
+      },
+    }
+    namespaceNodes.set(ns.id, node)
+    children.push(node)
+  }
   for (const [id, size] of classSizes) {
-    children.push(buildElkLeafNode(id, size))
+    const leaf = buildElkLeafNode(id, size)
+    const parent = namespaceNodes.get(namespaceOf.get(id) ?? '')
+    if (parent?.children) parent.children.push(leaf)
+    else children.push(leaf)
   }
 
   // Class edge labels carry no per-label layout options — placement is set
@@ -203,6 +285,9 @@ function buildClassElkGraph(
         padding: CLS.padding,
       }),
       'elk.edgeLabels.placement': 'CENTER',
+      // Relationships are declared at the root and may cross namespace
+      // frames; INCLUDE_CHILDREN routes them in one pass through the nesting.
+      'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
       // Mermaid lays disconnected components out left to right in
       // declaration order (#1249). ELK's default packs components by size
       // into rows, which reorders them; laying them out as one graph with
@@ -214,7 +299,7 @@ function buildClassElkGraph(
     edges,
   }
 
-  return { elkGraph, classSizes, noteSizes }
+  return { elkGraph, classSizes, noteSizes, namespaces }
 }
 
 /** Extract positioned classes, relationships, and notes from ELK result. */
@@ -223,12 +308,56 @@ function extractClassLayout(
   diagram: ClassDiagram,
   classSizes: ClassSizeMap,
   noteSizes: NoteSizeMap,
+  namespaces: LayoutNamespace[],
 ): PositionedClassDiagram {
   const classLookup = new Map<string, ClassNode>()
   for (const cls of diagram.classes) classLookup.set(cls.id, cls)
 
-  const positionedClasses: PositionedClassNode[] = []
+  // ELK reports a nested node relative to its parent. Namespaces are one
+  // level deep, so flatten each member into diagram coordinates.
+  const namespaceIds = new Set(namespaces.map((ns) => ns.id))
+  const namespaceOffsets = new Map<string, { x: number; y: number }>()
+  const flatChildren: ElkNode[] = []
   for (const child of result.children ?? []) {
+    if (namespaceIds.has(child.id)) {
+      const ox = child.x ?? 0
+      const oy = child.y ?? 0
+      namespaceOffsets.set(child.id, { x: ox, y: oy })
+      for (const inner of child.children ?? []) {
+        flatChildren.push({
+          ...inner,
+          x: (inner.x ?? 0) + ox,
+          y: (inner.y ?? 0) + oy,
+        })
+      }
+    } else {
+      flatChildren.push(child)
+    }
+  }
+  // Under INCLUDE_CHILDREN an edge's points are relative to its container
+  // (the lowest common ancestor of its endpoints): a namespace for an edge
+  // inside one, the root otherwise.
+  const edgeOffset = (edge: ElkExtendedEdge): { x: number; y: number } => {
+    const container = (edge as { container?: string }).container
+    return (container && namespaceOffsets.get(container)) || { x: 0, y: 0 }
+  }
+
+  const positionedNamespaces: PositionedClassNamespace[] = []
+  for (const ns of namespaces) {
+    const node = (result.children ?? []).find((c) => c.id === ns.id)
+    if (!node) continue
+    positionedNamespaces.push({
+      name: ns.name,
+      classIds: ns.classIds,
+      x: node.x ?? 0,
+      y: node.y ?? 0,
+      width: node.width ?? 0,
+      height: node.height ?? 0,
+    })
+  }
+
+  const positionedClasses: PositionedClassNode[] = []
+  for (const child of flatChildren) {
     const cls = classLookup.get(child.id)
     if (cls) {
       const size = classSizes.get(cls.id)
@@ -275,8 +404,9 @@ function extractClassLayout(
       throw new Error(`Missing ELK edge for relationship ${i}`)
     }
 
-    const points = extractEdgePoints(elkEdge)
-    const labelPosition = extractEdgeLabelPosition(elkEdge)
+    const off = edgeOffset(elkEdge)
+    const points = extractEdgePoints(elkEdge, off.x, off.y)
+    const labelPosition = extractEdgeLabelPosition(elkEdge, off.x, off.y)
 
     relationships.push({
       from: rel.from,
@@ -298,7 +428,7 @@ function extractClassLayout(
     linkEdges.set(elkEdge.id, elkEdge)
   }
   const childById = new Map<string, ElkNode>()
-  for (const child of result.children ?? []) childById.set(child.id, child)
+  for (const child of flatChildren) childById.set(child.id, child)
 
   const notes: PositionedClassNote[] = []
   for (const [i, note] of diagram.notes.entries()) {
@@ -321,7 +451,15 @@ function extractClassLayout(
       y: child.y ?? 0,
       width: child.width ?? size.width,
       height: child.height ?? size.height,
-      ...(link ? { linkPoints: extractEdgePoints(link) } : {}),
+      ...(link
+        ? {
+            linkPoints: extractEdgePoints(
+              link,
+              edgeOffset(link).x,
+              edgeOffset(link).y,
+            ),
+          }
+        : {}),
     })
   }
 
@@ -331,6 +469,7 @@ function extractClassLayout(
     classes: positionedClasses,
     relationships,
     notes,
+    namespaces: positionedNamespaces,
   }
 }
 
@@ -342,15 +481,22 @@ export function layoutClassDiagramSync(
   options: ClassRenderOptions = {},
 ): PositionedClassDiagram {
   if (diagram.classes.length === 0 && diagram.notes.length === 0) {
-    return { width: 0, height: 0, classes: [], relationships: [], notes: [] }
+    return {
+      width: 0,
+      height: 0,
+      classes: [],
+      relationships: [],
+      notes: [],
+      namespaces: [],
+    }
   }
 
-  const { elkGraph, classSizes, noteSizes } = buildClassElkGraph(
+  const { elkGraph, classSizes, noteSizes, namespaces } = buildClassElkGraph(
     diagram,
     options,
   )
   const result = elkLayoutSync(elkGraph, options.layoutCache)
-  return extractClassLayout(result, diagram, classSizes, noteSizes)
+  return extractClassLayout(result, diagram, classSizes, noteSizes, namespaces)
 }
 
 /**

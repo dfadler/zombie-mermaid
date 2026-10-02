@@ -76,7 +76,9 @@ Fixed in [#217](https://github.com/dfadler/zombie-mermaid/pull/217) (v1.3.0): a 
 - **The left-side "zero or more" crow's-foot marker (`}o`, e.g. `TAG }o--|| PRODUCT`) was silently dropped.** Cardinality strings were normalized by sorting their characters, which conflated `}o` with the unrelated `{o`/`o{` pair and left it unmatched — the relationship rendered with no cardinality marker on that side at all. Fixed in [#51](https://github.com/dfadler/zombie-mermaid/pull/51) (v1.2.0), which also fixed the ASCII/Unicode renderer mirroring the same marker on the wrong side.
 - **The `direction` directive (`direction TB`/`LR`/`BT`/`RL`) was parsed but never applied to layout.** Fixed as part of [#81](https://github.com/dfadler/zombie-mermaid/pull/81) (v1.2.0); a diagram that set `direction` expecting a particular axis, and got the old default instead, now actually lays out on the axis it specified.
 
-**Triggered by:** an ER diagram using the `}o` cardinality marker on the left side of a relationship, or a `direction` directive.
+- **An ER diagram with no `direction` statement laid out left to right; official Mermaid lays it out top to bottom.** The SVG renderer now defaults to top to bottom ([#1250](https://github.com/dfadler/zombie-mermaid/issues/1250)). A diagram that relied on the old horizontal default needs `direction LR` in the source (or the `direction` render option / CLI `--direction LR`). The ASCII renderer has no ER direction and is unchanged.
+
+**Triggered by:** an ER diagram using the `}o` cardinality marker on the left side of a relationship, a `direction` directive, or an ER diagram with no `direction` statement.
 
 ### Nested subgraph direction and cross-boundary edges
 

@@ -1,5 +1,6 @@
 import type {
   PositionedClassDiagram,
+  PositionedClassNamespace,
   PositionedClassNode,
   PositionedClassNote,
   PositionedClassRelationship,
@@ -35,6 +36,7 @@ import { CLS } from './layout.ts'
 // All colors use CSS custom properties (var(--_xxx)) from the theme system.
 //
 // Render order:
+//   0. Namespace frames (behind everything)
 //   1. Relationship lines and note links (behind boxes)
 //   2. Class boxes (header + attributes + methods compartments)
 //   3. Notes (dog-eared boxes)
@@ -113,6 +115,11 @@ export function renderClassSvg(
   parts.push(relationshipMarkerDefs())
   parts.push('</defs>')
 
+  // 0. Namespace frames (behind everything else)
+  for (const ns of diagram.namespaces) {
+    parts.push(renderNamespace(ns))
+  }
+
   // 1. Relationship lines and note links (rendered behind boxes)
   for (const rel of diagram.relationships) {
     parts.push(renderRelationship(rel))
@@ -138,6 +145,24 @@ export function renderClassSvg(
 
   parts.push('</svg>')
   return parts.join('\n')
+}
+
+// ============================================================================
+// Namespace frames
+// ============================================================================
+
+/** A `namespace` block: a framed box with its name in a header band. */
+function renderNamespace(ns: PositionedClassNamespace): string {
+  const { x, y, width, height } = ns
+  const bandH = CLS.namespaceTitleHeight
+  const sw = STROKE_WIDTHS.outerBox
+  return [
+    f`<g class="class-namespace" data-id="${escapeAttr(ns.name)}" data-label="${escapeAttr(ns.name)}">`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${sw}" />`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${bandH}" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${sw}" />`,
+    f`  <text x="${x + CLS.namespacePad}" y="${y + bandH / 2}" dy="${TEXT_BASELINE_SHIFT}" font-size="${CLS.namespaceTitleFontSize}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)">${escapeXml(ns.name)}</text>`,
+    '</g>',
+  ].join('\n')
 }
 
 // ============================================================================

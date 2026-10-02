@@ -146,10 +146,11 @@ function findViolation(
         const boxHi = vertical ? box.maxX : box.maxY
         if (line > boxHi) {
           // Past the frame's far side: the line must be strictly outside the
-          // wall, even for a frame the edge ends in (it should cross that
-          // wall perpendicular, not ride up its interior).
-          if (lineD > wallHi) continue
-          const need = wallHi + 1 - lineD
+          // wall with a clear column between them (#1285), even for a frame
+          // the edge ends in (it should cross that wall perpendicular, not
+          // ride up its interior).
+          if (lineD > wallHi + 1) continue
+          const need = wallHi + 2 - lineD
           // The gap column right beside the box is the widenable one; if the
           // line already sits in it, widening it moves the centre by half.
           return line - 1 > boxHi
@@ -157,8 +158,8 @@ function findViolation(
             : { index: line, by: 2 * need }
         }
         if (line < boxLo) {
-          if (lineD < wallLo) continue
-          const need = lineD + 1 - wallLo
+          if (lineD < wallLo - 1) continue
+          const need = lineD + 2 - wallLo
           return line + 1 < boxLo
             ? { index: line + 1, by: need }
             : { index: line, by: 2 * need }

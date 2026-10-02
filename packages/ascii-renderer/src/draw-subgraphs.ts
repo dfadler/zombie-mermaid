@@ -134,8 +134,8 @@ function centredStart(cells: readonly string[], width: number): number {
 /**
  * Whether `line` can be placed in a frame `width` wide with a clear column
  * between it and every vertical stroke (tier 1 of `pickTitleStart`); abutting
- * a stroke does not count. Grid layout uses this to decide whether a frame
- * needs widening (#1222).
+ * a stroke does not count, and a clear column before the right wall. Grid
+ * layout uses this to decide whether a frame needs widening (#1222).
  */
 export function titleAvoidsStrokes(
   line: string,
@@ -150,6 +150,9 @@ export function titleAvoidsStrokes(
     blocked,
   )
   if (start === null) return false
+  // A title ending against the right wall reads as cramped next to the clear
+  // column it keeps from the stroke, so the frame widens for that too (#1285).
+  if (start + cells.length >= width) return false
   // Whether the start it picked keeps the clear column (tier 1), or only abuts.
   for (let x = start - 1; x < start + cells.length + 1; x++) {
     if (x >= 1 && x < width && blocked(x)) return false
