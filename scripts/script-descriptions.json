@@ -33,6 +33,7 @@
   "generate:hero": "regenerate the committed README hero asset `public/hero.svg` (`scripts/generate-hero.ts`)",
   "generate:logo-lockup": "regenerate the logo lockup asset (`scripts/generate-logo-lockup.ts`)",
   "generate:primitives-classes": "regenerate `demo/components/generated/primitives-classes.ts` from `primitives.module.css`; run it whenever that CSS module changes",
+  "layout:oracle": "layout-fidelity oracle: renders every flowchart sample through real mermaid.js (headless Chromium, Playwright) and through our own layout engine, then scores how often the two put the same nodes above, below, beside and inside the same things (share of node pairs in the same relation, plus subgraph containment). Only relative placement is compared, so font and padding differences don't count against us. `--filter=<text>` limits it to matching samples, `--json=<file>` writes the figures, `--fail-below=<pct>` exits 1 if any sample's lowest figure is under that, `--tolerance=<px>` sets how close two centres must be to count as level. A diagnostic for layout changes (needs `pnpm exec playwright install chromium`), not part of CI. See `scripts/layout-oracle.ts` and `scripts/lib/layout-agreement.ts`.",
   "lint": "ESLint",
   "pages": "render the static site pages (`packages/site/pages.ts`), including `sitemap.xml`",
   "prepublishOnly": "runs `build` before `npm publish`; not meant to be run by hand",
