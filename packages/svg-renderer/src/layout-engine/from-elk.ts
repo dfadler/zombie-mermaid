@@ -22,6 +22,7 @@ import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
+import { edgesReversedForLayout } from './to-elk.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -527,7 +528,11 @@ function extractEdgesRecursively(
       style: originalEdge.style,
       hasArrowStart: originalEdge.hasArrowStart,
       hasArrowEnd: originalEdge.hasArrowEnd,
-      points: orthogonalPoints,
+      // An edge laid out reversed (see `edgesReversedForLayout`) comes back
+      // running target to source; flip it so it runs source to target again.
+      points: edgesReversedForLayout(graph).has(edgeIndex)
+        ? [...orthogonalPoints].reverse()
+        : orthogonalPoints,
       labelPosition,
       inlineStyle: resolveEdgeStyle(edgeIndex, graph),
       id: originalEdge.id,

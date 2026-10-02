@@ -17,6 +17,7 @@ import type { FontSizes } from '../styles.ts'
 import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
 import { measureMultilineText } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
+import { findBackEdgeIndexes } from './back-edges.ts'
 import {
   ELK_DIRECTION_FALLBACK,
   INLINE_CENTERED_EDGE_LABEL,
@@ -72,6 +73,29 @@ function isStateGraph(graph: MermaidGraph): boolean {
     if (node.shape === 'state-start' || node.shape === 'state-end') return true
   }
   return false
+}
+
+const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
+
+/**
+ * Indices of the edges handed to ELK reversed, so the layout breaks cycles the
+ * way mermaid.js (dagre) does: see `findBackEdgeIndexes`. `elkToPositioned`
+ * flips each one's points back so they still run source to target.
+ *
+ * Flowcharts only. State diagrams have their own cycle breaking (above), and a
+ * graph with a subgraph direction override goes through hop edges and ports
+ * that this does not rewrite.
+ */
+export function edgesReversedForLayout(graph: MermaidGraph): Set<number> {
+  let set = reversedCache.get(graph)
+  if (!set) {
+    set =
+      isStateGraph(graph) || hasAnyDirectionOverride(graph.subgraphs)
+        ? new Set()
+        : findBackEdgeIndexes(graph)
+    reversedCache.set(graph, set)
+  }
+  return set
 }
 
 /**
@@ -575,13 +599,14 @@ export function mermaidToElk(
   // excluded — ELK has no native self-loop layout and produces a degenerate
   // zero-length-span polyline for them; from-elk.ts synthesizes a proper
   // side loop for these once node positions are known instead.
+  const reversed = edgesReversedForLayout(graph)
   for (const { index, edge } of edgesBySubgraph.get(null)!) {
     if (edge.source === edge.target) continue
     rootEdges.push(
       buildElkEdge({
         id: `e${index}`,
-        source: edge.source,
-        target: edge.target,
+        source: reversed.has(index) ? edge.target : edge.source,
+        target: reversed.has(index) ? edge.source : edge.target,
         label: edge.label,
         labelStyle: edgeLabelStyle(opts),
       }),
@@ -603,8 +628,8 @@ export function mermaidToElk(
       rootEdges.push(
         buildElkEdge({
           id: `e${index}`,
-          source: edge.source,
-          target: edge.target,
+          source: reversed.has(index) ? edge.target : edge.source,
+          target: reversed.has(index) ? edge.source : edge.target,
           label: edge.label,
           labelStyle: edgeLabelStyle(opts),
         }),
@@ -716,13 +741,14 @@ function subgraphToElk(
   // Self-loops are excluded — see the matching comment in mermaidToElk.
   const edges: ElkExtendedEdge[] = []
   const internalEdges = edgesBySubgraph.get(sg.id) ?? []
+  const reversed = edgesReversedForLayout(graph)
   for (const { index, edge } of internalEdges) {
     if (edge.source === edge.target) continue
     edges.push(
       buildElkEdge({
         id: `e${index}`,
-        source: edge.source,
-        target: edge.target,
+        source: reversed.has(index) ? edge.target : edge.source,
+        target: reversed.has(index) ? edge.source : edge.target,
         label: edge.label,
         labelStyle: edgeLabelStyle(opts),
       }),
