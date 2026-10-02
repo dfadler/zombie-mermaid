@@ -39,4 +39,17 @@ describe('subgraph wall vs node box (#1288)', () => {
     expect(aTop![boxAt - 1]).toBe(' ')
     expect(aTop![boxAt - 2]).toBe('│')
   })
+
+  it('does not push frames apart when the title already leaves room', () => {
+    // The wide title leaves the right frame's wall clear of its node, so the
+    // frames keep their tight one-column gap (the early-`continue` path).
+    const wide = renderMermaidASCII(
+      SOURCE.replace('[Alpha]', '[Long title for alpha here]'),
+      { colorMode: 'none' },
+    )
+    const text = wide.split('\n')
+    expect(text.some((l) => l.includes('┐ ┌'))).toBe(true)
+    expect(wide.match(/┌───┐/g)).toHaveLength(3)
+    expect(wide).not.toMatch(/├───[┐┘]/)
+  })
 })
