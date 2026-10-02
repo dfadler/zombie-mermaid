@@ -53,7 +53,8 @@ describe('ASCII subgraph title padding (aside from issue #65)', () => {
     // Exact known-good output (captured from a real renderMermaidASCII run;
     // not fabricated) — locks in the fix precisely.
     expect(firstLine.trimEnd()).toBe('│ First │')
-    expect(secondLine).toBe('│   │ Second│')
+    // (TWO keeps a clear column after the title too, #1285.)
+    expect(secondLine).toBe('│   │ Second │')
   })
 
   it('still centers a title symmetrically when the label/width parity allows it', () => {
