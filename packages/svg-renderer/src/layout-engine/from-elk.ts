@@ -22,6 +22,7 @@ import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
+import { routeBackEdgesIntoGroups } from './back-edge-routing.ts'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,
@@ -211,6 +212,10 @@ export function elkToPositioned(
   // position.
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   synthesizeSelfLoopEdges(graph, nodeMap, edges)
+
+  // A back edge into a subgraph is routed by ELK around the subgraph's
+  // upstream end; bring it in through the downstream wall instead (#1239).
+  routeBackEdgesIntoGroups(edges, groups, nodes, graph.direction)
 
   // Bundle fan-out/fan-in edge paths into shared trunks when mergeEdges is enabled
   if (mergeEdges) {
