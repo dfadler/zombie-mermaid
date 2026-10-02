@@ -61,22 +61,31 @@ const STATE_LAYOUT_OPTIONS: LayoutOptions = {
 }
 
 /**
- * Whether `graph` is a flat `stateDiagram` (it has `[*]` markers, the only
- * thing that distinguishes a state graph from a flowchart here, and no
- * composite states).
- *
- * Composite states are left on the previous options on purpose: their
- * subgraph compound nodes are appended after the top-level leaf nodes, so a
- * `MODEL_ORDER` cycle break reads every edge into a composite as a back-edge
- * and draws such diagrams upside down. Giving composites the same treatment
- * needs the model order reworked first; see #1240.
+ * Whether `graph` is a `stateDiagram` (it has `[*]` markers, the only thing
+ * that distinguishes a state graph from a flowchart here). Composite states
+ * are included: their compound nodes are placed among their siblings at
+ * first-mention position (see `firstMentionRank`), so `MODEL_ORDER` reads
+ * them in source order instead of after every leaf (#1287).
  */
-function isFlatStateGraph(graph: MermaidGraph): boolean {
-  if (graph.subgraphs.length > 0) return false
+function isStateGraph(graph: MermaidGraph): boolean {
   for (const node of graph.nodes.values()) {
     if (node.shape === 'state-start' || node.shape === 'state-end') return true
   }
   return false
+}
+
+/**
+ * Source position of a root-level state or composite: the index of the first
+ * edge that names it. A composite no edge names itself falls back to the first
+ * edge naming a state inside it. Items no edge mentions rank last, keeping
+ * their relative order.
+ */
+function firstMentionRank(graph: MermaidGraph, ids: Set<string>): number {
+  for (let i = 0; i < graph.edges.length; i++) {
+    const e = graph.edges[i]!
+    if (ids.has(e.source) || ids.has(e.target)) return i
+  }
+  return Number.POSITIVE_INFINITY
 }
 
 /**
@@ -375,7 +384,7 @@ export function mermaidToElk(
     'elk.layered.compaction.postCompaction.strategy':
       'LEFT_RIGHT_CONSTRAINT_LOCKING',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-    ...(isFlatStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
+    ...(isStateGraph(graph) ? STATE_LAYOUT_OPTIONS : {}),
     'elk.layered.wrapping.strategy': 'OFF',
     // Use SEPARATE when subgraphs have direction overrides (enables proper direction handling)
     // Use INCLUDE_CHILDREN otherwise (simpler cross-hierarchy edge routing)
@@ -487,7 +496,7 @@ export function mermaidToElk(
       // A top-level start `[*]` marks where reading starts: pin it to the
       // first layer so a back-edge can't drag it into the middle. The end
       // marker stays free (see STATE_MARKER_LAYER_CONSTRAINT).
-      const pin = isFlatStateGraph(graph)
+      const pin = isStateGraph(graph)
         ? STATE_MARKER_LAYER_CONSTRAINT[node.shape]
         : undefined
       if (pin !== undefined) {
@@ -521,7 +530,14 @@ export function mermaidToElk(
   // subgraph in a cyclic flow (e.g. "CI/CD Pipeline"), reordering the
   // entire rank structure rather than just left-right sibling position —
   // a much bigger, unreviewed blast radius than the reported bug needs.
-  for (const sg of [...graph.subgraphs].reverse()) {
+  const stateGraph = isStateGraph(graph)
+  const leafCount = rootChildren.length
+  // State diagrams read in source order, so composites keep forward
+  // declaration order and are interleaved with the leaves below.
+  const subgraphOrder = stateGraph
+    ? graph.subgraphs
+    : [...graph.subgraphs].reverse()
+  for (const sg of subgraphOrder) {
     rootChildren.push(
       subgraphToElk(
         sg,
@@ -533,6 +549,26 @@ export function mermaidToElk(
         graph.direction,
       ),
     )
+  }
+  if (stateGraph && graph.subgraphs.length > 0) {
+    // ELK's MODEL_ORDER cycle breaking and crossing minimisation follow the
+    // child order, so a composite must sit at its first-mention position
+    // among its siblings rather than after every leaf (#1287). Array#sort is
+    // stable, so equal ranks keep leaves-then-composites order.
+    const rank = rootChildren.map((child, i) => {
+      if (i < leafCount) return firstMentionRank(graph, new Set([child.id]))
+      const sg = graph.subgraphs[i - leafCount]!
+      const own = firstMentionRank(graph, new Set([sg.id]))
+      if (own !== Number.POSITIVE_INFINITY) return own
+      const members = new Set<string>()
+      collectAllMemberNodeIds(sg, members)
+      return firstMentionRank(graph, members)
+    })
+    const order = rootChildren
+      .map((_, i) => i)
+      .sort((a, b) => rank[a]! - rank[b]! || a - b)
+    const sorted = order.map((i) => rootChildren[i]!)
+    rootChildren.splice(0, rootChildren.length, ...sorted)
   }
 
   // Add root-level edges. Self-loops (edge.source === edge.target) are
