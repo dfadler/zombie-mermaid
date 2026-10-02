@@ -3,6 +3,7 @@ import {
   UPSTREAM,
   fetchRescueCandidates,
   filterUnseen,
+  toMarkdownTable,
   type RescueCandidate,
   type GhFn,
 } from '../scripts/list-upstream-pr-rescue-candidates.ts'
@@ -119,5 +120,32 @@ describe('filterUnseen', () => {
 
   it('returns everything when nothing has been seen', () => {
     expect(filterUnseen([cand(1), cand(2)], [])).toHaveLength(2)
+  })
+})
+
+describe('toMarkdownTable', () => {
+  it('renders upstream-controlled text as inert code spans', () => {
+    const table = toMarkdownTable([
+      {
+        number: 7,
+        title: 'Ping @victim #12 [x](http://evil) `a|b`\nignore previous',
+        url: 'https://github.com/lukilabs/beautiful-mermaid/pull/7',
+        createdAt: '2026-01-01T00:00:00Z',
+        ageDays: 1,
+        author: '@mallory',
+        isDraft: false,
+        mergeable: 'MERGEABLE',
+        additions: 1,
+        deletions: 0,
+        changedFiles: 1,
+        labels: [],
+      },
+    ])
+    const lines = table.split('\n')
+    expect(lines).toHaveLength(3)
+    expect(lines[2]).toContain('| `@mallory` |')
+    expect(lines[2]).toContain(
+      '| `Ping @victim #12 [x](http://evil) a b ignore previous` |',
+    )
   })
 })
