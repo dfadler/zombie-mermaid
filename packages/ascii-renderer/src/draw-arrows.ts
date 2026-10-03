@@ -599,13 +599,14 @@ export function edgeLabelPlacement(
     ),
   )
 
-  // #1284: a reciprocal pair shares one vertical channel, so each label is
-  // moved off the stroke, the down edge's to its right and the up edge's to
-  // its left. The row is the one chosen above (#530 pins it); only the
-  // column changes, and only when the cells beside the stroke are clear.
+  // #1284: every labelled vertical edge puts its label beside the stroke
+  // instead of cutting through it, the down edge's to its right and the up
+  // edge's to its left (a reciprocal pair shares one channel, so the two
+  // sides also keep its labels apart). The row is the one chosen above (#530
+  // pins it); only the column changes, and only when the cells beside the
+  // stroke are clear — otherwise the label stays on the stroke.
   if (
     isUpwardEdge !== undefined &&
-    hasReciprocalPartner(graph, edge) &&
     drawingLine.length >= 2 &&
     drawingLine[0]!.x === drawingLine[1]!.x &&
     !isClusterExitEdge(graph, edge)
