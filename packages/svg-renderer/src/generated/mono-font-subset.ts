@@ -5,7 +5,7 @@
  * (scripts/build-mono-font-subset.ts), which subsets
  * third_party/fonts/jetbrains-mono-nl/JetBrainsMonoNL-Regular.ttf down to
  * Basic Latin + Latin-1 Supplement — the self-hosted, embeddable
- * `@font-face` packages/core/src/theme.ts's `buildStyleBlock()` inlines
+ * `@font-face` packages/svg-renderer/src/styles.ts's `buildSvgStyleBlock()` inlines
  * into an SVG's own `<style>` for its `.mono` rule (class-diagram method
  * signatures, ER-diagram attribute types), replacing a Google Fonts CDN
  * `@import` this library's SVG output previously depended on by default
