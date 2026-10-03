@@ -36,9 +36,9 @@ function columns(row: string, char: string): number[] {
   return [...row].flatMap((c, i) => (c === char ? [i] : []))
 }
 
-/** Whether every neighbouring pair is at least two cells apart. */
-function spaced(cols: number[]): boolean {
-  return cols.every((c, i) => i === 0 || c - cols[i - 1]! >= 2)
+/** Whether every neighbouring pair is at least `gap` cells apart. */
+function spaced(cols: number[], gap: number): boolean {
+  return cols.every((c, i) => i === 0 || c - cols[i - 1]! >= gap)
 }
 
 describe('ASCII: several entries into one cluster, TD (#1181)', () => {
@@ -50,7 +50,8 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
     expect(rows.join('\n')).not.toMatch(/[◄▲►]/)
     const heads = columns(rows[wall - 1]!, '▼')
     expect(heads).toHaveLength(2)
-    expect(spaced(heads)).toBe(true)
+    // Two empty cells between arrowheads where the wall has room.
+    expect(spaced(heads, 3)).toBe(true)
   })
 
   it('the far source jogs along the gutter and drops with a corner', () => {
@@ -74,12 +75,22 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
     expect(rows[topWall(rows) + 1]).toMatch(/^│\s+Sub\s+│/)
   })
 
-  it('three entries: one arrowhead each, every pair two cells apart', () => {
+  it('three entries: one arrowhead each, three cells apart', () => {
     const rows = lines(`graph TD\nX-->Sub\nY-->Sub\nZ-->Sub${frame}`)
     expect(rows.join('\n')).not.toMatch(/[◄▲►]/)
     const heads = columns(rows[topWall(rows) - 1]!, '▼')
     expect(heads).toHaveLength(3)
-    expect(spaced(heads)).toBe(true)
+    expect(spaced(heads, 3)).toBe(true)
+  })
+
+  it('a wall too narrow for the wider gap settles for two cells', () => {
+    const rows = lines(
+      `graph TD\nW-->Sub\nX-->Sub\nY-->Sub\nZ-->Sub\nsubgraph Sub\nA\nend`,
+    )
+    const heads = columns(rows[topWall(rows) - 1]!, '▼')
+    expect(heads).toHaveLength(4)
+    expect(spaced(heads, 2)).toBe(true)
+    expect(spaced(heads, 3)).toBe(false)
   })
 
   it('more entries than the wall can separate still end sideways-free', () => {
@@ -138,7 +149,7 @@ describe('ASCII: several entries into one cluster, LR (#1181)', () => {
     const rows = lines(src)
     expect(rows.join('\n')).not.toMatch(/[◄▲▼]/)
     expect(heads(rows)).toHaveLength(2)
-    expect(spaced(heads(rows))).toBe(true)
+    expect(spaced(heads(rows), 3)).toBe(true)
   })
 
   it('the far source runs up its own column and turns into the wall', () => {
@@ -156,7 +167,7 @@ describe('ASCII: several entries into one cluster, LR (#1181)', () => {
     const rows = lines(`graph LR\nX-->Sub\nY-->Sub\nZ-->Sub${frame}`)
     expect(rows.join('\n')).not.toMatch(/[◄▲▼]/)
     expect(heads(rows)).toHaveLength(3)
-    expect(spaced(heads(rows))).toBe(true)
+    expect(spaced(heads(rows), 3)).toBe(true)
   })
 })
 

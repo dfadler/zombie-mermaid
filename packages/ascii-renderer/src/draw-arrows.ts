@@ -237,24 +237,44 @@ function entryLandings(
     return landings
   }
 
-  // Keep each entry at its routed landing where it can stay, and push only
-  // the colliding ones apart by two cells: a forward pass clears each from
-  // the one before it, a backward pass pulls the run back inside the wall.
+  // Two empty cells between arrowheads read better than one; a wall too
+  // narrow for that settles for one, and one too narrow even for that keeps
+  // the routed landings.
   const lo = lr ? sg.minY + 1 : sg.minX + 1
   const hi = lr ? sg.maxY - 1 : sg.maxX - 1
-  for (let i = 0; i < spaced.length; i++) {
-    const floor = i === 0 ? lo : spaced[i - 1]! + 2
-    spaced[i] = Math.max(spaced[i]!, floor)
-  }
-  for (let i = spaced.length - 1; i >= 0; i--) {
-    const ceiling = i === spaced.length - 1 ? hi : spaced[i + 1]! - 2
-    spaced[i] = Math.min(spaced[i]!, ceiling)
-  }
-  // A wall too narrow to give every entry its own cell keeps the routed one.
-  if (spaced[0]! < lo) return landings
+  const pushed =
+    pushApart(spaced, lo, hi, PREFERRED_ENTRY_GAP) ??
+    pushApart(spaced, lo, hi, MIN_ENTRY_GAP)
+  if (!pushed) return landings
 
-  group.forEach((g, i) => landings.set(g.edge, spaced[i]!))
+  group.forEach((g, i) => landings.set(g.edge, pushed[i]!))
   return landings
+}
+
+/** Cells between the landings of two entries into one wall: preferred, minimum. */
+const PREFERRED_ENTRY_GAP = 3
+const MIN_ENTRY_GAP = 2
+
+/**
+ * Move sorted `positions` as little as needed to be at least `gap` apart and
+ * inside `[lo, hi]`: a forward pass clears each from the one before it, a
+ * backward pass pulls the run back inside the wall. Undefined when they do
+ * not fit.
+ */
+function pushApart(
+  positions: number[],
+  lo: number,
+  hi: number,
+  gap: number,
+): number[] | undefined {
+  const out = [...positions]
+  for (let i = 0; i < out.length; i++) {
+    out[i] = Math.max(out[i]!, i === 0 ? lo : out[i - 1]! + gap)
+  }
+  for (let i = out.length - 1; i >= 0; i--) {
+    out[i] = Math.min(out[i]!, i === out.length - 1 ? hi : out[i + 1]! - gap)
+  }
+  return out[0]! < lo ? undefined : out
 }
 
 /**
