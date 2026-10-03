@@ -56,6 +56,7 @@ export function drawArrow(
     edge.path,
     edge.style,
     clusterWallEnd(graph, edge),
+    strokeShift(graph, edge),
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -187,6 +188,7 @@ function drawPath(
   path: GridCoord[],
   style: AsciiEdgeStyle = 'solid',
   endOverride?: DrawingCoord,
+  dx = 0,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -197,11 +199,13 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = gridToDrawingCoord(graph, previousCoord)
+    const shift = (c: DrawingCoord): DrawingCoord =>
+      dx === 0 ? c : { x: c.x + dx, y: c.y }
+    const prevDC = shift(gridToDrawingCoord(graph, previousCoord))
     const nextDC =
       endOverride && i === path.length - 1
         ? endOverride
-        : gridToDrawingCoord(graph, nextCoord)
+        : shift(gridToDrawingCoord(graph, nextCoord))
 
     if (drawingCoordEquals(prevDC, nextDC)) {
       previousCoord = nextCoord
@@ -535,6 +539,26 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
 }
 
 /**
+ * Prototype 2 (#1284): a straight vertical reciprocal pair keeps its single
+ * grid column but each edge's stroke is drawn one cell off the column
+ * centre: down edge right (+1), up edge left (-1). 0 = not applicable.
+ */
+export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
+  if (edge.from === edge.to || edge.path.length !== 2) return 0
+  const partner = graph.edges.find(
+    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
+  )
+  if (!partner || partner.path.length !== 2) return 0
+  const [a, b] = edge.path as [GridCoord, GridCoord]
+  const [c, d] = partner.path as [GridCoord, GridCoord]
+  if (a.x !== b.x || c.x !== d.x || a.x !== c.x || a.y === b.y) return 0
+  for (const n of [edge.from, edge.to]) {
+    if (!n.drawing || n.drawing.length < 5) return 0
+  }
+  return b.y > a.y ? 1 : -1
+}
+
+/**
  * Where an edge's label goes, as the drawing-space cells its lines start at.
  * `null` for an unlabeled edge. The single source of truth for label
  * placement: `drawArrowLabel` draws from it, and cluster-boundary.ts
@@ -579,6 +603,21 @@ export function edgeLabelPlacement(
     (graph.config.graphDirection !== 'LR' &&
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
+
+  const dx = strokeShift(graph, edge)
+  if (dx !== 0 && drawingLine.length >= 2) {
+    const strokeX = drawingLine[0]!.x + dx
+    const placed = labelTextPlacement(
+      drawingLine,
+      edge.text,
+      isUpwardEdge,
+      pullTowardTarget,
+    ).map((item) => ({
+      ...item,
+      x: dx > 0 ? strokeX + 2 : strokeX - 1 - displayWidth(item.text),
+    }))
+    if (placed.every((p) => p.x >= 0)) return placed
+  }
 
   return clearOfLaneJunction(
     graph,
