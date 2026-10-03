@@ -96,6 +96,13 @@ export function convertToAsciiGraph(
     let clusterMSg: MermaidSubgraph | undefined
     let clusterTargetMSg: MermaidSubgraph | undefined
 
+    // An edge between a node and a subgraph that contains it (`B --> Sub`
+    // with B inside Sub, or `Sub --> B`) has no frame-crossing to draw. The
+    // redirect below would turn it into an ordinary back-edge to the cluster's
+    // entry member and the router would run it along the frame's wall (#1310),
+    // so it is dropped, like a self-edge on the cluster.
+    if (isEdgeWithinOwnCluster(mEdge, subgraphById)) continue
+
     if (subgraphIds.has(sourceId)) {
       const mSg = subgraphById.get(sourceId)
       const resolved = mSg
@@ -226,6 +233,26 @@ function indexSubgraph(
 function collectAllMemberNodeIds(mSg: MermaidSubgraph, out: Set<string>): void {
   for (const id of mSg.nodeIds) out.add(id)
   for (const child of mSg.children) collectAllMemberNodeIds(child, out)
+}
+
+/**
+ * True when one endpoint of `edge` is a subgraph id and the other is a plain
+ * node that is a member (directly or through a nested subgraph) of it.
+ */
+function isEdgeWithinOwnCluster(
+  edge: { source: string; target: string },
+  subgraphById: Map<string, MermaidSubgraph>,
+): boolean {
+  const contains = (clusterId: string, nodeId: string): boolean => {
+    const mSg = subgraphById.get(clusterId)
+    if (!mSg || subgraphById.has(nodeId)) return false
+    const members = new Set<string>()
+    collectAllMemberNodeIds(mSg, members)
+    return members.has(nodeId)
+  }
+  return (
+    contains(edge.target, edge.source) || contains(edge.source, edge.target)
+  )
 }
 
 /**
