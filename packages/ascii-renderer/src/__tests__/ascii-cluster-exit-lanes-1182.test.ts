@@ -125,16 +125,30 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
     },
   )
 
-  // A third sibling has no free side face left on the target, so the group
-  // keeps today's routing rather than running a lane along a node border.
-  it.each([
-    ['TD', ''],
-    ['LR', ''],
-    ['TD', '  S -->|fourth| T\n'],
-  ] as const)(
-    '%s: a three- or four-sibling lane group does not engage the cluster (%j)',
-    (dir, extra) => {
-      const src = `${head(dir)}  S -->|third| T\n${extra}  S -->|other| U\n  S -->|more| V\n`
+  // Three or more siblings (#1253): the target is against the layout edge
+  // (no low-side gutter) and a fourth sibling needs a track of its own, so
+  // layout inserts gutter tracks. Five or more keep today's routing.
+  describe('three or more siblings (#1253)', () => {
+    const LABELS = ['first', 'second', 'third', 'fourth', 'fifth']
+    const many = (dir: Dir, siblings: number, others: string[]): string =>
+      `flowchart ${dir}
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+${LABELS.slice(0, siblings)
+  .map((l) => `  S -->|${l}| T\n`)
+  .join('')}${others.map((o, i) => `  S -->|${o}| ${'UVW'[i]}\n`).join('')}`
+
+    const MANY_CASES: Array<[string, Dir, number, string[]]> = [
+      ['TD, 3 siblings, one other', 'TD', 3, ['other']],
+      ['TD, 4 siblings, one other', 'TD', 4, ['other']],
+      ['TD, 3 siblings, two others', 'TD', 3, ['other', 'more']],
+      ['LR, 3 siblings, one other', 'LR', 3, ['other']],
+      ['LR, 4 siblings, one other', 'LR', 4, ['other']],
+    ]
+
+    const plan = (src: string, dir: Dir): Set<unknown> | undefined => {
       const graph = convertToAsciiGraph(parseMermaid(src), {
         useAscii: false,
         paddingX: 6,
@@ -143,11 +157,80 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
         graphDirection: dir,
       })
       createMapping(graph)
-      const plan = [...(graph.clusterExitPlans?.values() ?? [])][0]
-      expect(plan).toBeDefined()
-      expect([...plan!.edges].some((e) => e.parallelLane)).toBe(false)
-    },
-  )
+      return [...(graph.clusterExitPlans?.values() ?? [])][0]?.edges
+    }
+
+    it.each(MANY_CASES)(
+      '%s: the cluster engages and owns every exit',
+      (_n, dir, siblings, others) => {
+        expect(plan(many(dir, siblings, others), dir)?.size).toBe(
+          siblings + others.length,
+        )
+      },
+    )
+
+    it.each(MANY_CASES)(
+      '%s: every label appears once and no two abut',
+      (_n, dir, siblings, others) => {
+        const words = [...LABELS.slice(0, siblings), ...others]
+        for (const useAscii of [false, true]) {
+          const lines = render(many(dir, siblings, others), useAscii)
+          for (const word of ['Start', 'Cluster', ...words]) {
+            expect(count(lines, word), `${word} (ascii=${useAscii})`).toBe(1)
+          }
+          for (const [r, text] of lines.entries()) {
+            const spans = words
+              .map((w) => [text.indexOf(w), w.length] as const)
+              .filter(([i]) => i >= 0)
+              .sort((x, y) => x[0] - y[0])
+            for (let i = 1; i < spans.length; i++) {
+              const prev = spans[i - 1]!
+              expect(
+                spans[i]![0] - (prev[0] + prev[1]),
+                `row ${r} (ascii=${useAscii}):\n${text}`,
+              ).toBeGreaterThanOrEqual(2)
+            }
+          }
+        }
+      },
+    )
+
+    it.each(MANY_CASES.filter(([, d]) => d === 'TD'))(
+      '%s: only the trunk crosses the bottom wall',
+      (_n, dir, siblings, others) => {
+        const lines = render(many(dir, siblings, others))
+        const wall = lines.findLastIndex((l) => /^\s*└[─┼]+┘$/.test(l))
+        expect(wall).toBeGreaterThan(-1)
+        expect(lines[wall]!.match(/[┼┬┴├┤]/g) ?? []).toHaveLength(1)
+      },
+    )
+
+    it('TD: three siblings render with the target kept off the layout edge', () => {
+      const lines = render(many('TD', 3, ['other']))
+      // first drops straight above T, second and third to its right (source order).
+      const labels = lines.find((l) => l.includes('third'))!
+      expect(labels.indexOf('first')).toBeLessThan(labels.indexOf('second'))
+      expect(labels.indexOf('second')).toBeLessThan(labels.indexOf('third'))
+      expect(labels.indexOf('third')).toBeLessThan(labels.indexOf('other'))
+    })
+
+    it.each(['TD', 'LR'] as const)(
+      "%s: five siblings keep today's routing (no lane in the plan)",
+      (dir) => {
+        const src = many(dir, 5, ['other', 'more'])
+        const graph = convertToAsciiGraph(parseMermaid(src), {
+          useAscii: false,
+          paddingX: 6,
+          paddingY: 5,
+          boxBorderPadding: 1,
+          graphDirection: dir,
+        })
+        createMapping(graph)
+        const edges = [...(graph.clusterExitPlans?.values() ?? [])][0]?.edges
+        expect([...(edges ?? [])].some((e) => e.parallelLane)).toBe(false)
+      },
+    )
+  })
 
   // A lane label short enough to sit clear of the junction unaided.
   it('LR: a short second-lane label keeps its place beside the junction', () => {

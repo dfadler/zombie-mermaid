@@ -88,10 +88,12 @@ describe('title room beside an entering stroke (#1278)', () => {
 describe('title beside a stroke in a labelled mutual pair (#1278)', () => {
   const out = renderMermaidASCII(MUTUAL_PAIR)
 
-  it('keeps "Two" whole with a clear column after the stroke', () => {
+  it('keeps "Two" whole with a clear column before the next stroke', () => {
+    // The pair's strokes are drawn apart (#1284), so the title sits left of
+    // both rather than between the frame wall and a single stroke.
     const line = row(out, 'Two')
-    expect(line).toMatch(/[│┼] Two/)
-    expect(line).not.toMatch(/[│┼]Two/)
+    expect(line).toMatch(/Two [│┼]/)
+    expect(line).not.toMatch(/Two[│┼]/)
   })
 
   it('still draws both edge labels', () => {

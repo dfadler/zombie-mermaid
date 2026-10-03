@@ -56,6 +56,7 @@ export function drawArrow(
     edge.path,
     edge.style,
     clusterWallEnd(graph, edge),
+    strokeShift(graph, edge),
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -187,6 +188,7 @@ function drawPath(
   path: GridCoord[],
   style: AsciiEdgeStyle = 'solid',
   endOverride?: DrawingCoord,
+  dx = 0,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -197,11 +199,13 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = gridToDrawingCoord(graph, previousCoord)
+    const shift = (c: DrawingCoord): DrawingCoord =>
+      dx === 0 ? c : { x: c.x + dx, y: c.y }
+    const prevDC = shift(gridToDrawingCoord(graph, previousCoord))
     const nextDC =
       endOverride && i === path.length - 1
-        ? endOverride
-        : gridToDrawingCoord(graph, nextCoord)
+        ? shift(endOverride)
+        : shift(gridToDrawingCoord(graph, nextCoord))
 
     if (drawingCoordEquals(prevDC, nextDC)) {
       previousCoord = nextCoord
@@ -535,6 +539,55 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
 }
 
 /**
+ * #1284: a straight vertical reciprocal pair (`A --> B` + `B --> A`, one
+ * grid column) keeps its single column, but the two strokes are drawn apart:
+ * the down edge one cell right of the column centre (+1), the up edge one
+ * cell left (-1). The labels then sit beside their own stroke. Returns 0 -
+ * the strokes stay on the centre - unless the pair is straight and vertical,
+ * both boxes are wide enough to hold two strokes, and every label has free
+ * cells beside its stroke.
+ */
+export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
+  const partner = verticalPairPartner(graph, edge)
+  if (!partner) return 0
+  for (const e of [edge, partner]) {
+    if (e.text.length === 0) continue
+    const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
+    const beside = besideStroke(
+      centredLabelPlacement(graph, e),
+      gridToDrawingCoord(graph, e.path[0]!).x + (side === 'right' ? 1 : -1),
+      side,
+    )
+    if (!besideCellsFree(graph, e, beside)) return 0
+  }
+  return edge.path[1]!.y > edge.path[0]!.y ? 1 : -1
+}
+
+function verticalPairPartner(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): AsciiEdge | undefined {
+  if (edge.from === edge.to || edge.path.length !== 2) return undefined
+  const partner = graph.edges.find(
+    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
+  )
+  if (!partner || partner.path.length !== 2) return undefined
+  if (isClusterExitEdge(graph, edge) || isClusterExitEdge(graph, partner)) {
+    return undefined
+  }
+  const [a, b] = edge.path as [GridCoord, GridCoord]
+  const [c, d] = partner.path as [GridCoord, GridCoord]
+  if (a.x !== b.x || c.x !== d.x || a.x !== c.x || a.y === b.y) return undefined
+  // Opposite directions, each box wide enough for two strokes (centre +-1
+  // must stay inside the border, i.e. width >= 5).
+  if ((b.y > a.y) === (d.y > c.y)) return undefined
+  for (const n of [edge.from, edge.to]) {
+    if (!n.drawing || n.drawing.length < 5) return undefined
+  }
+  return partner
+}
+
+/**
  * Where an edge's label goes, as the drawing-space cells its lines start at.
  * `null` for an unlabeled edge. The single source of truth for label
  * placement: `drawArrowLabel` draws from it, and cluster-boundary.ts
@@ -546,7 +599,23 @@ export function edgeLabelPlacement(
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] | null {
   if (edge.text.length === 0) return null
+  const centred = centredLabelPlacement(graph, edge)
+  const dx = strokeShift(graph, edge)
+  if (dx === 0) return centred
+  // #1284: the pair's strokes are drawn one cell either side of the column
+  // centre (see strokeShift), so each label sits beside its own stroke,
+  // clear of the other. strokeShift already checked these cells are free.
+  return besideStroke(
+    centred,
+    gridToDrawingCoord(graph, edge.path[0]!).x + dx,
+    dx > 0 ? 'right' : 'left',
+  )
+}
 
+function centredLabelPlacement(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number; text: string }[] {
   const drawingLine = lineToDrawing(graph, edge.labelLine)
 
   // Determine if this is an upward edge (target is above source in the path)
@@ -580,7 +649,7 @@ export function edgeLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  const centred = clearOfLaneJunction(
+  return clearOfLaneJunction(
     graph,
     edge,
     clearOfSubgraphTitles(
@@ -598,26 +667,6 @@ export function edgeLabelPlacement(
       drawingLine,
     ),
   )
-
-  // #1284: a reciprocal pair shares one vertical channel, so each label is
-  // moved off the stroke, the down edge's to its right and the up edge's to
-  // its left. The row is the one chosen above (#530 pins it); only the
-  // column changes, and only when the cells beside the stroke are clear.
-  if (
-    isUpwardEdge !== undefined &&
-    hasReciprocalPartner(graph, edge) &&
-    drawingLine.length >= 2 &&
-    drawingLine[0]!.x === drawingLine[1]!.x &&
-    !isClusterExitEdge(graph, edge)
-  ) {
-    const beside = besideStroke(
-      centred,
-      drawingLine[0]!.x,
-      isUpwardEdge ? 'left' : 'right',
-    )
-    if (besideCellsFree(graph, edge, beside)) return beside
-  }
-  return centred
 }
 
 function isClusterExitEdge(graph: AsciiGraph, edge: AsciiEdge): boolean {
