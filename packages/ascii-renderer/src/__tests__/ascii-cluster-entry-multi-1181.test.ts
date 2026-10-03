@@ -1,12 +1,15 @@
 /**
  * Regression tests for #1181: several edges addressed to one subgraph id
- * (`X --> Sub`, `Y --> Sub`) share a landing cell on the cluster's wall.
+ * (`X --> Sub`, `Y --> Sub`).
  *
- * A source off the landing column jogs along the gutter and then has to turn
- * onto the wall. Before, the jog itself ended on the landing cell, so its
- * arrowhead pointed along the gutter (`◄` / `▲`) and overwrote the arrowhead
- * of the edge that did run straight in. Every entry now ends in an arrowhead
- * that points into the cluster, one cell outside the wall.
+ * Routing clamps each source's column (row) into the cluster's span, so when
+ * the interior is narrow the entries collapse onto one landing cell. A source
+ * off that cell jogs along the gutter and has to turn onto the wall; before,
+ * the jog itself ended on the landing cell, so its arrowhead pointed along the
+ * gutter (`◄` / `▲`) and overwrote the arrowhead of the edge that did run
+ * straight in. Every entry now ends in an arrowhead of its own that points into
+ * the cluster, one cell outside the wall, as real mermaid gives each edge its
+ * own point on the cluster border.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -28,26 +31,42 @@ function topWall(rows: string[], useAscii = false): number {
   return i
 }
 
+/** Columns of `char` in `row`. */
+function columns(row: string, char: string): number[] {
+  return [...row].flatMap((c, i) => (c === char ? [i] : []))
+}
+
+/** Whether every neighbouring pair is at least two cells apart. */
+function spaced(cols: number[]): boolean {
+  return cols.every((c, i) => i === 0 || c - cols[i - 1]! >= 2)
+}
+
 describe('ASCII: several entries into one cluster, TD (#1181)', () => {
   const src = `graph TD\nX-->Sub\nY-->Sub${frame}`
 
-  it('every arrowhead points down, on the row above the wall', () => {
+  it('every entry has its own arrowhead, on the row above the wall', () => {
     const rows = lines(src)
     const wall = topWall(rows)
-    const text = rows.join('\n')
-    expect(text).not.toMatch(/[◄▲►]/)
-    expect(rows[wall - 1]).toMatch(/▼/)
-    // The two entries merge into one arrowhead on the shared landing cell.
-    expect([...text].filter((c) => c === '▼')).toHaveLength(2)
+    expect(rows.join('\n')).not.toMatch(/[◄▲►]/)
+    const heads = columns(rows[wall - 1]!, '▼')
+    expect(heads).toHaveLength(2)
+    expect(spaced(heads)).toBe(true)
   })
 
-  it('the far source turns onto the landing column with a tee, not an arrowhead', () => {
+  it('the far source jogs along the gutter and drops with a corner', () => {
     const rows = lines(src)
     const wall = topWall(rows)
     const jog = rows[wall - 2]!
-    expect(jog).toMatch(/├─+┘/)
-    // The arrowhead sits in the jog's column, directly below the tee.
-    expect(rows[wall - 1]!.indexOf('▼')).toBe(jog.indexOf('├'))
+    expect(jog).toMatch(/┌─+┘/)
+    // The jog's corner sits directly above the arrowhead it drops to.
+    expect(columns(rows[wall - 1]!, '▼')).toContain(jog.indexOf('┌'))
+  })
+
+  it('the near source keeps running straight in', () => {
+    const rows = lines(src)
+    const wall = topWall(rows)
+    const stem = columns(rows[wall - 3]!, '│')
+    expect(stem.some((c) => rows[wall - 1]![c] === '▼')).toBe(true)
   })
 
   it('leaves the wall unbroken', () => {
@@ -55,13 +74,31 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
     expect(rows[topWall(rows) + 1]).toMatch(/^│\s+Sub\s+│/)
   })
 
-  it('three entries: a source on each side of the landing column', () => {
+  it('three entries: one arrowhead each, every pair two cells apart', () => {
     const rows = lines(`graph TD\nX-->Sub\nY-->Sub\nZ-->Sub${frame}`)
-    const text = rows.join('\n')
-    expect(text).not.toMatch(/[◄▲►]/)
+    expect(rows.join('\n')).not.toMatch(/[◄▲►]/)
+    const heads = columns(rows[topWall(rows) - 1]!, '▼')
+    expect(heads).toHaveLength(3)
+    expect(spaced(heads)).toBe(true)
+  })
+
+  it('more entries than the wall can separate still end sideways-free', () => {
+    const rows = lines(
+      `graph TD\nV-->Sub\nW-->Sub\nX-->Sub\nY-->Sub\nZ-->Sub\nsubgraph Sub\nA\nend`,
+    )
+    expect(rows.join('\n')).not.toMatch(/[◄▲►]/)
+    expect(rows[topWall(rows) - 1]).toMatch(/▼/)
+  })
+
+  it('entries that already land apart are left where they were routed', () => {
+    // Two members side by side: each source sits over its own member, so the
+    // routed landings are far apart and need no spreading.
+    const rows = lines(`graph TD\nX-->Sub\nY-->Sub\nsubgraph Sub\nA\nB\nend`)
     const wall = topWall(rows)
-    // One landing cell: a single arrowhead on the row above the wall.
-    expect([...rows[wall - 1]!].filter((c) => c === '▼')).toHaveLength(1)
+    expect(rows.join('\n')).not.toMatch(/[◄▲►]/)
+    // No jog: nothing between the sources' stems and the arrowheads bends.
+    expect(rows[wall - 2]).not.toMatch(/[┌┐└┘]/)
+    expect(columns(rows[wall - 1]!, '▼')).toHaveLength(2)
   })
 
   it('labels sit on the jog, not on the arrowhead row', () => {
@@ -82,7 +119,7 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
   it('ASCII mode: the drop corner and arrowhead use ASCII glyphs', () => {
     const rows = lines(src, true)
     const wall = topWall(rows, true)
-    expect(rows[wall - 1]).toMatch(/v/)
+    expect(columns(rows[wall - 1]!, 'v')).toHaveLength(2)
     expect(rows[wall - 2]).toMatch(/\+-+\+/)
     expect(rows.join('\n')).not.toMatch(/[<>^]/)
   })
@@ -90,21 +127,23 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
 
 describe('ASCII: several entries into one cluster, LR (#1181)', () => {
   const src = `graph LR\nX-->|req|Sub\nY-->|retry|Sub${frame}`
+  /** Rows holding an arrowhead in the cell just left of the frame's wall. */
+  const heads = (rows: string[]): number[] => {
+    // The frame is the only box wide enough to have a run of nine dashes.
+    const wallX = rows.map((r) => r.search(/┌─{9,}┐/)).find((x) => x >= 0)!
+    return rows.flatMap((r, i) => (r[wallX - 1] === '►' ? [i] : []))
+  }
 
-  it('every arrowhead points right, one cell before the wall', () => {
+  it('every entry has its own arrowhead, one cell before the wall', () => {
     const rows = lines(src)
-    const text = rows.join('\n')
-    expect(text).not.toMatch(/[◄▲▼]/)
-    const arrow = rows.find((r) => r.includes('►│'))
-    expect(arrow).toBeDefined()
-    // Only one arrowhead reaches the wall: the entries share the landing cell.
-    expect(rows.filter((r) => r.includes('►│'))).toHaveLength(1)
+    expect(rows.join('\n')).not.toMatch(/[◄▲▼]/)
+    expect(heads(rows)).toHaveLength(2)
+    expect(spaced(heads(rows))).toBe(true)
   })
 
-  it('the second source turns onto the first one’s run with a tee', () => {
+  it('the far source runs up its own column and turns into the wall', () => {
     const rows = lines(src)
-    const arrow = rows.find((r) => r.includes('►│'))!
-    expect(arrow).toMatch(/┬─►│/)
+    expect(rows.some((r) => /┌─►│/.test(r))).toBe(true)
   })
 
   it('both labels are kept whole', () => {
@@ -113,10 +152,11 @@ describe('ASCII: several entries into one cluster, LR (#1181)', () => {
     expect(text).toMatch(/retry/)
   })
 
-  it('three entries stack their jogs on one run', () => {
+  it('three entries each get a row of their own', () => {
     const rows = lines(`graph LR\nX-->Sub\nY-->Sub\nZ-->Sub${frame}`)
     expect(rows.join('\n')).not.toMatch(/[◄▲▼]/)
-    expect(rows.filter((r) => r.includes('►│'))).toHaveLength(1)
+    expect(heads(rows)).toHaveLength(3)
+    expect(spaced(heads(rows))).toBe(true)
   })
 })
 
