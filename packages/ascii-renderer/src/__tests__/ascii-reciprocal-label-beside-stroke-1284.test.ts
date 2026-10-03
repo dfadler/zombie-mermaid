@@ -83,10 +83,26 @@ B -->|y| A`)
     expect(start + 'cancel'.length).toBeGreaterThan(col)
   })
 
-  it('leaves a lone labelled vertical edge on its stroke (wider case deliberately not changed)', () => {
+  it('puts a lone labelled down edge right of its stroke too', () => {
     const lines = render(`graph TD
 A -->|hello| B`)
+    const col = lines[lines.findIndex((l) => l.includes('▼'))]!.indexOf('▼')
     const row = lines.find((l) => l.includes('hello'))!
-    expect(row.trim()).toBe('hello')
+    expect(row[col]).toBe('│')
+    expect(row.indexOf('hello')).toBe(col + 2)
+  })
+
+  it('keeps a lone down edge on its stroke when another edge blocks the right side', () => {
+    // The sibling A --> C runs where a beside-right label would land, so the
+    // free-cell check fails and the label stays centred on its own stroke.
+    const lines = render(`graph TD
+A -->|a much longer label here| B
+A --> C`)
+    const col = lines[lines.findIndex((l) => l.includes('▼'))]!.indexOf('▼')
+    const start = lines
+      .find((l) => l.includes('a much longer'))!
+      .indexOf('a much longer')
+    expect(start).toBeLessThanOrEqual(col)
+    expect(start + 'a much longer label here'.length).toBeGreaterThan(col)
   })
 })
