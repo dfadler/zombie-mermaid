@@ -51,11 +51,14 @@ export function drawArrow(
   }
 
   const labelCanvas = drawArrowLabel(graph, edge)
+  const wallEnd = clusterWallEnd(graph, edge)
+  const drop = wallEnd ? clusterEntryDrop(graph, edge, wallEnd) : undefined
   const [pathCanvas, linesDrawn, lineDirs] = drawPath(
     graph,
     edge.path,
     edge.style,
-    clusterWallEnd(graph, edge),
+    wallEnd,
+    drop,
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -126,7 +129,7 @@ export function drawArrow(
 
   const cornersCanvas = invisible
     ? copyCanvas(graph.canvas)
-    : drawCorners(graph, edge.path)
+    : drawCorners(graph, edge.path, drop)
 
   return [
     pathCanvas,
@@ -179,6 +182,61 @@ function clusterWallEnd(
 }
 
 /**
+ * A cluster-entry edge whose last routed leg runs along the wall (across the
+ * flow axis) instead of into it, and where it turns (#1181). That happens
+ * when several entries share one landing cell and a source sits off the
+ * landing column (row): its path jogs along the gutter and must then turn to
+ * drop onto the wall, so its arrowhead points into the cluster like its
+ * siblings' rather than along the gutter. `end` is the wall cell the drop
+ * reaches; `turn` is the drawing row (TD) or column (LR) of the jog, kept
+ * two cells clear of the wall so the arrowhead has its own cell between the
+ * jog and the wall. The drop leg and its corner are drawn, not routed, so
+ * occupancy is unchanged.
+ */
+interface EntryDrop {
+  end: DrawingCoord
+  turn: number
+  /** The grid row (TD) or column (LR) the routed jog runs along. */
+  gridLine: number
+}
+
+function clusterEntryDrop(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  end: DrawingCoord,
+): EntryDrop | undefined {
+  const last = edge.path[edge.path.length - 1]
+  const prev = edge.path[edge.path.length - 2]
+  if (!last || !prev) return undefined
+  const lr = graph.config.graphDirection === 'LR'
+  const dir = determineDirection(prev, last)
+  if (dirEquals(dir, lr ? Right : Down)) return undefined
+  const gutter = gridToDrawingCoord(graph, last)
+  const start = gridToDrawingCoord(graph, edge.path[0]!)
+  const turn = lr
+    ? Math.min(gutter.x, end.x - 2)
+    : Math.min(gutter.y, end.y - 2)
+  // No room between the source and the wall for a jog and an arrowhead:
+  // leave the edge as routed.
+  if (turn <= (lr ? start.x : start.y)) return undefined
+  return { end, turn, gridLine: lr ? last.x : last.y }
+}
+
+/** Drawing coordinate of a path point, with an entry drop's jog moved to its turn. */
+function dropPoint(
+  graph: AsciiGraph,
+  point: GridCoord,
+  drop: EntryDrop | undefined,
+): DrawingCoord {
+  const dc = gridToDrawingCoord(graph, point)
+  if (!drop) return dc
+  if (graph.config.graphDirection === 'LR') {
+    return point.x === drop.gridLine ? { x: drop.turn, y: dc.y } : dc
+  }
+  return point.y === drop.gridLine ? { x: dc.x, y: drop.turn } : dc
+}
+
+/**
  * Draw the path lines for an edge.
  * Returns the canvas, the coordinates drawn for each segment, and the direction of each segment.
  */
@@ -187,6 +245,7 @@ function drawPath(
   path: GridCoord[],
   style: AsciiEdgeStyle = 'solid',
   endOverride?: DrawingCoord,
+  drop?: EntryDrop,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -197,11 +256,11 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = gridToDrawingCoord(graph, previousCoord)
+    const prevDC = dropPoint(graph, previousCoord, drop)
     const nextDC =
-      endOverride && i === path.length - 1
+      endOverride && !drop && i === path.length - 1
         ? endOverride
-        : gridToDrawingCoord(graph, nextCoord)
+        : dropPoint(graph, nextCoord, drop)
 
     if (drawingCoordEquals(prevDC, nextDC)) {
       previousCoord = nextCoord
@@ -222,6 +281,24 @@ function drawPath(
     linesDrawn.push(segment)
     lineDirs.push(dir)
     previousCoord = nextCoord
+  }
+
+  // An entry that ran along the wall turns at the end of its jog and drops
+  // onto the wall.
+  if (drop) {
+    const turn = dropPoint(graph, previousCoord, drop)
+    const segment = drawLine(
+      canvas,
+      turn,
+      drop.end,
+      1,
+      -1,
+      graph.config.useAscii,
+      style,
+    )
+    if (segment.length === 0) segment.push(turn)
+    linesDrawn.push(segment)
+    lineDirs.push(determineDirection(turn, drop.end))
   }
 
   return [canvas, linesDrawn, lineDirs]
@@ -468,14 +545,22 @@ function drawArrowHead(
  * Draw corner characters at path bends (where the direction changes).
  * Uses ┌┐└┘ in Unicode mode, + in ASCII mode.
  */
-function drawCorners(graph: AsciiGraph, path: GridCoord[]): Canvas {
+function drawCorners(
+  graph: AsciiGraph,
+  path: GridCoord[],
+  drop?: EntryDrop,
+): Canvas {
   const canvas = copyCanvas(graph.canvas)
+  const flow = graph.config.graphDirection === 'LR' ? Right : Down
 
-  for (let idx = 1; idx < path.length - 1; idx++) {
+  // An entry drop (clusterEntryDrop) makes the last point a bend too.
+  const bends = drop ? path.length : path.length - 1
+  for (let idx = 1; idx < bends; idx++) {
     const coord = path[idx]!
-    const dc = gridToDrawingCoord(graph, coord)
+    const dc = dropPoint(graph, coord, drop)
     const prevDir = determineDirection(path[idx - 1]!, coord)
-    const nextDir = determineDirection(coord, path[idx + 1]!)
+    const nextDir =
+      idx + 1 < path.length ? determineDirection(coord, path[idx + 1]!) : flow
 
     let corner: string
     if (!graph.config.useAscii) {
@@ -580,24 +665,56 @@ export function edgeLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  return clearOfLaneJunction(
+  return followEntryDrop(
     graph,
     edge,
-    clearOfSubgraphTitles(
+    drawingLine,
+    clearOfLaneJunction(
       graph,
-      clearOfClusterWalls(
+      edge,
+      clearOfSubgraphTitles(
         graph,
-        labelTextPlacement(
-          drawingLine,
-          edge.text,
-          isUpwardEdge,
-          pullTowardTarget,
+        clearOfClusterWalls(
+          graph,
+          labelTextPlacement(
+            drawingLine,
+            edge.text,
+            isUpwardEdge,
+            pullTowardTarget,
+          ),
+          drawingLine[0]?.x === drawingLine[1]?.x
+            ? drawingLine[0]?.x
+            : undefined,
         ),
-        drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+        drawingLine,
       ),
-      drawingLine,
     ),
   )
+}
+
+/**
+ * A label on the jog of a cluster entry that drops onto the wall
+ * (`clusterEntryDrop`) follows the jog to where it is drawn, instead of
+ * staying on the gutter row (column) the jog was routed along, which can
+ * be the arrowhead's own row.
+ */
+function followEntryDrop(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const end = clusterWallEnd(graph, edge)
+  const drop = end ? clusterEntryDrop(graph, edge, end) : undefined
+  const last = edge.path[edge.path.length - 1]
+  // LR needs no shift: an entry label widens the gutter column
+  // (`determinePath`), which puts the column's centre, where the jog runs,
+  // clear of the wall.
+  if (!drop || !last || line.length < 2) return placement
+  if (graph.config.graphDirection === 'LR') return placement
+  const gutter = gridToDrawingCoord(graph, last)
+  if (!line.every((c) => c.y === gutter.y)) return placement
+  return placement.map((p) => ({ ...p, y: p.y + drop.turn - gutter.y }))
 }
 
 /**
