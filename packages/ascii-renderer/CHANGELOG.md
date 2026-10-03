@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 4.1.0
+
+### Patch Changes
+
+- [#1322](https://github.com/dfadler/zombie-mermaid/pull/1322) [`490de7c`](https://github.com/dfadler/zombie-mermaid/commit/490de7c7d3a0d8074bed3e68c052effd91914016) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: an edge between a node and the subgraph that contains it (`B --> Sub` with `B` inside `Sub`) no longer loops along the frame wall; it is dropped ([#1310](https://github.com/dfadler/zombie-mermaid/issues/1310)).
+- Updated dependencies [[`68b8a6a`](https://github.com/dfadler/zombie-mermaid/commit/68b8a6a621ea9b3fb7e83aaff8bf29534ae10277)]:
+  - @zombie-mermaid/core@4.1.0
+  - @zombie-mermaid/mermaid-parser@4.1.0
+
 ## 4.0.0
 
 ### Patch Changes

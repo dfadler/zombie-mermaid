@@ -1,6 +1,6 @@
 {
   "name": "@zombie-mermaid/mcp",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "license": "MIT",
   "description": "Model Context Protocol server exposing zombie-mermaid's SVG and ASCII rendering as MCP tools.",
   "repository": {
