@@ -8,7 +8,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '../index.ts'
-import { layoutGraphSync } from '@zombie-mermaid/svg-renderer'
+import {
+  layoutFlowchartSync,
+  layoutGraphSync,
+} from '@zombie-mermaid/svg-renderer'
 import { findBackEdgeIndexes } from '../../packages/svg-renderer/src/layout-engine/back-edges.ts'
 import { edgesReversedForLayout } from '../../packages/svg-renderer/src/layout-engine/to-elk.ts'
 import type { PositionedGraph } from '@zombie-mermaid/core'
@@ -158,6 +161,33 @@ describe('layout of a flowchart with a cycle', () => {
     const d = p.nodes.find((n) => n.id === 'D')!
     expect(e.points[0]!.y).toBeCloseTo(d.y, 0) // leaves the top of Fix & Retry
     expect(e.points.at(-1)!.y).toBeCloseTo(a.y + a.height, 0) // enters A's bottom
+  })
+})
+
+describe('CI/CD sample with its subgraph (#1307)', () => {
+  const CI_CD = `graph TD
+  subgraph ci [CI Pipeline]
+    A[Push Code] --> B{Tests Pass?}
+    B -->|Yes| C[Build Image]
+    B -->|No| D[Fix & Retry]
+    D -.-> A
+  end
+  C --> E([Deploy Staging])
+  E --> F{QA Approved?}
+  F -->|Yes| G((Production))
+  F -->|No| D`
+  // What the SVG renderer calls for a flowchart.
+  const p = layoutFlowchartSync(parseMermaid(CI_CD))
+
+  it('has the subgraph on top and Deploy Staging below its first nodes, like mermaid.js', () => {
+    const ci = p.groups[0]!
+    const y = (id: string): number => centreOf(p, id).y
+    expect(ci.label).toBe('CI Pipeline')
+    expect(y('A')).toBeLessThan(y('E'))
+    expect(y('C')).toBeLessThan(y('E'))
+    expect(y('E')).toBeLessThan(y('F'))
+    // Fix & Retry comes after QA Approved?, not before Deploy Staging.
+    expect(y('F')).toBeLessThan(y('D'))
   })
 })
 
