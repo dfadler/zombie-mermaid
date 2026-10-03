@@ -23,10 +23,16 @@ function lines(source: string, useAscii = false): string[] {
   return renderMermaidASCII(source, { useAscii, colorMode: 'none' }).split('\n')
 }
 
-/** Index of the line holding the frame's top wall. */
+/**
+ * Index of the line holding the frame's top wall: the box top whose next row
+ * holds the title. The cluster is centered on its sources, so it need not sit
+ * at the left edge, and a node box can open a row of its own.
+ */
 function topWall(rows: string[], useAscii = false): number {
-  const wall = useAscii ? /^\+-+\+\s*$/ : /^┌─+┐\s*$/
-  const i = rows.findIndex((r) => wall.test(r))
+  const wall = useAscii ? /^\s*\+-+\+\s*$/ : /^\s*┌─+┐\s*$/
+  const i = rows.findIndex(
+    (r, n) => wall.test(r) && rows[n + 1]?.includes('Sub'),
+  )
   if (i < 0) throw new Error(`no intact top wall in:\n${rows.join('\n')}`)
   return i
 }
@@ -63,16 +69,23 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
     expect(columns(rows[wall - 1]!, '▼')).toContain(jog.indexOf('┌'))
   })
 
-  it('the near source keeps running straight in', () => {
+  it('the arrowheads are balanced about the cluster', () => {
+    // The cluster is centered on its sources and the landings are spread
+    // evenly about its middle, not bunched against one side of the wall.
     const rows = lines(src)
     const wall = topWall(rows)
-    const stem = columns(rows[wall - 3]!, '│')
-    expect(stem.some((c) => rows[wall - 1]![c] === '▼')).toBe(true)
+    const heads = columns(rows[wall - 1]!, '▼')
+    const left = rows[wall]!.indexOf('┌')
+    const right = rows[wall]!.indexOf('┐')
+    const middle = (left + right) / 2
+    expect(
+      Math.abs((heads[0]! + heads.at(-1)!) / 2 - middle),
+    ).toBeLessThanOrEqual(1)
   })
 
   it('leaves the wall unbroken', () => {
     const rows = lines(src)
-    expect(rows[topWall(rows) + 1]).toMatch(/^│\s+Sub\s+│/)
+    expect(rows[topWall(rows) + 1]).toMatch(/^\s*│\s+Sub\s+│/)
   })
 
   it('three entries: one arrowhead each, three cells apart', () => {
@@ -102,14 +115,14 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
   })
 
   it('entries that already land apart are left where they were routed', () => {
-    // Two members side by side: each source sits over its own member, so the
+    // Two members side by side: the entry member is wide enough that the
     // routed landings are far apart and need no spreading.
     const rows = lines(`graph TD\nX-->Sub\nY-->Sub\nsubgraph Sub\nA\nB\nend`)
     const wall = topWall(rows)
     expect(rows.join('\n')).not.toMatch(/[◄▲►]/)
-    // No jog: nothing between the sources' stems and the arrowheads bends.
-    expect(rows[wall - 2]).not.toMatch(/[┌┐└┘]/)
-    expect(columns(rows[wall - 1]!, '▼')).toHaveLength(2)
+    const heads = columns(rows[wall - 1]!, '▼')
+    expect(heads).toHaveLength(2)
+    expect(spaced(heads, 4)).toBe(true)
   })
 
   it('labels sit on the jog, not on the arrowhead row', () => {
@@ -178,6 +191,48 @@ describe('ASCII: entries and exits on the same cluster (#1181)', () => {
     expect(rows[wall - 1]).toMatch(/▼/)
     const text = rows.join('\n')
     expect(text).not.toMatch(/[◄▲►]/)
-    for (const id of ['P', 'Q']) expect(text).toMatch(new RegExp(`│ ${id} │`))
+    for (const id of ['P', 'Q'])
+      expect(text).toMatch(new RegExp(`│\\s+${id}\\s+│`))
+  })
+})
+
+describe('ASCII: the cluster sits centered between its sources (#1181)', () => {
+  it('TD: the cluster is centered under X and Y, not under X alone', () => {
+    const rows = lines(`graph TD\nX-->Sub\nY-->Sub${frame}`)
+    const wall = topWall(rows)
+    const left = rows[wall]!.indexOf('┌')
+    const right = rows[wall]!.indexOf('┐')
+    // Source box centers: the stems that leave X and Y.
+    const stems = columns(rows[wall - 4]!, '│')
+    expect(stems).toHaveLength(2)
+    const middle = (left + right) / 2
+    expect(Math.abs((stems[0]! + stems[1]!) / 2 - middle)).toBeLessThanOrEqual(
+      1.5,
+    )
+  })
+
+  it('LR: the cluster is centered beside X and Y, not beside X alone', () => {
+    const rows = lines(`graph LR\nX-->Sub\nY-->Sub${frame}`)
+    const wallX = rows.map((r) => r.search(/┌─{9,}┐/)).find((x) => x >= 0)!
+    const top = rows.findIndex((r) => r.includes('┌' + '─'.repeat(9)))
+    const bottom = rows.findIndex(
+      (r, i) => i > top && r.includes('└' + '─'.repeat(9)),
+    )
+    const sources = rows.flatMap((r, i) => (/│ [XY] ├/.test(r) ? [i] : []))
+    expect(sources).toHaveLength(2)
+    expect(wallX).toBeGreaterThan(0)
+    const middle = (top + bottom) / 2
+    expect(
+      Math.abs((sources[0]! + sources[1]!) / 2 - middle),
+    ).toBeLessThanOrEqual(2)
+  })
+
+  it('plain fan-in into a node keeps the first-parent slot', () => {
+    // Only a cluster's entry member is centered; the upstream goldens pin
+    // plain fan-in under the first parent.
+    const rows = lines('graph TD\nX-->A\nY-->A')
+    const a = rows.find((r) => /│\s+A\s+│/.test(r))!
+    const x = rows.find((r) => /│\s+X\s+│/.test(r))!
+    expect(a.indexOf('A') - x.indexOf('X')).toBe(0)
   })
 })
