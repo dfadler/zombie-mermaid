@@ -96,6 +96,13 @@ describe('buildStyleBlock', () => {
     expect(withoutMono).not.toContain('.mono')
   })
 
+  it('buildSvgStyleBlock omits the mono rule and font face when hasMonoFont is false', () => {
+    const block = buildSvgStyleBlock('Inter', false)
+    expect(block).not.toContain('.mono')
+    expect(block).not.toContain('@font-face')
+    expect(block).toContain('--_text')
+  })
+
   it('embeds the self-hosted mono subset as a base64 woff2 data URI (#1061)', () => {
     const block = buildSvgStyleBlock('Inter', true)
     expect(block).toContain('@font-face')
