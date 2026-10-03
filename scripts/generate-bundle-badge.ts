@@ -30,7 +30,9 @@
  * badges/bundle-size.json back to main if the number changed.
  */
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
 // One badge per published package that advertises a size. Since the monorepo
@@ -39,27 +41,59 @@ import { gzipSync } from 'node:zlib'
 // what a consumer installs (the umbrella's is ~4 KB). Each badge therefore
 // gzips the package's entry concatenated with the entries of every
 // `@zombie-mermaid/*` package it (transitively) imports. Third-party
-// dependencies (e.g. `elkjs`) are left out.
+// dependencies are counted via SVG_DEPS below (issue #1320): the SVG
+// renderer's real runtime weight is dominated by `elkjs`, which `dist/index.js`
+// leaves external, so omitting it made the SVG badge look smaller than ASCII's.
 const CORE = 'packages/core/dist/index.js'
 const PARSER = 'packages/mermaid-parser/dist/index.js'
 const ASCII = 'packages/ascii-renderer/dist/index.js'
 const SVG = 'packages/svg-renderer/dist/index.js'
 
+// Third-party runtime dependencies of the SVG renderer, resolved from its own
+// package.json (pnpm doesn't hoist them to the root). `elkjs` is the single
+// pre-bundled UMD file the renderer imports; `entities` is gzipped as its whole
+// ESM build (an upper bound, since a consumer's bundler may tree-shake it).
+const SVG_DEPS = [
+  { kind: 'file', specifier: 'elkjs/lib/elk.bundled.js' },
+  { kind: 'esm-dir', specifier: 'entities' },
+] as const
+
+type Dep = (typeof SVG_DEPS)[number]
+
+const svgRequire = createRequire(
+  new URL('../packages/svg-renderer/package.json', import.meta.url),
+)
+
+async function readDep({ kind, specifier }: Dep): Promise<Buffer[]> {
+  const resolved = svgRequire.resolve(specifier)
+  if (kind === 'file') return [await readFile(resolved)]
+  // `entities`' CJS entry is `<pkg>/dist/commonjs/index.js`; its ESM build is
+  // the sibling `<pkg>/dist/esm` tree.
+  const esmDir = join(dirname(dirname(resolved)), 'esm')
+  const names = (await readdir(esmDir, { recursive: true }))
+    .filter((n) => n.endsWith('.js'))
+    .sort()
+  return Promise.all(names.map((n) => readFile(join(esmDir, n))))
+}
+
 const TARGETS = [
   {
     entries: ['dist/index.js', CORE, PARSER, ASCII, SVG],
+    deps: SVG_DEPS,
     output: 'badges/bundle-size.json',
-    label: 'zombie-mermaid gzip',
+    label: 'zombie-mermaid gzip (incl. deps)',
   },
   {
     entries: [ASCII, CORE, PARSER],
+    deps: [] as readonly Dep[],
     output: 'badges/bundle-size-ascii-renderer.json',
     label: 'ascii-renderer gzip',
   },
   {
     entries: [SVG, CORE, PARSER],
+    deps: SVG_DEPS,
     output: 'badges/bundle-size-svg-renderer.json',
-    label: 'svg-renderer gzip',
+    label: 'svg-renderer gzip (incl. deps)',
   },
 ]
 
@@ -69,13 +103,24 @@ function fmtKB(bytes: number): string {
 
 await mkdir(new URL('../badges', import.meta.url), { recursive: true })
 
-for (const { entries, output, label } of TARGETS) {
+for (const { entries, deps, output, label } of TARGETS) {
   const parts: Buffer[] = []
   for (const entry of entries) {
     try {
       parts.push(await readFile(new URL(`../${entry}`, import.meta.url)))
     } catch {
       console.error(`Could not read ${entry} — run \`pnpm run build\` first.`)
+      process.exit(1)
+    }
+  }
+
+  for (const dep of deps) {
+    try {
+      parts.push(...(await readDep(dep)))
+    } catch {
+      console.error(
+        `Could not read dependency ${dep.specifier} — run \`pnpm install\` first.`,
+      )
       process.exit(1)
     }
   }
@@ -92,6 +137,6 @@ for (const { entries, output, label } of TARGETS) {
   )
 
   console.log(
-    `${label}: ${message} (${entries.length} files) -> wrote ${output}`,
+    `${label}: ${message} (${entries.length} entries, ${deps.length} deps) -> wrote ${output}`,
   )
 }
