@@ -580,7 +580,7 @@ export function edgeLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  return clearOfLaneJunction(
+  const centred = clearOfLaneJunction(
     graph,
     edge,
     clearOfSubgraphTitles(
@@ -598,6 +598,107 @@ export function edgeLabelPlacement(
       drawingLine,
     ),
   )
+
+  // #1284: a reciprocal pair shares one vertical channel, so each label is
+  // moved off the stroke, the down edge's to its right and the up edge's to
+  // its left. The row is the one chosen above (#530 pins it); only the
+  // column changes, and only when the cells beside the stroke are clear.
+  if (
+    isUpwardEdge !== undefined &&
+    hasReciprocalPartner(graph, edge) &&
+    drawingLine.length >= 2 &&
+    drawingLine[0]!.x === drawingLine[1]!.x &&
+    !isClusterExitEdge(graph, edge)
+  ) {
+    const beside = besideStroke(
+      centred,
+      drawingLine[0]!.x,
+      isUpwardEdge ? 'left' : 'right',
+    )
+    if (besideCellsFree(graph, edge, beside)) return beside
+  }
+  return centred
+}
+
+function isClusterExitEdge(graph: AsciiGraph, edge: AsciiEdge): boolean {
+  return (
+    edge.clusterSource !== undefined &&
+    graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true
+  )
+}
+
+/**
+ * Re-anchor label lines so they sit beside a vertical stroke at column
+ * `strokeX`, one blank cell clear of it: starting at `strokeX + 2` for the
+ * right side, ending at `strokeX - 2` for the left. Rows are kept.
+ */
+function besideStroke(
+  placement: { x: number; y: number; text: string }[],
+  strokeX: number,
+  side: 'left' | 'right',
+): { x: number; y: number; text: string }[] {
+  return placement.map((item) => ({
+    ...item,
+    x: side === 'right' ? strokeX + 2 : strokeX - 1 - displayWidth(item.text),
+  }))
+}
+
+/**
+ * Whether label text at `placement` sits on nothing else the layout has
+ * already fixed: inside the canvas's left edge, off every node box, off every
+ * subgraph wall and title row, and off every other edge's path. Pure
+ * geometry, so it also works where no canvas is drawn yet.
+ */
+function besideCellsFree(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): boolean {
+  for (const { x, y, text } of placement) {
+    const x0 = x
+    const x1 = x + displayWidth(text) - 1
+    if (x0 < 0) return false
+    for (const node of graph.nodes) {
+      if (!node.drawingCoord || !node.drawing) continue
+      const nx = node.drawingCoord.x
+      const ny = node.drawingCoord.y
+      if (
+        x1 >= nx &&
+        x0 < nx + node.drawing.length &&
+        y >= ny &&
+        y < ny + (node.drawing[0]?.length ?? 0)
+      ) {
+        return false
+      }
+    }
+    for (const sg of graph.subgraphs) {
+      if (sg.nodes.length === 0) continue
+      const titleRows = splitLines(sg.name).length
+      const inRows = y >= sg.minY && y <= sg.maxY
+      const crossesSide = [sg.minX, sg.maxX].some((w) => w >= x0 && w <= x1)
+      if (inRows && crossesSide) return false
+      const onTopOrBottom =
+        y === sg.maxY || (y >= sg.minY && y <= sg.minY + titleRows)
+      if (onTopOrBottom && x1 >= sg.minX && x0 <= sg.maxX) return false
+    }
+    for (const other of graph.edges) {
+      if (other === edge) continue
+      const pts = lineToDrawing(graph, other.path)
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1]!
+        const b = pts[i]!
+        if (
+          y >= Math.min(a.y, b.y) &&
+          y <= Math.max(a.y, b.y) &&
+          x1 >= Math.min(a.x, b.x) &&
+          x0 <= Math.max(a.x, b.x)
+        ) {
+          return false
+        }
+      }
+    }
+  }
+  return true
 }
 
 /**
