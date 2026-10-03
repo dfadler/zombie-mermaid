@@ -17,7 +17,10 @@ import type {
 import { EMPTY_STYLE } from './types.ts'
 import { mkCanvas, mkRoleCanvas } from './canvas.ts'
 import { createGrid } from './grid-occupancy.ts'
-import { stripFormattingTags } from '@zombie-mermaid/core'
+import {
+  isEdgeWithinOwnCluster,
+  stripFormattingTags,
+} from '@zombie-mermaid/core'
 
 /**
  * Convert a parsed MermaidGraph into an AsciiGraph ready for grid layout.
@@ -97,10 +100,11 @@ export function convertToAsciiGraph(
     let clusterTargetMSg: MermaidSubgraph | undefined
 
     // An edge between a node and a subgraph that contains it (`B --> Sub`
-    // with B inside Sub, or `Sub --> B`) has no frame-crossing to draw. The
-    // redirect below would turn it into an ordinary back-edge to the cluster's
-    // entry member and the router would run it along the frame's wall (#1310),
-    // so it is dropped, like a self-edge on the cluster.
+    // with B inside Sub, or `Sub --> B`) has no frame-crossing to draw, and
+    // real mermaid.js draws no line for it either (a zero-length path, see
+    // core's cluster-edges.ts). The redirect below would turn it into an
+    // ordinary back-edge to the cluster's entry member and the router would
+    // run it along the frame's wall (#1310), so it is dropped.
     if (isEdgeWithinOwnCluster(mEdge, subgraphById)) continue
 
     if (subgraphIds.has(sourceId)) {
@@ -233,26 +237,6 @@ function indexSubgraph(
 function collectAllMemberNodeIds(mSg: MermaidSubgraph, out: Set<string>): void {
   for (const id of mSg.nodeIds) out.add(id)
   for (const child of mSg.children) collectAllMemberNodeIds(child, out)
-}
-
-/**
- * True when one endpoint of `edge` is a subgraph id and the other is a plain
- * node that is a member (directly or through a nested subgraph) of it.
- */
-function isEdgeWithinOwnCluster(
-  edge: { source: string; target: string },
-  subgraphById: Map<string, MermaidSubgraph>,
-): boolean {
-  const contains = (clusterId: string, nodeId: string): boolean => {
-    const mSg = subgraphById.get(clusterId)
-    if (!mSg || subgraphById.has(nodeId)) return false
-    const members = new Set<string>()
-    collectAllMemberNodeIds(mSg, members)
-    return members.has(nodeId)
-  }
-  return (
-    contains(edge.target, edge.source) || contains(edge.source, edge.target)
-  )
 }
 
 /**
