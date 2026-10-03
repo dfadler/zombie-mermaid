@@ -255,8 +255,7 @@ function drawPath(
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []
   const lineDirs: Direction[] = []
-  // #1284: a straight vertical reciprocal pair is drawn `dx` cells off its
-  // column centre (see strokeShift).
+  // #1284: a reciprocal pair's strokes are drawn one cell off the column centre.
   const shift = (c: DrawingCoord): DrawingCoord =>
     dx === 0 ? c : { x: c.x + dx, y: c.y }
 
@@ -638,6 +637,12 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
 export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
   const partner = verticalPairPartner(graph, edge)
   if (!partner) return 0
+  // An entry drop (clusterEntryDrop) redraws the path's last leg, so the
+  // pair stays centred rather than shifting only part of the stroke.
+  for (const e of [edge, partner]) {
+    const wall = clusterWallEnd(graph, e)
+    if (wall && clusterEntryDrop(graph, e, wall)) return 0
+  }
   for (const e of [edge, partner]) {
     if (e.text.length === 0) continue
     const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
