@@ -429,10 +429,14 @@ function laneSide(
     dir: vertical ? Right : Down,
   }
   const sizes = vertical ? graph.columnWidth : graph.rowHeight
-  if (index === 3) {
+  // Gutter at or past the target's centre: siblings 2 and 3 both stack their
+  // own tracks on the high side (origin+4, origin+5), so labels read in source
+  // order instead of the third sibling detouring left and back into the low face.
+  const stackHigh = gutterCross >= centre
+  if (index === 3 || (index === 2 && stackHigh)) {
     // Its own track just past the high gutter: free of nodes and sized, or
     // else inserted. Landing on the high face merges with the sibling there.
-    const lane = origin + 4
+    const lane = origin + 4 + (stackHigh ? index - 2 : 0)
     if (lane === gutterCross) return null
     const occupied = graph.nodes.some((node) => {
       const at = requireGridCoord(node)
