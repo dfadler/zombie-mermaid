@@ -86,14 +86,29 @@ function segmentHitsBox(a: Point, b: Point, box: TitleTextBox): boolean {
   return true
 }
 
-/** Whether any segment of `edge` passes through any of the `boxes`. */
+/** The box without its `GAP_PADDING` clearance: the text itself. */
+function textOnly(box: TitleTextBox): TitleTextBox {
+  return {
+    x: box.x + GAP_PADDING,
+    y: box.y + GAP_PADDING,
+    width: box.width - 2 * GAP_PADDING,
+    height: box.height - 2 * GAP_PADDING,
+  }
+}
+
+/**
+ * Whether any segment of `edge` passes through the text of any of the `boxes`.
+ * The padding only widens the hole that is cut; an edge that merely passes
+ * through the clearance beside the text does not need a gap.
+ */
 export function edgeCrossesTitle(
   edge: PositionedEdge,
   boxes: TitleTextBox[],
 ): boolean {
   const pts = edge.points
+  const texts = boxes.map(textOnly)
   for (let i = 0; i + 1 < pts.length; i++) {
-    if (boxes.some((box) => segmentHitsBox(pts[i]!, pts[i + 1]!, box))) {
+    if (texts.some((box) => segmentHitsBox(pts[i]!, pts[i + 1]!, box))) {
       return true
     }
   }
