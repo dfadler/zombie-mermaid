@@ -14,7 +14,7 @@
 // arguments.
 // ============================================================================
 
-import { parseMermaid } from '../../../src/parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { withDirectionOverride } from '@zombie-mermaid/core'
 import type { Direction, MermaidGraph } from '@zombie-mermaid/core'
 import { convertToAsciiGraph } from './converter.ts'

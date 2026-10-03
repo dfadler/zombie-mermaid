@@ -26,13 +26,10 @@
 // `mermaid-parser` itself stays a sink exactly like `core` — it does not
 // import `svg-renderer` back.
 //
-// `core` and `mermaid-parser` may not reach back into `src/` by relative
-// path or by importing `zombie-mermaid` itself — the umbrella depends on
-// them, never the reverse. `svg-renderer` is the one exception, and only
-// through one known file: `registry.ts` reaches `parseMermaid` in the
-// umbrella's `src/parser.ts` (#1111), the same pre-existing boundary call
-// `ascii-renderer/src/flowchart.ts` already makes for the ASCII side — see
-// that describe block below for the full rationale.
+// `core`, `mermaid-parser` and `svg-renderer` may not reach back into `src/`
+// by relative path or by importing `zombie-mermaid` itself — the umbrella
+// depends on them, never the reverse (the flowchart/state parser moved into
+// `mermaid-parser` under #1318, removing the last such reach-through).
 
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -228,21 +225,11 @@ describe('@zombie-mermaid/svg-renderer depends only on core and mermaid-parser',
     ])
   })
 
-  it('reaches outside its own src/ only through the known src/parser.ts front door', () => {
-    // Under #1111, `packages/svg-renderer/src/registry.ts` reaches
-    // `parseMermaid` in the umbrella's `../../../src/parser.ts` for
-    // flowchart/state parsing — the same pre-existing, deliberate boundary
-    // call `packages/ascii-renderer/src/flowchart.ts` already makes for the
-    // ASCII side (see that file's header and vite.config.package.ts's own
-    // header for why the build bundles it in directly). `src/parser.ts`
-    // itself only needs `@zombie-mermaid/core` and
-    // `@zombie-mermaid/mermaid-parser` (see the 'workspace package
-    // manifests' describe block below for ascii-renderer's equivalent
-    // check) — both already required by svg-renderer's own source, so no
-    // manifest change beyond `entities` above is needed for this escape.
-    expect(escapingRelativeImports('svg-renderer')).toEqual([
-      'packages/svg-renderer/src/registry.ts -> ../../../src/parser.ts',
-    ])
+  it('never reaches outside its own src/ by relative path', () => {
+    // `parseMermaid` (flowchart/state) lives in `@zombie-mermaid/mermaid-parser`
+    // since #1318, so svg-renderer no longer reaches into the umbrella's
+    // `src/` and the build no longer inlines a second copy of the parser.
+    expect(escapingRelativeImports('svg-renderer')).toEqual([])
   })
 })
 
@@ -312,8 +299,7 @@ describe('workspace package manifests', () => {
     ])
   })
 
-  // `ascii-renderer` and `mcp` each bundle one (`packages/ascii-renderer/src/flowchart.ts`
-  // -> `../../../src/parser.ts`) or two (`packages/mcp/src/{server,tools/render-svg}.ts`
+  // `mcp` bundles two files (`packages/mcp/src/{server,tools/render-svg}.ts`
   // -> `../../../src/{package-info,index}.ts`) files from *outside* their
   // own `packages/<name>/src/` — see vite.config.package.ts's header and
   // each package's own vite.config.ts for why (their build still compiles
@@ -323,7 +309,7 @@ describe('workspace package manifests', () => {
   // hand-traced transitive set instead of extending that scanner to follow
   // an out-of-package relative import (which `escapingRelativeImports`
   // above deliberately treats as a violation for the other three packages).
-  it('ascii-renderer declares every specifier its reach-through into src/parser.ts needs, on top of its own', () => {
+  it('ascii-renderer declares every specifier it needs', () => {
     const manifest = JSON.parse(
       readFileSync(resolve(PACKAGES, 'ascii-renderer', 'package.json'), 'utf8'),
     ) as { dependencies?: Record<string, string> }

@@ -8,7 +8,7 @@
  * resolved fill; the ASCII renderer follows its flowchart behavior.
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 

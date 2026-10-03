@@ -34,7 +34,7 @@ export type {
 } from '@zombie-mermaid/core'
 export type { DiagramColors, ThemeName } from '@zombie-mermaid/core'
 export { fromShikiTheme, THEMES, DEFAULTS } from '@zombie-mermaid/core'
-export { parseMermaid } from './parser.ts'
+export { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 export {
   renderMermaidASCII,
   renderMermaidAscii,

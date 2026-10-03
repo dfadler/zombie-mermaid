@@ -10,7 +10,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { renderMermaidSVG } from '../index.ts'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 

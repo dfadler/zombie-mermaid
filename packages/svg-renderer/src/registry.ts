@@ -83,7 +83,7 @@ import { layoutC4DiagramSync } from './c4/layout.ts'
 import { renderC4Svg } from './c4/renderer.ts'
 import { layoutFlowchartSync, layoutGraphSync } from './layout-engine.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
-import { parseMermaid } from '../../../src/parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 
 /**
  * Parameters shared by every per-type SVG renderer today, factored out of
