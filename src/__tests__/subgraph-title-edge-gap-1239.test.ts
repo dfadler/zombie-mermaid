@@ -132,6 +132,19 @@ describe('edgeCrossesTitle', () => {
     ).toBe(false)
   })
 
+  it('is false for an edge in the padding beside the text, not through it', () => {
+    const x = box!.x + box!.width - 1
+    expect(
+      edgeCrossesTitle(
+        edge([
+          [x, 50],
+          [x, 200],
+        ]),
+        [box!],
+      ),
+    ).toBe(false)
+  })
+
   it('is false for an edge that stops above the text', () => {
     expect(
       edgeCrossesTitle(
@@ -184,6 +197,14 @@ describe('title gap mask', () => {
 })
 
 describe('rendered output', () => {
+  it('does not mask an edge that only grazes the right of a title', () => {
+    // A -> B runs at x=102; the "Inner" text ends just left of it.
+    const svg = renderMermaidSVG(
+      'flowchart TD\n  subgraph Outer\n    subgraph Inner\n      B\n    end\n  end\n  A --> B',
+    )
+    expect(svg).not.toContain('zm-title-gap')
+  })
+
   it('masks the edges that cross a subgraph title, and only those', () => {
     const svg = renderMermaidSVG(NESTED)
     expect(svg).toContain('<mask id="zm-title-gap-')

@@ -43,6 +43,7 @@ import {
   Left,
   Right,
   gridCoordDirection,
+  gridKey,
   requireCardinalDirection,
   requireGridCoord,
 } from './types.ts'
@@ -211,20 +212,74 @@ export function planClusterExits(graph: AsciiGraph): void {
     else byCluster.set(sg, [edge])
   }
 
-  const plans = new Map<AsciiSubgraph, ClusterExitPlan>()
-  for (const [sg, candidates] of byCluster) {
-    const plan = planOne(graph, sg, candidates, vertical)
-    if (plan) plans.set(sg, plan)
+  // A lane group may ask for a gutter track the layout doesn't have (a
+  // target against the layout edge, or a fourth sibling needing its own
+  // track). The track is inserted and every plan rebuilt, because the
+  // insertion shifts coordinates the earlier plans captured (#1253).
+  for (let attempt = 0; attempt <= MAX_TRACK_INSERTIONS; attempt++) {
+    const plans = new Map<AsciiSubgraph, ClusterExitPlan>()
+    let insertAt: number | null = null
+    for (const [sg, candidates] of byCluster) {
+      const result = planOne(graph, sg, candidates, vertical)
+      if (typeof result === 'number') {
+        insertAt = result
+        break
+      }
+      if (result) plans.set(sg, result)
+    }
+    if (insertAt === null || attempt === MAX_TRACK_INSERTIONS) {
+      if (plans.size > 0) graph.clusterExitPlans = plans
+      return
+    }
+    insertGridTrack(graph, vertical, insertAt)
   }
-  if (plans.size > 0) graph.clusterExitPlans = plans
 }
 
+/** Safety bound on gutter-track insertions per layout. */
+const MAX_TRACK_INSERTIONS = 4
+
+/**
+ * Insert one empty gutter track (a column in TD, a row in LR) at index `at`,
+ * shifting every node and size entry at or past it by one. Runs after node
+ * placement and before any edge is routed, so nothing else holds grid
+ * coordinates yet.
+ */
+function insertGridTrack(
+  graph: AsciiGraph,
+  vertical: boolean,
+  at: number,
+): void {
+  const shift = (c: GridCoord): GridCoord =>
+    vertical
+      ? { x: c.x >= at ? c.x + 1 : c.x, y: c.y }
+      : { x: c.x, y: c.y >= at ? c.y + 1 : c.y }
+  for (const node of graph.nodes) {
+    if (node.gridCoord) node.gridCoord = shift(node.gridCoord)
+  }
+  const keys = [...graph.grid.keys()]
+  for (const key of keys) graph.grid.delete(key)
+  for (const key of keys) {
+    const [x, y] = key.split(',').map(Number)
+    graph.grid.add(gridKey(shift({ x: x!, y: y! })))
+  }
+  const sizes = vertical ? graph.columnWidth : graph.rowHeight
+  const shifted = [...sizes].filter(([index]) => index >= at)
+  for (const [index] of shifted) sizes.delete(index)
+  for (const [index, size] of shifted) sizes.set(index + 1, size)
+  sizes.set(at, vertical ? graph.config.paddingX : graph.config.paddingY)
+}
+
+/**
+ * Plan one cluster's exits. Returns the plan, null when the cluster doesn't
+ * engage, or a track index at which `planClusterExits` must insert a gutter
+ * track before planning again.
+ */
 function planOne(
   graph: AsciiGraph,
   sg: AsciiSubgraph,
   candidates: AsciiEdge[],
   vertical: boolean,
-): ClusterExitPlan | null {
+): ClusterExitPlan | number | null {
   const box = clusterGridBox(sg)
   if (!box) return null
 
@@ -289,6 +344,13 @@ function planOne(
   for (const edge of eligible) {
     const lane = edge.parallelLane
     if (lane && lane.index > 0 && !clusterLaneSideRoute(graph, trial, edge)) {
+      // A sibling that only lacks a gutter track gets one inserted (#1253)
+      // when the group would otherwise engage.
+      const missing = laneSide(graph, trial, edge)?.insertAt
+      const hasOtherExit = eligible.some(
+        (other) => other.parallelLane?.usedOffsets !== lane.usedOffsets,
+      )
+      if (missing !== undefined && hasOtherExit) return missing
       unroutable.add(lane.usedOffsets)
     }
   }
@@ -326,6 +388,74 @@ function planOne(
   return plan
 }
 
+/** Which target face and gutter track a lane sibling uses; see `laneSide`. */
+interface LaneSide {
+  lane: number
+  attach: number
+  dir: Direction
+  /** Set when the track doesn't exist yet: insert a gutter track here first. */
+  insertAt?: number
+}
+
+/**
+ * The face and gutter track for lane sibling `edge` (`index` 1 takes the near
+ * side of the target, 2 the far side, 3 a track of its own past the high
+ * side that merges into the same face); null when no such leg is possible,
+ * or `insertAt` set when it needs a gutter track the layout lacks (#1253): a
+ * target against the layout edge, or the fourth sibling's own track.
+ */
+function laneSide(
+  graph: AsciiGraph,
+  plan: ClusterExitPlan,
+  edge: AsciiEdge,
+): LaneSide | null {
+  const vertical = graph.config.graphDirection !== 'LR'
+  const index = edge.parallelLane!.index
+  if (index > 3) return null
+  const to = requireGridCoord(edge.to)
+  const origin = vertical ? to.x : to.y
+  // Cross-axis position of the target's centre, and whether the gutter
+  // lies on its low or high side.
+  const centre = origin + 1
+  const gutterCross = vertical ? plan.gutter.x : plan.gutter.y
+  const high: LaneSide = {
+    lane: origin + 3,
+    attach: origin + 2,
+    dir: vertical ? Left : Up,
+  }
+  const low: LaneSide = {
+    lane: origin - 1,
+    attach: origin,
+    dir: vertical ? Right : Down,
+  }
+  const sizes = vertical ? graph.columnWidth : graph.rowHeight
+  // Gutter at or past the target's centre: siblings 2 and 3 both stack their
+  // own tracks on the high side (origin+4, origin+5), so labels read in source
+  // order instead of the third sibling detouring left and back into the low face.
+  const stackHigh = gutterCross >= centre
+  if (index === 3 || (index === 2 && stackHigh)) {
+    // Its own track just past the high gutter: free of nodes and sized, or
+    // else inserted. Landing on the high face merges with the sibling there.
+    const lane = origin + 4 + (stackHigh ? index - 2 : 0)
+    if (lane === gutterCross) return null
+    const occupied = graph.nodes.some((node) => {
+      const at = requireGridCoord(node)
+      const start = vertical ? at.x : at.y
+      return start <= lane && lane <= start + 2
+    })
+    return {
+      ...high,
+      lane,
+      insertAt: occupied || !sizes.has(lane) ? lane : undefined,
+    }
+  }
+  const side = (gutterCross >= centre ? [high, low] : [low, high])[index - 1]!
+  if (side.lane === gutterCross) return null
+  // Against the layout edge the low side has no gutter track at all.
+  if (side.lane < 0) return { ...side, insertAt: 0 }
+  return sizes.has(side.lane) ? side : null
+}
+
 /**
  * A lane sibling's leg from the gutter cell to a face of the target that the
  * first lane (which enters the flow-side face) leaves free: in TD the
@@ -334,8 +464,8 @@ function planOne(
  * enters that face, so the arrowhead lands one cell outside the border. The
  * ordinary lane builder instead runs its last approach along the target's
  * own border column (row), overwriting the border. Sibling `index` 1 takes
- * the near side, 2 the far side; null when that face has no gutter cell
- * (the target is against the layout edge) or the leg isn't clear of other
+ * the near side, 2 the far side, 3 its own track on the high side; null when
+ * the leg has no gutter track yet (see `laneSide`), isn't clear of other
  * nodes, or for any further sibling.
  */
 export function clusterLaneSideRoute(
@@ -348,28 +478,10 @@ export function clusterLaneSideRoute(
   labelSegment: [GridCoord, GridCoord]
 } | null {
   const vertical = graph.config.graphDirection !== 'LR'
-  const index = edge.parallelLane!.index
-  if (index > 2) return null
   const to = requireGridCoord(edge.to)
   const gutter = plan.gutter
-  // Cross-axis position of the target's centre, and whether the gutter
-  // lies on its low or high side.
-  const centre = vertical ? to.x + 1 : to.y + 1
-  const gutterCross = vertical ? gutter.x : gutter.y
-  const high = {
-    lane: (vertical ? to.x : to.y) + 3,
-    attach: (vertical ? to.x : to.y) + 2,
-    dir: vertical ? Left : Up,
-  }
-  const low = {
-    lane: (vertical ? to.x : to.y) - 1,
-    attach: vertical ? to.x : to.y,
-    dir: vertical ? Right : Down,
-  }
-  const sides = gutterCross >= centre ? [high, low] : [low, high]
-  const side = sides[index - 1]!
-  const known = (vertical ? graph.columnWidth : graph.rowHeight).has(side.lane)
-  if (!known || side.lane < 0 || side.lane === gutterCross) return null
+  const side = laneSide(graph, plan, edge)
+  if (!side || side.insertAt !== undefined) return null
 
   const path: GridCoord[] = vertical
     ? mergePath([
