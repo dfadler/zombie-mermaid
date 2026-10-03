@@ -101,7 +101,7 @@ export function convertToAsciiGraph(
     // redirect below would turn it into an ordinary back-edge to the cluster's
     // entry member and the router would run it along the frame's wall (#1310),
     // so it is dropped, like a self-edge on the cluster.
-    if (isEdgeWithinOwnCluster(mEdge, subgraphIds, subgraphById)) continue
+    if (isEdgeWithinOwnCluster(mEdge, subgraphById)) continue
 
     if (subgraphIds.has(sourceId)) {
       const mSg = subgraphById.get(sourceId)
@@ -241,13 +241,11 @@ function collectAllMemberNodeIds(mSg: MermaidSubgraph, out: Set<string>): void {
  */
 function isEdgeWithinOwnCluster(
   edge: { source: string; target: string },
-  subgraphIds: Set<string>,
   subgraphById: Map<string, MermaidSubgraph>,
 ): boolean {
   const contains = (clusterId: string, nodeId: string): boolean => {
-    if (!subgraphIds.has(clusterId) || subgraphIds.has(nodeId)) return false
     const mSg = subgraphById.get(clusterId)
-    if (!mSg) return false
+    if (!mSg || subgraphById.has(nodeId)) return false
     const members = new Set<string>()
     collectAllMemberNodeIds(mSg, members)
     return members.has(nodeId)

@@ -59,4 +59,17 @@ end`
       renderMermaidASCII(base),
     )
   })
+
+  it('keeps an edge between two subgraph ids', () => {
+    const two = `graph TD
+subgraph One
+A
+end
+subgraph Two
+B
+end`
+    expect(renderMermaidASCII(`${two}\nOne-->Two`)).not.toBe(
+      renderMermaidASCII(two),
+    )
+  })
 })
