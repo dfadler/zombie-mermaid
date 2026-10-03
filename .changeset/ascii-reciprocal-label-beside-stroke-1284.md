@@ -2,4 +2,4 @@
 '@zombie-mermaid/ascii-renderer': patch
 ---
 
-ASCII: the two labels of a reciprocal pair (`A -->|x| B` with `B -->|y| A`) no longer cut the shared vertical stroke; the down edge's label sits to its right and the up edge's to its left when there is room (#1284).
+ASCII: the two edges of a vertical reciprocal pair (`A -->|x| B` with `B -->|y| A`) are drawn as two strokes one cell either side of the column centre, each label beside its own stroke, instead of sharing one stroke that the labels cut (#1284).

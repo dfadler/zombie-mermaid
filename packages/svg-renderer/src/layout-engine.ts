@@ -30,6 +30,7 @@ import type {
   PositionedGraph,
   FlowchartRenderOptions,
 } from '@zombie-mermaid/core'
+import { withoutOwnClusterEdges } from '@zombie-mermaid/core'
 import { elkLayoutSync } from './elk-instance.ts'
 import { resolveFontSizes } from './styles.ts'
 import { DEFAULTS } from './layout-engine/constants.ts'
@@ -80,9 +81,12 @@ function layoutWithHints(
  * share the engine (state, architecture) keep using `layoutGraphSync`.
  */
 export function layoutFlowchartSync(
-  graph: MermaidGraph,
+  rawGraph: MermaidGraph,
   options: FlowchartRenderOptions = {},
 ): PositionedGraph {
+  // Real mermaid.js draws no line for an edge between a node and a subgraph
+  // containing it (#1310), so it is not laid out or rendered here either.
+  const graph = withoutOwnClusterEdges(rawGraph)
   if (canLayOutFlat(graph)) {
     const fontSizes = resolveFontSizes(options.fontSizes)
     const flat = layoutCompoundFlat(

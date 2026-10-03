@@ -1,6 +1,6 @@
 /**
  * Regression tests for #1310 — an edge between a node and a subgraph that
- * contains it (`B --> Sub`, B inside Sub) used to be redirected to the
+ * contains it (`B --> Sub`, B inside Sub; real mermaid.js 11.17.2 draws no line for it either) used to be redirected to the
  * cluster's entry member and routed as a back-edge along the frame's bottom
  * wall, overwriting the border. It is now dropped.
  */
@@ -50,6 +50,19 @@ A-->B
 end
 end`
     expect(renderMermaidASCII(`${nested}\nB-->Outer`)).toBe(
+      renderMermaidASCII(nested),
+    )
+  })
+
+  it('drops an edge between a subgraph and a subgraph nested in it', () => {
+    const nested = `graph TD
+A-->B
+subgraph Outer
+subgraph Inner
+B
+end
+end`
+    expect(renderMermaidASCII(`${nested}\nOuter-->Inner`)).toBe(
       renderMermaidASCII(nested),
     )
   })
