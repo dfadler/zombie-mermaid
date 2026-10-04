@@ -31,7 +31,11 @@ function lines(source: string): string[] {
 
 /** Index of the line holding the frame's top wall. */
 function topWall(rows: string[]): number {
-  const i = rows.findIndex((r) => /^┌─+┐\s*$/.test(r))
+  // The frame's wall is the box top whose next row holds the title; the
+  // cluster may sit anywhere across, so a node box can open a row too.
+  const i = rows.findIndex(
+    (r, n) => /^\s*┌─+┐\s*$/.test(r) && rows[n + 1]?.includes('Sub'),
+  )
   if (i < 0) throw new Error(`no intact top wall in:\n${rows.join('\n')}`)
   return i
 }
@@ -49,12 +53,20 @@ describe('ASCII: edges addressed to a subgraph end at its wall (#1283)', () => {
 
   it('TD: W sits directly above Y, and Y above the frame', () => {
     const rows = lines(`graph TD\nX-->Sub\nW-->Y\nY-->Sub${frame}`)
-    const col = (label: string): number => {
-      const row = rows.find((r) => r.includes(`│ ${label} │`))!
-      return row.indexOf(`│ ${label} │`)
+    // A node's label cell, whatever width the box gets. The pattern is a
+    // literal; the label is compared, not interpolated.
+    const cell = (label: string): { row: number; col: number } => {
+      for (const [row, text] of rows.entries()) {
+        for (const m of text.matchAll(/│\s+(\w+)\s+│/g)) {
+          if (m[1] === label) {
+            return { row, col: m.index + m[0].indexOf(label) }
+          }
+        }
+      }
+      throw new Error(`no box labelled ${label}`)
     }
-    const rowOf = (label: string): number =>
-      rows.findIndex((r) => r.includes(`│ ${label} │`))
+    const col = (label: string): number => cell(label).col
+    const rowOf = (label: string): number => cell(label).row
     expect(col('W')).toBe(col('Y'))
     expect(rowOf('W')).toBeLessThan(rowOf('Y'))
     expect(rowOf('Y')).toBeLessThan(topWall(rows))
@@ -62,8 +74,9 @@ describe('ASCII: edges addressed to a subgraph end at its wall (#1283)', () => {
 
   it('LR: the arrow stops one cell before the left wall, label clear of the node', () => {
     const rows = lines(`graph LR\nX-->Sub\nW-->Y\nY-->|go|Sub${frame}`)
-    const xRow = rows.find((r) => r.includes('│ X ├'))!
-    expect(xRow).toMatch(/►│ │ A/)
+    // Both arrowheads stop one cell before the wall (the cluster sits
+    // centered between its sources, so X's edge jogs down to its landing).
+    expect(rows.filter((r) => /►│ [│ ]/.test(r))).toHaveLength(2)
     const yRow = rows.find((r) => r.includes('│ Y ├'))!
     expect(yRow).toMatch(/│ Y ├go─+►│/)
   })

@@ -208,7 +208,8 @@ function routedWallEnd(
  * order, so the drops never cross. Empty (no override) when the routed
  * landings are already two or more cells apart, or when the wall is too
  * narrow to give every entry its own cell with a gap: those keep the routed
- * landing.
+ * landing. The spread run is then centered on the entries' sources, so a
+ * cluster fed from both sides gets landings balanced about its middle.
  */
 function entryLandings(
   graph: AsciiGraph,
@@ -248,7 +249,13 @@ function entryLandings(
     pushApart(spaced, lo, hi, MIN_ENTRY_GAP)
   if (!pushed) return landings
 
-  group.forEach((g, i) => landings.set(g.edge, pushed[i]!))
+  // The run only moved as far as it had to, which can leave it hugging one
+  // side while its sources sit evenly about the cluster. Slide it, rigid, to
+  // center on the sources' midpoint, as far as the wall allows.
+  const mid = (xs: number[]): number => (xs[0]! + xs[xs.length - 1]!) / 2
+  const slide = Math.round(mid(group.map((g) => g.from)) - mid(pushed))
+  const shift = Math.max(lo - pushed[0]!, Math.min(hi - pushed.at(-1)!, slide))
+  group.forEach((g, i) => landings.set(g.edge, pushed[i]! + shift))
   return landings
 }
 
