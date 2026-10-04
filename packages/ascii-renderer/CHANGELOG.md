@@ -1,5 +1,31 @@
 # @zombie-mermaid/ascii-renderer
 
+## 4.1.0
+
+### Patch Changes
+
+- [#1340](https://github.com/dfadler/zombie-mermaid/pull/1340) [`ab5ff8f`](https://github.com/dfadler/zombie-mermaid/commit/ab5ff8f6a8000963db021b6a851b6abaea5939d8) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: in top-down flowcharts and state diagrams, a node that fans out to several children is now centred over them, as in Mermaid, instead of sitting above the first child. Its edges leave from the middle rather than sideways and back down. It applies to acyclic graphs outside subgraphs, and the node stays put when a child has another parent or centring would widen unrelated branches.
+
+- [#1337](https://github.com/dfadler/zombie-mermaid/pull/1337) [`c392d1a`](https://github.com/dfadler/zombie-mermaid/commit/c392d1a0535dfdc11465114aa1a2c77397fd7c9b) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a subgraph fed by several sources now sits centered between them (as mermaid.js lays it out) instead of under the first one, and its entry arrowheads are spread about the cluster's middle rather than bunched on one side.
+
+- [#1335](https://github.com/dfadler/zombie-mermaid/pull/1335) [`ca51046`](https://github.com/dfadler/zombie-mermaid/commit/ca51046c8bc541c1442d7f9551fa9413137b40d0) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: edges addressed to one subgraph (`X --> Sub`, `Y --> Sub`) that used to merge into a single arrowhead on the frame's wall now each get an arrowhead of their own, spread along the wall, as mermaid draws them. Entries that already landed apart, and walls too narrow to separate them, are unchanged.
+
+- [#1328](https://github.com/dfadler/zombie-mermaid/pull/1328) [`0b2b607`](https://github.com/dfadler/zombie-mermaid/commit/0b2b6075769376cb9909e906591e1ec94eb6edad) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: when two or more edges are addressed to one subgraph (`X --> Sub`, `Y --> Sub`), a source that sits off the landing column now turns onto the frame's wall and its arrowhead points into the cluster, instead of ending in a sideways arrowhead (`◄`, `▲`) that overwrote its sibling's ([#1181](https://github.com/dfadler/zombie-mermaid/issues/1181)).
+
+- [#1322](https://github.com/dfadler/zombie-mermaid/pull/1322) [`490de7c`](https://github.com/dfadler/zombie-mermaid/commit/490de7c7d3a0d8074bed3e68c052effd91914016) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: an edge between a node and the subgraph that contains it (`B --> Sub` with `B` inside `Sub`) no longer loops along the frame wall; it is dropped ([#1310](https://github.com/dfadler/zombie-mermaid/issues/1310)).
+
+- [#1332](https://github.com/dfadler/zombie-mermaid/pull/1332) [`9be4d36`](https://github.com/dfadler/zombie-mermaid/commit/9be4d3692fee826d22b997a4aa5289fadbc8e8bb) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: every labelled vertical edge now puts its label beside the stroke (down edges to the right, up edges to the left) instead of printing it over the line, when the cells there are free; otherwise the label stays on the stroke as before ([#1284](https://github.com/dfadler/zombie-mermaid/issues/1284)).
+
+- [#1327](https://github.com/dfadler/zombie-mermaid/pull/1327) [`42e2e0c`](https://github.com/dfadler/zombie-mermaid/commit/42e2e0c576bb61f0bd193977c74d3bc045825d14) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: the two edges of a vertical reciprocal pair (`A -->|x| B` with `B -->|y| A`) are drawn as two strokes one cell either side of the column centre, each label beside its own stroke, instead of sharing one stroke that the labels cut ([#1284](https://github.com/dfadler/zombie-mermaid/issues/1284)).
+
+- [#1329](https://github.com/dfadler/zombie-mermaid/pull/1329) [`2e017dd`](https://github.com/dfadler/zombie-mermaid/commit/2e017dd399688f60689aad1003e4582e2cc21e36) Thanks [@dfadler](https://github.com/dfadler)! - SVG: an edge between a node and a subgraph that contains it (`B --> Sub` with `B` inside `Sub`, or `Sub --> B`, or between nested subgraphs) is no longer drawn as a degenerate stub. Real mermaid.js 11.17.2 draws no line for it (a zero-length path), and now both renderers omit it through one shared check in `@zombie-mermaid/core` ([#1310](https://github.com/dfadler/zombie-mermaid/issues/1310)).
+
+  SVG: the gap cut in an edge where it crosses a subgraph title ([#1239](https://github.com/dfadler/zombie-mermaid/issues/1239)) is now only cut when the edge passes through the title text itself, not when it merely runs through the 2px clearance beside it.
+
+- Updated dependencies [[`68b8a6a`](https://github.com/dfadler/zombie-mermaid/commit/68b8a6a621ea9b3fb7e83aaff8bf29534ae10277), [`2e017dd`](https://github.com/dfadler/zombie-mermaid/commit/2e017dd399688f60689aad1003e4582e2cc21e36)]:
+  - @zombie-mermaid/core@4.1.0
+  - @zombie-mermaid/mermaid-parser@4.1.0
+
 ## 4.0.0
 
 ### Patch Changes
