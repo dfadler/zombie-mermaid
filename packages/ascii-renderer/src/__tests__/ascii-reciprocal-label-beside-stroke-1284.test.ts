@@ -32,6 +32,12 @@ function strokes(lines: string[]): Strokes {
   }
 }
 
+/** The column of the first arrowhead: where a single shared stroke runs. */
+function strokeColumn(lines: string[]): number {
+  const arrow = lines.findIndex((l) => l.includes('▲'))
+  return lines[arrow]!.indexOf('▲')
+}
+
 describe('reciprocal pair draws separate strokes with labels beside them (#1284)', () => {
   const PAIR = `graph TD
 A -->|x| B
@@ -109,11 +115,46 @@ B -->|y| A`)
     expect(lines.some((l) => l.includes('Two'))).toBe(true)
   })
 
-  it('leaves a lone labelled vertical edge on its stroke (wider case deliberately not changed)', () => {
+  it('fits a long up-edge label whole beside its stroke by widening the channel', () => {
+    // A label wider than the default room left of the stroke: the pair's
+    // channel is widened for it (edge-routing.ts, #1284), so the label lands
+    // whole beside the stroke, never clipped at the canvas edge and never
+    // cutting through the stroke.
+    const label = 'cancel the whole thing'
+    const lines = render(`stateDiagram-v2
+  Idle --> Active : start
+  Active --> Idle : ${label}`)
+    const col = strokeColumn(lines)
+    const start = lines.find((l) => l.includes(label))!.indexOf(label)
+    expect(start).toBeGreaterThanOrEqual(0)
+    expect(start + label.length).toBeLessThan(col)
+  })
+
+  it('puts a lone labelled down edge right of its stroke too', () => {
     const lines = render(`graph TD
 A -->|hello| B`)
+    const col = lines[lines.findIndex((l) => l.includes('▼'))]!.indexOf('▼')
     const row = lines.find((l) => l.includes('hello'))!
-    expect(row.trim()).toBe('hello')
+    expect(row[col]).toBe('│')
+    expect(row.indexOf('hello')).toBe(col + 2)
+  })
+
+  it('keeps a lone down edge on its stroke when another edge blocks the right side', () => {
+    // The sibling A --> C runs where a beside-right label would land, so the
+    // free-cell check fails and the label stays centred on its own stroke.
+    // C has a second parent (D) so A is not centred over its children, which
+    // would send both edges out of A's sides instead (see
+    // ascii-center-parent-over-children.test.ts).
+    const lines = render(`graph TD
+A -->|a much longer label here| B
+A --> C
+D --> C`)
+    const col = lines[lines.findIndex((l) => l.includes('▼'))]!.indexOf('▼')
+    const start = lines
+      .find((l) => l.includes('a much longer'))!
+      .indexOf('a much longer')
+    expect(start).toBeLessThanOrEqual(col)
+    expect(start + 'a much longer label here'.length).toBeGreaterThan(col)
   })
 
   it('leaves a pair that is not one straight column alone', () => {
