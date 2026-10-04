@@ -637,12 +637,6 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
 export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
   const partner = verticalPairPartner(graph, edge)
   if (!partner) return 0
-  // An entry drop (clusterEntryDrop) redraws the path's last leg, so the
-  // pair stays centred rather than shifting only part of the stroke.
-  for (const e of [edge, partner]) {
-    const wall = clusterWallEnd(graph, e)
-    if (wall && clusterEntryDrop(graph, e, wall)) return 0
-  }
   for (const e of [edge, partner]) {
     if (e.text.length === 0) continue
     const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
@@ -819,7 +813,7 @@ function besideStroke(
  * subgraph wall and title row, and off every other edge's path. Pure
  * geometry, so it also works where no canvas is drawn yet.
  */
-function besideCellsFree(
+export function besideCellsFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
