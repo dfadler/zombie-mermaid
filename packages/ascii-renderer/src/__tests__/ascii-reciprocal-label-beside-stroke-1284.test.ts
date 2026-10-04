@@ -123,4 +123,75 @@ A -->|req| B
 B -->|res| A`)
     expect(lines.some((l) => l.includes('▲') && l.includes('▼'))).toBe(false)
   })
+
+  it('draws the strokes apart when only one edge of the pair is labelled', () => {
+    const lines = render(`graph TD
+A --> B
+B -->|y| A`)
+    const { up, down } = strokes(lines)
+    expect(down - up).toBe(2)
+    expect(lines.find((l) => l.includes('y'))!.indexOf('y')).toBeLessThan(
+      up - 1,
+    )
+  })
+
+  it.each([
+    ['round', 'A((a)) -->|x| B((b))'],
+    ['diamond', 'A{a} -->|x| B{b}'],
+    ['stadium', 'A([a]) -->|x| B([b])'],
+  ])('draws two strokes between %s nodes', (_shape, first) => {
+    const lines = render(`graph TD
+${first}
+B -->|y| A`)
+    const { up, down } = strokes(lines)
+    expect(down - up).toBe(2)
+  })
+
+  it('draws two strokes through nested frames without a label on a frame glyph', () => {
+    const lines = render(`graph TD
+subgraph O
+  subgraph I
+    A
+  end
+end
+subgraph P
+  B
+end
+A -->|x| B
+B -->|y| A`)
+    const { up, down, upRow, downRow } = strokes(lines)
+    expect(down - up).toBe(2)
+    for (let row = upRow + 1; row < downRow; row++) {
+      expect(lines[row]![up], `row ${row}: ${lines[row]}`).toMatch(/[│┼]/)
+      expect(lines[row]![down], `row ${row}: ${lines[row]}`).toMatch(/[│┼]/)
+    }
+  })
+
+  it('leaves a pair whose edges bend alone (the path is not two points)', () => {
+    const text = render(`graph TD
+A --> C
+A -->|x| B
+B -->|y| A
+C --> D
+B --> D`).join('\n')
+    // Both labels still drawn whole, and no up-arrowhead stroke beside a down one.
+    expect(text).toMatch(/\bx\b/)
+    expect(text).toMatch(/\by\b/)
+    expect(text).not.toContain('▲')
+  })
+
+  it('leaves a pair that exits a frame alone (cluster-exit edges are excluded)', () => {
+    const lines = render(`graph TD
+subgraph S
+  A
+  A2
+end
+A -->|x| B
+B -->|y| A
+A2 --> B`)
+    const { up, down } = strokes(lines)
+    expect(Math.abs(down - up)).not.toBe(2)
+    expect(lines.some((l) => l.includes('x'))).toBe(true)
+    expect(lines.some((l) => l.includes('y'))).toBe(true)
+  })
 })

@@ -798,7 +798,7 @@ function besideStroke(
  * subgraph wall and title row, and off every other edge's path. Pure
  * geometry, so it also works where no canvas is drawn yet.
  */
-function besideCellsFree(
+export function besideCellsFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
