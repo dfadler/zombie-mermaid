@@ -191,8 +191,8 @@ describe('ASCII: entries and exits on the same cluster (#1181)', () => {
     expect(rows[wall - 1]).toMatch(/▼/)
     const text = rows.join('\n')
     expect(text).not.toMatch(/[◄▲►]/)
-    for (const id of ['P', 'Q'])
-      expect(text).toMatch(new RegExp(`│\\s+${id}\\s+│`))
+    const boxes = [...text.matchAll(/│\s+(\w+)\s+│/g)].map((m) => m[1])
+    for (const id of ['P', 'Q']) expect(boxes).toContain(id)
   })
 })
 

@@ -53,14 +53,20 @@ describe('ASCII: edges addressed to a subgraph end at its wall (#1283)', () => {
 
   it('TD: W sits directly above Y, and Y above the frame', () => {
     const rows = lines(`graph TD\nX-->Sub\nW-->Y\nY-->Sub${frame}`)
-    const col = (label: string): number => {
-      const box = new RegExp(`│\\s+${label}\\s+│`)
-      const row = rows.find((r) => box.test(r))!
-      // The label's own column, whatever width the box gets.
-      return row.search(box) + row.slice(row.search(box)).indexOf(label)
+    // A node's label cell, whatever width the box gets. The pattern is a
+    // literal; the label is compared, not interpolated.
+    const cell = (label: string): { row: number; col: number } => {
+      for (const [row, text] of rows.entries()) {
+        for (const m of text.matchAll(/│\s+(\w+)\s+│/g)) {
+          if (m[1] === label) {
+            return { row, col: m.index + m[0].indexOf(label) }
+          }
+        }
+      }
+      throw new Error(`no box labelled ${label}`)
     }
-    const rowOf = (label: string): number =>
-      rows.findIndex((r) => new RegExp(`│\\s+${label}\\s+│`).test(r))
+    const col = (label: string): number => cell(label).col
+    const rowOf = (label: string): number => cell(label).row
     expect(col('W')).toBe(col('Y'))
     expect(rowOf('W')).toBeLessThan(rowOf('Y'))
     expect(rowOf('Y')).toBeLessThan(topWall(rows))
