@@ -742,12 +742,6 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
 export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
   const partner = verticalPairPartner(graph, edge)
   if (!partner) return 0
-  // An entry drop (clusterEntryDrop) redraws the path's last leg, so the
-  // pair stays centred rather than shifting only part of the stroke.
-  for (const e of [edge, partner]) {
-    const wall = clusterWallEnd(graph, e)
-    if (wall && clusterEntryDrop(graph, e, wall)) return 0
-  }
   for (const e of [edge, partner]) {
     if (e.text.length === 0) continue
     const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
@@ -851,7 +845,7 @@ function centredLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  return clearOfLaneJunction(
+  const centred = clearOfLaneJunction(
     graph,
     edge,
     clearOfSubgraphTitles(
@@ -869,6 +863,27 @@ function centredLabelPlacement(
       drawingLine,
     ),
   )
+
+  // #1284: every labelled vertical edge puts its label beside the stroke
+  // instead of cutting through it, the down edge's to its right and the up
+  // edge's to its left (a reciprocal pair shares one channel, so the two
+  // sides also keep its labels apart). The row is the one chosen above (#530
+  // pins it); only the column changes, and only when the cells beside the
+  // stroke are clear — otherwise the label stays on the stroke.
+  if (
+    isUpwardEdge !== undefined &&
+    drawingLine.length >= 2 &&
+    drawingLine[0]!.x === drawingLine[1]!.x &&
+    !isClusterExitEdge(graph, edge)
+  ) {
+    const beside = besideStroke(
+      centred,
+      drawingLine[0]!.x,
+      isUpwardEdge ? 'left' : 'right',
+    )
+    if (besideCellsFree(graph, edge, beside)) return beside
+  }
+  return centred
 }
 
 function isClusterExitEdge(graph: AsciiGraph, edge: AsciiEdge): boolean {

@@ -65,31 +65,33 @@ describe('edge label on a Case-4 direct-fallback (diagonal) path', () => {
   const labelRowIndex = lines.findIndex((l) => l.includes('thick'))
   const labelRow = lines[labelRowIndex]!
   const labelStart = labelRow.indexOf('thick')
-  const labelEnd = labelStart + 'thick'.length - 1
 
   it('is not glued to an unrelated edge’s connector', () => {
     expect(labelRow).not.toMatch(/[┆┊│]thick|thick[┆┊│]/)
   })
 
-  it('sits on the thick edge’s own vertical line', () => {
+  it('sits beside the thick edge’s own vertical line', () => {
     // The thick edge's vertical run (┃) is drawn in the rows right above
-    // and below the label; the label must be centered on that column, not
-    // floating somewhere between its own connector and a neighbour's.
+    // and below the label; the label must be anchored to that column, not
+    // floating somewhere between its own connector and a neighbour's. Since
+    // #1284 it sits one blank cell to the right of the stroke instead of
+    // cutting through it, so the stroke column is exactly labelStart - 2.
     const above = lines[labelRowIndex - 1]!
     const below = lines[labelRowIndex + 1]!
     const thickColumnAbove = above.indexOf('┃')
     const thickColumnBelow = below.indexOf('┃')
     expect(thickColumnAbove).toBeGreaterThan(-1)
     expect(thickColumnBelow).toBe(thickColumnAbove)
-    expect(thickColumnAbove).toBeGreaterThanOrEqual(labelStart)
-    expect(thickColumnAbove).toBeLessThanOrEqual(labelEnd)
+    expect(labelStart - thickColumnAbove).toBe(2)
+    expect(labelRow[thickColumnAbove]).toBe('┃')
+    expect(labelRow[thickColumnAbove + 1]).toBe(' ')
   })
 
-  it('keeps the dotted label on the dotted column', () => {
+  it('keeps the dotted label beside the dotted column', () => {
     const dottedRow = lines.find((l) => l.includes('dotted'))!
     const dottedStart = dottedRow.indexOf('dotted')
     const dottedColumn = lines[lines.indexOf(dottedRow) + 1]!.indexOf('┆')
-    expect(dottedColumn).toBeGreaterThanOrEqual(dottedStart)
-    expect(dottedColumn).toBeLessThanOrEqual(dottedStart + 'dotted'.length - 1)
+    expect(dottedStart - dottedColumn).toBe(2)
+    expect(dottedRow[dottedColumn]).toBe('┆')
   })
 })
