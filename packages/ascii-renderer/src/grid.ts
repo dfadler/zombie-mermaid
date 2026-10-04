@@ -894,6 +894,151 @@ function placeDeferredSiblingsNextToRoot(
 }
 
 /**
+ * Whether `node` can sit half a slot over its children without a labelled
+ * edge running out of room. A straddled parent's near border lines up with
+ * the neighbouring child's border, so an edge leaving that side reaches the
+ * child's centre after only half the child's width; the label has to fit in
+ * that run (plus a cell either side) or it lands on the box.
+ */
+function fitsStraddled(graph: AsciiGraph, node: AsciiNode): boolean {
+  const pad = graph.config.boxBorderPadding
+  for (const e of graph.edges) {
+    if (e.from !== node || !e.text) continue
+    const childWidth = displayWidth(e.to.displayLabel) + 2 * pad + 2
+    if (Math.floor(childWidth / 2) < displayWidth(e.text) + 2) return false
+  }
+  return true
+}
+
+/** Release `gc`'s 3x3 block in the occupancy grid. */
+function freeNodeBlock(graph: AsciiGraph, gc: GridCoord): void {
+  for (let dx = 0; dx < NODE_BLOCK_SIZE; dx++)
+    for (let dy = 0; dy < NODE_BLOCK_SIZE; dy++)
+      graph.grid.delete(gridKey({ x: gc.x + dx, y: gc.y + dy }))
+}
+
+/**
+ * Move `node` to `to` if that block is free, else leave it where it is.
+ * Returns whether it moved.
+ */
+function relocateNode(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  to: GridCoord,
+): boolean {
+  const from = requireGridCoord(node)
+  freeNodeBlock(graph, from)
+  const dest = isBlockFree(graph.grid, to, NODE_BLOCK_SIZE) ? to : from
+  placeBlock(graph.grid, dest, NODE_BLOCK_SIZE)
+  node.gridCoord = dest
+  return dest === to
+}
+
+/** Shift every node strictly right of column `afterX` by `by` grid units. */
+function shiftColumnsRight(
+  graph: AsciiGraph,
+  afterX: number,
+  by: number,
+): void {
+  const moved = graph.nodes.filter(
+    (n) => n.gridCoord !== null && n.gridCoord.x > afterX,
+  )
+  for (const n of moved) freeNodeBlock(graph, requireGridCoord(n))
+  for (const n of moved) {
+    const gc = requireGridCoord(n)
+    n.gridCoord = { x: gc.x + by, y: gc.y }
+    placeBlock(graph.grid, n.gridCoord, NODE_BLOCK_SIZE)
+  }
+}
+
+/**
+ * Centre a node over its children, as dagre does, instead of leaving it above
+ * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
+ * leaves its other edges to leave sideways and come back down).
+ *
+ * TD only, and only for graphs where every edge points to a lower row:
+ * back edges and same-row edges route around the nodes they skip, and moving
+ * nodes under them scrambles those routes. A node moves only when it and its
+ * children sit outside every subgraph, the children are on the next row, and
+ * each has no other parent. It only ever moves right, deepest rows first, so
+ * a chain follows its moved child.
+ *
+ * With an odd number of children the midpoint is a node slot. With an even
+ * number it falls on the padding column between the two middle children:
+ *  - if every labelled edge to a child still fits (`fitsStraddled`), the node
+ *    straddles that column and only the column widens;
+ *  - otherwise one slot is opened by pushing the nodes right of the midpoint
+ *    over, provided they all belong to this node's own subtree or fan-in
+ *    (else the shift would drag unrelated branches wider, so it stays put).
+ */
+function centerParentsOverChildren(graph: AsciiGraph): void {
+  if (graph.config.graphDirection !== 'TD') return
+  // Back edges and same-row edges route around the nodes they skip; moving
+  // nodes under them scrambles those routes (State: Connection Lifecycle).
+  // Only handle graphs where every edge points to a lower row.
+  const flowsDown = graph.edges.every((e) => {
+    const f = e.from.gridCoord
+    const t = e.to.gridCoord
+    return f !== null && t !== null && f.y < t.y
+  })
+  if (!flowsDown) return
+  // Deepest first so a moved child doesn't invalidate its parent's span.
+  const order = graph.nodes
+    .filter((n) => n.gridCoord !== null)
+    .sort((a, b) => requireGridCoord(b).y - requireGridCoord(a).y)
+  for (const node of order) {
+    const gc = requireGridCoord(node)
+    if (isNodeInAnySubgraph(graph, node)) continue
+    // No self-loops here: `flowsDown` rejected them.
+    const children = getChildren(graph, node)
+    if (children.length < 1) continue
+    let ok = true
+    for (const c of children) {
+      const cgc = c.gridCoord
+      if (
+        cgc === null ||
+        cgc.y !== gc.y + 4 ||
+        isNodeInAnySubgraph(graph, c) ||
+        graph.edges.some((e) => e.to === c && e.from !== node)
+      ) {
+        ok = false
+        break
+      }
+    }
+    if (!ok) continue
+    const xs = children.map((c) => requireGridCoord(c).x)
+    // Node slots sit on a stride of 4, so the midpoint of the outermost
+    // children is a slot only for an odd count.
+    let mid = (Math.min(...xs) + Math.max(...xs)) / 2
+    if (mid % 4 !== 0) {
+      if (mid + 2 <= gc.x) continue
+      if (fitsStraddled(graph, node)) {
+        relocateNode(graph, node, { x: mid, y: gc.y })
+        continue
+      }
+      const own = new Set<AsciiNode>([node])
+      const queue = [...children]
+      for (let n = queue.pop(); n; n = queue.pop()) {
+        if (own.has(n)) continue
+        own.add(n)
+        queue.push(...getChildren(graph, n))
+      }
+      // Co-parents of the node itself (the other half of a fan-in such as
+      // `A & B --> C`) move with it: widening the gap between them is what
+      // keeps the node centered under both.
+      for (const e of graph.edges) if (e.to === node) own.add(e.from)
+      const foreign = graph.nodes.some(
+        (n) => n.gridCoord !== null && n.gridCoord.x > mid && !own.has(n),
+      )
+      if (foreign) continue
+      shiftColumnsRight(graph, mid, 4)
+      mid += 2
+    }
+    if (mid > gc.x) relocateNode(graph, node, { x: mid, y: gc.y })
+  }
+}
+
+/**
  * Place all currently-reachable, still-unplaced children of already-placed
  * nodes, level by level, mutating `highestPositionPerLevel` as it goes.
  * Multi-pass: iterates until no more progress can be made in a full pass
@@ -1429,6 +1574,8 @@ export function createMapping(graph: AsciiGraph): void {
   // A deferred root may itself have children (edges) that couldn't be placed
   // above since it wasn't on the grid yet — give the traversal another pass.
   placeReachableChildren(graph, highestPositionPerLevel)
+
+  centerParentsOverChildren(graph)
 
   separateNonMembersFromFrames(graph)
 

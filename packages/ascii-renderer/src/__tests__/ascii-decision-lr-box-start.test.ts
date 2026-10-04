@@ -74,15 +74,18 @@ describe('issue #86: stray ├ on decision-node edge labels (LR, Unicode)', () =
 
   it('still renders a genuine ┬ junction for a TD fan-out box-start', () => {
     // Labeled edges opt out of edge bundling (see analyzeEdgeBundles'
-    // canBundle check), so both edges go through the plain drawArrow /
+    // canBundle check), so every edge goes through the plain drawArrow /
     // drawBoxStart path exercised by this fix rather than the separate
     // fan-out bundle trunk/junction logic.
     const out = renderMermaidASCII(
       `flowchart TD
   A[Box A] -->|one| B[Box B]
-  A -->|two| C[Box C]`,
+  A -->|two| C[Box C]
+  A -->|three| D[Box D]`,
       { colorMode: 'none' },
     )
+    // Three children: the source is centred over the middle one, whose edge
+    // leaves the bottom border, so that border carries a real ┬.
     expect(out).toContain('┬')
     expect(findOrphanedJunctions(out)).toEqual([])
   })

@@ -142,9 +142,13 @@ A -->|hello| B`)
   it('keeps a lone down edge on its stroke when another edge blocks the right side', () => {
     // The sibling A --> C runs where a beside-right label would land, so the
     // free-cell check fails and the label stays centred on its own stroke.
+    // C has a second parent (D) so A is not centred over its children, which
+    // would send both edges out of A's sides instead (see
+    // ascii-center-parent-over-children.test.ts).
     const lines = render(`graph TD
 A -->|a much longer label here| B
-A --> C`)
+A --> C
+D --> C`)
     const col = lines[lines.findIndex((l) => l.includes('▼'))]!.indexOf('▼')
     const start = lines
       .find((l) => l.includes('a much longer'))!

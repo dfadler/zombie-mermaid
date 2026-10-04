@@ -2,9 +2,11 @@
  * Regression tests for upstream lukilabs/beautiful-mermaid#113 (fixing
  * upstream issues #111 and #112): ASCII fan-out routing.
  *
- * - #111: sibling edges from one source (TB, labelled) must share a single
- *   horizontal trunk leaving the source's right border, each label sitting on
- *   its own vertical branch, instead of later edges detouring to a lower row.
+ * - #111: sibling edges from one source (TB, labelled) must leave the source
+ *   on a single row, each label sitting on its own vertical branch, instead
+ *   of later edges detouring to a lower row. The source is centred over its
+ *   targets, so the outer edges leave its sides and the middle one its
+ *   bottom border.
  * - #112: in an LR fan-out, a sibling edge's label widens the source's border
  *   column; the first edge's box-start connector must stay flush on the
  *   source box's real border rather than drifting right with the grid cell.
@@ -36,17 +38,17 @@ const LR_FANOUT = `flowchart LR
   Src -->|mid*| Mid
   Src -->|bot*| Bot`
 
-describe('upstream #111: TB fan-out siblings share one trunk', () => {
-  it('renders the shared trunk with labels on their own vertical branches (unicode)', () => {
+describe('upstream #111: TB fan-out siblings leave the source on one row', () => {
+  it('renders the source centred with labels on their own vertical branches (unicode)', () => {
     const out = renderMermaidASCII(TD_FANOUT, { colorMode: 'none' })
     expect(lines(out)).toEqual([
-      '┌─────────────┐',
-      '│             │',
-      '│    Source   ├─────────────┬─────────────────────┐',
-      '│             │             │                     │',
-      '└──────┬──────┘             │ center*             │ right*',
+      '                    ┌───────────────┐',
+      '                    │               │',
+      '       ┌────────────┤     Source    ├─────────────┐',
+      '       │            │               │             │',
+      '       │ left*      └───────┬───────┘             │ right*',
       '       │                    │                     │',
-      '       │ left*              │                     │',
+      '       │                    │ center*             │',
       '       │                    │                     │',
       '       │                    │                     │',
       '       ▼                    ▼                     ▼',
@@ -58,15 +60,20 @@ describe('upstream #111: TB fan-out siblings share one trunk', () => {
     ])
   })
 
-  it('has exactly one horizontal trunk row off the source border (ASCII)', () => {
+  it('has exactly one horizontal run row, on the source row (ASCII)', () => {
     const out = lines(
       renderMermaidASCII(TD_FANOUT, { colorMode: 'none', useAscii: true }),
     )
-    // Box border rows start with '+'; only the source-border row carries a long horizontal run; the buggy
-    // upstream output put a second run (the "right*" detour) on a lower row.
-    const rowsWithRun = out.filter((l) => !l.startsWith('+') && /-{5,}/.test(l))
-    expect(rowsWithRun).toHaveLength(1)
-    expect(rowsWithRun[0]).toMatch(/^\|\s+Source\s+\+-+\+-+\+$/)
+    // The outer edges leave the source row's sides as long horizontal runs.
+    // The buggy upstream output put a second run (the "right*" detour) on a
+    // lower row: nothing between the source's bottom border and the targets'
+    // top borders (rows starting with '+') may carry a run at all.
+    const sourceIdx = out.findIndex((l) => l.includes('Source'))
+    expect(out[sourceIdx]!.trim()).toMatch(/^\+-+\+\s+Source\s+\+-+\+$/)
+    const below = out.slice(sourceIdx + 3)
+    expect(below.filter((l) => !l.startsWith('+') && /-{3,}/.test(l))).toEqual(
+      [],
+    )
     // No label is stranded on a horizontal segment.
     expect(out.join('\n')).not.toMatch(/[-─]\/?(center|right)\*[-─]/)
   })

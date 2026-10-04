@@ -97,7 +97,9 @@ describe('draw-bundles: rendered fan-in/fan-out diagrams', () => {
 
   it('draws a fan-out bundle with one arrowhead per target (unicode)', () => {
     const out = renderMermaidASCII(FAN_OUT, { useAscii: false })
-    expect(out).toContain('├────────────┐')
+    // The source sits centred over its two targets, so the shared trunk
+    // leaves its bottom border and splits at a ┴ directly beneath it.
+    expect(out).toMatch(/┌─+┴─+┐/)
     expect(out.match(/▼/g)).toHaveLength(2)
   })
 
