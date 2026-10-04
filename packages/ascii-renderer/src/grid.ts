@@ -900,17 +900,11 @@ function placeDeferredSiblingsNextToRoot(
  * child's centre after only half the child's width; the label has to fit in
  * that run (plus a cell either side) or it lands on the box.
  */
-function fitsStraddled(
-  graph: AsciiGraph,
-  node: AsciiNode,
-  children: AsciiNode[],
-): boolean {
+function fitsStraddled(graph: AsciiGraph, node: AsciiNode): boolean {
   const pad = graph.config.boxBorderPadding
   for (const e of graph.edges) {
     if (e.from !== node || !e.text) continue
-    const child = children.find((c) => c === e.to)
-    if (!child) continue
-    const childWidth = displayWidth(child.displayLabel) + 2 * pad + 2
+    const childWidth = displayWidth(e.to.displayLabel) + 2 * pad + 2
     if (Math.floor(childWidth / 2) < displayWidth(e.text) + 2) return false
   }
   return true
@@ -991,11 +985,12 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
   // Deepest first so a moved child doesn't invalidate its parent's span.
   const order = graph.nodes
     .filter((n) => n.gridCoord !== null)
-    .sort((a, b) => (b.gridCoord?.y ?? 0) - (a.gridCoord?.y ?? 0))
+    .sort((a, b) => requireGridCoord(b).y - requireGridCoord(a).y)
   for (const node of order) {
-    const gc = node.gridCoord
-    if (gc === null || isNodeInAnySubgraph(graph, node)) continue
-    const children = getChildren(graph, node).filter((c) => c !== node)
+    const gc = requireGridCoord(node)
+    if (isNodeInAnySubgraph(graph, node)) continue
+    // No self-loops here: `flowsDown` rejected them.
+    const children = getChildren(graph, node)
     if (children.length < 1) continue
     let ok = true
     for (const c of children) {
@@ -1017,7 +1012,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     let mid = (Math.min(...xs) + Math.max(...xs)) / 2
     if (mid % 4 !== 0) {
       if (mid + 2 <= gc.x) continue
-      if (fitsStraddled(graph, node, children)) {
+      if (fitsStraddled(graph, node)) {
         relocateNode(graph, node, { x: mid, y: gc.y })
         continue
       }

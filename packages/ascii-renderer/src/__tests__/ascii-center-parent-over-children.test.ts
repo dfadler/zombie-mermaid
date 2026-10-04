@@ -84,6 +84,39 @@ describe('centering a node over its children', () => {
     expect(Math.abs(centerOf(out, 'Check') - childMidpoint)).toBeLessThan(1.5)
   })
 
+  it('still straddles when the labels are short enough to fit', () => {
+    const out = render(`graph TD
+  A -->|go| B[Wide Child One]
+  A -->|no| C[Wide Child Two]`)
+    const childMidpoint =
+      (centerOf(out, 'Wide Child One') + centerOf(out, 'Wide Child Two')) / 2
+    expect(Math.abs(centerOf(out, 'A') - childMidpoint)).toBeLessThan(1.5)
+    // Both labels are drawn whole, none glued to a box border or stroke.
+    const text = out.join('\n')
+    expect(text).toMatch(/[^\w│┤├]go[^\w│┤├]|go$/m)
+    expect(text).not.toMatch(/[│┤├]go|go[│┤├]|[│┤├]no|no[│┤├]/)
+    expect(text).toContain('no')
+  })
+
+  it('opens a slot over a diamond whose branches rejoin', () => {
+    const out = render(`graph TD
+  A -->|first long label| B
+  A -->|second long label| C
+  B --> E
+  C --> E`)
+    const childMidpoint = (centerOf(out, 'B') + centerOf(out, 'C')) / 2
+    expect(Math.abs(centerOf(out, 'A') - childMidpoint)).toBeLessThan(1.5)
+  })
+
+  it('leaves the node where it is when a neighbour already occupies the slot', () => {
+    // D sits right where A would have to go to straddle B and C.
+    const out = render(`graph TD
+  A --> B
+  A --> C
+  D --> E`)
+    expect(boxLeftOf(out, 'A')).toBe(boxLeftOf(out, 'B'))
+  })
+
   it('moves the other half of a fan-in apart so the node stays centred under both', () => {
     const out = render(`graph TD
   Input --> Processor

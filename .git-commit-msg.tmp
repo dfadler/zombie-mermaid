@@ -1,0 +1,14 @@
+test(ascii): cover the remaining centering branches, drop dead ones
+
+Codecov flagged three partial lines in centerParentsOverChildren.
+
+- Drop branches the flowsDown guard makes unreachable: the self-loop
+  filter on children, the null checks on grid coords, and the
+  child lookup in fitsStraddled (an edge's target is always a child).
+- Add tests for the straddle that succeeds with short labels, a diamond
+  whose branches rejoin, and a node that stays put because a neighbour
+  occupies the slot it would move to.
+
+No behaviour change.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
