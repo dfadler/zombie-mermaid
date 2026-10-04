@@ -1200,9 +1200,34 @@ function applyLabelLine(
   const middleX = findNonNodeColumn(graph, minX, maxX, idealX)
 
   const current = graph.columnWidth.get(middleX) ?? 0
-  graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2))
+  graph.columnWidth.set(
+    middleX,
+    Math.max(current, lenLabel + 2, pairColumnWidth(graph, edge, lenLabel)),
+  )
 
   edge.labelLine = [line[0], line[1]]
+}
+
+/**
+ * #1284: a straight vertical reciprocal pair draws its two strokes one cell
+ * either side of the column centre with each label beside its own stroke
+ * (draw-arrows.ts's `strokeShift`), so the column needs a label's width plus
+ * the stroke and a blank cell on each side of the centre: `2 * (label + 2)`.
+ * 0 for any other edge.
+ */
+function pairColumnWidth(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  lenLabel: number,
+): number {
+  const from = edge.from.gridCoord
+  const to = edge.to.gridCoord
+  if (!from || !to || from.x !== to.x || from.y === to.y) return 0
+  const partner = graph.edges.find(
+    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
+  )
+  if (!partner) return 0
+  return 2 * (Math.max(lenLabel, displayWidth(partner.text)) + 2)
 }
 
 /** Calculate the total character width of a line segment by summing column widths. */
