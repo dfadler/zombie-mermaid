@@ -77,3 +77,92 @@ describe('parallel edges leaving one node (#1308)', () => {
     expect(new Set(exits.map((p) => Math.round(p.y))).size).toBe(1)
   })
 })
+
+/** Distinct rounded values of one coordinate of each edge's chosen point. */
+function distinct(
+  source: string,
+  pairs: [string, string][],
+  pick: (pts: Pt[]) => number,
+): number {
+  return new Set(
+    pairs.map(([from, to]) => Math.round(pick(route(source, from, to)))),
+  ).size
+}
+
+const first = (axis: 'x' | 'y') => (pts: Pt[]) => pts[1]![axis]
+const last = (axis: 'x' | 'y') => (pts: Pt[]) => pts[pts.length - 1]![axis]
+
+describe('bundle guard on the other orientations and sides (#1308)', () => {
+  const out: [string, string][] = [
+    ['B', 'C'],
+    ['B', 'D'],
+    ['B', 'F'],
+  ]
+  const into: [string, string][] = [
+    ['A', 'T'],
+    ['B', 'T'],
+    ['C', 'T'],
+  ]
+
+  it('top-down: keeps edges leaving a node apart when a back edge returns to it', () => {
+    const src = `graph TD
+  B --> C
+  B --> D
+  B --> F
+  E --> B
+  C --> E`
+    expect(distinct(src, out, first('x'))).toBe(3)
+  })
+
+  it('top-down: still bundles a plain fan-out', () => {
+    const src = `graph TD
+  B --> C
+  B --> D
+  B --> F`
+    expect(distinct(src, out, first('x'))).toBe(1)
+  })
+
+  it('left-to-right: keeps edges entering a node apart when one leaves it on that side', () => {
+    const src = `graph LR
+  A --> T
+  B --> T
+  C --> T
+  T --> A`
+    expect(distinct(src, into, last('y'))).toBe(3)
+  })
+
+  it('left-to-right: still bundles a plain fan-in', () => {
+    const src = `graph LR
+  A --> T
+  B --> T
+  C --> T`
+    expect(distinct(src, into, last('y'))).toBe(1)
+  })
+
+  it('top-down: keeps edges entering a node apart when one leaves it on that side', () => {
+    const src = `graph TD
+  A --> T
+  B --> T
+  C --> T
+  T --> A`
+    expect(distinct(src, into, last('x'))).toBe(3)
+  })
+
+  it('top-down: still bundles a plain fan-in', () => {
+    const src = `graph TD
+  A --> T
+  B --> T
+  C --> T`
+    expect(distinct(src, into, last('x'))).toBe(1)
+  })
+
+  it('ignores self-loops and unrelated edges when deciding to bundle', () => {
+    const src = `graph LR
+  B --> B
+  B --> C
+  B --> D
+  B --> F
+  F --> G`
+    expect(distinct(src, out, first('y'))).toBe(1)
+  })
+})
