@@ -1059,6 +1059,7 @@ function placeReachableChildren(
   // first (a back-edge into the cluster), so they go in on what is known.
   let forceHeld = false
   const reservedSlot = new Set<AsciiNode>()
+  const centered = new Set<AsciiNode>()
   let progressed = true
   while (progressed) {
     progressed = false
@@ -1146,8 +1147,22 @@ function placeReachableChildren(
           // This keeps children aligned with parent when direction changes
           highestPosition = edgeDir === 'LR' ? gc.y : gc.x
         } else {
-          // Same direction: use level tracker
-          highestPosition = highestPositionPerLevel[childLevel] ?? 0
+          // Same direction: use level tracker, but a cluster's entry member
+          // sits centered under (beside) its sources as mermaid.js draws the
+          // cluster, not under the first one. Never earlier than the
+          // tracker's next free slot, so it cannot land on a sibling already
+          // placed at this level.
+          const center = fanInCenter(graph, child, childLevel)
+          highestPosition = Math.max(
+            highestPositionPerLevel[childLevel] ?? 0,
+            center ?? 0,
+            // A child of a centered node stays under it, not back at the
+            // level's left edge.
+            centered.has(node) ? (edgeDir === 'LR' ? gc.y : gc.x) : 0,
+          )
+          if (center !== undefined && highestPosition === center) {
+            centered.add(child)
+          }
         }
 
         const requested: GridCoord =
@@ -1168,6 +1183,37 @@ function placeReachableChildren(
       progressed = true
     }
   }
+}
+
+/**
+ * The cross-axis slot that centers a cluster's entry member on the sources
+ * already placed above it (left of it, for LR), or undefined when it is not a
+ * cluster entry or fewer than two sources are. Back edges
+ * (a parent at or past `childLevel`) say nothing about where the child sits
+ * and are ignored. Parent slots are one node block wide, so the midpoint of
+ * the outermost two is the centered block's origin.
+ */
+function fanInCenter(
+  graph: AsciiGraph,
+  child: AsciiNode,
+  childLevel: number,
+): number | undefined {
+  const lr = graph.config.graphDirection === 'LR'
+  const slots = new Set<number>()
+  let entersCluster = false
+  for (const edge of graph.edges) {
+    if (edge.to !== child || edge.from === child) continue
+    const gc = edge.from.gridCoord
+    if (!gc || (lr ? gc.x : gc.y) >= childLevel) continue
+    slots.add(lr ? gc.y : gc.x)
+    if (edge.clusterTarget) entersCluster = true
+  }
+  // Only a cluster entry: plain fan-in keeps the first-parent slot that the
+  // upstream mermaid-ascii goldens pin.
+  if (slots.size < 2 || !entersCluster) return undefined
+  const lo = Math.min(...slots)
+  const hi = Math.max(...slots)
+  return Math.floor((lo + hi) / 2)
 }
 
 /**

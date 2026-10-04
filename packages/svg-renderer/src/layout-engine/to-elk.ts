@@ -48,6 +48,18 @@ const STATE_MARKER_LAYER_CONSTRAINT: Partial<Record<string, string>> = {
  * Root-graph ELK options applied to state diagrams only (flowcharts keep
  * their tuned defaults).
  *
+ * Flowcharts deliberately do not get `MODEL_ORDER` cycle breaking (#1307).
+ * They already break cycles the way mermaid.js does, by reversing the
+ * depth-first back edges before ELK runs (`edgesReversedForLayout`), so ELK
+ * has no cycle left to break; adding `MODEL_ORDER` on top only moved nodes
+ * away from mermaid.js. Measured against mermaid 11.17.2 (relative placement
+ * of every node pair, `scripts/layout-oracle.ts` style): applied to every
+ * flowchart it changed 5 of the 26 gallery samples and 49 of 104 doc/test
+ * flowcharts, closer for 0 and 2, further for 4 and 41; applied only to
+ * graphs with a subgraph direction override (the one case where the
+ * pre-reversal is skipped) it changed 1 and 7, closer for 0 and 2, further
+ * for 1 and 5.
+ *
  * - `cycleBreaking: MODEL_ORDER` reverses the edge that points *against*
  *   declaration order instead of whichever edge ELK's greedy heuristic picks.
  *   The greedy default reversed the main chain of `[*] --> Idle`,
@@ -570,11 +582,9 @@ export function mermaidToElk(
   // Deliberately scoped to *only* the sibling-subgraph reversal, not a
   // wholesale "all clusters before all leaves" reordering (which mermaid's
   // own mechanism also does, globally): moving the whole subgraphs group
-  // ahead of top-level leaf nodes changed which edge in a cycle ELK treats
-  // as a feedback edge for a sample mixing top-level leaves and a
-  // subgraph in a cyclic flow (e.g. "CI/CD Pipeline"), reordering the
-  // entire rank structure rather than just left-right sibling position —
-  // a much bigger, unreviewed blast radius than the reported bug needs.
+  // ahead of top-level leaf nodes changes which edge in a cycle ELK treats
+  // as a feedback edge. Cycles in a flowchart are broken before ELK sees
+  // them (`edgesReversedForLayout`), so this ordering no longer decides that.
   const stateGraph = isStateGraph(graph)
   const leafCount = rootChildren.length
   // State diagrams read in source order, so composites keep forward
