@@ -86,9 +86,9 @@ B -->|y| A`
     }
     const cancel = lines.find((l) => l.includes('cancel'))!
     expect(cancel.indexOf('cancel') + 'cancel'.length).toBeLessThan(up)
-    expect(lines.find((l) => l.includes('start'))!.indexOf('start')).toBeGreaterThan(
-      down,
-    )
+    expect(
+      lines.find((l) => l.includes('start'))!.indexOf('start'),
+    ).toBeGreaterThan(down)
   })
 
   it('draws the strokes apart for an unlabelled pair too', () => {

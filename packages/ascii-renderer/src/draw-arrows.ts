@@ -673,7 +673,7 @@ function verticalPairPartner(
   if (a.x !== b.x || c.x !== d.x || a.x !== c.x || a.y === b.y) return undefined
   // Opposite directions, each box wide enough for two strokes (centre +-1
   // must stay inside the border, i.e. width >= 5).
-  if ((b.y > a.y) === (d.y > c.y)) return undefined
+  if (b.y > a.y === d.y > c.y) return undefined
   for (const n of [edge.from, edge.to]) {
     if (!n.drawing || n.drawing.length < 5) return undefined
   }
