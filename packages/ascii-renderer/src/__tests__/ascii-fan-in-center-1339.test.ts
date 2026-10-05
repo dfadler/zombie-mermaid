@@ -16,16 +16,24 @@ const render = (src: string): string[] =>
     .split('\n')
     .map((l) => l.trimEnd())
 
+/** Whether the row has a box border on each side of exactly `label`. */
+function carriesLabel(row: string, label: string): boolean {
+  return row
+    .split(/[│├┤]/)
+    .slice(1, -1)
+    .some((seg) => seg.trim() === label)
+}
+
 /** Column (TD) of the middle of the box labeled `label`. */
 function colOf(rows: string[], label: string): number {
-  const row = rows.find((r) => new RegExp(`│\\s+${label}\\s+│`).test(r))
+  const row = rows.find((r) => carriesLabel(r, label))
   if (row === undefined) throw new Error(`no box ${label}`)
   return row.indexOf(label)
 }
 
 /** Row (LR) of the line carrying the box labeled `label`. */
 function rowOf(rows: string[], label: string): number {
-  const i = rows.findIndex((r) => new RegExp(`│\\s+${label}\\s+[│├┤]`).test(r))
+  const i = rows.findIndex((r) => carriesLabel(r, label))
   if (i < 0) throw new Error(`no box ${label}`)
   return i
 }

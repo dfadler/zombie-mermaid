@@ -230,7 +230,12 @@ describe('ASCII: the cluster sits centered between its sources (#1181)', () => {
   it('plain unlabeled fan-in into a node is centered too (#1339)', () => {
     const rows = lines('graph TD\nX-->A\nY-->A')
     const centerOf = (label: string): number => {
-      const row = rows.find((r) => new RegExp(`│\\s+${label}\\s+│`).test(r))!
+      const row = rows.find((r) =>
+        r
+          .split('│')
+          .slice(1, -1)
+          .some((seg) => seg.trim() === label),
+      )!
       return row.indexOf(label)
     }
     const midpoint = (centerOf('X') + centerOf('Y')) / 2
