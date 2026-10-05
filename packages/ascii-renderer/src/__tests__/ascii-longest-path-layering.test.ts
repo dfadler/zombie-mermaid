@@ -6,16 +6,22 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
+/** Column where a node box labelled `label` starts on this row, or -1. */
+function boxCol(row: string, label: string): number {
+  for (const m of row.matchAll(/│\s+(\S+)\s+(?=[│├┤])/g)) {
+    if (m[1] === label) return m.index
+  }
+  return -1
+}
+
 function rowOf(ascii: string, label: string): number {
-  return ascii
-    .split('\n')
-    .findIndex((r) => new RegExp(`│\\s+${label}\\s+[│├┤]`).test(r))
+  return ascii.split('\n').findIndex((r) => boxCol(r, label) >= 0)
 }
 
 function colOf(ascii: string, label: string): number {
   for (const r of ascii.split('\n')) {
-    const m = new RegExp(`│\\s+${label}\\s+[│├┤]`).exec(r)
-    if (m) return m.index
+    const c = boxCol(r, label)
+    if (c >= 0) return c
   }
   return -1
 }

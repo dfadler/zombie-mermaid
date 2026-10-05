@@ -1128,6 +1128,7 @@ function placeReachableChildren(
         if (edgeDir === graph.config.graphDirection) {
           // Longest-path layering: a child sits below its deepest forward
           // parent even when a shallower parent happens to place it first.
+          /* v8 ignore next -- every node reachable here was ranked by the DFS */
           childLevel = Math.max(childLevel, minLevels.get(child) ?? 0)
           for (const source of entrySources) {
             const sgc = source.gridCoord
@@ -1249,11 +1250,13 @@ function computeMinLevels(
   // post-order so every parent is ranked before its children.
   const levels = new Map<AsciiNode, number>()
   const order = [...forward.keys()].reverse()
-  for (const node of order) levels.set(node, levels.get(node) ?? 0)
+  for (const node of order) levels.set(node, 0)
   for (const node of order) {
-    const base = levels.get(node) ?? 0
+    /* v8 ignore next -- every node in `order` was seeded to 0 above */
+    const next = (levels.get(node) ?? 0) + 4
+    /* v8 ignore next -- every forward node has an entry */
     for (const child of forward.get(node) ?? []) {
-      levels.set(child, Math.max(levels.get(child) ?? 0, base + 4))
+      levels.set(child, Math.max(levels.get(child) ?? 0, next))
     }
   }
   return levels
