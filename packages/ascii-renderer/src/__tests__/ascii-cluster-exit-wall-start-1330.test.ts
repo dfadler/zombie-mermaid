@@ -79,12 +79,19 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
     expect(lines.join('\n')).not.toMatch(/┼/)
   })
 
-  it('tight padding falls back to the routed start without a stray glyph', () => {
+  it('LR in ASCII mode: the member border is intact and the wall holds the junction', () => {
+    const lines = render(source('LR'), { useAscii: true })
+    const row = lines.findIndex((l) => /\| a \|/.test(l))
+    expect(row).toBeGreaterThan(-1)
+    // `| a | +---`: member border, then the wall's own `+`.
+    expect(lines[row]).toMatch(/\| a \| \+-+/)
+  })
+
+  it.each([0, 3])('paddings %i: the exit still starts on the wall', (pad) => {
     for (const dir of ['TD', 'LR'] as const) {
-      const out = render(source(dir), { paddingX: 1, paddingY: 1 }).join('\n')
-      expect(out).toContain('first')
-      expect(out).toContain('other')
-      expect(out).toMatch(/[►▼]/)
+      const out = render(source(dir), { paddingX: pad, paddingY: pad })
+      expect(out.join('\n')).toMatch(dir === 'TD' ? /└─*┬─*┘/ : /│ a │ ├/)
+      expect(out.join('\n')).toContain('first')
     }
   })
 })

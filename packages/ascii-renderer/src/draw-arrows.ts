@@ -197,9 +197,9 @@ function clusterWallEnd(
  * wall, in the stub's own column (row), instead of on
  * the stand-in member's face. The box-start connector then lands on the
  * wall (`┬`), so the edge reads as leaving the cluster and the member's own
- * border stays intact. Undefined for every other edge, and when the first
- * leg doesn't run on past that cell (tight padding can put the gutter cell
- * on or inside the wall); the exit then starts where it was routed.
+ * border stays intact. Undefined for every other edge. The planner puts the
+ * gutter cell past the wall (`planClusterExits`), so the first leg always
+ * runs on beyond it.
  */
 function clusterWallStart(
   graph: AsciiGraph,
@@ -209,17 +209,11 @@ function clusterWallStart(
   if (!sg || graph.clusterExitPlans?.get(sg)?.edges.has(edge) !== true) {
     return undefined
   }
-  const first = edge.path[0]
-  const next = edge.path[1]
-  if (!first || !next) return undefined
-  const start = gridToDrawingCoord(graph, first)
-  const end = gridToDrawingCoord(graph, next)
-  if (graph.config.graphDirection === 'LR') {
-    const x = sg.maxX
-    return start.x < x && x < end.x ? { x, y: start.y } : undefined
-  }
-  const y = sg.maxY
-  return start.y < y && y < end.y ? { x: start.x, y } : undefined
+  // An engaged exit's path is the stub then the outside leg: >= 2 points.
+  const start = gridToDrawingCoord(graph, edge.path[0]!)
+  return graph.config.graphDirection === 'LR'
+    ? { x: sg.maxX, y: start.y }
+    : { x: start.x, y: sg.maxY }
 }
 
 /** `clusterWallEnd` before any spreading: the gutter cell's own column (row). */
@@ -517,25 +511,11 @@ function drawBoxStart(
     graph.canvas[x]?.[y]
 
   if (wallAt) {
-    // A cluster exit (#1330) leaves through the cluster's own wall, at the
-    // cell the path was started on.
-    const vertical = dirEquals(dir, Up) || dirEquals(dir, Down)
-    const existing = existingOnBox(wallAt.x, wallAt.y)
-    const hasBorder =
-      existing !== undefined &&
-      (vertical ? HORIZONTAL_BORDER_CHARS : VERTICAL_BORDER_CHARS).has(existing)
-    const glyph = vertical
-      ? hasBorder
-        ? (junction ?? (dirEquals(dir, Up) ? '┴' : '┬'))
-        : useAscii
-          ? '|'
-          : '│'
-      : hasBorder
-        ? (junction ?? (dirEquals(dir, Left) ? '┤' : '├'))
-        : useAscii
-          ? '-'
-          : '─'
-    write(canvas, wallAt.x, wallAt.y, glyph)
+    // A cluster exit (#1330) leaves through the cluster's own flow-side
+    // wall, at the cell the path was started on: always a tee on that wall
+    // (a stub runs Down in TD, Right in LR).
+    const tee = dirEquals(dir, Down) ? '┬' : '├'
+    write(canvas, wallAt.x, wallAt.y, junction ?? tee)
   } else if (dirEquals(dir, Up)) {
     const x = from.x
     const y = from.y + 1
