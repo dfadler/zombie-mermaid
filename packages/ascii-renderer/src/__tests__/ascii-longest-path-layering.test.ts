@@ -57,4 +57,18 @@ describe('ASCII longest-path layering', () => {
     for (const n of ['A', 'B', 'C'])
       expect(rowOf(out, n)).toBeGreaterThanOrEqual(0)
   })
+
+  // D ranks below E, but C and E fill the column under B; D must move off it
+  // or `B --> D` has to wrap around both.
+  it('moves a pushed-down child off an unrelated sibling’s column (TD)', () => {
+    const out = render('graph TD\nA --> B\nB --> C\nB --> D\nC --> E\nE --> D')
+    expect(rowOf(out, 'D')).toBeGreaterThan(rowOf(out, 'E'))
+    expect(colOf(out, 'D')).toBeGreaterThan(colOf(out, 'C'))
+  })
+
+  it('does the same on the row axis (LR)', () => {
+    const out = render('graph LR\nA --> B\nB --> C\nB --> D\nC --> E\nE --> D')
+    expect(colOf(out, 'D')).toBeGreaterThan(colOf(out, 'E'))
+    expect(rowOf(out, 'D')).toBeGreaterThan(rowOf(out, 'C'))
+  })
 })

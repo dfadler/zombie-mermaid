@@ -1160,7 +1160,7 @@ function placeReachableChildren(
             // level's left edge.
             // Likewise when longest-path layering has pushed siblings off
             // this level, leaving the slots left of the parent empty.
-            edgeDir === 'LR' ? gc.y : gc.x,
+            clearSlotBelow(graph, gc, child, childLevel, edgeDir === 'LR'),
           )
           if (center !== undefined && highestPosition === center) {
             centered.add(child)
@@ -1185,6 +1185,39 @@ function placeReachableChildren(
       progressed = true
     }
   }
+}
+
+/**
+ * The cross-axis slot a child pushed `childLevel` away from its parent can
+ * take: the parent's own slot, or the next one over while an unrelated node
+ * already placed between them occupies it (so the edge is not forced to wrap around
+ * that node, as `B --> D` does around `B --> C` when D ranks below C).
+ */
+function clearSlotBelow(
+  graph: AsciiGraph,
+  parent: GridCoord,
+  child: AsciiNode,
+  childLevel: number,
+  lr: boolean,
+): number {
+  let slot = lr ? parent.y : parent.x
+  const level = lr ? parent.x : parent.y
+  const blocked = (): boolean =>
+    graph.nodes.some((n) => {
+      const c = n.gridCoord
+      if (!c) return false
+      const nl = lr ? c.x : c.y
+      // A node that is itself a parent of the child is no obstacle: its
+      // edge into the child runs alongside the longer one.
+      return (
+        (lr ? c.y : c.x) === slot &&
+        nl > level &&
+        nl < childLevel &&
+        !getChildren(graph, n).includes(child)
+      )
+    })
+  while (blocked()) slot += 4
+  return slot
 }
 
 /**
