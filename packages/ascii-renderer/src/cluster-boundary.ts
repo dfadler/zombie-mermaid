@@ -14,7 +14,9 @@
  * stand-in node's flow-side face, across the cluster's wall, to a gutter
  * cell just past it; then an ordinary routed leg from the gutter to the
  * target. All exits of one cluster share the stub (same-style overlap is
- * already permitted between siblings by edge-cell-styles.ts).
+ * already permitted between siblings by edge-cell-styles.ts). The shared stub
+ * is the *routed* shape; draw-arrows.ts then starts each exit at its own cell
+ * on the wall (`exitLandings`, #1182), so occupancy is unchanged.
  *
  * A cluster engages only when 2+ of its outgoing edges are eligible, and
  * all-or-nothing, so a single-exit cluster (and every graph without
