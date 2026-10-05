@@ -36,7 +36,7 @@ import {
 } from './types.ts'
 import { copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
-import { displayWidth } from './display-width.ts'
+import { displayWidth, toDisplayCells } from './display-width.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { splitLines } from './multiline-utils.ts'
 import { drawLine } from './draw-lines.ts'
@@ -1111,6 +1111,29 @@ function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
     drawText(canvas, { x, y }, text)
   }
   return canvas
+}
+
+/**
+ * Cells of `edge`'s drawn label that hold a literal space between two
+ * characters of the text. `mergeCanvases` treats an overlay's space as
+ * transparent, so a stroke the label sits on would show through the gap and
+ * turn `long label` into `long─label` (#1348); the caller blanks these cells
+ * after the merge, the way subgraph titles already do (#447).
+ */
+export function labelInteriorSpaces(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): DrawingCoord[] {
+  const cells: DrawingCoord[] = []
+  for (const { x, y, text } of edgeLabelPlacement(graph, edge) ?? []) {
+    const glyphs = toDisplayCells(text)
+    const first = glyphs.findIndex((g) => g !== ' ')
+    const last = glyphs.findLastIndex((g) => g !== ' ')
+    for (let i = first + 1; i < last; i++) {
+      if (glyphs[i] === ' ') cells.push({ x: x + i, y })
+    }
+  }
+  return cells
 }
 
 /**
