@@ -5,6 +5,12 @@
 // Split out of draw.ts.
 // ============================================================================
 
+import {
+  edgePointShifts,
+  labelLineToDrawing,
+  pathToDrawing,
+  portShifts,
+} from './port-offsets.ts'
 import type {
   Canvas,
   DrawingCoord,
@@ -31,7 +37,7 @@ import {
 import { copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { displayWidth } from './display-width.ts'
-import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
+import { gridToDrawingCoord } from './grid.ts'
 import { splitLines } from './multiline-utils.ts'
 import { drawLine } from './draw-lines.ts'
 
@@ -54,13 +60,17 @@ export function drawArrow(
   const labelCanvas = drawArrowLabel(graph, edge)
   const wallEnd = clusterWallEnd(graph, edge)
   const drop = wallEnd ? clusterEntryDrop(graph, edge, wallEnd) : undefined
+  const dx = strokeShift(graph, edge)
+  const shifts =
+    edgePointShifts(graph, edge) ??
+    (dx === 0 ? undefined : edge.path.map(() => dx))
   const [pathCanvas, linesDrawn, lineDirs] = drawPath(
     graph,
     edge.path,
     edge.style,
     wallEnd,
     drop,
-    strokeShift(graph, edge),
+    shifts,
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -131,7 +141,7 @@ export function drawArrow(
 
   const cornersCanvas = invisible
     ? copyCanvas(graph.canvas)
-    : drawCorners(graph, edge.path, drop)
+    : drawCorners(graph, edge.path, drop, shifts)
 
   return [
     pathCanvas,
@@ -351,7 +361,7 @@ function drawPath(
   style: AsciiEdgeStyle = 'solid',
   endOverride?: DrawingCoord,
   drop?: EntryDrop,
-  dx = 0,
+  shifts?: number[],
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -359,9 +369,12 @@ function drawPath(
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []
   const lineDirs: Direction[] = []
-  // #1284: a reciprocal pair's strokes are drawn one cell off the column centre.
-  const shift = (c: DrawingCoord): DrawingCoord =>
-    dx === 0 ? c : { x: c.x + dx, y: c.y }
+  // #1284/#1350: strokes that share a port are drawn off the column centre;
+  // `shifts[i]` is the offset of path point i.
+  const shift = (c: DrawingCoord, i: number): DrawingCoord =>
+    shifts === undefined || shifts[i] === 0
+      ? c
+      : { x: c.x + shifts[i]!, y: c.y }
 
   if (drop) {
     for (let i = 1; i < drop.points.length; i++) {
@@ -386,11 +399,11 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = shift(gridToDrawingCoord(graph, previousCoord))
+    const prevDC = shift(gridToDrawingCoord(graph, previousCoord), i - 1)
     const nextDC =
       endOverride && i === path.length - 1
-        ? shift(endOverride)
-        : shift(gridToDrawingCoord(graph, nextCoord))
+        ? shift(endOverride, i)
+        : shift(gridToDrawingCoord(graph, nextCoord), i)
 
     if (drawingCoordEquals(prevDC, nextDC)) {
       previousCoord = nextCoord
@@ -661,6 +674,7 @@ function drawCorners(
   graph: AsciiGraph,
   path: GridCoord[],
   drop?: EntryDrop,
+  shifts?: number[],
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   // An entry drop (clusterEntryDrop) is already a drawn polyline.
@@ -669,7 +683,10 @@ function drawCorners(
 
   for (let idx = 1; idx < points.length - 1; idx++) {
     const coord = points[idx]!
-    const dc = drop ? drop.points[idx]! : gridToDrawingCoord(graph, path[idx]!)
+    const base = drop
+      ? drop.points[idx]!
+      : gridToDrawingCoord(graph, path[idx]!)
+    const dc = shifts ? { x: base.x + (shifts[idx] ?? 0), y: base.y } : base
     const prevDir = determineDirection(points[idx - 1]!, coord)
     const nextDir = determineDirection(coord, points[idx + 1]!)
 
@@ -742,6 +759,9 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
 export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
   const partner = verticalPairPartner(graph, edge)
   if (!partner) return 0
+  // A pair that shares its port with other edges is spread by `portShifts`.
+  const generic = portShifts(graph)
+  if (generic.has(edge) || generic.has(partner)) return 0
   for (const e of [edge, partner]) {
     if (e.text.length === 0) continue
     const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
@@ -808,11 +828,7 @@ function centredLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] {
-  const drawingLine = onEntryJog(
-    graph,
-    edge,
-    lineToDrawing(graph, edge.labelLine),
-  )
+  const drawingLine = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
 
   // Determine if this is an upward edge (target is above source in the path)
   // This is used to offset labels on bidirectional edges to prevent overlap
@@ -949,7 +965,7 @@ export function besideCellsFree(
     }
     for (const other of graph.edges) {
       if (other === edge) continue
-      const pts = lineToDrawing(graph, other.path)
+      const pts = pathToDrawing(graph, other)
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1]!
         const b = pts[i]!
