@@ -1157,6 +1157,7 @@ function placeReachableChildren(
           )
           if (center !== undefined && highestPosition === center) {
             centered.add(child)
+            ;(graph.fanInCentered ??= new Set()).add(child)
           }
         }
 
@@ -1195,20 +1196,74 @@ function fanInCenter(
 ): number | undefined {
   const lr = graph.config.graphDirection === 'LR'
   const slots = new Set<number>()
+  let labeled = false
   let entersCluster = false
   for (const edge of graph.edges) {
     if (edge.to !== child || edge.from === child) continue
     const gc = edge.from.gridCoord
     if (!gc || (lr ? gc.x : gc.y) >= childLevel) continue
     slots.add(lr ? gc.y : gc.x)
+    if (edge.text.length > 0) labeled = true
     if (edge.clusterTarget) entersCluster = true
   }
-  // Only a cluster entry: plain fan-in keeps the first-parent slot that the
-  // upstream mermaid-ascii goldens pin.
-  if (slots.size < 2 || !entersCluster) return undefined
+  if (slots.size < 2) return undefined
+  // A cluster entry is always centered. A plain labeled fan-in is centered
+  // only where each edge can take a path of its own (see labeledFanInFits).
+  // Other plain fan-in keeps the first-parent slot that the upstream
+  // mermaid-ascii goldens pin.
+  if (!entersCluster && !(labeled && labeledFanInFits(graph, child, lr))) {
+    return undefined
+  }
   const lo = Math.min(...slots)
   const hi = Math.max(...slots)
   return Math.floor((lo + hi) / 2)
+}
+
+/**
+ * Whether a labeled fan-in into `child` is one the side-entry route
+ * (edge-routing.ts) handles without losing a label (#1339). Chosen by
+ * rendering thousands of random labeled graphs and counting labels that
+ * vanish: the shapes below are where centering made that worse.
+ *  - LR: the face a parent enters by is the one the child's own out-edge may
+ *    leave by, and the two edges meet.
+ *  - A parent with another outgoing edge: its drop column is shared with
+ *    that edge, or a second centered fan-in competes for the same parents.
+ *  - A child on a cycle: a back edge's label widens the column the side
+ *    entry ends in and detaches the arrowhead.
+ */
+function labeledFanInFits(
+  graph: AsciiGraph,
+  child: AsciiNode,
+  lr: boolean,
+): boolean {
+  if (lr) return false
+  for (const edge of graph.edges) {
+    if (edge.to !== child) continue
+    if (graph.edges.some((o) => o.from === edge.from && o.to !== child)) {
+      return false
+    }
+  }
+  return !reachesAnyParent(graph, child)
+}
+
+/** Whether following edges out of `node` leads back to a node that feeds it. */
+function reachesAnyParent(graph: AsciiGraph, node: AsciiNode): boolean {
+  const parents = new Set(
+    graph.edges
+      .filter((e) => e.to === node && e.from !== node)
+      .map((e) => e.from),
+  )
+  const seen = new Set<AsciiNode>([node])
+  const queue = [node]
+  for (let n = queue.pop(); n; n = queue.pop()) {
+    for (const e of graph.edges) {
+      if (e.from !== n || seen.has(e.to)) continue
+      if (parents.has(e.to)) return true
+      seen.add(e.to)
+      queue.push(e.to)
+    }
+  }
+  return false
 }
 
 /**

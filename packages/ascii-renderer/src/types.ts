@@ -401,6 +401,13 @@ export interface AsciiGraph {
   preferStraightRoutes?: boolean
   /** Engaged cluster-exit plans, keyed by subgraph. Set by createMapping. */
   clusterExitPlans?: Map<AsciiSubgraph, ClusterExitPlan>
+  /**
+   * Nodes placed midway between their parents on fan-in (see grid.ts
+   * `fanInCenter`). Such a node sits diagonally from each parent, so a
+   * labeled parent edge enters it from the side (edge-routing.ts) instead of
+   * sharing one top-entry path with its siblings.
+   */
+  fanInCentered?: Set<AsciiNode>
 }
 
 // ============================================================================
