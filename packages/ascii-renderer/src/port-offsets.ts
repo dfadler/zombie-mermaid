@@ -27,6 +27,7 @@
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
+import { isPortFixedEdge } from './edge-cell-styles.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -79,17 +80,7 @@ export interface PortShift {
 const portKey = (node: AsciiNode, cell: GridCoord): string =>
   `${node.index}|${cell.x},${cell.y}`
 
-function isFixed(edge: AsciiEdge): boolean {
-  return (
-    edge.from === edge.to ||
-    edge.path.length < 2 ||
-    edge.bundle !== undefined ||
-    edge.parallelLane !== undefined ||
-    edge.style === 'invisible' ||
-    edge.clusterSource !== undefined ||
-    edge.clusterTarget !== undefined
-  )
-}
+const isFixed = isPortFixedEdge
 
 const sign = (n: number): -1 | 0 | 1 => (n > 0 ? 1 : n < 0 ? -1 : 0)
 
@@ -249,7 +240,15 @@ function pushOf(run: PortRun, role: 'S' | 'E'): 1 | -1 {
   if (run.axis === 'v') {
     return (role === 'S') === (run.side === 'bottom') ? 1 : -1
   }
-  if (run.turn !== 0) return role === 'S' ? run.turn : (-run.turn as 1 | -1)
+  if (run.turn !== 0) {
+    // Two bent edges between the same pair nest like L shapes. The column
+    // convention puts the down-travelling edge on the outer (right) column
+    // of a right-hand route, and the outer route must take the upper row to
+    // avoid crossing the inner one, so on the right side the row is opposite
+    // the adjacent leg's motion; on the left side the columns mirror, and so
+    // does this.
+    return run.side === 'right' ? (-run.turn as 1 | -1) : run.turn
+  }
   return (role === 'S') === (run.side === 'right') ? 1 : -1
 }
 
