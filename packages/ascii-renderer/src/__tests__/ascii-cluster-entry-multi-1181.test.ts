@@ -227,12 +227,13 @@ describe('ASCII: the cluster sits centered between its sources (#1181)', () => {
     ).toBeLessThanOrEqual(2)
   })
 
-  it('plain fan-in into a node keeps the first-parent slot', () => {
-    // Only a cluster's entry member is centered; the upstream goldens pin
-    // plain fan-in under the first parent.
+  it('plain unlabeled fan-in into a node is centered too (#1339)', () => {
     const rows = lines('graph TD\nX-->A\nY-->A')
-    const a = rows.find((r) => /│\s+A\s+│/.test(r))!
-    const x = rows.find((r) => /│\s+X\s+│/.test(r))!
-    expect(a.indexOf('A') - x.indexOf('X')).toBe(0)
+    const centerOf = (label: string): number => {
+      const row = rows.find((r) => new RegExp(`│\\s+${label}\\s+│`).test(r))!
+      return row.indexOf(label)
+    }
+    const midpoint = (centerOf('X') + centerOf('Y')) / 2
+    expect(Math.abs(centerOf('A') - midpoint)).toBeLessThanOrEqual(1)
   })
 })

@@ -105,7 +105,10 @@ describe('centering a node over its children', () => {
   B --> E
   C --> E`)
     const childMidpoint = (centerOf(out, 'B') + centerOf(out, 'C')) / 2
-    expect(Math.abs(centerOf(out, 'A') - childMidpoint)).toBeLessThan(1.5)
+    // E now sits centered between B and C (#1339) in the column the opened
+    // slot straddles, and its box widens that column on one side, so A lands
+    // a little further off than the plain two-child case.
+    expect(Math.abs(centerOf(out, 'A') - childMidpoint)).toBeLessThan(3.5)
   })
 
   it('leaves the node where it is when a neighbour already occupies the slot', () => {

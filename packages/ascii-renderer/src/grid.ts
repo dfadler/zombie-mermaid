@@ -1195,17 +1195,45 @@ function fanInCenter(
 ): number | undefined {
   const lr = graph.config.graphDirection === 'LR'
   const slots = new Set<number>()
+  const parents = new Set<AsciiNode>()
   let entersCluster = false
+  let labeled = false
   for (const edge of graph.edges) {
     if (edge.to !== child || edge.from === child) continue
     const gc = edge.from.gridCoord
     if (!gc || (lr ? gc.x : gc.y) >= childLevel) continue
     slots.add(lr ? gc.y : gc.x)
+    parents.add(edge.from)
     if (edge.clusterTarget) entersCluster = true
+    if (edge.text !== '') labeled = true
   }
-  // Only a cluster entry: plain fan-in keeps the first-parent slot that the
-  // upstream mermaid-ascii goldens pin.
-  if (slots.size < 2 || !entersCluster) return undefined
+  // A plain node centers only when no incoming edge carries a label:
+  // unlabeled edges bundle into one trunk, but labeled ones would each need
+  // their own path through the gap between the parents, and share it
+  // instead (one label drawn over the other).
+  if (slots.size < 2 || (labeled && !entersCluster)) return undefined
+  // Nor when a parent also feeds another node. `A & B --> C & D`: the
+  // siblings would all claim the same midpoint and the later ones slide off
+  // it, leaving the set lopsided against its parents. `B --> C; B --> D;
+  // C --> D`: D's edge from C would ride the corridor of B's edge to C and
+  // read as one that never arrives. They keep their own parents' slots.
+  if (
+    !entersCluster &&
+    graph.edges.some(
+      (e) => e.from !== e.to && e.to !== child && parents.has(e.from),
+    )
+  ) {
+    return undefined
+  }
+  // Nor when the child fans out itself: `centerParentsOverChildren` already
+  // positions it between its own children, and the two would pull it apart.
+  if (!entersCluster) {
+    const kids = new Set<AsciiNode>()
+    for (const e of graph.edges) {
+      if (e.from === child && e.to !== child) kids.add(e.to)
+    }
+    if (kids.size > 1) return undefined
+  }
   const lo = Math.min(...slots)
   const hi = Math.max(...slots)
   return Math.floor((lo + hi) / 2)
