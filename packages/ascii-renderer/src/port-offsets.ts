@@ -438,6 +438,16 @@ export function labelLineToDrawing(
   const path = edge.path
   return base.map((dc, i) => {
     const g = edge.labelLine[i]!
+    // A corner can lie on two runs at once (a vertical start run and a
+    // horizontal end run meet at the bend), each shifting a different axis,
+    // so every matching run applies. Stopping at the first left a label on
+    // the unshifted row of its own stroke (#attribution).
+    // At most one shift per axis: a straight edge's start and end runs are
+    // one run, and applying its offset twice would double it.
+    let x = dc.x
+    let y = dc.y
+    let shiftedX = false
+    let shiftedY = false
     for (const [run, by] of [
       [shift.startRun, shift.start],
       [shift.endRun, shift.end],
@@ -447,21 +457,25 @@ export function labelLineToDrawing(
       const b = path[run.to]!
       if (run.axis === 'v') {
         if (
+          !shiftedX &&
           g.x === run.line &&
           g.y >= Math.min(a.y, b.y) &&
           g.y <= Math.max(a.y, b.y)
         ) {
-          return { x: dc.x + by, y: dc.y }
+          x += by
+          shiftedX = true
         }
       } else if (
+        !shiftedY &&
         g.y === run.line &&
         g.x >= Math.min(a.x, b.x) &&
         g.x <= Math.max(a.x, b.x)
       ) {
-        return { x: dc.x, y: dc.y + by }
+        y += by
+        shiftedY = true
       }
     }
-    return dc
+    return { x, y }
   })
 }
 
