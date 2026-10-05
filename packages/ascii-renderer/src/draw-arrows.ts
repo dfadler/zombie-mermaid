@@ -53,6 +53,7 @@ export function drawArrow(
 
   const labelCanvas = drawArrowLabel(graph, edge)
   const wallEnd = clusterWallEnd(graph, edge)
+  const wallStart = clusterWallStart(graph, edge)
   const drop = wallEnd ? clusterEntryDrop(graph, edge, wallEnd) : undefined
   const [pathCanvas, linesDrawn, lineDirs] = drawPath(
     graph,
@@ -61,6 +62,7 @@ export function drawArrow(
     wallEnd,
     drop,
     strokeShift(graph, edge),
+    wallStart,
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -85,7 +87,16 @@ export function drawArrow(
 
   const boxStartCanvas =
     hasSegments && !invisible
-      ? drawBoxStart(graph, edge.path, linesDrawn[0]!, edge.from)
+      ? drawBoxStart(
+          graph,
+          edge.path,
+          linesDrawn[0]!,
+          edge.from,
+          wallStart && {
+            x: wallStart.x + strokeShift(graph, edge),
+            y: wallStart.y,
+          },
+        )
       : copyCanvas(graph.canvas)
 
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
@@ -179,6 +190,36 @@ function clusterWallEnd(
   return graph.config.graphDirection === 'LR'
     ? { x: end.x, y: landing }
     : { x: landing, y: end.y }
+}
+
+/**
+ * Where an engaged cluster exit (#1330) starts: on the cluster's flow-side
+ * wall, in the stub's own column (row), instead of on
+ * the stand-in member's face. The box-start connector then lands on the
+ * wall (`┬`), so the edge reads as leaving the cluster and the member's own
+ * border stays intact. Undefined for every other edge, and when the first
+ * leg doesn't run on past that cell (tight padding can put the gutter cell
+ * on or inside the wall); the exit then starts where it was routed.
+ */
+function clusterWallStart(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): DrawingCoord | undefined {
+  const sg = edge.clusterSource
+  if (!sg || graph.clusterExitPlans?.get(sg)?.edges.has(edge) !== true) {
+    return undefined
+  }
+  const first = edge.path[0]
+  const next = edge.path[1]
+  if (!first || !next) return undefined
+  const start = gridToDrawingCoord(graph, first)
+  const end = gridToDrawingCoord(graph, next)
+  if (graph.config.graphDirection === 'LR') {
+    const x = sg.maxX
+    return start.x < x && x < end.x ? { x, y: start.y } : undefined
+  }
+  const y = sg.maxY
+  return start.y < y && y < end.y ? { x: start.x, y } : undefined
 }
 
 /** `clusterWallEnd` before any spreading: the gutter cell's own column (row). */
@@ -352,6 +393,7 @@ function drawPath(
   endOverride?: DrawingCoord,
   drop?: EntryDrop,
   dx = 0,
+  startOverride?: DrawingCoord,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -386,7 +428,11 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = shift(gridToDrawingCoord(graph, previousCoord))
+    const prevDC = shift(
+      startOverride && i === 1
+        ? startOverride
+        : gridToDrawingCoord(graph, previousCoord),
+    )
     const nextDC =
       endOverride && i === path.length - 1
         ? shift(endOverride)
@@ -440,12 +486,17 @@ function drawBoxStart(
   path: GridCoord[],
   firstLine: DrawingCoord[],
   sourceNode: AsciiNode,
+  wallAt?: DrawingCoord,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   const useAscii = graph.config.useAscii
 
-  // Skip box start connectors for state pseudo-states (they have their own bordered design)
-  if (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end') {
+  // Skip box start connectors for state pseudo-states (they have their own
+  // bordered design), unless the exit starts on a cluster wall (#1330).
+  if (
+    !wallAt &&
+    (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end')
+  ) {
     return canvas
   }
 
@@ -465,7 +516,27 @@ function drawBoxStart(
   const existingOnBox = (x: number, y: number): string | undefined =>
     graph.canvas[x]?.[y]
 
-  if (dirEquals(dir, Up)) {
+  if (wallAt) {
+    // A cluster exit (#1330) leaves through the cluster's own wall, at the
+    // cell the path was started on.
+    const vertical = dirEquals(dir, Up) || dirEquals(dir, Down)
+    const existing = existingOnBox(wallAt.x, wallAt.y)
+    const hasBorder =
+      existing !== undefined &&
+      (vertical ? HORIZONTAL_BORDER_CHARS : VERTICAL_BORDER_CHARS).has(existing)
+    const glyph = vertical
+      ? hasBorder
+        ? (junction ?? (dirEquals(dir, Up) ? '┴' : '┬'))
+        : useAscii
+          ? '|'
+          : '│'
+      : hasBorder
+        ? (junction ?? (dirEquals(dir, Left) ? '┤' : '├'))
+        : useAscii
+          ? '-'
+          : '─'
+    write(canvas, wallAt.x, wallAt.y, glyph)
+  } else if (dirEquals(dir, Up)) {
     const x = from.x
     const y = from.y + 1
     const existing = existingOnBox(x, y)
