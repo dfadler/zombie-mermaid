@@ -82,9 +82,9 @@ describe('cluster-exit anchoring: labeled multi-exit primary repro (#1135)', () 
     const inside = lines.slice(0, wall)
     expect(inside.some((l) => /├─+┼/.test(l))).toBe(false)
 
-    // The shared trunk starts on the wall (#1330): one junction, `┬`, and
-    // nothing crosses it.
-    expect(lines[wall]!.match(/┬/g)).toHaveLength(1)
+    // Each exit starts on the wall at its own junction (#1330, #1182), `┬`,
+    // and nothing crosses it.
+    expect(lines[wall]!.match(/┬/g)).toHaveLength(2)
     expect(lines[wall]).not.toMatch(/┼/)
 
     // Both edges still arrive: two arrowheads above the two targets.
@@ -96,18 +96,27 @@ describe('cluster-exit anchoring: labeled multi-exit primary repro (#1135)', () 
     expect(arrowRow).toBeDefined()
   })
 
-  it('shares one trunk: the fan-out forks at a tee directly on the trunk column', () => {
-    // Unlabeled, so no label sits on the fork itself.
+  it('each exit has its own wall junction and stroke, in target order (#1182)', () => {
+    // Unlabeled, so no label sits on a stroke.
     const lines = render(
       FLOW_TWIN.replace('-->|done|', '-->').replace('-->|fail|', '-->'),
     )
     const wall = wallRow(lines)
-    const trunkCol = lines[wall]!.indexOf('┬')
-    // The row below the wall forks at the trunk column (a tee) and runs to
-    // the other target's column.
-    const fork = lines[wall + 1]!
-    expect(fork[trunkCol]).toBe('├')
-    expect(fork).toMatch(/├─+┐/)
+    const first = lines[wall]!.indexOf('┬')
+    const second = lines[wall]!.lastIndexOf('┬')
+    expect(second).toBeGreaterThan(first)
+    // Done is the left target, so it takes the left junction: its stroke
+    // drops straight to the arrowhead, while Error's turns right on the
+    // gutter row and runs out to its own column. Neither is a shared trunk.
+    expect(lines[wall + 1]![first]).toBe('│')
+    expect(lines[wall + 1]![second]).toBe('└')
+    expect(lines[wall + 1]).toMatch(/└─+┐/)
+    const arrows = lines.findIndex((l) => (l.match(/▼/g) ?? []).length === 2)
+    expect(lines[arrows]![first]).toBe('▼')
+    const targets = lines.findIndex((l) => /Done/.test(l) && /Error/.test(l))
+    expect(lines[targets]!.indexOf('Done')).toBeLessThan(
+      lines[targets]!.indexOf('Error'),
+    )
   })
 
   it('LR mirror: both exits leave through the right wall', () => {
@@ -119,13 +128,14 @@ describe('cluster-exit anchoring: labeled multi-exit primary repro (#1135)', () 
   Processing -->|done| Done
   Processing -->|fail| Error
 `)
-    // The right wall is the last `│` column of the cluster box; the stub
-    // starts on it (#1330), as a `├` on N's row with N's own border intact.
+    // The right wall is the last `│` column of the cluster box; the exits
+    // start on it (#1330) as `├` tees, with N's own border intact.
     const nRow = lines.findIndex((l) => /│ N /.test(l))
     expect(nRow).toBeGreaterThan(-1)
-    expect(lines[nRow]).toMatch(/N │ +├/)
+    expect(lines[nRow]).not.toMatch(/N ├/)
+    const wallCol = lines[nRow]!.indexOf('│', lines[nRow]!.indexOf('N │') + 3)
+    expect(lines.filter((l) => l[wallCol] === '├')).toHaveLength(2)
     // Labels sit outside the wall: `fail` must not start at or before it.
-    const wallCol = lines[nRow]!.lastIndexOf('├')
     const failRow = lines.find((l) => l.includes('fail'))!
     expect(failRow.indexOf('fail')).toBeGreaterThan(wallCol)
     // Both targets are reached.
@@ -299,7 +309,7 @@ describe('cluster-exit anchoring: gutter sizing', () => {
       const wall = wallRow(lines)
       expect(wall).toBeGreaterThan(-1)
       expect(lines[wall]).not.toMatch(/one|two/)
-      expect(lines[wall]!.match(/┬/g)).toHaveLength(1)
+      expect(lines[wall]!.match(/┬/g)).toHaveLength(2)
       expect(lines.slice(wall + 1).join('\n')).toContain('one')
       expect(lines.slice(wall + 1).join('\n')).toContain('two')
     },
@@ -318,11 +328,11 @@ describe('cluster-exit anchoring: gutter sizing', () => {
 `,
       { paddingY: 2, paddingX: 2 },
     )
-    // The trunk starts on the outer cluster's bottom wall (#1330); the inner
+    // The exits start on the outer cluster's bottom wall (#1330); the inner
     // cluster's wall (and the member inside it) is left intact.
     const walls = lines
       .map((l, i) => [l, i] as const)
-      .filter(([l]) => /└─+┬─+┘/.test(l))
+      .filter(([l]) => /└─+┬─+┬─+┘/.test(l))
     expect(walls).toHaveLength(1)
     expect(lines.filter((l) => /└─+┼─+┘/.test(l))).toHaveLength(0)
     const outerWall = walls[0]![1]
@@ -344,12 +354,12 @@ describe('cluster-exit anchoring: gutter sizing', () => {
     // and the label `done` is not adjacent to a wall glyph on its left.
     expect(text).toMatch(/┐/)
     const doneRow = lines.find((l) => l.includes('done'))!
-    expect(doneRow).toMatch(/├[─┬]*done─*►/)
+    expect(doneRow).toMatch(/└─*done─*►/)
   })
 })
 
 describe('cluster-exit anchoring: style-conflict reroute keeps the cluster shape', () => {
-  it('a dotted exit alongside a solid one still forks from the shared trunk', () => {
+  it('a dotted exit alongside a solid one still leaves from its own wall junction', () => {
     const src = `flowchart TD
   subgraph S
     a
@@ -361,8 +371,10 @@ describe('cluster-exit anchoring: style-conflict reroute keeps the cluster shape
     const wall = wallRow(lines)
     expect(wall).toBeGreaterThan(-1)
     expect(lines.slice(0, wall).some((l) => /├─+┼/.test(l))).toBe(false)
-    // The dotted leg forks off the trunk on the gutter row and reaches D.
-    expect(lines[wall + 1]).toMatch(/├┄+┐/)
+    // Two junctions on the wall; the dotted leg runs along the gutter row
+    // from its own stroke and reaches D, beside the solid exit to C.
+    expect(lines[wall]!.match(/┬/g)).toHaveLength(2)
+    expect(lines[wall + 1]).toMatch(/└┐ +└┄+┐/)
     expect(lines.join('\n')).toMatch(/▼[\s\S]*▼/)
   })
 })
@@ -520,10 +532,10 @@ describe('cluster-exit anchoring: eligibility edge cases', () => {
     for (const [sg, plan] of graph.clusterExitPlans ?? []) {
       expect(gridToDrawingCoord(graph, plan.gutter).x).toBeGreaterThan(sg.maxX)
     }
-    // Rendered: Outer's exits start on its wall (├, #1330) and share one
-    // trunk past it (┬) instead of fanning out of the wall column itself.
+    // Rendered: Outer's exits start on its wall (├, #1330), E's straight
+    // out of z's row, then run on past it to their targets.
     const zRow = render(src).find((l) => l.includes('z'))
-    expect(zRow).toMatch(/├─+┬/)
+    expect(zRow).toMatch(/z │ +├─+►/)
   })
 })
 

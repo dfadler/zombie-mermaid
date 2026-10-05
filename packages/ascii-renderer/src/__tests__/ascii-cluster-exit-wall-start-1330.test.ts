@@ -1,8 +1,9 @@
 /**
  * A cluster exit (#1148, #1182) starts on the cluster's own flow-side wall,
  * not on the stand-in member's face (#1330): the member's border stays
- * intact and the wall carries the one junction, so the edge reads as
- * `Cluster --> T` rather than `a --> T`.
+ * intact and the wall carries the junctions, so the edge reads as
+ * `Cluster --> T` rather than `a --> T`. Each exit has its own wall junction
+ * (#1182), so two exits show two tees.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -29,16 +30,20 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
     expect(memberBottom).toBeGreaterThan(-1)
     // The cluster's bottom wall is the next full-width border row below it.
     const wall = lines.findIndex(
-      (l, i) => i > memberBottom && /^└─+┬─+┘$/.test(l),
+      (l, i) => i > memberBottom && /^└─+┬─+┬─+┘$/.test(l),
     )
     expect(wall).toBeGreaterThan(memberBottom)
     // Nothing between the member and the wall carries the exit's stroke.
     for (const l of lines.slice(memberBottom + 1, wall)) {
       expect(l).not.toMatch(/[┬┼]/)
     }
-    // The stroke continues straight down from the wall junction.
-    const col = lines[wall]!.indexOf('┬')
-    expect(lines[wall + 1]![col]).toBe('│')
+    // Each stroke continues straight down from its wall junction.
+    for (const col of [
+      lines[wall]!.indexOf('┬'),
+      lines[wall]!.lastIndexOf('┬'),
+    ]) {
+      expect(lines[wall + 1]![col]).toBe('│')
+    }
     // Labels and arrowheads are unchanged: both targets are reached.
     expect(lines.join('\n')).toContain('first')
     expect(lines.join('\n')).toContain('other')
@@ -49,9 +54,12 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
     const lines = render(source('LR'))
     const row = lines.findIndex((l) => /│ a │/.test(l))
     expect(row).toBeGreaterThan(-1)
-    // `│ a │ ├───`: member border, then the wall as a tee.
-    expect(lines[row]).toMatch(/│ a │ ├─+/)
+    // The member's row ends in the cluster wall, not a tee on the member.
+    expect(lines[row]).toMatch(/│ a │ │/)
     expect(lines[row]).not.toMatch(/a ├/)
+    // Two exits, so two tees on the wall.
+    const wallCol = lines[row]!.indexOf('│ a │ │') + '│ a │ '.length
+    expect(lines.filter((l) => l[wallCol] === '├')).toHaveLength(2)
   })
 
   it('ASCII mode: the member border is intact and the wall holds the only `+`', () => {
@@ -59,11 +67,11 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
     const memberBottom = lines.findIndex((l) => /^\| \+-+\+ \|$/.test(l))
     expect(memberBottom).toBeGreaterThan(-1)
     const wall = lines.findIndex(
-      (l, i) => i > memberBottom && /^\+-+\+-+\+$/.test(l),
+      (l, i) => i > memberBottom && /^\+-+\+-+\+-+\+$/.test(l),
     )
     expect(wall).toBeGreaterThan(memberBottom)
-    // The wall has its two corners plus exactly one junction.
-    expect(lines[wall]!.match(/\+/g)).toHaveLength(3)
+    // The wall has its two corners plus one junction per exit.
+    expect(lines[wall]!.match(/\+/g)).toHaveLength(4)
   })
 
   it('a state-diagram pseudo-state stand-in also leaves through the wall', () => {
@@ -74,7 +82,7 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
   Processing --> Done: done
   Processing --> Error: fail
 `)
-    const wall = lines.findIndex((l) => /^└─+┬─+┘$/.test(l))
+    const wall = lines.findIndex((l) => /^└─+┬─+┬─+┘$/.test(l))
     expect(wall).toBeGreaterThan(-1)
     expect(lines.join('\n')).not.toMatch(/┼/)
   })
@@ -83,14 +91,18 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
     const lines = render(source('LR'), { useAscii: true })
     const row = lines.findIndex((l) => /\| a \|/.test(l))
     expect(row).toBeGreaterThan(-1)
-    // `| a | +---`: member border, then the wall's own `+`.
-    expect(lines[row]).toMatch(/\| a \| \+-+/)
+    // The member's row ends in the wall, with no junction on the member.
+    expect(lines[row]).toMatch(/\| a \| \|/)
+    // One `+` junction on the wall per exit, each followed by its stroke.
+    // Inside the cluster (after a `|` or `+`), a stroke runs longer than the
+    // member's three-dash `+---+`.
+    expect(lines.filter((l) => /[|+] \+-{4,}\+? {2,}/.test(l))).toHaveLength(2)
   })
 
   it.each([0, 3])('paddings %i: the exit still starts on the wall', (pad) => {
     for (const dir of ['TD', 'LR'] as const) {
       const out = render(source(dir), { paddingX: pad, paddingY: pad })
-      expect(out.join('\n')).toMatch(dir === 'TD' ? /└─*┬─*┘/ : /│ a │ ├/)
+      expect(out.join('\n')).toMatch(dir === 'TD' ? /└─*┬─*┬─*┘/ : /├─+/)
       expect(out.join('\n')).toContain('first')
     }
   })
