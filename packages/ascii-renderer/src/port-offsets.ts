@@ -8,17 +8,20 @@
 // plus a third edge off the same side share one column, with junctions and
 // arrowheads piled up so no stroke can be followed (#1350).
 //
-// Mermaid draws each edge as its own path. Here each edge sharing a port is
-// given its own column along the node's border instead. The offset applies to
-// the vertical run of the path that touches the port (the first run for the
-// source end, the last for the target end); everything past the first bend is
-// left where the router put it, so the run just shifts sideways and the next
-// horizontal segment starts from the shifted corner.
+// Mermaid draws each edge as its own path. Here an edge that shares a port
+// with an edge going the other way is drawn one cell to the side of the port
+// centre: a column left or right on the top and bottom sides, a row up or down
+// on the left and right sides. The offset applies to the run of the path that
+// touches the port (the first run for the source end, the last for the target
+// end); everything past the first bend is left where the router put it, so the
+// run just shifts sideways and the next segment starts from the shifted corner.
 //
-// Edges that run straight from one port to another need one column at both
-// ends, so they are assigned first and constrain both ports. Edges in a bundle
-// (a shared fan-in/fan-out trunk), cluster edges and self-loops keep their
-// routed geometry and are treated as fixed occupants of the column they use.
+// Edges that leave a port in the same direction, or arrive from the same
+// direction, share one trunk by design (fan-out, fan-in) and keep one position;
+// only a port used both ways at once is split. Edges that run straight from one
+// port to another need one position at both ends, so their two ports are tied.
+// Edges in a bundle, lane edges, cluster edges and self-loops keep their routed
+// geometry and count as fixed occupants of the position they use.
 // ============================================================================
 
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
@@ -28,19 +31,25 @@ import type { DrawingCoord } from './types.ts'
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
 
-/** A vertical run of an edge's path that touches a node port. */
+/** A run of an edge's path along one axis that touches a node port. */
 interface PortRun {
-  /** Grid column the run sits on. */
-  col: number
+  /** `v` runs along a column (x offsets), `h` along a row (y offsets). */
+  axis: 'v' | 'h'
+  /** Grid column (`v`) or row (`h`) the run sits on. */
+  line: number
   /** Index of its first and last path point. */
   from: number
   to: number
   /** Which side of the node it leaves from / arrives at. */
-  side: 'top' | 'bottom'
+  side: 'top' | 'bottom' | 'left' | 'right'
   node: AsciiNode
   /** Cell in the node's block where the run touches the port. */
   cell: GridCoord
-  /** Direction of the first horizontal move off the run: -1, 0 (none) or 1. */
+  /**
+   * Direction the path moves across the run's axis next to the run: the
+   * first move after a source run, the last move into a target run. -1, 0
+   * (none) or 1 in grid units (x for `v`, y for `h`).
+   */
   turn: -1 | 0 | 1
 }
 
@@ -51,12 +60,20 @@ interface EdgeRuns {
   straight: boolean
 }
 
-/** Drawn-column shift for the points of each edge's first and last run. */
+/** Where a shifted run lies, for mapping path and label-line points. */
+export interface ShiftedRun {
+  axis: 'v' | 'h'
+  line: number
+  from: number
+  to: number
+}
+
+/** Drawn-cell shift of the first and last run of an edge's path. */
 export interface PortShift {
   start: number
   end: number
-  startRun?: { col: number; from: number; to: number }
-  endRun?: { col: number; from: number; to: number }
+  startRun?: ShiftedRun
+  endRun?: ShiftedRun
 }
 
 const portKey = (node: AsciiNode, cell: GridCoord): string =>
@@ -67,98 +84,173 @@ function isFixed(edge: AsciiEdge): boolean {
     edge.from === edge.to ||
     edge.path.length < 2 ||
     edge.bundle !== undefined ||
+    edge.parallelLane !== undefined ||
     edge.style === 'invisible' ||
     edge.clusterSource !== undefined ||
     edge.clusterTarget !== undefined
   )
 }
 
-function runsOf(edge: AsciiEdge): EdgeRuns | undefined {
+const sign = (n: number): -1 | 0 | 1 => (n > 0 ? 1 : n < 0 ? -1 : 0)
+
+/** The run that starts the path at `from` (index 0) going toward index 1. */
+function startRun(edge: AsciiEdge): PortRun | undefined {
   const p = edge.path
   const last = p.length - 1
-  const col0 = p[0]!.x
-  const colN = p[last]!.x
-  let startEnd = -1
-  if (p[1]!.x === col0 && p[1]!.y !== p[0]!.y) {
-    startEnd = 1
-    while (startEnd + 1 <= last && p[startEnd + 1]!.x === col0) startEnd++
-  }
-  let endStart = -1
-  if (p[last - 1]!.x === colN && p[last - 1]!.y !== p[last]!.y) {
-    endStart = last - 1
-    while (endStart - 1 >= 0 && p[endStart - 1]!.x === colN) endStart--
-  }
-  if (startEnd < 0 && endStart < 0) return undefined
-
-  const straight = startEnd === last && endStart === 0
-  const result: EdgeRuns = { straight }
-  if (startEnd >= 0) {
-    const down = p[1]!.y > p[0]!.y
-    const next = p[startEnd + 1]
-    result.start = {
-      col: col0,
+  const a = p[0]!
+  const b = p[1]!
+  if (b.x === a.x && b.y !== a.y) {
+    let end = 1
+    while (end + 1 <= last && p[end + 1]!.x === a.x) end++
+    const next = p[end + 1]
+    return {
+      axis: 'v',
+      line: a.x,
       from: 0,
-      to: startEnd,
-      side: down ? 'bottom' : 'top',
+      to: end,
+      side: b.y > a.y ? 'bottom' : 'top',
       node: edge.from,
-      cell: p[0]!,
-      turn: next ? (next.x > col0 ? 1 : -1) : 0,
+      cell: a,
+      turn: next ? sign(next.x - a.x) : 0,
     }
   }
-  if (endStart >= 0) {
-    const down = p[last]!.y > p[last - 1]!.y
-    const before = p[endStart - 1]
-    result.end = {
-      col: colN,
-      from: endStart,
+  if (b.y === a.y && b.x !== a.x) {
+    let end = 1
+    while (end + 1 <= last && p[end + 1]!.y === a.y) end++
+    const next = p[end + 1]
+    return {
+      axis: 'h',
+      line: a.y,
+      from: 0,
+      to: end,
+      side: b.x > a.x ? 'right' : 'left',
+      node: edge.from,
+      cell: a,
+      turn: next ? sign(next.y - a.y) : 0,
+    }
+  }
+  return undefined
+}
+
+/** The run that ends the path at the target, going into the last point. */
+function endRun(edge: AsciiEdge): PortRun | undefined {
+  const p = edge.path
+  const last = p.length - 1
+  const z = p[last]!
+  const y = p[last - 1]!
+  if (y.x === z.x && y.y !== z.y) {
+    let start = last - 1
+    while (start - 1 >= 0 && p[start - 1]!.x === z.x) start--
+    const before = p[start - 1]
+    return {
+      axis: 'v',
+      line: z.x,
+      from: start,
       to: last,
-      side: down ? 'top' : 'bottom',
+      side: z.y > y.y ? 'top' : 'bottom',
       node: edge.to,
-      cell: p[last]!,
-      // An edge arriving from the right sits on the right of its port.
-      turn: before ? (before.x > colN ? 1 : -1) : 0,
+      cell: z,
+      // Which side the path came in from: an edge arriving from the right.
+      turn: before ? sign(z.x - before.x) : 0,
     }
   }
+  if (y.y === z.y && y.x !== z.x) {
+    let start = last - 1
+    while (start - 1 >= 0 && p[start - 1]!.y === z.y) start--
+    const before = p[start - 1]
+    return {
+      axis: 'h',
+      line: z.y,
+      from: start,
+      to: last,
+      side: z.x > y.x ? 'left' : 'right',
+      node: edge.to,
+      cell: z,
+      turn: before ? sign(z.y - before.y) : 0,
+    }
+  }
+  return undefined
+}
+
+function runsOf(edge: AsciiEdge): EdgeRuns | undefined {
+  const start = startRun(edge)
+  const end = endRun(edge)
+  if (!start && !end) return undefined
+  const last = edge.path.length - 1
+  const straight =
+    start !== undefined &&
+    end !== undefined &&
+    start.to === last &&
+    end.from === 0
+  const result: EdgeRuns = { straight }
+  if (start) result.start = start
+  if (end) result.end = end
   return result
 }
 
-/** Drawing x of a port's centre, and the node's borders in drawing columns. */
-function portGeometry(
-  graph: AsciiGraph,
-  run: PortRun,
-): { cx: number; lo: number; hi: number; row: number } | undefined {
+interface Geometry {
+  /** Drawing coordinate of the port centre along the run's offset axis. */
+  centre: number
+  /** Furthest cells along that axis a stroke may meet the node's border. */
+  lo: number
+  hi: number
+  /** Index, within the node's drawing, of the border row (`v`) / column (`h`). */
+  border: number
+}
+
+function portGeometry(graph: AsciiGraph, run: PortRun): Geometry | undefined {
   const node = run.node
   const dc = node.drawingCoord
   const drawing = node.drawing
   if (!dc || !drawing) return undefined
   const width = drawing.length
   const height = drawing[0]?.length ?? 0
-  if (width < 3 || height < 1) return undefined
-  const row = run.side === 'top' ? 0 : height - 1
+  const centre = gridToDrawingCoord(graph, run.cell)
+  if (run.axis === 'v') {
+    if (width < 3 || height < 1) return undefined
+    return {
+      centre: centre.x,
+      lo: dc.x + 1,
+      hi: dc.x + width - 2,
+      border: run.side === 'top' ? 0 : height - 1,
+    }
+  }
+  if (height < 3 || width < 1) return undefined
   return {
-    cx: gridToDrawingCoord(graph, run.cell).x,
-    lo: dc.x + 1,
-    hi: dc.x + width - 2,
-    row,
+    centre: centre.y,
+    lo: dc.y + 1,
+    hi: dc.y + height - 2,
+    border: run.side === 'left' ? 0 : width - 1,
   }
 }
 
-/** Whether a stroke at drawing column `x` meets a plain horizontal border. */
-function attachesAt(
-  graph: AsciiGraph,
-  run: PortRun,
-  x: number,
-  geo: { lo: number; hi: number; row: number },
-): boolean {
-  if (x < geo.lo || x > geo.hi) return false
+/** Whether a stroke at `pos` along the offset axis meets a plain border. */
+function attachesAt(run: PortRun, pos: number, geo: Geometry): boolean {
+  if (pos < geo.lo || pos > geo.hi) return false
   const dc = run.node.drawingCoord!
-  const ch = run.node.drawing![x - dc.x]?.[geo.row]
-  return ch === '─' || ch === '-'
+  const drawing = run.node.drawing!
+  if (run.axis === 'v') {
+    const ch = drawing[pos - dc.x]?.[geo.border]
+    return ch === '─' || ch === '-'
+  }
+  const ch = drawing[geo.border]?.[pos - dc.y]
+  return ch === '│' || ch === '|'
 }
 
-/** Travel direction of a run: leaving a bottom port or arriving at a top port goes down. */
-function travelsDown(run: PortRun, role: 'S' | 'E'): boolean {
-  return (role === 'S') === (run.side === 'bottom')
+/**
+ * Which way a slot is pushed. Along a column, an edge travelling down sits
+ * right of centre and one travelling up sits left (the #1284 pair convention).
+ * Along a row, a bent edge sits on the side it turns toward, so it does not
+ * cross its neighbours: a source run goes to the row its first turn heads
+ * for, and a target run to the row opposite the way it came in from. A straight
+ * run follows its travel direction.
+ */
+function pushOf(run: PortRun, role: 'S' | 'E'): 1 | -1 {
+  if (run.axis === 'v') {
+    return (role === 'S') === (run.side === 'bottom') ? 1 : -1
+  }
+  if (run.turn !== 0) return role === 'S' ? run.turn : (-run.turn as 1 | -1)
+  return (role === 'S') === (run.side === 'right') ? 1 : -1
 }
 
 interface Slot {
@@ -172,11 +264,10 @@ interface Slot {
  *
  * Edges that leave a port in the same direction (a fan-out), or arrive at it
  * from the same direction (a fan-in), share one trunk by design and keep one
- * column. What collides is a port used both ways at once: an edge leaving and
- * another arriving. Those are drawn apart, the edge travelling down one column
- * right of the port centre and the edge travelling up one column left, the
- * same convention a reciprocal pair already uses (#1284). Ports used one way
- * only keep their routed column exactly.
+ * position. What collides is a port used both ways at once: an edge leaving and
+ * another arriving. Those are drawn apart by one cell either side of the port
+ * centre (see `pushOf`). Ports used one way only keep their routed position
+ * exactly.
  */
 export function portShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   const result = new Map<AsciiEdge, PortShift>()
@@ -222,25 +313,12 @@ export function portShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   for (const edge of graph.edges) {
     if (edge.from === edge.to || edge.path.length < 2) continue
     if (isFixed(edge)) {
-      // A bundled or cluster edge stays on its routed column at both ends.
-      const first = edge.path[0]!
-      const last = edge.path[edge.path.length - 1]!
-      const down = last.y > first.y
-      const stub = (
-        node: AsciiNode,
-        cell: GridCoord,
-        top: boolean,
-      ): PortRun => ({
-        col: cell.x,
-        from: 0,
-        to: 0,
-        side: top ? 'top' : 'bottom',
-        node,
-        cell,
-        turn: 0,
-      })
-      addSlot(edge.from, first, 'S', stub(edge.from, first, !down), true)
-      addSlot(edge.to, last, 'E', stub(edge.to, last, down), true)
+      // A bundled, lane or cluster edge stays where it was routed, at both
+      // ends; without a run of its own it still occupies its ports.
+      const s = startRun(edge)
+      const e = endRun(edge)
+      if (s) addSlot(edge.from, edge.path[0]!, 'S', s, true)
+      if (e) addSlot(edge.to, edge.path[edge.path.length - 1]!, 'E', e, true)
       continue
     }
     const r = runsOf(edge)
@@ -256,6 +334,7 @@ export function portShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
 
   // Components of tied slots; a component moves when any of its ports is used
   // both ways, and never when it holds a fixed slot.
+  const portOf = (key: string): string => key.slice(0, key.lastIndexOf('|'))
   const crowdedPort = (port: string): boolean =>
     (rolesAt.get(port)?.size ?? 0) > 1
   const components = new Map<string, string[]>()
@@ -265,8 +344,9 @@ export function portShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (list) list.push(key)
     else components.set(root, [key])
   }
-  // A reciprocal pair alone on its two ports is drawn apart by `strokeShift`
-  // (draw-arrows.ts), which also checks the labels fit; leave it to that.
+  // A straight reciprocal pair alone on its two ports is drawn apart by
+  // `strokeShift` (draw-arrows.ts), which also checks the labels fit, or by
+  // the lane mechanism of #629; leave it to those.
   const pairOnly = new Set<string>()
   for (const [edge, { r, s, e }] of runs) {
     if (!r.straight || !s || !e) continue
@@ -277,69 +357,72 @@ export function portShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (!partner?.r.straight || !partner.s || !partner.e) continue
     const keys = [s, e, partner.s, partner.e]
     const alone = keys.every((k) => slotEdges.get(k) === 1)
-    const ports = new Set(keys.map((k) => k.slice(0, k.lastIndexOf('|'))))
+    const ports = new Set(keys.map(portOf))
     if (
       alone &&
       ports.size === 2 &&
-      keys.every((k) => crowdedPort(k.slice(0, k.lastIndexOf('|'))))
-    )
+      keys.every((k) => crowdedPort(portOf(k)))
+    ) {
       pairOnly.add(find(s))
+    }
   }
-  const offsets = new Map<string, number>() // component root -> column offset
+
+  const offsets = new Map<string, number>() // component root -> offset
   for (const [root, keys] of components) {
     if (pairOnly.has(root)) continue
     const members = keys.map((k) => slots.get(k)!)
     if (members.some((m) => m.fixed)) continue
-    const ports = keys.map((k) => k.slice(0, k.lastIndexOf('|')))
+    const ports = keys.map(portOf)
     if (!ports.some(crowdedPort)) continue
-    const down = travelsDown(members[0]!.run, members[0]!.role)
-    // Keep clear of a fixed (bundle or cluster) stroke on the same port.
+    // Keep clear of a fixed stroke on the same port.
     const nearFixed = ports.some((port) =>
       [...slots.entries()].some(
         ([k, m]) => m.fixed && k.startsWith(`${port}|`),
       ),
     )
     const magnitude = nearFixed ? STROKE_SPACING : 1
-    const offset = down ? magnitude : -magnitude
+    const offset = pushOf(members[0]!.run, members[0]!.role) * magnitude
     const fits = members.every((m) => {
       const geo = portGeometry(graph, m.run)
-      return geo !== undefined && attachesAt(graph, m.run, geo.cx + offset, geo)
+      return geo !== undefined && attachesAt(m.run, geo.centre + offset, geo)
     })
     if (fits) offsets.set(root, offset)
   }
 
+  const shiftedRun = (run: PortRun): ShiftedRun => ({
+    axis: run.axis,
+    line: run.line,
+    from: run.from,
+    to: run.to,
+  })
   for (const [edge, { r, s, e }] of runs) {
     const start = s ? (offsets.get(find(s)) ?? 0) : 0
     const end = e ? (offsets.get(find(e)) ?? 0) : 0
     if (start === 0 && end === 0) continue
     const shift: PortShift = { start, end }
-    if (r.start) {
-      shift.startRun = { col: r.start.col, from: r.start.from, to: r.start.to }
-    }
-    if (r.end) {
-      shift.endRun = { col: r.end.col, from: r.end.from, to: r.end.to }
-    }
+    if (r.start) shift.startRun = shiftedRun(r.start)
+    if (r.end) shift.endRun = shiftedRun(r.end)
     result.set(edge, shift)
   }
   return result
 }
 
-/** Per-point drawn-column shift for `edge`'s path, or undefined when unshifted. */
+/** Per-point drawn shift for `edge`'s path, or undefined when unshifted. */
 export function edgePointShifts(
   graph: AsciiGraph,
   edge: AsciiEdge,
-): number[] | undefined {
+): DrawingCoord[] | undefined {
   const shift = portShifts(graph).get(edge)
   if (!shift) return undefined
-  const shifts = edge.path.map(() => 0)
-  if (shift.startRun) {
-    for (let i = shift.startRun.from; i <= shift.startRun.to; i++) {
-      shifts[i] = shift.start
-    }
-  }
-  if (shift.endRun) {
-    for (let i = shift.endRun.from; i <= shift.endRun.to; i++) {
-      shifts[i] = shift.end
+  const shifts: DrawingCoord[] = edge.path.map(() => ({ x: 0, y: 0 }))
+  for (const [run, by] of [
+    [shift.startRun, shift.start],
+    [shift.endRun, shift.end],
+  ] as const) {
+    if (!run) continue
+    for (let i = run.from; i <= run.to; i++) {
+      if (run.axis === 'v') shifts[i]!.x = by
+      else shifts[i]!.y = by
     }
   }
   return shifts
@@ -356,14 +439,27 @@ export function labelLineToDrawing(
   const path = edge.path
   return base.map((dc, i) => {
     const g = edge.labelLine[i]!
-    for (const [run, dx] of [
+    for (const [run, by] of [
       [shift.startRun, shift.start],
       [shift.endRun, shift.end],
     ] as const) {
-      if (!run || g.x !== run.col) continue
-      const ys = [path[run.from]!.y, path[run.to]!.y]
-      if (g.y >= Math.min(...ys) && g.y <= Math.max(...ys)) {
-        return { x: dc.x + dx, y: dc.y }
+      if (!run) continue
+      const a = path[run.from]!
+      const b = path[run.to]!
+      if (run.axis === 'v') {
+        if (
+          g.x === run.line &&
+          g.y >= Math.min(a.y, b.y) &&
+          g.y <= Math.max(a.y, b.y)
+        ) {
+          return { x: dc.x + by, y: dc.y }
+        }
+      } else if (
+        g.y === run.line &&
+        g.x >= Math.min(a.x, b.x) &&
+        g.x <= Math.max(a.x, b.x)
+      ) {
+        return { x: dc.x, y: dc.y + by }
       }
     }
     return dc
@@ -378,5 +474,8 @@ export function pathToDrawing(
   const base = lineToDrawing(graph, edge.path)
   const shifts = edgePointShifts(graph, edge)
   if (!shifts) return base
-  return base.map((dc, i) => ({ x: dc.x + shifts[i]!, y: dc.y }))
+  return base.map((dc, i) => ({
+    x: dc.x + shifts[i]!.x,
+    y: dc.y + shifts[i]!.y,
+  }))
 }

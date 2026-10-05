@@ -21,6 +21,7 @@ import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
   determineLabelLine,
+  createLabelContext,
   assignParallelEdgeLanes,
 } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
@@ -1690,7 +1691,6 @@ export function createMapping(graph: AsciiGraph): void {
       increaseGridSizeForPath(graph, edge.path)
       claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
       claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
-      determineLabelLine(graph, edge)
       continue
     }
 
@@ -1712,8 +1712,13 @@ export function createMapping(graph: AsciiGraph): void {
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
-    determineLabelLine(graph, edge)
   }
+
+  // Choose each label's segment only now that every path exists, so a label
+  // avoids segments another edge also runs along and segments another label
+  // already holds (#1347).
+  const labelContext = createLabelContext(graph)
+  for (const edge of graph.edges) determineLabelLine(graph, edge, labelContext)
 
   // Convert grid coords → drawing coords and generate box drawings
   for (const node of graph.nodes) {
