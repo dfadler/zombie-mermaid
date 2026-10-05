@@ -166,11 +166,13 @@ export function isPortFixedEdge(edge: AsciiEdge): boolean {
  * around each other only wraps one of them round the far side of the diagram
  * (#1349).
  *
- * Only a reciprocal pair (`A --> C` beside `C --> A`) qualifies. A true chain
- * (`Mobile App --> Gateway` then `Gateway --> User Service`) shares a node but
- * not both, and two strokes a cell apart on one row can still read as a single
- * connector through the node (#1067, #63), so a chain keeps being routed apart.
- * Cells further along either route are not exempt: nothing draws those apart.
+ * A reciprocal pair (`A --> C` beside `C --> A`) always qualifies. A chain
+ * (`D --> A` beside `A --> C`, both on A's right) qualifies only when the two
+ * legs end at different corners. When they turn at the *same* cell (`Mobile App
+ * --> Gateway` then `Gateway --> User Service`, #1067) the far legs lie on one
+ * line, and a gap of a cell between strokes reads as a single connector through
+ * the node, so that chain keeps being routed apart. Cells further along either
+ * route are not exempt: nothing draws those apart.
  */
 function portSharedCells(
   owner: AsciiEdge,
@@ -179,7 +181,7 @@ function portSharedCells(
 ): Set<string> {
   const shared = new Set<string>()
   if (isPortFixedEdge(owner) || isPortFixedEdge(edge)) return shared
-  if (owner.from !== edge.to || owner.to !== edge.from) return shared
+  const reciprocal = owner.from === edge.to && owner.to === edge.from
   const same = (a: GridCoord | undefined, b: GridCoord | undefined): boolean =>
     a !== undefined && b !== undefined && a.x === b.x && a.y === b.y
   const keysOf = (leg: GridCoord[]): Set<string> =>
@@ -196,13 +198,18 @@ function portSharedCells(
     p[p.length - 1]!,
   ]
   // `owner` leaves the node `edge` arrives at, through the same port.
-  if (owner.from === edge.to && same(ownerPath[0], path[path.length - 1])) {
+  if (
+    owner.from === edge.to &&
+    same(ownerPath[0], path[path.length - 1]) &&
+    (reciprocal || !same(ownerPath[1], path[path.length - 2]))
+  ) {
     meet(first(ownerPath), last(path))
   }
   // `owner` arrives at the node `edge` leaves, through the same port.
   if (
     owner.to === edge.from &&
-    same(ownerPath[ownerPath.length - 1], path[0])
+    same(ownerPath[ownerPath.length - 1], path[0]) &&
+    (reciprocal || !same(ownerPath[ownerPath.length - 2], path[1]))
   ) {
     meet(last(ownerPath), first(path))
   }
