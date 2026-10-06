@@ -18,11 +18,11 @@ const render = (src: string, useAscii = false): string =>
 
 /** The text of every row that carries the label's first glyph, from `p` to `d`. */
 function labelSpans(out: string, label: string): string[] {
-  const first = label[0]
-  const last = label[label.length - 1]
+  const first = label.slice(0, 1)
+  const last = label.slice(-1)
   const spans: string[] = []
   for (const row of out.split('\n')) {
-    const start = row.indexOf(first + label[1])
+    const start = row.indexOf(label.slice(0, 2))
     if (start === -1) continue
     const end = row.indexOf(last, start + label.length - 1)
     if (end !== -1) spans.push(row.slice(start, end + 1))
