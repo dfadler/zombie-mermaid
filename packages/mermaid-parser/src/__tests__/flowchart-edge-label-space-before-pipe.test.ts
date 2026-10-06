@@ -41,7 +41,9 @@ describe('edge label with a space before the pipe', () => {
     // labelled link with target B and label `x`.
     for (const src of ['graph LR\n  A -- |x| B', 'graph LR\n  A == |x| B']) {
       const g = parseMermaid(src)
-      expect(g.edges.some((e) => e.label === 'x' && e.target === 'B')).toBe(false)
+      expect(g.edges.some((e) => e.label === 'x' && e.target === 'B')).toBe(
+        false,
+      )
     }
   })
 
