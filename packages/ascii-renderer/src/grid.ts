@@ -1274,6 +1274,22 @@ function fanInCenter(
     }
     if (kids.size > 1) return undefined
   }
+  // Nor when the child has an edge back up to a node already placed at or
+  // before its level (`E --> B` closing a loop): the loop routes around the
+  // nodes it skips, and moving the child off its first parent's column
+  // scrambles that route.
+  if (!entersCluster) {
+    const back = graph.edges.some((e) => {
+      const gc = e.to.gridCoord
+      return (
+        e.from === child &&
+        e.to !== child &&
+        gc !== null &&
+        (lr ? gc.x : gc.y) <= childLevel
+      )
+    })
+    if (back) return undefined
+  }
   const lo = Math.min(...slots)
   const hi = Math.max(...slots)
   return Math.floor((lo + hi) / 2)

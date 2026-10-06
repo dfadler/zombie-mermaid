@@ -93,4 +93,13 @@ describe('fan-in that keeps the first-parent slot (#1339)', () => {
     const kids = (colOf(rows, 'B') + colOf(rows, 'C')) / 2
     expect(Math.abs(colOf(rows, 'A') - kids)).toBeLessThanOrEqual(1.5)
   })
+
+  it('does not center a child that loops back to an earlier node', () => {
+    // The loop `E -> B` routes around the nodes it skips; centering E off its
+    // first parent's row scrambles it.
+    const rows = render(
+      'graph LR\nB --> C\nB --> D\nC --> E\nD --> E\nE -->|again| B',
+    )
+    expect(rowOf(rows, 'E')).toBe(rowOf(rows, 'C'))
+  })
 })
