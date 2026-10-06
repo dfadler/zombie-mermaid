@@ -120,7 +120,22 @@ export function determineStartAndEndDir(
       ? dirEquals(d, Left) || dirEquals(d, UpperLeft) || dirEquals(d, LowerLeft)
       : dirEquals(d, Up) || dirEquals(d, UpperLeft) || dirEquals(d, UpperRight)
 
-  if (dirEquals(d, LowerRight)) {
+  if (
+    graphDirection === 'LR' &&
+    edge.to.fanInCentered &&
+    (dirEquals(d, LowerRight) || dirEquals(d, UpperRight))
+  ) {
+    // A fan-in child centered between its parents (grid.ts `fanInCenter`):
+    // every parent leaves through its right face and enters the child's left
+    // face, so the paths meet in the gap column and share one arrowhead. The
+    // vertical offset here is half the parents' spread, not a reason to exit
+    // through a bottom/top face, which would grow the box and run a trunk
+    // under the parents' centers.
+    preferredDir = Right
+    preferredOppositeDir = Left
+    alternativeDir = Right
+    alternativeOppositeDir = Left
+  } else if (dirEquals(d, LowerRight)) {
     if (graphDirection === 'LR') {
       preferredDir = Down
       preferredOppositeDir = Left
@@ -978,7 +993,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
  */
 function hasLabeledFanIn(graph: AsciiGraph, node: AsciiNode): boolean {
   return (
-    graph.fanInCentered?.has(node) === true &&
+    node.fanInCentered === true &&
     !graph.edges.some((e) => e.to === node && e.clusterTarget) &&
     graph.edges.some((e) => e.to === node && e.text.length > 0)
   )

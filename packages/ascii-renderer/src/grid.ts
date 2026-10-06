@@ -155,6 +155,51 @@ export function reserveSpotInGrid(
 // ============================================================================
 
 /**
+ * Whether the slot before `node` is the content column of a node centered
+ * between its parents (#1339), either `node`'s own parent (the left one) or
+ * its centered child (for the right one). Padding that slot would stretch the
+ * left parent wider than its sibling, or the centered child past both, and
+ * push the trunk off center. The nodes stacked in the centered node's slot (`A --> Z`) sit in
+ * the same columns and inherit this. Only a node with several parents counts:
+ * a single child at a fan-out's centered parent's content column (#1340)
+ * keeps its padding.
+ */
+function straddlesParent(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  axis: 'x' | 'y',
+  seen: Set<AsciiNode> = new Set(),
+): boolean {
+  const gc = node.gridCoord
+  if (!gc || seen.has(node)) return false
+  seen.add(node)
+  const parents = new Set<AsciiNode>()
+  for (const e of graph.edges) {
+    if (e.to === node && e.from !== node) parents.add(e.from)
+  }
+  for (const p of parents) {
+    const pc = p.gridCoord
+    if (!pc) continue
+    if (parents.size > 1 && pc[axis] + 1 === gc[axis] - 1) return true
+    if (pc[axis] === gc[axis] && straddlesParent(graph, p, axis, seen)) {
+      return true
+    }
+  }
+  // The right-hand sibling: the slot before it is the centered child's
+  // content column, which padding would stretch past the parents' width.
+  for (const e of graph.edges) {
+    const c = e.from === node && e.to !== node ? e.to.gridCoord : null
+    if (!c || c[axis] + 1 !== gc[axis] - 1) continue
+    const sources = new Set<AsciiNode>()
+    for (const f of graph.edges) {
+      if (f.to === e.to && f.from !== e.to) sources.add(f.from)
+    }
+    if (sources.size > 1) return true
+  }
+  return false
+}
+
+/**
  * Set column widths and row heights for a node's 3x3 grid block.
  * Each node occupies 3 columns (border, content, border) and 3 rows.
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
@@ -185,13 +230,32 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
     graph.rowHeight.set(yCoord, Math.max(current, rowHeights[idx]!))
   }
 
-  // Padding column/row before the node (spacing between nodes)
-  if (gc.x > 0) {
+  // Padding column/row before the node (spacing between nodes), unless
+  // the node straddles its parents (see `straddlesParent`).
+  if (gc.x > 0 && !straddlesParent(graph, node, 'x')) {
     const current = graph.columnWidth.get(gc.x - 1) ?? 0
     graph.columnWidth.set(gc.x - 1, Math.max(current, graph.config.paddingX))
   }
 
-  if (gc.y > 0) {
+  // LR: when the row above this node is another node's own block (a fan-in
+  // child centered between its parents, `fanInCenter`), it is that node's
+  // content row, not a gap between rows. Padding it would stretch the
+  // neighbour into a tall box for no spacing benefit. `straddlesParent`
+  // covers the centered node's own padding; this covers the one above its
+  // lower parent, which lands on the centered node's content row.
+  const rowAboveIsNodeBlock =
+    graph.config.graphDirection === 'LR' &&
+    graph.nodes.some((other) => {
+      const oc = other.gridCoord
+      return (
+        other !== node &&
+        oc !== null &&
+        oc.y <= gc.y - 1 &&
+        gc.y - 1 <= oc.y + 2 &&
+        oc.x !== gc.x
+      )
+    })
+  if (gc.y > 0 && !rowAboveIsNodeBlock && !straddlesParent(graph, node, 'y')) {
     let basePadding = graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
@@ -1163,7 +1227,7 @@ function placeReachableChildren(
           )
           if (center !== undefined && highestPosition === center) {
             centered.add(child)
-            ;(graph.fanInCentered ??= new Set()).add(child)
+            child.fanInCentered = true
           }
         }
 
@@ -1235,23 +1299,63 @@ function fanInCenter(
 ): number | undefined {
   const lr = graph.config.graphDirection === 'LR'
   const slots = new Set<number>()
-  let labeled = false
+  const parents = new Set<AsciiNode>()
   let entersCluster = false
+  let labeled = false
   for (const edge of graph.edges) {
     if (edge.to !== child || edge.from === child) continue
     const gc = edge.from.gridCoord
     if (!gc || (lr ? gc.x : gc.y) >= childLevel) continue
     slots.add(lr ? gc.y : gc.x)
-    if (edge.text.length > 0) labeled = true
+    parents.add(edge.from)
     if (edge.clusterTarget) entersCluster = true
+    if (edge.text !== '') labeled = true
   }
   if (slots.size < 2) return undefined
-  // A cluster entry is always centered. A plain labeled fan-in is centered
-  // only where each edge can take a path of its own (see labeledFanInFits).
-  // Other plain fan-in keeps the first-parent slot that the upstream
-  // mermaid-ascii goldens pin.
-  if (!entersCluster && !(labeled && labeledFanInFits(graph, child, lr))) {
+  // A plain node with a labeled incoming edge centers only where each edge
+  // can take a path of its own (see labeledFanInFits): unlabeled edges
+  // bundle into one trunk, but labeled ones sharing the gap between the
+  // parents would draw one label over the other.
+  if (labeled && !entersCluster && !labeledFanInFits(graph, child, lr)) {
     return undefined
+  }
+  // Nor when a parent also feeds another node. `A & B --> C & D`: the
+  // siblings would all claim the same midpoint and the later ones slide off
+  // it, leaving the set lopsided against its parents. `B --> C; B --> D;
+  // C --> D`: D's edge from C would ride the corridor of B's edge to C and
+  // read as one that never arrives. They keep their own parents' slots.
+  if (
+    !entersCluster &&
+    graph.edges.some(
+      (e) => e.from !== e.to && e.to !== child && parents.has(e.from),
+    )
+  ) {
+    return undefined
+  }
+  // Nor when the child fans out itself: `centerParentsOverChildren` already
+  // positions it between its own children, and the two would pull it apart.
+  if (!entersCluster) {
+    const kids = new Set<AsciiNode>()
+    for (const e of graph.edges) {
+      if (e.from === child && e.to !== child) kids.add(e.to)
+    }
+    if (kids.size > 1) return undefined
+  }
+  // Nor when the child has an edge back up to a node already placed at or
+  // before its level (`E --> B` closing a loop): the loop routes around the
+  // nodes it skips, and moving the child off its first parent's column
+  // scrambles that route.
+  if (!entersCluster) {
+    const back = graph.edges.some((e) => {
+      const gc = e.to.gridCoord
+      return (
+        e.from === child &&
+        e.to !== child &&
+        gc !== null &&
+        (lr ? gc.x : gc.y) <= childLevel
+      )
+    })
+    if (back) return undefined
   }
   const lo = Math.min(...slots)
   const hi = Math.max(...slots)
@@ -1262,11 +1366,10 @@ function fanInCenter(
  * Whether a labeled fan-in into `child` is one the side-entry route
  * (edge-routing.ts) handles without losing a label (#1339). Chosen by
  * rendering thousands of random labeled graphs and counting labels that
- * vanish: the shapes below are where centering made that worse.
+ * vanish: the shapes below are where centering made that worse. A parent
+ * with another outgoing edge is excluded for every fan-in by `fanInCenter`.
  *  - LR: the face a parent enters by is the one the child's own out-edge may
  *    leave by, and the two edges meet.
- *  - A parent with another outgoing edge: its drop column is shared with
- *    that edge, or a second centered fan-in competes for the same parents.
  *  - A child on a cycle: a back edge's label widens the column the side
  *    entry ends in and detaches the arrowhead.
  */
@@ -1276,12 +1379,6 @@ function labeledFanInFits(
   lr: boolean,
 ): boolean {
   if (lr) return false
-  for (const edge of graph.edges) {
-    if (edge.to !== child) continue
-    if (graph.edges.some((o) => o.from === edge.from && o.to !== child)) {
-      return false
-    }
-  }
   return !reachesAnyParent(graph, child)
 }
 

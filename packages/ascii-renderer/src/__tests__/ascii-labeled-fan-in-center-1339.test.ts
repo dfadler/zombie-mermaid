@@ -102,10 +102,5 @@ describe('labeled fan-in centered between its parents (#1339)', () => {
       }
       expect(centerOf(lines, 'A')).toBe(centerOf(lines, 'X'))
     })
-
-    it('for plain unlabeled fan-in (the upstream goldens pin it)', () => {
-      const lines = render('graph TD\n  X --> A\n  Y --> A')
-      expect(centerOf(lines, 'A')).toBe(centerOf(lines, 'X'))
-    })
   })
 })

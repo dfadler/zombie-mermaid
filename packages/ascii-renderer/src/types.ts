@@ -145,6 +145,13 @@ export interface AsciiNode {
   drawing: Canvas | null
   drawn: boolean
   /**
+   * Set by grid layout when a plain fan-in child was centered across its
+   * parents' cross-axis slots (`fanInCenter`). Edge routing then leaves each
+   * parent through its graph-direction face (LR: right) and joins in the gap
+   * before the child, instead of exiting the parents' bottom/top faces.
+   */
+  fanInCentered?: boolean
+  /**
    * Rows of `drawing` holding the label's lines (inclusive), set by drawBox.
    * Lets the BT flip restore the label's reading order exactly, rather than
    * inferring which text cells belong to one label.
@@ -401,13 +408,6 @@ export interface AsciiGraph {
   preferStraightRoutes?: boolean
   /** Engaged cluster-exit plans, keyed by subgraph. Set by createMapping. */
   clusterExitPlans?: Map<AsciiSubgraph, ClusterExitPlan>
-  /**
-   * Nodes placed midway between their parents on fan-in (see grid.ts
-   * `fanInCenter`). Such a node sits diagonally from each parent, so a
-   * labeled parent edge enters it from the side (edge-routing.ts) instead of
-   * sharing one top-entry path with its siblings.
-   */
-  fanInCentered?: Set<AsciiNode>
 }
 
 // ============================================================================
