@@ -101,8 +101,10 @@ describe('upstream #112: LR fan-out box-start connector stays on the border', ()
       '│        │      │               │',
       '│ Source ├top*─►│   Top Target  │',
       '│        │      │               │',
-      '└────┬───┘      └───────────────┘',
-      '     │',
+      // The Mid and Bot edges bend the same way at different depths, so each
+      // has its own stem out of the bottom border (#1308).
+      '└────┬─┬─┘      └───────────────┘',
+      '     │ │',
     ])
   })
 })

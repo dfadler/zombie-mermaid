@@ -18,7 +18,11 @@
 //
 // Edges that leave a port in the same direction, or arrive from the same
 // direction, share one trunk by design (fan-out, fan-in) and keep one position;
-// only a port used both ways at once is split. Edges that run straight from one
+// only a port used both ways at once is split. The exception is a fan-out
+// whose edges bend the same way at different distances from the port: the
+// nearer bend would run along the whole stem of the farther one, so each
+// distinct distance gets a stem of its own (#1308, `staggerFanOuts`).
+// Edges that run straight from one
 // port to another need one position at both ends, so their two ports are tied.
 // Edges in a bundle, lane edges, cluster edges and self-loops keep their routed
 // geometry and count as fixed occupants of the position they use.
@@ -33,7 +37,7 @@ import { isPortFixedEdge } from './edge-cell-styles.ts'
 const STROKE_SPACING = 2
 
 /** A run of an edge's path along one axis that touches a node port. */
-interface PortRun {
+export interface PortRun {
   /** `v` runs along a column (x offsets), `h` along a row (y offsets). */
   axis: 'v' | 'h'
   /** Grid column (`v`) or row (`h`) the run sits on. */
@@ -252,6 +256,66 @@ function pushOf(run: PortRun, role: 'S' | 'E'): 1 | -1 {
   return (role === 'S') === (run.side === 'right') ? 1 : -1
 }
 
+/** An edge leaving a port, for `staggerFanOuts`. */
+export interface FanOutMember {
+  edge: AsciiEdge
+  run: PortRun
+  /** The run is the whole edge: it goes straight to its target. */
+  straight: boolean
+}
+
+/** How far the run travels from the port, in grid cells. */
+function runExtent(edge: AsciiEdge, run: PortRun): number {
+  const a = edge.path[run.from]!
+  const b = edge.path[run.to]!
+  return run.axis === 'v' ? Math.abs(b.y - a.y) : Math.abs(b.x - a.x)
+}
+
+/**
+ * Give the edges of a fan-out that bend the same way at different distances a
+ * stem each (#1308). They leave one port in one direction, so the nearer bend
+ * would otherwise ride the whole stem of the farther one and the two cannot be
+ * told apart. The farthest bend keeps `base`, the position the port gives the
+ * slot; each nearer distance steps one stroke spacing further toward the side
+ * it bends to, which keeps its turn clear of the stems it leaves behind. A
+ * straight edge out of the same port counts as the farthest and keeps `base`.
+ *
+ * Edges bending the other way keep sharing the base stem (the usual tree), as
+ * do edges that bend at the same distance. A group whose stems do not all
+ * land on the node's border, or would land within a stroke spacing of another
+ * edge at this port (`taken`, as offsets), is left sharing one stem.
+ */
+export function staggerFanOuts(
+  graph: AsciiGraph,
+  members: readonly FanOutMember[],
+  base: number,
+  taken: readonly number[],
+  out: Map<AsciiEdge, number>,
+): void {
+  const anchored = members.some((m) => m.straight)
+  for (const turn of [-1, 1] as const) {
+    const bent = members.filter((m) => !m.straight && m.run.turn === turn)
+    const extents = [...new Set(bent.map((m) => runExtent(m.edge, m.run)))]
+    extents.sort((a, b) => b - a)
+    if (extents.length + (anchored ? 1 : 0) < 2) continue
+    const offsetOf = (extent: number): number =>
+      base +
+      turn * STROKE_SPACING * (extents.indexOf(extent) + (anchored ? 1 : 0))
+    const geo = portGeometry(graph, bent[0]!.run)
+    const fits =
+      geo !== undefined &&
+      extents.every((x) => {
+        const offset = offsetOf(x)
+        return (
+          attachesAt(bent[0]!.run, geo.centre + offset, geo) &&
+          taken.every((t) => Math.abs(t - offset) >= STROKE_SPACING)
+        )
+      })
+    if (!fits) continue
+    for (const m of bent) out.set(m.edge, offsetOf(runExtent(m.edge, m.run)))
+  }
+}
+
 interface Slot {
   run: PortRun
   role: 'S' | 'E'
@@ -331,6 +395,7 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   }
 
   const runs = new Map<AsciiEdge, { r: EdgeRuns; s?: string; e?: string }>()
+  const startGroups = new Map<string, FanOutMember[]>()
   for (const edge of graph.edges) {
     if (edge.from === edge.to || edge.path.length < 2) continue
     if (isFixed(edge)) {
@@ -347,6 +412,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     const entry: { r: EdgeRuns; s?: string; e?: string } = { r }
     if (r.start) {
       entry.s = addSlot(r.start.node, r.start.cell, 'S', r.start, false)
+      const group = startGroups.get(entry.s) ?? []
+      group.push({ edge, run: r.start, straight: r.straight })
+      startGroups.set(entry.s, group)
     }
     if (r.end) entry.e = addSlot(r.end.node, r.end.cell, 'E', r.end, false)
     if (r.straight && entry.s && entry.e) union(entry.s, entry.e)
@@ -416,8 +484,19 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     from: run.from,
     to: run.to,
   })
+  const slotOffset = (key: string): number => offsets.get(find(key)) ?? 0
+  const staggered = new Map<AsciiEdge, number>()
+  for (const [key, members] of startGroups) {
+    if (members.length < 2 || slots.get(key)!.fixed) continue
+    const port = portOf(key)
+    const taken = [...slots.keys()]
+      .filter((k) => k !== key && portOf(k) === port)
+      .map(slotOffset)
+    staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
+  }
+
   for (const [edge, { r, s, e }] of runs) {
-    const start = s ? (offsets.get(find(s)) ?? 0) : 0
+    const start = staggered.get(edge) ?? (s ? slotOffset(s) : 0)
     const end = e ? (offsets.get(find(e)) ?? 0) : 0
     if (start === 0 && end === 0) continue
     const shift: PortShift = { start, end }
