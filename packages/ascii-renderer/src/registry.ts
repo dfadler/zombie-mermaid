@@ -40,6 +40,7 @@ import { renderFlowchartAscii } from './flowchart.ts'
 import { renderArchitectureAscii } from './architecture.ts'
 
 import { renderC4Ascii } from './c4-diagram.ts'
+import { parsePieChart } from '@zombie-mermaid/mermaid-parser'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -93,4 +94,10 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
 
   c4: (text, config, colorMode, theme, extras) =>
     renderC4Ascii(text, config, colorMode, theme, extras),
+  // Parsed (so syntax errors still surface) but not rendered yet — the ASCII
+  // pie renderer lands in a follow-up PR.
+  pie: (text) => {
+    parsePieChart(text)
+    throw new Error('Pie chart ASCII rendering is not implemented yet.')
+  },
 }

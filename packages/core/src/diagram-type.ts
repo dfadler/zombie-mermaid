@@ -25,6 +25,7 @@ export const DIAGRAM_TYPES = [
   'architecture',
 
   'c4',
+  'pie',
 ] as const
 
 /** The diagram types this library can detect and route to a renderer. */
@@ -40,7 +41,14 @@ export type DiagramType = (typeof DIAGRAM_TYPES)[number]
  * routing and parsing can never disagree about where the header ends.
  */
 export function detectDiagramType(text: string): DiagramType {
-  const firstLine = splitStatements(text)[0]?.text.toLowerCase() ?? ''
+  const header = splitStatements(text)[0]?.text ?? ''
+  const firstLine = header.toLowerCase()
+
+  // Case-sensitive, unlike the other headers: Mermaid's pie detector is
+  // `/^\s*pie/` and its grammar keyword `pie` must be followed by
+  // whitespace, a comment, or the end of input, so `Pie` and `pie:` are not
+  // pie charts there either.
+  if (/^pie(?:\s|$)/.test(header)) return 'pie'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
   if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'

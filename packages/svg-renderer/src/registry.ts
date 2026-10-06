@@ -57,6 +57,7 @@ import {
   parseArchitecture,
   architectureToGraph,
   parseC4Diagram,
+  parsePieChart,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -70,6 +71,7 @@ import type {
   ArchitectureDiagram,
   C4Diagram,
   PositionedC4Diagram,
+  PieChart,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -381,6 +383,24 @@ const architectureModule: DiagramModule<
 }
 
 /**
+ * Pie charts are detected and parsed, but not rendered yet: the SVG renderer
+ * lands in a follow-up PR. `parse` runs the real parser so a malformed chart
+ * still reports its syntax error; a valid one then stops at `layoutForSvg`
+ * with an explicit "not implemented" error instead of being misrouted to the
+ * flowchart parser.
+ */
+const pieModule: DiagramModule<PieChart, never> = {
+  type: 'pie',
+  parse: (_lines, text) => parsePieChart(text),
+  layoutForSvg() {
+    throw new Error('Pie chart SVG rendering is not implemented yet.')
+  },
+  renderSvg() {
+    throw new Error('Pie chart SVG rendering is not implemented yet.')
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -408,4 +428,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   architecture: architectureModule,
 
   c4: c4Module,
+  pie: pieModule,
 }

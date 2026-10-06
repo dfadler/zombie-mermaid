@@ -41,6 +41,7 @@ describe('list_diagram_types', () => {
       architecture: 'architecture-beta\nservice a[A]',
 
       c4: 'C4Context\nPerson(a, "A")',
+      pie: 'pie\n"A" : 1',
     }
     expect(Object.keys(headers).sort()).toEqual([...DIAGRAM_TYPES].sort())
     for (const type of DIAGRAM_TYPES) {
