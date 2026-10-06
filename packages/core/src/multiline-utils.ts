@@ -73,7 +73,7 @@ function codePointToChar(cp: number): string | undefined {
  */
 export function decodeMermaidEntities(text: string): string {
   return text.replace(
-    /#(x[0-9a-fA-F]+|[0-9]+|[a-zA-Z]+);/g,
+    /#([xX][0-9a-fA-F]+|[0-9]+|[a-zA-Z]+);/g,
     (match, code: string) => {
       if (/^x/i.test(code)) {
         return codePointToChar(parseInt(code.slice(1), 16)) ?? match
@@ -93,7 +93,7 @@ export function decodeMermaidEntities(text: string): string {
  */
 export function decodeXmlEntitiesInLabel(text: string): string {
   return text.replace(
-    /&(#x[0-9a-fA-F]+|#[0-9]+|quot|amp|lt|gt|apos);/g,
+    /&(#[xX][0-9a-fA-F]+|#[0-9]+|quot|amp|lt|gt|apos);/g,
     (match, code: string) => {
       if (/^#x/i.test(code)) {
         return codePointToChar(parseInt(code.slice(2), 16)) ?? match

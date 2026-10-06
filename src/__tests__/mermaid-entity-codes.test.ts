@@ -97,7 +97,7 @@ describe('ASCII entity decoding', () => {
   })
 
   it('decodes numeric and hex HTML entities', () => {
-    expect(decodeXmlEntitiesInLabel('&#35;9 &#x5B;y&#x5d; &apos;')).toBe(
+    expect(decodeXmlEntitiesInLabel('&#35;9 &#x5B;y&#X5d; &apos;')).toBe(
       "#9 [y] '",
     )
   })
@@ -106,5 +106,9 @@ describe('ASCII entity decoding', () => {
     for (const bad of ['&#99999999;', '&#x110000;', '&#0;', '&#xD800;']) {
       expect(decodeXmlEntitiesInLabel(bad)).toBe(bad)
     }
+  })
+
+  it('decodes an uppercase X hex marker in Mermaid codes', () => {
+    expect(decodeMermaidEntities('#X5B;y#X5d;')).toBe('[y]')
   })
 })
