@@ -972,6 +972,37 @@ function findNonNodeColumn(
 }
 
 /**
+ * What `determineLabelLine` needs to know about the *other* edges. Label
+ * lines are chosen once every path is routed, so an edge can tell which of
+ * its segments another edge also runs along (a label there would read as
+ * belonging to both, #1347) and which segments another label already holds.
+ */
+export interface LabelContext {
+  /** Edges whose path covers each grid cell. */
+  cover: Map<string, Set<AsciiEdge>>
+  /** Label segment each edge has been given so far. */
+  chosen: Map<AsciiEdge, [GridCoord, GridCoord]>
+}
+
+export function createLabelContext(graph: AsciiGraph): LabelContext {
+  const cover = new Map<string, Set<AsciiEdge>>()
+  const chosen = new Map<AsciiEdge, [GridCoord, GridCoord]>()
+  for (const edge of graph.edges) {
+    for (const cell of pathCells(expandDiagonalSegments(edge.path))) {
+      const key = `${cell.x},${cell.y}`
+      const set = cover.get(key)
+      if (set) set.add(edge)
+      else cover.set(key, new Set([edge]))
+    }
+    // Labels fixed during routing (cluster exits, parallel lanes) are taken.
+    if (edge.labelLine.length === 2) {
+      chosen.set(edge, [edge.labelLine[0]!, edge.labelLine[1]!])
+    }
+  }
+  return { cover, chosen }
+}
+
+/**
  * Find the best line segment in an edge's path to place a label on.
  * Prefers vertical segments for TD/BT graphs and horizontal for LR/RL to avoid
  * label collisions when multiple edges share initial segments.
@@ -986,7 +1017,11 @@ function findNonNodeColumn(
  * function's doc) — re-running the search here would risk picking a
  * different, sibling-colliding segment instead.
  */
-export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
+export function determineLabelLine(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  ctx?: LabelContext,
+): void {
   if (edge.text.length === 0) return
   if (edge.parallelLane && edge.parallelLane.index > 0) return
   // Likewise a cluster-exit edge: determinePath placed its label directly
@@ -1077,12 +1112,49 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     (s) => s.width >= lenLabel && !isTerminalSegment(s) && clearOfNodes(s.line),
   )
 
+  // Segments a label would sit on, best first: not already holding another
+  // edge's label, then running along as few cells of other edges as possible.
+  // Without `ctx` (a caller that routes one edge at a time) nothing is known
+  // about the other edges, so every segment ranks equal and the original
+  // "closest to the target" order decides.
+  const ownEnds = new Set(
+    [edge.path[0], edge.path[edge.path.length - 1]].map((c) =>
+      c ? `${c.x},${c.y}` : '',
+    ),
+  )
+  const rank = (line: [GridCoord, GridCoord]): [number, number] => {
+    if (!ctx) return [0, 0]
+    const cells = pathCells(line)
+    let shared = 0
+    for (const cell of cells) {
+      const key = `${cell.x},${cell.y}`
+      if (ownEnds.has(key)) continue
+      const others = ctx.cover.get(key)
+      if (others && [...others].some((o) => o !== edge)) shared++
+    }
+    const keys = new Set(cells.map((c) => `${c.x},${c.y}`))
+    let taken = 0
+    for (const [other, held] of ctx.chosen) {
+      if (other === edge) continue
+      if (pathCells(held).some((c) => keys.has(`${c.x},${c.y}`))) taken = 1
+    }
+    return [taken, shared]
+  }
+  const byRank = (
+    a: { line: [GridCoord, GridCoord]; index: number },
+    b: { line: [GridCoord, GridCoord]; index: number },
+  ): number => {
+    const ra = rank(a.line)
+    const rb = rank(b.line)
+    return ra[0] - rb[0] || ra[1] - rb[1] || b.index - a.index
+  }
+
   let largestLine: [GridCoord, GridCoord]
 
   if (suitableSegments.length > 0) {
     // Prefer segments near the end of the path (closer to target)
     // This avoids the shared initial segments from source
-    suitableSegments.sort((a, b) => b.index - a.index)
+    suitableSegments.sort(byRank)
     largestLine = suitableSegments[0]!.line
   } else {
     // Fall back to any suitable segment, including a terminal one (the
@@ -1094,11 +1166,22 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     // still slip through here; that's an accepted last-resort trade-off,
     // not a regression, since this tier only runs once every non-terminal
     // segment has already been ruled out.)
+    // A vertical segment no other edge runs along qualifies however narrow
+    // it is: its label goes beside the stroke (draw-arrows.ts), so the
+    // column's width is no limit, and it beats landing on a segment another
+    // edge shares (#1347).
+    const alone = (s: (typeof segments)[number]): boolean => {
+      if (!ctx || !s.isVertical) return false
+      // Widening a node's own column to make room would inflate its box.
+      if (isNodeOccupiedColumn(graph, s.line[0].x)) return false
+      const [taken, shared] = rank(s.line)
+      return taken === 0 && shared === 0
+    }
     const fallbackSegments = segments.filter(
-      (s) => s.width >= lenLabel && clearOfNodes(s.line),
+      (s) => (s.width >= lenLabel || alone(s)) && clearOfNodes(s.line),
     )
     if (fallbackSegments.length > 0) {
-      fallbackSegments.sort((a, b) => b.index - a.index)
+      fallbackSegments.sort(byRank)
       largestLine = fallbackSegments[0]!.line
     } else {
       // No segment both wide enough and clear of nodes — prefer the
@@ -1128,7 +1211,27 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
           : clearSegments.length > 0
             ? clearSegments
             : segments
-      pool.sort((a, b) => b.width - a.width)
+      // A segment no other edge runs along comes first: a label on a shared
+      // one reads as belonging to every edge on it (#1347). Width decides
+      // between equals, as before.
+      const poolRank = (s: (typeof segments)[number]): [number, number] => {
+        const [taken, shared] = rank(s.line)
+        // A segment too short for the label whose every column belongs to a
+        // node can only be widened by inflating that node's box, so it comes
+        // last (a vertical one is a single such column).
+        const lo = Math.min(s.line[0].x, s.line[1].x)
+        const hi = Math.max(s.line[0].x, s.line[1].x)
+        let inflates = s.width < lenLabel
+        for (let x = lo; inflates && x <= hi; x++) {
+          if (!isNodeOccupiedColumn(graph, x)) inflates = false
+        }
+        return [taken, shared + (inflates ? 1000 : 0)]
+      }
+      pool.sort((a, b) => {
+        const ra = poolRank(a)
+        const rb = poolRank(b)
+        return ra[0] - rb[0] || ra[1] - rb[1] || b.width - a.width
+      })
       if (pool.length > 0) {
         largestLine = pool[0]!.line
       } else {
@@ -1145,6 +1248,7 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
   }
 
   applyLabelLine(graph, edge, largestLine, lenLabel)
+  ctx?.chosen.set(edge, largestLine)
 }
 
 /**
@@ -1199,11 +1303,22 @@ function applyLabelLine(
   const idealX = minX + Math.floor((maxX - minX) / 2)
   const middleX = findNonNodeColumn(graph, minX, maxX, idealX)
 
-  const current = graph.columnWidth.get(middleX) ?? 0
-  graph.columnWidth.set(
-    middleX,
-    Math.max(current, lenLabel + 2, pairColumnWidth(graph, edge, lenLabel)),
-  )
+  // A segment already wide enough for the label needs no widening. When its
+  // only candidate column is a node's own, widening it anyway inflates that
+  // node's box (a long label on a short hop out of `Reconnecting` made the
+  // node and everything in its column ten cells wider, #1349).
+  const pairWidth = pairColumnWidth(graph, edge, lenLabel)
+  // A vertical segment's label goes beside the stroke and needs the column's
+  // own width, so only a horizontal one is exempt.
+  const wideEnough =
+    line[0].y === line[1].y &&
+    isNodeOccupiedColumn(graph, middleX) &&
+    pairWidth === 0 &&
+    calculateLineWidth(graph, line) >= lenLabel + 2
+  if (!wideEnough) {
+    const current = graph.columnWidth.get(middleX) ?? 0
+    graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2, pairWidth))
+  }
 
   edge.labelLine = [line[0], line[1]]
 }

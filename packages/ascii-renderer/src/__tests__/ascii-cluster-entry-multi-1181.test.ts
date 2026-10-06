@@ -130,7 +130,9 @@ describe('ASCII: several entries into one cluster, TD (#1181)', () => {
     const wall = topWall(rows)
     expect(rows[wall - 1]).not.toMatch(/one|two/)
     expect(rows.slice(0, wall).join('\n')).toMatch(/one/)
-    expect(rows[wall - 2]).toMatch(/──two──|two─|─two/)
+    // `two` sits on its own source's stroke rather than on the jog X's edge
+    // also runs along (#1347): above the wall, off the arrowhead row.
+    expect(rows.slice(0, wall).join('\n')).toMatch(/two/)
   })
 
   it('a lone source off the landing column also turns onto the wall', () => {

@@ -5,6 +5,12 @@
 // Split out of draw.ts.
 // ============================================================================
 
+import {
+  edgePointShifts,
+  labelLineToDrawing,
+  pathToDrawing,
+  portShifts,
+} from './port-offsets.ts'
 import type {
   Canvas,
   DrawingCoord,
@@ -31,8 +37,8 @@ import {
 } from './types.ts'
 import { copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
-import { displayWidth } from './display-width.ts'
-import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
+import { displayWidth, toDisplayCells } from './display-width.ts'
+import { gridToDrawingCoord } from './grid.ts'
 import { splitLines } from './multiline-utils.ts'
 import { drawLine } from './draw-lines.ts'
 
@@ -58,13 +64,17 @@ export function drawArrow(
   const drop = wallEnd
     ? clusterEntryDrop(graph, edge, wallEnd)
     : clusterExitDrop(graph, edge, wallStart)
+  const dx = strokeShift(graph, edge)
+  const shifts =
+    edgePointShifts(graph, edge) ??
+    (dx === 0 ? undefined : edge.path.map(() => ({ x: dx, y: 0 })))
   const [pathCanvas, linesDrawn, lineDirs] = drawPath(
     graph,
     edge.path,
     edge.style,
     wallEnd,
     drop,
-    strokeShift(graph, edge),
+    shifts,
     wallStart,
   )
 
@@ -145,7 +155,7 @@ export function drawArrow(
 
   const cornersCanvas = invisible
     ? copyCanvas(graph.canvas)
-    : drawCorners(graph, edge.path, drop)
+    : drawCorners(graph, edge.path, drop, shifts)
 
   return [
     pathCanvas,
@@ -488,7 +498,7 @@ function drawPath(
   style: AsciiEdgeStyle = 'solid',
   endOverride?: DrawingCoord,
   drop?: EntryDrop,
-  dx = 0,
+  shifts?: DrawingCoord[],
   startOverride?: DrawingCoord,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
@@ -497,9 +507,14 @@ function drawPath(
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []
   const lineDirs: Direction[] = []
-  // #1284: a reciprocal pair's strokes are drawn one cell off the column centre.
-  const shift = (c: DrawingCoord): DrawingCoord =>
-    dx === 0 ? c : { x: c.x + dx, y: c.y }
+  // #1284/#1350: strokes that share a port are drawn off the port centre;
+  // `shifts[i]` is the offset of path point i.
+  const shift = (c: DrawingCoord, i: number): DrawingCoord => {
+    const by = shifts?.[i]
+    return by === undefined || (by.x === 0 && by.y === 0)
+      ? c
+      : { x: c.x + by.x, y: c.y + by.y }
+  }
 
   if (drop) {
     for (let i = 1; i < drop.points.length; i++) {
@@ -528,11 +543,12 @@ function drawPath(
       startOverride && i === 1
         ? startOverride
         : gridToDrawingCoord(graph, previousCoord),
+      i - 1,
     )
     const nextDC =
       endOverride && i === path.length - 1
-        ? shift(endOverride)
-        : shift(gridToDrawingCoord(graph, nextCoord))
+        ? shift(endOverride, i)
+        : shift(gridToDrawingCoord(graph, nextCoord), i)
 
     if (drawingCoordEquals(prevDC, nextDC)) {
       previousCoord = nextCoord
@@ -814,6 +830,7 @@ function drawCorners(
   graph: AsciiGraph,
   path: GridCoord[],
   drop?: EntryDrop,
+  shifts?: DrawingCoord[],
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   // An entry drop (clusterEntryDrop) is already a drawn polyline.
@@ -822,7 +839,11 @@ function drawCorners(
 
   for (let idx = 1; idx < points.length - 1; idx++) {
     const coord = points[idx]!
-    const dc = drop ? drop.points[idx]! : gridToDrawingCoord(graph, path[idx]!)
+    const base = drop
+      ? drop.points[idx]!
+      : gridToDrawingCoord(graph, path[idx]!)
+    const by = shifts?.[idx]
+    const dc = by ? { x: base.x + by.x, y: base.y + by.y } : base
     const prevDir = determineDirection(points[idx - 1]!, coord)
     const nextDir = determineDirection(coord, points[idx + 1]!)
 
@@ -907,6 +928,9 @@ function strokeShiftFor(
 ): 0 | 1 | -1 {
   const partner = verticalPairPartner(graph, edge)
   if (!partner) return 0
+  // A pair that shares its port with other edges is spread by `portShifts`.
+  const generic = portShifts(graph)
+  if (generic.has(edge) || generic.has(partner)) return 0
   for (const e of [edge, partner]) {
     if (e.text.length === 0) continue
     const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
@@ -989,11 +1013,7 @@ function centredLabelPlacement(
   edge: AsciiEdge,
   labelAware: boolean,
 ): { x: number; y: number; text: string }[] {
-  const drawingLine = onEntryJog(
-    graph,
-    edge,
-    lineToDrawing(graph, edge.labelLine),
-  )
+  const drawingLine = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
 
   // Determine if this is an upward edge (target is above source in the path)
   // This is used to offset labels on bidirectional edges to prevent overlap
@@ -1062,7 +1082,31 @@ function centredLabelPlacement(
       drawingLine[0]!.x,
       isUpwardEdge ? 'left' : 'right',
     )
-    if (besideFree(graph, edge, beside, labelAware)) return beside
+    if (besideFree(graph, edge, beside, labelAware)) {
+      // Right beside another edge's stroke the label reads as that edge's
+      // (#attribution). A label beside its own stroke has one blank cell to
+      // it, so another stroke should be two or more away; failing that, one
+      // blank cell clear. Slide along its own stroke to the nearest row that
+      // manages it, keeping off the stroke's two ends.
+      const top = Math.min(drawingLine[0]!.y, drawingLine[1]!.y) + 1
+      const bottom = Math.max(drawingLine[0]!.y, drawingLine[1]!.y) - 1
+      const rows = beside.map((b) => b.y)
+      const span = Math.max(...rows) - Math.min(...rows)
+      for (const clearance of [2, 1]) {
+        if (besideFree(graph, edge, beside, labelAware, clearance))
+          return beside
+        for (let d = 1; d <= bottom - top; d++) {
+          for (const dy of [d, -d]) {
+            const moved = beside.map((b) => ({ ...b, y: b.y + dy }))
+            const first = Math.min(...moved.map((m) => m.y))
+            if (first < top || first + span > bottom) continue
+            if (besideFree(graph, edge, moved, labelAware, clearance))
+              return moved
+          }
+        }
+      }
+      return beside
+    }
   }
   return centred
 }
@@ -1100,8 +1144,9 @@ export function besideCellsFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
+  clearance = 0,
 ): boolean {
-  return besideFree(graph, edge, placement, true)
+  return besideFree(graph, edge, placement, true, clearance)
 }
 
 function besideFree(
@@ -1109,9 +1154,10 @@ function besideFree(
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
   labelAware: boolean,
+  clearance = 0,
 ): boolean {
   return (
-    besideGeometryFree(graph, edge, placement) &&
+    besideGeometryFree(graph, edge, placement, clearance) &&
     (!labelAware || !hitsOtherLabel(graph, edge, placement))
   )
 }
@@ -1157,6 +1203,7 @@ function besideGeometryFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
+  clearance = 0,
 ): boolean {
   for (const { x, y, text } of placement) {
     const x0 = x
@@ -1187,15 +1234,17 @@ function besideGeometryFree(
     }
     for (const other of graph.edges) {
       if (other === edge) continue
-      const pts = lineToDrawing(graph, other.path)
+      const pts = pathToDrawing(graph, other)
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1]!
         const b = pts[i]!
+        // `clearance` keeps the text off cells *next to* another edge's
+        // stroke too, where it would read as that stroke's label (#attribution).
         if (
-          y >= Math.min(a.y, b.y) &&
-          y <= Math.max(a.y, b.y) &&
-          x1 >= Math.min(a.x, b.x) &&
-          x0 <= Math.max(a.x, b.x)
+          y >= Math.min(a.y, b.y) - clearance &&
+          y <= Math.max(a.y, b.y) + clearance &&
+          x1 >= Math.min(a.x, b.x) - clearance &&
+          x0 <= Math.max(a.x, b.x) + clearance
         ) {
           return false
         }
@@ -1357,6 +1406,29 @@ function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
     drawText(canvas, { x, y }, text)
   }
   return canvas
+}
+
+/**
+ * Cells of `edge`'s drawn label that hold a literal space between two
+ * characters of the text. `mergeCanvases` treats an overlay's space as
+ * transparent, so a stroke the label sits on would show through the gap and
+ * turn `long label` into `long─label` (#1348); the caller blanks these cells
+ * after the merge, the way subgraph titles already do (#447).
+ */
+export function labelInteriorSpaces(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): DrawingCoord[] {
+  const cells: DrawingCoord[] = []
+  for (const { x, y, text } of edgeLabelPlacement(graph, edge) ?? []) {
+    const glyphs = toDisplayCells(text)
+    const first = glyphs.findIndex((g) => g !== ' ')
+    const last = glyphs.findLastIndex((g) => g !== ' ')
+    for (let i = first + 1; i < last; i++) {
+      if (glyphs[i] === ' ') cells.push({ x: x + i, y })
+    }
+  }
+  return cells
 }
 
 /**

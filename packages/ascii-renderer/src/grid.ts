@@ -21,6 +21,7 @@ import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
   determineLabelLine,
+  createLabelContext,
   assignParallelEdgeLanes,
 } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
@@ -268,11 +269,9 @@ function rerouteAroundStyleConflicts(
   const temporarilyBlocked: GridCoord[] = []
   // Each reroute blocks one conflict cell, and the A* search around it
   // picks an arbitrary one of many equally short detours — in practice a
-  // staircase hugging the cluster wall (#1148's `retry` edge). Prefer fewest
-  // bends instead. Scoped to graphs with an engaged cluster exit so every
-  // other graph's reroutes stay byte for byte as before.
-  const straighten = (graph.clusterExitPlans?.size ?? 0) > 0
-  if (straighten) graph.preferStraightRoutes = true
+  // staircase hugging the cluster wall (#1148's `retry` edge) or a stair-step
+  // round a reciprocal edge (#1349's `D --> A`). Prefer fewest bends instead.
+  graph.preferStraightRoutes = true
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
@@ -294,7 +293,7 @@ function rerouteAroundStyleConflicts(
       determinePath(graph, edge)
     }
   } finally {
-    if (straighten) graph.preferStraightRoutes = false
+    graph.preferStraightRoutes = false
     for (const cell of temporarilyBlocked) graph.grid.delete(gridKey(cell))
   }
 }
@@ -1726,7 +1725,6 @@ export function createMapping(graph: AsciiGraph): void {
       increaseGridSizeForPath(graph, edge.path)
       claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
       claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
-      determineLabelLine(graph, edge)
       continue
     }
 
@@ -1748,8 +1746,13 @@ export function createMapping(graph: AsciiGraph): void {
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
-    determineLabelLine(graph, edge)
   }
+
+  // Choose each label's segment only now that every path exists, so a label
+  // avoids segments another edge also runs along and segments another label
+  // already holds (#1347).
+  const labelContext = createLabelContext(graph)
+  for (const edge of graph.edges) determineLabelLine(graph, edge, labelContext)
 
   // Convert grid coords → drawing coords and generate box drawings
   for (const node of graph.nodes) {
