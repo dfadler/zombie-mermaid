@@ -139,6 +139,77 @@ function isChainPair(a: AsciiEdge, b: AsciiEdge): boolean {
 }
 
 /**
+ * Whether port-offsets.ts leaves `edge` where it was routed: self-loops,
+ * bundled, lane, invisible and cluster edges. Such an edge is not drawn apart
+ * from another at a shared port, so the port-sharing exemption below does not
+ * apply to it. Lives here, not in port-offsets.ts, to keep this module free of
+ * the layout imports that would make a cycle.
+ */
+export function isPortFixedEdge(edge: AsciiEdge): boolean {
+  return (
+    edge.from === edge.to ||
+    edge.path.length < 2 ||
+    edge.bundle !== undefined ||
+    edge.parallelLane !== undefined ||
+    edge.style === 'invisible' ||
+    edge.clusterSource !== undefined ||
+    edge.clusterTarget !== undefined
+  )
+}
+
+/**
+ * Cells where `owner` and a candidate `path` for `edge` meet at one node port
+ * in opposite roles: one leaves the node by the port cell and the other
+ * arrives at the very same cell, so their first (or last) legs run along the
+ * same cells. port-offsets.ts draws two such edges one cell apart on the node's
+ * side, so sharing those cells cannot read as one connector, and routing them
+ * around each other only wraps one of them round the far side of the diagram
+ * (#1349).
+ *
+ * Only a reciprocal pair (`A --> C` beside `C --> A`) qualifies. A true chain
+ * (`Mobile App --> Gateway` then `Gateway --> User Service`) shares a node but
+ * not both, and two strokes a cell apart on one row can still read as a single
+ * connector through the node (#1067, #63), so a chain keeps being routed apart.
+ * Cells further along either route are not exempt: nothing draws those apart.
+ */
+function portSharedCells(
+  owner: AsciiEdge,
+  edge: AsciiEdge,
+  path: readonly GridCoord[],
+): Set<string> {
+  const shared = new Set<string>()
+  if (isPortFixedEdge(owner) || isPortFixedEdge(edge)) return shared
+  if (owner.from !== edge.to || owner.to !== edge.from) return shared
+  const same = (a: GridCoord | undefined, b: GridCoord | undefined): boolean =>
+    a !== undefined && b !== undefined && a.x === b.x && a.y === b.y
+  const keysOf = (leg: GridCoord[]): Set<string> =>
+    new Set(pathCells(leg).map(gridKey))
+  const meet = (a: GridCoord[], b: GridCoord[]): void => {
+    const bKeys = keysOf(b)
+    for (const key of keysOf(a)) if (bKeys.has(key)) shared.add(key)
+  }
+  const ownerPath = owner.path
+  if (ownerPath.length < 2 || path.length < 2) return shared
+  const first = (p: readonly GridCoord[]): GridCoord[] => [p[0]!, p[1]!]
+  const last = (p: readonly GridCoord[]): GridCoord[] => [
+    p[p.length - 2]!,
+    p[p.length - 1]!,
+  ]
+  // `owner` leaves the node `edge` arrives at, through the same port.
+  if (owner.from === edge.to && same(ownerPath[0], path[path.length - 1])) {
+    meet(first(ownerPath), last(path))
+  }
+  // `owner` arrives at the node `edge` leaves, through the same port.
+  if (
+    owner.to === edge.from &&
+    same(ownerPath[ownerPath.length - 1], path[0])
+  ) {
+    meet(last(ownerPath), first(path))
+  }
+  return shared
+}
+
+/**
  * Minimum number of open, non-node cells a chain pair must share before it
  * counts as a real conflict. A single shared cell is an ordinary crossing
  * (two independent lines passing through the same point, which still reads
@@ -186,6 +257,15 @@ export function findUnrelatedOverlap(
 ): GridCoord | null {
   const overlapCounts = new Map<AsciiEdge, number>()
   const firstConflicts = new Map<AsciiEdge, GridCoord>()
+  const exempt = new Map<AsciiEdge, Set<string>>()
+  const portShared = (owner: AsciiEdge): Set<string> => {
+    let cells = exempt.get(owner)
+    if (!cells) {
+      cells = portSharedCells(owner, edge, path)
+      exempt.set(owner, cells)
+    }
+    return cells
+  }
   for (const cell of pathCells(path)) {
     if (isOccupied(grid, cell)) continue
     const cellOwners = owners.get(gridKey(cell))
@@ -193,6 +273,7 @@ export function findUnrelatedOverlap(
     for (const owner of cellOwners) {
       if (owner === edge) continue
       if (!isChainPair(owner, edge)) continue
+      if (portShared(owner).has(gridKey(cell))) continue
       overlapCounts.set(owner, (overlapCounts.get(owner) ?? 0) + 1)
       if (!firstConflicts.has(owner)) firstConflicts.set(owner, cell)
     }
