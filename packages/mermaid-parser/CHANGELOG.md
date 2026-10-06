@@ -1,5 +1,12 @@
 # @zombie-mermaid/mermaid-parser
 
+## 4.1.0
+
+### Patch Changes
+
+- Updated dependencies [[`68b8a6a`](https://github.com/dfadler/zombie-mermaid/commit/68b8a6a621ea9b3fb7e83aaff8bf29534ae10277), [`2e017dd`](https://github.com/dfadler/zombie-mermaid/commit/2e017dd399688f60689aad1003e4582e2cc21e36)]:
+  - @zombie-mermaid/core@4.1.0
+
 ## 4.0.0
 
 ### Patch Changes

@@ -1127,6 +1127,7 @@ function placeReachableChildren(
         if (edgeDir === graph.config.graphDirection) {
           // Longest-path layering: a child sits below its deepest forward
           // parent even when a shallower parent happens to place it first.
+          /* v8 ignore next -- every node reachable here was ranked by the DFS */
           childLevel = Math.max(childLevel, minLevels.get(child) ?? 0)
           for (const source of entrySources) {
             const sgc = source.gridCoord
@@ -1158,7 +1159,7 @@ function placeReachableChildren(
             // level's left edge.
             // Likewise when longest-path layering has pushed siblings off
             // this level, leaving the slots left of the parent empty.
-            edgeDir === 'LR' ? gc.y : gc.x,
+            clearSlotBelow(graph, gc, child, childLevel, edgeDir === 'LR'),
           )
           if (center !== undefined && highestPosition === center) {
             centered.add(child)
@@ -1183,6 +1184,39 @@ function placeReachableChildren(
       progressed = true
     }
   }
+}
+
+/**
+ * The cross-axis slot a child pushed `childLevel` away from its parent can
+ * take: the parent's own slot, or the next one over while an unrelated node
+ * already placed between them occupies it (so the edge is not forced to wrap around
+ * that node, as `B --> D` does around `B --> C` when D ranks below C).
+ */
+function clearSlotBelow(
+  graph: AsciiGraph,
+  parent: GridCoord,
+  child: AsciiNode,
+  childLevel: number,
+  lr: boolean,
+): number {
+  let slot = lr ? parent.y : parent.x
+  const level = lr ? parent.x : parent.y
+  const blocked = (): boolean =>
+    graph.nodes.some((n) => {
+      const c = n.gridCoord
+      if (!c) return false
+      const nl = lr ? c.x : c.y
+      // A node that is itself a parent of the child is no obstacle: its
+      // edge into the child runs alongside the longer one.
+      return (
+        (lr ? c.y : c.x) === slot &&
+        nl > level &&
+        nl < childLevel &&
+        !getChildren(graph, n).includes(child)
+      )
+    })
+  while (blocked()) slot += 4
+  return slot
 }
 
 /**
@@ -1248,11 +1282,13 @@ function computeMinLevels(
   // post-order so every parent is ranked before its children.
   const levels = new Map<AsciiNode, number>()
   const order = [...forward.keys()].reverse()
-  for (const node of order) levels.set(node, levels.get(node) ?? 0)
+  for (const node of order) levels.set(node, 0)
   for (const node of order) {
-    const base = levels.get(node) ?? 0
+    /* v8 ignore next -- every node in `order` was seeded to 0 above */
+    const next = (levels.get(node) ?? 0) + 4
+    /* v8 ignore next -- every forward node has an entry */
     for (const child of forward.get(node) ?? []) {
-      levels.set(child, Math.max(levels.get(child) ?? 0, base + 4))
+      levels.set(child, Math.max(levels.get(child) ?? 0, next))
     }
   }
   return levels

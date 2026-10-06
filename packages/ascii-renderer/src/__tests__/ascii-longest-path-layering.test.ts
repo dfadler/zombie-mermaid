@@ -6,16 +6,22 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
+/** Column where a node box labelled `label` starts on this row, or -1. */
+function boxCol(row: string, label: string): number {
+  for (const m of row.matchAll(/│\s+(\S+)\s+(?=[│├┤])/g)) {
+    if (m[1] === label) return m.index
+  }
+  return -1
+}
+
 function rowOf(ascii: string, label: string): number {
-  return ascii
-    .split('\n')
-    .findIndex((r) => new RegExp(`│\\s+${label}\\s+[│├┤]`).test(r))
+  return ascii.split('\n').findIndex((r) => boxCol(r, label) >= 0)
 }
 
 function colOf(ascii: string, label: string): number {
   for (const r of ascii.split('\n')) {
-    const m = new RegExp(`│\\s+${label}\\s+[│├┤]`).exec(r)
-    if (m) return m.index
+    const c = boxCol(r, label)
+    if (c >= 0) return c
   }
   return -1
 }
@@ -50,5 +56,19 @@ describe('ASCII longest-path layering', () => {
     const out = render('graph TD\nA --> B\nB --> C\nC --> A')
     for (const n of ['A', 'B', 'C'])
       expect(rowOf(out, n)).toBeGreaterThanOrEqual(0)
+  })
+
+  // D ranks below E, but C and E fill the column under B; D must move off it
+  // or `B --> D` has to wrap around both.
+  it('moves a pushed-down child off an unrelated sibling’s column (TD)', () => {
+    const out = render('graph TD\nA --> B\nB --> C\nB --> D\nC --> E\nE --> D')
+    expect(rowOf(out, 'D')).toBeGreaterThan(rowOf(out, 'E'))
+    expect(colOf(out, 'D')).toBeGreaterThan(colOf(out, 'C'))
+  })
+
+  it('does the same on the row axis (LR)', () => {
+    const out = render('graph LR\nA --> B\nB --> C\nB --> D\nC --> E\nE --> D')
+    expect(colOf(out, 'D')).toBeGreaterThan(colOf(out, 'E'))
+    expect(rowOf(out, 'D')).toBeGreaterThan(rowOf(out, 'C'))
   })
 })

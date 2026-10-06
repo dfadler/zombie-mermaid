@@ -760,6 +760,14 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
  * cells beside its stroke.
  */
 export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
+  return strokeShiftFor(graph, edge, true)
+}
+
+function strokeShiftFor(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  labelAware: boolean,
+): 0 | 1 | -1 {
   const partner = verticalPairPartner(graph, edge)
   if (!partner) return 0
   // A pair that shares its port with other edges is spread by `portShifts`.
@@ -769,11 +777,11 @@ export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
     if (e.text.length === 0) continue
     const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
     const beside = besideStroke(
-      centredLabelPlacement(graph, e),
+      centredLabelPlacement(graph, e, labelAware),
       gridToDrawingCoord(graph, e.path[0]!).x + (side === 'right' ? 1 : -1),
       side,
     )
-    if (!besideCellsFree(graph, e, beside)) return 0
+    if (!besideFree(graph, e, beside, labelAware)) return 0
   }
   return edge.path[1]!.y > edge.path[0]!.y ? 1 : -1
 }
@@ -813,9 +821,24 @@ export function edgeLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] | null {
+  return resolveLabelPlacement(graph, edge, true)
+}
+
+/**
+ * `edgeLabelPlacement`'s body. `labelAware` says whether the beside-stroke
+ * candidates are also checked against the other edges' labels (#1338). Those
+ * labels are themselves resolved with `labelAware = false` (see
+ * `otherLabelPlacements`), so the check never recurses and never depends on
+ * the order the edges are drawn in.
+ */
+function resolveLabelPlacement(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  labelAware: boolean,
+): { x: number; y: number; text: string }[] | null {
   if (edge.text.length === 0) return null
-  const centred = centredLabelPlacement(graph, edge)
-  const dx = strokeShift(graph, edge)
+  const centred = centredLabelPlacement(graph, edge, labelAware)
+  const dx = strokeShiftFor(graph, edge, labelAware)
   if (dx === 0) return centred
   // #1284: the pair's strokes are drawn one cell either side of the column
   // centre (see strokeShift), so each label sits beside its own stroke,
@@ -830,6 +853,7 @@ export function edgeLabelPlacement(
 function centredLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
+  labelAware: boolean,
 ): { x: number; y: number; text: string }[] {
   const drawingLine = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
 
@@ -900,7 +924,7 @@ function centredLabelPlacement(
       drawingLine[0]!.x,
       isUpwardEdge ? 'left' : 'right',
     )
-    if (besideCellsFree(graph, edge, beside)) {
+    if (besideFree(graph, edge, beside, labelAware)) {
       // Right beside another edge's stroke the label reads as that edge's
       // (#attribution). A label beside its own stroke has one blank cell to
       // it, so another stroke should be two or more away; failing that, one
@@ -911,13 +935,13 @@ function centredLabelPlacement(
       const rows = beside.map((b) => b.y)
       const span = Math.max(...rows) - Math.min(...rows)
       for (const clearance of [2, 1]) {
-        if (besideCellsFree(graph, edge, beside, clearance)) return beside
+        if (besideFree(graph, edge, beside, labelAware, clearance)) return beside
         for (let d = 1; d <= bottom - top; d++) {
           for (const dy of [d, -d]) {
             const moved = beside.map((b) => ({ ...b, y: b.y + dy }))
             const first = Math.min(...moved.map((m) => m.y))
             if (first < top || first + span > bottom) continue
-            if (besideCellsFree(graph, edge, moved, clearance)) return moved
+            if (besideFree(graph, edge, moved, labelAware, clearance)) return moved
           }
         }
       }
@@ -957,6 +981,65 @@ function besideStroke(
  * geometry, so it also works where no canvas is drawn yet.
  */
 export function besideCellsFree(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+  clearance = 0,
+): boolean {
+  return besideFree(graph, edge, placement, true, clearance)
+}
+
+function besideFree(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+  labelAware: boolean,
+  clearance = 0,
+): boolean {
+  return (
+    besideGeometryFree(graph, edge, placement, clearance) &&
+    (!labelAware || !hitsOtherLabel(graph, edge, placement))
+  )
+}
+
+/**
+ * #1338: whether any line of `placement` shares a cell with another edge's
+ * label. `drawGraph` merges label overlays last-wins, so an overlap would
+ * overwrite text.
+ */
+function hitsOtherLabel(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): boolean {
+  const others = otherLabelPlacements(graph, edge)
+  return placement.some((a) =>
+    others.some(
+      (b) =>
+        a.y === b.y &&
+        a.x <= b.x + displayWidth(b.text) - 1 &&
+        b.x <= a.x + displayWidth(a.text) - 1,
+    ),
+  )
+}
+
+/**
+ * Every other labelled edge's label lines, placed without the label check
+ * (`labelAware = false`) so this stays a pure function of the layout.
+ */
+function otherLabelPlacements(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number; text: string }[] {
+  const out: { x: number; y: number; text: string }[] = []
+  for (const other of graph.edges) {
+    if (other === edge || other.path.length < 2) continue
+    out.push(...(resolveLabelPlacement(graph, other, false) ?? []))
+  }
+  return out
+}
+
+function besideGeometryFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
