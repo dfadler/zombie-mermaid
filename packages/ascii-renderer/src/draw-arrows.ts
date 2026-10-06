@@ -900,7 +900,29 @@ function centredLabelPlacement(
       drawingLine[0]!.x,
       isUpwardEdge ? 'left' : 'right',
     )
-    if (besideCellsFree(graph, edge, beside)) return beside
+    if (besideCellsFree(graph, edge, beside)) {
+      // Right beside another edge's stroke the label reads as that edge's
+      // (#attribution). A label beside its own stroke has one blank cell to
+      // it, so another stroke should be two or more away; failing that, one
+      // blank cell clear. Slide along its own stroke to the nearest row that
+      // manages it, keeping off the stroke's two ends.
+      const top = Math.min(drawingLine[0]!.y, drawingLine[1]!.y) + 1
+      const bottom = Math.max(drawingLine[0]!.y, drawingLine[1]!.y) - 1
+      const rows = beside.map((b) => b.y)
+      const span = Math.max(...rows) - Math.min(...rows)
+      for (const clearance of [2, 1]) {
+        if (besideCellsFree(graph, edge, beside, clearance)) return beside
+        for (let d = 1; d <= bottom - top; d++) {
+          for (const dy of [d, -d]) {
+            const moved = beside.map((b) => ({ ...b, y: b.y + dy }))
+            const first = Math.min(...moved.map((m) => m.y))
+            if (first < top || first + span > bottom) continue
+            if (besideCellsFree(graph, edge, moved, clearance)) return moved
+          }
+        }
+      }
+      return beside
+    }
   }
   return centred
 }
@@ -938,6 +960,7 @@ export function besideCellsFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
+  clearance = 0,
 ): boolean {
   for (const { x, y, text } of placement) {
     const x0 = x
@@ -972,11 +995,13 @@ export function besideCellsFree(
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1]!
         const b = pts[i]!
+        // `clearance` keeps the text off cells *next to* another edge's
+        // stroke too, where it would read as that stroke's label (#attribution).
         if (
-          y >= Math.min(a.y, b.y) &&
-          y <= Math.max(a.y, b.y) &&
-          x1 >= Math.min(a.x, b.x) &&
-          x0 <= Math.max(a.x, b.x)
+          y >= Math.min(a.y, b.y) - clearance &&
+          y <= Math.max(a.y, b.y) + clearance &&
+          x1 >= Math.min(a.x, b.x) - clearance &&
+          x0 <= Math.max(a.x, b.x) + clearance
         ) {
           return false
         }
