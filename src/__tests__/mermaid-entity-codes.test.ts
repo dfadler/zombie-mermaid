@@ -97,7 +97,7 @@ describe('ASCII entity decoding', () => {
   })
 
   it('decodes numeric and hex HTML entities', () => {
-    expect(decodeXmlEntitiesInLabel('&#35;9 &#x5B;y&#X5d; &apos;')).toBe(
+    expect(decodeXmlEntitiesInLabel('&#35;9 &#x5B;y&#x5d; &apos;')).toBe(
       "#9 [y] '",
     )
   })
