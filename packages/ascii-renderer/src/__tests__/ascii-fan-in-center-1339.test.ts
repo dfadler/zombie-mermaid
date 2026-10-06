@@ -43,14 +43,16 @@ describe('plain fan-in is centered between its parents (#1339)', () => {
     const rows = render('graph TD\nX --> A\nY --> A\nA --> Z')
     // The centered A straddles X's content column; padding that column
     // stretched X (7 wide) beside Y (5 wide) and pushed the junction off-center.
-    const top = rows.filter((r) => r.includes('┌'))[0]!
-    const widths = top.match(/┌─*┐/g)!.map((b) => b.length)
-    expect(widths).toEqual([5, 5])
+    // A is the centered node and Z sits under it: all four boxes match.
+    const widths = rows
+      .flatMap((r) => r.match(/┌─*┐/g) ?? [])
+      .map((b) => b.length)
+    expect(widths).toEqual([5, 5, 5, 5])
     const junction = rows.find((r) => /└─{3,}┬─{3,}┘/.test(r))!.indexOf('┬')
     expect(junction).toBe(colOf(rows, 'A'))
   })
 
-  it('LR: the parents stay the same height', () => {
+  it('LR: the parents and the centered node stay the same height', () => {
     const rows = render('graph LR\nX --> A\nY --> A\nA --> Z')
     const heights = (label: string): number => {
       const i = rowOf(rows, label)
@@ -61,6 +63,7 @@ describe('plain fan-in is centered between its parents (#1339)', () => {
       return bottom - top + 1
     }
     expect(heights('X')).toBe(heights('Y'))
+    expect(heights('A')).toBe(heights('X'))
   })
 
   it('TD: A sits midway between X and Y', () => {

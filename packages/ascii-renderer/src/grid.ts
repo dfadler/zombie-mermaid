@@ -154,10 +154,11 @@ export function reserveSpotInGrid(
 // ============================================================================
 
 /**
- * Whether the slot before `node` is a parent's content column. A node
- * centered between two parents (#1339) straddles them, so padding that slot
- * would stretch the left parent wider than its sibling and push the trunk off
- * center. The nodes stacked in the centered node's slot (`A --> Z`) sit in
+ * Whether the slot before `node` is the content column of a node centered
+ * between its parents (#1339), either `node`'s own parent (the left one) or
+ * its centered child (for the right one). Padding that slot would stretch the
+ * left parent wider than its sibling, or the centered child past both, and
+ * push the trunk off center. The nodes stacked in the centered node's slot (`A --> Z`) sit in
  * the same columns and inherit this. Only a node with several parents counts:
  * a single child at a fan-out's centered parent's content column (#1340)
  * keeps its padding.
@@ -182,6 +183,17 @@ function straddlesParent(
     if (pc[axis] === gc[axis] && straddlesParent(graph, p, axis, seen)) {
       return true
     }
+  }
+  // The right-hand sibling: the slot before it is the centered child's
+  // content column, which padding would stretch past the parents' width.
+  for (const e of graph.edges) {
+    const c = e.from === node && e.to !== node ? e.to.gridCoord : null
+    if (!c || c[axis] + 1 !== gc[axis] - 1) continue
+    const sources = new Set<AsciiNode>()
+    for (const f of graph.edges) {
+      if (f.to === e.to && f.from !== e.to) sources.add(f.from)
+    }
+    if (sources.size > 1) return true
   }
   return false
 }
