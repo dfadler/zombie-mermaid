@@ -39,6 +39,30 @@ function rowOf(rows: string[], label: string): number {
 }
 
 describe('plain fan-in is centered between its parents (#1339)', () => {
+  it('TD: the parents stay the same width and the trunk meets A dead center', () => {
+    const rows = render('graph TD\nX --> A\nY --> A\nA --> Z')
+    // The centered A straddles X's content column; padding that column
+    // stretched X (7 wide) beside Y (5 wide) and pushed the junction off-center.
+    const top = rows.filter((r) => r.includes('┌'))[0]!
+    const widths = top.match(/┌─*┐/g)!.map((b) => b.length)
+    expect(widths).toEqual([5, 5])
+    const junction = rows.find((r) => /└─{3,}┬─{3,}┘/.test(r))!.indexOf('┬')
+    expect(junction).toBe(colOf(rows, 'A'))
+  })
+
+  it('LR: the parents stay the same height', () => {
+    const rows = render('graph LR\nX --> A\nY --> A\nA --> Z')
+    const heights = (label: string): number => {
+      const i = rowOf(rows, label)
+      let top = i
+      while (!rows[top]!.includes('┌')) top--
+      let bottom = i
+      while (!rows[bottom]!.includes('└')) bottom++
+      return bottom - top + 1
+    }
+    expect(heights('X')).toBe(heights('Y'))
+  })
+
   it('TD: A sits midway between X and Y', () => {
     const rows = render('graph TD\nX --> A\nY --> A')
     const mid = (colOf(rows, 'X') + colOf(rows, 'Y')) / 2
@@ -152,6 +176,6 @@ describe('LR centered fan-in routing', () => {
 
   it('leaves a TD fan-in routing unchanged', () => {
     const rows = render('graph TD\nA & B --> C')
-    expect(rows.some((r) => r.includes('└─────┬────┘'))).toBe(true)
+    expect(rows.some((r) => r.includes('└────┬────┘'))).toBe(true)
   })
 })
