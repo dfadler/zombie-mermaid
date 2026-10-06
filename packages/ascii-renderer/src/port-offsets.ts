@@ -269,6 +269,28 @@ interface Slot {
  * exactly.
  */
 export function portShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
+  return scopedShifts.get(graph) ?? computePortShifts(graph)
+}
+
+/**
+ * `portShifts` is O(E²) and label placement asks for it once per candidate,
+ * so a draw pass would repeat it many times over an unchanged layout. Within
+ * `withPortShifts` the result is computed once; outside it nothing is cached,
+ * so a later re-route can never see a stale map.
+ */
+const scopedShifts = new WeakMap<AsciiGraph, Map<AsciiEdge, PortShift>>()
+
+export function withPortShifts<T>(graph: AsciiGraph, run: () => T): T {
+  if (scopedShifts.has(graph)) return run()
+  scopedShifts.set(graph, computePortShifts(graph))
+  try {
+    return run()
+  } finally {
+    scopedShifts.delete(graph)
+  }
+}
+
+function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   const result = new Map<AsciiEdge, PortShift>()
   if (graph.edges.length < 2) return result
 

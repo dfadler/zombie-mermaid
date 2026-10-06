@@ -28,6 +28,7 @@ import { mergeCanvases, firstClaimWins, write } from './canvas.ts'
 import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
+import { withPortShifts } from './port-offsets.ts'
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -170,6 +171,10 @@ function fillRolesForNodeBox(
  * Also fills the roleCanvas with character roles for colored output.
  */
 export function drawGraph(graph: AsciiGraph): Canvas {
+  return withPortShifts(graph, () => drawGraphScoped(graph))
+}
+
+function drawGraphScoped(graph: AsciiGraph): Canvas {
   const labelRects: LabelRect[] = []
   graph.labelRects = labelRects
   const useAscii = graph.config.useAscii
