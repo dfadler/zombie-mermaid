@@ -93,9 +93,16 @@ describe('parseMermaid – graph header', () => {
     ).toThrow('Did you mean "sequenceDiagram"?')
   })
 
+  it('suggests `pie` for a pie header in the wrong case', () => {
+    // Mermaid's `pie` keyword is case-sensitive, so `PieChart` is not a pie.
+    expect(() => parseMermaid('PieChart\n  "A" : 1')).toThrow(
+      'Did you mean "pie"?',
+    )
+  })
+
   it('lists all supported diagram headers for a totally unrecognized header', () => {
     expect(() => parseMermaid('this is not mermaid at all')).toThrow(
-      /"stateDiagram-v2".*"sequenceDiagram".*"classDiagram".*"erDiagram".*"xychart-beta"/,
+      /"stateDiagram-v2".*"sequenceDiagram".*"classDiagram".*"erDiagram".*"xychart-beta".*"pie"/,
     )
   })
 

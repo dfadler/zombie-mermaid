@@ -57,6 +57,7 @@ import {
   parseArchitecture,
   architectureToGraph,
   parseC4Diagram,
+  parsePieChart,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -70,6 +71,8 @@ import type {
   ArchitectureDiagram,
   C4Diagram,
   PositionedC4Diagram,
+  PieChart,
+  PositionedPieChart,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -81,6 +84,8 @@ import { layoutClassDiagramSync } from './class/layout.ts'
 import { renderClassSvg } from './class/renderer.ts'
 import { layoutC4DiagramSync } from './c4/layout.ts'
 import { renderC4Svg } from './c4/renderer.ts'
+import { layoutPieChart } from './pie/layout.ts'
+import { renderPieSvg } from './pie/renderer.ts'
 import { layoutFlowchartSync, layoutGraphSync } from './layout-engine.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
@@ -381,6 +386,30 @@ const architectureModule: DiagramModule<
 }
 
 /**
+ * Pie charts parse from the raw `text` rather than `lines` (see
+ * `parsePieChart`'s doc: `splitStatements` would split `title A; B` and
+ * treat `'` as a quote), then lay out and render to Mermaid's geometry —
+ * see ./pie/layout.ts. No direction or interactivity applies.
+ */
+const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
+  type: 'pie',
+  parse: (_lines, text) => parsePieChart(text),
+  layoutForSvg: layoutPieChart,
+  renderSvg(positioned, ctx) {
+    return renderPieSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
  * The registry proper — every `DiagramType` is looked up here by the SVG
  * front door (`renderMermaidSVG` in ./index.ts), which has no fallback
  * switch left. The ASCII front door's equivalent table is `asciiRegistry`
@@ -408,4 +437,5 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   architecture: architectureModule,
 
   c4: c4Module,
+  pie: pieModule,
 }

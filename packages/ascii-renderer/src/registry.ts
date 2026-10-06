@@ -40,6 +40,7 @@ import { renderFlowchartAscii } from './flowchart.ts'
 import { renderArchitectureAscii } from './architecture.ts'
 
 import { renderC4Ascii } from './c4-diagram.ts'
+import { renderPieAscii } from './pie.ts'
 
 /**
  * Small, closed set of ASCII-only extras not every type needs — `class`
@@ -93,4 +94,6 @@ export const asciiRegistry: Record<DiagramType, AsciiRenderer> = {
 
   c4: (text, config, colorMode, theme, extras) =>
     renderC4Ascii(text, config, colorMode, theme, extras),
+  pie: (text, config, colorMode, theme) =>
+    renderPieAscii(text, config, colorMode, theme),
 }

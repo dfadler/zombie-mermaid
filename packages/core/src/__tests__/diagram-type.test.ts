@@ -59,6 +59,21 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('xychart-foo\nx-axis [a, b]')).toBe('flowchart')
   })
 
+  it('detects pie charts with or without trailing header content', () => {
+    expect(detectDiagramType('pie\n"A" : 1')).toBe('pie')
+    expect(detectDiagramType('  pie  ')).toBe('pie')
+    expect(detectDiagramType('pie showData\n"A" : 1')).toBe('pie')
+    expect(detectDiagramType('pie title Pets\n"A" : 1')).toBe('pie')
+    expect(detectDiagramType('pie\ttitle Pets')).toBe('pie')
+    expect(detectDiagramType('%% comment\npie\n"A" : 1')).toBe('pie')
+  })
+
+  it('matches the pie header case-sensitively and as a whole word, like Mermaid', () => {
+    expect(detectDiagramType('Pie\n"A" : 1')).toBe('flowchart')
+    expect(detectDiagramType('PIE\n"A" : 1')).toBe('flowchart')
+    expect(detectDiagramType('pieChart\n"A" : 1')).toBe('flowchart')
+  })
+
   it('falls back to flowchart for unrecognized input', () => {
     expect(detectDiagramType('')).toBe('flowchart')
     expect(detectDiagramType('not a real header')).toBe('flowchart')

@@ -1644,4 +1644,92 @@ flowchart LR
   api:B -- T:db{group}
   jobs:R --> L:db`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  PIE CHARTS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Pie: Basic',
+    category: 'Pie',
+    description:
+      'Slices in source order, clockwise from 12 o\'clock, with whole-number percentages inside each slice and a legend on the right.',
+    source: `pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: showData',
+    category: 'Pie',
+    description:
+      '`pie showData` adds each slice\'s value to its legend row, printed as written.',
+    source: `pie showData title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5`,
+  },
+  {
+    title: 'Pie: Many Slices',
+    category: 'Pie',
+    description:
+      'Fourteen slices: the twelve-colour palette repeats from the 13th slice.',
+    source: `pie title Commits by weekday and team
+  "Mon core" : 14
+  "Mon docs" : 9
+  "Tue core" : 13
+  "Tue docs" : 8
+  "Wed core" : 12
+  "Wed docs" : 7
+  "Thu core" : 11
+  "Thu docs" : 7
+  "Fri core" : 10
+  "Fri docs" : 6
+  "Sat core" : 5
+  "Sat docs" : 3
+  "Sun core" : 4
+  "Sun docs" : 2`,
+  },
+  {
+    title: 'Pie: Tiny Slices',
+    category: 'Pie',
+    description:
+      'Slices under 1% of the total are left out of the pie but stay in the legend; zero-value slices are never drawn.',
+    source: `pie showData title Browser share
+  "Chrome" : 640
+  "Safari" : 190
+  "Firefox" : 120
+  "Edge" : 45
+  "Opera" : 4
+  "Lynx" : 1
+  "Netscape" : 0`,
+  },
+  {
+    title: 'Pie: Single Slice',
+    category: 'Pie',
+    description: 'One slice fills the whole circle at 100%.',
+    source: `pie title Uptime this week
+  "Up" : 1`,
+  },
+  {
+    title: 'Pie: Dark Theme',
+    category: 'Pie',
+    description:
+      'The palette follows the theme accent and switches shade direction on a dark background.',
+    source: `pie title Time spent
+  accTitle: Time spent per activity
+  accDescr: Coding takes half the day, meetings a quarter.
+  "Coding" : 50
+  "Meetings" : 25
+  "Review" : 15
+  "Email" : 10`,
+    options: {
+      bg: '#1a1b26',
+      fg: '#a9b1d6',
+      line: '#3d59a1',
+      accent: '#7aa2f7',
+      muted: '#565f89',
+    },
+  },
 ]

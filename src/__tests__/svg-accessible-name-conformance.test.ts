@@ -73,7 +73,16 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
     'architecture-beta\n  service a[A]\n  service b[B]\n  a:R -- L:b',
 
   c4: 'C4Context\n  Person(u, "User")\n  System(s, "System")\n  Rel(u, s, "Uses")',
+  pie: 'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85',
 }
+
+/**
+ * Types that are detected and parsed but have no SVG renderer yet. Each is
+ * asserted to fail with an explicit "not implemented" error instead of the
+ * accessibility contract — and that assertion stops passing the moment the
+ * renderer lands, forcing the type out of this set and into the real check.
+ */
+const NOT_YET_RENDERED: ReadonlySet<DiagramType> = new Set<DiagramType>([])
 
 /**
  * `stateDiagram-v2` is a distinct syntax a real caller might render, but it
@@ -211,6 +220,12 @@ describe('accessible-name conformance — every diagram type (#294)', () => {
 
   for (const diagramType of Object.keys(SAMPLE_BY_TYPE) as DiagramType[]) {
     const source = SAMPLE_BY_TYPE[diagramType]
+    if (NOT_YET_RENDERED.has(diagramType)) {
+      it(`${diagramType}: rendering is not implemented yet`, () => {
+        expect(() => renderMermaidSVG(source)).toThrow(/not implemented yet/)
+      })
+      continue
+    }
     for (const { name, options } of OPTION_SETS) {
       it(`${diagramType}: ${name}`, () => {
         const svg = renderMermaidSVG(source, options)

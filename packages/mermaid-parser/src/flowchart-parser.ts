@@ -65,7 +65,7 @@ export { toDirection } from '@zombie-mermaid/core'
  * way sequence/class/ER/xychart were before issue #541.
  */
 const SUPPORTED_HEADERS =
-  '"graph <dir>"/"flowchart <dir>" (dir: TD, TB, LR, BT, RL), "stateDiagram-v2", "sequenceDiagram", "classDiagram", "erDiagram", "xychart-beta", "C4Context"/"C4Container"/"C4Component"/"C4Dynamic"/"C4Deployment", "architecture-beta"'
+  '"graph <dir>"/"flowchart <dir>" (dir: TD, TB, LR, BT, RL), "stateDiagram-v2", "sequenceDiagram", "classDiagram", "erDiagram", "xychart-beta", "C4Context"/"C4Container"/"C4Component"/"C4Dynamic"/"C4Deployment", "architecture-beta", "pie"'
 
 /**
  * Best-guess canonical header for a header line that looks like an attempt
@@ -76,8 +76,8 @@ const SUPPORTED_HEADERS =
  * any of those — in which case the generic "supported headers" list in the
  * thrown error is the best we can do.
  *
- * This only recognizes the four *other* multi-word headers
- * (sequenceDiagram/classDiagram/erDiagram/xychart-beta/stateDiagram-v2);
+ * This only recognizes the *other* headers
+ * (sequenceDiagram/classDiagram/erDiagram/xychart-beta/stateDiagram-v2/pie);
  * "graph"/"flowchart" typos are handled by the direction-specific message
  * below instead, since those already matched the diagram-type keyword and
  * just have a bad or missing direction token.
@@ -89,6 +89,8 @@ function suggestedHeaderFor(header: string): string | undefined {
   if (/^er/.test(lower)) return 'erDiagram'
   if (/^xychart/.test(lower)) return 'xychart-beta'
   if (/^state/.test(lower)) return 'stateDiagram-v2'
+  // Mermaid's `pie` keyword is case-sensitive, so `PieChart` lands here.
+  if (/^pie/.test(lower)) return 'pie'
   return undefined
 }
 

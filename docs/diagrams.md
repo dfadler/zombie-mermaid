@@ -741,6 +741,50 @@ Known limitations:
 - A relationship from an element to itself is not drawn in ASCII.
 - Two relationships with the same `from` and `to` (for example `Rel(a, b, ...)` and `Rel_Back(a, b, ...)`) are both drawn. Mermaid merges them and draws only the later one; we keep both so nothing the author wrote is dropped (#1209).
 
+## Pie Charts
+
+`pie` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/pie.html)
+and its renderer's layout:
+
+```mermaid
+pie showData title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5
+```
+
+Supported: `title` (on the `pie` line or its own line), `showData` (right
+after `pie`), quoted `"label" : value` slices, `accTitle` and `accDescr`.
+Values must be zero or more; a repeated label keeps its first value. A line
+the parser does not understand is an error with its line number.
+
+The SVG uses Mermaid's geometry: slices in source order, clockwise from 12
+o'clock; each slice labelled with its whole-number percentage of the total,
+inside the slice; a legend on the right listing every slice (with `showData`,
+as `label [value]`, the value printed as written). Slices under 1% of the
+total are left out of the pie but stay in the legend, so the drawn slices
+fill the circle and the labels may not add up to 100%. A `pie` with no
+slices draws an empty circle.
+
+Colours follow the theme instead of Mermaid's `pie1`..`pie12`: the first
+slice uses the accent colour, the next eleven use the XY chart series
+shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
+opacity with a 2px outline in the theme's foreground colour.
+
+Known differences from Mermaid:
+
+- `%%{init: {"pie": …}}%%` settings (`textPosition`, `donutHole`,
+  `legendPosition`, `highlightSlice`) are not supported yet; the defaults
+  are always used.
+- A legend taller than the 450px frame (more than about 20 slices) makes the
+  SVG taller instead of being cut off, and an empty chart keeps its full
+  width (Mermaid crops it).
+- Mermaid's `#quot;`-style character codes in labels are shown as written.
+
+Mermaid has no text output for pie charts; see
+[ASCII Pie Charts](#ascii-pie-charts) for this library's.
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
@@ -761,6 +805,12 @@ This library never invents a name on your behalf (a generated "flowchart
 with 3 nodes" summary would be a confidently useless accessible name) — when
 `title` is omitted the SVG still gets `role="img"`, but claims no name, the
 same as an `<img>` with no `alt`.
+
+Pie charts also read Mermaid's `accTitle:` and `accDescr:` lines from the
+source: `accTitle` becomes the accessible name when the `title` option is not
+given (the option wins), and `accDescr` becomes a `<desc id="zm-desc-N">`
+referenced by `aria-describedby`. The visible chart `title` is not used as the
+accessible name. Both are dropped when the diagram is `decorative`.
 
 For a diagram that's already described in surrounding prose, mark it
 decorative instead of naming it:
@@ -884,3 +934,40 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 - **Multi-series** — Each series gets a distinct ANSI color from the theme's accent palette
 - **Legends** — Automatically shown when multiple series are present
 - **Horizontal charts** — Fully supported with categories on the y-axis
+
+### ASCII Pie Charts
+
+Mermaid has no text mode for pie charts, so the ASCII output is this
+library's own design: one stacked bar, 50 cells wide, and a table below it.
+The numbers are the SVG renderer's.
+
+```text
+             Pets adopted by volunteers
+
+[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]
+
+  █ Dogs    79%
+  ▓ Cats    17%
+  ▒ Rats     3%
+```
+
+- **The bar** holds the slices at or above 1% of the total, in source order,
+  sharing all 50 cells between them, as the SVG's drawn slices share the
+  circle. Cells are rounded by largest remainder, so the segments always add
+  up to 50, and every drawn slice gets at least one cell.
+- **The table** is the SVG legend: one row per slice, in source order, with
+  `label [value]` under `showData` (the value printed as written). The
+  percentage is the SVG's slice label, a whole number of the full total.
+  A slice under 1% has no segment and no percentage, and a `·` (`.` in ASCII
+  mode) as its swatch.
+- **Colour** uses the SVG palette: the accent, then the XY chart series
+  shades, repeating after 12. With `colorMode: 'none'` the segments are told
+  apart by fill instead: `█▓▒░` (Unicode) or `#=*+` (ASCII), cycling so that
+  neighbouring segments always differ; each table swatch repeats its
+  segment's fill.
+- The title is centred over the bar. `accTitle` and `accDescr` are not
+  printed (in the SVG they are the accessible name and description, not
+  visible text).
+- Long labels are never truncated or wrapped; the table widens to fit them,
+  measured in terminal columns so CJK and emoji labels line up.
+- A chart with no slices prints an empty bar.
