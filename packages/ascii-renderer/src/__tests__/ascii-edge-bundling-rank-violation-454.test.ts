@@ -42,11 +42,16 @@ describe('ASCII edge bundling — refuses to bundle a rank-violating edge (issue
       { colorMode: 'none' },
     )
 
-    // A distinct horizontal arrowhead ('◄') from Retry into Worker's own
-    // row — the bundled/buggy version instead routes Retry's line down
-    // into a vertical merge with Worker's unrelated outgoing line to
-    // Store, with no arrowhead of its own anywhere in the output.
-    expect(ascii).toContain('◄')
+    // Longest-path layering (grid.ts `computeMinLevels`) ranks Worker one
+    // level below Retry, so the rank collision the bundling guard exists
+    // for no longer arises here: Worker must sit strictly below Retry, not
+    // beside it with a sideways '◄' edge.
+    const rows = ascii.split('\n')
+    const retryRow = rows.findIndex((r) => r.includes('Retry'))
+    const workerRow = rows.findIndex((r) => r.includes('Worker'))
+    expect(retryRow).toBeGreaterThanOrEqual(0)
+    expect(workerRow).toBeGreaterThan(retryRow)
+    expect(ascii).not.toContain('◄')
   })
 
   it('gives a fan-out edge its own arrowhead when its target shares a rank with the source', () => {

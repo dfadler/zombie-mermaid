@@ -89,7 +89,12 @@ end`
 
   it('does not move anything when Y has two parents', () => {
     const g = layout(`graph TD${frame}\nX-->A\nW-->Y\nV-->Y\nY-->A`, 'TD')
-    expect(grid(g, 'W').x).not.toBe(grid(g, 'Y').x)
+    // Longest-path layering ranks A below Y, so Y no longer lands in the
+    // frame's span and nothing is moved: both parents stay on the root row
+    // in their own columns.
+    expect(grid(g, 'W').y).toBe(grid(g, 'V').y)
+    expect(grid(g, 'W').x).not.toBe(grid(g, 'V').x)
+    expect(grid(g, 'Y').y).toBeGreaterThan(grid(g, 'W').y)
   })
 
   it('leaves a parent that is itself in a subgraph alone', () => {
