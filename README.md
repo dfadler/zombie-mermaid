@@ -17,7 +17,8 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 [![npm version](https://img.shields.io/npm/v/zombie-mermaid.svg)](https://www.npmjs.com/package/zombie-mermaid)
 [![CI](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml/badge.svg)](https://github.com/dfadler/zombie-mermaid/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/dfadler/zombie-mermaid/branch/main/graph/badge.svg)](https://codecov.io/gh/dfadler/zombie-mermaid)
-[![Bundle Size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size)
+[![ASCII renderer size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-ascii-renderer.json)](#bundle-size)
+[![SVG renderer size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-svg-renderer.json)](#bundle-size)
 [![Socket Security](https://badge.socket.dev/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -46,19 +47,28 @@ Diagrams are essential for AI-assisted programming. When you're working with an 
 
 ### Bundle Size
 
-The **Bundle Size** badge above tracks the gzipped size of `zombie-mermaid`'s
-main entry point (`dist/index.js`) together with the `@zombie-mermaid/*`
-workspace packages it imports, **plus the SVG renderer's third-party
-dependencies** ([ELK.js](https://github.com/kieler/elkjs) and `entities`,
-which make up most of the SVG renderer's real weight), and updates
-automatically with every release — the same badge/CI-tracked pattern already
-backing the coverage and CI status badges. The standalone renderer packages
-under [Packages](#packages) get the same measurement for their own dependency
-closure: the SVG badge is labelled "incl. deps" because it counts ELK.js and
-`entities`, while the ASCII renderer has no third-party dependencies to count. Need ASCII rendering only? `import { renderMermaidASCII }
-from 'zombie-mermaid/ascii'` skips [ELK.js](https://github.com/kieler/elkjs),
-the layout engine the SVG renderer depends on, for a substantially smaller
-bundle.
+The two size badges above track the gzipped size of each renderer, and update
+automatically with every release:
+
+- **ascii-renderer** — the ASCII/Unicode renderer plus `@zombie-mermaid/core`
+  and `@zombie-mermaid/mermaid-parser`. It has no third-party dependencies, so
+  this is what `zombie-mermaid/ascii` costs.
+- **svg-renderer (incl. deps)** — the SVG renderer, core and parser, **plus its
+  third-party dependencies**. Nearly all of the weight is
+  [ELK.js](https://github.com/kieler/elkjs), the layout engine: about 466 KB
+  gzipped on its own, shipped as one pre-bundled file that can't be
+  tree-shaken. `entities` is counted tree-shaken, since the renderer uses one
+  function from it.
+
+Both figures gzip a plain concatenation of the built files, so they approximate
+what you'd ship, not what any particular bundler emits. The umbrella
+`zombie-mermaid` entry re-exports both renderers; its all-in total is
+[![All-in size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size), the worst case. With a
+bundler, importing only `renderMermaidASCII` from the root drops the SVG
+renderer and ELK.js (every package here is `"sideEffects": false`). Without a
+bundler — Node, a CLI, a serverless function — the root entry loads ELK.js at
+startup even for ASCII-only use, so import from `zombie-mermaid/ascii` instead
+(see [ASCII Output](#ascii-output)).
 
 ## Features
 

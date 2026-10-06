@@ -30,9 +30,11 @@
  * badges/bundle-size.json back to main if the number changed.
  */
 
-import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
+import { build } from 'esbuild'
+import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
 // One badge per published package that advertises a size. Since the monorepo
@@ -51,11 +53,15 @@ const SVG = 'packages/svg-renderer/dist/index.js'
 
 // Third-party runtime dependencies of the SVG renderer, resolved from its own
 // package.json (pnpm doesn't hoist them to the root). `elkjs` is the single
-// pre-bundled UMD file the renderer imports; `entities` is gzipped as its whole
-// ESM build (an upper bound, since a consumer's bundler may tree-shake it).
+// pre-bundled UMD file the renderer imports, so it can't be tree-shaken and is
+// counted whole. `entities` is a library of many entry points of which the
+// renderer imports only `decodeXML` (packages/svg-renderer/src/index.ts), so it
+// is bundled and minified with just those exports, the way a consumer's bundler
+// would tree-shake it (whole-build gzip counted ~35 KB of code nobody ships).
+// Keep `exports` in sync with the renderer's actual imports from `entities`.
 const SVG_DEPS = [
   { kind: 'file', specifier: 'elkjs/lib/elk.bundled.js' },
-  { kind: 'esm-dir', specifier: 'entities' },
+  { kind: 'tree-shaken', specifier: 'entities', exports: ['decodeXML'] },
 ] as const
 
 type Dep = (typeof SVG_DEPS)[number]
@@ -64,16 +70,32 @@ const svgRequire = createRequire(
   new URL('../packages/svg-renderer/package.json', import.meta.url),
 )
 
-async function readDep({ kind, specifier }: Dep): Promise<Buffer[]> {
-  const resolved = svgRequire.resolve(specifier)
-  if (kind === 'file') return [await readFile(resolved)]
-  // `entities`' CJS entry is `<pkg>/dist/commonjs/index.js`; its ESM build is
-  // the sibling `<pkg>/dist/esm` tree.
-  const esmDir = join(dirname(dirname(resolved)), 'esm')
-  const names = (await readdir(esmDir, { recursive: true }))
-    .filter((n) => n.endsWith('.js'))
-    .sort()
-  return Promise.all(names.map((n) => readFile(join(esmDir, n))))
+const SVG_PACKAGE_DIR = dirname(
+  fileURLToPath(
+    new URL('../packages/svg-renderer/package.json', import.meta.url),
+  ),
+)
+
+async function readDep(dep: Dep): Promise<Buffer[]> {
+  if (dep.kind === 'file') {
+    return [await readFile(svgRequire.resolve(dep.specifier))]
+  }
+  const result = await build({
+    stdin: {
+      contents: `export { ${dep.exports.join(', ')} } from '${dep.specifier}'`,
+      // Resolve from the SVG renderer's own node_modules (pnpm doesn't hoist).
+      resolveDir: SVG_PACKAGE_DIR,
+    },
+    bundle: true,
+    minify: true,
+    format: 'esm',
+    platform: 'neutral',
+    mainFields: ['module', 'main'],
+    conditions: ['import'],
+    write: false,
+    logLevel: 'silent',
+  })
+  return result.outputFiles.map((f) => Buffer.from(f.contents))
 }
 
 const TARGETS = [
