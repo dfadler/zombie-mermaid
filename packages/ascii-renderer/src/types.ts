@@ -145,6 +145,13 @@ export interface AsciiNode {
   drawing: Canvas | null
   drawn: boolean
   /**
+   * Set by grid layout when a plain fan-in child was centered across its
+   * parents' cross-axis slots (`fanInCenter`). Edge routing then leaves each
+   * parent through its graph-direction face (LR: right) and joins in the gap
+   * before the child, instead of exiting the parents' bottom/top faces.
+   */
+  fanInCentered?: boolean
+  /**
    * Rows of `drawing` holding the label's lines (inclusive), set by drawBox.
    * Lets the BT flip restore the label's reading order exactly, rather than
    * inferring which text cells belong to one label.

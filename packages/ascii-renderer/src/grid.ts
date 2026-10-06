@@ -155,6 +155,51 @@ export function reserveSpotInGrid(
 // ============================================================================
 
 /**
+ * Whether the slot before `node` is the content column of a node centered
+ * between its parents (#1339), either `node`'s own parent (the left one) or
+ * its centered child (for the right one). Padding that slot would stretch the
+ * left parent wider than its sibling, or the centered child past both, and
+ * push the trunk off center. The nodes stacked in the centered node's slot (`A --> Z`) sit in
+ * the same columns and inherit this. Only a node with several parents counts:
+ * a single child at a fan-out's centered parent's content column (#1340)
+ * keeps its padding.
+ */
+function straddlesParent(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  axis: 'x' | 'y',
+  seen: Set<AsciiNode> = new Set(),
+): boolean {
+  const gc = node.gridCoord
+  if (!gc || seen.has(node)) return false
+  seen.add(node)
+  const parents = new Set<AsciiNode>()
+  for (const e of graph.edges) {
+    if (e.to === node && e.from !== node) parents.add(e.from)
+  }
+  for (const p of parents) {
+    const pc = p.gridCoord
+    if (!pc) continue
+    if (parents.size > 1 && pc[axis] + 1 === gc[axis] - 1) return true
+    if (pc[axis] === gc[axis] && straddlesParent(graph, p, axis, seen)) {
+      return true
+    }
+  }
+  // The right-hand sibling: the slot before it is the centered child's
+  // content column, which padding would stretch past the parents' width.
+  for (const e of graph.edges) {
+    const c = e.from === node && e.to !== node ? e.to.gridCoord : null
+    if (!c || c[axis] + 1 !== gc[axis] - 1) continue
+    const sources = new Set<AsciiNode>()
+    for (const f of graph.edges) {
+      if (f.to === e.to && f.from !== e.to) sources.add(f.from)
+    }
+    if (sources.size > 1) return true
+  }
+  return false
+}
+
+/**
  * Set column widths and row heights for a node's 3x3 grid block.
  * Each node occupies 3 columns (border, content, border) and 3 rows.
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
@@ -185,13 +230,32 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
     graph.rowHeight.set(yCoord, Math.max(current, rowHeights[idx]!))
   }
 
-  // Padding column/row before the node (spacing between nodes)
-  if (gc.x > 0) {
+  // Padding column/row before the node (spacing between nodes), unless
+  // the node straddles its parents (see `straddlesParent`).
+  if (gc.x > 0 && !straddlesParent(graph, node, 'x')) {
     const current = graph.columnWidth.get(gc.x - 1) ?? 0
     graph.columnWidth.set(gc.x - 1, Math.max(current, graph.config.paddingX))
   }
 
-  if (gc.y > 0) {
+  // LR: when the row above this node is another node's own block (a fan-in
+  // child centered between its parents, `fanInCenter`), it is that node's
+  // content row, not a gap between rows. Padding it would stretch the
+  // neighbour into a tall box for no spacing benefit. `straddlesParent`
+  // covers the centered node's own padding; this covers the one above its
+  // lower parent, which lands on the centered node's content row.
+  const rowAboveIsNodeBlock =
+    graph.config.graphDirection === 'LR' &&
+    graph.nodes.some((other) => {
+      const oc = other.gridCoord
+      return (
+        other !== node &&
+        oc !== null &&
+        oc.y <= gc.y - 1 &&
+        gc.y - 1 <= oc.y + 2 &&
+        oc.x !== gc.x
+      )
+    })
+  if (gc.y > 0 && !rowAboveIsNodeBlock && !straddlesParent(graph, node, 'y')) {
     let basePadding = graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
@@ -1163,6 +1227,7 @@ function placeReachableChildren(
           )
           if (center !== undefined && highestPosition === center) {
             centered.add(child)
+            child.fanInCentered = true
           }
         }
 
@@ -1234,17 +1299,61 @@ function fanInCenter(
 ): number | undefined {
   const lr = graph.config.graphDirection === 'LR'
   const slots = new Set<number>()
+  const parents = new Set<AsciiNode>()
   let entersCluster = false
+  let labeled = false
   for (const edge of graph.edges) {
     if (edge.to !== child || edge.from === child) continue
     const gc = edge.from.gridCoord
     if (!gc || (lr ? gc.x : gc.y) >= childLevel) continue
     slots.add(lr ? gc.y : gc.x)
+    parents.add(edge.from)
     if (edge.clusterTarget) entersCluster = true
+    if (edge.text !== '') labeled = true
   }
-  // Only a cluster entry: plain fan-in keeps the first-parent slot that the
-  // upstream mermaid-ascii goldens pin.
-  if (slots.size < 2 || !entersCluster) return undefined
+  // A plain node centers only when no incoming edge carries a label:
+  // unlabeled edges bundle into one trunk, but labeled ones would each need
+  // their own path through the gap between the parents, and share it
+  // instead (one label drawn over the other).
+  if (slots.size < 2 || (labeled && !entersCluster)) return undefined
+  // Nor when a parent also feeds another node. `A & B --> C & D`: the
+  // siblings would all claim the same midpoint and the later ones slide off
+  // it, leaving the set lopsided against its parents. `B --> C; B --> D;
+  // C --> D`: D's edge from C would ride the corridor of B's edge to C and
+  // read as one that never arrives. They keep their own parents' slots.
+  if (
+    !entersCluster &&
+    graph.edges.some(
+      (e) => e.from !== e.to && e.to !== child && parents.has(e.from),
+    )
+  ) {
+    return undefined
+  }
+  // Nor when the child fans out itself: `centerParentsOverChildren` already
+  // positions it between its own children, and the two would pull it apart.
+  if (!entersCluster) {
+    const kids = new Set<AsciiNode>()
+    for (const e of graph.edges) {
+      if (e.from === child && e.to !== child) kids.add(e.to)
+    }
+    if (kids.size > 1) return undefined
+  }
+  // Nor when the child has an edge back up to a node already placed at or
+  // before its level (`E --> B` closing a loop): the loop routes around the
+  // nodes it skips, and moving the child off its first parent's column
+  // scrambles that route.
+  if (!entersCluster) {
+    const back = graph.edges.some((e) => {
+      const gc = e.to.gridCoord
+      return (
+        e.from === child &&
+        e.to !== child &&
+        gc !== null &&
+        (lr ? gc.x : gc.y) <= childLevel
+      )
+    })
+    if (back) return undefined
+  }
   const lo = Math.min(...slots)
   const hi = Math.max(...slots)
   return Math.floor((lo + hi) / 2)
