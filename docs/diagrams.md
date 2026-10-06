@@ -741,6 +741,48 @@ Known limitations:
 - A relationship from an element to itself is not drawn in ASCII.
 - Two relationships with the same `from` and `to` (for example `Rel(a, b, ...)` and `Rel_Back(a, b, ...)`) are both drawn. Mermaid merges them and draws only the later one; we keep both so nothing the author wrote is dropped (#1209).
 
+## Pie Charts
+
+`pie` follows [Mermaid's syntax](https://mermaid.ai/open-source/syntax/pie.html)
+and its renderer's layout:
+
+```mermaid
+pie showData title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5
+```
+
+Supported: `title` (on the `pie` line or its own line), `showData` (right
+after `pie`), quoted `"label" : value` slices, `accTitle` and `accDescr`.
+Values must be zero or more; a repeated label keeps its first value. A line
+the parser does not understand is an error with its line number.
+
+The SVG uses Mermaid's geometry: slices in source order, clockwise from 12
+o'clock; each slice labelled with its whole-number percentage of the total,
+inside the slice; a legend on the right listing every slice (with `showData`,
+as `label [value]`, the value printed as written). Slices under 1% of the
+total are left out of the pie but stay in the legend, so the drawn slices
+fill the circle and the labels may not add up to 100%. A `pie` with no
+slices draws an empty circle.
+
+Colours follow the theme instead of Mermaid's `pie1`..`pie12`: the first
+slice uses the accent colour, the next eleven use the XY chart series
+shades, and the twelve repeat after that. Slices are drawn at Mermaid's 0.7
+opacity with a 2px outline in the theme's foreground colour.
+
+Known differences from Mermaid:
+
+- `%%{init: {"pie": …}}%%` settings (`textPosition`, `donutHole`,
+  `legendPosition`, `highlightSlice`) are not supported yet; the defaults
+  are always used.
+- A legend taller than the 450px frame (more than about 20 slices) makes the
+  SVG taller instead of being cut off, and an empty chart keeps its full
+  width (Mermaid crops it).
+- Mermaid's `#quot;`-style character codes in labels are shown as written.
+- ASCII output is not available yet.
+
 ## Accessibility
 
 Every SVG diagram type gets `role="img"` on the root `<svg>`, so assistive
@@ -761,6 +803,12 @@ This library never invents a name on your behalf (a generated "flowchart
 with 3 nodes" summary would be a confidently useless accessible name) — when
 `title` is omitted the SVG still gets `role="img"`, but claims no name, the
 same as an `<img>` with no `alt`.
+
+Pie charts also read Mermaid's `accTitle:` and `accDescr:` lines from the
+source: `accTitle` becomes the accessible name when the `title` option is not
+given (the option wins), and `accDescr` becomes a `<desc id="zm-desc-N">`
+referenced by `aria-describedby`. The visible chart `title` is not used as the
+accessible name. Both are dropped when the diagram is `decorative`.
 
 For a diagram that's already described in surrounding prose, mark it
 decorative instead of naming it:
