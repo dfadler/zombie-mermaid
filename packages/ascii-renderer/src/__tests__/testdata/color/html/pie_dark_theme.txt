@@ -1,0 +1,17 @@
+theme={"fg":"#a9b1d6","border":"#373949","line":"#3d59a1","arrow":"#7aa2f7","accent":"#7aa2f7","bg":"#1a1b26","corner":"#3d59a1","junction":"#373949"}
+pie title Time spent
+  accTitle: Time spent per activity
+  accDescr: Coding takes half the day, meetings a quarter.
+  "Coding" : 50
+  "Meetings" : 25
+  "Review" : 15
+  "Email" : 10
+---
+                     <span style="color:#a9b1d6">Time spent</span>
+
+<span style="color:#373949">[</span><span style="color:#7aa2f7;background:#7aa2f7">█████████████████████████</span><span style="color:#5fabf2">▓▓▓▓▓▓▓▓▓▓▓▓▓</span><span style="color:#0d52a5">▒▒▒▒▒▒▒</span><span style="color:#92daf6">░░░░░</span><span style="color:#373949">]</span>
+
+  <span style="color:#7aa2f7;background:#7aa2f7">█</span> <span style="color:#a9b1d6">Coding</span>     <span style="color:#a9b1d6"> 50%</span>
+  <span style="color:#5fabf2">▓</span> <span style="color:#a9b1d6">Meetings</span>   <span style="color:#a9b1d6"> 25%</span>
+  <span style="color:#0d52a5">▒</span> <span style="color:#a9b1d6">Review</span>     <span style="color:#a9b1d6"> 15%</span>
+  <span style="color:#92daf6">░</span> <span style="color:#a9b1d6">Email</span>      <span style="color:#a9b1d6"> 10%</span>

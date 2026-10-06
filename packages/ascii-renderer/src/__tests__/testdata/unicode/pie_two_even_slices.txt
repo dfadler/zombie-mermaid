@@ -1,0 +1,10 @@
+pie title Coin flips
+  "Heads" : 50
+  "Tails" : 50
+---
+                     Coin flips
+
+[█████████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓]
+
+  █ Heads    50%
+  ▓ Tails    50%

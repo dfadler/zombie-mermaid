@@ -1,0 +1,17 @@
+pie title Labels <&> "quotes"
+  "R&D" : 30
+  'Single quoted' : 25
+  "<script>" : 20
+  "Say \"hi\"" : 15
+  "R&D" : 99
+  'It\'s' : 10
+---
+                Labels <&> "quotes"
+
+[###############=============**********+++++++#####]
+
+  # R&D              30%
+  = Single quoted    25%
+  * <script>         20%
+  + Say "hi"         15%
+  # It's             10%

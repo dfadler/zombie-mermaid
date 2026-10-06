@@ -1,0 +1,8 @@
+pie title Uptime this week
+  "Up" : 1
+---
+                  Uptime this week
+
+[██████████████████████████████████████████████████]
+
+  █ Up   100%

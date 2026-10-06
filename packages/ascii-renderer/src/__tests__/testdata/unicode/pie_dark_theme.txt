@@ -1,0 +1,16 @@
+pie title Time spent
+  accTitle: Time spent per activity
+  accDescr: Coding takes half the day, meetings a quarter.
+  "Coding" : 50
+  "Meetings" : 25
+  "Review" : 15
+  "Email" : 10
+---
+                     Time spent
+
+[█████████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒░░░░░]
+
+  █ Coding      50%
+  ▓ Meetings    25%
+  ▒ Review      15%
+  ░ Email       10%

@@ -168,6 +168,36 @@ describe('pie ASCII – layout', () => {
     ])
   })
 
+  // Regression: with more drawn slices than cells, the slices that got no
+  // cell kept a percentage (and, when rendered, a fill swatch) although they
+  // were not in the bar.
+  it('treats a drawn slice that gets no cell like an omitted one', () => {
+    const src =
+      'pie\n' +
+      Array.from({ length: 60 }, (_, i) => `  "S${i + 1}" : 1`).join('\n')
+    const layout = layoutPieAscii(parsePieChart(src))
+    expect(layout.rows.reduce((a, r) => a + r.cells, 0)).toBe(BAR_WIDTH)
+    // Equal shares: remainder ties go to the earlier slices.
+    const inBar = layout.rows.slice(0, BAR_WIDTH)
+    const left = layout.rows.slice(BAR_WIDTH)
+    expect(inBar.every((r) => r.cells === 1 && r.percentText === '2%')).toBe(
+      true,
+    )
+    expect(inBar.map((r) => r.drawnIndex)).toEqual(
+      Array.from({ length: BAR_WIDTH }, (_, i) => i),
+    )
+    expect(left).toHaveLength(10)
+    for (const r of left) {
+      expect([r.cells, r.percentText, r.drawnIndex]).toEqual([0, '', -1])
+    }
+
+    const out = render(src)
+    expect(out).toContain('  ▓ S50     2%')
+    expect(out.split('\n').slice(-10)).toEqual(
+      Array.from({ length: 10 }, (_, i) => `  · S${i + 51}`),
+    )
+  })
+
   it('draws nothing for a chart with no slices or a zero total', () => {
     expect(layoutPieAscii(parsePieChart('pie')).rows).toEqual([])
     const zeros = layoutPieAscii(parsePieChart('pie\n  "A" : 0\n  "B" : 0'))
@@ -315,9 +345,16 @@ describe('pie ASCII – colour modes', () => {
 
   it('uses the SVG palette: accent first, then getSeriesColor shades', () => {
     const out = renderMermaidASCII(PETS, { colorMode: 'html', theme })
-    for (const i of [0, 1, 2]) {
+    // Slot 0's run is all `█`, which htmlSpan backs with its own colour;
+    // the `▓`/`▒` runs after it are coloured but not backed.
+    const accent = getSeriesColor(0, theme.accent, theme.bg)
+    expect(out).toContain(`color:${accent};background:${accent}">█`)
+    for (const [i, glyph] of [
+      [1, '▓'],
+      [2, '▒'],
+    ] as const) {
       const hex = getSeriesColor(i, theme.accent, theme.bg)
-      expect(out).toContain(`color:${hex};background:${hex}`)
+      expect(out).toContain(`<span style="color:${hex}">${glyph}`)
     }
     expect(getSeriesColor(0, theme.accent, theme.bg)).toBe(theme.accent)
   })
@@ -339,12 +376,68 @@ describe('pie ASCII – colour modes', () => {
     expect(rows[1]!.match(/background:(#[0-9a-f]{6})/)?.[1]).toBe(theme.accent)
   })
 
-  it('uses solid blocks for every segment when coloured', () => {
+  it('keeps the fill patterns when coloured', () => {
     const src = 'pie\n  "A" : 1\n  "B" : 1\n  "C" : 1\n  "D" : 1\n  "E" : 1'
-    const out = renderMermaidASCII(src, { colorMode: 'truecolor', theme })
+    for (const mode of ['ansi16', 'ansi256', 'truecolor'] as const) {
+      const out = renderMermaidASCII(src, { colorMode: mode, theme })
+      const plain = out.replace(/\x1b\[[0-9;]*m/g, '')
+      expect(barOf(plain)).toBe(barOf(render(src)))
+    }
+  })
 
-    const plain = out.replace(/\x1b\[[0-9;]*m/g, '')
-    expect(barOf(plain)).toBe(`[${'█'.repeat(BAR_WIDTH)}]`)
+  /** Bar segments as [fill glyph, ANSI colour code] pairs, in bar order. */
+  const ansiSegments = (out: string): Array<[string, string]> =>
+    [
+      ...barOf(out.replace(/^(?:\x1b\[[0-9;]*m)+\[/gm, '[')).matchAll(
+        /\x1b\[([0-9;]+)m([█▓▒░])\2*\x1b\[0m/g,
+      ),
+    ].map((m) => [m[2]!, m[1]!])
+
+  // Regression: with solid blocks in every colour mode, ansi16 mapped B and
+  // D (neighbours once the zero slice between them is left out) to the same
+  // colour, and the bar showed them as one 40-cell run.
+  it('keeps neighbours apart in ansi16 when a zero slice sits between them', () => {
+    const src = `pie
+  "A" : 10
+  "B" : 40
+  "gap" : 0
+  "D" : 40
+  "E" : 10`
+    const segments = ansiSegments(
+      renderMermaidASCII(src, { colorMode: 'ansi16' }),
+    )
+    expect(segments).toHaveLength(4)
+    // B and D still share an ansi16 colour; the fill is what tells them apart.
+    expect(segments[1]![1]).toBe(segments[2]![1])
+    for (let i = 1; i < segments.length; i++) {
+      expect(segments[i]![0]).not.toBe(segments[i - 1]![0])
+    }
+  })
+
+  it('keeps all 12 ansi16 neighbours apart for accents that collapse to one colour', () => {
+    const src =
+      'pie\n' + Array.from({ length: 12 }, (_, i) => `  "S${i}" : 1`).join('\n')
+    const cases = [
+      { accent: '#2aa198' },
+      { accent: '#00ff00' },
+      { accent: '#888888', bg: '#1a1b26' },
+      { accent: '#d33682', bg: '#1a1b26' },
+      { accent: '#e0af68', bg: '#1a1b26' },
+    ]
+    for (const t of cases) {
+      const segments = ansiSegments(
+        renderMermaidASCII(src, { colorMode: 'ansi16', theme: t }),
+      )
+      expect(segments).toHaveLength(12)
+      // Each of these palettes has a pair of neighbours in one colour...
+      expect(
+        segments.some((s, i) => i > 0 && s[1] === segments[i - 1]![1]),
+      ).toBe(true)
+      // ...and every pair of neighbours still differs in fill.
+      for (let i = 1; i < segments.length; i++) {
+        expect(segments[i]![0]).not.toBe(segments[i - 1]![0])
+      }
+    }
   })
 
   it('escapes HTML in labels and titles', () => {
@@ -362,9 +455,8 @@ describe('pie ASCII – colour modes', () => {
       expect(out).toContain('\x1b[')
 
       const plain = out.replace(/\x1b\[[0-9;]*m/g, '')
-      // Colour swaps the no-colour fill patterns for solid blocks; the
-      // layout is otherwise identical.
-      expect(plain).toBe(render(PETS).replace(/[▓▒░]/g, '█'))
+      // Colour is painted on top of the same text, fills included.
+      expect(plain).toBe(render(PETS))
     })
   }
 
@@ -375,9 +467,7 @@ describe('pie ASCII – colour modes', () => {
       expect(out).not.toMatch(/\x1b\[[0-9;]*m\x1b\[0m|<span[^>]*><\/span>/)
     }
     const plain = renderMermaidASCII(src, { colorMode: 'truecolor', theme })
-    expect(plain.replace(/\x1b\[[0-9;]*m/g, '')).toBe(
-      render(src).replace(/[▓▒░]/g, '█'),
-    )
+    expect(plain.replace(/\x1b\[[0-9;]*m/g, '')).toBe(render(src))
   })
 
   it('emits no escapes in none mode', () => {

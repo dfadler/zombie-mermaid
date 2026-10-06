@@ -1,0 +1,34 @@
+pie title Commits by weekday and team
+  "Mon core" : 14
+  "Mon docs" : 9
+  "Tue core" : 13
+  "Tue docs" : 8
+  "Wed core" : 12
+  "Wed docs" : 7
+  "Thu core" : 11
+  "Thu docs" : 7
+  "Fri core" : 10
+  "Fri docs" : 6
+  "Sat core" : 5
+  "Sat docs" : 3
+  "Sun core" : 4
+  "Sun docs" : 2
+---
+            [90mCommits by weekday and team[0m
+
+[37m[[0m[37m██████[0m[97m▓▓▓▓[0m[36m▒▒▒▒▒▒[0m[97m░░░░[0m[37m█████[0m[97m▓▓▓[0m[37m▒▒▒▒▒[0m[97m░░░[0m[37m█████[0m[97m▓▓▓[0m[37m▒▒[0m[97m░[0m[37m██[0m[97m▓[0m[37m][0m
+
+  [37m█[0m [90mMon core[0m   [90m 13%[0m
+  [97m▓[0m [90mMon docs[0m   [90m  8%[0m
+  [36m▒[0m [90mTue core[0m   [90m 12%[0m
+  [97m░[0m [90mTue docs[0m   [90m  7%[0m
+  [37m█[0m [90mWed core[0m   [90m 11%[0m
+  [97m▓[0m [90mWed docs[0m   [90m  6%[0m
+  [37m▒[0m [90mThu core[0m   [90m 10%[0m
+  [97m░[0m [90mThu docs[0m   [90m  6%[0m
+  [37m█[0m [90mFri core[0m   [90m  9%[0m
+  [97m▓[0m [90mFri docs[0m   [90m  5%[0m
+  [37m▒[0m [90mSat core[0m   [90m  5%[0m
+  [97m░[0m [90mSat docs[0m   [90m  3%[0m
+  [37m█[0m [90mSun core[0m   [90m  4%[0m
+  [97m▓[0m [90mSun docs[0m   [90m  2%[0m

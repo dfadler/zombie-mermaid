@@ -18,21 +18,24 @@
 //   - The bar is BAR_WIDTH cells wide. Like the SVG pie, it holds only the
 //     slices at or above 1% of the total, in source order, and those slices
 //     share the whole bar between them. Cells are handed out by largest
-//     remainder, so the segments always add up to exactly BAR_WIDTH, and
-//     every drawn slice gets at least one cell.
+//     remainder, so the segments always add up to exactly BAR_WIDTH. While
+//     there are no more drawn slices than cells, every drawn slice gets at
+//     least one cell; past that (more than 50 slices at 1% or more), the
+//     ones that lose out on the rounding get none.
 //   - The table is the SVG legend: one row per slice, omitted ones included,
 //     in source order. The row text is the label, or `label [value]` with
 //     `showData` (`String(value)`, no number formatting). The percentage is
 //     the SVG's slice label: `toFixed(0)` of the share of the *whole* total.
-//     Slices left out of the bar have no percentage, as they have no slice
-//     label in the SVG.
+//     A slice with no bar segment (under 1%, or left without a cell) has no
+//     percentage, the way a slice left out of the SVG pie has no label.
 //   - Colours are the SVG's: palette slot `index % 12` in source order, slot
 //     0 the theme accent and the rest getSeriesColor() shades of it.
-//   - Without colour, adjacent bar segments would be indistinguishable, so
-//     each drawn slice gets a fill pattern (cycled by its position in the
-//     bar, so neighbours always differ) and its table swatch repeats it. With
-//     colour, every segment is a solid block. A slice with no segment gets a
-//     dot for its swatch.
+//   - Each bar segment gets a fill pattern, cycled by its position in the
+//     bar so neighbours always differ, and its table swatch repeats it. This
+//     holds in every colour mode, not only without colour: two neighbouring
+//     palette shades can map to the same terminal colour (ansi16 has only a
+//     handful that fit), and the fill keeps them apart. Colour is painted on
+//     top. A slice with no segment gets a dot for its swatch.
 //   - Labels are never truncated or wrapped: the table grows to the longest
 //     one, as the SVG legend and the XY chart's category gutter do. Widths
 //     are display widths, so CJK and emoji labels line up.
@@ -65,13 +68,11 @@ const PERCENT_WIDTH = 4
 
 /** `patterns` holds one fill character (all single UTF-16 units) per slot. */
 const UNI = {
-  solid: '█',
   patterns: '█▓▒░',
   noSegment: '·',
 } as const
 
 const ASC = {
-  solid: '#',
   patterns: '#=*+',
   noSegment: '.',
 } as const
@@ -80,13 +81,13 @@ const ASC = {
 export interface PieAsciiRow {
   /** Label, or `label [value]` with showData. */
   text: string
-  /** Percentage text, or '' when the slice is not in the bar. */
+  /** Percentage text, or '' when the slice has no bar segment. */
   percentText: string
   /** Palette slot: source index modulo 12. */
   colorIndex: number
-  /** Cells in the bar; 0 when the slice is not drawn. */
+  /** Cells in the bar; 0 when the slice has no bar segment. */
   cells: number
-  /** Position among the drawn slices, or -1 when not drawn. */
+  /** Position among the bar's segments, or -1 when the slice has none. */
   drawnIndex: number
 }
 
@@ -153,32 +154,39 @@ export function layoutPieAscii(
 ): PieAsciiLayout {
   const total = chart.slices.reduce((sum, s) => sum + s.value, 0)
   // Same filter as the SVG: a zero total gives NaN, which drops every slice.
-  const isDrawn = chart.slices.map(
-    (s) => (s.value / total) * 100 >= MIN_PERCENT,
+  const drawn = chart.slices.flatMap((slice, index) =>
+    (slice.value / total) * 100 >= MIN_PERCENT
+      ? [{ index, value: slice.value }]
+      : [],
   )
-  const drawnValues = chart.slices
-    .filter((_, i) => isDrawn[i])
-    .map((s) => s.value)
-  const cells = allocateCells(drawnValues, barWidth)
+  const cells = allocateCells(
+    drawn.map((d) => d.value),
+    barWidth,
+  )
+  // Cells per source index; slices left out of the bar have no entry.
+  const cellsBySlice = new Map(drawn.map((d, k) => [d.index, cells[k]]))
 
-  let drawnIndex = 0
+  // `segment` counts the slices that actually got cells, so fill patterns
+  // cycle along the bar.
+  let segment = 0
   const rows: PieAsciiRow[] = chart.slices.map((slice, index) => {
     const text = chart.showData
       ? `${slice.label} [${String(slice.value)}]`
       : slice.label
     const colorIndex = index % PALETTE_SIZE
-    if (!isDrawn[index]) {
+    const sliceCells = cellsBySlice.get(index) ?? 0
+    // A drawn slice can still end up with no cell when there are more drawn
+    // slices than cells; it is shown like an omitted one, not as a segment.
+    if (sliceCells === 0) {
       return { text, percentText: '', colorIndex, cells: 0, drawnIndex: -1 }
     }
-    const row: PieAsciiRow = {
+    return {
       text,
       percentText: `${((slice.value / total) * 100).toFixed(0)}%`,
       colorIndex,
-      cells: cells[drawnIndex] ?? 0,
-      drawnIndex,
+      cells: sliceCells,
+      drawnIndex: segment++,
     }
-    drawnIndex++
-    return row
   })
 
   return {
@@ -201,16 +209,16 @@ export function renderPieAscii(
 ): string {
   const layout = layoutPieAscii(parsePieChart(text))
   const ch = config.useAscii ? ASC : UNI
-  const colored = colorMode !== 'none'
   // colorizeText leaves an empty string (e.g. a `"" : 1` label) uncoloured.
   const paint = (s: string, hex: string): string =>
     colorizeText(s, hex, colorMode)
 
-  const fill = (row: PieAsciiRow): string => {
-    if (row.drawnIndex < 0) return ch.noSegment
-    if (colored) return ch.solid
-    return ch.patterns.charAt(row.drawnIndex % ch.patterns.length)
-  }
+  // The same fill in every colour mode: colour alone can't keep neighbours
+  // apart (see the header comment).
+  const fill = (row: PieAsciiRow): string =>
+    row.drawnIndex < 0
+      ? ch.noSegment
+      : ch.patterns.charAt(row.drawnIndex % ch.patterns.length)
 
   const lines: string[] = []
   const barLineWidth = layout.barWidth + 2
