@@ -935,13 +935,15 @@ function centredLabelPlacement(
       const rows = beside.map((b) => b.y)
       const span = Math.max(...rows) - Math.min(...rows)
       for (const clearance of [2, 1]) {
-        if (besideFree(graph, edge, beside, labelAware, clearance)) return beside
+        if (besideFree(graph, edge, beside, labelAware, clearance))
+          return beside
         for (let d = 1; d <= bottom - top; d++) {
           for (const dy of [d, -d]) {
             const moved = beside.map((b) => ({ ...b, y: b.y + dy }))
             const first = Math.min(...moved.map((m) => m.y))
             if (first < top || first + span > bottom) continue
-            if (besideFree(graph, edge, moved, labelAware, clearance)) return moved
+            if (besideFree(graph, edge, moved, labelAware, clearance))
+              return moved
           }
         }
       }
