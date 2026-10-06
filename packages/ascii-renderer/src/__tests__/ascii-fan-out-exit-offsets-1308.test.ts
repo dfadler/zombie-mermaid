@@ -129,6 +129,33 @@ describe('ASCII fan-out exit offsets (#1308)', () => {
       expect(out.get(edge(g, 'B', 'D'))).toBe(2)
     })
 
+    it('does not compare edges that leave different sides of one cell', () => {
+      const out = new Map<AsciiEdge, number>()
+      const [a, b] = members()
+      // Same port cell, same turn, different bend distances, but the second
+      // edge leaves through the top side: they share no stem.
+      const other: FanOutMember = { ...b!, run: { ...b!.run, side: 'top' } }
+      staggerFanOuts(g, [a!, other], 1, [], out)
+      expect(out.size).toBe(0)
+      // A straight edge anchors only the side it leaves through.
+      const straightTop: FanOutMember = {
+        ...downThenRight(edge(g, 'B', 'F'), true),
+      }
+      straightTop.run = { ...straightTop.run, side: 'top' }
+      staggerFanOuts(g, [straightTop, a!], 1, [], out)
+      expect(out.size).toBe(0)
+    })
+
+    it('leaves the group sharing when the node has no drawing to attach to', () => {
+      const out = new Map<AsciiEdge, number>()
+      const bare = (m: FanOutMember): FanOutMember => {
+        const node = { ...m.run.node, drawingCoord: null }
+        return { ...m, run: { ...m.run, node } }
+      }
+      staggerFanOuts(g, members().map(bare), 1, [], out)
+      expect(out.size).toBe(0)
+    })
+
     it('leaves the group sharing when a stem would land on another edge', () => {
       const out = new Map<AsciiEdge, number>()
       // Another edge at this port sits where the nearer bend would go.

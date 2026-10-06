@@ -292,27 +292,33 @@ export function staggerFanOuts(
   taken: readonly number[],
   out: Map<AsciiEdge, number>,
 ): void {
-  const anchored = members.some((m) => m.straight)
-  for (const turn of [-1, 1] as const) {
-    const bent = members.filter((m) => !m.straight && m.run.turn === turn)
-    const extents = [...new Set(bent.map((m) => runExtent(m.edge, m.run)))]
-    extents.sort((a, b) => b - a)
-    if (extents.length + (anchored ? 1 : 0) < 2) continue
-    const offsetOf = (extent: number): number =>
-      base +
-      turn * STROKE_SPACING * (extents.indexOf(extent) + (anchored ? 1 : 0))
-    const geo = portGeometry(graph, bent[0]!.run)
-    const fits =
-      geo !== undefined &&
-      extents.every((x) => {
-        const offset = offsetOf(x)
-        return (
-          attachesAt(bent[0]!.run, geo.centre + offset, geo) &&
-          taken.every((t) => Math.abs(t - offset) >= STROKE_SPACING)
-        )
-      })
-    if (!fits) continue
-    for (const m of bent) out.set(m.edge, offsetOf(runExtent(m.edge, m.run)))
+  // One port cell can start edges out of different sides of the node (a corner
+  // cell serves two); only edges leaving the same side share a stem, so group
+  // by side before comparing bends or looking for a straight anchor.
+  for (const side of ['top', 'bottom', 'left', 'right'] as const) {
+    const group = members.filter((m) => m.run.side === side)
+    const anchored = group.some((m) => m.straight)
+    for (const turn of [-1, 1] as const) {
+      const bent = group.filter((m) => !m.straight && m.run.turn === turn)
+      const extents = [...new Set(bent.map((m) => runExtent(m.edge, m.run)))]
+      extents.sort((a, b) => b - a)
+      if (extents.length + (anchored ? 1 : 0) < 2) continue
+      const offsetOf = (extent: number): number =>
+        base +
+        turn * STROKE_SPACING * (extents.indexOf(extent) + (anchored ? 1 : 0))
+      const geo = portGeometry(graph, bent[0]!.run)
+      const fits =
+        geo !== undefined &&
+        extents.every((x) => {
+          const offset = offsetOf(x)
+          return (
+            attachesAt(bent[0]!.run, geo.centre + offset, geo) &&
+            taken.every((t) => Math.abs(t - offset) >= STROKE_SPACING)
+          )
+        })
+      if (!fits) continue
+      for (const m of bent) out.set(m.edge, offsetOf(runExtent(m.edge, m.run)))
+    }
   }
 }
 
