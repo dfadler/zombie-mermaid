@@ -691,7 +691,7 @@ function ensureStateNode(
  *
  * Optional label: -->|label text|
  */
-const ARROW_REGEX = /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\|([^|]*)\|)?/
+const ARROW_REGEX = /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\s*\|([^|]*)\|)?/
 
 /**
  * Link bodies that are only a link when a start or end marker accompanies
