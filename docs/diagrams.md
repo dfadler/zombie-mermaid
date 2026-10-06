@@ -954,17 +954,20 @@ The numbers are the SVG renderer's.
 - **The bar** holds the slices at or above 1% of the total, in source order,
   sharing all 50 cells between them, as the SVG's drawn slices share the
   circle. Cells are rounded by largest remainder, so the segments always add
-  up to 50, and every drawn slice gets at least one cell.
+  up to 50, and every drawn slice gets at least one cell (with more than 50
+  slices at 1% or more, the ones that lose out on the rounding get none).
 - **The table** is the SVG legend: one row per slice, in source order, with
   `label [value]` under `showData` (the value printed as written). The
   percentage is the SVG's slice label, a whole number of the full total.
-  A slice under 1% has no segment and no percentage, and a `·` (`.` in ASCII
-  mode) as its swatch.
-- **Colour** uses the SVG palette: the accent, then the XY chart series
-  shades, repeating after 12. With `colorMode: 'none'` the segments are told
-  apart by fill instead: `█▓▒░` (Unicode) or `#=*+` (ASCII), cycling so that
-  neighbouring segments always differ; each table swatch repeats its
-  segment's fill.
+  A slice with no segment (under 1%, or left without a cell) has no
+  percentage, and a `·` (`.` in ASCII mode) as its swatch.
+- **Fills** tell segments apart: `█▓▒░` (Unicode) or `#=*+` (ASCII),
+  cycling so that neighbouring segments always differ; each table swatch
+  repeats its segment's fill. This holds in every colour mode, because two
+  neighbouring palette shades can land on the same terminal colour
+  (especially in `ansi16`).
+- **Colour** uses the SVG palette, painted over the fills: the accent, then
+  the XY chart series shades, repeating after 12.
 - The title is centred over the bar. `accTitle` and `accDescr` are not
   printed (in the SVG they are the accessible name and description, not
   visible text).
