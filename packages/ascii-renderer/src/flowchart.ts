@@ -15,8 +15,15 @@
 // ============================================================================
 
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
-import { withDirectionOverride } from '@zombie-mermaid/core'
-import type { Direction, MermaidGraph } from '@zombie-mermaid/core'
+import {
+  decodeXmlEntitiesInLabel,
+  withDirectionOverride,
+} from '@zombie-mermaid/core'
+import type {
+  Direction,
+  MermaidGraph,
+  MermaidSubgraph,
+} from '@zombie-mermaid/core'
 import { convertToAsciiGraph } from './converter.ts'
 import { createMapping } from './grid.ts'
 import { drawGraph } from './draw.ts'
@@ -49,6 +56,28 @@ export interface FlowchartAsciiExtras {
 }
 
 /**
+ * Decode `&quot;`-style entities in each parsed label, as the SVG renderer's
+ * source-level decode does. Done per label after parsing so the characters
+ * it produces can't change how the source parses.
+ */
+function decodeGraphLabelEntities(graph: MermaidGraph): MermaidGraph {
+  for (const node of graph.nodes.values()) {
+    node.label = decodeXmlEntitiesInLabel(node.label)
+  }
+  for (const edge of graph.edges) {
+    if (edge.label) edge.label = decodeXmlEntitiesInLabel(edge.label)
+  }
+  const walk = (subgraphs: MermaidSubgraph[]): void => {
+    for (const sg of subgraphs) {
+      sg.label = decodeXmlEntitiesInLabel(sg.label)
+      walk(sg.children)
+    }
+  }
+  walk(graph.subgraphs)
+  return graph
+}
+
+/**
  * Render a flowchart or state diagram to ASCII/Unicode text art.
  *
  * Matches every other diagram type's ASCII entry-point shape
@@ -65,7 +94,10 @@ export function renderFlowchartAscii(
   // `extras.direction` replaces the parsed top-level direction before
   // layout; see packages/core/src/direction-override.ts.
   return renderGraphAscii(
-    withDirectionOverride(parseMermaid(text), extras.direction),
+    withDirectionOverride(
+      decodeGraphLabelEntities(parseMermaid(text)),
+      extras.direction,
+    ),
     config,
     colorMode,
     theme,

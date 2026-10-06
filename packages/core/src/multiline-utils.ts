@@ -30,7 +30,7 @@ export function normalizeBrTags(label: string): string {
       ? unquoted.slice(1, -1)
       : unquoted
 
-  return (
+  return decodeMermaidEntities(
     unfenced
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/\\n/g, '\n')
@@ -38,7 +38,71 @@ export function normalizeBrTags(label: string): string {
       // Markdown formatting → HTML tags (order matters: ** before *)
       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
       .replace(/(?<!\*)\*([^\s*](?:[^*]*[^\s*])?)\*(?!\*)/g, '<i>$1</i>')
-      .replace(/~~(.+?)~~/g, '<s>$1</s>')
+      .replace(/~~(.+?)~~/g, '<s>$1</s>'),
+  )
+}
+
+const MAX_CODEPOINT = 0x10ffff
+
+const NAMED_ENTITIES: Record<string, string> = {
+  quot: '"',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  apos: "'",
+  nbsp: '\u00a0',
+}
+
+/** Code point -> character, or undefined when it is not a usable scalar value. */
+function codePointToChar(cp: number): string | undefined {
+  const usable =
+    Number.isInteger(cp) &&
+    cp > 0 &&
+    cp <= MAX_CODEPOINT &&
+    !(cp >= 0xd800 && cp <= 0xdfff)
+  return usable ? String.fromCodePoint(cp) : undefined
+}
+
+/**
+ * Decode Mermaid's entity codes (`#quot;`, `#lt;`, `#35;`, `#x5B;`), the way
+ * Mermaid writes characters that would otherwise end a label or break its
+ * syntax. Call it on a single already-parsed label, never on diagram source:
+ * decoding up front would let the characters it produces (`<`, `"`, `[`)
+ * change how the line parses, and would hit `#fff;` colors in style lines.
+ * Unknown names and out-of-range numbers are left untouched.
+ */
+export function decodeMermaidEntities(text: string): string {
+  return text.replace(
+    /#([xX][0-9a-fA-F]+|[0-9]+|[a-zA-Z]+);/g,
+    (match, code: string) => {
+      if (/^x/i.test(code)) {
+        return codePointToChar(parseInt(code.slice(1), 16)) ?? match
+      }
+      if (/^[0-9]+$/.test(code)) {
+        return codePointToChar(parseInt(code, 10)) ?? match
+      }
+      return NAMED_ENTITIES[code.toLowerCase()] ?? match
+    },
+  )
+}
+
+/**
+ * Decode HTML/XML entities (`&quot;`, `&lt;`, `&#35;`, `&#x5B;`) in one label,
+ * in a single pass so `&amp;lt;` becomes `&lt;` rather than `<`. Used by the
+ * ASCII renderer, which (unlike SVG) has no source-level decode step.
+ */
+export function decodeXmlEntitiesInLabel(text: string): string {
+  return text.replace(
+    /&(#[xX][0-9a-fA-F]+|#[0-9]+|quot|amp|lt|gt|apos);/g,
+    (match, code: string) => {
+      if (/^#x/i.test(code)) {
+        return codePointToChar(parseInt(code.slice(2), 16)) ?? match
+      }
+      if (code.startsWith('#')) {
+        return codePointToChar(parseInt(code.slice(1), 10)) ?? match
+      }
+      return NAMED_ENTITIES[code] ?? match
+    },
   )
 }
 
