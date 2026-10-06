@@ -1216,9 +1216,16 @@ export function determineLabelLine(
       // between equals, as before.
       const poolRank = (s: (typeof segments)[number]): [number, number] => {
         const [taken, shared] = rank(s.line)
-        const onNodeColumn =
-          s.isVertical && isNodeOccupiedColumn(graph, s.line[0].x)
-        return [taken, shared + (onNodeColumn ? 1000 : 0)]
+        // A segment too short for the label whose every column belongs to a
+        // node can only be widened by inflating that node's box, so it comes
+        // last (a vertical one is a single such column).
+        const lo = Math.min(s.line[0].x, s.line[1].x)
+        const hi = Math.max(s.line[0].x, s.line[1].x)
+        let inflates = s.width < lenLabel
+        for (let x = lo; inflates && x <= hi; x++) {
+          if (!isNodeOccupiedColumn(graph, x)) inflates = false
+        }
+        return [taken, shared + (inflates ? 1000 : 0)]
       }
       pool.sort((a, b) => {
         const ra = poolRank(a)
@@ -1296,11 +1303,22 @@ function applyLabelLine(
   const idealX = minX + Math.floor((maxX - minX) / 2)
   const middleX = findNonNodeColumn(graph, minX, maxX, idealX)
 
-  const current = graph.columnWidth.get(middleX) ?? 0
-  graph.columnWidth.set(
-    middleX,
-    Math.max(current, lenLabel + 2, pairColumnWidth(graph, edge, lenLabel)),
-  )
+  // A segment already wide enough for the label needs no widening. When its
+  // only candidate column is a node's own, widening it anyway inflates that
+  // node's box (a long label on a short hop out of `Reconnecting` made the
+  // node and everything in its column ten cells wider, #1349).
+  const pairWidth = pairColumnWidth(graph, edge, lenLabel)
+  // A vertical segment's label goes beside the stroke and needs the column's
+  // own width, so only a horizontal one is exempt.
+  const wideEnough =
+    line[0].y === line[1].y &&
+    isNodeOccupiedColumn(graph, middleX) &&
+    pairWidth === 0 &&
+    calculateLineWidth(graph, line) >= lenLabel + 2
+  if (!wideEnough) {
+    const current = graph.columnWidth.get(middleX) ?? 0
+    graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2, pairWidth))
+  }
 
   edge.labelLine = [line[0], line[1]]
 }
