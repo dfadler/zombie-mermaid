@@ -5,7 +5,8 @@
  *
  * Covers `fanInCenter` in grid.ts. It centers only when the edges bundle into
  * one trunk, so each guard that keeps the old first-parent slot has a case:
- * labeled edges, a parent that also feeds something else (`A & B --> C & D`, and
+ * labeled edges in LR (TD labeled fan-in is covered by
+ * `ascii-labeled-fan-in-center-1339.test.ts`), a parent that also feeds something else (`A & B --> C & D`, and
  * `backlink_from_bottom`, where one parent feeds the other), and a child that fans out itself.
  */
 import { describe, it, expect } from 'vitest'
@@ -93,9 +94,9 @@ describe('plain fan-in is centered between its parents (#1339)', () => {
 })
 
 describe('fan-in that keeps the first-parent slot (#1339)', () => {
-  it('labeled fan-in is not centered, and keeps both labels', () => {
-    const rows = render('graph TD\nX -->|one| A\nY -->|two| A')
-    expect(colOf(rows, 'A')).toBe(colOf(rows, 'X'))
+  it('LR labeled fan-in is not centered, and keeps both labels', () => {
+    const rows = render('graph LR\nX -->|one| A\nY -->|two| A')
+    expect(rowOf(rows, 'A')).toBe(rowOf(rows, 'X'))
     const text = rows.join('\n')
     expect(text).toContain('one')
     expect(text).toContain('two')

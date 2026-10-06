@@ -860,6 +860,36 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     return
   }
 
+  // A fan-in child centered between its parents sits diagonally from each,
+  // and the preferred route for every one of them ends on the child's top
+  // face, so two labeled edges share a path and one label is lost. Send a
+  // labeled parent down its own column and in through the child's near side.
+  if (
+    hasLabeledFanIn(graph, edge.to) &&
+    !dirEquals(preferredDir, alternativeDir)
+  ) {
+    const sideFrom = gridCoordDirection(
+      requireGridCoord(edge.from),
+      alternativeDir,
+    )
+    const sideTo = gridCoordDirection(
+      requireGridCoord(edge.to),
+      alternativeOppositeDir,
+    )
+    const sidePath = routeEdge(
+      graph,
+      sideFrom,
+      sideTo,
+      requireCardinalDirection(alternativeDir),
+    )
+    if (sidePath !== null) {
+      edge.startDir = alternativeDir
+      edge.endDir = alternativeOppositeDir
+      edge.path = sidePath
+      return
+    }
+  }
+
   // Try preferred path — routeEdge tries an unobstructed direct L-shape
   // before falling back to A* (see routeEdge / tryDirectPath in
   // pathfinder.ts). determineStartAndEndDir only ever produces one of the
@@ -953,6 +983,20 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   edge.startDir = preferredDir
   edge.endDir = preferredOppositeDir
   edge.path = expandDiagonalSegments([prefFrom, prefTo])
+}
+
+/**
+ * Whether `node` was centered between its parents on fan-in and at least one
+ * of the edges into it carries a label. Those edges route into the node's
+ * sides (see determinePath); an all-unlabeled fan-in bundles into one trunk
+ * instead.
+ */
+function hasLabeledFanIn(graph: AsciiGraph, node: AsciiNode): boolean {
+  return (
+    node.fanInCentered === true &&
+    !graph.edges.some((e) => e.to === node && e.clusterTarget) &&
+    graph.edges.some((e) => e.to === node && e.text.length > 0)
+  )
 }
 
 /** Check whether grid column `x` falls inside any node's reserved 3-column block. */
@@ -1050,6 +1094,19 @@ export function determineLabelLine(
   }
 
   const lenLabel = displayWidth(edge.text)
+
+  // A side-entry route into a centered fan-in child (see determinePath) is
+  // an L whose horizontal leg is a single gap wide; the label goes on the
+  // vertical drop beside the parent, not on that stub.
+  if (
+    hasLabeledFanIn(graph, edge.to) &&
+    (dirEquals(edge.endDir, Left) || dirEquals(edge.endDir, Right)) &&
+    edge.path.length >= 2 &&
+    edge.path[0]!.x === edge.path[1]!.x
+  ) {
+    applyLabelLine(graph, edge, [edge.path[0]!, edge.path[1]!], lenLabel)
+    return
+  }
 
   // Every routed path is axis-aligned (A* is 4-directional and
   // tryDirectPath builds explicit L-shapes), with one exception:

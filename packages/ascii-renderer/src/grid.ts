@@ -1311,11 +1311,14 @@ function fanInCenter(
     if (edge.clusterTarget) entersCluster = true
     if (edge.text !== '') labeled = true
   }
-  // A plain node centers only when no incoming edge carries a label:
-  // unlabeled edges bundle into one trunk, but labeled ones would each need
-  // their own path through the gap between the parents, and share it
-  // instead (one label drawn over the other).
-  if (slots.size < 2 || (labeled && !entersCluster)) return undefined
+  if (slots.size < 2) return undefined
+  // A plain node with a labeled incoming edge centers only where each edge
+  // can take a path of its own (see labeledFanInFits): unlabeled edges
+  // bundle into one trunk, but labeled ones sharing the gap between the
+  // parents would draw one label over the other.
+  if (labeled && !entersCluster && !labeledFanInFits(graph, child, lr)) {
+    return undefined
+  }
   // Nor when a parent also feeds another node. `A & B --> C & D`: the
   // siblings would all claim the same midpoint and the later ones slide off
   // it, leaving the set lopsided against its parents. `B --> C; B --> D;
@@ -1357,6 +1360,46 @@ function fanInCenter(
   const lo = Math.min(...slots)
   const hi = Math.max(...slots)
   return Math.floor((lo + hi) / 2)
+}
+
+/**
+ * Whether a labeled fan-in into `child` is one the side-entry route
+ * (edge-routing.ts) handles without losing a label (#1339). Chosen by
+ * rendering thousands of random labeled graphs and counting labels that
+ * vanish: the shapes below are where centering made that worse. A parent
+ * with another outgoing edge is excluded for every fan-in by `fanInCenter`.
+ *  - LR: the face a parent enters by is the one the child's own out-edge may
+ *    leave by, and the two edges meet.
+ *  - A child on a cycle: a back edge's label widens the column the side
+ *    entry ends in and detaches the arrowhead.
+ */
+function labeledFanInFits(
+  graph: AsciiGraph,
+  child: AsciiNode,
+  lr: boolean,
+): boolean {
+  if (lr) return false
+  return !reachesAnyParent(graph, child)
+}
+
+/** Whether following edges out of `node` leads back to a node that feeds it. */
+function reachesAnyParent(graph: AsciiGraph, node: AsciiNode): boolean {
+  const parents = new Set(
+    graph.edges
+      .filter((e) => e.to === node && e.from !== node)
+      .map((e) => e.from),
+  )
+  const seen = new Set<AsciiNode>([node])
+  const queue = [node]
+  for (let n = queue.pop(); n; n = queue.pop()) {
+    for (const e of graph.edges) {
+      if (e.from !== n || seen.has(e.to)) continue
+      if (parents.has(e.to)) return true
+      seen.add(e.to)
+      queue.push(e.to)
+    }
+  }
+  return false
 }
 
 /**
