@@ -81,28 +81,30 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
   )
 
   it.each(TD_CASES)(
-    '%s: only the trunk crosses the bottom wall, and no label is on it',
+    '%s: each exit (the lane group once) starts on the bottom wall, and no label is on it',
     (_n, dir, others) => {
       for (const useAscii of [false, true]) {
         const lines = render(source(dir, others), useAscii)
         // The cluster's bottom wall is the last full-width border row
         // (the top border, with the entry trunk, matches too).
         const wall = lines.findLastIndex((l) =>
-          useAscii ? /^\+[-|]+\+$/.test(l) : /^└[─┼]+┘$/.test(l),
+          useAscii ? /^\+[-+]+\+$/.test(l) : /^└[─┬]+┘$/.test(l),
         )
         expect(wall).toBeGreaterThan(-1)
         const text = lines[wall]!
         expect(text).not.toMatch(/[a-z]/)
         const crossings = useAscii
-          ? (text.match(/\|/g) ?? []).length
+          ? (text.match(/\+/g) ?? []).length - 2
           : (text.match(/[┼┬┴├┤]/g) ?? []).length
-        expect(crossings).toBe(1)
+        // The lane group leaves together; every other exit has its own
+        // junction (#1182).
+        expect(crossings).toBe(1 + others.length)
       }
     },
   )
 
   it.each(LR_CASES)(
-    '%s: only the trunk crosses the right wall, and no label is on it',
+    '%s: each exit (the lane group once) starts on the right wall, and no label is on it',
     (_n, dir, others) => {
       const lines = render(source(dir, others))
       const top = lines.find((l) => l.includes('┐'))!
@@ -110,7 +112,9 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
       const crossing = lines
         .map((l) => l[col] ?? ' ')
         .filter((ch) => ch !== ' ' && ch !== '│' && ch !== '┐' && ch !== '┘')
-      expect(crossing).toEqual(['┼'])
+      // Exits start on the wall (#1330) as `├`, not a `┼` crossing: the lane
+      // group once, plus one per other exit (#1182).
+      expect(crossing).toEqual(Array(1 + others.length).fill('├'))
     },
   )
 
@@ -196,12 +200,14 @@ ${LABELS.slice(0, siblings)
     )
 
     it.each(MANY_CASES.filter(([, d]) => d === 'TD'))(
-      '%s: only the trunk crosses the bottom wall',
+      '%s: each exit (the lane group once) starts on the bottom wall',
       (_n, dir, siblings, others) => {
         const lines = render(many(dir, siblings, others))
-        const wall = lines.findLastIndex((l) => /^\s*└[─┼]+┘$/.test(l))
+        const wall = lines.findLastIndex((l) => /^\s*└[─┬]+┘$/.test(l))
         expect(wall).toBeGreaterThan(-1)
-        expect(lines[wall]!.match(/[┼┬┴├┤]/g) ?? []).toHaveLength(1)
+        expect(lines[wall]!.match(/[┼┬┴├┤]/g) ?? []).toHaveLength(
+          1 + others.length,
+        )
       },
     )
 

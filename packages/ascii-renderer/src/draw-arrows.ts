@@ -33,6 +33,7 @@ import {
   LowerRight,
   Middle,
   drawingCoordEquals,
+  requireGridCoord,
 } from './types.ts'
 import { copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
@@ -59,7 +60,10 @@ export function drawArrow(
 
   const labelCanvas = drawArrowLabel(graph, edge)
   const wallEnd = clusterWallEnd(graph, edge)
-  const drop = wallEnd ? clusterEntryDrop(graph, edge, wallEnd) : undefined
+  const wallStart = clusterWallStart(graph, edge)
+  const drop = wallEnd
+    ? clusterEntryDrop(graph, edge, wallEnd)
+    : clusterExitDrop(graph, edge, wallStart)
   const dx = strokeShift(graph, edge)
   const shifts =
     edgePointShifts(graph, edge) ??
@@ -71,6 +75,7 @@ export function drawArrow(
     wallEnd,
     drop,
     shifts,
+    wallStart,
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -95,7 +100,16 @@ export function drawArrow(
 
   const boxStartCanvas =
     hasSegments && !invisible
-      ? drawBoxStart(graph, edge.path, linesDrawn[0]!, edge.from)
+      ? drawBoxStart(
+          graph,
+          edge.path,
+          linesDrawn[0]!,
+          edge.from,
+          wallStart && {
+            x: wallStart.x + strokeShift(graph, edge),
+            y: wallStart.y,
+          },
+        )
       : copyCanvas(graph.canvas)
 
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
@@ -189,6 +203,129 @@ function clusterWallEnd(
   return graph.config.graphDirection === 'LR'
     ? { x: end.x, y: landing }
     : { x: landing, y: end.y }
+}
+
+/**
+ * Where an engaged cluster exit (#1330) starts: on the cluster's flow-side
+ * wall, in the stub's own column (row), instead of on
+ * the stand-in member's face. The box-start connector then lands on the
+ * wall (`┬`), so the edge reads as leaving the cluster and the member's own
+ * border stays intact. Undefined for every other edge. The planner puts the
+ * gutter cell past the wall (`planClusterExits`), so the first leg always
+ * runs on beyond it.
+ */
+function clusterWallStart(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): DrawingCoord | undefined {
+  const sg = edge.clusterSource
+  if (!sg || graph.clusterExitPlans?.get(sg)?.edges.has(edge) !== true) {
+    return undefined
+  }
+  // An engaged exit's path is the stub then the outside leg: >= 2 points.
+  const start = gridToDrawingCoord(graph, edge.path[0]!)
+  const landing = exitLandings(graph, sg).get(edge)
+  return graph.config.graphDirection === 'LR'
+    ? { x: sg.maxX, y: landing ?? start.y }
+    : { x: landing ?? start.x, y: sg.maxY }
+}
+
+/**
+ * Where each engaged exit of `sg` leaves along its flow-side wall (#1182).
+ * Real mermaid clips every edge at its own point on the cluster border; the
+ * planner's shared stub puts them all on one cell. Each exit instead takes the
+ * wall cell nearest its target's centre, in target order so the drops never
+ * cross, kept apart by `PREFERRED_ENTRY_GAP` (or `MIN_ENTRY_GAP` when the wall
+ * is narrow). A lane group (same stand-in and target) leaves together, so it
+ * counts once. Empty (no override: all share the stub's cell) when the wall is
+ * too narrow to give each exit its own cell. Like entry landings this is
+ * drawn, not routed, so occupancy is unchanged.
+ */
+function exitLandings(
+  graph: AsciiGraph,
+  sg: AsciiSubgraph,
+): Map<AsciiEdge, number> {
+  const landings = new Map<AsciiEdge, number>()
+  const plan = graph.clusterExitPlans?.get(sg)
+  if (!plan) return landings
+  const lr = graph.config.graphDirection === 'LR'
+
+  const units = new Map<unknown, AsciiEdge[]>()
+  for (const edge of plan.edges) {
+    const key = edge.parallelLane?.usedOffsets ?? edge
+    const unit = units.get(key)
+    if (unit) unit.push(edge)
+    else units.set(key, [edge])
+  }
+  if (units.size < 2) return landings
+
+  const ranked = [...units.values()]
+    .map((edges) => {
+      const to = requireGridCoord(edges[0]!.to)
+      const centre = gridToDrawingCoord(
+        graph,
+        lr ? { x: to.x, y: to.y + 1 } : { x: to.x + 1, y: to.y },
+      )
+      return { edges, want: lr ? centre.y : centre.x }
+    })
+    // Stable, so exits aimed at the same cell keep edge order.
+    .sort((a, b) => a.want - b.want)
+  // A cell clear of the corner reads better than a tee beside it; a wall too
+  // narrow for that settles for the cell next to the corner.
+  const first = lr ? sg.minY : sg.minX
+  const last = lr ? sg.maxY : sg.maxX
+  let spread: number[] | undefined
+  for (const inset of [2, 1]) {
+    const lo = first + inset
+    const hi = last - inset
+    const wanted = ranked.map((r) => Math.min(hi, Math.max(lo, r.want)))
+    spread =
+      pushApart(wanted, lo, hi, PREFERRED_ENTRY_GAP) ??
+      pushApart(wanted, lo, hi, MIN_ENTRY_GAP)
+    if (spread) break
+  }
+  if (!spread) return landings
+  ranked.forEach((r, i) => {
+    for (const edge of r.edges) landings.set(edge, spread[i]!)
+  })
+  return landings
+}
+
+/**
+ * The drawn shape of an engaged exit whose landing is not the stub's cell:
+ * from its wall cell straight out to the gutter line, then on along the
+ * routed outside leg. Mirrors `clusterEntryDrop`; undefined when the edge
+ * starts where it was routed.
+ */
+function clusterExitDrop(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  start: DrawingCoord | undefined,
+): EntryDrop | undefined {
+  if (!start || edge.path.length < 2) return undefined
+  const lr = graph.config.graphDirection === 'LR'
+  const points = edge.path.map((p) => gridToDrawingCoord(graph, p))
+  const stub = points[0]!
+  if ((lr ? stub.y : stub.x) === (lr ? start.y : start.x)) return undefined
+
+  const gutter = points[1]!
+  const moved: DrawingCoord = lr
+    ? { x: gutter.x, y: start.y }
+    : { x: start.x, y: gutter.y }
+  const rest = points.slice(2)
+  // The routed leg left the gutter along the bus (or straight on, for a
+  // collinear target); from the moved point it may now need an elbow.
+  const next = rest[0]
+  const elbow: DrawingCoord[] =
+    next && next.x !== moved.x && next.y !== moved.y
+      ? [lr ? { x: moved.x, y: next.y } : { x: next.x, y: moved.y }]
+      : []
+  // The landing can coincide with a routed corner, leaving a zero-length run
+  // that `drawCorners` would read as a bend.
+  const drawn = [start, moved, ...elbow, ...rest].filter(
+    (p, i, all) => i === 0 || !drawingCoordEquals(p, all[i - 1]!),
+  )
+  return { points: drawn, jog: [moved, ...elbow] }
 }
 
 /** `clusterWallEnd` before any spreading: the gutter cell's own column (row). */
@@ -362,6 +499,7 @@ function drawPath(
   endOverride?: DrawingCoord,
   drop?: EntryDrop,
   shifts?: DrawingCoord[],
+  startOverride?: DrawingCoord,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -401,7 +539,12 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = shift(gridToDrawingCoord(graph, previousCoord), i - 1)
+    const prevDC = shift(
+      startOverride && i === 1
+        ? startOverride
+        : gridToDrawingCoord(graph, previousCoord),
+      i - 1,
+    )
     const nextDC =
       endOverride && i === path.length - 1
         ? shift(endOverride, i)
@@ -455,12 +598,17 @@ function drawBoxStart(
   path: GridCoord[],
   firstLine: DrawingCoord[],
   sourceNode: AsciiNode,
+  wallAt?: DrawingCoord,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   const useAscii = graph.config.useAscii
 
-  // Skip box start connectors for state pseudo-states (they have their own bordered design)
-  if (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end') {
+  // Skip box start connectors for state pseudo-states (they have their own
+  // bordered design), unless the exit starts on a cluster wall (#1330).
+  if (
+    !wallAt &&
+    (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end')
+  ) {
     return canvas
   }
 
@@ -480,7 +628,13 @@ function drawBoxStart(
   const existingOnBox = (x: number, y: number): string | undefined =>
     graph.canvas[x]?.[y]
 
-  if (dirEquals(dir, Up)) {
+  if (wallAt) {
+    // A cluster exit (#1330) leaves through the cluster's own flow-side
+    // wall, at the cell the path was started on: always a tee on that wall
+    // (a stub runs Down in TD, Right in LR).
+    const tee = dirEquals(dir, Down) ? '┬' : '├'
+    write(canvas, wallAt.x, wallAt.y, junction ?? tee)
+  } else if (dirEquals(dir, Up)) {
     const x = from.x
     const y = from.y + 1
     const existing = existingOnBox(x, y)
@@ -726,6 +880,10 @@ function drawCorners(
       } else {
         corner = '+'
       }
+    } else if (dirEquals(prevDir, nextDir)) {
+      // Collinear, as above: ASCII has no tee glyph to merge into, so a
+      // straight run just continues (a sibling's corner here is a `+`).
+      corner = dirEquals(prevDir, Up) || dirEquals(prevDir, Down) ? '|' : '-'
     } else {
       corner = '+'
     }
@@ -1111,12 +1269,39 @@ function onEntryJog(
   const end = clusterWallEnd(graph, edge)
   const drop = end ? clusterEntryDrop(graph, edge, end) : undefined
   const last = edge.path[edge.path.length - 1]
+  if (!end && line.length >= 2) return onExitBus(graph, edge, line)
   if (!drop || !last || line.length < 2) return line
   const gutter = gridToDrawingCoord(graph, last)
   const lr = graph.config.graphDirection === 'LR'
   return line.every((c) => (lr ? c.x === gutter.x : c.y === gutter.y))
     ? drop.jog
     : line
+}
+
+/**
+ * A label on the bus run of an exit that leaves the wall off its stub's cell
+ * (`clusterExitDrop`) follows the run to where it is drawn: the run now starts
+ * at the exit's own wall column (row), not the stub's, and a label centred on
+ * the routed run would sit on the new corner. A label on any other leg stays.
+ */
+function onExitBus(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+): DrawingCoord[] {
+  const drop = clusterExitDrop(graph, edge, clusterWallStart(graph, edge))
+  if (!drop) return line
+  const lr = graph.config.graphDirection === 'LR'
+  const stub = gridToDrawingCoord(graph, edge.path[0]!)
+  const bus = drop.jog[0]!
+  if (!line.every((c) => (lr ? c.x === bus.x : c.y === bus.y))) return line
+  return line.map((c) =>
+    (lr ? c.y === stub.y : c.x === stub.x)
+      ? lr
+        ? { x: c.x, y: bus.y }
+        : { x: bus.x, y: c.y }
+      : c,
+  )
 }
 
 /**
