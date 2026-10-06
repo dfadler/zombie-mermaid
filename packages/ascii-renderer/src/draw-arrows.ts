@@ -63,7 +63,7 @@ export function drawArrow(
   const dx = strokeShift(graph, edge)
   const shifts =
     edgePointShifts(graph, edge) ??
-    (dx === 0 ? undefined : edge.path.map(() => dx))
+    (dx === 0 ? undefined : edge.path.map(() => ({ x: dx, y: 0 })))
   const [pathCanvas, linesDrawn, lineDirs] = drawPath(
     graph,
     edge.path,
@@ -361,7 +361,7 @@ function drawPath(
   style: AsciiEdgeStyle = 'solid',
   endOverride?: DrawingCoord,
   drop?: EntryDrop,
-  shifts?: number[],
+  shifts?: DrawingCoord[],
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -369,12 +369,14 @@ function drawPath(
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []
   const lineDirs: Direction[] = []
-  // #1284/#1350: strokes that share a port are drawn off the column centre;
+  // #1284/#1350: strokes that share a port are drawn off the port centre;
   // `shifts[i]` is the offset of path point i.
-  const shift = (c: DrawingCoord, i: number): DrawingCoord =>
-    shifts === undefined || shifts[i] === 0
+  const shift = (c: DrawingCoord, i: number): DrawingCoord => {
+    const by = shifts?.[i]
+    return by === undefined || (by.x === 0 && by.y === 0)
       ? c
-      : { x: c.x + shifts[i]!, y: c.y }
+      : { x: c.x + by.x, y: c.y + by.y }
+  }
 
   if (drop) {
     for (let i = 1; i < drop.points.length; i++) {
@@ -674,7 +676,7 @@ function drawCorners(
   graph: AsciiGraph,
   path: GridCoord[],
   drop?: EntryDrop,
-  shifts?: number[],
+  shifts?: DrawingCoord[],
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   // An entry drop (clusterEntryDrop) is already a drawn polyline.
@@ -686,7 +688,8 @@ function drawCorners(
     const base = drop
       ? drop.points[idx]!
       : gridToDrawingCoord(graph, path[idx]!)
-    const dc = shifts ? { x: base.x + (shifts[idx] ?? 0), y: base.y } : base
+    const by = shifts?.[idx]
+    const dc = by ? { x: base.x + by.x, y: base.y + by.y } : base
     const prevDir = determineDirection(points[idx - 1]!, coord)
     const nextDir = determineDirection(coord, points[idx + 1]!)
 
