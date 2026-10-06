@@ -5,6 +5,12 @@
 // Split out of draw.ts.
 // ============================================================================
 
+import {
+  edgePointShifts,
+  labelLineToDrawing,
+  pathToDrawing,
+  portShifts,
+} from './port-offsets.ts'
 import type {
   Canvas,
   DrawingCoord,
@@ -27,11 +33,12 @@ import {
   LowerRight,
   Middle,
   drawingCoordEquals,
+  requireGridCoord,
 } from './types.ts'
 import { copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
-import { displayWidth } from './display-width.ts'
-import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
+import { displayWidth, toDisplayCells } from './display-width.ts'
+import { gridToDrawingCoord } from './grid.ts'
 import { splitLines } from './multiline-utils.ts'
 import { drawLine } from './draw-lines.ts'
 
@@ -53,14 +60,22 @@ export function drawArrow(
 
   const labelCanvas = drawArrowLabel(graph, edge)
   const wallEnd = clusterWallEnd(graph, edge)
-  const drop = wallEnd ? clusterEntryDrop(graph, edge, wallEnd) : undefined
+  const wallStart = clusterWallStart(graph, edge)
+  const drop = wallEnd
+    ? clusterEntryDrop(graph, edge, wallEnd)
+    : clusterExitDrop(graph, edge, wallStart)
+  const dx = strokeShift(graph, edge)
+  const shifts =
+    edgePointShifts(graph, edge) ??
+    (dx === 0 ? undefined : edge.path.map(() => ({ x: dx, y: 0 })))
   const [pathCanvas, linesDrawn, lineDirs] = drawPath(
     graph,
     edge.path,
     edge.style,
     wallEnd,
     drop,
-    strokeShift(graph, edge),
+    shifts,
+    wallStart,
   )
 
   // A routed path can collapse to zero drawn line segments when every grid
@@ -85,7 +100,16 @@ export function drawArrow(
 
   const boxStartCanvas =
     hasSegments && !invisible
-      ? drawBoxStart(graph, edge.path, linesDrawn[0]!, edge.from)
+      ? drawBoxStart(
+          graph,
+          edge.path,
+          linesDrawn[0]!,
+          edge.from,
+          wallStart && {
+            x: wallStart.x + strokeShift(graph, edge),
+            y: wallStart.y,
+          },
+        )
       : copyCanvas(graph.canvas)
 
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
@@ -131,7 +155,7 @@ export function drawArrow(
 
   const cornersCanvas = invisible
     ? copyCanvas(graph.canvas)
-    : drawCorners(graph, edge.path, drop)
+    : drawCorners(graph, edge.path, drop, shifts)
 
   return [
     pathCanvas,
@@ -179,6 +203,129 @@ function clusterWallEnd(
   return graph.config.graphDirection === 'LR'
     ? { x: end.x, y: landing }
     : { x: landing, y: end.y }
+}
+
+/**
+ * Where an engaged cluster exit (#1330) starts: on the cluster's flow-side
+ * wall, in the stub's own column (row), instead of on
+ * the stand-in member's face. The box-start connector then lands on the
+ * wall (`┬`), so the edge reads as leaving the cluster and the member's own
+ * border stays intact. Undefined for every other edge. The planner puts the
+ * gutter cell past the wall (`planClusterExits`), so the first leg always
+ * runs on beyond it.
+ */
+function clusterWallStart(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): DrawingCoord | undefined {
+  const sg = edge.clusterSource
+  if (!sg || graph.clusterExitPlans?.get(sg)?.edges.has(edge) !== true) {
+    return undefined
+  }
+  // An engaged exit's path is the stub then the outside leg: >= 2 points.
+  const start = gridToDrawingCoord(graph, edge.path[0]!)
+  const landing = exitLandings(graph, sg).get(edge)
+  return graph.config.graphDirection === 'LR'
+    ? { x: sg.maxX, y: landing ?? start.y }
+    : { x: landing ?? start.x, y: sg.maxY }
+}
+
+/**
+ * Where each engaged exit of `sg` leaves along its flow-side wall (#1182).
+ * Real mermaid clips every edge at its own point on the cluster border; the
+ * planner's shared stub puts them all on one cell. Each exit instead takes the
+ * wall cell nearest its target's centre, in target order so the drops never
+ * cross, kept apart by `PREFERRED_ENTRY_GAP` (or `MIN_ENTRY_GAP` when the wall
+ * is narrow). A lane group (same stand-in and target) leaves together, so it
+ * counts once. Empty (no override: all share the stub's cell) when the wall is
+ * too narrow to give each exit its own cell. Like entry landings this is
+ * drawn, not routed, so occupancy is unchanged.
+ */
+function exitLandings(
+  graph: AsciiGraph,
+  sg: AsciiSubgraph,
+): Map<AsciiEdge, number> {
+  const landings = new Map<AsciiEdge, number>()
+  const plan = graph.clusterExitPlans?.get(sg)
+  if (!plan) return landings
+  const lr = graph.config.graphDirection === 'LR'
+
+  const units = new Map<unknown, AsciiEdge[]>()
+  for (const edge of plan.edges) {
+    const key = edge.parallelLane?.usedOffsets ?? edge
+    const unit = units.get(key)
+    if (unit) unit.push(edge)
+    else units.set(key, [edge])
+  }
+  if (units.size < 2) return landings
+
+  const ranked = [...units.values()]
+    .map((edges) => {
+      const to = requireGridCoord(edges[0]!.to)
+      const centre = gridToDrawingCoord(
+        graph,
+        lr ? { x: to.x, y: to.y + 1 } : { x: to.x + 1, y: to.y },
+      )
+      return { edges, want: lr ? centre.y : centre.x }
+    })
+    // Stable, so exits aimed at the same cell keep edge order.
+    .sort((a, b) => a.want - b.want)
+  // A cell clear of the corner reads better than a tee beside it; a wall too
+  // narrow for that settles for the cell next to the corner.
+  const first = lr ? sg.minY : sg.minX
+  const last = lr ? sg.maxY : sg.maxX
+  let spread: number[] | undefined
+  for (const inset of [2, 1]) {
+    const lo = first + inset
+    const hi = last - inset
+    const wanted = ranked.map((r) => Math.min(hi, Math.max(lo, r.want)))
+    spread =
+      pushApart(wanted, lo, hi, PREFERRED_ENTRY_GAP) ??
+      pushApart(wanted, lo, hi, MIN_ENTRY_GAP)
+    if (spread) break
+  }
+  if (!spread) return landings
+  ranked.forEach((r, i) => {
+    for (const edge of r.edges) landings.set(edge, spread[i]!)
+  })
+  return landings
+}
+
+/**
+ * The drawn shape of an engaged exit whose landing is not the stub's cell:
+ * from its wall cell straight out to the gutter line, then on along the
+ * routed outside leg. Mirrors `clusterEntryDrop`; undefined when the edge
+ * starts where it was routed.
+ */
+function clusterExitDrop(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  start: DrawingCoord | undefined,
+): EntryDrop | undefined {
+  if (!start || edge.path.length < 2) return undefined
+  const lr = graph.config.graphDirection === 'LR'
+  const points = edge.path.map((p) => gridToDrawingCoord(graph, p))
+  const stub = points[0]!
+  if ((lr ? stub.y : stub.x) === (lr ? start.y : start.x)) return undefined
+
+  const gutter = points[1]!
+  const moved: DrawingCoord = lr
+    ? { x: gutter.x, y: start.y }
+    : { x: start.x, y: gutter.y }
+  const rest = points.slice(2)
+  // The routed leg left the gutter along the bus (or straight on, for a
+  // collinear target); from the moved point it may now need an elbow.
+  const next = rest[0]
+  const elbow: DrawingCoord[] =
+    next && next.x !== moved.x && next.y !== moved.y
+      ? [lr ? { x: moved.x, y: next.y } : { x: next.x, y: moved.y }]
+      : []
+  // The landing can coincide with a routed corner, leaving a zero-length run
+  // that `drawCorners` would read as a bend.
+  const drawn = [start, moved, ...elbow, ...rest].filter(
+    (p, i, all) => i === 0 || !drawingCoordEquals(p, all[i - 1]!),
+  )
+  return { points: drawn, jog: [moved, ...elbow] }
 }
 
 /** `clusterWallEnd` before any spreading: the gutter cell's own column (row). */
@@ -351,7 +498,8 @@ function drawPath(
   style: AsciiEdgeStyle = 'solid',
   endOverride?: DrawingCoord,
   drop?: EntryDrop,
-  dx = 0,
+  shifts?: DrawingCoord[],
+  startOverride?: DrawingCoord,
 ): [Canvas, DrawingCoord[][], Direction[]] {
   const canvas = copyCanvas(graph.canvas)
   // path is non-empty: drawArrow (drawPath's sole caller) already returns
@@ -359,9 +507,14 @@ function drawPath(
   let previousCoord = path[0]!
   const linesDrawn: DrawingCoord[][] = []
   const lineDirs: Direction[] = []
-  // #1284: a reciprocal pair's strokes are drawn one cell off the column centre.
-  const shift = (c: DrawingCoord): DrawingCoord =>
-    dx === 0 ? c : { x: c.x + dx, y: c.y }
+  // #1284/#1350: strokes that share a port are drawn off the port centre;
+  // `shifts[i]` is the offset of path point i.
+  const shift = (c: DrawingCoord, i: number): DrawingCoord => {
+    const by = shifts?.[i]
+    return by === undefined || (by.x === 0 && by.y === 0)
+      ? c
+      : { x: c.x + by.x, y: c.y + by.y }
+  }
 
   if (drop) {
     for (let i = 1; i < drop.points.length; i++) {
@@ -386,11 +539,16 @@ function drawPath(
 
   for (let i = 1; i < path.length; i++) {
     const nextCoord = path[i]!
-    const prevDC = shift(gridToDrawingCoord(graph, previousCoord))
+    const prevDC = shift(
+      startOverride && i === 1
+        ? startOverride
+        : gridToDrawingCoord(graph, previousCoord),
+      i - 1,
+    )
     const nextDC =
       endOverride && i === path.length - 1
-        ? shift(endOverride)
-        : shift(gridToDrawingCoord(graph, nextCoord))
+        ? shift(endOverride, i)
+        : shift(gridToDrawingCoord(graph, nextCoord), i)
 
     if (drawingCoordEquals(prevDC, nextDC)) {
       previousCoord = nextCoord
@@ -440,12 +598,17 @@ function drawBoxStart(
   path: GridCoord[],
   firstLine: DrawingCoord[],
   sourceNode: AsciiNode,
+  wallAt?: DrawingCoord,
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   const useAscii = graph.config.useAscii
 
-  // Skip box start connectors for state pseudo-states (they have their own bordered design)
-  if (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end') {
+  // Skip box start connectors for state pseudo-states (they have their own
+  // bordered design), unless the exit starts on a cluster wall (#1330).
+  if (
+    !wallAt &&
+    (sourceNode.shape === 'state-start' || sourceNode.shape === 'state-end')
+  ) {
     return canvas
   }
 
@@ -465,7 +628,13 @@ function drawBoxStart(
   const existingOnBox = (x: number, y: number): string | undefined =>
     graph.canvas[x]?.[y]
 
-  if (dirEquals(dir, Up)) {
+  if (wallAt) {
+    // A cluster exit (#1330) leaves through the cluster's own flow-side
+    // wall, at the cell the path was started on: always a tee on that wall
+    // (a stub runs Down in TD, Right in LR).
+    const tee = dirEquals(dir, Down) ? '┬' : '├'
+    write(canvas, wallAt.x, wallAt.y, junction ?? tee)
+  } else if (dirEquals(dir, Up)) {
     const x = from.x
     const y = from.y + 1
     const existing = existingOnBox(x, y)
@@ -661,6 +830,7 @@ function drawCorners(
   graph: AsciiGraph,
   path: GridCoord[],
   drop?: EntryDrop,
+  shifts?: DrawingCoord[],
 ): Canvas {
   const canvas = copyCanvas(graph.canvas)
   // An entry drop (clusterEntryDrop) is already a drawn polyline.
@@ -669,7 +839,11 @@ function drawCorners(
 
   for (let idx = 1; idx < points.length - 1; idx++) {
     const coord = points[idx]!
-    const dc = drop ? drop.points[idx]! : gridToDrawingCoord(graph, path[idx]!)
+    const base = drop
+      ? drop.points[idx]!
+      : gridToDrawingCoord(graph, path[idx]!)
+    const by = shifts?.[idx]
+    const dc = by ? { x: base.x + by.x, y: base.y + by.y } : base
     const prevDir = determineDirection(points[idx - 1]!, coord)
     const nextDir = determineDirection(coord, points[idx + 1]!)
 
@@ -706,6 +880,10 @@ function drawCorners(
       } else {
         corner = '+'
       }
+    } else if (dirEquals(prevDir, nextDir)) {
+      // Collinear, as above: ASCII has no tee glyph to merge into, so a
+      // straight run just continues (a sibling's corner here is a `+`).
+      corner = dirEquals(prevDir, Up) || dirEquals(prevDir, Down) ? '|' : '-'
     } else {
       corner = '+'
     }
@@ -740,17 +918,28 @@ function hasReciprocalPartner(graph: AsciiGraph, edge: AsciiEdge): boolean {
  * cells beside its stroke.
  */
 export function strokeShift(graph: AsciiGraph, edge: AsciiEdge): 0 | 1 | -1 {
+  return strokeShiftFor(graph, edge, true)
+}
+
+function strokeShiftFor(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  labelAware: boolean,
+): 0 | 1 | -1 {
   const partner = verticalPairPartner(graph, edge)
   if (!partner) return 0
+  // A pair that shares its port with other edges is spread by `portShifts`.
+  const generic = portShifts(graph)
+  if (generic.has(edge) || generic.has(partner)) return 0
   for (const e of [edge, partner]) {
     if (e.text.length === 0) continue
     const side = e.path[1]!.y > e.path[0]!.y ? 'right' : 'left'
     const beside = besideStroke(
-      centredLabelPlacement(graph, e),
+      centredLabelPlacement(graph, e, labelAware),
       gridToDrawingCoord(graph, e.path[0]!).x + (side === 'right' ? 1 : -1),
       side,
     )
-    if (!besideCellsFree(graph, e, beside)) return 0
+    if (!besideFree(graph, e, beside, labelAware)) return 0
   }
   return edge.path[1]!.y > edge.path[0]!.y ? 1 : -1
 }
@@ -790,9 +979,24 @@ export function edgeLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] | null {
+  return resolveLabelPlacement(graph, edge, true)
+}
+
+/**
+ * `edgeLabelPlacement`'s body. `labelAware` says whether the beside-stroke
+ * candidates are also checked against the other edges' labels (#1338). Those
+ * labels are themselves resolved with `labelAware = false` (see
+ * `otherLabelPlacements`), so the check never recurses and never depends on
+ * the order the edges are drawn in.
+ */
+function resolveLabelPlacement(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  labelAware: boolean,
+): { x: number; y: number; text: string }[] | null {
   if (edge.text.length === 0) return null
-  const centred = centredLabelPlacement(graph, edge)
-  const dx = strokeShift(graph, edge)
+  const centred = centredLabelPlacement(graph, edge, labelAware)
+  const dx = strokeShiftFor(graph, edge, labelAware)
   if (dx === 0) return centred
   // #1284: the pair's strokes are drawn one cell either side of the column
   // centre (see strokeShift), so each label sits beside its own stroke,
@@ -807,12 +1011,9 @@ export function edgeLabelPlacement(
 function centredLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
+  labelAware: boolean,
 ): { x: number; y: number; text: string }[] {
-  const drawingLine = onEntryJog(
-    graph,
-    edge,
-    lineToDrawing(graph, edge.labelLine),
-  )
+  const drawingLine = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
 
   // Determine if this is an upward edge (target is above source in the path)
   // This is used to offset labels on bidirectional edges to prevent overlap
@@ -881,7 +1082,31 @@ function centredLabelPlacement(
       drawingLine[0]!.x,
       isUpwardEdge ? 'left' : 'right',
     )
-    if (besideCellsFree(graph, edge, beside)) return beside
+    if (besideFree(graph, edge, beside, labelAware)) {
+      // Right beside another edge's stroke the label reads as that edge's
+      // (#attribution). A label beside its own stroke has one blank cell to
+      // it, so another stroke should be two or more away; failing that, one
+      // blank cell clear. Slide along its own stroke to the nearest row that
+      // manages it, keeping off the stroke's two ends.
+      const top = Math.min(drawingLine[0]!.y, drawingLine[1]!.y) + 1
+      const bottom = Math.max(drawingLine[0]!.y, drawingLine[1]!.y) - 1
+      const rows = beside.map((b) => b.y)
+      const span = Math.max(...rows) - Math.min(...rows)
+      for (const clearance of [2, 1]) {
+        if (besideFree(graph, edge, beside, labelAware, clearance))
+          return beside
+        for (let d = 1; d <= bottom - top; d++) {
+          for (const dy of [d, -d]) {
+            const moved = beside.map((b) => ({ ...b, y: b.y + dy }))
+            const first = Math.min(...moved.map((m) => m.y))
+            if (first < top || first + span > bottom) continue
+            if (besideFree(graph, edge, moved, labelAware, clearance))
+              return moved
+          }
+        }
+      }
+      return beside
+    }
   }
   return centred
 }
@@ -919,6 +1144,66 @@ export function besideCellsFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
+  clearance = 0,
+): boolean {
+  return besideFree(graph, edge, placement, true, clearance)
+}
+
+function besideFree(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+  labelAware: boolean,
+  clearance = 0,
+): boolean {
+  return (
+    besideGeometryFree(graph, edge, placement, clearance) &&
+    (!labelAware || !hitsOtherLabel(graph, edge, placement))
+  )
+}
+
+/**
+ * #1338: whether any line of `placement` shares a cell with another edge's
+ * label. `drawGraph` merges label overlays last-wins, so an overlap would
+ * overwrite text.
+ */
+function hitsOtherLabel(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): boolean {
+  const others = otherLabelPlacements(graph, edge)
+  return placement.some((a) =>
+    others.some(
+      (b) =>
+        a.y === b.y &&
+        a.x <= b.x + displayWidth(b.text) - 1 &&
+        b.x <= a.x + displayWidth(a.text) - 1,
+    ),
+  )
+}
+
+/**
+ * Every other labelled edge's label lines, placed without the label check
+ * (`labelAware = false`) so this stays a pure function of the layout.
+ */
+function otherLabelPlacements(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): { x: number; y: number; text: string }[] {
+  const out: { x: number; y: number; text: string }[] = []
+  for (const other of graph.edges) {
+    if (other === edge || other.path.length < 2) continue
+    out.push(...(resolveLabelPlacement(graph, other, false) ?? []))
+  }
+  return out
+}
+
+function besideGeometryFree(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+  clearance = 0,
 ): boolean {
   for (const { x, y, text } of placement) {
     const x0 = x
@@ -949,15 +1234,17 @@ export function besideCellsFree(
     }
     for (const other of graph.edges) {
       if (other === edge) continue
-      const pts = lineToDrawing(graph, other.path)
+      const pts = pathToDrawing(graph, other)
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1]!
         const b = pts[i]!
+        // `clearance` keeps the text off cells *next to* another edge's
+        // stroke too, where it would read as that stroke's label (#attribution).
         if (
-          y >= Math.min(a.y, b.y) &&
-          y <= Math.max(a.y, b.y) &&
-          x1 >= Math.min(a.x, b.x) &&
-          x0 <= Math.max(a.x, b.x)
+          y >= Math.min(a.y, b.y) - clearance &&
+          y <= Math.max(a.y, b.y) + clearance &&
+          x1 >= Math.min(a.x, b.x) - clearance &&
+          x0 <= Math.max(a.x, b.x) + clearance
         ) {
           return false
         }
@@ -982,12 +1269,39 @@ function onEntryJog(
   const end = clusterWallEnd(graph, edge)
   const drop = end ? clusterEntryDrop(graph, edge, end) : undefined
   const last = edge.path[edge.path.length - 1]
+  if (!end && line.length >= 2) return onExitBus(graph, edge, line)
   if (!drop || !last || line.length < 2) return line
   const gutter = gridToDrawingCoord(graph, last)
   const lr = graph.config.graphDirection === 'LR'
   return line.every((c) => (lr ? c.x === gutter.x : c.y === gutter.y))
     ? drop.jog
     : line
+}
+
+/**
+ * A label on the bus run of an exit that leaves the wall off its stub's cell
+ * (`clusterExitDrop`) follows the run to where it is drawn: the run now starts
+ * at the exit's own wall column (row), not the stub's, and a label centred on
+ * the routed run would sit on the new corner. A label on any other leg stays.
+ */
+function onExitBus(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+): DrawingCoord[] {
+  const drop = clusterExitDrop(graph, edge, clusterWallStart(graph, edge))
+  if (!drop) return line
+  const lr = graph.config.graphDirection === 'LR'
+  const stub = gridToDrawingCoord(graph, edge.path[0]!)
+  const bus = drop.jog[0]!
+  if (!line.every((c) => (lr ? c.x === bus.x : c.y === bus.y))) return line
+  return line.map((c) =>
+    (lr ? c.y === stub.y : c.x === stub.x)
+      ? lr
+        ? { x: c.x, y: bus.y }
+        : { x: bus.x, y: c.y }
+      : c,
+  )
 }
 
 /**
@@ -1092,6 +1406,29 @@ function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
     drawText(canvas, { x, y }, text)
   }
   return canvas
+}
+
+/**
+ * Cells of `edge`'s drawn label that hold a literal space between two
+ * characters of the text. `mergeCanvases` treats an overlay's space as
+ * transparent, so a stroke the label sits on would show through the gap and
+ * turn `long label` into `long─label` (#1348); the caller blanks these cells
+ * after the merge, the way subgraph titles already do (#447).
+ */
+export function labelInteriorSpaces(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): DrawingCoord[] {
+  const cells: DrawingCoord[] = []
+  for (const { x, y, text } of edgeLabelPlacement(graph, edge) ?? []) {
+    const glyphs = toDisplayCells(text)
+    const first = glyphs.findIndex((g) => g !== ' ')
+    const last = glyphs.findLastIndex((g) => g !== ' ')
+    for (let i = first + 1; i < last; i++) {
+      if (glyphs[i] === ' ') cells.push({ x: x + i, y })
+    }
+  }
+  return cells
 }
 
 /**

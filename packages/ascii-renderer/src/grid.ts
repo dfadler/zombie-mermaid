@@ -21,6 +21,7 @@ import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
   determineLabelLine,
+  createLabelContext,
   assignParallelEdgeLanes,
 } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
@@ -268,11 +269,9 @@ function rerouteAroundStyleConflicts(
   const temporarilyBlocked: GridCoord[] = []
   // Each reroute blocks one conflict cell, and the A* search around it
   // picks an arbitrary one of many equally short detours — in practice a
-  // staircase hugging the cluster wall (#1148's `retry` edge). Prefer fewest
-  // bends instead. Scoped to graphs with an engaged cluster exit so every
-  // other graph's reroutes stay byte for byte as before.
-  const straighten = (graph.clusterExitPlans?.size ?? 0) > 0
-  if (straighten) graph.preferStraightRoutes = true
+  // staircase hugging the cluster wall (#1148's `retry` edge) or a stair-step
+  // round a reciprocal edge (#1349's `D --> A`). Prefer fewest bends instead.
+  graph.preferStraightRoutes = true
   try {
     for (let i = 0; i < MAX_STYLE_CONFLICT_REROUTES; i++) {
       const conflict =
@@ -294,7 +293,7 @@ function rerouteAroundStyleConflicts(
       determinePath(graph, edge)
     }
   } finally {
-    if (straighten) graph.preferStraightRoutes = false
+    graph.preferStraightRoutes = false
     for (const cell of temporarilyBlocked) graph.grid.delete(gridKey(cell))
   }
 }
@@ -1048,6 +1047,7 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
 function placeReachableChildren(
   graph: AsciiGraph,
   highestPositionPerLevel: number[],
+  minLevels: ReadonlyMap<AsciiNode, number>,
 ): void {
   // Set once a pass stalls with children still held back for a cluster
   // entry (see `clusterEntrySources`): their sources can't all be placed
@@ -1125,6 +1125,10 @@ function placeReachableChildren(
 
         let childLevel = edgeDir === 'LR' ? gc.x + 4 : gc.y + 4
         if (edgeDir === graph.config.graphDirection) {
+          // Longest-path layering: a child sits below its deepest forward
+          // parent even when a shallower parent happens to place it first.
+          /* v8 ignore next -- every node reachable here was ranked by the DFS */
+          childLevel = Math.max(childLevel, minLevels.get(child) ?? 0)
           for (const source of entrySources) {
             const sgc = source.gridCoord
             if (!sgc) continue
@@ -1153,7 +1157,9 @@ function placeReachableChildren(
             center ?? 0,
             // A child of a centered node stays under it, not back at the
             // level's left edge.
-            centered.has(node) ? (edgeDir === 'LR' ? gc.y : gc.x) : 0,
+            // Likewise when longest-path layering has pushed siblings off
+            // this level, leaving the slots left of the parent empty.
+            clearSlotBelow(graph, gc, child, childLevel, edgeDir === 'LR'),
           )
           if (center !== undefined && highestPosition === center) {
             centered.add(child)
@@ -1179,6 +1185,39 @@ function placeReachableChildren(
       progressed = true
     }
   }
+}
+
+/**
+ * The cross-axis slot a child pushed `childLevel` away from its parent can
+ * take: the parent's own slot, or the next one over while an unrelated node
+ * already placed between them occupies it (so the edge is not forced to wrap around
+ * that node, as `B --> D` does around `B --> C` when D ranks below C).
+ */
+function clearSlotBelow(
+  graph: AsciiGraph,
+  parent: GridCoord,
+  child: AsciiNode,
+  childLevel: number,
+  lr: boolean,
+): number {
+  let slot = lr ? parent.y : parent.x
+  const level = lr ? parent.x : parent.y
+  const blocked = (): boolean =>
+    graph.nodes.some((n) => {
+      const c = n.gridCoord
+      if (!c) return false
+      const nl = lr ? c.x : c.y
+      // A node that is itself a parent of the child is no obstacle: its
+      // edge into the child runs alongside the longer one.
+      return (
+        (lr ? c.y : c.x) === slot &&
+        nl > level &&
+        nl < childLevel &&
+        !getChildren(graph, n).includes(child)
+      )
+    })
+  while (blocked()) slot += 4
+  return slot
 }
 
 /**
@@ -1264,6 +1303,50 @@ function reachesAnyParent(graph: AsciiGraph, node: AsciiNode): boolean {
     }
   }
   return false
+}
+
+/**
+ * The shallowest level (a multiple of 4, root = 0) each node may occupy under
+ * longest-path layering, as dagre ranks it: a node sits below every parent
+ * that reaches it over a forward edge. A forward DFS from `roots` classifies
+ * back edges (an edge into a node still open on the stack, which closes a
+ * cycle) and drops them, so `A --> B --> A` still ranks B one level below A.
+ * Without this, `A --> B --> D` plus `A --> D` placed D beside B (its first
+ * parent's level) and the `B --> D` edge ran sideways.
+ */
+function computeMinLevels(
+  graph: AsciiGraph,
+  roots: AsciiNode[],
+): Map<AsciiNode, number> {
+  const forward = new Map<AsciiNode, AsciiNode[]>()
+  const state = new Map<AsciiNode, 'open' | 'done'>()
+  const dfs = (node: AsciiNode): void => {
+    state.set(node, 'open')
+    const out: AsciiNode[] = []
+    for (const child of getChildren(graph, node)) {
+      if (child === node || state.get(child) === 'open') continue
+      out.push(child)
+      if (!state.has(child)) dfs(child)
+    }
+    forward.set(node, out)
+    state.set(node, 'done')
+  }
+  for (const root of roots) if (!state.has(root)) dfs(root)
+
+  // Longest path from any root over the acyclic forward edges, in reverse
+  // post-order so every parent is ranked before its children.
+  const levels = new Map<AsciiNode, number>()
+  const order = [...forward.keys()].reverse()
+  for (const node of order) levels.set(node, 0)
+  for (const node of order) {
+    /* v8 ignore next -- every node in `order` was seeded to 0 above */
+    const next = (levels.get(node) ?? 0) + 4
+    /* v8 ignore next -- every forward node has an entry */
+    for (const child of forward.get(node) ?? []) {
+      levels.set(child, Math.max(levels.get(child) ?? 0, next))
+    }
+  }
+  return levels
 }
 
 /**
@@ -1438,6 +1521,7 @@ export function createMapping(graph: AsciiGraph): void {
   // --> A`, each in its own subgraph) that is the component's only seed, so
   // dropping it left the whole component unplaced (#1197).
   const rootNodes = initialRoots
+  const minLevels = computeMinLevels(graph, rootNodes)
 
   // Defer root nodes that belong to a subgraph which has OTHER members that
   // are (a) not roots themselves and (b) not even reachable from this root
@@ -1567,7 +1651,7 @@ export function createMapping(graph: AsciiGraph): void {
   }
 
   // Place child nodes level by level (reachable from the roots placed so far).
-  placeReachableChildren(graph, highestPositionPerLevel)
+  placeReachableChildren(graph, highestPositionPerLevel, minLevels)
 
   // Now place whatever deferred subgraph-orphan roots weren't already
   // resolved above (anchored to a root placed in this same subgraph) —
@@ -1628,7 +1712,7 @@ export function createMapping(graph: AsciiGraph): void {
 
   // A deferred root may itself have children (edges) that couldn't be placed
   // above since it wasn't on the grid yet — give the traversal another pass.
-  placeReachableChildren(graph, highestPositionPerLevel)
+  placeReachableChildren(graph, highestPositionPerLevel, minLevels)
 
   centerParentsOverChildren(graph)
 
@@ -1696,7 +1780,6 @@ export function createMapping(graph: AsciiGraph): void {
       increaseGridSizeForPath(graph, edge.path)
       claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
       claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
-      determineLabelLine(graph, edge)
       continue
     }
 
@@ -1718,8 +1801,13 @@ export function createMapping(graph: AsciiGraph): void {
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
-    determineLabelLine(graph, edge)
   }
+
+  // Choose each label's segment only now that every path exists, so a label
+  // avoids segments another edge also runs along and segments another label
+  // already holds (#1347).
+  const labelContext = createLabelContext(graph)
+  for (const edge of graph.edges) determineLabelLine(graph, edge, labelContext)
 
   // Convert grid coords → drawing coords and generate box drawings
   for (const node of graph.nodes) {
