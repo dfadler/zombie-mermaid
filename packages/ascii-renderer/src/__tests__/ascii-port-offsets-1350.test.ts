@@ -76,8 +76,9 @@ D -->|x| A`,
     const below = rows[border + 1]!
     expect(below.indexOf('▲')).toBeGreaterThanOrEqual(0)
     expect(below.indexOf('│')).toBeGreaterThan(below.indexOf('▲') + 1)
-    // The border carries one junction for the leaving trunk, not a pair.
-    expect(rows[border]!.match(/┬/g)).toHaveLength(1)
+    // A --> B and A --> D bend the same way at different depths, so each has
+    // its own stem (#1308): two junctions, one per leaving edge, not a pile.
+    expect(rows[border]!.match(/┬/g)).toHaveLength(2)
   })
 
   it('leaves a port used one way only on its routed column', () => {
