@@ -154,24 +154,27 @@ export function layoutPieAscii(
 ): PieAsciiLayout {
   const total = chart.slices.reduce((sum, s) => sum + s.value, 0)
   // Same filter as the SVG: a zero total gives NaN, which drops every slice.
-  const isDrawn = chart.slices.map(
-    (s) => (s.value / total) * 100 >= MIN_PERCENT,
+  const drawn = chart.slices.flatMap((slice, index) =>
+    (slice.value / total) * 100 >= MIN_PERCENT
+      ? [{ index, value: slice.value }]
+      : [],
   )
-  const drawnValues = chart.slices
-    .filter((_, i) => isDrawn[i])
-    .map((s) => s.value)
-  const cells = allocateCells(drawnValues, barWidth)
+  const cells = allocateCells(
+    drawn.map((d) => d.value),
+    barWidth,
+  )
+  // Cells per source index; slices left out of the bar have no entry.
+  const cellsBySlice = new Map(drawn.map((d, k) => [d.index, cells[k]]))
 
-  // `next` walks `cells` (one entry per drawn slice); `segment` counts the
-  // slices that actually got cells, so fill patterns cycle along the bar.
-  let next = 0
+  // `segment` counts the slices that actually got cells, so fill patterns
+  // cycle along the bar.
   let segment = 0
   const rows: PieAsciiRow[] = chart.slices.map((slice, index) => {
     const text = chart.showData
       ? `${slice.label} [${String(slice.value)}]`
       : slice.label
     const colorIndex = index % PALETTE_SIZE
-    const sliceCells = isDrawn[index] ? (cells[next++] ?? 0) : 0
+    const sliceCells = cellsBySlice.get(index) ?? 0
     // A drawn slice can still end up with no cell when there are more drawn
     // slices than cells; it is shown like an omitted one, not as a segment.
     if (sliceCells === 0) {
