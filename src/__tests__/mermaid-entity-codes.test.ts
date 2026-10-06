@@ -5,7 +5,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
-import { decodeMermaidEntities } from '@zombie-mermaid/core'
+import {
+  decodeMermaidEntities,
+  decodeXmlEntitiesInLabel,
+} from '@zombie-mermaid/core'
 import { renderMermaidSVG, renderMermaidASCII } from '../index.ts'
 
 describe('Mermaid entity codes', () => {
@@ -72,5 +75,36 @@ describe('ASCII entity decoding', () => {
       colorMode: 'none',
     })
     expect(out).toContain('&lt;')
+  })
+
+  it('decodes edge labels in ASCII output', () => {
+    const out = renderMermaidASCII('flowchart LR\n  A -->|&quot;go&quot;| B', {
+      colorMode: 'none',
+    })
+    expect(out).toContain('"go"')
+    expect(out).not.toContain('&quot;')
+  })
+
+  it('decodes subgraph labels, including nested ones', () => {
+    const out = renderMermaidASCII(
+      'flowchart TD\n  subgraph O["&lt;outer&gt;"]\n    subgraph I["&quot;inner&quot;"]\n      A\n    end\n  end',
+      { colorMode: 'none' },
+    )
+    expect(out).toContain('<outer>')
+    expect(out).toContain('"inner"')
+    expect(out).not.toContain('&lt;')
+    expect(out).not.toContain('&quot;')
+  })
+
+  it('decodes numeric and hex HTML entities', () => {
+    expect(decodeXmlEntitiesInLabel('&#35;9 &#x5B;y&#X5d; &apos;')).toBe(
+      "#9 [y] '",
+    )
+  })
+
+  it('leaves invalid numeric HTML entities untouched', () => {
+    for (const bad of ['&#99999999;', '&#x110000;', '&#0;', '&#xD800;']) {
+      expect(decodeXmlEntitiesInLabel(bad)).toBe(bad)
+    }
   })
 })
