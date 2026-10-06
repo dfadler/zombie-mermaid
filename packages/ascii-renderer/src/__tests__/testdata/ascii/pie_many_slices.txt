@@ -1,0 +1,34 @@
+pie title Commits by weekday and team
+  "Mon core" : 14
+  "Mon docs" : 9
+  "Tue core" : 13
+  "Tue docs" : 8
+  "Wed core" : 12
+  "Wed docs" : 7
+  "Thu core" : 11
+  "Thu docs" : 7
+  "Fri core" : 10
+  "Fri docs" : 6
+  "Sat core" : 5
+  "Sat docs" : 3
+  "Sun core" : 4
+  "Sun docs" : 2
+---
+            Commits by weekday and team
+
+[######====******++++#####===*****+++#####===**+##=]
+
+  # Mon core    13%
+  = Mon docs     8%
+  * Tue core    12%
+  + Tue docs     7%
+  # Wed core    11%
+  = Wed docs     6%
+  * Thu core    10%
+  + Thu docs     6%
+  # Fri core     9%
+  = Fri docs     5%
+  * Sat core     5%
+  + Sat docs     3%
+  # Sun core     4%
+  = Sun docs     2%

@@ -1,0 +1,54 @@
+pie title Tickets by component
+  "Component 01" : 30
+  "Component 02" : 29
+  "Component 03" : 28
+  "Component 04" : 27
+  "Component 05" : 26
+  "Component 06" : 25
+  "Component 07" : 24
+  "Component 08" : 23
+  "Component 09" : 22
+  "Component 10" : 21
+  "Component 11" : 20
+  "Component 12" : 19
+  "Component 13" : 18
+  "Component 14" : 17
+  "Component 15" : 16
+  "Component 16" : 15
+  "Component 17" : 14
+  "Component 18" : 13
+  "Component 19" : 12
+  "Component 20" : 11
+  "Component 21" : 10
+  "Component 22" : 9
+  "Component 23" : 8
+  "Component 24" : 7
+---
+                Tickets by component
+
+[███▓▓▓▒▒▒░░░███▓▓▓▒▒▒░░░███▓▓▒▒░░██▓▓▒▒░░██▓▒░█▓▒░]
+
+  █ Component 01     7%
+  ▓ Component 02     7%
+  ▒ Component 03     6%
+  ░ Component 04     6%
+  █ Component 05     6%
+  ▓ Component 06     6%
+  ▒ Component 07     5%
+  ░ Component 08     5%
+  █ Component 09     5%
+  ▓ Component 10     5%
+  ▒ Component 11     5%
+  ░ Component 12     4%
+  █ Component 13     4%
+  ▓ Component 14     4%
+  ▒ Component 15     4%
+  ░ Component 16     3%
+  █ Component 17     3%
+  ▓ Component 18     3%
+  ▒ Component 19     3%
+  ░ Component 20     2%
+  █ Component 21     2%
+  ▓ Component 22     2%
+  ▒ Component 23     2%
+  ░ Component 24     2%

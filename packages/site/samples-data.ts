@@ -1732,4 +1732,161 @@ flowchart LR
       muted: '#565f89',
     },
   },
+
+  // Pie edge cases. Each source here also has an ASCII golden of the same
+  // name under packages/ascii-renderer/src/__tests__/testdata/{ascii,unicode}
+  // (and some colour goldens under testdata/color/), so every case is pinned
+  // in both renderers.
+  {
+    title: 'Pie: Empty',
+    category: 'Pie',
+    description:
+      "A bare `pie` with no slices is valid: just the outline circle, at the pie's own width.",
+    source: `pie`,
+  },
+  {
+    title: 'Pie: Empty With Title',
+    category: 'Pie',
+    description: 'A title over an empty chart.',
+    source: `pie title Nothing to show yet`,
+  },
+  {
+    title: 'Pie: All Zero',
+    category: 'Pie',
+    description:
+      'Every value is 0: nothing is drawn, every slice stays in the legend.',
+    source: `pie showData title Nothing counted
+  "Apples" : 0
+  "Pears" : 0
+  "Plums" : 0`,
+  },
+  {
+    title: 'Pie: Tall Legend',
+    category: 'Pie',
+    description:
+      'Twenty-four slices: the legend is taller than the 450px frame, so the viewBox grows to fit it.',
+    source: `pie title Tickets by component
+  "Component 01" : 30
+  "Component 02" : 29
+  "Component 03" : 28
+  "Component 04" : 27
+  "Component 05" : 26
+  "Component 06" : 25
+  "Component 07" : 24
+  "Component 08" : 23
+  "Component 09" : 22
+  "Component 10" : 21
+  "Component 11" : 20
+  "Component 12" : 19
+  "Component 13" : 18
+  "Component 14" : 17
+  "Component 15" : 16
+  "Component 16" : 15
+  "Component 17" : 14
+  "Component 18" : 13
+  "Component 19" : 12
+  "Component 20" : 11
+  "Component 21" : 10
+  "Component 22" : 9
+  "Component 23" : 8
+  "Component 24" : 7`,
+  },
+  // No emoji in this one: the Linux CI image has no emoji font (they would
+  // render as boxes), and ascii-geometry.visual.test.ts's xterm oracle uses
+  // Unicode 6 widths, where most emoji are one cell. Emoji labels have a
+  // text-only ASCII golden instead (testdata/*/pie_emoji_labels.txt).
+  {
+    title: 'Pie: Wide Characters',
+    category: 'Pie',
+    description:
+      'Chinese, Japanese, Korean and fullwidth characters in the title and labels; text widths are display widths.',
+    source: `pie title 宠物 ペット 반려동물
+  "狗 Dogs" : 40
+  "猫 Cats" : 30
+  "さかな Fish" : 20
+  "ＢＩＲＤ" : 10`,
+  },
+  {
+    title: 'Pie: Long Labels',
+    category: 'Pie',
+    description:
+      'Labels and a title are never truncated: the legend (and a title wider than the chart) widen the output instead.',
+    source: `pie title Where the quarterly infrastructure budget actually went this year
+  "Cloud compute for the continuous integration and nightly regression fleet" : 55
+  "Storage" : 30
+  "A label that is long but not the longest one in this chart" : 15`,
+  },
+  {
+    title: 'Pie: showData Decimals',
+    category: 'Pie',
+    description:
+      '`showData` prints values with `String(value)`: no thousands separators, and `42.10` becomes `42.1`.',
+    source: `pie showData title Revenue by region
+  "North" : 2500000.75
+  "South" : 1000000
+  "East" : 42.10
+  "West" : 0.5`,
+  },
+  {
+    title: 'Pie: Two Even Slices',
+    category: 'Pie',
+    description: 'Two equal slices, each 50%.',
+    source: `pie title Coin flips
+  "Heads" : 50
+  "Tails" : 50`,
+  },
+  {
+    title: 'Pie: Accessibility Only',
+    category: 'Pie',
+    description:
+      "`accTitle` and a multi-line `accDescr { … }` with no `title`: they become the SVG's `<title>`/`<desc>` and are never drawn as text.",
+    source: `pie
+  accTitle: Survey answers
+  accDescr {
+    Most people answered yes.
+    A few said no.
+  }
+  "Yes" : 70
+  "No" : 30`,
+  },
+  {
+    title: 'Pie: Label Edge Cases',
+    category: 'Pie',
+    description:
+      'A repeated label keeps its first value, single-quoted and escaped labels are accepted, and markup characters are shown as text.',
+    source: `pie title Labels <&> "quotes"
+  "R&D" : 30
+  'Single quoted' : 25
+  "<script>" : 20
+  "Say \\"hi\\"" : 15
+  "R&D" : 99
+  'It\\'s' : 10`,
+  },
+  {
+    title: 'Pie: Percentage Boundaries',
+    category: 'Pie',
+    description:
+      'Exactly 1% is drawn; 0.99%, 0.01% and -0 are not. `-0` is shown as `0`.',
+    source: `pie showData title Percentage boundaries
+  "Most" : 98
+  "Exactly 1%" : 1
+  "Just under 1%" : 0.99
+  "One hundredth" : 0.01
+  "Negative zero" : -0`,
+  },
+  {
+    title: 'Pie: Custom Accent',
+    category: 'Pie',
+    description:
+      'The palette is built from the theme accent, so overriding only `accent` recolours every slice.',
+    source: `pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15
+  "Birds" : 60
+  "Fish" : 30`,
+    options: {
+      accent: '#d33682',
+    },
+  },
 ]

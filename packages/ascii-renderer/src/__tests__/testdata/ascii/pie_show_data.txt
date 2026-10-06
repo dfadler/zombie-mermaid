@@ -1,0 +1,14 @@
+pie showData title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5
+---
+             Key elements in Product X
+
+[####################=======================*****++]
+
+  # Calcium [42.96]      40%
+  = Potassium [50.05]    46%
+  * Magnesium [10.01]     9%
+  + Iron [5]              5%

@@ -1,0 +1,20 @@
+pie showData title Browser share
+  "Chrome" : 640
+  "Safari" : 190
+  "Firefox" : 120
+  "Edge" : 45
+  "Opera" : 4
+  "Lynx" : 1
+  "Netscape" : 0
+---
+                   Browser share
+
+[████████████████████████████████▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒░░]
+
+  █ Chrome [640]     64%
+  ▓ Safari [190]     19%
+  ▒ Firefox [120]    12%
+  ░ Edge [45]         5%
+  · Opera [4]
+  · Lynx [1]
+  · Netscape [0]
