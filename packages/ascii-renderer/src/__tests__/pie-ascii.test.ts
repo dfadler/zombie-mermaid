@@ -68,6 +68,11 @@ describe('pie ASCII – allocateCells', () => {
     expect(allocateCells([776, 170, 54], 50)).toEqual([39, 8, 3])
   })
 
+  it('breaks remainder ties in favour of the earlier part', () => {
+    // Three equal shares of 16.67: the two spare cells go to the first two.
+    expect(allocateCells([1, 1, 1], 50)).toEqual([17, 17, 16])
+  })
+
   it('gives every part at least one cell when there is room', () => {
     // 1 of 1000 is 0.05 of a cell: it still gets one, taken from the big part.
     expect(allocateCells([999, 1], 50)).toEqual([49, 1])
@@ -362,6 +367,18 @@ describe('pie ASCII – colour modes', () => {
       expect(plain).toBe(render(PETS).replace(/[▓▒░]/g, '█'))
     })
   }
+
+  it('wraps no empty colour run around an empty label', () => {
+    const src = 'pie\n  "" : 1\n  "B" : 1'
+    for (const mode of ['truecolor', 'html'] as const) {
+      const out = renderMermaidASCII(src, { colorMode: mode, theme })
+      expect(out).not.toMatch(/\x1b\[[0-9;]*m\x1b\[0m|<span[^>]*><\/span>/)
+    }
+    const plain = renderMermaidASCII(src, { colorMode: 'truecolor', theme })
+    expect(plain.replace(/\x1b\[[0-9;]*m/g, '')).toBe(
+      render(src).replace(/[▓▒░]/g, '█'),
+    )
+  })
 
   it('emits no escapes in none mode', () => {
     expect(render(PETS)).not.toContain('\x1b')

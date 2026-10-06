@@ -63,15 +63,16 @@ const TABLE_GAP = '   '
 /** Width of the percentage column ("100%"). */
 const PERCENT_WIDTH = 4
 
+/** `patterns` holds one fill character (all single UTF-16 units) per slot. */
 const UNI = {
   solid: '█',
-  patterns: ['█', '▓', '▒', '░'],
+  patterns: '█▓▒░',
   noSegment: '·',
 } as const
 
 const ASC = {
   solid: '#',
-  patterns: ['#', '=', '*', '+'],
+  patterns: '#=*+',
   noSegment: '.',
 } as const
 
@@ -106,42 +107,43 @@ export function allocateCells(weights: number[], width: number): number[] {
   if (n === 0) return []
   const sum = weights.reduce((a, b) => a + b, 0)
   if (!(sum > 0)) return weights.map(() => 0)
-  const exact = weights.map((w) => (w / sum) * width)
-  const counts = exact.map((e) => Math.floor(e))
-  let left = width - counts.reduce((a, b) => a + b, 0)
+  const parts = weights.map((w, i) => {
+    const exact = (w / sum) * width
+    return { i, exact, count: Math.floor(exact) }
+  })
+  let left = width - parts.reduce((a, p) => a + p.count, 0)
   // Largest remainder first; ties go to the earlier slice.
-  const byRemainder = exact
-    .map((e, i) => ({ i, rem: e - Math.floor(e) }))
-    .sort((a, b) => b.rem - a.rem || a.i - b.i)
-  for (const { i } of byRemainder) {
+  const byRemainder = [...parts].sort(
+    (a, b) => b.exact - b.count - (a.exact - a.count) || a.i - b.i,
+  )
+  for (const part of byRemainder) {
     if (left <= 0) break
-    counts[i] = (counts[i] ?? 0) + 1
+    part.count++
     left--
   }
   if (n <= width) {
     // Give an empty part one cell, taken from whichever part is furthest
     // above its exact share and can spare one.
-    for (let i = 0; i < n; i++) {
-      if (counts[i] !== 0) continue
-      let donor = -1
+    for (const empty of parts) {
+      if (empty.count !== 0) continue
+      let donor: (typeof parts)[number] | undefined
       let best = -Infinity
-      for (let j = 0; j < n; j++) {
-        const c = counts[j] ?? 0
-        const over = c - (exact[j] ?? 0)
-        if (c > 1 && over > best) {
+      for (const part of parts) {
+        const over = part.count - part.exact
+        if (part.count > 1 && over > best) {
           best = over
-          donor = j
+          donor = part
         }
       }
       // Unreachable: with n <= width cells shared out and one part empty,
       // some other part holds at least two.
       /* v8 ignore next */
-      if (donor < 0) break
-      counts[donor] = (counts[donor] ?? 0) - 1
-      counts[i] = 1
+      if (donor === undefined) break
+      donor.count--
+      empty.count = 1
     }
   }
-  return counts
+  return parts.map((p) => p.count)
 }
 
 /** Lay out a parsed pie chart for text output. Pure; no colours. */
@@ -200,13 +202,14 @@ export function renderPieAscii(
   const layout = layoutPieAscii(parsePieChart(text))
   const ch = config.useAscii ? ASC : UNI
   const colored = colorMode !== 'none'
+  // colorizeText leaves an empty string (e.g. a `"" : 1` label) uncoloured.
   const paint = (s: string, hex: string): string =>
-    s.length === 0 ? s : colorizeText(s, hex, colorMode)
+    colorizeText(s, hex, colorMode)
 
   const fill = (row: PieAsciiRow): string => {
     if (row.drawnIndex < 0) return ch.noSegment
     if (colored) return ch.solid
-    return ch.patterns[row.drawnIndex % ch.patterns.length] ?? ch.solid
+    return ch.patterns.charAt(row.drawnIndex % ch.patterns.length)
   }
 
   const lines: string[] = []

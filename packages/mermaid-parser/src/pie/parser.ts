@@ -133,6 +133,7 @@ function lineError(
   line: number,
   message: string,
 ): Error {
+  /* v8 ignore next -- every caller passes a line inside `lines` */
   const source = (lines[line - 1] ?? '').trim()
   return new Error(`Line ${line}: ${message} in "${source}". ${SYNTAX_HELP}`)
 }
@@ -241,14 +242,16 @@ function convertTitleLike(kind: TokenKind, text: string): string {
   if (match?.[1] !== undefined) {
     return match[1].trim().replace(/[\t ]{2,}/gm, ' ')
   }
-  if (match?.[2] !== undefined) {
-    return match[2]
-      .replace(/^\s*/gm, '')
-      .replace(/\s+$/gm, '')
-      .replace(/[\t ]{2,}/gm, ' ')
-      .replace(/[\n\r]{2,}/gm, '\n')
-  }
-  return ''
+  // Only the `accDescr { … }` form leaves group 1 unset, and it always sets
+  // group 2: every TITLE / ACC_TITLE / ACC_DESCR token matches its value
+  // regex. (Mermaid's converter returns undefined if neither group is set.)
+  /* v8 ignore next */
+  const braced = match?.[2] ?? ''
+  return braced
+    .replace(/^\s*/gm, '')
+    .replace(/\s+$/gm, '')
+    .replace(/[\t ]{2,}/gm, ' ')
+    .replace(/[\n\r]{2,}/gm, '\n')
 }
 
 const DESCRIBE: Record<TokenKind, string> = {

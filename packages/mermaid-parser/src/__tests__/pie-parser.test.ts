@@ -257,6 +257,26 @@ describe('labels', () => {
     ).toEqual(['say "hi"', "it's", 'tab\there'])
   })
 
+  // Langium's convertEscapeCharacter maps exactly these seven letters; any
+  // other escaped character stands for itself. Checked against
+  // @mermaid-js/parser 2.0.1, which turns
+  // "b\bf\fn\nr\rt\tv\v0\0q\"z\z" into "b\bf\fn\nr\rt\tv\u000b0\u0000q\"zz".
+  it.each([
+    ['\\b', '\b'],
+    ['\\f', '\f'],
+    ['\\n', '\n'],
+    ['\\r', '\r'],
+    ['\\t', '\t'],
+    ['\\v', '\v'],
+    ['\\0', '\0'],
+    ['\\z', 'z'],
+    ['\\\\', '\\'],
+  ])('resolves the %s escape in a label', (escape, resolved) => {
+    expect(parsePieChart(`pie\n"a${escape}b" : 1`).slices).toEqual([
+      { label: `a${resolved}b`, value: 1 },
+    ])
+  })
+
   it('keeps the other quote character literally', () => {
     expect(
       parsePieChart(`pie\n"it's" : 1\n'say "hi"' : 2`).slices.map(
