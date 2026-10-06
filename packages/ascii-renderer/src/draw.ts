@@ -27,7 +27,7 @@ import type {
 import { mergeCanvases, firstClaimWins, write } from './canvas.ts'
 import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
-import { drawArrow } from './draw-arrows.ts'
+import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -366,6 +366,15 @@ export function drawGraph(graph: AsciiGraph): Canvas {
 
   graph.canvas = mergeCanvases(graph.canvas, zero, useAscii, ...labelCanvases)
   fillRolesFromCanvases(graph.roleCanvas, labelCanvases, zero, 'text')
+  // A space inside a label must stay blank, not let the stroke beneath show
+  // through it (#1348); mergeCanvases skips overlay spaces, so force them.
+  for (const edge of graph.edges) {
+    if (edge.bundle && edge.pathToJunction) continue
+    for (const { x, y } of labelInteriorSpaces(graph, edge)) {
+      write(graph.canvas, x, y, ' ')
+      setRole(graph.roleCanvas, x, y, 'text')
+    }
+  }
   for (const labelC of labelCanvases) {
     const rect = textBounds(labelC)
     if (rect) labelRects.push(rect)
