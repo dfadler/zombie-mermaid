@@ -190,7 +190,23 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
     graph.columnWidth.set(gc.x - 1, Math.max(current, graph.config.paddingX))
   }
 
-  if (gc.y > 0) {
+  // LR: when the row above this node is another node's own block (a fan-in
+  // child centered between its parents, `fanInCenter`), it is that node's
+  // content row, not a gap between rows. Padding it would stretch the
+  // neighbour into a tall box for no spacing benefit.
+  const rowAboveIsNodeBlock =
+    graph.config.graphDirection === 'LR' &&
+    graph.nodes.some((other) => {
+      const oc = other.gridCoord
+      return (
+        other !== node &&
+        oc !== null &&
+        oc.y <= gc.y - 1 &&
+        gc.y - 1 <= oc.y + 2 &&
+        oc.x !== gc.x
+      )
+    })
+  if (gc.y > 0 && !rowAboveIsNodeBlock) {
     let basePadding = graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
@@ -1164,6 +1180,7 @@ function placeReachableChildren(
           )
           if (center !== undefined && highestPosition === center) {
             centered.add(child)
+            child.fanInCentered = true
           }
         }
 

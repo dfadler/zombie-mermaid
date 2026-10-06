@@ -103,3 +103,55 @@ describe('fan-in that keeps the first-parent slot (#1339)', () => {
     expect(rowOf(rows, 'E')).toBe(rowOf(rows, 'C'))
   })
 })
+
+describe('LR centered fan-in routing', () => {
+  // A centered child is vertically offset from every parent, so the router
+  // used to exit the parents through their bottom/top faces and run the trunk
+  // under their centers, drawing a vertical line joining A and B and
+  // stretching their boxes. Each parent must leave through its right face and
+  // join in the gap before the child.
+  const GOLDEN = [
+    '┌───┐',
+    '│   │',
+    '│ A ├──┐',
+    '│   │  │',
+    '└───┘  │  ┌───┐',
+    '       │  │   │',
+    '       ├─►│ C │',
+    '       │  │   │',
+    '┌───┐  │  └───┘',
+    '│   │  │',
+    '│ B ├──┘',
+    '│   │',
+    '└───┘',
+  ]
+
+  it('leaves each parent through its right face and joins before the child', () => {
+    expect(render('graph LR\nA & B --> C')).toEqual(GOLDEN)
+  })
+
+  it('has no bottom/top port on a parent and one arrowhead into the child', () => {
+    const text = render('graph LR\nA & B --> C').join('\n')
+    expect(text).not.toMatch(/[┬┴]/)
+    expect(text.match(/►/g)).toHaveLength(1)
+  })
+
+  it('mirrors for RL: parents leave through their left face', () => {
+    const text = render('graph RL\nA & B --> C').join('\n')
+    expect(text).not.toMatch(/[┬┴]/)
+    expect(text.match(/◄/g)).toHaveLength(1)
+    expect(text).toMatch(/┌──┤ A │/)
+    expect(text).toMatch(/└──┤ B │/)
+  })
+
+  it('routes a middle parent straight through the trunk', () => {
+    const text = render('graph LR\nA & B & D --> C').join('\n')
+    expect(text).toContain('─┼─►│ C │')
+    expect(text.match(/►/g)).toHaveLength(1)
+  })
+
+  it('leaves a TD fan-in routing unchanged', () => {
+    const rows = render('graph TD\nA & B --> C')
+    expect(rows.some((r) => r.includes('└─────┬────┘'))).toBe(true)
+  })
+})
