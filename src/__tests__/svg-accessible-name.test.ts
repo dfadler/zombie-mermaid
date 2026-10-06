@@ -182,6 +182,32 @@ describe('svgOpenTag – hasInteractiveLinks (issue #239)', () => {
   })
 })
 
+describe('svgOpenTag – description', () => {
+  const desc = (decorative?: boolean, links?: boolean) =>
+    svgOpenTag(400, 300, colors, false, 'T', decorative, links, true, 'D & <x>')
+
+  it('adds aria-describedby and a <desc> after the <title>', () => {
+    const tag = desc()
+    expect(tag).toContain(
+      'role="img" aria-labelledby="zm-title-1" aria-describedby="zm-desc-1"',
+    )
+    expect(tag).toMatch(
+      /<title id="zm-title-1">T<\/title>\n {2}<desc id="zm-desc-1">D &amp; &lt;x&gt;<\/desc>$/,
+    )
+  })
+
+  it('keeps the description with interactive links, drops it when decorative', () => {
+    expect(desc(true, true)).toContain('<desc id="zm-desc-1">')
+    expect(desc(true, false)).not.toMatch(/<desc|aria-describedby/)
+  })
+
+  it('emits nothing new without a description', () => {
+    expect(svgOpenTag(400, 300, colors, false, 'T')).not.toMatch(
+      /<desc|aria-describedby/,
+    )
+  })
+})
+
 // ============================================================================
 // renderMermaidSVG – wiring across every diagram type
 // ============================================================================

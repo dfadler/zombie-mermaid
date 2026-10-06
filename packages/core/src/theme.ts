@@ -560,6 +560,14 @@ function nextTitleId(): string {
   return `zm-title-${titleIdCounter}`
 }
 
+/** Same scheme as `nextTitleId`, for the root `<desc>` (`description`). */
+let descIdCounter = 0
+
+function nextDescId(): string {
+  descIdCounter += 1
+  return `zm-desc-${descIdCounter}`
+}
+
 /**
  * Test-only: reset the title-id counter so id assertions in tests don't
  * depend on how many titled diagrams earlier tests in the same file rendered.
@@ -567,6 +575,7 @@ function nextTitleId(): string {
  */
 export function __resetSvgTitleIdCounterForTests(): void {
   titleIdCounter = 0
+  descIdCounter = 0
 }
 
 /**
@@ -669,6 +678,11 @@ export function themeStyleDeclarations(
  *                              See #239 — forces no root `role` so the link
  *                              stays reachable, regardless of `decorative`.
  * @param styleAttribute - Emit the root `style="…"` attribute. Default true.
+ * @param description - Accessible description: a `<desc id="zm-desc-N">`
+ *                      after the title plus `aria-describedby` on the root.
+ *                      Follows the same rules as `title` (dropped when
+ *                      decorative without interactive links). Used for
+ *                      Mermaid's `accDescr`.
  */
 export function svgOpenTag(
   width: number,
@@ -679,6 +693,7 @@ export function svgOpenTag(
   decorative?: boolean,
   hasInteractiveLinks?: boolean,
   styleAttribute: boolean = true,
+  description?: string,
 ): string {
   const styleAttr = styleAttribute
     ? ` style="${themeStyleDeclarations(colors, transparent)}"`
@@ -686,23 +701,24 @@ export function svgOpenTag(
 
   let a11yAttrs = ''
   let titleEl = ''
-  if (hasInteractiveLinks) {
-    // No root role: role="img" or aria-hidden would hide a real, focusable
-    // <a href> descendant from assistive tech while leaving it Tab-reachable.
-    if (title) {
-      const id = nextTitleId()
-      a11yAttrs = ` aria-labelledby="${id}"`
-      titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
-    }
-  } else if (decorative) {
+  const named = hasInteractiveLinks || !decorative
+  if (!hasInteractiveLinks && decorative) {
     a11yAttrs = ' aria-hidden="true"'
-  } else {
+  } else if (!hasInteractiveLinks) {
+    // No root role with interactive links: role="img" or aria-hidden would
+    // hide a real, focusable <a href> descendant from assistive tech while
+    // leaving it Tab-reachable.
     a11yAttrs = ' role="img"'
-    if (title) {
-      const id = nextTitleId()
-      a11yAttrs += ` aria-labelledby="${id}"`
-      titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
-    }
+  }
+  if (named && title) {
+    const id = nextTitleId()
+    a11yAttrs += ` aria-labelledby="${id}"`
+    titleEl = `\n  <title id="${id}">${escapeXml(title)}</title>`
+  }
+  if (named && description) {
+    const id = nextDescId()
+    a11yAttrs += ` aria-describedby="${id}"`
+    titleEl += `\n  <desc id="${id}">${escapeXml(description)}</desc>`
   }
 
   return (

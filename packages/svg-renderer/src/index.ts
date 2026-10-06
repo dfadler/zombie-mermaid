@@ -62,6 +62,8 @@ export * from './sequence/layout.ts'
 export * from './sequence/renderer.ts'
 export * from './xychart/layout.ts'
 export * from './xychart/renderer.ts'
+export * from './pie/layout.ts'
+export * from './pie/renderer.ts'
 
 import { decodeXML } from 'entities'
 import type {

@@ -82,7 +82,7 @@ const SAMPLE_BY_TYPE: Record<DiagramType, string> = {
  * accessibility contract — and that assertion stops passing the moment the
  * renderer lands, forcing the type out of this set and into the real check.
  */
-const NOT_YET_RENDERED: ReadonlySet<DiagramType> = new Set(['pie'])
+const NOT_YET_RENDERED: ReadonlySet<DiagramType> = new Set<DiagramType>([])
 
 /**
  * `stateDiagram-v2` is a distinct syntax a real caller might render, but it
