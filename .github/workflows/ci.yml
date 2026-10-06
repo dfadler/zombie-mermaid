@@ -6,13 +6,15 @@ on:
   pull_request:
     branches: [main]
 
-# Cancel superseded runs on the same ref (e.g. repeated pushes to a PR
-# branch) instead of letting them pile up. Unlike publish.yml, CI runs have
-# no side effects worth protecting mid-flight, so cancel-in-progress is safe
-# here (see publish.yml's concurrency block for why it deliberately isn't).
+# Cancel superseded runs on a PR branch (repeated pushes) instead of letting
+# them pile up. Pushes to main are keyed by SHA and never cancelled: a
+# cancelled run is the latest completed run on main, and the README's
+# native CI badge renders that as "failing". CI runs have no side effects
+# worth protecting mid-flight, so cancelling PR runs is safe (see
+# publish.yml's concurrency block for why it deliberately isn't).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
