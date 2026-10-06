@@ -154,6 +154,39 @@ export function reserveSpotInGrid(
 // ============================================================================
 
 /**
+ * Whether the slot before `node` is a parent's content column. A node
+ * centered between two parents (#1339) straddles them, so padding that slot
+ * would stretch the left parent wider than its sibling and push the trunk off
+ * center. The nodes stacked in the centered node's slot (`A --> Z`) sit in
+ * the same columns and inherit this. Only a node with several parents counts:
+ * a single child at a fan-out's centered parent's content column (#1340)
+ * keeps its padding.
+ */
+function straddlesParent(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  axis: 'x' | 'y',
+  seen: Set<AsciiNode> = new Set(),
+): boolean {
+  const gc = node.gridCoord
+  if (!gc || seen.has(node)) return false
+  seen.add(node)
+  const parents = new Set<AsciiNode>()
+  for (const e of graph.edges) {
+    if (e.to === node && e.from !== node) parents.add(e.from)
+  }
+  for (const p of parents) {
+    const pc = p.gridCoord
+    if (!pc) continue
+    if (parents.size > 1 && pc[axis] + 1 === gc[axis] - 1) return true
+    if (pc[axis] === gc[axis] && straddlesParent(graph, p, axis, seen)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
  * Set column widths and row heights for a node's 3x3 grid block.
  * Each node occupies 3 columns (border, content, border) and 3 rows.
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
@@ -184,13 +217,14 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
     graph.rowHeight.set(yCoord, Math.max(current, rowHeights[idx]!))
   }
 
-  // Padding column/row before the node (spacing between nodes)
-  if (gc.x > 0) {
+  // Padding column/row before the node (spacing between nodes), unless
+  // the node straddles its parents (see `straddlesParent`).
+  if (gc.x > 0 && !straddlesParent(graph, node, 'x')) {
     const current = graph.columnWidth.get(gc.x - 1) ?? 0
     graph.columnWidth.set(gc.x - 1, Math.max(current, graph.config.paddingX))
   }
 
-  if (gc.y > 0) {
+  if (gc.y > 0 && !straddlesParent(graph, node, 'y')) {
     let basePadding = graph.config.paddingY
     // Extra vertical padding for nodes with incoming edges from outside their subgraph
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
