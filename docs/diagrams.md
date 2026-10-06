@@ -781,7 +781,9 @@ Known differences from Mermaid:
   SVG taller instead of being cut off, and an empty chart keeps its full
   width (Mermaid crops it).
 - Mermaid's `#quot;`-style character codes in labels are shown as written.
-- ASCII output is not available yet.
+
+Mermaid has no text output for pie charts; see
+[ASCII Pie Charts](#ascii-pie-charts) for this library's.
 
 ## Accessibility
 
@@ -932,3 +934,40 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 - **Multi-series** — Each series gets a distinct ANSI color from the theme's accent palette
 - **Legends** — Automatically shown when multiple series are present
 - **Horizontal charts** — Fully supported with categories on the y-axis
+
+### ASCII Pie Charts
+
+Mermaid has no text mode for pie charts, so the ASCII output is this
+library's own design: one stacked bar, 50 cells wide, and a table below it.
+The numbers are the SVG renderer's.
+
+```text
+             Pets adopted by volunteers
+
+[████████████████████████████████████████▓▓▓▓▓▓▓▓▓▒]
+
+  █ Dogs    79%
+  ▓ Cats    17%
+  ▒ Rats     3%
+```
+
+- **The bar** holds the slices at or above 1% of the total, in source order,
+  sharing all 50 cells between them, as the SVG's drawn slices share the
+  circle. Cells are rounded by largest remainder, so the segments always add
+  up to 50, and every drawn slice gets at least one cell.
+- **The table** is the SVG legend: one row per slice, in source order, with
+  `label [value]` under `showData` (the value printed as written). The
+  percentage is the SVG's slice label, a whole number of the full total.
+  A slice under 1% has no segment and no percentage, and a `·` (`.` in ASCII
+  mode) as its swatch.
+- **Colour** uses the SVG palette: the accent, then the XY chart series
+  shades, repeating after 12. With `colorMode: 'none'` the segments are told
+  apart by fill instead: `█▓▒░` (Unicode) or `#=*+` (ASCII), cycling so that
+  neighbouring segments always differ; each table swatch repeats its
+  segment's fill.
+- The title is centred over the bar. `accTitle` and `accDescr` are not
+  printed (in the SVG they are the accessible name and description, not
+  visible text).
+- Long labels are never truncated or wrapped; the table widens to fit them,
+  measured in terminal columns so CJK and emoji labels line up.
+- A chart with no slices prints an empty bar.
