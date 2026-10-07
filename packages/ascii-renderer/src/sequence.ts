@@ -74,18 +74,14 @@ function selfLoopWidth(msg: Message): number {
 // width, so the next lifeline can stay closer (issue #1387).
 const SELF_LABEL_OFFSET = 2
 
-// Rows the label adds above the loop; an empty label adds none.
-function selfLabelRows(msg: Message): number {
-  return msg.label === '' ? 0 : lineCount(msg.label)
-}
-
 // Columns right of the lifeline a self-message occupies: the wider of its
 // loop and its label. Shared by the gap-sizing, canvas-width and block-wall
 // passes so all three agree.
 function selfExtent(msg: Message): number {
-  const labelRight =
-    msg.label === '' ? 0 : SELF_LABEL_OFFSET + maxLineWidth(msg.label)
-  return Math.max(selfLoopWidth(msg), labelRight)
+  return Math.max(
+    selfLoopWidth(msg),
+    SELF_LABEL_OFFSET + maxLineWidth(msg.label),
+  )
 }
 
 /**
@@ -276,7 +272,7 @@ export function renderSequenceAscii(
       // lifeline by one blank column, or it overwrites that lifeline
       // (issue #1387). The last actor has no right neighbour; the
       // canvas-width pass widens for it instead.
-      if (fi < adjMaxWidth.length && msg.label !== '') {
+      if (fi < adjMaxWidth.length) {
         // `-2` because the gap computation below adds its own `+ 2` margin.
         const needed = selfExtent(msg) + 1 - 2
         adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, needed)
@@ -620,9 +616,9 @@ export function renderSequenceAscii(
     const destroyedIdx = destroyedByMsg.get(m)
 
     if (isSelf) {
-      // Self-message: label rows (above the loop, none when the label is
-      // empty), then a 3-row loop — top arm, right wall, bottom arm.
-      const labelRows = selfLabelRows(msg)
+      // Self-message: label rows (above the loop), then a 3-row loop — top
+      // arm, right wall, bottom arm.
+      const labelRows = msgLineCount
       msgLabelY[m] = curY
       msgArrowY[m] = curY + labelRows
       curY += labelRows + 3
@@ -1068,7 +1064,7 @@ export function renderSequenceAscii(
     if (isSelf) {
       // Self-message: the label above a 3-row loop to the right of the
       // lifeline, as mermaid.js draws it (issue #1387)
-      //   │ Label        (label rows, one per line; none when empty)
+      //   │ Label        (label rows, one per line)
       //   ├──┐           (row 0 = msgArrowY)
       //   │  │           (row 1)
       //   ◀──┘           (row 2)
@@ -1103,7 +1099,7 @@ export function renderSequenceAscii(
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
       // Label rows sit above the loop, clear of the lifeline.
-      const labelRows = selfLabelRows(msg)
+      const labelRows = msgLines.length
       for (let lineIdx = 0; lineIdx < labelRows; lineIdx++) {
         writeTextCells(
           fromX + SELF_LABEL_OFFSET,
