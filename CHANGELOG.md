@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.2.2
+
+### Patch Changes
+
+- [#1395](https://github.com/dfadler/zombie-mermaid/pull/1395) [`f3c19a9`](https://github.com/dfadler/zombie-mermaid/commit/f3c19a90a2f88ce4d3882a2ca5265b3e3d6ef088) Thanks [@dfadler](https://github.com/dfadler)! - A start marker with no matching end marker (`A <-.- B`, `A <--- B`, `A o--- B`, `A o--x B`) is now dropped, as Mermaid does, so the link renders without it instead of drawing a lone start arrowhead. Paired markers (`<-->`, `<-.->`, `o--o`, `x--x`) are unchanged.
+- Updated dependencies [[`b4091ce`](https://github.com/dfadler/zombie-mermaid/commit/b4091ce0c90c3ea3b5bd1bdf0d2471f22ec1f1f9), [`cb7d2ab`](https://github.com/dfadler/zombie-mermaid/commit/cb7d2ab91d4a7c91e4dabedcfa6ab121450a8c2e)]:
+  - @zombie-mermaid/ascii-renderer@4.2.2
+  - @zombie-mermaid/svg-renderer@4.2.2
+  - @zombie-mermaid/mcp@4.2.2
+  - @zombie-mermaid/core@4.2.2
+  - @zombie-mermaid/mermaid-parser@4.2.2
+
 ## 4.2.1
 
 ### Patch Changes

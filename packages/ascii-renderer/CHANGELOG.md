@@ -1,5 +1,14 @@
 # @zombie-mermaid/ascii-renderer
 
+## 4.2.2
+
+### Patch Changes
+
+- [#1389](https://github.com/dfadler/zombie-mermaid/pull/1389) [`b4091ce`](https://github.com/dfadler/zombie-mermaid/commit/b4091ce0c90c3ea3b5bd1bdf0d2471f22ec1f1f9) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII sequence diagrams where a self-message label (including multi-line `<br/>` labels) was drawn over the next participant's lifeline and erased it. The label now sits above the loop, as mermaid.js draws it, and the gap to the next participant widens only as far as the label needs. Closes [#1387](https://github.com/dfadler/zombie-mermaid/issues/1387).
+- Updated dependencies []:
+  - @zombie-mermaid/core@4.2.2
+  - @zombie-mermaid/mermaid-parser@4.2.2
+
 ## 4.2.1
 
 ### Patch Changes
