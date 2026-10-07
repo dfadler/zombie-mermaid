@@ -22,6 +22,7 @@ import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
 import { alignLayerNodes } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
+import { straightenTinyJogs } from './jog-straightening.ts'
 import { edgesReversedForLayout } from './to-elk.ts'
 import {
   extractEdgePoints,
@@ -222,6 +223,7 @@ export function elkToPositioned(
   // ELK treats all nodes as rectangles, so we need to clip edge endpoints
   // to the actual shape boundaries (e.g., diamond vertices).
   for (const edge of edges) {
+    edge.points = straightenTinyJogs(edge.points)
     const sourceNode = nodeMap.get(edge.source)
     const targetNode = nodeMap.get(edge.target)
 
