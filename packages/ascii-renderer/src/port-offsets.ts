@@ -501,9 +501,11 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
   }
 
+  const split = splitLabeledArrivals(graph, runs, slotOffset)
+
   for (const [edge, { r, s, e }] of runs) {
     const start = staggered.get(edge) ?? (s ? slotOffset(s) : 0)
-    const end = e ? (offsets.get(find(e)) ?? 0) : 0
+    const end = split.get(edge) ?? (e ? (offsets.get(find(e)) ?? 0) : 0)
     if (start === 0 && end === 0) continue
     const shift: PortShift = { start, end }
     if (r.start) shift.startRun = shiftedRun(r.start)
@@ -511,6 +513,53 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     result.set(edge, shift)
   }
   return result
+}
+
+/**
+ * Give labeled edges that reach one port from opposite sides a stroke each.
+ * One arriving from the left and one from the right of a vertical run meet in
+ * the port's column and read as one edge with one label (#1399): each moves a
+ * stroke toward the side it comes from, so neither crosses the other. An edge
+ * that runs straight in keeps the centre. Unlabeled edges, ports also used to
+ * leave, and ports where the shifted strokes would miss the border are left
+ * sharing one trunk.
+ */
+function splitLabeledArrivals(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, { r: EdgeRuns; s?: string; e?: string }>,
+  slotOffset: (key: string) => number,
+): Map<AsciiEdge, number> {
+  const byPort = new Map<string, { edge: AsciiEdge; run: PortRun }[]>()
+  for (const [edge, { r, e }] of runs) {
+    if (!e || r.end?.axis !== 'v' || r.straight) continue
+    const group = byPort.get(e) ?? []
+    group.push({ edge, run: r.end })
+    byPort.set(e, group)
+  }
+  const out = new Map<AsciiEdge, number>()
+  for (const [key, group] of byPort) {
+    const labeled = (turn: number): boolean =>
+      group.some((m) => m.run.turn === turn && m.edge.text.length > 0)
+    if (!labeled(-1) || !labeled(1) || slotOffset(key) !== 0) continue
+    const port = key.slice(0, key.lastIndexOf('|'))
+    const hasStraight = group.some((m) => m.run.turn === 0)
+    const step = hasStraight ? STROKE_SPACING : 1
+    const geo = portGeometry(graph, group[0]!.run)
+    const fits =
+      geo !== undefined &&
+      attachesAt(group[0]!.run, geo.centre - step, geo) &&
+      attachesAt(group[0]!.run, geo.centre + step, geo)
+    // Another role at the port (an edge leaving it) is already handled by
+    // the both-ways rule; leave those ports alone.
+    const crowded = [...runs.values()].some(
+      ({ s }) => s !== undefined && s.startsWith(`${port}|`),
+    )
+    if (!fits || crowded) continue
+    for (const m of group) {
+      if (m.run.turn !== 0) out.set(m.edge, -m.run.turn * step)
+    }
+  }
+  return out
 }
 
 /** Per-point drawn shift for `edge`'s path, or undefined when unshifted. */
