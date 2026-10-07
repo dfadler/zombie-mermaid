@@ -501,9 +501,11 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     staggerFanOuts(graph, members, slotOffset(key), taken, staggered)
   }
 
+  const split = splitLabeledArrivals(runs)
+
   for (const [edge, { r, s, e }] of runs) {
     const start = staggered.get(edge) ?? (s ? slotOffset(s) : 0)
-    const end = e ? (offsets.get(find(e)) ?? 0) : 0
+    const end = split.get(edge) ?? (e ? (offsets.get(find(e)) ?? 0) : 0)
     if (start === 0 && end === 0) continue
     const shift: PortShift = { start, end }
     if (r.start) shift.startRun = shiftedRun(r.start)
@@ -511,6 +513,33 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     result.set(edge, shift)
   }
   return result
+}
+
+/**
+ * Give labeled edges that reach one port from opposite sides a stroke each.
+ * One arriving from the left and one from the right of a vertical run meet in
+ * the port's column and read as one edge with one label (#1399): each moves a
+ * cell toward the side it comes from, so neither crosses the other. Unlabeled
+ * edges keep sharing one trunk.
+ */
+function splitLabeledArrivals(
+  runs: ReadonlyMap<AsciiEdge, { r: EdgeRuns; s?: string; e?: string }>,
+): Map<AsciiEdge, number> {
+  const byPort = new Map<string, { edge: AsciiEdge; run: PortRun }[]>()
+  for (const [edge, { r, e }] of runs) {
+    if (!e || r.end?.axis !== 'v' || r.straight) continue
+    const group = byPort.get(e) ?? []
+    group.push({ edge, run: r.end })
+    byPort.set(e, group)
+  }
+  const out = new Map<AsciiEdge, number>()
+  for (const group of byPort.values()) {
+    const labeled = (turn: number): boolean =>
+      group.some((m) => m.run.turn === turn && m.edge.text.length > 0)
+    if (!labeled(-1) || !labeled(1)) continue
+    for (const m of group) out.set(m.edge, -m.run.turn)
+  }
+  return out
 }
 
 /** Per-point drawn shift for `edge`'s path, or undefined when unshifted. */
