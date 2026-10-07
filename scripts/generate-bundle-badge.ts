@@ -58,7 +58,8 @@ const SVG = 'packages/svg-renderer/dist/index.js'
 // renderer imports only `decodeXML` (packages/svg-renderer/src/index.ts), so it
 // is bundled and minified with just those exports, the way a consumer's bundler
 // would tree-shake it (whole-build gzip counted ~35 KB of code nobody ships).
-// Keep `exports` in sync with the renderer's actual imports from `entities`.
+// Keep `exports` in sync with the renderer's actual imports from `entities`
+// (enforced by __tests__/bundle-badge-entities-exports.test.ts).
 const SVG_DEPS = [
   { kind: 'file', specifier: 'elkjs/lib/elk.bundled.js' },
   { kind: 'tree-shaken', specifier: 'entities', exports: ['decodeXML'] },
