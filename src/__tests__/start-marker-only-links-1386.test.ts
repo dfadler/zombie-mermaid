@@ -81,22 +81,24 @@ describe('Top <--> Bot beside Top <-.- Bot (#1386)', () => {
 
   it('ASCII: arrowheads only on the solid edge', () => {
     const ascii = renderMermaidASCII(source, { colorMode: 'none' })
-    expect(ascii).toMatchInlineSnapshot(`
-      "┌─────┐  
-      │     │  
-      │ Top ├┄┐
-      │     │ ┆
-      └──▲──┘ ┆
-         │    ┆
-         │    ┆
-         │    ┆
-         │    ┆
-         ▼    ┆
-      ┌─────┐ ┆
-      │     │ ┆
-      │ Bot │┄┘
-      │     │  
-      └─────┘  "
-    `)
+    expect(ascii).toBe(
+      [
+        '┌─────┐  ',
+        '│     │  ',
+        '│ Top ├┄┐',
+        '│     │ ┆',
+        '└──▲──┘ ┆',
+        '   │    ┆',
+        '   │    ┆',
+        '   │    ┆',
+        '   │    ┆',
+        '   ▼    ┆',
+        '┌─────┐ ┆',
+        '│     │ ┆',
+        '│ Bot │┄┘',
+        '│     │  ',
+        '└─────┘  ',
+      ].join('\n'),
+    )
   })
 })
