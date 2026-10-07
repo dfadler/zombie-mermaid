@@ -24,6 +24,8 @@ const relationship = (svg: string, type: string) =>
 // so refX has to be the tip's x; refX=0 pushes the whole diamond outward
 // under the class box (#1232). The polygon must also be inset by half its
 // stroke, or the marker viewport clips the diamond's points flat.
+const unscoped = (svg: string) => svg.replace(/zm[0-9a-z]+-/g, '')
+
 describe('class diagram diamond markers (#1232)', () => {
   const cases = [
     ['composition', 'C *-- D', 'cls-composition', 'var(--_arrow)'],
@@ -32,13 +34,16 @@ describe('class diagram diamond markers (#1232)', () => {
 
   for (const [type, line, id, fill] of cases) {
     it(`${type} references its marker at the owning end`, () => {
-      const svg = renderMermaidSVG(`classDiagram\n  ${line}`)
+      const svg = unscoped(renderMermaidSVG(`classDiagram\n  ${line}`))
       expect(relationship(svg, type)).toContain(`marker-start="url(#${id})"`)
       expect(marker(svg, id)).toContain(`fill="${fill}"`)
     })
 
     it(`${type} anchors its tip on the endpoint without clipping the stroke`, () => {
-      const def = marker(renderMermaidSVG(`classDiagram\n  ${line}`), id)
+      const def = marker(
+        unscoped(renderMermaidSVG(`classDiagram\n  ${line}`)),
+        id,
+      )
       const points = attrValue(def, 'points')
         .split(',')
         .map((p) => p.trim().split(/\s+/).map(Number) as [number, number])

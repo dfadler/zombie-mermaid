@@ -243,7 +243,11 @@ describe('renderMermaidSVG – Batch 2 edge features', () => {
   })
 
   it('renders bidirectional arrows', () => {
-    const svg = renderMermaidSVG('graph TD\n  A <--> B')
+    // ids carry a per-render scope prefix (#1397); strip it to check the name
+    const svg = renderMermaidSVG('graph TD\n  A <--> B').replace(
+      /zm[0-9a-z]+-/g,
+      '',
+    )
     expect(svg).toContain('marker-end="url(#arrowhead)"')
     expect(svg).toContain('marker-start="url(#arrowhead-start)"')
   })
