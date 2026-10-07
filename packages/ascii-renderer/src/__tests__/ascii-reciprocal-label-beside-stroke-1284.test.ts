@@ -38,7 +38,7 @@ function strokeColumn(lines: string[]): number {
   return lines[arrow]!.indexOf('▲')
 }
 
-describe('reciprocal pair draws separate strokes with labels beside them (#1284)', () => {
+describe('reciprocal pair draws separate strokes with labels on or beside them (#1284, #1408)', () => {
   const PAIR = `graph TD
 A -->|x| B
 B -->|y| A`
@@ -52,10 +52,15 @@ B -->|y| A`
     const lines = render(PAIR)
     const { up, down, upRow, downRow } = strokes(lines)
     for (let row = upRow + 1; row < downRow; row++) {
-      expect(lines[row]![up], `up stroke, row ${row}: ${lines[row]}`).toBe('│')
-      expect(lines[row]![down], `down stroke, row ${row}: ${lines[row]}`).toBe(
-        '│',
+      // #1408 (option C): a one-letter label replaces the stroke cell it
+      // sits on; every other row keeps the stroke.
+      expect(lines[row]![up], `up stroke, row ${row}: ${lines[row]}`).toMatch(
+        /[│y]/,
       )
+      expect(
+        lines[row]![down],
+        `down stroke, row ${row}: ${lines[row]}`,
+      ).toMatch(/[│x]/)
     }
   })
 
@@ -64,8 +69,9 @@ B -->|y| A`
     const { up, down } = strokes(lines)
     const yRow = lines.find((l) => l.includes('y'))!
     const xRow = lines.find((l) => /\bx\b/.test(l))!
-    expect(yRow.indexOf('y')).toBeLessThan(up - 1)
-    expect(xRow.indexOf('x')).toBeGreaterThan(down + 1)
+    // #1408 (option C): each label sits on its own stroke.
+    expect(yRow.indexOf('y')).toBe(up)
+    expect(xRow.indexOf('x')).toBe(down)
   })
 
   it('keeps the #530 row order: up label under the up arrowhead, down label above the down arrowhead', () => {
@@ -109,8 +115,8 @@ B -->|y| A`)
     const { up, down, upRow, downRow } = strokes(lines)
     for (let row = upRow + 1; row < downRow; row++) {
       // A wall or title row may hold a frame glyph, but never a label.
-      expect(lines[row]![up], `row ${row}: ${lines[row]}`).toMatch(/[│┼]/)
-      expect(lines[row]![down], `row ${row}: ${lines[row]}`).toMatch(/[│┼]/)
+      expect(lines[row]![up], `row ${row}: ${lines[row]}`).toMatch(/[│┼y]/)
+      expect(lines[row]![down], `row ${row}: ${lines[row]}`).toMatch(/[│┼x]/)
     }
     expect(lines.some((l) => l.includes('Two'))).toBe(true)
   })
@@ -130,13 +136,14 @@ B -->|y| A`)
     expect(start + label.length).toBeLessThan(col)
   })
 
-  it('puts a lone labelled down edge right of its stroke too', () => {
+  it('puts a lone labelled down edge on its stroke (#1408 option C)', () => {
     const lines = render(`graph TD
 A -->|hello| B`)
     const col = lines[lines.findIndex((l) => l.includes('▼'))]!.indexOf('▼')
     const row = lines.find((l) => l.includes('hello'))!
-    expect(row[col]).toBe('│')
-    expect(row.indexOf('hello')).toBe(col + 2)
+    expect(row.indexOf('hello')).toBe(col - 2)
+    expect(lines[lines.indexOf(row) - 1]![col]).toBe('│')
+    expect(lines[lines.indexOf(row) + 1]![col]).toBe('│')
   })
 
   it('keeps a lone down edge on its stroke when another edge blocks the right side', () => {
@@ -171,9 +178,7 @@ A --> B
 B -->|y| A`)
     const { up, down } = strokes(lines)
     expect(down - up).toBe(2)
-    expect(lines.find((l) => l.includes('y'))!.indexOf('y')).toBeLessThan(
-      up - 1,
-    )
+    expect(lines.find((l) => l.includes('y'))!.indexOf('y')).toBe(up)
   })
 
   it.each([
@@ -203,8 +208,8 @@ B -->|y| A`)
     const { up, down, upRow, downRow } = strokes(lines)
     expect(down - up).toBe(2)
     for (let row = upRow + 1; row < downRow; row++) {
-      expect(lines[row]![up], `row ${row}: ${lines[row]}`).toMatch(/[│┼]/)
-      expect(lines[row]![down], `row ${row}: ${lines[row]}`).toMatch(/[│┼]/)
+      expect(lines[row]![up], `row ${row}: ${lines[row]}`).toMatch(/[│┼y]/)
+      expect(lines[row]![down], `row ${row}: ${lines[row]}`).toMatch(/[│┼x]/)
     }
   })
 

@@ -3,7 +3,7 @@
  * upstream issues #111 and #112): ASCII fan-out routing.
  *
  * - #111: sibling edges from one source (TB, labelled) must leave the source
- *   on a single row, each label sitting on its own vertical branch, instead
+ *   on a single row, each label sitting on its own vertical branch (since #1408 option C, drawn on the stroke), instead
  *   of later edges detouring to a lower row. The source is centred over its
  *   targets, so the outer edges leave its sides and the middle one its
  *   bottom border.
@@ -46,10 +46,10 @@ describe('upstream #111: TB fan-out siblings leave the source on one row', () =>
       '                    │               │',
       '       ┌────────────┤     Source    ├─────────────┐',
       '       │            │               │             │',
-      '       │ left*      └───────┬───────┘             │ right*',
+      '       │            └───────┬───────┘             │',
       '       │                    │                     │',
-      '       │                    │ center*             │',
-      '       │                    │                     │',
+      '     left*                  │                  right*',
+      '       │                 center*                  │',
       '       │                    │                     │',
       '       ▼                    ▼                     ▼',
       '┌─────────────┐     ┌───────────────┐     ┌──────────────┐',
