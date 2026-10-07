@@ -1,5 +1,14 @@
 # @zombie-mermaid/svg-renderer
 
+## 4.2.2
+
+### Patch Changes
+
+- [#1390](https://github.com/dfadler/zombie-mermaid/pull/1390) [`cb7d2ab`](https://github.com/dfadler/zombie-mermaid/commit/cb7d2ab91d4a7c91e4dabedcfa6ab121450a8c2e) Thanks [@dfadler](https://github.com/dfadler)! - SVG flowcharts: two parallel edges between differently sized, centered nodes (for example `Top <--> Bot` plus `Top <-.- Bot`) no longer kink by a fraction of a pixel just above the target node. ELK spread each edge across a node side relative to that node's own width, so the two ends landed at slightly different x values and the line stepped sideways, tilting the arrowhead off the edge's axis. Sub-1.5px jogs between two straight runs are now collapsed into one straight line.
+- Updated dependencies []:
+  - @zombie-mermaid/core@4.2.2
+  - @zombie-mermaid/mermaid-parser@4.2.2
+
 ## 4.2.1
 
 ### Patch Changes

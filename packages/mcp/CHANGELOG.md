@@ -1,5 +1,15 @@
 # @zombie-mermaid/mcp
 
+## 4.2.2
+
+### Patch Changes
+
+- Updated dependencies [[`b4091ce`](https://github.com/dfadler/zombie-mermaid/commit/b4091ce0c90c3ea3b5bd1bdf0d2471f22ec1f1f9), [`cb7d2ab`](https://github.com/dfadler/zombie-mermaid/commit/cb7d2ab91d4a7c91e4dabedcfa6ab121450a8c2e)]:
+  - @zombie-mermaid/ascii-renderer@4.2.2
+  - @zombie-mermaid/svg-renderer@4.2.2
+  - @zombie-mermaid/core@4.2.2
+  - @zombie-mermaid/mermaid-parser@4.2.2
+
 ## 4.2.1
 
 ### Patch Changes
