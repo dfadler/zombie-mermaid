@@ -727,6 +727,19 @@ function markerKind(
 }
 
 /**
+ * The start marker an end marker pairs with: `>` closes a `<` arrowhead,
+ * `o` and `x` close their own kind. Anything else (no end marker) pairs with
+ * nothing.
+ */
+function endMarkerPartner(
+  endMarker: string | undefined,
+): '<' | 'o' | 'x' | undefined {
+  if (endMarker === '>') return '<'
+  if (endMarker === 'o' || endMarker === 'x') return endMarker
+  return undefined
+}
+
+/**
  * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
  * Tried as fallback when ARROW_REGEX doesn't match.
  *
@@ -1064,8 +1077,19 @@ function parseEdgeLine(
       // a distinct glyph instead of the default arrowhead (see issue #330,
       // a follow-up to issue #65 which first stopped these from being
       // dropped entirely).
-      hasArrowStart = startMarker !== undefined
-      startMarkerKind = markerKind(startMarker)
+      //
+      // Mermaid only draws a start marker when the end carries the matching
+      // one (`<-->`, `o--o`, `x--x`); a start marker on its own (`<-.-`,
+      // `<---`, `o---`) or paired with a different end (`o--x`) is dropped
+      // and the link renders without it (see issue #1386). The two-character
+      // bodies (`<--`, `o--`) are not valid Mermaid at all, so they keep the
+      // existing lenient reading.
+      const startDrawn =
+        startMarker !== undefined &&
+        (startMarker === endMarkerPartner(endMarker) ||
+          (endMarker === undefined && AMBIGUOUS_UNMARKED_BODIES.has(arrowBody)))
+      hasArrowStart = startDrawn
+      startMarkerKind = startDrawn ? markerKind(startMarker) : undefined
       const rawEdgeLabel = arrowMatch[4]?.trim()
       edgeLabel = rawEdgeLabel ? normalizeBrTags(rawEdgeLabel) : undefined
       remaining = remaining.slice(arrowMatch[0].length).trim()
