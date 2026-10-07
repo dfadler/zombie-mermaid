@@ -250,7 +250,19 @@ export function renderSequenceAscii(
   for (const msg of diagram.messages) {
     const fi = actorIndexOf(msg.from)
     const ti = actorIndexOf(msg.to)
-    if (fi === ti) continue // self-messages don't affect spacing
+    if (fi === ti) {
+      // A self-message draws its label to the right of its own loop, in the
+      // gap before the next lifeline: loop + 2 columns of clearance + the
+      // label, plus one blank column so the label never touches (or
+      // overwrites) that lifeline (issue #1387). The last actor has no
+      // right neighbour; the canvas-width pass widens for it instead.
+      if (fi < adjMaxWidth.length && msg.label !== '') {
+        // `-2` because the gap computation below adds its own `+ 2` margin.
+        const needed = selfLoopWidth(msg) + 2 + maxLineWidth(msg.label) + 1 - 2
+        adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, needed)
+      }
+      continue
+    }
     const lo = Math.min(fi, ti)
     const hi = Math.max(fi, ti)
     // Required gap per span = (max line width + arrow decorations) / number of gaps
