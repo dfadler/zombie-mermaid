@@ -1091,6 +1091,10 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // Node slots sit on a stride of 4, so the midpoint of the outermost
     // children is a slot only for an odd count.
     let mid = (Math.min(...xs) + Math.max(...xs)) / 2
+    // A child centered over its own straddled children sits on an odd column,
+    // so two such children can have a half-column midpoint. Grid coordinates
+    // are integers (a fractional one hangs the pathfinder), so leave it be.
+    if (!Number.isInteger(mid)) continue
     if (mid % 4 !== 0) {
       if (mid + 2 <= gc.x) continue
       if (fitsStraddled(graph, node)) {
