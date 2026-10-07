@@ -202,10 +202,43 @@ export function renderMermaidSVG(
   text: string,
   options: RenderOptions = {},
 ): string {
-  const svg = renderMermaidSVGRaw(text, options)
+  const svg = scopeSvgIds(renderMermaidSVGRaw(text, options))
   return options.resolveColors
     ? resolveCssColors(svg, buildColors(options))
     : svg
+}
+
+/**
+ * Prefix every `id` in the SVG (and each `url(#…)`, `href="#…"` reference to
+ * it) with a hash of the SVG itself, so two diagrams inlined in one HTML
+ * document never share marker/mask ids. Without this every `url(#arrowhead)`
+ * resolves to the first diagram's marker, which draws nothing when that
+ * diagram is in a `display: none` subtree (#1397). Hashing the whole output
+ * (not just the source) keeps same-text renders with different options apart.
+ */
+function scopeSvgIds(svg: string): string {
+  const ids = new Set(
+    Array.from(svg.matchAll(/\sid="([^"]+)"/g), (m) => m[1] ?? ''),
+  )
+  if (ids.size === 0) return svg
+  let h = 0x811c9dc5
+  for (let i = 0; i < svg.length; i++) {
+    h = Math.imul(h ^ svg.charCodeAt(i), 0x01000193)
+  }
+  const prefix = `zm${(h >>> 0).toString(36)}-`
+  // ids already carrying the zm- prefix (aria title/desc, title-gap mask) are unique already
+  const scoped = (id: string) =>
+    ids.has(id) && !id.startsWith('zm-') ? prefix + id : id
+  return svg
+    .replace(
+      /(\sid=")([^"]+)"/g,
+      (_, a: string, id: string) => `${a}${scoped(id)}"`,
+    )
+    .replace(/url\(#([^)]+)\)/g, (_, id: string) => `url(#${scoped(id)})`)
+    .replace(
+      /(href=")#([^"]+)"/g,
+      (_, a: string, id: string) => `${a}#${scoped(id)}"`,
+    )
 }
 
 /** The renderer proper — `renderMermaidSVG` minus the optional `resolveColors` post-pass. */
