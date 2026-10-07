@@ -1091,6 +1091,10 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     // Node slots sit on a stride of 4, so the midpoint of the outermost
     // children is a slot only for an odd count.
     let mid = (Math.min(...xs) + Math.max(...xs)) / 2
+    // A child centered over its own straddled children sits on an odd column,
+    // so two such children can have a half-column midpoint. Grid coordinates
+    // are integers (a fractional one hangs the pathfinder), so leave it be.
+    if (!Number.isInteger(mid)) continue
     if (mid % 4 !== 0) {
       if (mid + 2 <= gc.x) continue
       if (fitsStraddled(graph, node)) {
@@ -1116,6 +1120,25 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       mid += 2
     }
     if (mid > gc.x) relocateNode(graph, node, { x: mid, y: gc.y })
+  }
+  markLabeledFanIn(graph)
+}
+
+/**
+ * A node `fanInCenter` left alone because it fans out itself still takes
+ * labelled edges from several parents: flag it so edge-routing gives each
+ * edge its own side entry instead of one shared run that overprints the
+ * labels (`X -->|one| A; Y -->|two| A; A --> B; A --> C`, #1364). Only reached
+ * for TD graphs where every edge points down, which already rules out the
+ * cycles `labeledFanInFits` guards; `hasLabeledFanIn` skips cluster edges.
+ */
+function markLabeledFanIn(graph: AsciiGraph): void {
+  for (const node of graph.nodes) {
+    if (node.fanInCentered) continue
+    const into = graph.edges.filter((e) => e.to === node && e.from !== node)
+    if (new Set(into.map((e) => e.from)).size < 2) continue
+    if (!into.some((e) => e.text !== '')) continue
+    node.fanInCentered = true
   }
 }
 
