@@ -1046,22 +1046,29 @@ function centredLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
-  const centred = clearOfLaneJunction(
+  const centred = clearOfJoiningStrokes(
     graph,
     edge,
-    clearOfSubgraphTitles(
+    drawingLine,
+    clearOfLaneJunction(
       graph,
-      clearOfClusterWalls(
+      edge,
+      clearOfSubgraphTitles(
         graph,
-        labelTextPlacement(
-          drawingLine,
-          edge.text,
-          isUpwardEdge,
-          pullTowardTarget,
+        clearOfClusterWalls(
+          graph,
+          labelTextPlacement(
+            drawingLine,
+            edge.text,
+            isUpwardEdge,
+            pullTowardTarget,
+          ),
+          drawingLine[0]?.x === drawingLine[1]?.x
+            ? drawingLine[0]?.x
+            : undefined,
         ),
-        drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
+        drawingLine,
       ),
-      drawingLine,
     ),
   )
 
@@ -1340,6 +1347,51 @@ function clearOfSubgraphTitles(
       }
     }
     return best === null ? item : { ...item, y: best }
+  })
+}
+
+/**
+ * A label centred on a horizontal run another edge turns onto (a fan-in's
+ * vertical stroke ending in a tee on this row) can cover the tee's cell and
+ * erase the join (#1392). Slide the text to the nearest spot on the run that
+ * clears every such column.
+ */
+function clearOfJoiningStrokes(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  if (line.length < 2 || line[0]!.y !== line[1]!.y) return placement
+  const lo = Math.min(line[0]!.x, line[1]!.x)
+  const hi = Math.max(line[0]!.x, line[1]!.x)
+  const gy = edge.labelLine[0]?.y
+  const joins: number[] = []
+  for (const other of graph.edges) {
+    if (other === edge) continue
+    other.path.forEach((p, i) => {
+      if (i === 0 || i === other.path.length - 1 || p.y !== gy) return
+      // A bend: the stroke arrives or leaves vertically.
+      if (other.path[i - 1]!.y === p.y && other.path[i + 1]!.y === p.y) return
+      const x = gridToDrawingCoord(graph, p).x
+      if (x > lo && x < hi) joins.push(x)
+    })
+  }
+  if (joins.length === 0) return placement
+  return placement.map((item) => {
+    const width = displayWidth(item.text)
+    const hit = (x: number): boolean =>
+      joins.some((j) => j >= x && j < x + width)
+    // A label drawn off the run's own row can't cover a tee on it.
+    if (item.y !== line[0]!.y || !hit(item.x)) return item
+    let best: number | null = null
+    for (let x = lo + 1; x + width - 1 < hi; x++) {
+      if (hit(x)) continue
+      if (best === null || Math.abs(x - item.x) < Math.abs(best - item.x)) {
+        best = x
+      }
+    }
+    return best === null ? item : { ...item, x: best }
   })
 }
 
