@@ -67,6 +67,27 @@ function selfLoopWidth(msg: Message): number {
     : SELF_LOOP_WIDTH + String(msg.seqNumber).length
 }
 
+// A self-message's label is drawn on rows ABOVE its loop (mermaid.js's own
+// placement), starting this many columns right of the lifeline so it never
+// touches it. Sitting above the loop rather than beside it means the label
+// only needs `SELF_LABEL_OFFSET + width` columns, not loop + clearance +
+// width, so the next lifeline can stay closer (issue #1387).
+const SELF_LABEL_OFFSET = 2
+
+// Rows the label adds above the loop; an empty label adds none.
+function selfLabelRows(msg: Message): number {
+  return msg.label === '' ? 0 : lineCount(msg.label)
+}
+
+// Columns right of the lifeline a self-message occupies: the wider of its
+// loop and its label. Shared by the gap-sizing, canvas-width and block-wall
+// passes so all three agree.
+function selfExtent(msg: Message): number {
+  const labelRight =
+    msg.label === '' ? 0 : SELF_LABEL_OFFSET + maxLineWidth(msg.label)
+  return Math.max(selfLoopWidth(msg), labelRight)
+}
+
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.
  *
@@ -251,14 +272,13 @@ export function renderSequenceAscii(
     const fi = actorIndexOf(msg.from)
     const ti = actorIndexOf(msg.to)
     if (fi === ti) {
-      // A self-message draws its label to the right of its own loop, in the
-      // gap before the next lifeline: loop + 2 columns of clearance + the
-      // label, plus one blank column so the label never touches (or
-      // overwrites) that lifeline (issue #1387). The last actor has no
-      // right neighbour; the canvas-width pass widens for it instead.
+      // A self-message's label sits above its loop and must clear the next
+      // lifeline by one blank column, or it overwrites that lifeline
+      // (issue #1387). The last actor has no right neighbour; the
+      // canvas-width pass widens for it instead.
       if (fi < adjMaxWidth.length && msg.label !== '') {
         // `-2` because the gap computation below adds its own `+ 2` margin.
-        const needed = selfLoopWidth(msg) + 2 + maxLineWidth(msg.label) + 1 - 2
+        const needed = selfExtent(msg) + 1 - 2
         adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, needed)
       }
       continue
@@ -459,8 +479,7 @@ export function renderSequenceAscii(
       minLX = Math.min(minLX, llX[Math.min(f, t)]!)
       maxLX = Math.max(maxLX, llX[Math.max(f, t)]!)
       if (f === t) {
-        const selfRight =
-          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+        const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
       }
     }
@@ -601,10 +620,12 @@ export function renderSequenceAscii(
     const destroyedIdx = destroyedByMsg.get(m)
 
     if (isSelf) {
-      // Self-message occupies 3+ rows: top-arm, label-col(s), bottom-arm
-      msgLabelY[m] = curY + 1
-      msgArrowY[m] = curY
-      curY += 2 + msgLineCount // top-arm + label lines + bottom-arm
+      // Self-message: label rows (above the loop, none when the label is
+      // empty), then a 3-row loop — top arm, right wall, bottom arm.
+      const labelRows = selfLabelRows(msg)
+      msgLabelY[m] = curY
+      msgArrowY[m] = curY + labelRows
+      curY += labelRows + 3
     } else {
       // Normal message: label row(s), then — for a creating message — the
       // rows of the created box above the arrow, then the arrow row, then
@@ -697,8 +718,7 @@ export function renderSequenceAscii(
     const msg = diagram.messages[m]!
     if (msg.from === msg.to) {
       const fi = actorIndexOf(msg.from)
-      const selfRight =
-        llX[fi]! + selfLoopWidth(msg) + 2 + 2 + maxLineWidth(msg.label)
+      const selfRight = llX[fi]! + selfExtent(msg) + 2
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -1046,10 +1066,12 @@ export function renderSequenceAscii(
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
     if (isSelf) {
-      // Self-message: 3-row loop to the right of the lifeline
+      // Self-message: the label above a 3-row loop to the right of the
+      // lifeline, as mermaid.js draws it (issue #1387)
+      //   │ Label        (label rows, one per line; none when empty)
       //   ├──┐           (row 0 = msgArrowY)
-      //   │  │ Label     (row 1)
-      //   │◄─┘           (row 2)
+      //   │  │           (row 1)
+      //   ◀──┘           (row 2)
       //
       // The loop is only SELF_LOOP_WIDTH (4) columns wide by default, with no
       // spare room for a second arrowhead without corrupting the loop's
@@ -1080,16 +1102,23 @@ export function renderSequenceAscii(
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
-      // Label rows: vertical on right side + one line of label text each
-      const labelX = fromX + loopW + 2
-      for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
-        const rowY = y0 + 1 + lineIdx
-        setC(fromX + loopW, rowY, V, 'line')
-        writeTextCells(labelX, rowY, msgLines[lineIdx]!, 'text', totalW)
+      // Label rows sit above the loop, clear of the lifeline.
+      const labelRows = selfLabelRows(msg)
+      for (let lineIdx = 0; lineIdx < labelRows; lineIdx++) {
+        writeTextCells(
+          fromX + SELF_LABEL_OFFSET,
+          y0 - labelRows + lineIdx,
+          msgLines[lineIdx]!,
+          'text',
+          totalW,
+        )
       }
 
+      // Right wall of the loop
+      setC(fromX + loopW, y0 + 1, V, 'line')
+
       // Bottom row: arrow-back + horizontal + bottom-right corner
-      const bottomY = y0 + 1 + msgLines.length
+      const bottomY = y0 + 2
       const arrowChar = isLost
         ? lostChar
         : isFilled
@@ -1238,8 +1267,7 @@ export function renderSequenceAscii(
       // right than the lifeline itself — account for that extent too, or a
       // long self-arrow label gets clipped by / drawn outside the wall.
       if (f === t) {
-        const selfRight =
-          llX[f]! + selfLoopWidth(msg) + 2 + maxLineWidth(msg.label)
+        const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
       }
     }

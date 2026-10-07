@@ -6,8 +6,9 @@ sequenceDiagram
  │ Alice │    │ Bob │   
  └───┬───┘    └──┬──┘   
      │           │      
-     ├───┐       │      
-     │   │ Think │      
+     │ Think     │
+     ├───┐       │
+     │   │       │
      ◀───┘       │      
      │           │      
      │  Result   │      

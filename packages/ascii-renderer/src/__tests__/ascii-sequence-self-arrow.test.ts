@@ -215,12 +215,12 @@ describe('ASCII sequence diagrams – self-message autonumber badge (issue #342)
 // ============================================================================
 
 describe('ASCII sequence diagrams – self-message label clears the next lifeline (issue #1387)', () => {
-  // B's lifeline column: the last non-space glyph on the row directly above
-  // the first label row (the loop's top arm), where only the loop and the
+  // B's lifeline column: the last non-space glyph on the row directly below
+  // the last label row (the loop's top arm), where only the loop and the
   // lifelines are drawn.
-  function lifelineCol(lines: string[], firstLabel: string): number {
-    const labelIdx = lines.findIndex((l) => l.includes(firstLabel))
-    return lines[labelIdx - 1]!.trimEnd().length - 1
+  function lifelineCol(lines: string[], lastLabel: string): number {
+    const labelIdx = lines.findIndex((l) => l.includes(lastLabel))
+    return lines[labelIdx + 1]!.trimEnd().length - 1
   }
 
   const cases: [string, string[], boolean][] = [
@@ -239,11 +239,8 @@ describe('ASCII sequence diagrams – self-message label clears the next lifelin
   A->>A: ${label.join('<br/>')}`,
         { useAscii },
       ).split('\n')
-      const col = lifelineCol(lines, label[0]!)
+      const col = lifelineCol(lines, label.at(-1)!)
       const V = useAscii ? '|' : '│'
-      expect(
-        lines[lines.findIndex((l) => l.includes(label[0]!)) - 1]![col],
-      ).toBe(V)
 
       for (const text of label) {
         const row = lines.find((l) => l.includes(text))!
@@ -267,8 +264,25 @@ describe('ASCII sequence diagrams – self-message label clears the next lifelin
       )
     const long = 'a rather long self-message label here'
     expect(colFor(long)).toBeGreaterThan(colFor('hi'))
-    // Exactly: loop (4) + 2 clearance + label + 1 blank column past A (col 3).
-    expect(colFor(long)).toBe(3 + 4 + 2 + long.length + 1)
+    // Exactly: 2 columns of offset + label + 1 blank column past A (col 3).
+    expect(colFor(long)).toBe(3 + 2 + long.length + 1)
+  })
+
+  it('draws the label above the loop, with the loop intact below it', () => {
+    const lines = renderMermaidASCII(
+      `sequenceDiagram
+  participant A
+  A->>A: line one<br/>line two`,
+    ).split('\n')
+    const one = lines.findIndex((l) => l.includes('line one'))
+    const two = lines.findIndex((l) => l.includes('line two'))
+    expect(two).toBe(one + 1)
+    expect(lines[two + 1]).toContain('├───┐')
+    expect(lines[two + 2]).toMatch(/│ {3}│/)
+    expect(lines[two + 3]).toContain('◀───┘')
+    // The lifeline stays unbroken through the label rows.
+    expect(lines[one]![3]).toBe('│')
+    expect(lines[two]![3]).toBe('│')
   })
 
   it('accounts for the autonumber badge widening the loop', () => {
@@ -279,7 +293,7 @@ describe('ASCII sequence diagrams – self-message label clears the next lifelin
   participant B
   A->>A: line one<br/>line two`,
     ).split('\n')
-    const col = lifelineCol(lines, 'line one')
+    const col = lifelineCol(lines, 'line two')
     for (const text of ['line one', 'line two']) {
       const row = lines.find((l) => l.includes(text))!
       expect(row[col]).toBe('│')
