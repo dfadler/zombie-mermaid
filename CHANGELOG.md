@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.2.1
+
+### Patch Changes
+
+- Updated dependencies [[`245e76b`](https://github.com/dfadler/zombie-mermaid/commit/245e76b8c32e4e3234414d68a8bfb7de522f8cc4)]:
+  - @zombie-mermaid/ascii-renderer@4.2.1
+  - @zombie-mermaid/mcp@4.2.1
+  - @zombie-mermaid/core@4.2.1
+  - @zombie-mermaid/mermaid-parser@4.2.1
+  - @zombie-mermaid/svg-renderer@4.2.1
+
 ## 4.2.0
 
 ### Patch Changes
