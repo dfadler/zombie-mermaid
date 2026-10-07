@@ -1249,9 +1249,40 @@ export function determineLabelLine(
       const [taken, shared] = rank(s.line)
       return taken === 0 && shared === 0
     }
-    const fallbackSegments = segments.filter(
+    let fallbackSegments = segments.filter(
       (s) => (s.width >= lenLabel || alone(s)) && clearOfNodes(s.line),
     )
+    // Every candidate already holds another edge's label: writing over it
+    // erases one of the two (#1392). A vertical segment nobody else uses
+    // still takes the label beside its stroke, even if that widens a node's
+    // own column; that beats losing a label.
+    if (
+      ctx &&
+      graph.config.graphDirection === 'LR' &&
+      fallbackSegments.length > 0 &&
+      fallbackSegments.every((s) => rank(s.line)[0] === 1)
+    ) {
+      // Its end cells are corners shared with the other path; only the
+      // interior decides whether a label already sits on it.
+      const holdsLabel = (line: [GridCoord, GridCoord]): boolean => {
+        const inner = new Set(
+          pathCells(line)
+            .slice(1, -1)
+            .map((c) => `${c.x},${c.y}`),
+        )
+        for (const [other, held] of ctx.chosen) {
+          if (other === edge) continue
+          if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) {
+            return true
+          }
+        }
+        return false
+      }
+      const free = segments.filter(
+        (s) => s.isVertical && clearOfNodes(s.line) && !holdsLabel(s.line),
+      )
+      if (free.length > 0) fallbackSegments = free
+    }
     if (fallbackSegments.length > 0) {
       fallbackSegments.sort(byRank)
       largestLine = fallbackSegments[0]!.line
