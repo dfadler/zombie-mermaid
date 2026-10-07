@@ -108,10 +108,10 @@ describe('linkStyle – SVG integration', () => {
       'graph TD\n  A --> B\n  linkStyle 0 stroke:#ff0000',
     )
     // Should have a color-specific marker def (# is hex-encoded to "23")
-    expect(svg).toContain('id="arrowhead-23ff0000"')
+    expect(svg).toMatch(/id="zm[0-9a-z]+-arrowhead-23ff0000"/)
     expect(svg).toContain('fill="#ff0000"')
     // Edge should reference the colored marker
-    expect(svg).toContain('marker-end="url(#arrowhead-23ff0000)"')
+    expect(svg).toMatch(/marker-end="url\(#zm[0-9a-z]+-arrowhead-23ff0000\)"/)
   })
 
   it('escapes XSS injection in stroke value', () => {

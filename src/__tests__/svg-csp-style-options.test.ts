@@ -283,10 +283,13 @@ describe('renderMermaidSVG – styleAttribute: false', () => {
       expect(tag).toContain('data-src="')
 
       // Everything after the root tag is unchanged — the option touches
-      // only the opening tag. (The title id counter differs per render, so
-      // normalise it before comparing.)
+      // only the opening tag. (The title id counter and the per-render id
+      // scope prefix differ per render, so normalise them before comparing.)
       const body = (s: string) =>
-        s.slice(s.indexOf('>') + 1).replace(/zm-title-\d+/g, 'zm-title-N')
+        s
+          .slice(s.indexOf('>') + 1)
+          .replace(/zm-title-\d+/g, 'zm-title-N')
+          .replace(/zm[0-9a-z]+-/g, '')
       expect(body(without)).toBe(body(withAttr))
     },
   )
