@@ -1106,16 +1106,16 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
  * A node `fanInCenter` left alone because it fans out itself still takes
  * labelled edges from several parents: flag it so edge-routing gives each
  * edge its own side entry instead of one shared run that overprints the
- * labels (`X -->|one| A; Y -->|two| A; A --> B; A --> C`, #1364).
+ * labels (`X -->|one| A; Y -->|two| A; A --> B; A --> C`, #1364). Only reached
+ * for TD graphs where every edge points down, which already rules out the
+ * cycles `labeledFanInFits` guards; `hasLabeledFanIn` skips cluster edges.
  */
 function markLabeledFanIn(graph: AsciiGraph): void {
   for (const node of graph.nodes) {
-    if (node.fanInCentered || node.gridCoord === null) continue
+    if (node.fanInCentered) continue
     const into = graph.edges.filter((e) => e.to === node && e.from !== node)
     if (new Set(into.map((e) => e.from)).size < 2) continue
     if (!into.some((e) => e.text !== '')) continue
-    if (into.some((e) => e.clusterTarget)) continue
-    if (!labeledFanInFits(graph, node, false)) continue
     node.fanInCentered = true
   }
 }

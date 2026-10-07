@@ -30,4 +30,32 @@ describe('labelled fan-in into a node that fans out', () => {
     B --> X`)
     expect(out).toContain('one')
   })
+
+  it('skips a plain fan-in already centered by fanInCenter', () => {
+    const out = render(`flowchart TD
+    X -->|one| A
+    Y -->|two| A`)
+    expect(out).toContain('one')
+    expect(out).toContain('two')
+  })
+
+  it('skips an unlabelled fan-in and a single labelled parent', () => {
+    expect(
+      render('flowchart TD\n X --> A\n Y --> A\n A --> B\n A --> C'),
+    ).toContain('A')
+    expect(render('flowchart TD\n X -->|one| A\n A --> B\n A --> C')).toContain(
+      'one',
+    )
+  })
+
+  it('skips an edge into a subgraph', () => {
+    const out = render(`flowchart TD
+    X -->|one| S
+    Y -->|two| S
+    subgraph S
+      A --> B
+      A --> C
+    end`)
+    expect(out).toContain('one')
+  })
 })
