@@ -36,9 +36,6 @@ import { isPortFixedEdge } from './edge-cell-styles.ts'
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
 
-/** Widest cell offset from the port centre for a stroke split off a shared port. */
-const PAIR_SPREAD = 2
-
 /** A run of an edge's path along one axis that touches a node port. */
 export interface PortRun {
   /** `v` runs along a column (x offsets), `h` along a row (y offsets). */
@@ -478,27 +475,13 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
         ([k, m]) => m.fixed && k.startsWith(`${port}|`),
       ),
     )
-    // Prefer a wide split so the two strokes of a reciprocal pair read as two
-    // edges (#1400); settle for a narrower one where the port is too short.
-    const push = pushOf(members[0]!.run, members[0]!.role)
-    // A port that also fans out keeps the narrow split: `staggerFanOuts`
-    // spaces its stems from this offset (#1308).
-    const fansOut = ports.some((port) =>
-      [...slotEdges].some(([k, n]) => n > 1 && portOf(k) === port),
-    )
-    const magnitudes =
-      nearFixed || fansOut
-        ? [nearFixed ? STROKE_SPACING : 1]
-        : Array.from({ length: PAIR_SPREAD }, (_, i) => PAIR_SPREAD - i)
-    const offset = magnitudes
-      .map((m) => push * m)
-      .find((o) =>
-        members.every((m) => {
-          const geo = portGeometry(graph, m.run)
-          return geo !== undefined && attachesAt(m.run, geo.centre + o, geo)
-        }),
-      )
-    if (offset !== undefined) offsets.set(root, offset)
+    const magnitude = nearFixed ? STROKE_SPACING : 1
+    const offset = pushOf(members[0]!.run, members[0]!.role) * magnitude
+    const fits = members.every((m) => {
+      const geo = portGeometry(graph, m.run)
+      return geo !== undefined && attachesAt(m.run, geo.centre + offset, geo)
+    })
+    if (fits) offsets.set(root, offset)
   }
 
   const shiftedRun = (run: PortRun): ShiftedRun => ({
