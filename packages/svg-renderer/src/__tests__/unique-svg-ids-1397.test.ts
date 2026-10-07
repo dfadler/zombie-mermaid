@@ -29,4 +29,10 @@ describe('SVG ids are unique per render (#1397)', () => {
       renderMermaidSVG(sources.flowchart),
     )
   })
+
+  it('leaves an id-free diagram untouched', () => {
+    const svg = renderMermaidSVG('pie\n  "A" : 1\n  "B" : 2')
+    expect(ids(svg)).toEqual([])
+    expect(svg).not.toMatch(/zm[0-9a-z]+-/)
+  })
 })
