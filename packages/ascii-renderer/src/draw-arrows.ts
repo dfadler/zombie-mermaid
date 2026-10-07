@@ -997,6 +997,10 @@ function resolveLabelPlacement(
   if (edge.text.length === 0) return null
   const centred = centredLabelPlacement(graph, edge, labelAware)
   const dx = strokeShiftFor(graph, edge, labelAware)
+  // #1408 option C: a vertical edge's label goes on its own stroke when the
+  // gap and the cells around it allow; otherwise the placement below stands.
+  const onStroke = onStrokePlacement(graph, edge, labelAware, dx, centred)
+  if (onStroke) return onStroke
   if (dx === 0) return centred
   // #1284: the pair's strokes are drawn one cell either side of the column
   // centre (see strokeShift), so each label sits beside its own stroke,
@@ -1006,6 +1010,100 @@ function resolveLabelPlacement(
     gridToDrawingCoord(graph, edge.path[0]!).x + dx,
     dx > 0 ? 'right' : 'left',
   )
+}
+
+/**
+ * #1408 option C: draw a vertical edge's label ON its stroke, centred on the
+ * stroke column, the way Mermaid centres it on the line. Terminal cells have
+ * no background fill, so the text replaces the stroke cells under it and the
+ * stroke carries on above and below.
+ *
+ * Rules:
+ * - Row: the gap midpoint for a lone edge; a reciprocal partner keeps the
+ *   #530 row (`preferred`) so each label stays next to its own arrowhead.
+ * - The label rows need a plain stroke cell between them and each node
+ *   border (two clear rows; three where an arrowhead is drawn at that end),
+ *   so a gap too short for that is not eligible and the placement that
+ *   applied before (beside the stroke where free, else centred on it)
+ *   stands.
+ * - The text must sit on nothing else (node, subgraph wall or title, another
+ *   edge's stroke - which keeps it off a bypass edge's junction row - or
+ *   another label). Rows slide away from the preferred one to find such a
+ *   spot, looking for one a cell clear of other strokes first.
+ *
+ * Returns null when no row qualifies (or, for a pair, when its partner has
+ * none). Cluster-exit edges are not handled.
+ */
+function onStrokePlacement(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  labelAware: boolean,
+  dx: number,
+  preferred: { x: number; y: number; text: string }[],
+  checkPartner = true,
+): { x: number; y: number; text: string }[] | null {
+  // A reciprocal pair goes on its strokes together or not at all, so one
+  // label never sits on its stroke while the other sits beside its own.
+  const partner = verticalPairPartner(graph, edge)
+  if (
+    checkPartner &&
+    partner &&
+    partner.text.length > 0 &&
+    !onStrokePlacement(
+      graph,
+      partner,
+      false,
+      strokeShiftFor(graph, partner, false),
+      centredLabelPlacement(graph, partner, false),
+      false,
+    )
+  ) {
+    return null
+  }
+  const line = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
+  if (
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    line[0]!.y === line[1]!.y ||
+    isClusterExitEdge(graph, edge)
+  ) {
+    return null
+  }
+  const strokeX = line[0]!.x + dx
+  const lo = Math.min(line[0]!.y, line[1]!.y)
+  const hi = Math.max(line[0]!.y, line[1]!.y)
+  const lines = splitLines(edge.text)
+  const span = lines.length - 1
+  const paired = hasReciprocalPartner(graph, edge)
+  // Rows to keep clear next to each border: one plain stroke cell, plus the
+  // arrowhead's own cell when an arrowhead is drawn at that end. A pair's
+  // labels stay on the #530 rows, next to their own arrowheads, so they only
+  // keep the plain cell.
+  const upward = line[1]!.y < line[0]!.y
+  const arrow = paired ? 2 : 3
+  const top = (upward ? edge.hasArrowEnd : edge.hasArrowStart) ? arrow : 2
+  const bottom = (upward ? edge.hasArrowStart : edge.hasArrowEnd) ? arrow : 2
+  const first = paired
+    ? preferred[0]!.y
+    : lo + Math.floor((hi - lo) / 2) - Math.floor(span / 2)
+  const at = (y: number) =>
+    lines.map((text, i) => ({
+      x: strokeX - Math.floor(displayWidth(text) / 2),
+      y: y + i,
+      text,
+    }))
+  for (const clearance of [1, 0]) {
+    for (let d = 0; d <= hi - lo; d++) {
+      for (const y of d === 0 ? [first] : [first + d, first - d]) {
+        if (y < lo + top || y + span > hi - bottom) continue
+        const placement = at(y)
+        if (besideFree(graph, edge, placement, labelAware, clearance)) {
+          return placement
+        }
+      }
+    }
+  }
+  return null
 }
 
 function centredLabelPlacement(
