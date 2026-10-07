@@ -39,4 +39,11 @@ describe('ASCII labeled arrivals from opposite sides (#1399)', () => {
     })
     expect(arrowheadsAbove(out, 'Fix & Retry')).toBe(1)
   })
+
+  it('keeps one trunk when only one of the two arrivals is labeled', () => {
+    const out = renderMermaidASCII(CI_CD.replace('F -->|No| D', 'F --> D'), {
+      colorMode: 'none',
+    })
+    expect(arrowheadsAbove(out, 'Fix & Retry')).toBe(1)
+  })
 })
