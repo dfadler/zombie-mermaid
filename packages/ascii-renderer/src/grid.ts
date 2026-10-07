@@ -234,7 +234,10 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
   // the node straddles its parents (see `straddlesParent`).
   if (gc.x > 0 && !straddlesParent(graph, node, 'x')) {
     const current = graph.columnWidth.get(gc.x - 1) ?? 0
-    graph.columnWidth.set(gc.x - 1, Math.max(current, graph.config.paddingX))
+    graph.columnWidth.set(
+      gc.x - 1,
+      Math.max(current, graph.config.paddingX, lrFanInGap(graph, node)),
+    )
   }
 
   // LR: when the row above this node is another node's own block (a fan-in
@@ -265,6 +268,21 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
     const current = graph.rowHeight.get(gc.y - 1) ?? 0
     graph.rowHeight.set(gc.y - 1, Math.max(current, basePadding))
   }
+}
+
+/**
+ * Narrowest gap before an LR node with several parents. The parents' edges
+ * join in that gap: one column for the junction and one for the arrowhead.
+ * In a 1- or 2-wide gap the farther edge's riser lands on the arrowhead cell
+ * and reads as stopping beside the child with no junction (#1393).
+ */
+function lrFanInGap(graph: AsciiGraph, node: AsciiNode): number {
+  if (graph.config.graphDirection !== 'LR') return 0
+  const parents = new Set<AsciiNode>()
+  for (const e of graph.edges) {
+    if (e.to === node && e.from !== node) parents.add(e.from)
+  }
+  return parents.size > 1 ? 3 : 0
 }
 
 /** Ensure grid has width/height entries for all cells along an edge path. */
