@@ -1046,6 +1046,21 @@ function centredLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
+  // #1408: a lone edge (no other edge on either endpoint, so no fan-out row
+  // to share and no bypass corner to collide with) sits on the gap midpoint,
+  // as Mermaid places it. Anything else keeps the near-source row.
+  const centreOnMidpoint =
+    !pullTowardTarget &&
+    edge.from !== edge.to &&
+    !graph.edges.some(
+      (o) =>
+        o !== edge &&
+        (o.from === edge.from ||
+          o.to === edge.from ||
+          o.from === edge.to ||
+          o.to === edge.to),
+    )
+
   const centred = clearOfLaneJunction(
     graph,
     edge,
@@ -1058,6 +1073,7 @@ function centredLabelPlacement(
           edge.text,
           isUpwardEdge,
           pullTowardTarget,
+          centreOnMidpoint,
         ),
         drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
       ),
@@ -1443,6 +1459,8 @@ export function labelInteriorSpaces(
  *   (near its own source), unless `pullTowardTarget` is set.
  * - No direction (isUpwardEdge=undefined): label centered (default)
  *
+ * `centreOnMidpoint` (a lone edge, #1408) skips the offset entirely.
+ *
  * `pullTowardTarget` inverts both of the above, pulling the label toward
  * its own arrowhead (the edge's target end) instead of its source. This
  * only makes a visible difference for a genuine reciprocal pair sharing one
@@ -1460,6 +1478,7 @@ function labelTextPlacement(
   label: string,
   isUpwardEdge?: boolean,
   pullTowardTarget = false,
+  centreOnMidpoint = false,
 ): { x: number; y: number; text: string }[] {
   if (line.length < 2) return []
   const minX = Math.min(line[0]!.x, line[1]!.x)
@@ -1471,7 +1490,7 @@ function labelTextPlacement(
 
   // Offset label vertically to prevent overlap on bidirectional edges
   // For vertical segments (same X), shift based on edge direction
-  if (isUpwardEdge !== undefined && minX === maxX) {
+  if (isUpwardEdge !== undefined && !centreOnMidpoint && minX === maxX) {
     const segmentHeight = maxY - minY
     const offset = Math.max(1, Math.floor(segmentHeight / 4))
     // XOR: pullTowardTarget flips which portion each direction lands in.
