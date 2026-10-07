@@ -1032,8 +1032,8 @@ function centredLabelPlacement(
 
   // Only a genuine reciprocal pair (A-->B alongside B-->A) needs its label
   // pulled toward its own target instead of its own source — see #530 and
-  // labelTextPlacement's doc comment below. A lone vertical edge keeps the
-  // original "precede the arrow, near the source" placement.
+  // labelTextPlacement's doc comment below. A lone vertical edge sits on the
+  // gap midpoint (#1408).
   //
   // A TD cluster-exit edge whose first outside leg is vertical (its target
   // lies straight below the stub) also pulls toward its target: the fan-out
@@ -1046,6 +1046,12 @@ function centredLabelPlacement(
       edge.clusterSource !== undefined &&
       graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge) === true)
 
+  const midpointed = labelTextPlacement(
+    drawingLine,
+    edge.text,
+    isUpwardEdge,
+    pullTowardTarget,
+  )
   const centred = clearOfLaneJunction(
     graph,
     edge,
@@ -1053,12 +1059,9 @@ function centredLabelPlacement(
       graph,
       clearOfClusterWalls(
         graph,
-        labelTextPlacement(
-          drawingLine,
-          edge.text,
-          isUpwardEdge,
-          pullTowardTarget,
-        ),
+        pullTowardTarget
+          ? midpointed
+          : offJunctionRows(graph, edge, drawingLine, midpointed),
         drawingLine[0]?.x === drawingLine[1]?.x ? drawingLine[0]?.x : undefined,
       ),
       drawingLine,
@@ -1371,6 +1374,43 @@ function clearOfLaneJunction(
 }
 
 /**
+ * #1408: a lone vertical edge's label sits on the gap midpoint, which can be
+ * the row where another edge's stroke turns (a bypass corner or a `├`
+ * junction). The label then reads as part of that line (`E-mail System───┘`).
+ * Nudge it to the nearest row inside the segment that no other edge turns on,
+ * preferring up; leave it put when every row is taken.
+ */
+function offJunctionRows(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  if (line.length < 2 || line[0]!.x !== line[1]!.x || placement.length === 0) {
+    return placement
+  }
+  const turnRows = new Set<number>()
+  for (const other of graph.edges) {
+    if (other === edge || other.path.length < 2) continue
+    for (const p of pathToDrawing(graph, other)) turnRows.add(p.y)
+  }
+  const top = Math.min(line[0]!.y, line[1]!.y) + 1
+  const bottom = Math.max(line[0]!.y, line[1]!.y) - 1
+  const first = placement[0]!.y
+  const last = placement[placement.length - 1]!.y
+  const hits = (dy: number) => {
+    for (let y = first + dy; y <= last + dy; y++)
+      if (turnRows.has(y)) return true
+    return false
+  }
+  for (const dy of [0, -1, 1, -2, 2]) {
+    if (first + dy < top || last + dy > bottom || hits(dy)) continue
+    return dy === 0 ? placement : placement.map((p) => ({ ...p, y: p.y + dy }))
+  }
+  return placement
+}
+
+/**
  * Keep label text off a cluster's side walls. A line running one character
  * from a wall (an outside edge passing beside a cluster) centres a label
  * wider than that on the line, which overwrites the wall cell and leaves a
@@ -1435,16 +1475,11 @@ export function labelInteriorSpaces(
  * Place text centered on a line segment defined by two drawing coordinates.
  * Supports multi-line labels.
  *
- * When isUpwardEdge is provided, offsets the label vertically to prevent
- * overlapping with labels from edges going the opposite direction:
- * - Upward edges: label placed in lower portion of segment (near its own
- *   source), unless `pullTowardTarget` is set — see below.
- * - Downward edges (isUpwardEdge=false): label placed in upper portion
- *   (near its own source), unless `pullTowardTarget` is set.
- * - No direction (isUpwardEdge=undefined): label centered (default)
+ * The label is centered on the segment unless `pullTowardTarget` is set
+ * and isUpwardEdge is provided, which offsets it vertically (see below).
  *
- * `pullTowardTarget` inverts both of the above, pulling the label toward
- * its own arrowhead (the edge's target end) instead of its source. This
+ * `pullTowardTarget` pulls the label toward its own arrowhead (the edge's
+ * target end) by a quarter of the gap. This
  * only makes a visible difference for a genuine reciprocal pair sharing one
  * vertical channel (`A --> B` alongside `B --> A`, both routed through the
  * same column): pulling each label toward its own *source* there pulls it
@@ -1452,8 +1487,7 @@ export function labelInteriorSpaces(
  * cycle one edge's source is the other edge's target. #530 is exactly that
  * bug — a same-pair bidirectional edge's two labels rendered swapped
  * relative to the arrowheads they sit beside. A lone edge (no reciprocal
- * partner) keeps the original near-source placement so its label still
- * reads as "preceding" its own arrow rather than crowding the arrowhead.
+ * partner) is not offset and sits on the gap midpoint (#1408).
  */
 function labelTextPlacement(
   line: DrawingCoord[],
@@ -1471,7 +1505,8 @@ function labelTextPlacement(
 
   // Offset label vertically to prevent overlap on bidirectional edges
   // For vertical segments (same X), shift based on edge direction
-  if (isUpwardEdge !== undefined && minX === maxX) {
+  // A lone edge (no pull) stays on the gap midpoint, as Mermaid places it (#1408).
+  if (isUpwardEdge !== undefined && pullTowardTarget && minX === maxX) {
     const segmentHeight = maxY - minY
     const offset = Math.max(1, Math.floor(segmentHeight / 4))
     // XOR: pullTowardTarget flips which portion each direction lands in.
