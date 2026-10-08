@@ -211,6 +211,20 @@ ${LABELS.slice(0, siblings)
       },
     )
 
+    it('TD: the second and third siblings enter the target on separate rows (#1331)', () => {
+      for (const useAscii of [false, true]) {
+        const lines = render(many('TD', 3, ['other']), useAscii)
+        const heads = lines.flatMap((l, r) => (/[◄<]/.test(l) ? [r] : []))
+        expect(heads, lines.join('\n')).toHaveLength(2)
+        expect(heads[1]! - heads[0]!).toBe(1)
+      }
+    })
+
+    it('TD: the two-sibling layout is not shifted (#1331)', () => {
+      const lines = render(many('TD', 2, ['other']))
+      expect(lines.filter((l) => l.includes('◄'))).toHaveLength(1)
+    })
+
     it('TD: three siblings render with the target kept off the layout edge', () => {
       const lines = render(many('TD', 3, ['other']))
       // first drops straight above T, second and third to its right (source order).
