@@ -32,6 +32,7 @@ import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
 import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
+import { clusterLaneEndShift } from './cluster-boundary.ts'
 
 /** Cells between a fixed stroke and a moved one (one blank cell). */
 const STROKE_SPACING = 2
@@ -366,6 +367,12 @@ export function withPortShifts<T>(graph: AsciiGraph, run: () => T): T {
 function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   const result = new Map<AsciiEdge, PortShift>()
   if (graph.edges.length < 2) return result
+  const shiftedRun = (run: PortRun): ShiftedRun => ({
+    axis: run.axis,
+    line: run.line,
+    from: run.from,
+    to: run.to,
+  })
 
   // Slots: one per (port, role). Straight edges tie their two slots together.
   const parent = new Map<string, string>()
@@ -414,6 +421,10 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
       const e = endRun(edge)
       if (s) addSlot(edge.from, edge.path[0]!, 'S', s, true)
       if (e) addSlot(edge.to, edge.path[edge.path.length - 1]!, 'E', e, true)
+      const end = clusterLaneEndShift(graph, edge)
+      if (end && e) {
+        result.set(edge, { start: 0, end, endRun: shiftedRun(e) })
+      }
       continue
     }
     const r = runsOf(edge)
@@ -501,12 +512,6 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     if (offset !== undefined) offsets.set(root, offset)
   }
 
-  const shiftedRun = (run: PortRun): ShiftedRun => ({
-    axis: run.axis,
-    line: run.line,
-    from: run.from,
-    to: run.to,
-  })
   const slotOffset = (key: string): number => offsets.get(find(key)) ?? 0
   const staggered = new Map<AsciiEdge, number>()
   for (const [key, members] of startGroups) {
