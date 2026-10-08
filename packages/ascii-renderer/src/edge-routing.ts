@@ -37,7 +37,7 @@ import {
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
-import { isOccupied, pathCells } from './grid-occupancy.ts'
+import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
 // draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
@@ -272,10 +272,11 @@ export function interiorCellsClearOfNodes(
   graph: AsciiGraph,
   cells: readonly GridCoord[],
   ownNodes: readonly AsciiNode[] = [],
+  grid: Grid = graph.grid,
 ): boolean {
   for (let i = 1; i < cells.length - 1; i++) {
     const cell = cells[i]!
-    if (!isOccupied(graph.grid, cell)) continue
+    if (!isOccupied(grid, cell)) continue
     if (ownNodes.some((n) => isCellInNodeBlock(n, cell))) continue
     return false
   }
@@ -1398,6 +1399,36 @@ export function determineLabelLine(
         const only = edge.path[0] ?? { x: 0, y: 0 }
         largestLine = [only, only]
       }
+    }
+  }
+
+  // #1413: two edges sharing a lane can pick the very same segment, and the
+  // later label then overwrites the earlier one. When the pick's interior
+  // already holds another edge's label, move to a vertical segment of this
+  // edge whose interior is free; its label goes beside the stroke.
+  if (ctx && graph.config.graphDirection !== 'LR') {
+    const holdsOther = (line: [GridCoord, GridCoord]): boolean => {
+      const inner = new Set(
+        pathCells(line)
+          .slice(1, -1)
+          .map((c) => `${c.x},${c.y}`),
+      )
+      // This edge isn't in `chosen` yet (labels fixed in routing return early).
+      for (const held of ctx.chosen.values()) {
+        if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) return true
+      }
+      return false
+    }
+    if (holdsOther(largestLine)) {
+      const free = segments.filter(
+        (s) =>
+          s.isVertical &&
+          !isTerminalSegment(s) &&
+          clearOfNodes(s.line) &&
+          !isNodeOccupiedColumn(graph, s.line[0].x) &&
+          !holdsOther(s.line),
+      )
+      if (free.length > 0) largestLine = free.sort(byRank)[0]!.line
     }
   }
 

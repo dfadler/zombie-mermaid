@@ -1,5 +1,28 @@
 # @zombie-mermaid/ascii-renderer
 
+## 4.2.3
+
+### Patch Changes
+
+- [#1419](https://github.com/dfadler/zombie-mermaid/pull/1419) [`3cfd4c0`](https://github.com/dfadler/zombie-mermaid/commit/3cfd4c0d5f1cdf3dae82f4e5fd8a934f6ef8b70b) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a back edge between two nodes of the same subgraph now stays inside the subgraph's frame instead of running past its wall (fixes [#1399](https://github.com/dfadler/zombie-mermaid/issues/1399)).
+
+- [#1407](https://github.com/dfadler/zombie-mermaid/pull/1407) [`1bfc76e`](https://github.com/dfadler/zombie-mermaid/commit/1bfc76ecd6db50b18d9d6b147863ce60fd65d2e3) Thanks [@dfadler](https://github.com/dfadler)! - Fix `renderMermaidASCII` hanging or throwing `pathCells: segment ... did not reach its endpoint` on a top-down flowchart made of chained fan-outs (`A --> B`, `A --> C`, `C --> D`, `D --> E`, `D --> F`, ...). A parent whose children sat a half column apart was placed on a fractional column; it now stays above its first child instead. Closes [#1391](https://github.com/dfadler/zombie-mermaid/issues/1391).
+
+- [#1416](https://github.com/dfadler/zombie-mermaid/pull/1416) [`cfa74cd`](https://github.com/dfadler/zombie-mermaid/commit/cfa74cded88f56b88f228f0f886d5d83689e7eff) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a vertical edge's label is drawn on its stroke at the gap midpoint, centred on the line the way Mermaid does, with the stroke carrying on above and below the text. A gap too short for that, or cells already taken, keep the previous placement (refs [#1408](https://github.com/dfadler/zombie-mermaid/issues/1408), option C).
+
+- [#1404](https://github.com/dfadler/zombie-mermaid/pull/1404) [`1f524f8`](https://github.com/dfadler/zombie-mermaid/commit/1f524f8cb074eca81b2c9aedd0bb51788356f48a) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: with `paddingX` 1 or 2, an `LR` node with several parents no longer has one parent's edge stop beside its border with no junction or arrowhead; the gap before such a node is kept at least 3 wide so the edges join (fixes [#1393](https://github.com/dfadler/zombie-mermaid/issues/1393)).
+
+- [#1422](https://github.com/dfadler/zombie-mermaid/pull/1422) [`555cbfb`](https://github.com/dfadler/zombie-mermaid/commit/555cbfbe627df56261d2191a0e3b7286e4d33f0d) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: an edge whose conflict-avoiding reroute finds no clear route keeps its earlier path instead of falling back to a straight line drawn through another node (fixes [#1411](https://github.com/dfadler/zombie-mermaid/issues/1411)).
+
+- [#1410](https://github.com/dfadler/zombie-mermaid/pull/1410) [`2a29580`](https://github.com/dfadler/zombie-mermaid/commit/2a295809f975afe7a1f9c00a5f45c46c03d2cc93) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII flowcharts where two labeled edges reaching the same side of a node from opposite directions (such as the two "No" edges into "Fix & Retry" in the CI/CD sample) merged into one line with a single arrowhead. Each now gets its own column and arrowhead. Closes [#1399](https://github.com/dfadler/zombie-mermaid/issues/1399).
+
+- [#1417](https://github.com/dfadler/zombie-mermaid/pull/1417) [`c0eed80`](https://github.com/dfadler/zombie-mermaid/commit/c0eed80f2abe099733b169ef7a2f348077a2e903) Thanks [@dfadler](https://github.com/dfadler)! - Fix ASCII diagrams where the down and up strokes of a reciprocal pair on one node side (such as Busy and Err in the state-diagram samples) ran only one blank cell apart and read as one edge. They now keep a clear gap where the node border has room. Closes [#1400](https://github.com/dfadler/zombie-mermaid/issues/1400).
+
+- [#1427](https://github.com/dfadler/zombie-mermaid/pull/1427) [`a637027`](https://github.com/dfadler/zombie-mermaid/commit/a6370270f9afed0a4e4cdfac6c40a08468344e6b) Thanks [@dfadler](https://github.com/dfadler)! - Stop publishing test files in the npm tarballs (the `zombie-mermaid` tarball drops from about 255 KB to 46 KB), and speed up ASCII edge routing by about 25% on large flowcharts with no change to output. Refs [#1373](https://github.com/dfadler/zombie-mermaid/issues/1373), [#1374](https://github.com/dfadler/zombie-mermaid/issues/1374).
+- Updated dependencies []:
+  - @zombie-mermaid/core@4.2.3
+  - @zombie-mermaid/mermaid-parser@4.2.3
+
 ## 4.2.2
 
 ### Patch Changes
