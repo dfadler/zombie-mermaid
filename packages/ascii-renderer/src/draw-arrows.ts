@@ -112,6 +112,18 @@ export function drawArrow(
         )
       : copyCanvas(graph.canvas)
 
+  // An arrowless end has no glyph to bridge the last cell to the target's
+  // border, which leaves a gap under a dotted stroke (┆ doesn't fill its
+  // cell): tee into the border like the start does.
+  if (!edge.hasArrowEnd && hasSegments && !invisible) {
+    drawBoxEnd(
+      graph,
+      boxStartCanvas,
+      linesDrawn[linesDrawn.length - 1]!,
+      lineDirs[lineDirs.length - 1]!,
+    )
+  }
+
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
   let arrowHeadEndCanvas: Canvas
   if (edge.hasArrowEnd && hasSegments) {
@@ -691,6 +703,41 @@ function drawBoxStart(
   }
 
   return canvas
+}
+
+/**
+ * Tee an arrowless edge end into the border it runs up to. Only fires when
+ * the cell past the last stroke is a straight border facing the stroke, so a
+ * diagonal or border-less end is left alone.
+ */
+function drawBoxEnd(
+  graph: AsciiGraph,
+  canvas: Canvas,
+  lastLine: DrawingCoord[],
+  dir: Direction,
+): void {
+  const last = lastLine[lastLine.length - 1]!
+  const tee = [
+    [Down, 0, 1, '┴', HORIZONTAL_BORDER_CHARS],
+    [Up, 0, -1, '┬', HORIZONTAL_BORDER_CHARS],
+    [Right, 1, 0, '┤', VERTICAL_BORDER_CHARS],
+    [Left, -1, 0, '├', VERTICAL_BORDER_CHARS],
+  ].find(([d]) => dirEquals(dir, d as Direction))
+  /* v8 ignore next -- diagonal ends come only from determinePath's rare Case-4 fallback */
+  if (!tee) return
+  const [, dx, dy, glyph, borders] = tee as [
+    Direction,
+    number,
+    number,
+    string,
+    ReadonlySet<string>,
+  ]
+  const x = last.x + dx
+  const y = last.y + dy
+  const existing = graph.canvas[x]?.[y]
+  if (existing !== undefined && borders.has(existing)) {
+    write(canvas, x, y, graph.config.useAscii ? '+' : glyph)
+  }
 }
 
 /**
