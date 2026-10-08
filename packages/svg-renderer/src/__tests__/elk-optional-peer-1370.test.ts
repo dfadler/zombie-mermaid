@@ -139,33 +139,41 @@ describe('elkjs optional peer (#1370)', () => {
 
     it('skips auto-load when getBuiltinModule is unavailable', async () => {
       vi.resetModules()
-      vi.spyOn(process, 'getBuiltinModule', 'get' as never).mockReturnValue(
-        undefined as never,
-      )
-      const api = await import('../index.ts')
-      expect(() => api.renderMermaidSVG(src)).toThrow(api.ElkNotRegisteredError)
+      vi.stubGlobal('process', { ...process, getBuiltinModule: undefined })
+      try {
+        const api = await import('../index.ts')
+        expect(() => api.renderMermaidSVG(src)).toThrow(
+          api.ElkNotRegisteredError,
+        )
+      } finally {
+        vi.unstubAllGlobals()
+      }
     })
 
     it('falls back to "/" when process.cwd is missing', async () => {
       const seen: string[] = []
       vi.resetModules()
-      vi.spyOn(process, 'getBuiltinModule').mockImplementation(
-        () =>
-          ({
-            createRequire: (from: string) => {
-              seen.push(from)
-              return () => {
-                throw new Error('nope')
-              }
-            },
-          }) as never,
-      )
-      vi.spyOn(process, 'cwd', 'get' as never).mockReturnValue(
-        undefined as never,
-      )
-      const api = await import('../index.ts')
-      expect(() => api.renderMermaidSVG(src)).toThrow(api.ElkNotRegisteredError)
-      expect(seen[1]).toMatch(/^file:\/\/\/+$/)
+      vi.stubGlobal('process', {
+        ...process,
+        cwd: undefined,
+        getBuiltinModule: () => ({
+          createRequire: (from: string) => {
+            seen.push(from)
+            return () => {
+              throw new Error('nope')
+            }
+          },
+        }),
+      })
+      try {
+        const api = await import('../index.ts')
+        expect(() => api.renderMermaidSVG(src)).toThrow(
+          api.ElkNotRegisteredError,
+        )
+        expect(seen[1]).toMatch(/^file:\/\/\/+$/)
+      } finally {
+        vi.unstubAllGlobals()
+      }
     })
 
     it('hides a worker-style `self` during construction and restores it', async () => {
