@@ -1244,6 +1244,13 @@ function centredLabelPlacement(
       const bottom = Math.max(drawingLine[0]!.y, drawingLine[1]!.y) - 1
       const rows = beside.map((b) => b.y)
       const span = Math.max(...rows) - Math.min(...rows)
+      // #1435: on a lane other edges also run down, start the label just
+      // below where this edge joins it, not mid-lane, so it reads as theirs.
+      const join = sharedLaneJoinRow(graph, edge, drawingLine)
+      if (join !== undefined && !isUpwardEdge) {
+        const dy = join + 2 - Math.min(...rows)
+        for (const b of beside) b.y += dy
+      }
       for (const clearance of [2, 1]) {
         if (besideFree(graph, edge, beside, labelAware, clearance))
           return beside
@@ -1261,6 +1268,39 @@ function centredLabelPlacement(
     }
   }
   return clearOfSiblingStrokes(graph, edge, drawingLine, centred, labelAware)
+}
+
+/**
+ * The row where `edge` turns onto the vertical `line` from a horizontal run,
+ * when another edge also runs down that line (a shared fan-in lane); else
+ * undefined.
+ */
+function sharedLaneJoinRow(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+): number | undefined {
+  const [a, b] = line as [DrawingCoord, DrawingCoord]
+  const mine = pathToDrawing(graph, edge)
+  const i = mine.findIndex((p) => p.x === a.x && p.y === a.y)
+  if (i < 1 || mine[i - 1]!.y !== a.y || mine[i - 1]!.x === a.x) {
+    return undefined
+  }
+  const lo = Math.min(a.y, b.y)
+  const hi = Math.max(a.y, b.y)
+  const shared = graph.edges.some(
+    (o) =>
+      o !== edge &&
+      pathToDrawing(graph, o).some(
+        (p, j, pts) =>
+          j > 0 &&
+          p.x === a.x &&
+          pts[j - 1]!.x === a.x &&
+          Math.max(p.y, pts[j - 1]!.y) > lo &&
+          Math.min(p.y, pts[j - 1]!.y) < hi,
+      ),
+  )
+  return shared ? a.y : undefined
 }
 
 /**
@@ -1293,7 +1333,9 @@ function clearOfSiblingStrokes(
     for (let d = 1; d <= width + clearance; d++) {
       for (const dx of [-d, d]) {
         const moved = placement.map((p) => ({ ...p, x: p.x + dx }))
-        if (besideFree(graph, edge, moved, labelAware, clearance)) return moved
+        if (besideFree(graph, edge, moved, labelAware, clearance, true)) {
+          return moved
+        }
       }
     }
   }
@@ -1344,9 +1386,10 @@ function besideFree(
   placement: { x: number; y: number; text: string }[],
   labelAware: boolean,
   clearance = 0,
+  sidewaysOnly = false,
 ): boolean {
   return (
-    besideGeometryFree(graph, edge, placement, clearance) &&
+    besideGeometryFree(graph, edge, placement, clearance, sidewaysOnly) &&
     (!labelAware || !hitsOtherLabel(graph, edge, placement))
   )
 }
@@ -1393,6 +1436,7 @@ function besideGeometryFree(
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
   clearance = 0,
+  sidewaysOnly = false,
 ): boolean {
   for (const { x, y, text } of placement) {
     const x0 = x
@@ -1429,9 +1473,14 @@ function besideGeometryFree(
         const b = pts[i]!
         // `clearance` keeps the text off cells *next to* another edge's
         // stroke too, where it would read as that stroke's label (#attribution).
+        // `sidewaysOnly` counts it only across columns: a label already on its
+        // own stroke can't be misread, and a stroke on the row above or below
+        // ruled out the one-cell gap beside a stem whenever a junction row sat
+        // right below (#1434).
+        const rowClearance = sidewaysOnly ? 0 : clearance
         if (
-          y >= Math.min(a.y, b.y) - clearance &&
-          y <= Math.max(a.y, b.y) + clearance &&
+          y >= Math.min(a.y, b.y) - rowClearance &&
+          y <= Math.max(a.y, b.y) + rowClearance &&
           x1 >= Math.min(a.x, b.x) - clearance &&
           x0 <= Math.max(a.x, b.x) + clearance
         ) {
