@@ -1350,6 +1350,36 @@ export function determineLabelLine(
     }
   }
 
+  // #1413: two edges sharing a lane can pick the very same segment, and the
+  // later label then overwrites the earlier one. When the pick's interior
+  // already holds another edge's label, move to a vertical segment of this
+  // edge whose interior is free; its label goes beside the stroke.
+  if (ctx && graph.config.graphDirection !== 'LR') {
+    const holdsOther = (line: [GridCoord, GridCoord]): boolean => {
+      const inner = new Set(
+        pathCells(line)
+          .slice(1, -1)
+          .map((c) => `${c.x},${c.y}`),
+      )
+      for (const [other, held] of ctx.chosen) {
+        if (other === edge) continue
+        if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) return true
+      }
+      return false
+    }
+    if (holdsOther(largestLine)) {
+      const free = segments.filter(
+        (s) =>
+          s.isVertical &&
+          !isTerminalSegment(s) &&
+          clearOfNodes(s.line) &&
+          !isNodeOccupiedColumn(graph, s.line[0].x) &&
+          !holdsOther(s.line),
+      )
+      if (free.length > 0) largestLine = free.sort(byRank)[0]!.line
+    }
+  }
+
   applyLabelLine(graph, edge, largestLine, lenLabel)
   ctx?.chosen.set(edge, largestLine)
 }
