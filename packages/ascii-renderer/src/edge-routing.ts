@@ -1361,8 +1361,8 @@ export function determineLabelLine(
           .slice(1, -1)
           .map((c) => `${c.x},${c.y}`),
       )
-      for (const [other, held] of ctx.chosen) {
-        if (other === edge) continue
+      // This edge isn't in `chosen` yet (labels fixed in routing return early).
+      for (const held of ctx.chosen.values()) {
         if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) return true
       }
       return false
