@@ -340,6 +340,56 @@ function parallelGroupKey(edge: AsciiEdge): string {
 }
 
 /**
+ * Whether `group` (edges between one ordered pair of nodes) can run side by
+ * side on the two nodes' facing faces (#1394) instead of taking side lanes:
+ * unlabeled edges between nodes stacked in one grid column (or side by side in
+ * one grid row) with a free channel between them, on faces wide enough to hold
+ * one stroke per edge a stroke-spacing apart. `portShifts` (port-offsets.ts)
+ * then spreads the strokes. Labeled groups keep the lanes, which place labels.
+ */
+function spreadsOnFaces(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+): boolean {
+  const { from, to } = group[0]!
+  const a = requireGridCoord(from)
+  const b = requireGridCoord(to)
+  if (group.some((e) => e.from !== from || e.to !== to || e.text.length > 0)) {
+    return false
+  }
+  if (group.some((e) => e.clusterSource || e.clusterTarget)) return false
+  // Defensive: a diagonal pair has a second parent/child toward its partner,
+  // which the edge check below already refuses; kept so the axis is never
+  // guessed for a pair on neither a shared row nor a shared column.
+  /* v8 ignore next */
+  if (a.x !== b.x && a.y !== b.y) return false
+  const vertical = a.x === b.x
+  const size = vertical ? graph.columnWidth : graph.rowHeight
+  const at = vertical ? a.x : a.y
+  const extent = [0, 1, 2].reduce((n, i) => n + size.get(at + i)!, 0)
+  if (extent < 2 * group.length + 1) return false
+  // Nothing else may use the facing faces, which would put a stroke on top of
+  // the spread ones: every other edge at either node must leave from the far
+  // side of that node (a chain onward), never toward the partner or level.
+  const axis = vertical ? 'y' : 'x'
+  for (const e of graph.edges) {
+    if (group.includes(e) || e.from === e.to) continue
+    for (const [node, here, there] of [
+      [from, a, b],
+      [to, b, a],
+    ] as const) {
+      if (e.from !== node && e.to !== node) continue
+      const far = requireGridCoord(e.from === node ? e.to : e.from)
+      const towards = Math.sign(there[axis] - here[axis])
+      if (Math.sign(far[axis] - here[axis]) !== -towards) return false
+    }
+  }
+  // Any node between the two would be linked to one of them by an edge toward
+  // the other, which the loop above has already refused: the channel is clear.
+  return true
+}
+
+/**
  * Group edges that connect the same pair of nodes — two edges in the same
  * direction (`A -->|One| B` and `A -->|Two| B`), or, when the two nodes are
  * laid out side by side, an edge and its reverse-direction partner
@@ -380,7 +430,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   }
 
   for (const group of groups.values()) {
-    if (group.length < 2) continue
+    if (group.length < 2 || spreadsOnFaces(graph, group)) continue
     const usedOffsets = new Set<number>()
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
