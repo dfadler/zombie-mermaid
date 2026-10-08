@@ -86,6 +86,12 @@ A `direction` override on a nested subgraph was silently ignored, and an edge cr
 
 **Triggered by:** a flowchart with nested subgraphs where an inner subgraph sets its own `direction`, or an edge that crosses one or more subgraph boundaries.
 
+### ASCII/Unicode: `RL` direction
+
+`beautiful-mermaid` drew `graph RL` (and a state diagram's `direction RL`) exactly like `LR`, source on the left and arrowheads pointing right. `renderMermaidASCII` now mirrors the finished layout, so the source sits on the right and arrowheads point left ([#1231](https://github.com/dfadler/zombie-mermaid/issues/1231)). `BT` was already flipped upstream and still is. A `direction RL` or `BT` written inside a nested subgraph is still drawn as `LR`/`TD` in ASCII, same as upstream ([#1372](https://github.com/dfadler/zombie-mermaid/issues/1372)); the decision record is [here](decisions/ascii-orientation-audit-vs-beautiful-mermaid-1372.md).
+
+**Triggered by:** an ASCII/Unicode-rendered flowchart declared `graph RL` / `flowchart RL`, or a state diagram with `direction RL`.
+
 ### ASCII/Unicode: wide-character box sizing
 
 Box width and column reservation were computed with `.length` (UTF-16 code units), so a CJK, kana, hangul, fullwidth-form, or emoji character — which occupies two terminal columns — was sized as one. Labels, subgraph titles, and (separately, in class/ER diagrams' multi-compartment boxes) attribute/method lines all overflowed their own borders as a result. Fixed for flowchart/state labels and titles in [#94](https://github.com/dfadler/zombie-mermaid/pull/94), and for class/ER multi-compartment boxes in [#203](https://github.com/dfadler/zombie-mermaid/pull/203) (v1.2.0 and v1.3.0 respectively), via a shared display-width-aware measurement helper.
