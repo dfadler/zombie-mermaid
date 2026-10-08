@@ -120,6 +120,10 @@ function autoLoadElk(): ElkConstructor | null {
   if (!mod) return null
   const specifier = ['elkjs', 'lib', 'elk.bundled.js'].join('/')
   // CJS build: rolldown rewrites `import.meta` to `{}`, so prefer `__filename`.
+  // vite-node injects __filename into every module, so the plain-ESM
+  // `import.meta.url` arm is unreachable under vitest; it is exercised by the
+  // built ESM dist (checked manually on Node and Bun for #1370).
+  /* v8 ignore next */
   const here = typeof __filename === 'string' ? __filename : import.meta.url
   const bases = [here, new URL(`file://${cwd(proc)}/`).href]
   for (const base of bases) {
