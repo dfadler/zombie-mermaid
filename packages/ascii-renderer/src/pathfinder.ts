@@ -183,6 +183,14 @@ export function createPathBudget(
 }
 
 /**
+ * Injective integer key for a cell, valid for |coord| < 2^20 (grids here are
+ * tens to hundreds of cells wide; `MAX_ITERATIONS` bounds the search anyway).
+ */
+function searchKey(c: GridCoord): number {
+  return (c.x + 1_048_576) * 2_097_152 + (c.y + 1_048_576)
+}
+
+/**
  * Find a path from `from` to `to` on the grid using A*.
  * Returns the path as an array of GridCoords, or null if no path exists.
  *
@@ -205,11 +213,14 @@ export function getPath(
   const pq = new MinHeap()
   pq.push({ coord: from, priority: 0 })
 
-  const costSoFar = new Map<string, number>()
-  costSoFar.set(gridKey(from), 0)
+  // Numeric keys: the A* maps are the hottest allocation site in the ASCII
+  // renderer, and `x,y` string keys cost a template-literal allocation per
+  // lookup. Same cell identity as gridKey, just cheaper to hash.
+  const costSoFar = new Map<number, number>()
+  costSoFar.set(searchKey(from), 0)
 
-  const cameFrom = new Map<string, GridCoord | null>()
-  cameFrom.set(gridKey(from), null)
+  const cameFrom = new Map<number, GridCoord | null>()
+  cameFrom.set(searchKey(from), null)
 
   let iterations = 0
   while (pq.length > 0) {
@@ -228,10 +239,10 @@ export function getPath(
       const path: GridCoord[] = []
       let c: GridCoord | null = current
       while (c !== null) {
-        path.unshift(c)
-        c = cameFrom.get(gridKey(c)) ?? null
+        path.push(c)
+        c = cameFrom.get(searchKey(c)) ?? null
       }
-      return path
+      return path.reverse()
     }
 
     // Every coord ever pushed onto `pq` has its costSoFar entry set
@@ -241,7 +252,7 @@ export function getPath(
     // cost. That invariant lives in this function's control flow, not in
     // the Map's type, so it's checked explicitly rather than trusted via
     // `!`.
-    const currentCost = costSoFar.get(gridKey(current))
+    const currentCost = costSoFar.get(searchKey(current))
     if (currentCost === undefined) {
       /* v8 ignore next */
       throw new Error(
@@ -260,11 +271,11 @@ export function getPath(
       // With `preferStraight`, a bend costs a hair more than a straight
       // step, so among equally short routes the one with fewest turns wins
       // instead of whichever a heap tie surfaces (a staircase).
-      const prev = preferStraight ? cameFrom.get(gridKey(current)) : null
+      const prev = preferStraight ? cameFrom.get(searchKey(current)) : null
       const bends =
         prev && (current.x - prev.x !== dir.x || current.y - prev.y !== dir.y)
       const newCost = currentCost + 1 + (bends ? BEND_EPSILON : 0)
-      const nextKey = gridKey(next)
+      const nextKey = searchKey(next)
       const existingCost = costSoFar.get(nextKey)
 
       if (existingCost === undefined || newCost < existingCost) {

@@ -112,6 +112,18 @@ export function drawArrow(
         )
       : copyCanvas(graph.canvas)
 
+  // An arrowless end has no glyph to bridge the last cell to the target's
+  // border, which leaves a gap under a dotted stroke (┆ doesn't fill its
+  // cell): tee into the border like the start does.
+  if (!edge.hasArrowEnd && hasSegments && !invisible) {
+    drawBoxEnd(
+      graph,
+      boxStartCanvas,
+      linesDrawn[linesDrawn.length - 1]!,
+      lineDirs[lineDirs.length - 1]!,
+    )
+  }
+
   // Draw end arrowhead only if hasArrowEnd is true (default behavior)
   let arrowHeadEndCanvas: Canvas
   if (edge.hasArrowEnd && hasSegments) {
@@ -694,6 +706,41 @@ function drawBoxStart(
 }
 
 /**
+ * Tee an arrowless edge end into the border it runs up to. Only fires when
+ * the cell past the last stroke is a straight border facing the stroke, so a
+ * diagonal or border-less end is left alone.
+ */
+function drawBoxEnd(
+  graph: AsciiGraph,
+  canvas: Canvas,
+  lastLine: DrawingCoord[],
+  dir: Direction,
+): void {
+  const last = lastLine[lastLine.length - 1]!
+  const tee = [
+    [Down, 0, 1, '┴', HORIZONTAL_BORDER_CHARS],
+    [Up, 0, -1, '┬', HORIZONTAL_BORDER_CHARS],
+    [Right, 1, 0, '┤', VERTICAL_BORDER_CHARS],
+    [Left, -1, 0, '├', VERTICAL_BORDER_CHARS],
+  ].find(([d]) => dirEquals(dir, d as Direction))
+  /* v8 ignore next -- diagonal ends come only from determinePath's rare Case-4 fallback */
+  if (!tee) return
+  const [, dx, dy, glyph, borders] = tee as [
+    Direction,
+    number,
+    number,
+    string,
+    ReadonlySet<string>,
+  ]
+  const x = last.x + dx
+  const y = last.y + dy
+  const existing = graph.canvas[x]?.[y]
+  if (existing !== undefined && borders.has(existing)) {
+    write(canvas, x, y, graph.config.useAscii ? '+' : glyph)
+  }
+}
+
+/**
  * Fixed glyph for a `--o`/`--x` circle/cross terminator — direction-
  * independent, unlike the triangular arrowheads below, so callers don't
  * need to know which way the edge points to pick it. Returns undefined for
@@ -1213,7 +1260,44 @@ function centredLabelPlacement(
       return beside
     }
   }
-  return centred
+  return clearOfSiblingStrokes(graph, edge, drawingLine, centred, labelAware)
+}
+
+/**
+ * A label centred on a vertical stroke can reach across to a sibling stroke
+ * that leaves the same node a few cells over (a fan-out's port-shifted stems)
+ * and overwrite it, leaving that edge without a visible path. Slide the text
+ * sideways to the nearest column where it sits on no other edge; it stays
+ * where it is when nothing is free.
+ */
+function clearOfSiblingStrokes(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+  labelAware: boolean,
+): { x: number; y: number; text: string }[] {
+  if (
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    line[0]!.y === line[1]!.y ||
+    isClusterExitEdge(graph, edge) ||
+    besideFree(graph, edge, placement, labelAware)
+  ) {
+    return placement
+  }
+  const width = Math.max(...placement.map((p) => displayWidth(p.text)))
+  // One blank cell clear of the sibling first, so it doesn't read as the
+  // label's own stroke; flush against it only when that is all there is.
+  for (const clearance of [1, 0]) {
+    for (let d = 1; d <= width + clearance; d++) {
+      for (const dx of [-d, d]) {
+        const moved = placement.map((p) => ({ ...p, x: p.x + dx }))
+        if (besideFree(graph, edge, moved, labelAware, clearance)) return moved
+      }
+    }
+  }
+  return placement
 }
 
 function isClusterExitEdge(graph: AsciiGraph, edge: AsciiEdge): boolean {
@@ -1467,11 +1551,13 @@ function clearOfJoiningStrokes(
   const joins: number[] = []
   for (const other of graph.edges) {
     if (other === edge) continue
+    // The drawn column, so a port-shifted stem's tee is found where it lands.
+    const drawn = pathToDrawing(graph, other)
     other.path.forEach((p, i) => {
       if (i === 0 || i === other.path.length - 1 || p.y !== gy) return
       // A bend: the stroke arrives or leaves vertically.
       if (other.path[i - 1]!.y === p.y && other.path[i + 1]!.y === p.y) return
-      const x = gridToDrawingCoord(graph, p).x
+      const x = drawn[i]!.x
       if (x > lo && x < hi) joins.push(x)
     })
   }

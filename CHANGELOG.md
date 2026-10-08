@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.2.3
+
+### Patch Changes
+
+- [#1406](https://github.com/dfadler/zombie-mermaid/pull/1406) [`600d977`](https://github.com/dfadler/zombie-mermaid/commit/600d977748dafbd91aca14fc61d239def27f5094) Thanks [@dfadler](https://github.com/dfadler)! - In an LR flowchart, two labelled edges into the same node no longer draw one label over the other, and a label no longer covers the tee where another edge joins its row ([#1392](https://github.com/dfadler/zombie-mermaid/issues/1392)).
+
+- [#1403](https://github.com/dfadler/zombie-mermaid/pull/1403) [`60b126c`](https://github.com/dfadler/zombie-mermaid/commit/60b126ce51b40c503535c55ddff023f6a051c862) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: a node with several labelled parents that also fans out to children no longer prints its parents' labels on top of each other (`onetwo`); each labelled edge now takes its own side entry.
+
+- [#1427](https://github.com/dfadler/zombie-mermaid/pull/1427) [`a637027`](https://github.com/dfadler/zombie-mermaid/commit/a6370270f9afed0a4e4cdfac6c40a08468344e6b) Thanks [@dfadler](https://github.com/dfadler)! - Stop publishing test files in the npm tarballs (the `zombie-mermaid` tarball drops from about 255 KB to 46 KB), and speed up ASCII edge routing by about 25% on large flowcharts with no change to output. Refs [#1373](https://github.com/dfadler/zombie-mermaid/issues/1373), [#1374](https://github.com/dfadler/zombie-mermaid/issues/1374).
+
+- [#1405](https://github.com/dfadler/zombie-mermaid/pull/1405) [`2f9993c`](https://github.com/dfadler/zombie-mermaid/commit/2f9993cf88961c532225a406b6a9f911a401c3bc) Thanks [@dfadler](https://github.com/dfadler)! - Scope every SVG `id` (arrowhead, class and sequence markers) and its `url(#…)` / `href="#…"` references with a per-render hash, so several diagrams inlined in one HTML document no longer share marker ids and lose their arrowheads when the first one is hidden ([#1397](https://github.com/dfadler/zombie-mermaid/issues/1397)).
+- Updated dependencies [[`3cfd4c0`](https://github.com/dfadler/zombie-mermaid/commit/3cfd4c0d5f1cdf3dae82f4e5fd8a934f6ef8b70b), [`1bfc76e`](https://github.com/dfadler/zombie-mermaid/commit/1bfc76ecd6db50b18d9d6b147863ce60fd65d2e3), [`cfa74cd`](https://github.com/dfadler/zombie-mermaid/commit/cfa74cded88f56b88f228f0f886d5d83689e7eff), [`1f524f8`](https://github.com/dfadler/zombie-mermaid/commit/1f524f8cb074eca81b2c9aedd0bb51788356f48a), [`555cbfb`](https://github.com/dfadler/zombie-mermaid/commit/555cbfbe627df56261d2191a0e3b7286e4d33f0d), [`2a29580`](https://github.com/dfadler/zombie-mermaid/commit/2a295809f975afe7a1f9c00a5f45c46c03d2cc93), [`c0eed80`](https://github.com/dfadler/zombie-mermaid/commit/c0eed80f2abe099733b169ef7a2f348077a2e903), [`a637027`](https://github.com/dfadler/zombie-mermaid/commit/a6370270f9afed0a4e4cdfac6c40a08468344e6b), [`2f9993c`](https://github.com/dfadler/zombie-mermaid/commit/2f9993cf88961c532225a406b6a9f911a401c3bc)]:
+  - @zombie-mermaid/ascii-renderer@4.2.3
+  - @zombie-mermaid/svg-renderer@4.2.3
+  - @zombie-mermaid/mcp@4.2.3
+  - @zombie-mermaid/core@4.2.3
+  - @zombie-mermaid/mermaid-parser@4.2.3
+
 ## 4.2.2
 
 ### Patch Changes

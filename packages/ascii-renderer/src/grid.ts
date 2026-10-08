@@ -20,6 +20,7 @@ import { gridKey, requireGridCoord } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
+  interiorCellsClearOfNodes,
   determineLabelLine,
   createLabelContext,
   assignParallelEdgeLanes,
@@ -37,6 +38,7 @@ import {
   isBlockFree,
   placeBlock,
   cloneGrid,
+  pathCells,
   NODE_BLOCK_SIZE,
   type Grid,
 } from './grid-occupancy.ts'
@@ -372,7 +374,23 @@ function rerouteAroundStyleConflicts(
       if (!conflict) return
       graph.grid.add(gridKey(conflict))
       temporarilyBlocked.push(conflict)
+      const { path, startDir, endDir, labelLine } = edge
       determinePath(graph, edge)
+      // With the conflict cell blocked, no clear route may remain, and
+      // determinePath then falls back to a straight line that ignores
+      // occupancy (#1411: A --> D drawn through B). A line that overlaps
+      // another edge is better than one through a node: keep the old path.
+      if (
+        !interiorCellsClearOfNodes(
+          graph,
+          pathCells(edge.path),
+          [edge.from, edge.to],
+          nodeOnlyGrid,
+        )
+      ) {
+        Object.assign(edge, { path, startDir, endDir, labelLine })
+        return
+      }
     }
   } finally {
     graph.preferStraightRoutes = false
@@ -573,6 +591,19 @@ function calculateSubgraphBoundingBox(
     minY = Math.min(minY, nodeMinY)
     maxX = Math.max(maxX, nodeMaxX)
     maxY = Math.max(maxY, nodeMaxY)
+  }
+
+  // An edge between two of this frame's own nodes stays inside it: a loop
+  // lane in the gap past the outermost node would otherwise sit on or beyond
+  // the wall (#1399).
+  const members = new Set(sg.nodes)
+  for (const edge of graph.edges) {
+    if (!members.has(edge.from) || !members.has(edge.to)) continue
+    for (const p of edge.path) {
+      const d = gridToDrawingCoord(graph, p)
+      minX = Math.min(minX, d.x)
+      maxX = Math.max(maxX, d.x)
+    }
   }
 
   const subgraphPadding = 2

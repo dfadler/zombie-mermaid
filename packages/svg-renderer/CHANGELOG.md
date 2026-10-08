@@ -1,5 +1,14 @@
 # @zombie-mermaid/svg-renderer
 
+## 4.2.3
+
+### Patch Changes
+
+- [#1405](https://github.com/dfadler/zombie-mermaid/pull/1405) [`2f9993c`](https://github.com/dfadler/zombie-mermaid/commit/2f9993cf88961c532225a406b6a9f911a401c3bc) Thanks [@dfadler](https://github.com/dfadler)! - Scope every SVG `id` (arrowhead, class and sequence markers) and its `url(#…)` / `href="#…"` references with a per-render hash, so several diagrams inlined in one HTML document no longer share marker ids and lose their arrowheads when the first one is hidden ([#1397](https://github.com/dfadler/zombie-mermaid/issues/1397)).
+- Updated dependencies []:
+  - @zombie-mermaid/core@4.2.3
+  - @zombie-mermaid/mermaid-parser@4.2.3
+
 ## 4.2.2
 
 ### Patch Changes
