@@ -520,6 +520,28 @@ export function clusterLaneSideRoute(
   return { path, endDir: side.dir, labelSegment }
 }
 
+/**
+ * Drawn-cell shift for the end of the third lane sibling's leg (#1331). With
+ * three siblings the second and third drop from one bus into the same target
+ * face on the same row and merge, so the third's final run is drawn one cell
+ * further along the face and each arrowhead has its own stroke. TD only (LR
+ * keeps its layout); 0 otherwise.
+ */
+export function clusterLaneEndShift(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+): number {
+  if (edge.parallelLane?.index !== 2 || graph.config.graphDirection === 'LR') {
+    return 0
+  }
+  for (const plan of graph.clusterExitPlans?.values() ?? []) {
+    if (!plan.edges.has(edge)) continue
+    const origin = requireGridCoord(edge.to).x
+    return laneSide(graph, plan, edge)?.lane === origin + 4 ? 1 : 0
+  }
+  return 0
+}
+
 /** Safety bound on one-character gutter widenings per cluster. */
 const MAX_GUTTER_WIDENINGS = 64
 

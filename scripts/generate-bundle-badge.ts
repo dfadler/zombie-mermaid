@@ -43,29 +43,32 @@ import { gzipSync } from 'node:zlib'
 // what a consumer installs (the umbrella's is ~4 KB). Each badge therefore
 // gzips the package's entry concatenated with the entries of every
 // `@zombie-mermaid/*` package it (transitively) imports. Third-party
-// dependencies are counted via SVG_DEPS below (issue #1320): the SVG
-// renderer's real runtime weight is dominated by `elkjs`, which `dist/index.js`
-// leaves external, so omitting it made the SVG badge look smaller than ASCII's.
+// dependencies are counted via SVG_DEPS below (issue #1320). `elkjs` dominates
+// the SVG renderer's weight but is an OPTIONAL PEER since #1370: a consumer who
+// never registers it never ships it. So the badge reports the base figure and,
+// for the SVG-bearing badges, the figure with `elkjs` registered (ELK_DEP).
 const CORE = 'packages/core/dist/index.js'
 const PARSER = 'packages/mermaid-parser/dist/index.js'
 const ASCII = 'packages/ascii-renderer/dist/index.js'
 const SVG = 'packages/svg-renderer/dist/index.js'
 
-// Third-party runtime dependencies of the SVG renderer, resolved from its own
-// package.json (pnpm doesn't hoist them to the root). `elkjs` is the single
-// pre-bundled UMD file the renderer imports, so it can't be tree-shaken and is
-// counted whole. `entities` is a library of many entry points of which the
+// `elkjs` is the single pre-bundled UMD file a consumer registers via
+// `registerElk()`, so it can't be tree-shaken and is counted whole.
+const ELK_DEP = { kind: 'file', specifier: 'elkjs/lib/elk.bundled.js' } as const
+
+// Always-shipped third-party runtime dependencies of the SVG renderer,
+// resolved from its own package.json (pnpm doesn't hoist them to the root).
+// `entities` is a library of many entry points of which the
 // renderer imports only `decodeXML` (packages/svg-renderer/src/index.ts), so it
 // is bundled and minified with just those exports, the way a consumer's bundler
 // would tree-shake it (whole-build gzip counted ~35 KB of code nobody ships).
 // Keep `exports` in sync with the renderer's actual imports from `entities`
 // (enforced by __tests__/bundle-badge-entities-exports.test.ts).
 const SVG_DEPS = [
-  { kind: 'file', specifier: 'elkjs/lib/elk.bundled.js' },
   { kind: 'tree-shaken', specifier: 'entities', exports: ['decodeXML'] },
 ] as const
 
-type Dep = (typeof SVG_DEPS)[number]
+type Dep = (typeof SVG_DEPS)[number] | typeof ELK_DEP
 
 const svgRequire = createRequire(
   new URL('../packages/svg-renderer/package.json', import.meta.url),
@@ -103,18 +106,21 @@ const TARGETS = [
   {
     entries: ['dist/index.js', CORE, PARSER, ASCII, SVG],
     deps: SVG_DEPS,
+    withElk: true,
     output: 'badges/bundle-size.json',
     label: 'zombie-mermaid gzip (incl. deps)',
   },
   {
     entries: [ASCII, CORE, PARSER],
     deps: [] as readonly Dep[],
+    withElk: false,
     output: 'badges/bundle-size-ascii-renderer.json',
     label: 'ascii-renderer gzip',
   },
   {
     entries: [SVG, CORE, PARSER],
     deps: SVG_DEPS,
+    withElk: true,
     output: 'badges/bundle-size-svg-renderer.json',
     label: 'svg-renderer gzip (incl. deps)',
   },
@@ -126,7 +132,7 @@ function fmtKB(bytes: number): string {
 
 await mkdir(new URL('../badges', import.meta.url), { recursive: true })
 
-for (const { entries, deps, output, label } of TARGETS) {
+for (const { entries, deps, withElk, output, label } of TARGETS) {
   const parts: Buffer[] = []
   for (const entry of entries) {
     try {
@@ -148,7 +154,12 @@ for (const { entries, deps, output, label } of TARGETS) {
     }
   }
 
-  const message = fmtKB(gzipSync(Buffer.concat(parts)).length)
+  const base = fmtKB(gzipSync(Buffer.concat(parts)).length)
+  let message = base
+  if (withElk) {
+    const withElkParts = [...parts, ...(await readDep(ELK_DEP))]
+    message = `${base} (${fmtKB(gzipSync(Buffer.concat(withElkParts)).length)} with elkjs)`
+  }
 
   // shields.io endpoint badge schema: https://shields.io/badges/endpoint-badge
   const badge = { schemaVersion: 1, label, message, color: 'blue' }

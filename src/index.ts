@@ -40,8 +40,13 @@ export {
   renderMermaidAscii,
 } from '@zombie-mermaid/ascii-renderer'
 export type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
-export { createLayoutCache } from '@zombie-mermaid/svg-renderer'
+export {
+  createLayoutCache,
+  registerElk,
+  ElkNotRegisteredError,
+} from '@zombie-mermaid/svg-renderer'
 export type { LayoutCache } from '@zombie-mermaid/svg-renderer'
+export type { ElkConstructor } from '@zombie-mermaid/core'
 
 // The SVG dispatch table (diagram-type registry) and the
 // `renderMermaidSVG`/`renderMermaidSVGAsync`/`themeCssVariables` front door

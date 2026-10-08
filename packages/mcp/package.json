@@ -39,6 +39,7 @@
     "@zombie-mermaid/svg-renderer": "workspace:*",
     "@zombie-mermaid/ascii-renderer": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "elkjs": "^0.11.0"
   }
 }
