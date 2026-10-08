@@ -21,6 +21,7 @@ Ultra-fast, fully themeable, zero DOM dependencies. A maintained fork of [`beaut
 [![SVG renderer size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-svg-renderer.json)](#bundle-size)
 [![Socket Security](https://badge.socket.dev/npm/package/zombie-mermaid)](https://socket.dev/npm/package/zombie-mermaid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Star History](https://img.shields.io/github/stars/dfadler/zombie-mermaid?style=social)](https://star-history.com/#dfadler/zombie-mermaid&Date)
 
 </div>
 
