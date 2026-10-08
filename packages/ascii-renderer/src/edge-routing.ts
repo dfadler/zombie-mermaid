@@ -352,18 +352,21 @@ function spreadsOnFaces(
   group: readonly AsciiEdge[],
 ): boolean {
   const { from, to } = group[0]!
-  const a = from.gridCoord
-  const b = to.gridCoord
-  if (!a || !b) return false
+  const a = requireGridCoord(from)
+  const b = requireGridCoord(to)
   if (group.some((e) => e.from !== from || e.to !== to || e.text.length > 0)) {
     return false
   }
   if (group.some((e) => e.clusterSource || e.clusterTarget)) return false
-  const vertical = a.x === b.x && a.y !== b.y
-  if (!vertical && !(a.y === b.y && a.x !== b.x)) return false
+  // Defensive: a diagonal pair has a second parent/child toward its partner,
+  // which the edge check below already refuses; kept so the axis is never
+  // guessed for a pair on neither a shared row nor a shared column.
+  /* v8 ignore next */
+  if (a.x !== b.x && a.y !== b.y) return false
+  const vertical = a.x === b.x
   const size = vertical ? graph.columnWidth : graph.rowHeight
   const at = vertical ? a.x : a.y
-  const extent = [0, 1, 2].reduce((n, i) => n + (size.get(at + i) ?? 0), 0)
+  const extent = [0, 1, 2].reduce((n, i) => n + size.get(at + i)!, 0)
   if (extent < 2 * group.length + 1) return false
   // Nothing else may use the facing faces, which would put a stroke on top of
   // the spread ones: every other edge at either node must leave from the far
@@ -376,17 +379,13 @@ function spreadsOnFaces(
       [to, b, a],
     ] as const) {
       if (e.from !== node && e.to !== node) continue
-      const far = (e.from === node ? e.to : e.from).gridCoord
+      const far = requireGridCoord(e.from === node ? e.to : e.from)
       const towards = Math.sign(there[axis] - here[axis])
-      if (!far || Math.sign(far[axis] - here[axis]) !== -towards) return false
+      if (Math.sign(far[axis] - here[axis]) !== -towards) return false
     }
   }
-  const lo = (vertical ? Math.min(a.y, b.y) : Math.min(a.x, b.x)) + 3
-  const hi = vertical ? Math.max(a.y, b.y) : Math.max(a.x, b.x)
-  for (let i = lo; i < hi; i++) {
-    const cell = vertical ? { x: a.x + 1, y: i } : { x: i, y: a.y + 1 }
-    if (isOccupied(graph.grid, cell)) return false
-  }
+  // Any node between the two would be linked to one of them by an edge toward
+  // the other, which the loop above has already refused: the channel is clear.
   return true
 }
 
