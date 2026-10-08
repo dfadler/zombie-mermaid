@@ -79,6 +79,7 @@
   },
   "files": [
     "src/",
+    "!src/**/__tests__",
     "dist/",
     "LICENSE",
     "README.md"
