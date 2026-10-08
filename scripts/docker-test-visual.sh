@@ -299,7 +299,7 @@ rsync -a --delete \
   --exclude 'blob-report/' \
   --exclude 'coverage/' \
   --exclude 'dist/' \
-  --exclude 'site/' \
+  --exclude '/site/' \
   --exclude '.fork-fixes-cache/' \
   --exclude '.visual-diff-cache/' \
   --exclude '.form-facts/' \
