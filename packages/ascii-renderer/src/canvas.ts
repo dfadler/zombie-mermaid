@@ -618,6 +618,13 @@ export function canvasToString(
 // ============================================================================
 
 /**
+ * The state-end double box is drawn with `'text'` role (changing that would
+ * recolor every state diagram), so the flips must remap its corners anyway.
+ * No label plausibly contains these glyphs. See #1372.
+ */
+const DOUBLE_BOX_CORNERS = new Set(['╔', '╗', '╚', '╝'])
+
+/**
  * Characters that change meaning when the Y-axis is flipped.
  * Symmetric characters (─, │, ├, ┤, ┼) are unchanged.
  */
@@ -678,7 +685,8 @@ export function flipCanvasVertically(
   // Remap directional characters that change meaning after vertical flip
   for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
-      if (roleCanvas?.[x]?.[y] === 'text') continue
+      if (roleCanvas?.[x]?.[y] === 'text' && !DOUBLE_BOX_CORNERS.has(ch))
+        continue
       const flipped = VERTICAL_FLIP_MAP[ch]
       if (flipped) col[y] = flipped
     }
@@ -839,7 +847,8 @@ export function flipCanvasHorizontally(
 ): Canvas {
   for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
-      if (roleCanvas?.[x]?.[y] === 'text') continue
+      if (roleCanvas?.[x]?.[y] === 'text' && !DOUBLE_BOX_CORNERS.has(ch))
+        continue
       const flipped = HORIZONTAL_FLIP_MAP[ch]
       if (flipped) col[y] = flipped
     }

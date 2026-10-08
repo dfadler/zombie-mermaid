@@ -29,10 +29,11 @@ fixes, not audited case by case here.
 | Sequence, class                                     | one fixed output                        | byte-identical to upstream for every direction on the tested samples                                                                                              | Unchanged                                                            |
 | State-end (`[*]` target) double box under `BT`/`RL` | no such box mirroring (RL not mirrored) | corners were left unmapped, giving `╗═══╔` under `RL` and top/bottom swapped under `BT`                                                                           | **Bug in our flips, fixed in this PR**                               |
 
-The state-end bug came from `isBorderChar` in `draw.ts` not listing the
-double-line glyphs, so they were tagged `text` and exempt from the flip's glyph
-remap, and from `VERTICAL_FLIP_MAP` lacking `╔╗╚╝`. Both are fixed; a test
-covers `RL` and `BT`.
+The state-end bug came from the double-line glyphs being tagged `text` (so the
+flip's glyph remap skipped them) and from `VERTICAL_FLIP_MAP` lacking `╔╗╚╝`.
+The fix exempts those four glyphs from the `text` skip in both flips and adds
+them to the vertical map, rather than retagging them `border`, which would have
+recolored every colored state diagram. A test covers `RL` and `BT`.
 
 ## Decision
 
