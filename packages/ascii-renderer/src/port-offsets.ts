@@ -420,10 +420,10 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
       const s = startRun(edge)
       const e = endRun(edge)
       if (s) addSlot(edge.from, edge.path[0]!, 'S', s, true)
-      if (e) {
-        addSlot(edge.to, edge.path[edge.path.length - 1]!, 'E', e, true)
-        const end = clusterLaneEndShift(graph, edge)
-        if (end) result.set(edge, { start: 0, end, endRun: shiftedRun(e) })
+      if (e) addSlot(edge.to, edge.path[edge.path.length - 1]!, 'E', e, true)
+      const end = clusterLaneEndShift(graph, edge)
+      if (end && e) {
+        result.set(edge, { start: 0, end, endRun: shiftedRun(e) })
       }
       continue
     }
