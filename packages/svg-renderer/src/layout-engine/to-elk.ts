@@ -6,7 +6,11 @@
  * direction (ELK result → PositionedGraph) lives in ./from-elk.ts.
  */
 
-import type { ElkNode, ElkExtendedEdge, LayoutOptions } from 'elkjs'
+import type {
+  ElkNode,
+  ElkExtendedEdge,
+  LayoutOptions,
+} from '@zombie-mermaid/core'
 import type {
   MermaidGraph,
   MermaidSubgraph,

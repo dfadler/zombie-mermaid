@@ -2,7 +2,11 @@
  * Shared ELK instance singleton.
  *
  * Uses elk.bundled.js (pure synchronous JS, ~1.6 MB) for all environments.
- * The singleton is created lazily on first use and cached forever.
+ * `elkjs` is an OPTIONAL PEER dependency (#1370): this module never imports
+ * it statically, so a bundler never inlines it. The constructor arrives via
+ * `registerElk()`, or — under Node — is auto-loaded on first use.
+ * The singleton is created lazily on first use and cached until
+ * `registerElk()` is called again.
  *
  * ELK's FakeWorker wraps both postMessage and onmessage in setTimeout(0),
  * making the normal API fully async. To bypass this:
@@ -13,9 +17,7 @@
  *      rawWorker.onmessage (which the dispatcher calls synchronously).
  */
 
-import type { ELK, ElkNode } from 'elkjs'
-import ELKBundled from 'elkjs/lib/elk.bundled.js'
-import type { LayoutCache } from '@zombie-mermaid/core'
+import type { ElkConstructor, ElkNode, LayoutCache } from '@zombie-mermaid/core'
 
 /** The message envelope ELK's FakeWorker passes to `dispatcher.saveDispatch()`
  * to request a layout run. Mirrors the shape elk-worker.min.js expects on
@@ -45,19 +47,98 @@ interface RawFakeWorker {
 
 /**
  * The shape of elkjs's bundled `ELK` instance that actually exists at
- * runtime, including the internal `worker` handle. elkjs's public `ELK`
- * type (from `elk-api.d.ts`) only declares `layout`/`knownLayout*`/
- * `terminateWorker` — it deliberately doesn't expose worker internals,
- * since those aren't a supported API. We rely on them anyway (see file
- * header), so this extends the public type with the internal piece we
- * touch instead of casting through `unknown`.
+ * runtime: just the internal `worker` handle. elkjs's public `ELK` type
+ * deliberately doesn't expose worker internals, since those aren't a
+ * supported API. We rely on them anyway (see file header).
  */
-interface ElkBundledInternal extends ELK {
+interface ElkBundledInternal {
   worker: { worker: RawFakeWorker }
 }
 
-let elk: ELK | null = null
+function hasFakeWorker(x: unknown): x is ElkBundledInternal {
+  const w = (x as { worker?: { worker?: unknown } } | null)?.worker?.worker
+  return typeof w === 'object' && w !== null && 'dispatcher' in w
+}
+
+// Present only in the CJS build; undeclared under the ESM-only tsconfig `lib`.
+declare const __filename: string | undefined
+
+let ElkCtor: ElkConstructor | null = null
+let elk: ElkBundledInternal | null = null
 let rawWorker: RawFakeWorker | null = null
+
+/** Thrown when a graph diagram renders and no `elkjs` constructor is available. */
+export class ElkNotRegisteredError extends Error {
+  constructor() {
+    super(
+      'zombie-mermaid: rendering a flowchart, state, class, ER or architecture ' +
+        'diagram needs the optional peer dependency "elkjs". Install it ' +
+        '(npm i elkjs) and call registerElk(ELK) once at startup with ' +
+        "`import ELK from 'elkjs/lib/elk.bundled.js'`. Sequence, pie, xychart, " +
+        'C4 and ASCII output do not need it.',
+    )
+    this.name = 'ElkNotRegisteredError'
+  }
+}
+
+/**
+ * Register the `elkjs` constructor used for flowchart, state, class, ER and
+ * architecture layout. Call once before rendering, in browsers and bundlers:
+ *
+ *     import ELK from 'elkjs/lib/elk.bundled.js'
+ *     registerElk(ELK)
+ *
+ * Under Node (and Bun) this is optional when `elkjs` is installed: it is
+ * auto-loaded on first use. Calling it again swaps the constructor and drops
+ * the cached instance.
+ */
+export function registerElk(ctor: ElkConstructor): void {
+  ElkCtor = ctor
+  elk = null
+  rawWorker = null
+}
+
+/**
+ * Best-effort synchronous load of `elkjs` under Node/Bun. Goes through
+ * `createRequire` on a non-literal specifier so bundlers cannot statically
+ * see (and inline) elkjs. Returns null in browsers or when elkjs is absent.
+ */
+function autoLoadElk(): ElkConstructor | null {
+  const proc = (
+    globalThis as {
+      process?: {
+        versions?: { node?: string }
+        getBuiltinModule?: (id: string) => unknown
+      }
+    }
+  ).process
+  if (!proc?.versions?.node || typeof proc.getBuiltinModule !== 'function') {
+    return null
+  }
+  const mod = proc.getBuiltinModule('node:module') as
+    { createRequire(from: string): (id: string) => unknown } | undefined
+  if (!mod) return null
+  const specifier = ['elkjs', 'lib', 'elk.bundled.js'].join('/')
+  // CJS build: rolldown rewrites `import.meta` to `{}`, so prefer `__filename`.
+  const here = typeof __filename === 'string' ? __filename : import.meta.url
+  const bases = [here, new URL(`file://${cwd(proc)}/`).href]
+  for (const base of bases) {
+    try {
+      const loaded = mod.createRequire(base)(specifier) as
+        ElkConstructor | { default?: ElkConstructor }
+      const ctor = typeof loaded === 'function' ? loaded : loaded.default
+      if (typeof ctor === 'function') return ctor
+    } catch {
+      // not resolvable from this base; try the next
+    }
+  }
+  return null
+}
+
+function cwd(proc: object): string {
+  const fn = (proc as { cwd?: () => string }).cwd
+  return typeof fn === 'function' ? fn.call(proc) : '/'
+}
 
 // ============================================================================
 // Opt-in layout cache
@@ -166,6 +247,9 @@ function stableStringify(value: unknown): string {
 function ensureElk(): RawFakeWorker {
   if (elk && rawWorker) return rawWorker
 
+  const Ctor = ElkCtor ?? (ElkCtor = autoLoadElk())
+  if (!Ctor) throw new ElkNotRegisteredError()
+
   // Capture setTimeout(0) callbacks queued during ELK construction
   const pending: (() => void)[] = []
   const origSetTimeout = globalThis.setTimeout
@@ -192,25 +276,29 @@ function ensureElk(): RawFakeWorker {
     delete g.self
   }
 
-  elk = new ELKBundled()
-  if (!elk) {
-    // Unreachable — `new ELKBundled()` always returns an instance — but
-    // makes the invariant explicit rather than letting the cast below
-    // silently paper over a null `elk` if that ever stopped being true.
-    throw new Error('ELKBundled construction unexpectedly produced no instance')
+  let instance: unknown
+  try {
+    instance = new Ctor()
+  } finally {
+    // Restore even if construction throws, so a bad registration cannot
+    // leave a patched setTimeout/self behind.
+    if (hadSelf) g.self = origSelf
+    globalThis.setTimeout = origSetTimeout
   }
-
-  // Restore self
-  if (hadSelf) g.self = origSelf
-
-  // Restore setTimeout immediately
-  globalThis.setTimeout = origSetTimeout
+  if (!hasFakeWorker(instance)) {
+    throw new Error(
+      'zombie-mermaid: registerElk() needs the ELK class from ' +
+        "'elkjs/lib/elk.bundled.js' (or 'elkjs/lib/main.js'), whose " +
+        'synchronous worker this renderer drives directly.',
+    )
+  }
+  elk = instance
 
   // Flush captured callbacks synchronously — registers layout algorithms
   pending.forEach((fn) => fn())
 
   // Cache the raw FakeWorker for elkLayoutSync()
-  rawWorker = (elk as ElkBundledInternal).worker.worker
+  rawWorker = elk.worker.worker
   return rawWorker
 }
 

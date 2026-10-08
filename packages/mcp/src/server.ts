@@ -11,6 +11,8 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { getPackageVersion } from '../../../src/package-info.ts'
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk } from '@zombie-mermaid/svg-renderer'
 import { renderSvgInputShape, renderSvgHandler } from './tools/render-svg.ts'
 import {
   renderAsciiInputShape,
@@ -38,6 +40,8 @@ import { listDiagramTypesHandler } from './tools/list-diagram-types.ts'
  * in-process without spawning anything.
  */
 export function createMcpServer(): McpServer {
+  // elkjs is a regular dependency of this package; register it for the SVG tool.
+  registerElk(ELK)
   const server = new McpServer({
     name: 'zombie-mermaid',
     version: getPackageVersion(),

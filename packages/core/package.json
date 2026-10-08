@@ -34,8 +34,5 @@
     "!src/**/__tests__",
     "dist/",
     "LICENSE"
-  ],
-  "dependencies": {
-    "elkjs": "^0.11.0"
-  }
+  ]
 }

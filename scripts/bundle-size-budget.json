@@ -18,5 +18,9 @@
     "packages/ascii-renderer/dist/index.cjs": 58368,
     "packages/mcp/dist/index.js": 7168,
     "packages/mcp/dist/index.cjs": 7168
+  },
+  "consumerBundles": {
+    "packages/svg-renderer/dist/index.js": 86016,
+    "dist/index.js": 150528
   }
 }

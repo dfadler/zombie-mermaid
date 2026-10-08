@@ -42,6 +42,7 @@
     "@zombie-mermaid/ascii-renderer": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "entities": "^7.0.1",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "elkjs": "^0.11.0"
   }
 }

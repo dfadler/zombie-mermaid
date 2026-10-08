@@ -7,7 +7,7 @@
  * up ELK's raw output.
  */
 
-import type { ElkNode, ElkExtendedEdge } from 'elkjs'
+import type { ElkNode, ElkExtendedEdge } from '@zombie-mermaid/core'
 import type {
   MermaidGraph,
   MermaidSubgraph,

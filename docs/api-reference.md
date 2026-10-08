@@ -72,6 +72,27 @@ Two more advanced options exist — `fontSizes` (per-element font size overrides
 
 **XY Charts:** Diagrams starting with `xychart-beta` are auto-detected — no separate function needed. The `accent` color option drives the chart series color palette.
 
+## `registerElk(ELK): void`
+
+Registers the [`elkjs`](https://github.com/kieler/elkjs) layout engine, an optional
+peer dependency, used for flowchart, state, class, ER and architecture diagrams.
+Call it once before rendering in a browser or bundler app:
+
+```typescript
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk } from 'zombie-mermaid'
+
+registerElk(ELK)
+```
+
+Pass the `ELK` class from `elkjs/lib/elk.bundled.js` or `elkjs/lib/main.js`.
+Under Node and Bun the call is optional: with `elkjs` installed it is loaded on
+first use. Calling it again swaps the constructor. Without a registered or
+auto-loadable `elkjs`, rendering a graph diagram throws `ElkNotRegisteredError`;
+sequence, pie, xychart, C4 and ASCII rendering are unaffected. Also exported by
+`@zombie-mermaid/svg-renderer`. See the
+[migration guide](guides/elkjs-optional-peer.md).
+
 ## `renderMermaidSVGAsync(text, options?): Promise<string>`
 
 Async version of `renderMermaidSVG()`. Same output, returns a `Promise<string>`. Useful in async server handlers or data loaders.
@@ -94,8 +115,8 @@ Render a Mermaid diagram to ASCII/Unicode text. Synchronous.
 | `hyperlinks`       | `boolean`                              | `false`  | Wrap `click` hrefs in OSC 8 terminal hyperlinks (see [ASCII terminal hyperlinks](diagrams.md#ascii-terminal-hyperlinks))                                                                                                                                           |
 
 ASCII-only consumers can import from `zombie-mermaid/ascii` instead of the
-package root to avoid bundling `elkjs` (the SVG layout engine, statically
-imported by the root entry and unused by the ASCII path):
+package root to skip loading the SVG renderer (the root entry no longer
+includes `elkjs` unless you call `registerElk()`):
 
 ```typescript
 import { renderMermaidASCII } from 'zombie-mermaid/ascii'
