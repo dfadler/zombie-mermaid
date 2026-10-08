@@ -1279,14 +1279,44 @@ function clearOfSiblingStrokes(
 ): { x: number; y: number; text: string }[] {
   if (
     line.length < 2 ||
-    line[0]!.x !== line[1]!.x ||
-    line[0]!.y === line[1]!.y ||
     isClusterExitEdge(graph, edge) ||
     besideFree(graph, edge, placement, labelAware)
   ) {
     return placement
   }
   const width = Math.max(...placement.map((p) => displayWidth(p.text)))
+  if (
+    graph.config.graphDirection === 'LR' &&
+    line[0]!.y === line[1]!.y &&
+    line[0]!.x !== line[1]!.x
+  ) {
+    // #1433: the LR mirror. A label centred on a horizontal run can cover a
+    // sibling's drop stem that leaves the same node a few cells over. Slide
+    // along the run, then try the row above and below it, to the nearest spot
+    // that sits on no other edge; the first and last run cells stay clear
+    // (border / arrowhead).
+    const lo = Math.min(line[0]!.x, line[1]!.x) + 1
+    const hi = Math.max(line[0]!.x, line[1]!.x) - 1
+    for (const dy of [0, -1, 1]) {
+      for (const clearance of [1, 0]) {
+        for (let d = 0; d <= hi - lo; d++) {
+          for (const dx of d === 0 ? [0] : [-d, d]) {
+            const moved = placement.map((p) => ({
+              ...p,
+              x: p.x + dx,
+              y: p.y + dy,
+            }))
+            const first = Math.min(...moved.map((m) => m.x))
+            if (first < lo || first + width - 1 > hi) continue
+            if (besideFree(graph, edge, moved, labelAware, clearance))
+              return moved
+          }
+        }
+      }
+    }
+    return placement
+  }
+  if (line[0]!.x !== line[1]!.x || line[0]!.y === line[1]!.y) return placement
   // One blank cell clear of the sibling first, so it doesn't read as the
   // label's own stroke; flush against it only when that is all there is.
   for (const clearance of [1, 0]) {
