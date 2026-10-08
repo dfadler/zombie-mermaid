@@ -33,24 +33,28 @@ describe('ASCII subgraph direction override — honored case (issue #445)', () =
       const rowB = lines.findIndex((l) => l.includes('B'))
       const rowC = lines.findIndex((l) => l.includes('C'))
 
-      // Honored `direction LR`/`RL` (both normalize to LR) places A, B, C on
-      // the same row (left-to-right), not stacked one per row as the outer
-      // `TD` would.
+      // Honored `direction LR`/`RL` places A, B, C on the same row, not
+      // stacked one per row as the outer `TD` would; RL reads right-to-left
+      // (#1421).
       expect(rowA).toBe(rowB)
       expect(rowB).toBe(rowC)
 
       const colA = lines[rowA]!.indexOf('A')
       const colB = lines[rowB]!.indexOf('B')
       const colC = lines[rowC]!.indexOf('C')
-      expect(colA).toBeLessThan(colB)
-      expect(colB).toBeLessThan(colC)
+      if (direction === 'LR') {
+        expect(colA).toBeLessThan(colB)
+        expect(colB).toBeLessThan(colC)
+      } else {
+        expect(colC).toBeLessThan(colB)
+        expect(colB).toBeLessThan(colA)
+      }
     },
   )
 
-  it('normalizes direction BT to TD (vertical stacking), same as the outer graph', () => {
-    // Exercises the ternary's final `: 'TD'` fallback arm — BT is neither
-    // 'LR' nor 'RL', so it normalizes to 'TD' just like an unset direction
-    // would default to matching the outer graph's own TD flow.
+  it('lays direction BT out as a vertical stack that reads bottom-to-top', () => {
+    // BT is neither 'LR' nor 'RL', so it lays out as 'TD' and is then
+    // flipped (#1421).
     const ascii = renderMermaidASCII(
       `graph TD
   subgraph Group
@@ -65,8 +69,8 @@ describe('ASCII subgraph direction override — honored case (issue #445)', () =
     const rowB = lines.findIndex((l) => l.includes('B'))
     const rowC = lines.findIndex((l) => l.includes('C'))
 
-    expect(rowA).toBeLessThan(rowB)
-    expect(rowB).toBeLessThan(rowC)
+    expect(rowC).toBeLessThan(rowB)
+    expect(rowB).toBeLessThan(rowA)
   })
 
   it('does not crash on a subgraph with a direction override and zero member nodes', () => {

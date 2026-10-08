@@ -321,7 +321,9 @@ function convertSubgraph(
   // normalizing it in that case so it falls through to the parent's
   // direction like everything else.
   let normalizedDirection: 'LR' | 'TD' | undefined
+  let rawDirection: AsciiSubgraph['rawDirection']
   if (mSg.direction && subgraphDirectionIsHonored(mSg, parsed)) {
+    rawDirection = mSg.direction === 'TB' ? 'TD' : mSg.direction
     normalizedDirection =
       mSg.direction === 'LR' || mSg.direction === 'RL' ? 'LR' : 'TD'
   }
@@ -336,6 +338,7 @@ function convertSubgraph(
     maxX: 0,
     maxY: 0,
     direction: normalizedDirection,
+    rawDirection,
   }
 
   // Resolve node references
