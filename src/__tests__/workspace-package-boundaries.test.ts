@@ -329,7 +329,6 @@ describe('workspace package manifests', () => {
       '@zombie-mermaid/core',
       '@zombie-mermaid/mermaid-parser',
       '@zombie-mermaid/svg-renderer',
-      'entities',
       'zod',
     ])
   })

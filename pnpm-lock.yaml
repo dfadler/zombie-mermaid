@@ -30,12 +30,6 @@ importers:
       '@zombie-mermaid/svg-renderer':
         specifier: workspace:*
         version: link:packages/svg-renderer
-      elkjs:
-        specifier: ^0.11.0
-        version: 0.11.1
-      entities:
-        specifier: ^7.0.1
-        version: 7.0.1
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^1.0.0
@@ -173,9 +167,6 @@ importers:
       '@zombie-mermaid/svg-renderer':
         specifier: workspace:*
         version: link:../svg-renderer
-      entities:
-        specifier: ^7.0.1
-        version: 7.0.1
       zod:
         specifier: ^4.5.4
         version: 4.5.4

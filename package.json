@@ -78,8 +78,6 @@
     "zombie-mermaid": "dist/cli.js"
   },
   "files": [
-    "src/",
-    "!src/**/__tests__",
     "dist/",
     "LICENSE",
     "README.md"
@@ -145,9 +143,7 @@
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mcp": "workspace:*",
     "@zombie-mermaid/mermaid-parser": "workspace:*",
-    "@zombie-mermaid/svg-renderer": "workspace:*",
-    "elkjs": "^0.11.0",
-    "entities": "^7.0.1"
+    "@zombie-mermaid/svg-renderer": "workspace:*"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
