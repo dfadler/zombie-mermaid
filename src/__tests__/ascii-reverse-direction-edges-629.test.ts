@@ -277,6 +277,6 @@ describe('opposite-direction edges between one node pair (#629)', () => {
     // One declared edge, drawn as one line with a head at each end — this
     // is a different code path from the per-edge lane assignment and must
     // stay untouched.
-    expect(out).toContain(`${LEFT_ARROW}────${RIGHT_ARROW}`)
+    expect(out).toContain(`${LEFT_ARROW}───${RIGHT_ARROW}`)
   })
 })

@@ -137,28 +137,15 @@ export function drawArrow(
     arrowHeadEndCanvas = copyCanvas(graph.canvas)
   }
 
-  // Draw start arrowhead for bidirectional edges
-  // The start arrowhead needs to be at the box connector position (one step back
-  // from the first line point), pointing into the source node.
+  // Draw start arrowhead for bidirectional edges, in the first stroke cell
+  // (one cell out from the source border, mirroring the end head) so the
+  // border stays intact for drawBoxStart's tee (#1438).
   let arrowHeadStartCanvas: Canvas
   if (edge.hasArrowStart && hasSegments) {
-    const firstLine = linesDrawn[0]!
-    const firstPoint = firstLine[0]!
-    const startDir = reverseDirection(lineDirs[0]!)
-
-    // Calculate the box connector position (one step back from first point)
-    const arrowPos: DrawingCoord = { x: firstPoint.x, y: firstPoint.y }
-    if (dirEquals(lineDirs[0]!, Right)) arrowPos.x = firstPoint.x - 1
-    else if (dirEquals(lineDirs[0]!, Left)) arrowPos.x = firstPoint.x + 1
-    else if (dirEquals(lineDirs[0]!, Down)) arrowPos.y = firstPoint.y - 1
-    else if (dirEquals(lineDirs[0]!, Up)) arrowPos.y = firstPoint.y + 1
-
-    // Create a synthetic line ending at the arrow position for drawArrowHead
-    const syntheticLine: DrawingCoord[] = [firstPoint, arrowPos]
     arrowHeadStartCanvas = drawArrowHead(
       graph,
-      syntheticLine,
-      startDir,
+      [linesDrawn[0]![0]!],
+      reverseDirection(lineDirs[0]!),
       edge.startMarker,
     )
   } else {
