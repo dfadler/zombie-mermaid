@@ -519,10 +519,12 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   }
 
   const split = splitLabeledArrivals(runs)
+  const spread = spreadParallelEdges(graph, runs, rolesAt, portOf)
 
   for (const [edge, { r, s, e }] of runs) {
-    const start = staggered.get(edge) ?? (s ? slotOffset(s) : 0)
-    const end = split.get(edge) ?? (e ? (offsets.get(find(e)) ?? 0) : 0)
+    const own = spread.get(edge)
+    const start = own ?? staggered.get(edge) ?? (s ? slotOffset(s) : 0)
+    const end = own ?? split.get(edge) ?? (e ? (offsets.get(find(e)) ?? 0) : 0)
     if (start === 0 && end === 0) continue
     const shift: PortShift = { start, end }
     if (r.start) shift.startRun = shiftedRun(r.start)
@@ -530,6 +532,47 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
     result.set(edge, shift)
   }
   return result
+}
+
+/**
+ * Draw parallel edges (same ordered pair, unlabeled, each a straight run
+ * between the same two ports, used by nothing else) side by side on the two
+ * faces, one stroke spacing apart and centred on the port (#1394). A group
+ * whose strokes would not all land on a plain border stays on one position.
+ */
+function spreadParallelEdges(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, { r: EdgeRuns; s?: string; e?: string }>,
+  rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
+  portOf: (key: string) => string,
+): Map<AsciiEdge, number> {
+  const groups = new Map<string, AsciiEdge[]>()
+  for (const [edge, { r, s, e }] of runs) {
+    if (!r.straight || !s || !e || edge.text.length > 0) continue
+    const key = `${s}>${e}`
+    const group = groups.get(key) ?? []
+    group.push(edge)
+    groups.set(key, group)
+  }
+  const out = new Map<AsciiEdge, number>()
+  for (const group of groups.values()) {
+    const first = runs.get(group[0]!)!
+    if (group.length < 2 || rolesAt.get(portOf(first.s!))!.size > 1) continue
+    if (rolesAt.get(portOf(first.e!))!.size > 1) continue
+    const offsetOf = (i: number): number =>
+      STROKE_SPACING * i - STROKE_SPACING * ((group.length - 1) / 2)
+    const fits = group.every((edge, i) => {
+      const { r } = runs.get(edge)!
+      return [r.start!, r.end!].every((run) => {
+        const geo = portGeometry(graph, run)
+        return (
+          geo !== undefined && attachesAt(run, geo.centre + offsetOf(i), geo)
+        )
+      })
+    })
+    if (fits) group.forEach((edge, i) => out.set(edge, offsetOf(i)))
+  }
+  return out
 }
 
 /**
