@@ -1213,7 +1213,44 @@ function centredLabelPlacement(
       return beside
     }
   }
-  return centred
+  return clearOfSiblingStrokes(graph, edge, drawingLine, centred, labelAware)
+}
+
+/**
+ * A label centred on a vertical stroke can reach across to a sibling stroke
+ * that leaves the same node a few cells over (a fan-out's port-shifted stems)
+ * and overwrite it, leaving that edge without a visible path. Slide the text
+ * sideways to the nearest column where it sits on no other edge; it stays
+ * where it is when nothing is free.
+ */
+function clearOfSiblingStrokes(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  line: DrawingCoord[],
+  placement: { x: number; y: number; text: string }[],
+  labelAware: boolean,
+): { x: number; y: number; text: string }[] {
+  if (
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    line[0]!.y === line[1]!.y ||
+    isClusterExitEdge(graph, edge) ||
+    besideFree(graph, edge, placement, labelAware)
+  ) {
+    return placement
+  }
+  const width = Math.max(...placement.map((p) => displayWidth(p.text)))
+  // One blank cell clear of the sibling first, so it doesn't read as the
+  // label's own stroke; flush against it only when that is all there is.
+  for (const clearance of [1, 0]) {
+    for (let d = 1; d <= width + clearance; d++) {
+      for (const dx of [-d, d]) {
+        const moved = placement.map((p) => ({ ...p, x: p.x + dx }))
+        if (besideFree(graph, edge, moved, labelAware, clearance)) return moved
+      }
+    }
+  }
+  return placement
 }
 
 function isClusterExitEdge(graph: AsciiGraph, edge: AsciiEdge): boolean {
@@ -1467,11 +1504,13 @@ function clearOfJoiningStrokes(
   const joins: number[] = []
   for (const other of graph.edges) {
     if (other === edge) continue
+    // The drawn column, so a port-shifted stem's tee is found where it lands.
+    const drawn = pathToDrawing(graph, other)
     other.path.forEach((p, i) => {
       if (i === 0 || i === other.path.length - 1 || p.y !== gy) return
       // A bend: the stroke arrives or leaves vertically.
       if (other.path[i - 1]!.y === p.y && other.path[i + 1]!.y === p.y) return
-      const x = gridToDrawingCoord(graph, p).x
+      const x = drawn[i]!.x
       if (x > lo && x < hi) joins.push(x)
     })
   }
