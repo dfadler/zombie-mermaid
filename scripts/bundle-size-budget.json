@@ -1,10 +1,22 @@
 {
   "unit": "gzip-bytes",
   "budgets": {
-    "dist/index.js": 112640,
-    "dist/index.cjs": 112640,
-    "dist/ascii.js": 66560,
-    "dist/ascii.cjs": 66560,
-    "dist/cli.js": 118784
+    "dist/index.js": 1024,
+    "dist/index.cjs": 1024,
+    "dist/ascii.js": 512,
+    "dist/ascii.cjs": 512,
+    "dist/mcp.js": 512,
+    "dist/mcp.cjs": 512,
+    "dist/cli.js": 14336,
+    "packages/core/dist/index.js": 10752,
+    "packages/core/dist/index.cjs": 10240,
+    "packages/mermaid-parser/dist/index.js": 21504,
+    "packages/mermaid-parser/dist/index.cjs": 19456,
+    "packages/svg-renderer/dist/index.js": 61440,
+    "packages/svg-renderer/dist/index.cjs": 56320,
+    "packages/ascii-renderer/dist/index.js": 65536,
+    "packages/ascii-renderer/dist/index.cjs": 58368,
+    "packages/mcp/dist/index.js": 7168,
+    "packages/mcp/dist/index.cjs": 7168
   }
 }
