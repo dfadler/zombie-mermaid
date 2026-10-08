@@ -37,7 +37,7 @@ import {
   clusterLaneSideRoute,
   type ClusterExitRoute,
 } from './cluster-boundary.ts'
-import { isOccupied, pathCells } from './grid-occupancy.ts'
+import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
 // draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
@@ -272,10 +272,11 @@ export function interiorCellsClearOfNodes(
   graph: AsciiGraph,
   cells: readonly GridCoord[],
   ownNodes: readonly AsciiNode[] = [],
+  grid: Grid = graph.grid,
 ): boolean {
   for (let i = 1; i < cells.length - 1; i++) {
     const cell = cells[i]!
-    if (!isOccupied(graph.grid, cell)) continue
+    if (!isOccupied(grid, cell)) continue
     if (ownNodes.some((n) => isCellInNodeBlock(n, cell))) continue
     return false
   }

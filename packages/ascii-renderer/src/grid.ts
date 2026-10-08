@@ -20,6 +20,7 @@ import { gridKey, requireGridCoord } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
+  interiorCellsClearOfNodes,
   determineLabelLine,
   createLabelContext,
   assignParallelEdgeLanes,
@@ -37,6 +38,7 @@ import {
   isBlockFree,
   placeBlock,
   cloneGrid,
+  pathCells,
   NODE_BLOCK_SIZE,
   type Grid,
 } from './grid-occupancy.ts'
@@ -372,7 +374,23 @@ function rerouteAroundStyleConflicts(
       if (!conflict) return
       graph.grid.add(gridKey(conflict))
       temporarilyBlocked.push(conflict)
+      const { path, startDir, endDir, labelLine } = edge
       determinePath(graph, edge)
+      // With the conflict cell blocked, no clear route may remain, and
+      // determinePath then falls back to a straight line that ignores
+      // occupancy (#1411: A --> D drawn through B). A line that overlaps
+      // another edge is better than one through a node: keep the old path.
+      if (
+        !interiorCellsClearOfNodes(
+          graph,
+          pathCells(edge.path),
+          [edge.from, edge.to],
+          nodeOnlyGrid,
+        )
+      ) {
+        Object.assign(edge, { path, startDir, endDir, labelLine })
+        return
+      }
     }
   } finally {
     graph.preferStraightRoutes = false
