@@ -10,8 +10,22 @@ Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagr
 ## Install
 
 ```bash
-npm install @zombie-mermaid/svg-renderer
+npm install @zombie-mermaid/svg-renderer elkjs
 ```
+
+`elkjs` is an **optional peer dependency**. Flowchart, state, class, ER and
+architecture diagrams need it; sequence, pie, xychart and C4 do not. Under Node
+and Bun it is auto-loaded; in a browser or bundler register it once:
+
+```ts
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk } from '@zombie-mermaid/svg-renderer'
+
+registerElk(ELK)
+```
+
+Without it, those diagram types throw `ElkNotRegisteredError`. See the
+[migration guide](../../docs/guides/elkjs-optional-peer.md).
 
 ## Usage
 

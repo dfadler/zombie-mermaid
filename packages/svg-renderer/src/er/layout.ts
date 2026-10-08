@@ -6,7 +6,7 @@
  *   2. Attribute rows (type, name, keys)
  */
 
-import type { ElkNode, ElkExtendedEdge } from 'elkjs'
+import type { ElkNode, ElkExtendedEdge } from '@zombie-mermaid/core'
 import type {
   ErDiagram,
   ErEntity,

@@ -851,8 +851,8 @@ const ascii = renderMermaidASCII(`graph LR; A --> B`, { useAscii: true })
 ```
 
 If you only need ASCII output, import from `zombie-mermaid/ascii` instead —
-it never pulls in `elkjs`, the SVG layout engine, which the package root
-statically imports regardless of whether you call `renderMermaidSVG`:
+it never loads the SVG renderer or `elkjs`, the SVG layout engine (an optional
+peer you register with `registerElk()`):
 
 ```typescript
 import { renderMermaidASCII } from 'zombie-mermaid/ascii'

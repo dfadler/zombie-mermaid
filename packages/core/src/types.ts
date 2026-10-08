@@ -2,7 +2,7 @@
 // Parsed graph — logical structure extracted from Mermaid text
 // ============================================================================
 
-import type { ElkNode } from 'elkjs'
+import type { ElkNode } from './elk-types.ts'
 import type { InitConfig, CurveStyle } from './init-directive.ts'
 
 // `LayoutCache`'s shape is declared here rather than beside

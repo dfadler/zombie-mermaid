@@ -18,7 +18,12 @@
  * is the separately-scoped work in #538.
  */
 
-import type { ElkExtendedEdge, ElkLabel, ElkNode, LayoutOptions } from 'elkjs'
+import type {
+  ElkExtendedEdge,
+  ElkLabel,
+  ElkNode,
+  LayoutOptions,
+} from '@zombie-mermaid/core'
 import type { Direction } from '@zombie-mermaid/core'
 import { measureMultilineText } from '@zombie-mermaid/core'
 import { FONT_WEIGHTS } from '../styles.ts'
