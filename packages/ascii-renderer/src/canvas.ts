@@ -648,6 +648,11 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   '╰': '╭',
   '╮': '╯',
   '╯': '╮',
+  // Double-line corners (state-end box)
+  '╔': '╚',
+  '╚': '╔',
+  '╗': '╝',
+  '╝': '╗',
   // Box-start junctions (exit points from node boxes)
   '╵': '╷',
   '╷': '╵',

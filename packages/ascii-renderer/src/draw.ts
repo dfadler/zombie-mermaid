@@ -139,7 +139,7 @@ function fillRolesForNodeBox(
   canvas: Canvas,
   offset: DrawingCoord,
 ): void {
-  const isBorderChar = (c: string) => /^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)
+  const isBorderChar = (c: string) => /^[┌┐└┘├┤┬┴┼│─╭╮╰╯╔╗╚╝║═+\-|.':]$/.test(c)
 
   for (let x = 0; x < canvas.length; x++) {
     for (let y = 0; y < (canvas[0]?.length ?? 0); y++) {
