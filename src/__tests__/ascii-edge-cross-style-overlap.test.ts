@@ -187,7 +187,7 @@ describe('cross-style edge overlap', () => {
         'dotted',
       )
       expect(conflict).not.toBeNull()
-      grid.add(`${conflict!.x},${conflict!.y}`)
+      grid.add(conflict!.x, conflict!.y)
     }
 
     // The bug: after those three iterations, every real conflict cell now

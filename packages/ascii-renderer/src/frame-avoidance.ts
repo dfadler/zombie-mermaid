@@ -27,7 +27,7 @@
  */
 
 import type { AsciiEdge, AsciiGraph, AsciiSubgraph } from './types.ts'
-import { gridKey } from './types.ts'
+import type { GridCoord } from './types.ts'
 import { clusterGridBox } from './cluster-boundary.ts'
 import { gridToDrawingCoord } from './grid.ts'
 import { splitLines } from './multiline-utils.ts'
@@ -50,8 +50,8 @@ function isRelated(sg: AsciiSubgraph, edge: AsciiEdge): boolean {
 export function blockUnrelatedFrames(
   graph: AsciiGraph,
   edge: AsciiEdge,
-): { added: string[]; engaged: boolean } {
-  const added: string[] = []
+): { added: GridCoord[]; engaged: boolean } {
+  const added: GridCoord[] = []
   let engaged = false
   for (const sg of graph.subgraphs) {
     if (isRelated(sg, edge)) continue
@@ -60,10 +60,9 @@ export function blockUnrelatedFrames(
     engaged = true
     for (let x = box.minX; x <= box.maxX; x++) {
       for (let y = box.minY; y <= box.maxY; y++) {
-        const key = gridKey({ x, y })
-        if (graph.grid.has(key)) continue
-        graph.grid.add(key)
-        added.push(key)
+        if (graph.grid.has(x, y)) continue
+        graph.grid.add(x, y)
+        added.push({ x, y })
       }
     }
   }
@@ -71,8 +70,8 @@ export function blockUnrelatedFrames(
 }
 
 /** Release cells reserved by `blockUnrelatedFrames`. */
-export function unblock(graph: AsciiGraph, keys: readonly string[]): void {
-  for (const key of keys) graph.grid.delete(key)
+export function unblock(graph: AsciiGraph, cells: readonly GridCoord[]): void {
+  for (const { x, y } of cells) graph.grid.delete(x, y)
 }
 
 /**
