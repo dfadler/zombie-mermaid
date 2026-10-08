@@ -575,6 +575,19 @@ function calculateSubgraphBoundingBox(
     maxY = Math.max(maxY, nodeMaxY)
   }
 
+  // An edge between two of this frame's own nodes stays inside it: a loop
+  // lane in the gap past the outermost node would otherwise sit on or beyond
+  // the wall (#1399).
+  const members = new Set(sg.nodes)
+  for (const edge of graph.edges) {
+    if (!members.has(edge.from) || !members.has(edge.to)) continue
+    for (const p of edge.path) {
+      const d = gridToDrawingCoord(graph, p)
+      minX = Math.min(minX, d.x)
+      maxX = Math.max(maxX, d.x)
+    }
+  }
+
   const subgraphPadding = 2
   const subgraphLabelSpace = 2
   sg.minX = minX - subgraphPadding
