@@ -107,4 +107,81 @@ describe('elkjs optional peer (#1370)', () => {
       expect(api.renderMermaidSVG('graph TD\n  A --> B')).toContain('<svg')
     })
   })
+
+  describe('Node auto-load edge cases', () => {
+    const src = 'graph TD\n  A --> B'
+    /** Fresh module graph whose `node:module` builtin is `createRequire`-stubbed. */
+    async function withCreateRequire(load: () => unknown): Promise<Api> {
+      vi.resetModules()
+      vi.spyOn(process, 'getBuiltinModule').mockImplementation(
+        () => ({ createRequire: () => load }) as never,
+      )
+      return import('../index.ts')
+    }
+
+    it('unwraps a { default } module export', async () => {
+      const api = await withCreateRequire(() => ({ default: ELK }))
+      expect(api.renderMermaidSVG(src)).toContain('<svg')
+    })
+
+    it.each([
+      [
+        'resolution throws',
+        () => {
+          throw new Error('nope')
+        },
+      ],
+      ['export has no constructor', () => ({})],
+    ])('reports ElkNotRegisteredError when %s', async (_l, load) => {
+      const api = await withCreateRequire(load)
+      expect(() => api.renderMermaidSVG(src)).toThrow(api.ElkNotRegisteredError)
+    })
+
+    it('skips auto-load when getBuiltinModule is unavailable', async () => {
+      vi.resetModules()
+      vi.spyOn(process, 'getBuiltinModule', 'get' as never).mockReturnValue(
+        undefined as never,
+      )
+      const api = await import('../index.ts')
+      expect(() => api.renderMermaidSVG(src)).toThrow(api.ElkNotRegisteredError)
+    })
+
+    it('falls back to "/" when process.cwd is missing', async () => {
+      const seen: string[] = []
+      vi.resetModules()
+      vi.spyOn(process, 'getBuiltinModule').mockImplementation(
+        () =>
+          ({
+            createRequire: (from: string) => {
+              seen.push(from)
+              return () => {
+                throw new Error('nope')
+              }
+            },
+          }) as never,
+      )
+      vi.spyOn(process, 'cwd', 'get' as never).mockReturnValue(
+        undefined as never,
+      )
+      const api = await import('../index.ts')
+      expect(() => api.renderMermaidSVG(src)).toThrow(api.ElkNotRegisteredError)
+      expect(seen[1]).toMatch(/^file:\/\/\/+$/)
+    })
+
+    it('hides a worker-style `self` during construction and restores it', async () => {
+      const g = globalThis as { self?: unknown; document?: unknown }
+      const hadSelf = 'self' in g
+      const before = g.self
+      g.self = globalThis
+      try {
+        const api = await freshWithoutElk()
+        api.registerElk(ELK)
+        expect(api.renderMermaidSVG(src)).toContain('<svg')
+        expect(g.self).toBe(globalThis)
+      } finally {
+        if (hadSelf) g.self = before
+        else delete g.self
+      }
+    })
+  })
 })
