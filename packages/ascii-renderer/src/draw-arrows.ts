@@ -1013,7 +1013,80 @@ export function edgeLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] | null {
-  return resolveLabelPlacement(graph, edge, true)
+  const placed = resolveLabelPlacement(graph, edge, true)
+  return placed && clearOfEarlierLabels(graph, edge, placed)
+}
+
+/**
+ * #1433: two edges that share their last vertical leg (a lane's drop into one
+ * node) both resolve to the same cell, and `drawGraph` merges label overlays
+ * last-wins, so one label vanished. Each label is resolved against the others
+ * unmoved, so both see the clash and move identically; the later edge alone
+ * slides along the shared stroke to the nearest rows no earlier label covers.
+ */
+function clearOfEarlierLabels(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const earlier = (): { x: number; y: number; text: string }[] => {
+    const out: { x: number; y: number; text: string }[] = []
+    for (const other of graph.edges) {
+      if (other === edge) break
+      if (other.path.length >= 2) {
+        out.push(...(resolveLabelPlacement(graph, other, false) ?? []))
+      }
+    }
+    return out
+  }
+  const others = earlier()
+  const line = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
+  if (
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    isClusterExitEdge(graph, edge)
+  ) {
+    return placement
+  }
+  return slideClearOf(
+    placement,
+    others,
+    Math.min(line[0]!.y, line[1]!.y),
+    Math.max(line[0]!.y, line[1]!.y),
+  )
+}
+
+/**
+ * Shift `placement` along a vertical stroke spanning rows `lo`..`hi` to the
+ * nearest rows strictly inside it (clear of both ends) that no label in
+ * `taken` covers, staying put when it already clears them all (or when no
+ * rows do).
+ */
+export function slideClearOf(
+  placement: { x: number; y: number; text: string }[],
+  taken: { x: number; y: number; text: string }[],
+  lo: number,
+  hi: number,
+): { x: number; y: number; text: string }[] {
+  const hits = (p: typeof placement) =>
+    p.some((a) =>
+      taken.some(
+        (b) =>
+          a.y === b.y &&
+          a.x <= b.x + displayWidth(b.text) - 1 &&
+          b.x <= a.x + displayWidth(a.text) - 1,
+      ),
+    )
+  if (!hits(placement)) return placement
+  for (let d = 1; d < hi - lo; d++) {
+    for (const dy of [d, -d]) {
+      const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
+      const ys = moved.map((m) => m.y)
+      if (Math.min(...ys) <= lo || Math.max(...ys) >= hi) continue
+      if (!hits(moved)) return moved
+    }
+  }
+  return placement
 }
 
 /**
@@ -1267,14 +1340,44 @@ function clearOfSiblingStrokes(
 ): { x: number; y: number; text: string }[] {
   if (
     line.length < 2 ||
-    line[0]!.x !== line[1]!.x ||
-    line[0]!.y === line[1]!.y ||
     isClusterExitEdge(graph, edge) ||
     besideFree(graph, edge, placement, labelAware)
   ) {
     return placement
   }
   const width = Math.max(...placement.map((p) => displayWidth(p.text)))
+  if (
+    graph.config.graphDirection === 'LR' &&
+    line[0]!.y === line[1]!.y &&
+    line[0]!.x !== line[1]!.x
+  ) {
+    // #1433: the LR mirror. A label centred on a horizontal run can cover a
+    // sibling's drop stem that leaves the same node a few cells over. Slide
+    // along the run, then try the row above and below it, to the nearest spot
+    // that sits on no other edge; the first and last run cells stay clear
+    // (border / arrowhead).
+    const lo = Math.min(line[0]!.x, line[1]!.x) + 1
+    const hi = Math.max(line[0]!.x, line[1]!.x) - 1
+    for (const dy of [0, -1, 1]) {
+      for (const clearance of [1, 0]) {
+        for (let d = 0; d <= hi - lo; d++) {
+          for (const dx of d === 0 ? [0] : [-d, d]) {
+            const moved = placement.map((p) => ({
+              ...p,
+              x: p.x + dx,
+              y: p.y + dy,
+            }))
+            const first = Math.min(...moved.map((m) => m.x))
+            if (first < lo || first + width - 1 > hi) continue
+            if (besideFree(graph, edge, moved, labelAware, clearance))
+              return moved
+          }
+        }
+      }
+    }
+    return placement
+  }
+  if (line[0]!.x !== line[1]!.x || line[0]!.y === line[1]!.y) return placement
   // One blank cell clear of the sibling first, so it doesn't read as the
   // label's own stroke; flush against it only when that is all there is.
   for (const clearance of [1, 0]) {
