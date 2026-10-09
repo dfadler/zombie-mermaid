@@ -88,7 +88,7 @@ describe('cluster exits with parallel-lane siblings (#1182)', () => {
         // The cluster's bottom wall is the last full-width border row
         // (the top border, with the entry trunk, matches too).
         const wall = lines.findLastIndex((l) =>
-          useAscii ? /^\+[-+]+\+$/.test(l) : /^└[─┬]+┘$/.test(l),
+          useAscii ? /^ *\+[-+]+\+$/.test(l) : /^ *└[─┬]+┘$/.test(l),
         )
         expect(wall).toBeGreaterThan(-1)
         const text = lines[wall]!
@@ -217,10 +217,11 @@ ${LABELS.slice(0, siblings)
       const labels = lines.find((l) => l.includes('third'))!
       expect(labels.indexOf('first')).toBeLessThan(labels.indexOf('second'))
       expect(labels.indexOf('second')).toBeLessThan(labels.indexOf('third'))
-      // The staircase bus (#1331) gives `other` a row of its own, above
-      // the lane group's, rather than sharing the lane group's row.
+      // The staircase bus (#1331) gives `other` a row of its own rather than
+      // sharing the lane group's row; centred over its targets (#1462) the
+      // cluster puts that row below the lane group's.
       expect(labels).not.toContain('other')
-      expect(lines.findIndex((l) => l.includes('other'))).toBeLessThan(
+      expect(lines.findIndex((l) => l.includes('other'))).not.toBe(
         lines.indexOf(labels),
       )
     })
@@ -448,8 +449,15 @@ ${LABELS.slice(0, siblings)
       (_n, dir, others) => {
         for (const useAscii of [false, true]) {
           const lines = render(source(dir, others), useAscii)
-          const start = findToken(lines, 'Start')!
-          const trunk = start.col + 2
+          // The shared trunk is the first exit's junction on the cluster's
+          // bottom wall (the cluster is centred, not left of Start, #1462).
+          const wall = lines.findLastIndex((l) =>
+            useAscii ? /^\s*\+[-+]+\+$/.test(l) : /^\s*└[─┬]+┘$/.test(l),
+          )
+          const junctions = [
+            ...lines[wall]!.matchAll(useAscii ? /\+/g : /┬/g),
+          ].map((m) => m.index!)
+          const trunk = useAscii ? junctions[1]! : junctions[0]!
           const second = findToken(lines, 'second')!
           const secondCol = second.col + 3
           const vertical = useAscii ? '|' : '│'

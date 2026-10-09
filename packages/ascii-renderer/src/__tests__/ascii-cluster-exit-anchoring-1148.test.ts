@@ -57,9 +57,25 @@ const COMPOSITE_STATE = `stateDiagram-v2
   Processing --> Error: fail
 `
 
-/** Row index of the cluster's bottom wall: a `└──…──┘` row. */
-const wallRow = (lines: string[]): number =>
-  lines.findIndex((l) => /^└[─┼┬┴┤├]+┘/.test(l))
+/**
+ * Row index of the cluster's bottom wall: the widest `└──…──┘` row. Boxes
+ * centred over the cluster (#1462) can share its left margin, so "first
+ * match" would find one of theirs; the frame is always wider than a plain box.
+ */
+const wallRow = (lines: string[]): number => {
+  let best = -1
+  let bestWidth = 0
+  lines.forEach((l, i) => {
+    const wall = /^ *(└[─┼┬┴┤├]+┘)/.exec(l)
+    if (wall === null) return
+    const width = wall[1]!.length
+    if (width > bestWidth) {
+      best = i
+      bestWidth = width
+    }
+  })
+  return best
+}
 
 describe('cluster-exit anchoring: labeled multi-exit primary repro (#1135)', () => {
   it.each([
@@ -105,14 +121,16 @@ describe('cluster-exit anchoring: labeled multi-exit primary repro (#1135)', () 
     const first = lines[wall]!.indexOf('┬')
     const second = lines[wall]!.lastIndexOf('┬')
     expect(second).toBeGreaterThan(first)
-    // Done is the left target, so it takes the left junction: its stroke
-    // drops straight to the arrowhead, while Error's turns right on the
-    // gutter row and runs out to its own column. Neither is a shared trunk.
-    expect(lines[wall + 1]![first]).toBe('│')
-    expect(lines[wall + 1]![second]).toBe('└')
-    expect(lines[wall + 1]).toMatch(/└─+┐/)
+    // Done is the left target, so it takes the left junction: with the
+    // cluster centred over its targets (#1462) its stroke turns left on the
+    // gutter row, while Error's drops from its own junction and turns right
+    // into its column. Neither is a shared trunk.
+    expect(lines[wall + 1]![first]).toBe('┘')
+    expect(lines[wall + 1]![second]).toBe('│')
+    expect(lines[wall + 1]).toMatch(/┌─+┘/)
     const arrows = lines.findIndex((l) => (l.match(/▼/g) ?? []).length === 2)
-    expect(lines[arrows]![first]).toBe('▼')
+    expect(lines[arrows]!.indexOf('▼')).toBeLessThan(first)
+    expect(lines[arrows]!.lastIndexOf('▼')).toBeGreaterThan(second)
     const targets = lines.findIndex((l) => /Done/.test(l) && /Error/.test(l))
     expect(lines[targets]!.indexOf('Done')).toBeLessThan(
       lines[targets]!.indexOf('Error'),
@@ -258,6 +276,8 @@ describe('cluster-exit anchoring: engagement and fallbacks', () => {
 describe('cluster-exit anchoring: overlapping root subgraphs (#1165)', () => {
   // S1's long title widens its box on both sides until it collides with its
   // neighbour S2, which is exactly what ensureSubgraphSpacing resolves.
+  // `b --> C` gives C a second parent, so `a` is not centred over its targets
+  // (#1462) and the frames still overlap before the pass.
   const src = `flowchart TD
   subgraph S1["Long cluster title"]
     a
@@ -267,6 +287,7 @@ describe('cluster-exit anchoring: overlapping root subgraphs (#1165)', () => {
   end
   X --> a
   X --> b
+  b --> C
   S1 -->|one| C
   S1 -->|two| D
 `
@@ -372,10 +393,12 @@ describe('cluster-exit anchoring: style-conflict reroute keeps the cluster shape
     const wall = wallRow(lines)
     expect(wall).toBeGreaterThan(-1)
     expect(lines.slice(0, wall).some((l) => /├─+┼/.test(l))).toBe(false)
-    // Two junctions on the wall; the dotted leg runs along the gutter row
-    // from its own stroke and reaches D, beside the solid exit to C.
+    // Two junctions on the wall; the solid exit to C turns left on the gutter
+    // row (the cluster is centred over its targets, #1462) and the dotted leg
+    // drops from its own junction and turns into D.
     expect(lines[wall]!.match(/┬/g)).toHaveLength(2)
-    expect(lines[wall + 1]).toMatch(/│ +└┄+┐/)
+    expect(lines[wall + 1]).toMatch(/┌─+┘ +┆/)
+    expect(lines.join('\n')).toMatch(/└┄+▼/)
     expect(lines.join('\n')).toMatch(/▼[\s\S]*▼/)
   })
 })
