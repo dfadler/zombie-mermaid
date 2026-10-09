@@ -6,8 +6,8 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 
-const render = (src: string, useAscii = false) =>
-  renderMermaidASCII(src, { colorMode: 'none', useAscii })
+const render = (src: string, useAscii = false, hyperlinks = false) =>
+  renderMermaidASCII(src, { colorMode: 'none', useAscii, hyperlinks })
 const col = (out: string, needle: string) =>
   Math.max(...out.split('\n').map((l) => l.indexOf(needle)))
 const row = (out: string, needle: string) =>
@@ -61,5 +61,32 @@ describe('nested subgraph direction RL/BT (#1421)', () => {
     expect(col(out, 'P')).toBeLessThan(col(out, 'Q'))
     // A is a two-line label, so its column is not searchable by letter.
     expect(col(out, 'x')).toBeGreaterThan(col(out, 'B'))
+  })
+
+  it('treats TB like TD and flips TD back inside BT', () => {
+    const tb = render(
+      'graph TD\n  subgraph S\n    direction TB\n    A --> B\n  end',
+    )
+    expect(row(tb, 'A')).toBeLessThan(row(tb, 'B'))
+    const td = render(
+      'graph BT\n  subgraph S\n    direction TB\n    A --> B\n  end',
+    )
+    expect(row(td, 'A')).toBeLessThan(row(td, 'B'))
+    const bt = render(
+      'graph BT\n  subgraph S\n    direction BT\n    A --> B\n  end',
+    )
+    expect(row(bt, 'B')).toBeLessThan(row(bt, 'A'))
+  })
+
+  it('keeps clickable nodes inside flipped regions', () => {
+    for (const d of ['RL', 'BT']) {
+      const out = render(
+        `graph TD\n  subgraph S\n    direction ${d}\n    A -->|go| B\n  end\n  click A "https://example.com"`,
+        false,
+        true,
+      )
+      expect(out).toContain('A')
+      expect(out).toContain('go')
+    }
   })
 })
