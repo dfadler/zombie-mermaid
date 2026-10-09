@@ -37,12 +37,13 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
     for (const l of lines.slice(memberBottom + 1, wall)) {
       expect(l).not.toMatch(/[┬┼]/)
     }
-    // Each stroke continues straight down from its wall junction.
+    // Each stroke continues down from its wall junction: straight on, or
+    // (the staircase bus, #1331) turning off along its own row.
     for (const col of [
       lines[wall]!.indexOf('┬'),
       lines[wall]!.lastIndexOf('┬'),
     ]) {
-      expect(lines[wall + 1]![col]).toBe('│')
+      expect(lines[wall + 1]![col]).toMatch(/[│└]/)
     }
     // Labels and arrowheads are unchanged: both targets are reached.
     expect(lines.join('\n')).toContain('first')
@@ -94,9 +95,10 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
     // The member's row ends in the wall, with no junction on the member.
     expect(lines[row]).toMatch(/\| a \| \|/)
     // One `+` junction on the wall per exit, each followed by its stroke.
-    // Inside the cluster (after a `|` or `+`), a stroke runs longer than the
-    // member's three-dash `+---+`.
-    expect(lines.filter((l) => /[|+] \+-{4,}\+? {2,}/.test(l))).toHaveLength(2)
+    // Inside the cluster (after a `|` or `+`), a stroke follows its wall
+    // junction: the staircase (#1331) gives each exit its own column, so the
+    // nearer one is a short `+--+` rather than a three-dash `+---+` member.
+    expect(lines.filter((l) => /[|+] \+-{2,}\+? {2,}/.test(l))).toHaveLength(2)
   })
 
   it.each([0, 3])('paddings %i: the exit still starts on the wall', (pad) => {

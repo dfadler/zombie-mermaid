@@ -217,7 +217,12 @@ ${LABELS.slice(0, siblings)
       const labels = lines.find((l) => l.includes('third'))!
       expect(labels.indexOf('first')).toBeLessThan(labels.indexOf('second'))
       expect(labels.indexOf('second')).toBeLessThan(labels.indexOf('third'))
-      expect(labels.indexOf('third')).toBeLessThan(labels.indexOf('other'))
+      // The staircase bus (#1331) gives `other` a row of its own, above
+      // the lane group's, rather than sharing the lane group's row.
+      expect(labels).not.toContain('other')
+      expect(lines.findIndex((l) => l.includes('other'))).toBeLessThan(
+        lines.indexOf(labels),
+      )
     })
 
     it.each(['TD', 'LR'] as const)(

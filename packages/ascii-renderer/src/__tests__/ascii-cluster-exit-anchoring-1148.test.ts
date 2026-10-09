@@ -354,7 +354,8 @@ describe('cluster-exit anchoring: gutter sizing', () => {
     // and the label `done` is not adjacent to a wall glyph on its left.
     expect(text).toMatch(/┐/)
     const doneRow = lines.find((l) => l.includes('done'))!
-    expect(doneRow).toMatch(/└─*done─*►/)
+    expect(doneRow).toMatch(/done─*►/)
+    expect(doneRow).not.toMatch(/│done/)
   })
 })
 
@@ -374,7 +375,7 @@ describe('cluster-exit anchoring: style-conflict reroute keeps the cluster shape
     // Two junctions on the wall; the dotted leg runs along the gutter row
     // from its own stroke and reaches D, beside the solid exit to C.
     expect(lines[wall]!.match(/┬/g)).toHaveLength(2)
-    expect(lines[wall + 1]).toMatch(/└┐ +└┄+┐/)
+    expect(lines[wall + 1]).toMatch(/│ +└┄+┐/)
     expect(lines.join('\n')).toMatch(/▼[\s\S]*▼/)
   })
 })

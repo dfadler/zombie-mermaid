@@ -39,6 +39,7 @@ import { copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { gridToDrawingCoord } from './grid.ts'
+import { exitGutter } from './types.ts'
 import { splitLines } from './multiline-utils.ts'
 import { drawLine } from './draw-lines.ts'
 
@@ -1632,7 +1633,7 @@ function clearOfLaneJunction(
   ) {
     return placement
   }
-  const minX = gridToDrawingCoord(graph, plan.gutter).x + 2
+  const minX = gridToDrawingCoord(graph, exitGutter(plan, edge)).x + 2
   return placement.map((item) => (item.x < minX ? { ...item, x: minX } : item))
 }
 
