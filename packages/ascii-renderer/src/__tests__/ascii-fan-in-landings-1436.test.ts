@@ -12,9 +12,7 @@ const render = (src: string, useAscii: boolean): string[] =>
 
 /** Arrowheads on the row above the first box that holds `name`. */
 function headsAbove(rows: string[], name: string, head: string): number {
-  const top = rows.findIndex((r) =>
-    new RegExp(`[│|]\\s+${name}\\s+[│|]`).test(r),
-  )
+  const top = rows.findIndex((r) => r.includes(` ${name} `))
   return rows[top - 3]!.split(head).length - 1
 }
 
