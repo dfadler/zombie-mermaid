@@ -1031,19 +1031,6 @@ function clearOfEarlierLabels(
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
 ): { x: number; y: number; text: string }[] {
-  const earlier: { x: number; y: number; text: string }[] = []
-  const later: { x: number; y: number; text: string }[] = []
-  let seen = false
-  for (const other of graph.edges) {
-    if (other === edge) seen = true
-    else if (other.path.length >= 2) {
-      // A later label is taken where it will be drawn (label-aware, before
-      // its own slide, which only ever looks at earlier ones: no cycle).
-      ;(seen ? later : earlier).push(
-        ...(resolveLabelPlacement(graph, other, seen) ?? []),
-      )
-    }
-  }
   const line = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
   if (
     line.length < 2 ||
@@ -1052,6 +1039,15 @@ function clearOfEarlierLabels(
   ) {
     return placement
   }
+  const at = graph.edges.indexOf(edge)
+  const labelsOf = (edges: AsciiEdge[], labelAware: boolean) =>
+    edges
+      .filter((other) => other.path.length >= 2)
+      .flatMap((other) => resolveLabelPlacement(graph, other, labelAware) ?? [])
+  const earlier = labelsOf(graph.edges.slice(0, at), false)
+  // A later label is taken where it will be drawn (label-aware, before its
+  // own slide, which only ever looks at earlier ones: no cycle).
+  const later = labelsOf(graph.edges.slice(at + 1), true)
   return slideClearOf(
     placement,
     earlier,
