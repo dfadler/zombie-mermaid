@@ -1013,16 +1013,14 @@ export function edgeLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] | null {
-  if (placementMemo) return resolveWithClearance(graph, edge)
   // #1466: one call resolves the same (edge, labelAware) pairs over and over
   // (every later edge re-resolves every other edge), so remember them for the
   // call. The layout cannot change mid-call, and the memo is dropped on exit,
   // so a layout change can never see a stale placement.
-  placementMemo = new Map()
   try {
     return resolveWithClearance(graph, edge)
   } finally {
-    placementMemo = null
+    placementMemo.clear()
   }
 }
 
@@ -1033,7 +1031,7 @@ function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
 
 type LabelLines = { x: number; y: number; text: string }[] | null
 /** Per-`edgeLabelPlacement`-call memo of `resolveLabelPlacement` (#1466). */
-let placementMemo: Map<string, LabelLines> | null = null
+const placementMemo = new Map<string, LabelLines>()
 
 /**
  * #1433: two edges that share their last vertical leg (a lane's drop into one
@@ -1121,8 +1119,6 @@ function resolveLabelPlacement(
   edge: AsciiEdge,
   labelAware: boolean,
 ): LabelLines {
-  if (!placementMemo)
-    return resolveLabelPlacementUncached(graph, edge, labelAware)
   const key = `${graph.edges.indexOf(edge)}:${labelAware}`
   if (!placementMemo.has(key)) {
     placementMemo.set(
