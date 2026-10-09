@@ -35,7 +35,7 @@ import {
   drawingCoordEquals,
   requireGridCoord,
 } from './types.ts'
-import { copyCanvas, drawText, write } from './canvas.ts'
+import { blankLayer, copyCanvas, drawText, write } from './canvas.ts'
 import { determineDirection, dirEquals } from './edge-routing.ts'
 import { displayWidth, toDisplayCells } from './display-width.ts'
 import { gridToDrawingCoord } from './grid.ts'
@@ -55,7 +55,7 @@ export function drawArrow(
   edge: AsciiEdge,
 ): [Canvas, Canvas, Canvas, Canvas, Canvas, Canvas] {
   if (edge.path.length === 0) {
-    const empty = copyCanvas(graph.canvas)
+    const empty = blankLayer(graph.canvas)
     return [empty, empty, empty, empty, empty, empty]
   }
 
@@ -135,7 +135,7 @@ export function drawArrow(
       edge.endMarker,
     )
   } else {
-    arrowHeadEndCanvas = copyCanvas(graph.canvas)
+    arrowHeadEndCanvas = blankLayer(graph.canvas)
   }
 
   // Draw start arrowhead for bidirectional edges, in the first stroke cell
@@ -150,11 +150,11 @@ export function drawArrow(
       edge.startMarker,
     )
   } else {
-    arrowHeadStartCanvas = copyCanvas(graph.canvas)
+    arrowHeadStartCanvas = blankLayer(graph.canvas)
   }
 
   const cornersCanvas = invisible
-    ? copyCanvas(graph.canvas)
+    ? blankLayer(graph.canvas)
     : drawCorners(graph, edge.path, drop, shifts)
 
   return [
@@ -1765,8 +1765,10 @@ function clearOfClusterWalls(
 
 /** Draw edge label text centered on the widest path segment. */
 function drawArrowLabel(graph: AsciiGraph, edge: AsciiEdge): Canvas {
+  const placements = edgeLabelPlacement(graph, edge) ?? []
+  if (placements.length === 0) return blankLayer(graph.canvas)
   const canvas = copyCanvas(graph.canvas)
-  for (const { x, y, text } of edgeLabelPlacement(graph, edge) ?? []) {
+  for (const { x, y, text } of placements) {
     drawText(canvas, { x, y }, text)
   }
   return canvas

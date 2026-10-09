@@ -24,7 +24,7 @@ import type {
   AsciiSubgraph,
   EdgeBundle,
 } from './types.ts'
-import { mergeCanvases, firstClaimWins, write } from './canvas.ts'
+import { mergeCanvases, firstClaimWins, scanBounds, write } from './canvas.ts'
 import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
 import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
@@ -82,8 +82,9 @@ function fillRolesFromCanvas(
   offset: DrawingCoord,
   role: CharRole,
 ): void {
-  for (let x = 0; x < canvas.length; x++) {
-    for (let y = 0; y < (canvas[0]?.length ?? 0); y++) {
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
       const char = canvas[x]?.[y]
       if (char && char !== ' ') {
         const rx = x + offset.x
@@ -114,9 +115,10 @@ function fillRolesFromCanvases(
 /** Bounding rectangle of a canvas's non-space cells, or null if it has none. */
 function textBounds(canvas: Canvas): LabelRect | null {
   let rect: LabelRect | null = null
-  for (const [x, col] of canvas.entries()) {
-    for (const [y, ch] of col.entries()) {
-      if (ch === ' ') continue
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
+      if (canvas[x]![y] === ' ') continue
       rect = rect
         ? {
             x0: Math.min(rect.x0, x),
@@ -141,8 +143,9 @@ function fillRolesForNodeBox(
 ): void {
   const isBorderChar = (c: string) => /^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)
 
-  for (let x = 0; x < canvas.length; x++) {
-    for (let y = 0; y < (canvas[0]?.length ?? 0); y++) {
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
       const char = canvas[x]?.[y]
       if (char && char !== ' ') {
         const rx = x + offset.x
