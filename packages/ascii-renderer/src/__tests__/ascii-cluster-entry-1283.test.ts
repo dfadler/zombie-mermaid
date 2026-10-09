@@ -16,7 +16,6 @@ import { createMapping } from '../grid.ts'
 import { buildClusterEntryRoute } from '../cluster-boundary.ts'
 import { determinePath } from '../edge-routing.ts'
 import { drawArrow } from '../draw-arrows.ts'
-import { gridKey } from '../types.ts'
 import type { AsciiGraph } from '../types.ts'
 
 const frame = `
@@ -179,7 +178,7 @@ describe('ASCII: edge cases of the cluster-entry shape (#1283)', () => {
     const graph = layout(simple)
     const edge = entry(graph)
     const gutter = buildClusterEntryRoute(graph, edge)!.path.at(-1)!
-    graph.grid.add(gridKey(gutter))
+    graph.grid.add(gutter.x, gutter.y)
     expect(buildClusterEntryRoute(graph, edge)).toBeNull()
   })
 
