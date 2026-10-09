@@ -1281,8 +1281,24 @@ function clearOfSiblingStrokes(
     for (let d = 1; d <= width + clearance; d++) {
       for (const dx of [-d, d]) {
         const moved = placement.map((p) => ({ ...p, x: p.x + dx }))
-        if (besideFree(graph, edge, moved, labelAware, clearance)) return moved
+        if (besideFree(graph, edge, moved, labelAware, clearance, true)) {
+          return moved
+        }
       }
+    }
+  }
+  // No column is free: slide along the stroke to a row where the label sits
+  // clear (a fan-in's landing strokes can box in the middle of a short stem).
+  const lo = Math.min(line[0]!.y, line[1]!.y) + 1
+  const hi = Math.max(line[0]!.y, line[1]!.y) - 2
+  const rows = placement.map((p) => p.y)
+  const span = Math.max(...rows) - Math.min(...rows)
+  for (let d = 1; d <= hi - lo; d++) {
+    for (const dy of [-d, d]) {
+      const first = Math.min(...rows) + dy
+      if (first < lo || first + span > hi) continue
+      const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
+      if (besideFree(graph, edge, moved, labelAware)) return moved
     }
   }
   return placement
@@ -1332,9 +1348,10 @@ function besideFree(
   placement: { x: number; y: number; text: string }[],
   labelAware: boolean,
   clearance = 0,
+  sidewaysOnly = false,
 ): boolean {
   return (
-    besideGeometryFree(graph, edge, placement, clearance) &&
+    besideGeometryFree(graph, edge, placement, clearance, sidewaysOnly) &&
     (!labelAware || !hitsOtherLabel(graph, edge, placement))
   )
 }
@@ -1381,6 +1398,7 @@ function besideGeometryFree(
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
   clearance = 0,
+  sidewaysOnly = false,
 ): boolean {
   for (const { x, y, text } of placement) {
     const x0 = x
@@ -1417,9 +1435,14 @@ function besideGeometryFree(
         const b = pts[i]!
         // `clearance` keeps the text off cells *next to* another edge's
         // stroke too, where it would read as that stroke's label (#attribution).
+        // `sidewaysOnly` counts it only across columns: a label already on its
+        // own stroke can't be misread, and a stroke on the row above or below
+        // ruled out the one-cell gap beside a stem whenever a junction row sat
+        // right below (#1434).
+        const rowClearance = sidewaysOnly ? 0 : clearance
         if (
-          y >= Math.min(a.y, b.y) - clearance &&
-          y <= Math.max(a.y, b.y) + clearance &&
+          y >= Math.min(a.y, b.y) - rowClearance &&
+          y <= Math.max(a.y, b.y) + rowClearance &&
           x1 >= Math.min(a.x, b.x) - clearance &&
           x0 <= Math.max(a.x, b.x) + clearance
         ) {

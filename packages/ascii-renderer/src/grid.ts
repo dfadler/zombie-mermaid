@@ -49,6 +49,8 @@ import {
   createEdgeCellOwners,
   claimPathOwners,
   findUnrelatedOverlap,
+  isPortFixedEdge,
+  separateFanInLane,
   type EdgeCellStyles,
   type EdgeCellOwners,
 } from './edge-cell-styles.ts'
@@ -1967,6 +1969,9 @@ export function createMapping(graph: AsciiGraph): void {
     )
     graph.preferStraightRoutes = prevStraight
     unblock(graph, frameCells)
+    if (graph.config.graphDirection === 'TD' && !isPortFixedEdge(edge)) {
+      separateFanInLane(nodeOnlyGrid, cellOwners, edge)
+    }
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)
