@@ -40,6 +40,7 @@ import type {
   GridCoord,
 } from './types.ts'
 import {
+  exitGutter,
   Up,
   Down,
   Left,
@@ -108,7 +109,7 @@ export function buildClusterExitRoute(
   // then run straight into the target's entry face.
   const outside = routeEdge(
     graph,
-    plan.gutter,
+    exitGutter(plan, edge),
     targetFace,
     requireCardinalDirection(vertical ? Right : Down),
   )
@@ -219,10 +220,10 @@ export function planClusterExits(graph: AsciiGraph): void {
   // insertion shifts coordinates the earlier plans captured (#1253).
   for (let attempt = 0; attempt <= MAX_TRACK_INSERTIONS; attempt++) {
     const plans = new Map<AsciiSubgraph, ClusterExitPlan>()
-    let insertAt: number | null = null
+    let insertAt: { at: number; flow: boolean } | null = null
     for (const [sg, candidates] of byCluster) {
       const result = planOne(graph, sg, candidates, vertical)
-      if (typeof result === 'number') {
+      if (result && 'at' in result) {
         insertAt = result
         break
       }
@@ -230,14 +231,38 @@ export function planClusterExits(graph: AsciiGraph): void {
     }
     if (insertAt === null || attempt === MAX_TRACK_INSERTIONS) {
       if (plans.size > 0) graph.clusterExitPlans = plans
+      // A staircase (#1331) steps one slim track at a time: the first track
+      // takes the same slim size as the ones inserted after it
+      // (`widenClusterGutters` still grows it to clear the wall).
+      const sizes = vertical ? graph.rowHeight : graph.columnWidth
+      for (const plan of plans.values()) {
+        if (plan.gutters && new Set(plan.gutters.values()).size > 1) {
+          sizes.set(vertical ? plan.gutter.y : plan.gutter.x, STAIR_TRACK)
+        }
+      }
       return
     }
-    insertGridTrack(graph, vertical, insertAt)
+    // A cross-axis track (a lane sibling's) is a column in TD; a staircase
+    // track (#1331) runs along the flow, a row in TD, and stays slim.
+    const axis = vertical === !insertAt.flow ? 'x' : 'y'
+    insertGridTrack(
+      graph,
+      axis,
+      insertAt.at,
+      insertAt.flow
+        ? STAIR_TRACK
+        : vertical
+          ? graph.config.paddingX
+          : graph.config.paddingY,
+    )
   }
 }
 
 /** Safety bound on gutter-track insertions per layout. */
-const MAX_TRACK_INSERTIONS = 4
+const MAX_TRACK_INSERTIONS = 16
+
+/** Size of an inserted staircase track (#1331). */
+const STAIR_TRACK = 2
 
 /**
  * Insert one empty gutter track (a column in TD, a row in LR) at index `at`,
@@ -247,11 +272,12 @@ const MAX_TRACK_INSERTIONS = 4
  */
 function insertGridTrack(
   graph: AsciiGraph,
-  vertical: boolean,
+  axis: 'x' | 'y',
   at: number,
+  size: number,
 ): void {
   const shift = (c: GridCoord): GridCoord =>
-    vertical
+    axis === 'x'
       ? { x: c.x >= at ? c.x + 1 : c.x, y: c.y }
       : { x: c.x, y: c.y >= at ? c.y + 1 : c.y }
   for (const node of graph.nodes) {
@@ -263,11 +289,11 @@ function insertGridTrack(
     const { x, y } = shift(cell)
     graph.grid.add(x, y)
   }
-  const sizes = vertical ? graph.columnWidth : graph.rowHeight
+  const sizes = axis === 'x' ? graph.columnWidth : graph.rowHeight
   const shifted = [...sizes].filter(([index]) => index >= at)
   for (const [index] of shifted) sizes.delete(index)
   for (const [index, size] of shifted) sizes.set(index + 1, size)
-  sizes.set(at, vertical ? graph.config.paddingX : graph.config.paddingY)
+  sizes.set(at, size)
 }
 
 /**
@@ -280,7 +306,7 @@ function planOne(
   sg: AsciiSubgraph,
   candidates: AsciiEdge[],
   vertical: boolean,
-): ClusterExitPlan | number | null {
+): ClusterExitPlan | { at: number; flow: boolean } | null {
   const box = clusterGridBox(sg)
   if (!box) return null
 
@@ -339,6 +365,7 @@ function planOne(
     box,
     anchor,
     gutter,
+    gutters: staircase(eligible, gutter, vertical).gutters,
     edges: new Set(eligible),
   }
   const unroutable = new Set<Set<number>>()
@@ -351,7 +378,9 @@ function planOne(
       const hasOtherExit = eligible.some(
         (other) => other.parallelLane?.usedOffsets !== lane.usedOffsets,
       )
-      if (missing !== undefined && hasOtherExit) return missing
+      if (missing !== undefined && hasOtherExit) {
+        return { at: missing, flow: false }
+      }
       unroutable.add(lane.usedOffsets)
     }
   }
@@ -367,7 +396,22 @@ function planOne(
   )
   if (exits.size < 2) return null
 
-  const stubLen = vertical ? gutter.y - face.y : gutter.x - face.x
+  // Staircase bus (#1331): each exit turns off the stub on a track of its
+  // own. Tracks past the first must exist and be free of nodes, else one is
+  // inserted there and the plan rebuilt.
+  const { gutters, rows } = staircase(eligible, gutter, vertical)
+  const sizes = vertical ? graph.rowHeight : graph.columnWidth
+  for (let i = 1; i < rows; i++) {
+    const track = (vertical ? gutter.y : gutter.x) + i
+    const occupied = graph.nodes.some((node) => {
+      const at = requireGridCoord(node)
+      const start = vertical ? at.y : at.x
+      return start <= track && track <= start + 2
+    })
+    if (occupied || !sizes.has(track)) return { at: track, flow: true }
+  }
+
+  const stubLen = (vertical ? gutter.y - face.y : gutter.x - face.x) + rows - 1
   for (let i = 1; i <= stubLen; i++) {
     const cell: GridCoord = vertical
       ? { x: face.x, y: face.y + i }
@@ -379,6 +423,7 @@ function planOne(
     box,
     anchor,
     gutter,
+    gutters,
     edges: new Set(eligible),
   }
   // All-or-nothing: if any edge's outside leg can't be routed, none engage.
@@ -387,6 +432,43 @@ function planOne(
   }
 
   return plan
+}
+
+/**
+ * Staircase bus (#1331): assign each exit unit (a lane group counts once) its
+ * own gutter track, so no two siblings turn on the same row (column) and each
+ * label sits on its own run. Farthest target first, so a nearer exit's drop
+ * never crosses a farther exit's run. `rows` is the number of tracks used.
+ */
+function staircase(
+  eligible: AsciiEdge[],
+  gutter: GridCoord,
+  vertical: boolean,
+): { gutters: Map<AsciiEdge, GridCoord>; rows: number } {
+  const units = new Map<unknown, AsciiEdge[]>()
+  for (const edge of eligible) {
+    const key = edge.parallelLane?.usedOffsets ?? edge
+    const unit = units.get(key)
+    if (unit) unit.push(edge)
+    else units.set(key, [edge])
+  }
+  const offset = (edges: AsciiEdge[]): number => {
+    const to = requireGridCoord(edges[0]!.to)
+    return vertical ? to.x + 1 - gutter.x : to.y + 1 - gutter.y
+  }
+  const sorted = [...units.values()].sort(
+    (a, b) => Math.abs(offset(b)) - Math.abs(offset(a)),
+  )
+  const rows = sorted.length
+  const gutters = new Map<AsciiEdge, GridCoord>()
+  sorted.forEach((edges, i) => {
+    const track = i
+    const cell: GridCoord = vertical
+      ? { x: gutter.x, y: gutter.y + track }
+      : { x: gutter.x + track, y: gutter.y }
+    for (const edge of edges) gutters.set(edge, cell)
+  })
+  return { gutters, rows }
 }
 
 /** Which target face and gutter track a lane sibling uses; see `laneSide`. */
@@ -480,7 +562,7 @@ export function clusterLaneSideRoute(
 } | null {
   const vertical = graph.config.graphDirection !== 'LR'
   const to = requireGridCoord(edge.to)
-  const gutter = plan.gutter
+  const gutter = exitGutter(plan, edge)
   const side = laneSide(graph, plan, edge)
   if (!side || side.insertAt !== undefined) return null
 
@@ -575,9 +657,17 @@ export function widenClusterGutters(graph: AsciiGraph): boolean {
   for (const [sg, plan] of ordered) {
     const wall = vertical ? sg.maxY : sg.maxX
     const sizes = vertical ? graph.rowHeight : graph.columnWidth
-    const index = vertical ? plan.gutter.y : plan.gutter.x
+    const first = vertical ? plan.gutter.y : plan.gutter.x
+    // The labels' and arrowheads' room is the last staircase track's (#1331);
+    // the wall's is the first's.
+    const tracks = new Set(
+      [...(plan.gutters?.values() ?? [])].map((c) => (vertical ? c.y : c.x)),
+    )
+    const last = Math.max(first, ...tracks)
     for (let i = 0; i < MAX_GUTTER_WIDENINGS; i++) {
-      if (gutterClears(graph, plan, wall, vertical)) break
+      const clear = gutterClears(graph, plan, wall, vertical)
+      if (clear === true) break
+      const index = clear === 'wall' ? first : last
       sizes.set(index, (sizes.get(index) ?? 0) + 1)
       changed = true
     }
@@ -602,9 +692,9 @@ function gutterClears(
   plan: ClusterExitPlan,
   wall: number,
   vertical: boolean,
-): boolean {
+): true | 'wall' | 'leg' {
   const along = (c: { x: number; y: number }): number => (vertical ? c.y : c.x)
-  if (along(gridToDrawingCoord(graph, plan.gutter)) <= wall) return false
+  if (along(gridToDrawingCoord(graph, plan.gutter)) <= wall) return 'wall'
   for (const edge of plan.edges) {
     const placement = edgeLabelPlacement(graph, edge)
     const last = edge.path[edge.path.length - 1]
@@ -613,7 +703,8 @@ function gutterClears(
     for (const { x, y, text } of placement) {
       const start = vertical ? y : x
       const end = vertical ? y : x + displayWidth(text) - 1
-      if (start <= wall || end >= arrowCell) return false
+      if (start <= wall) return 'wall'
+      if (end >= arrowCell) return 'leg'
     }
   }
   return true

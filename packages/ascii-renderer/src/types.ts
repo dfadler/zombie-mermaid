@@ -276,8 +276,19 @@ export interface ClusterExitPlan {
   anchor: AsciiNode
   /** Gutter cell just past the cluster's flow-side wall, in the anchor's column/row. */
   gutter: GridCoord
+  /**
+   * Staircase bus (#1331): each exit's own gutter cell, one track further out
+   * than the one before, so its turn is on a row (column) no sibling shares.
+   * Absent for an exit that stays on `gutter`.
+   */
+  gutters?: Map<AsciiEdge, GridCoord>
   /** Edges that route through the shared stub. */
   edges: Set<AsciiEdge>
+}
+
+/** The gutter cell where `edge` turns off the stub: its own, else the plan's. */
+export function exitGutter(plan: ClusterExitPlan, edge: AsciiEdge): GridCoord {
+  return plan.gutters?.get(edge) ?? plan.gutter
 }
 
 /** A subgraph container with bounding box for rendering. */

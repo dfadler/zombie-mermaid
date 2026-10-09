@@ -1066,15 +1066,48 @@ function shiftColumnsRight(
 }
 
 /**
+ * Whether `node` is outside every subgraph, or the only member of each one it
+ * is in. Moving it then moves the whole frame with it (frames are derived
+ * from their members afterwards), so a cluster exit's stand-in member can be
+ * centred over the exit targets (#1462). A cluster with other members would
+ * be skewed.
+ */
+function onlyInLoneClusters(graph: AsciiGraph, node: AsciiNode): boolean {
+  return graph.subgraphs.every(
+    (sg) => !sg.nodes.includes(node) || sg.nodes.length === 1,
+  )
+}
+
+/**
+ * Whether every edge out of `node` is a cluster exit (`S --> X`) and there are
+ * at least two, the shape `planClusterExits` engages on. A plain edge out of
+ * the member (`a --> D`) leaves the frame sideways, so centring over its
+ * targets only makes the route cross the wall. Two exits to one target
+ * (parallel lanes, #1182) are left out too: centred, the third lane's
+ * shifted final run (#1331) loses its horizontal leg and arrowhead.
+ */
+function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
+  const out = getEdgesFromNode(graph, node)
+  const lanes = new Set(out.map((e) => e.to)).size < out.length
+  return (
+    out.length >= 2 && !lanes && out.every((e) => e.clusterSource !== undefined)
+  )
+}
+
+/**
  * Centre a node over its children, as dagre does, instead of leaving it above
  * the first one (a fan-out like `A --> B & C & D` otherwise hangs A over B and
  * leaves its other edges to leave sideways and come back down).
  *
  * TD only, and only for graphs where every edge points to a lower row:
  * back edges and same-row edges route around the nodes they skip, and moving
- * nodes under them scrambles those routes. A node moves only when it and its
- * children sit outside every subgraph, the children are on the next row, and
- * each has no other parent. It only ever moves right, deepest rows first, so
+ * nodes under them scrambles those routes. A node moves only when it is
+ * outside every subgraph, or alone in each one and leaving only by cluster
+ * exits (`onlyInLoneClusters`, `leavesByClusterExits`), its
+ * children are outside every subgraph (a lone one may be inside a lone
+ * cluster: frames of several are spaced apart after this pass, so a midpoint
+ * over them would be wrong), the children are on the next row, and each has
+ * no other parent. It only ever moves right, deepest rows first, so
  * a chain follows its moved child.
  *
  * With an odd number of children the midpoint is a node slot. With an even
@@ -1102,7 +1135,12 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
     .sort((a, b) => requireGridCoord(b).y - requireGridCoord(a).y)
   for (const node of order) {
     const gc = requireGridCoord(node)
-    if (isNodeInAnySubgraph(graph, node)) continue
+    if (
+      isNodeInAnySubgraph(graph, node) &&
+      !(onlyInLoneClusters(graph, node) && leavesByClusterExits(graph, node))
+    ) {
+      continue
+    }
     // No self-loops here: `flowsDown` rejected them.
     const children = getChildren(graph, node)
     if (children.length < 1) continue
@@ -1112,7 +1150,8 @@ function centerParentsOverChildren(graph: AsciiGraph): void {
       if (
         cgc === null ||
         cgc.y !== gc.y + 4 ||
-        isNodeInAnySubgraph(graph, c) ||
+        (isNodeInAnySubgraph(graph, c) &&
+          !(children.length === 1 && onlyInLoneClusters(graph, c))) ||
         graph.edges.some((e) => e.to === c && e.from !== node)
       ) {
         ok = false
