@@ -81,6 +81,17 @@ that may no longer contain a matching repro. See
 [#402](https://github.com/dfadler/zombie-mermaid/issues/402), which this
 requirement exists to close.
 
+## Research and measurement: findings go in the issue
+
+When a task is investigation or measurement for an issue, post the findings
+summary as a comment on that issue (result, method in a few lines, next step) and
+link any in-repo script or data with a commit permalink. Don't default to a
+`docs/research/*.md` file in the PR; add one only when the write-up is long-form
+reference that stands apart from the issue, and then link it from the issue
+comment too. See CONTRIBUTING.md's "Documentation, accessibility, and decisions"
+and [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479). Docs-only, so
+no changeset.
+
 ## Decision docs: run the self-review checklist before opening the PR
 
 Before opening a PR that adds or edits a `docs/decisions/*.md` file, walk through
