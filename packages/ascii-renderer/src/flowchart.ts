@@ -41,7 +41,13 @@ import {
   flipLinkCanvasHorizontally,
   flipLinkCanvasVertically,
 } from './hyperlinks.ts'
-import type { AsciiConfig, AsciiTheme, ColorMode } from './types.ts'
+import type {
+  AsciiConfig,
+  AsciiGraph,
+  AsciiSubgraph,
+  AsciiTheme,
+  ColorMode,
+} from './types.ts'
 
 /**
  * Flowchart-only ASCII extras: `direction` (override the parsed top-level
@@ -106,6 +112,79 @@ export function renderFlowchartAscii(
 }
 
 /**
+ * Mirror each honored `direction RL`/`BT` subgraph's own box in place (#1421).
+ * An honored override means no edge crosses the box, so its contents are
+ * self-contained. The flip is relative to what the surrounding output already
+ * shows: `h`/`v` say whether an ancestor (or the root) mirrors this region, so
+ * `RL` inside `RL` flips nothing and `LR` inside `RL` flips back. Inner boxes
+ * flip first, while the coordinates of the outer one are still valid.
+ */
+function flipSubgraphRegions(
+  graph: AsciiGraph,
+  linkCanvas: (string | null)[][] | undefined,
+  rootDir: Direction,
+): void {
+  const visit = (sg: AsciiSubgraph, h0: boolean, v0: boolean): void => {
+    const d = sg.rawDirection
+    let h = h0
+    let v = v0
+    let flip: 'h' | 'v' | undefined
+    if (d === 'LR' || d === 'RL') {
+      if ((d === 'RL') !== h) flip = 'h'
+      h = d === 'RL'
+    } else if (d === 'TD' || d === 'BT') {
+      if ((d === 'BT') !== v) flip = 'v'
+      v = d === 'BT'
+    }
+    for (const c of sg.children) visit(c, h, v)
+    if (flip) flipRegion(graph, linkCanvas, sg, flip)
+  }
+  for (const sg of graph.subgraphs) {
+    if (!sg.parent) visit(sg, rootDir === 'RL', rootDir === 'BT')
+  }
+}
+
+function flipRegion(
+  graph: AsciiGraph,
+  linkCanvas: (string | null)[][] | undefined,
+  { minX, minY, maxX, maxY }: AsciiSubgraph,
+  axis: 'h' | 'v',
+): void {
+  const cut = <T>(layer: T[][]): T[][] =>
+    layer.slice(minX, maxX + 1).map((col) => col.slice(minY, maxY + 1))
+  const paste = <T>(layer: T[][], sub: T[][]): void => {
+    for (const [i, col] of sub.entries()) {
+      for (const [j, cell] of col.entries()) layer[minX + i]![minY + j] = cell
+    }
+  }
+  const canvas = cut(graph.canvas)
+  const roles = cut(graph.roleCanvas)
+  const links = linkCanvas ? cut(linkCanvas) : undefined
+  const rects = (graph.labelRects ?? [])
+    .filter((r) => r.x0 >= minX && r.x1 <= maxX && r.y0 >= minY && r.y1 <= maxY)
+    .map((r) => ({
+      x0: r.x0 - minX,
+      x1: r.x1 - minX,
+      y0: r.y0 - minY,
+      y1: r.y1 - minY,
+    }))
+  if (axis === 'h') {
+    mirrorLabelColumns(canvas, roles, rects, links)
+    flipCanvasHorizontally(canvas, roles)
+    flipRoleCanvasHorizontally(roles)
+    if (links) flipLinkCanvasHorizontally(links)
+  } else {
+    mirrorLabelRows(canvas, roles, rects, links)
+    flipCanvasVertically(canvas, roles)
+    flipRoleCanvasVertically(roles)
+    if (links) flipLinkCanvasVertically(links)
+  }
+  paste(graph.canvas, canvas)
+  paste(graph.roleCanvas, roles)
+  if (linkCanvas && links) paste(linkCanvas, links)
+}
+
+/**
  * Render an already-parsed graph to ASCII text art. Shared by the diagram
  * types that lower to the flowchart model (see `renderArchitectureAscii`).
  */
@@ -134,6 +213,8 @@ export function renderGraphAscii(
   const linkCanvas = extras.hyperlinks
     ? buildNodeLinkCanvas(graph, parsed.interactions)
     : undefined
+
+  flipSubgraphRegions(graph, linkCanvas, parsed.direction)
 
   // BT: flip the finished canvas vertically so the flow runs bottom→top.
   // The grid layout ran as TD; flipping + character remapping produces BT.

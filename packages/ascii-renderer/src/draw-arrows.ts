@@ -100,7 +100,7 @@ export function drawArrow(
   const invisible = edge.style === 'invisible'
 
   const boxStartCanvas =
-    hasSegments && !invisible
+    hasSegments && !invisible && (!edge.hasArrowStart || wallStart)
       ? drawBoxStart(
           graph,
           edge.path,
@@ -138,28 +138,15 @@ export function drawArrow(
     arrowHeadEndCanvas = copyCanvas(graph.canvas)
   }
 
-  // Draw start arrowhead for bidirectional edges
-  // The start arrowhead needs to be at the box connector position (one step back
-  // from the first line point), pointing into the source node.
+  // Draw start arrowhead for bidirectional edges, in the first stroke cell
+  // (one cell out from the source border, mirroring the end head) so the
+  // border stays intact and untee'd, like the end side's (#1438).
   let arrowHeadStartCanvas: Canvas
   if (edge.hasArrowStart && hasSegments) {
-    const firstLine = linesDrawn[0]!
-    const firstPoint = firstLine[0]!
-    const startDir = reverseDirection(lineDirs[0]!)
-
-    // Calculate the box connector position (one step back from first point)
-    const arrowPos: DrawingCoord = { x: firstPoint.x, y: firstPoint.y }
-    if (dirEquals(lineDirs[0]!, Right)) arrowPos.x = firstPoint.x - 1
-    else if (dirEquals(lineDirs[0]!, Left)) arrowPos.x = firstPoint.x + 1
-    else if (dirEquals(lineDirs[0]!, Down)) arrowPos.y = firstPoint.y - 1
-    else if (dirEquals(lineDirs[0]!, Up)) arrowPos.y = firstPoint.y + 1
-
-    // Create a synthetic line ending at the arrow position for drawArrowHead
-    const syntheticLine: DrawingCoord[] = [firstPoint, arrowPos]
     arrowHeadStartCanvas = drawArrowHead(
       graph,
-      syntheticLine,
-      startDir,
+      [linesDrawn[0]![0]!],
+      reverseDirection(lineDirs[0]!),
       edge.startMarker,
     )
   } else {
@@ -1027,7 +1014,82 @@ export function edgeLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] | null {
-  return resolveLabelPlacement(graph, edge, true)
+  const placed = resolveLabelPlacement(graph, edge, true)
+  return placed && clearOfEarlierLabels(graph, edge, placed)
+}
+
+/**
+ * #1433: two edges that share their last vertical leg (a lane's drop into one
+ * node) both resolve to the same cell, and `drawGraph` merges label overlays
+ * last-wins, so one label vanished. Each label is resolved against the others
+ * unmoved, so both see the clash and move identically; the later edge alone
+ * slides along the shared stroke to the nearest rows no other label covers
+ * (#1463: a later edge's label on the lane included, or the slide just trades
+ * one overprint for another).
+ */
+function clearOfEarlierLabels(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const line = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
+  if (
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    isClusterExitEdge(graph, edge)
+  ) {
+    return placement
+  }
+  const at = graph.edges.indexOf(edge)
+  const labelsOf = (edges: AsciiEdge[], labelAware: boolean) =>
+    edges
+      .filter((other) => other.path.length >= 2)
+      .flatMap((other) => resolveLabelPlacement(graph, other, labelAware) ?? [])
+  const earlier = labelsOf(graph.edges.slice(0, at), false)
+  // A later label is taken where it will be drawn (label-aware, before its
+  // own slide, which only ever looks at earlier ones: no cycle).
+  const later = labelsOf(graph.edges.slice(at + 1), true)
+  return slideClearOf(
+    placement,
+    earlier,
+    Math.min(line[0]!.y, line[1]!.y),
+    Math.max(line[0]!.y, line[1]!.y),
+    later,
+  )
+}
+
+/**
+ * Shift `placement` along a vertical stroke spanning rows `lo`..`hi` to the
+ * nearest rows strictly inside it (clear of both ends) that no label in
+ * `taken` or `avoid` covers, staying put when it already clears `taken` (or
+ * when no rows do).
+ */
+export function slideClearOf(
+  placement: { x: number; y: number; text: string }[],
+  taken: { x: number; y: number; text: string }[],
+  lo: number,
+  hi: number,
+  avoid: { x: number; y: number; text: string }[] = [],
+): { x: number; y: number; text: string }[] {
+  const hits = (p: typeof placement, against = taken) =>
+    p.some((a) =>
+      against.some(
+        (b) =>
+          a.y === b.y &&
+          a.x <= b.x + displayWidth(b.text) - 1 &&
+          b.x <= a.x + displayWidth(a.text) - 1,
+      ),
+    )
+  if (!hits(placement)) return placement
+  for (let d = 1; d < hi - lo; d++) {
+    for (const dy of [d, -d]) {
+      const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
+      const ys = moved.map((m) => m.y)
+      if (Math.min(...ys) <= lo || Math.max(...ys) >= hi) continue
+      if (!hits(moved, [...taken, ...avoid])) return moved
+    }
+  }
+  return placement
 }
 
 /**
@@ -1208,6 +1270,7 @@ function centredLabelPlacement(
             edge.text,
             isUpwardEdge,
             pullTowardTarget,
+            edge.hasArrowStart && edge.hasArrowEnd,
           ),
           drawingLine[0]?.x === drawingLine[1]?.x
             ? drawingLine[0]?.x
@@ -1324,8 +1387,24 @@ function clearOfSiblingStrokes(
     for (let d = 1; d <= width + clearance; d++) {
       for (const dx of [-d, d]) {
         const moved = placement.map((p) => ({ ...p, x: p.x + dx }))
-        if (besideFree(graph, edge, moved, labelAware, clearance)) return moved
+        if (besideFree(graph, edge, moved, labelAware, clearance, true)) {
+          return moved
+        }
       }
+    }
+  }
+  // No column is free: slide along the stroke to a row where the label sits
+  // clear (a fan-in's landing strokes can box in the middle of a short stem).
+  const lo = Math.min(line[0]!.y, line[1]!.y) + 1
+  const hi = Math.max(line[0]!.y, line[1]!.y) - 2
+  const rows = placement.map((p) => p.y)
+  const span = Math.max(...rows) - Math.min(...rows)
+  for (let d = 1; d <= hi - lo; d++) {
+    for (const dy of [-d, d]) {
+      const first = Math.min(...rows) + dy
+      if (first < lo || first + span > hi) continue
+      const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
+      if (besideFree(graph, edge, moved, labelAware)) return moved
     }
   }
   return placement
@@ -1375,9 +1454,10 @@ function besideFree(
   placement: { x: number; y: number; text: string }[],
   labelAware: boolean,
   clearance = 0,
+  sidewaysOnly = false,
 ): boolean {
   return (
-    besideGeometryFree(graph, edge, placement, clearance) &&
+    besideGeometryFree(graph, edge, placement, clearance, sidewaysOnly) &&
     (!labelAware || !hitsOtherLabel(graph, edge, placement))
   )
 }
@@ -1424,6 +1504,7 @@ function besideGeometryFree(
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
   clearance = 0,
+  sidewaysOnly = false,
 ): boolean {
   for (const { x, y, text } of placement) {
     const x0 = x
@@ -1460,9 +1541,14 @@ function besideGeometryFree(
         const b = pts[i]!
         // `clearance` keeps the text off cells *next to* another edge's
         // stroke too, where it would read as that stroke's label (#attribution).
+        // `sidewaysOnly` counts it only across columns: a label already on its
+        // own stroke can't be misread, and a stroke on the row above or below
+        // ruled out the one-cell gap beside a stem whenever a junction row sat
+        // right below (#1434).
+        const rowClearance = sidewaysOnly ? 0 : clearance
         if (
-          y >= Math.min(a.y, b.y) - clearance &&
-          y <= Math.max(a.y, b.y) + clearance &&
+          y >= Math.min(a.y, b.y) - rowClearance &&
+          y <= Math.max(a.y, b.y) + rowClearance &&
           x1 >= Math.min(a.x, b.x) - clearance &&
           x0 <= Math.max(a.x, b.x) + clearance
         ) {
@@ -1727,6 +1813,7 @@ function labelTextPlacement(
   label: string,
   isUpwardEdge?: boolean,
   pullTowardTarget = false,
+  bothHeads = false,
 ): { x: number; y: number; text: string }[] {
   if (line.length < 2) return []
   const minX = Math.min(line[0]!.x, line[1]!.x)
@@ -1754,8 +1841,14 @@ function labelTextPlacement(
   const lines = splitLines(label)
   const startY = middleY - Math.floor((lines.length - 1) / 2)
 
+  // A horizontal edge with a head at each end centres the label between the
+  // heads (border, head, ..., head, border), not on the border-to-border
+  // midpoint, which sits half a cell off for an even-width label.
+  const between = bothHeads && minY === maxY
   return lines.map((lineText, i) => ({
-    x: middleX - Math.floor(displayWidth(lineText) / 2),
+    x: between
+      ? minX + 2 + Math.floor((maxX - minX - 3 - displayWidth(lineText)) / 2)
+      : middleX - Math.floor(displayWidth(lineText) / 2),
     y: startY + i,
     text: lineText,
   }))

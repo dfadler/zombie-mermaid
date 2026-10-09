@@ -16,7 +16,7 @@ import type {
   AsciiNode,
   AsciiSubgraph,
 } from './types.ts'
-import { gridKey, requireGridCoord } from './types.ts'
+import { requireGridCoord } from './types.ts'
 import { setCanvasSizeToGrid, setRoleCanvasSizeToGrid } from './canvas.ts'
 import {
   determinePath,
@@ -49,6 +49,8 @@ import {
   createEdgeCellOwners,
   claimPathOwners,
   findUnrelatedOverlap,
+  isPortFixedEdge,
+  separateFanInLane,
   type EdgeCellStyles,
   type EdgeCellOwners,
 } from './edge-cell-styles.ts'
@@ -372,7 +374,7 @@ function rerouteAroundStyleConflicts(
               ?.edges.has(owner) === true,
         )
       if (!conflict) return
-      graph.grid.add(gridKey(conflict))
+      graph.grid.add(conflict.x, conflict.y)
       temporarilyBlocked.push(conflict)
       const { path, startDir, endDir, labelLine } = edge
       determinePath(graph, edge)
@@ -394,7 +396,7 @@ function rerouteAroundStyleConflicts(
     }
   } finally {
     graph.preferStraightRoutes = false
-    for (const cell of temporarilyBlocked) graph.grid.delete(gridKey(cell))
+    for (const cell of temporarilyBlocked) graph.grid.delete(cell.x, cell.y)
   }
 }
 
@@ -1026,7 +1028,7 @@ function fitsStraddled(graph: AsciiGraph, node: AsciiNode): boolean {
 function freeNodeBlock(graph: AsciiGraph, gc: GridCoord): void {
   for (let dx = 0; dx < NODE_BLOCK_SIZE; dx++)
     for (let dy = 0; dy < NODE_BLOCK_SIZE; dy++)
-      graph.grid.delete(gridKey({ x: gc.x + dx, y: gc.y + dy }))
+      graph.grid.delete(gc.x + dx, gc.y + dy)
 }
 
 /**
@@ -1608,7 +1610,7 @@ function alignSoleParent(
   if (lr ? gc.y === placed.y : gc.x === placed.x) return
   for (let dx = 0; dx < NODE_BLOCK_SIZE; dx++) {
     for (let dy = 0; dy < NODE_BLOCK_SIZE; dy++) {
-      graph.grid.delete(gridKey({ x: gc.x + dx, y: gc.y + dy }))
+      graph.grid.delete(gc.x + dx, gc.y + dy)
     }
   }
   reserveSpotInGrid(
@@ -1650,7 +1652,7 @@ function separateNonMembersFromFrames(graph: AsciiGraph): void {
         }
         for (let dx = 0; dx < NODE_BLOCK_SIZE; dx++) {
           for (let dy = 0; dy < NODE_BLOCK_SIZE; dy++) {
-            graph.grid.delete(gridKey({ x: gc.x + dx, y: gc.y + dy }))
+            graph.grid.delete(gc.x + dx, gc.y + dy)
           }
         }
         const placed = reserveSpotInGrid(
@@ -2006,6 +2008,9 @@ export function createMapping(graph: AsciiGraph): void {
     )
     graph.preferStraightRoutes = prevStraight
     unblock(graph, frameCells)
+    if (graph.config.graphDirection === 'TD' && !isPortFixedEdge(edge)) {
+      separateFanInLane(nodeOnlyGrid, cellOwners, edge)
+    }
     increaseGridSizeForPath(graph, edge.path)
     claimPathCells(nodeOnlyGrid, cellStyles, edge.path, edge.style)
     claimPathOwners(nodeOnlyGrid, cellOwners, edge.path, edge)

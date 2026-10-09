@@ -32,7 +32,7 @@
 
 import type { AsciiEdge, AsciiEdgeStyle, GridCoord } from './types.ts'
 import { gridKey } from './types.ts'
-import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
+import { isFree, isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
 
 /** Cells already claimed by a drawn edge, keyed by "x,y", storing which
  * single line style is drawn there. */
@@ -312,5 +312,61 @@ export function claimPathOwners(
       owners.set(key, cellOwners)
     }
     cellOwners.add(edge)
+  }
+}
+
+// ============================================================================
+// Fan-in lane separation (#1439)
+// ============================================================================
+
+/** Fewest cells a vertical run must share with another source's edge into the
+ * same node before it reads as one stroke and gets a lane of its own. */
+const MIN_FAN_IN_OVERLAP = 2
+
+/** How far from its routed column a vertical run may move to find a free lane. */
+const MAX_LANE_SHIFT = 3
+
+/** Two edges into one node from different sources. */
+function isFanInPair(a: AsciiEdge, b: AsciiEdge): boolean {
+  return a.to === b.to && a.from !== b.from
+}
+
+/**
+ * In a TD graph, two unbundled edges into one node from different sources can
+ * run down the same column, which draws as one stroke and hides which source
+ * each belongs to. Move such an edge's inner vertical run to the nearest free
+ * column, keeping the horizontal legs on either side of it. Leaves the path
+ * alone when no column within `MAX_LANE_SHIFT` is free of nodes and of other
+ * sources' strokes into the same node. Edges that share a source keep sharing
+ * their trunk.
+ */
+export function separateFanInLane(
+  grid: Grid,
+  owners: EdgeCellOwners,
+  edge: AsciiEdge,
+): void {
+  const p = edge.path
+  const shared = (cells: GridCoord[]): number =>
+    cells.filter((c) =>
+      [...(owners.get(gridKey(c)) ?? [])].some(
+        (o) => o !== edge && isFanInPair(o, edge),
+      ),
+    ).length
+  for (let i = 1; i + 2 < p.length; i++) {
+    const [a, b, c, d] = [p[i - 1]!, p[i]!, p[i + 1]!, p[i + 2]!]
+    if (b.x !== c.x || a.y !== b.y || c.y !== d.y) continue
+    if (shared(pathCells([b, c])) < MIN_FAN_IN_OVERLAP) continue
+    for (let k = 1; k <= MAX_LANE_SHIFT; k++) {
+      for (const x of [b.x + k, b.x - k]) {
+        if (x === a.x || x === d.x) continue
+        const lane = [a, { x, y: b.y }, { x, y: c.y }, d]
+        const inner = pathCells(lane).slice(1, -1)
+        if (!inner.every((cell) => isFree(grid, cell))) continue
+        if (shared(pathCells(lane.slice(1, 3))) >= MIN_FAN_IN_OVERLAP) continue
+        edge.path = [...p.slice(0, i - 1), ...lane, ...p.slice(i + 3)]
+        return
+      }
+    }
+    return
   }
 }

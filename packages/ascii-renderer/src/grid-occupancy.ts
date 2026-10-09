@@ -15,10 +15,21 @@
 // ============================================================================
 
 import type { GridCoord } from './types.ts'
-import { gridKey } from './types.ts'
 
 /**
- * Grid occupancy map — an opaque set of reserved "x,y" cells. Only tracks
+ * Numeric cell key: avoids building an "x,y" string per `has` call, which was
+ * ~12% of a CPU profile of the slowest ASCII sample (#1424). Coordinates are
+ * offset so small negatives (shift/probe cells) stay unique; |x|, |y| < 2^20
+ * keeps the key under 2^42, far inside the exact-integer range of a double.
+ */
+const KEY_OFFSET = 0x100000
+const KEY_STRIDE = 0x200000
+function cellKey(x: number, y: number): number {
+  return (x + KEY_OFFSET) * KEY_STRIDE + (y + KEY_OFFSET)
+}
+
+/**
+ * Grid occupancy map — an opaque set of reserved cells. Only tracks
  * *whether* a cell is reserved, not by whom: nothing in this renderer looks
  * up which node owns a given cell (layout code identifies a node's cells via
  * `node.gridCoord`, not via the grid), so there is no per-cell node value to
@@ -33,16 +44,16 @@ import { gridKey } from './types.ts'
  * can ever touch the underlying `Set`.
  */
 export class Grid {
-  readonly #cells = new Set<string>()
+  readonly #cells = new Set<number>()
 
   /** Whether a single cell is already reserved. */
-  has(key: string): boolean {
-    return this.#cells.has(key)
+  has(x: number, y: number): boolean {
+    return this.#cells.has(cellKey(x, y))
   }
 
   /** Reserve a single cell. Internal — callers go through `placeBlock`. */
-  add(key: string): void {
-    this.#cells.add(key)
+  add(x: number, y: number): void {
+    this.#cells.add(cellKey(x, y))
   }
 
   /**
@@ -51,13 +62,16 @@ export class Grid {
    * this module (node blocks, in particular) is permanent for the life of
    * a render, so a real caller should rarely need this.
    */
-  delete(key: string): void {
-    this.#cells.delete(key)
+  delete(x: number, y: number): void {
+    this.#cells.delete(cellKey(x, y))
   }
 
-  /** Iterate the reserved cell keys. Read-only — see `cloneGrid`. */
-  keys(): IterableIterator<string> {
-    return this.#cells.keys()
+  /** Snapshot of the reserved cells. Read-only — see `cloneGrid`. */
+  cells(): GridCoord[] {
+    return [...this.#cells].map((k) => ({
+      x: Math.floor(k / KEY_STRIDE) - KEY_OFFSET,
+      y: (k % KEY_STRIDE) - KEY_OFFSET,
+    }))
   }
 }
 
@@ -82,7 +96,7 @@ export function createGrid(): Grid {
  */
 export function cloneGrid(grid: Grid): Grid {
   const clone = createGrid()
-  for (const key of grid.keys()) clone.add(key)
+  for (const { x, y } of grid.cells()) clone.add(x, y)
   return clone
 }
 
@@ -91,7 +105,7 @@ export const NODE_BLOCK_SIZE = 3
 
 /** Whether a single cell is already reserved. */
 export function isOccupied(grid: Grid, coord: GridCoord): boolean {
-  return grid.has(gridKey(coord))
+  return grid.has(coord.x, coord.y)
 }
 
 /**
@@ -165,7 +179,7 @@ export function placeBlock(
   for (let dx = 0; dx < size; dx++) {
     for (let dy = 0; dy < size; dy++) {
       const coord: GridCoord = { x: origin.x + dx, y: origin.y + dy }
-      grid.add(gridKey(coord))
+      grid.add(coord.x, coord.y)
     }
   }
 }

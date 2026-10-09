@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { ElkNode } from 'elkjs/lib/elk-api'
+import type { ElkNode } from '@zombie-mermaid/core'
 import { splitStatements } from '@zombie-mermaid/core'
 import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 

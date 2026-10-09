@@ -303,6 +303,8 @@ export interface AsciiSubgraph {
   maxY: number
   /** Optional direction override for layout within this subgraph (LR or TD). */
   direction?: 'LR' | 'TD'
+  /** Un-normalized direction (RL/BT kept) when the override is honored; drives the post-draw region flip. */
+  rawDirection?: 'LR' | 'RL' | 'TD' | 'BT'
   /**
    * Extra interior columns added (split across both sides) so the title can
    * clear a vertical edge entering the frame (#1222). Set by layout only.
