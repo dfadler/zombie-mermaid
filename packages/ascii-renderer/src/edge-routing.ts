@@ -28,7 +28,12 @@ import {
   dirEquals,
   requireCardinalDirection,
 } from './types.ts'
-import { routeEdge, mergePath } from './pathfinder.ts'
+import {
+  routeEdge,
+  mergePath,
+  avoidCells,
+  searchCellKey,
+} from './pathfinder.ts'
 import {
   getNodeSubgraph,
   gridToDrawingCoord,
@@ -530,6 +535,35 @@ interface ParallelLaneRoute {
   faces?: { startDir: Direction; endDir: Direction }
 }
 
+/**
+ * LR: cells of earlier labeled edges into the same node, for a labeled `edge`
+ * to keep off once a run already carries two labels, so a third never joins
+ * the same lane and stem (#1467). Undefined
+ * when the rule doesn't apply.
+ */
+function earlierLabeledFanInCells(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  effectiveDir: string,
+): Set<number> | undefined {
+  if (effectiveDir !== 'LR' || edge.text.length === 0) return undefined
+  return avoidCells(
+    graph.edges
+      .filter(
+        (e) =>
+          e !== edge &&
+          e.to === edge.to &&
+          e.text.length > 0 &&
+          e.path.length > 0,
+      )
+      .map((e) => e.path),
+    2,
+  )
+}
+
+/** Shared cells beyond which a parallel-lane candidate counts as riding another edge's lane. */
+const LANE_SHARE_LIMIT = 2
+
 function buildParallelLanePath(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -548,6 +582,16 @@ function buildParallelLanePath(
   const horizontalDeparture =
     dirEquals(preferredDir, Left) || dirEquals(preferredDir, Right)
   const ownNodes = [edge.from, edge.to]
+  const avoid = earlierLabeledFanInCells(
+    graph,
+    edge,
+    graph.config.graphDirection,
+  )
+  const laneClear = (cells: GridCoord[]): boolean =>
+    interiorCellsClearOfNodes(graph, cells, ownNodes) &&
+    (!avoid?.size ||
+      cells.filter((c) => avoid.has(searchCellKey(c))).length <=
+        LANE_SHARE_LIMIT)
   // Shared, by reference, across every edge in this parallel group (see
   // types.ts's parallelLane doc) — records every offset a sibling lane has
   // already committed to, so two lanes that each have to detour around the
@@ -615,7 +659,7 @@ function buildParallelLanePath(
             { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: toSide.y },
           ]
       const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
-      if (interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)) {
+      if (laneClear(pathCells(sidePath))) {
         usedOffsets.add(offset)
         return {
           path: sidePath,
@@ -653,7 +697,7 @@ function buildParallelLanePath(
       toGutter,
       toAttach,
     ])
-    if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
+    if (laneClear(pathCells(wideCandidate))) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
     }
@@ -726,9 +770,7 @@ function buildParallelLanePath(
           toGutter,
           toAttach,
         ])
-    if (
-      interiorCellsClearOfNodes(graph, pathCells(gutterCandidate), ownNodes)
-    ) {
+    if (laneClear(pathCells(gutterCandidate))) {
       usedOffsets.add(offset)
       return { path: gutterCandidate, labelSegment: gutterLabelSegment }
     }
@@ -972,11 +1014,13 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     requireGridCoord(edge.to),
     preferredOppositeDir,
   )
+  const avoid = earlierLabeledFanInCells(graph, edge, effectiveDir)
   const preferredPath = routeEdge(
     graph,
     prefFrom,
     prefTo,
     requireCardinalDirection(preferredDir),
+    avoid,
   )
 
   // Try alternative path
@@ -993,6 +1037,7 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     altFrom,
     altTo,
     requireCardinalDirection(alternativeDir),
+    avoid,
   )
 
   // Case 1: Both paths found — pick the shorter one (routeEdge already merged each)
