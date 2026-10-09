@@ -1897,4 +1897,19 @@ flowchart LR
     source: `pie title Sixty equal slices
 ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" : 1`).join('\n')}`,
   },
+  {
+    title: 'Labeled Fan-In (LR)',
+    category: 'Flowchart',
+    description:
+      'Several labeled edges into one node (#1467). In the ASCII panel each edge keeps its own lane, so every label sits on the stroke it names.',
+    source: `flowchart LR
+  A --> B
+  A -->|first| C
+  B -->|second| C
+  A -->|third| D
+  C -->|fourth| D
+  B -->|fifth| D
+  B -->|sixth| D
+  A -->|seventh| D`,
+  },
 ]

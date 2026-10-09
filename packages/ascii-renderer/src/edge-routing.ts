@@ -463,6 +463,77 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
 }
 
 /**
+ * #1467 (LR only): labeled edges from different sources into one target can
+ * route onto the same under-row lane and final drop, so their labels cannot be
+ * told apart. After `edge` is routed, if its path shares a run (2+ cells,
+ * ignoring the two cells at each end) with an earlier labeled edge into the
+ * same target, tag it as a parallel-lane sibling and re-route it through its
+ * own lane (`buildParallelLanePath`). Unlabeled sharers are left alone: a
+ * shared trunk with one label stays readable. `lanes` holds per-target state
+ * (lane count and the shared `usedOffsets` set) for the whole layout pass.
+ */
+export function splitSharedLabeledLane(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  lanes: Map<AsciiNode, { count: number; usedOffsets: Set<number> }>,
+): void {
+  if (
+    graph.config.graphDirection !== 'LR' ||
+    edge.text.length === 0 ||
+    edge.bundle ||
+    edge.clusterSource ||
+    edge.clusterTarget ||
+    edge.from === edge.to
+  ) {
+    return
+  }
+  const inner = (e: AsciiEdge): Set<string> => {
+    const cells = pathCells(e.path).slice(2, -2)
+    return new Set(cells.map((c) => `${c.x},${c.y}`))
+  }
+  const mine = inner(edge)
+  // A straight run into the target's final approach is a plain tee whose
+  // branches are all visible (#1392); a run that bends or sits mid-path is
+  // the lane-and-drop that hides which label belongs to which edge.
+  const mineCells = pathCells(edge.path)
+  const last = mineCells[mineCells.length - 3]
+  const lastKey = last ? `${last.x},${last.y}` : ''
+  const isTee = (keys: string[]): boolean => {
+    const xs = new Set(keys.map((k) => k.split(',')[0]))
+    const ys = new Set(keys.map((k) => k.split(',')[1]))
+    return (xs.size === 1 || ys.size === 1) && keys.includes(lastKey)
+  }
+  for (const other of graph.edges) {
+    if (other === edge) break
+    if (other.to !== edge.to || other.text.length === 0) continue
+    if (other.from === edge.from || other.path.length === 0) continue
+    const shared = [...inner(other)].filter((k) => mine.has(k))
+    if (shared.length < 2 || isTee(shared)) continue
+    let state = lanes.get(edge.to)
+    if (!state) {
+      // Start at 1: the shared center path already holds the first lane row.
+      state = { count: 1, usedOffsets: new Set() }
+      lanes.set(edge.to, state)
+      // Lane siblings into this target (same-source groups, #329) must not
+      // land on a row a split lane takes: share one offset set among them.
+      for (const e of graph.edges) {
+        if (e.to !== edge.to || !e.parallelLane) continue
+        for (const o of e.parallelLane.usedOffsets) state.usedOffsets.add(o)
+        e.parallelLane.usedOffsets = state.usedOffsets
+      }
+    }
+    state.count++
+    edge.parallelLane = {
+      index: state.count,
+      total: Math.max(edge.parallelLane?.total ?? 0, state.count + 1),
+      usedOffsets: state.usedOffsets,
+    }
+    determinePath(graph, edge)
+    return
+  }
+}
+
+/**
  * Build an offset-lane path for a non-first edge in a parallel-edge group:
  * leave the source node at the same attachment point every sibling in the
  * group shares (consistent with how two edges are already allowed to share
