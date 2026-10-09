@@ -13,7 +13,7 @@ import type {
   CardinalDirection,
 } from './types.ts'
 import { gridKey, gridCoordEquals, dirEquals, Left, Right } from './types.ts'
-import { isFree, type Grid } from './grid-occupancy.ts'
+import { isFree, pathCells, type Grid } from './grid-occupancy.ts'
 
 // ============================================================================
 // Priority queue (min-heap) for A* open set
@@ -127,6 +127,13 @@ export function heuristic(a: GridCoord, b: GridCoord): number {
  */
 const BEND_EPSILON = 0.001
 
+/**
+ * Extra cost of stepping onto a cell in a `getPath` `avoid` set (#1467): large
+ * enough to prefer a detour of a few cells over riding another edge's lane,
+ * small enough that a detour is still taken only when one exists.
+ */
+const AVOID_COST = 3
+
 /** 4-directional movement (no diagonals in grid pathfinding). */
 const MOVE_DIRS: GridCoord[] = [
   { x: 1, y: 0 },
@@ -190,6 +197,29 @@ function searchKey(c: GridCoord): number {
   return (c.x + 1_048_576) * 2_097_152 + (c.y + 1_048_576)
 }
 
+/** Key of a cell in an `avoid` set (see `avoidCells`). */
+export const searchCellKey = (c: GridCoord): number => searchKey(c)
+
+/**
+ * The `avoid` set for `getPath`/`routeEdge`: every cell that at least
+ * `minPaths` of the given paths cover.
+ */
+export function avoidCells(
+  paths: readonly GridCoord[][],
+  minPaths = 1,
+): Set<number> {
+  const counts = new Map<number, number>()
+  for (const p of paths) {
+    for (const c of pathCells(p)) {
+      const k = searchKey(c)
+      counts.set(k, (counts.get(k) ?? 0) + 1)
+    }
+  }
+  const keys = new Set<number>()
+  for (const [k, n] of counts) if (n >= minPaths) keys.add(k)
+  return keys
+}
+
 /**
  * Find a path from `from` to `to` on the grid using A*.
  * Returns the path as an array of GridCoords, or null if no path exists.
@@ -205,16 +235,19 @@ export function getPath(
   to: GridCoord,
   budget?: PathBudget,
   preferStraight = false,
+  avoid?: ReadonlySet<number>,
 ): GridCoord[] | null {
   if (budget && budget.remaining <= 0) {
     return null
   }
 
-  // A sealed target is unreachable; without this A* floods the open
-  // quadrant until MAX_ITERATIONS (#1474). `from` counts as an entry.
+  // A sealed target (every neighbour blocked, #1474) is unreachable, but the
+  // search would still flood the open quadrant up to MAX_ITERATIONS before
+  // finding that out. `from` counts as an entry: it may sit next to `to`.
   if (
-    !MOVE_DIRS.some((d) => {
-      const n = { x: to.x + d.x, y: to.y + d.y }
+    !gridCoordEquals(from, to) &&
+    !MOVE_DIRS.some((dir) => {
+      const n: GridCoord = { x: to.x + dir.x, y: to.y + dir.y }
       return isFree(grid, n) || gridCoordEquals(n, from)
     })
   ) {
@@ -285,7 +318,11 @@ export function getPath(
       const prev = preferStraight ? cameFrom.get(searchKey(current)) : null
       const bends =
         prev && (current.x - prev.x !== dir.x || current.y - prev.y !== dir.y)
-      const newCost = currentCost + 1 + (bends ? BEND_EPSILON : 0)
+      const newCost =
+        currentCost +
+        1 +
+        (bends ? BEND_EPSILON : 0) +
+        (avoid?.has(searchKey(next)) ? AVOID_COST : 0)
       const nextKey = searchKey(next)
       const existingCost = costSoFar.get(nextKey)
 
@@ -471,20 +508,28 @@ export function routeEdge(
   from: GridCoord,
   to: GridCoord,
   dir: CardinalDirection,
+  avoid?: ReadonlySet<number>,
 ): GridCoord[] | null {
   if (!graph.pathBudget) {
     throw new Error(
       'routeEdge requires graph.pathBudget to be set; call createPathBudget() (see grid.ts createMapping) before routing edges',
     )
   }
+  // With `avoid` (cells of earlier edges to keep off, #1467) a direct route
+  // that still rides one of them hands over to the penalised search.
+  let direct = tryDirectPath(graph, from, to, dir)
+  if (direct && avoid?.size) {
+    if (pathCells(direct).some((c) => avoid.has(searchKey(c)))) direct = null
+  }
   const path =
-    tryDirectPath(graph, from, to, dir) ??
+    direct ??
     getPath(
       graph.grid,
       from,
       to,
       graph.pathBudget,
       graph.preferStraightRoutes === true,
+      avoid,
     )
   return path ? mergePath(path) : null
 }
