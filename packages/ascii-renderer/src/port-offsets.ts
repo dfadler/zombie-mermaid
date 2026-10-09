@@ -82,6 +82,8 @@ export interface PortShift {
   end: number
   startRun?: ShiftedRun
   endRun?: ShiftedRun
+  /** Extra drawn shift per path point (a fan-in's leg moved to its own row). */
+  points?: DrawingCoord[]
 }
 
 const portKey = (node: AsciiNode, cell: GridCoord): string =>
@@ -520,18 +522,192 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
 
   const split = splitLabeledArrivals(runs)
   const spread = spreadParallelEdges(runs, rolesAt, portOf)
+  const landings = separateFanIns(
+    graph,
+    runs,
+    slots,
+    slotEdges,
+    rolesAt,
+    portOf,
+  )
 
   for (const [edge, { r, s, e }] of runs) {
     const own = spread.get(edge)
-    const start = own ?? staggered.get(edge) ?? (s ? slotOffset(s) : 0)
-    const end = own ?? split.get(edge) ?? (e ? (offsets.get(find(e)) ?? 0) : 0)
-    if (start === 0 && end === 0) continue
+    const lane = landings.get(edge)
+    const start =
+      own ?? lane?.start ?? staggered.get(edge) ?? (s ? slotOffset(s) : 0)
+    const end =
+      own ??
+      lane?.end ??
+      split.get(edge) ??
+      (e ? (offsets.get(find(e)) ?? 0) : 0)
+    if (start === 0 && end === 0 && !lane?.points) continue
     const shift: PortShift = { start, end }
+    if (lane?.points) shift.points = lane.points
     if (r.start) shift.startRun = shiftedRun(r.start)
     if (r.end) shift.endRun = shiftedRun(r.end)
     result.set(edge, shift)
   }
   return result
+}
+
+/** Where a fan-in edge lands and which row its last leg runs along. */
+interface Landing {
+  /** Drawn x shift of the stem into the target (and of a straight edge's start). */
+  end: number
+  start?: number
+  /** Extra shift per path point, moving the leg to its own row. */
+  points?: DrawingCoord[]
+}
+
+type RunEntry = { r: EdgeRuns; s?: string; e?: string }
+
+/**
+ * Give unbundled edges into one node from different sources a stroke and an
+ * arrowhead each (#1436), the way Mermaid draws them. Such edges used to share
+ * a leg along the row above the node and merge into one arrowhead, so none
+ * could be followed. A port with two or more of them on its top face is split:
+ * stems land a stroke spacing apart, ordered left to right by where each edge
+ * comes from so none cross, and bent edges from the same side take a row each,
+ * the nearer lane on the upper row. A group is left merged when it would not
+ * fit the node's width or the rows between the layers.
+ */
+function separateFanIns(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, RunEntry>,
+  slots: ReadonlyMap<string, Slot>,
+  slotEdges: ReadonlyMap<string, number>,
+  rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
+  portOf: (key: string) => string,
+): Map<AsciiEdge, Landing> {
+  const groups = new Map<string, AsciiEdge[]>()
+  for (const [edge, { r, e }] of runs) {
+    if (!e || r.end?.axis !== 'v' || r.end.side !== 'top') continue
+    const group = groups.get(e) ?? []
+    group.push(edge)
+    groups.set(e, group)
+  }
+  const out = new Map<AsciiEdge, Landing>()
+  for (const [key, group] of groups) {
+    const port = portOf(key)
+    if (group.length < 2 || rolesAt.get(port)!.size > 1) continue
+    if ([...slots].some(([k, m]) => m.fixed && portOf(k) === port)) continue
+    if (new Set(group.map((g) => g.from)).size < 2) continue
+    landFanIn(graph, runs, slotEdges, rolesAt, portOf, group, out)
+  }
+  return out
+}
+
+function landFanIn(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, RunEntry>,
+  slotEdges: ReadonlyMap<string, number>,
+  rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
+  portOf: (key: string) => string,
+  group: AsciiEdge[],
+  out: Map<AsciiEdge, Landing>,
+): void {
+  // Which side each edge comes from, and how far its lane is from the port.
+  const info = group.map((edge) => {
+    const { r } = runs.get(edge)!
+    const end = r.end!
+    const p = edge.path
+    const before = p[end.from - 1]
+    const lane = p[end.from - 2]
+    const bent = !r.straight && before !== undefined
+    const from = bent ? sign(before.x - end.cell.x) : 0
+    return {
+      edge,
+      r,
+      end,
+      bent,
+      from,
+      dist: bent ? Math.abs(before.x - end.cell.x) : 0,
+      lane,
+    }
+  })
+  for (const m of info) {
+    if (!m.bent) continue
+    const k = m.edge.path[m.end.from]!
+    const l = m.edge.path[m.end.from - 1]!
+    // Only a plain lane, leg and stem can move: a vertical lane into a
+    // horizontal leg into the stem.
+    if (l.y !== k.y || m.from === 0 || m.lane?.x !== l.x) return
+  }
+  const order = [
+    ...info.filter((m) => m.from < 0).sort((a, b) => b.dist - a.dist),
+    ...info.filter((m) => m.from === 0),
+    ...info.filter((m) => m.from > 0).sort((a, b) => a.dist - b.dist),
+  ]
+  const geo = portGeometry(graph, order[0]!.end)
+  if (!geo) return
+  const straights = order.filter((m) => !m.bent)
+  if (straights.length > 1) return
+  // A straight edge moves with both its ends, so its source port must be
+  // used by it alone.
+  const startOk = (m: (typeof order)[number], o: number): boolean => {
+    const st = m.r.start
+    const key =
+      m.edge.from && st
+        ? `${m.edge.from.index}|${st.cell.x},${st.cell.y}|S`
+        : ''
+    const g = st && portGeometry(graph, st)
+    return (
+      !!g &&
+      slotEdges.get(key) === 1 &&
+      rolesAt.get(portOf(key))!.size === 1 &&
+      attachesAt(st, g.centre + o, g)
+    )
+  }
+  const n = order.length
+  const spacings: number[][] = [
+    order.map((_, i) => STROKE_SPACING * (i - (n - 1) / 2)),
+  ]
+  const at = order.findIndex((m) => !m.bent)
+  if (at >= 0) spacings.push(order.map((_, i) => STROKE_SPACING * (i - at)))
+  const offs = spacings.find((os) =>
+    order.every(
+      (m, i) =>
+        Number.isInteger(os[i]) &&
+        attachesAt(m.end, geo.centre + os[i]!, geo) &&
+        (m.bent || os[i] === 0 || startOk(m, os[i]!)),
+    ),
+  )
+  if (!offs) return
+
+  // Rows: bent edges from one side take a row each, stacked up from the one
+  // just above the arrowheads, the nearer lane highest. Sitting low keeps the
+  // legs clear of the sources' own legs in the gap above.
+  const borderY = order[0]!.end.node.drawingCoord!.y
+  const dys = new Map<AsciiEdge, number>()
+  for (const side of [-1, 1]) {
+    const mine = order.filter((m) => m.bent && m.from === side)
+    mine.sort((a, b) => a.dist - b.dist)
+    for (const [i, m] of mine.entries()) {
+      const row =
+        borderY - STROKE_SPACING - STROKE_SPACING * (mine.length - 1 - i)
+      const was = gridToDrawingCoord(graph, m.edge.path[m.end.from]!).y
+      const dy = row - was
+      const top = gridToDrawingCoord(graph, m.lane!).y + STROKE_SPACING
+      // Stay out of a frame the leg was not already inside.
+      const inFrame = (y: number): boolean =>
+        graph.subgraphs.some((sg) => y > sg.minY && y < sg.maxY)
+      if (row < top || (inFrame(row) && !inFrame(was))) return
+      dys.set(m.edge, dy)
+    }
+  }
+  order.forEach((m, i) => {
+    const o = offs[i]!
+    const dy = dys.get(m.edge)
+    if (dy === undefined) {
+      out.set(m.edge, { end: o, start: o })
+      return
+    }
+    const points = m.edge.path.map(() => ({ x: 0, y: 0 }))
+    points[m.end.from - 1]!.y = dy
+    points[m.end.from]!.y = dy
+    out.set(m.edge, { end: o, points })
+  })
 }
 
 /**
@@ -614,6 +790,10 @@ export function edgePointShifts(
       else shifts[i]!.y = by
     }
   }
+  shift.points?.forEach((pt, i) => {
+    shifts[i]!.x += pt.x
+    shifts[i]!.y += pt.y
+  })
   return shifts
 }
 
@@ -665,7 +845,9 @@ export function labelLineToDrawing(
         shiftedY = true
       }
     }
-    return { x, y }
+    const j = path.findIndex((q) => q.x === g.x && q.y === g.y)
+    const extra = j >= 0 ? shift.points?.[j] : undefined
+    return { x: x + (extra?.x ?? 0), y: y + (extra?.y ?? 0) }
   })
 }
 

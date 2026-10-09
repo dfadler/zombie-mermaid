@@ -1339,6 +1339,20 @@ function clearOfSiblingStrokes(
       }
     }
   }
+  // No column is free: slide along the stroke to a row where the label sits
+  // clear (a fan-in's landing strokes can box in the middle of a short stem).
+  const lo = Math.min(line[0]!.y, line[1]!.y) + 1
+  const hi = Math.max(line[0]!.y, line[1]!.y) - 2
+  const rows = placement.map((p) => p.y)
+  const span = Math.max(...rows) - Math.min(...rows)
+  for (let d = 1; d <= hi - lo; d++) {
+    for (const dy of [-d, d]) {
+      const first = Math.min(...rows) + dy
+      if (first < lo || first + span > hi) continue
+      const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
+      if (besideFree(graph, edge, moved, labelAware)) return moved
+    }
+  }
   return placement
 }
 

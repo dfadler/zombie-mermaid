@@ -26,11 +26,16 @@ describe('TD labels on a shared lane (#1434, #1435)', () => {
       expect(row).toMatch(new RegExp(`second \\${stem}`))
     })
 
-    it(`puts "fifth" within two rows below the junction row (${mode})`, () => {
-      const join = rows.findIndex((r) => r.includes('first'))
-      const fifth = rows.findIndex((r) => r.includes('fifth'))
-      expect(fifth - join).toBeGreaterThan(0)
-      expect(fifth - join).toBeLessThanOrEqual(2)
+    // #1436: each edge keeps its own path and arrowhead, so "fifth" no longer
+    // shares a lane with another edge and sits on its own column.
+    it(`draws one arrowhead per edge into C and D (${mode})`, () => {
+      const head = useAscii ? 'v' : '▼'
+      const headsAbove = (node: string): number => {
+        const top = rows.findIndex((r) => r.includes(`${stem}   ${node}`))
+        return rows[top - 3]!.split(head).length - 1
+      }
+      expect(headsAbove('C')).toBe(2)
+      expect(headsAbove('D')).toBe(3)
     })
   }
 })
