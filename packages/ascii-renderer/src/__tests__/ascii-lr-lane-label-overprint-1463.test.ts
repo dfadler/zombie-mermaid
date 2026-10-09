@@ -30,6 +30,9 @@ describe('LR labels stay readable when a stem label slides (#1463)', () => {
     it(`prints every label whole (${useAscii ? 'ascii' : 'unicode'})`, () => {
       const out = renderMermaidASCII(SRC, { colorMode: 'none', useAscii })
       for (const label of LABELS) expect(out).toContain(label)
+      // Both present but run together would still pass the loop above.
+      expect(out).not.toContain('sixthfifth')
+      expect(out).not.toContain('fifthsixth')
     })
   }
 })
