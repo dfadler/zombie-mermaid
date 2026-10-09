@@ -78,8 +78,6 @@
     "zombie-mermaid": "dist/cli.js"
   },
   "files": [
-    "src/",
-    "!src/**/__tests__",
     "dist/",
     "LICENSE",
     "README.md"

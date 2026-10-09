@@ -30,8 +30,6 @@
     "provenance": true
   },
   "files": [
-    "src/",
-    "!src/**/__tests__",
     "dist/",
     "LICENSE"
   ]
