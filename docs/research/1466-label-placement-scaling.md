@@ -20,8 +20,9 @@ difference is label-placement cost (layout is identical). Medians of 3 runs,
 | 20 (40)                 |         782 |          11.6 |           771 |
 | 40 (80)                 |      13,614 |          50.6 |        13,563 |
 
-Label cost grows 9x, then 18x, per doubling: worse than cubic. The unlabelled twin also
-grows superlinearly, while the labelled-minus-unlabelled cost grows more sharply.
+Label cost grows 9x, then 18x, per doubling: worse than cubic. The unlabelled twin is
+also superlinear (4.1, 11.6, 50.6 ms: ~2.8x then ~4.4x per doubling) but stays tiny
+beside the label cost.
 
 ## Call counts (temporary counters, not committed)
 
@@ -38,19 +39,25 @@ N=20) and is worth keeping, but the call count itself is still cubic.
 ## Where the time goes
 
 `node --cpu-prof` at N=28: `besideGeometryFree` is ~2.6 s self time of ~3 s total.
-`resolveLabelPlacement`, `pathToDrawing` and everything else are each under ~50 ms. The
-beside-stroke geometry check dominates, not label resolution itself.
+`resolveLabelPlacement`, `pathToDrawing` and everything else are each under ~50 ms self
+time. The cost is the scan inside `besideGeometryFree` itself
+(`packages/ascii-renderer/src/draw-arrows.ts`): for every candidate placement it loops
+over every other edge, calls `pathToDrawing(graph, other)`, and tests every segment of
+that path. That is placements x edges x segments per resolution, on top of the cubic call
+count above.
 
 ## Conclusion
 
 1. The scaling problem is real for the #1463-shaped worst case: 80 labelled edges take
    ~13.6 s. Typical diagrams are small (20 labelled edges: 90 ms).
 2. Layout-scoped caching of placements is not the remaining lever: placements are already
-   memoised per call and the memo is dropped on exit, so it cannot go stale. The
-   `besideGeometryFree` geometry check dominates self time. Per-layout `pathToDrawing`
-   caching remains a separate optimisation hypothesis to benchmark.
-3. Next optimisation: cache `pathToDrawing` per layout (not keyed on `AsciiEdge` identity
-   alone). That work is tracked under #1458; re-run the benchmark above against it to verify
-   the gain (target: N=40 well under 1 s).
+   memoised per call and the memo is dropped on exit, so it cannot go stale.
+3. Caching `pathToDrawing` per layout alone is unlikely to be enough: its self time is
+   under ~50 ms, so it removes only the allocation, not the segment scan. The lever is the
+   `besideGeometryFree` scan: precompute each edge's drawn segments (or bounding boxes)
+   once per layout and skip edges whose box cannot reach the candidate cell. Tracked in a
+   follow-up issue; #1458's `pathToDrawing` cache is a prerequisite for the per-layout
+   precompute, not the fix. Re-run the benchmark above to verify (target: N=40 well under
+   1 s).
 
 No renderer code is changed by this write-up.
