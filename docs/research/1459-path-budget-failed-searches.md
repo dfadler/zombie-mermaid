@@ -23,13 +23,16 @@ non-flowchart/state types). Measured 2026-10-09 on `main` (0d61de15).
 - Of the 6 failures: 3 hit the per-call 50,000 cap; the other 3 ended after a
   single iteration (empty frontier). A separate counter saw the render-wide
   budget run out once, in the same sample (cause not investigated; the
-  counted iterations total only 150,325, so some of that sample's work is not
-  covered by these counters, e.g. a second layout pass).
+  counted iterations total 151,529 (1,526 + 150,003), short of the 200,000
+  budget, so some of that sample's work is not covered by these counters,
+  e.g. a second layout pass).
 - All 3 cap-hits are in one sample, **CI/CD Pipeline** (12 ok / 4 failed,
   150,001 failed iterations). Every other sample uses under 1,000 iterations.
 - The slowest successful search in the whole corpus took 80 iterations. A cap-hit is therefore never a "slightly too small
-  limit"; those searches are unreachable or effectively unreachable targets
-  that A\* floods the grid looking for.
+  limit". Hypothesis, not yet confirmed: those targets are unreachable or
+  effectively so, and A\* floods the grid looking for them. The cap only shows
+  no route was found within 50,000 iterations; `getPath` can return `null` at
+  the cap with a non-empty frontier.
 
 ## Decision
 
@@ -43,7 +46,7 @@ is a worse failure than the current bounded slowness. The render-wide budget
 (200,000) stays as the hard ceiling, and
 only one corpus render reaches it.
 
-Follow-up worth filing if CI/CD Pipeline's cost matters: find out why those 3
-edges are unreachable and short-circuit them (a cheap reachability check, or
+Follow-up worth filing if CI/CD Pipeline's cost matters: confirm whether those 3
+edges are unreachable and why and short-circuit them (a cheap reachability check, or
 fixing the endpoint choice) rather than tuning the caps. That removes the
 waste without touching the limits.
