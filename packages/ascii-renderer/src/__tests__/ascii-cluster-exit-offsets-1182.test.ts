@@ -25,7 +25,7 @@ const twin = (first: string, second: string): string => `flowchart TD
 
 /** The cluster's bottom wall: the last `└──┬──┬──┘` style row. */
 const wallRow = (lines: string[]): number =>
-  lines.findLastIndex((l) => /^└[─┬]+┘$/.test(l))
+  lines.findLastIndex((l) => /^ *└[─┬]+┘$/.test(l))
 
 describe('cluster exits leave at their own wall cell (#1182)', () => {
   it('TD: two exits get two junctions, left target on the left', () => {
@@ -35,12 +35,14 @@ describe('cluster exits leave at their own wall cell (#1182)', () => {
     const first = lines[wall]!.indexOf('┬')
     const second = lines[wall]!.lastIndexOf('┬')
     expect(second).toBeGreaterThan(first)
-    // T is the left target: its stroke drops straight to the arrowhead, U's
-    // turns right on the gutter row.
-    expect(lines[wall + 1]![first]).toBe('│')
-    expect(lines[wall + 1]![second]).toBe('└')
+    // The cluster is centred over its targets (#1462): T is the left target,
+    // so its stroke turns left on the gutter row; U's drops from its own
+    // junction and turns right into U.
+    expect(lines[wall + 1]![first]).toBe('┘')
+    expect(lines[wall + 1]![second]).toBe('│')
     const arrows = lines.findIndex((l) => (l.match(/▼/g) ?? []).length === 2)
-    expect(lines[arrows]![first]).toBe('▼')
+    expect(lines[arrows]!.indexOf('▼')).toBeLessThan(first)
+    expect(lines[arrows]!.lastIndexOf('▼')).toBeGreaterThan(second)
   })
 
   it('the junction order follows the target order, so strokes never cross', () => {
@@ -61,14 +63,15 @@ describe('cluster exits leave at their own wall cell (#1182)', () => {
     // The target placed left (U) is reached by the left arrowhead.
     expect(Math.abs(left - uCol)).toBeLessThanOrEqual(2)
     expect(Math.abs(right - tCol)).toBeLessThanOrEqual(2)
-    // The run out to the right target starts at the right junction and no
-    // other run passes through it: the left stroke ends in the left column.
+    // The left stroke turns left at the left junction, the right one drops
+    // straight from the right junction: they never share a column.
     const wall = wallRow(lines)
     const first = lines[wall]!.indexOf('┬')
     const second = lines[wall]!.lastIndexOf('┬')
     expect(second).toBeGreaterThan(first)
-    expect(lines[wall + 1]!.indexOf('┐', second)).toBe(right)
-    expect(lines[wall + 1]![second]).toBe('└')
+    expect(lines[wall + 1]![first]).toBe('┘')
+    expect(lines[wall + 1]![second]).toBe('│')
+    expect(lines[wall + 1]!.indexOf('┌')).toBeLessThan(first)
   })
 
   it('a label sits on its own run, clear of the exit’s corner', () => {
@@ -102,14 +105,17 @@ describe('cluster exits leave at their own wall cell (#1182)', () => {
     expect(lines[aRow]).not.toMatch(/a ├/)
   })
 
-  it('ASCII mode: a straight exit has no stray `+` where it passes the gutter', () => {
+  it('ASCII mode: a drop has no stray `+` where it passes the gutter', () => {
     const lines = render(twin('T', 'U'), { useAscii: true })
-    const wall = lines.findLastIndex((l) => /^\+-+\+-+\+-*\+$/.test(l))
+    const wall = lines.findLastIndex((l) => /^ *\+-+\+-+\+-*\+$/.test(l))
     expect(wall).toBeGreaterThan(-1)
-    const col = lines[wall]!.indexOf('+', 1)
-    const arrow = lines.findIndex((l, i) => i > wall && l[col] === 'v')
-    expect(arrow).toBeGreaterThan(wall)
-    for (const l of lines.slice(wall + 1, arrow)) expect(l[col]).toBe('|')
+    // The right exit's junction: the last inner `+` of the wall. It drops
+    // straight, then turns right (#1462), so only its corner row is a `+`.
+    const junctions = [...lines[wall]!.matchAll(/\+/g)].map((m) => m.index!)
+    const col = junctions[junctions.length - 2]!
+    const corner = lines.findIndex((l, i) => i > wall && l[col] === '+')
+    expect(corner).toBeGreaterThan(wall + 1)
+    for (const l of lines.slice(wall + 1, corner)) expect(l[col]).toBe('|')
   })
 
   it('a landing that meets a routed corner draws no stray corner glyph', () => {

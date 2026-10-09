@@ -26,11 +26,11 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
   it('TD: the member keeps a plain bottom border and the wall carries the junction', () => {
     const lines = render(source('TD'))
     // a's bottom border: the box corner row inside the cluster. No tee.
-    const memberBottom = lines.findIndex((l) => /^│ └─+┘ │$/.test(l))
+    const memberBottom = lines.findIndex((l) => /^ *│ └─+┘ │$/.test(l))
     expect(memberBottom).toBeGreaterThan(-1)
     // The cluster's bottom wall is the next full-width border row below it.
     const wall = lines.findIndex(
-      (l, i) => i > memberBottom && /^└─+┬─+┬─+┘$/.test(l),
+      (l, i) => i > memberBottom && /^ *└─+┬─+┬─+┘$/.test(l),
     )
     expect(wall).toBeGreaterThan(memberBottom)
     // Nothing between the member and the wall carries the exit's stroke.
@@ -38,12 +38,13 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
       expect(l).not.toMatch(/[┬┼]/)
     }
     // Each stroke continues down from its wall junction: straight on, or
-    // (the staircase bus, #1331) turning off along its own row.
+    // (the staircase bus, #1331) turning off along its own row, left or
+    // right now the cluster is centred over its targets (#1462).
     for (const col of [
       lines[wall]!.indexOf('┬'),
       lines[wall]!.lastIndexOf('┬'),
     ]) {
-      expect(lines[wall + 1]![col]).toMatch(/[│└]/)
+      expect(lines[wall + 1]![col]).toMatch(/[│└┘]/)
     }
     // Labels and arrowheads are unchanged: both targets are reached.
     expect(lines.join('\n')).toContain('first')
@@ -65,10 +66,10 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
 
   it('ASCII mode: the member border is intact and the wall holds the only `+`', () => {
     const lines = render(source('TD'), { useAscii: true })
-    const memberBottom = lines.findIndex((l) => /^\| \+-+\+ \|$/.test(l))
+    const memberBottom = lines.findIndex((l) => /^ *\| \+-+\+ \|$/.test(l))
     expect(memberBottom).toBeGreaterThan(-1)
     const wall = lines.findIndex(
-      (l, i) => i > memberBottom && /^\+-+\+-+\+-+\+$/.test(l),
+      (l, i) => i > memberBottom && /^ *\+-+\+-+\+-+\+$/.test(l),
     )
     expect(wall).toBeGreaterThan(memberBottom)
     // The wall has its two corners plus one junction per exit.
@@ -83,7 +84,7 @@ describe('cluster exits start on the cluster wall (#1330)', () => {
   Processing --> Done: done
   Processing --> Error: fail
 `)
-    const wall = lines.findIndex((l) => /^└─+┬─+┬─+┘$/.test(l))
+    const wall = lines.findIndex((l) => /^ *└─+┬─+┬─+┘$/.test(l))
     expect(wall).toBeGreaterThan(-1)
     expect(lines.join('\n')).not.toMatch(/┼/)
   })
