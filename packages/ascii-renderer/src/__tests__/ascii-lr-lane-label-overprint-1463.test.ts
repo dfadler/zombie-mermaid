@@ -37,6 +37,23 @@ describe('LR labels stay readable when a stem label slides (#1463)', () => {
   }
 })
 
+describe('label placement memo (#1466)', () => {
+  it('never carries a placement from one render into the next', () => {
+    const opts = { colorMode: 'none' as const }
+    renderMermaidASCII(
+      'flowchart LR\n  X -->|alpha| Z\n  Y -->|beta| Z\n  X --> Y',
+      opts,
+    )
+    const out = renderMermaidASCII(
+      'flowchart LR\n  A -->|gamma| C\n  B -->|delta| C\n  A --> B',
+      opts,
+    )
+    expect(out).toContain('gamma')
+    expect(out).toContain('delta')
+    expect(out).not.toContain('alpha')
+  })
+})
+
 describe('slideClearOf avoid list (#1463)', () => {
   const at = (y: number, text = 'fifth') => [{ x: 30, y, text }]
 
