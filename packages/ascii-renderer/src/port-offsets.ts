@@ -724,7 +724,7 @@ function spreadParallelEdges(
 ): Map<AsciiEdge, number> {
   const groups = new Map<string, AsciiEdge[]>()
   for (const [edge, { r, s, e }] of runs) {
-    if (!r.straight || !s || !e || edge.text.length > 0) continue
+    if (!r.straight || !s || !e) continue
     const key = `${s}>${e}`
     const group = groups.get(key) ?? []
     group.push(edge)

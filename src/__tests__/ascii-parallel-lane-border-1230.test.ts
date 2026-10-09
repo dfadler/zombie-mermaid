@@ -31,7 +31,9 @@ function boxRows(lines: string[]): string[] {
 }
 
 describe('parallel lanes keep the target border clean (#1230)', () => {
-  for (const count of [2, 3, 4]) {
+  // Two labeled edges now draw side by side instead (#1455), so the lanes
+  // appear from three.
+  for (const count of [3, 4]) {
     it(`TD, ${count} lanes: later lanes enter the target's right face with their own arrowhead`, () => {
       const lines = render(lanes('TD', count), false)
       const rows = boxRows(lines)
@@ -51,7 +53,7 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
     })
   }
 
-  for (const count of [2, 3]) {
+  for (const count of [3]) {
     it(`LR, ${count} lanes: later lanes run under the nodes and enter the target's bottom face with their own arrowhead`, () => {
       const lines = render(lanes('LR', count), false)
       const text = lines.join('\n')

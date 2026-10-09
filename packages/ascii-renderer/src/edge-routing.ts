@@ -29,7 +29,12 @@ import {
   requireCardinalDirection,
 } from './types.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
-import { getNodeSubgraph, requireGridCoord } from './grid.ts'
+import {
+  getNodeSubgraph,
+  gridToDrawingCoord,
+  requireGridCoord,
+} from './grid.ts'
+import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
 import {
   buildClusterExitRoute,
@@ -345,7 +350,8 @@ function parallelGroupKey(edge: AsciiEdge): string {
  * unlabeled edges between nodes stacked in one grid column (or side by side in
  * one grid row) with a free channel between them, on faces wide enough to hold
  * one stroke per edge a stroke-spacing apart. `portShifts` (port-offsets.ts)
- * then spreads the strokes. Labeled groups keep the lanes, which place labels.
+ * then spreads the strokes. Labels (#1455) stagger onto rows of the gap; a
+ * vertical group with more label lines than rows keeps the lanes.
  */
 function spreadsOnFaces(
   graph: AsciiGraph,
@@ -354,7 +360,7 @@ function spreadsOnFaces(
   const { from, to } = group[0]!
   const a = requireGridCoord(from)
   const b = requireGridCoord(to)
-  if (group.some((e) => e.from !== from || e.to !== to || e.text.length > 0)) {
+  if (group.some((e) => e.from !== from || e.to !== to)) {
     return false
   }
   if (group.some((e) => e.clusterSource || e.clusterTarget)) return false
@@ -368,6 +374,19 @@ function spreadsOnFaces(
   const at = vertical ? a.x : a.y
   const extent = [0, 1, 2].reduce((n, i) => n + size.get(at + i)!, 0)
   if (extent < 2 * group.length + 1) return false
+  // #1455: labels on side-by-side vertical strokes stagger onto their own
+  // rows (a label wider than the 2-cell stroke spacing would overprint its
+  // neighbour), so the gap needs a plain-stroke row-pair clear at each end
+  // (arrowhead end: three) plus one row per label line.
+  if (vertical) {
+    const rows = group.reduce(
+      (n, e) => n + (e.text ? splitLines(e.text).length : 0),
+      0,
+    )
+    const top = gridToDrawingCoord(graph, { x: a.x, y: Math.min(a.y, b.y) + 2 })
+    const bottom = gridToDrawingCoord(graph, { x: a.x, y: Math.max(a.y, b.y) })
+    if (rows > bottom.y - top.y - 4) return false
+  }
   // Nothing else may use the facing faces, which would put a stroke on top of
   // the spread ones: every other edge at either node must leave from the far
   // side of that node (a chain onward), never toward the partner or level.

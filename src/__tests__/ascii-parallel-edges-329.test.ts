@@ -101,7 +101,8 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|First Arrow| B
-    A -->|Second Arrow| B`,
+    A -->|Second Arrow| B
+    A -->|Third Arrow| B`,
       'LR',
     )
     const [first, second] = edgesBetween(graph, 'A', 'B')
@@ -114,7 +115,8 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|First Arrow| B
-    A -->|Second Arrow| B`,
+    A -->|Second Arrow| B
+    A -->|Third Arrow| B`,
       'LR',
     )
     const [first, second] = edgesBetween(graph, 'A', 'B')
@@ -162,11 +164,12 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|Labeled| B
+    A --> B
     A --> B`,
       'LR',
     )
     const edges = edgesBetween(graph, 'A', 'B')
-    expect(edges).toHaveLength(2)
+    expect(edges).toHaveLength(3)
     expect(pathKey(edges[0]!.path)).not.toBe(pathKey(edges[1]!.path))
   })
 
@@ -181,11 +184,16 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|Solid| B
-    A -.->|Dotted| B`,
+    A -.->|Dotted| B
+    A -->|Again| B`,
       'LR',
     )
     const edges = edgesBetween(graph, 'A', 'B')
-    expect(edges.map((e) => e.style).sort()).toEqual(['dotted', 'solid'])
+    expect(edges.map((e) => e.style).sort()).toEqual([
+      'dotted',
+      'solid',
+      'solid',
+    ])
     expect(pathKey(edges[0]!.path)).not.toBe(pathKey(edges[1]!.path))
   })
 

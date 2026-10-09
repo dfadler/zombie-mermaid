@@ -1491,9 +1491,20 @@ function otherLabelPlacements(
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] {
   const out: { x: number; y: number; text: string }[] = []
-  for (const other of graph.edges) {
+  const shifts = portShifts(graph)
+  const at = graph.edges.indexOf(edge)
+  for (const [i, other] of graph.edges.entries()) {
     if (other === edge || other.path.length < 2) continue
-    out.push(...(resolveLabelPlacement(graph, other, false) ?? []))
+    // #1455: side-by-side siblings (same ends, both spread) stagger instead of
+    // all sliding to the same row: a later sibling yields to this label, an
+    // earlier one is taken where it is drawn (strictly earlier, so no cycle).
+    const sibling =
+      other.from === edge.from &&
+      other.to === edge.to &&
+      shifts.has(edge) &&
+      shifts.has(other)
+    if (sibling && i > at) continue
+    out.push(...(resolveLabelPlacement(graph, other, sibling) ?? []))
   }
   return out
 }
