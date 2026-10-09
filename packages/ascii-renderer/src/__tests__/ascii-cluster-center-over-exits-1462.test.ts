@@ -75,6 +75,23 @@ describe('cluster centred over its exit targets (#1462)', () => {
     expect(out.some((l) => l.startsWith('┌'))).toBe(true)
   })
 
+  it('does not centre over parallel lanes: every lane keeps its own arrowhead', () => {
+    // Centred, the third lane's shifted final run (#1331) lost its horizontal
+    // leg and arrowhead, leaving a dangling `┘` under T.
+    const text = render(`flowchart TD
+  subgraph S [Cluster]
+    a
+  end
+  Start --> S
+  S -->|first| T
+  S -->|second| T
+  S -->|third| T
+  S -->|other| U
+`).join('\n')
+    expect(text.match(/◄/g)).toHaveLength(2) // second and third lanes
+    expect(text.match(/▼/g)).toHaveLength(3) // Start->S, first, other
+  })
+
   it('leaves a multi-member cluster where it was', () => {
     const out = render(`flowchart TD
   subgraph S [Cluster]
