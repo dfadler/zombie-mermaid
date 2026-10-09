@@ -24,7 +24,7 @@
  * See packages/svg-renderer/src/layout-engine/constants.ts for the shared DEFAULTS used across stages.
  */
 
-import type { ElkNode } from 'elkjs'
+import type { ElkNode } from '@zombie-mermaid/core'
 import type {
   MermaidGraph,
   PositionedGraph,

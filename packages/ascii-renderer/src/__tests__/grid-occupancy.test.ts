@@ -83,16 +83,16 @@ describe('grid-occupancy', () => {
   describe('Grid.delete', () => {
     it('releases a cell so it reports free again', () => {
       const grid = createGrid()
-      grid.add('5,5')
-      expect(grid.has('5,5')).toBe(true)
-      grid.delete('5,5')
-      expect(grid.has('5,5')).toBe(false)
+      grid.add(5, 5)
+      expect(grid.has(5, 5)).toBe(true)
+      grid.delete(5, 5)
+      expect(grid.has(5, 5)).toBe(false)
     })
 
     it('is a no-op for a cell that was never reserved', () => {
       const grid = createGrid()
-      expect(() => grid.delete('9,9')).not.toThrow()
-      expect(grid.has('9,9')).toBe(false)
+      expect(() => grid.delete(9, 9)).not.toThrow()
+      expect(grid.has(9, 9)).toBe(false)
     })
   })
 
@@ -210,31 +210,51 @@ describe('grid-occupancy', () => {
     })
   })
 
-  describe('Grid.keys / cloneGrid', () => {
-    it('keys() iterates every reserved cell', () => {
+  describe('Grid.cells / cloneGrid', () => {
+    it('cells() lists every reserved cell', () => {
       const grid = createGrid()
-      grid.add('1,1')
-      grid.add('2,2')
-      expect(new Set(grid.keys())).toEqual(new Set(['1,1', '2,2']))
+      grid.add(1, 1)
+      grid.add(2, 2)
+      expect(grid.cells()).toHaveLength(2)
+      expect(grid.cells()).toEqual(
+        expect.arrayContaining([
+          { x: 1, y: 1 },
+          { x: 2, y: 2 },
+        ]),
+      )
+    })
+
+    it('cells() round-trips distinct and negative coordinates without collisions', () => {
+      const grid = createGrid()
+      const pts = [
+        { x: 0, y: 1 },
+        { x: 1, y: 0 },
+        { x: -1, y: 5 },
+        { x: 5, y: -1 },
+        { x: 0, y: 0 },
+      ]
+      for (const p of pts) grid.add(p.x, p.y)
+      expect(grid.cells()).toHaveLength(pts.length)
+      expect(grid.cells()).toEqual(expect.arrayContaining(pts))
     })
 
     it('cloneGrid copies current reservations into an independent grid', () => {
       const original = createGrid()
-      original.add('1,1')
+      original.add(1, 1)
       const clone = cloneGrid(original)
       expect(isOccupied(clone, { x: 1, y: 1 })).toBe(true)
 
       // Independent: mutating one after cloning doesn't affect the other.
-      original.add('2,2')
+      original.add(2, 2)
       expect(isOccupied(clone, { x: 2, y: 2 })).toBe(false)
 
-      clone.add('3,3')
+      clone.add(3, 3)
       expect(isOccupied(original, { x: 3, y: 3 })).toBe(false)
     })
 
     it('cloneGrid on an empty grid produces an empty grid', () => {
       const clone = cloneGrid(createGrid())
-      expect([...clone.keys()]).toEqual([])
+      expect(clone.cells()).toEqual([])
     })
   })
 })

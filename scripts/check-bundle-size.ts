@@ -18,10 +18,14 @@
 
 import { readFile } from 'node:fs/promises'
 import { gzipSync } from 'node:zlib'
+import { build } from 'esbuild'
+import { fileURLToPath } from 'node:url'
 
 interface BudgetFile {
   unit: string
   budgets: Record<string, number>
+  /** Minified browser bundle of the entry, `elkjs` NOT registered (#1370). */
+  consumerBundles: Record<string, number>
 }
 
 const EXIT_OK = 0
@@ -69,6 +73,41 @@ for (const [relPath, budget] of Object.entries(budgetFile.budgets)) {
     `  ${relPath.padEnd(20)} ${fmtBytes(gzipSize).padStart(10)} / ${fmtBytes(budget).padStart(10)} budget  ${fmtPct(pct).padStart(7)}  ${status}`,
   )
 
+  if (gzipSize > budget) anyOverBudget = true
+}
+
+// A consumer's bundler must not pull in `elkjs` unless the consumer registers
+// it (#1370): bundle each entry the way an app would and gate the result.
+console.log('\nConsumer bundles, elkjs unregistered (minified, gzip)')
+console.log('─'.repeat(70))
+for (const [relPath, budget] of Object.entries(budgetFile.consumerBundles)) {
+  const entry = fileURLToPath(new URL(`../${relPath}`, import.meta.url))
+  const result = await build({
+    stdin: {
+      contents: `export * from ${JSON.stringify(entry)}`,
+      resolveDir: fileURLToPath(new URL('..', import.meta.url)),
+    },
+    bundle: true,
+    minify: true,
+    format: 'esm',
+    platform: 'browser',
+    mainFields: ['module', 'main'],
+    conditions: ['import'],
+    write: false,
+    logLevel: 'silent',
+  }).catch(() => null)
+  if (!result) {
+    console.error(
+      `  ${relPath.padEnd(20)} MISSING — run \`pnpm run build\` first`,
+    )
+    anyMissing = true
+    continue
+  }
+  const gzipSize = gzipSync(Buffer.from(result.outputFiles[0]!.contents)).length
+  const status = gzipSize > budget ? 'OVER' : 'ok'
+  console.log(
+    `  ${relPath.padEnd(20)} ${fmtBytes(gzipSize).padStart(10)} / ${fmtBytes(budget).padStart(10)} budget  ${status}`,
+  )
   if (gzipSize > budget) anyOverBudget = true
 }
 

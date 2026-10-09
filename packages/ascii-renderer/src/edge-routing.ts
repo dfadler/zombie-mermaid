@@ -340,6 +340,56 @@ function parallelGroupKey(edge: AsciiEdge): string {
 }
 
 /**
+ * Whether `group` (edges between one ordered pair of nodes) can run side by
+ * side on the two nodes' facing faces (#1394) instead of taking side lanes:
+ * unlabeled edges between nodes stacked in one grid column (or side by side in
+ * one grid row) with a free channel between them, on faces wide enough to hold
+ * one stroke per edge a stroke-spacing apart. `portShifts` (port-offsets.ts)
+ * then spreads the strokes. Labeled groups keep the lanes, which place labels.
+ */
+function spreadsOnFaces(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+): boolean {
+  const { from, to } = group[0]!
+  const a = requireGridCoord(from)
+  const b = requireGridCoord(to)
+  if (group.some((e) => e.from !== from || e.to !== to || e.text.length > 0)) {
+    return false
+  }
+  if (group.some((e) => e.clusterSource || e.clusterTarget)) return false
+  // Defensive: a diagonal pair has a second parent/child toward its partner,
+  // which the edge check below already refuses; kept so the axis is never
+  // guessed for a pair on neither a shared row nor a shared column.
+  /* v8 ignore next */
+  if (a.x !== b.x && a.y !== b.y) return false
+  const vertical = a.x === b.x
+  const size = vertical ? graph.columnWidth : graph.rowHeight
+  const at = vertical ? a.x : a.y
+  const extent = [0, 1, 2].reduce((n, i) => n + size.get(at + i)!, 0)
+  if (extent < 2 * group.length + 1) return false
+  // Nothing else may use the facing faces, which would put a stroke on top of
+  // the spread ones: every other edge at either node must leave from the far
+  // side of that node (a chain onward), never toward the partner or level.
+  const axis = vertical ? 'y' : 'x'
+  for (const e of graph.edges) {
+    if (group.includes(e) || e.from === e.to) continue
+    for (const [node, here, there] of [
+      [from, a, b],
+      [to, b, a],
+    ] as const) {
+      if (e.from !== node && e.to !== node) continue
+      const far = requireGridCoord(e.from === node ? e.to : e.from)
+      const towards = Math.sign(there[axis] - here[axis])
+      if (Math.sign(far[axis] - here[axis]) !== -towards) return false
+    }
+  }
+  // Any node between the two would be linked to one of them by an edge toward
+  // the other, which the loop above has already refused: the channel is clear.
+  return true
+}
+
+/**
  * Group edges that connect the same pair of nodes — two edges in the same
  * direction (`A -->|One| B` and `A -->|Two| B`), or, when the two nodes are
  * laid out side by side, an edge and its reverse-direction partner
@@ -380,7 +430,7 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   }
 
   for (const group of groups.values()) {
-    if (group.length < 2) continue
+    if (group.length < 2 || spreadsOnFaces(graph, group)) continue
     const usedOffsets = new Set<number>()
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
@@ -1351,6 +1401,36 @@ export function determineLabelLine(
     }
   }
 
+  // #1413: two edges sharing a lane can pick the very same segment, and the
+  // later label then overwrites the earlier one. When the pick's interior
+  // already holds another edge's label, move to a vertical segment of this
+  // edge whose interior is free; its label goes beside the stroke.
+  if (ctx && graph.config.graphDirection !== 'LR') {
+    const holdsOther = (line: [GridCoord, GridCoord]): boolean => {
+      const inner = new Set(
+        pathCells(line)
+          .slice(1, -1)
+          .map((c) => `${c.x},${c.y}`),
+      )
+      // This edge isn't in `chosen` yet (labels fixed in routing return early).
+      for (const held of ctx.chosen.values()) {
+        if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) return true
+      }
+      return false
+    }
+    if (holdsOther(largestLine)) {
+      const free = segments.filter(
+        (s) =>
+          s.isVertical &&
+          !isTerminalSegment(s) &&
+          clearOfNodes(s.line) &&
+          !isNodeOccupiedColumn(graph, s.line[0].x) &&
+          !holdsOther(s.line),
+      )
+      if (free.length > 0) largestLine = free.sort(byRank)[0]!.line
+    }
+  }
+
   applyLabelLine(graph, edge, largestLine, lenLabel)
   ctx?.chosen.set(edge, largestLine)
 }
@@ -1412,16 +1492,20 @@ function applyLabelLine(
   // node's box (a long label on a short hop out of `Reconnecting` made the
   // node and everything in its column ten cells wider, #1349).
   const pairWidth = pairColumnWidth(graph, edge, lenLabel)
+  // A horizontal stroke's start arrowhead takes the first stroke cell (#1438),
+  // beside the end arrowhead's, so the label needs one more cell.
+  const horizontal = line[0].y === line[1].y
+  const need = lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
   // A vertical segment's label goes beside the stroke and needs the column's
   // own width, so only a horizontal one is exempt.
   const wideEnough =
-    line[0].y === line[1].y &&
+    horizontal &&
     isNodeOccupiedColumn(graph, middleX) &&
     pairWidth === 0 &&
-    calculateLineWidth(graph, line) >= lenLabel + 2
+    calculateLineWidth(graph, line) >= need
   if (!wideEnough) {
     const current = graph.columnWidth.get(middleX) ?? 0
-    graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2, pairWidth))
+    graph.columnWidth.set(middleX, Math.max(current, need, pairWidth))
   }
 
   edge.labelLine = [line[0], line[1]]

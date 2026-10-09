@@ -30,15 +30,23 @@
     "provenance": true
   },
   "files": [
-    "src/",
-    "!src/**/__tests__",
     "dist/",
     "LICENSE"
   ],
   "dependencies": {
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mermaid-parser": "workspace:*",
-    "elkjs": "^0.11.0",
     "entities": "^7.0.1"
+  },
+  "peerDependencies": {
+    "elkjs": "^0.11.0"
+  },
+  "peerDependenciesMeta": {
+    "elkjs": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "elkjs": "^0.11.0"
   }
 }

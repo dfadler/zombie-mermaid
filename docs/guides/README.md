@@ -3,11 +3,12 @@
 Task-oriented walkthroughs. Where the reference docs answer _"what is the
 syntax for X"_, these answer _"how do I get X done"_.
 
-| Guide                                                  | Start here if you want to…                         |
-| ------------------------------------------------------ | -------------------------------------------------- |
-| [Browsing and using the samples](samples.md)           | find a diagram close to what you need and adapt it |
-| [Choosing and customizing a theme](theming.md)         | make diagrams match your site, app, or terminal    |
-| [Using the self-contained HTML viewer](html-viewer.md) | pan/zoom a diagram, or hand someone a file to open |
+| Guide                                                            | Start here if you want to…                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------ |
+| [Browsing and using the samples](samples.md)                     | find a diagram close to what you need and adapt it     |
+| [Choosing and customizing a theme](theming.md)                   | make diagrams match your site, app, or terminal        |
+| [Using the self-contained HTML viewer](html-viewer.md)           | pan/zoom a diagram, or hand someone a file to open     |
+| [Migrating: `elkjs` is an optional peer](elkjs-optional-peer.md) | upgrade from 4.x and register `elkjs` in a browser app |
 
 Reference docs, for when you know what you're looking for:
 

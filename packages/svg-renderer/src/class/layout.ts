@@ -7,7 +7,7 @@
  *   3. Methods section
  */
 
-import type { ElkNode, ElkExtendedEdge } from 'elkjs'
+import type { ElkNode, ElkExtendedEdge } from '@zombie-mermaid/core'
 import type {
   ClassDiagram,
   ClassNode,

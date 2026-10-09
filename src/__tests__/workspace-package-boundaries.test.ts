@@ -14,10 +14,11 @@
 //
 // So: walk what the files actually import, and assert the shape.
 //
-//   core            -> nothing in this repo, only `elkjs` (type-only)
+//   core            -> nothing at all (its ELK graph types are inlined, #1370)
 //   mermaid-parser  -> `@zombie-mermaid/core`, nothing else
 //   svg-renderer    -> `@zombie-mermaid/core`, `@zombie-mermaid/mermaid-parser`,
-//                      `elkjs`, and `entities`, nothing else
+//                      and `entities`, nothing else (`elkjs` is an optional
+//                      peer reached only through `registerElk()`, #1370)
 //
 // `svg-renderer` depending on `mermaid-parser` (added under #624) is a new
 // edge, not a violation of the sink property above: it is an ordinary,
@@ -182,12 +183,12 @@ function escapingRelativeImports(pkg: string): string[] {
 }
 
 describe('@zombie-mermaid/core is a workspace sink', () => {
-  it('imports no workspace package and no npm dependency but elkjs', () => {
-    // `elkjs` is `import type { ElkNode }` in `types.ts` only — carried for
-    // `RenderOptions.layoutCache`'s shape and erased at compile time. Adding
-    // any *runtime* dependency here would land in `dist/ascii.js`, which is
-    // exactly what the `./ascii` subpath export (#300) exists to prevent.
-    expect(externalSpecifiers('core')).toEqual(['elkjs'])
+  it('imports no workspace package and no npm dependency', () => {
+    // Its ELK graph types are owned in `elk-types.ts` (#1370), so the
+    // published `.d.ts` needs no `elkjs`. Adding any *runtime* dependency
+    // here would land in `dist/ascii.js`, which is exactly what the `./ascii`
+    // subpath export (#300) exists to prevent.
+    expect(externalSpecifiers('core')).toEqual([])
   })
 
   it('never reaches outside its own src/ by relative path', () => {
@@ -220,7 +221,6 @@ describe('@zombie-mermaid/svg-renderer depends only on core and mermaid-parser',
     expect(externalSpecifiers('svg-renderer')).toEqual([
       '@zombie-mermaid/core',
       '@zombie-mermaid/mermaid-parser',
-      'elkjs',
       'entities',
     ])
   })
@@ -289,14 +289,26 @@ describe('workspace package manifests', () => {
     }
   })
 
-  it('core additionally declares elkjs — type-only in source, but part of its own published public types', () => {
+  it('core declares no elkjs, and no dependencies at all', () => {
     const manifest = JSON.parse(
       readFileSync(resolve(PACKAGES, 'core', 'package.json'), 'utf8'),
     ) as { dependencies?: Record<string, string> }
-    expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual([
-      'elkjs',
-      ...externalValueSpecifiers('core'),
-    ])
+    expect(Object.keys(manifest.dependencies ?? {})).toEqual([])
+  })
+
+  // #1370: elkjs is an OPTIONAL peer of the library, so a bundler consumer
+  // that never registers it never ships it, and `npm i` does not pull it in.
+  it('svg-renderer declares elkjs as an optional peer, not a dependency', () => {
+    const manifest = JSON.parse(
+      readFileSync(resolve(PACKAGES, 'svg-renderer', 'package.json'), 'utf8'),
+    ) as {
+      dependencies?: Record<string, string>
+      peerDependencies?: Record<string, string>
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>
+    }
+    expect(manifest.dependencies?.elkjs).toBeUndefined()
+    expect(manifest.peerDependencies?.elkjs).toBeDefined()
+    expect(manifest.peerDependenciesMeta?.elkjs?.optional).toBe(true)
   })
 
   // `mcp` bundles two files (`packages/mcp/src/{server,tools/render-svg}.ts`
@@ -329,7 +341,7 @@ describe('workspace package manifests', () => {
       '@zombie-mermaid/core',
       '@zombie-mermaid/mermaid-parser',
       '@zombie-mermaid/svg-renderer',
-      'entities',
+      'elkjs',
       'zod',
     ])
   })

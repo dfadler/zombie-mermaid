@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
 import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
+import { clusterLaneEndShift } from '../cluster-boundary.ts'
 import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping } from '../grid.ts'
 
@@ -210,6 +211,65 @@ ${LABELS.slice(0, siblings)
         )
       },
     )
+
+    it('TD: the second and third siblings enter the target on separate rows (#1331)', () => {
+      for (const useAscii of [false, true]) {
+        const lines = render(many('TD', 3, ['other']), useAscii)
+        const heads = lines.flatMap((l, r) => (/[◄<]/.test(l) ? [r] : []))
+        expect(heads, lines.join('\n')).toHaveLength(2)
+        expect(heads[1]! - heads[0]!).toBe(1)
+      }
+    })
+
+    it('the third sibling is shifted only when it stacks on the high side (#1331)', () => {
+      const graph = convertToAsciiGraph(
+        parseMermaid(many('TD', 3, ['other'])),
+        {
+          useAscii: false,
+          paddingX: 6,
+          paddingY: 5,
+          boxBorderPadding: 1,
+          graphDirection: 'TD',
+        },
+      )
+      createMapping(graph)
+      const plan = [...graph.clusterExitPlans!.values()][0]!
+      const third = [...plan.edges].find((e) => e.parallelLane?.index === 2)!
+      expect(clusterLaneEndShift(graph, third)).toBe(1)
+      // A gutter left of the target's centre sends the third to the low side.
+      plan.gutter.x = -10
+      expect(clusterLaneEndShift(graph, third)).toBe(0)
+      const first = [...plan.edges].find((e) => e.parallelLane?.index === 0)!
+      expect(clusterLaneEndShift(graph, first)).toBe(0)
+      // Not engaged by any plan, or no plans at all: ordinary routing.
+      plan.gutter.x = 100
+      plan.edges.delete(third)
+      expect(clusterLaneEndShift(graph, third)).toBe(0)
+      delete graph.clusterExitPlans
+      expect(clusterLaneEndShift(graph, third)).toBe(0)
+    })
+
+    it('LR: the third sibling is not shifted (#1331)', () => {
+      const graph = convertToAsciiGraph(
+        parseMermaid(many('LR', 3, ['other'])),
+        {
+          useAscii: false,
+          paddingX: 6,
+          paddingY: 5,
+          boxBorderPadding: 1,
+          graphDirection: 'LR',
+        },
+      )
+      createMapping(graph)
+      const plan = [...graph.clusterExitPlans!.values()][0]!
+      const third = [...plan.edges].find((e) => e.parallelLane?.index === 2)!
+      expect(clusterLaneEndShift(graph, third)).toBe(0)
+    })
+
+    it('TD: the two-sibling layout is not shifted (#1331)', () => {
+      const lines = render(many('TD', 2, ['other']))
+      expect(lines.filter((l) => l.includes('◄'))).toHaveLength(1)
+    })
 
     it('TD: three siblings render with the target kept off the layout edge', () => {
       const lines = render(many('TD', 3, ['other']))

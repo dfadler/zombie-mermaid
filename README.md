@@ -54,21 +54,22 @@ automatically with every release:
   and `@zombie-mermaid/mermaid-parser`. It has no third-party dependencies, so
   this is what `zombie-mermaid/ascii` costs.
 - **svg-renderer (incl. deps)** — the SVG renderer, core and parser, **plus its
-  third-party dependencies**. Nearly all of the weight is
-  [ELK.js](https://github.com/kieler/elkjs), the layout engine: about 466 KB
-  gzipped on its own, shipped as one pre-bundled file that can't be
-  tree-shaken. `entities` is counted tree-shaken, since the renderer uses one
-  function from it.
+  third-party dependencies**, reported two ways: the base figure, and the figure
+  with [ELK.js](https://github.com/kieler/elkjs) (the layout engine) registered.
+  ELK.js is an optional peer: about 466 KB gzipped on its own, one pre-bundled
+  file that can't be tree-shaken, and only shipped if your app registers it
+  (see [the migration guide](docs/guides/elkjs-optional-peer.md)). `entities` is
+  counted tree-shaken, since the renderer uses one function from it.
 
 Both figures gzip a plain concatenation of the built files, so they approximate
 what you'd ship, not what any particular bundler emits. The umbrella
 `zombie-mermaid` entry re-exports both renderers; its all-in total is
 [![All-in size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size.json)](#bundle-size), the worst case. With a
 bundler, importing only `renderMermaidASCII` from the root drops the SVG
-renderer and ELK.js (every package here is `"sideEffects": false`). Without a
-bundler — Node, a CLI, a serverless function — the root entry loads ELK.js at
-startup even for ASCII-only use, so import from `zombie-mermaid/ascii` instead
-(see [ASCII Output](#ascii-output)).
+renderer (every package here is `"sideEffects": false`), and the root entry no
+longer includes ELK.js unless you register it. Without a bundler — Node, a CLI, a
+serverless function — you can import from `zombie-mermaid/ascii` to skip loading
+the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Features
 
@@ -93,6 +94,10 @@ bun add zombie-mermaid
 pnpm add zombie-mermaid
 ```
 
+> **Upgrading from 4.x?** `elkjs` is now an optional peer dependency: browser and
+> bundler apps must call `registerElk(ELK)` once. See the
+> [migration guide](docs/guides/elkjs-optional-peer.md).
+
 Only need one output format? `@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer` are published standalone — see [Packages](#packages) below.
 
 ## Quick Start
@@ -111,6 +116,22 @@ const svg = renderMermaidSVG(`
 ```
 
 Rendering is **fully synchronous** — no `await`, no promises. The ELK.js layout engine runs synchronously via a FakeWorker bypass, so you get your SVG string instantly.
+
+Flowchart, state, class, ER and architecture diagrams are laid out by
+[`elkjs`](https://github.com/kieler/elkjs), an **optional peer dependency**.
+Under Node and Bun it is loaded automatically. In a browser or bundler, register
+it once (`npm install elkjs`):
+
+```typescript
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk } from 'zombie-mermaid'
+
+registerElk(ELK)
+```
+
+Sequence, pie, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
+and no registration. Rendering a graph diagram with no `elkjs` available throws an
+`ElkNotRegisteredError` that says how to fix it.
 
 Need async? Use `renderMermaidSVGAsync()` — same output, returns a `Promise<string>`.
 
@@ -131,10 +152,9 @@ const ascii = renderMermaidASCII(`graph LR; A --> B --> C`)
 ```
 
 ASCII-only consumers (a CLI, a terminal UI, a serverless function) can import
-from `zombie-mermaid/ascii` instead of the package root. The root entry
-statically pulls in `elkjs` for the SVG layout engine — over 1.4MB minified —
-even if you never call `renderMermaidSVG`. The `/ascii` subpath never imports
-it:
+from `zombie-mermaid/ascii` instead of the package root. The root entry also
+loads the SVG renderer (about 74 KB gzipped, plus `elkjs` only if you register
+it); the `/ascii` subpath never touches either:
 
 ```typescript
 import { renderMermaidASCII } from 'zombie-mermaid/ascii'
@@ -234,7 +254,7 @@ the package.
 
 This repo is a pnpm-workspace monorepo. Most consumers only need the umbrella `zombie-mermaid` package above; internally it's built from workspace packages under `packages/`, all published under the `@zombie-mermaid` npm scope and version-locked with it:
 
-- **[`@zombie-mermaid/ascii-renderer`](packages/ascii-renderer)** — the ASCII/Unicode renderer, published standalone for anyone who wants terminal output without `svg-renderer`'s `elkjs` dependency. The exact code `zombie-mermaid/ascii` re-exports.  
+- **[`@zombie-mermaid/ascii-renderer`](packages/ascii-renderer)** — the ASCII/Unicode renderer, published standalone for anyone who wants terminal output without `svg-renderer` or `elkjs`. The exact code `zombie-mermaid/ascii` re-exports.  
   [![npm](https://img.shields.io/npm/v/@zombie-mermaid/ascii-renderer.svg)](https://www.npmjs.com/package/@zombie-mermaid/ascii-renderer) [![gzip size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-ascii-renderer.json)](#bundle-size)
 - **[`@zombie-mermaid/svg-renderer`](packages/svg-renderer)** — the ELK.js-backed SVG layout and rendering engine, also published standalone.  
   [![npm](https://img.shields.io/npm/v/@zombie-mermaid/svg-renderer.svg)](https://www.npmjs.com/package/@zombie-mermaid/svg-renderer) [![gzip size](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dfadler/zombie-mermaid/main/badges/bundle-size-svg-renderer.json)](#bundle-size)
