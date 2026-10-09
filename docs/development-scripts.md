@@ -30,6 +30,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 ## Benchmarks and checks
 
 - `pnpm run bench:compare` — compare a `bench.ts --json=` summary against `bench-baseline.json` (what CI's benchmark regression gate runs)
+- `pnpm run bench:scaling` — report-only large-diagram benchmark: generated 100/200/300-node flowcharts through parse, SVG and ASCII (`--sizes=`, `--runs=`, `--json=`). Not part of bench-baseline.json or the CI gate (few-run timings of multi-second renders are too noisy to gate on); use it for before/after numbers on a perf change
 - `pnpm run bench:core` — isolated per-package benchmark that times only that package's own code (see the script's header comment for exactly what's included), so a regression can be attributed to a specific package instead of just "render got slower"
 - `pnpm run bench:mermaid-parser` — isolated per-package benchmark that times only that package's own code (see the script's header comment for exactly what's included), so a regression can be attributed to a specific package instead of just "render got slower"
 - `pnpm run bench:svg-renderer` — isolated per-package benchmark that times only that package's own code (see the script's header comment for exactly what's included), so a regression can be attributed to a specific package instead of just "render got slower"

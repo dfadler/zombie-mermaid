@@ -45,7 +45,6 @@ import {
   Left,
   Right,
   gridCoordDirection,
-  gridKey,
   requireCardinalDirection,
   requireGridCoord,
 } from './types.ts'
@@ -258,11 +257,11 @@ function insertGridTrack(
   for (const node of graph.nodes) {
     if (node.gridCoord) node.gridCoord = shift(node.gridCoord)
   }
-  const keys = [...graph.grid.keys()]
-  for (const key of keys) graph.grid.delete(key)
-  for (const key of keys) {
-    const [x, y] = key.split(',').map(Number)
-    graph.grid.add(gridKey(shift({ x: x!, y: y! })))
+  const cells = graph.grid.cells()
+  for (const { x, y } of cells) graph.grid.delete(x, y)
+  for (const cell of cells) {
+    const { x, y } = shift(cell)
+    graph.grid.add(x, y)
   }
   const sizes = vertical ? graph.columnWidth : graph.rowHeight
   const shifted = [...sizes].filter(([index]) => index >= at)

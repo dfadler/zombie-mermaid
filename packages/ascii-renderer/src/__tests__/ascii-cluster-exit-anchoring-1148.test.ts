@@ -15,7 +15,6 @@ import { convertToAsciiGraph } from '../converter.ts'
 import { createMapping, gridToDrawingCoord } from '../grid.ts'
 import { planClusterExits } from '../cluster-boundary.ts'
 import { determinePath } from '../edge-routing.ts'
-import { gridKey } from '../types.ts'
 import type { AsciiConfig } from '../types.ts'
 
 const render = (src: string, opts: Record<string, unknown> = {}): string[] =>
@@ -608,7 +607,7 @@ describe('cluster-exit anchoring: planner guards (graph mutated after layout)', 
     const anchor = exits[0]!.from.gridCoord!
     // The gutter cell: one row below the lowest member, in the stub's column.
     const boxMaxY = Math.max(...sg.nodes.map((n) => n.gridCoord!.y + 2))
-    graph.grid.add(gridKey({ x: anchor.x + 1, y: boxMaxY + 1 }))
+    graph.grid.add(anchor.x + 1, boxMaxY + 1)
     planClusterExits(graph)
     expect(graph.clusterExitPlans).toBeUndefined()
   })
@@ -626,7 +625,7 @@ describe('cluster-exit anchoring: planner guards (graph mutated after layout)', 
     for (let x = 0; x <= 14; x++) {
       for (let y = gutter.y - 2; y < toY; y++) {
         if (x === gutter.x && y === gutter.y) continue
-        graph.grid.add(gridKey({ x, y }))
+        graph.grid.add(x, y)
       }
     }
   }
