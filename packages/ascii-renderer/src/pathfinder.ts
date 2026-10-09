@@ -210,6 +210,17 @@ export function getPath(
     return null
   }
 
+  // A sealed target is unreachable; without this A* floods the open
+  // quadrant until MAX_ITERATIONS (#1474). `from` counts as an entry.
+  if (
+    !MOVE_DIRS.some((d) => {
+      const n = { x: to.x + d.x, y: to.y + d.y }
+      return isFree(grid, n) || gridCoordEquals(n, from)
+    })
+  ) {
+    return null
+  }
+
   const pq = new MinHeap()
   pq.push({ coord: from, priority: 0 })
 
