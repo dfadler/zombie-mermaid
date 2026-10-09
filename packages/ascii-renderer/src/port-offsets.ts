@@ -640,20 +640,14 @@ function landFanIn(
     ...info.filter((m) => m.from > 0).sort((a, b) => a.dist - b.dist),
   ]
   const geo = portGeometry(graph, order[0]!.end)
-  if (!geo) return
-  const straights = order.filter((m) => !m.bent)
-  if (straights.length > 1) return
   // A straight edge moves with both its ends, so its source port must be
   // used by it alone.
   const startOk = (m: (typeof order)[number], o: number): boolean => {
-    const st = m.r.start
-    const key =
-      m.edge.from && st
-        ? `${m.edge.from.index}|${st.cell.x},${st.cell.y}|S`
-        : ''
-    const g = st && portGeometry(graph, st)
+    const key = runs.get(m.edge)!.s!
+    const st = m.r.start!
+    const g = portGeometry(graph, st)
     return (
-      !!g &&
+      g !== undefined &&
       slotEdges.get(key) === 1 &&
       rolesAt.get(portOf(key))!.size === 1 &&
       attachesAt(st, g.centre + o, g)
@@ -665,14 +659,16 @@ function landFanIn(
   ]
   const at = order.findIndex((m) => !m.bent)
   if (at >= 0) spacings.push(order.map((_, i) => STROKE_SPACING * (i - at)))
-  const offs = spacings.find((os) =>
-    order.every(
-      (m, i) =>
-        Number.isInteger(os[i]) &&
-        attachesAt(m.end, geo.centre + os[i]!, geo) &&
-        (m.bent || os[i] === 0 || startOk(m, os[i]!)),
-    ),
-  )
+  const offs =
+    geo &&
+    spacings.find((os) =>
+      order.every(
+        (m, i) =>
+          Number.isInteger(os[i]) &&
+          attachesAt(m.end, geo.centre + os[i]!, geo) &&
+          (m.bent || os[i] === 0 || startOk(m, os[i]!)),
+      ),
+    )
   if (!offs) return
 
   // Rows: bent edges from one side take a row each, stacked up from the one

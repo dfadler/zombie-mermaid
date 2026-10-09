@@ -1244,13 +1244,6 @@ function centredLabelPlacement(
       const bottom = Math.max(drawingLine[0]!.y, drawingLine[1]!.y) - 1
       const rows = beside.map((b) => b.y)
       const span = Math.max(...rows) - Math.min(...rows)
-      // #1435: on a lane other edges also run down, start the label just
-      // below where this edge joins it, not mid-lane, so it reads as theirs.
-      const join = sharedLaneJoinRow(graph, edge, drawingLine)
-      if (join !== undefined && !isUpwardEdge) {
-        const dy = join + 2 - Math.min(...rows)
-        for (const b of beside) b.y += dy
-      }
       for (const clearance of [2, 1]) {
         if (besideFree(graph, edge, beside, labelAware, clearance))
           return beside
@@ -1268,39 +1261,6 @@ function centredLabelPlacement(
     }
   }
   return clearOfSiblingStrokes(graph, edge, drawingLine, centred, labelAware)
-}
-
-/**
- * The row where `edge` turns onto the vertical `line` from a horizontal run,
- * when another edge also runs down that line (a shared fan-in lane); else
- * undefined.
- */
-function sharedLaneJoinRow(
-  graph: AsciiGraph,
-  edge: AsciiEdge,
-  line: DrawingCoord[],
-): number | undefined {
-  const [a, b] = line as [DrawingCoord, DrawingCoord]
-  const mine = pathToDrawing(graph, edge)
-  const i = mine.findIndex((p) => p.x === a.x && p.y === a.y)
-  if (i < 1 || mine[i - 1]!.y !== a.y || mine[i - 1]!.x === a.x) {
-    return undefined
-  }
-  const lo = Math.min(a.y, b.y)
-  const hi = Math.max(a.y, b.y)
-  const shared = graph.edges.some(
-    (o) =>
-      o !== edge &&
-      pathToDrawing(graph, o).some(
-        (p, j, pts) =>
-          j > 0 &&
-          p.x === a.x &&
-          pts[j - 1]!.x === a.x &&
-          Math.max(p.y, pts[j - 1]!.y) > lo &&
-          Math.min(p.y, pts[j - 1]!.y) < hi,
-      ),
-  )
-  return shared ? a.y : undefined
 }
 
 /**
