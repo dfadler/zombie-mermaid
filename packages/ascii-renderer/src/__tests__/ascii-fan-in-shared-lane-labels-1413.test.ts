@@ -35,8 +35,8 @@ describe('labelled fan-in sharing a lane (#1413)', () => {
       const second = rows.findIndex((r) => r.includes('second'))
       const stem = useAscii ? '|' : '│'
       expect(rows[second]).toMatch(new RegExp(`second\\s*\\${stem}`))
-      // ...and it lands on the first-label row as a tee into the lane.
-      expect(rows[second + 1]).toMatch(useAscii ? /\+-\+/ : /┴/)
+      // ...and it reaches the first-label row, where it turns into the lane.
+      expect(rows[second + 1]).toMatch(useAscii ? /\+first/ : /├first/)
     })
   }
 })

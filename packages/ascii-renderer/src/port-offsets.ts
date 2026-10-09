@@ -29,7 +29,7 @@
 // ============================================================================
 
 import type { AsciiEdge, AsciiGraph, AsciiNode, GridCoord } from './types.ts'
-import { gridToDrawingCoord, lineToDrawing } from './grid.ts'
+import { getNodeSubgraph, gridToDrawingCoord, lineToDrawing } from './grid.ts'
 import type { DrawingCoord } from './types.ts'
 import { isPortFixedEdge } from './edge-cell-styles.ts'
 
@@ -83,6 +83,8 @@ export interface PortShift {
   startRun?: ShiftedRun
   endRun?: ShiftedRun
 }
+
+const portOfKey = (key: string): string => key.slice(0, key.lastIndexOf('|'))
 
 const portKey = (node: AsciiNode, cell: GridCoord): string =>
   `${node.index}|${cell.x},${cell.y}`
@@ -519,6 +521,9 @@ function computePortShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
   }
 
   const split = splitLabeledArrivals(runs)
+  for (const [edge, by] of spreadFanInArrivals(graph, runs, rolesAt, find)) {
+    if (!split.has(edge)) split.set(edge, by)
+  }
   const spread = spreadParallelEdges(runs, rolesAt, portOf)
 
   for (const [edge, { r, s, e }] of runs) {
@@ -592,6 +597,73 @@ function splitLabeledArrivals(
       group.some((m) => m.run.turn === turn && m.edge.text.length > 0)
     if (!labeled(-1) || !labeled(1)) continue
     for (const m of group) out.set(m.edge, -m.run.turn)
+  }
+  return out
+}
+
+/**
+ * Give each edge arriving at one port its own landing column (#1436). Edges
+ * that come in from different sources used to share one trunk and one
+ * arrowhead, so only one of them could be followed in. A straight arrival keeps
+ * the port centre; bent ones land on the side they come from, nearer approaches
+ * innermost so a farther edge does not cross a nearer one's landing. A port
+ * that also starts an edge, or whose landings would not all meet a plain
+ * border, keeps its single trunk.
+ */
+function spreadFanInArrivals(
+  graph: AsciiGraph,
+  runs: ReadonlyMap<AsciiEdge, { r: EdgeRuns; s?: string; e?: string }>,
+  rolesAt: ReadonlyMap<string, Set<'S' | 'E'>>,
+  find: (k: string) => string,
+): Map<AsciiEdge, number> {
+  const byPort = new Map<string, { edge: AsciiEdge; run: PortRun }[]>()
+  const anchored = new Set<string>()
+  for (const [edge, { r, e }] of runs) {
+    if (!e || r.end?.axis !== 'v') continue
+    if (r.straight) {
+      anchored.add(e)
+      continue
+    }
+    const group = byPort.get(e) ?? []
+    group.push({ edge, run: r.end })
+    byPort.set(e, group)
+  }
+  const out = new Map<AsciiEdge, number>()
+  for (const [key, group] of byPort) {
+    const hasStraight =
+      anchored.has(key) || [...anchored].some((a) => find(a) === find(key))
+    if (group.length + (hasStraight ? 1 : 0) < 2) continue
+    if (rolesAt.get(portOfKey(key))!.size > 1) continue
+    const sides = [-1, 1] as const
+    const base =
+      hasStraight || sides.every((t) => group.some((m) => m.run.turn === t))
+        ? 1
+        : 0
+    const offsets = new Map<AsciiEdge, number>()
+    const place = (spacing: number): void => {
+      offsets.clear()
+      for (const turn of sides) {
+        const side = group
+          .filter((m) => m.run.turn === turn)
+          .sort((a, b) => runExtent(a.edge, a.run) - runExtent(b.edge, b.run))
+        side.forEach((m, i) =>
+          offsets.set(m.edge, -turn * spacing * (i + base)),
+        )
+      }
+    }
+    // A frame's wall and title are sized for one trunk (#1285); keep it there.
+    if (getNodeSubgraph(graph, group[0]!.run.node)) continue
+    const geo = portGeometry(graph, group[0]!.run)
+    if (!geo) continue
+    for (const spacing of [STROKE_SPACING, 1]) {
+      place(spacing)
+      const fits = group.every((m) =>
+        attachesAt(m.run, geo.centre + (offsets.get(m.edge) ?? 0), geo),
+      )
+      if (!fits) continue
+      for (const [edge, by] of offsets) out.set(edge, by)
+      break
+    }
   }
   return out
 }
