@@ -1492,16 +1492,20 @@ function applyLabelLine(
   // node's box (a long label on a short hop out of `Reconnecting` made the
   // node and everything in its column ten cells wider, #1349).
   const pairWidth = pairColumnWidth(graph, edge, lenLabel)
+  // A horizontal stroke's start arrowhead takes the first stroke cell (#1438),
+  // beside the end arrowhead's, so the label needs one more cell.
+  const horizontal = line[0].y === line[1].y
+  const need = lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
   // A vertical segment's label goes beside the stroke and needs the column's
   // own width, so only a horizontal one is exempt.
   const wideEnough =
-    line[0].y === line[1].y &&
+    horizontal &&
     isNodeOccupiedColumn(graph, middleX) &&
     pairWidth === 0 &&
-    calculateLineWidth(graph, line) >= lenLabel + 2
+    calculateLineWidth(graph, line) >= need
   if (!wideEnough) {
     const current = graph.columnWidth.get(middleX) ?? 0
-    graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2, pairWidth))
+    graph.columnWidth.set(middleX, Math.max(current, need, pairWidth))
   }
 
   edge.labelLine = [line[0], line[1]]

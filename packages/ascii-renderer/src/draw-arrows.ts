@@ -99,7 +99,7 @@ export function drawArrow(
   const invisible = edge.style === 'invisible'
 
   const boxStartCanvas =
-    hasSegments && !invisible
+    hasSegments && !invisible && (!edge.hasArrowStart || wallStart)
       ? drawBoxStart(
           graph,
           edge.path,
@@ -137,28 +137,15 @@ export function drawArrow(
     arrowHeadEndCanvas = copyCanvas(graph.canvas)
   }
 
-  // Draw start arrowhead for bidirectional edges
-  // The start arrowhead needs to be at the box connector position (one step back
-  // from the first line point), pointing into the source node.
+  // Draw start arrowhead for bidirectional edges, in the first stroke cell
+  // (one cell out from the source border, mirroring the end head) so the
+  // border stays intact and untee'd, like the end side's (#1438).
   let arrowHeadStartCanvas: Canvas
   if (edge.hasArrowStart && hasSegments) {
-    const firstLine = linesDrawn[0]!
-    const firstPoint = firstLine[0]!
-    const startDir = reverseDirection(lineDirs[0]!)
-
-    // Calculate the box connector position (one step back from first point)
-    const arrowPos: DrawingCoord = { x: firstPoint.x, y: firstPoint.y }
-    if (dirEquals(lineDirs[0]!, Right)) arrowPos.x = firstPoint.x - 1
-    else if (dirEquals(lineDirs[0]!, Left)) arrowPos.x = firstPoint.x + 1
-    else if (dirEquals(lineDirs[0]!, Down)) arrowPos.y = firstPoint.y - 1
-    else if (dirEquals(lineDirs[0]!, Up)) arrowPos.y = firstPoint.y + 1
-
-    // Create a synthetic line ending at the arrow position for drawArrowHead
-    const syntheticLine: DrawingCoord[] = [firstPoint, arrowPos]
     arrowHeadStartCanvas = drawArrowHead(
       graph,
-      syntheticLine,
-      startDir,
+      [linesDrawn[0]![0]!],
+      reverseDirection(lineDirs[0]!),
       edge.startMarker,
     )
   } else {
@@ -1207,6 +1194,7 @@ function centredLabelPlacement(
             edge.text,
             isUpwardEdge,
             pullTowardTarget,
+            edge.hasArrowStart && edge.hasArrowEnd,
           ),
           drawingLine[0]?.x === drawingLine[1]?.x
             ? drawingLine[0]?.x
@@ -1696,6 +1684,7 @@ function labelTextPlacement(
   label: string,
   isUpwardEdge?: boolean,
   pullTowardTarget = false,
+  bothHeads = false,
 ): { x: number; y: number; text: string }[] {
   if (line.length < 2) return []
   const minX = Math.min(line[0]!.x, line[1]!.x)
@@ -1723,8 +1712,14 @@ function labelTextPlacement(
   const lines = splitLines(label)
   const startY = middleY - Math.floor((lines.length - 1) / 2)
 
+  // A horizontal edge with a head at each end centres the label between the
+  // heads (border, head, ..., head, border), not on the border-to-border
+  // midpoint, which sits half a cell off for an even-width label.
+  const between = bothHeads && minY === maxY
   return lines.map((lineText, i) => ({
-    x: middleX - Math.floor(displayWidth(lineText) / 2),
+    x: between
+      ? minX + 2 + Math.floor((maxX - minX - 3 - displayWidth(lineText)) / 2)
+      : middleX - Math.floor(displayWidth(lineText) / 2),
     y: startY + i,
     text: lineText,
   }))
