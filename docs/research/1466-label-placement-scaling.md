@@ -20,8 +20,8 @@ difference is label-placement cost (layout is identical). Medians of 3 runs,
 | 20 (40)                 |         782 |          11.6 |           771 |
 | 40 (80)                 |      13,614 |          50.6 |        13,563 |
 
-Label cost grows 9x, then 18x, per doubling: worse than cubic. The unlabelled twin stays
-near-linear, so the growth is entirely label placement.
+Label cost grows 9x, then 18x, per doubling: worse than cubic. The unlabelled twin also
+grows superlinearly, while the labelled-minus-unlabelled cost grows more sharply.
 
 ## Call counts (temporary counters, not committed)
 
@@ -46,8 +46,9 @@ beside-stroke geometry check dominates, not label resolution itself.
 1. The scaling problem is real for the #1463-shaped worst case: 80 labelled edges take
    ~13.6 s. Typical diagrams are small (20 labelled edges: 90 ms).
 2. Layout-scoped caching of placements is not the remaining lever: placements are already
-   memoised per call and the memo is dropped on exit, so it cannot go stale. The remaining
-   cost is `besideGeometryFree` re-deriving drawing-space paths.
+   memoised per call and the memo is dropped on exit, so it cannot go stale. The
+   `besideGeometryFree` geometry check dominates self time. Per-layout `pathToDrawing`
+   caching remains a separate optimisation hypothesis to benchmark.
 3. Next optimisation: cache `pathToDrawing` per layout (not keyed on `AsciiEdge` identity
    alone). That work is tracked under #1458; re-run the benchmark above against it to verify
    the gain (target: N=40 well under 1 s).
