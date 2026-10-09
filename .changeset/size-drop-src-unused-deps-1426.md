@@ -7,4 +7,4 @@
 '@zombie-mermaid/mcp': patch
 ---
 
-Smaller tarballs: stop publishing `src/` (source maps already embed it via `sourcesContent`), and drop unused `entities` (mcp, root) and `elkjs` (root) dependency declarations (refs #1426).
+Smaller tarballs: stop publishing `src/` (source maps already embed it via `sourcesContent`), and drop the unused `entities` dependency declaration from mcp (refs #1426).
