@@ -27,11 +27,7 @@ import type { LinkCanvas } from './hyperlinks.ts'
 export function mkCanvas(x: number, y: number): Canvas {
   const canvas: Canvas = []
   for (let i = 0; i <= x; i++) {
-    const col: string[] = []
-    for (let j = 0; j <= y; j++) {
-      col.push(' ')
-    }
-    canvas.push(col)
+    canvas.push(new Array<string>(y + 1).fill(' '))
   }
   return canvas
 }
@@ -39,7 +35,54 @@ export function mkCanvas(x: number, y: number): Canvas {
 /** Create a blank canvas with the same dimensions as the given canvas. */
 export function copyCanvas(source: Canvas): Canvas {
   const [maxX, maxY] = getCanvasSize(source)
-  return mkCanvas(maxX, maxY)
+  const canvas = mkCanvas(maxX, maxY)
+  inkBounds.set(canvas, [Infinity, Infinity, -1, -1])
+  return canvas
+}
+
+let sharedBlank: Canvas | undefined
+
+/**
+ * A blank canvas shared across callers, sized like `source`. READ-ONLY: only
+ * for overlay layers that stay empty and are merged/scanned, never drawn into.
+ */
+export function blankLayer(source: Canvas): Canvas {
+  const [maxX, maxY] = getCanvasSize(source)
+  if (!sharedBlank || getCanvasSize(sharedBlank).join() !== `${maxX},${maxY}`) {
+    sharedBlank = copyCanvas(source)
+  }
+  return sharedBlank
+}
+
+/**
+ * Inclusive [x0, y0, x1, y1] box covering every cell written to a canvas made
+ * by `copyCanvas` (the per-edge overlay layers). Dense graphs build thousands
+ * of these, nearly blank, so scanning only this box keeps merge/role passes
+ * from costing O(edges x canvas area) (#1458). Only `write` and `drawText`
+ * record into it; never write to a `copyCanvas` result any other way.
+ */
+const inkBounds = new WeakMap<Canvas, [number, number, number, number]>()
+
+/** Box to scan for non-space cells: tracked ink box, else the whole canvas. */
+export function scanBounds(canvas: Canvas): [number, number, number, number] {
+  const [maxX, maxY] = getCanvasSize(canvas)
+  const b = inkBounds.get(canvas)
+  if (!b) return [0, 0, maxX, maxY]
+  return [
+    Math.max(b[0], 0),
+    Math.max(b[1], 0),
+    Math.min(b[2], maxX),
+    Math.min(b[3], maxY),
+  ]
+}
+
+function markInk(canvas: Canvas, x: number, y: number): void {
+  const b = inkBounds.get(canvas)
+  if (!b) return
+  if (x < b[0]) b[0] = x
+  if (y < b[1]) b[1] = y
+  if (x > b[2]) b[2] = x
+  if (y > b[3]) b[3] = y
 }
 
 // ============================================================================
@@ -82,6 +125,7 @@ export function increaseRoleCanvasSize(
   const currY = (roleCanvas[0]?.length ?? 1) - 1
   const targetX = Math.max(newX, currX)
   const targetY = Math.max(newY, currY)
+  if (targetX === currX && targetY === currY) return roleCanvas
   const grown = mkRoleCanvas(targetX, targetY)
   for (let x = 0; x < grown.length; x++) {
     for (let y = 0; y < (grown[0]?.length ?? 0); y++) {
@@ -175,6 +219,7 @@ export function increaseSize(
   const [currX, currY] = getCanvasSize(canvas)
   const targetX = Math.max(newX, currX)
   const targetY = Math.max(newY, currY)
+  if (targetX === currX && targetY === currY) return canvas
   const grown = mkCanvas(targetX, targetY)
   for (let x = 0; x < grown.length; x++) {
     for (let y = 0; y < (grown[0]?.length ?? 0); y++) {
@@ -233,6 +278,7 @@ export function write(
   const [maxX, maxY] = getCanvasSize(canvas)
   if (x < 0 || x > maxX || y < 0 || y > maxY) return
   canvas[x]![y] = ch
+  markInk(canvas, x, y)
   if (roleTracking) {
     setRole(roleTracking.roleCanvas, x, y, roleTracking.role)
   }
@@ -445,14 +491,14 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
   const claimed = new Map<string, string>()
   const result: Canvas[] = []
   for (const canvas of canvases) {
-    const [maxX, maxY] = getCanvasSize(canvas)
     // `copyCanvas` (despite its name) returns a *blank* canvas of the same
     // size, not a clone of `canvas`'s content — see its own doc. Every cell
     // must be written explicitly below, not just the ones this function
     // blanks out.
     const out = copyCanvas(canvas)
-    for (let x = 0; x <= maxX; x++) {
-      for (let y = 0; y <= maxY; y++) {
+    const [bx0, by0, bx1, by1] = scanBounds(canvas)
+    for (let x = bx0; x <= bx1; x++) {
+      for (let y = by0; y <= by1; y++) {
         const c = canvas[x]?.[y]
         if (c === undefined || c === ' ') continue
         const key = `${x},${y}`
@@ -473,6 +519,7 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
           claimed.set(key, c)
         }
         out[x]![y] = c
+        markInk(out, x, y)
       }
     }
     result.push(out)
@@ -511,8 +558,9 @@ export function mergeCanvases(
 
   // Apply overlays
   for (const overlay of overlays) {
-    for (let x = 0; x < overlay.length; x++) {
-      for (let y = 0; y < (overlay[0]?.length ?? 0); y++) {
+    const [ox0, oy0, ox1, oy1] = scanBounds(overlay)
+    for (let x = ox0; x <= ox1; x++) {
+      for (let y = oy0; y <= oy1; y++) {
         const c = overlay[x]![y]!
         if (c !== ' ') {
           const mx = x + offset.x
@@ -943,6 +991,7 @@ export function drawText(
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
       canvas[x]![start.y] = cell
+      markInk(canvas, x, start.y)
     }
   }
 }
