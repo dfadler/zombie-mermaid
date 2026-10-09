@@ -29,10 +29,12 @@ non-flowchart/state types). Measured 2026-10-09 on `main` (0d61de15).
 - All 3 cap-hits are in one sample, **CI/CD Pipeline** (12 ok / 4 failed,
   150,001 failed iterations). Every other sample uses under 1,000 iterations.
 - The slowest successful search in the whole corpus took 80 iterations. A cap-hit is therefore never a "slightly too small
-  limit". Hypothesis, not yet confirmed: those targets are unreachable or
-  effectively so, and A\* floods the grid looking for them. The cap only shows
-  no route was found within 50,000 iterations; `getPath` can return `null` at
-  the cap with a non-empty frontier.
+  limit". Follow-up investigation (#1474) found the cause:
+  `rerouteAroundStyleConflicts` temporarily reserves the only free neighbour of
+  an endpoint's port cell, so the target (or start) is sealed for that retry
+  and A\* floods the open grid until the cap. The edges are reachable on the
+  first routing pass; which three calls were the cap-hits was not attributed
+  per call (the `C -> E` runs against a sealed target are the likely ones).
 
 ## Decision
 
@@ -46,7 +48,7 @@ is a worse failure than the current bounded slowness. The render-wide budget
 (200,000) stays as the hard ceiling, and
 only one corpus render reaches it.
 
-Follow-up worth filing if CI/CD Pipeline's cost matters: confirm whether those 3
-edges are unreachable and why and short-circuit them (a cheap reachability check, or
-fixing the endpoint choice) rather than tuning the caps. That removes the
-waste without touching the limits.
+Follow-up: #1474 tracks the fix (skip conflict cells that are an endpoint's
+only entry or exit, and return `null` from `getPath` when the target has no
+free neighbour) rather than tuning the caps. That removes the waste without
+touching the limits.
