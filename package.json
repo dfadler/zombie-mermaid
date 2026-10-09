@@ -102,6 +102,7 @@
     "bench": "tsx scripts/bench.ts",
     "bench:compare": "tsx scripts/bench-compare.ts",
     "bench:scaling": "tsx scripts/bench-scaling.ts",
+    "bench:label-placement": "tsx scripts/bench-label-placement.ts",
     "bench:core": "tsx scripts/bench-core.ts",
     "bench:mermaid-parser": "tsx scripts/bench-mermaid-parser.ts",
     "bench:svg-renderer": "tsx scripts/bench-svg-renderer.ts",
