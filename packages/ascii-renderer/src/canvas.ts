@@ -35,9 +35,32 @@ export function mkCanvas(x: number, y: number): Canvas {
 /** Create a blank canvas with the same dimensions as the given canvas. */
 export function copyCanvas(source: Canvas): Canvas {
   const [maxX, maxY] = getCanvasSize(source)
-  const canvas = mkCanvas(maxX, maxY)
+  // #1458: every column starts as one shared blank column and is copied on
+  // first write (`ownColumn`), so a dense graph's thousands of nearly blank
+  // per-edge layers cost O(width) each instead of O(width x height).
+  const canvas: Canvas = new Array<string[]>(maxX + 1).fill(
+    sharedBlankColumn(maxY + 1),
+  )
   inkBounds.set(canvas, [Infinity, Infinity, -1, -1])
   return canvas
+}
+
+const sharedColumns = new WeakSet<string[]>()
+let blankColumn: string[] | undefined
+
+function sharedBlankColumn(height: number): string[] {
+  if (blankColumn?.length !== height) {
+    blankColumn = new Array<string>(height).fill(' ')
+    sharedColumns.add(blankColumn)
+  }
+  return blankColumn
+}
+
+/** Column `x` of a layer, copied first if it is still a shared blank one. */
+function ownColumn(canvas: Canvas, x: number): string[] {
+  let col = canvas[x]!
+  if (sharedColumns.has(col)) canvas[x] = col = col.slice()
+  return col
 }
 
 let sharedBlank: Canvas | undefined
@@ -277,7 +300,7 @@ export function write(
 ): void {
   const [maxX, maxY] = getCanvasSize(canvas)
   if (x < 0 || x > maxX || y < 0 || y > maxY) return
-  canvas[x]![y] = ch
+  ownColumn(canvas, x)[y] = ch
   markInk(canvas, x, y)
   if (roleTracking) {
     setRole(roleTracking.roleCanvas, x, y, roleTracking.role)
@@ -518,8 +541,7 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
         } else {
           claimed.set(key, c)
         }
-        out[x]![y] = c
-        markInk(out, x, y)
+        write(out, x, y, c)
       }
     }
     result.push(out)
@@ -990,7 +1012,7 @@ export function drawText(
     const current = canvas[x]![start.y]!
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
-      canvas[x]![start.y] = cell
+      ownColumn(canvas, x)[start.y] = cell
       markInk(canvas, x, start.y)
     }
   }
