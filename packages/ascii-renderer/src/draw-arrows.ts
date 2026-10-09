@@ -1022,24 +1022,28 @@ export function edgeLabelPlacement(
  * node) both resolve to the same cell, and `drawGraph` merges label overlays
  * last-wins, so one label vanished. Each label is resolved against the others
  * unmoved, so both see the clash and move identically; the later edge alone
- * slides along the shared stroke to the nearest rows no earlier label covers.
+ * slides along the shared stroke to the nearest rows no other label covers
+ * (#1463: a later edge's label on the lane included, or the slide just trades
+ * one overprint for another).
  */
 function clearOfEarlierLabels(
   graph: AsciiGraph,
   edge: AsciiEdge,
   placement: { x: number; y: number; text: string }[],
 ): { x: number; y: number; text: string }[] {
-  const earlier = (): { x: number; y: number; text: string }[] => {
-    const out: { x: number; y: number; text: string }[] = []
-    for (const other of graph.edges) {
-      if (other === edge) break
-      if (other.path.length >= 2) {
-        out.push(...(resolveLabelPlacement(graph, other, false) ?? []))
-      }
+  const earlier: { x: number; y: number; text: string }[] = []
+  const later: { x: number; y: number; text: string }[] = []
+  let seen = false
+  for (const other of graph.edges) {
+    if (other === edge) seen = true
+    else if (other.path.length >= 2) {
+      // A later label is taken where it will be drawn (label-aware, before
+      // its own slide, which only ever looks at earlier ones: no cycle).
+      ;(seen ? later : earlier).push(
+        ...(resolveLabelPlacement(graph, other, seen) ?? []),
+      )
     }
-    return out
   }
-  const others = earlier()
   const line = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
   if (
     line.length < 2 ||
@@ -1050,27 +1054,29 @@ function clearOfEarlierLabels(
   }
   return slideClearOf(
     placement,
-    others,
+    earlier,
     Math.min(line[0]!.y, line[1]!.y),
     Math.max(line[0]!.y, line[1]!.y),
+    later,
   )
 }
 
 /**
  * Shift `placement` along a vertical stroke spanning rows `lo`..`hi` to the
  * nearest rows strictly inside it (clear of both ends) that no label in
- * `taken` covers, staying put when it already clears them all (or when no
- * rows do).
+ * `taken` or `avoid` covers, staying put when it already clears `taken` (or
+ * when no rows do).
  */
 export function slideClearOf(
   placement: { x: number; y: number; text: string }[],
   taken: { x: number; y: number; text: string }[],
   lo: number,
   hi: number,
+  avoid: { x: number; y: number; text: string }[] = [],
 ): { x: number; y: number; text: string }[] {
-  const hits = (p: typeof placement) =>
+  const hits = (p: typeof placement, against = taken) =>
     p.some((a) =>
-      taken.some(
+      against.some(
         (b) =>
           a.y === b.y &&
           a.x <= b.x + displayWidth(b.text) - 1 &&
@@ -1083,7 +1089,7 @@ export function slideClearOf(
       const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
       const ys = moved.map((m) => m.y)
       if (Math.min(...ys) <= lo || Math.max(...ys) >= hi) continue
-      if (!hits(moved)) return moved
+      if (!hits(moved, [...taken, ...avoid])) return moved
     }
   }
   return placement
