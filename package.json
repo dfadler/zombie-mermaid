@@ -143,7 +143,9 @@
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mcp": "workspace:*",
     "@zombie-mermaid/mermaid-parser": "workspace:*",
-    "@zombie-mermaid/svg-renderer": "workspace:*"
+    "@zombie-mermaid/svg-renderer": "workspace:*",
+    "elkjs": "^0.11.0",
+    "entities": "^7.0.1"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
