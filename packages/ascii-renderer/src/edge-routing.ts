@@ -1495,7 +1495,7 @@ function applyLabelLine(
   // A horizontal stroke's start arrowhead takes the first stroke cell (#1438),
   // beside the end arrowhead's, so the label needs one more cell.
   const horizontal = line[0].y === line[1].y
-  const need = lenLabel + 2 + (horizontal && edge.hasArrowStart ? 1 : 0)
+  const need = lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
   // A vertical segment's label goes beside the stroke and needs the column's
   // own width, so only a horizontal one is exempt.
   const wideEnough =

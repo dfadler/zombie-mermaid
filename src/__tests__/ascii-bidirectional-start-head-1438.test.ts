@@ -31,6 +31,15 @@ describe('bidirectional start arrowhead (#1438)', () => {
 
   it('LR with a label keeps both heads visible', () => {
     const line = renderMermaidASCII('graph LR\nA <-->|sync| B').split('\n')[2]!
-    expect(line).toContain('│◄sync─►│')
+    expect(line).toContain('│◄─sync─►│')
+  })
+
+  it('centres the label between the heads, odd or even width', () => {
+    for (const label of ['sync', 'abc', 'ab']) {
+      const line = renderMermaidASCII(`graph LR\nA <-->|${label}| B`).split(
+        '\n',
+      )[2]!
+      expect(line).toContain(`│◄─${label}─►│`)
+    }
   })
 })

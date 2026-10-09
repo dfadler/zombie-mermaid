@@ -1194,6 +1194,7 @@ function centredLabelPlacement(
             edge.text,
             isUpwardEdge,
             pullTowardTarget,
+            edge.hasArrowStart && edge.hasArrowEnd,
           ),
           drawingLine[0]?.x === drawingLine[1]?.x
             ? drawingLine[0]?.x
@@ -1683,6 +1684,7 @@ function labelTextPlacement(
   label: string,
   isUpwardEdge?: boolean,
   pullTowardTarget = false,
+  bothHeads = false,
 ): { x: number; y: number; text: string }[] {
   if (line.length < 2) return []
   const minX = Math.min(line[0]!.x, line[1]!.x)
@@ -1710,8 +1712,14 @@ function labelTextPlacement(
   const lines = splitLines(label)
   const startY = middleY - Math.floor((lines.length - 1) / 2)
 
+  // A horizontal edge with a head at each end centres the label between the
+  // heads (border, head, ..., head, border), not on the border-to-border
+  // midpoint, which sits half a cell off for an even-width label.
+  const between = bothHeads && minY === maxY
   return lines.map((lineText, i) => ({
-    x: middleX - Math.floor(displayWidth(lineText) / 2),
+    x: between
+      ? minX + 2 + Math.floor((maxX - minX - 3 - displayWidth(lineText)) / 2)
+      : middleX - Math.floor(displayWidth(lineText) / 2),
     y: startY + i,
     text: lineText,
   }))
