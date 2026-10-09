@@ -24,6 +24,7 @@ import {
   determineLabelLine,
   createLabelContext,
   assignParallelEdgeLanes,
+  splitSharedLabeledLane,
 } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
@@ -1984,6 +1985,10 @@ export function createMapping(graph: AsciiGraph): void {
   const cellOwners = createEdgeCellOwners()
   const nodeOnlyGrid = cloneGrid(graph.grid)
   const frameAvoidingEdges = new Set<AsciiEdge>()
+  const sharedLaneState = new Map<
+    AsciiNode,
+    { count: number; usedOffsets: Set<number> }
+  >()
   for (const edge of graph.edges) {
     // Skip edges that were already routed as part of a bundle
     if (edge.bundle && edge.path.length > 0) {
@@ -1999,6 +2004,7 @@ export function createMapping(graph: AsciiGraph): void {
     const prevStraight = graph.preferStraightRoutes
     if (engaged) graph.preferStraightRoutes = true
     determinePath(graph, edge)
+    splitSharedLabeledLane(graph, edge, sharedLaneState)
     rerouteAroundStyleConflicts(
       graph,
       edge,
