@@ -355,14 +355,18 @@ export function portShifts(graph: AsciiGraph): Map<AsciiEdge, PortShift> {
  * so a later re-route can never see a stale map.
  */
 const scopedShifts = new WeakMap<AsciiGraph, Map<AsciiEdge, PortShift>>()
+/** Per-edge `pathToDrawing` results, valid for the same scope (#1458). */
+const scopedPaths = new WeakMap<AsciiGraph, Map<AsciiEdge, DrawingCoord[]>>()
 
 export function withPortShifts<T>(graph: AsciiGraph, run: () => T): T {
   if (scopedShifts.has(graph)) return run()
   scopedShifts.set(graph, computePortShifts(graph))
+  scopedPaths.set(graph, new Map())
   try {
     return run()
   } finally {
     scopedShifts.delete(graph)
+    scopedPaths.delete(graph)
   }
 }
 
@@ -857,11 +861,17 @@ export function pathToDrawing(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): DrawingCoord[] {
+  const cache = scopedPaths.get(graph)
+  const hit = cache?.get(edge)
+  if (hit) return hit
   const base = lineToDrawing(graph, edge.path)
   const shifts = edgePointShifts(graph, edge)
-  if (!shifts) return base
-  return base.map((dc, i) => ({
-    x: dc.x + shifts[i]!.x,
-    y: dc.y + shifts[i]!.y,
-  }))
+  const out = shifts
+    ? base.map((dc, i) => ({
+        x: dc.x + shifts[i]!.x,
+        y: dc.y + shifts[i]!.y,
+      }))
+    : base
+  cache?.set(edge, out)
+  return out
 }
