@@ -28,8 +28,8 @@ near-linear, so the growth is entirely label placement.
 | N   | `resolveLabelPlacement` calls | uncached resolutions (memo on) | time, memo on | time, memo off |
 | --- | ----------------------------: | -----------------------------: | ------------: | -------------: |
 | 5   |                         3,590 |                            446 |         29 ms |         248 ms |
-| 10  |                        29,570 |                          1,806 |         86 ms |         4.5 s  |
-| 20  |                       238,730 |                          7,226 |        757 ms |          92 s  |
+| 10  |                        29,570 |                          1,806 |         86 ms |          4.5 s |
+| 20  |                       238,730 |                          7,226 |        757 ms |           92 s |
 
 (Memo-off timings include counter overhead.) Calls grow ~8x per doubling (cubic), unique
 resolutions ~4x (quadratic). The #1473 memo removes repeated resolution work (~100x at
