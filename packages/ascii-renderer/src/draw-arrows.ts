@@ -1026,7 +1026,62 @@ export function edgeLabelPlacement(
   graph: AsciiGraph,
   edge: AsciiEdge,
 ): { x: number; y: number; text: string }[] | null {
-  return resolveLabelPlacement(graph, edge, true)
+  const placed = resolveLabelPlacement(graph, edge, true)
+  return placed && clearOfEarlierLabels(graph, edge, placed)
+}
+
+/**
+ * #1433: two edges that share their last vertical leg (a lane's drop into one
+ * node) both resolve to the same cell, and `drawGraph` merges label overlays
+ * last-wins, so one label vanished. Each label is resolved against the others
+ * unmoved, so both see the clash and move identically; the later edge alone
+ * slides along the shared stroke to the nearest rows no earlier label covers.
+ */
+function clearOfEarlierLabels(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  placement: { x: number; y: number; text: string }[],
+): { x: number; y: number; text: string }[] {
+  const earlier = (): { x: number; y: number; text: string }[] => {
+    const out: { x: number; y: number; text: string }[] = []
+    for (const other of graph.edges) {
+      if (other === edge) break
+      if (other.path.length >= 2) {
+        out.push(...(resolveLabelPlacement(graph, other, false) ?? []))
+      }
+    }
+    return out
+  }
+  const hits = (p: { x: number; y: number; text: string }[], o: typeof p) =>
+    p.some((a) =>
+      o.some(
+        (b) =>
+          a.y === b.y &&
+          a.x <= b.x + displayWidth(b.text) - 1 &&
+          b.x <= a.x + displayWidth(a.text) - 1,
+      ),
+    )
+  const others = earlier()
+  const line = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
+  if (
+    !hits(placement, others) ||
+    line.length < 2 ||
+    line[0]!.x !== line[1]!.x ||
+    isClusterExitEdge(graph, edge)
+  ) {
+    return placement
+  }
+  const lo = Math.min(line[0]!.y, line[1]!.y)
+  const hi = Math.max(line[0]!.y, line[1]!.y)
+  for (let d = 1; d < hi - lo; d++) {
+    for (const dy of [d, -d]) {
+      const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
+      const ys = moved.map((m) => m.y)
+      if (Math.min(...ys) <= lo || Math.max(...ys) >= hi) continue
+      if (!hits(moved, others)) return moved
+    }
+  }
+  return placement
 }
 
 /**

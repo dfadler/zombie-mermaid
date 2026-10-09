@@ -22,9 +22,16 @@ describe('LR label clear of a sibling stem (#1433)', () => {
     expect(row.match(/┬/g)).toHaveLength(3)
   })
 
+  it('draws every label, even where two edges share a drop into D (unicode)', () => {
+    const out = renderMermaidASCII(SRC, { colorMode: 'none' })
+    for (const label of ['first', 'second', 'third', 'fourth', 'fifth']) {
+      expect(out).toContain(label)
+    }
+  })
+
   it('still draws the moved labels (ascii)', () => {
     const out = renderMermaidASCII(SRC, { colorMode: 'none', useAscii: true })
-    for (const label of ['first', 'second', 'third', 'fourth']) {
+    for (const label of ['first', 'second', 'third', 'fourth', 'fifth']) {
       expect(out).toContain(label)
     }
   })
