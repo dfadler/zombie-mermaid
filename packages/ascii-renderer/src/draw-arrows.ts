@@ -1052,33 +1052,51 @@ function clearOfEarlierLabels(
     }
     return out
   }
-  const hits = (p: { x: number; y: number; text: string }[], o: typeof p) =>
-    p.some((a) =>
-      o.some(
-        (b) =>
-          a.y === b.y &&
-          a.x <= b.x + displayWidth(b.text) - 1 &&
-          b.x <= a.x + displayWidth(a.text) - 1,
-      ),
-    )
   const others = earlier()
   const line = onEntryJog(graph, edge, labelLineToDrawing(graph, edge))
   if (
-    !hits(placement, others) ||
     line.length < 2 ||
     line[0]!.x !== line[1]!.x ||
     isClusterExitEdge(graph, edge)
   ) {
     return placement
   }
-  const lo = Math.min(line[0]!.y, line[1]!.y)
-  const hi = Math.max(line[0]!.y, line[1]!.y)
+  return slideClearOf(
+    placement,
+    others,
+    Math.min(line[0]!.y, line[1]!.y),
+    Math.max(line[0]!.y, line[1]!.y),
+  )
+}
+
+/**
+ * Shift `placement` along a vertical stroke spanning rows `lo`..`hi` to the
+ * nearest rows strictly inside it (clear of both ends) that no label in
+ * `taken` covers, staying put when it already clears them all (or when no
+ * rows do).
+ */
+export function slideClearOf(
+  placement: { x: number; y: number; text: string }[],
+  taken: { x: number; y: number; text: string }[],
+  lo: number,
+  hi: number,
+): { x: number; y: number; text: string }[] {
+  const hits = (p: typeof placement) =>
+    p.some((a) =>
+      taken.some(
+        (b) =>
+          a.y === b.y &&
+          a.x <= b.x + displayWidth(b.text) - 1 &&
+          b.x <= a.x + displayWidth(a.text) - 1,
+      ),
+    )
+  if (!hits(placement)) return placement
   for (let d = 1; d < hi - lo; d++) {
     for (const dy of [d, -d]) {
       const moved = placement.map((p) => ({ ...p, y: p.y + dy }))
       const ys = moved.map((m) => m.y)
       if (Math.min(...ys) <= lo || Math.max(...ys) >= hi) continue
-      if (!hits(moved, others)) return moved
+      if (!hits(moved)) return moved
     }
   }
   return placement
