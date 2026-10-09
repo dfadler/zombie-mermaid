@@ -210,6 +210,19 @@ export function getPath(
     return null
   }
 
+  // A sealed target (every neighbour blocked, #1474) is unreachable, but the
+  // search would still flood the open quadrant up to MAX_ITERATIONS before
+  // finding that out. `from` counts as an entry: it may sit next to `to`.
+  if (
+    !gridCoordEquals(from, to) &&
+    !MOVE_DIRS.some((dir) => {
+      const n: GridCoord = { x: to.x + dir.x, y: to.y + dir.y }
+      return isFree(grid, n) || gridCoordEquals(n, from)
+    })
+  ) {
+    return null
+  }
+
   const pq = new MinHeap()
   pq.push({ coord: from, priority: 0 })
 

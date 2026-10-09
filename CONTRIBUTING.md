@@ -87,7 +87,7 @@ and commit the generated file under `.changeset/` alongside your change. CI's `c
 
 Update the relevant file under `docs/` (or `README.md`) when you change documented behavior; [docs/README.md](docs/README.md) is the index. Rendered output has accessibility expectations: check [docs/accessibility.md](docs/accessibility.md) for what's guaranteed and CI-enforced before changing markup or colors. `docs/decisions/` holds rare, short records of settled decisions. Add one only when it closes off an alternative someone would plausibly re-propose (see its [README](docs/decisions/README.md)), and walk through [the self-review checklist](docs/decisions/decision-doc-self-review-checklist-977.md) before opening that PR.
 
-Research and measurement findings go in the issue, not in the PR: post a findings summary (what was measured, the result, what to do next) as an issue comment, and link any script or data from the repo with a commit permalink. Don't add a `docs/research/*.md` file by default. Add one only when the write-up is long-form reference that readers will return to independently of the issue (large tables, a reproducible method, a spike others will re-run) and the issue comment links to it. Issues record what we know and how to solve it; PRs carry the solutions.
+Investigation and measurement findings belong on the issue, not only in a PR. Post the findings summary as an issue comment, with a permalink to any long-form artifact (a `docs/research/*.md` doc or a script) in the repo. Add a research doc only when the detail is too long or too reusable for a comment; the PR then carries the artifact, and the issue carries what we know and how to solve it.
 
 ### Mutation and reassignment
 

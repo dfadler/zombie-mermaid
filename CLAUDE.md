@@ -83,14 +83,11 @@ requirement exists to close.
 
 ## Research and measurement: findings go in the issue
 
-When a task is investigation or measurement for an issue, post the findings
-summary as a comment on that issue (result, method in a few lines, next step) and
-link any in-repo script or data with a commit permalink. Don't default to a
-`docs/research/*.md` file in the PR; add one only when the write-up is long-form
-reference that stands apart from the issue, and then link it from the issue
-comment too. See CONTRIBUTING.md's "Documentation, accessibility, and decisions"
-and [#1479](https://github.com/dfadler/zombie-mermaid/issues/1479). Docs-only, so
-no changeset.
+For investigation or measurement work on an issue, post the findings summary as an
+issue comment with a permalink to any artifact (a `docs/research/*.md` doc or a
+script) in the repo; don't leave the findings only in a PR's research doc. Write a
+research doc only when the detail is too long or reusable for a comment. See
+[#1479](https://github.com/dfadler/zombie-mermaid/issues/1479).
 
 ## Decision docs: run the self-review checklist before opening the PR
 
