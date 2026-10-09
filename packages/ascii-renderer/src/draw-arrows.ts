@@ -99,7 +99,7 @@ export function drawArrow(
   const invisible = edge.style === 'invisible'
 
   const boxStartCanvas =
-    hasSegments && !invisible
+    hasSegments && !invisible && (!edge.hasArrowStart || wallStart)
       ? drawBoxStart(
           graph,
           edge.path,
@@ -139,7 +139,7 @@ export function drawArrow(
 
   // Draw start arrowhead for bidirectional edges, in the first stroke cell
   // (one cell out from the source border, mirroring the end head) so the
-  // border stays intact for drawBoxStart's tee (#1438).
+  // border stays intact and untee'd, like the end side's (#1438).
   let arrowHeadStartCanvas: Canvas
   if (edge.hasArrowStart && hasSegments) {
     arrowHeadStartCanvas = drawArrowHead(
