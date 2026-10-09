@@ -32,10 +32,39 @@ export function mkCanvas(x: number, y: number): Canvas {
   return canvas
 }
 
-/** Create a blank canvas with the same dimensions as the given canvas. */
+const blankColumns = new Map<number, string[]>()
+
+/** Frozen all-space column of `height` cells, shared by every sparse layer. */
+function blankColumn(height: number): string[] {
+  let col = blankColumns.get(height)
+  if (!col) {
+    col = Object.freeze(new Array<string>(height).fill(' ')) as string[]
+    blankColumns.set(height, col)
+  }
+  return col
+}
+
+/**
+ * Set a cell, giving a `copyCanvas` layer its own copy of the column first
+ * if it still points at the shared blank one (sparse overlay, #1478).
+ */
+function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
+  let col = canvas[x]!
+  if (Object.isFrozen(col)) canvas[x] = col = col.slice()
+  col[y] = ch
+}
+
+/**
+ * Create a blank canvas with the same dimensions as the given canvas. Columns
+ * are a shared frozen blank until first written, so a mostly-empty per-edge
+ * layer costs O(columns touched x height), not O(area) (#1478). Reads work as
+ * usual; write only through `write`/`drawText`, never `canvas[x][y] = ch`.
+ */
 export function copyCanvas(source: Canvas): Canvas {
   const [maxX, maxY] = getCanvasSize(source)
-  const canvas = mkCanvas(maxX, maxY)
+  const canvas: Canvas = new Array<string[]>(maxX + 1).fill(
+    blankColumn(maxY + 1),
+  )
   inkBounds.set(canvas, [Infinity, Infinity, -1, -1])
   return canvas
 }
@@ -277,7 +306,7 @@ export function write(
 ): void {
   const [maxX, maxY] = getCanvasSize(canvas)
   if (x < 0 || x > maxX || y < 0 || y > maxY) return
-  canvas[x]![y] = ch
+  setCell(canvas, x, y, ch)
   markInk(canvas, x, y)
   if (roleTracking) {
     setRole(roleTracking.roleCanvas, x, y, roleTracking.role)
@@ -518,7 +547,7 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
         } else {
           claimed.set(key, c)
         }
-        out[x]![y] = c
+        setCell(out, x, y, c)
         markInk(out, x, y)
       }
     }
@@ -990,7 +1019,7 @@ export function drawText(
     const current = canvas[x]![start.y]!
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
-      canvas[x]![start.y] = cell
+      setCell(canvas, x, start.y, cell)
       markInk(canvas, x, start.y)
     }
   }
