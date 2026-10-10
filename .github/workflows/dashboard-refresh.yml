@@ -6,7 +6,7 @@
 # workflow is that "future scheduled workflow" scripts/generate-dashboard-
 # data.ts's own header comment already pointed at.
 #
-# Same shape as upstream-check.yml (weekly cron + workflow_dispatch, fork
+# Same shape as upstream-watch.yml (weekly cron + workflow_dispatch, fork
 # guard) but this one commits data instead of opening an issue.
 #
 # Opens a PR instead of pushing straight to main (as this workflow used to)
@@ -52,12 +52,19 @@
 # trigger already redeploys from — no explicit `gh workflow run pages.yml`
 # dispatch needed (that only mattered for the old direct-push design, where
 # the "push" was GITHUB_TOKEN-authored and so was itself suppressed).
+#
+# Also records the weekly benchmark trend entry (bench-history.jsonl, formerly
+# bench-trend.yml) so both data files land in ONE PR / ONE CI run / one
+# PAT-using workflow instead of two (#1605). Unlike the dashboard snapshot,
+# the trend entry is a new time-series point every week, so a PR is always
+# opened; if the dashboard metrics are unchanged only the trend row ships.
 name: Dashboard data refresh
 
 on:
   schedule:
-    # Weekly, offset an hour from upstream-check.yml's Monday 13:00 UTC run
-    # so the two don't contend for the same runner minute.
+    # Weekly, offset an hour from upstream-watch.yml's Monday 13:00 UTC run
+    # so the two don't contend for the same runner minute. form-judge-weekly
+    # follows at 15:00.
     - cron: '0 14 * * 1'
   workflow_dispatch: {}
 
@@ -75,8 +82,6 @@ jobs:
     # against its main, which is harmless but pointless noise for the fork
     # owner.
     if: github.repository == 'dfadler/zombie-mermaid'
-    outputs:
-      changed: ${{ steps.diff.outputs.changed }}
 
     steps:
       - name: Checkout
@@ -104,8 +109,23 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm run dashboard:data
 
-      - name: Check for substantive change
-        id: diff
+      - name: Run benchmark
+        run: pnpm run bench -- --json=bench-current.json
+
+      # No --commit=/--ref= flags: the script falls back to $GITHUB_SHA/
+      # $GITHUB_REF (passing them via `${{ }}` would trip Semgrep's
+      # run-shell-injection rule).
+      - name: Append to trend history
+        run: pnpm run bench:history:append -- bench-current.json
+
+      # Stars, npm downloads and package sizes (#1520). A failed fetch
+      # records null, so this never blocks the benchmark entry.
+      - name: Append project metrics
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm run metrics:history:append
+
+      - name: Check for substantive dashboard change
         run: |
           set -euo pipefail
 
@@ -117,25 +137,25 @@ jobs:
               | jq 'del(.generatedAt)' > /tmp/old-data.json \
             && jq 'del(.generatedAt)' demo/dashboard-data.json > /tmp/new-data.json \
             && diff -q /tmp/old-data.json /tmp/new-data.json > /dev/null; then
-            echo "No substantive change (only generatedAt differs) — skipping PR."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "No substantive dashboard change (only generatedAt differs) — keeping the committed snapshot."
+            git checkout -- demo/dashboard-data.json
           fi
 
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-
       - name: Upload snapshot
-        if: steps.diff.outputs.changed == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dashboard-data-snapshot
-          path: demo/dashboard-data.json
+          # Multiple paths: upload-artifact keeps them relative to the repo root.
+          path: |
+            demo/dashboard-data.json
+            bench-history.jsonl
+            metrics-history.jsonl
           retention-days: 1
 
   open-pr:
     name: Open PR
     needs: generate-snapshot
-    if: needs.generate-snapshot.outputs.changed == 'true' && github.repository == 'dfadler/zombie-mermaid'
+    if: github.repository == 'dfadler/zombie-mermaid'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -155,7 +175,6 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dashboard-data-snapshot
-          path: demo
 
       - name: Commit, push, and open PR
         env:
@@ -168,16 +187,6 @@ jobs:
             exit 1
           fi
 
-          # Empty changeset satisfies the "Changeset present" required
-          # check without claiming a version bump — a data-snapshot refresh
-          # isn't a release-worthy change. Same pattern already used by
-          # several other non-release PRs in .changeset/. Hand-written to
-          # match `pnpm changeset add --empty`'s own output exactly, since
-          # this job has no changesets CLI installed (see step comment
-          # above).
-          mkdir -p .changeset
-          printf -- '---\n---\n' > ".changeset/dashboard-data-refresh-${GITHUB_RUN_ID}.md"
-
           # Suffixed with the run id (not just the date) so two runs on the
           # same UTC day — e.g. a manual workflow_dispatch alongside the
           # weekly cron, or a rerun — never collide on branch name and
@@ -187,8 +196,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add demo/dashboard-data.json .changeset
-          git commit -m 'chore: refresh dashboard data snapshot'
+          git add demo/dashboard-data.json bench-history.jsonl metrics-history.jsonl
+          git commit -m 'chore: weekly data refresh (dashboard snapshot + bench trend)'
 
           # Authenticate only for this push, right before it — see the
           # persist-credentials note on the checkout step above. Pushing
@@ -200,5 +209,5 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --base main \
             --head "$BRANCH" \
-            --title 'chore: refresh dashboard data snapshot' \
-            --body 'Automated weekly refresh of demo/dashboard-data.json (dashboard-refresh.yml). Includes an empty changeset — this is a data snapshot, not a release-worthy change. Merge once checks pass to redeploy the live dashboard.'
+            --title 'chore: weekly data refresh (dashboard snapshot + bench trend)' \
+            --body 'Automated weekly refresh of demo/dashboard-data.json and bench-history.jsonl (dashboard-refresh.yml). No changeset: the "Changeset present" check exempts data-only PRs. Merge once checks pass.'

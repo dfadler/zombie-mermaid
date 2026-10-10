@@ -501,7 +501,7 @@ jobs:
       # this repo merging many PRs per day, that produced far more trend
       # PRs than any maintainer could keep up with (24 open, none ever
       # merged, is what prompted this). Trend recording now runs on its own
-      # weekly schedule instead — see .github/workflows/bench-trend.yml —
+      # weekly schedule instead — see .github/workflows/dashboard-refresh.yml —
       # fully decoupled from how often main actually gets pushed to.
 
   bundle-size:
@@ -586,7 +586,11 @@ jobs:
     container:
       # Official Semgrep image; runs entirely against Semgrep's free, public
       # rulesets (no SEMGREP_APP_TOKEN / Semgrep Cloud account required or used).
-      image: semgrep/semgrep
+      # Pinned to 1.179.0 by digest (the `latest` tag as of 2026-10-10) so an
+      # engine release can't fail old PRs; bump deliberately. Rules from
+      # `--config auto` are still served by the registry and can't be pinned
+      # without vendoring them (see #1599).
+      image: semgrep/semgrep:1.179.0@sha256:93963d9295a366f59e4850127b1550400ee7b388f04fe144e4a1f6325d96e01b
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -641,13 +645,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Also exempt: badges/ and bench-history.jsonl, the bot-written data
+      # files (publish.yml, dashboard-refresh.yml) that used to carry an empty
+      # changeset each (#1585).
       # demo/ is never published (it's excluded from package.json's "files"
       # field), so a PR that only touches demo/ has no effect on the shipped
       # package and shouldn't be forced into a version bump + changelog
       # entry. Scoped to "every changed file is under demo/" rather than a
       # flat path-ignore so a PR that touches demo/ *and* src/ still requires
       # a changeset for the src/ change.
-      - name: Check whether this PR only touches demo/
+      - name: Check whether this PR only touches unpublished/data paths
         id: diff_scope
         run: |
           set -euo pipefail
@@ -655,7 +662,7 @@ jobs:
           # awk, not `grep -c`, because grep -c exits 1 (a hard failure
           # under set -e) when the count is zero — exactly the demo-only
           # case this check needs to detect. awk always exits 0.
-          non_demo_count="$(printf '%s\n' "$changed_files" | awk 'NF && $0 !~ /^demo\// { count++ } END { print count + 0 }')"
+          non_demo_count="$(printf '%s\n' "$changed_files" | awk 'NF && $0 !~ /^(demo\/|badges\/|bench-history\.jsonl$)/ { count++ } END { print count + 0 }')"
           if [ -z "$changed_files" ] || [ "$non_demo_count" -gt 0 ]; then
             echo "demo_only=false" >> "$GITHUB_OUTPUT"
           else
