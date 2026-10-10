@@ -45,7 +45,10 @@ const jsonFetch: Fetcher = async (url) => {
   if (url.startsWith('https://api.github.com') && process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`
   }
-  const res = await fetch(url, { headers })
+  const res = await fetch(url, {
+    headers,
+    signal: AbortSignal.timeout(15_000),
+  })
   if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`)
   return res.json()
 }
