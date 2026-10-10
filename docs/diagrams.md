@@ -965,6 +965,8 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 - **Multi-series** — Each series gets a distinct ANSI color from the theme's accent palette
 - **Legends** — Automatically shown when multiple series are present
 - **Horizontal charts** — Fully supported with categories on the y-axis
+- **Y-axis ticks** — The same "nice" tick values as the SVG, about 5 to 10 per chart. Mermaid.js labels more ticks and, without a `y-axis` range, starts at the data minimum instead of near 0; see [xychart-design.md](xychart-design.md#shipped-behavior-y-axis-ticks-and-the-y-axis-title)
+- **Y-axis title** — Written one letter per row down the left edge in vertical charts (no rotation in a terminal), and as a centered line under the axis in horizontal charts
 
 ### ASCII Pie Charts
 

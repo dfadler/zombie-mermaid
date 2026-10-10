@@ -10,6 +10,51 @@ XY charts render bar charts, line charts, or combinations thereof, with categori
 
 ---
 
+## Shipped behavior: y-axis ticks and the y-axis title
+
+Added for [#1705](https://github.com/dfadler/zombie-mermaid/issues/1705) (finding 4 and 6 of the [#1592 audit](https://github.com/dfadler/zombie-mermaid/issues/1592#issuecomment-6100809326)). This describes the code as it is today, not a proposal.
+
+### Value-axis tick policy
+
+The same `niceTickValues` algorithm runs in the SVG layout (`packages/svg-renderer/src/xychart/layout.ts`) and, as a copy, in the ASCII renderer (`packages/ascii-renderer/src/xychart.ts`). It applies to the y-axis in vertical charts and to the value (x) axis in horizontal charts.
+
+1. Take the axis range `min --> max`. If the source has no `y-axis min --> max`, the parser (`packages/mermaid-parser/src/xychart/parser.ts`) derives it from all series data: pad each end by 10% of the data span, then floor `min` to 0 when it is positive and below half the span. With no data, the range is 0 to 100.
+2. Aim for about 6 intervals: `rawInterval = (max - min) / 6`.
+3. Round `rawInterval` to a nice step. With `magnitude = 10^floor(log10(rawInterval))` and `residual = rawInterval / magnitude`, the step is `1`, `2`, `5` or `10` times `magnitude` for a residual of at most 1.5, 3, 7, or above 7.
+4. Emit every multiple of the step from `ceil(min / step) * step` up to `max`.
+
+The result is roughly 5 to 10 ticks. A y-axis label is drawn at every tick, and so is a grid line. Labels use as many decimals as the step needs to stay distinct (`formatTickLabels`).
+
+Mermaid's own axis does not follow this policy, and the output differs. Mermaid 11.17.2 (the pinned `mermaid` devDependency) was rendered next to this renderer's SVG for the `XY Chart` samples in `packages/site/samples-data.ts`. Counted by y tick labels:
+
+| Sample               | Ours                  | Mermaid 11.17.2        |
+| -------------------- | --------------------- | ---------------------- |
+| Simple Bar Chart     | 0, 50 ... 300 (7)     | 100, 120 ... 300 (11)  |
+| Line Chart           | 0, 200 ... 1200 (7)   | 400, 500 ... 1200 (9)  |
+| Bar and Line Overlay | 0, 2000 ... 10000 (6) | 0, 1000 ... 10000 (11) |
+| Numeric X-Axis       | 0, 20 ... 100 (6)     | 20, 30 ... 90 (8)      |
+| 12-Month Dataset     | 0, 5000 ... 30000 (7) | 0, 2000 ... 30000 (16) |
+| Sprint Burndown      | 0, 10 ... 80 (9)      | 0, 10 ... 80 (9)       |
+| Multiple Bar Series  | 200, 220 ... 360 (9)  | 200, 220 ... 340 (8)   |
+
+Mermaid labels more ticks in most samples, with a finer step. The ranges differ too: with no `y-axis` range, Mermaid uses the data's own minimum and maximum (Simple Bar Chart starts at 100), while this renderer pads and usually starts at 0. This was counted from rendered SVG text, so treat the counts as approximate. The horizontal samples were not compared. The ASCII renderer uses the same ticks as the SVG, so it differs from Mermaid in the same way.
+
+No decision record explains the lower density, so treat it as undecided rather than a deliberate rule. Whether to match Mermaid's density (and its data-derived range) is open on #1705. The mismatch is a fidelity gap, not a rendering bug.
+
+### Y-axis title
+
+- **SVG:** the title is rotated 90 degrees along the left edge of the plot (`PositionedAxis.title.rotate`).
+- **ASCII, vertical charts:** a terminal cannot rotate text, so the title is written one character per row down the leftmost column (column 0), starting at the row that centers it on the plot. A title longer than the plot has rows for is cut off at the bottom of the plot. Because the letters are on separate rows, the title cannot be found by searching the text of the output.
+- **ASCII, horizontal charts:** the value axis is horizontal, so its title is ordinary text centered on the last row, under the tick labels.
+
+```text
+S    │
+t  30┤····
+o    │
+r  25┤····
+y
+```
+
 ## Mermaid Syntax Reference
 
 ```
@@ -257,7 +302,7 @@ export async function layoutXYChart(
 4. **Tick generation:**
    - X-axis categorical: one tick per category, centered in band
    - X-axis numeric: 5-10 ticks at "nice" intervals (1, 2, 5, 10, 20, 50, ...)
-   - Y-axis: 5-8 ticks at nice intervals
+   - Y-axis: nice intervals aimed at about 6 steps (5-10 ticks in practice; see "Shipped behavior" above)
 
 5. **Bar rectangles:**
    - `barWidth = bandWidth * 0.6` (60% of band, leaving gaps)
