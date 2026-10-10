@@ -1,0 +1,32 @@
+schema_version: "1.1"
+name: external-reporter
+description: At merge, an external-authored closed issue gets a drafted closing comment naming the release, not a manual close.
+tags: [quick]
+runs: 3
+execution:
+  allowed_tools: [Skill]
+  prompt: |
+    Merge time for my PR. Close it out. Facts I already pulled:
+
+    - PR body: "Closes #1555"
+    - Issue #1555 author: octocat, authorAssociation: NONE, not a bot
+    - A pending .changeset/fix-label.md exists; the Version Packages PR has not merged
+    - No follow-ups in the PR body
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?close-out"'
+  - name: names_next_release
+    type: regex
+    pattern: 'next release'
+    flags: i
+  - name: drafts_comment
+    type: regex
+    pattern: 'draft|approval|gh-publish-guide'
+    flags: i
+  - name: no_manual_close
+    type: regex
+    pattern: '^\s*(\$ )?gh issue close'
+    flags: im
+    match: not_contains

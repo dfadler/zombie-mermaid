@@ -1,0 +1,29 @@
+schema_version: "1.1"
+name: unfiled-followup
+description: Close-out flags a PR-body follow-up with no issue number and proposes filing it.
+tags: [quick]
+runs: 3
+execution:
+  allowed_tools: [Skill]
+  prompt: |
+    I'm about to open this PR. Close out the PR body before I do. Here is the body:
+
+    ---
+    Adds dark-mode support to the sequence-diagram renderer.
+
+    Follow-up: handle the xychart palette later.
+    Closes #1700
+    ---
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?close-out"'
+  - name: flags_unfiled
+    type: regex
+    pattern: 'unfiled|no (filed )?issue|not (yet )?filed'
+    flags: i
+  - name: drafts_not_publishes
+    type: regex
+    pattern: 'gh issue create|body-file|approval|gh-publish-guide'
+    flags: i
