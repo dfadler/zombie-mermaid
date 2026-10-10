@@ -856,6 +856,11 @@ export function labelLineToDrawing(
   })
 }
 
+/** Identity of the current `withPortShifts` scope's caches, or undefined outside one (#1490). */
+export function pathScope(graph: AsciiGraph): object | undefined {
+  return scopedPaths.get(graph)
+}
+
 /** `edge`'s whole path in drawing space, following any port shift. */
 export function pathToDrawing(
   graph: AsciiGraph,
