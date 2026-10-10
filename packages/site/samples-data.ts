@@ -1548,6 +1548,7 @@ flowchart LR
   {
     title: 'C4: Container With Boundary And BiRel',
     category: 'C4',
+    gallery: true,
     description:
       'A C4 Container diagram: a system boundary holding containers, a database and a queue, with a bidirectional relationship and an external system.',
     source: `C4Container
@@ -1568,6 +1569,7 @@ flowchart LR
   {
     title: 'C4: Nested Boundaries Component',
     category: 'C4',
+    gallery: true,
     description:
       'A C4 Component diagram with a boundary nested inside another boundary, plus components wired to a database outside both.',
     source: `C4Component
@@ -1609,6 +1611,7 @@ flowchart LR
   {
     title: 'Architecture: Nested Groups And Junction',
     category: 'Architecture',
+    gallery: true,
     description:
       'architecture-beta groups nested two deep, with a junction fanning one edge out to two services.',
     source: `architecture-beta
@@ -1630,6 +1633,7 @@ flowchart LR
   {
     title: 'Architecture: Group-To-Group Edges',
     category: 'Architecture',
+    gallery: true,
     description:
       'architecture-beta edges attached to a service\'s enclosing group with the {group} modifier, on one or both ends.',
     source: `architecture-beta
@@ -1662,6 +1666,7 @@ flowchart LR
   {
     title: 'Pie: showData',
     category: 'Pie',
+    gallery: true,
     description:
       '`pie showData` adds each slice\'s value to its legend row, printed as written.',
     source: `pie showData title Key elements in Product X
@@ -1673,6 +1678,7 @@ flowchart LR
   {
     title: 'Pie: Many Slices',
     category: 'Pie',
+    gallery: true,
     description:
       'Fourteen slices: the twelve-colour palette repeats from the 13th slice.',
     source: `pie title Commits by weekday and team
@@ -1694,6 +1700,7 @@ flowchart LR
   {
     title: 'Pie: Tiny Slices',
     category: 'Pie',
+    gallery: true,
     description:
       'Slices under 1% of the total are left out of the pie but stay in the legend; zero-value slices are never drawn.',
     source: `pie showData title Browser share
@@ -1715,6 +1722,7 @@ flowchart LR
   {
     title: 'Pie: Dark Theme',
     category: 'Pie',
+    gallery: true,
     description:
       'The palette follows the theme accent and switches shade direction on a dark background.',
     source: `pie title Time spent
@@ -1798,6 +1806,7 @@ flowchart LR
   {
     title: 'Pie: Wide Characters',
     category: 'Pie',
+    gallery: true,
     description:
       'Chinese, Japanese, Korean and fullwidth characters in the title and labels; text widths are display widths.',
     source: `pie title 宠物 ペット 반려동물

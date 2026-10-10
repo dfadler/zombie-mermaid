@@ -373,6 +373,92 @@ function XyChartGlyph() {
   )
 }
 
+function C4Glyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <circle
+        cx="50"
+        cy="12"
+        r="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="24"
+        y="44"
+        width="52"
+        height="20"
+        rx="3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M50 18 V44"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function ArchitectureGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <rect
+        x="6"
+        y="24"
+        width="24"
+        height="22"
+        rx="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <rect
+        x="70"
+        y="24"
+        width="24"
+        height="22"
+        rx="4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="50" cy="35" r="4" fill="currentColor" />
+      <path
+        d="M30 35 H46 M54 35 H70"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
+function PieGlyph() {
+  return (
+    <svg viewBox="0 0 100 70" width="60" height="42" aria-hidden="true">
+      <circle
+        cx="50"
+        cy="35"
+        r="26"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M50 35 V9 M50 35 L72.5 48 M50 35 L27.5 48"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="edge-anim"
+      />
+    </svg>
+  )
+}
+
 /**
  * Every diagram type's crosslink glyph, keyed by `DiagramTypeProfile.slug`
  * (demo/diagram-pages-data.ts) — the same six slugs `DIAGRAM_TYPE_PROFILES`
@@ -386,6 +472,9 @@ const DIAGRAM_TYPE_GLYPHS: Record<string, () => ReactNode> = {
   class: ClassGlyph,
   er: ErGlyph,
   'xy-chart': XyChartGlyph,
+  c4: C4Glyph,
+  'architecture-beta': ArchitectureGlyph,
+  pie: PieGlyph,
 }
 
 /** One crosslink target: the other type's own display data. */
