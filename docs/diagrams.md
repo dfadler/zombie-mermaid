@@ -280,8 +280,6 @@ an explicit `style A ...` directive overrides both.
 
 <!-- mermaid-audited-version: 11.17.0 (read by .github/workflows/upstream-check.yml; bump when the coverage audit is redone) -->
 
-<!-- mermaid-audited-version: 11.17.0 (read by .github/workflows/upstream-check.yml; bump when the coverage audit is redone) -->
-
 ### Known limitations
 
 Three pieces of Mermaid's flowchart syntax are recognized as intentionally
