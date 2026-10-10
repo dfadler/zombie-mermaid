@@ -6,7 +6,7 @@
  *
  * Usage: tsx scripts/metrics-history-append.ts [--history=<path>] [--max-entries=<n>]
  *
- * Meant to run weekly from .github/workflows/bench-trend.yml. A failed fetch
+ * Meant to run weekly from .github/workflows/dashboard-refresh.yml. A failed fetch
  * records `null` for that value rather than aborting, so one npm blip
  * doesn't lose the week's other numbers.
  */

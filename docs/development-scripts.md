@@ -37,7 +37,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run bench:svg-renderer` — isolated per-package benchmark that times only that package's own code (see the script's header comment for exactly what's included), so a regression can be attributed to a specific package instead of just "render got slower"
 - `pnpm run bench:ascii-renderer` — isolated per-package benchmark that times only that package's own code (see the script's header comment for exactly what's included), so a regression can be attributed to a specific package instead of just "render got slower"
 - `pnpm run bench:package-compare` — the per-package analog of `bench:compare`; no-ops until a maintainer seeds that package's baseline from a real CI run (same reasoning as `bench-baseline.json` — see `scripts/bench-package-compare.ts`'s header)
-- `pnpm run bench:history:append` — append a `bench.ts --json=` summary to the tracked trend history (`bench-history.jsonl`); wired into `.github/workflows/bench-trend.yml`'s weekly schedule (not every push to `main`, and not on PRs) — you shouldn't normally need to run this by hand
+- `pnpm run bench:history:append` — append a `bench.ts --json=` summary to the tracked trend history (`bench-history.jsonl`); wired into `.github/workflows/dashboard-refresh.yml`'s weekly schedule (not every push to `main`, and not on PRs) — you shouldn't normally need to run this by hand
 - `pnpm run bench:trend` — print how the combined render total (and each category) has moved across the most recent entries in `bench-history.jsonl`, for a "weeks/months of drift" view that complements `bench:compare`'s single current-vs-baseline check
 - `pnpm run bench:mcp` — benchmark the `packages/mcp` server's own request/response overhead (Zod validation, tool dispatch, transport round-trip) by driving a real MCP `Client` against `createMcpServer()` over `InMemoryTransport`; reports mean/median/p95 latency per tool. Supports `--json=<path>` in `bench.ts`'s own summary shape, `--iterations=<n>` (default 50), and `--warmup=<n>` (default 5)
 - `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
@@ -60,7 +60,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 ## Other tooling
 
 - `pnpm run bench` — render benchmarks (full end-to-end SVG + ASCII render time)
-- `pnpm run metrics:history:append` — append a snapshot of GitHub stars, npm weekly downloads and unpacked package sizes to `metrics-history.jsonl`; wired into `.github/workflows/bench-trend.yml`'s weekly schedule — you shouldn't normally need to run this by hand
+- `pnpm run metrics:history:append` — append a snapshot of GitHub stars, npm weekly downloads and unpacked package sizes to `metrics-history.jsonl`; wired into `.github/workflows/dashboard-refresh.yml`'s weekly schedule — you shouldn't normally need to run this by hand
 - `pnpm run smoke:packed` — pack every public package, install the tarballs into clean temp projects and smoke-test them as a consumer would (run `pnpm run build` first; what CI's "Packed tarball smoke test" job and publish.yml run)
 - `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
 - `pnpm run form-diff` — build `form-diff.html`, a human-reviewable report pairing real renders (`scripts/form-diff.ts`; see its header comment)
