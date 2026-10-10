@@ -89,6 +89,12 @@ import { registerElk } from 'zombie-mermaid'
 registerElk(ELK)
 ```
 
+| Diagram type                                                    | Needs `registerElk()` in a browser/bundler? |
+| --------------------------------------------------------------- | ------------------------------------------- |
+| flowchart, state, class, ER, architecture (`architecture-beta`) | yes                                         |
+| sequence, pie, xychart, C4                                      | no                                          |
+| any ASCII output (`renderMermaidASCII`)                         | no                                          |
+
 Pass the `ELK` class from `elkjs/lib/elk.bundled.js` or `elkjs/lib/main.js`.
 Under Node and Bun the call is optional: with `elkjs` installed it is loaded on
 first use. Calling it again swaps the constructor. Without a registered or

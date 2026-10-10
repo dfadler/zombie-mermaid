@@ -132,6 +132,7 @@ import { registerElk } from 'zombie-mermaid'
 registerElk(ELK)
 ```
 
+Architecture diagrams (`architecture-beta`, see [Supported Diagrams](docs/diagrams.md#architecture-diagrams)) are laid out by `elkjs` too.
 Sequence, pie, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
 and no registration. Rendering a graph diagram with no `elkjs` available throws an
 `ElkNotRegisteredError` that says how to fix it.
