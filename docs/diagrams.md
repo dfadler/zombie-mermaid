@@ -323,6 +323,33 @@ stateDiagram-v2
   Complete --> [*]
 ```
 
+### Choice, fork and join
+
+`state c <<choice>>` draws an unlabeled diamond; `state f <<fork>>` and
+`state j <<join>>` draw an unlabeled bar (`[[choice]]`, `[[fork]]` and
+`[[join]]` are accepted spellings). The id is only a handle for transitions.
+The bar is always horizontal: Mermaid turns it vertical in `direction LR`,
+which is not done here. In ASCII the bar is a solid row of `█` (`#` in
+pure-ASCII mode).
+
+### Concurrency
+
+A bare `--` line inside a composite state starts a new concurrent region.
+Each region is drawn as its own dashed, untitled box, side by side inside the
+composite, as Mermaid draws them (`┄`/`┆` in ASCII, `.`/`:` in pure-ASCII
+mode).
+
+```
+stateDiagram-v2
+  state Work {
+    [*] --> A1
+    A1 --> A2
+    --
+    [*] --> B1
+    B1 --> B2
+  }
+```
+
 ### Notes
 
 `note right of S : text` and `note left of S : text` attach a note to a

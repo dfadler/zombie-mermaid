@@ -404,6 +404,9 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   let startCount = 0
   let endCount = 0
 
+  // `state x <<choice|fork|join>>` declarations, applied once parsing is done.
+  const pseudoStates = new Map<string, NodeShape>()
+
   // An open `note right of X` ... `end note` block: its target and the text
   // lines gathered so far.
   let noteBlock: { target: string; lines: string[] } | null = null
@@ -558,6 +561,20 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
       continue
     }
 
+    // --- pseudo-state: `state c <<choice>>`, `<<fork>>`, `<<join>>` (also
+    // spelled `[[choice]]`). Drawn as a diamond / bar with no label. ---
+    const pseudoMatch = line.match(
+      /^state\s+([\w\p{L}]+)\s+(?:<<|\[\[)\s*(choice|fork|join)\s*(?:>>|\]\])$/iu,
+    )
+    if (pseudoMatch) {
+      const id = pseudoMatch[1]!
+      const kind = pseudoMatch[2]!.toLowerCase()
+      // Applied after parsing, not here: registering the node now would
+      // pin it ahead of the states the layout reads in first-mention order.
+      pseudoStates.set(id, kind === 'choice' ? 'diamond' : 'fork-join')
+      continue
+    }
+
     // --- state alias: `state "Description" as s1` (without brace) ---
     const stateAliasMatch = line.match(
       /^state\s+"([^"]+)"\s+as\s+([\w\p{L}]+)\s*$/u,
@@ -667,6 +684,16 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   for (const id of graph.classAssignments.keys()) {
     if (!graph.nodes.has(id) && !compositeStateIds.has(id)) {
       ensureStateNode(graph, [], id)
+    }
+  }
+
+  for (const [id, shape] of pseudoStates) {
+    const node = graph.nodes.get(id)
+    if (node) {
+      node.shape = shape
+      node.label = ''
+    } else if (!compositeStateIds.has(id)) {
+      registerStateNode(graph, [], { id, label: '', shape })
     }
   }
 

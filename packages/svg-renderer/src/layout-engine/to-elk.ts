@@ -245,6 +245,11 @@ function estimateNodeSize(
     return { width: 28, height: 28 }
   }
 
+  // Unlabeled state pseudo-states (`<<choice>>`, `<<fork>>`/`<<join>>`), at
+  // mermaid.js's sizes: a 28px diamond and a 70x10 bar.
+  if (label === '' && shape === 'diamond') return { width: 28, height: 28 }
+  if (label === '' && shape === 'fork-join') return { width: 70, height: 10 }
+
   width = Math.max(width, 60)
   height = Math.max(height, 36)
 
