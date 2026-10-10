@@ -501,7 +501,7 @@ jobs:
       # this repo merging many PRs per day, that produced far more trend
       # PRs than any maintainer could keep up with (24 open, none ever
       # merged, is what prompted this). Trend recording now runs on its own
-      # weekly schedule instead — see .github/workflows/bench-trend.yml —
+      # weekly schedule instead — see .github/workflows/dashboard-refresh.yml —
       # fully decoupled from how often main actually gets pushed to.
 
   bundle-size:
@@ -646,7 +646,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Also exempt: badges/ and bench-history.jsonl, the bot-written data
-      # files (publish.yml, bench-trend.yml) that used to carry an empty
+      # files (publish.yml, dashboard-refresh.yml) that used to carry an empty
       # changeset each (#1585).
       # demo/ is never published (it's excluded from package.json's "files"
       # field), so a PR that only touches demo/ has no effect on the shipped
