@@ -138,6 +138,7 @@
     "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "layout:oracle": "tsx scripts/layout-oracle.ts",
+    "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md",
     "label:oracle": "tsx scripts/label-position-oracle.ts"
   },
   "dependencies": {
