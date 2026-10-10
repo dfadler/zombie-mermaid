@@ -93,6 +93,12 @@ jobs:
         # root's guarantees for library source.
         run: pnpm run typecheck
 
+      # Pre-publish gate (#1566): build, pack and smoke-test the tarballs as
+      # a consumer would, so missing files or broken exports fail here
+      # instead of after npm publish. The publish step rebuilds as needed.
+      - name: Build and smoke-test packed tarballs
+        run: pnpm run build && pnpm run smoke:packed
+
       - name: Create Version PR or publish to npm
         id: changesets
         uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1
