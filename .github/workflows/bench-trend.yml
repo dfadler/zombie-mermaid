@@ -34,7 +34,7 @@ name: Benchmark trend recording
 
 on:
   schedule:
-    # Weekly, offset from upstream-check.yml (Monday 13:00 UTC) and
+    # Weekly, offset from upstream-watch.yml (Monday 13:00 UTC) and
     # dashboard-refresh.yml (Monday 14:00 UTC) so the three don't contend
     # for the same runner minute.
     - cron: '0 15 * * 1'
