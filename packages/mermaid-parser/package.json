@@ -1,6 +1,6 @@
 {
   "name": "@zombie-mermaid/mermaid-parser",
-  "version": "4.2.3",
+  "version": "5.0.0",
   "license": "MIT",
   "description": "Parsers for class, ER, sequence, and XY chart diagrams — the per-type parse functions both svg-renderer and ascii-renderer import directly.",
   "repository": {
