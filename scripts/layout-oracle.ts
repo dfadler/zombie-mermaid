@@ -36,7 +36,6 @@ import {
   formatRow,
   parseOracleArgs,
   worst,
-  type Agreement,
   type Box,
   type HistoryEntry,
   type SampleResult,
