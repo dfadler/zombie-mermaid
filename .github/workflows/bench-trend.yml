@@ -132,13 +132,6 @@ jobs:
             exit 1
           fi
 
-          # Empty changeset satisfies the "Changeset present" required
-          # check without claiming a version bump — a trend-data append
-          # isn't a release-worthy change. Same pattern dashboard-
-          # refresh.yml already uses for its own data-only PRs.
-          mkdir -p .changeset
-          printf -- '---\n---\n' > ".changeset/bench-history-${GITHUB_RUN_ID}.md"
-
           # Suffixed with the run id (not just the date) so a manual
           # workflow_dispatch alongside the weekly cron, or a rerun, never
           # collides on branch name and gets rejected as non-fast-forward
@@ -147,7 +140,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add bench-history.jsonl .changeset
+          git add bench-history.jsonl
           git commit -m 'chore: record benchmark trend entry'
 
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
@@ -157,4 +150,4 @@ jobs:
             --base main \
             --head "$BRANCH" \
             --title 'chore: record benchmark trend entry' \
-            --body 'Automated weekly append of bench.ts'"'"'s summary to bench-history.jsonl, via bench-trend.yml. Includes an empty changeset -- this is a data snapshot, not a release-worthy change. Merge once checks pass. Run pnpm run bench:trend to see the trend report.'
+            --body 'Automated weekly append of bench.ts'"'"'s summary to bench-history.jsonl, via bench-trend.yml. No changeset: the "Changeset present" check exempts data-only PRs. Merge once checks pass. Run pnpm run bench:trend to see the trend report.'
