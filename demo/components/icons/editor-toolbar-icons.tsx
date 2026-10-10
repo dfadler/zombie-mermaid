@@ -79,7 +79,7 @@ export function ShareIcon(props: IconProps) {
  * Download — an arrow onto a baseline.
  *
  * CANVAS: Editor.dc.html, toolbar, `aria-label="Download SVG"`, `--amber` at
- * 16px; the same drawing at 26px on the "One-click SVG export" feature card.
+ * 16px; the same drawing at 26px on the "SVG and ASCII output" feature card.
  */
 export function DownloadIcon(props: IconProps) {
   return (

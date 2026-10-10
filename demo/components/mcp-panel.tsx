@@ -206,12 +206,16 @@ export function McpPanel() {
             lineHeight: 1.55,
           }}
         >
-          <span className="mono">render_mermaid_svg</span>,{' '}
-          <span className="mono">render_mermaid_ascii</span>, and a
-          sequence-activation checker, exposed over stdio — embed it, or run{' '}
-          <span className="mono">zombie-mermaid mcp</span> directly. Shipped to
-          gauge interest, not a finished implementation — the tool surface may
-          still change.{' '}
+          <span className="mono">render_mermaid_svg</span> (optional{' '}
+          <span className="mono">bg</span>/<span className="mono">fg</span>{' '}
+          colors and <span className="mono">outputPath</span>),{' '}
+          <span className="mono">render_mermaid_ascii</span>,
+          sequence-activation check and fix tools,{' '}
+          <span className="mono">list_themes</span>, and{' '}
+          <span className="mono">list_diagram_types</span>, exposed over stdio —
+          embed it, or run <span className="mono">zombie-mermaid mcp</span>{' '}
+          directly. Shipped to gauge interest, not a finished implementation —
+          the tool surface may still change.{' '}
           <a href={`${FORK_URL}#mcp-server`}>Read the MCP docs →</a>
         </p>
       </div>

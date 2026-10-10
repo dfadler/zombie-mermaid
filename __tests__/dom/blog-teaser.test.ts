@@ -12,11 +12,14 @@ describe('BlogTeaser', () => {
   it('renders the real newest post, linking to its blog page', () => {
     render(createElement(BlogTeaser))
 
-    expect(screen.getByText('Sep 6, 2026')).toBeInTheDocument()
+    expect(screen.getByText('Sep 21, 2026')).toBeInTheDocument()
     const postLink = screen.getByRole('link', {
-      name: /294 prs, 14 days/i,
+      name: /standalone packages/i,
     })
-    expect(postLink).toHaveAttribute('href', 'blog/294-prs-14-days.html')
+    expect(postLink).toHaveAttribute(
+      'href',
+      'blog/ascii-and-svg-renderer-now-standalone.html',
+    )
 
     expect(
       screen.getByRole('link', { name: /read the blog/i }),

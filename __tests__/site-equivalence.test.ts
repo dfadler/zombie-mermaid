@@ -113,7 +113,7 @@ describe('index.ts → index.html', () => {
         .querySelector('meta[name="description"]')
         ?.getAttribute('content'),
     ).toBe(
-      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams.',
+      'Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, and Pie diagrams.',
     )
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
@@ -521,9 +521,9 @@ describe('index.ts → index.html', () => {
 
     expect(
       body.getByRole('link', {
-        name: '294 PRs, 14 Days — What Agent-Driven OSS Maintenance Actually Looks Like',
+        name: 'ascii-renderer and svg-renderer are now standalone packages',
       }),
-    ).toHaveAttribute('href', 'blog/294-prs-14-days.html')
+    ).toHaveAttribute('href', 'blog/ascii-and-svg-renderer-now-standalone.html')
     expect(body.getByRole('link', { name: /Read the blog/ })).toHaveAttribute(
       'href',
       'blog/',
