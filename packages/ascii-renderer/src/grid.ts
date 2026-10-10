@@ -25,6 +25,8 @@ import {
   createLabelContext,
   assignParallelEdgeLanes,
   splitSharedLabeledLane,
+  spreadCandidates,
+  type SpreadCandidate,
 } from './edge-routing.ts'
 import { analyzeEdgeBundles, processBundles } from './edge-bundling.ts'
 import { createPathBudget } from './pathfinder.ts'
@@ -209,7 +211,11 @@ function straddlesParent(
  * Each node occupies 3 columns (border, content, border) and 3 rows.
  * Uses shape-aware dimensions to properly size non-rectangular shapes.
  */
-export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
+export function setColumnWidth(
+  graph: AsciiGraph,
+  node: AsciiNode,
+  spreads: readonly SpreadCandidate[] = [],
+): void {
   const gc = requireGridCoord(node)
   const padding = graph.config.boxBorderPadding
 
@@ -223,16 +229,32 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
   const colWidths = shapeDims.gridColumns
   const rowHeights = shapeDims.gridRows
 
+  // #1716: a face holding k side-by-side parallel strokes (k >= 3) needs 2k - 1
+  // interior cells, strokes a spacing of 2 apart and off the corners.
+  const strokeCells = (vertical: boolean): number =>
+    Math.max(
+      0,
+      ...spreads
+        .filter((s) => s.vertical === vertical)
+        .map((s) => 2 * s.strokes - 1),
+    )
+
   for (let idx = 0; idx < colWidths.length; idx++) {
     const xCoord = gc.x + idx
     const current = graph.columnWidth.get(xCoord) ?? 0
-    graph.columnWidth.set(xCoord, Math.max(current, colWidths[idx]!))
+    const want =
+      idx === 1 ? Math.max(colWidths[idx]!, strokeCells(true)) : colWidths[idx]!
+    graph.columnWidth.set(xCoord, Math.max(current, want))
   }
 
   for (let idx = 0; idx < rowHeights.length; idx++) {
     const yCoord = gc.y + idx
     const current = graph.rowHeight.get(yCoord) ?? 0
-    graph.rowHeight.set(yCoord, Math.max(current, rowHeights[idx]!))
+    const want =
+      idx === 1
+        ? Math.max(rowHeights[idx]!, strokeCells(false))
+        : rowHeights[idx]!
+    graph.rowHeight.set(yCoord, Math.max(current, want))
   }
 
   // Padding column/row before the node (spacing between nodes), unless
@@ -269,6 +291,11 @@ export function setColumnWidth(graph: AsciiGraph, node: AsciiNode): void {
     if (hasIncomingEdgeFromOutsideSubgraph(graph, node)) {
       const subgraphOverhead = 4
       basePadding += subgraphOverhead
+    }
+    // #1716: each label of a spread group takes a row of the gap, with a
+    // plain stroke row-pair clear at the tail and three at the arrowhead.
+    for (const s of spreads) {
+      if (s.vertical && s.below) basePadding = Math.max(basePadding, s.rows + 3)
     }
     const current = graph.rowHeight.get(gc.y - 1) ?? 0
     graph.rowHeight.set(gc.y - 1, Math.max(current, basePadding))
@@ -1930,8 +1957,9 @@ export function createMapping(graph: AsciiGraph): void {
   separateNonMembersFromFrames(graph)
 
   // Compute column widths and row heights
+  const spreads = spreadCandidates(graph)
   for (const node of graph.nodes) {
-    setColumnWidth(graph, node)
+    setColumnWidth(graph, node, spreads.get(node))
   }
 
   // Fresh render-wide A* iteration budget for this layout pass. Shared by

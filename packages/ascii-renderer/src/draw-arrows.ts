@@ -1534,8 +1534,9 @@ function otherLabelPlacements(
     const sibling =
       other.from === edge.from &&
       other.to === edge.to &&
-      shifts.has(edge) &&
-      shifts.has(other)
+      // The middle stroke of an odd group sits on its port (shift 0, so no
+      // entry): one of the pair being shifted marks a spread group (#1716).
+      (shifts.has(edge) || shifts.has(other))
     if (sibling && i > at) continue
     out.push(...(resolveLabelPlacement(graph, other, sibling) ?? []))
   }

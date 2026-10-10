@@ -45,11 +45,32 @@ describe('parallel edges side by side (#1394)', () => {
     expect(out).toContain('◄┘')
   })
 
-  it('ASCII: more labels than gap rows keep the side lane', () => {
+  // #1716: three labeled edges used to take lanes whose last two met in one
+  // junction and one arrowhead. The nodes now widen and the gap grows so each
+  // gets its own stroke, arrowhead and label row.
+  it('ASCII: three labeled edges each get a stroke and an arrowhead (#1716)', () => {
     const out = ascii(
-      'graph TD\n  Alpha -->|one| Beta\n  Alpha -->|two| Beta\n  Alpha -->|three| Beta',
+      'graph TD\n  A -->|one| B\n  A -->|two| B\n  A -->|three| B',
     )
-    expect(out).toContain('◄─┴')
+    expect(out.match(/▼/g)).toHaveLength(3)
+    expect(out.match(/[┬┴]/g)).toHaveLength(3)
+    for (const label of ['one', 'two', 'three']) expect(out).toContain(label)
+    expect(out).not.toContain('◄')
+  })
+
+  it('ASCII: a label too wide to sit between its neighbours keeps the lanes', () => {
+    const out = ascii(
+      'graph TD\n  A -->|first| B\n  A -->|second| B\n  A -->|third| B',
+    )
+    expect(out).toMatch(/◄─+┴/)
+  })
+
+  it('ASCII: three labeled edges in LR each get a row and an arrowhead (#1716)', () => {
+    const out = ascii(
+      'graph LR\n  A -->|one| B\n  A -->|two| B\n  A -->|three| B',
+    )
+    expect(out.match(/►/g)).toHaveLength(3)
+    expect(out).not.toContain('▲')
   })
 
   it('ASCII: three edges that fit are spread over three columns', () => {
