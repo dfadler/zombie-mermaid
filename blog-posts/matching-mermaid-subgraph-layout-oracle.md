@@ -58,10 +58,10 @@ of them score worse, so current behavior stayed.
 
 The scores quoted in #1315 for the CI/CD sample, vertical / horizontal:
 
-| Sample | before #1315 | after |
-| --- | --- | --- |
-| CI/CD Pipeline | 48% / 52% | 95% / 76% |
-| System Architecture | 82% / 93% | 96% / 93% |
+| Sample              | before #1315 | after     |
+| ------------------- | ------------ | --------- |
+| CI/CD Pipeline      | 48% / 52%    | 95% / 76% |
+| System Architecture | 82% / 93%    | 96% / 93% |
 
 Here is the oracle run on the current branch point (27 flowchart samples, the
 rows that are not 100% on every figure):
