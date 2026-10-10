@@ -5,7 +5,7 @@ Single-topic files, plus three grouped directories: task-oriented walkthroughs i
 [guides/](guides/), settled-decision records in [decisions/](decisions/), and
 investigation and measurement write-ups in [research/](research/).
 
-- [guides/](guides/) — task-oriented walkthroughs: browsing the samples, choosing a theme
+- [guides/](guides/) — task-oriented walkthroughs: browsing the samples, choosing a theme, upgrading from 2.x to 5.x
 - [development-scripts.md](development-scripts.md) — the less common `package.json` scripts: site generators, benchmarks, bundle-size and coverage checks
 - [visual-regression.md](visual-regression.md) — the Playwright screenshot suite: ASCII mockup fidelity probes, the containerized Linux baselines, and darwin font pitfalls
 - [RELEASING.md](RELEASING.md) — the changesets-based release flow and npm trusted-publishing setup

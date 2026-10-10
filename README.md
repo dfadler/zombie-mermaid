@@ -266,7 +266,7 @@ See [docs/decisions/monorepo-conversion.md](docs/decisions/monorepo-conversion.m
 
 ## Docs
 
-- [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md), [using the HTML viewer](docs/guides/html-viewer.md)
+- [Guides](docs/guides/) — task-oriented walkthroughs: [browsing the samples](docs/guides/samples.md), [choosing a theme](docs/guides/theming.md), [using the HTML viewer](docs/guides/html-viewer.md), [upgrading from 2.x to 5.x](docs/guides/upgrading-2x-to-5x.md)
 - [Accessibility](docs/accessibility.md) — conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
 - [Theming](docs/theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
 - [Supported Diagrams](docs/diagrams.md) — syntax for every diagram type, XY chart styling, and ASCII rendering options

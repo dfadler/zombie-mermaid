@@ -9,6 +9,7 @@ syntax for X"_, these answer _"how do I get X done"_.
 | [Choosing and customizing a theme](theming.md)                   | make diagrams match your site, app, or terminal        |
 | [Using the self-contained HTML viewer](html-viewer.md)           | pan/zoom a diagram, or hand someone a file to open     |
 | [Migrating: `elkjs` is an optional peer](elkjs-optional-peer.md) | upgrade from 4.x and register `elkjs` in a browser app |
+| [Upgrading from 2.x to 5.x](upgrading-2x-to-5x.md)               | work through every breaking change between 2.x and 5.x |
 
 Reference docs, for when you know what you're looking for:
 
