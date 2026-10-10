@@ -323,6 +323,19 @@ stateDiagram-v2
   Complete --> [*]
 ```
 
+### Styling
+
+State diagrams accept the same `classDef` / `class` / `:::name` styling as
+flowcharts (see [Styling](#styling)), including `classDef default`:
+
+```
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Busy:::hot
+  classDef hot fill:#f96,stroke:#333
+  class Idle hot
+```
+
 ## Sequence Diagrams
 
 ```
@@ -469,6 +482,20 @@ classDiagram
   Duck: +String beakColor
   Duck: +swim()
   Duck: +quack()
+```
+
+### Namespaces
+
+`namespace Name { ... }` blocks are drawn as a labeled frame around their
+member classes in both SVG and ASCII.
+
+```
+classDiagram
+  namespace Core {
+    class A
+    class B
+  }
+  A --> B
 ```
 
 ### Interactions
