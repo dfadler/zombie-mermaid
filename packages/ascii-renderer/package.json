@@ -31,7 +31,8 @@
   },
   "files": [
     "dist/",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "dependencies": {
     "@zombie-mermaid/core": "workspace:*",
