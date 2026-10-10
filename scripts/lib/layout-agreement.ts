@@ -151,14 +151,45 @@ export interface OracleArgs {
   /** Fail (exit 1) if any sample's worst figure is below this percentage. */
   failBelow?: number
   tolerance: number
+  /** Which diagram type to score; flowchart unless `--type=state`. */
+  type: OracleType
   help: boolean
+}
+
+/** Diagram types the oracle can score. */
+export type OracleType = 'flowchart' | 'state'
+
+/** Whether `source` is a diagram of `type` (graph/flowchart or stateDiagram[-v2]). */
+export function isOfType(source: string, type: OracleType): boolean {
+  return type === 'state'
+    ? /^\s*stateDiagram(-v2)?\b/.test(source)
+    : /^\s*(graph|flowchart)\b/.test(source)
+}
+
+/**
+ * Our node id for an element id real mermaid wrote into its SVG
+ * (`<renderId>-flowchart-<id>-<n>` / `<renderId>-state-<id>-<n>`; the id may
+ * contain hyphens). Mermaid names the top-level pseudostates `root_start` and
+ * `root_end`; we call them `_start` and `_end`.
+ */
+export function officialNodeName(
+  raw: string,
+  renderId: string,
+  type: OracleType,
+): string {
+  const name = raw
+    .replace(`${renderId}-${type}-`, '')
+    .replace(new RegExp(`^${type}-`), '')
+    .replace(/-\d+$/, '')
+  return type === 'state' ? name.replace(/^root_(start|end)$/, '_$1') : name
 }
 
 export const USAGE = `Usage: tsx scripts/layout-oracle.ts [options]
 
-Compares our layout of each flowchart sample with the one official mermaid.js
-draws, as the share of node pairs placed in the same relation.
+Compares our layout of each flowchart (or state) sample with the one official
+mermaid.js draws, as the share of node pairs placed in the same relation.
 
+  --type=<kind>        flowchart (default) or state
   --filter=<text>      only samples whose title contains <text>
   --json=<file>        write the per-sample figures to <file>
   --history=<file>     append a one-line summary of this run to <file> (JSON Lines)
@@ -170,7 +201,11 @@ draws, as the share of node pairs placed in the same relation.
 
 /** Parse `argv` (without the node and script entries). Throws on anything unknown. */
 export function parseOracleArgs(argv: string[]): OracleArgs {
-  const args: OracleArgs = { tolerance: DEFAULT_TOLERANCE, help: false }
+  const args: OracleArgs = {
+    tolerance: DEFAULT_TOLERANCE,
+    type: 'flowchart',
+    help: false,
+  }
   for (const arg of argv) {
     if (arg === '-h' || arg === '--help') {
       args.help = true
@@ -183,7 +218,12 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     if (!match) throw new Error(`Unknown argument: ${arg}`)
     const [, name, value] = match as unknown as [string, string, string]
     if (name === 'filter') args.filter = value
-    else if (name === 'json') args.json = value
+    else if (name === 'type') {
+      if (value !== 'flowchart' && value !== 'state') {
+        throw new Error(`--type is flowchart or state, got "${value}"`)
+      }
+      args.type = value
+    } else if (name === 'json') args.json = value
     else if (name === 'history') args.history = value
     else if (name === 'scorecard') args.scorecard = value
     else if (name === 'fail-below' || name === 'tolerance') {
