@@ -1,0 +1,64 @@
+# Regenerates the Linux visual baselines inside the same pinned container CI
+# gates on, and pushes them to the chosen branch. macOS agents can't produce
+# these (scripts/docker-test-visual.sh only checks), so this stops them being
+# deferred (#1577).
+#
+# Run: Actions > update-linux-baselines > Run workflow, pick the PR branch.
+# Note: a push made with GITHUB_TOKEN does not trigger CI; push an empty commit
+# or close/reopen the PR afterwards to get checks to run.
+name: update-linux-baselines
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-linux-baselines-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.repository == 'dfadler/zombie-mermaid' && github.ref != 'refs/heads/main'
+    container:
+      image: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only@sha256:aa9d5b32ea243e0f6880c5ad7b4fbb1ab863e97d271a215f5bd966aa58a605d5 # keep in sync with ci.yml's visual-regression job
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Merge main first
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-edit origin/main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate Linux baselines
+        run: pnpm exec playwright test --update-snapshots
+
+      - name: Commit and push
+        run: |
+          git add __tests__/visual/__screenshots__
+          if git diff --cached --quiet; then
+            echo "Baselines already up to date."
+            exit 0
+          fi
+          git commit -m "test(visual): regenerate Linux baselines"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

@@ -1921,4 +1921,142 @@ ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" :
   B -->|sixth| D
   A -->|seventh| D`,
   },
+  {
+    title: 'Direction: Right-Left (RL)',
+    category: 'Flowchart',
+    gallery: true,
+    description:
+      'Flow runs right to left; the first node sits at the right edge.',
+    source: `graph RL
+  A[Start] --> B{Check}
+  B -->|yes| C[Done]
+  B -->|no| D[Retry]
+  D --> B`,
+  },
+  {
+    title: 'Nested Subgraphs (RL)',
+    category: 'Flowchart',
+    gallery: true,
+    description: 'Subgraphs inside subgraphs under a right-to-left direction.',
+    source: `graph RL
+  subgraph Outer
+    subgraph Inner
+      A --> B
+    end
+    B --> C
+  end
+  C --> D`,
+  },
+  {
+    title: 'Nested Subgraphs (BT)',
+    category: 'Flowchart',
+    gallery: true,
+    description: 'Subgraphs inside subgraphs under a bottom-to-top direction.',
+    source: `graph BT
+  subgraph Outer
+    subgraph Inner
+      A --> B
+    end
+    B --> C
+  end
+  C --> D`,
+  },
+  {
+    title: 'Edges Into and Out of Subgraphs',
+    category: 'Flowchart',
+    gallery: true,
+    description:
+      'Edges that cross cluster borders, including exits from a cluster to several siblings (#1331, #1461).',
+    source: `flowchart TD
+  In[Request] --> A
+  subgraph Cluster
+    A --> B
+    B --> C
+  end
+  Cluster --> X[Cache]
+  Cluster --> Y[Log]
+  B --> Z[Audit]
+  C --> W[Reply]`,
+  },
+  {
+    title: 'Vertical Edge Labels',
+    category: 'Flowchart',
+    gallery: true,
+    description: 'Labels on edges in a top-down flow, including multi-word ones.',
+    source: `flowchart TD
+  A[Order] -->|validated| B[Payment]
+  B -->|card declined| C[Retry]
+  B -->|paid in full| D[Ship]
+  C -->|give up| E[Cancel]`,
+  },
+  {
+    title: 'Flowchart: CJK Labels',
+    category: 'Flowchart',
+    gallery: true,
+    description:
+      'Chinese, Japanese and Korean text in nodes, edge labels and a subgraph title.',
+    source: `flowchart LR
+  subgraph 前端
+    A[用户] -->|请求| B[ログイン]
+  end
+  B -->|확인| C{결정}
+  C -->|はい| D[完了]
+  C -->|いいえ| A`,
+  },
+  {
+    title: 'Sequence: CJK Participants',
+    category: 'Sequence',
+    gallery: true,
+    description: 'Wide characters in participant names, messages and a note.',
+    source: `sequenceDiagram
+  participant 客户
+  participant サーバー
+  participant 데이터베이스
+  客户->>サーバー: 要求を送信
+  サーバー->>데이터베이스: 조회
+  데이터베이스-->>サーバー: 결과
+  Note over サーバー,데이터베이스: 캐시 사용
+  サーバー-->>客户: 应答`,
+  },
+  {
+    title: 'Sequence: Span Labels Across Lifelines',
+    category: 'Sequence',
+    gallery: true,
+    description:
+      'A long label on a message that crosses intermediate lifelines; the lifelines stay visible around it (#1119).',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  participant C
+  participant D
+  A->>D: a label that spans the lifelines of B and C
+  D-->>A: and a reply that also crosses them
+  B->>C: adjacent
+  A->>C: skips B`,
+  },
+  {
+    title: 'Class: Namespaces',
+    category: 'Class',
+    gallery: true,
+    description:
+      'Classes grouped into namespaces, with a relationship across them.',
+    source: `classDiagram
+  namespace Shapes {
+    class Circle {
+      +radius
+      +area()
+    }
+    class Square {
+      +side
+      +area()
+    }
+  }
+  namespace Rendering {
+    class Canvas {
+      +draw(shape)
+    }
+  }
+  Canvas --> Circle
+  Canvas --> Square`,
+  },
 ]
