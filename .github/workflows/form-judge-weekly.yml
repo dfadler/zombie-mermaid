@@ -164,7 +164,9 @@ jobs:
         # above rather than burn the full budget silently. If a future
         # category's sample count pushes past this, raise it again from a
         # measured run, not preemptively.
-        timeout-minutes: 15
+        # Raised 15 -> 25 after run 37377612759 (#1604): Flowchart outgrew 15m
+        # and timed out. Raise again from a measured run, not preemptively.
+        timeout-minutes: 25
         # Pinned to main's HEAD as of 2026-09-06, not a tagged release —
         # anthropics/claude-code-base-action has no tag newer than v0.0.63
         # (2025-08-22, the previous pin here), only untagged daily "sync
@@ -298,6 +300,7 @@ jobs:
           # via a sample's own content) would sail straight through that
           # gap otherwise. See PR #408 for the full reasoning.
           CLAUDE_TOKEN_TO_SCRUB: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          JUDGE_RESULT: ${{ needs.judge.result }}
         run: |
           set -euo pipefail
 
@@ -363,6 +366,14 @@ jobs:
               done
               printf '> [!WARNING]\n> **Incomplete report** — no results for: %s. That category'"'"'s judge matrix leg likely failed before writing anything (see the [run](%s) for why); the counts and findings below only cover the categories that did report.\n\n' \
                 "$MISSING_JOINED" "$RUN_URL"
+            fi
+
+            # A leg that timed out / failed mid-run still uploads partial
+            # results (so it's NOT in MISSING_CATEGORIES); the aggregate
+            # matrix result is the only signal of that (#1604).
+            if [ "$JUDGE_RESULT" != "success" ]; then
+              printf '> [!WARNING]\n> **Partial coverage** — the judge job finished as `%s` (a matrix leg failed or timed out), so some categories may have been only partly judged. See the [run](%s).\n\n' \
+                "$JUDGE_RESULT" "$RUN_URL"
             fi
 
             JUDGED=$((TOTAL - SKIPPED))
