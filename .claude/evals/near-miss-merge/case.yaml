@@ -1,4 +1,4 @@
-schema_version: "1.1"
+schema_version: '1.1'
 name: near-miss-merge
 description: A merge-strategy question shares vocabulary with close-out but must not fire it.
 tags: [quick]

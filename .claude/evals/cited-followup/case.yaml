@@ -1,4 +1,4 @@
-schema_version: "1.1"
+schema_version: '1.1'
 name: cited-followup
 description: A follow-up that already cites a filed issue is not flagged, and a non-deferral "later" is tolerated.
 tags: [quick]

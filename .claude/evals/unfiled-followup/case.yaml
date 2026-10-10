@@ -1,4 +1,4 @@
-schema_version: "1.1"
+schema_version: '1.1'
 name: unfiled-followup
 description: Close-out flags a PR-body follow-up with no issue number and proposes filing it.
 tags: [quick]

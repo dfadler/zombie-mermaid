@@ -1,4 +1,4 @@
-schema_version: "1.1"
+schema_version: '1.1'
 name: external-reporter
 description: At merge, an external-authored closed issue gets a drafted closing comment naming the release, not a manual close.
 tags: [quick]
