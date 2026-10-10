@@ -117,6 +117,8 @@ export type NodeShape =
   | 'bolt' // lightning bolt — communication link
   | 'text' // label with no outline
   | 'anchor' // invisible point
+  // State diagram `note left of X` / `note right of X`
+  | 'note' // dog-eared box
 
 export interface MermaidEdge {
   source: string

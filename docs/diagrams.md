@@ -323,6 +323,17 @@ stateDiagram-v2
   Complete --> [*]
 ```
 
+### Notes
+
+`note right of S : text` and `note left of S : text` attach a note to a
+state; a block form (`note right of S`, the text on following lines, then
+`end note`) holds several lines. The note is a dog-eared box (square-cornered
+in ASCII, where states are rounded) joined to its state by a dotted,
+arrowless link. Mermaid places the note beside its state; here the dotted link
+decides where it lands, so `left`/`right` is accepted but not honored as a
+side. The note's text is the only thing it carries: `note over` and
+free-floating notes are not recognized.
+
 ### Styling
 
 State diagrams accept the same `classDef` / `class` / `:::name` styling as

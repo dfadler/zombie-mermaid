@@ -404,9 +404,55 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   let startCount = 0
   let endCount = 0
 
+  // An open `note right of X` ... `end note` block: its target and the text
+  // lines gathered so far.
+  let noteBlock: { target: string; lines: string[] } | null = null
+  let noteCount = 0
+  const addNote = (target: string, text: string): void => {
+    if (!compositeStateIds.has(target)) {
+      ensureStateNode(graph, compositeStack, target)
+    }
+    noteCount++
+    // Mermaid names the note node `<state>----note-<n>` and joins it to the
+    // state with a dotted, arrowless link.
+    const noteId = `${target}----note-${noteCount}`
+    registerStateNode(graph, compositeStack, {
+      id: noteId,
+      label: normalizeBrTags(text),
+      shape: 'note',
+    })
+    graph.edges.push({
+      source: target,
+      target: noteId,
+      style: 'dotted',
+      hasArrowStart: false,
+      hasArrowEnd: false,
+    })
+  }
+
   for (let i = 1; i < lines.length; i++) {
     const stmt = lines[i]!
     const line = stmt.text
+
+    // --- note: `note right of X : text`, or a block closed by `end note` ---
+    if (noteBlock) {
+      if (/^end\s+note$/i.test(line)) {
+        addNote(noteBlock.target, noteBlock.lines.join('\n'))
+        noteBlock = null
+      } else {
+        noteBlock.lines.push(line)
+      }
+      continue
+    }
+    const noteMatch = line.match(
+      /^note\s+(?:left|right)\s+of\s+([\w\p{L}-]+)\s*(?::\s*(.*))?$/iu,
+    )
+    if (noteMatch) {
+      if (noteMatch[2] !== undefined)
+        addNote(noteMatch[1]!, noteMatch[2].trim())
+      else noteBlock = { target: noteMatch[1]!, lines: [] }
+      continue
+    }
 
     // --- classDef / class assignment / style — shared with the flowchart and
     // class-diagram parsers, see packages/core/src/style-directives.ts.

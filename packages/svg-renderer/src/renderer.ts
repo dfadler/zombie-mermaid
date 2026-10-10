@@ -698,6 +698,8 @@ function renderNodeShape(node: PositionedNode): string {
       return renderCrossedCircle(x, y, width, height, fill, stroke, sw)
     case 'fork-join':
       return renderForkJoin(x, y, width, height, stroke)
+    case 'note':
+      return renderNoteShape(x, y, width, height, stroke, sw)
     case 'notched-pentagon':
       return renderNotchedPentagon(x, y, width, height, fill, stroke, sw)
     case 'sloped-rectangle':
@@ -1236,6 +1238,29 @@ function renderForkJoin(
 ): string {
   const barH = Math.min(8, h)
   return f`<rect x="${x}" y="${y + (h - barH) / 2}" width="${w}" height="${barH}" fill="${stroke}" stroke="${stroke}" />`
+}
+
+/** State diagram note: a dog-eared box, like the sequence/class notes. */
+function renderNoteShape(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  stroke: string,
+  sw: string,
+): string {
+  const fold = 6
+  const body = [
+    f`${x},${y}`,
+    f`${x + w - fold},${y}`,
+    f`${x + w},${y + fold}`,
+    f`${x + w},${y + h}`,
+    f`${x},${y + h}`,
+  ].join(' ')
+  return (
+    f`<polygon points="${body}" fill="var(--bg)" stroke="${stroke}" stroke-width="${sw}" />\n` +
+    f`<polygon points="${x + w - fold},${y} ${x + w},${y + fold} ${x + w - fold},${y + fold}" fill="var(--_inner-stroke)" stroke="${stroke}" stroke-width="${sw}" />`
+  )
 }
 
 /** Notched pentagon (loop limit): both top corners clipped. */
