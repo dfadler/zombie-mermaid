@@ -278,6 +278,8 @@ motion was intended.
 own class (`class A foo` or `A:::foo`) overrides it property by property, and
 an explicit `style A ...` directive overrides both.
 
+<!-- mermaid-audited-version: 11.17.0 (read by .github/workflows/upstream-check.yml; bump when the coverage audit is redone) -->
+
 ### Known limitations
 
 Three pieces of Mermaid's flowchart syntax are recognized as intentionally
@@ -319,6 +321,19 @@ stateDiagram-v2
   Idle --> Processing: start
   Processing --> Complete: done
   Complete --> [*]
+```
+
+### Styling
+
+State diagrams accept the same `classDef` / `class` / `:::name` styling as
+flowcharts (see [Styling](#styling)), including `classDef default`:
+
+```
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Busy:::hot
+  classDef hot fill:#f96,stroke:#333
+  class Idle hot
 ```
 
 ## Sequence Diagrams
@@ -467,6 +482,20 @@ classDiagram
   Duck: +String beakColor
   Duck: +swim()
   Duck: +quack()
+```
+
+### Namespaces
+
+`namespace Name { ... }` blocks are drawn as a labeled frame around their
+member classes in both SVG and ASCII.
+
+```
+classDiagram
+  namespace Core {
+    class A
+    class B
+  }
+  A --> B
 ```
 
 ### Interactions
