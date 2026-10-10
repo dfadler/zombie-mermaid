@@ -16,7 +16,7 @@
  * budget should be a deliberate, visible diff, not a regenerated snapshot).
  */
 
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir, stat } from 'node:fs/promises'
 import { gzipSync } from 'node:zlib'
 import { build } from 'esbuild'
 import { fileURLToPath } from 'node:url'
@@ -26,6 +26,8 @@ interface BudgetFile {
   budgets: Record<string, number>
   /** Minified browser bundle of the entry, `elkjs` NOT registered (#1370). */
   consumerBundles: Record<string, number>
+  /** Unpacked bytes of each package's dist/ (source maps excluded), #1569. */
+  unpackedBudgets: Record<string, number>
 }
 
 const EXIT_OK = 0
@@ -111,6 +113,34 @@ for (const [relPath, budget] of Object.entries(budgetFile.consumerBundles)) {
   if (gzipSize > budget) anyOverBudget = true
 }
 
+// Per-package unpacked size (#1569): total bytes of dist/, minus .map files
+// (not published). Catches growth that per-file gzip budgets can miss, e.g.
+// a new chunk or .d.ts bloat.
+console.log('\nUnpacked dist/ size per package (no source maps)')
+console.log('─'.repeat(70))
+for (const [relDir, budget] of Object.entries(budgetFile.unpackedBudgets)) {
+  let size = 0
+  try {
+    const dir = fileURLToPath(new URL(`../${relDir}`, import.meta.url))
+    for (const f of await readdir(dir, { recursive: true })) {
+      if (f.endsWith('.map')) continue
+      const st = await stat(`${dir}/${f}`)
+      if (st.isFile()) size += st.size
+    }
+  } catch {
+    console.error(
+      `  ${relDir.padEnd(20)} MISSING — run \`pnpm run build\` first`,
+    )
+    anyMissing = true
+    continue
+  }
+  const status = size > budget ? 'OVER' : 'ok'
+  console.log(
+    `  ${relDir.padEnd(20)} ${fmtBytes(size).padStart(10)} / ${fmtBytes(budget).padStart(10)} budget  ${status}`,
+  )
+  if (size > budget) anyOverBudget = true
+}
+
 if (anyMissing) {
   console.error('\nFAIL: one or more budgeted dist/ files were not built.')
   process.exit(EXIT_FAILURE)
@@ -121,7 +151,7 @@ if (anyOverBudget) {
     '\nFAIL: one or more dist/ files exceeded their gzip size budget.',
   )
   console.error(
-    'If the increase is intentional and reviewed, raise the budget in bundle-size-budget.json.',
+    'If the increase is intentional and reviewed, raise the budget in bundle-size-budget.json in the same PR and justify the increase in the PR description (see CONTRIBUTING.md, "Bundle size budgets").',
   )
   process.exit(EXIT_FAILURE)
 }
