@@ -1,11 +1,6 @@
 name: Visual regression Chromium-only image (build & publish)
 
-# Builds and pushes docker/visual-regression-chromium.Dockerfile to GHCR,
-# then runs a throwaway `container:` job against the freshly-pushed image so
-# its real "Initialize containers" (image pull) time can be sampled from
-# `gh run view --json jobs` the same way
-# docs/research/ci-container-job-vs-actions-cache-timing.md sampled the real
-# `visual-regression` job's pull time in ci.yml.
+# Builds and pushes docker/visual-regression-chromium.Dockerfile to GHCR.
 #
 # ORIGIN AND CURRENT ROLE
 #
@@ -33,11 +28,6 @@ name: Visual regression Chromium-only image (build & publish)
 # pinned Playwright/base-image version bumps, then update `ci.yml`'s digest
 # to match.
 #
-# The `measure-pull-time` job below is no longer this workflow's primary
-# purpose, but it costs nothing extra on a workflow_dispatch-only run and
-# remains useful for a future re-measurement if the base image changes
-# again - kept per #868's own explicit "keep for future re-measurement"
-# option rather than deleted.
 on:
   workflow_dispatch: {}
 
@@ -82,9 +72,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Pushes two tags: the immutable per-run SHA tag (what the measurement
-      # job below actually pulls, so a re-run of this workflow can't change
-      # the image out from under a `run` that already started) and the
+      # Pushes two tags: the immutable per-run SHA tag (what ci.yml pins by
+      # digest, so a re-run of this workflow can't change the image) and the
       # floating `visual-regression-chromium-only` tag (so anyone poking at
       # GHCR by hand, or a future PR revisiting this, can find "the current
       # one" without hunting through run history for a SHA).
@@ -97,60 +86,3 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.tag }}
             ${{ env.IMAGE }}:latest
-
-  measure-pull-time:
-    name: Measure GHCR pull time (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: github.repository == 'dfadler/zombie-mermaid'
-    permissions:
-      contents: read
-      packages: read # pulls the image this job's build-and-push step just pushed
-    # Mirrors ci.yml's `visual-regression` job's --ipc=host and 4-shard
-    # matrix exactly, so the "Initialize containers" timing sampled here is
-    # comparable to the real job's, not an apples-to-oranges single-container
-    # pull. fail-fast: false for the same reason as ci.yml: one shard's
-    # container failing to start (or a rendering mismatch - this image was
-    # never suite-verified the way docker/visual-regression.Dockerfile was)
-    # shouldn't cancel the other shards' timing samples.
-    strategy:
-      fail-fast: false
-      matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
-    container:
-      image: ${{ needs.build-and-push.outputs.tag }}
-      options: --ipc=host
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          persist-credentials: false
-
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # This is a TIMING measurement, not a correctness check: the point of
-      # this job is the "Initialize containers" step duration GitHub records
-      # before this step even starts, sampled afterward via `gh run view
-      # --json jobs`. Whether the suite itself passes against this
-      # never-suite-verified image is irrelevant to that number, so a
-      # rendering mismatch here must not be read as this image being unfit
-      # for anything - it was never validated against the committed
-      # baselines the way docker/visual-regression.Dockerfile was (see that
-      # file's own font-parity layer, copied here unverified). continue-on-
-      # error keeps a mismatch from hiding this job's "Initialize containers"
-      # timing behind a big red X.
-      - name: Run visual regression suite (timing only, not a correctness gate)
-        continue-on-error: true
-        run: pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
