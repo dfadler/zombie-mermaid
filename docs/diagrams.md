@@ -732,7 +732,7 @@ Supported: `Person`, `System`, `Container`, `Component` (plus `Db`, `Queue` and 
 
 C4 diagrams have their own renderers (they are not lowered to the flowchart model): persons get a head-and-shoulders glyph, databases a cylinder, queues a pipe, external elements the muted C4 palette, and boundaries and deployment nodes a dashed frame with a title. Relationship labels show the label and, on its own line, the `[technology]`. A `title` is drawn at the top. `Rel` endpoints may be populated boundaries. `RenderOptions.direction` re-orients the SVG layout (default top-to-bottom).
 
-Layout hints: `Rel_D`/`Rel_U` are layering constraints (the target sits below/above the source) in both renderers. `Rel_R`/`Rel_L` place the two elements side by side in one row, source left/right of target: exact in ASCII; in SVG the ELK layered engine cannot guarantee a shared layer, so it is a strong nudge (the two share predecessors and are ordered) that holds unless other relationships pull them apart. In a left-to-right SVG layout the axes swap.
+Layout hints: `Rel_D`/`Rel_U`/`Rel_L`/`Rel_R` are layering constraints (target below/above, or side by side in one row) in ASCII. In SVG they have no effect on placement, as in Mermaid: shapes are laid out in declaration order, in rows, and relationships are drawn afterwards without moving anything. C4 SVG uses its own row layout, not ELK, so it does not need `elkjs`.
 
 Known limitations:
 

@@ -3,7 +3,10 @@
 Because rendering is synchronous, you can call `renderMermaidSVG()` directly in the render body — no `useEffect` round trip, no flash. Wrapping the call in `useMemo()` additionally skips recomputing the SVG on renders where `code` hasn't changed:
 
 ```tsx
-import { renderMermaidSVG } from 'zombie-mermaid'
+import ELK from 'elkjs/lib/elk.bundled.js'
+import { registerElk, renderMermaidSVG } from 'zombie-mermaid'
+
+registerElk(ELK) // once, at app startup, before the first render
 
 function MermaidDiagram({ code }: { code: string }) {
   const { svg, error } = React.useMemo(() => {
@@ -29,9 +32,11 @@ function MermaidDiagram({ code }: { code: string }) {
 }
 ```
 
+**Setup:** in a browser, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you call `registerElk()`, so run `npm install elkjs` and register it as above. Sequence, pie, xychart and C4 diagrams need nothing. To keep `elkjs` out of your initial bundle, register it lazily instead: `const { default: ELK } = await import('elkjs/lib/elk.bundled.js'); registerElk(ELK)`, and render only after that resolves. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+
 **Why this works well:**
 
-- **No flash** — SVG is computed synchronously during render, not in a useEffect
+- **No flash** — SVG is computed synchronously during render, not in a useEffect (once `elkjs` is registered)
 - **CSS variables** — Pass `var(--background)` etc. instead of hex colors. The SVG inherits from your app's CSS, so theme switches apply instantly without re-rendering
 - **Memoized** — Only recomputed when `code` changes
 - **Links and hover stay interactive** — `dangerouslySetInnerHTML` inlines the SVG into your page's DOM. An `<img src="data:image/svg+xml,...">` approach would render the SVG in the browser's secure static mode instead, where `click`-generated links and CSS `:hover` tooltips go inert — see [`docs/decisions/no-script-interactivity.md`](decisions/no-script-interactivity.md) for why
