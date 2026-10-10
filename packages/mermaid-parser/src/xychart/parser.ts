@@ -133,12 +133,12 @@ export function parseXYChart(lines: Statement[]): XYChart {
     const allValues = series.flatMap((s) => s.data)
     let min = Math.min(...allValues)
     let max = Math.max(...allValues)
-    const span = max - min || 1
-    // Add 10% padding
-    min = min - span * 0.1
-    max = max + span * 0.1
-    // Floor to 0 if all values are positive and min is close to 0
-    if (min > 0 && min < span * 0.5) min = 0
+    // Mermaid uses the raw data extent. Only a flat series (zero span) gets
+    // a synthetic range, so the axis has something to draw.
+    if (max === min) {
+      min -= 0.1
+      max += 0.1
+    }
     yAxis.range = { min, max }
   }
 
