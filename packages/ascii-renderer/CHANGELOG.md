@@ -1,5 +1,18 @@
 # @zombie-mermaid/ascii-renderer
 
+## 5.0.1
+
+### Patch Changes
+
+- [#1496](https://github.com/dfadler/zombie-mermaid/pull/1496) [`23007f5`](https://github.com/dfadler/zombie-mermaid/commit/23007f5b3356f3531b2a25aebab3aa9974836015) Thanks [@dfadler](https://github.com/dfadler)! - ASCII: the CI/CD Pipeline sample's `Build Image --> Deploy Staging` edge now takes the A*-routed path (up and over the `Tests Pass?` row) instead of a direct-path fallback. The [#1474](https://github.com/dfadler/zombie-mermaid/issues/1474) sealed-target guard stops sealed-target searches draining the render-wide path budget, so the edge's real search is no longer starved. This is an intentional output change; the [#1474](https://github.com/dfadler/zombie-mermaid/issues/1474) note that output is unchanged was wrong for this diagram ([#1493](https://github.com/dfadler/zombie-mermaid/issues/1493)).
+
+- [#1501](https://github.com/dfadler/zombie-mermaid/pull/1501) [`000bea2`](https://github.com/dfadler/zombie-mermaid/commit/000bea2eefcf178646f6a90d2e364b603d191954) Thanks [@dfadler](https://github.com/dfadler)! - ASCII sequence: a message label that spans several participants no longer overwrites the lifelines it passes over; it is centred in a gap wide enough to hold it instead ([#1119](https://github.com/dfadler/zombie-mermaid/issues/1119)).
+
+- [#1498](https://github.com/dfadler/zombie-mermaid/pull/1498) [`2e01fc8`](https://github.com/dfadler/zombie-mermaid/commit/2e01fc855e13681f808cbbd8331763cfc677508f) Thanks [@dfadler](https://github.com/dfadler)! - Speed up ASCII label placement on graphs with many labelled edges: `besideGeometryFree` now reads a per-layout row index of drawn edge segments instead of rescanning every edge for each candidate. Output is unchanged.
+- Updated dependencies []:
+  - @zombie-mermaid/core@5.0.1
+  - @zombie-mermaid/mermaid-parser@5.0.1
+
 ## 5.0.0
 
 ### Major Changes
