@@ -1,3 +1,4 @@
+import { decodeMermaidEntities } from '@zombie-mermaid/core'
 import type { PieChart, PieSlice } from './types.ts'
 
 // ============================================================================
@@ -335,7 +336,7 @@ export function parsePieChart(text: string): PieChart {
       case 'ACC_TITLE':
       case 'ACC_DESCR': {
         const value = convertTitleLike(token.kind, token.text)
-        if (token.kind === 'TITLE') title = value
+        if (token.kind === 'TITLE') title = decodeMermaidEntities(value)
         else if (token.kind === 'ACC_TITLE') accTitle = value
         else accDescr = value
         i++
@@ -355,7 +356,7 @@ export function parsePieChart(text: string): PieChart {
         i++
         expectEndOfStatement('the slice value')
         rawSlices.push({
-          label: convertString(token.text),
+          label: decodeMermaidEntities(convertString(token.text)),
           value: Number(valueToken.text),
           line: token.line,
         })

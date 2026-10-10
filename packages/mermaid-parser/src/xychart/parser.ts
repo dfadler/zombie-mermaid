@@ -1,5 +1,5 @@
 import type { XYChart, XYAxis, XYChartSeries } from './types.ts'
-import type { Statement } from '@zombie-mermaid/core'
+import { decodeMermaidEntities, type Statement } from '@zombie-mermaid/core'
 
 // ============================================================================
 // XY Chart parser
@@ -40,16 +40,16 @@ export function parseXYChart(lines: Statement[]): XYChart {
     // Title
     const titleMatch = line.match(/^title\s+"([^"]+)"/)
     if (titleMatch) {
-      title = titleMatch[1]
+      title = decodeMermaidEntities(titleMatch[1]!)
       continue
     }
 
     // x-axis with categories: x-axis "Title" [a, b, c] or x-axis [a, b, c]
     const xCatMatch = line.match(/^x-axis\s+(?:"([^"]*)"\s*)?\[([^\]]+)\]/)
     if (xCatMatch) {
-      if (xCatMatch[1]) xAxis.title = xCatMatch[1]
+      if (xCatMatch[1]) xAxis.title = decodeMermaidEntities(xCatMatch[1])
       xAxis.categories = splitCategoryList(xCatMatch[2]!).map((s) =>
-        unquote(s.trim()),
+        decodeMermaidEntities(unquote(s.trim())),
       )
       continue
     }
@@ -59,7 +59,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
       /^x-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
     )
     if (xRangeMatch) {
-      if (xRangeMatch[1]) xAxis.title = xRangeMatch[1]
+      if (xRangeMatch[1]) xAxis.title = decodeMermaidEntities(xRangeMatch[1])
       xAxis.range = {
         min: parseFloat(xRangeMatch[2]!),
         max: parseFloat(xRangeMatch[3]!),
@@ -72,7 +72,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
       /^y-axis\s+(?:"([^"]*)"\s+)?(-?\d+(?:\.\d+)?)\s*-->\s*(-?\d+(?:\.\d+)?)/,
     )
     if (yRangeMatch) {
-      if (yRangeMatch[1]) yAxis.title = yRangeMatch[1]
+      if (yRangeMatch[1]) yAxis.title = decodeMermaidEntities(yRangeMatch[1])
       yAxis.range = {
         min: parseFloat(yRangeMatch[2]!),
         max: parseFloat(yRangeMatch[3]!),
@@ -83,7 +83,7 @@ export function parseXYChart(lines: Statement[]): XYChart {
     // y-axis with just title (no range)
     const yTitleOnly = line.match(/^y-axis\s+"([^"]+)"\s*$/)
     if (yTitleOnly) {
-      yAxis.title = yTitleOnly[1]
+      yAxis.title = decodeMermaidEntities(yTitleOnly[1]!)
       continue
     }
 
