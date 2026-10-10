@@ -142,10 +142,14 @@ under the scope (so the names can't be squatted) and version-locked with the
 rest, but with no standalone support commitment beyond backing the umbrella
 and the two public renderer packages.
 
+## `elkjs` is an optional peer dependency
+
+The published package doesn't bundle `elkjs`; consumers supply it with `registerElk()`. Release checks that exercise ELK layouts must call `registerElk(ELK)` first. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
+
 ## Requirements this depends on
 
-- npm CLI `11.5.1+` and Node.js `22.14.0+` for trusted publishing support.
-  The workflow runs `npm install -g npm@latest` before publishing to make
+- npm CLI `11.5.1+` and Node.js `22.14.0+` for trusted publishing support
+  (the workflow pins Node 24, which satisfies this). The workflow runs `npm install -g npm@latest` before publishing to make
   sure the runner's npm is new enough regardless of what ships with the
   pinned Node version.
 - The `id-token: write` and `contents: write` / `pull-requests: write`

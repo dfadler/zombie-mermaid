@@ -1,5 +1,7 @@
 # Research summary: identical Playwright Docker image, real Apple Silicon vs. real x86 CI screenshots
 
+Outcome (added later): **superseded** by [545-crossarch-ci-flag-matched-confirmation.md](545-crossarch-ci-flag-matched-confirmation.md) and [615-emulated-amd64-vs-native-arm64-spike.md](615-emulated-amd64-vs-native-arm64-spike.md); kept as history.
+
 > **Closed.** The two gaps this doc left open (a flag-matched arm64 run, and a real
 > x86-CI-on-the-same-commit data point) are closed in
 > [545-crossarch-ci-flag-matched-confirmation.md](545-crossarch-ci-flag-matched-confirmation.md) —

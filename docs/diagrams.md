@@ -305,13 +305,11 @@ to mean picking one fixed rendered state (expanded or collapsed) at render
 time, which is a different feature. The real collapse syntax also could not
 be verified, since Mermaid itself isn't a dependency here; shipping a guess
 at the grammar seemed worse than not shipping it. **A `collapse <id>`
-statement, or `@{ ... }` metadata attached to a subgraph id, is not
-recognized as collapse syntax — treat it as unsupported rather than a
-no-op.** Verified empirically: both forms are absorbed by the ordinary node
-parser instead, which adds a stray, disconnected node to the diagram (with
-id `collapse`, or reusing the subgraph's own id) rather than leaving the
-diagram unchanged. Omit this syntax rather than relying on it to be
-harmlessly ignored.
+statement is not recognized as collapse syntax — treat it as unsupported
+rather than a no-op.** Re-verified on 5.0: it is absorbed by the ordinary
+node parser, which adds a stray, disconnected node with id `collapse`. A
+`S@{ collapse: true }` line on a subgraph id no longer adds a node, but it
+does not collapse anything either. Omit this syntax.
 
 ## State Diagrams
 
@@ -732,7 +730,7 @@ Supported: `Person`, `System`, `Container`, `Component` (plus `Db`, `Queue` and 
 
 C4 diagrams have their own renderers (they are not lowered to the flowchart model): persons get a head-and-shoulders glyph, databases a cylinder, queues a pipe, external elements the muted C4 palette, and boundaries and deployment nodes a dashed frame with a title. Relationship labels show the label and, on its own line, the `[technology]`. A `title` is drawn at the top. `Rel` endpoints may be populated boundaries. `RenderOptions.direction` re-orients the SVG layout (default top-to-bottom).
 
-Layout hints: `Rel_D`/`Rel_U` are layering constraints (the target sits below/above the source) in both renderers. `Rel_R`/`Rel_L` place the two elements side by side in one row, source left/right of target: exact in ASCII; in SVG the ELK layered engine cannot guarantee a shared layer, so it is a strong nudge (the two share predecessors and are ordered) that holds unless other relationships pull them apart. In a left-to-right SVG layout the axes swap.
+Layout hints: `Rel_D`/`Rel_U`/`Rel_L`/`Rel_R` are layering constraints (target below/above, or side by side in one row) in ASCII. In SVG they have no effect on placement, as in Mermaid: shapes are laid out in declaration order, in rows, and relationships are drawn afterwards without moving anything. C4 SVG uses its own row layout, not ELK, so it does not need `elkjs`.
 
 Known limitations:
 
@@ -780,7 +778,7 @@ Known differences from Mermaid:
 - A legend taller than the 450px frame (more than about 20 slices) makes the
   SVG taller instead of being cut off, and an empty chart keeps its full
   width (Mermaid crops it).
-- Mermaid's `#quot;`-style character codes in labels are shown as written.
+- Mermaid's `#quot;`-style character codes in pie labels and legends are shown as written. Flowchart labels decode them (via `decodeMermaidEntities` in `packages/core/src/multiline-utils.ts`).
 
 Mermaid has no text output for pie charts; see
 [ASCII Pie Charts](#ascii-pie-charts) for this library's.
@@ -811,6 +809,10 @@ source: `accTitle` becomes the accessible name when the `title` option is not
 given (the option wins), and `accDescr` becomes a `<desc id="zm-desc-N">`
 referenced by `aria-describedby`. The visible chart `title` is not used as the
 accessible name. Both are dropped when the diagram is `decorative`.
+
+C4 diagrams use their source `title` as the accessible name when the `title`
+option is not given. Architecture diagrams are named only by the `title`
+option.
 
 For a diagram that's already described in surrounding prose, mark it
 decorative instead of naming it:

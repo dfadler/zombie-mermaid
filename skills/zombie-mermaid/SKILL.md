@@ -4,8 +4,8 @@ description: |
   Render Mermaid diagram source to an SVG, a PNG, a self-contained pan/zoom
   HTML viewer, or ASCII/Unicode box-drawing art, using the published
   `zombie-mermaid` npm CLI (`npx -y zombie-mermaid render ...`) or its MCP
-  server. Use this whenever a Mermaid flowchart, sequence, class, state, ER
-  diagram, or XY chart needs to become an actual image or terminal drawing —
+  server. Use this whenever a Mermaid flowchart, sequence, class, state, ER,
+  architecture, C4, pie, or XY chart needs to become an actual image or terminal drawing —
   "render this diagram", "turn this Mermaid into an SVG/PNG", "show me this
   flowchart as ASCII", "apply a theme to this diagram", "does this diagram
   look right" — and also to check a `sequenceDiagram` for unbalanced
@@ -30,7 +30,7 @@ renderer to drift out of sync — bugs and feature requests go to
 
 ## Prerequisites
 
-Node.js 22 or newer. No install step: `npx -y zombie-mermaid` fetches the
+Node.js 24 or newer. No install step: `npx -y zombie-mermaid` fetches the
 package on first use. For repeated use in one project, add it as a dependency
 instead (`npm i -D zombie-mermaid`) and drop the `npx -y` prefix.
 
@@ -126,12 +126,14 @@ Tools (all but the `list_*` ones take a `diagram` string):
   `sequenceDiagram`, flagging every `activate X` (or `+` arrow shorthand) with
   no matching `deactivate X`. Mechanical and deterministic, no LLM judgment.
   Errors on any other diagram type.
+- `fix_mermaid_sequence_activations` — same check, plus a corrected diagram
+  (`{ ok, fixedDiagram, fixesApplied, remainingIssues }`): appends a missing
+  `deactivate X`; an unmatched `deactivate X` is reported, not auto-fixed.
 
 Invalid Mermaid syntax comes back as a normal tool error (`isError: true`)
 rather than dropping the connection.
 
-The MCP server is still labeled **experimental** upstream — its tool surface
-may change. The CLI above is the stable interface.
+The MCP server is experimental — its tool surface may change. The CLI above is the stable interface.
 
 ## Choosing an output
 
@@ -145,8 +147,8 @@ may change. The CLI above is the stable interface.
 
 ## Supported diagram types
 
-Flowchart, sequence, class, state, and ER diagrams render to every output.
-XY charts render to SVG/PNG/HTML only, not ASCII.
+Flowchart, sequence, class, state, ER, XY chart, architecture, C4, and pie
+diagrams all render to every output (SVG, PNG, HTML, ASCII).
 
 ## What this skill deliberately does not do
 
