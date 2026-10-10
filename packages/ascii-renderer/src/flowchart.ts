@@ -168,9 +168,17 @@ function flipRegion(
       y0: r.y0 - minY,
       y1: r.y1 - minY,
     }))
+  const nodeRects = (graph.nodeRects ?? [])
+    .filter((r) => r.x0 >= minX && r.x1 <= maxX && r.y0 >= minY && r.y1 <= maxY)
+    .map((r) => ({
+      x0: r.x0 - minX,
+      x1: r.x1 - minX,
+      y0: r.y0 - minY,
+      y1: r.y1 - minY,
+    }))
   if (axis === 'h') {
     mirrorLabelColumns(canvas, roles, rects, links)
-    flipCanvasHorizontally(canvas, roles)
+    flipCanvasHorizontally(canvas, roles, nodeRects)
     flipRoleCanvasHorizontally(roles)
     if (links) flipLinkCanvasHorizontally(links)
   } else {
@@ -178,6 +186,18 @@ function flipRegion(
     flipCanvasVertically(canvas, roles)
     flipRoleCanvasVertically(roles)
     if (links) flipLinkCanvasVertically(links)
+  }
+  // Node boxes inside the region moved with it; keep their rects in step.
+  for (const r of graph.nodeRects ?? []) {
+    if (!(r.x0 >= minX && r.x1 <= maxX && r.y0 >= minY && r.y1 <= maxY)) continue
+    const { x0, x1, y0, y1 } = r
+    if (axis === 'h') {
+      r.x0 = minX + maxX - x1
+      r.x1 = minX + maxX - x0
+    } else {
+      r.y0 = minY + maxY - y1
+      r.y1 = minY + maxY - y0
+    }
   }
   paste(graph.canvas, canvas)
   paste(graph.roleCanvas, roles)
@@ -238,7 +258,11 @@ export function renderGraphAscii(
       graph.labelRects ?? [],
       linkCanvas,
     )
-    flipCanvasHorizontally(graph.canvas, graph.roleCanvas)
+    flipCanvasHorizontally(
+      graph.canvas,
+      graph.roleCanvas,
+      graph.nodeRects ?? [],
+    )
     flipRoleCanvasHorizontally(graph.roleCanvas)
     if (linkCanvas) flipLinkCanvasHorizontally(linkCanvas)
   }

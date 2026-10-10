@@ -180,6 +180,8 @@ export function drawGraph(graph: AsciiGraph): Canvas {
 function drawGraphScoped(graph: AsciiGraph): Canvas {
   const labelRects: LabelRect[] = []
   graph.labelRects = labelRects
+  const nodeRects: LabelRect[] = []
+  graph.nodeRects = nodeRects
   const useAscii = graph.config.useAscii
   const zero: DrawingCoord = { x: 0, y: 0 }
 
@@ -222,6 +224,12 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
           }
         }
       }
+      nodeRects.push({
+        x0: node.drawingCoord.x,
+        x1: node.drawingCoord.x + node.drawing.length - 1,
+        y0: node.drawingCoord.y,
+        y1: node.drawingCoord.y + (node.drawing[0]?.length ?? 1) - 1,
+      })
       node.drawn = true
     }
   }
