@@ -1,7 +1,7 @@
 # Testing conventions for demo/editor components
 
 This doc covers how to test React components under `demo/**` and `editor/**`
-— the site chrome and the in-repo editor, as distinct from `src/**`'s
+— the site chrome and the in-repo editor, as distinct from `packages/*/src/**`'s
 parser/renderer unit tests (see "Test coverage" in
 [CONTRIBUTING.md](../CONTRIBUTING.md)). It exists because, once [React
 Testing Library](https://testing-library.com/docs/react-testing-library/intro/)

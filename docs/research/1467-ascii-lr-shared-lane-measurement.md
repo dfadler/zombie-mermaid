@@ -1,5 +1,7 @@
 # #1467: LR edges sharing a lane into one node — measurement
 
+Status: **measurement, answered (research only; no renderer change).**
+
 Research only; no renderer change. Answers the two things #1467 says nobody has
 measured: how the router decides to put these edges on one lane, and how many
 existing samples a "one lane/drop per edge" change could touch.

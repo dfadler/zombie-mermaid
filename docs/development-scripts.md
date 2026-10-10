@@ -60,6 +60,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 ## Other tooling
 
 - `pnpm run bench` — render benchmarks (full end-to-end SVG + ASCII render time)
+- `pnpm run smoke:packed` — pack every public package, install the tarballs into clean temp projects and smoke-test them as a consumer would (run `pnpm run build` first; what CI's "Packed tarball smoke test" job and publish.yml run)
 - `pnpm run visual-diff` — render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review
 - `pnpm run form-diff` — build `form-diff.html`, a human-reviewable report pairing real renders (`scripts/form-diff.ts`; see its header comment)
 - `pnpm run form-facts` — extract the structural facts the form judge compares (`scripts/form-facts.ts`; see its header comment)

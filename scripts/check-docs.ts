@@ -41,8 +41,8 @@ const NUMWORDS: Record<string, number> = {
 const slug = (h: string) =>
   h
     .toLowerCase()
-    .replace(/<[^>]+>|[`*_~]/g, '')
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/<[^>]+>|[`*~]/g, '')
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
     .trim()
     .replace(/\s/g, '-')
 

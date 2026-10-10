@@ -1,5 +1,7 @@
 # Spike: smoothing the lines in real-PTY ASCII captures
 
+Status: **spike, answered. Outcome: the artefact is the rasteriser, not the renderer; no renderer change. Context: [#1278](https://github.com/dfadler/zombie-mermaid/issues/1278).**
+
 Context: on #1278 the PR screenshots (`scripts/ascii-terminal-capture.sh`, asciinema + agg) show a
 horizontal edge stepping up by 1-2px where it crosses a frame wall (`├──┼─┼─►`). Question: is that
 the renderer's output, agg's rasteriser, or the font, and can the capture be made smooth?
