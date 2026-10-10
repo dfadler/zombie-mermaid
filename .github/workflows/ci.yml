@@ -633,3 +633,33 @@ jobs:
       - name: Check for changeset
         if: steps.diff_scope.outputs.demo_only != 'true'
         run: pnpm changeset status --since origin/main
+
+  pr-hygiene:
+    name: PR hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # only checks out code and greps commit subjects and the PR body
+    if: >-
+      github.repository == 'dfadler/zombie-mermaid' && github.event_name == 'pull_request' &&
+      !(github.head_ref == 'changeset-release/main' && github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      # The PR body goes through env, never interpolated into the script.
+      - name: No TEMP commits; follow-ups must link an issue
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          if git log --format=%s origin/main..HEAD | grep -E '^TEMP:'; then
+            echo "::error::Commit subject starts with 'TEMP:'; drop or reword it before merging."
+            exit 1
+          fi
+          # A line mentioning a follow-up / "TODO later" needs a #N link on the same line.
+          if printf '%s\n' "$PR_BODY" | grep -iE 'follow-?[ -]?ups?|todo later' | grep -vE '#[0-9]+'; then
+            echo "::error::PR body mentions a follow-up without a #N issue link; file the issue and link it."
+            exit 1
+          fi
