@@ -226,6 +226,7 @@ await check('MCP server starts and answers initialize', async () => {
 
 await check('Vite bundles a consumer app', () => {
   writeFileSync(
+    // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag -- static markup written to this script's own temp dir
     join(app, 'index.html'),
     '<script type="module" src="./main.js"></script>',
   )
