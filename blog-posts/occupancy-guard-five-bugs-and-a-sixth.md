@@ -4,7 +4,7 @@ date: 2026-09-11
 description: A release-readiness audit found five confirmed ASCII rendering bugs, closed within hours by generalizing an old guard pattern from the ER renderer — until the same review turned up a sixth bug the guard couldn't fix, because the guard was never the problem.
 ---
 
-The [last post](/blog/why-i-forked-beautiful-mermaid.html) went up on 2026-09-10.
+The [last post](why-i-forked-beautiful-mermaid.html) went up on 2026-09-10.
 Before that day was over, a release-readiness audit had already filed
 [#953](https://github.com/dfadler/zombie-mermaid/issues/953): five confirmed
 ASCII rendering bugs, each written up as an `it.fails(...)` test so it would

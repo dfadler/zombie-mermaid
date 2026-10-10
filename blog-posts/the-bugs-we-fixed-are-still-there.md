@@ -221,7 +221,7 @@ label at all.
 
 This fork's fix ([#77](https://github.com/dfadler/zombie-mermaid/pull/77))
 strips the pre-bracket shorthand before shape matching runs, in
-[`src/parser.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/src/parser.ts):
+[`packages/mermaid-parser/src/flowchart-parser.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/mermaid-parser/src/flowchart-parser.ts):
 
 ```ts
 const PRE_CLASS_SHORTHAND_REGEX = /^([\w\p{L}-]+):::([\w][\w-]*)/u
@@ -431,7 +431,7 @@ trailing text — the edge itself is never parsed at all.
 This fork's fix ([#80](https://github.com/dfadler/zombie-mermaid/pull/80))
 made every shape pattern quote-aware and constrained the bare-id pattern to
 only allow a hyphen between word characters, in
-[`src/parser.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/src/parser.ts):
+[`packages/mermaid-parser/src/flowchart-parser.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/mermaid-parser/src/flowchart-parser.ts):
 
 ```ts
 { regex: /^([\w\p{L}-]+)\[((?:"[^"]*"|(?!\]).)+)\]/u, shape: 'rectangle' }, // A[text]
@@ -582,7 +582,7 @@ flowchart TD
   A --> B
 ```
 
-Upstream's box-dimension calculation, in `src/ascii/shapes/rectangle.ts`,
+Upstream's box-dimension calculation, in `packages/ascii-renderer/src/shapes/rectangle.ts`,
 measures with `.length`:
 
 ```ts
@@ -600,7 +600,7 @@ for flowchart/state labels and titles,
 [#203](https://github.com/dfadler/zombie-mermaid/pull/203) for class/ER
 multi-compartment boxes) added a shared display-width helper and switched
 every box-sizing call site to it, in
-[`src/ascii/display-width.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/src/ascii/display-width.ts):
+[`packages/ascii-renderer/src/display-width.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/ascii-renderer/src/display-width.ts):
 
 ```ts
 export function displayWidth(text: string): number {
@@ -611,7 +611,7 @@ export function displayWidth(text: string): number {
 ```
 
 used in
-[`src/ascii/shapes/rectangle.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/src/ascii/shapes/rectangle.ts):
+[`packages/ascii-renderer/src/shapes/rectangle.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/ascii-renderer/src/shapes/rectangle.ts):
 
 ```ts
 const maxLineWidth = Math.max(...lines.map((l) => displayWidth(l)), 0)
@@ -642,7 +642,7 @@ also doesn't match — the edge, and the node it points to, are silently
 dropped from the graph entirely.
 
 **An edge that targets a subgraph id directly produces two disconnected
-phantom boxes.** Upstream's `src/ascii/converter.ts` builds one `AsciiNode`
+phantom boxes.** Upstream's `packages/ascii-renderer/src/converter.ts` builds one `AsciiNode`
 per parser-registered id, with no awareness that some of those ids belong
 to subgraphs rather than real nodes:
 
@@ -694,9 +694,9 @@ addressed all three: it extended the arrow regex to recognize `o`/`x`
 terminators, added subgraph-id resolution that redirects such an edge to a
 real member node at the subgraph's boundary, and strips formatting tags
 before handing labels to the ASCII canvas — in
-[`src/parser.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/src/parser.ts)
+[`packages/mermaid-parser/src/flowchart-parser.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/mermaid-parser/src/flowchart-parser.ts)
 and
-[`src/ascii/converter.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/src/ascii/converter.ts):
+[`packages/ascii-renderer/src/converter.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/ascii-renderer/src/converter.ts):
 
 ```ts
 const ARROW_REGEX = /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\|([^|]*)\|)?/
