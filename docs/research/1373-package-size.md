@@ -1,5 +1,7 @@
 # Package size research (#1373)
 
+Status: **measurement, as of v2.x (2026-10-08, pre-5.0). Sizes are a point-in-time snapshot (e.g. 7.44 MB before #1446, 5.93 MB after); re-run the reproduce steps for current numbers.**
+
 Measured 2026-10-08 on `main` (79009cb6), Node 24, `pnpm run build`.
 
 ## Reproduce

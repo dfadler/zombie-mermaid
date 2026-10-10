@@ -10,7 +10,7 @@ LR flowchart, N nodes `S0..S(N-1)`, each with a labelled edge to a shared `Sink`
 shared `Hub`, plus a chain `S(i-1) --> Si`: 2N labelled edges on shared vertical legs (the
 #1433/#1463 shape). The "unlabelled" twin is the same graph with labels stripped, so the
 difference is label-placement cost (layout is identical). Medians of 3 runs,
-`colorMode: 'none'`, Node 22, Apple silicon.
+`colorMode: 'none'`, Node 22 (as measured then; history, 1373/1374 later used Node 24), Apple silicon.
 
 ## Results (main, includes the #1473 per-call memo)
 

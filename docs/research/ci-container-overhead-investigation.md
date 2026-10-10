@@ -1,5 +1,7 @@
 # Investigation: reducing `visual-regression`'s container init overhead
 
+Status: **investigation, answered (follow-up to #729); timings are as of PR #651.**
+
 Answers [#729](https://github.com/dfadler/zombie-mermaid/issues/729), a follow-up to
 the real timing numbers `docs/research/ci-container-job-vs-actions-cache-timing.md`
 (§4) recorded for the `visual-regression` job's `container:` step after PR
