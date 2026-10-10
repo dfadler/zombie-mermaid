@@ -89,13 +89,13 @@ Per-PR numbers from different machines do not add up, so I ran the existing
 benchmarks myself, back to back, on one laptop under normal load. Three runs
 of `pnpm run bench` at each commit, median reported, Node 22.
 
-| commit | what it is | Flowchart ASCII, 24 samples (ms) |
-|---|---|---|
-| `7a4925a3` | the 10-05 history entry's commit | 439.6, 391.3, 1048.8 (median 439.6) |
-| `5b4f5889` | after #1351, before any other PR above | 336.8, 313.6, 377.1 (median 336.8) |
-| `ccad43e9` | after #1472 | 170.6, 161.5, 160.0 (median 161.5) |
-| `9b4f8039` | after #1481 (includes #1473) | 35.3, 30.8, 74.0 (median 35.3) |
-| current `main` | includes all of the above | 39.1, 39.6, 66.4 (median 39.6) |
+| commit         | what it is                             | Flowchart ASCII, 24 samples (ms)    |
+| -------------- | -------------------------------------- | ----------------------------------- |
+| `7a4925a3`     | the 10-05 history entry's commit       | 439.6, 391.3, 1048.8 (median 439.6) |
+| `5b4f5889`     | after #1351, before any other PR above | 336.8, 313.6, 377.1 (median 336.8)  |
+| `ccad43e9`     | after #1472                            | 170.6, 161.5, 160.0 (median 161.5)  |
+| `9b4f8039`     | after #1481 (includes #1473)           | 35.3, 30.8, 74.0 (median 35.3)      |
+| current `main` | includes all of the above              | 39.1, 39.6, 66.4 (median 39.6)      |
 
 The 1048.8 and 74.0 and 66.4 readings are the machine being busy; I report
 them rather than dropping them. The medians are the figures to look at.
@@ -116,10 +116,10 @@ The scaling benchmark, `pnpm run bench:scaling --runs=3`, comparing
 `5b4f5889` with current `main` (the script copied onto the older commit):
 
 | nodes | ASCII before (ms) | ASCII now (ms) |
-|---|---|---|
-| 100 | 272.4 | 41.1 |
-| 200 | 1031.9 | 177.2 |
-| 300 | 3282.4 | 434.5 |
+| ----- | ----------------- | -------------- |
+| 100   | 272.4             | 41.1           |
+| 200   | 1031.9            | 177.2          |
+| 300   | 3282.4            | 434.5          |
 
 Still super-linear: roughly 4.3x going from 100 to 200 nodes, 2.4x from 200
 to 300. The scaling curve is flatter and the constants are lower, which is
