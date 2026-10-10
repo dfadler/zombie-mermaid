@@ -31,7 +31,7 @@ This is the fix most likely to affect a real diagram, because `classDef`/`class`
 - **`style A font-family:...` and `classDef`-supplied `font-family` were parsed but never rendered**, silently ignored in SVG output. Fixed in [#78](https://github.com/dfadler/zombie-mermaid/pull/78).
 - **`classDef default` only applied to nodes that named it explicitly** (`class X default`), instead of styling every node the way Mermaid does it. Fixed in [#206](https://github.com/dfadler/zombie-mermaid/pull/206) (v1.3.0).
 
-Parsing lives in `src/parser.ts` around `graph.classDefs`/`graph.classAssignments`; resolution into inline node styles is in `packages/svg-renderer/src/renderer.ts`.
+Parsing lives in `packages/mermaid-parser/src/flowchart-parser.ts` around `graph.classDefs`/`graph.classAssignments`; resolution into inline node styles is in `packages/svg-renderer/src/renderer.ts`.
 
 **Triggered by:** any diagram using `classDef`, `class`, `:::className`, or `style` — especially one with a trailing semicolon on a `class` line, a `:::className` shorthand before the node's brackets, or a custom fill without an explicit text color.
 
