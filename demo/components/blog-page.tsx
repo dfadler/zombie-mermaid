@@ -168,6 +168,12 @@ function BlogDocument({
       head={
         <>
           <link rel="canonical" href={canonical} />
+          <link
+            rel="alternate"
+            type="application/rss+xml"
+            title="zombie-mermaid blog"
+            href="feed.xml"
+          />
           <meta property="og:title" content={title} />
           <meta property="og:description" content={description} />
           <meta property="og:type" content={ogType} />
