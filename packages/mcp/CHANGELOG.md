@@ -1,5 +1,16 @@
 # @zombie-mermaid/mcp
 
+## 5.0.2
+
+### Patch Changes
+
+- [#1629](https://github.com/dfadler/zombie-mermaid/pull/1629) [`192bb09`](https://github.com/dfadler/zombie-mermaid/commit/192bb093ac050c8b20feacf4daf3701d479a68e7) Thanks [@dfadler](https://github.com/dfadler)! - `render_svg` no longer leaks filesystem details in `outputPath` write errors; the MCP threat model is now documented.
+- Updated dependencies []:
+  - @zombie-mermaid/ascii-renderer@5.0.2
+  - @zombie-mermaid/core@5.0.2
+  - @zombie-mermaid/mermaid-parser@5.0.2
+  - @zombie-mermaid/svg-renderer@5.0.2
+
 ## 5.0.1
 
 ### Patch Changes
