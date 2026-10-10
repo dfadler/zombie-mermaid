@@ -14,7 +14,9 @@ tags: [issue-batch, trigger, quick]
 execution:
   prompt: |
     I want to sweep these GitHub issues in parallel with worktree subagents. Don't
-    run gh or create anything; just give me the plan.
+    run gh or create anything; just give me the plan. Put each wave on its own line
+    as `Wave N: #a, #b` (issue numbers only, nothing else on that line), with any
+    reasoning below the waves.
 
     #101 "Arrow heads clip at node corners": body says the fix is in
     packages/ascii-renderer/draw-arrows.ts; regenerates the ASCII snapshots.
@@ -42,6 +44,22 @@ graders:
     pattern: '\bwave\b'
     flags: i
     match: contains
+
+  # Non-vacuous guard: wave lines in the requested format exist.
+  - name: has_wave_lines
+    type: regex
+    target: last_message
+    pattern: '^\W*Wave\s*\d+\W*:[^\n]*#10[123]'
+    flags: im
+    match: contains
+
+  # Core behavior: #101 and #102 (both draw-arrows.ts) never share a wave line.
+  - name: overlap_issues_not_same_wave
+    type: regex
+    target: last_message
+    pattern: '^\W*Wave\s*\d+\W*:[^\n]*(?:#101[^\n]*#102|#102[^\n]*#101)'
+    flags: im
+    match: not_contains
 
   - name: names_overlap_file
     type: regex
