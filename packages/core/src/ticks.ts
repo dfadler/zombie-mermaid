@@ -38,8 +38,8 @@ export function niceTickValues(min: number, max: number): number[] {
     if (i1 * inc < min) ++i1
     if (i2 * inc > max) --i2
   }
-  if (i2 < i1) return []
 
+  // The step is always below the range, so at least one multiple fits.
   const ticks: number[] = []
   for (let i = i1; i <= i2; i++) ticks.push(inc > 0 ? i * inc : i / -inc)
   return ticks
