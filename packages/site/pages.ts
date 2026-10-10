@@ -280,7 +280,7 @@ async function main(): Promise<void> {
     ): string =>
       renderMermaidSVG(source, {
         ...colors,
-        title: `${profile.label} diagram, Zombie Mermaid`,
+        title: `${profile.label}, Zombie Mermaid`,
         interactivity: 'none',
         ...extra,
       })
@@ -425,7 +425,7 @@ async function main(): Promise<void> {
             label: rule.label,
             href: `../tag/${rule.slug}.html`,
           })),
-          title: `${sample.title} | ${profile.label} diagram | Zombie Mermaid`,
+          title: `${sample.title} | ${profile.label} | Zombie Mermaid`,
           description: `${sample.description} Rendered live as both SVG and ASCII by zombie-mermaid, free and open source.`,
           canonical: detailCanonical,
           faviconHref: '../../favicon.svg',
