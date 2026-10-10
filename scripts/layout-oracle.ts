@@ -23,7 +23,8 @@
  * (`flowchart-<id>-<n>`) are flowchart-specific.
  */
 
-import { writeFile } from 'node:fs/promises'
+import { appendFile, readFile, writeFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { parseMermaid } from '../src/index.ts'
 import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
@@ -37,6 +38,10 @@ import {
   worst,
   type Agreement,
   type Box,
+  type HistoryEntry,
+  type SampleResult,
+  scorecardMarkdown,
+  summarize,
   type LayoutBoxes,
 } from './lib/layout-agreement.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
@@ -144,7 +149,7 @@ async function main(): Promise<number> {
   // tsx (esbuild) wraps named functions in a `__name` helper the page lacks.
   await session.page.evaluate('window.__name = (f) => f')
 
-  const results: Record<string, Agreement & { subgraphs: boolean }> = {}
+  const results: Record<string, SampleResult> = {}
   const rows: string[] = []
   const failing: string[] = []
   try {
@@ -186,6 +191,32 @@ async function main(): Promise<number> {
   if (args.json) {
     await writeFile(args.json, `${JSON.stringify(results, null, 2)}\n`)
     console.log(`\nWrote ${args.json}`)
+  }
+  if (args.history || args.scorecard) {
+    const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
+      encoding: 'utf8',
+    }).trim()
+    const entry = summarize(results, {
+      date: new Date().toISOString().slice(0, 10),
+      commit,
+      tolerance: args.tolerance,
+    })
+    let history: HistoryEntry[] = [entry]
+    if (args.history) {
+      await appendFile(args.history, `${JSON.stringify(entry)}\n`)
+      history = (await readFile(args.history, 'utf8'))
+        .split('\n')
+        .filter(Boolean)
+        .map((l) => JSON.parse(l) as HistoryEntry)
+      console.log(`Appended to ${args.history}`)
+    }
+    if (args.scorecard) {
+      await writeFile(
+        args.scorecard,
+        scorecardMarkdown(entry, results, history),
+      )
+      console.log(`Wrote ${args.scorecard}`)
+    }
   }
   if (failing.length > 0) {
     console.error(`\nBelow ${args.failBelow}%: ${failing.join(', ')}`)
