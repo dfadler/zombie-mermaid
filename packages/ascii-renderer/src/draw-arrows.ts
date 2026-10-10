@@ -9,6 +9,7 @@ import {
   edgePointShifts,
   labelLineToDrawing,
   pathToDrawing,
+  pathScope,
   portShifts,
 } from './port-offsets.ts'
 import type {
@@ -1541,6 +1542,34 @@ function otherLabelPlacements(
   return out
 }
 
+type SegRow = { edge: AsciiEdge; minX: number; maxX: number }
+
+/** Every drawn segment of every edge, bucketed by each row it spans (#1490). */
+function buildSegmentRows(graph: AsciiGraph): Map<number, SegRow[]> {
+  const rows = new Map<number, SegRow[]>()
+  for (const edge of graph.edges) {
+    const pts = pathToDrawing(graph, edge)
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1]!
+      const b = pts[i]!
+      const seg = {
+        edge,
+        minX: Math.min(a.x, b.x),
+        maxX: Math.max(a.x, b.x),
+      }
+      for (let r = Math.min(a.y, b.y); r <= Math.max(a.y, b.y); r++) {
+        const bucket = rows.get(r)
+        if (bucket) bucket.push(seg)
+        else rows.set(r, [seg])
+      }
+    }
+  }
+  return rows
+}
+
+/** Built once per `withPortShifts` scope; rebuilt per call outside one. */
+const segmentRows = new WeakMap<object, Map<number, SegRow[]>>()
+
 function besideGeometryFree(
   graph: AsciiGraph,
   edge: AsciiEdge,
@@ -1548,6 +1577,12 @@ function besideGeometryFree(
   clearance = 0,
   sidewaysOnly = false,
 ): boolean {
+  const scope = pathScope(graph)
+  let index = scope && segmentRows.get(scope)
+  if (!index) {
+    index = buildSegmentRows(graph)
+    if (scope) segmentRows.set(scope, index)
+  }
   for (const { x, y, text } of placement) {
     const x0 = x
     const x1 = x + displayWidth(text) - 1
@@ -1575,24 +1610,19 @@ function besideGeometryFree(
         y === sg.maxY || (y >= sg.minY && y <= sg.minY + titleRows)
       if (onTopOrBottom && x1 >= sg.minX && x0 <= sg.maxX) return false
     }
-    for (const other of graph.edges) {
-      if (other === edge) continue
-      const pts = pathToDrawing(graph, other)
-      for (let i = 1; i < pts.length; i++) {
-        const a = pts[i - 1]!
-        const b = pts[i]!
-        // `clearance` keeps the text off cells *next to* another edge's
-        // stroke too, where it would read as that stroke's label (#attribution).
-        // `sidewaysOnly` counts it only across columns: a label already on its
-        // own stroke can't be misread, and a stroke on the row above or below
-        // ruled out the one-cell gap beside a stem whenever a junction row sat
-        // right below (#1434).
-        const rowClearance = sidewaysOnly ? 0 : clearance
+    // `clearance` keeps the text off cells *next to* another edge's
+    // stroke too, where it would read as that stroke's label (#attribution).
+    // `sidewaysOnly` counts it only across columns: a label already on its
+    // own stroke can't be misread, and a stroke on the row above or below
+    // ruled out the one-cell gap beside a stem whenever a junction row sat
+    // right below (#1434).
+    const rowClearance = sidewaysOnly ? 0 : clearance
+    for (let r = y - rowClearance; r <= y + rowClearance; r++) {
+      for (const s of index.get(r) ?? []) {
         if (
-          y >= Math.min(a.y, b.y) - rowClearance &&
-          y <= Math.max(a.y, b.y) + rowClearance &&
-          x1 >= Math.min(a.x, b.x) - clearance &&
-          x0 <= Math.max(a.x, b.x) + clearance
+          s.edge !== edge &&
+          x1 >= s.minX - clearance &&
+          x0 <= s.maxX + clearance
         ) {
           return false
         }
