@@ -57,7 +57,7 @@ detail:
    is an unverified hypothesis, not a claim — it would need its own
    measurement.
 
-See [the canonical CI-timing record](docs/research/ci-container-job-vs-actions-cache-timing.md)
+See [the canonical CI-timing record](ci-container-job-vs-actions-cache-timing.md)
 for the original `container:` vs. `actions/cache` comparison this issue
 follows up on; this investigation's conclusion (no change, gap not closeable
 without new infrastructure) is cross-linked from there.
