@@ -1,0 +1,20 @@
+# zombie-mermaid
+
+> Render Mermaid diagrams as themeable SVG or ASCII/Unicode art. Zero DOM dependencies. A maintained fork of beautiful-mermaid.
+
+- [Sample gallery and live demo](https://dfadler.github.io/zombie-mermaid/)
+- [Diagram types](https://dfadler.github.io/zombie-mermaid/diagrams/)
+- [Editor](https://dfadler.github.io/zombie-mermaid/editor)
+- [Blog](https://dfadler.github.io/zombie-mermaid/blog/)
+
+## Docs
+
+- [Docs index](https://github.com/dfadler/zombie-mermaid/blob/main/docs/README.md)
+- [API reference](https://github.com/dfadler/zombie-mermaid/blob/main/docs/api-reference.md)
+- [Supported diagrams](https://github.com/dfadler/zombie-mermaid/blob/main/docs/diagrams.md)
+- [Theming](https://github.com/dfadler/zombie-mermaid/blob/main/docs/theming.md)
+
+## Package
+
+- [npm](https://www.npmjs.com/package/zombie-mermaid)
+- [Source](https://github.com/dfadler/zombie-mermaid)
