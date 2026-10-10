@@ -1,5 +1,7 @@
-# Regenerates the Linux visual baselines inside the same pinned container CI
-# gates on, and pushes them to the chosen branch. macOS agents can't produce
+# Regenerates the Linux visual baselines inside the same pinned container image
+# CI gates on, and pushes them to the chosen branch. All git work runs on the
+# host runner (the image has no git, #1711); only the Playwright run uses the
+# image, via `docker run` against the shared checkout. macOS agents can't produce
 # these (scripts/docker-test-visual.sh only checks), so this stops them being
 # deferred (#1577).
 #
@@ -23,9 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.repository == 'dfadler/zombie-mermaid' && github.ref != 'refs/heads/main'
-    container:
-      image: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only@sha256:aa9d5b32ea243e0f6880c5ad7b4fbb1ab863e97d271a215f5bd966aa58a605d5 # keep in sync with ci.yml's visual-regression job
-      options: --ipc=host
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -33,7 +32,6 @@ jobs:
 
       - name: Merge main first
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git merge --no-edit origin/main
@@ -51,7 +49,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Regenerate Linux baselines
-        run: pnpm exec playwright test --update-snapshots
+        env:
+          IMAGE: ghcr.io/dfadler/zombie-mermaid/visual-regression-chromium-only@sha256:aa9d5b32ea243e0f6880c5ad7b4fbb1ab863e97d271a215f5bd966aa58a605d5 # keep in sync with ci.yml's visual-regression job
+        run: |
+          docker run --rm --ipc=host -v "$GITHUB_WORKSPACE:/work" -w /work \
+            "$IMAGE" node_modules/.bin/playwright test --update-snapshots
 
       - name: Commit and push
         run: |
