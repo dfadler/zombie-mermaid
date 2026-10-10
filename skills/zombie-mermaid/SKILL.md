@@ -30,7 +30,7 @@ renderer to drift out of sync — bugs and feature requests go to
 
 ## Prerequisites
 
-Node.js 22 or newer. No install step: `npx -y zombie-mermaid` fetches the
+Node.js 24 or newer. No install step: `npx -y zombie-mermaid` fetches the
 package on first use. For repeated use in one project, add it as a dependency
 instead (`npm i -D zombie-mermaid`) and drop the `npx -y` prefix.
 

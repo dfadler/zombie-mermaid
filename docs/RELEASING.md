@@ -144,8 +144,8 @@ and the two public renderer packages.
 
 ## Requirements this depends on
 
-- npm CLI `11.5.1+` and Node.js `22.14.0+` for trusted publishing support.
-  The workflow runs `npm install -g npm@latest` before publishing to make
+- npm CLI `11.5.1+` and Node.js `22.14.0+` for trusted publishing support
+  (the workflow pins Node 24, which satisfies this). The workflow runs `npm install -g npm@latest` before publishing to make
   sure the runner's npm is new enough regardless of what ships with the
   pinned Node version.
 - The `id-token: write` and `contents: write` / `pull-requests: write`
