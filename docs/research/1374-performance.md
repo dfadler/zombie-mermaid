@@ -1,5 +1,7 @@
 # Performance research (#1374)
 
+Status: **measurement, as of v2.x (2026-10-08, pre-5.0). Numbers are a point-in-time snapshot with roughly +/-30% noise; re-run the reproduce steps before citing.**
+
 Measured 2026-10-08 on `main` (79009cb6), Node 24, Apple laptop that was also
 running other agent sessions, so absolute numbers carry roughly +/-30% noise.
 Compare minimum-of-batches, not single runs.

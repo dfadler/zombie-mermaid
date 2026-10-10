@@ -1,5 +1,7 @@
 # Research: motivation check for #495 (Go core rewrite)
 
+Status: **research, answered (scoping only; no Go written). Duplicates part of [docs/decisions/go-core-renderer-proposal.md](../decisions/go-core-renderer-proposal.md); see that doc for the decision.**
+
 🤖 **Claude:** This document was produced by an AI assistant investigating
 [issue #495](https://github.com/dfadler/zombie-mermaid/issues/495) at
 @dfadler's request, as part of an oldest-first backlog sweep. It answers the
