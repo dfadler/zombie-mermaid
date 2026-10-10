@@ -124,6 +124,7 @@
     "form-facts": "tsx scripts/form-facts.ts",
     "form-judge-prepare": "tsx scripts/form-judge-prepare.ts",
     "form-judge-finalize-cache": "tsx scripts/form-judge-finalize-cache.ts",
+    "form-judge-calibrate": "tsx scripts/form-judge-calibrate.ts",
     "build": "pnpm run build:packages && vite build --app --config config/vite.config.lib.ts",
     "build:packages": "vite build --app --config packages/core/vite.config.ts && vite build --app --config packages/mermaid-parser/vite.config.ts && vite build --app --config packages/svg-renderer/vite.config.ts && vite build --app --config packages/ascii-renderer/vite.config.ts && vite build --app --config packages/mcp/vite.config.ts",
     "build:site": "rm -rf site && mkdir -p site && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/index.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/editor.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/fork-fixes.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/pages.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/blog.ts && SITE_OUT_DIR=site scripts/tsx-css.sh packages/site/dashboard.ts && cp -r public/* site/",
