@@ -49,5 +49,7 @@
   "test:watch": "Vitest in watch mode",
   "typecheck": "type-check the library, `demo/`, and `editor/` configs",
   "upstream:pr-candidates": "list upstream `lukilabs/beautiful-mermaid`'s open PRs as a triage table for porting (read-only; needs an authenticated `gh`); see \"Porting fixes from upstream\" in [CONTRIBUTING.md](../CONTRIBUTING.md)",
-  "visual-diff": "render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review"
+  "visual-diff": "render every sample with the working tree's renderer vs. a base ref (default `main`) into `visual-diff.html` for manual review",
+  "verify": "fast local gate: the three tsc projects in parallel (incremental), eslint and prettier on files changed vs `origin/main`, then `vitest run --changed origin/main`. `--full` mirrors CI (whole-repo lint, format check, `test:coverage`).",
+  "doctor": "checks the local toolchain: Node >=24 and pnpm (required); Playwright Chromium, asciinema, agg, JetBrains Mono, and docker (optional, for ASCII captures and visual baselines)."
 }

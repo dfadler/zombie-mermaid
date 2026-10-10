@@ -4,6 +4,15 @@ Repo-specific mechanics for working in zombie-mermaid. General cross-project hab
 (git worktree discipline, PR conventions, etc.) live in the global `CLAUDE.md`
 instead — this file only holds what's specific to _this_ repo's tooling.
 
+## Default check loop: `pnpm run verify`
+
+After a change, run `pnpm run verify` (typecheck in parallel, lint/format on changed files,
+`vitest run --changed origin/main`) instead of separate full-repo typecheck/eslint/prettier/coverage
+runs. For a single file, `pnpm exec vitest run -c config/vitest.config.ts --related <file>`.
+Path-to-suite map: `packages/ascii-renderer/**` -> its `__tests__` plus
+`pnpm exec playwright test -g ascii-samples`. Reserve `pnpm run verify --full` (CI parity) for
+the end. `pnpm run doctor` diagnoses a broken local toolchain.
+
 ## Worktree cleanup
 
 This repo's dev server (`vite.config.ts`, run via `pnpm run dev` / `vite`) has two
