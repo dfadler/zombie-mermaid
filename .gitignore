@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Skill eval run output
+**/evals/results/
+
 # Build output
 dist/
 /site/
