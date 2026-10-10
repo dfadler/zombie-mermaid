@@ -3,13 +3,17 @@
 Short answer: **`zombie-mermaid`**. Reach for a scoped package only for the
 narrow cases below.
 
-| I want to…                                             | Install                                        |
-| ------------------------------------------------------ | ---------------------------------------------- |
-| render SVG and/or ASCII from code, or use the CLI      | `zombie-mermaid`                               |
-| render only terminal text, with no SVG code or `elkjs` | `@zombie-mermaid/ascii-renderer`               |
-| render only SVG, without the umbrella's ASCII half     | `@zombie-mermaid/svg-renderer` (+ `elkjs`)     |
-| let an AI agent render diagrams over MCP               | `zombie-mermaid` (run `zombie-mermaid mcp`)    |
-| embed the MCP server in my own process                 | `zombie-mermaid` (import `zombie-mermaid/mcp`) |
+**Smallest install:** `@zombie-mermaid/ascii-renderer` (terminal text, no
+dependencies), or `@zombie-mermaid/svg-renderer` without `elkjs` if you only
+need sequence, pie, xychart or C4 diagrams as SVG.
+
+| I want to…                                             | Install                                                                     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------- |
+| render SVG and/or ASCII from code, or use the CLI      | `zombie-mermaid`                                                            |
+| render only terminal text, with no SVG code or `elkjs` | `@zombie-mermaid/ascii-renderer`                                            |
+| render only SVG, without the umbrella's ASCII half     | `@zombie-mermaid/svg-renderer` (`elkjs` only for graph diagrams, see below) |
+| let an AI agent render diagrams over MCP               | `zombie-mermaid` (run `zombie-mermaid mcp`)                                 |
+| embed the MCP server in my own process                 | `zombie-mermaid` (import `zombie-mermaid/mcp`)                              |
 
 ## The packages
 
@@ -32,6 +36,11 @@ Only for SVG of flowchart, state, class, ER and architecture diagrams, and only
 in a browser or bundler (Node and Bun auto-load it). ASCII output never needs it.
 Register it once with `registerElk()`; see
 [the migration guide](elkjs-optional-peer.md) for the full table and steps.
+
+Without it, those five SVG diagram types throw `ElkNotRegisteredError` (a clear
+message, not a blank SVG). Sequence, pie, xychart, C4 and all ASCII output
+render fine. `elkjs` is about 1.5 MB minified, so skip it if you don't need
+SVG flowcharts.
 
 ## How big is it?
 
