@@ -47,6 +47,16 @@ const svg = renderMermaidSVG(diagram, {
 
 If an enrichment color isn't provided, it falls back to the `color-mix()` derivation. This means you can provide just the colors you care about.
 
+## Pie, C4 and architecture diagrams
+
+Pie charts read `--accent` live for the first slice and derive the other
+slices from it and `--bg`; the outline and slice strokes use `--fg`. C4
+element fills, strokes and text use fixed Mermaid palette colours, so they do
+not follow the theme; boundaries, relationship lines, titles and labels use the
+theme's foreground. Architecture
+diagrams are rendered through the flowchart renderer, so they consume every
+enrichment colour exactly as flowcharts do.
+
 ## CSS Custom Properties = Live Switching
 
 All colors are CSS custom properties on the `<svg>` element. This means you can switch themes instantly without re-rendering:
