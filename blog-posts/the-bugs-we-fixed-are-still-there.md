@@ -4,6 +4,10 @@ date: 2026-09-08
 description: A direct source-code check against beautiful-mermaid's current upstream tree, not a rendered-output comparison, confirms eleven fixed parsing and rendering bugs are unchanged four months on.
 ---
 
+> **Snapshot:** the upstream comparison below is a point-in-time check dated 2026-09-08, not a live claim. `beautiful-mermaid` may have changed since.
+
+> **Note (2026-10-10):** this post was written before the monorepo split. File paths it cites under `src/` have since moved into `packages/*` (for example `packages/ascii-renderer/`, `packages/svg-renderer/`, `packages/core/`); the code and line references are as of the post's date.
+
 [#630](https://github.com/dfadler/zombie-mermaid/issues/630) asked whether a
 blog post comparing zombie-mermaid to
 [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) — the

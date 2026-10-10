@@ -4,6 +4,8 @@ date: 2026-09-06
 description: Instead of one "improve test coverage" ticket, this repo filed nineteen — one per file, all in a 25-second burst — and closed all nineteen in under four minutes each. The backlog shape did more work than any individual fix did.
 ---
 
+> **Note (2026-10-10):** this post was written before the monorepo split. File paths it cites under `src/` have since moved into `packages/*` (for example `packages/ascii-renderer/`, `packages/svg-renderer/`, `packages/core/`); the code and line references are as of the post's date.
+
 The obvious way to write a coverage ticket is: "Improve test coverage." One
 issue, whatever files happen to be thin, whoever picks it up figures out
 scope as they go. It reads fine. It also produces exactly one thing you can
