@@ -1018,9 +1018,11 @@ export function edgeLabelPlacement(
   // (every later edge re-resolves every other edge), so remember them for the
   // call. The layout cannot change mid-call, and the memo is dropped on exit,
   // so a layout change can never see a stale placement.
+  scopeDepth++
   try {
     return resolveWithClearance(graph, edge)
   } finally {
+    if (--scopeDepth === 0) edgeBoxMemo.clear()
     placementMemo.clear()
   }
 }
@@ -1033,6 +1035,37 @@ function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
 type LabelLines = { x: number; y: number; text: string }[] | null
 /** Per-`edgeLabelPlacement`-call memo of `resolveLabelPlacement` (#1466). */
 const placementMemo = new Map<string, LabelLines>()
+
+/**
+ * #1490: each edge's drawn points and bounding box, so `besideGeometryFree`
+ * can skip an edge whose box cannot reach a candidate without walking its
+ * segments. Only filled inside an `edgeLabelPlacement` call (the layout is
+ * fixed there) and dropped when the outermost call exits.
+ */
+type EdgeBox = {
+  pts: DrawingCoord[]
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+}
+const edgeBoxMemo = new Map<AsciiEdge, EdgeBox>()
+let scopeDepth = 0
+
+function edgeBox(graph: AsciiGraph, edge: AsciiEdge): EdgeBox {
+  const hit = scopeDepth > 0 ? edgeBoxMemo.get(edge) : undefined
+  if (hit) return hit
+  const pts = pathToDrawing(graph, edge)
+  const box: EdgeBox = {
+    pts,
+    minX: Math.min(...pts.map((p) => p.x)),
+    maxX: Math.max(...pts.map((p) => p.x)),
+    minY: Math.min(...pts.map((p) => p.y)),
+    maxY: Math.max(...pts.map((p) => p.y)),
+  }
+  if (scopeDepth > 0) edgeBoxMemo.set(edge, box)
+  return box
+}
 
 /**
  * #1433: two edges that share their last vertical leg (a lane's drop into one
@@ -1577,7 +1610,16 @@ function besideGeometryFree(
     }
     for (const other of graph.edges) {
       if (other === edge) continue
-      const pts = pathToDrawing(graph, other)
+      const { pts, minX, maxX, minY, maxY } = edgeBox(graph, other)
+      // Box prefilter: the per-segment test below can only hit inside it.
+      if (
+        y < minY - clearance ||
+        y > maxY + clearance ||
+        x1 < minX - clearance ||
+        x0 > maxX + clearance
+      ) {
+        continue
+      }
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1]!
         const b = pts[i]!
