@@ -99,6 +99,9 @@ export function isStateGraph(graph: MermaidGraph): boolean {
  */
 export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 
+/** Padding for an untitled concurrency region (no header band). */
+const REGION_PADDING = { top: 16, left: 16, bottom: 16, right: 16 }
+
 const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
 
 /**
@@ -731,7 +734,8 @@ function subgraphToElk(
     direction: directionToElk(effectiveDirection),
     nodeSpacing: opts.nodeSpacing,
     layerSpacing: opts.layerSpacing,
-    padding: SUBGRAPH_PADDING,
+    // A region has no title bar to leave room for.
+    padding: sg.region ? REGION_PADDING : SUBGRAPH_PADDING,
   })
 
   // Ports, built before children/edges since they don't depend on them.
@@ -764,7 +768,12 @@ function subgraphToElk(
   // leaf nodes above, is left as-is — see the matching comment and
   // rationale in `mermaidToElk`) — matching real mermaid.js's own sibling-
   // subgraph order (issue #444).
-  for (const child of [...sg.children].reverse()) {
+  // Regions keep their written order (mermaid.js draws `--` sections left to
+  // right), unlike sibling subgraphs.
+  const orderedChildren = sg.children.some((c) => c.region)
+    ? sg.children
+    : [...sg.children].reverse()
+  for (const child of orderedChildren) {
     children.push(
       subgraphToElk(
         child,

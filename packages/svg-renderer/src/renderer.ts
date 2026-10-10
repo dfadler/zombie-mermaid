@@ -287,6 +287,20 @@ function renderGroup(
   const headerHeight = fontSizes.groupHeader + 16
   const parts: string[] = []
 
+  // Concurrency region (state `--`): a dashed untitled box, no header band.
+  if (group.region) {
+    parts.push(
+      f`<g class="subgraph subgraph-region" data-id="${escapeAttr(group.id)}">`,
+      f`  <rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" ` +
+        f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-dasharray="6 4" />`,
+    )
+    for (const child of group.children) {
+      parts.push(renderGroup(child, font, fontSizes))
+    }
+    parts.push('</g>')
+    return parts.join('\n')
+  }
+
   // Opening <g> with semantic attributes for subgraph identification
   // data-id: original Mermaid subgraph ID
   // data-label: display label (may differ from ID)

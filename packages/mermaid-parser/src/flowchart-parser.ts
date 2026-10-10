@@ -177,7 +177,12 @@ export function parseMermaid(text: string): MermaidGraph {
    */
   const initConfig = extractInitConfig(text.split('\n').map((l) => l.trim()))
 
-  const lines = mergeContinuationLines(splitStatementsByLine(text))
+  const groups = splitStatementsByLine(text)
+  // State diagrams have no multi-line edge chains, and a bare `--` line is
+  // the concurrency separator there: merging it into the previous
+  // transition would swallow the separator and the statement it follows.
+  const isState = /^stateDiagram(-v2)?\s*$/i.test(groups[0]?.[0]?.text ?? '')
+  const lines = isState ? groups.flat() : mergeContinuationLines(groups)
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')
@@ -470,8 +475,32 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
       continue
     }
 
+    // --- concurrency separator: `--` inside a composite state starts a new
+    // region. The first one wraps what came before it into region 1. ---
+    if (/^-{2,}$/.test(line) && compositeStack.length > 0) {
+      let top = compositeStack[compositeStack.length - 1]!
+      if (top.region) {
+        compositeStack.pop()
+        top = compositeStack[compositeStack.length - 1]!
+      } else {
+        const first = makeRegion(top, 1)
+        first.nodeIds = top.nodeIds
+        first.children = top.children
+        top.nodeIds = []
+        top.children = [first]
+      }
+      const next = makeRegion(top, top.children.length + 1)
+      top.children.push(next)
+      compositeStack.push(next)
+      continue
+    }
+
     // --- composite state end ---
     if (line === '}') {
+      // Closing a composite that has regions also closes its open region.
+      if (compositeStack[compositeStack.length - 1]?.region) {
+        compositeStack.pop()
+      }
       const completed = compositeStack.pop()
       if (completed) {
         if (compositeStack.length > 0) {
@@ -596,6 +625,17 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   }
 
   return graph
+}
+
+/** An empty concurrency region of `composite`, numbered from 1. */
+function makeRegion(composite: MermaidSubgraph, n: number): MermaidSubgraph {
+  return {
+    id: `${composite.id}__region${n}`,
+    label: '',
+    nodeIds: [],
+    children: [],
+    region: true,
+  }
 }
 
 /**

@@ -192,6 +192,12 @@ export interface MermaidSubgraph {
   children: MermaidSubgraph[]
   /** Optional direction override for this subgraph's internal layout */
   direction?: Direction
+  /**
+   * A concurrency region of a state diagram's composite state (the sections
+   * a `--` line separates). Drawn as an unlabeled dashed box rather than a
+   * titled subgraph, like mermaid.js's `divider` cluster.
+   */
+  region?: boolean
 }
 
 // ============================================================================
@@ -254,6 +260,8 @@ export interface PositionedGroup {
   width: number
   height: number
   children: PositionedGroup[]
+  /** Concurrency region: draw dashed and untitled (see `MermaidSubgraph.region`) */
+  region?: boolean
 }
 
 // ============================================================================
