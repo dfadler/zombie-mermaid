@@ -12,11 +12,11 @@ why the numbers moved so fast.
 
 ## The three releases
 
-| Version | Published (UTC) | The breaking change |
-| --- | --- | --- |
-| 3.0.0 | 2026-09-28 | Removed the unused `componentSpacing` option from the render options types ([#1122](https://github.com/dfadler/zombie-mermaid/pull/1122)) |
-| 4.0.0 | 2026-10-02 | Node 24 or newer, `engines.node` `>=24` ([#1291](https://github.com/dfadler/zombie-mermaid/pull/1291)) |
-| 5.0.0 | 2026-10-10 | `elkjs` becomes an optional peer dependency ([#1444](https://github.com/dfadler/zombie-mermaid/pull/1444), from [#1370](https://github.com/dfadler/zombie-mermaid/issues/1370)) |
+| Version | Published (UTC) | The breaking change                                                                                                                                                             |
+| ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.0.0   | 2026-09-28      | Removed the unused `componentSpacing` option from the render options types ([#1122](https://github.com/dfadler/zombie-mermaid/pull/1122))                                       |
+| 4.0.0   | 2026-10-02      | Node 24 or newer, `engines.node` `>=24` ([#1291](https://github.com/dfadler/zombie-mermaid/pull/1291))                                                                          |
+| 5.0.0   | 2026-10-10      | `elkjs` becomes an optional peer dependency ([#1444](https://github.com/dfadler/zombie-mermaid/pull/1444), from [#1370](https://github.com/dfadler/zombie-mermaid/issues/1370)) |
 
 All six packages share one version number through the repo's fixed changeset
 group, so a major in one is a major in all of them. Between the majors there
