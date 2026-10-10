@@ -20,6 +20,7 @@
 import { act, createElement } from 'react'
 import { render } from '@testing-library/react'
 import { describe, expect, it, afterEach, vi } from 'vitest'
+import dashboardData from '../../demo/dashboard-data.json' with { type: 'json' }
 import { IndexMainApp } from '../../demo/components/index-app.tsx'
 
 type IOCallback = (
@@ -54,7 +55,7 @@ afterEach(() => {
 })
 
 /**
- * The fork card's "merged PRs" stat (real value 334 per `PROOF_SNAPSHOT`)
+ * The fork card's "merged PRs" stat (real value from `dashboard-data.json` via `PROOF_SNAPSHOT`)
  * -- one representative `SlotNumber`, not all six on the page. Returns the
  * always-correct accessible text node and the first digit reel's own
  * transform-carrying inner `<span>` (see `SlotDigit`'s doc comment for the
@@ -88,7 +89,9 @@ describe('ProofSection stat slot-reel animation', () => {
     render(createElement(IndexMainApp))
 
     const { accessibleText, reelInner } = mergedPRsCells()
-    expect(accessibleText.textContent).toBe('334')
+    expect(accessibleText.textContent).toBe(
+      String(dashboardData.fork.mergedPRs),
+    )
     const restTransform = reelInner.style.transform
     expect(reelInner.style.transition).toBe('none')
 
@@ -104,7 +107,9 @@ describe('ProofSection stat slot-reel animation', () => {
     expect(reelInner.style.transform).toBe('translateY(0em)')
     expect(reelInner.style.transition).toBe('none')
     // The real, accessible value never moves -- it was always correct.
-    expect(accessibleText.textContent).toBe('334')
+    expect(accessibleText.textContent).toBe(
+      String(dashboardData.fork.mergedPRs),
+    )
 
     // Flush the two nested rAFs SlotDigit uses to force a paint of the
     // snapped state before applying the transition (see its doc comment).
@@ -126,7 +131,9 @@ describe('ProofSection stat slot-reel animation', () => {
 
     const { accessibleText, reelInner } = mergedPRsCells()
     const restTransform = reelInner.style.transform
-    expect(accessibleText.textContent).toBe('334')
+    expect(accessibleText.textContent).toBe(
+      String(dashboardData.fork.mergedPRs),
+    )
 
     if (!capturedCallback) {
       throw new Error('test setup: IntersectionObserver never constructed')
@@ -150,7 +157,9 @@ describe('ProofSection stat slot-reel animation', () => {
     render(createElement(IndexMainApp))
 
     const { accessibleText, reelInner } = mergedPRsCells()
-    expect(accessibleText.textContent).toBe('334')
+    expect(accessibleText.textContent).toBe(
+      String(dashboardData.fork.mergedPRs),
+    )
     expect(reelInner.style.transition).toBe('none')
   })
 })

@@ -6,6 +6,12 @@
  */
 import type { RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
+import dashboardData from '../dashboard-data.json' with { type: 'json' }
+import {
+  daysSince,
+  parseDashboardData,
+  type DashboardData,
+} from '../dashboard-model.ts'
 import { ChecklistIcon } from './icons.tsx'
 import { Card, CTA, SectionEyebrow } from './primitives.tsx'
 import { SlotNumber } from './slot-number.tsx'
@@ -20,19 +26,30 @@ import {
 } from './tokens.tsx'
 
 /**
- * The real fork-vs-upstream snapshot from `demo/dashboard-data.json`
- * (`generatedAt: "2026-09-07T19:17:01.680Z"`), computed the same way
- * `demo/dashboard-model.ts` computes "days since last commit": whole days
- * from a repo's `lastPushedAt` to the snapshot's own `generatedAt`. See the
- * Dashboard page (`dashboard.html`) for the live, refreshed numbers — this
- * snapshot is deliberately captioned as a snapshot, not live data.
+ * The fork-vs-upstream snapshot, derived from `demo/dashboard-data.json`
+ * (the weekly-refreshed file the Dashboard page renders) so it can't drift
+ * from it (zombie-mermaid#1529). "Days since last commit" is computed the
+ * same way `demo/dashboard-model.ts` does: whole days from `lastPushedAt`
+ * to the snapshot's own `generatedAt`. Still captioned as a snapshot, not
+ * live data. `asOf` is formatted in UTC so server and client agree.
  */
+const proofStats = (r: DashboardData['fork']) => ({
+  daysSinceCommit: daysSince(r.lastPushedAt, data.generatedAt),
+  mergedPRs: r.mergedPRs,
+  openPRs: r.openPRs,
+})
+const data = parseDashboardData(dashboardData)
 const PROOF_SNAPSHOT = {
-  asOf: 'Sep 7, 2026',
-  fork: { daysSinceCommit: 0, mergedPRs: 334, openPRs: 1 },
-  upstream: { daysSinceCommit: 124, mergedPRs: 13, openPRs: 37 },
-  rescuedFixCount: 27,
-} as const
+  asOf: new Date(data.generatedAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }),
+  fork: proofStats(data.fork),
+  upstream: proofStats(data.upstream),
+  rescuedFixCount: data.rescued.totalFixes,
+}
 
 /**
  * True once the returned ref's element has scrolled into the viewport —
