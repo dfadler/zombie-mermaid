@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-Only the latest published version of `zombie-mermaid` on npm is supported with security
-fixes. If you're on an older version, please upgrade before reporting — the fix may
+Only the latest published version of `zombie-mermaid` on npm (currently the 5.x line) is
+supported with security fixes, and fixes are not backported to earlier majors. If you're on an older version, please upgrade before reporting — the fix may
 already be out.
 
 ## Scope
