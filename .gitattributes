@@ -1,0 +1,5 @@
+# Baseline PNGs can't be text-merged. Mark them binary (no merge attempt) so a
+# main-into-branch merge always reports a plain conflict. Resolution rule: take
+# main's PNG (`git checkout --theirs <file>`), then regenerate with the
+# update-linux-baselines workflow (Linux) or `pnpm test:visual:update` (darwin).
+__tests__/visual/__screenshots__/**/*.png binary

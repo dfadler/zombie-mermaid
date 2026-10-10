@@ -40,6 +40,10 @@ function slug(text: string): string {
 }
 
 test.describe('gallery samples (samples-data.ts), ASCII/terminal', () => {
+  // Snapshot specs are deterministic per input: a mismatch reruns identically,
+  // so 2 CI retries just triple the cost of a real failure (#1577). One keeps
+  // a cheap guard against rasterization jitter; geometry/seams keep the default.
+  test.describe.configure({ retries: process.env.CI ? 1 : 0 })
   for (const [i, sample] of samples.entries()) {
     // Hero samples have no ASCII panel in the live demo either — see
     // index.ts's `isHero` branch.
