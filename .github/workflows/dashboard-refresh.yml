@@ -168,16 +168,6 @@ jobs:
             exit 1
           fi
 
-          # Empty changeset satisfies the "Changeset present" required
-          # check without claiming a version bump — a data-snapshot refresh
-          # isn't a release-worthy change. Same pattern already used by
-          # several other non-release PRs in .changeset/. Hand-written to
-          # match `pnpm changeset add --empty`'s own output exactly, since
-          # this job has no changesets CLI installed (see step comment
-          # above).
-          mkdir -p .changeset
-          printf -- '---\n---\n' > ".changeset/dashboard-data-refresh-${GITHUB_RUN_ID}.md"
-
           # Suffixed with the run id (not just the date) so two runs on the
           # same UTC day — e.g. a manual workflow_dispatch alongside the
           # weekly cron, or a rerun — never collide on branch name and
@@ -187,7 +177,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add demo/dashboard-data.json .changeset
+          git add demo/dashboard-data.json
           git commit -m 'chore: refresh dashboard data snapshot'
 
           # Authenticate only for this push, right before it — see the

@@ -192,19 +192,11 @@ jobs:
             exit 1
           fi
 
-          # Empty changeset satisfies the "Changeset present" required
-          # check without claiming a version bump — a badge-data update
-          # isn't itself a release-worthy change. Hand-written (not `pnpm
-          # changeset add --empty`) since this job has no changesets CLI
-          # installed (see step comment above).
-          mkdir -p .changeset
-          printf -- '---\n---\n' > ".changeset/bundle-size-badge-${GITHUB_RUN_ID}.md"
-
           BRANCH="chore/bundle-size-badge-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add badges .changeset
+          git add badges
           git commit -m 'chore: update bundle-size badge data'
 
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
@@ -214,4 +206,4 @@ jobs:
             --base main \
             --head "$BRANCH" \
             --title 'chore: update bundle-size badge data' \
-            --body 'Automated bundle-size badge refresh after a release (publish.yml). Includes an empty changeset — this is a data update, not a release-worthy change. Merge once checks pass.'
+            --body 'Automated bundle-size badge refresh after a release (publish.yml). No changeset: the "Changeset present" check exempts data-only PRs. Merge once checks pass.'
