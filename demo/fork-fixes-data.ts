@@ -358,8 +358,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  A <|-- B : inheritance\n  C *-- D : composition\n  E o-- F : aggregation\n  G --> H : association\n  I ..> J : dependency\n  K ..|> L : realization',
     fixCommit: '60a40d2',
-    // TODO: set to the PR that carries 60a40d2 once it is opened.
-    pr: 0,
+    pr: 512,
     render: 'ascii',
     lookFor:
       'Before: five of the six labels read `inheri…`, `composi…`, and so on. After: the columns spread apart just enough for all six to render in full.',
@@ -373,8 +372,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  class A\n  class B\n  A --> B : one\n  A --> B : two\n  A --> B : three\n  A --> B : four',
     fixCommit: '60a40d2',
-    // TODO: set to the PR that carries 60a40d2 once it is opened.
-    pr: 0,
+    pr: 512,
     render: 'ascii',
     lookFor:
       'Before: only `four` survives, on two lines. After: `one`, `two`, `three`, and `four` each sit on their own lane, joined to the boxes by a short jog, with four distinct arrowheads.',
@@ -387,8 +385,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  class Model {\n    -data Map\n    +getData() Map\n    +setData(key, val) void\n    +notify() void\n  }\n  class View {\n    -model Model\n    +render() void\n    +update() void\n  }\n  class Controller {\n    -model Model\n    -view View\n    +handleInput(event) void\n    +updateModel(data) void\n  }\n  Controller --> Model : updates\n  Controller --> View : refreshes\n  View --> Model : reads\n  Model ..> View : notifies',
     fixCommit: '1bf8096',
-    // TODO: set to the PR that carries 1bf8096 once it is opened.
-    pr: 0,
+    pr: 514,
     render: 'ascii',
     lookFor:
       'Before: `refreshes` and `updates` sit stacked on adjacent rows above the single arrowhead entering Model, reading as though both terminate there. After: `refreshes` sits beside its own detour line, past Model’s right border, clearly distinct from `updates`.',
@@ -401,9 +398,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  class EventEmitter {\n    -List~Observer~ observers\n    +attach(Observer) void\n  }\n  class Observer {\n    <<interface>>\n    +update() void\n  }\n  EventEmitter --> Observer',
     fixCommit: '2a06338',
-    // TODO(#418 sweep): replace with the PR number once the PR is opened —
-    // the branch was pushed without GitHub write access.
-    pr: 0,
+    pr: 505,
     render: 'ascii',
     lookFor:
       'Before: the EventEmitter attribute reads `List~Observer~`. After: it reads `List<Observer>`, the form real mermaid renders.',
@@ -416,9 +411,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'graph TD\n  A[Source] -->|solid| B[Target 1]\n  A -.->|dotted| C[Target 2]\n  A ==>|thick| D[Target 3]',
     fixCommit: '64c8dd4',
-    // TODO(#418 sweep): replace with the PR number once the PR is opened —
-    // the branch was pushed without GitHub write access.
-    pr: 0,
+    pr: 505,
     render: 'ascii',
     lookFor:
       'Before: "thick" sits glued to the dotted edge’s ┆ column. After: it sits on the thick edge’s own ┃ line, like "dotted" does on its ┆ line.',

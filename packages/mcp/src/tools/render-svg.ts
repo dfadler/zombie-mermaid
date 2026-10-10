@@ -242,7 +242,20 @@ export function renderSvgHandler(input: RenderSvgToolArgs): CallToolResult {
       ...(input.fg !== undefined ? { fg: input.fg } : {}),
     })
     if (input.outputPath !== undefined) {
-      const saved = writeSvgFile(input.outputPath, svg)
+      let saved: { saved: string; size: number }
+      try {
+        saved = writeSvgFile(input.outputPath, svg)
+      } catch (err) {
+        // Raw Node fs errors embed the absolute path ("EISDIR: ..., open
+        // '/abs/x.svg'"); report only the errno code. Our own checks above
+        // throw code-less Errors with already-safe messages.
+        if (err instanceof Error && 'code' in err) {
+          throw new Error(
+            `outputPath could not be written (${String(err.code)})`,
+          )
+        }
+        throw err
+      }
       return { content: [{ type: 'text', text: JSON.stringify(saved) }] }
     }
     return { content: [{ type: 'text', text: svg }] }

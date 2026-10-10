@@ -82,7 +82,7 @@
     "LICENSE",
     "README.md"
   ],
-  "packageManager": "pnpm@11.13.0",
+  "packageManager": "pnpm@11.13.1",
   "engines": {
     "node": ">=24"
   },
@@ -109,8 +109,10 @@
     "bench:ascii-renderer": "tsx scripts/bench-ascii-renderer.ts",
     "bench:package-compare": "tsx scripts/bench-package-compare.ts",
     "bench:history:append": "tsx scripts/bench-history-append.ts",
+    "metrics:history:append": "tsx scripts/metrics-history-append.ts",
     "bench:trend": "tsx scripts/bench-trend.ts",
     "bench:mcp": "tsx scripts/bench-mcp.ts",
+    "smoke:packed": "node scripts/smoke-test-packed.mjs",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
     "build:mono-font": "tsx scripts/build-mono-font-subset.ts && prettier --write demo/components/generated/mono-font-subset.ts demo/styles.css packages/svg-renderer/src/generated/mono-font-subset.ts",
@@ -137,6 +139,7 @@
     "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "layout:oracle": "tsx scripts/layout-oracle.ts",
+    "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md && prettier --write docs/layout-fidelity-scorecard.md",
     "label:oracle": "tsx scripts/label-position-oracle.ts",
     "verify": "scripts/verify.sh",
     "doctor": "scripts/doctor.sh"
