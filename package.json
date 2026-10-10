@@ -109,6 +109,7 @@
     "bench:ascii-renderer": "tsx scripts/bench-ascii-renderer.ts",
     "bench:package-compare": "tsx scripts/bench-package-compare.ts",
     "bench:history:append": "tsx scripts/bench-history-append.ts",
+    "metrics:history:append": "tsx scripts/metrics-history-append.ts",
     "bench:trend": "tsx scripts/bench-trend.ts",
     "bench:mcp": "tsx scripts/bench-mcp.ts",
     "smoke:packed": "node scripts/smoke-test-packed.mjs",

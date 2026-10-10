@@ -118,6 +118,13 @@ jobs:
       - name: Append to trend history
         run: pnpm run bench:history:append -- bench-current.json
 
+      # Stars, npm downloads and package sizes (#1520). A failed fetch
+      # records null, so this never blocks the benchmark entry.
+      - name: Append project metrics
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm run metrics:history:append
+
       - name: Check for substantive dashboard change
         run: |
           set -euo pipefail
@@ -138,10 +145,11 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dashboard-data-snapshot
-          # Two paths: upload-artifact keeps them relative to the repo root.
+          # Multiple paths: upload-artifact keeps them relative to the repo root.
           path: |
             demo/dashboard-data.json
             bench-history.jsonl
+            metrics-history.jsonl
           retention-days: 1
 
   open-pr:
@@ -188,7 +196,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add demo/dashboard-data.json bench-history.jsonl
+          git add demo/dashboard-data.json bench-history.jsonl metrics-history.jsonl
           git commit -m 'chore: weekly data refresh (dashboard snapshot + bench trend)'
 
           # Authenticate only for this push, right before it — see the
