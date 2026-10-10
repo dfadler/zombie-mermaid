@@ -41,9 +41,9 @@ name: Upstream PR rescue candidates
 
 on:
   schedule:
-    # Weekly, offset from upstream-check.yml (13:00) and dashboard-refresh
-    # (14:00) Monday runs.
-    - cron: '0 15 * * 1'
+    # Weekly, offset from upstream-check.yml (13:00), dashboard-refresh
+    # (14:00) and form-judge-weekly (15:00) Monday runs.
+    - cron: '0 16 * * 1'
   workflow_dispatch: {}
 
 permissions:
