@@ -51,7 +51,9 @@ If an enrichment color isn't provided, it falls back to the `color-mix()` deriva
 
 Pie charts read `--accent` live for the first slice and derive the other
 slices from it and `--bg`; the outline and slice strokes use `--fg`. C4
-diagrams use the same `--bg`/`--fg` derivations as flowcharts. Architecture
+element fills, strokes and text use fixed Mermaid palette colours, so they do
+not follow the theme; boundaries, relationship lines, titles and labels use the
+theme's foreground. Architecture
 diagrams are rendered through the flowchart renderer, so they consume every
 enrichment colour exactly as flowcharts do.
 
