@@ -15,17 +15,16 @@ import {
 } from './tokens.tsx'
 
 /**
- * The real current newest post (`blog-posts/294-prs-14-days.md`), picked by
+ * The real current newest post (`blog-posts/ascii-and-svg-renderer-now-standalone.md`), picked by
  * the same rule `blog.ts`'s `loadPosts()` uses (newest `date`, ties broken
  * by directory read order) rather than invented.
  */
 const LATEST_POST = {
-  slug: '294-prs-14-days',
-  title:
-    '294 PRs, 14 Days — What Agent-Driven OSS Maintenance Actually Looks Like',
-  displayDate: 'Sep 6, 2026',
+  slug: 'ascii-and-svg-renderer-now-standalone',
+  title: 'ascii-renderer and svg-renderer are now standalone packages',
+  displayDate: 'Sep 21, 2026',
   description:
-    'The real daily merge-count histogram behind two weeks of reviving a dead fork — not the rounder number the tracking issue guessed — and what it does and doesn’t tell you about agent-driven maintenance.',
+    '@zombie-mermaid/ascii-renderer and @zombie-mermaid/svg-renderer are now documented, supported standalone packages on npm — install just the piece you need instead of the whole umbrella.',
 } as const
 
 export function BlogTeaser() {

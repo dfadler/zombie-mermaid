@@ -60,9 +60,9 @@ const EDITOR_FEATURES: readonly EditorFeature[] = [
   },
   {
     icon: <DownloadIcon size={26} />,
-    title: 'One-click SVG export',
+    title: 'SVG and ASCII output',
     description:
-      'Download the exact rendered diagram as a clean, standalone SVG file — ready to drop into docs or slides.',
+      'Flip between SVG and terminal-ready ASCII, then download the SVG — across all nine diagram types, including C4, architecture, and pie.',
   },
 ] as const
 
