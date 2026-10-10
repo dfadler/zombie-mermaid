@@ -5,7 +5,7 @@
 
 SVG layout and rendering primitives for [Mermaid](https://mermaid.js.org/) diagrams — the [ELK.js](https://github.com/kieler/elkjs)-backed layout engine and per-diagram-type SVG emitters behind [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s SVG output.
 
-Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, and XY charts.
+Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, XY charts, pie charts, C4 diagrams, and architecture diagrams.
 
 ## Install
 
@@ -58,8 +58,7 @@ This package also exports the per-diagram-type building blocks `renderMermaidSVG
 Each diagram type follows the same shape: parse (from `@zombie-mermaid/mermaid-parser`) → lay out → render. Class diagrams, for example:
 
 ```ts
-import { splitStatements } from '@zombie-mermaid/core'
-import { THEMES } from '@zombie-mermaid/core'
+import { splitStatements, THEMES } from '@zombie-mermaid/core'
 import { parseClassDiagram } from '@zombie-mermaid/mermaid-parser'
 import {
   layoutClassDiagramSync,
@@ -72,7 +71,7 @@ const positioned = layoutClassDiagramSync(diagram)
 const svg = renderClassSvg(positioned, THEMES['zinc-light'])
 ```
 
-The equivalent pairs for the other diagram types: `layoutErDiagramSync`/`renderErSvg`, `layoutSequenceDiagramSync`/`renderSequenceSvg`, `layoutXYChartSync`/`renderXYChartSvg`, and flowchart/state via `layoutGraphSync` (re-exported from `layout-engine.ts`) plus `renderer.ts`'s renderer. See each module under [`src/`](src) for exact signatures — most render functions take additional optional parameters (font, transparent background, embedded source, title, CSP nonce) beyond the two shown above.
+The equivalent pairs for the other diagram types: `layoutErDiagramSync`/`renderErSvg`, `layoutSequenceDiagramSync`/`renderSequenceSvg`, `layoutXYChartSync`/`renderXYChartSvg`, and flowchart/state via `layoutGraphSync` (re-exported from `layout-engine.ts`) plus `renderer.ts`'s renderer. See each module under [`src/`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/svg-renderer/src) for exact signatures — most render functions take additional optional parameters (font, transparent background, embedded source, title, CSP nonce) beyond the two shown above.
 
 ## Relationship to `zombie-mermaid`
 
