@@ -586,7 +586,11 @@ jobs:
     container:
       # Official Semgrep image; runs entirely against Semgrep's free, public
       # rulesets (no SEMGREP_APP_TOKEN / Semgrep Cloud account required or used).
-      image: semgrep/semgrep
+      # Pinned to 1.179.0 by digest (the `latest` tag as of 2026-10-10) so an
+      # engine release can't fail old PRs; bump deliberately. Rules from
+      # `--config auto` are still served by the registry and can't be pinned
+      # without vendoring them (see #1599).
+      image: semgrep/semgrep:1.179.0@sha256:93963d9295a366f59e4850127b1550400ee7b388f04fe144e4a1f6325d96e01b
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
