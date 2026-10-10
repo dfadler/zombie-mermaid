@@ -2,7 +2,7 @@
 # issue-batch-stays-quiet-on-single-issue. All graders are free, so tagged `quick`.
 # Can fail: without the skill the model does not know the "wave" partitioning or that the
 # default cap is 8; skill_fired fails if the description stops matching the prompt.
-schema_version: "1.1"
+schema_version: '1.1'
 name: issue-batch-plans-waves-by-file-surface
 description: >
   Given several issues to work in parallel, without naming issue-batch, the model
