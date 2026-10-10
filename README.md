@@ -96,6 +96,8 @@ bun add zombie-mermaid
 pnpm add zombie-mermaid
 ```
 
+> Not sure this is the right package? See [Which package do I install?](docs/guides/choosing-a-package.md).
+
 > **Upgrading from 4.x?** Node.js 24 or newer is now required. `elkjs` is now an
 > optional peer dependency: browser and bundler apps must call `registerElk(ELK)`
 > once (see the [migration guide](docs/guides/elkjs-optional-peer.md)). The
