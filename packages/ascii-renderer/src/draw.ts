@@ -228,7 +228,7 @@ function drawGraphScoped(graph: AsciiGraph): Canvas {
         x0: node.drawingCoord.x,
         x1: node.drawingCoord.x + node.drawing.length - 1,
         y0: node.drawingCoord.y,
-        y1: node.drawingCoord.y + (node.drawing[0]?.length ?? 1) - 1,
+        y1: node.drawingCoord.y + node.drawing[0]!.length - 1,
       })
       node.drawn = true
     }

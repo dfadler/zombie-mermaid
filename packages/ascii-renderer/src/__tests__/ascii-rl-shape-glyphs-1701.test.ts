@@ -82,4 +82,15 @@ describe('RL keeps node shapes unmirrored', () => {
     flipCanvasHorizontally(canvas)
     expect(canvas.map((c) => c[0]).join('')).toBe('◄ ┐')
   })
+
+  it('flipCanvasHorizontally skips single-column and off-canvas node rects', () => {
+    const canvas = mkCanvas(2, 0)
+    canvas[0]![0] = '┌'
+    canvas[2]![0] = '►'
+    flipCanvasHorizontally(canvas, undefined, [
+      { x0: 1, x1: 1, y0: 0, y1: 0 },
+      { x0: 0, x1: 9, y0: 0, y1: 0 },
+    ])
+    expect(canvas.map((c) => c[0]).join('')).toBe('◄ ┐')
+  })
 })
