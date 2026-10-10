@@ -135,7 +135,7 @@ visual change") was written to protect, just measured from the other side:
 not that the refactor didn't break anything, but that it didn't need
 revisiting the moment real work started depending on it.
 
-That's the same bet [this blog's post on refactor timing](/blog/refactor-after-the-audit-not-before.html)
+That's the same bet [this blog's post on refactor timing](refactor-after-the-audit-not-before.html)
 made about a different codebase layer back in August, restated with fresh
 evidence: an architecture review scoped to _only_ reorganize, with an
 explicit rule against changing behavior while doing it, is the kind of work
