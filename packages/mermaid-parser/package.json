@@ -2,11 +2,15 @@
   "name": "@zombie-mermaid/mermaid-parser",
   "version": "5.0.1",
   "license": "MIT",
-  "description": "Parsers for class, ER, sequence, and XY chart diagrams — the per-type parse functions both svg-renderer and ascii-renderer import directly.",
+  "description": "Parsers for flowchart, class, ER, sequence, XY chart, pie, C4, and architecture diagrams \u2014 the per-type parse functions both svg-renderer and ascii-renderer import directly.",
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid",
     "directory": "packages/mermaid-parser"
+  },
+  "homepage": "https://github.com/dfadler/zombie-mermaid#readme",
+  "bugs": {
+    "url": "https://github.com/dfadler/zombie-mermaid/issues"
   },
   "type": "module",
   "sideEffects": false,
@@ -35,5 +39,8 @@
   ],
   "dependencies": {
     "@zombie-mermaid/core": "workspace:*"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
