@@ -22,5 +22,13 @@
   "consumerBundles": {
     "packages/svg-renderer/dist/index.js": 86016,
     "dist/index.js": 150528
+  },
+  "unpackedBudgets": {
+    "dist": 48000,
+    "packages/core/dist": 180000,
+    "packages/mermaid-parser/dist": 202000,
+    "packages/svg-renderer/dist": 414000,
+    "packages/ascii-renderer/dist": 428000,
+    "packages/mcp/dist": 44000
   }
 }

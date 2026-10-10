@@ -195,3 +195,11 @@ Be respectful and constructive in issues, PRs, and reviews. There's no separate 
 ## License
 
 By contributing, you agree your contributions are licensed under this project's [MIT license](LICENSE).
+
+## Bundle size budgets
+
+`pnpm run check:bundle-size` (CI job "Bundle size gate") fails a PR if any
+`dist/` file exceeds its gzip budget, or any package's unpacked `dist/` (no
+source maps) exceeds its budget, in `scripts/bundle-size-budget.json`. To raise
+one after an intentional size increase, edit that file in the same PR and
+explain the increase in the PR description; budgets are never auto-regenerated.
