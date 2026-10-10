@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.0.2
+
+### Patch Changes
+
+- [#1617](https://github.com/dfadler/zombie-mermaid/pull/1617) [`fb50520`](https://github.com/dfadler/zombie-mermaid/commit/fb505200f77500fc2c5dc9e09918005c0f2080da) Thanks [@dfadler](https://github.com/dfadler)! - Correct the README: list all 8 supported diagram types, note the Node.js 24 requirement and that the package no longer ships `src/`, and fix the MCP tool count.
+- Updated dependencies [[`192bb09`](https://github.com/dfadler/zombie-mermaid/commit/192bb093ac050c8b20feacf4daf3701d479a68e7)]:
+  - @zombie-mermaid/mcp@5.0.2
+  - @zombie-mermaid/ascii-renderer@5.0.2
+  - @zombie-mermaid/core@5.0.2
+  - @zombie-mermaid/mermaid-parser@5.0.2
+  - @zombie-mermaid/svg-renderer@5.0.2
+
 ## 5.0.1
 
 ### Patch Changes
