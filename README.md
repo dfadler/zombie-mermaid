@@ -73,7 +73,7 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Features
 
-- **6 diagram types** — Flowcharts, State, Sequence, Class, ER, and XY Charts (bar, line, combined)
+- **8 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, and Pie
 - **Dual output** — SVG for rich UIs, ASCII/Unicode for terminals
 - **Synchronous rendering** — No async, no flash. Works with React `useMemo()`
 - **15 built-in themes** — And dead simple to add your own
@@ -86,6 +86,8 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Installation
 
+Requires Node.js 24 or newer (`engines` in `package.json`).
+
 ```bash
 npm install zombie-mermaid
 # or
@@ -94,9 +96,10 @@ bun add zombie-mermaid
 pnpm add zombie-mermaid
 ```
 
-> **Upgrading from 4.x?** `elkjs` is now an optional peer dependency: browser and
-> bundler apps must call `registerElk(ELK)` once. See the
-> [migration guide](docs/guides/elkjs-optional-peer.md).
+> **Upgrading from 4.x?** Node.js 24 or newer is now required. `elkjs` is now an
+> optional peer dependency: browser and bundler apps must call `registerElk(ELK)`
+> once (see the [migration guide](docs/guides/elkjs-optional-peer.md)). The
+> package no longer ships `src/` (see [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538)).
 
 Only need one output format? `@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer` are published standalone — see [Packages](#packages) below.
 
@@ -216,7 +219,7 @@ Example Claude Desktop / Claude Code MCP server config:
 }
 ```
 
-All three tools accept a `diagram` string. The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
+The four diagram tools accept a `diagram` string (`list_themes` and `list_diagram_types` take no arguments). The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
 
 `check_mermaid_sequence_activations` is a mechanical, deterministic check — no LLM judgment involved — for a specific gap in existing Mermaid validators: every `activate X` (or `+` arrow shorthand) in a `sequenceDiagram` must be closed by a matching `deactivate X` (`-` shorthand) before the diagram ends. It returns a JSON report (`{ ok, issues }`) rather than rendering anything, and errors (`isError: true`) if given a non-sequence diagram.
 
