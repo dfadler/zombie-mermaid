@@ -67,10 +67,36 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Most pushes to main are no-ops here: no pending changesets (so no
+      # Version PR to open/update) and the current package.json version is
+      # already tagged (so nothing to publish). Skip the expensive steps then.
+      # Fails open: any pending non-README changeset file, or a missing
+      # tag for the root version, runs the full pipeline. Deliberately not a
+      # `paths:` filter: merging the Version PR changes only package.json,
+      # CHANGELOG.md and .changeset/, and that merge must trigger publish.
+      - name: Detect release work
+        id: gate
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          pending=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | head -n1)
+          if [ -n "$pending" ]; then
+            echo "Pending changeset: $pending"
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif ! git rev-parse -q --verify "refs/tags/zombie-mermaid@${version}" >/dev/null; then
+            echo "No tag for zombie-mermaid@${version}; publish may be needed."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No pending changesets and zombie-mermaid@${version} is tagged; nothing to do."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup pnpm
+        if: steps.gate.outputs.run == 'true'
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
       - name: Setup Node.js
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '24'
@@ -78,15 +104,20 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Ensure npm supports trusted publishing
-        run: npm install -g npm@latest
+        if: steps.gate.outputs.run == 'true'
+        # Pinned (was @latest): trusted publishing needs npm >= 11.5.1.
+        run: npm install -g npm@11.21.0
 
       - name: Run tests
+        if: steps.gate.outputs.run == 'true'
         run: pnpm test
 
       - name: Type check
+        if: steps.gate.outputs.run == 'true'
         # Runs both the library config and demo/tsconfig.json — the demo's
         # client-side code needs DOM types the root config deliberately omits,
         # so it is checked under its own config rather than weakening the
@@ -100,6 +131,7 @@ jobs:
         run: pnpm run build && pnpm run smoke:packed
 
       - name: Create Version PR or publish to npm
+        if: steps.gate.outputs.run == 'true'
         id: changesets
         uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1
         with:
