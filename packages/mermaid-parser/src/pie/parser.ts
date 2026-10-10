@@ -1,4 +1,4 @@
-import { decodeMermaidEntities } from '@zombie-mermaid/core'
+import { decodeMermaidEntities, extractInitConfig } from '@zombie-mermaid/core'
 import type { PieChart, PieSlice } from './types.ts'
 
 // ============================================================================
@@ -387,6 +387,8 @@ export function parsePieChart(text: string): PieChart {
   }
 
   const chart: PieChart = { showData, slices }
+  const { pieTextPosition } = extractInitConfig(text.split(/\r\n?|\n/))
+  if (pieTextPosition !== undefined) chart.textPosition = pieTextPosition
   if (title) chart.title = title
   if (accTitle) chart.accTitle = accTitle
   if (accDescr) chart.accDescr = accDescr

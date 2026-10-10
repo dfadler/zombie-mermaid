@@ -801,9 +801,11 @@ opacity with a 2px outline in the theme's foreground colour.
 
 Known differences from Mermaid:
 
-- `%%{init: {"pie": …}}%%` settings (`textPosition`, `donutHole`,
-  `legendPosition`, `highlightSlice`) are not supported yet; the defaults
-  are always used.
+- `%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the SVG slice labels
+  (0 is the centre, 1 the outer edge; default 0.75). The ASCII output has no
+  positioned labels, so it ignores it. The other `pie` settings Mermaid
+  11.16+ supports (`donutHole`, `legendPosition`, `highlightSlice`) are not
+  supported yet; their defaults are always used.
 - A legend taller than the 450px frame (more than about 20 slices) makes the
   SVG taller instead of being cut off, and an empty chart keeps its full
   width (Mermaid crops it).
