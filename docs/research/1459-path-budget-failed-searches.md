@@ -1,5 +1,7 @@
 # Path-budget iterations spent on failed searches (#1459)
 
+Status: **measurement, answered (research only; the counters were temporary and not shipped).**
+
 Remaining half of #1424. Question: how much of the render-wide A\* budget
 (`DEFAULT_PATH_BUDGET` = 200,000 in `packages/ascii-renderer/src/pathfinder.ts`)
 is burned by searches that never find a path?
