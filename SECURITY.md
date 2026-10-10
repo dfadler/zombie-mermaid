@@ -23,6 +23,27 @@ General bugs that don't have a security impact (incorrect layout, wrong colors, 
 diagram type not rendering as expected) should go through the normal
 [issue tracker](https://github.com/dfadler/zombie-mermaid/issues) instead.
 
+## MCP server (`@zombie-mermaid/mcp`) threat model
+
+The MCP caller (usually an LLM agent) and the diagram text it sends are untrusted;
+the server process and its working directory are trusted. Reviewed in
+[#1565](https://github.com/dfadler/zombie-mermaid/issues/1565):
+
+- **File writes** happen only in `render_mermaid_svg` with `outputPath`. The path
+  must end in `.svg`, resolve inside the server's real working directory (checked
+  lexically and after resolving symlinks on the parent), and have an existing
+  parent directory. The final component is opened with `O_NOFOLLOW` and must be a
+  regular file. An existing `.svg` is overwritten (the tool is annotated
+  `destructiveHint: true`). No directories are created. The other tools never
+  touch the filesystem.
+- **Error messages** from the write path report only the errno code, not the
+  absolute path. The success result returns the absolute `saved` path by design.
+- **SVG/CSS injection:** `bg`/`fg` are validated as `#rgb`/`#rrggbb`; `theme` is an
+  enum; `font` is sanitized by the renderer before it reaches the `<style>` block.
+- **Not enforced:** there is no size cap on the diagram or the written file beyond
+  what the MCP transport allows; run the server in a directory you are happy for an
+  agent to write `.svg` files into.
+
 ## Reporting a vulnerability
 
 Please **do not** open a public issue for a suspected vulnerability.

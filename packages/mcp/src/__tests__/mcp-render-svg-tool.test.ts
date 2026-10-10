@@ -173,6 +173,9 @@ describe('outputPath', () => {
     mkdirSync(join(dir, 'd.svg'))
     const result = renderSvgHandler({ diagram: DIAGRAM, outputPath: 'd.svg' })
     expect(result.isError).toBe(true)
+    // Raw fs errors would embed the absolute path; only the code may surface.
+    expect(text(result)).toContain('outputPath could not be written')
+    expect(text(result)).not.toContain(dir)
   })
 
   it.skipIf(process.platform === 'win32')(
