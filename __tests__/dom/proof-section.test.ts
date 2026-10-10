@@ -10,6 +10,8 @@
 import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import dashboardData from '../../demo/dashboard-data.json' with { type: 'json' }
+import { daysSince } from '../../demo/dashboard-model.ts'
 import { ProofSection } from '../../demo/components/proof-section.tsx'
 
 describe('ProofSection', () => {
@@ -19,18 +21,23 @@ describe('ProofSection', () => {
     expect(screen.getByText('zombie-mermaid (this fork)')).toBeInTheDocument()
     expect(screen.getByText('beautiful-mermaid (upstream)')).toBeInTheDocument()
 
-    // Fork stats: 0 days, 334 merged PRs, 1 open PR.
-    expect(screen.getByText('334')).toBeInTheDocument()
-    // Upstream stats: 124 days, 13 merged PRs, 37 open PRs.
-    expect(screen.getByText('124')).toBeInTheDocument()
-    expect(screen.getByText('13')).toBeInTheDocument()
-    expect(screen.getByText('37')).toBeInTheDocument()
+    const { fork, upstream, generatedAt } = dashboardData
+    expect(screen.getByText(String(fork.mergedPRs))).toBeInTheDocument()
+    expect(
+      screen.getByText(String(daysSince(upstream.lastPushedAt, generatedAt))),
+    ).toBeInTheDocument()
+    expect(screen.getByText(String(upstream.mergedPRs))).toBeInTheDocument()
+    expect(screen.getByText(String(upstream.openPRs))).toBeInTheDocument()
   })
 
   it('renders the fixes-teaser card linking to fork-fixes.html', () => {
     render(createElement(ProofSection))
 
-    expect(screen.getByText(/27 documented bugs/i)).toBeInTheDocument()
+    expect(
+      screen.getAllByText(
+        new RegExp(`${dashboardData.rescued.totalFixes} documented bugs`, 'i'),
+      ).length,
+    ).toBeGreaterThan(0)
     expect(
       screen.getByRole('link', { name: /see the evidence/i }),
     ).toHaveAttribute('href', 'fork-fixes.html')
