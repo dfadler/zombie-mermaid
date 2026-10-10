@@ -118,6 +118,7 @@ describe('Mermaid entity codes in pie and xychart (#1697)', () => {
   const sources = {
     pie: `pie title ${E}\n  "${E}" : 3\n  "y" : 2`,
     xychart: `xychart-beta\n  title "${E}"\n  x-axis "${E}" ["${E}", y]\n  y-axis "${E}" 0 --> 10\n  bar [3, 4]`,
+    'xychart (numeric x-axis, title-only y-axis)': `xychart-beta\n  x-axis "${E}" 0 --> 5\n  y-axis "${E}"\n  bar [3, 4]`,
   }
   for (const [name, src] of Object.entries(sources)) {
     it(`${name}: SVG and ASCII show decoded text, never the raw code`, () => {
