@@ -24,13 +24,13 @@ occupies 8 columns, so a box sized for 4 is cut through by its own label.
 
 ## The reports
 
-| Upstream | Opened | What it says | State when I checked (2026-10-10) |
-| --- | --- | --- | --- |
-| [#12](https://github.com/lukilabs/beautiful-mermaid/issues/12) | 2026-01-30 | Empty body. A commenter called it a duplicate. | Closed |
-| [#13](https://github.com/lukilabs/beautiful-mermaid/issues/13) | 2026-01-30 | CJK and emoji width in ASCII output. | Closed 2026-02-23 by a maintainer comment saying v1.0.0 fixed it |
-| [#119](https://github.com/lukilabs/beautiful-mermaid/issues/119) | 2026-05-28 | Node labels with CJK misalign boxes. | Open |
-| [#122](https://github.com/lukilabs/beautiful-mermaid/issues/122) | 2026-06-01 | The grid assumes 1 cell is 1 display column. | Open |
-| [#128](https://github.com/lukilabs/beautiful-mermaid/pull/128) | 2026-06-13 | A pull request that fixes #119 and #122. | Open |
+| Upstream                                                         | Opened     | What it says                                   | State when I checked (2026-10-10)                                |
+| ---------------------------------------------------------------- | ---------- | ---------------------------------------------- | ---------------------------------------------------------------- |
+| [#12](https://github.com/lukilabs/beautiful-mermaid/issues/12)   | 2026-01-30 | Empty body. A commenter called it a duplicate. | Closed                                                           |
+| [#13](https://github.com/lukilabs/beautiful-mermaid/issues/13)   | 2026-01-30 | CJK and emoji width in ASCII output.           | Closed 2026-02-23 by a maintainer comment saying v1.0.0 fixed it |
+| [#119](https://github.com/lukilabs/beautiful-mermaid/issues/119) | 2026-05-28 | Node labels with CJK misalign boxes.           | Open                                                             |
+| [#122](https://github.com/lukilabs/beautiful-mermaid/issues/122) | 2026-06-01 | The grid assumes 1 cell is 1 display column.   | Open                                                             |
+| [#128](https://github.com/lukilabs/beautiful-mermaid/pull/128)   | 2026-06-13 | A pull request that fixes #119 and #122.       | Open                                                             |
 
 The odd one is #13. It was closed as fixed in v1.0.0, but #119 and #122 were filed
 months later against the same symptom. In #128's thread, a commenter on 2026-07-01
