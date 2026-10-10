@@ -44,6 +44,10 @@ Parsing lives in `packages/mermaid-parser/src/flowchart-parser.ts` around `graph
 
 **Triggered by:** any diagram using `classDef`, `class`, `:::className`, or `style` — especially one with a trailing semicolon on a `class` line, a `:::className` shorthand before the node's brackets, or a custom fill without an explicit text color.
 
+### SVG coordinates rounded to 2 decimal places
+
+All SVG coordinates are now rounded to 2dp, which changes every SVG output string (byte-for-byte). Rendering is visually identical; only snapshot or string-equality tests on stored SVG need regenerating.
+
 ### Brackets inside quoted labels, and no-space arrows
 
 `A["/blog/[slug]"]` previously rendered as `"/blog/[slug` — the shape-delimiter matcher used a lazy `.+?` to find the closing `]`, so it stopped at the first `]` it found, including one inside the quoted string. Any label containing a literal `[` or `]` — file globs, route patterns, array-index notation — was silently truncated. Delimiter matching is now quote-aware, so a complete `"..."` span is treated as a unit.
