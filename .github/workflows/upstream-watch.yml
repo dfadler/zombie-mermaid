@@ -82,11 +82,11 @@ jobs:
             --jq '.commits[] | [.sha, .commit.message] | @json' > commits.jsonl
           # Subject = first line of the message. Third-party text: strip
           # control/format chars, collapse backticks/pipes/whitespace, cap the
-          # length, emit as an inert code span.
+          # length (100: less room to smuggle prose), emit as an inert code span.
           jq -r '
             fromjson | .[0] as $sha | (.[1] | split("\n")[0]) as $s
             | ($s | gsub("[\\p{Cc}\\p{Cf}]"; "") | gsub("[`|\\s]+"; " ")
-                  | sub("^ +"; "") | sub(" +$"; "") | .[0:200]) as $safe
+                  | sub("^ +"; "") | sub(" +$"; "") | .[0:100]) as $safe
             | "- [`\($sha[0:7])`](https://github.com/lukilabs/beautiful-mermaid/commit/\($sha)) `\($safe)`"
           ' commits.jsonl > commits.md
 
