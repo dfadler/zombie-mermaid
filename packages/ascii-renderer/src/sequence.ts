@@ -1147,8 +1147,33 @@ export function renderSequenceAscii(
       }
 
       // Draw label centered between the two lifelines (supports multi-line)
-      const midX = Math.floor((fromX + toX) / 2)
+      let midX = Math.floor((fromX + toX) / 2)
       const msgLines = splitLines(msg.label)
+
+      // A label centred on a message that spans several participants can land
+      // on an intermediate (uninvolved) lifeline and blank it out. When the
+      // centred label would cover one, centre it in the spanned gap that can
+      // hold it clear of both lifelines (nearest the midpoint) instead. If no
+      // gap fits, keep the centred placement. (issue #1119)
+      const labelW = Math.max(0, ...msgLines.map(displayWidth))
+      const lo = Math.min(fromX, toX)
+      const hi = Math.max(fromX, toX)
+      const between = llX.filter((x) => x > lo && x < hi)
+      const covers = (c: number) => {
+        const s = c - Math.floor(labelW / 2)
+        return between.some((x) => x >= s && x < s + labelW)
+      }
+      if (labelW > 0 && covers(midX)) {
+        const stops = [lo, ...between, hi]
+        let best: number | undefined
+        for (let k = 0; k + 1 < stops.length; k++) {
+          if (stops[k + 1]! - stops[k]! - 1 < labelW + 2) continue
+          const c = Math.floor((stops[k]! + stops[k + 1]!) / 2)
+          if (best === undefined || Math.abs(c - midX) < Math.abs(best - midX))
+            best = c
+        }
+        if (best !== undefined) midX = best
+      }
 
       for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
         const line = msgLines[lineIdx]!
