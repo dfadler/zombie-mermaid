@@ -78,6 +78,8 @@ The equivalent pairs for the other diagram types: `layoutErDiagramSync`/`renderE
 
 This package is one of the internal pieces `zombie-mermaid` is built from (alongside `@zombie-mermaid/core` and `@zombie-mermaid/mermaid-parser`, which stay internal-only). Installing `zombie-mermaid` pulls in the exact same layout/render code, wired up behind `renderMermaidSVG`.
 
+Not sure which package you need? See [Which package do I install?](../../docs/guides/choosing-a-package.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

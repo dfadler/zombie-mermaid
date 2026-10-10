@@ -41,6 +41,8 @@ See `AsciiRenderOptions` in [`src/index.ts`](src/index.ts) for the full option s
 
 This package is one of the internal pieces `zombie-mermaid` is built from (alongside `@zombie-mermaid/core` and `@zombie-mermaid/mermaid-parser`, which stay internal-only). Installing `zombie-mermaid` and using `zombie-mermaid/ascii` pulls in the exact same renderer — reach for this package directly only when you specifically don't want the SVG-rendering half of the umbrella package.
 
+Not sure which package you need? See [Which package do I install?](../../docs/guides/choosing-a-package.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
