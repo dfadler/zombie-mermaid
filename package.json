@@ -80,6 +80,7 @@
   "files": [
     "dist/",
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "README.md"
   ],
   "packageManager": "pnpm@11.13.0",
