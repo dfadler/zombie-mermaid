@@ -1,20 +1,49 @@
 name: Deploy demo site to GitHub Pages
 
 # Builds the static demo site (index.ts/editor.ts -> site/) and publishes it
-# to GitHub Pages on every push to main. Requires the repo's Pages source to
-# be set to "GitHub Actions" (Settings -> Pages) — this workflow's deploy
-# step fails otherwise.
+# to GitHub Pages. Requires the repo's Pages source to be set to "GitHub
+# Actions" (Settings -> Pages) — this workflow's deploy step fails otherwise.
+#
+# Triggers (#1595): a push to main that touches anything the site could depend
+# on, a daily schedule as a safety net, and manual dispatch. The push filter is
+# a deny-list (`paths-ignore`), not an allow-list: the site build reads from
+# packages/, src/, demo/ (incl. dashboard-data.json), public/, blog-posts/,
+# docs/, editor/, scripts/ and the lockfile, so an allow-list that forgot one
+# would silently stop deploying. Only paths verified to be unread by
+# `pnpm run build:site` are ignored. Note: GitHub skips a push run only when
+# EVERY changed file matches paths-ignore.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '__tests__/**'
+      - '.changeset/**'
+      - 'badges/**'
+      - 'docker/**'
+      - 'skills/**'
+      - 'bench-history.jsonl'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'SECURITY.md'
+      - 'LICENSE'
+      # Workflow edits other than this file cannot change the site.
+      - '.github/workflows/**'
+      - '!.github/workflows/pages.yml'
+  schedule:
+    - cron: '17 6 * * *' # daily, off the hour
   workflow_dispatch:
 
-# Only one Pages deployment should ever be in flight; a mid-flight cancel
-# would leave Pages serving a half-uploaded artifact, so unlike ci.yml this
-# does not cancel-in-progress (same reasoning as publish.yml).
+# Only one Pages deployment should be in flight, and a newer run supersedes an
+# older one. cancel-in-progress is true so a hung run (a deploy stuck in
+# `waiting` on the github-pages environment holds this group indefinitely, and
+# job timeouts do not apply there — #1525) is cancelled by the next push,
+# schedule or dispatch instead of blocking every later deploy. Safe because
+# the artifact is fully uploaded by the build job before deploy starts, and
+# deploy-pages activates it as a single deployment, so a cancel never leaves a
+# half-published site.
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
