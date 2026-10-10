@@ -16,7 +16,7 @@
 - [ ] `pnpm test` passes
 - [ ] Changeset added with `pnpm changeset` if this touches published code (never hand-edit `CHANGELOG.md`; see CONTRIBUTING.md's "Changesets")
 - [ ] If this fixes a bug with a visible rendering change (SVG or ASCII), added a `demo/fork-fixes-data.ts` entry (see CONTRIBUTING.md's "Adding a fork-fixes entry") — otherwise N/A
-- [ ] Linked issue: Closes #  (and the issue reporter is notified, if not you)
+- [ ] Linked issue: Closes # (and the issue reporter is notified, if not you)
 - [ ] Breaking change? yes / no (majors must be deliberate)
 - [ ] Follow-ups are filed issues linked as #N, not prose (CI fails on an unlinked "follow-up" / "TODO later")
 - [ ] No `TEMP:` commit subjects (CI fails on them)
