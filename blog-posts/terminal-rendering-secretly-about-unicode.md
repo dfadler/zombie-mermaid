@@ -4,6 +4,8 @@ date: 2026-09-06
 description: The hardest recurring bug in zombie-mermaid's ASCII renderer wasn't diagram layout, it was column-width math, and it came back four times in a week wearing a different costume each time.
 ---
 
+> **Note (2026-10-10):** this post was written before the monorepo split. File paths it cites under `src/` have since moved into `packages/*` (for example `packages/ascii-renderer/`, `packages/svg-renderer/`, `packages/core/`); the code and line references are as of the post's date.
+
 If you'd asked me to guess where zombie-mermaid's ASCII renderer would accumulate the most bugs, I'd have guessed layout: pathfinding around dense graphs, edge bundling, grid placement for deeply nested subgraphs. That guess would have been wrong. The single bug category that came back the most times in the space of about a week wasn't any of that. It was the question of how wide a piece of text is.
 
 That sounds like it should have one obvious answer. It doesn't, and this post is the story of finding that out the hard way, four times, in four different corners of the same codebase.

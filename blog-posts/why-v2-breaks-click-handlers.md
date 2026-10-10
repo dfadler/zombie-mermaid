@@ -61,6 +61,10 @@ support via `nonce`/`styleAttribute`, and a handful of ASCII layout fixes.
 None of those forced the major bump; the click-handler change did, on its
 own, because it changes behavior for anyone depending on the old attribute.
 
+Later majors (3.0.0, 4.0.0, 5.0.0) also contain breaking changes; see the
+[CHANGELOG](https://github.com/dfadler/zombie-mermaid/blob/main/CHANGELOG.md)
+before upgrading past 2.x.
+
 ## If you haven't upgraded yet
 
 This is a one-line audit: search your codebase for `data-click-callback`. If

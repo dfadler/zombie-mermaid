@@ -143,7 +143,9 @@ function parseFrontmatter(
       throw new Error(`${sourceFile}: malformed frontmatter line: "${line}"`)
     }
     const key = line.slice(0, separatorIndex).trim()
-    const value = line.slice(separatorIndex + 1).trim()
+    let value = line.slice(separatorIndex + 1).trim()
+    // Strip one pair of surrounding quotes (YAML-style quoted scalar).
+    if (/^(['"]).*\1$/.test(value)) value = value.slice(1, -1)
     fields[key] = value
   }
   return { fields, body: body!.trim() }

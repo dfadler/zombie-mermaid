@@ -94,10 +94,12 @@ features either. Since the first release, zombie-mermaid has shipped:
 - **Strict CSP support** — a `nonce` option and a `styleAttribute: false`
   escape hatch so a host whose `style-src` disallows `'unsafe-inline'` can
   still render themed diagrams correctly.
-- **An MCP tool** (`check_mermaid_sequence_activations`) for mechanically
-  verifying activation/deactivation balance in sequence diagrams — aimed at
-  a specific, measured failure mode in LLM-generated diagrams, not general
-  syntax checking that other tools already cover well.
+- **MCP tools** — `check_mermaid_sequence_activations` and
+  `fix_mermaid_sequence_activations` for verifying and repairing
+  activation/deactivation balance in sequence diagrams (aimed at a specific,
+  measured failure mode in LLM-generated diagrams), plus `list_themes` and
+  `list_diagram_types` so an agent can discover what's available.
+- **More diagram types**, including C4, `architecture-beta` and pie charts.
 - **Per-diagram-type typed `RenderOptions`** so consumers can see which
   options actually apply to which diagram type instead of one large,
   mostly-inapplicable options bag.
@@ -105,17 +107,19 @@ features either. Since the first release, zombie-mermaid has shipped:
 None of this needed to break anything for existing users — the public API
 (`renderMermaidSVG`, `renderMermaidASCII`, `parseMermaid`, `RenderOptions`)
 has stayed a drop-in replacement for beautiful-mermaid's the whole way, with
-exactly one deliberate, well-documented exception so far (the
-[2.0.0 click-handler change](why-v2-breaks-click-handlers.html)).
+deliberate, documented exceptions only at major versions. The first was the
+[2.0.0 click-handler change](why-v2-breaks-click-handlers.html); 3.0.0, 4.0.0
+and 5.0.0 also contained breaking changes (see the
+[CHANGELOG](https://github.com/dfadler/zombie-mermaid/blob/main/CHANGELOG.md)).
 
 ## How I intend to keep maintaining it
 
 "Maintained" only means something if it's backed by process, not just
 intent. A few things that are already in place, not aspirational:
 
-- **A real release cadence.** Eighteen tagged releases since the fork
-  started at the end of January 2026 — patches, minors, and one major,
-  shipped as they're ready rather than batched and delayed.
+- **A real release cadence.** Sixteen tagged `zombie-mermaid` releases since the fork
+  started at the end of January 2026 (through 5.0.1 as of 2026-10-10) —
+  patches, minors, and five majors, shipped as they're ready rather than batched and delayed.
 - **Every merge to `main` ships through changesets**, so the CHANGELOG and
   version bumps are generated from the same PRs that actually landed, not
   written after the fact from memory.

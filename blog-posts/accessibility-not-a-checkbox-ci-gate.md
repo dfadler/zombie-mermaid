@@ -4,6 +4,8 @@ date: 2026-09-06
 description: Nine accessibility issues, filed and fixed over four days, ended with a written conformance statement and an automated test that fails the build if a future diagram type ships without an accessible name. Here's the arc from bug report to guarantee, and the regression that got caught eight hours after the guarantee shipped.
 ---
 
+> **Note (2026-10-10):** this post was written before the monorepo split. File paths it cites under `src/` have since moved into `packages/*` (for example `packages/ascii-renderer/`, `packages/svg-renderer/`, `packages/core/`); the code and line references are as of the post's date.
+
 Most projects treat accessibility as a list of bugs to close. Close #215,
 close #239, move on. What actually happened in this repo between
 2026-08-28 and 2026-09-01 looks like that at first — nine issues, nine
