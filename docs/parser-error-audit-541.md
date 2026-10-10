@@ -1,5 +1,11 @@
 # Parser error-message audit (issue #541)
 
+> **Historical.** This is a snapshot from when the audit was done. Its claims no
+> longer hold (it counts five parsers and says no thrown error carries a
+> line/column; both are out of date). See
+> [research/541-parser-error-audit-followup.md](research/541-parser-error-audit-followup.md)
+> for the current state.
+
 Audit of parse-error quality across all five diagram-type parsers, done by
 writing deliberately-broken `.mmd` snippets and running them through the
 real parse paths (`parseMermaid`, `parseSequenceDiagram`,

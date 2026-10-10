@@ -16,7 +16,7 @@
 
 - [ ] `pnpm run lint` passes
 - [ ] `pnpm run format:check` passes
-- [ ] `pnpm exec tsc --noEmit` passes
+- [ ] `pnpm run typecheck` passes (also covers `demo/` and `editor/`)
 - [ ] `pnpm test` passes
 - [ ] Changeset added with `pnpm changeset` if this touches published code (never hand-edit `CHANGELOG.md`; see CONTRIBUTING.md's "Changesets")
 - [ ] If this fixes a bug with a visible rendering change (SVG or ASCII), added a `demo/fork-fixes-data.ts` entry (see CONTRIBUTING.md's "Adding a fork-fixes entry") — otherwise N/A
