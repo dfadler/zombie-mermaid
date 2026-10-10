@@ -130,7 +130,7 @@ rest to match.
 [`__tests__/site-equivalence.test.ts`](../__tests__/site-equivalence.test.ts)
 guards the five site-generator pages (`index.ts`, `editor.ts`,
 `fork-fixes.ts`, `pages.ts`, `blog.ts`) with `toMatchFileSnapshot` against
-checked-in, DOM-normalized fixtures under `__tests__/__fixtures__/`. This is
+checked-in, DOM-normalized fixtures under `__tests__/fixtures/`. This is
 the one case in this repo where a real snapshot matcher (not just a literal
 string assertion) is the right tool: the real generator output is
 enormous (each page embeds a ~1.6 MB minified bundle or freshly rendered
