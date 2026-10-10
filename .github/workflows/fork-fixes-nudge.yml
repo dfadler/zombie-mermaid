@@ -4,7 +4,7 @@
 # one-time backfill. This workflow reminds contributors when a `bug`-labeled
 # PR doesn't touch demo/fork-fixes-data.ts. It is a nudge, not a merge gate —
 # it never fails the build, matching #295's explicit ask for "a nudge rather
-# than a hard gate" and the precedent already set by upstream-check.yml
+# than a hard gate" and the precedent already set by upstream-watch.yml
 # (advisory-only, silent when there's nothing to say).
 #
 # Uses `pull_request_target` rather than `pull_request` so the reminder still

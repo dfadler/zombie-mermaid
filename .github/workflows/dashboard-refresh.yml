@@ -6,7 +6,7 @@
 # workflow is that "future scheduled workflow" scripts/generate-dashboard-
 # data.ts's own header comment already pointed at.
 #
-# Same shape as upstream-check.yml (weekly cron + workflow_dispatch, fork
+# Same shape as upstream-watch.yml (weekly cron + workflow_dispatch, fork
 # guard) but this one commits data instead of opening an issue.
 #
 # Opens a PR instead of pushing straight to main (as this workflow used to)
@@ -62,9 +62,9 @@ name: Dashboard data refresh
 
 on:
   schedule:
-    # Weekly, offset an hour from upstream-check.yml's Monday 13:00 UTC run
+    # Weekly, offset an hour from upstream-watch.yml's Monday 13:00 UTC run
     # so the two don't contend for the same runner minute. form-judge-weekly
-    # (15:00) and upstream-pr-rescue (16:00) follow.
+    # follows at 15:00.
     - cron: '0 14 * * 1'
   workflow_dispatch: {}
 
