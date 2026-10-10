@@ -222,7 +222,7 @@ Example Claude Desktop / Claude Code MCP server config:
 }
 ```
 
-The four diagram tools accept a `diagram` string (`list_themes` and `list_diagram_types` take no arguments). The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
+The five diagram tools (including `validate_mermaid`, parse-only) accept a `diagram` string (`list_themes` and `list_diagram_types` take no arguments). The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
 
 `check_mermaid_sequence_activations` is a mechanical, deterministic check — no LLM judgment involved — for a specific gap in existing Mermaid validators: every `activate X` (or `+` arrow shorthand) in a `sequenceDiagram` must be closed by a matching `deactivate X` (`-` shorthand) before the diagram ends. It returns a JSON report (`{ ok, issues }`) rather than rendering anything, and errors (`isError: true`) if given a non-sequence diagram.
 
