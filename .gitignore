@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Skill eval run output
+**/evals/results/
+
 # Build output
 dist/
 /site/
@@ -84,3 +87,6 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# eval run output
+**/evals/results/
