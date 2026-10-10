@@ -153,7 +153,7 @@ Object containing all 15 built-in themes. See [theming.md](theming.md) for the f
 
 ## `createMcpServer(): McpServer`
 
-Build an [MCP](https://modelcontextprotocol.io/) server (also exported as `createMcpServer` from `@zombie-mermaid/mcp`) exposing `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, and `list_diagram_types` tools, from `zombie-mermaid/mcp`. Not connected to a transport — see the [README's MCP Server section](../README.md#mcp-server) for the `zombie-mermaid mcp` CLI subcommand (the common case) or how to connect it yourself.
+Build an [MCP](https://modelcontextprotocol.io/) server (also exported as `createMcpServer` from `@zombie-mermaid/mcp`) exposing `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, and `list_diagram_types` tools, from `zombie-mermaid/mcp`. Not connected to a transport — see the [MCP tool reference](mcp-tools.md) for every tool's arguments and the [README's MCP Server section](../README.md#mcp-server) for the `zombie-mermaid mcp` CLI subcommand (the common case) or how to connect it yourself.
 
 Default colors (`#FFFFFF` / `#27272A`).
 
