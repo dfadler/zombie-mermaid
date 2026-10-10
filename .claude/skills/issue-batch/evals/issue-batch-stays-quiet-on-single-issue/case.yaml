@@ -1,0 +1,25 @@
+# Near-miss: shares vocabulary (worktree, GitHub issue) but is one issue, not a batch.
+schema_version: "1.1"
+name: issue-batch-stays-quiet-on-single-issue
+description: >
+  A request to fix one issue in a worktree must not fire issue-batch.
+  expected_outcome: PASS when no issue-batch Skill call is made; FAIL otherwise.
+tags: [issue-batch, trigger, quick]
+
+execution:
+  prompt: |
+    In one sentence, what is the command to create a git worktree for fixing a
+    single GitHub issue, #204, on a new branch? Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: skill_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?issue-batch"'
+    min: 0
+    max: 0
+    arm: both

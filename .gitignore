@@ -84,3 +84,6 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# eval run output
+**/evals/results/
