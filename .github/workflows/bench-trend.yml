@@ -87,11 +87,20 @@ jobs:
       - name: Append to trend history
         run: pnpm run bench:history:append -- bench-current.json
 
+      # Stars, npm downloads and package sizes (#1520). A failed fetch
+      # records null, so this never blocks the benchmark entry.
+      - name: Append project metrics
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm run metrics:history:append
+
       - name: Upload updated trend history
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: bench-history-updated
-          path: bench-history.jsonl
+          path: |
+            bench-history.jsonl
+            metrics-history.jsonl
           retention-days: 1
 
   open-pr:
@@ -147,7 +156,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
-          git add bench-history.jsonl .changeset
+          git add bench-history.jsonl metrics-history.jsonl .changeset
           git commit -m 'chore: record benchmark trend entry'
 
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
