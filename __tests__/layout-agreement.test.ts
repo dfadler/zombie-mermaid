@@ -5,6 +5,8 @@ import {
   formatRow,
   parseOracleArgs,
   worst,
+  scorecardMarkdown,
+  summarize,
   type Box,
   type LayoutBoxes,
 } from '../scripts/lib/layout-agreement.ts'
@@ -220,5 +222,27 @@ describe('formatRow', () => {
       false,
     )
     expect(row).not.toContain('sg')
+  })
+})
+
+describe('summarize / scorecardMarkdown (#1572)', () => {
+  const r = (v: number | null, h: number | null, c: number | null) => ({
+    vertical: v,
+    horizontal: h,
+    containment: c,
+    nodes: 3,
+    subgraphs: false,
+  })
+  const meta = { date: '2026-10-10', commit: 'abcdef123', tolerance: 20 }
+
+  it('means ignore null figures', () => {
+    const e = summarize({ a: r(1, null, null), b: r(0.5, null, null) }, meta)
+    expect(e).toMatchObject({ samples: 2, vertical: 0.75, horizontal: null })
+  })
+
+  it('scorecard lists lowest sample first and escapes pipes', () => {
+    const results = { 'hi|gh': r(1, 1, 1), low: r(0.2, 1, 1) }
+    const md = scorecardMarkdown(summarize(results, meta), results, [])
+    expect(md.indexOf('| low |')).toBeLessThan(md.indexOf('hi\\|gh'))
   })
 })

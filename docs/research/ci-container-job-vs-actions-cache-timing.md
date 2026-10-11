@@ -1,5 +1,7 @@
 # Spike: real CI time cost of a `container:` job vs. current `actions/cache` install
 
+Status: **spike, answered. The container migration it fed shipped as #549 (PR #651); timings are as of that migration.**
+
 Answers [#547](https://github.com/dfadler/zombie-mermaid/issues/547). Feeds
 [#548](https://github.com/dfadler/zombie-mermaid/issues/548) (decision, already
 closed go/no-go — the container migration shipped as

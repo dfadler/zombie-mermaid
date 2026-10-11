@@ -27,7 +27,7 @@ import type {
 } from './types.ts'
 import { colorizeText } from './ansi.ts'
 import { mkCanvas, mkRoleCanvas, write } from './canvas.ts'
-import { splitStatements } from '@zombie-mermaid/core'
+import { niceTickValues, splitStatements } from '@zombie-mermaid/core'
 
 // ============================================================================
 // Constants
@@ -1056,28 +1056,6 @@ function getCategoryLabels(chart: XYChart, count: number): string[] {
     )
   }
   return Array.from({ length: count }, (_, i) => String(i + 1))
-}
-
-/** Generate nice tick values for a numeric range. */
-function niceTickValues(min: number, max: number): number[] {
-  const range = max - min
-  if (range <= 0) return [min]
-
-  const rawInterval = range / 6
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawInterval)))
-  const residual = rawInterval / magnitude
-  let niceInterval: number
-  if (residual <= 1.5) niceInterval = magnitude
-  else if (residual <= 3) niceInterval = 2 * magnitude
-  else if (residual <= 7) niceInterval = 5 * magnitude
-  else niceInterval = 10 * magnitude
-
-  const start = Math.ceil(min / niceInterval) * niceInterval
-  const ticks: number[] = []
-  for (let v = start; v <= max + niceInterval * 0.001; v += niceInterval) {
-    ticks.push(Math.round(v * 1e10) / 1e10)
-  }
-  return ticks
 }
 
 /**
