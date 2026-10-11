@@ -104,7 +104,7 @@ Usage:
   zombie-mermaid render <file> --png                Rasterize to <file stem>.png
   cat file.mmd | zombie-mermaid render --ascii      Read from stdin
   zombie-mermaid validate [file]                    Parse only; exit 1 with line diagnostics if invalid
-  zombie-mermaid themes                            List available themes
+  zombie-mermaid themes                             List available themes
   zombie-mermaid web [--port <n>]                   Start a local web UI (default port: 3000)
   zombie-mermaid mcp                                Start an MCP server on stdio (render tools)
   zombie-mermaid --help                             Show this help

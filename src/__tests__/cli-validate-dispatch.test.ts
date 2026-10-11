@@ -48,4 +48,12 @@ describe('cli.ts – validate command dispatch', () => {
       expect.stringContaining('Line 4: bad'),
     )
   })
+
+  it('stringifies a non-Error rejection', async () => {
+    runValidateMock.mockRejectedValue('plain string')
+    process.argv = ['node', 'zombie-mermaid', 'validate']
+    await import('../cli.ts')
+    await vi.waitFor(() => expect(exitSpy).toHaveBeenCalledWith(1))
+    expect(errorSpy).toHaveBeenCalledWith('Error: plain string')
+  })
 })

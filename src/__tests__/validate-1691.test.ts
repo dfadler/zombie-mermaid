@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parseArgs } from '../cli/parse-args.ts'
 import { runValidate } from '../cli/validate.ts'
+import { withSourceLine } from '../cli/diagnostics.ts'
 import { runRender } from '../cli/render.ts'
 import { validateHandler } from '../../packages/mcp/src/tools/validate.ts'
 
@@ -177,5 +178,16 @@ describe('validate_mermaid', () => {
     expect(r.valid).toBe(false)
     expect(r.diagnostics[0]?.line).toBeUndefined()
     expect(r.diagnostics[0]?.message).toBeTruthy()
+  })
+})
+
+describe('withSourceLine', () => {
+  it('passes a non-Error value through unchanged', () => {
+    expect(withSourceLine('nope', GOOD)).toBe('nope')
+  })
+
+  it('returns an Error without a "Line N:" prefix unchanged', () => {
+    const err = new Error('C4 diagram, line 2: unrecognized statement')
+    expect(withSourceLine(err, 'C4Context\n Person(')).toBe(err)
   })
 })
