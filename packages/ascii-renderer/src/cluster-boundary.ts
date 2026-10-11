@@ -620,7 +620,19 @@ export function clusterLaneEndShift(
     const origin = requireGridCoord(edge.to).x
     return laneSide(graph, plan, edge)?.lane === origin + 4 ? 1 : 0
   }
-  return 0
+  // #1743: outside a cluster the third side lane (index 2) enters the target's
+  // right face on the second lane's row and merges with it; same shift. Only
+  // for exactly three lanes: a fourth would still merge, now across this one.
+  if (
+    edge.parallelLane.total !== 3 ||
+    edge.clusterSource ||
+    edge.clusterTarget
+  ) {
+    return 0
+  }
+  const { path } = edge
+  const [a, b] = path.slice(-2)
+  return a && b && a.y === b.y && b.x < a.x ? 1 : 0
 }
 
 /** Safety bound on one-character gutter widenings per cluster. */
