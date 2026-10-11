@@ -305,7 +305,8 @@ function clusterExitDrop(
 ): EntryDrop | undefined {
   if (!start || edge.path.length < 2) return undefined
   const lr = graph.config.graphDirection === 'LR'
-  const points = edge.path.map((p) => gridToDrawingCoord(graph, p))
+  // Shifted, so a lane's end run (#1331) keeps its own row/column in the drop.
+  const points = pathToDrawing(graph, edge)
   const stub = points[0]!
   if ((lr ? stub.y : stub.x) === (lr ? start.y : start.x)) return undefined
 
@@ -878,7 +879,8 @@ function drawCorners(
     const base = drop
       ? drop.points[idx]!
       : gridToDrawingCoord(graph, path[idx]!)
-    const by = shifts?.[idx]
+    // A drop is drawn as given (its points already carry any shift).
+    const by = drop ? undefined : shifts?.[idx]
     const dc = by ? { x: base.x + by.x, y: base.y + by.y } : base
     const prevDir = determineDirection(points[idx - 1]!, coord)
     const nextDir = determineDirection(coord, points[idx + 1]!)

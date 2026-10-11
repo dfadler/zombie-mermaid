@@ -1110,16 +1110,12 @@ function onlyInLoneClusters(graph: AsciiGraph, node: AsciiNode): boolean {
  * Whether every edge out of `node` is a cluster exit (`S --> X`) and there are
  * at least two, the shape `planClusterExits` engages on. A plain edge out of
  * the member (`a --> D`) leaves the frame sideways, so centring over its
- * targets only makes the route cross the wall. Two exits to one target
- * (parallel lanes, #1182) are left out too: centred, the third lane's
- * shifted final run (#1331) loses its horizontal leg and arrowhead.
+ * targets only makes the route cross the wall. Parallel lanes (two exits to
+ * one target, #1182) centre like any other exit (#1688).
  */
 function leavesByClusterExits(graph: AsciiGraph, node: AsciiNode): boolean {
   const out = getEdgesFromNode(graph, node)
-  const lanes = new Set(out.map((e) => e.to)).size < out.length
-  return (
-    out.length >= 2 && !lanes && out.every((e) => e.clusterSource !== undefined)
-  )
+  return out.length >= 2 && out.every((e) => e.clusterSource !== undefined)
 }
 
 /**
