@@ -170,10 +170,16 @@ function edgeReaches(
       // An edge label sits on the stroke: bridge it, but only straight
       // across and only when the stroke resumes on the far side.
       if (isLabelCell(grid, boxes, labels, tx, ty)) {
+        // A multi-word label has a plain space between its words.
         do {
           tx += dx
           ty += dy
-        } while (dx !== 0 && isLabelCell(grid, boxes, labels, tx, ty))
+        } while (
+          dx !== 0 &&
+          (isLabelCell(grid, boxes, labels, tx, ty) ||
+            (at(tx, ty) === ' ' &&
+              isLabelCell(grid, boxes, labels, tx + dx, ty)))
+        )
       }
       const back = ARMS[at(tx, ty)]
       if (back?.includes(OPPOSITE[d])) queue.push([tx, ty])

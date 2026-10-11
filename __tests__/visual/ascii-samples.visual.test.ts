@@ -27,6 +27,7 @@
 import { expect, test } from '@playwright/test'
 import { renderMermaidASCII } from '../../src/index.ts'
 import { samples } from '../../packages/site/samples-data.ts'
+import { xychartSamples } from '../../packages/site/xychart-samples-data.ts'
 import { escapeHtml } from '../../demo/format.ts'
 import { TERMINAL_ASCII_OPTS } from './helpers/terminal-panel.ts'
 import { buildHarnessScript } from './helpers/build-harness.ts'
@@ -70,6 +71,32 @@ test.describe('gallery samples (samples-data.ts), ASCII/terminal', () => {
 
       await expect(page.locator('.ascii-panel')).toHaveScreenshot(
         `general-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}.png`,
+      )
+    })
+  }
+})
+
+// Counterpart to svg-samples' xychart block: every xychart-N SVG baseline has
+// an ASCII baseline too (#1703).
+test.describe('xychart samples (xychart-samples-data.ts), ASCII/terminal', () => {
+  test.describe.configure({ retries: process.env.CI ? 1 : 0 })
+  for (const [i, sample] of xychartSamples.entries()) {
+    test(`renders ${sample.category ?? 'uncategorized'} / ${sample.title}`, async ({
+      page,
+    }) => {
+      const html = renderMermaidASCII(sample.source, TERMINAL_ASCII_OPTS)
+
+      const harnessScript = await buildHarnessScript()
+      await page.setContent('<!DOCTYPE html><html><body></body></html>')
+      await page.addScriptTag({ content: harnessScript })
+
+      await page.evaluate((html) => {
+        const terminalWindow = window.__harness.buildTerminalPanel(html)
+        return window.__harness.mountAsciiPanel(terminalWindow)
+      }, html)
+
+      await expect(page.locator('.ascii-panel')).toHaveScreenshot(
+        `xychart-${i}-${slug(sample.category ?? 'uncategorized')}-${slug(sample.title)}.png`,
       )
     })
   }
