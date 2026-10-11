@@ -38,6 +38,8 @@ export interface InitConfig {
   curve?: CurveStyle
   /** `pie.textPosition`: slice label distance as a fraction of the radius. */
   pieTextPosition?: number
+  /** `pie.donutHole`: inner radius as a fraction of the radius. */
+  pieDonutHole?: number
   /** Recognized but not acted on — see `IGNORED_KEYS`. */
   ignored: string[]
 }
@@ -204,13 +206,10 @@ export function parseInitDirective(line: string): InitConfig | undefined {
 
     if (lower === 'pie' && typeof value === 'object' && value !== null) {
       for (const [pk, pv] of Object.entries({ ...value })) {
-        if (
-          pk.toLowerCase() === 'textposition' &&
-          typeof pv === 'number' &&
-          Number.isFinite(pv)
-        ) {
-          config.pieTextPosition = pv
-        }
+        if (typeof pv !== 'number' || !Number.isFinite(pv)) continue
+        const pl = pk.toLowerCase()
+        if (pl === 'textposition') config.pieTextPosition = pv
+        else if (pl === 'donuthole') config.pieDonutHole = pv
       }
       continue
     }
@@ -237,6 +236,9 @@ export function extractInitConfig(lines: string[]): InitConfig {
     if (config.curve !== undefined) merged.curve = config.curve
     if (config.pieTextPosition !== undefined) {
       merged.pieTextPosition = config.pieTextPosition
+    }
+    if (config.pieDonutHole !== undefined) {
+      merged.pieDonutHole = config.pieDonutHole
     }
     merged.ignored.push(...config.ignored)
   }

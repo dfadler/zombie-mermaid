@@ -841,9 +841,13 @@ Known differences from Mermaid:
 
 - `%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the SVG slice labels
   (0 is the centre, 1 the outer edge; default 0.75). The ASCII output has no
-  positioned labels, so it ignores it. The other `pie` settings Mermaid
-  11.16+ supports (`donutHole`, `legendPosition`, `highlightSlice`) are not
-  supported yet; their defaults are always used.
+  positioned labels, so it ignores it.
+- `%%{init: {"pie": {"donutHole": 0.5}}}%%` cuts a hole in the SVG pie, as a
+  fraction of the radius. Like Mermaid, it only applies for values above 0
+  and up to 0.9 (anything else draws a plain pie), and the slice labels stay
+  at `textPosition`. The ASCII output has no centre to cut, so it ignores it.
+  The other `pie` settings Mermaid 11.16+ supports (`legendPosition`,
+  `highlightSlice`) are not supported yet; their defaults are always used.
 - A legend taller than the 450px frame (more than about 20 slices) makes the
   SVG taller instead of being cut off, and an empty chart keeps its full
   width (Mermaid crops it).

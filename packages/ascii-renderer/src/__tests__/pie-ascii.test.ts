@@ -42,6 +42,14 @@ describe('pie ASCII – init textPosition', () => {
   })
 })
 
+describe('pie ASCII – init donutHole', () => {
+  it('is ignored (a bar chart has no centre to cut)', () => {
+    expect(render(`%%{init: {"pie": {"donutHole": 0.5}}}%%\n${PETS}`)).toBe(
+      render(PETS),
+    )
+  })
+})
+
 // ============================================================================
 // allocateCells
 // ============================================================================

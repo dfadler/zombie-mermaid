@@ -30,6 +30,8 @@ export interface PieChart {
   showData: boolean
   /** `%%{init: {"pie": {"textPosition": n}}}%%`; absent means Mermaid's 0.75. */
   textPosition?: number
+  /** `%%{init: {"pie": {"donutHole": n}}}%%`; Mermaid draws a hole only for 0 < n <= 0.9. */
+  donutHole?: number
   /**
    * Slices in source order. A label that repeats keeps its first value and
    * position; later duplicates are ignored, as in Mermaid. May be empty:
