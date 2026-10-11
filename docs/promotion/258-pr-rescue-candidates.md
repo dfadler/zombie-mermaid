@@ -2,7 +2,7 @@
 
 > **Frozen snapshot, 2026-09-09. Do not update or regenerate.** The live list is
 > `scripts/list-upstream-pr-rescue-candidates.ts`, run by
-> `.github/workflows/upstream-pr-rescue.yml`, with triage state in
+> `.github/workflows/upstream-watch.yml`, with triage state in
 > `docs/promotion/upstream-pr-seen.json`. Upstream now has more open PRs than the 30
 > counted here, and statements below about what zombie-mermaid supports or what is
 > "still open" are as of the snapshot date and unverified since.
