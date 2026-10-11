@@ -2116,4 +2116,18 @@ pie title Pets adopted by volunteers
   "Cats" : 85
   "Rats" : 15`,
   },
+  {
+    title: 'ER: Word-Form Cardinalities and .- / -. Lines',
+    category: 'ER',
+    description:
+      'Cardinalities written as words (`one to many`, `1 to 0+`, `zero or one to one or more`), the mirrored symbol pairs `o|--||` and `o{--o{`, and the `.-` / `-.` line forms, which draw a dashed (non-identifying) relationship.',
+    source: `erDiagram
+  CUSTOMER one to many ORDER : places
+  ORDER 1 to 0+ LINE_ITEM : contains
+  LINE_ITEM zero or one to one or more PRODUCT : lists
+  PRODUCT o|--|| SUPPLIER : sourced_from
+  SUPPLIER o{--o{ WAREHOUSE : stocks
+  WAREHOUSE ||.-o{ SHELF : holds
+  SHELF ||-.o{ BIN : holds`,
+  },
 ]
