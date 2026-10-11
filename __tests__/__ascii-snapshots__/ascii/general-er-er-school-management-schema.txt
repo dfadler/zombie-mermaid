@@ -1,0 +1,23 @@
++--------------+      +-------------------+         
+| STUDENT      |      | TEACHER           |         
++--------------+      +-------------------+         
+| int id PK    |      | int id PK         |         
+| string name  |      | string name       |         
+| date dob     |      | string department |         
+| string grade |      +-------------------+         
++--------------+                +                   
+        +                       |                   
+        | + teaches ------------+      enrolled     
+        +----------------------------+              
+         o<                         o<              
++-------------------+      +-------------------+    
+| COURSE            |      | ENROLLMENT        |    
++-------------------+      +-------------------+    
+| int id PK         |      | int id PK         |    
+| string title      |-|--o<| int student_id FK |    
+| int teacher_id FK | has  | int course_id FK  |    
+| int credits       |      | string semester   |    
++-------------------+      | float grade       |    
+                           +-------------------+    
+                                                    
+                                                    

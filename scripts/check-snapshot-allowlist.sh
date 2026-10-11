@@ -95,6 +95,11 @@ ALLOWLIST=(
   # on any intentional markup change (`pnpm exec vitest -u`) — see this
   # file's own header comment for the full rationale.
   "__tests__/site-equivalence.test.ts"
+  # Exact plain-text goldens of every sample's ASCII renderer output (#1708),
+  # the tolerance-free counterpart to the ASCII PNG baselines. Not a demo/
+  # editor component test; the .txt files under __tests__/__ascii-snapshots__/
+  # are reviewed via `git diff` (`pnpm run test:ascii-text:update`).
+  "__tests__/ascii-text-snapshots.test.ts"
 )
 
 is_allowlisted() {

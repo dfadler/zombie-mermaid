@@ -1,0 +1,21 @@
+┌─────────────────┐        ┌────────────────────┐    
+│ CUSTOMER        │        │ ORDER              │    
+├─────────────────┤        ├────────────────────┤    
+│ int id PK       │─│────○╟│ int id PK          │    
+│ string name     │ places │ date created       │    
+│ string email UK │        │ int customer_id FK │    
+└─────────────────┘        └────────────────────┘    
+                                      ┼              
+                                   ┌ contains        
+                                   │                 
+                                   ╟                 
+┌─────────────┐          ┌───────────────────┐       
+│ PRODUCT     │          │ LINE_ITEM         │       
+├─────────────┤          ├───────────────────┤       
+│ int id PK   │─│──────○╟│ int id PK         │       
+│ string name │ includes │ int order_id FK   │       
+│ float price │          │ int product_id FK │       
+└─────────────┘          │ int quantity      │       
+                         └───────────────────┘       
+                                                     
+                                                     
