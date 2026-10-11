@@ -46,6 +46,9 @@ unlabeled group of child text nodes:
 | No `click`-based link, `decorative: true`                        | `aria-hidden="true"`, no `role`, no name                                                                                                                                                                                                                                                                                                                                                             |
 | Any node has a `click A "url"` link (real, focusable `<a href>`) | No `role` and no `aria-hidden` at all — both would hide the focusable link from assistive tech while leaving it Tab-reachable, an explicit WAI-ARIA violation. `title`, if supplied, still applies via `aria-labelledby` (a `role`-less element can still have a computed name). `decorative` is silently overridden — a diagram containing a real action is never fully hidden from assistive tech. |
 
+An optional `description` option adds a `<desc id>` child after the title and
+an `aria-describedby` on the root, independent of the table above.
+
 This maps to two WCAG success criteria:
 
 - **[1.1.1 Non-text Content](https://www.w3.org/WAI/WCAG21/Understanding/non-text-content.html) (Level A):**
@@ -129,11 +132,14 @@ of any single one of them:
   on **Fork fixes** (`fork-fixes.html`, via `demo/fork-fixes.css`) —
   relevant to
   [2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG21/Understanding/focus-visible.html) (Level AA)
-  on those pages. **Home** (`index.html`), **Blog** (`blog/*.html`), and
-  **Dashboard** (`dashboard.html`) — all built on the redesign's shared
-  component library (`demo/components/tokens.tsx`, `primitives.tsx`,
-  `nav.tsx`, `footer.tsx`) — declare no `:focus-visible` rule of their own
-  and fall back to each browser's default outline. **Editor**
+  on those pages. **Blog** (`blog/*.html`) and **Dashboard**
+  (`dashboard.html`) — built on the redesign's shared component library
+  (`demo/components/tokens.tsx`, `primitives.tsx`, `nav.tsx`, `footer.tsx`) —
+  declare no `:focus-visible` rule of their own and fall back to each
+  browser's default outline. **Home** (`index.html`) has widget-level rules
+  only (theme showcase zoom/fullscreen, the picker trigger and the output
+  segment control in `demo/components/index-page.tsx`), not a general
+  `a`/`button` ring. **Editor**
   (`editor.html`) has the same kind of ring on its tool controls
   (`editor/css/misc.css`, loaded last, covers buttons, links, inputs,
   selects and `[tabindex]` elements), but its nav/hero/footer chrome has
@@ -145,6 +151,11 @@ of any single one of them:
   [2.4.1 Bypass Blocks](https://www.w3.org/WAI/WCAG21/Understanding/bypass-blocks.html) (Level A)
   on Home only. No other page family (Diagrams, Editor, Fork fixes, Blog,
   Dashboard) has one.
+- **Landmarks and hidden-nav focus** — `<main>` exists only on Home and
+  Fork fixes; the Editor, Dashboard, Diagrams and Blog pages have none. The
+  closed mobile nav panel (`.mobile-nav-panel` in `demo/components/nav-css.ts`)
+  is hidden with `opacity:0; pointer-events:none` only, so its links remain
+  Tab-focusable and exposed to assistive tech while it is closed.
 - **Modal dialog semantics** — **no longer applicable.** The "Edit Diagram"
   dialog this bullet used to describe was part of the interactive gallery
   the redesign removed; there is no `role="dialog"`/`aria-modal` element
@@ -189,9 +200,13 @@ not something this statement claims already exists.
   components — not the result of a full page-level audit.
 - **No color-contrast guarantee across all 15 built-in themes.** Some
   contrast issues have been found and fixed as one-off reports (see
-  `.changeset/description-text-contrast.md`, `.changeset/fix-edit-btn-contrast.md`),
-  but no automated contrast check runs across the full theme set, so this
-  isn't a standing guarantee the way the SVG accessible-name check is.
+  `.changeset/description-text-contrast.md`, `.changeset/fix-edit-btn-contrast.md`).
+  `packages/core/src/__tests__/theme-palette-contrast.test.ts` asserts only
+  `bg`/`fg` at 4.0:1 (below WCAG AA's 4.5:1 for normal text). The `muted`
+  secondary-text color (edge labels, group headers, axis titles) is below
+  4.5:1 in most built-in themes, and `line` is below 3:1 in many; neither is
+  checked, so this isn't a standing guarantee the way the SVG
+  accessible-name check is.
 - **No screen-reader compatibility testing matrix.** The markup follows
   documented WAI-ARIA/SVG accessibility techniques (cited above), but this
   hasn't been manually verified against a specific screen reader (VoiceOver,
