@@ -1,0 +1,25 @@
+# Near-miss: shares "snapshot" vocabulary but is about vitest API, not Linux baselines.
+schema_version: '1.1'
+name: linux-baselines-stays-quiet-on-vitest-snapshots
+description: >
+  A question about vitest snapshot matchers must not fire linux-baselines.
+  expected_outcome: PASS when no linux-baselines Skill call is made; FAIL otherwise.
+tags: [linux-baselines, trigger, quick]
+
+execution:
+  prompt: |
+    In one sentence, what is the difference between vitest's toMatchSnapshot and
+    toMatchInlineSnapshot? Don't run anything.
+  max_turns: 4
+  allowed_tools:
+    - Skill
+    - Read
+
+graders:
+  - name: skill_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?linux-baselines"'
+    min: 0
+    max: 0
+    arm: both
