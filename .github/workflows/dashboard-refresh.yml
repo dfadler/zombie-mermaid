@@ -196,8 +196,14 @@ jobs:
         run: |
           set -uo pipefail
           [ -n "${PAT}" ] || exit 0 # unset is reported by the push step
-          code=$(curl -sS -o /dev/null -D /tmp/pat-headers -w '%{http_code}' \
-            -H "Authorization: Bearer ${PAT}" https://api.github.com/user) || exit 0
+          # Header file (mktemp is 0600) keeps the PAT out of curl's argv, where
+          # other processes could read it; --max-time stops a stalled request
+          # from eating the job timeout before the push step runs.
+          auth=$(mktemp)
+          trap 'rm -f "$auth"' EXIT
+          printf 'Authorization: Bearer %s\n' "${PAT}" > "$auth"
+          code=$(curl -sS --max-time 20 -o /dev/null -D /tmp/pat-headers -w '%{http_code}' \
+            -H @"$auth" https://api.github.com/user) || exit 0
           problem=""
           if [ "$code" = 401 ] || [ "$code" = 403 ]; then
             problem="was rejected by the GitHub API (HTTP ${code}); it is probably expired or revoked."

@@ -83,7 +83,7 @@ Used by `dashboard-refresh.yml` (and the other PAT-using workflows) to push the 
 
 **Expiry.** As of 2026-10-11 the token is set to _no expiration_ (Settings > Developer settings > Fine-grained tokens), so the early warning above cannot fire for it; the alert only triggers once GitHub rejects the token. Set a finite expiry (e.g. 90 days) so the 14-day warning has something to measure. Tracked in [#1799](https://github.com/dfadler/zombie-mermaid/issues/1799).
 
-**Rotating.** Create a new fine-grained PAT with the same scope and a short expiry, then run `gh secret set DASHBOARD_REFRESH_PAT --repo dfadler/zombie-mermaid` (it prompts for the value; never paste it into an issue, PR, log or chat), and close the alert issue.
+**Rotating.** Create a new fine-grained PAT with the same scope and a short expiry, then run `gh secret set DASHBOARD_REFRESH_PAT --repo dfadler/zombie-mermaid` (it prompts for the value; never paste it into an issue, PR, log or chat). Verify the next run succeeds, then delete the previous token in Settings > Developer settings > Fine-grained tokens (replacing the secret does not revoke it), and close the alert issue.
 
 ## The `VISUAL_REGRESSION_ATTACH_PAT` secret (maintainers)
 
