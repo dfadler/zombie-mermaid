@@ -223,6 +223,7 @@ export const forkFixes: ForkFix[] = [
     render: 'ascii',
     lookFor:
       'Before: the leading note is missing entirely. After: it renders above the first message.',
+    upstreamIssues: [53],
   },
   {
     id: 'er-entity-alias',
@@ -358,8 +359,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  A <|-- B : inheritance\n  C *-- D : composition\n  E o-- F : aggregation\n  G --> H : association\n  I ..> J : dependency\n  K ..|> L : realization',
     fixCommit: '60a40d2',
-    // TODO: set to the PR that carries 60a40d2 once it is opened.
-    pr: 0,
+    pr: 512,
     render: 'ascii',
     lookFor:
       'Before: five of the six labels read `inheri…`, `composi…`, and so on. After: the columns spread apart just enough for all six to render in full.',
@@ -373,8 +373,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  class A\n  class B\n  A --> B : one\n  A --> B : two\n  A --> B : three\n  A --> B : four',
     fixCommit: '60a40d2',
-    // TODO: set to the PR that carries 60a40d2 once it is opened.
-    pr: 0,
+    pr: 512,
     render: 'ascii',
     lookFor:
       'Before: only `four` survives, on two lines. After: `one`, `two`, `three`, and `four` each sit on their own lane, joined to the boxes by a short jog, with four distinct arrowheads.',
@@ -387,8 +386,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  class Model {\n    -data Map\n    +getData() Map\n    +setData(key, val) void\n    +notify() void\n  }\n  class View {\n    -model Model\n    +render() void\n    +update() void\n  }\n  class Controller {\n    -model Model\n    -view View\n    +handleInput(event) void\n    +updateModel(data) void\n  }\n  Controller --> Model : updates\n  Controller --> View : refreshes\n  View --> Model : reads\n  Model ..> View : notifies',
     fixCommit: '1bf8096',
-    // TODO: set to the PR that carries 1bf8096 once it is opened.
-    pr: 0,
+    pr: 514,
     render: 'ascii',
     lookFor:
       'Before: `refreshes` and `updates` sit stacked on adjacent rows above the single arrowhead entering Model, reading as though both terminate there. After: `refreshes` sits beside its own detour line, past Model’s right border, clearly distinct from `updates`.',
@@ -401,9 +399,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'classDiagram\n  class EventEmitter {\n    -List~Observer~ observers\n    +attach(Observer) void\n  }\n  class Observer {\n    <<interface>>\n    +update() void\n  }\n  EventEmitter --> Observer',
     fixCommit: '2a06338',
-    // TODO(#418 sweep): replace with the PR number once the PR is opened —
-    // the branch was pushed without GitHub write access.
-    pr: 0,
+    pr: 505,
     render: 'ascii',
     lookFor:
       'Before: the EventEmitter attribute reads `List~Observer~`. After: it reads `List<Observer>`, the form real mermaid renders.',
@@ -416,9 +412,7 @@ export const forkFixes: ForkFix[] = [
     source:
       'graph TD\n  A[Source] -->|solid| B[Target 1]\n  A -.->|dotted| C[Target 2]\n  A ==>|thick| D[Target 3]',
     fixCommit: '64c8dd4',
-    // TODO(#418 sweep): replace with the PR number once the PR is opened —
-    // the branch was pushed without GitHub write access.
-    pr: 0,
+    pr: 505,
     render: 'ascii',
     lookFor:
       'Before: "thick" sits glued to the dotted edge’s ┆ column. After: it sits on the thick edge’s own ┃ line, like "dotted" does on its ┆ line.',
@@ -435,5 +429,73 @@ export const forkFixes: ForkFix[] = [
     render: 'svg',
     lookFor:
       'Before: a stray `::hot` label on the first transition and no colors. After: S1 and S3 are red, S2 is blue.',
+  },
+  {
+    id: 'edge-label-space-before-pipe',
+    title: 'A space before the edge label pipe dropped the target node',
+    symptom:
+      '`A --> |deploy| B` required the `|label|` to touch the arrow, so with a space before the pipe the parser lost both the label and the node it pointed at.',
+    source: 'graph LR\n  A --> |deploy| B\n  B --> |verify| C',
+    fixCommit: '700b97bcb',
+    pr: 1367,
+    render: 'svg',
+    lookFor:
+      'Before: the labels and the nodes B and C are missing. After: three nodes, two labelled edges.',
+    upstreamIssues: [155],
+  },
+  {
+    id: 'ascii-vertical-label-beside-stroke',
+    title: 'ASCII vertical edge labels were printed over the edge line',
+    symptom:
+      'A label on a vertical edge was drawn on top of the stroke, so the line ran through the gaps between its words (`long─label`) or vanished under the text.',
+    source: 'graph TD\n  A -->|long label| B\n  B -->|ab| C',
+    fixCommit: '9be4d3692',
+    pr: 1332,
+    render: 'ascii',
+    lookFor:
+      'Before: the label replaces the edge line on its row. After: the line runs unbroken and the label sits one cell beside it.',
+    upstreamIssues: [154],
+  },
+  {
+    id: 'flowchart-cycle-direction',
+    title: 'A cyclic top-down flowchart could be laid out upside down',
+    symptom:
+      'The layout engine broke cycles with its own heuristic and could reverse the wrong edge, drawing the whole flow backwards (the last step at the top). Cycles are now broken the way mermaid.js does, depth-first from the first node.',
+    source:
+      'flowchart TD\n  A[main] --> B[develop]\n  B --> C[Tests?]\n  C -->|fail| B\n  C -->|pass| A',
+    fixCommit: 'e894cf060',
+    pr: 1313,
+    render: 'svg',
+    lookFor:
+      'Before: the flow is inverted, starting from the wrong node. After: `main` is at the top and the flow reads downward.',
+    upstreamIssues: [83],
+  },
+  {
+    id: 'ascii-sequence-self-arrow-in-block',
+    title: 'A self-arrow inside alt/loop was drawn outside its block',
+    symptom:
+      'The block’s right wall was sized from lifeline positions only, ignoring a self-arrow’s loop glyphs and label, so the loop’s corners were overwritten by the wall.',
+    source:
+      'sequenceDiagram\n  participant A\n  participant B\n  loop retry\n    A->>A: a rather long self message\n  end\n  A->>B: done',
+    fixCommit: 'd35d92114',
+    pr: 84,
+    render: 'ascii',
+    lookFor:
+      'Before: the loop wall clips the self-arrow. After: the block encloses the whole arrow and label.',
+    upstreamIssues: [108],
+  },
+  {
+    id: 'ascii-edge-line-style-bleed',
+    title: 'ASCII fan-out edges bled their line style into each other',
+    symptom:
+      'Edges with different styles leaving one node shared a routing corridor, and the later thick edge overwrote the dotted edge’s glyphs. Separately, two edges routed through a shared node could land on the same column and read as one line.',
+    source:
+      'graph LR\n  C(Mobile App) --> B(API Gateway)\n  B --> E(User Service)\n  B -.-> F(Cache)\n  B ==> G(Queue)',
+    fixCommit: '43bac5abf',
+    pr: 1093,
+    render: 'ascii',
+    lookFor:
+      'Before: the dotted edge’s leg is drawn with heavy glyphs. After: each edge keeps its own style.',
+    upstreamIssues: [63],
   },
 ]

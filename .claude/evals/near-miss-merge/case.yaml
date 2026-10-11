@@ -1,0 +1,21 @@
+schema_version: '1.1'
+name: near-miss-merge
+description: A merge-strategy question shares vocabulary with close-out but must not fire it.
+tags: [quick]
+runs: 3
+execution:
+  allowed_tools: [Skill]
+  prompt: |
+    What's the difference between a no-fast-forward merge and a fast-forward merge in git? Two sentences.
+graders:
+  - name: close_out_not_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?close-out"'
+    min: 0
+    max: 0
+    arm: both
+  - name: mentions_merge_commit
+    type: regex
+    pattern: 'merge commit'
+    flags: i

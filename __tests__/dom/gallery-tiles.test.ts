@@ -17,10 +17,13 @@ import {
   SequenceTile,
   StateTile,
   XYChartTile,
+  C4Tile,
+  ArchitectureTile,
+  PieTile,
 } from '../../demo/components/gallery-tiles.tsx'
 
 describe('gallery tiles', () => {
-  it('GALLERY_TILES lists all six tiles in flowchart/state/sequence/class/er/xy-chart order', () => {
+  it('GALLERY_TILES lists all nine tiles in flowchart/state/sequence/class/er/xy-chart/c4/architecture/pie order', () => {
     expect(GALLERY_TILES).toEqual([
       FlowchartTile,
       StateTile,
@@ -28,6 +31,9 @@ describe('gallery tiles', () => {
       ClassTile,
       ERTile,
       XYChartTile,
+      C4Tile,
+      ArchitectureTile,
+      PieTile,
     ])
   })
 
@@ -38,6 +44,9 @@ describe('gallery tiles', () => {
     ['ClassTile', ClassTile],
     ['ERTile', ERTile],
     ['XYChartTile', XYChartTile],
+    ['C4Tile', C4Tile],
+    ['ArchitectureTile', ArchitectureTile],
+    ['PieTile', PieTile],
   ] as const)('%s renders a single 100x70-viewBox svg', (_name, Tile) => {
     const { container } = render(createElement(Tile))
     const svg = container.querySelector('svg')
