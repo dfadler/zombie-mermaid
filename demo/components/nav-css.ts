@@ -279,6 +279,21 @@ html.mobile-nav-open {
   transform: translateY(-5px) rotate(-45deg);
 }
 
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: ${NAV_Z_INDEX + 1};
+  padding: ${SPACE.md}px ${SPACE.xl}px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.skip-link:focus {
+  left: ${SPACE.xl}px;
+  top: ${SPACE.xl}px;
+}
+
 .mobile-nav-panel {
   position: fixed;
   inset: 0;
@@ -290,7 +305,11 @@ html.mobile-nav-open {
   opacity: 0;
   transform: translateX(-12px);
   pointer-events: none;
-  transition: opacity .26s ease, transform .26s ease;
+  /* visibility:hidden (not just opacity) takes the closed panel's links out
+   * of the Tab order and the accessibility tree (#1760); the delay on the
+   * closing transition lets the fade finish before it flips. */
+  visibility: hidden;
+  transition: opacity .26s ease, transform .26s ease, visibility 0s linear .26s;
   overflow: hidden;
 }
 
@@ -298,6 +317,8 @@ html.mobile-nav-open {
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 .mobile-diagram-bg {
@@ -396,6 +417,7 @@ ${MEDIA.mobile} {
   .mobile-nav-panel,
   .mobile-diagram-bg .mdb-edge {
     transition-duration: 0.001ms;
+    transition-delay: 0s;
     animation: none;
   }
 }
@@ -410,6 +432,7 @@ ${MEDIA.mobile} {
   .mobile-nav-panel.is-open {
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
   }
 }`
 }

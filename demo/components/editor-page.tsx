@@ -448,7 +448,8 @@ export function EditorPage({
         <EditorHero homeHref={homeHref} />
       </div>
 
-      <div
+      <main
+        id="main"
         className="section-px"
         style={{
           padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
@@ -463,7 +464,7 @@ export function EditorPage({
         <div className="editor-tool-shell">
           <EditorAppIsland themes={themes} />
         </div>
-      </div>
+      </main>
 
       <div className={ZM_SHELL}>
         <EditorFeatureStrip />

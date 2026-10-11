@@ -266,21 +266,23 @@ export function BlogPostPage({
           detailed version of this comment (the pattern this mirrors) for
           why renderToString (not renderToStaticMarkup) is needed here.
         */}
-        <div
-          id={BLOG_POST_ROOT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogPostApp component tree rendered via renderToString (see the comment above); never user input
-            __html: renderToString(<BlogPostApp {...appProps} />),
-          }}
-        />
-        <script
-          type="application/json"
-          id={BLOG_POST_PROPS_ELEMENT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogPostAppProps, escaped with escapeJsonForScriptTag; never user input
-            __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-          }}
-        />
+        <main id="main">
+          <div
+            id={BLOG_POST_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogPostApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<BlogPostApp {...appProps} />),
+            }}
+          />
+          <script
+            type="application/json"
+            id={BLOG_POST_PROPS_ELEMENT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogPostAppProps, escaped with escapeJsonForScriptTag; never user input
+              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+            }}
+          />
+        </main>
 
         <Footer columns={FOOTER_COLUMNS} />
         <script
@@ -348,21 +350,23 @@ export function BlogIndexPage({
           Plain, inert hydration container -- see BlogPostPage's identical
           comment above.
         */}
-        <div
-          id={BLOG_INDEX_ROOT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogIndexApp component tree rendered via renderToString (see the comment above); never user input
-            __html: renderToString(<BlogIndexApp {...appProps} />),
-          }}
-        />
-        <script
-          type="application/json"
-          id={BLOG_INDEX_PROPS_ELEMENT_ID}
-          dangerouslySetInnerHTML={{
-            // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogIndexAppProps, escaped with escapeJsonForScriptTag; never user input
-            __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-          }}
-        />
+        <main id="main">
+          <div
+            id={BLOG_INDEX_ROOT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own BlogIndexApp component tree rendered via renderToString (see the comment above); never user input
+              __html: renderToString(<BlogIndexApp {...appProps} />),
+            }}
+          />
+          <script
+            type="application/json"
+            id={BLOG_INDEX_PROPS_ELEMENT_ID}
+            dangerouslySetInnerHTML={{
+              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own BlogIndexAppProps, escaped with escapeJsonForScriptTag; never user input
+              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+            }}
+          />
+        </main>
 
         <Footer columns={FOOTER_COLUMNS} />
         <script
