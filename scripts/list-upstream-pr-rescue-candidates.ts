@@ -30,9 +30,10 @@
  *   --write-seen  with --seen, rewrite that file with every currently-open
  *            PR number (sorted), so closed/merged upstream PRs drop out
  *
- * `.github/workflows/upstream-pr-rescue.yml` runs this weekly with
- * `--seen=docs/promotion/upstream-pr-seen.json --write-seen` and opens a PR
- * when new candidates show up.
+ * `.github/workflows/upstream-watch.yml` runs this weekly (with `--seen` only,
+ * never `--write-seen`) and lists the new candidates in the rolling
+ * `upstream-tracking` issue. Marking PRs as seen is a manual `--write-seen` run
+ * committed in an ordinary PR.
  */
 
 import { execFile } from 'node:child_process'
