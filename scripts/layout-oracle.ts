@@ -9,7 +9,7 @@
  *
  * Usage: tsx scripts/layout-oracle.ts [--filter=<text>] [--json=<file>]
  *                                     [--fail-below=<pct>] [--tolerance=<px>]
- *                                     [--type=flowchart|state]
+ *                                     [--type=flowchart|state|class|er]
  *
  * Why it exists: "true to the mermaid source" was a judgment from looking at a
  * screenshot next to mermaid's. This puts a number on it, per sample, so a
@@ -20,15 +20,23 @@
  *
  * Only relative placement is compared (see layout-agreement.ts for why), so
  * font and padding differences between the renderers don't count against us.
- * Flowcharts by default; `--type=state` scores state diagrams (official node
- * ids `state-<id>-<n>`, composites as clusters). Other types are not covered yet.
+ * Flowcharts by default; `--type=state|class|er` scores the others (official
+ * node ids `state-<id>-<n>`, `classId-<id>-<n>`, `entity-<id>-<n>`; state
+ * composites and class namespaces are clusters). Other types are not covered.
  */
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { parseMermaid } from '../src/index.ts'
+import { splitStatements } from '@zombie-mermaid/core'
 import {
+  parseClassDiagram,
+  parseErDiagram,
+} from '@zombie-mermaid/mermaid-parser'
+import {
+  layoutClassDiagramSync,
+  layoutErDiagramSync,
   layoutFlowchartSync,
   layoutGraphSync,
 } from '@zombie-mermaid/svg-renderer'
@@ -104,10 +112,32 @@ async function measureOfficial(
 
 /** Box of every node and subgraph in our own layout of `source`. */
 function measureOurs(source: string, type: OracleType): LayoutBoxes {
+  const nodes: Record<string, Box> = {}
+  if (type === 'class') {
+    const d = layoutClassDiagramSync(
+      parseClassDiagram(splitStatements(source)),
+    )
+    for (const c of d.classes) {
+      nodes[c.id] = { x: c.x, y: c.y, w: c.width, h: c.height }
+    }
+    const groups: Record<string, Box> = {}
+    for (const n of d.namespaces) {
+      groups[n.name] = { x: n.x, y: n.y, w: n.width, h: n.height }
+    }
+    return { nodes, groups }
+  }
+  if (type === 'er') {
+    const d = layoutErDiagramSync(
+      parseErDiagram(splitStatements(source)),
+    )
+    for (const e of d.entities) {
+      nodes[e.id] = { x: e.x, y: e.y, w: e.width, h: e.height }
+    }
+    return { nodes, groups: {} }
+  }
   const graph = parseMermaid(source)
   const positioned =
     type === 'state' ? layoutGraphSync(graph) : layoutFlowchartSync(graph)
-  const nodes: Record<string, Box> = {}
   for (const n of positioned.nodes) {
     nodes[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height }
   }
@@ -165,10 +195,12 @@ async function main(): Promise<number> {
   const failing: string[] = []
   try {
     for (const [i, sample] of wanted.entries()) {
-      const hasSubgraphs =
-        args.type === 'state'
-          ? /^\s*state\s+.*\{\s*$/m.test(sample.source)
-          : /\bsubgraph\b/.test(sample.source)
+      const hasSubgraphs = {
+        state: /^\s*state\s+.*\{\s*$/m,
+        class: /^\s*namespace\b/m,
+        er: /$^/,
+        flowchart: /\bsubgraph\b/,
+      }[args.type].test(sample.source)
       try {
         const renderId = `oracle_${i}`
         const svg = await renderRealMermaidSvg(session, renderId, sample.source)

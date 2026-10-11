@@ -257,6 +257,10 @@ describe('oracle diagram types (#1707)', () => {
     expect(isOfType('stateDiagram\n  [*] --> A', 'state')).toBe(true)
     expect(isOfType('graph TD\n  A-->B', 'state')).toBe(false)
     expect(isOfType('flowchart LR\n  A-->B', 'flowchart')).toBe(true)
+    expect(isOfType('classDiagram\n  class A', 'class')).toBe(true)
+    expect(isOfType('classDiagram-v2\n  class A', 'class')).toBe(true)
+    expect(isOfType('erDiagram\n  A ||--o{ B : x', 'er')).toBe(true)
+    expect(isOfType('erDiagram\n  A ||--o{ B : x', 'class')).toBe(false)
     expect(isOfType('stateDiagram-v2\n  [*] --> A', 'flowchart')).toBe(false)
   })
 
@@ -280,11 +284,20 @@ describe('oracle diagram types (#1707)', () => {
   it('keeps the flowchart mapping', () => {
     expect(officialNodeName('p1-flowchart-A-0', 'p1', 'flowchart')).toBe('A')
     expect(officialNodeName('flowchart-a-b-12', 'p1', 'flowchart')).toBe('a-b')
+    expect(officialNodeName('p1-classId-Animal-0', 'p1', 'class')).toBe('Animal')
+    expect(officialNodeName('p1-entity-LOG_ENTRY-1', 'p1', 'er')).toBe('LOG_ENTRY')
+    expect(officialNodeName('classId-a-b-3', 'p1', 'class')).toBe('a-b')
+    // A flowchart-prefixed id is not a class node id.
+    expect(officialNodeName('p1-flowchart-A-0', 'p1', 'class')).toBe(
+      'p1-flowchart-A',
+    )
   })
 
   it('parses --type and rejects other values', () => {
     expect(parseOracleArgs([]).type).toBe('flowchart')
     expect(parseOracleArgs(['--type=state']).type).toBe('state')
+    expect(parseOracleArgs(['--type=class']).type).toBe('class')
+    expect(parseOracleArgs(['--type=er']).type).toBe('er')
     expect(() => parseOracleArgs(['--type=pie'])).toThrow(/--type/)
   })
 })
