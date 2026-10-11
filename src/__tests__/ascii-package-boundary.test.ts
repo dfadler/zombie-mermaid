@@ -187,12 +187,10 @@ const ALLOWED_OUTSIDE_ASCII = {
   // `class/format.ts`, `xychart/colors.ts`, `sequence/box-color.ts` fit
   // neither. The ASCII entry now reaches all of them through the bare
   // `@zombie-mermaid/mermaid-parser` specifier — invisible to this walker,
-  // same as the `core` bucket above. `src/parser.ts` (the flowchart/state
-  // parser) is NOT part of #624's scope — findings 1-2 are about
-  // `class`/`er`/`sequence`/`xychart` only, which already have no shared
-  // generic model the way flowcharts do — so it's the one entry still
-  // reached by relative import.
-  parser: ['src/parser.ts'],
+  // same as the `core` bucket above. The flowchart/state parser (formerly
+  // `src/parser.ts`) moved there too under #1318, so nothing is reached by
+  // relative import any more.
+  parser: [] as string[],
   // The scoping doc's recommendation 5 originally put all three on its
   // `svg-renderer`-only list. #625's addendum found `init-directive.ts` and
   // `style-directives.ts` actually belong to `core` (both moved to

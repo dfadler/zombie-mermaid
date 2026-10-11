@@ -117,6 +117,40 @@ describe('getSeriesColor', () => {
   })
 })
 
+describe('first-three-series separation (#1244)', () => {
+  // CIE76 ΔE between two sRGB hex colors.
+  function lab(hex: string): [number, number, number] {
+    const lin = (i: number) => {
+      const v = parseInt(hex.slice(i, i + 2), 16) / 255
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+    }
+    const [r, g, b] = [lin(1), lin(3), lin(5)] as const
+    const x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+    const y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    const z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+    const f = (t: number) =>
+      t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116
+    return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))]
+  }
+  const deltaE = (a: string, b: string) => {
+    const [l1, a1, b1] = lab(a)
+    const [l2, a2, b2] = lab(b)
+    return Math.hypot(l1 - l2, a1 - a2, b1 - b2)
+  }
+
+  // The pre-fix palette had ΔE 9 between series 0 and 2 (two similar blues).
+  for (const bg of ['#ffffff', '#1a1b26']) {
+    it(`keeps series 0, 1 and 2 at least 25 ΔE apart on ${bg}`, () => {
+      const c0 = getSeriesColor(0, '#3b82f6', bg)
+      const c1 = getSeriesColor(1, '#3b82f6', bg)
+      const c2 = getSeriesColor(2, '#3b82f6', bg)
+      expect(deltaE(c0, c1)).toBeGreaterThanOrEqual(25)
+      expect(deltaE(c0, c2)).toBeGreaterThanOrEqual(25)
+      expect(deltaE(c1, c2)).toBeGreaterThanOrEqual(25)
+    })
+  }
+})
+
 /** Minimal hex→HSL helper for assertions (mirrors colors.ts's private hexToHsl). */
 function hexLightness(hex: string): [number, number, number] {
   const h = hex.replace('#', '')

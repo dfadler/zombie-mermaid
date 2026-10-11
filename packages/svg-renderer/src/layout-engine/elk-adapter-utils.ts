@@ -8,7 +8,7 @@
  * place that logic lives, so the three call sites can't drift.
  */
 
-import type { ElkExtendedEdge } from 'elkjs'
+import type { ElkExtendedEdge } from '@zombie-mermaid/core'
 import type { Point } from '@zombie-mermaid/core'
 
 /**

@@ -54,6 +54,10 @@ import {
   parseErDiagram,
   parseSequenceDiagram,
   parseClassDiagram,
+  parseArchitecture,
+  architectureToGraph,
+  parseC4Diagram,
+  parsePieChart,
 } from '@zombie-mermaid/mermaid-parser'
 import type {
   XYChart,
@@ -64,6 +68,11 @@ import type {
   PositionedSequenceDiagram,
   ClassDiagram,
   PositionedClassDiagram,
+  ArchitectureDiagram,
+  C4Diagram,
+  PositionedC4Diagram,
+  PieChart,
+  PositionedPieChart,
 } from '@zombie-mermaid/mermaid-parser'
 import { layoutXYChart } from './xychart/layout.ts'
 import { renderXYChartSvg } from './xychart/renderer.ts'
@@ -73,9 +82,13 @@ import { layoutSequenceDiagram } from './sequence/layout.ts'
 import { renderSequenceSvg } from './sequence/renderer.ts'
 import { layoutClassDiagramSync } from './class/layout.ts'
 import { renderClassSvg } from './class/renderer.ts'
-import { layoutGraphSync } from './layout-engine.ts'
+import { layoutC4DiagramSync } from './c4/layout.ts'
+import { renderC4Svg } from './c4/renderer.ts'
+import { layoutPieChart } from './pie/layout.ts'
+import { renderPieSvg } from './pie/renderer.ts'
+import { layoutFlowchartSync, layoutGraphSync } from './layout-engine.ts'
 import { renderSvg as renderFlowchartSvg } from './renderer.ts'
-import { parseMermaid } from '../../../src/parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 
 /**
  * Parameters shared by every per-type SVG renderer today, factored out of
@@ -301,7 +314,7 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
     // see the doc comment on `PositionedFlowchart` above.
     const graph = withDirectionOverride(diagram, options.direction)
     return {
-      graph: layoutGraphSync(graph, options),
+      graph: layoutFlowchartSync(graph, options),
       curve: options.curve ?? diagram.initConfig?.curve ?? 'linear',
     }
   },
@@ -316,6 +329,79 @@ const flowchartModule: DiagramModule<MermaidGraph, PositionedFlowchart> = {
       ctx.embedSource,
       resolveAnimationEnabled(options),
       resolveLinksEnabled(options),
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+const c4Module: DiagramModule<C4Diagram, PositionedC4Diagram> = {
+  type: 'c4',
+  parse: parseC4Diagram,
+  // Mermaid's C4 renderer has no direction: shapes are placed in rows in
+  // declaration order, so `options.direction` does not apply to the SVG.
+  layoutForSvg(diagram, options) {
+    return layoutC4DiagramSync(diagram, options)
+  },
+  renderSvg(positioned, ctx) {
+    return renderC4Svg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.fontSizes,
+      ctx.embedSource,
+      ctx.title,
+      ctx.decorative,
+      ctx.emit,
+    )
+  },
+}
+
+/**
+ * Architecture diagrams are lowered to the flowchart model
+ * (`architectureToGraph` in `@zombie-mermaid/mermaid-parser`) and ride the
+ * flowchart layout + renderer, so this module is `flowchartModule` with a
+ * different `parse`. The lowered graph carries no `%%{init}%%` config, so
+ * `curve` is `options.curve` or 'linear'.
+ */
+const architectureModule: DiagramModule<
+  ArchitectureDiagram,
+  PositionedFlowchart
+> = {
+  type: 'architecture',
+  parse: parseArchitecture,
+  layoutForSvg(diagram, options) {
+    const graph = withDirectionOverride(
+      architectureToGraph(diagram),
+      options.direction,
+    )
+    return {
+      graph: layoutGraphSync(graph, options),
+      curve: options.curve ?? 'linear',
+    }
+  },
+  renderSvg: flowchartModule.renderSvg,
+}
+
+/**
+ * Pie charts parse from the raw `text` rather than `lines` (see
+ * `parsePieChart`'s doc: `splitStatements` would split `title A; B` and
+ * treat `'` as a quote), then lay out and render to Mermaid's geometry —
+ * see ./pie/layout.ts. No direction or interactivity applies.
+ */
+const pieModule: DiagramModule<PieChart, PositionedPieChart> = {
+  type: 'pie',
+  parse: (_lines, text) => parsePieChart(text),
+  layoutForSvg: layoutPieChart,
+  renderSvg(positioned, ctx) {
+    return renderPieSvg(
+      positioned,
+      ctx.colors,
+      ctx.font,
+      ctx.transparent,
+      ctx.embedSource,
       ctx.title,
       ctx.decorative,
       ctx.emit,
@@ -348,4 +434,8 @@ export const diagramRegistry: Record<DiagramType, AnyDiagramModule> = {
   sequence: sequenceModule,
   class: classModule,
   flowchart: flowchartModule,
+  architecture: architectureModule,
+
+  c4: c4Module,
+  pie: pieModule,
 }

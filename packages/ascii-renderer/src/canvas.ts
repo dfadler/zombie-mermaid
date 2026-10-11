@@ -10,12 +10,13 @@ import type {
   Canvas,
   DrawingCoord,
   RoleCanvas,
+  LabelRect,
   CharRole,
   AsciiTheme,
   ColorMode,
 } from './types.ts'
 import { colorizeLine, DEFAULT_ASCII_THEME } from './ansi.ts'
-import { toDisplayCells } from './display-width.ts'
+import { toDisplayCells, WIDE_CHAR_PLACEHOLDER } from './display-width.ts'
 import { joinWithLinks } from './hyperlinks.ts'
 import type { LinkCanvas } from './hyperlinks.ts'
 
@@ -26,19 +27,91 @@ import type { LinkCanvas } from './hyperlinks.ts'
 export function mkCanvas(x: number, y: number): Canvas {
   const canvas: Canvas = []
   for (let i = 0; i <= x; i++) {
-    const col: string[] = []
-    for (let j = 0; j <= y; j++) {
-      col.push(' ')
-    }
-    canvas.push(col)
+    canvas.push(new Array<string>(y + 1).fill(' '))
   }
   return canvas
 }
 
-/** Create a blank canvas with the same dimensions as the given canvas. */
+const blankColumns = new Map<number, string[]>()
+
+/** Frozen all-space column of `height` cells, shared by every sparse layer. */
+function blankColumn(height: number): string[] {
+  let col = blankColumns.get(height)
+  if (!col) {
+    col = Object.freeze(new Array<string>(height).fill(' ')) as string[]
+    blankColumns.set(height, col)
+  }
+  return col
+}
+
+/**
+ * Set a cell, giving a `copyCanvas` layer its own copy of the column first
+ * if it still points at the shared blank one (sparse overlay, #1478).
+ */
+function setCell(canvas: Canvas, x: number, y: number, ch: string): void {
+  let col = canvas[x]!
+  if (Object.isFrozen(col)) canvas[x] = col = col.slice()
+  col[y] = ch
+}
+
+/**
+ * Create a blank canvas with the same dimensions as the given canvas. Columns
+ * are a shared frozen blank until first written, so a mostly-empty per-edge
+ * layer costs O(columns touched x height), not O(area) (#1478). Reads work as
+ * usual; write only through `write`/`drawText`, never `canvas[x][y] = ch`.
+ */
 export function copyCanvas(source: Canvas): Canvas {
   const [maxX, maxY] = getCanvasSize(source)
-  return mkCanvas(maxX, maxY)
+  const canvas: Canvas = new Array<string[]>(maxX + 1).fill(
+    blankColumn(maxY + 1),
+  )
+  inkBounds.set(canvas, [Infinity, Infinity, -1, -1])
+  return canvas
+}
+
+let sharedBlank: Canvas | undefined
+
+/**
+ * A blank canvas shared across callers, sized like `source`. READ-ONLY: only
+ * for overlay layers that stay empty and are merged/scanned, never drawn into.
+ */
+export function blankLayer(source: Canvas): Canvas {
+  const [maxX, maxY] = getCanvasSize(source)
+  if (!sharedBlank || getCanvasSize(sharedBlank).join() !== `${maxX},${maxY}`) {
+    sharedBlank = copyCanvas(source)
+  }
+  return sharedBlank
+}
+
+/**
+ * Inclusive [x0, y0, x1, y1] box covering every cell written to a canvas made
+ * by `copyCanvas` (the per-edge overlay layers). Dense graphs build thousands
+ * of these, nearly blank, so scanning only this box keeps merge/role passes
+ * from costing O(edges x canvas area) (#1458). Only `write` and `drawText`
+ * record into it; never write to a `copyCanvas` result any other way.
+ */
+const inkBounds = new WeakMap<Canvas, [number, number, number, number]>()
+
+/** Box to scan for non-space cells: tracked ink box, else the whole canvas. */
+export function scanBounds(canvas: Canvas): [number, number, number, number] {
+  const [maxX, maxY] = getCanvasSize(canvas)
+  const b = inkBounds.get(canvas)
+  if (!b) return [0, 0, maxX, maxY]
+  return [
+    Math.max(b[0], 0),
+    Math.max(b[1], 0),
+    Math.min(b[2], maxX),
+    Math.min(b[3], maxY),
+  ]
+}
+
+function markInk(canvas: Canvas, x: number, y: number): void {
+  const b = inkBounds.get(canvas)
+  if (!b) return
+  if (x < b[0]) b[0] = x
+  if (y < b[1]) b[1] = y
+  if (x > b[2]) b[2] = x
+  if (y > b[3]) b[3] = y
 }
 
 // ============================================================================
@@ -81,6 +154,7 @@ export function increaseRoleCanvasSize(
   const currY = (roleCanvas[0]?.length ?? 1) - 1
   const targetX = Math.max(newX, currX)
   const targetY = Math.max(newY, currY)
+  if (targetX === currX && targetY === currY) return roleCanvas
   const grown = mkRoleCanvas(targetX, targetY)
   for (let x = 0; x < grown.length; x++) {
     for (let y = 0; y < (grown[0]?.length ?? 0); y++) {
@@ -174,6 +248,7 @@ export function increaseSize(
   const [currX, currY] = getCanvasSize(canvas)
   const targetX = Math.max(newX, currX)
   const targetY = Math.max(newY, currY)
+  if (targetX === currX && targetY === currY) return canvas
   const grown = mkCanvas(targetX, targetY)
   for (let x = 0; x < grown.length; x++) {
     for (let y = 0; y < (grown[0]?.length ?? 0); y++) {
@@ -231,7 +306,8 @@ export function write(
 ): void {
   const [maxX, maxY] = getCanvasSize(canvas)
   if (x < 0 || x > maxX || y < 0 || y > maxY) return
-  canvas[x]![y] = ch
+  setCell(canvas, x, y, ch)
+  markInk(canvas, x, y)
   if (roleTracking) {
     setRole(roleTracking.roleCanvas, x, y, roleTracking.role)
   }
@@ -444,14 +520,14 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
   const claimed = new Map<string, string>()
   const result: Canvas[] = []
   for (const canvas of canvases) {
-    const [maxX, maxY] = getCanvasSize(canvas)
     // `copyCanvas` (despite its name) returns a *blank* canvas of the same
     // size, not a clone of `canvas`'s content — see its own doc. Every cell
     // must be written explicitly below, not just the ones this function
     // blanks out.
     const out = copyCanvas(canvas)
-    for (let x = 0; x <= maxX; x++) {
-      for (let y = 0; y <= maxY; y++) {
+    const [bx0, by0, bx1, by1] = scanBounds(canvas)
+    for (let x = bx0; x <= bx1; x++) {
+      for (let y = by0; y <= by1; y++) {
         const c = canvas[x]?.[y]
         if (c === undefined || c === ' ') continue
         const key = `${x},${y}`
@@ -471,7 +547,8 @@ export function firstClaimWins(canvases: readonly Canvas[]): Canvas[] {
         } else {
           claimed.set(key, c)
         }
-        out[x]![y] = c
+        setCell(out, x, y, c)
+        markInk(out, x, y)
       }
     }
     result.push(out)
@@ -510,8 +587,9 @@ export function mergeCanvases(
 
   // Apply overlays
   for (const overlay of overlays) {
-    for (let x = 0; x < overlay.length; x++) {
-      for (let y = 0; y < (overlay[0]?.length ?? 0); y++) {
+    const [ox0, oy0, ox1, oy1] = scanBounds(overlay)
+    for (let x = ox0; x <= ox1; x++) {
+      for (let y = oy0; y <= oy1; y++) {
         const c = overlay[x]![y]!
         if (c !== ' ') {
           const mx = x + offset.x
@@ -617,6 +695,13 @@ export function canvasToString(
 // ============================================================================
 
 /**
+ * The state-end double box is drawn with `'text'` role (changing that would
+ * recolor every state diagram), so the flips must remap its corners anyway.
+ * No label plausibly contains these glyphs. See #1372.
+ */
+const DOUBLE_BOX_CORNERS = new Set(['╔', '╗', '╚', '╝'])
+
+/**
  * Characters that change meaning when the Y-axis is flipped.
  * Symmetric characters (─, │, ├, ┤, ┼) are unchanged.
  */
@@ -642,6 +727,16 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
   // Unicode junctions (T-pieces flip vertically)
   '┬': '┴',
   '┴': '┬',
+  // Rounded corners (rounded rectangle, cylinder caps)
+  '╭': '╰',
+  '╰': '╭',
+  '╮': '╯',
+  '╯': '╮',
+  // Double-line corners (state-end box)
+  '╔': '╚',
+  '╚': '╔',
+  '╗': '╝',
+  '╝': '╗',
   // Box-start junctions (exit points from node boxes)
   '╵': '╷',
   '╷': '╵',
@@ -652,24 +747,89 @@ const VERTICAL_FLIP_MAP: Record<string, string> = {
  * Reverses row order within each column and remaps directional characters
  * (arrows, corners, junctions) so they point the correct way after flip.
  *
+ * Cells `roleCanvas` marks as `'text'` (node/edge labels) are never remapped:
+ * a label containing `v` or `^` is prose, not an arrowhead. Call
+ * `mirrorLabelRows` first so multi-line labels keep reading order.
+ *
  * Used to transform a TD-rendered canvas into BT output.
- * Mutates the canvas in place and returns it.
+ * Mutates the canvas in place and returns it. `roleCanvas` must still be
+ * unflipped when this runs.
  */
-export function flipCanvasVertically(canvas: Canvas): Canvas {
-  // Reverse each column array (Y-axis flip in column-major layout)
-  for (const col of canvas) {
-    col.reverse()
-  }
-
+export function flipCanvasVertically(
+  canvas: Canvas,
+  roleCanvas?: RoleCanvas,
+): Canvas {
   // Remap directional characters that change meaning after vertical flip
-  for (const col of canvas) {
+  for (const [x, col] of canvas.entries()) {
     for (const [y, ch] of col.entries()) {
+      if (roleCanvas?.[x]?.[y] === 'text' && !DOUBLE_BOX_CORNERS.has(ch))
+        continue
       const flipped = VERTICAL_FLIP_MAP[ch]
       if (flipped) col[y] = flipped
     }
   }
 
+  // Reverse each column array (Y-axis flip in column-major layout)
+  for (const col of canvas) {
+    col.reverse()
+  }
+
   return canvas
+}
+
+/**
+ * Pre-compensate multi-line labels for a following vertical flip: within each
+ * label rectangle, reverse the row order of the `'text'` cells, so that after
+ * `flipCanvasVertically` the label's lines read top-to-bottom again while the
+ * label itself still lands at the mirrored position.
+ *
+ * The rectangles come from `drawGraph` (it knows which rows each label was
+ * drawn on), so blank lines inside a label and lines of different widths need
+ * no special handling. `linkCanvas` is permuted identically to `canvas`.
+ * Mutates in place; call before the flips, while every canvas is still
+ * unflipped.
+ */
+export function mirrorLabelRows(
+  canvas: Canvas,
+  roleCanvas: RoleCanvas,
+  labelRects: LabelRect[],
+  linkCanvas?: (string | null)[][],
+): void {
+  // Collect every cell before moving any, so a moved cell is never re-read.
+  const moves: { cells: [number, number][]; ySum: number }[] = []
+  const seen = new Set<string>()
+  for (const { x0, y0, x1, y1 } of labelRects) {
+    if (y0 === y1) continue
+    const cells: [number, number][] = []
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        const key = `${x},${y}`
+        if (roleCanvas[x]?.[y] !== 'text' || seen.has(key)) continue
+        seen.add(key)
+        cells.push([x, y])
+      }
+    }
+    moves.push({ cells, ySum: y0 + y1 })
+  }
+
+  for (const { cells, ySum } of moves) {
+    moveCells(canvas, cells, ySum, ' ')
+    moveCells(roleCanvas, cells, ySum, null)
+    if (linkCanvas) moveCells(linkCanvas, cells, ySum, null)
+  }
+}
+
+function moveCells<T>(
+  layer: T[][],
+  cells: [number, number][],
+  ySum: number,
+  empty: T,
+): void {
+  const saved = cells.map(([cx, cy]) => layer[cx]![cy]!)
+  for (const [cx, cy] of cells) layer[cx]![cy] = empty
+  for (const [i, [cx, cy]] of cells.entries()) {
+    layer[cx]![ySum - cy] = saved[i]!
+  }
 }
 
 /**
@@ -680,6 +840,190 @@ export function flipRoleCanvasVertically(roleCanvas: RoleCanvas): RoleCanvas {
   for (const col of roleCanvas) {
     col.reverse()
   }
+  return roleCanvas
+}
+
+// ============================================================================
+// Canvas horizontal flip — used for RL (right-to-left) direction support.
+//
+// RL is laid out as LR and the finished canvas is mirrored left-to-right,
+// remapping glyphs whose meaning depends on the X-axis. The counterpart of the
+// vertical flip above.
+// ============================================================================
+
+/**
+ * Characters that change meaning when the X-axis is flipped. Symmetric
+ * characters (─, │, ┬, ┴, ┼, ╵, ╷) are unchanged.
+ */
+const HORIZONTAL_FLIP_MAP: Record<string, string> = {
+  // Arrowheads
+  '►': '◄',
+  '◄': '►',
+  '>': '<',
+  '<': '>',
+  // Diagonal arrowheads (U+2196-U+2199)
+  '↖': '↗',
+  '↗': '↖',
+  '↙': '↘',
+  '↘': '↙',
+  // Corners
+  '┌': '┐',
+  '┐': '┌',
+  '└': '┘',
+  '┘': '└',
+  // Junctions (T-pieces flip horizontally)
+  '├': '┤',
+  '┤': '├',
+  // Rounded corners
+  '╭': '╮',
+  '╮': '╭',
+  '╰': '╯',
+  '╯': '╰',
+  // Double-line corners and junctions
+  '╔': '╗',
+  '╗': '╔',
+  '╚': '╝',
+  '╝': '╚',
+  '╟': '╢',
+  '╢': '╟',
+  // Corner brackets
+  '⌜': '⌝',
+  '⌝': '⌜',
+  '⌞': '⌟',
+  '⌟': '⌞',
+  // Slanted strokes and triangles
+  '╱': '╲',
+  '╲': '╱',
+  '/': '\\',
+  '\\': '/',
+  '◢': '◣',
+  '◣': '◢',
+  '◤': '◥',
+  '◥': '◤',
+  '◸': '◹',
+  '◹': '◸',
+  '◺': '◿',
+  '◿': '◺',
+}
+
+/**
+ * Flip the canvas horizontally (mirror across the vertical center).
+ * Reverses column order and remaps directional characters so arrows point
+ * the other way and corners mirror correctly.
+ *
+ * Cells `roleCanvas` marks as `'text'` are never remapped: a label containing
+ * `<` or `/` is prose, not an arrowhead. Call `mirrorLabelColumns` first so
+ * labels keep reading left-to-right.
+ *
+ * `nodeRects` (outer node-box rectangles, pre-flip) keep each node shape
+ * itself unmirrored, as mermaid.js does for RL: the box moves to its mirrored
+ * position but its four corner glyphs (parallelogram slants, the flag's
+ * notch, hexagon brackets) are exchanged left/right without remapping, so the
+ * shape looks exactly as it does in LR (#1701). Their roles swap too, because
+ * `flipRoleCanvasHorizontally` reverses them afterwards.
+ *
+ * Used to transform an LR-rendered canvas into RL output. Mutates the canvas
+ * in place and returns it. `roleCanvas` must still be unflipped when this runs.
+ */
+export function flipCanvasHorizontally(
+  canvas: Canvas,
+  roleCanvas?: RoleCanvas,
+  nodeRects: LabelRect[] = [],
+): Canvas {
+  const corners = nodeRects.flatMap(({ x0, x1, y0, y1 }) =>
+    x0 === x1
+      ? []
+      : [y0, y1].map((y) => ({
+          y,
+          x0,
+          x1,
+          g0: canvas[x0]?.[y],
+          g1: canvas[x1]?.[y],
+          r0: roleCanvas?.[x0]?.[y],
+          r1: roleCanvas?.[x1]?.[y],
+        })),
+  )
+  for (const [x, col] of canvas.entries()) {
+    for (const [y, ch] of col.entries()) {
+      if (roleCanvas?.[x]?.[y] === 'text' && !DOUBLE_BOX_CORNERS.has(ch))
+        continue
+      const flipped = HORIZONTAL_FLIP_MAP[ch]
+      if (flipped) col[y] = flipped
+    }
+  }
+  // Overwrite the box corners with their un-remapped opposites; the reverse
+  // below then lands each glyph back on its own side of the mirrored box.
+  for (const { y, x0, x1, g0, g1, r0, r1 } of corners) {
+    if (g0 === undefined || g1 === undefined) continue
+    canvas[x0]![y] = g1
+    canvas[x1]![y] = g0
+    if (roleCanvas && r0 !== undefined && r1 !== undefined) {
+      roleCanvas[x0]![y] = r1
+      roleCanvas[x1]![y] = r0
+    }
+  }
+  canvas.reverse()
+  return canvas
+}
+
+/**
+ * Pre-compensate labels for a following horizontal flip: within each label
+ * rectangle, reflect the `'text'` cells across the rectangle's vertical
+ * center, so that after `flipCanvasHorizontally` each label lands at its
+ * mirrored position but still reads left-to-right (wide-character placeholder
+ * cells keep their order too, since the two reflections cancel). `linkCanvas`
+ * is permuted identically. Mutates in place; call before the flips.
+ */
+export function mirrorLabelColumns(
+  canvas: Canvas,
+  roleCanvas: RoleCanvas,
+  labelRects: LabelRect[],
+  linkCanvas?: (string | null)[][],
+): void {
+  const moves: { cells: [number, number][]; xSum: number }[] = []
+  const seen = new Set<string>()
+  for (const { x0, y0, x1, y1 } of labelRects) {
+    if (x0 === x1) continue
+    const cells: [number, number][] = []
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        const key = `${x},${y}`
+        // A wide glyph's placeholder cell is '' and carries no role of its
+        // own, but it must travel with the glyph it follows.
+        const isText =
+          roleCanvas[x]?.[y] === 'text' ||
+          canvas[x]?.[y] === WIDE_CHAR_PLACEHOLDER
+        if (!isText || seen.has(key)) continue
+        seen.add(key)
+        cells.push([x, y])
+      }
+    }
+    moves.push({ cells, xSum: x0 + x1 })
+  }
+
+  for (const { cells, xSum } of moves) {
+    moveCellsX(canvas, cells, xSum, ' ')
+    moveCellsX(roleCanvas, cells, xSum, null)
+    if (linkCanvas) moveCellsX(linkCanvas, cells, xSum, null)
+  }
+}
+
+function moveCellsX<T>(
+  layer: T[][],
+  cells: [number, number][],
+  xSum: number,
+  empty: T,
+): void {
+  const saved = cells.map(([cx, cy]) => layer[cx]![cy]!)
+  for (const [cx, cy] of cells) layer[cx]![cy] = empty
+  for (const [i, [cx, cy]] of cells.entries()) {
+    layer[xSum - cx]![cy] = saved[i]!
+  }
+}
+
+/** Flip the role canvas horizontally to match flipCanvasHorizontally. */
+export function flipRoleCanvasHorizontally(roleCanvas: RoleCanvas): RoleCanvas {
+  roleCanvas.reverse()
   return roleCanvas
 }
 
@@ -707,7 +1051,8 @@ export function drawText(
     const current = canvas[x]![start.y]!
     // Only write if target is empty or we're forcing overwrite
     if (forceOverwrite || current === ' ') {
-      canvas[x]![start.y] = cell
+      setCell(canvas, x, start.y, cell)
+      markInk(canvas, x, start.y)
     }
   }
 }

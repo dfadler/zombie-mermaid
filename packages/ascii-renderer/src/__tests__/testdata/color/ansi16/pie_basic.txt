@@ -1,0 +1,12 @@
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15
+---
+             [90mPets adopted by volunteers[0m
+
+[37m[[0m[37m████████████████████████████████████████[0m[97m▓▓▓▓▓▓▓▓▓[0m[36m▒[0m[37m][0m
+
+  [37m█[0m [90mDogs[0m   [90m 79%[0m
+  [97m▓[0m [90mCats[0m   [90m 17%[0m
+  [36m▒[0m [90mRats[0m   [90m  3%[0m

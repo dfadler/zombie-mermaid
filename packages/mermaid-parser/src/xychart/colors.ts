@@ -4,7 +4,9 @@
 // Generates monochromatic shades from the theme accent color.
 // Series 0 = accent (or blue fallback). Series 1+ are darker/lighter
 // shades of the same hue with subtle hue drift to stay in the same
-// color family (like navy ↔ cyan from blue).
+// color family (like navy ↔ cyan from blue). Hue drifts toward navy for
+// darker shades and toward cyan for lighter ones, so neighbouring series
+// do not collapse into two near-identical blues (#1244).
 //
 // Used by both the SVG and ASCII renderers.
 // ============================================================================
@@ -101,7 +103,7 @@ export function isDarkBackground(bgHex: string): boolean {
  * Get the hex color for a series index.
  * Index 0 returns the accent color as-is.
  * Index 1+ alternate between darker and lighter shades of the same hue
- * with subtle hue drift (±8-12° per tier) to stay in the same family.
+ * with subtle hue drift (-8° per tier for darker, -12° for lighter) to stay in the same family.
  *
  * When `bgColor` is provided, shade direction adapts to the background:
  *   - Light bg: odd = darker, even = lighter (default)
@@ -128,8 +130,12 @@ export function getSeriesColor(
   const dark = safeBg && isDarkBackground(safeBg) ? !oddIndex : oddIndex
   const l = dark ? Math.max(25, 48 - tier * 13) : Math.min(78, 55 + tier * 11)
 
-  // Subtle hue drift: darker shades shift slightly negative, lighter shift positive
-  const hShift = (dark ? -8 : 12) * tier
+  // Subtle hue drift: darker shades shift slightly negative (toward navy),
+  // lighter shades shift negative too (toward sky/cyan). The lighter shade
+  // used to drift positive (toward indigo), which landed series 2 within a
+  // few ΔE of series 0 (#1244); drifting the other way keeps the three first
+  // series distinct in hue as well as lightness.
+  const hShift = (dark ? -8 : -12) * tier
   const newH = (((h + hShift) % 360) + 360) % 360
 
   return hslToHex(newH, chartS, l)

@@ -2,8 +2,9 @@
 // @zombie-mermaid/mermaid-parser — per-type diagram parsers
 //
 // Class, ER, sequence, and XY chart diagrams have no shared generic model
-// the way flowcharts/state diagrams do (`MermaidGraph`, parsed by the
-// umbrella's own `src/parser.ts`). Both `svg-renderer` and `ascii-renderer`
+// the way flowcharts/state diagrams do (`MermaidGraph`, parsed by
+// `flowchart-parser.ts` here, moved from the umbrella's `src/parser.ts`
+// under #1318 so both renderers share one copy). Both `svg-renderer` and `ascii-renderer`
 // import each type's parse function and types directly — confirmed by grep
 // (zombie-mermaid#624, umbrella #620, `monorepo-conversion-scoping.md`
 // finding 2) — so this package's public API is every per-type parse
@@ -28,6 +29,14 @@
 // creating a cycle — see `packages/core/src/direction.ts`'s header.
 // ============================================================================
 
+export * from './architecture/parser.ts'
+export * from './architecture/types.ts'
+export * from './architecture/to-graph.ts'
+
+export * from './c4/parser.ts'
+export * from './c4/types.ts'
+export * from './c4/format.ts'
+
 export * from './class/parser.ts'
 export * from './class/types.ts'
 export * from './class/format.ts'
@@ -45,4 +54,8 @@ export * from './xychart/parser.ts'
 export * from './xychart/types.ts'
 export * from './xychart/colors.ts'
 
+export * from './pie/parser.ts'
+export * from './pie/types.ts'
+
 export * from './expanded-shapes.ts'
+export * from './flowchart-parser.ts'

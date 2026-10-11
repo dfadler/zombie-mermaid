@@ -1522,4 +1522,541 @@ flowchart LR
   destroy Bob
   Bob->>Alice: I agree`,
   },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  C4 — appended at the end for the same flat-index baseline-filename
+  //  reason as the Sequence entries above (see #1217).
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    title: 'C4: System Context',
+    category: 'C4',
+    description:
+      'A C4 System Context diagram: a person, an internal system in an enterprise boundary, and an external system, joined by labelled relationships.',
+    source: `C4Context
+  title System Context for Internet Banking
+  Person(customer, "Personal Banking Customer", "A customer of the bank")
+  Enterprise_Boundary(b0, "Bank") {
+    System(banking, "Internet Banking System", "Lets customers view accounts")
+    SystemDb(ledger, "Ledger", "Stores transactions")
+  }
+  System_Ext(mail, "E-mail System", "Sends e-mails")
+  Rel(customer, banking, "Uses", "HTTPS")
+  Rel(banking, ledger, "Reads from and writes to")
+  Rel_Back(customer, mail, "Sends e-mails to")
+  Rel(banking, mail, "Sends e-mail using")`,
+  },
+  {
+    title: 'C4: Container With Boundary And BiRel',
+    category: 'C4',
+    gallery: true,
+    description:
+      'A C4 Container diagram: a system boundary holding containers, a database and a queue, with a bidirectional relationship and an external system.',
+    source: `C4Container
+  Person(user, "User")
+  System_Boundary(sys, "Shop") {
+    Container(web, "Web App", "React", "Storefront")
+    Container(api, "API", "Node.js", "Business logic")
+    ContainerDb(db, "Database", "PostgreSQL", "Orders")
+    ContainerQueue(q, "Events", "Kafka")
+  }
+  System_Ext(pay, "Payments")
+  Rel(user, web, "Browses")
+  Rel(web, api, "Calls", "JSON/HTTPS")
+  Rel(api, db, "Reads/writes", "SQL")
+  BiRel(api, q, "Publishes", "AMQP")
+  Rel(api, pay, "Charges cards")`,
+  },
+  {
+    title: 'C4: Nested Boundaries Component',
+    category: 'C4',
+    gallery: true,
+    description:
+      'A C4 Component diagram with a boundary nested inside another boundary, plus components wired to a database outside both.',
+    source: `C4Component
+  Container_Boundary(api, "API Application") {
+    Boundary(web, "Web Layer") {
+      Component(ctl, "Controller", "Express", "Routes requests")
+    }
+    Component(svc, "Service", "TypeScript", "Business rules")
+  }
+  ContainerDb(db, "Database", "Postgres")
+  Rel(ctl, svc, "Uses")
+  BiRel(svc, db, "Reads and writes", "SQL")`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Architecture — appended at the end for the same flat-index
+  //  baseline-filename reason as the Sequence entries above (see #1218).
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    title: 'Architecture: Services And Edge Sides',
+    category: 'Architecture',
+    description:
+      'architecture-beta services only (no groups), joined on all four sides (L/R/T/B), with plain and arrowed edges and a mix of built-in and unknown icons.',
+    source: `architecture-beta
+  service db(database)[Database]
+  service disk(disk)[Disk]
+  service server(server)[Server]
+  service cloud(cloud)[Cloud]
+  service web(internet)[Web]
+  service mystery(not-a-real-icon)[Unknown Icon]
+  service bare[No Icon]
+  db:R -- L:server
+  server:R --> L:cloud
+  server:B -- T:disk
+  cloud:T <-- B:web
+  web:R <--> L:mystery
+  disk:R -- L:bare`,
+  },
+  {
+    title: 'Architecture: Nested Groups And Junction',
+    category: 'Architecture',
+    gallery: true,
+    description:
+      'architecture-beta groups nested two deep, with a junction fanning one edge out to two services.',
+    source: `architecture-beta
+  group cloud(cloud)[Cloud]
+  group api(server)[API Tier] in cloud
+  group data(database)[Data Tier] in cloud
+  service gw(internet)[Gateway] in api
+  service app(server)[App] in api
+  service db(database)[Primary DB] in data
+  service replica(disk)[Replica] in data
+  junction fan in cloud
+  service client(internet)[Client]
+  client:R --> L:gw
+  gw:R -- L:app
+  app:R -- L:fan
+  fan:R --> L:db
+  fan:B --> T:replica`,
+  },
+  {
+    title: 'Architecture: Group-To-Group Edges',
+    category: 'Architecture',
+    gallery: true,
+    description:
+      'architecture-beta edges attached to a service\'s enclosing group with the {group} modifier, on one or both ends.',
+    source: `architecture-beta
+  group front(cloud)[Frontend]
+  group back(server)[Backend]
+  group store(database)[Storage]
+  service ui(internet)[UI] in front
+  service api(server)[API] in back
+  service jobs(server)[Jobs] in back
+  service db(database)[Postgres] in store
+  ui{group}:R --> L:api{group}
+  api:B -- T:db{group}
+  jobs:R --> L:db`,
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  PIE CHARTS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  {
+    title: 'Pie: Basic',
+    category: 'Pie',
+    description:
+      'Slices in source order, clockwise from 12 o\'clock, with whole-number percentages inside each slice and a legend on the right.',
+    source: `pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
+    title: 'Pie: showData',
+    category: 'Pie',
+    gallery: true,
+    description:
+      '`pie showData` adds each slice\'s value to its legend row, printed as written.',
+    source: `pie showData title Key elements in Product X
+  "Calcium" : 42.96
+  "Potassium" : 50.05
+  "Magnesium" : 10.01
+  "Iron" : 5`,
+  },
+  {
+    title: 'Pie: Many Slices',
+    category: 'Pie',
+    gallery: true,
+    description:
+      'Fourteen slices: the twelve-colour palette repeats from the 13th slice.',
+    source: `pie title Commits by weekday and team
+  "Mon core" : 14
+  "Mon docs" : 9
+  "Tue core" : 13
+  "Tue docs" : 8
+  "Wed core" : 12
+  "Wed docs" : 7
+  "Thu core" : 11
+  "Thu docs" : 7
+  "Fri core" : 10
+  "Fri docs" : 6
+  "Sat core" : 5
+  "Sat docs" : 3
+  "Sun core" : 4
+  "Sun docs" : 2`,
+  },
+  {
+    title: 'Pie: Tiny Slices',
+    category: 'Pie',
+    gallery: true,
+    description:
+      'Slices under 1% of the total are left out of the pie but stay in the legend; zero-value slices are never drawn.',
+    source: `pie showData title Browser share
+  "Chrome" : 640
+  "Safari" : 190
+  "Firefox" : 120
+  "Edge" : 45
+  "Opera" : 4
+  "Lynx" : 1
+  "Netscape" : 0`,
+  },
+  {
+    title: 'Pie: Single Slice',
+    category: 'Pie',
+    description: 'One slice fills the whole circle at 100%.',
+    source: `pie title Uptime this week
+  "Up" : 1`,
+  },
+  {
+    title: 'Pie: Dark Theme',
+    category: 'Pie',
+    gallery: true,
+    description:
+      'The palette follows the theme accent and switches shade direction on a dark background.',
+    source: `pie title Time spent
+  accTitle: Time spent per activity
+  accDescr: Coding takes half the day, meetings a quarter.
+  "Coding" : 50
+  "Meetings" : 25
+  "Review" : 15
+  "Email" : 10`,
+    options: {
+      bg: '#1a1b26',
+      fg: '#a9b1d6',
+      line: '#3d59a1',
+      accent: '#7aa2f7',
+      muted: '#565f89',
+    },
+  },
+
+  // Pie edge cases. Each source here also has an ASCII golden of the same
+  // name under packages/ascii-renderer/src/__tests__/testdata/{ascii,unicode}
+  // (and some colour goldens under testdata/color/), so every case is pinned
+  // in both renderers.
+  {
+    title: 'Pie: Empty',
+    category: 'Pie',
+    description:
+      "A bare `pie` with no slices is valid: just the outline circle, at the pie's own width.",
+    source: `pie`,
+  },
+  {
+    title: 'Pie: Empty With Title',
+    category: 'Pie',
+    description: 'A title over an empty chart.',
+    source: `pie title Nothing to show yet`,
+  },
+  {
+    title: 'Pie: All Zero',
+    category: 'Pie',
+    description:
+      'Every value is 0: nothing is drawn, every slice stays in the legend.',
+    source: `pie showData title Nothing counted
+  "Apples" : 0
+  "Pears" : 0
+  "Plums" : 0`,
+  },
+  {
+    title: 'Pie: Tall Legend',
+    category: 'Pie',
+    description:
+      'Twenty-four slices: the legend is taller than the 450px frame, so the viewBox grows to fit it.',
+    source: `pie title Tickets by component
+  "Component 01" : 30
+  "Component 02" : 29
+  "Component 03" : 28
+  "Component 04" : 27
+  "Component 05" : 26
+  "Component 06" : 25
+  "Component 07" : 24
+  "Component 08" : 23
+  "Component 09" : 22
+  "Component 10" : 21
+  "Component 11" : 20
+  "Component 12" : 19
+  "Component 13" : 18
+  "Component 14" : 17
+  "Component 15" : 16
+  "Component 16" : 15
+  "Component 17" : 14
+  "Component 18" : 13
+  "Component 19" : 12
+  "Component 20" : 11
+  "Component 21" : 10
+  "Component 22" : 9
+  "Component 23" : 8
+  "Component 24" : 7`,
+  },
+  // No emoji in this one: the Linux CI image has no emoji font (they would
+  // render as boxes), and ascii-geometry.visual.test.ts's xterm oracle uses
+  // Unicode 6 widths, where most emoji are one cell. Emoji labels have a
+  // text-only ASCII golden instead (testdata/*/pie_emoji_labels.txt).
+  {
+    title: 'Pie: Wide Characters',
+    category: 'Pie',
+    gallery: true,
+    description:
+      'Chinese, Japanese, Korean and fullwidth characters in the title and labels; text widths are display widths.',
+    source: `pie title 宠物 ペット 반려동물
+  "狗 Dogs" : 40
+  "猫 Cats" : 30
+  "さかな Fish" : 20
+  "ＢＩＲＤ" : 10`,
+  },
+  {
+    title: 'Pie: Long Labels',
+    category: 'Pie',
+    description:
+      'Labels and a title are never truncated: the legend (and a title wider than the chart) widen the output instead.',
+    source: `pie title Where the quarterly infrastructure budget actually went this year
+  "Cloud compute for the continuous integration and nightly regression fleet" : 55
+  "Storage" : 30
+  "A label that is long but not the longest one in this chart" : 15`,
+  },
+  {
+    title: 'Pie: showData Decimals',
+    category: 'Pie',
+    description:
+      '`showData` prints values with `String(value)`: no thousands separators, and `42.10` becomes `42.1`.',
+    source: `pie showData title Revenue by region
+  "North" : 2500000.75
+  "South" : 1000000
+  "East" : 42.10
+  "West" : 0.5`,
+  },
+  {
+    title: 'Pie: Two Even Slices',
+    category: 'Pie',
+    description: 'Two equal slices, each 50%.',
+    source: `pie title Coin flips
+  "Heads" : 50
+  "Tails" : 50`,
+  },
+  {
+    title: 'Pie: Accessibility Only',
+    category: 'Pie',
+    description:
+      "`accTitle` and a multi-line `accDescr { … }` with no `title`: they become the SVG's `<title>`/`<desc>` and are never drawn as text.",
+    source: `pie
+  accTitle: Survey answers
+  accDescr {
+    Most people answered yes.
+    A few said no.
+  }
+  "Yes" : 70
+  "No" : 30`,
+  },
+  {
+    title: 'Pie: Label Edge Cases',
+    category: 'Pie',
+    description:
+      'A repeated label keeps its first value, single-quoted and escaped labels are accepted, and markup characters are shown as text.',
+    source: `pie title Labels <&> "quotes"
+  "R&D" : 30
+  'Single quoted' : 25
+  "<script>" : 20
+  "Say \\"hi\\"" : 15
+  "R&D" : 99
+  'It\\'s' : 10`,
+  },
+  {
+    title: 'Pie: Percentage Boundaries',
+    category: 'Pie',
+    description:
+      'Exactly 1% is drawn; 0.99%, 0.01% and -0 are not. `-0` is shown as `0`.',
+    source: `pie showData title Percentage boundaries
+  "Most" : 98
+  "Exactly 1%" : 1
+  "Just under 1%" : 0.99
+  "One hundredth" : 0.01
+  "Negative zero" : -0`,
+  },
+  {
+    title: 'Pie: Custom Accent',
+    category: 'Pie',
+    description:
+      'The palette is built from the theme accent, so overriding only `accent` recolours every slice.',
+    source: `pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15
+  "Birds" : 60
+  "Fish" : 30`,
+    options: {
+      accent: '#d33682',
+    },
+  },
+  {
+    title: 'Pie: More Slices Than Bar Cells',
+    category: 'Pie',
+    description:
+      'Sixty equal slices. The SVG draws every one; the 50-cell ASCII bar fits fifty, and the other ten are listed like slices under 1% (dot swatch, no percentage).',
+    source: `pie title Sixty equal slices
+${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" : 1`).join('\n')}`,
+  },
+  {
+    title: 'Labeled Fan-In (LR)',
+    category: 'Flowchart',
+    description:
+      'Several labeled edges into one node (#1467). In the ASCII panel each edge keeps its own lane, so every label sits on the stroke it names.',
+    source: `flowchart LR
+  A --> B
+  A -->|first| C
+  B -->|second| C
+  A -->|third| D
+  C -->|fourth| D
+  B -->|fifth| D
+  B -->|sixth| D
+  A -->|seventh| D`,
+  },
+  {
+    title: 'Direction: Right-Left (RL)',
+    category: 'Flowchart',
+    gallery: true,
+    description:
+      'Flow runs right to left; the first node sits at the right edge.',
+    source: `graph RL
+  A[Start] --> B{Check}
+  B -->|yes| C[Done]
+  B -->|no| D[Retry]
+  D --> B`,
+  },
+  {
+    title: 'Nested Subgraphs (RL)',
+    category: 'Flowchart',
+    gallery: true,
+    description: 'Subgraphs inside subgraphs under a right-to-left direction.',
+    source: `graph RL
+  subgraph Outer
+    subgraph Inner
+      A --> B
+    end
+    B --> C
+  end
+  C --> D`,
+  },
+  {
+    title: 'Nested Subgraphs (BT)',
+    category: 'Flowchart',
+    gallery: true,
+    description: 'Subgraphs inside subgraphs under a bottom-to-top direction.',
+    source: `graph BT
+  subgraph Outer
+    subgraph Inner
+      A --> B
+    end
+    B --> C
+  end
+  C --> D`,
+  },
+  {
+    title: 'Edges Into and Out of Subgraphs',
+    category: 'Flowchart',
+    gallery: true,
+    description:
+      'Edges that cross cluster borders, including exits from a cluster to several siblings (#1331, #1461).',
+    source: `flowchart TD
+  In[Request] --> A
+  subgraph Cluster
+    A --> B
+    B --> C
+  end
+  Cluster --> X[Cache]
+  Cluster --> Y[Log]
+  B --> Z[Audit]
+  C --> W[Reply]`,
+  },
+  {
+    title: 'Vertical Edge Labels',
+    category: 'Flowchart',
+    gallery: true,
+    description: 'Labels on edges in a top-down flow, including multi-word ones.',
+    source: `flowchart TD
+  A[Order] -->|validated| B[Payment]
+  B -->|card declined| C[Retry]
+  B -->|paid in full| D[Ship]
+  C -->|give up| E[Cancel]`,
+  },
+  {
+    title: 'Flowchart: CJK Labels',
+    category: 'Flowchart',
+    gallery: true,
+    description:
+      'Chinese, Japanese and Korean text in nodes, edge labels and a subgraph title.',
+    source: `flowchart LR
+  subgraph 前端
+    A[用户] -->|请求| B[ログイン]
+  end
+  B -->|확인| C{결정}
+  C -->|はい| D[完了]
+  C -->|いいえ| A`,
+  },
+  {
+    title: 'Sequence: CJK Participants',
+    category: 'Sequence',
+    gallery: true,
+    description: 'Wide characters in participant names, messages and a note.',
+    source: `sequenceDiagram
+  participant 客户
+  participant サーバー
+  participant 데이터베이스
+  客户->>サーバー: 要求を送信
+  サーバー->>데이터베이스: 조회
+  데이터베이스-->>サーバー: 결과
+  Note over サーバー,데이터베이스: 캐시 사용
+  サーバー-->>客户: 应答`,
+  },
+  {
+    title: 'Sequence: Span Labels Across Lifelines',
+    category: 'Sequence',
+    gallery: true,
+    description:
+      'A long label on a message that crosses intermediate lifelines; the lifelines stay visible around it (#1119).',
+    source: `sequenceDiagram
+  participant A
+  participant B
+  participant C
+  participant D
+  A->>D: a label that spans the lifelines of B and C
+  D-->>A: and a reply that also crosses them
+  B->>C: adjacent
+  A->>C: skips B`,
+  },
+  {
+    title: 'Class: Namespaces',
+    category: 'Class',
+    gallery: true,
+    description:
+      'Classes grouped into namespaces, with a relationship across them.',
+    source: `classDiagram
+  namespace Shapes {
+    class Circle {
+      +radius
+      +area()
+    }
+    class Square {
+      +side
+      +area()
+    }
+  }
+  namespace Rendering {
+    class Canvas {
+      +draw(shape)
+    }
+  }
+  Canvas --> Circle
+  Canvas --> Square`,
+  },
 ]

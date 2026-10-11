@@ -294,11 +294,12 @@ function panelContent(
   if (excerpt) {
     // Literal indexOf bounds rather than a constructed regex: every excerpt
     // is a fixed tag, so a pattern would add nothing but a ReDoS smell.
-    const start = output.indexOf(excerpt.from)
+    // Drop the per-render id scope (`zm<hash>-`, #1397) so an excerpt can name
+    // `<marker id="arrowhead-start"` the same for before/after renders.
+    const text = output.replace(/zm[0-9a-z]+-/g, '')
+    const start = text.indexOf(excerpt.from)
     const end =
-      start === -1
-        ? -1
-        : output.indexOf(excerpt.to, start + excerpt.from.length)
+      start === -1 ? -1 : text.indexOf(excerpt.to, start + excerpt.from.length)
     if (start === -1 || end === -1) {
       // Without the slice the entry would render an empty panel, silently
       // claiming a fix it no longer shows. Fail instead.
@@ -306,7 +307,7 @@ function panelContent(
         `excerpt "${excerpt.from}" … "${excerpt.to}" was not found in the output`,
       )
     }
-    const slice = output.slice(start, end + excerpt.to.length)
+    const slice = text.slice(start, end + excerpt.to.length)
     return { kind: 'excerpt', text: slice.trim() }
   }
 

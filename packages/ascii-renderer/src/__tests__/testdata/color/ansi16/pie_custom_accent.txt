@@ -1,0 +1,17 @@
+theme={"accent":"#d33682"}
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15
+  "Birds" : 60
+  "Fish" : 30
+---
+             [90mPets adopted by volunteers[0m
+
+[37m[[0m[37m██████████████████████████████████[0m[97m▓▓▓▓▓▓▓[0m[37m▒[0m[97m░░░░░[0m[37m███[0m[37m][0m
+
+  [37m█[0m [90mDogs[0m    [90m 67%[0m
+  [97m▓[0m [90mCats[0m    [90m 15%[0m
+  [37m▒[0m [90mRats[0m    [90m  3%[0m
+  [97m░[0m [90mBirds[0m   [90m 10%[0m
+  [37m█[0m [90mFish[0m    [90m  5%[0m

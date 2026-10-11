@@ -11,7 +11,7 @@
  * coverage rather than relying on an integration test to happen to hit it.
  */
 import { describe, it, expect } from 'vitest'
-import type { ElkExtendedEdge } from 'elkjs'
+import type { ElkExtendedEdge } from '@zombie-mermaid/core'
 import {
   extractEdgePoints,
   extractEdgeLabelPosition,

@@ -123,6 +123,45 @@ function adjustJunctionForGroups(
   return crossingGroup.y - GAP // TD
 }
 
+/*
+ * How far an edge end may sit from a node's side and still count as attached
+ * to that side, in px (ELK routes to the box edge; alignment can shift it a
+ * little).
+ */
+const SIDE_TOLERANCE = 2
+
+/**
+ * True when an edge outside the bundle also attaches to `hub` on the side the
+ * bundle would use. Bundling collapses the group onto the side's midpoint, so
+ * an outside edge ending there (a back edge returning to the node, say) would
+ * land on the trunk and read as part of it. ELK's own lanes keep them apart,
+ * so that group is left as routed.
+ *
+ * `side` is the coordinate of the hub's side along the flow axis and
+ * `horizontal` says which axis that is (x for a left-to-right graph).
+ */
+function hasOutsideEdgeOnSide(
+  edges: PositionedEdge[],
+  bundleEdges: Set<PositionedEdge>,
+  hubId: string,
+  side: number,
+  horizontal: boolean,
+): boolean {
+  for (const e of edges) {
+    if (bundleEdges.has(e) || e.source === e.target) continue
+    const end =
+      e.source === hubId
+        ? e.points[0]
+        : e.target === hubId
+          ? e.points[e.points.length - 1]
+          : undefined
+    if (!end) continue
+    if (Math.abs((horizontal ? end.x : end.y) - side) <= SIDE_TOLERANCE)
+      return true
+  }
+  return false
+}
+
 /**
  * Bundle fan-out and fan-in edge paths so they share a common trunk segment.
  *
@@ -193,6 +232,16 @@ export function bundleEdgePaths(
     if (isHorizontal) {
       const exitX = isLR ? source.x + source.width : source.x
       const exitY = srcCY
+      if (
+        hasOutsideEdgeOnSide(
+          edges,
+          new Set(targets.map((t) => t.edge)),
+          sourceId,
+          exitX,
+          true,
+        )
+      )
+        continue
 
       const nearestX = isLR
         ? Math.min(...targets.map((t) => t.node.x))
@@ -229,6 +278,16 @@ export function bundleEdgePaths(
     } else {
       const exitX = srcCX
       const exitY = isBT ? source.y : source.y + source.height
+      if (
+        hasOutsideEdgeOnSide(
+          edges,
+          new Set(targets.map((t) => t.edge)),
+          sourceId,
+          exitY,
+          false,
+        )
+      )
+        continue
 
       const nearestY = isBT
         ? Math.max(...targets.map((t) => t.node.y + t.node.height))
@@ -307,6 +366,16 @@ export function bundleEdgePaths(
     if (isHorizontal) {
       const entryX = isLR ? target.x : target.x + target.width
       const entryY = tgtCY
+      if (
+        hasOutsideEdgeOnSide(
+          edges,
+          new Set(sources.map((s) => s.edge)),
+          targetId,
+          entryX,
+          true,
+        )
+      )
+        continue
 
       const farthestX = isLR
         ? Math.max(...sources.map((s) => s.node.x + s.node.width))
@@ -342,6 +411,16 @@ export function bundleEdgePaths(
     } else {
       const entryX = tgtCX
       const entryY = isBT ? target.y + target.height : target.y
+      if (
+        hasOutsideEdgeOnSide(
+          edges,
+          new Set(sources.map((s) => s.edge)),
+          targetId,
+          entryY,
+          false,
+        )
+      )
+        continue
 
       const farthestY = isBT
         ? Math.min(...sources.map((s) => s.node.y))

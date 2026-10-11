@@ -53,5 +53,8 @@ describe('renderMermaidASCII – hyperlinks strip invariant across gallery sampl
       expect(rendered).toBeGreaterThan(20)
       expect(withLinks).toBeGreaterThanOrEqual(1)
     },
+    // Renders every gallery sample twice in one test; ~0.75s alone but ~3-6s
+    // under full-suite worker contention, so the 5s default flaked.
+    30_000,
   )
 })

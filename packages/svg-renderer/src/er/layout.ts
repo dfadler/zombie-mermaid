@@ -6,7 +6,7 @@
  *   2. Attribute rows (type, name, keys)
  */
 
-import type { ElkNode, ElkExtendedEdge } from 'elkjs'
+import type { ElkNode, ElkExtendedEdge } from '@zombie-mermaid/core'
 import type {
   ErDiagram,
   ErEntity,
@@ -47,6 +47,19 @@ const ER = {
 type EntitySizeMap = Map<string, { width: number; height: number }>
 
 /** Build ELK graph and size map from an ER diagram. */
+/**
+ * Width of an attribute row sized for the worst-case glyph advance.
+ *
+ * The mono face advances 0.6em per glyph (6.6px at the 11px attribute size),
+ * but browsers that don't position glyphs at subpixel offsets (headless
+ * Chromium on Linux) round each advance to a whole pixel, so a long row draws
+ * wider than `estimateMonoTextWidth` says and the type runs into the
+ * right-aligned name (#1262, same cause as class members in #1238).
+ */
+function attrTextWidth(text: string): number {
+  return text.length * Math.ceil(estimateMonoTextWidth('M', ER.attrFontSize))
+}
+
 function buildErElkGraph(
   diagram: ErDiagram,
   options: ErRenderOptions,
@@ -63,7 +76,7 @@ function buildErElkGraph(
     let maxAttrW = 0
     for (const attr of entity.attributes) {
       const attrText = `${attr.type}  ${attr.name}${attr.keys.length > 0 ? '  ' + attr.keys.join(',') : ''}`
-      const w = estimateMonoTextWidth(attrText, ER.attrFontSize)
+      const w = attrTextWidth(attrText)
       if (w > maxAttrW) maxAttrW = w
     }
     const width = Math.max(
@@ -105,15 +118,18 @@ function buildErElkGraph(
     id: 'root',
     layoutOptions: {
       ...baseElkLayoutOptions({
-        // A source with no `direction` statement lays out left-to-right —
-        // ER's own default, unlike flowchart/class's DOWN. See
-        // ELK_DIRECTION_FALLBACK.
+        // A source with no `direction` statement lays out top-to-bottom,
+        // as official Mermaid does (#1250). See ELK_DIRECTION_FALLBACK.
         direction: directionToElk(diagram.direction, ELK_DIRECTION_FALLBACK.er),
         nodeSpacing: ER.nodeSpacing,
         layerSpacing: ER.layerSpacing,
         padding: ER.padding,
       }),
       'elk.edgeLabels.placement': 'CENTER',
+      // Keep declaration order as the crossing-minimization tie-break and
+      // center children under their parents, as official Mermaid does.
+      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
     },
     children,
     edges,

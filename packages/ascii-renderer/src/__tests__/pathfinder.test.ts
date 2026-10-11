@@ -153,6 +153,33 @@ describe('pathfinder', () => {
       expect(afterSecond).toBeLessThan(afterFirst)
     })
 
+    it('returns null without searching when the target is sealed (#1474)', () => {
+      // Target (5,5) has all four neighbours blocked; an unguarded search
+      // would flood the open grid up to MAX_ITERATIONS before giving up.
+      const grid = buildGrid([
+        { x: 4, y: 5 },
+        { x: 6, y: 5 },
+        { x: 5, y: 4 },
+        { x: 5, y: 6 },
+      ])
+      const budget = createPathBudget(DEFAULT_PATH_BUDGET)
+      expect(getPath(grid, { x: 0, y: 0 }, { x: 5, y: 5 }, budget)).toBeNull()
+      expect(budget.remaining).toBe(DEFAULT_PATH_BUDGET)
+    })
+
+    it('still reaches a target whose only neighbour is the start (#1474)', () => {
+      const grid = buildGrid([
+        { x: 4, y: 5 },
+        { x: 6, y: 5 },
+        { x: 5, y: 4 },
+        { x: 5, y: 6 },
+      ])
+      expect(getPath(grid, { x: 4, y: 5 }, { x: 5, y: 5 })).toEqual([
+        { x: 4, y: 5 },
+        { x: 5, y: 5 },
+      ])
+    })
+
     it('returns null immediately once the budget is exhausted, without spending further iterations', () => {
       const grid = buildGrid([])
       const budget: PathBudget = { remaining: 0 }

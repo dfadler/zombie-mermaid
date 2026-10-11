@@ -10,6 +10,44 @@ describe('detectDiagramType', () => {
     expect(detectDiagramType('xychart-beta\nx-axis [a, b]')).toBe('xychart')
   })
 
+  it('detects architecture diagrams under both header spellings', () => {
+    expect(detectDiagramType('architecture-beta\nservice a')).toBe(
+      'architecture',
+    )
+    expect(detectDiagramType('architecture\nservice a')).toBe('architecture')
+    expect(detectDiagramType('Architecture-Beta\nservice a')).toBe(
+      'architecture',
+    )
+    expect(detectDiagramType('architecture-beta;service a')).toBe(
+      'architecture',
+    )
+  })
+
+  it('does not match an architecture header with an unsupported suffix', () => {
+    expect(detectDiagramType('architecture-foo\nservice a')).toBe('flowchart')
+    expect(detectDiagramType('architecture-beta TB\nservice a')).toBe(
+      'flowchart',
+    )
+  })
+
+  it('detects every C4 variant header, case-insensitively', () => {
+    for (const header of [
+      'C4Context',
+      'C4Container',
+      'C4Component',
+      'C4Dynamic',
+      'C4Deployment',
+      'c4context',
+    ]) {
+      expect(detectDiagramType(`${header}\nPerson(a, "A")`)).toBe('c4')
+    }
+    expect(detectDiagramType('C4Context;Person(a, "A")')).toBe('c4')
+  })
+
+  it('does not match an unknown C4 variant', () => {
+    expect(detectDiagramType('C4Foo\nPerson(a, "A")')).toBe('flowchart')
+  })
+
   it('isolates the header on a semicolon-separated single line', () => {
     expect(detectDiagramType('sequenceDiagram;A->>B: Hi')).toBe('sequence')
     expect(detectDiagramType('classDiagram;class Foo')).toBe('class')
@@ -19,6 +57,21 @@ describe('detectDiagramType', () => {
 
   it('does not match an xychart header with an unsupported suffix', () => {
     expect(detectDiagramType('xychart-foo\nx-axis [a, b]')).toBe('flowchart')
+  })
+
+  it('detects pie charts with or without trailing header content', () => {
+    expect(detectDiagramType('pie\n"A" : 1')).toBe('pie')
+    expect(detectDiagramType('  pie  ')).toBe('pie')
+    expect(detectDiagramType('pie showData\n"A" : 1')).toBe('pie')
+    expect(detectDiagramType('pie title Pets\n"A" : 1')).toBe('pie')
+    expect(detectDiagramType('pie\ttitle Pets')).toBe('pie')
+    expect(detectDiagramType('%% comment\npie\n"A" : 1')).toBe('pie')
+  })
+
+  it('matches the pie header case-sensitively and as a whole word, like Mermaid', () => {
+    expect(detectDiagramType('Pie\n"A" : 1')).toBe('flowchart')
+    expect(detectDiagramType('PIE\n"A" : 1')).toBe('flowchart')
+    expect(detectDiagramType('pieChart\n"A" : 1')).toBe('flowchart')
   })
 
   it('falls back to flowchart for unrecognized input', () => {

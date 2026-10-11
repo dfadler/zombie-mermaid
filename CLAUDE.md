@@ -34,11 +34,11 @@ properties that make worktree cleanup easy to get wrong:
   resolves) — as a background `Bash` process, and track that PID yourself; nothing
   else will.
 
-## ASCII rendering changes: the PR screenshot must be a real terminal, never the browser mockup
+## ASCII rendering changes: the PR screenshot must be a real terminal; mockup-only changes use the probes
 
 Before attaching before/after screenshots to a PR/issue for any change touching
-ASCII output (`src/ascii/**`, `packages/site/ascii-html.ts`, `src/cli.ts`'s ASCII path,
-`demo/client.ts`'s ASCII path, `packages/site/index.ts`'s `.ascii-panel`,
+ASCII output (`packages/ascii-renderer/**`, `packages/site/ascii-html.ts`, `src/cli.ts`'s ASCII path,
+`__tests__/visual/helpers/terminal-panel.ts`'s `TERMINAL_ASCII_OPTS`/`applyWideCharWidths`, `packages/site/index.ts`'s `.ascii-panel`,
 `scripts/visual-diff.ts`, `__tests__/visual/helpers/terminal-panel.ts`, or
 `__tests__/visual/ascii-samples.visual.test.ts`), invoke the
 `verify-ascii-terminal` skill first. This is a hard requirement on the
@@ -55,6 +55,21 @@ fix) in that approximation's chrome while the underlying renderer was fine
 — so they stay useful for iterating locally but must never supply the
 screenshot that ends up in a PR/issue body for this category of change.
 
+The mockup's own fidelity is checked separately, by tests rather than by
+eye: `__tests__/visual/ascii-geometry.visual.test.ts` (every glyph sits in the
+right cell with the right color, against an `@xterm/headless` oracle),
+`ascii-seams.visual.test.ts` (adjacent line and block glyphs join),
+`ascii-legibility.visual.test.ts` (connectors keep clear of text) and
+`ascii-crispness.visual.test.ts` (vertical strokes are one crisp pixel column,
+not split across two). A change that
+only touches the mockup (`.ascii-output` CSS in `demo/styles.css`,
+`packages/site/ascii-html.ts`'s chrome, the visual helpers) leaves what a
+terminal prints unchanged, so a real-terminal capture would show nothing: for
+those, run the four tests and attach before/after mockup screenshots, each
+labeled as a browser mockup, not a terminal. Any change to what the renderer
+emits still needs the real-terminal image above. A real-PTY golden suite was
+considered and not adopted (#1151, #1186).
+
 Whenever a PR or issue includes a "Visual verification" (or equivalent
 before/after) section for this category of change, paste the exact Mermaid
 source used to produce both renders inline, in a fenced ` ```mermaid ` code
@@ -65,6 +80,14 @@ screenshots from the PR/issue body alone, without chasing down another issue
 that may no longer contain a matching repro. See
 [#402](https://github.com/dfadler/zombie-mermaid/issues/402), which this
 requirement exists to close.
+
+## Research and measurement: findings go in the issue
+
+For investigation or measurement work on an issue, post the findings summary as an
+issue comment with a permalink to any artifact (a `docs/research/*.md` doc or a
+script) in the repo; don't leave the findings only in a PR's research doc. Write a
+research doc only when the detail is too long or reusable for a comment. See
+[#1479](https://github.com/dfadler/zombie-mermaid/issues/1479).
 
 ## Decision docs: run the self-review checklist before opening the PR
 

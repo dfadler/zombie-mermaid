@@ -40,17 +40,53 @@ describe('createMcpServer', () => {
     expect(names).toEqual([
       'check_mermaid_sequence_activations',
       'fix_mermaid_sequence_activations',
+      'list_diagram_types',
+      'list_themes',
       'render_mermaid_ascii',
       'render_mermaid_svg',
     ])
   })
 
-  it('marks every tool as read-only and non-destructive', async () => {
+  it('marks every tool read-only and non-destructive except render_mermaid_svg', async () => {
     const { tools } = await client.listTools()
     for (const tool of tools) {
+      if (tool.name === 'render_mermaid_svg') {
+        // outputPath can write (and overwrite) a .svg file.
+        expect(tool.annotations?.readOnlyHint).toBe(false)
+        expect(tool.annotations?.destructiveHint).toBe(true)
+        continue
+      }
       expect(tool.annotations?.readOnlyHint).toBe(true)
       expect(tool.annotations?.destructiveHint).toBe(false)
     }
+  })
+
+  it('lists themes and diagram types via real tool calls', async () => {
+    for (const [name, key] of [
+      ['list_themes', 'themes'],
+      ['list_diagram_types', 'diagramTypes'],
+    ] as const) {
+      const result = await client.callTool({ name, arguments: {} })
+      expect(result.isError).toBeFalsy()
+      const content = result.content
+      if (
+        !Array.isArray(content) ||
+        content[0]?.type !== 'text' ||
+        typeof content[0].text !== 'string'
+      ) {
+        throw new Error('Expected text content')
+      }
+      const parsed = JSON.parse(content[0].text) as Record<string, unknown>
+      expect(Array.isArray(parsed[key])).toBe(true)
+    }
+  })
+
+  it('rejects a non-hex bg via input schema validation', async () => {
+    const result = await client.callTool({
+      name: 'render_mermaid_svg',
+      arguments: { diagram: 'graph LR\n  A --> B', bg: 'red' },
+    })
+    expect(result.isError).toBe(true)
   })
 
   it('renders SVG via a real tool call', async () => {

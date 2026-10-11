@@ -149,12 +149,18 @@ describe('issue #64: edge-routing crashes and layout bugs', () => {
     Src -->|center*| Center
     Src -->|right*| Right`)
 
-      // The three branch points (├, ┬, ┐) for a clean shared trunk all
-      // land on the same row, immediately below Source's box.
-      const trunkRow = out
-        .split('\n')
-        .find((l) => l.includes('├') && l.includes('┬') && l.includes('┐'))
-      expect(trunkRow).toBeDefined()
+      // Source is centred over its three targets: the outer edges leave its
+      // sides (┤ and ├) on the Source row, the middle one leaves the bottom
+      // (┬ on the border), and nothing detours to a lower row, so all three
+      // arrowheads land on the same row.
+      const rows = out.split('\n')
+      const sourceRow = rows.find((l) => l.includes('Source'))!
+      expect(sourceRow).toContain('┤')
+      expect(sourceRow).toContain('├')
+      expect(rows.some((l) => l.includes('┬'))).toBe(true)
+      const arrowRows = rows.filter((l) => l.includes('▼'))
+      expect(arrowRows).toHaveLength(1)
+      expect(arrowRows[0]!.match(/▼/g)).toHaveLength(3)
     })
   })
 

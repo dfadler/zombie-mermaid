@@ -67,6 +67,23 @@ function selfLoopWidth(msg: Message): number {
     : SELF_LOOP_WIDTH + String(msg.seqNumber).length
 }
 
+// A self-message's label is drawn on rows ABOVE its loop (mermaid.js's own
+// placement), starting this many columns right of the lifeline so it never
+// touches it. Sitting above the loop rather than beside it means the label
+// only needs `SELF_LABEL_OFFSET + width` columns, not loop + clearance +
+// width, so the next lifeline can stay closer (issue #1387).
+const SELF_LABEL_OFFSET = 2
+
+// Columns right of the lifeline a self-message occupies: the wider of its
+// loop and its label. Shared by the gap-sizing, canvas-width and block-wall
+// passes so all three agree.
+function selfExtent(msg: Message): number {
+  return Math.max(
+    selfLoopWidth(msg),
+    SELF_LABEL_OFFSET + maxLineWidth(msg.label),
+  )
+}
+
 /**
  * Render a Mermaid sequence diagram to ASCII/Unicode text.
  *
@@ -250,7 +267,18 @@ export function renderSequenceAscii(
   for (const msg of diagram.messages) {
     const fi = actorIndexOf(msg.from)
     const ti = actorIndexOf(msg.to)
-    if (fi === ti) continue // self-messages don't affect spacing
+    if (fi === ti) {
+      // A self-message's label sits above its loop and must clear the next
+      // lifeline by one blank column, or it overwrites that lifeline
+      // (issue #1387). The last actor has no right neighbour; the
+      // canvas-width pass widens for it instead.
+      if (fi < adjMaxWidth.length) {
+        // `-2` because the gap computation below adds its own `+ 2` margin.
+        const needed = selfExtent(msg) + 1 - 2
+        adjMaxWidth[fi] = Math.max(adjMaxWidth[fi]!, needed)
+      }
+      continue
+    }
     const lo = Math.min(fi, ti)
     const hi = Math.max(fi, ti)
     // Required gap per span = (max line width + arrow decorations) / number of gaps
@@ -447,8 +475,7 @@ export function renderSequenceAscii(
       minLX = Math.min(minLX, llX[Math.min(f, t)]!)
       maxLX = Math.max(maxLX, llX[Math.max(f, t)]!)
       if (f === t) {
-        const selfRight =
-          llX[f]! + SELF_LOOP_WIDTH + 2 + maxLineWidth(msg.label)
+        const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
       }
     }
@@ -589,10 +616,12 @@ export function renderSequenceAscii(
     const destroyedIdx = destroyedByMsg.get(m)
 
     if (isSelf) {
-      // Self-message occupies 3+ rows: top-arm, label-col(s), bottom-arm
-      msgLabelY[m] = curY + 1
-      msgArrowY[m] = curY
-      curY += 2 + msgLineCount // top-arm + label lines + bottom-arm
+      // Self-message: label rows (above the loop), then a 3-row loop — top
+      // arm, right wall, bottom arm.
+      const labelRows = msgLineCount
+      msgLabelY[m] = curY
+      msgArrowY[m] = curY + labelRows
+      curY += labelRows + 3
     } else {
       // Normal message: label row(s), then — for a creating message — the
       // rows of the created box above the arrow, then the arrow row, then
@@ -685,8 +714,7 @@ export function renderSequenceAscii(
     const msg = diagram.messages[m]!
     if (msg.from === msg.to) {
       const fi = actorIndexOf(msg.from)
-      const selfRight =
-        llX[fi]! + selfLoopWidth(msg) + 2 + 2 + maxLineWidth(msg.label)
+      const selfRight = llX[fi]! + selfExtent(msg) + 2
       totalW = Math.max(totalW, selfRight + 1)
     }
   }
@@ -1034,10 +1062,12 @@ export function renderSequenceAscii(
     const lineChar = isDashed ? (useAscii ? '.' : '╌') : H
 
     if (isSelf) {
-      // Self-message: 3-row loop to the right of the lifeline
+      // Self-message: the label above a 3-row loop to the right of the
+      // lifeline, as mermaid.js draws it (issue #1387)
+      //   │ Label        (label rows, one per line)
       //   ├──┐           (row 0 = msgArrowY)
-      //   │  │ Label     (row 1)
-      //   │◄─┘           (row 2)
+      //   │  │           (row 1)
+      //   ◀──┘           (row 2)
       //
       // The loop is only SELF_LOOP_WIDTH (4) columns wide by default, with no
       // spare room for a second arrowhead without corrupting the loop's
@@ -1068,16 +1098,23 @@ export function renderSequenceAscii(
         setC(x, y0, lineChar, 'line')
       setC(fromX + loopW, y0, useAscii ? '+' : '┐', 'corner')
 
-      // Label rows: vertical on right side + one line of label text each
-      const labelX = fromX + loopW + 2
-      for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
-        const rowY = y0 + 1 + lineIdx
-        setC(fromX + loopW, rowY, V, 'line')
-        writeTextCells(labelX, rowY, msgLines[lineIdx]!, 'text', totalW)
+      // Label rows sit above the loop, clear of the lifeline.
+      const labelRows = msgLines.length
+      for (let lineIdx = 0; lineIdx < labelRows; lineIdx++) {
+        writeTextCells(
+          fromX + SELF_LABEL_OFFSET,
+          y0 - labelRows + lineIdx,
+          msgLines[lineIdx]!,
+          'text',
+          totalW,
+        )
       }
 
+      // Right wall of the loop
+      setC(fromX + loopW, y0 + 1, V, 'line')
+
       // Bottom row: arrow-back + horizontal + bottom-right corner
-      const bottomY = y0 + 1 + msgLines.length
+      const bottomY = y0 + 2
       const arrowChar = isLost
         ? lostChar
         : isFilled
@@ -1110,8 +1147,33 @@ export function renderSequenceAscii(
       }
 
       // Draw label centered between the two lifelines (supports multi-line)
-      const midX = Math.floor((fromX + toX) / 2)
+      let midX = Math.floor((fromX + toX) / 2)
       const msgLines = splitLines(msg.label)
+
+      // A label centred on a message that spans several participants can land
+      // on an intermediate (uninvolved) lifeline and blank it out. When the
+      // centred label would cover one, centre it in the spanned gap that can
+      // hold it clear of both lifelines (nearest the midpoint) instead. If no
+      // gap fits, keep the centred placement. (issue #1119)
+      const labelW = Math.max(0, ...msgLines.map(displayWidth))
+      const lo = Math.min(fromX, toX)
+      const hi = Math.max(fromX, toX)
+      const between = llX.filter((x) => x > lo && x < hi)
+      const covers = (c: number) => {
+        const s = c - Math.floor(labelW / 2)
+        return between.some((x) => x >= s && x < s + labelW)
+      }
+      if (labelW > 0 && covers(midX)) {
+        const stops = [lo, ...between, hi]
+        let best: number | undefined
+        for (let k = 0; k + 1 < stops.length; k++) {
+          if (stops[k + 1]! - stops[k]! - 1 < labelW + 2) continue
+          const c = Math.floor((stops[k]! + stops[k + 1]!) / 2)
+          if (best === undefined || Math.abs(c - midX) < Math.abs(best - midX))
+            best = c
+        }
+        if (best !== undefined) midX = best
+      }
 
       for (let lineIdx = 0; lineIdx < msgLines.length; lineIdx++) {
         const line = msgLines[lineIdx]!
@@ -1226,8 +1288,7 @@ export function renderSequenceAscii(
       // right than the lifeline itself — account for that extent too, or a
       // long self-arrow label gets clipped by / drawn outside the wall.
       if (f === t) {
-        const selfRight =
-          llX[f]! + selfLoopWidth(msg) + 2 + maxLineWidth(msg.label)
+        const selfRight = llX[f]! + selfExtent(msg)
         maxLX = Math.max(maxLX, selfRight)
       }
     }

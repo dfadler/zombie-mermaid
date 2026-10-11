@@ -1,12 +1,16 @@
 {
   "name": "@zombie-mermaid/mcp",
-  "version": "2.2.6",
+  "version": "5.0.1",
   "license": "MIT",
   "description": "Model Context Protocol server exposing zombie-mermaid's SVG and ASCII rendering as MCP tools.",
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid",
     "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/dfadler/zombie-mermaid#readme",
+  "bugs": {
+    "url": "https://github.com/dfadler/zombie-mermaid/issues"
   },
   "type": "module",
   "sideEffects": false,
@@ -30,7 +34,6 @@
     "provenance": true
   },
   "files": [
-    "src/",
     "dist/",
     "LICENSE"
   ],
@@ -40,7 +43,10 @@
     "@zombie-mermaid/svg-renderer": "workspace:*",
     "@zombie-mermaid/ascii-renderer": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "entities": "^7.0.1",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "elkjs": "^0.11.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

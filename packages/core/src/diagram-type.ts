@@ -10,8 +10,26 @@
 
 import { splitStatements } from './statements.ts'
 
+/**
+ * Every diagram type this library can detect and route to a renderer — the
+ * runtime source of truth `DiagramType` is derived from, so consumers that
+ * need to enumerate the types (e.g. the MCP `list_diagram_types` tool) never
+ * keep a duplicate list that could drift.
+ */
+export const DIAGRAM_TYPES = [
+  'flowchart',
+  'sequence',
+  'class',
+  'er',
+  'xychart',
+  'architecture',
+
+  'c4',
+  'pie',
+] as const
+
 /** The diagram types this library can detect and route to a renderer. */
-export type DiagramType = 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart'
+export type DiagramType = (typeof DIAGRAM_TYPES)[number]
 
 /**
  * Detect the diagram type from the mermaid source text.
@@ -23,9 +41,22 @@ export type DiagramType = 'flowchart' | 'sequence' | 'class' | 'er' | 'xychart'
  * routing and parsing can never disagree about where the header ends.
  */
 export function detectDiagramType(text: string): DiagramType {
-  const firstLine = splitStatements(text)[0]?.text.toLowerCase() ?? ''
+  const header = splitStatements(text)[0]?.text ?? ''
+  const firstLine = header.toLowerCase()
+
+  // Case-sensitive, unlike the other headers: Mermaid's pie detector is
+  // `/^\s*pie/` and its grammar keyword `pie` must be followed by
+  // whitespace, a comment, or the end of input, so `Pie` and `pie:` are not
+  // pie charts there either.
+  if (/^pie(?:\s|$)/.test(header)) return 'pie'
 
   if (/^xychart(?:-beta)?(?:\s|$)/.test(firstLine)) return 'xychart'
+  if (/^architecture(?:-beta)?\s*$/.test(firstLine)) return 'architecture'
+
+  if (
+    /^c4(?:context|container|component|dynamic|deployment)\s*$/.test(firstLine)
+  )
+    return 'c4'
   if (/^sequencediagram\s*$/.test(firstLine)) return 'sequence'
   if (/^classdiagram\s*$/.test(firstLine)) return 'class'
   if (/^erdiagram\s*$/.test(firstLine)) return 'er'

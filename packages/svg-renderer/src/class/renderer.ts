@@ -1,5 +1,6 @@
 import type {
   PositionedClassDiagram,
+  PositionedClassNamespace,
   PositionedClassNode,
   PositionedClassNote,
   PositionedClassRelationship,
@@ -9,16 +10,17 @@ import type {
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
-  buildStyleBlock,
   getReadableTextColor,
   sanitizeClassName,
   renderMultilineText,
   escapeXml as escapeXmlUtil,
   escapeAttr,
   safeHref,
+  f,
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import {
+  buildSvgStyleBlock,
   FONT_SIZES,
   FONT_WEIGHTS,
   STROKE_WIDTHS,
@@ -34,6 +36,7 @@ import { CLS } from './layout.ts'
 // All colors use CSS custom properties (var(--_xxx)) from the theme system.
 //
 // Render order:
+//   0. Namespace frames (behind everything)
 //   1. Relationship lines and note links (behind boxes)
 //   2. Class boxes (header + attributes + methods compartments)
 //   3. Notes (dog-eared boxes)
@@ -107,10 +110,15 @@ export function renderClassSvg(
       embedSource,
     ),
   )
-  parts.push(buildStyleBlock(font, true, emit.nonce))
+  parts.push(buildSvgStyleBlock(font, true, emit.nonce))
   parts.push('<defs>')
   parts.push(relationshipMarkerDefs())
   parts.push('</defs>')
+
+  // 0. Namespace frames (behind everything else)
+  for (const ns of diagram.namespaces) {
+    parts.push(renderNamespace(ns))
+  }
 
   // 1. Relationship lines and note links (rendered behind boxes)
   for (const rel of diagram.relationships) {
@@ -140,6 +148,24 @@ export function renderClassSvg(
 }
 
 // ============================================================================
+// Namespace frames
+// ============================================================================
+
+/** A `namespace` block: a framed box with its name in a header band. */
+function renderNamespace(ns: PositionedClassNamespace): string {
+  const { x, y, width, height } = ns
+  const bandH = CLS.namespaceTitleHeight
+  const sw = STROKE_WIDTHS.outerBox
+  return [
+    f`<g class="class-namespace" data-id="${escapeAttr(ns.name)}" data-label="${escapeAttr(ns.name)}">`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="${sw}" />`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${bandH}" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${sw}" />`,
+    f`  <text x="${x + CLS.namespacePad}" y="${y + bandH / 2}" dy="${TEXT_BASELINE_SHIFT}" font-size="${CLS.namespaceTitleFontSize}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)">${escapeXml(ns.name)}</text>`,
+    '</g>',
+  ].join('\n')
+}
+
+// ============================================================================
 // Marker definitions
 // ============================================================================
 
@@ -161,13 +187,14 @@ function relationshipMarkerDefs(): string {
     `  <marker id="cls-inherit" markerWidth="12" markerHeight="10" refX="12" refY="5" orient="auto-start-reverse">` +
     `\n    <polygon points="0 0, 12 5, 0 10" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />` +
     `\n  </marker>` +
-    // Filled diamond (composition) — points at source
-    `\n  <marker id="cls-composition" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto-start-reverse">` +
-    `\n    <polygon points="6 0, 12 5, 6 10, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="1" />` +
+    // Filled diamond (composition) — tip sits on the endpoint, body runs along the line;
+    // the polygon is inset so the stroke isn't clipped by the marker viewport
+    `\n  <marker id="cls-composition" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">` +
+    `\n    <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="1" />` +
     `\n  </marker>` +
-    // Hollow diamond (aggregation) — points at source
-    `\n  <marker id="cls-aggregation" markerWidth="12" markerHeight="10" refX="0" refY="5" orient="auto-start-reverse">` +
-    `\n    <polygon points="6 0, 12 5, 6 10, 0 5" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />` +
+    // Hollow diamond (aggregation) — tip sits on the endpoint, body runs along the line
+    `\n  <marker id="cls-aggregation" markerWidth="18" markerHeight="14" refX="16.5" refY="7" orient="auto-start-reverse">` +
+    `\n    <polygon points="9 1.5, 16.5 7, 9 12.5, 1.5 7" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="1.5" />` +
     `\n  </marker>` +
     // Open arrow (association, dependency)
     `\n  <marker id="cls-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto-start-reverse">` +
@@ -230,20 +257,20 @@ function renderClassBox(
   // data-label: class name
   // data-annotation: stereotype (interface, abstract, etc.)
   const annotationAttr = cls.annotation
-    ? ` data-annotation="${escapeAttr(cls.annotation)}"`
+    ? f` data-annotation="${escapeAttr(cls.annotation)}"`
     : ''
   // A style class from `cssClass`/`class A name`/`:::name` is emitted onto
   // the group so external CSS can target it, after the same allowlist the
   // flowchart renderer applies.
   const safeClassName = sanitizeClassName(cls.className)
   const groupAttrs = [
-    `class="${safeClassName ? `class-node ${safeClassName}` : 'class-node'}"`,
-    `data-id="${escapeAttr(cls.id)}"`,
-    `data-label="${escapeAttr(cls.label)}"`,
+    f`class="${safeClassName ? f`class-node ${safeClassName}` : 'class-node'}"`,
+    f`data-id="${escapeAttr(cls.id)}"`,
+    f`data-label="${escapeAttr(cls.label)}"`,
   ]
   // `click ClassName call fn()` is parsed, never invoked, and never written
   // into the markup — see renderNode() in packages/svg-renderer/src/renderer.ts for the rationale.
-  parts.push(`<g ${groupAttrs.join(' ')}${annotationAttr}>`)
+  parts.push(f`<g ${groupAttrs.join(' ')}${annotationAttr}>`)
 
   // An href becomes a real SVG link, which needs no script to work.
   // `interactivity: 'none'` strips it — a link is meaningless in
@@ -251,28 +278,28 @@ function renderClassBox(
   const href = linksEnabled ? safeHref(interaction?.href) : undefined
   if (href) {
     const targetAttr = interaction?.target
-      ? ` target="${escapeAttr(interaction.target)}"`
+      ? f` target="${escapeAttr(interaction.target)}"`
       : ''
-    parts.push(`  <a href="${escapeAttr(href)}"${targetAttr}>`)
+    parts.push(f`  <a href="${escapeAttr(href)}"${targetAttr}>`)
   }
 
   if (linksEnabled && interaction?.tooltip) {
     // <title> is SVG's native tooltip — no script, no CSS. Gated by
     // linksEnabled alongside href above: both come from the same `click`
     // statement, and 'none' strips both.
-    parts.push(`  <title>${escapeXml(interaction.tooltip)}</title>`)
+    parts.push(f`  <title>${escapeXml(interaction.tooltip)}</title>`)
   }
 
   // Outer rectangle (full box)
   parts.push(
-    `  <rect x="${x}" y="${y}" width="${width}" height="${height}" ` +
-      `rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${height}" ` +
+      f`rx="0" ry="0" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
   )
 
   // Header background
   parts.push(
-    `  <rect x="${x}" y="${y}" width="${width}" height="${headerHeight}" ` +
-      `rx="0" ry="0" fill="${headerFill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
+    f`  <rect x="${x}" y="${y}" width="${width}" height="${headerHeight}" ` +
+      f`rx="0" ry="0" fill="${headerFill}" stroke="${stroke}" stroke-width="${strokeWidth}" />`,
   )
 
   // Annotation (<<interface>>, <<abstract>>, etc.)
@@ -280,9 +307,9 @@ function renderClassBox(
   if (cls.annotation) {
     const annotY = y + 12
     parts.push(
-      `  <text x="${x + width / 2}" y="${annotY}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
-        `font-size="${CLS_FONT.annotationSize}" font-weight="${CLS_FONT.annotationWeight}" ` +
-        `font-style="italic" fill="${textColor ?? 'var(--_text-muted)'}">&lt;&lt;${escapeXml(cls.annotation)}&gt;&gt;</text>`,
+      f`  <text x="${x + width / 2}" y="${annotY}" text-anchor="middle" dy="${TEXT_BASELINE_SHIFT}" ` +
+        f`font-size="${CLS_FONT.annotationSize}" font-weight="${CLS_FONT.annotationWeight}" ` +
+        f`font-style="italic" fill="${textColor ?? 'var(--_text-muted)'}">&lt;&lt;${escapeXml(cls.annotation)}&gt;&gt;</text>`,
     )
     nameY = y + headerHeight / 2 + 6
   }
@@ -295,15 +322,15 @@ function renderClassBox(
         x + width / 2,
         nameY,
         fontSizes.nodeLabel,
-        `text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="${textColor ?? 'var(--_text)'}"`,
+        f`text-anchor="middle" font-size="${fontSizes.nodeLabel}" font-weight="700" fill="${textColor ?? 'var(--_text)'}"`,
       ),
   )
 
   // Divider line between header and attributes
   const attrTop = y + headerHeight
   parts.push(
-    `  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
-      `stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    f`  <line x1="${x}" y1="${attrTop}" x2="${x + width}" y2="${attrTop}" ` +
+      f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
   )
 
   // Attributes
@@ -317,8 +344,8 @@ function renderClassBox(
   // Divider line between attributes and methods
   const methodTop = attrTop + attrHeight
   parts.push(
-    `  <line x1="${x}" y1="${methodTop}" x2="${x + width}" y2="${methodTop}" ` +
-      `stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    f`  <line x1="${x}" y1="${methodTop}" x2="${x + width}" y2="${methodTop}" ` +
+      f`stroke="${stroke}" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
   )
 
   // Methods
@@ -334,10 +361,14 @@ function renderClassBox(
   return parts.join('\n')
 }
 
+/** Heavier weight for the visibility marker so `~` stays distinct from `-` (#1237) */
+const VISIBILITY_MARKER_WEIGHT = 700
+
 /**
  * Render a single class member with syntax highlighting.
  * Uses <tspan> elements to color each part of the member differently:
- *   - visibility symbol (+/-/#/~) → textFaint
+ *   - visibility symbol (+/-/#/~) → textSecondary, bold (faint at weight 400
+ *     made `~` read like `-` at 1x, #1237)
  *   - member name (incl. parens for methods) → textSecondary
  *   - colon separator → textFaint
  *   - type annotation → textMuted
@@ -366,27 +397,27 @@ function renderMember(
 
   if (member.visibility) {
     spans.push(
-      `<tspan fill="${faint}">${escapeXml(member.visibility)} </tspan>`,
+      f`<tspan fill="${secondary}" font-weight="${VISIBILITY_MARKER_WEIGHT}">${escapeXml(member.visibility)}</tspan><tspan fill="${faint}"> </tspan>`,
     )
   }
 
   // Add parentheses for methods to distinguish from attributes, including parameters if present
   const displayName = member.isMethod
-    ? `${member.name}(${member.params || ''})`
+    ? f`${member.name}(${member.params || ''})`
     : member.name
   // False positive: displayName is passed through escapeXml() (see packages/core/src/multiline-utils.ts),
   // which escapes &, <, >, ", ' before interpolation, so this is not raw/unescaped HTML.
-  spans.push(`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
+  spans.push(f`<tspan fill="${secondary}">${escapeXml(displayName)}</tspan>`) // nosemgrep: javascript.express.security.injection.raw-html-format.raw-html-format
 
   if (member.type) {
-    spans.push(`<tspan fill="${faint}">: </tspan>`)
-    spans.push(`<tspan fill="${muted}">${escapeXml(member.type)}</tspan>`)
+    spans.push(f`<tspan fill="${faint}">: </tspan>`)
+    spans.push(f`<tspan fill="${muted}">${escapeXml(member.type)}</tspan>`)
   }
 
   return (
-    `<text x="${x}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
-    `font-size="${CLS_FONT.memberSize}" font-weight="${CLS_FONT.memberWeight}"${fontStyle}${decoration}>` +
-    `${spans.join('')}</text>`
+    f`<text x="${x}" y="${y}" class="mono" dy="${TEXT_BASELINE_SHIFT}" ` +
+    f`font-size="${CLS_FONT.memberSize}" font-weight="${CLS_FONT.memberWeight}"${fontStyle}${decoration}>` +
+    f`${spans.join('')}</text>`
   )
 }
 
@@ -408,33 +439,33 @@ function renderNote(note: PositionedClassNote, fontSizes: FontSizes): string {
   const { x, y, width: w, height: h } = note
   const forAttr =
     note.forClass !== undefined
-      ? ` data-for="${escapeAttr(note.forClass)}"`
+      ? f` data-for="${escapeAttr(note.forClass)}"`
       : ''
 
   // Note body: (x,y) → (x+w-fold,y) → (x+w,y+fold) → (x+w,y+h) → (x,y+h)
   const bodyPoints = [
-    `${x},${y}`,
-    `${x + w - NOTE_FOLD},${y}`,
-    `${x + w},${y + NOTE_FOLD}`,
-    `${x + w},${y + h}`,
-    `${x},${y + h}`,
+    f`${x},${y}`,
+    f`${x + w - NOTE_FOLD},${y}`,
+    f`${x + w},${y + NOTE_FOLD}`,
+    f`${x + w},${y + h}`,
+    f`${x},${y + h}`,
   ].join(' ')
   const foldPoints =
-    `${x + w - NOTE_FOLD},${y} ${x + w},${y + NOTE_FOLD} ` +
-    `${x + w - NOTE_FOLD},${y + NOTE_FOLD}`
+    f`${x + w - NOTE_FOLD},${y} ${x + w},${y + NOTE_FOLD} ` +
+    f`${x + w - NOTE_FOLD},${y + NOTE_FOLD}`
 
   return (
-    `<g class="class-note"${forAttr}>` +
-    `\n  <polygon points="${bodyPoints}" ` +
-    `fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
-    `\n  <polygon points="${foldPoints}" ` +
-    `fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
-    `\n  ${renderMultilineText(
+    f`<g class="class-note"${forAttr}>` +
+    f`\n  <polygon points="${bodyPoints}" ` +
+    f`fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    f`\n  <polygon points="${foldPoints}" ` +
+    f`fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    f`\n  ${renderMultilineText(
       note.text,
       x + w / 2,
       y + h / 2,
       fontSizes.edgeLabel,
-      `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
     )}` +
     `\n</g>`
   )
@@ -446,14 +477,14 @@ function renderNote(note: PositionedClassNote, fontSizes: FontSizes): string {
  */
 function renderNoteLink(note: PositionedClassNote): string {
   if (!note.linkPoints || note.linkPoints.length < 2) return ''
-  const pathData = note.linkPoints.map((p) => `${p.x},${p.y}`).join(' ')
+  const pathData = note.linkPoints.map((p) => f`${p.x},${p.y}`).join(' ')
   const forAttr =
     note.forClass !== undefined
-      ? ` data-for="${escapeAttr(note.forClass)}"`
+      ? f` data-for="${escapeAttr(note.forClass)}"`
       : ''
   return (
-    `<polyline class="class-note-link"${forAttr} points="${pathData}" ` +
-    `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}" stroke-dasharray="2 3" />`
+    f`<polyline class="class-note-link"${forAttr} points="${pathData}" ` +
+    f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}" stroke-dasharray="2 3" />`
   )
 }
 
@@ -468,7 +499,7 @@ function renderNoteLink(note: PositionedClassNote): string {
 function renderRelationship(rel: PositionedClassRelationship): string {
   if (rel.points.length < 2) return ''
 
-  const pathData = rel.points.map((p) => `${p.x},${p.y}`).join(' ')
+  const pathData = rel.points.map((p) => f`${p.x},${p.y}`).join(' ')
   const isDashed = rel.type === 'dependency' || rel.type === 'realization'
   const dashArray = isDashed ? ' stroke-dasharray="6 4"' : ''
 
@@ -484,24 +515,26 @@ function renderRelationship(rel: PositionedClassRelationship): string {
   // - data-label: relationship label if present
   const dataAttrs = [
     'class="class-relationship"',
-    `data-from="${escapeAttr(rel.from)}"`,
-    `data-to="${escapeAttr(rel.to)}"`,
-    `data-type="${rel.type}"`,
-    `data-marker-at="${rel.markerAt}"`,
+    f`data-from="${escapeAttr(rel.from)}"`,
+    f`data-to="${escapeAttr(rel.to)}"`,
+    f`data-type="${rel.type}"`,
+    f`data-marker-at="${rel.markerAt}"`,
   ]
   if (rel.label) {
-    dataAttrs.push(`data-label="${escapeAttr(rel.label)}"`)
+    dataAttrs.push(f`data-label="${escapeAttr(rel.label)}"`)
   }
   if (rel.fromCardinality) {
-    dataAttrs.push(`data-from-cardinality="${escapeAttr(rel.fromCardinality)}"`)
+    dataAttrs.push(
+      f`data-from-cardinality="${escapeAttr(rel.fromCardinality)}"`,
+    )
   }
   if (rel.toCardinality) {
-    dataAttrs.push(`data-to-cardinality="${escapeAttr(rel.toCardinality)}"`)
+    dataAttrs.push(f`data-to-cardinality="${escapeAttr(rel.toCardinality)}"`)
   }
 
   return (
-    `<polyline ${dataAttrs.join(' ')} points="${pathData}" fill="none" stroke="var(--_line)" ` +
-    `stroke-width="${STROKE_WIDTHS.connector}"${dashArray}${markers} />`
+    f`<polyline ${dataAttrs.join(' ')} points="${pathData}" fill="none" stroke="var(--_line)" ` +
+    f`stroke-width="${STROKE_WIDTHS.connector}"${dashArray}${markers} />`
   )
 }
 
@@ -519,9 +552,9 @@ function getRelationshipMarkers(
   if (!markerId) return ''
 
   if (markerAt === 'from') {
-    return ` marker-start="url(#${markerId})"`
+    return f` marker-start="url(#${markerId})"`
   } else {
-    return ` marker-end="url(#${markerId})"`
+    return f` marker-end="url(#${markerId})"`
   }
 }
 
@@ -562,7 +595,7 @@ function renderRelationshipLabels(
         pos.x,
         pos.y - 8,
         fontSizes.edgeLabel,
-        `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -578,7 +611,7 @@ function renderRelationshipLabels(
         p.x + offset.x,
         p.y + offset.y,
         fontSizes.edgeLabel,
-        `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }
@@ -594,7 +627,7 @@ function renderRelationshipLabels(
         p.x + offset.x,
         p.y + offset.y,
         fontSizes.edgeLabel,
-        `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+        f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
       ),
     )
   }

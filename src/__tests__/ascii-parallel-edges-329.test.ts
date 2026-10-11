@@ -36,7 +36,7 @@
  * function's own doc for the full reasoning.
  */
 import { describe, it, expect } from 'vitest'
-import { parseMermaid } from '../parser.ts'
+import { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 import { convertToAsciiGraph } from '../../packages/ascii-renderer/src/converter.ts'
 import { createMapping } from '../../packages/ascii-renderer/src/grid.ts'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
@@ -101,7 +101,8 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|First Arrow| B
-    A -->|Second Arrow| B`,
+    A -->|Second Arrow| B
+    A -->|Third Arrow| B`,
       'LR',
     )
     const [first, second] = edgesBetween(graph, 'A', 'B')
@@ -114,7 +115,8 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|First Arrow| B
-    A -->|Second Arrow| B`,
+    A -->|Second Arrow| B
+    A -->|Third Arrow| B`,
       'LR',
     )
     const [first, second] = edgesBetween(graph, 'A', 'B')
@@ -162,11 +164,12 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|Labeled| B
+    A --> B
     A --> B`,
       'LR',
     )
     const edges = edgesBetween(graph, 'A', 'B')
-    expect(edges).toHaveLength(2)
+    expect(edges).toHaveLength(3)
     expect(pathKey(edges[0]!.path)).not.toBe(pathKey(edges[1]!.path))
   })
 
@@ -181,11 +184,16 @@ describe('parallel edges between the same node pair (#329)', () => {
     const graph = buildGraph(
       `flowchart LR
     A -->|Solid| B
-    A -.->|Dotted| B`,
+    A -.->|Dotted| B
+    A -->|Again| B`,
       'LR',
     )
     const edges = edgesBetween(graph, 'A', 'B')
-    expect(edges.map((e) => e.style).sort()).toEqual(['dotted', 'solid'])
+    expect(edges.map((e) => e.style).sort()).toEqual([
+      'dotted',
+      'solid',
+      'solid',
+    ])
     expect(pathKey(edges[0]!.path)).not.toBe(pathKey(edges[1]!.path))
   })
 
@@ -218,11 +226,16 @@ describe('parallel edges between the same node pair (#329)', () => {
     )
     const edges = edgesBetween(graph, 'A', 'B')
     expect(edges).toHaveLength(2)
+    expect(edges.some((e) => e.bundle)).toBe(false)
     // Before the canBundle fix, this exact degenerate case (both "fan-in"
     // and "fan-out" candidates share not just one endpoint but both) could
     // be folded into a single bundle/junction, visually merging the two
-    // edges into what looks like one line.
-    expect(pathKey(edges[0]!.path)).not.toBe(pathKey(edges[1]!.path))
+    // edges into what looks like one line. Since #1394 the two edges share
+    // their routed path and are drawn side by side by port-offsets.ts.
+    const out = renderMermaidASCII('flowchart TD\n  A --> B\n  A --> B', {
+      colorMode: 'none',
+    })
+    expect(out.split('\n').some((l) => l.trim() === '│ │')).toBe(true)
   })
 
   it('a self-loop is not affected by parallel-lane assignment', () => {

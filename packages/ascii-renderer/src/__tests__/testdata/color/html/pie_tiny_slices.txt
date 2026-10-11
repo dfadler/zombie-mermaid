@@ -1,0 +1,20 @@
+pie showData title Browser share
+  "Chrome" : 640
+  "Safari" : 190
+  "Firefox" : 120
+  "Edge" : 45
+  "Opera" : 4
+  "Lynx" : 1
+  "Netscape" : 0
+---
+                   <span style="color:#27272a">Browser share</span>
+
+<span style="color:#a1a1aa">[</span><span style="color:#3b82f6;background:#3b82f6">████████████████████████████████</span><span style="color:#0d5ba5">▓▓▓▓▓▓▓▓▓▓</span><span style="color:#5fb4f2">▒▒▒▒▒▒</span><span style="color:#0a5076">░░</span><span style="color:#a1a1aa">]</span>
+
+  <span style="color:#3b82f6;background:#3b82f6">█</span> <span style="color:#27272a">Chrome [640]</span>    <span style="color:#27272a"> 64%</span>
+  <span style="color:#0d5ba5">▓</span> <span style="color:#27272a">Safari [190]</span>    <span style="color:#27272a"> 19%</span>
+  <span style="color:#5fb4f2">▒</span> <span style="color:#27272a">Firefox [120]</span>   <span style="color:#27272a"> 12%</span>
+  <span style="color:#0a5076">░</span> <span style="color:#27272a">Edge [45]</span>       <span style="color:#27272a">  5%</span>
+  <span style="color:#92e0f6">·</span> <span style="color:#27272a">Opera [4]</span>
+  <span style="color:#0a5e76">·</span> <span style="color:#27272a">Lynx [1]</span>
+  <span style="color:#97f5f7">·</span> <span style="color:#27272a">Netscape [0]</span>

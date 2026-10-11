@@ -14,10 +14,11 @@
 //
 // So: walk what the files actually import, and assert the shape.
 //
-//   core            -> nothing in this repo, only `elkjs` (type-only)
+//   core            -> nothing at all (its ELK graph types are inlined, #1370)
 //   mermaid-parser  -> `@zombie-mermaid/core`, nothing else
 //   svg-renderer    -> `@zombie-mermaid/core`, `@zombie-mermaid/mermaid-parser`,
-//                      `elkjs`, and `entities`, nothing else
+//                      and `entities`, nothing else (`elkjs` is an optional
+//                      peer reached only through `registerElk()`, #1370)
 //
 // `svg-renderer` depending on `mermaid-parser` (added under #624) is a new
 // edge, not a violation of the sink property above: it is an ordinary,
@@ -26,13 +27,10 @@
 // `mermaid-parser` itself stays a sink exactly like `core` — it does not
 // import `svg-renderer` back.
 //
-// `core` and `mermaid-parser` may not reach back into `src/` by relative
-// path or by importing `zombie-mermaid` itself — the umbrella depends on
-// them, never the reverse. `svg-renderer` is the one exception, and only
-// through one known file: `registry.ts` reaches `parseMermaid` in the
-// umbrella's `src/parser.ts` (#1111), the same pre-existing boundary call
-// `ascii-renderer/src/flowchart.ts` already makes for the ASCII side — see
-// that describe block below for the full rationale.
+// `core`, `mermaid-parser` and `svg-renderer` may not reach back into `src/`
+// by relative path or by importing `zombie-mermaid` itself — the umbrella
+// depends on them, never the reverse (the flowchart/state parser moved into
+// `mermaid-parser` under #1318, removing the last such reach-through).
 
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -185,12 +183,12 @@ function escapingRelativeImports(pkg: string): string[] {
 }
 
 describe('@zombie-mermaid/core is a workspace sink', () => {
-  it('imports no workspace package and no npm dependency but elkjs', () => {
-    // `elkjs` is `import type { ElkNode }` in `types.ts` only — carried for
-    // `RenderOptions.layoutCache`'s shape and erased at compile time. Adding
-    // any *runtime* dependency here would land in `dist/ascii.js`, which is
-    // exactly what the `./ascii` subpath export (#300) exists to prevent.
-    expect(externalSpecifiers('core')).toEqual(['elkjs'])
+  it('imports no workspace package and no npm dependency', () => {
+    // Its ELK graph types are owned in `elk-types.ts` (#1370), so the
+    // published `.d.ts` needs no `elkjs`. Adding any *runtime* dependency
+    // here would land in `dist/ascii.js`, which is exactly what the `./ascii`
+    // subpath export (#300) exists to prevent.
+    expect(externalSpecifiers('core')).toEqual([])
   })
 
   it('never reaches outside its own src/ by relative path', () => {
@@ -223,26 +221,15 @@ describe('@zombie-mermaid/svg-renderer depends only on core and mermaid-parser',
     expect(externalSpecifiers('svg-renderer')).toEqual([
       '@zombie-mermaid/core',
       '@zombie-mermaid/mermaid-parser',
-      'elkjs',
       'entities',
     ])
   })
 
-  it('reaches outside its own src/ only through the known src/parser.ts front door', () => {
-    // Under #1111, `packages/svg-renderer/src/registry.ts` reaches
-    // `parseMermaid` in the umbrella's `../../../src/parser.ts` for
-    // flowchart/state parsing — the same pre-existing, deliberate boundary
-    // call `packages/ascii-renderer/src/flowchart.ts` already makes for the
-    // ASCII side (see that file's header and vite.config.package.ts's own
-    // header for why the build bundles it in directly). `src/parser.ts`
-    // itself only needs `@zombie-mermaid/core` and
-    // `@zombie-mermaid/mermaid-parser` (see the 'workspace package
-    // manifests' describe block below for ascii-renderer's equivalent
-    // check) — both already required by svg-renderer's own source, so no
-    // manifest change beyond `entities` above is needed for this escape.
-    expect(escapingRelativeImports('svg-renderer')).toEqual([
-      'packages/svg-renderer/src/registry.ts -> ../../../src/parser.ts',
-    ])
+  it('never reaches outside its own src/ by relative path', () => {
+    // `parseMermaid` (flowchart/state) lives in `@zombie-mermaid/mermaid-parser`
+    // since #1318, so svg-renderer no longer reaches into the umbrella's
+    // `src/` and the build no longer inlines a second copy of the parser.
+    expect(escapingRelativeImports('svg-renderer')).toEqual([])
   })
 })
 
@@ -302,18 +289,29 @@ describe('workspace package manifests', () => {
     }
   })
 
-  it('core additionally declares elkjs — type-only in source, but part of its own published public types', () => {
+  it('core declares no elkjs, and no dependencies at all', () => {
     const manifest = JSON.parse(
       readFileSync(resolve(PACKAGES, 'core', 'package.json'), 'utf8'),
     ) as { dependencies?: Record<string, string> }
-    expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual([
-      'elkjs',
-      ...externalValueSpecifiers('core'),
-    ])
+    expect(Object.keys(manifest.dependencies ?? {})).toEqual([])
   })
 
-  // `ascii-renderer` and `mcp` each bundle one (`packages/ascii-renderer/src/flowchart.ts`
-  // -> `../../../src/parser.ts`) or two (`packages/mcp/src/{server,tools/render-svg}.ts`
+  // #1370: elkjs is an OPTIONAL peer of the library, so a bundler consumer
+  // that never registers it never ships it, and `npm i` does not pull it in.
+  it('svg-renderer declares elkjs as an optional peer, not a dependency', () => {
+    const manifest = JSON.parse(
+      readFileSync(resolve(PACKAGES, 'svg-renderer', 'package.json'), 'utf8'),
+    ) as {
+      dependencies?: Record<string, string>
+      peerDependencies?: Record<string, string>
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>
+    }
+    expect(manifest.dependencies?.elkjs).toBeUndefined()
+    expect(manifest.peerDependencies?.elkjs).toBeDefined()
+    expect(manifest.peerDependenciesMeta?.elkjs?.optional).toBe(true)
+  })
+
+  // `mcp` bundles two files (`packages/mcp/src/{server,tools/render-svg}.ts`
   // -> `../../../src/{package-info,index}.ts`) files from *outside* their
   // own `packages/<name>/src/` — see vite.config.package.ts's header and
   // each package's own vite.config.ts for why (their build still compiles
@@ -323,7 +321,7 @@ describe('workspace package manifests', () => {
   // hand-traced transitive set instead of extending that scanner to follow
   // an out-of-package relative import (which `escapingRelativeImports`
   // above deliberately treats as a violation for the other three packages).
-  it('ascii-renderer declares every specifier its reach-through into src/parser.ts needs, on top of its own', () => {
+  it('ascii-renderer declares every specifier it needs', () => {
     const manifest = JSON.parse(
       readFileSync(resolve(PACKAGES, 'ascii-renderer', 'package.json'), 'utf8'),
     ) as { dependencies?: Record<string, string> }
@@ -343,7 +341,7 @@ describe('workspace package manifests', () => {
       '@zombie-mermaid/core',
       '@zombie-mermaid/mermaid-parser',
       '@zombie-mermaid/svg-renderer',
-      'entities',
+      'elkjs',
       'zod',
     ])
   })

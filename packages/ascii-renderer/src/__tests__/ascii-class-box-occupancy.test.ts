@@ -120,12 +120,12 @@ ${manyAttrs('b', 6)}
   Charlie --> Alpha`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectAllPresentOnce(ascii, [
-      '+ b0: String',
-      '+ b1: String',
-      '+ b2: String',
-      '+ b3: String',
-      '+ b4: String',
-      '+ b5: String',
+      '+ String b0',
+      '+ String b1',
+      '+ String b2',
+      '+ String b3',
+      '+ String b4',
+      '+ String b5',
     ])
   })
 
@@ -217,12 +217,12 @@ ${manyAttrs('b', 6)}
     ).toBe(true)
 
     expectAllPresentOnce(nonOverlapping, [
-      '+ b0: String',
-      '+ b1: String',
-      '+ b2: String',
-      '+ b3: String',
-      '+ b4: String',
-      '+ b5: String',
+      '+ String b0',
+      '+ String b1',
+      '+ String b2',
+      '+ String b3',
+      '+ String b4',
+      '+ String b5',
     ])
     expectNoBoxOverlap(nonOverlapping, [
       'Alpha',
@@ -232,12 +232,12 @@ ${manyAttrs('b', 6)}
       'Kid',
     ])
     expectAllPresentOnce(overlapping, [
-      '+ b0: String',
-      '+ b1: String',
-      '+ b2: String',
-      '+ b3: String',
-      '+ b4: String',
-      '+ b5: String',
+      '+ String b0',
+      '+ String b1',
+      '+ String b2',
+      '+ String b3',
+      '+ String b4',
+      '+ String b5',
     ])
     expectNoBoxOverlap(overlapping, ['Alpha', 'Mid', 'Charlie', 'Root'])
 
@@ -266,12 +266,12 @@ ${manyAttrs('b', 6)}
   Charlie --> Alpha : a rather long descriptive label`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectAllPresentOnce(ascii, [
-      '+ b0: String',
-      '+ b1: String',
-      '+ b2: String',
-      '+ b3: String',
-      '+ b4: String',
-      '+ b5: String',
+      '+ String b0',
+      '+ String b1',
+      '+ String b2',
+      '+ String b3',
+      '+ String b4',
+      '+ String b5',
     ])
     expect(ascii).toContain('a rather long descriptive label')
   })
@@ -339,12 +339,12 @@ ${manyAttrs('b', 6)}
   A --> C`
     const ascii = renderMermaidASCII(src, { useAscii: true })
     expectAllPresentOnce(ascii, [
-      '+ b0: String',
-      '+ b1: String',
-      '+ b2: String',
-      '+ b3: String',
-      '+ b4: String',
-      '+ b5: String',
+      '+ String b0',
+      '+ String b1',
+      '+ String b2',
+      '+ String b3',
+      '+ String b4',
+      '+ String b5',
     ])
   })
 

@@ -243,6 +243,71 @@ interface PlacedClass {
   height: number
 }
 
+// Namespace frames: a frame's border sits `FRAME_SIDE_PAD` columns outside
+// its member boxes (one blank column of padding, then the border), the top
+// border (which carries the title) two rows above, and the bottom border two
+// rows below. The gaps between boxes and levels grow by the matching amount
+// so a frame never needs more room than the gap it sits in.
+const FRAME_SIDE_PAD = 2
+const FRAME_TOP_PAD = 2
+const FRAME_BOTTOM_PAD = 2
+const FRAME_EXTRA_HGAP = FRAME_SIDE_PAD * 2
+const FRAME_EXTRA_VGAP = FRAME_TOP_PAD + FRAME_BOTTOM_PAD - 1
+
+/** A `namespace` block with at least one member class in the diagram. */
+interface AsciiNamespaceFrame {
+  name: string
+  /** Member class ids, including the notes attached to those classes. */
+  ids: string[]
+}
+
+/**
+ * Namespaces to frame. A class claimed by two namespaces stays in the first;
+ * unknown members and empty namespaces are dropped; a note attached to a
+ * member class joins that class's frame, since it sits right beside it.
+ */
+function resolveFrames(
+  diagram: ClassDiagram,
+  notesById: Map<string, ClassNote>,
+): AsciiNamespaceFrame[] {
+  const known = new Set(diagram.classes.map((c) => c.id))
+  const claimed = new Set<string>()
+  const frames: AsciiNamespaceFrame[] = []
+  for (const ns of diagram.namespaces) {
+    const ids: string[] = []
+    for (const id of ns.classIds) {
+      if (!known.has(id) || claimed.has(id)) continue
+      claimed.add(id)
+      ids.push(id)
+      for (const [noteId, note] of notesById) {
+        if (note.forClass === id) ids.push(noteId)
+      }
+    }
+    if (ids.length > 0) frames.push({ name: ns.name, ids })
+  }
+  return frames
+}
+
+/**
+ * Reorder one level's classes so each frame's members sit next to each
+ * other, at the position of the frame's first member. Order inside a frame,
+ * and among unframed classes, is unchanged.
+ */
+function groupByFrame(group: string[], frameOf: Map<string, number>): string[] {
+  const out: string[] = []
+  const emitted = new Set<number>()
+  for (const id of group) {
+    const f = frameOf.get(id)
+    if (f === undefined) {
+      out.push(id)
+    } else if (!emitted.has(f)) {
+      emitted.add(f)
+      out.push(...group.filter((other) => frameOf.get(other) === f))
+    }
+  }
+  return out
+}
+
 /** Per-render switches that aren't layout config (see `AsciiRenderOptions`). */
 export interface ClassAsciiOptions {
   /** Wrap each `click`-linked class's name in an OSC 8 hyperlink pair. */
@@ -267,11 +332,21 @@ export function renderClassAscii(
 
   if (diagram.classes.length === 0) return ''
 
+  const frames = resolveFrames(diagram, notesById)
+  const frameOf = new Map<string, number>()
+  for (const [i, fr] of frames.entries()) {
+    for (const id of fr.ids) frameOf.set(id, i)
+  }
+
   const useAscii = config.useAscii
   // See paddingOffset's doc comment (types.ts) for why these are an offset
   // from the padding defaults rather than the raw config values.
-  const hGap = paddingOffset(config.paddingX, DEFAULT_PADDING_X, 4, 1) // horizontal gap between class boxes
-  const vGap = paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 3, 1) // vertical gap between levels (enough for relationship lines)
+  const hGap =
+    paddingOffset(config.paddingX, DEFAULT_PADDING_X, 4, 1) +
+    (frames.length > 0 ? FRAME_EXTRA_HGAP : 0) // horizontal gap between class boxes
+  const vGap =
+    paddingOffset(config.paddingY, DEFAULT_PADDING_Y, 3, 1) +
+    (frames.length > 0 ? FRAME_EXTRA_VGAP : 0) // vertical gap between levels (enough for relationship lines)
 
   // --- Build box dimensions for each class ---
   const classSections = new Map<string, string[][]>()
@@ -374,6 +449,11 @@ export function renderClassAscii(
   const levelGroups: string[][] = Array.from({ length: maxLevel + 1 }, () => [])
   for (const cls of diagram.classes) {
     levelGroups[level.get(cls.id)!]!.push(cls.id)
+  }
+  if (frames.length > 0) {
+    for (const [i, g] of levelGroups.entries()) {
+      levelGroups[i] = groupByFrame(g, frameOf)
+    }
   }
 
   // When more than one relationship connects the same pair of classes —
@@ -775,13 +855,59 @@ export function renderClassAscii(
     currentY += maxH + vGap
   }
 
+  // --- Frame rectangles ---
+  // Each frame wraps the boxes of its members; the whole diagram shifts
+  // right/down so the outermost frame's border lands on the canvas.
+  interface FrameRect {
+    name: string
+    x0: number
+    y0: number
+    x1: number
+    y1: number
+  }
+  const frameRects: FrameRect[] = []
+  if (frames.length > 0) {
+    for (const p of placed.values()) {
+      p.x += FRAME_SIDE_PAD
+      p.y += FRAME_TOP_PAD
+    }
+    maxSlotEnd += FRAME_SIDE_PAD
+    for (const fr of frames) {
+      let minX = Infinity
+      let minY = Infinity
+      let maxX = -Infinity
+      let maxY = -Infinity
+      for (const id of fr.ids) {
+        const p = placed.get(id)
+        if (!p) continue
+        minX = Math.min(minX, p.x)
+        minY = Math.min(minY, p.y)
+        maxX = Math.max(maxX, p.x + p.width - 1)
+        maxY = Math.max(maxY, p.y + p.height - 1)
+      }
+      if (minX === Infinity) continue
+      const x0 = minX - FRAME_SIDE_PAD
+      // Wide enough for ` Title ` between the corners, plus a dash each side.
+      const x1 = Math.max(maxX + FRAME_SIDE_PAD, x0 + displayWidth(fr.name) + 5)
+      frameRects.push({
+        name: fr.name,
+        x0,
+        y0: minY - FRAME_TOP_PAD,
+        x1,
+        y1: maxY + FRAME_BOTTOM_PAD,
+      })
+    }
+  }
+
   // --- Create canvas ---
   let totalW = maxSlotEnd
+  for (const r of frameRects) totalW = Math.max(totalW, r.x1 + 1)
   let totalH = 0
   for (const p of placed.values()) {
     totalW = Math.max(totalW, p.x + p.width)
     totalH = Math.max(totalH, p.y + p.height)
   }
+  for (const r of frameRects) totalH = Math.max(totalH, r.y1 + 1)
 
   // Extra space for relationship lines that may go below/beside
   totalW += 4
@@ -1880,6 +2006,52 @@ export function renderClassAscii(
           }
         }
       }
+    }
+  }
+
+  // --- Draw namespace frames ---
+  // Drawn last, into blank cells only: a relationship that crosses a frame
+  // keeps its stroke (the frame border yields), and the title slides along
+  // the top border (widening the frame if it must) to stay clear of strokes.
+  for (const r of frameRects) {
+    const h = useAscii ? '-' : '─'
+    const v = useAscii ? '|' : '│'
+    const c = useAscii
+      ? { tl: '+', tr: '+', bl: '+', br: '+' }
+      : { tl: '┌', tr: '┐', bl: '└', br: '┘' }
+    const cells = toDisplayCells(` ${r.name} `)
+    const blank = (x: number): boolean => (canvas[x]?.[r.y0] ?? ' ') === ' '
+    // Leftmost start, one dash in from the corner, whose cells plus a dash
+    // each side hold no stroke.
+    let start = r.x0 + 2
+    while (
+      Array.from({ length: cells.length + 2 }, (_, i) => start - 1 + i).some(
+        (x) => !blank(x),
+      )
+    ) {
+      start++
+    }
+    r.x1 = Math.max(r.x1, start + cells.length + 1)
+    increaseSize(canvas, r.x1 + 1, r.y1 + 1)
+    increaseRoleCanvasSize(rc, r.x1 + 1, r.y1 + 1)
+
+    const put = (x: number, y: number, ch: string, role: CharRole): void => {
+      if (canvas[x]?.[y] === ' ') setC(x, y, ch, role)
+    }
+    for (let x = r.x0 + 1; x < r.x1; x++) {
+      put(x, r.y0, h, 'border')
+      put(x, r.y1, h, 'border')
+    }
+    for (let y = r.y0 + 1; y < r.y1; y++) {
+      put(r.x0, y, v, 'border')
+      put(r.x1, y, v, 'border')
+    }
+    put(r.x0, r.y0, c.tl, 'border')
+    put(r.x1, r.y0, c.tr, 'border')
+    put(r.x0, r.y1, c.bl, 'border')
+    put(r.x1, r.y1, c.br, 'border')
+    for (const [i, cell] of cells.entries()) {
+      if (canvas[start + i]?.[r.y0] === h) setC(start + i, r.y0, cell, 'text')
     }
   }
 

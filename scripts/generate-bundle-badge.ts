@@ -9,8 +9,10 @@
  * not "hand-edit a URL in README.md".
  *
  * Measures the gzipped size of `dist/index.js` — the main ESM entry point
- * (`import { renderMermaid } from 'zombie-mermaid'`), i.e. the number most
- * consumers actually experience. This intentionally does *not* duplicate
+ * (`import { renderMermaid } from 'zombie-mermaid'`) — together with the
+ * workspace packages it imports (see TARGETS below), i.e. the number most
+ * consumers actually experience, plus the same figure for each standalone
+ * renderer package. This intentionally does *not* duplicate
  * scripts/check-bundle-size.ts's multi-file budget/gate logic (added by
  * issue #293, gzip-checking dist/index.{js,cjs}, dist/ascii.{js,cjs}, and
  * dist/cli.js against bundle-size-budget.json) — that script's job is
@@ -28,40 +30,147 @@
  * badges/bundle-size.json back to main if the number changed.
  */
 
+import { build } from 'esbuild'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
-const ENTRY_POINT = 'dist/index.js'
-const OUTPUT_PATH = 'badges/bundle-size.json'
+// One badge per published package that advertises a size. Since the monorepo
+// split, each package's `dist/index.js` is a thin entry that imports the
+// other workspace packages as externals, so a package's own file understates
+// what a consumer installs (the umbrella's is ~4 KB). Each badge therefore
+// gzips the package's entry concatenated with the entries of every
+// `@zombie-mermaid/*` package it (transitively) imports. Third-party
+// dependencies are counted via SVG_DEPS below (issue #1320). `elkjs` dominates
+// the SVG renderer's weight but is an OPTIONAL PEER since #1370: a consumer who
+// never registers it never ships it. So the badge reports the base figure and,
+// for the SVG-bearing badges, the figure with `elkjs` registered (ELK_DEP).
+const CORE = 'packages/core/dist/index.js'
+const PARSER = 'packages/mermaid-parser/dist/index.js'
+const ASCII = 'packages/ascii-renderer/dist/index.js'
+const SVG = 'packages/svg-renderer/dist/index.js'
+
+// `elkjs` is the single pre-bundled UMD file a consumer registers via
+// `registerElk()`, so it can't be tree-shaken and is counted whole.
+const ELK_DEP = { kind: 'file', specifier: 'elkjs/lib/elk.bundled.js' } as const
+
+// Always-shipped third-party runtime dependencies of the SVG renderer,
+// resolved from its own package.json (pnpm doesn't hoist them to the root).
+// `entities` is a library of many entry points of which the
+// renderer imports only `decodeXML` (packages/svg-renderer/src/index.ts), so it
+// is bundled and minified with just those exports, the way a consumer's bundler
+// would tree-shake it (whole-build gzip counted ~35 KB of code nobody ships).
+// Keep `exports` in sync with the renderer's actual imports from `entities`
+// (enforced by __tests__/bundle-badge-entities-exports.test.ts).
+const SVG_DEPS = [
+  { kind: 'tree-shaken', specifier: 'entities', exports: ['decodeXML'] },
+] as const
+
+type Dep = (typeof SVG_DEPS)[number] | typeof ELK_DEP
+
+const svgRequire = createRequire(
+  new URL('../packages/svg-renderer/package.json', import.meta.url),
+)
+
+const SVG_PACKAGE_DIR = dirname(
+  fileURLToPath(
+    new URL('../packages/svg-renderer/package.json', import.meta.url),
+  ),
+)
+
+async function readDep(dep: Dep): Promise<Buffer[]> {
+  if (dep.kind === 'file') {
+    return [await readFile(svgRequire.resolve(dep.specifier))]
+  }
+  const result = await build({
+    stdin: {
+      contents: `export { ${dep.exports.join(', ')} } from '${dep.specifier}'`,
+      // Resolve from the SVG renderer's own node_modules (pnpm doesn't hoist).
+      resolveDir: SVG_PACKAGE_DIR,
+    },
+    bundle: true,
+    minify: true,
+    format: 'esm',
+    platform: 'neutral',
+    mainFields: ['module', 'main'],
+    conditions: ['import'],
+    write: false,
+    logLevel: 'silent',
+  })
+  return result.outputFiles.map((f) => Buffer.from(f.contents))
+}
+
+const TARGETS = [
+  {
+    entries: ['dist/index.js', CORE, PARSER, ASCII, SVG],
+    deps: SVG_DEPS,
+    withElk: true,
+    output: 'badges/bundle-size.json',
+    label: 'zombie-mermaid gzip (incl. deps)',
+  },
+  {
+    entries: [ASCII, CORE, PARSER],
+    deps: [] as readonly Dep[],
+    withElk: false,
+    output: 'badges/bundle-size-ascii-renderer.json',
+    label: 'ascii-renderer gzip',
+  },
+  {
+    entries: [SVG, CORE, PARSER],
+    deps: SVG_DEPS,
+    withElk: true,
+    output: 'badges/bundle-size-svg-renderer.json',
+    label: 'svg-renderer gzip (incl. deps)',
+  },
+]
 
 function fmtKB(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`
 }
 
-let raw: Buffer
-try {
-  raw = await readFile(new URL(`../${ENTRY_POINT}`, import.meta.url))
-} catch {
-  console.error(`Could not read ${ENTRY_POINT} — run \`pnpm run build\` first.`)
-  process.exit(1)
-}
-
-const gzipSize = gzipSync(raw).length
-const message = fmtKB(gzipSize)
-
-// shields.io endpoint badge schema: https://shields.io/badges/endpoint-badge
-const badge = {
-  schemaVersion: 1,
-  label: 'bundle size (gzip)',
-  message,
-  color: 'blue',
-}
-
 await mkdir(new URL('../badges', import.meta.url), { recursive: true })
-await writeFile(
-  new URL(`../${OUTPUT_PATH}`, import.meta.url),
-  JSON.stringify(badge, null, 2) + '\n',
-  'utf-8',
-)
 
-console.log(`${ENTRY_POINT}: ${message} gzipped -> wrote ${OUTPUT_PATH}`)
+for (const { entries, deps, withElk, output, label } of TARGETS) {
+  const parts: Buffer[] = []
+  for (const entry of entries) {
+    try {
+      parts.push(await readFile(new URL(`../${entry}`, import.meta.url)))
+    } catch {
+      console.error(`Could not read ${entry} — run \`pnpm run build\` first.`)
+      process.exit(1)
+    }
+  }
+
+  for (const dep of deps) {
+    try {
+      parts.push(...(await readDep(dep)))
+    } catch {
+      console.error(
+        `Could not read dependency ${dep.specifier} — run \`pnpm install\` first.`,
+      )
+      process.exit(1)
+    }
+  }
+
+  const base = fmtKB(gzipSync(Buffer.concat(parts)).length)
+  let message = base
+  if (withElk) {
+    const withElkParts = [...parts, ...(await readDep(ELK_DEP))]
+    message = `${base} (${fmtKB(gzipSync(Buffer.concat(withElkParts)).length)} with elkjs)`
+  }
+
+  // shields.io endpoint badge schema: https://shields.io/badges/endpoint-badge
+  const badge = { schemaVersion: 1, label, message, color: 'blue' }
+
+  await writeFile(
+    new URL(`../${output}`, import.meta.url),
+    JSON.stringify(badge, null, 2) + '\n',
+    'utf-8',
+  )
+
+  console.log(
+    `${label}: ${message} (${entries.length} entries, ${deps.length} deps) -> wrote ${output}`,
+  )
+}

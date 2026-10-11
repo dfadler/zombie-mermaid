@@ -111,9 +111,9 @@ describe('ASCII class diagram — single-parent x-alignment (issue #971)', () =>
     const animal = findBoxRect(ascii, 'Animal')
     const dog = findBoxRect(ascii, 'Dog')
     const cat = findBoxRect(ascii, 'Cat')
-    expect(animal).toEqual({ x0: 0, x1: 17, y0: 0, y1: 6 })
-    expect(dog).toEqual({ x0: 0, x1: 18, y0: 10, y1: 16 })
-    expect(cat).toEqual({ x0: 23, x1: 42, y0: 10, y1: 16 })
+    expect(animal).toEqual({ x0: 0, x1: 16, y0: 0, y1: 6 })
+    expect(dog).toEqual({ x0: 0, x1: 17, y0: 10, y1: 16 })
+    expect(cat).toEqual({ x0: 22, x1: 40, y0: 10, y1: 16 })
   })
 
   it('two independent single-parent children at the same level both align, and compaction keeps them from overlapping', () => {

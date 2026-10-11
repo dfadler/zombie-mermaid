@@ -24,10 +24,11 @@ import type {
   AsciiSubgraph,
   EdgeBundle,
 } from './types.ts'
-import { mergeCanvases, firstClaimWins, write } from './canvas.ts'
-import type { RoleCanvas, CharRole } from './types.ts'
+import { mergeCanvases, firstClaimWins, scanBounds, write } from './canvas.ts'
+import type { RoleCanvas, CharRole, LabelRect } from './types.ts'
 import { setRole } from './canvas.ts'
-import { drawArrow } from './draw-arrows.ts'
+import { drawArrow, labelInteriorSpaces } from './draw-arrows.ts'
+import { withPortShifts } from './port-offsets.ts'
 import {
   drawBundledEdgeSegment,
   drawBundleSharedPath,
@@ -37,7 +38,11 @@ import {
   drawBundledEdgeArrowheadStart,
   drawJunctionCharacter,
 } from './draw-bundles.ts'
-import { drawSubgraphBox, drawSubgraphLabel } from './draw-subgraphs.ts'
+import {
+  drawSubgraphBox,
+  drawSubgraphLabel,
+  isVerticalStroke,
+} from './draw-subgraphs.ts'
 
 export {
   drawNode,
@@ -77,8 +82,9 @@ function fillRolesFromCanvas(
   offset: DrawingCoord,
   role: CharRole,
 ): void {
-  for (let x = 0; x < canvas.length; x++) {
-    for (let y = 0; y < (canvas[0]?.length ?? 0); y++) {
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
       const char = canvas[x]?.[y]
       if (char && char !== ' ') {
         const rx = x + offset.x
@@ -106,6 +112,26 @@ function fillRolesFromCanvases(
   }
 }
 
+/** Bounding rectangle of a canvas's non-space cells, or null if it has none. */
+function textBounds(canvas: Canvas): LabelRect | null {
+  let rect: LabelRect | null = null
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
+      if (canvas[x]![y] === ' ') continue
+      rect = rect
+        ? {
+            x0: Math.min(rect.x0, x),
+            x1: Math.max(rect.x1, x),
+            y0: Math.min(rect.y0, y),
+            y1: Math.max(rect.y1, y),
+          }
+        : { x0: x, x1: x, y0: y, y1: y }
+    }
+  }
+  return rect
+}
+
 /**
  * Special handling for node boxes: border chars get 'border' role, text gets 'text' role.
  * Detects text by checking if character is alphanumeric or common punctuation.
@@ -117,8 +143,9 @@ function fillRolesForNodeBox(
 ): void {
   const isBorderChar = (c: string) => /^[┌┐└┘├┤┬┴┼│─╭╮╰╯+\-|.':]$/.test(c)
 
-  for (let x = 0; x < canvas.length; x++) {
-    for (let y = 0; y < (canvas[0]?.length ?? 0); y++) {
+  const [x0, y0, x1, y1] = scanBounds(canvas)
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
       const char = canvas[x]?.[y]
       if (char && char !== ' ') {
         const rx = x + offset.x
@@ -147,6 +174,14 @@ function fillRolesForNodeBox(
  * Also fills the roleCanvas with character roles for colored output.
  */
 export function drawGraph(graph: AsciiGraph): Canvas {
+  return withPortShifts(graph, () => drawGraphScoped(graph))
+}
+
+function drawGraphScoped(graph: AsciiGraph): Canvas {
+  const labelRects: LabelRect[] = []
+  graph.labelRects = labelRects
+  const nodeRects: LabelRect[] = []
+  graph.nodeRects = nodeRects
   const useAscii = graph.config.useAscii
   const zero: DrawingCoord = { x: 0, y: 0 }
 
@@ -171,6 +206,30 @@ export function drawGraph(graph: AsciiGraph): Canvas {
       )
       // Node boxes: detect border vs text characters
       fillRolesForNodeBox(graph.roleCanvas, node.drawing, node.drawingCoord)
+      if (node.labelRows) {
+        // Every non-space cell on a label row between the side borders is
+        // label text, even a `-` or `|` that isBorderChar would call a border.
+        const { x: ox, y: oy } = node.drawingCoord
+        const rect: LabelRect = {
+          x0: ox + 1,
+          x1: ox + node.drawing.length - 2,
+          y0: oy + node.labelRows.top,
+          y1: oy + node.labelRows.bottom,
+        }
+        labelRects.push(rect)
+        for (let x = rect.x0; x <= rect.x1; x++) {
+          for (let y = rect.y0; y <= rect.y1; y++) {
+            const ch = graph.canvas[x]?.[y]
+            if (ch && ch !== ' ') setRole(graph.roleCanvas, x, y, 'text')
+          }
+        }
+      }
+      nodeRects.push({
+        x0: node.drawingCoord.x,
+        x1: node.drawingCoord.x + node.drawing.length - 1,
+        y0: node.drawingCoord.y,
+        y1: node.drawingCoord.y + node.drawing[0]!.length - 1,
+      })
       node.drawn = true
     }
   }
@@ -323,13 +382,42 @@ export function drawGraph(graph: AsciiGraph): Canvas {
 
   graph.canvas = mergeCanvases(graph.canvas, zero, useAscii, ...labelCanvases)
   fillRolesFromCanvases(graph.roleCanvas, labelCanvases, zero, 'text')
+  // A space inside a label must stay blank, not let the stroke beneath show
+  // through it (#1348); mergeCanvases skips overlay spaces, so force them.
+  for (const edge of graph.edges) {
+    if (edge.bundle && edge.pathToJunction) continue
+    for (const { x, y } of labelInteriorSpaces(graph, edge)) {
+      write(graph.canvas, x, y, ' ')
+      setRole(graph.roleCanvas, x, y, 'text')
+    }
+  }
+  for (const labelC of labelCanvases) {
+    const rect = textBounds(labelC)
+    if (rect) labelRects.push(rect)
+  }
 
   // Draw subgraph labels last (on top)
   for (const sg of graph.subgraphs) {
     if (sg.nodes.length === 0) continue
-    const [labelCanvas, offset, footprint] = drawSubgraphLabel(sg, graph)
+    const [labelCanvas, offset, footprint] = drawSubgraphLabel(
+      sg,
+      graph,
+      (x, y) =>
+        isVerticalStroke(graph.canvas[x + sg.minX]?.[y + sg.minY]) &&
+        // continues below, so it is an edge passing through, not a stray glyph
+        (graph.canvas[x + sg.minX]?.[y + sg.minY + 1] ?? ' ') !== ' ',
+    )
     graph.canvas = mergeCanvases(graph.canvas, offset, useAscii, labelCanvas)
     fillRolesFromCanvas(graph.roleCanvas, labelCanvas, offset, 'text')
+    const titleRect = textBounds(labelCanvas)
+    if (titleRect) {
+      labelRects.push({
+        x0: titleRect.x0 + offset.x,
+        x1: titleRect.x1 + offset.x,
+        y0: titleRect.y0 + offset.y,
+        y1: titleRect.y1 + offset.y,
+      })
+    }
     // mergeCanvases treats an overlay's space characters as transparent (so
     // sparse edge/arrow layers don't blank each other out) — but the title's
     // own footprint should win outright, including cells whose character is

@@ -1,12 +1,16 @@
 {
   "name": "@zombie-mermaid/svg-renderer",
-  "version": "2.2.6",
+  "version": "5.0.1",
   "license": "MIT",
   "description": "SVG rendering primitives and the ELK-backed layout engine behind zombie-mermaid's SVG output.",
   "repository": {
     "type": "git",
     "url": "https://github.com/dfadler/zombie-mermaid",
     "directory": "packages/svg-renderer"
+  },
+  "homepage": "https://github.com/dfadler/zombie-mermaid#readme",
+  "bugs": {
+    "url": "https://github.com/dfadler/zombie-mermaid/issues"
   },
   "type": "module",
   "sideEffects": false,
@@ -30,14 +34,26 @@
     "provenance": true
   },
   "files": [
-    "src/",
     "dist/",
     "LICENSE"
   ],
   "dependencies": {
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mermaid-parser": "workspace:*",
-    "elkjs": "^0.11.0",
     "entities": "^7.0.1"
+  },
+  "peerDependencies": {
+    "elkjs": "^0.11.0"
+  },
+  "peerDependenciesMeta": {
+    "elkjs": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "elkjs": "^0.11.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

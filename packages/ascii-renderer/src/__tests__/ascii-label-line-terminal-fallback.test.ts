@@ -37,7 +37,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { determineLabelLine } from '../edge-routing.ts'
-import { Down, gridKey } from '../types.ts'
+import { Down } from '../types.ts'
 import type { AsciiEdge, AsciiGraph, AsciiNode } from '../types.ts'
 import { createGrid } from '../grid-occupancy.ts'
 
@@ -131,7 +131,7 @@ describe('determineLabelLine terminal-segment-exclusion fallback tiers', () => {
     // the only non-terminal segment available is then unusable, leaving
     // clearLaterSegments empty and forcing the fallback to clearSegments
     // (any segment clear of nodes, terminal or not).
-    graph.grid.add(gridKey({ x: 3, y: 0 }))
+    graph.grid.add(3, 0)
     // A cell wedged between the two edge nodes stands in for that
     // unrelated node's own footprint (not registered as a real AsciiNode —
     // clearOfNodes only consults grid occupancy, not node identity).

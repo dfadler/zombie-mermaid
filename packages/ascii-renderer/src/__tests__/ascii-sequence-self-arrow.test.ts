@@ -204,3 +204,112 @@ describe('ASCII sequence diagrams – self-message autonumber badge (issue #342)
     expect(result).toContain('Reflect')
   })
 })
+
+// ============================================================================
+// Self-message label vs the next participant's lifeline (issue #1387)
+//
+// The gap-sizing pass skipped self-messages, so a label wider than the default
+// gap was drawn over the next lifeline's column and erased it on every label
+// row. The `toContain('│')` checks in the #68 tests can't see that — the loop
+// wall is also a `│` — so these compare the exact lifeline column.
+// ============================================================================
+
+describe('ASCII sequence diagrams – self-message label clears the next lifeline (issue #1387)', () => {
+  // B's lifeline column: the last non-space glyph on the row directly below
+  // the last label row (the loop's top arm), where only the loop and the
+  // lifelines are drawn.
+  function lifelineCol(lines: string[], lastLabel: string): number {
+    const labelIdx = lines.findIndex((l) => l.includes(lastLabel))
+    return lines[labelIdx + 1]!.trimEnd().length - 1
+  }
+
+  const cases: [string, string[], boolean][] = [
+    ['multi-line label', ['line one', 'line two'], false],
+    ['single wide label', ['a rather long self-message label here'], false],
+    ['multi-line label, ASCII glyphs', ['line one', 'line two'], true],
+  ]
+
+  it.each(cases)(
+    'keeps the next lifeline unbroken: %s',
+    (_name, label, useAscii) => {
+      const lines = renderMermaidASCII(
+        `sequenceDiagram
+  participant A
+  participant B
+  A->>A: ${label.join('<br/>')}`,
+        { useAscii },
+      ).split('\n')
+      const col = lifelineCol(lines, label.at(-1)!)
+      const V = useAscii ? '|' : '│'
+
+      for (const text of label) {
+        const row = lines.find((l) => l.includes(text))!
+        expect(row[col]).toBe(V)
+        // The label ends before the lifeline, leaving a blank column.
+        expect(row.indexOf(text) + text.length).toBeLessThan(col)
+      }
+    },
+  )
+
+  it('widens the gap only as far as the label needs', () => {
+    const colFor = (label: string) =>
+      lifelineCol(
+        renderMermaidASCII(
+          `sequenceDiagram
+  participant A
+  participant B
+  A->>A: ${label}`,
+        ).split('\n'),
+        label,
+      )
+    const long = 'a rather long self-message label here'
+    expect(colFor(long)).toBeGreaterThan(colFor('hi'))
+    // Exactly: 2 columns of offset + label + 1 blank column past A (col 3).
+    expect(colFor(long)).toBe(3 + 2 + long.length + 1)
+  })
+
+  it('draws the label above the loop, with the loop intact below it', () => {
+    const lines = renderMermaidASCII(
+      `sequenceDiagram
+  participant A
+  A->>A: line one<br/>line two`,
+    ).split('\n')
+    const one = lines.findIndex((l) => l.includes('line one'))
+    const two = lines.findIndex((l) => l.includes('line two'))
+    expect(two).toBe(one + 1)
+    expect(lines[two + 1]).toContain('├───┐')
+    expect(lines[two + 2]).toMatch(/│ {3}│/)
+    expect(lines[two + 3]).toContain('◀───┘')
+    // The lifeline stays unbroken through the label rows.
+    expect(lines[one]![3]).toBe('│')
+    expect(lines[two]![3]).toBe('│')
+  })
+
+  it('accounts for the autonumber badge widening the loop', () => {
+    const lines = renderMermaidASCII(
+      `sequenceDiagram
+  autonumber
+  participant A
+  participant B
+  A->>A: line one<br/>line two`,
+    ).split('\n')
+    const col = lifelineCol(lines, 'line two')
+    for (const text of ['line one', 'line two']) {
+      const row = lines.find((l) => l.includes(text))!
+      expect(row[col]).toBe('│')
+      expect(row.indexOf(text) + text.length).toBeLessThan(col)
+    }
+  })
+
+  it('leaves the last participant (no right neighbour) unaffected', () => {
+    const result = renderMermaidASCII(
+      `sequenceDiagram
+  participant A
+  participant B
+  B->>B: line one<br/>line two`,
+    )
+    expect(result).toContain('line one')
+    expect(result).toContain('line two')
+    expect((result.match(/└───┘/g) || []).length).toBe(2)
+  })
+})

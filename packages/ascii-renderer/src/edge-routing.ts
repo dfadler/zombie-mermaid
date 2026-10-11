@@ -12,6 +12,7 @@ import type {
   AsciiEdge,
   AsciiGraph,
   AsciiNode,
+  ClusterExitPlan,
 } from './types.ts'
 import {
   Up,
@@ -28,9 +29,20 @@ import {
   requireCardinalDirection,
 } from './types.ts'
 import { routeEdge, mergePath } from './pathfinder.ts'
-import { getNodeSubgraph, requireGridCoord } from './grid.ts'
+import {
+  getNodeSubgraph,
+  gridToDrawingCoord,
+  requireGridCoord,
+} from './grid.ts'
+import { splitLines } from './multiline-utils.ts'
 import { displayWidth } from './display-width.ts'
-import { isOccupied, pathCells } from './grid-occupancy.ts'
+import {
+  buildClusterExitRoute,
+  buildClusterEntryRoute,
+  clusterLaneSideRoute,
+  type ClusterExitRoute,
+} from './cluster-boundary.ts'
+import { isOccupied, pathCells, type Grid } from './grid-occupancy.ts'
 
 // Re-exported for existing consumers (draw-arrows.ts, draw-lines.ts,
 // draw-bundles.ts, shapes/*.ts) that import dirEquals from this module —
@@ -113,7 +125,22 @@ export function determineStartAndEndDir(
       ? dirEquals(d, Left) || dirEquals(d, UpperLeft) || dirEquals(d, LowerLeft)
       : dirEquals(d, Up) || dirEquals(d, UpperLeft) || dirEquals(d, UpperRight)
 
-  if (dirEquals(d, LowerRight)) {
+  if (
+    graphDirection === 'LR' &&
+    edge.to.fanInCentered &&
+    (dirEquals(d, LowerRight) || dirEquals(d, UpperRight))
+  ) {
+    // A fan-in child centered between its parents (grid.ts `fanInCenter`):
+    // every parent leaves through its right face and enters the child's left
+    // face, so the paths meet in the gap column and share one arrowhead. The
+    // vertical offset here is half the parents' spread, not a reason to exit
+    // through a bottom/top face, which would grow the box and run a trunk
+    // under the parents' centers.
+    preferredDir = Right
+    preferredOppositeDir = Left
+    alternativeDir = Right
+    alternativeOppositeDir = Left
+  } else if (dirEquals(d, LowerRight)) {
     if (graphDirection === 'LR') {
       preferredDir = Down
       preferredOppositeDir = Left
@@ -246,14 +273,15 @@ function isCellInNodeBlock(node: AsciiNode, cell: GridCoord): boolean {
  *    Only a *different*, unrelated node's block is a genuine collision
  *    there.
  */
-function interiorCellsClearOfNodes(
+export function interiorCellsClearOfNodes(
   graph: AsciiGraph,
   cells: readonly GridCoord[],
   ownNodes: readonly AsciiNode[] = [],
+  grid: Grid = graph.grid,
 ): boolean {
   for (let i = 1; i < cells.length - 1; i++) {
     const cell = cells[i]!
-    if (!isOccupied(graph.grid, cell)) continue
+    if (!isOccupied(grid, cell)) continue
     if (ownNodes.some((n) => isCellInNodeBlock(n, cell))) continue
     return false
   }
@@ -317,6 +345,70 @@ function parallelGroupKey(edge: AsciiEdge): string {
 }
 
 /**
+ * Whether `group` (edges between one ordered pair of nodes) can run side by
+ * side on the two nodes' facing faces (#1394) instead of taking side lanes:
+ * unlabeled edges between nodes stacked in one grid column (or side by side in
+ * one grid row) with a free channel between them, on faces wide enough to hold
+ * one stroke per edge a stroke-spacing apart. `portShifts` (port-offsets.ts)
+ * then spreads the strokes. Labels (#1455) stagger onto rows of the gap; a
+ * vertical group with more label lines than rows keeps the lanes.
+ */
+function spreadsOnFaces(
+  graph: AsciiGraph,
+  group: readonly AsciiEdge[],
+): boolean {
+  const { from, to } = group[0]!
+  const a = requireGridCoord(from)
+  const b = requireGridCoord(to)
+  if (group.some((e) => e.from !== from || e.to !== to)) {
+    return false
+  }
+  if (group.some((e) => e.clusterSource || e.clusterTarget)) return false
+  // Defensive: a diagonal pair has a second parent/child toward its partner,
+  // which the edge check below already refuses; kept so the axis is never
+  // guessed for a pair on neither a shared row nor a shared column.
+  /* v8 ignore next */
+  if (a.x !== b.x && a.y !== b.y) return false
+  const vertical = a.x === b.x
+  const size = vertical ? graph.columnWidth : graph.rowHeight
+  const at = vertical ? a.x : a.y
+  const extent = [0, 1, 2].reduce((n, i) => n + size.get(at + i)!, 0)
+  if (extent < 2 * group.length + 1) return false
+  // #1455: labels on side-by-side vertical strokes stagger onto their own
+  // rows (a label wider than the 2-cell stroke spacing would overprint its
+  // neighbour), so the gap needs a plain-stroke row-pair clear at each end
+  // (arrowhead end: three) plus one row per label line.
+  if (vertical) {
+    const rows = group.reduce(
+      (n, e) => n + (e.text ? splitLines(e.text).length : 0),
+      0,
+    )
+    const top = gridToDrawingCoord(graph, { x: a.x, y: Math.min(a.y, b.y) + 2 })
+    const bottom = gridToDrawingCoord(graph, { x: a.x, y: Math.max(a.y, b.y) })
+    if (rows > bottom.y - top.y - 4) return false
+  }
+  // Nothing else may use the facing faces, which would put a stroke on top of
+  // the spread ones: every other edge at either node must leave from the far
+  // side of that node (a chain onward), never toward the partner or level.
+  const axis = vertical ? 'y' : 'x'
+  for (const e of graph.edges) {
+    if (group.includes(e) || e.from === e.to) continue
+    for (const [node, here, there] of [
+      [from, a, b],
+      [to, b, a],
+    ] as const) {
+      if (e.from !== node && e.to !== node) continue
+      const far = requireGridCoord(e.from === node ? e.to : e.from)
+      const towards = Math.sign(there[axis] - here[axis])
+      if (Math.sign(far[axis] - here[axis]) !== -towards) return false
+    }
+  }
+  // Any node between the two would be linked to one of them by an edge toward
+  // the other, which the loop above has already refused: the channel is clear.
+  return true
+}
+
+/**
  * Group edges that connect the same pair of nodes — two edges in the same
  * direction (`A -->|One| B` and `A -->|Two| B`), or, when the two nodes are
  * laid out side by side, an edge and its reverse-direction partner
@@ -357,11 +449,82 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
   }
 
   for (const group of groups.values()) {
-    if (group.length < 2) continue
+    if (group.length < 2 || spreadsOnFaces(graph, group)) continue
     const usedOffsets = new Set<number>()
     for (let i = 0; i < group.length; i++) {
       group[i]!.parallelLane = { index: i, total: group.length, usedOffsets }
     }
+  }
+}
+
+/**
+ * #1467 (LR only): labeled edges from different sources into one target can
+ * route onto the same under-row lane and final drop, so their labels cannot be
+ * told apart. After `edge` is routed, if its path shares a run (2+ cells,
+ * ignoring the two cells at each end) with an earlier labeled edge into the
+ * same target, tag it as a parallel-lane sibling and re-route it through its
+ * own lane (`buildParallelLanePath`). Unlabeled sharers are left alone: a
+ * shared trunk with one label stays readable. `lanes` holds per-target state
+ * (lane count and the shared `usedOffsets` set) for the whole layout pass.
+ */
+export function splitSharedLabeledLane(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  lanes: Map<AsciiNode, { count: number; usedOffsets: Set<number> }>,
+): void {
+  if (
+    graph.config.graphDirection !== 'LR' ||
+    edge.text.length === 0 ||
+    edge.bundle ||
+    edge.clusterSource ||
+    edge.clusterTarget ||
+    edge.from === edge.to
+  ) {
+    return
+  }
+  const inner = (e: AsciiEdge): Set<string> => {
+    const cells = pathCells(e.path).slice(2, -2)
+    return new Set(cells.map((c) => `${c.x},${c.y}`))
+  }
+  const mine = inner(edge)
+  // A straight run into the target's final approach is a plain tee whose
+  // branches are all visible (#1392); a run that bends or sits mid-path is
+  // the lane-and-drop that hides which label belongs to which edge.
+  const mineCells = pathCells(edge.path)
+  const last = mineCells[mineCells.length - 3]
+  const lastKey = last ? `${last.x},${last.y}` : ''
+  const isTee = (keys: string[]): boolean => {
+    const xs = new Set(keys.map((k) => k.split(',')[0]))
+    const ys = new Set(keys.map((k) => k.split(',')[1]))
+    return (xs.size === 1 || ys.size === 1) && keys.includes(lastKey)
+  }
+  for (const other of graph.edges) {
+    if (other === edge) break
+    if (other.to !== edge.to || other.text.length === 0) continue
+    if (other.from === edge.from || other.path.length === 0) continue
+    const shared = [...inner(other)].filter((k) => mine.has(k))
+    if (shared.length < 2 || isTee(shared)) continue
+    let state = lanes.get(edge.to)
+    if (!state) {
+      // Start at 1: the shared center path already holds the first lane row.
+      state = { count: 1, usedOffsets: new Set() }
+      lanes.set(edge.to, state)
+      // Lane siblings into this target (same-source groups, #329) must not
+      // land on a row a split lane takes: share one offset set among them.
+      for (const e of graph.edges) {
+        if (e.to !== edge.to || !e.parallelLane) continue
+        for (const o of e.parallelLane.usedOffsets) state.usedOffsets.add(o)
+        e.parallelLane.usedOffsets = state.usedOffsets
+      }
+    }
+    state.count++
+    edge.parallelLane = {
+      index: state.count,
+      total: Math.max(edge.parallelLane?.total ?? 0, state.count + 1),
+      usedOffsets: state.usedOffsets,
+    }
+    determinePath(graph, edge)
+    return
   }
 }
 
@@ -434,6 +597,8 @@ export function assignParallelEdgeLanes(graph: AsciiGraph): void {
 interface ParallelLaneRoute {
   path: GridCoord[]
   labelSegment: [GridCoord, GridCoord]
+  /** Set when the lane leaves/enters different faces than the caller asked for. */
+  faces?: { startDir: Direction; endDir: Direction }
 }
 
 function buildParallelLanePath(
@@ -502,6 +667,35 @@ function buildParallelLanePath(
     const laneMain = fromAttach.y + offset
     const laneCross = fromAttach.x + offset
 
+    // Candidate U ("side lane"): leave the source's side face and enter the
+    // target's matching side face (bottom in horizontal graphs, right in
+    // vertical ones), so this lane gets its own arrowhead instead of backing
+    // into the first edge's run, where the first edge's label hides the
+    // junction cell.
+    {
+      const sideDir = horizontalDeparture ? Down : Right
+      const fromSide = gridCoordDirection(requireGridCoord(edge.from), sideDir)
+      const toSide = gridCoordDirection(requireGridCoord(edge.to), sideDir)
+      const sideLabelSegment: [GridCoord, GridCoord] = horizontalDeparture
+        ? [
+            { x: fromSide.x, y: Math.max(fromSide.y, toSide.y) + offset - 1 },
+            { x: toSide.x, y: Math.max(fromSide.y, toSide.y) + offset - 1 },
+          ]
+        : [
+            { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: fromSide.y },
+            { x: Math.max(fromSide.x, toSide.x) + offset - 1, y: toSide.y },
+          ]
+      const sidePath = mergePath([fromSide, ...sideLabelSegment, toSide])
+      if (interiorCellsClearOfNodes(graph, pathCells(sidePath), ownNodes)) {
+        usedOffsets.add(offset)
+        return {
+          path: sidePath,
+          labelSegment: sideLabelSegment,
+          faces: { startDir: sideDir, endDir: sideDir },
+        }
+      }
+    }
+
     // Candidate A ("wide"): travel the offset lane across the *full*
     // node-to-node span (fromAttach.x..toAttach.x, or the vertical
     // equivalent). Its middle segment is always genuinely wide (it spans
@@ -517,7 +711,19 @@ function buildParallelLanePath(
           { x: laneCross, y: fromAttach.y },
           { x: laneCross, y: toAttach.y },
         ]
-    const wideCandidate = mergePath([fromAttach, ...wideLabelSegment, toAttach])
+    // End the lane with the same one-gutter-cell approach every other edge
+    // makes into its target (`toGutter` -> `toAttach`), instead of running
+    // the last leg along the target's own border, where it drew a stray
+    // arrowhead/junction on the border cell itself (#1230).
+    const wideCandidate = mergePath([
+      fromAttach,
+      wideLabelSegment[0],
+      horizontalDeparture
+        ? { x: toGutter.x, y: laneMain }
+        : { x: laneCross, y: toGutter.y },
+      toGutter,
+      toAttach,
+    ])
     if (interiorCellsClearOfNodes(graph, pathCells(wideCandidate), ownNodes)) {
       usedOffsets.add(offset)
       return { path: wideCandidate, labelSegment: wideLabelSegment }
@@ -626,6 +832,37 @@ function buildParallelLanePath(
 // ============================================================================
 
 /**
+ * Route for a lane sibling (`parallelLane.index > 0`) of an engaged cluster
+ * exit: the shared stub to the gutter, then a leg that ends on the target's
+ * side face (see `clusterLaneSideRoute`), so the lane's drop and label lie
+ * outside the cluster wall and its arrowhead sits beside the target's border
+ * rather than on it. Same shape as `buildClusterExitRoute`'s result, or null
+ * when no side route is clear.
+ */
+function buildClusterLaneRoute(
+  graph: AsciiGraph,
+  plan: ClusterExitPlan,
+  edge: AsciiEdge,
+): ClusterExitRoute | null {
+  const vertical = graph.config.graphDirection !== 'LR'
+  const startDir = vertical ? Down : Right
+  const face = gridCoordDirection(requireGridCoord(plan.anchor), startDir)
+  const side = clusterLaneSideRoute(graph, plan, edge)
+  // planClusterExits only engages a lane group whose siblings all have a
+  // side route, so this is null only when a style-conflict reroute has
+  // temporarily blocked a cell on it; the caller then routes the edge
+  // ordinarily, as it does when `buildClusterExitRoute` returns null.
+  /* v8 ignore next */
+  if (!side) return null
+  return {
+    path: [face, ...side.path],
+    startDir,
+    endDir: side.endDir,
+    labelSegment: side.labelSegment,
+  }
+}
+
+/**
  * Determine the path for an edge by trying two candidate routes (preferred + alternative)
  * and picking the shorter one. Sets edge.path, edge.startDir, edge.endDir.
  *
@@ -653,6 +890,62 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
     alternativeDir,
     alternativeOppositeDir,
   ] = determineStartAndEndDir(edge, effectiveDir)
+
+  // An edge leaving a cluster that engaged cluster-boundary routing (see
+  // cluster-boundary.ts) takes the cluster's shared exit instead of the
+  // ordinary search below. Dispatching here, in determinePath, rather than
+  // in createMapping's loop, means rerouteAroundStyleConflicts' re-calls
+  // keep the cluster shape too. The label is placed directly, like a
+  // parallel lane's, and determineLabelLine skips the edge — see its guard.
+  const clusterPlan = edge.clusterSource
+    ? graph.clusterExitPlans?.get(edge.clusterSource)
+    : undefined
+  if (clusterPlan?.edges.has(edge)) {
+    const route =
+      edge.parallelLane && edge.parallelLane.index > 0
+        ? buildClusterLaneRoute(graph, clusterPlan, edge)
+        : buildClusterExitRoute(graph, clusterPlan, edge)
+    if (route) {
+      edge.startDir = route.startDir
+      edge.endDir = route.endDir
+      edge.path = route.path
+      if (edge.text.length > 0) {
+        applyLabelLine(graph, edge, route.labelSegment, displayWidth(edge.text))
+      }
+      return
+    }
+    // The outside leg can no longer be routed (a style-conflict reroute
+    // blocked its way). Drop this edge from the plan so it, and
+    // determineLabelLine, treat it as an ordinary edge from here on.
+    clusterPlan.edges.delete(edge)
+    edge.labelLine = []
+  }
+
+  // An edge addressed to a subgraph id ends at the cluster's wall, not at
+  // the member the converter stood in for it. Falls through to ordinary
+  // routing when the cluster-entry shape doesn't fit (see
+  // buildClusterEntryRoute); a style-conflict reroute re-enters here.
+  if (edge.clusterTarget) {
+    const route = buildClusterEntryRoute(graph, edge)
+    if (route) {
+      edge.startDir = route.startDir
+      edge.endDir = route.endDir
+      edge.path = route.path
+      edge.clusterEntered = true
+      // The arrow runs on to the wall, past the gutter cell, so the
+      // label's column needs room for the text, the arrowhead and the wall.
+      const gutter = route.path[route.path.length - 1]!
+      if (edge.text.length > 0 && graph.config.graphDirection === 'LR') {
+        const current = graph.columnWidth.get(gutter.x) ?? 0
+        graph.columnWidth.set(
+          gutter.x,
+          Math.max(current, displayWidth(edge.text) + 5),
+        )
+      }
+      return
+    }
+    edge.clusterEntered = false
+  }
 
   // Edges after the first in a true-parallel (same source AND target) group
   // skip the normal preferred/alternative search entirely: that search
@@ -698,10 +991,44 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
       edge.parallelLane.index,
     )
     edge.path = route.path
+    if (route.faces) {
+      edge.startDir = route.faces.startDir
+      edge.endDir = route.faces.endDir
+    }
     if (edge.text.length > 0) {
       applyLabelLine(graph, edge, route.labelSegment, displayWidth(edge.text))
     }
     return
+  }
+
+  // A fan-in child centered between its parents sits diagonally from each,
+  // and the preferred route for every one of them ends on the child's top
+  // face, so two labeled edges share a path and one label is lost. Send a
+  // labeled parent down its own column and in through the child's near side.
+  if (
+    hasLabeledFanIn(graph, edge.to) &&
+    !dirEquals(preferredDir, alternativeDir)
+  ) {
+    const sideFrom = gridCoordDirection(
+      requireGridCoord(edge.from),
+      alternativeDir,
+    )
+    const sideTo = gridCoordDirection(
+      requireGridCoord(edge.to),
+      alternativeOppositeDir,
+    )
+    const sidePath = routeEdge(
+      graph,
+      sideFrom,
+      sideTo,
+      requireCardinalDirection(alternativeDir),
+    )
+    if (sidePath !== null) {
+      edge.startDir = alternativeDir
+      edge.endDir = alternativeOppositeDir
+      edge.path = sidePath
+      return
+    }
   }
 
   // Try preferred path — routeEdge tries an unobstructed direct L-shape
@@ -799,6 +1126,20 @@ export function determinePath(graph: AsciiGraph, edge: AsciiEdge): void {
   edge.path = expandDiagonalSegments([prefFrom, prefTo])
 }
 
+/**
+ * Whether `node` was centered between its parents on fan-in and at least one
+ * of the edges into it carries a label. Those edges route into the node's
+ * sides (see determinePath); an all-unlabeled fan-in bundles into one trunk
+ * instead.
+ */
+function hasLabeledFanIn(graph: AsciiGraph, node: AsciiNode): boolean {
+  return (
+    node.fanInCentered === true &&
+    !graph.edges.some((e) => e.to === node && e.clusterTarget) &&
+    graph.edges.some((e) => e.to === node && e.text.length > 0)
+  )
+}
+
 /** Check whether grid column `x` falls inside any node's reserved 3-column block. */
 function isNodeOccupiedColumn(graph: AsciiGraph, x: number): boolean {
   for (const node of graph.nodes) {
@@ -831,6 +1172,37 @@ function findNonNodeColumn(
 }
 
 /**
+ * What `determineLabelLine` needs to know about the *other* edges. Label
+ * lines are chosen once every path is routed, so an edge can tell which of
+ * its segments another edge also runs along (a label there would read as
+ * belonging to both, #1347) and which segments another label already holds.
+ */
+export interface LabelContext {
+  /** Edges whose path covers each grid cell. */
+  cover: Map<string, Set<AsciiEdge>>
+  /** Label segment each edge has been given so far. */
+  chosen: Map<AsciiEdge, [GridCoord, GridCoord]>
+}
+
+export function createLabelContext(graph: AsciiGraph): LabelContext {
+  const cover = new Map<string, Set<AsciiEdge>>()
+  const chosen = new Map<AsciiEdge, [GridCoord, GridCoord]>()
+  for (const edge of graph.edges) {
+    for (const cell of pathCells(expandDiagonalSegments(edge.path))) {
+      const key = `${cell.x},${cell.y}`
+      const set = cover.get(key)
+      if (set) set.add(edge)
+      else cover.set(key, new Set([edge]))
+    }
+    // Labels fixed during routing (cluster exits, parallel lanes) are taken.
+    if (edge.labelLine.length === 2) {
+      chosen.set(edge, [edge.labelLine[0]!, edge.labelLine[1]!])
+    }
+  }
+  return { cover, chosen }
+}
+
+/**
  * Find the best line segment in an edge's path to place a label on.
  * Prefers vertical segments for TD/BT graphs and horizontal for LR/RL to avoid
  * label collisions when multiple edges share initial segments.
@@ -845,11 +1217,37 @@ function findNonNodeColumn(
  * function's doc) — re-running the search here would risk picking a
  * different, sibling-colliding segment instead.
  */
-export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
+export function determineLabelLine(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  ctx?: LabelContext,
+): void {
   if (edge.text.length === 0) return
   if (edge.parallelLane && edge.parallelLane.index > 0) return
+  // Likewise a cluster-exit edge: determinePath placed its label directly
+  // on the first segment outside the cluster. The width-based search below
+  // would centre it on the stub, i.e. on the cluster wall.
+  if (
+    edge.clusterSource &&
+    graph.clusterExitPlans?.get(edge.clusterSource)?.edges.has(edge)
+  ) {
+    return
+  }
 
   const lenLabel = displayWidth(edge.text)
+
+  // A side-entry route into a centered fan-in child (see determinePath) is
+  // an L whose horizontal leg is a single gap wide; the label goes on the
+  // vertical drop beside the parent, not on that stub.
+  if (
+    hasLabeledFanIn(graph, edge.to) &&
+    (dirEquals(edge.endDir, Left) || dirEquals(edge.endDir, Right)) &&
+    edge.path.length >= 2 &&
+    edge.path[0]!.x === edge.path[1]!.x
+  ) {
+    applyLabelLine(graph, edge, [edge.path[0]!, edge.path[1]!], lenLabel)
+    return
+  }
 
   // Every routed path is axis-aligned (A* is 4-directional and
   // tryDirectPath builds explicit L-shapes), with one exception:
@@ -927,12 +1325,49 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     (s) => s.width >= lenLabel && !isTerminalSegment(s) && clearOfNodes(s.line),
   )
 
+  // Segments a label would sit on, best first: not already holding another
+  // edge's label, then running along as few cells of other edges as possible.
+  // Without `ctx` (a caller that routes one edge at a time) nothing is known
+  // about the other edges, so every segment ranks equal and the original
+  // "closest to the target" order decides.
+  const ownEnds = new Set(
+    [edge.path[0], edge.path[edge.path.length - 1]].map((c) =>
+      c ? `${c.x},${c.y}` : '',
+    ),
+  )
+  const rank = (line: [GridCoord, GridCoord]): [number, number] => {
+    if (!ctx) return [0, 0]
+    const cells = pathCells(line)
+    let shared = 0
+    for (const cell of cells) {
+      const key = `${cell.x},${cell.y}`
+      if (ownEnds.has(key)) continue
+      const others = ctx.cover.get(key)
+      if (others && [...others].some((o) => o !== edge)) shared++
+    }
+    const keys = new Set(cells.map((c) => `${c.x},${c.y}`))
+    let taken = 0
+    for (const [other, held] of ctx.chosen) {
+      if (other === edge) continue
+      if (pathCells(held).some((c) => keys.has(`${c.x},${c.y}`))) taken = 1
+    }
+    return [taken, shared]
+  }
+  const byRank = (
+    a: { line: [GridCoord, GridCoord]; index: number },
+    b: { line: [GridCoord, GridCoord]; index: number },
+  ): number => {
+    const ra = rank(a.line)
+    const rb = rank(b.line)
+    return ra[0] - rb[0] || ra[1] - rb[1] || b.index - a.index
+  }
+
   let largestLine: [GridCoord, GridCoord]
 
   if (suitableSegments.length > 0) {
     // Prefer segments near the end of the path (closer to target)
     // This avoids the shared initial segments from source
-    suitableSegments.sort((a, b) => b.index - a.index)
+    suitableSegments.sort(byRank)
     largestLine = suitableSegments[0]!.line
   } else {
     // Fall back to any suitable segment, including a terminal one (the
@@ -944,11 +1379,53 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     // still slip through here; that's an accepted last-resort trade-off,
     // not a regression, since this tier only runs once every non-terminal
     // segment has already been ruled out.)
-    const fallbackSegments = segments.filter(
-      (s) => s.width >= lenLabel && clearOfNodes(s.line),
+    // A vertical segment no other edge runs along qualifies however narrow
+    // it is: its label goes beside the stroke (draw-arrows.ts), so the
+    // column's width is no limit, and it beats landing on a segment another
+    // edge shares (#1347).
+    const alone = (s: (typeof segments)[number]): boolean => {
+      if (!ctx || !s.isVertical) return false
+      // Widening a node's own column to make room would inflate its box.
+      if (isNodeOccupiedColumn(graph, s.line[0].x)) return false
+      const [taken, shared] = rank(s.line)
+      return taken === 0 && shared === 0
+    }
+    let fallbackSegments = segments.filter(
+      (s) => (s.width >= lenLabel || alone(s)) && clearOfNodes(s.line),
     )
+    // Every candidate already holds another edge's label: writing over it
+    // erases one of the two (#1392). A vertical segment nobody else uses
+    // still takes the label beside its stroke, even if that widens a node's
+    // own column; that beats losing a label.
+    if (
+      ctx &&
+      graph.config.graphDirection === 'LR' &&
+      fallbackSegments.length > 0 &&
+      fallbackSegments.every((s) => rank(s.line)[0] === 1)
+    ) {
+      // Its end cells are corners shared with the other path; only the
+      // interior decides whether a label already sits on it.
+      const holdsLabel = (line: [GridCoord, GridCoord]): boolean => {
+        const inner = new Set(
+          pathCells(line)
+            .slice(1, -1)
+            .map((c) => `${c.x},${c.y}`),
+        )
+        for (const [other, held] of ctx.chosen) {
+          if (other === edge) continue
+          if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) {
+            return true
+          }
+        }
+        return false
+      }
+      const free = segments.filter(
+        (s) => s.isVertical && clearOfNodes(s.line) && !holdsLabel(s.line),
+      )
+      if (free.length > 0) fallbackSegments = free
+    }
     if (fallbackSegments.length > 0) {
-      fallbackSegments.sort((a, b) => b.index - a.index)
+      fallbackSegments.sort(byRank)
       largestLine = fallbackSegments[0]!.line
     } else {
       // No segment both wide enough and clear of nodes — prefer the
@@ -978,7 +1455,27 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
           : clearSegments.length > 0
             ? clearSegments
             : segments
-      pool.sort((a, b) => b.width - a.width)
+      // A segment no other edge runs along comes first: a label on a shared
+      // one reads as belonging to every edge on it (#1347). Width decides
+      // between equals, as before.
+      const poolRank = (s: (typeof segments)[number]): [number, number] => {
+        const [taken, shared] = rank(s.line)
+        // A segment too short for the label whose every column belongs to a
+        // node can only be widened by inflating that node's box, so it comes
+        // last (a vertical one is a single such column).
+        const lo = Math.min(s.line[0].x, s.line[1].x)
+        const hi = Math.max(s.line[0].x, s.line[1].x)
+        let inflates = s.width < lenLabel
+        for (let x = lo; inflates && x <= hi; x++) {
+          if (!isNodeOccupiedColumn(graph, x)) inflates = false
+        }
+        return [taken, shared + (inflates ? 1000 : 0)]
+      }
+      pool.sort((a, b) => {
+        const ra = poolRank(a)
+        const rb = poolRank(b)
+        return ra[0] - rb[0] || ra[1] - rb[1] || b.width - a.width
+      })
       if (pool.length > 0) {
         largestLine = pool[0]!.line
       } else {
@@ -994,7 +1491,38 @@ export function determineLabelLine(graph: AsciiGraph, edge: AsciiEdge): void {
     }
   }
 
+  // #1413: two edges sharing a lane can pick the very same segment, and the
+  // later label then overwrites the earlier one. When the pick's interior
+  // already holds another edge's label, move to a vertical segment of this
+  // edge whose interior is free; its label goes beside the stroke.
+  if (ctx && graph.config.graphDirection !== 'LR') {
+    const holdsOther = (line: [GridCoord, GridCoord]): boolean => {
+      const inner = new Set(
+        pathCells(line)
+          .slice(1, -1)
+          .map((c) => `${c.x},${c.y}`),
+      )
+      // This edge isn't in `chosen` yet (labels fixed in routing return early).
+      for (const held of ctx.chosen.values()) {
+        if (pathCells(held).some((c) => inner.has(`${c.x},${c.y}`))) return true
+      }
+      return false
+    }
+    if (holdsOther(largestLine)) {
+      const free = segments.filter(
+        (s) =>
+          s.isVertical &&
+          !isTerminalSegment(s) &&
+          clearOfNodes(s.line) &&
+          !isNodeOccupiedColumn(graph, s.line[0].x) &&
+          !holdsOther(s.line),
+      )
+      if (free.length > 0) largestLine = free.sort(byRank)[0]!.line
+    }
+  }
+
   applyLabelLine(graph, edge, largestLine, lenLabel)
+  ctx?.chosen.set(edge, largestLine)
 }
 
 /**
@@ -1049,10 +1577,50 @@ function applyLabelLine(
   const idealX = minX + Math.floor((maxX - minX) / 2)
   const middleX = findNonNodeColumn(graph, minX, maxX, idealX)
 
-  const current = graph.columnWidth.get(middleX) ?? 0
-  graph.columnWidth.set(middleX, Math.max(current, lenLabel + 2))
+  // A segment already wide enough for the label needs no widening. When its
+  // only candidate column is a node's own, widening it anyway inflates that
+  // node's box (a long label on a short hop out of `Reconnecting` made the
+  // node and everything in its column ten cells wider, #1349).
+  const pairWidth = pairColumnWidth(graph, edge, lenLabel)
+  // A horizontal stroke's start arrowhead takes the first stroke cell (#1438),
+  // beside the end arrowhead's, so the label needs one more cell.
+  const horizontal = line[0].y === line[1].y
+  const need = lenLabel + 2 + (horizontal && edge.hasArrowStart ? 2 : 0)
+  // A vertical segment's label goes beside the stroke and needs the column's
+  // own width, so only a horizontal one is exempt.
+  const wideEnough =
+    horizontal &&
+    isNodeOccupiedColumn(graph, middleX) &&
+    pairWidth === 0 &&
+    calculateLineWidth(graph, line) >= need
+  if (!wideEnough) {
+    const current = graph.columnWidth.get(middleX) ?? 0
+    graph.columnWidth.set(middleX, Math.max(current, need, pairWidth))
+  }
 
   edge.labelLine = [line[0], line[1]]
+}
+
+/**
+ * #1284: a straight vertical reciprocal pair draws its two strokes one cell
+ * either side of the column centre with each label beside its own stroke
+ * (draw-arrows.ts's `strokeShift`), so the column needs a label's width plus
+ * the stroke and a blank cell on each side of the centre: `2 * (label + 2)`.
+ * 0 for any other edge.
+ */
+function pairColumnWidth(
+  graph: AsciiGraph,
+  edge: AsciiEdge,
+  lenLabel: number,
+): number {
+  const from = edge.from.gridCoord
+  const to = edge.to.gridCoord
+  if (!from || !to || from.x !== to.x || from.y === to.y) return 0
+  const partner = graph.edges.find(
+    (o) => o !== edge && o.from === edge.to && o.to === edge.from,
+  )
+  if (!partner) return 0
+  return 2 * (Math.max(lenLabel, displayWidth(partner.text)) + 2)
 }
 
 /** Calculate the total character width of a line segment by summing column widths. */

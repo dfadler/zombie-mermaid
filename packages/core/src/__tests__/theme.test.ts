@@ -131,30 +131,33 @@ describe('buildStyleBlock – font handling', () => {
   })
 })
 
-describe('buildStyleBlock – mono font (#1061)', () => {
+describe('buildStyleBlock – mono font embed (#1061, #1319)', () => {
+  // core ships no font data; the caller supplies the embed (svg-renderer's
+  // buildSvgStyleBlock supplies the real subset — see src/__tests__/styles.test.ts).
+  const embed = {
+    family: 'Test Mono',
+    faceCss:
+      "@font-face { font-family: 'Test Mono'; src: url(data:font/woff2;base64,AAAA) format('woff2'); }",
+  }
+
   it('never reaches out to Google Fonts for the .mono rule', () => {
-    const block = buildStyleBlock('Inter', true)
-    // The main `font` still gets its own Google Fonts @import (unrelated to
-    // this regression test), but nothing in the block should ever request
-    // JetBrains Mono from a third-party CDN.
-    expect(block).not.toContain('fonts.googleapis.com/css2?family=JetBrains')
+    const block = buildStyleBlock('Inter', embed)
+    expect(block).not.toContain('fonts.googleapis.com/css2?family=Test')
   })
 
-  it('embeds a self-hosted @font-face as a base64 woff2 data URI for the mono font', () => {
-    const block = buildStyleBlock('Inter', true)
-    expect(block).toContain('@font-face')
-    expect(block).toContain('data:font/woff2;base64,')
-    expect(block).toContain("font-family: 'JetBrains Mono NL';")
+  it('inlines the supplied @font-face verbatim', () => {
+    const block = buildStyleBlock('Inter', embed)
+    expect(block).toContain(`  ${embed.faceCss}`)
   })
 
-  it("leads the .mono rule's font stack with the self-hosted family name", () => {
-    const block = buildStyleBlock('Inter', true)
+  it("leads the .mono rule's font stack with the supplied family name", () => {
+    const block = buildStyleBlock('Inter', embed)
     expect(block).toContain(
-      "  .mono { font-family: 'JetBrains Mono NL', 'SF Mono', 'Fira Code', ui-monospace, monospace; }",
+      "  .mono { font-family: 'Test Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }",
     )
   })
 
-  it('emits neither the @font-face embed nor the .mono rule when hasMonoFont is false', () => {
+  it('emits neither the @font-face embed nor the .mono rule when mono is false', () => {
     const block = buildStyleBlock('Inter', false)
     expect(block).not.toContain('@font-face')
     expect(block).not.toContain('.mono')

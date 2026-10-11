@@ -1,0 +1,17 @@
+theme={"fg":"#a9b1d6","border":"#373949","line":"#3d59a1","arrow":"#7aa2f7","accent":"#7aa2f7","bg":"#1a1b26","corner":"#3d59a1","junction":"#373949"}
+pie title Time spent
+  accTitle: Time spent per activity
+  accDescr: Coding takes half the day, meetings a quarter.
+  "Coding" : 50
+  "Meetings" : 25
+  "Review" : 15
+  "Email" : 10
+---
+                     [38;5;146mTime spent[0m
+
+[38;5;59m[[0m[38;5;111m█████████████████████████[0m[38;5;75m▓▓▓▓▓▓▓▓▓▓▓▓▓[0m[38;5;25m▒▒▒▒▒▒▒[0m[38;5;117m░░░░░[0m[38;5;59m][0m
+
+  [38;5;111m█[0m [38;5;146mCoding[0m     [38;5;146m 50%[0m
+  [38;5;75m▓[0m [38;5;146mMeetings[0m   [38;5;146m 25%[0m
+  [38;5;25m▒[0m [38;5;146mReview[0m     [38;5;146m 15%[0m
+  [38;5;117m░[0m [38;5;146mEmail[0m      [38;5;146m 10%[0m

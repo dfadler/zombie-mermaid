@@ -1,6 +1,6 @@
 {
   "name": "zombie-mermaid",
-  "version": "2.2.6",
+  "version": "5.0.1",
   "license": "MIT",
   "description": "Render Mermaid diagrams as beautiful SVGs or ASCII art. Ultra-fast, fully themeable, zero DOM dependencies. Maintained fork of beautiful-mermaid.",
   "type": "module",
@@ -78,14 +78,13 @@
     "zombie-mermaid": "dist/cli.js"
   },
   "files": [
-    "src/",
     "dist/",
     "LICENSE",
     "README.md"
   ],
-  "packageManager": "pnpm@11.13.0",
+  "packageManager": "pnpm@11.13.1",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "test": "vitest run -c config/vitest.config.ts",
@@ -102,19 +101,24 @@
     "dev": "vite",
     "bench": "tsx scripts/bench.ts",
     "bench:compare": "tsx scripts/bench-compare.ts",
+    "bench:scaling": "tsx scripts/bench-scaling.ts",
+    "bench:label-placement": "tsx scripts/bench-label-placement.ts",
     "bench:core": "tsx scripts/bench-core.ts",
     "bench:mermaid-parser": "tsx scripts/bench-mermaid-parser.ts",
     "bench:svg-renderer": "tsx scripts/bench-svg-renderer.ts",
     "bench:ascii-renderer": "tsx scripts/bench-ascii-renderer.ts",
     "bench:package-compare": "tsx scripts/bench-package-compare.ts",
     "bench:history:append": "tsx scripts/bench-history-append.ts",
+    "metrics:history:append": "tsx scripts/metrics-history-append.ts",
     "bench:trend": "tsx scripts/bench-trend.ts",
     "bench:mcp": "tsx scripts/bench-mcp.ts",
+    "smoke:packed": "node scripts/smoke-test-packed.mjs",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
-    "build:mono-font": "tsx scripts/build-mono-font-subset.ts && prettier --write demo/components/generated/mono-font-subset.ts demo/styles.css packages/core/src/generated/mono-font-subset.ts",
+    "build:mono-font": "tsx scripts/build-mono-font-subset.ts && prettier --write demo/components/generated/mono-font-subset.ts demo/styles.css packages/svg-renderer/src/generated/mono-font-subset.ts",
     "generate:primitives-classes": "tsx scripts/generate-primitives-classes.ts && prettier --write demo/components/generated/primitives-classes.ts",
     "generate:logo-lockup": "tsx scripts/generate-logo-lockup.ts",
+    "docs:scripts": "tsx scripts/generate-development-scripts-doc.ts && prettier --write docs/development-scripts.md",
     "badge:bundle-size": "tsx scripts/generate-bundle-badge.ts",
     "visual-diff": "tsx scripts/visual-diff.ts",
     "form-diff": "tsx scripts/form-diff.ts",
@@ -133,7 +137,10 @@
     "dashboard": "scripts/tsx-css.sh packages/site/dashboard.ts",
     "dashboard:data": "tsx scripts/generate-dashboard-data.ts",
     "upstream:pr-candidates": "tsx scripts/list-upstream-pr-rescue-candidates.ts",
-    "audit:responsive": "tsx scripts/audit-responsive.ts"
+    "audit:responsive": "tsx scripts/audit-responsive.ts",
+    "layout:oracle": "tsx scripts/layout-oracle.ts",
+    "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md && prettier --write docs/layout-fidelity-scorecard.md",
+    "label:oracle": "tsx scripts/label-position-oracle.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
@@ -154,10 +161,11 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
     "@types/jsdom": "^30.0.0",
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.13.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitest/coverage-v8": "^4.1.11",
+    "@xterm/headless": "^6.0.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
@@ -172,7 +180,7 @@
     "shiki": "^3.19.0",
     "subset-font": "^2.7.0",
     "tsx": "^4.23.12",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.68.0",
     "unplugin-dts": "^1.0.3",
     "vite": "^8.2.2",

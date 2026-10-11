@@ -8,13 +8,15 @@ import type {
   PositionedNote,
   PositionedParticipantBox,
 } from '@zombie-mermaid/mermaid-parser'
-import { boxLabelHeight } from './layout.ts'
+import { ACTOR_LABEL_OFFSET, boxLabelHeight } from './layout.ts'
 import type { DiagramColors, SvgEmitOptions } from '@zombie-mermaid/core'
 import {
   svgOpenTag,
   buildStyleBlock,
   renderMultilineText,
+  measureMultilineText,
   escapeAttr,
+  f,
 } from '@zombie-mermaid/core'
 import { withDataSrc } from '../renderer.ts'
 import {
@@ -103,9 +105,11 @@ export function renderSequenceSvg(
     parts.push(renderBlock(block, fontSizes))
   }
 
-  // 2. Lifelines (dashed vertical lines from actor to bottom)
+  // 2. Lifelines (dashed vertical lines from actor to bottom), interrupted
+  //    where a message / block label sits on them so no line runs through text
+  const labelBoxes = collectLabelBoxes(diagram, fontSizes)
   for (const lifeline of diagram.lifelines) {
-    parts.push(renderLifeline(lifeline))
+    parts.push(renderLifeline(lifeline, labelBoxes))
   }
 
   // 3. Activation boxes
@@ -140,12 +144,12 @@ function arrowMarkerDefs(): string {
   const w = ARROW_HEAD.width
   const h = ARROW_HEAD.height
   return (
-    `  <marker id="seq-arrow" markerWidth="${w}" markerHeight="${h}" refX="${w}" refY="${h / 2}" orient="auto-start-reverse">` +
-    `\n    <polygon points="0 0, ${w} ${h / 2}, 0 ${h}" fill="var(--_arrow)" />` +
+    f`  <marker id="seq-arrow" markerWidth="${w}" markerHeight="${h}" refX="${w}" refY="${h / 2}" orient="auto-start-reverse">` +
+    f`\n    <polygon points="0 0, ${w} ${h / 2}, 0 ${h}" fill="var(--_arrow)" />` +
     `\n  </marker>` +
     // Open arrow head (just lines, no fill)
-    `\n  <marker id="seq-arrow-open" markerWidth="${w}" markerHeight="${h}" refX="${w}" refY="${h / 2}" orient="auto-start-reverse">` +
-    `\n    <polyline points="0 0, ${w} ${h / 2}, 0 ${h}" fill="none" stroke="var(--_arrow)" stroke-width="1" />` +
+    f`\n  <marker id="seq-arrow-open" markerWidth="${w}" markerHeight="${h}" refX="${w}" refY="${h / 2}" orient="auto-start-reverse">` +
+    f`\n    <polyline points="0 0, ${w} ${h / 2}, 0 ${h}" fill="none" stroke="var(--_arrow)" stroke-width="1" />` +
     `\n  </marker>`
   )
 }
@@ -164,7 +168,7 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
 
   // Semantic wrapper with actor metadata
   parts.push(
-    `<g class="actor" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}" data-type="${type}">`,
+    f`<g class="actor" data-id="${escapeAttr(id)}" data-label="${escapeAttr(label)}" data-type="${type}">`,
   )
 
   if (type === 'actor') {
@@ -179,13 +183,13 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
     const iconStroke = 'var(--_line)' // use line color for actor icon strokes
 
     parts.push(
-      `  <g transform="translate(${tx},${ty}) scale(${s})">` +
+      f`  <g transform="translate(${tx},${ty}) scale(${s})">` +
         // Outer circle
-        `\n    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
+        f`\n    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
         // Head
-        `\n    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
+        f`\n    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
         // Shoulders
-        `\n    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
+        f`\n    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="${iconStroke}" stroke-width="${sw}" />` +
         `\n  </g>`,
     )
     // Label below the icon (supports multi-line)
@@ -194,17 +198,17 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
         renderMultilineText(
           label,
           x,
-          y + height + 14,
+          y + height + ACTOR_LABEL_OFFSET,
           fontSizes.nodeLabel,
-          `font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
+          f`font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
         ),
     )
   } else {
     // Participant: rectangle box with label (supports multi-line)
     const boxX = x - width / 2
     parts.push(
-      `  <rect x="${boxX}" y="${y}" width="${width}" height="${height}" rx="4" ry="4" ` +
-        `fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+      f`  <rect x="${boxX}" y="${y}" width="${width}" height="${height}" rx="4" ry="4" ` +
+        f`fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
     )
     parts.push(
       '  ' +
@@ -213,7 +217,7 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
           x,
           y + height / 2,
           fontSizes.nodeLabel,
-          `font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
+          f`font-size="${fontSizes.nodeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.nodeLabel}" fill="var(--_text)"`,
         ),
     )
   }
@@ -222,15 +226,152 @@ function renderActor(actor: PositionedActor, fontSizes: FontSizes): string {
   return parts.join('\n')
 }
 
+/** Self-message loop width, height, and the gap before its label, in px. */
+const SELF_LOOP_WIDTH = 30
+const SELF_LOOP_HEIGHT = 20
+const SELF_LABEL_PADDING = 8
+
+/** How far above its arrow a message label's centre sits, in px. */
+const MESSAGE_LABEL_RISE = 10
+
+/** Height of a block's type-label tab, in px. */
+const BLOCK_TAB_HEIGHT = 18
+
+/** A rectangle some text occupies; lifelines are cut around it. */
+interface LabelBox {
+  x0: number
+  x1: number
+  y0: number
+  y1: number
+}
+
+/** Breathing room kept between a label and the lifeline segments around it. */
+const LIFELINE_LABEL_PAD_X = 3
+const LIFELINE_LABEL_PAD_Y = 2
+
+/** Lifeline fragments shorter than this are dropped rather than drawn as a stub. */
+const LIFELINE_MIN_SEGMENT = 3
+
 /**
- * Render a lifeline (dashed vertical line from actor to bottom).
+ * Footprints of every text label a lifeline can run through: message labels
+ * (above the arrow, or beside a self-message loop), the block type tab, and
+ * block divider (`else` / `and`) labels. Mirrors the positions
+ * {@link renderMessage} and {@link renderBlock} draw them at (#1242).
+ */
+function collectLabelBoxes(
+  diagram: PositionedSequenceDiagram,
+  fontSizes: FontSizes,
+): LabelBox[] {
+  const boxes: LabelBox[] = []
+  const measure = (text: string) =>
+    measureMultilineText(text, fontSizes.edgeLabel, FONT_WEIGHTS.edgeLabel)
+  const centred = (text: string, cx: number, cy: number) => {
+    const m = measure(text)
+    boxes.push({
+      x0: cx - m.width / 2,
+      x1: cx + m.width / 2,
+      y0: cy - m.height / 2,
+      y1: cy + m.height / 2,
+    })
+  }
+  const startAnchored = (text: string, x: number, cy: number) => {
+    const m = measure(text)
+    boxes.push({
+      x0: x,
+      x1: x + m.width,
+      y0: cy - m.height / 2,
+      y1: cy + m.height / 2,
+    })
+  }
+
+  for (const msg of diagram.messages) {
+    if (!msg.label) continue
+    if (msg.isSelf) {
+      startAnchored(
+        msg.label,
+        msg.x1 + SELF_LOOP_WIDTH + SELF_LABEL_PADDING,
+        msg.y + SELF_LOOP_HEIGHT / 2,
+      )
+    } else {
+      centred(msg.label, (msg.x1 + msg.x2) / 2, msg.y - MESSAGE_LABEL_RISE)
+    }
+  }
+
+  for (const block of diagram.blocks) {
+    const tab = `${block.type}${block.label ? ` [${block.label}]` : ''}`
+    const tabWidth =
+      estimateTextWidth(
+        tab.split('\n')[0] ?? '',
+        fontSizes.edgeLabel,
+        FONT_WEIGHTS.groupHeader,
+      ) + 16
+    boxes.push({
+      x0: block.x,
+      x1: block.x + tabWidth,
+      y0: block.y,
+      y1: block.y + BLOCK_TAB_HEIGHT,
+    })
+    for (const divider of block.dividers) {
+      if (!divider.label) continue
+      startAnchored(`[${divider.label}]`, block.x + 8, divider.y + 14)
+    }
+  }
+  return boxes
+}
+
+/**
+ * The y-ranges of `lifeline` left after cutting out every label box it
+ * crosses, as `[y0, y1]` pairs top to bottom.
+ */
+function lifelineSegments(
+  lifeline: Lifeline,
+  labelBoxes: readonly LabelBox[],
+): Array<[number, number]> {
+  const cuts = labelBoxes
+    .filter(
+      (b) =>
+        lifeline.x > b.x0 - LIFELINE_LABEL_PAD_X &&
+        lifeline.x < b.x1 + LIFELINE_LABEL_PAD_X &&
+        b.y1 + LIFELINE_LABEL_PAD_Y > lifeline.topY &&
+        b.y0 - LIFELINE_LABEL_PAD_Y < lifeline.bottomY,
+    )
+    .map((b): [number, number] => [
+      b.y0 - LIFELINE_LABEL_PAD_Y,
+      b.y1 + LIFELINE_LABEL_PAD_Y,
+    ])
+    .sort((a, b) => a[0] - b[0])
+
+  const segments: Array<[number, number]> = []
+  let cursor = lifeline.topY
+  for (const [c0, c1] of cuts) {
+    if (c0 - cursor >= LIFELINE_MIN_SEGMENT) segments.push([cursor, c0])
+    cursor = Math.max(cursor, c1)
+  }
+  if (lifeline.bottomY - cursor >= LIFELINE_MIN_SEGMENT) {
+    segments.push([cursor, lifeline.bottomY])
+  }
+  // A lifeline entirely under a label (or otherwise shorter than a stub)
+  // would vanish; keep it whole rather than drop the participant's line.
+  return segments.length > 0 ? segments : [[lifeline.topY, lifeline.bottomY]]
+}
+
+/**
+ * Render a lifeline (dashed vertical line from actor to bottom), as one
+ * `<line>` per stretch between label boxes it would otherwise pass through.
  * Includes data-actor to link to its actor.
  */
-function renderLifeline(lifeline: Lifeline): string {
-  const line =
-    `<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
-    `x1="${lifeline.x}" y1="${lifeline.topY}" x2="${lifeline.x}" y2="${lifeline.bottomY}" ` +
-    `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`
+function renderLifeline(
+  lifeline: Lifeline,
+  labelBoxes: readonly LabelBox[],
+): string {
+  const line = lifelineSegments(lifeline, labelBoxes)
+    .map(
+      ([y0, y1]) =>
+        f`<line class="lifeline" data-actor="${escapeAttr(lifeline.actorId)}" ` +
+        f`x1="${lifeline.x}" y1="${y0}" x2="${lifeline.x}" y2="${y1}" ` +
+        `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`,
+    )
+    .join('\n')
   if (!lifeline.destroyed) return line
   // `destroy X`: the lifeline ends at the destroying message's row, marked
   // with a cross centred on it — the same glyph Mermaid uses. Drawn in the
@@ -239,9 +380,9 @@ function renderLifeline(lifeline: Lifeline): string {
   const r = DESTROY_CROSS_HALF
   return (
     line +
-    `\n<path class="destroy" data-actor="${escapeAttr(lifeline.actorId)}" ` +
-    `d="M${x - r} ${y - r} L${x + r} ${y + r} M${x + r} ${y - r} L${x - r} ${y + r}" ` +
-    `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-linecap="round" />`
+    f`\n<path class="destroy" data-actor="${escapeAttr(lifeline.actorId)}" ` +
+    f`d="M${x - r} ${y - r} L${x + r} ${y + r} M${x + r} ${y - r} L${x - r} ${y + r}" ` +
+    f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.outerBox}" stroke-linecap="round" />`
   )
 }
 
@@ -254,9 +395,9 @@ const DESTROY_CROSS_HALF = 8
  */
 function renderActivation(activation: Activation): string {
   return (
-    `<rect class="activation" data-actor="${escapeAttr(activation.actorId)}" ` +
-    `x="${activation.x}" y="${activation.topY}" width="${activation.width}" height="${activation.bottomY - activation.topY}" ` +
-    `fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`
+    f`<rect class="activation" data-actor="${escapeAttr(activation.actorId)}" ` +
+    f`x="${activation.x}" y="${activation.topY}" width="${activation.width}" height="${activation.bottomY - activation.topY}" ` +
+    f`fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`
   )
 }
 
@@ -273,25 +414,25 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
   // automatically flips 180° for marker-start so it points outward at the
   // line's start instead of reusing the marker-end orientation.
   const markerStart = msg.bidirectional
-    ? ` marker-start="url(#${markerId})"`
+    ? f` marker-start="url(#${markerId})"`
     : ''
 
   // Semantic wrapper with message metadata
   parts.push(
-    `<g class="message" data-from="${escapeAttr(msg.from)}" data-to="${escapeAttr(msg.to)}" ` +
-      `data-label="${escapeAttr(msg.label)}" data-line-style="${msg.lineStyle}" ` +
-      `data-arrow-head="${msg.arrowHead}" data-self="${msg.isSelf}" data-bidirectional="${msg.bidirectional}">`,
+    f`<g class="message" data-from="${escapeAttr(msg.from)}" data-to="${escapeAttr(msg.to)}" ` +
+      f`data-label="${escapeAttr(msg.label)}" data-line-style="${msg.lineStyle}" ` +
+      f`data-arrow-head="${msg.arrowHead}" data-self="${msg.isSelf}" data-bidirectional="${msg.bidirectional}">`,
   )
 
   if (msg.isSelf) {
     // Self-message: curved loop going right and back
     // Loop dimensions - loopH is fixed, loopW provides minimum clearance
-    const loopW = 30
-    const loopH = 20
-    const labelPadding = 8 // Space between loop and label
+    const loopW = SELF_LOOP_WIDTH
+    const loopH = SELF_LOOP_HEIGHT
+    const labelPadding = SELF_LABEL_PADDING // Space between loop and label
     parts.push(
-      `  <polyline points="${msg.x1},${msg.y} ${msg.x1 + loopW},${msg.y} ${msg.x1 + loopW},${msg.y + loopH} ${msg.x2},${msg.y + loopH}" ` +
-        `fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
+      f`  <polyline points="${msg.x1},${msg.y} ${msg.x1 + loopW},${msg.y} ${msg.x1 + loopW},${msg.y + loopH} ${msg.x2},${msg.y + loopH}" ` +
+        f`fill="none" stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
     )
     // Label to the right of the loop (supports multi-line)
     parts.push(
@@ -301,14 +442,14 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
           msg.x1 + loopW + labelPadding,
           msg.y + loopH / 2,
           fontSizes.edgeLabel,
-          `font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+          f`font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
         ),
     )
   } else {
     // Normal message: horizontal arrow
     parts.push(
-      `  <line x1="${msg.x1}" y1="${msg.y}" x2="${msg.x2}" y2="${msg.y}" ` +
-        `stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
+      f`  <line x1="${msg.x1}" y1="${msg.y}" x2="${msg.x2}" y2="${msg.y}" ` +
+        f`stroke="var(--_line)" stroke-width="${STROKE_WIDTHS.connector}"${dashArray} marker-end="url(#${markerId})"${markerStart} />`,
     )
     // Label above the arrow, centered (supports multi-line)
     const midX = (msg.x1 + msg.x2) / 2
@@ -317,9 +458,9 @@ function renderMessage(msg: PositionedMessage, fontSizes: FontSizes): string {
         renderMultilineText(
           msg.label,
           midX,
-          msg.y - 10,
+          msg.y - MESSAGE_LABEL_RISE,
           fontSizes.edgeLabel,
-          `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+          f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
         ),
     )
   }
@@ -353,13 +494,13 @@ function renderSeqNumberBadge(
     : msg.x1
   return (
     `<g class="seq-number">` +
-    `<circle cx="${cx}" cy="${msg.y}" r="${radius}" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    f`<circle cx="${cx}" cy="${msg.y}" r="${radius}" fill="var(--bg)" stroke="var(--_arrow)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
     renderMultilineText(
       String(msg.seqNumber),
       cx,
       msg.y,
       fontSize,
-      `font-size="${fontSize}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_arrow)"`,
+      f`font-size="${fontSize}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_arrow)"`,
     ) +
     `</g>`
   )
@@ -389,17 +530,17 @@ function renderParticipantBox(
   box: PositionedParticipantBox,
   fontSizes: FontSizes,
 ): string {
-  const labelAttr = box.label ? ` data-label="${escapeAttr(box.label)}"` : ''
+  const labelAttr = box.label ? f` data-label="${escapeAttr(box.label)}"` : ''
   const colorAttr =
-    box.color !== undefined ? ` data-color="${escapeAttr(box.color)}"` : ''
+    box.color !== undefined ? f` data-color="${escapeAttr(box.color)}"` : ''
   const fill =
     box.color !== undefined
-      ? `color-mix(in srgb, ${escapeAttr(box.color)} ${BOX_COLOR_MIX_PERCENT}%, var(--bg))`
+      ? f`color-mix(in srgb, ${escapeAttr(box.color)} ${BOX_COLOR_MIX_PERCENT}%, var(--bg))`
       : 'none'
   const parts: string[] = [
-    `<g class="participant-box"${labelAttr}${colorAttr}>`,
-    `  <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="4" ry="4" ` +
-      `fill="${fill}" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
+    f`<g class="participant-box"${labelAttr}${colorAttr}>`,
+    f`  <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="4" ry="4" ` +
+      f`fill="${fill}" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />`,
   ]
   if (box.label) {
     // Centred in the label band the layout reserved above the actor boxes.
@@ -410,7 +551,7 @@ function renderParticipantBox(
           box.x + box.width / 2,
           box.y + boxLabelHeight(fontSizes.edgeLabel) / 2,
           fontSizes.edgeLabel,
-          `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+          f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
         ),
     )
   }
@@ -427,21 +568,21 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
 
   // Semantic wrapper with block metadata
   const labelAttr = block.label
-    ? ` data-label="${escapeAttr(block.label)}"`
+    ? f` data-label="${escapeAttr(block.label)}"`
     : ''
   parts.push(
-    `<g class="block" data-type="${escapeAttr(block.type)}"${labelAttr}>`,
+    f`<g class="block" data-type="${escapeAttr(block.type)}"${labelAttr}>`,
   )
 
   // Outer rectangle
   parts.push(
-    `  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
-      `rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+    f`  <rect x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" ` +
+      f`rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
 
   // Type label tab (top-left corner)
   // For multi-line block labels, we use the first line for the tab but show full label
-  const labelText = `${block.type}${block.label ? ` [${block.label}]` : ''}`
+  const labelText = f`${block.type}${block.label ? f` [${block.label}]` : ''}`
   // Audited for issue #100: `String.prototype.split` always returns an
   // array with at least one element (even splitting `''` yields `['']`),
   // so index 0 is guaranteed to exist regardless of whether `labelText`
@@ -454,11 +595,11 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
       fontSizes.edgeLabel,
       FONT_WEIGHTS.groupHeader,
     ) + 16
-  const tabHeight = 18
+  const tabHeight = BLOCK_TAB_HEIGHT
 
   parts.push(
-    `  <rect x="${block.x}" y="${block.y}" width="${tabWidth}" height="${tabHeight}" ` +
-      `fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
+    f`  <rect x="${block.x}" y="${block.y}" width="${tabWidth}" height="${tabHeight}" ` +
+      f`fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.outerBox}" />`,
   )
   // Block type label (supports multi-line via <br> tags)
   parts.push(
@@ -468,14 +609,14 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
         block.x + 6,
         block.y + tabHeight / 2,
         fontSizes.edgeLabel,
-        `font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
+        f`font-size="${fontSizes.edgeLabel}" font-weight="${FONT_WEIGHTS.groupHeader}" fill="var(--_text-sec)"`,
       ),
   )
 
   // Divider lines (for alt/else, par/and)
   for (const divider of block.dividers) {
     parts.push(
-      `  <line x1="${block.x}" y1="${divider.y}" x2="${block.x + block.width}" y2="${divider.y}" ` +
+      f`  <line x1="${block.x}" y1="${divider.y}" x2="${block.x + block.width}" y2="${divider.y}" ` +
         `stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />`,
     )
     if (divider.label) {
@@ -483,11 +624,11 @@ function renderBlock(block: PositionedBlock, fontSizes: FontSizes): string {
       parts.push(
         '  ' +
           renderMultilineText(
-            `[${divider.label}]`,
+            f`[${divider.label}]`,
             block.x + 8,
             divider.y + 14,
             fontSizes.edgeLabel,
-            `font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+            f`font-size="${fontSizes.edgeLabel}" text-anchor="start" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
           ),
       )
     }
@@ -509,37 +650,37 @@ function renderNote(note: PositionedNote, fontSizes: FontSizes): string {
   // Build actor reference attribute if present
   const actorsAttr =
     note.actors && note.actors.length > 0
-      ? ` data-actors="${note.actors.map(escapeAttr).join(',')}"`
+      ? f` data-actors="${note.actors.map(escapeAttr).join(',')}"`
       : ''
   const positionAttr = note.position
-    ? ` data-position="${escapeAttr(note.position)}"`
+    ? f` data-position="${escapeAttr(note.position)}"`
     : ''
 
   // Note body: polygon with top-right corner cut off
   //   (x,y) → (x+w-fold,y) → (x+w,y+fold) → (x+w,y+h) → (x,y+h)
   const bodyPoints = [
-    `${x},${y}`,
-    `${x + w - foldSize},${y}`,
-    `${x + w},${y + foldSize}`,
-    `${x + w},${y + h}`,
-    `${x},${y + h}`,
+    f`${x},${y}`,
+    f`${x + w - foldSize},${y}`,
+    f`${x + w},${y + foldSize}`,
+    f`${x + w},${y + h}`,
+    f`${x},${y + h}`,
   ].join(' ')
 
   return (
-    `<g class="note"${positionAttr}${actorsAttr}>` +
+    f`<g class="note"${positionAttr}${actorsAttr}>` +
     // Note body with bg fill and clipped corner
-    `\n  <polygon points="${bodyPoints}" ` +
-    `fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    f`\n  <polygon points="${bodyPoints}" ` +
+    f`fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
     // Fold triangle (the folded-over corner)
-    `\n  <polygon points="${x + w - foldSize},${y} ${x + w},${y + foldSize} ${x + w - foldSize},${y + foldSize}" ` +
-    `fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
+    f`\n  <polygon points="${x + w - foldSize},${y} ${x + w},${y + foldSize} ${x + w - foldSize},${y + foldSize}" ` +
+    f`fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="${STROKE_WIDTHS.innerBox}" />` +
     // Note text (supports multi-line)
-    `\n  ${renderMultilineText(
+    f`\n  ${renderMultilineText(
       note.text,
       x + w / 2,
       y + h / 2,
       fontSizes.edgeLabel,
-      `font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
+      f`font-size="${fontSizes.edgeLabel}" text-anchor="middle" font-weight="${FONT_WEIGHTS.edgeLabel}" fill="var(--_text-muted)"`,
     )}` +
     `\n</g>`
   )

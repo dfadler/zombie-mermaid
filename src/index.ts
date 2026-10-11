@@ -34,14 +34,19 @@ export type {
 } from '@zombie-mermaid/core'
 export type { DiagramColors, ThemeName } from '@zombie-mermaid/core'
 export { fromShikiTheme, THEMES, DEFAULTS } from '@zombie-mermaid/core'
-export { parseMermaid } from './parser.ts'
+export { parseMermaid } from '@zombie-mermaid/mermaid-parser'
 export {
   renderMermaidASCII,
   renderMermaidAscii,
 } from '@zombie-mermaid/ascii-renderer'
 export type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
-export { createLayoutCache } from '@zombie-mermaid/svg-renderer'
+export {
+  createLayoutCache,
+  registerElk,
+  ElkNotRegisteredError,
+} from '@zombie-mermaid/svg-renderer'
 export type { LayoutCache } from '@zombie-mermaid/svg-renderer'
+export type { ElkConstructor } from '@zombie-mermaid/core'
 
 // The SVG dispatch table (diagram-type registry) and the
 // `renderMermaidSVG`/`renderMermaidSVGAsync`/`themeCssVariables` front door

@@ -169,7 +169,7 @@ describe('renderMermaidSVG – sequence diagrams – bidirectional arrows', () =
     const svg = renderMermaidSVG(`sequenceDiagram
       Alice<<->>Bob: Sync call`)
     expect(svg).toContain('data-bidirectional="true"')
-    expect(svg).toMatch(/marker-start="url\(#seq-arrow\)"/)
+    expect(svg).toMatch(/marker-start="url\(#zm[0-9a-z]+-seq-arrow\)"/)
   })
 
   it('a regular one-way arrow has no marker-start', () => {

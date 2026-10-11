@@ -1,0 +1,13 @@
+pie
+  accTitle: Survey answers
+  accDescr {
+    Most people answered yes.
+    A few said no.
+  }
+  "Yes" : 70
+  "No" : 30
+---
+[███████████████████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓]
+
+  █ Yes    70%
+  ▓ No     30%

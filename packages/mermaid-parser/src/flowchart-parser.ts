@@ -1,0 +1,1351 @@
+import type {
+  MermaidGraph,
+  MermaidNode,
+  MermaidSubgraph,
+  NodeShape,
+  EdgeStyle,
+  Statement,
+} from '@zombie-mermaid/core'
+import {
+  toDirection,
+  normalizeBrTags,
+  splitStatementsByLine,
+  extractInitConfig,
+  applyClickStatement as applyClickStatementShared,
+  parseStyleProps,
+  tryApplyClassDef,
+  tryApplyClassAssignment,
+  tryApplyStyleStatement,
+} from '@zombie-mermaid/core'
+
+import {
+  matchExpandedBlock,
+  parseExpandedMeta,
+  resolveShapeName,
+} from './expanded-shapes.ts'
+import type { ExpandedNodeMeta } from './expanded-shapes.ts'
+/** Remove a single layer of matching wrapping quotes (`"…"` or `'…'`). */
+function stripWrappingQuotes(s: string): string {
+  const t = s.trim()
+  if (
+    t.length >= 2 &&
+    ((t[0] === '"' && t[t.length - 1] === '"') ||
+      (t[0] === "'" && t[t.length - 1] === "'"))
+  ) {
+    return t.slice(1, -1)
+  }
+  return t
+}
+
+// ============================================================================
+// Mermaid parser — flowcharts and state diagrams
+//
+// Supports:
+//   Flowcharts: graph TD / flowchart LR
+//   State diagrams: stateDiagram-v2
+//
+// Line-by-line regex approach — the grammar is regular enough
+// that we don't need a grammar generator or full parser combinator.
+// ============================================================================
+
+// `toDirection` used to be defined here, with this file as its only caller.
+// #624 gave it a second caller — `packages/mermaid-parser/src/er/parser.ts`,
+// which cannot import this umbrella file without creating a cycle
+// (mermaid-parser -> umbrella -> mermaid-parser) — so it moved to
+// `packages/core/src/direction.ts` alongside `isDirection`, for the same
+// reason that one moved under #625. Re-exported here so existing importers
+// of `toDirection` from `./parser.ts` (this file's own tests included) keep
+// working unchanged.
+export { toDirection } from '@zombie-mermaid/core'
+
+/**
+ * All diagram-type headers this library recognizes, for the "supported
+ * headers" list in the invalid-header error below. Kept in one place so a
+ * newly-added diagram type doesn't get forgotten in the error message the
+ * way sequence/class/ER/xychart were before issue #541.
+ */
+const SUPPORTED_HEADERS =
+  '"graph <dir>"/"flowchart <dir>" (dir: TD, TB, LR, BT, RL), "stateDiagram-v2", "sequenceDiagram", "classDiagram", "erDiagram", "xychart-beta", "C4Context"/"C4Container"/"C4Component"/"C4Dynamic"/"C4Deployment", "architecture-beta", "pie"'
+
+/**
+ * Best-guess canonical header for a header line that looks like an attempt
+ * at one of the *other* diagram types this library supports, but didn't
+ * match `detectDiagramType`'s exact-match regex (a typo, extra trailing
+ * text, wrong case pattern, etc.) and so fell through to this flowchart
+ * parser as the default. Returns undefined when `header` doesn't look like
+ * any of those — in which case the generic "supported headers" list in the
+ * thrown error is the best we can do.
+ *
+ * This only recognizes the *other* headers
+ * (sequenceDiagram/classDiagram/erDiagram/xychart-beta/stateDiagram-v2/pie);
+ * "graph"/"flowchart" typos are handled by the direction-specific message
+ * below instead, since those already matched the diagram-type keyword and
+ * just have a bad or missing direction token.
+ */
+function suggestedHeaderFor(header: string): string | undefined {
+  const lower = header.trim().toLowerCase()
+  if (/^sequence/.test(lower)) return 'sequenceDiagram'
+  if (/^class/.test(lower)) return 'classDiagram'
+  if (/^er/.test(lower)) return 'erDiagram'
+  if (/^xychart/.test(lower)) return 'xychart-beta'
+  if (/^state/.test(lower)) return 'stateDiagram-v2'
+  // Mermaid's `pie` keyword is case-sensitive, so `PieChart` lands here.
+  if (/^pie/.test(lower)) return 'pie'
+  return undefined
+}
+
+/**
+ * Matches the start of a statement that continues the *previous* one's edge
+ * chain rather than beginning a new one: Mermaid lets a vertex-chain
+ * statement break across lines, with the link operator leading the next
+ * line — e.g.
+ *
+ *   start([Start])
+ *   ==> green([Change some code])
+ *   ==> finish([Finish])
+ *
+ * is one chained statement (`start ==> green ==> finish`), identical to
+ * writing it on one line. `splitStatementsByLine` only knows about newlines
+ * and `;` as separators, so without this it hands `parseFlowchart` three
+ * unrelated-looking statements — the continuation lines start with a bare
+ * arrow and no node group, so `parseEdgeLine` can't find a source node and
+ * drops them entirely (see issue mermaid-js/mermaid#6049's repro, reported
+ * against this parser).
+ *
+ * Covers every arrow opener `parseEdgeLine` itself recognizes (ARROW_REGEX /
+ * TEXT_ARROW_REGEX below): a solid/thick run (`--`, `===`), a dotted run
+ * (`-.`, `-.-`), a `~~~` run, each optionally preceded by a `<` marker and/or
+ * an edge id (`e1@-->`).
+ *
+ * Deliberately excludes the `o`/`x` start markers ARROW_REGEX also accepts
+ * (`o--o`, `x--x`): unlike `<`, both are also valid bare node ids, so a
+ * first-body-line statement like `x-->Y` would otherwise be misread as an
+ * `x`-marked continuation of the header and merged into it, corrupting the
+ * header line (`flowchart TD x-->Y`) instead of parsing `x` as its own node.
+ * A genuine marked-start continuation line is rare enough that losing it is
+ * the safer tradeoff.
+ */
+const CONTINUATION_START_REGEX = /^(?:[\w-]+@)?<?(?:-{2,}|={2,}|-\.+-?|~{3,})/
+
+/**
+ * Rejoin a continuation statement onto the one it continues.
+ *
+ * `splitStatementsByLine` groups statements by their originating physical
+ * line, which is what makes this safe: only the *first* statement in a
+ * group is eligible to merge backward into the previous group's last
+ * statement (a genuine multi-line continuation, see
+ * `CONTINUATION_START_REGEX`). A later statement in the same group got
+ * there via an explicit `;` on that line (`A --> B; --> C`) — that boundary
+ * must stay a boundary, or `--> C` would wrongly become part of the chain
+ * instead of the source-less fragment it actually is.
+ */
+function mergeContinuationLines(groups: Statement[][]): Statement[] {
+  const merged: Statement[] = []
+  for (const group of groups) {
+    group.forEach((statement, index) => {
+      if (
+        index === 0 &&
+        merged.length > 0 &&
+        CONTINUATION_START_REGEX.test(statement.text)
+      ) {
+        // Keep the *first* line's number: a merged statement is reported at
+        // the line its logical statement began, not the continuation line.
+        const prev = merged[merged.length - 1]!
+        merged[merged.length - 1] = {
+          text: `${prev.text} ${statement.text}`,
+          line: prev.line,
+        }
+      } else {
+        merged.push(statement)
+      }
+    })
+  }
+  return merged
+}
+
+/**
+ * Parse Mermaid text into a logical graph structure.
+ * Auto-detects diagram type (flowchart or state diagram).
+ * Throws on invalid/unsupported input.
+ */
+export function parseMermaid(text: string): MermaidGraph {
+  /*
+   * Init directives must be read from the raw lines: `%%{init: ...}%%` begins
+   * with `%%`, so splitStatementsByLine — which treats `%%` as a comment and
+   * truncates the line there — would otherwise discard it along with real
+   * comments before it could be seen.
+   */
+  const initConfig = extractInitConfig(text.split('\n').map((l) => l.trim()))
+
+  const lines = mergeContinuationLines(splitStatementsByLine(text))
+
+  if (lines.length === 0) {
+    throw new Error('Empty mermaid diagram')
+  }
+
+  // Detect diagram type from header
+  const headerStmt = lines[0]!
+
+  // State diagram: "stateDiagram-v2" or "stateDiagram"
+  const graph = /^stateDiagram(-v2)?\s*$/i.test(headerStmt.text)
+    ? parseStateDiagram(lines)
+    : parseFlowchart(lines)
+
+  graph.initConfig = initConfig
+  return graph
+}
+
+// ============================================================================
+// Flowchart parser
+// ============================================================================
+
+function parseFlowchart(lines: Statement[]): MermaidGraph {
+  // parseFlowchart is only ever invoked by parseMermaid, which has already
+  // verified `lines` is non-empty — but that invariant isn't visible to the
+  // type checker across the function boundary, so validate it here instead
+  // of asserting past it.
+  const headerStmt = lines[0]
+  if (headerStmt === undefined) {
+    /* v8 ignore next */
+    throw new Error('parseFlowchart called with no lines')
+  }
+  const header = headerStmt.text
+
+  const headerMatch = header.match(
+    /^(?:graph|flowchart)\s+(TD|TB|LR|BT|RL)\s*$/i,
+  )
+  if (!headerMatch) {
+    // A header that starts with "graph"/"flowchart" but has a bad or
+    // missing direction gets a targeted message about the direction token
+    // specifically — it already picked the right diagram type.
+    const partialFlowchartMatch = header.match(
+      /^(?:graph|flowchart)\b\s*(.*)$/i,
+    )
+    if (partialFlowchartMatch) {
+      const rest = partialFlowchartMatch[1]!.trim()
+      throw new Error(
+        rest.length > 0
+          ? `Line ${headerStmt.line}: Invalid direction "${rest}" in header "${header}". Expected one of: TD, TB, LR, BT, RL.`
+          : `Line ${headerStmt.line}: Missing direction in header "${header}". Expected e.g. "graph TD" or "flowchart LR" — one of: TD, TB, LR, BT, RL.`,
+      )
+    }
+
+    // Otherwise this header didn't match any recognized diagram-type
+    // keyword at all (typo, extra text, or genuinely unsupported syntax) —
+    // point at the closest known diagram type when the text resembles one.
+    const suggestion = suggestedHeaderFor(header)
+    const hint =
+      suggestion && suggestion.toLowerCase() !== header.trim().toLowerCase()
+        ? ` Did you mean "${suggestion}"?`
+        : ''
+    throw new Error(
+      `Line ${headerStmt.line}: Invalid mermaid header: "${header}".${hint} Supported headers: ${SUPPORTED_HEADERS}.`,
+    )
+  }
+
+  const direction = toDirection(headerMatch[1])
+
+  const graph: MermaidGraph = {
+    direction,
+    nodes: new Map(),
+    edges: [],
+    subgraphs: [],
+    classDefs: new Map(),
+    classAssignments: new Map(),
+    nodeStyles: new Map(),
+    linkStyles: new Map(),
+    interactions: new Map(),
+  }
+
+  // Subgraph stack for nested subgraphs.
+  const subgraphStack: MermaidSubgraph[] = []
+
+  for (let i = 1; i < lines.length; i++) {
+    const stmt = lines[i]!
+    const line = stmt.text
+
+    // --- classDef / class assignment / style — shared with the class-diagram
+    // parser, see packages/core/src/style-directives.ts ---
+    if (tryApplyClassDef(line, graph)) continue
+    if (tryApplyClassAssignment(line, graph)) continue
+    if (tryApplyStyleStatement(line, graph)) continue
+
+    // --- click interaction: `click A "url" "tooltip" _blank` / `click A call fn()` ---
+    if (/^click\s+/i.test(line)) {
+      applyClickStatement(line, graph)
+      continue
+    }
+
+    // --- edge metadata: `e1@{ animate: true }` — shared with parseStateDiagram ---
+    if (tryApplyEdgeMetaLine(line, graph)) {
+      continue
+    }
+
+    // --- linkStyle: `linkStyle 0 stroke:#f00` or `linkStyle default stroke:#f00` ---
+    const linkStyleMatch = line.match(/^linkStyle\s+(default|[\d,\s]+)\s+(.+)$/)
+    if (linkStyleMatch) {
+      const target = linkStyleMatch[1]!.trim()
+      const props = parseStyleProps(linkStyleMatch[2]!)
+      if (target === 'default') {
+        graph.linkStyles.set('default', {
+          ...graph.linkStyles.get('default'),
+          ...props,
+        })
+      } else {
+        const indices = target.split(',').map((s) => parseInt(s.trim(), 10))
+        for (const idx of indices) {
+          if (!isNaN(idx)) {
+            graph.linkStyles.set(idx, {
+              ...graph.linkStyles.get(idx),
+              ...props,
+            })
+          }
+        }
+      }
+      continue
+    }
+
+    // --- direction override inside subgraph: `direction LR` ---
+    const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
+    if (dirMatch && subgraphStack.length > 0) {
+      subgraphStack[subgraphStack.length - 1]!.direction = toDirection(
+        dirMatch[1],
+      )
+      continue
+    }
+
+    // --- subgraph start: `subgraph Label` or `subgraph id [Label]` ---
+    const subgraphMatch = line.match(/^subgraph\s+(.+)$/)
+    if (subgraphMatch) {
+      const rest = subgraphMatch[1]!.trim()
+      // Check for `subgraph id [Label]` / `subgraph id ["Label"]` form. The id
+      // may contain non-ASCII chars (e.g. CJK), so match any run of non-space,
+      // non-`[` chars rather than ASCII [\w-]; strip optional quotes wrapping
+      // the title.
+      const bracketMatch = rest.match(/^([^\s[]+)\s*\[(.+)\]$/)
+      let id: string
+      let label: string
+      if (bracketMatch) {
+        id = bracketMatch[1]!
+        label = normalizeBrTags(stripWrappingQuotes(bracketMatch[2]!))
+      } else {
+        // `subgraph Label` (optionally quoted): the label doubles as the id,
+        // slugified — but preserve unicode letters/numbers so a CJK-only title
+        // doesn't collapse to an empty id (which broke nested layout).
+        label = normalizeBrTags(stripWrappingQuotes(rest))
+        id = label.replace(/\s+/g, '_').replace(/[^\p{L}\p{N}_-]/gu, '')
+      }
+      const sg: MermaidSubgraph = { id, label, nodeIds: [], children: [] }
+      subgraphStack.push(sg)
+      continue
+    }
+
+    // --- subgraph end ---
+    if (line === 'end') {
+      const completed = subgraphStack.pop()
+      if (completed) {
+        if (subgraphStack.length > 0) {
+          subgraphStack[subgraphStack.length - 1]!.children.push(completed)
+        } else {
+          graph.subgraphs.push(completed)
+        }
+      }
+      continue
+    }
+
+    // --- Edge/node definitions ---
+    parseEdgeLine(line, graph, subgraphStack)
+  }
+
+  return graph
+}
+
+// ============================================================================
+// State diagram parser
+//
+// Supported syntax:
+//   stateDiagram-v2
+//   s1 : Description
+//   state "Description" as s1
+//   s1 --> s2 : label
+//   [*] --> s1            (start pseudostate)
+//   s1 --> [*]            (end pseudostate)
+//   state CompositeState {
+//     inner1 --> inner2
+//   }
+//   classDef name fill:#f00      (style class — shared helpers)
+//   class s1,s2 name
+//   s1:::name --> s2             (inline class shorthand)
+// ============================================================================
+
+function parseStateDiagram(lines: Statement[]): MermaidGraph {
+  const graph: MermaidGraph = {
+    direction: 'TD',
+    nodes: new Map(),
+    edges: [],
+    subgraphs: [],
+    classDefs: new Map(),
+    classAssignments: new Map(),
+    nodeStyles: new Map(),
+    linkStyles: new Map(),
+    interactions: new Map(),
+  }
+
+  // Track composite state nesting (like subgraphs)
+  const compositeStack: MermaidSubgraph[] = []
+  // Track all composite state IDs to avoid creating duplicate nodes
+  const compositeStateIds = new Set<string>()
+  // Counter for unique [*] pseudostate IDs
+  let startCount = 0
+  let endCount = 0
+
+  for (let i = 1; i < lines.length; i++) {
+    const stmt = lines[i]!
+    const line = stmt.text
+
+    // --- classDef / class assignment / style — shared with the flowchart and
+    // class-diagram parsers, see packages/core/src/style-directives.ts.
+    // Mermaid can't style `[*]` or composite states yet, so an assignment to
+    // one of those ids is stored but never matches a rendered node. ---
+    if (tryApplyClassDef(line, graph)) continue
+    if (tryApplyClassAssignment(line, graph)) continue
+    if (tryApplyStyleStatement(line, graph)) continue
+
+    // --- direction override ---
+    const dirMatch = line.match(/^direction\s+(TD|TB|LR|BT|RL)\s*$/i)
+    if (dirMatch) {
+      if (compositeStack.length > 0) {
+        compositeStack[compositeStack.length - 1]!.direction = toDirection(
+          dirMatch[1],
+        )
+      } else {
+        graph.direction = toDirection(dirMatch[1])
+      }
+      continue
+    }
+
+    // --- linkStyle: `linkStyle 0 stroke:#f00` or `linkStyle default stroke:#f00` ---
+    const linkStyleMatch = line.match(/^linkStyle\s+(default|[\d,\s]+)\s+(.+)$/)
+    if (linkStyleMatch) {
+      const target = linkStyleMatch[1]!.trim()
+      const props = parseStyleProps(linkStyleMatch[2]!)
+      if (target === 'default') {
+        graph.linkStyles.set('default', {
+          ...graph.linkStyles.get('default'),
+          ...props,
+        })
+      } else {
+        const indices = target.split(',').map((s) => parseInt(s.trim(), 10))
+        for (const idx of indices) {
+          if (!isNaN(idx)) {
+            graph.linkStyles.set(idx, {
+              ...graph.linkStyles.get(idx),
+              ...props,
+            })
+          }
+        }
+      }
+      continue
+    }
+
+    // --- edge metadata: `e1@{ animate: true }` — shared with parseFlowchart ---
+    if (tryApplyEdgeMetaLine(line, graph)) {
+      continue
+    }
+
+    // --- composite state start: `state CompositeState {` ---
+    const compositeMatch = line.match(
+      /^state\s+(?:"([^"]+)"\s+as\s+)?([\w\p{L}]+)\s*\{$/u,
+    )
+    if (compositeMatch) {
+      const label = compositeMatch[1] ?? compositeMatch[2]!
+      const id = compositeMatch[2]!
+      const sg: MermaidSubgraph = { id, label, nodeIds: [], children: [] }
+      compositeStack.push(sg)
+      // Track this ID to avoid creating a duplicate node for the composite state
+      compositeStateIds.add(id)
+      // Remove any existing node that was created when parsing transitions before
+      // this composite state definition (e.g., "A --> Processing" before "state Processing {")
+      graph.nodes.delete(id)
+      continue
+    }
+
+    // --- composite state end ---
+    if (line === '}') {
+      const completed = compositeStack.pop()
+      if (completed) {
+        if (compositeStack.length > 0) {
+          compositeStack[compositeStack.length - 1]!.children.push(completed)
+        } else {
+          graph.subgraphs.push(completed)
+        }
+      }
+      continue
+    }
+
+    // --- state alias: `state "Description" as s1` (without brace) ---
+    const stateAliasMatch = line.match(
+      /^state\s+"([^"]+)"\s+as\s+([\w\p{L}]+)\s*$/u,
+    )
+    if (stateAliasMatch) {
+      const label = normalizeBrTags(stateAliasMatch[1]!)
+      const id = stateAliasMatch[2]!
+      registerStateDescription(graph, compositeStack, id, label)
+      continue
+    }
+
+    /*
+     * --- transition: `s1 --> s2`, `s1 --> s2 : label`, `[*] --> s1`, or
+     * with an edge id (Mermaid v11.10.0+): `s1 e1@--> s2` ---
+     *
+     * State-diagram transitions only ever use `-->` (unlike flowchart's
+     * many arrow variants), so the edge id — same `id@` prefix syntax as
+     * flowchart's `A e1@--> B` — is captured inline in this one regex
+     * rather than needing flowchart's separate pre-arrow scan.
+     */
+    const transitionMatch = line.match(
+      /^(\[\*\]|[\w\p{L}-]+)(?::::([\w][\w-]*))?\s*(?:([\w-]+)@)?-->\s*(\[\*\]|[\w\p{L}-]+)(?::::([\w][\w-]*))?(?:\s*:\s*(.+))?$/u,
+    )
+    if (transitionMatch) {
+      let sourceId = transitionMatch[1]!
+      const sourceClass = transitionMatch[2]
+      const edgeId = transitionMatch[3]
+      let targetId = transitionMatch[4]!
+      const targetClass = transitionMatch[5]
+      const rawTransitionLabel = transitionMatch[6]?.trim()
+      const edgeLabel = rawTransitionLabel
+        ? normalizeBrTags(rawTransitionLabel)
+        : undefined
+
+      // Handle [*] pseudostates — each occurrence gets a unique ID
+      if (sourceId === '[*]') {
+        startCount++
+        sourceId = `_start${startCount > 1 ? startCount : ''}`
+        registerStateNode(graph, compositeStack, {
+          id: sourceId,
+          label: '',
+          shape: 'state-start',
+        })
+      } else if (!compositeStateIds.has(sourceId)) {
+        // Only create a node if this isn't a composite state
+        ensureStateNode(graph, compositeStack, sourceId)
+      }
+
+      if (targetId === '[*]') {
+        endCount++
+        targetId = `_end${endCount > 1 ? endCount : ''}`
+        registerStateNode(graph, compositeStack, {
+          id: targetId,
+          label: '',
+          shape: 'state-end',
+        })
+      } else if (!compositeStateIds.has(targetId)) {
+        // Only create a node if this isn't a composite state
+        ensureStateNode(graph, compositeStack, targetId)
+      }
+
+      // `S1:::name --> S2:::name` — inline class shorthand on either end
+      if (sourceClass !== undefined) {
+        graph.classAssignments.set(sourceId, sourceClass)
+      }
+      if (targetClass !== undefined) {
+        graph.classAssignments.set(targetId, targetClass)
+      }
+
+      graph.edges.push({
+        source: sourceId,
+        target: targetId,
+        label: edgeLabel,
+        style: 'solid',
+        hasArrowStart: false,
+        hasArrowEnd: true,
+        ...(edgeId !== undefined ? { id: edgeId } : {}),
+      })
+      continue
+    }
+
+    // --- bare class shorthand: `S2:::name`. Must precede the description
+    // rule below, which would otherwise read it as `S2 : ::name`. ---
+    const stateClassMatch = line.match(/^([\w\p{L}-]+):::([\w][\w-]*)\s*$/u)
+    if (stateClassMatch) {
+      const id = stateClassMatch[1]!
+      if (!compositeStateIds.has(id)) {
+        ensureStateNode(graph, compositeStack, id)
+      }
+      graph.classAssignments.set(id, stateClassMatch[2]!)
+      continue
+    }
+
+    // --- state description: `s1 : Description` ---
+    const stateDescMatch = line.match(/^([\w\p{L}-]+)\s*:\s*(.+)$/u)
+    if (stateDescMatch) {
+      const id = stateDescMatch[1]!
+      const label = normalizeBrTags(stateDescMatch[2]!.trim())
+      registerStateDescription(graph, compositeStack, id, label)
+      continue
+    }
+  }
+
+  // `class S2 foo` on a state that no transition mentions still declares it
+  // (Mermaid creates the state on first reference). Composite ids are skipped:
+  // they render as clusters, not nodes.
+  for (const id of graph.classAssignments.keys()) {
+    if (!graph.nodes.has(id) && !compositeStateIds.has(id)) {
+      ensureStateNode(graph, [], id)
+    }
+  }
+
+  return graph
+}
+
+/**
+ * Register a state with an explicit description (`s1 : text` or
+ * `state "text" as s1`). Unlike a bare reference, this replaces the
+ * placeholder label an earlier `s1 --> s2` or `s1:::name` gave the node.
+ */
+function registerStateDescription(
+  graph: MermaidGraph,
+  compositeStack: MermaidSubgraph[],
+  id: string,
+  label: string,
+): void {
+  const existing = graph.nodes.get(id)
+  if (existing) existing.label = label
+  registerStateNode(graph, compositeStack, { id, label, shape: 'rounded' })
+}
+
+/** Register a state node and track in composite state if applicable */
+function registerStateNode(
+  graph: MermaidGraph,
+  compositeStack: MermaidSubgraph[],
+  node: MermaidNode,
+): void {
+  const isNew = !graph.nodes.has(node.id)
+  if (isNew) {
+    graph.nodes.set(node.id, node)
+  }
+  if (compositeStack.length > 0) {
+    const current = compositeStack[compositeStack.length - 1]!
+    if (!current.nodeIds.includes(node.id)) {
+      current.nodeIds.push(node.id)
+    }
+  }
+}
+
+/** Ensure a state node exists with default rounded shape */
+function ensureStateNode(
+  graph: MermaidGraph,
+  compositeStack: MermaidSubgraph[],
+  id: string,
+): void {
+  if (!graph.nodes.has(id)) {
+    registerStateNode(graph, compositeStack, {
+      id,
+      label: id,
+      shape: 'rounded',
+    })
+  } else {
+    // Track in composite if applicable
+    if (compositeStack.length > 0) {
+      const current = compositeStack[compositeStack.length - 1]!
+      if (!current.nodeIds.includes(id)) {
+        current.nodeIds.push(id)
+      }
+    }
+  }
+}
+
+// ============================================================================
+// Flowchart edge line parser
+//
+// Handles chained edges like: A[Label] --> B(Label) -.-> C{Label}
+// Also handles & parallel links: A & B --> C & D
+// ============================================================================
+
+/**
+ * Arrow regex — matches all arrow operators with optional labels.
+ *
+ * Supported operators:
+ *   -->  ---       solid arrow / solid line
+ *   -.-> -.-       dotted arrow / dotted line
+ *   ==>  ===       thick arrow / thick line
+ *   <--> <-.-> <==>  bidirectional variants
+ *   --o  --x       circle-end / cross-end arrow (see issue #65)
+ *   o--  x--       circle-start / cross-start arrow
+ *   o--o x--x      circle/cross at both ends
+ *
+ * The doubled `o--o`/`x--x` forms must be tried before the single-sided
+ * `o--`/`x--` forms — regex alternation picks the first alternative that
+ * matches, not the longest, so `o--` listed first would consume just the
+ * start marker and strand the trailing `o` as a bogus token. Capturing the
+ * markers as their own groups (rather than baking them into an alternation
+ * of whole tokens) sidesteps that ordering problem entirely.
+ *
+ * The body is a variable-length run: Mermaid uses extra characters as a
+ * layout-rank hint (`A ---- B` pushes B one rank further than `A --> B`).
+ * A fixed alternation of `-->|---|==>` mis-tokenized anything longer,
+ * stranding the surplus characters and corrupting the following token.
+ * The run length is parsed so the edge survives; the rank hint it encodes
+ * is not yet modelled by the layout engine.
+ *
+ * `~~~` is Mermaid's invisible link: it participates in layout but draws
+ * nothing.
+ *
+ * Optional label: -->|label text|
+ */
+const ARROW_REGEX =
+  /^(<|o|x)?(-{2,}|={2,}|-\.+-|~{3,})(>|o|x)?(?:\s*\|([^|]*)\|)?/
+
+/**
+ * Link bodies that are only a link when a start or end marker accompanies
+ * them.
+ *
+ * A bare `--` (or `==`) opens Mermaid's text-embedded label syntax —
+ * `A -- Yes --> B` — which TEXT_ARROW_REGEX handles. Treating it as an
+ * unmarked open link here would consume the opener and strand the label.
+ * Mermaid itself requires three characters for an unmarked open link
+ * (`A --- B`), so this only rejects what Mermaid also rejects.
+ */
+const AMBIGUOUS_UNMARKED_BODIES = new Set(['--', '=='])
+
+/**
+ * Map a raw start/end marker character (`<`, `>`, `o`, `x`, or undefined) to
+ * the distinct terminator shape it draws, if any.
+ *
+ * `<`/`>` are plain arrowheads — already handled by `hasArrowStart`/
+ * `hasArrowEnd` — so they map to `undefined` here, same as no marker at all.
+ * Only `o`/`x` need their own shape (circle/cross) recorded, so the ASCII
+ * renderer can draw something other than the default arrowhead glyph — see
+ * issue #330.
+ */
+function markerKind(
+  marker: string | undefined,
+): 'circle' | 'cross' | undefined {
+  if (marker === 'o') return 'circle'
+  if (marker === 'x') return 'cross'
+  return undefined
+}
+
+/**
+ * The start marker an end marker pairs with: `>` closes a `<` arrowhead,
+ * `o` and `x` close their own kind. Anything else (no end marker) pairs with
+ * nothing.
+ */
+function endMarkerPartner(
+  endMarker: string | undefined,
+): '<' | 'o' | 'x' | undefined {
+  if (endMarker === '>') return '<'
+  if (endMarker === 'o' || endMarker === 'x') return endMarker
+  return undefined
+}
+
+/**
+ * Text-embedded label regex — matches "-- label -->", "-. label .->", "== label ==>" syntax.
+ * Tried as fallback when ARROW_REGEX doesn't match.
+ *
+ * The closing operator is a variable-length run, matching ARROW_REGEX. While
+ * it was a fixed alternation, `A -- label ----> B` consumed only `---` from
+ * `---->`, leaving `-> B`, which forms no node group — so the edge and its
+ * target node were both dropped silently. Exactly the failure mode the
+ * variable-length work exists to remove.
+ *
+ * Based on PR #36 by @liuxiaopai-ai (https://github.com/lukilabs/beautiful-mermaid/pull/36)
+ */
+const TEXT_ARROW_REGEX =
+  /^(<|o|x)?(--|-\.|==)\s+(.+?)\s+(-{2,}[>ox]|={2,}[>ox]|\.+-[>ox]|-{3,}|={3,}|-\.+-)/
+
+/**
+ * Node shape patterns — ordered from most specific delimiters to least.
+ * Multi-char delimiters must be tried before single-char to avoid false matches.
+ *
+ * The label-content group for each shape is quote-aware: it matches either a
+ * complete `"..."` quoted span (any character, including this shape's own
+ * closing delimiter chars, is fine inside quotes) or a single character that
+ * isn't the start of the closing delimiter. This stops the scanner from
+ * treating a `]`/`)`/`}` etc. *inside* a quoted label as the node's real
+ * closing bracket (see issue #61) — without this, `A["test [] brackets"]`
+ * would stop at the first `]`, which lives inside the quoted string.
+ */
+/**
+ * A node shape pattern.
+ *
+ * `shape` is usually a fixed `NodeShape`. For the slash-bracket family it is
+ * a function instead, because those four shapes are distinguished by which
+ * delimiter *closes* them — which the regex has to capture rather than
+ * hard-code. See SLASH_BRACKET note below.
+ */
+interface NodePattern {
+  regex: RegExp
+  shape: NodeShape | ((closingDelimiter: string) => NodeShape)
+}
+
+const NODE_PATTERNS: NodePattern[] = [
+  // Triple delimiters (must be first)
+  {
+    regex: /^([\w\p{L}-]+)\(\(\(((?:"[^"]*"|(?!\)\)\)).)+)\)\)\)/u,
+    shape: 'doublecircle',
+  }, // A(((text)))
+
+  // Double delimiters with mixed brackets
+  {
+    regex: /^([\w\p{L}-]+)\(\[((?:"[^"]*"|(?!\]\)).)+)\]\)/u,
+    shape: 'stadium',
+  }, // A([text])
+  { regex: /^([\w\p{L}-]+)\(\(((?:"[^"]*"|(?!\)\)).)+)\)\)/u, shape: 'circle' }, // A((text))
+  {
+    regex: /^([\w\p{L}-]+)\[\[((?:"[^"]*"|(?!\]\]).)+)\]\]/u,
+    shape: 'subroutine',
+  }, // A[[text]]
+  {
+    regex: /^([\w\p{L}-]+)\[\(((?:"[^"]*"|(?!\)\]).)+)\)\]/u,
+    shape: 'cylinder',
+  }, // A[(text)]
+
+  /*
+   * SLASH_BRACKET family — must come before plain [text].
+   *
+   * Four shapes share a `[` + slash opener and differ only in which
+   * delimiter closes them:
+   *
+   *   A[/text\]  trapezoid          A[/text/]  parallelogram
+   *   A[\text/]  trapezoid-alt      A[\text\]  parallelogram-alt
+   *
+   * They CANNOT be four separate patterns each negated against its own
+   * closing pair. A pattern for `[/…\]` whose content merely excludes `\]`
+   * will happily run past a `/]` to reach a `\]` later on the same line, so
+   *
+   *     A[/parallelogram/] --> B[\alt\]
+   *
+   * matched as a single trapezoid whose label was the entire statement —
+   * silently swallowing the edge and the second node. Ordering the patterns
+   * differently only moves which input breaks.
+   *
+   * Instead, one pattern per opener stops at whichever slash-close comes
+   * first and captures it, and the captured delimiter selects the shape.
+   */
+  {
+    regex: /^([\w\p{L}-]+)\[\/((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/u,
+    shape: (close) => (close === '\\' ? 'trapezoid' : 'parallelogram'),
+  }, // A[/text\] or A[/text/]
+  {
+    regex: /^([\w\p{L}-]+)\[\\((?:"[^"]*"|(?![\\/]\]).)+)([\\/])\]/u,
+    shape: (close) => (close === '/' ? 'trapezoid-alt' : 'parallelogram-alt'),
+  }, // A[\text/] or A[\text\]
+
+  // Asymmetric flag shape
+  { regex: /^([\w\p{L}-]+)>((?:"[^"]*"|(?!\]).)+)\]/u, shape: 'asymmetric' }, // A>text]
+
+  // Double curly braces (hexagon) — must come before single {text}
+  {
+    regex: /^([\w\p{L}-]+)\{\{((?:"[^"]*"|(?!\}\}).)+)\}\}/u,
+    shape: 'hexagon',
+  }, // A{{text}}
+
+  // Single-char delimiters (last — most common, least specific)
+  { regex: /^([\w\p{L}-]+)\[((?:"[^"]*"|(?!\]).)+)\]/u, shape: 'rectangle' }, // A[text]
+  { regex: /^([\w\p{L}-]+)\(((?:"[^"]*"|(?!\)).)+)\)/u, shape: 'rounded' }, // A(text)
+  { regex: /^([\w\p{L}-]+)\{((?:"[^"]*"|(?!\}).)+)\}/u, shape: 'diamond' }, // A{text}
+]
+
+/**
+ * Regex for a bare node reference (just an ID, no shape brackets).
+ *
+ * Only allows a hyphen when it's sandwiched between word characters
+ * (`foo-bar`, `step-1-b`), never a bare/trailing/doubled hyphen. This keeps
+ * legitimately hyphenated ids intact while stopping the id from swallowing
+ * the leading dashes of an immediately-following arrow when there's no
+ * whitespace before it — e.g. `A-->B` (see issue #61): the naive `[\w-]+`
+ * greedily consumed `A--`, leaving a bogus node and no edge. Arrow tokens
+ * always start with `-`/`=`/`<` followed by another non-word character
+ * (`-`, `.`, `=`, `>`), which this pattern never matches into, so it now
+ * stops cleanly at `A` and lets the arrow regex take over.
+ *
+ * `\p{L}` (any Unicode letter, alongside plain `\w`) is included so a bare
+ * non-ASCII name (`Lasaña`, `日本`) matches in full instead of truncating at
+ * the first non-ASCII character and silently stranding the rest of the line
+ * as unparsed text — see issue #328. This mirrors the state-diagram
+ * transition regex below, which already allows `\p{L}` for the same reason.
+ */
+const BARE_NODE_REGEX = /^([\w\p{L}]+(?:-[\w\p{L}]+)*)/u
+
+/**
+ * Node id immediately followed by the expanded-syntax opener: `A@{`.
+ *
+ * Only the id is captured — the block itself needs depth- and quote-aware
+ * scanning (a label may contain `}`), which a regex would do badly, so
+ * `matchExpandedBlock` takes over from here.
+ */
+const EXPANDED_NODE_ID_REGEX = /^([\w\p{L}-]+)(?=@\{)/u
+
+/**
+ * Resolve the geometry for an `A@{ ... }` node.
+ *
+ * An `icon:` or `img:` node has no `shape:` of its own — its outline comes
+ * from `form:` instead (Mermaid defaults to a square). An unrecognized shape
+ * name falls back to a rectangle rather than throwing: Mermaid adds shape
+ * names regularly, and rendering a plain box beats failing the whole diagram
+ * over one unknown name.
+ */
+function expandedNodeShape(meta: ExpandedNodeMeta): NodeShape {
+  if (meta.shape) {
+    return resolveShapeName(meta.shape) ?? 'rectangle'
+  }
+
+  if (meta.icon !== undefined || meta.img !== undefined) {
+    switch (meta.form?.toLowerCase()) {
+      case 'circle':
+        return 'circle'
+      case 'rounded':
+        return 'rounded'
+      default:
+        return 'rectangle'
+    }
+  }
+
+  return 'rectangle'
+}
+
+/**
+ * Resolve the display label for an `A@{ ... }` node.
+ *
+ * Falls back to the node id when no `label:` is given, matching how the
+ * bracket syntax treats a bare `A`. For an icon or image node with no label,
+ * the icon/image reference itself is shown: this renderer draws neither
+ * FontAwesome glyphs nor remote images, so showing the reference is more
+ * useful than an empty box, and it keeps the node identifiable.
+ */
+function expandedNodeLabel(id: string, meta: ExpandedNodeMeta): string {
+  if (meta.label !== undefined && meta.label.length > 0) return meta.label
+  if (meta.icon) return meta.icon
+  if (meta.img) return meta.img
+  return id
+}
+
+/**
+ * Apply a `click` statement to the graph.
+ *
+ * Mermaid's forms:
+ *   click A "https://example.com"
+ *   click A "https://example.com" "Tooltip"
+ *   click A "https://example.com" _blank
+ *   click A href "https://example.com" "Tooltip" _blank
+ *   click A call myCallback()
+ *   click A callback "Tooltip"
+ *
+ * A callback is recorded but never invoked — this renderer emits static SVG
+ * and does not execute script supplied by a diagram. An href, by contrast, is
+ * genuinely actionable: the node is wrapped in an SVG <a>, which works in any
+ * browser without script.
+ *
+ * The actual grammar and href-safety rules live in packages/core/src/click-directive.ts,
+ * shared with the class diagram parser
+ * (packages/mermaid-parser/src/class/parser.ts) — this is a thin wrapper
+ * binding it to this parser's `graph.interactions` map.
+ */
+function applyClickStatement(line: string, graph: MermaidGraph): void {
+  applyClickStatementShared(line, graph.interactions)
+}
+
+/**
+ * Id immediately followed by the expanded-syntax opener on a standalone
+ * metadata line: `e1@{ ... }`.
+ *
+ * Shared by both parsers (`tryApplyEdgeMetaLine`) since the syntax and its
+ * "must already be a known edge id" disambiguation rule are identical for
+ * flowcharts and state diagrams — only how edge ids get declared differs
+ * (`A e1@--> B` vs. `A e1@--> B` with a simpler arrow set).
+ */
+const EDGE_META_ID_REGEX = /^([\w-]+)(?=@\{)/
+
+/**
+ * Try to parse and apply a standalone `e1@{ animate: true }` edge-metadata
+ * line.
+ *
+ * Told apart from a node's `A@{ shape: ... }` by whether the id was already
+ * declared as an edge id (`A e1@--> B`) — checked before node parsing so an
+ * edge id is never registered as a stray node. Shared between
+ * `parseFlowchart` and `parseStateDiagram`; returns `true` if the line was
+ * consumed as edge metadata (caller should `continue` its loop).
+ */
+function tryApplyEdgeMetaLine(line: string, graph: MermaidGraph): boolean {
+  const edgeMetaMatch = line.match(EDGE_META_ID_REGEX)
+  if (!edgeMetaMatch || !graph.edges.some((e) => e.id === edgeMetaMatch[1])) {
+    return false
+  }
+  const block = matchExpandedBlock(line.slice(edgeMetaMatch[1]!.length))
+  if (!block) return false
+  applyEdgeMeta(graph, edgeMetaMatch[1]!, parseExpandedMeta(block.body))
+  return true
+}
+
+/**
+ * Apply an `e1@{ ... }` metadata block to the edge with that id.
+ *
+ * Only `animate` is acted on; Mermaid's other edge keys (`animation`,
+ * `curve`) are recorded as no-ops rather than errors, matching how an
+ * unknown node shape degrades.
+ */
+function applyEdgeMeta(
+  graph: MermaidGraph,
+  edgeId: string,
+  meta: Record<string, string | undefined>,
+): void {
+  for (const edge of graph.edges) {
+    if (edge.id !== edgeId) continue
+    if (meta.animate !== undefined) {
+      edge.animate = meta.animate.toLowerCase() !== 'false'
+    }
+    // Mermaid's `animation: fast|slow` is a speed hint on top of animate.
+    if (meta.animation !== undefined) edge.animate = true
+  }
+}
+
+/** Regex for ::: class shorthand suffix — matches :::className immediately after a node */
+const CLASS_SHORTHAND_REGEX = /^:::([\w][\w-]*)/
+
+/**
+ * Regex for ::: class shorthand appearing BEFORE the shape brackets,
+ * e.g. A:::external[Label]. Captures the bare id and the class name so
+ * the shorthand can be stripped out before shape-pattern matching runs.
+ *
+ * The id group allows `\p{L}` (see BARE_NODE_REGEX above) so a non-ASCII
+ * id keeps working with this shorthand instead of falling through to
+ * BARE_NODE_REGEX with the `:::className` suffix left dangling as
+ * unparsed text. The class-name group stays ASCII-only — Mermaid class
+ * names follow CSS identifier conventions, not node-name conventions.
+ */
+const PRE_CLASS_SHORTHAND_REGEX = /^([\w\p{L}-]+):::([\w][\w-]*)/u
+
+/**
+ * Parse a line that contains node definitions and edges.
+ * Handles chaining: A --> B --> C produces edges A→B and B→C.
+ * Handles parallel links: A & B --> C & D produces 4 edges.
+ */
+function parseEdgeLine(
+  line: string,
+  graph: MermaidGraph,
+  subgraphStack: MermaidSubgraph[],
+): void {
+  let remaining = line.trim()
+
+  // Parse the first node group (possibly with & separators)
+  const firstGroup = consumeNodeGroup(remaining, graph, subgraphStack)
+  if (!firstGroup || firstGroup.ids.length === 0) return
+
+  remaining = firstGroup.remaining.trim()
+  let prevGroupIds = firstGroup.ids
+
+  // Parse arrow + node-group pairs until the line is exhausted
+  while (remaining.length > 0) {
+    let hasArrowStart: boolean
+    let style: EdgeStyle
+    let hasArrowEnd: boolean
+    let edgeLabel: string | undefined
+    let startMarkerKind: 'circle' | 'cross' | undefined
+    let endMarkerKind: 'circle' | 'cross' | undefined
+
+    /*
+     * Optional edge id prefix: `A e1@--> B` (Mermaid v11.10.0+). Consumed
+     * before the arrow so ARROW_REGEX still sees the link token at position
+     * zero. `@` is not otherwise valid ahead of a link, so this cannot
+     * shadow existing syntax.
+     */
+    let edgeId: string | undefined
+    const edgeIdMatch = remaining.match(/^([\w-]+)@(?=[-=<~ox])/)
+    if (edgeIdMatch) {
+      edgeId = edgeIdMatch[1]
+      remaining = remaining.slice(edgeIdMatch[0].length)
+    }
+
+    const arrowMatch = remaining.match(ARROW_REGEX)
+    const arrowBody = arrowMatch?.[2]
+    const startMarker = arrowMatch?.[1]
+    const endMarker = arrowMatch?.[3]
+
+    if (
+      arrowMatch &&
+      arrowBody !== undefined &&
+      // An unmarked `--`/`==` is the text-label opener, not a link.
+      !(
+        startMarker === undefined &&
+        endMarker === undefined &&
+        AMBIGUOUS_UNMARKED_BODIES.has(arrowBody)
+      )
+    ) {
+      // `o`/`x` mark a circle/cross terminator (alongside `<` for a reversed
+      // arrow) — `markerKind` records which, so the ASCII renderer can draw
+      // a distinct glyph instead of the default arrowhead (see issue #330,
+      // a follow-up to issue #65 which first stopped these from being
+      // dropped entirely).
+      //
+      // Mermaid only draws a start marker when the end carries the matching
+      // one (`<-->`, `o--o`, `x--x`); a start marker on its own (`<-.-`,
+      // `<---`, `o---`) or paired with a different end (`o--x`) is dropped
+      // and the link renders without it (see issue #1386). The two-character
+      // bodies (`<--`, `o--`) are not valid Mermaid at all, so they keep the
+      // existing lenient reading.
+      const startDrawn =
+        startMarker !== undefined &&
+        (startMarker === endMarkerPartner(endMarker) ||
+          (endMarker === undefined && AMBIGUOUS_UNMARKED_BODIES.has(arrowBody)))
+      hasArrowStart = startDrawn
+      startMarkerKind = startDrawn ? markerKind(startMarker) : undefined
+      const rawEdgeLabel = arrowMatch[4]?.trim()
+      edgeLabel = rawEdgeLabel ? normalizeBrTags(rawEdgeLabel) : undefined
+      remaining = remaining.slice(arrowMatch[0].length).trim()
+      style = arrowStyleFromBody(arrowBody)
+      hasArrowEnd = endMarker !== undefined
+      endMarkerKind = markerKind(endMarker)
+    } else {
+      // Fallback: text-embedded label syntax (-- Yes -->, -. Maybe .->, == Sure ==>)
+      const textMatch = remaining.match(TEXT_ARROW_REGEX)
+      if (!textMatch) break
+      hasArrowStart = Boolean(textMatch[1])
+      startMarkerKind = markerKind(textMatch[1])
+      const rawLabel = textMatch[3]!.trim()
+      edgeLabel = rawLabel ? normalizeBrTags(rawLabel) : undefined
+      const openOp = textMatch[2]!
+      const closeOp = textMatch[4]!
+      remaining = remaining.slice(textMatch[0].length).trim()
+      style = textArrowStyleFromOps(openOp, closeOp)
+      // closeOp is a variable-length run (e.g. "---o", "==x", "-.-.->"); only
+      // its final character can be a circle/cross marker. A circle/cross
+      // terminator is its own kind of arrow ending — like `>` — so it counts
+      // toward hasArrowEnd too; an unmarked run (`---`, `===`, `-.-`) is the
+      // only case with no arrowhead of any kind at the close.
+      endMarkerKind = markerKind(closeOp.slice(-1))
+      hasArrowEnd = closeOp.endsWith('>') || endMarkerKind !== undefined
+    }
+
+    // Parse the next node group
+    const nextGroup = consumeNodeGroup(remaining, graph, subgraphStack)
+    if (!nextGroup || nextGroup.ids.length === 0) break
+
+    remaining = nextGroup.remaining.trim()
+
+    // Emit Cartesian product of edges: every source × every target
+    for (const sourceId of prevGroupIds) {
+      for (const targetId of nextGroup.ids) {
+        graph.edges.push({
+          source: sourceId,
+          target: targetId,
+          label: edgeLabel,
+          style,
+          hasArrowStart,
+          hasArrowEnd,
+          ...(startMarkerKind !== undefined
+            ? { startMarker: startMarkerKind }
+            : {}),
+          ...(endMarkerKind !== undefined ? { endMarker: endMarkerKind } : {}),
+          ...(edgeId !== undefined ? { id: edgeId } : {}),
+        })
+      }
+    }
+
+    prevGroupIds = nextGroup.ids
+  }
+}
+
+interface ConsumedNodeGroup {
+  ids: string[]
+  remaining: string
+}
+
+/**
+ * Consume one or more nodes separated by `&`.
+ * E.g. "A & B & C --> ..." returns ids: ['A', 'B', 'C']
+ */
+function consumeNodeGroup(
+  text: string,
+  graph: MermaidGraph,
+  subgraphStack: MermaidSubgraph[],
+): ConsumedNodeGroup | null {
+  const first = consumeNode(text, graph, subgraphStack)
+  if (!first) return null
+
+  const ids = [first.id]
+  let remaining = first.remaining.trim()
+
+  // Check for & separators
+  while (remaining.startsWith('&')) {
+    remaining = remaining.slice(1).trim()
+    const next = consumeNode(remaining, graph, subgraphStack)
+    if (!next) break
+    ids.push(next.id)
+    remaining = next.remaining.trim()
+  }
+
+  return { ids, remaining }
+}
+
+interface ConsumedNode {
+  id: string
+  remaining: string
+}
+
+/**
+ * Try to consume a node definition from the start of `text`.
+ * If the node has a shape+label (e.g. A[Text]), it's registered in the graph.
+ * If it's a bare reference (e.g. A), we look it up or create a default.
+ * Also handles ::: class shorthand suffix.
+ */
+function consumeNode(
+  text: string,
+  graph: MermaidGraph,
+  subgraphStack: MermaidSubgraph[],
+): ConsumedNode | null {
+  let id: string | null = null
+  let remaining: string = text
+
+  // Check for ::: class shorthand appearing BEFORE the shape brackets
+  // (e.g. A:::external[Label]). Strip it out so shape-pattern matching
+  // below still sees the id directly adjacent to its brackets.
+  let preClassName: string | undefined
+  const preClassMatch = remaining.match(PRE_CLASS_SHORTHAND_REGEX)
+  if (preClassMatch) {
+    preClassName = preClassMatch[2]!
+    remaining = preClassMatch[1]! + remaining.slice(preClassMatch[0].length)
+  }
+
+  /*
+   * Expanded syntax: `A@{ shape: doc, label: "Report" }` (Mermaid v11.3.0+).
+   *
+   * Tried before the bracket patterns because the id is followed by `@{`,
+   * which none of them match — without this the id would fall through to
+   * BARE_NODE_REGEX and the whole metadata block would be stranded as
+   * unparsed text.
+   */
+  const expandedIdMatch = remaining.match(EXPANDED_NODE_ID_REGEX)
+  if (expandedIdMatch) {
+    const expandedId = expandedIdMatch[1]!
+    const block = matchExpandedBlock(remaining.slice(expandedId.length))
+    if (block) {
+      const meta = parseExpandedMeta(block.body)
+      registerNode(graph, subgraphStack, {
+        id: expandedId,
+        label: normalizeBrTags(expandedNodeLabel(expandedId, meta)),
+        shape: expandedNodeShape(meta),
+      })
+      id = expandedId
+      remaining = remaining.slice(expandedId.length + block.length)
+    }
+  }
+
+  // Try each node pattern (shape-qualified)
+  if (id === null) {
+    for (const { regex, shape } of NODE_PATTERNS) {
+      const match = remaining.match(regex)
+      if (match) {
+        id = match[1]!
+        const label = normalizeBrTags(match[2]!)
+        // The slash-bracket family resolves its shape from the closing
+        // delimiter it captured in group 3; every other pattern has a fixed
+        // shape. See the SLASH_BRACKET note in NODE_PATTERNS.
+        const resolvedShape =
+          typeof shape === 'function' ? shape(match[3] ?? '') : shape
+        registerNode(graph, subgraphStack, { id, label, shape: resolvedShape })
+        remaining = remaining.slice(match[0].length)
+        break
+      }
+    }
+  }
+
+  // Bare node reference — register it if the node doesn't exist yet.
+  // If it already exists, it stays in the subgraph that claimed it first
+  // (nodes belong to the subgraph where they're first defined). A node that
+  // no subgraph has claimed yet (declared earlier at the top level, e.g.
+  // `X --> A` before `subgraph SA; A; end`) is adopted by the current one,
+  // as Mermaid does; otherwise the frame would come out empty (#1289).
+  if (id === null) {
+    const bareMatch = remaining.match(BARE_NODE_REGEX)
+    if (bareMatch) {
+      id = bareMatch[1]!
+      if (!graph.nodes.has(id)) {
+        registerNode(graph, subgraphStack, {
+          id,
+          label: id,
+          shape: 'rectangle',
+        })
+      } else if (!isClaimedBySubgraph(graph, subgraphStack, id)) {
+        trackInSubgraph(subgraphStack, id)
+      }
+      remaining = remaining.slice(bareMatch[0].length)
+    }
+  }
+
+  if (id === null) return null
+
+  if (preClassName) {
+    graph.classAssignments.set(id, preClassName)
+  }
+
+  // Check for ::: class shorthand suffix immediately after the node
+  const classMatch = remaining.match(CLASS_SHORTHAND_REGEX)
+  if (classMatch) {
+    graph.classAssignments.set(id, classMatch[1]!)
+    remaining = remaining.slice(classMatch[0].length)
+  }
+
+  return { id, remaining }
+}
+
+/** Register a node in the graph and track it in the current subgraph */
+function registerNode(
+  graph: MermaidGraph,
+  subgraphStack: MermaidSubgraph[],
+  node: MermaidNode,
+): void {
+  const isNew = !graph.nodes.has(node.id)
+  if (isNew) {
+    graph.nodes.set(node.id, node)
+  }
+  trackInSubgraph(subgraphStack, node.id)
+}
+
+/** True when any finished or still-open subgraph already lists `nodeId`. */
+function isClaimedBySubgraph(
+  graph: MermaidGraph,
+  subgraphStack: MermaidSubgraph[],
+  nodeId: string,
+): boolean {
+  const claims = (sg: MermaidSubgraph): boolean =>
+    sg.nodeIds.includes(nodeId) || sg.children.some(claims)
+  return graph.subgraphs.some(claims) || subgraphStack.some(claims)
+}
+
+/** Add node ID to the innermost subgraph if we're inside one */
+function trackInSubgraph(
+  subgraphStack: MermaidSubgraph[],
+  nodeId: string,
+): void {
+  if (subgraphStack.length > 0) {
+    const current = subgraphStack[subgraphStack.length - 1]!
+    if (!current.nodeIds.includes(nodeId)) {
+      current.nodeIds.push(nodeId)
+    }
+  }
+}
+
+/**
+ * Map a link body to its edge style, ignoring direction and run length.
+ *
+ * The body is the run between the optional start/end markers: `--`, `----`,
+ * `==`, `-.-`, `-..-`, `~~~`, etc. Classification is by the characters used,
+ * not the length, so every run length of a given style behaves identically.
+ */
+function arrowStyleFromBody(body: string): EdgeStyle {
+  if (body.startsWith('~')) return 'invisible'
+  if (body.includes('.')) return 'dotted'
+  if (body.startsWith('=')) return 'thick'
+  return 'solid'
+}
+
+/** Map text-embedded arrow open/close operators to edge style */
+function textArrowStyleFromOps(openOp: string, closeOp: string): EdgeStyle {
+  // Classify by the characters used, not by exact token, so every run length
+  // of a given style resolves identically — the same rule arrowStyleFromBody
+  // applies to the plain arrow forms.
+  if (openOp.includes('.') || closeOp.includes('.')) return 'dotted'
+  if (openOp.startsWith('=') || closeOp.startsWith('=')) return 'thick'
+  return 'solid'
+}
