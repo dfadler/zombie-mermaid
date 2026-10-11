@@ -39,7 +39,7 @@ the SVG renderer is about 74 KB gzipped, down from 518 KB, and the umbrella
 ## 2. Node version (4.0.0)
 
 4.0.0 changed `engines.node` from `>=22` to `>=24`, and its release notes say
-Node 22 is no longer supported. Whether that should stay a consumer
+the 22.x line is no longer supported. Whether that should stay a consumer
 requirement is still an open decision
 ([#1567](https://github.com/dfadler/zombie-mermaid/issues/1567)).
 
