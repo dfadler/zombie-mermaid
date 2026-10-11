@@ -25,10 +25,20 @@ const SWAP: Record<string, string> = {
   '◄': '►',
 }
 
+const isWord = (c: string | undefined) => c !== undefined && /\w/.test(c)
+
+/** Index of the first whole-word occurrence of `w` in `text`, or -1. (indexOf, not a RegExp built from input.) */
+function wordAt(text: string, w: string): number {
+  for (let i = text.indexOf(w); i >= 0; i = text.indexOf(w, i + 1)) {
+    if (!isWord(text[i - 1]) && !isWord(text[i + w.length])) return i
+  }
+  return -1
+}
+
 /** First whole-word label (4+ letters) from the source that also appears in the ASCII. */
 function pickLabel(s: CombinedSample): string | null {
   for (const w of s.source.match(/[A-Za-z]{4,}/g) ?? []) {
-    if (new RegExp(`\\b${w}\\b`).test(s.asciiText)) return w
+    if (wordAt(s.asciiText, w) >= 0) return w
   }
   return null
 }
@@ -39,11 +49,10 @@ const SIDE = '│┃║'
 function blankBox(a: string, s: CombinedSample): string | null {
   const lines = a.split('\n').map((l) => [...l])
   for (const w of s.source.match(/[A-Za-z]{4,}/g) ?? []) {
-    const re = new RegExp(`\\b${w}\\b`)
-    const i = lines.findIndex((l) => re.test(l.join('')))
+    const i = lines.findIndex((l) => wordAt(l.join(''), w) >= 0)
     if (i < 0) continue
     const row = lines[i]
-    const at = row.join('').search(re)
+    const at = wordAt(row.join(''), w)
     let l = at,
       r = at + w.length - 1
     while (l >= 0 && !SIDE.includes(row[l])) l--
@@ -101,13 +110,12 @@ export function mutate(s: CombinedSample, m: Mutation): string | null {
   } else {
     const w = pickLabel(s)
     if (w) {
-      const re = new RegExp(`\\b${w}\\b`)
-      out = a.replace(
-        re,
+      const at = wordAt(a, w)
+      const rep =
         m === 'truncateLabel'
           ? w.slice(0, -2) + '  '
-          : 'Zzzz'.padEnd(w.length, 'z').slice(0, w.length),
-      )
+          : 'Zzzz'.padEnd(w.length, 'z').slice(0, w.length)
+      out = a.slice(0, at) + rep + a.slice(at + w.length)
     }
   }
   return out !== null && out !== a ? out : null
