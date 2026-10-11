@@ -61,3 +61,7 @@ count above.
    1 s).
 
 No renderer code is changed by this write-up.
+
+Note, 2026-10-11 (#1746): N is the script's size parameter (N nodes, 2N labelled edges), as
+in the table above. Re-measuring N=40 (80 labelled edges) at the #1490 fix commit and at
+`main` gave about 470 ms and 450 ms, which does not reproduce the 13,614 ms recorded here.

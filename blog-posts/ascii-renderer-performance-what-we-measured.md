@@ -67,6 +67,8 @@ other.
   drawn segments by row in `besideGeometryFree`** (issue #1490). The PR
   reports 683 ms to 465 ms at 40 edges, about 30%, and states that its own
   acceptance target (well under 1 s at 80 labelled edges) is only partly met.
+  (The PR's "40 edges" is the benchmark's size parameter, which is 80
+  labelled edges; see the correction at the end.)
 - **portShifts computed once per `drawGraph`** (issue #1350). This is a
   commit, `df685c09`, inside [#1351](https://github.com/dfadler/zombie-mermaid/pull/1351),
   a layout fix for edges sharing a port. It was a perf fix for a slowdown
@@ -125,11 +127,14 @@ Still super-linear: roughly 4.3x going from 100 to 200 nodes, 2.4x from 200
 to 300. The scaling curve is flatter and the constants are lower, which is
 not the same as solved.
 
-`pnpm run bench:label-placement` on current `main` gives 3505 ms at 80
-labelled edges (and 460 ms at 40). The #1466 research doc recorded 13,614 ms
-at 80 labelled edges earlier the same week, on another run. That is roughly a
-4x improvement across two sessions, and the #1490 goal of getting that case
-well under one second has not been met.
+`pnpm run bench:label-placement` on current `main` gives 460 ms at 80
+labelled edges (size 40 in the script) and 3505 ms at 160 labelled edges
+(size 80). The #1466 research doc recorded 13,614 ms at 80 labelled edges
+earlier the same week, on another run. Re-measuring that same input at the
+#1490 fix commit and at `main` gave about 470 ms and 450 ms, so the #1490
+goal of getting 80 labelled edges well under one second is met. The cost is
+still super-linear, at roughly 6 to 7x per doubling, which is why 160
+labelled edges takes about 3.5 s.
 
 ## What this does and does not show
 
@@ -144,3 +149,15 @@ well under one second has not been met.
 If the next weekly entry does not show a drop of a similar size, the first
 thing to check is whether the CI runner's variance is hiding it, since the
 history records one run per week and no spread.
+
+**Correction, 2026-10-11.** An earlier version of this post treated the
+`bench:label-placement` size parameter as the number of labelled edges. The
+generator emits two labelled edges per unit of size, so size 40 is 80 labelled
+edges and size 80 is 160. The post said 3505 ms at 80 labelled edges and 460 ms
+at 40; the correct labels are 160 and 80. It also concluded that the #1490 goal
+(under one second at 80 labelled edges) had not been met. At 80 labelled edges
+the render takes about 0.45 s, so the goal is met; the cost is still
+super-linear, and 160 labelled edges takes about 3.5 s. The earlier
+"roughly a 4x improvement" comparison against the 13,614 ms figure is dropped,
+because re-measurements of that input do not reproduce 13 s. See
+[#1746](https://github.com/dfadler/zombie-mermaid/issues/1746#issuecomment-6112201852).

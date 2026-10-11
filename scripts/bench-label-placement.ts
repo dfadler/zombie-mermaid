@@ -3,7 +3,7 @@
  *
  * `clearOfEarlierLabels` (draw-arrows.ts) re-resolves every later edge's label
  * for each eligible vertical-leg edge, so cost could be quadratic in labelled
- * edges. This renders LR graphs with N labelled edges (the #1463 shared-stem
+ * edges. This renders LR graphs with 2N labelled edges (N source nodes) (the #1463 shared-stem
  * shape, scaled) and the same graphs with labels stripped; the difference is
  * the label-placement cost. Report-only, not part of the CI gate.
  *
@@ -17,7 +17,7 @@ const RUNS = Number(arg('runs') ?? 5)
 const SIZES = (arg('sizes') ?? '10,20,40,80').split(',').map(Number)
 
 /**
- * LR graph of `n` labelled edges: a chain S0..S(n-1) plus every Si -> a shared
+ * LR graph of `2n` labelled edges (`n` nodes, two labelled edges each): a chain S0..S(n-1) plus every Si -> a shared
  * sink and Si -> a shared hub, so many labels land on shared vertical legs
  * (the #1433/#1463 shape) without duplicate parallel edges.
  */
@@ -45,7 +45,9 @@ function median(fn: () => unknown): number {
 }
 
 console.log(`\nLabel-placement scaling (median of ${RUNS} runs)`)
-console.log('edges  labelled(ms)  unlabelled(ms)  label cost(ms)')
+console.log(
+  'nodes (2 labelled edges each)  labelled(ms)  unlabelled(ms)  label cost(ms)',
+)
 for (const n of SIZES) {
   const opts = { colorMode: 'none' as const }
   const lab = median(() => renderMermaidASCII(generateLabelled(n), opts))
@@ -53,6 +55,6 @@ for (const n of SIZES) {
     renderMermaidASCII(generateLabelled(n, false), opts),
   )
   console.log(
-    `${String(n).padStart(5)}  ${lab.toFixed(1).padStart(12)}  ${plain.toFixed(1).padStart(14)}  ${(lab - plain).toFixed(1).padStart(14)}`,
+    `${String(n).padStart(28)}  ${lab.toFixed(1).padStart(12)}  ${plain.toFixed(1).padStart(14)}  ${(lab - plain).toFixed(1).padStart(14)}`,
   )
 }
