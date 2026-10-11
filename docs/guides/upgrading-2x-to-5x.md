@@ -73,7 +73,7 @@ figures are from [the measurement doc](../research/1370-elkjs-optional-peer-dep.
 
 4.0.0 changed `engines.node` in `package.json` from `>=22` to `>=24`
 ([#1291](https://github.com/dfadler/zombie-mermaid/pull/1291)), and its release
-notes say Node 22 is no longer supported. Whether that should stay a
+notes say the previous major (22) is no longer supported. Whether that should stay a
 requirement for consumers is an open decision, tracked in
 [#1567](https://github.com/dfadler/zombie-mermaid/issues/1567), which also
 records what has been tested on other Node versions. Package managers that
