@@ -39,7 +39,7 @@ name: Form-judge weekly report
 on:
   schedule:
     # Every Monday at 15:00 UTC — weekly and low-urgency, like Upstream
-    # check's Monday 13:00 slot (upstream-check.yml), offset so the two
+    # check's Monday 13:00 slot (upstream-watch.yml), offset so the two
     # don't start at the exact same minute.
     - cron: '0 15 * * 1'
   workflow_dispatch: {}
@@ -55,7 +55,7 @@ concurrency:
 
 jobs:
   judge:
-    # Same fork-of-this-fork guard as upstream-check.yml / ci.yml — see
+    # Same fork-of-this-fork guard as upstream-watch.yml / ci.yml — see
     # ci.yml's `test` job for the full reasoning.
     if: github.repository == 'dfadler/zombie-mermaid'
     runs-on: ubuntu-latest

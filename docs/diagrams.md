@@ -278,7 +278,7 @@ motion was intended.
 own class (`class A foo` or `A:::foo`) overrides it property by property, and
 an explicit `style A ...` directive overrides both.
 
-<!-- mermaid-audited-version: 11.17.0 (read by .github/workflows/upstream-check.yml; bump when the coverage audit is redone) -->
+<!-- mermaid-audited-version: 11.17.0 (read by .github/workflows/upstream-watch.yml; bump when the coverage audit is redone) -->
 
 ### Known limitations
 
@@ -801,9 +801,11 @@ opacity with a 2px outline in the theme's foreground colour.
 
 Known differences from Mermaid:
 
-- `%%{init: {"pie": …}}%%` settings (`textPosition`, `donutHole`,
-  `legendPosition`, `highlightSlice`) are not supported yet; the defaults
-  are always used.
+- `%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the SVG slice labels
+  (0 is the centre, 1 the outer edge; default 0.75). The ASCII output has no
+  positioned labels, so it ignores it. The other `pie` settings Mermaid
+  11.16+ supports (`donutHole`, `legendPosition`, `highlightSlice`) are not
+  supported yet; their defaults are always used.
 - A legend taller than the 450px frame (more than about 20 slices) makes the
   SVG taller instead of being cut off, and an empty chart keeps its full
   width (Mermaid crops it).
@@ -965,6 +967,8 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 - **Multi-series** — Each series gets a distinct ANSI color from the theme's accent palette
 - **Legends** — Automatically shown when multiple series are present
 - **Horizontal charts** — Fully supported with categories on the y-axis
+- **Y-axis ticks** — The same ticks as the SVG, and as Mermaid.js: about 10 intervals at a step of 1, 2 or 5 times a power of ten. Without a `y-axis` range the axis spans the data's own minimum and maximum, so bars start at the data minimum; see [xychart-design.md](xychart-design.md#shipped-behavior-y-axis-ticks-and-the-y-axis-title)
+- **Y-axis title** — Written one letter per row down the left edge in vertical charts (no rotation in a terminal), and as a centered line under the axis in horizontal charts
 
 ### ASCII Pie Charts
 
