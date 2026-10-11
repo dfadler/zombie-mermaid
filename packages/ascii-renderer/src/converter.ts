@@ -339,6 +339,7 @@ function convertSubgraph(
     maxY: 0,
     direction: normalizedDirection,
     rawDirection,
+    ...(mSg.region ? { region: true } : {}),
   }
 
   // Resolve node references

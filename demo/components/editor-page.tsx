@@ -403,6 +403,7 @@ export function EditorPage({
   return (
     <Document
       title="Zombie Mermaid — Live Editor"
+      description="Live Mermaid editor: render Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, and Pie diagrams to SVG or ASCII, switch themes, and share by URL."
       head={
         <>
           {/* Document only emits the SVG favicon (its own shared default,

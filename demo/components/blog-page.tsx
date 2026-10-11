@@ -105,6 +105,7 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: './' },
+      { label: 'Upgrade guide', href: 'upgrading-2x-to-5x.html' },
       { label: 'GitHub', href: FORK_URL },
       {
         label: 'npm package',

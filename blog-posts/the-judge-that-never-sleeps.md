@@ -4,6 +4,8 @@ date: 2026-09-06
 description: A weekly job has an LLM compare this repo's ASCII rendering against real mermaid.js and files issues for what doesn't match. A second bot turns PR review comments into tracked issues. Neither fixes anything — that part is still humans.
 ---
 
+> **Note (2026-10-10):** this post was written before the monorepo split. File paths it cites under `src/` have since moved into `packages/*` (for example `packages/ascii-renderer/`, `packages/svg-renderer/`, `packages/core/`); the code and line references are as of the post's date.
+
 Most write-ups about AI-assisted coding stop at "the agent wrote the code." This one is about two pieces of automation that quietly went further: one has an LLM grade this repo's own rendering output against real, external ground truth on a schedule, and the other makes sure a review comment can't be silently forgotten. Together they're the closest thing this project has to a recursive QA loop — AI checking AI-assisted (and human) work — with people only in the loop to decide what to do about what gets flagged.
 
 ## What the weekly judge actually compares

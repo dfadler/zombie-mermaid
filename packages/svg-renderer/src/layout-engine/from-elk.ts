@@ -298,6 +298,7 @@ function extractNodesAndGroups(
         width,
         height,
         children: childGroups,
+        ...(mermaidSg?.region ? { region: true } : {}),
       })
     } else {
       // This is a leaf node
