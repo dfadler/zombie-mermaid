@@ -141,9 +141,9 @@ describe('parallel edges between the same node pair (#329)', () => {
   it('3 parallel edges route through 3 distinct paths', () => {
     const graph = buildGraph(
       `flowchart LR
-    A -->|One| B
-    A -->|Two| B
-    A -->|Three| B`,
+    A -->|First| B
+    A -->|Second| B
+    A -->|Third| B`,
       'LR',
     )
     const edges = edgesBetween(graph, 'A', 'B')

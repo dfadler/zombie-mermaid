@@ -27,6 +27,7 @@ import {
   fixSequenceActivationsHandler,
 } from './tools/fix-sequence-activations.ts'
 
+import { validateInputShape, validateHandler } from './tools/validate.ts'
 import { listThemesHandler } from './tools/list-themes.ts'
 import { listDiagramTypesHandler } from './tools/list-diagram-types.ts'
 
@@ -179,6 +180,26 @@ export function createMcpServer(): McpServer {
       },
     },
     listDiagramTypesHandler,
+  )
+
+  server.registerTool(
+    'validate_mermaid',
+    {
+      title: 'Validate Mermaid diagram syntax',
+      description:
+        'Parse Mermaid source without rendering it. Returns JSON ' +
+        '{ valid, diagnostics }; each diagnostic has { line, sourceLine, ' +
+        'message } when the parser names a line, else just { message }.',
+      inputSchema: validateInputShape,
+      annotations: {
+        title: 'Validate Mermaid diagram syntax',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    validateHandler,
   )
 
   return server
