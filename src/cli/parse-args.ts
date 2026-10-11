@@ -86,7 +86,13 @@ export interface WebArgs {
   port: number
 }
 
-export type CliArgs = RenderArgs | SimpleCommand | WebArgs
+export interface ValidateArgs {
+  command: 'validate'
+  /** Input file; `undefined` reads stdin. */
+  input: string | undefined
+}
+
+export type CliArgs = RenderArgs | SimpleCommand | WebArgs | ValidateArgs
 
 /** Default port for `zombie-mermaid web` when `--port` isn't given. */
 export const DEFAULT_WEB_PORT = 3000
@@ -200,6 +206,13 @@ export function parseArgs(argv: string[]): CliArgs {
   // Render command
   if (first === 'render') {
     return parseRender(rest)
+  }
+
+  // Validate command: parse only; one optional input file, no flags.
+  if (first === 'validate') {
+    const extra = rest.find((a, i) => i > 0 || a.startsWith('-'))
+    if (extra !== undefined) throw new Error(`Unexpected argument: ${extra}`)
+    return { command: 'validate', input: rest[0] }
   }
 
   // Web command

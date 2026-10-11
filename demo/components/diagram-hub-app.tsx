@@ -13,10 +13,13 @@
  */
 import type { CSSProperties, ReactNode } from 'react'
 import {
+  ArchitectureIcon,
+  C4Icon,
   ChevronRightIcon,
   ClassIcon,
   ErIcon,
   FlowchartIcon,
+  PieIcon,
   SequenceIcon,
   StateIcon,
   XyChartIcon,
@@ -44,6 +47,9 @@ const HUB_TYPE_ICONS: Record<
   class: ClassIcon,
   er: ErIcon,
   'xy-chart': XyChartIcon,
+  c4: C4Icon,
+  'architecture-beta': ArchitectureIcon,
+  pie: PieIcon,
 }
 const HUB_ICON_SIZE = 200
 
