@@ -25,19 +25,24 @@ export function drawSubgraphBox(sg: AsciiSubgraph, graph: AsciiGraph): Canvas {
   const canvas = mkCanvas(width, height)
 
   if (!graph.config.useAscii) {
-    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, from.y, '─')
-    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, to.y, '─')
-    for (let y = from.y + 1; y < to.y; y++) write(canvas, from.x, y, '│')
-    for (let y = from.y + 1; y < to.y; y++) write(canvas, to.x, y, '│')
+    // A concurrency region is dashed, like mermaid.js's `divider` cluster.
+    const h = sg.region ? '┄' : '─'
+    const v = sg.region ? '┆' : '│'
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, from.y, h)
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, to.y, h)
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, from.x, y, v)
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, to.x, y, v)
     write(canvas, from.x, from.y, '┌')
     write(canvas, to.x, from.y, '┐')
     write(canvas, from.x, to.y, '└')
     write(canvas, to.x, to.y, '┘')
   } else {
-    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, from.y, '-')
-    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, to.y, '-')
-    for (let y = from.y + 1; y < to.y; y++) write(canvas, from.x, y, '|')
-    for (let y = from.y + 1; y < to.y; y++) write(canvas, to.x, y, '|')
+    const h = sg.region ? '.' : '-'
+    const v = sg.region ? ':' : '|'
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, from.y, h)
+    for (let x = from.x + 1; x < to.x; x++) write(canvas, x, to.y, h)
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, from.x, y, v)
+    for (let y = from.y + 1; y < to.y; y++) write(canvas, to.x, y, v)
     write(canvas, from.x, from.y, '+')
     write(canvas, to.x, from.y, '+')
     write(canvas, from.x, to.y, '+')
