@@ -48,6 +48,7 @@
   "test:coverage": "Vitest with coverage",
   "test:a11y": "axe-core accessibility scan of the built site (run `pnpm run build:site` first)",
   "test:visual": "run the Playwright visual regression suite (see [visual-regression.md](visual-regression.md))",
+  "test:ascii-text:update": "rewrite the plain-text ASCII snapshots under `__tests__/__ascii-snapshots__/` (unicode and ASCII-only, one `.txt` per gallery sample; asserted by `__tests__/ascii-text-snapshots.test.ts` under normal `pnpm test`). Run it after an intentional ASCII rendering change or after adding a sample to `samples-data.ts`/`xychart-samples-data.ts`, then review the `.txt` diff (#1708)",
   "test:visual:update": "regenerate visual baselines for your platform (see [visual-regression.md](visual-regression.md))",
   "test:visual:watch": "the visual regression suite in Playwright UI mode",
   "test:watch": "Vitest in watch mode",
