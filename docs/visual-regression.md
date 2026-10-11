@@ -75,6 +75,14 @@ just a link to a sample index or a separate issue's reproduction. Without the
 inline source, the screenshots aren't verifiable from the PR/issue body
 alone; see [#402](https://github.com/dfadler/zombie-mermaid/issues/402).
 
+## The `DASHBOARD_REFRESH_PAT` secret (maintainers)
+
+Used by `dashboard-refresh.yml` (and the other PAT-using workflows) to push the weekly data-refresh branch and open its PR, because PRs authored with `GITHUB_TOKEN` do not trigger the required checks. Configured as the repository secret `DASHBOARD_REFRESH_PAT` (Settings > Secrets and variables > Actions): a fine-grained PAT limited to this repository with `Contents: Read and write` and `Pull requests: Read and write`.
+
+**Expiry alert ([#1736](https://github.com/dfadler/zombie-mermaid/issues/1736)).** Each run's "Check DASHBOARD_REFRESH_PAT health" step calls `GET /user` with the PAT. On HTTP 401/403, or when the `GitHub-Authentication-Token-Expiration` response header ([changelog](https://github.blog/changelog/2021-07-26-expiration-options-for-personal-access-tokens/)) is under 14 days away, it opens (or comments on) one issue titled "DASHBOARD_REFRESH_PAT needs attention", using `GITHUB_TOKEN`. The header is absent for non-expiring tokens, so those are never flagged until they are rejected. The step never fails the job.
+
+**Rotating.** Create a new fine-grained PAT with the same scope and a short expiry, then run `gh secret set DASHBOARD_REFRESH_PAT --repo dfadler/zombie-mermaid` (it prompts for the value; never paste it into an issue, PR, log or chat), and close the alert issue.
+
 ## The `VISUAL_REGRESSION_ATTACH_PAT` secret (maintainers)
 
 Contributors never need this. It matters to whoever administers the repo's secrets.
