@@ -1021,11 +1021,21 @@ export function edgeLabelPlacement(
   // (every later edge re-resolves every other edge), so remember them for the
   // call. The layout cannot change mid-call, and the memo is dropped on exit,
   // so a layout change can never see a stale placement.
-  try {
-    return resolveWithClearance(graph, edge)
-  } finally {
-    placementMemo.clear()
+  // #1785: inside a `withPortShifts` scope the layout is fixed (the segment
+  // index already relies on that), so the memo lives as long as the scope and
+  // each edge's final placement is computed once, not once per draw call.
+  const scope = pathScope(graph)
+  if (scope) {
+    placementMemo = scopedMemo.get(scope) ?? new Map()
+    scopedMemo.set(scope, placementMemo)
+    const key = `${graph.edges.indexOf(edge)}:final`
+    if (!placementMemo.has(key)) {
+      placementMemo.set(key, resolveWithClearance(graph, edge))
+    }
+    return placementMemo.get(key)!
   }
+  placementMemo = new Map()
+  return resolveWithClearance(graph, edge)
 }
 
 function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
@@ -1035,7 +1045,8 @@ function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
 
 type LabelLines = { x: number; y: number; text: string }[] | null
 /** Per-`edgeLabelPlacement`-call memo of `resolveLabelPlacement` (#1466). */
-const placementMemo = new Map<string, LabelLines>()
+let placementMemo = new Map<string, LabelLines>()
+const scopedMemo = new WeakMap<object, Map<string, LabelLines>>()
 
 /**
  * #1433: two edges that share their last vertical leg (a lane's drop into one
