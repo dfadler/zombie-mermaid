@@ -40,7 +40,7 @@ Every `package.json` script and what it does. Visual-regression workflow details
 - `pnpm run bench:history:append` — append a `bench.ts --json=` summary to the tracked trend history (`bench-history.jsonl`); wired into `.github/workflows/dashboard-refresh.yml`'s weekly schedule (not every push to `main`, and not on PRs) — you shouldn't normally need to run this by hand
 - `pnpm run bench:trend` — print how the combined render total (and each category) has moved across the most recent entries in `bench-history.jsonl`, for a "weeks/months of drift" view that complements `bench:compare`'s single current-vs-baseline check
 - `pnpm run bench:mcp` — benchmark the `packages/mcp` server's own request/response overhead (Zod validation, tool dispatch, transport round-trip) by driving a real MCP `Client` against `createMcpServer()` over `InMemoryTransport`; reports mean/median/p95 latency per tool. Supports `--json=<path>` in `bench.ts`'s own summary shape, `--iterations=<n>` (default 50), and `--warmup=<n>` (default 5)
-- `pnpm run check:docs` — check docs for drift: broken links and anchors, script and path references, and the Node version claim against `.nvmrc` and `engines.node` (see `scripts/check-docs.ts`)
+- `pnpm run check:docs` — check docs for drift: broken links and anchors, script and path references, and the Node version claim against `.nvmrc` and `devEngines` (see `scripts/check-docs.ts`)
 - `pnpm run check:bundle-size` — check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)
 
 ## Site and asset generators

@@ -86,7 +86,7 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Installation
 
-Requires Node.js 24 or newer (`engines` in `package.json`).
+Requires Node.js 22.3 or newer (`engines` in `package.json`): the oldest Node release line still in LTS.
 
 ```bash
 npm install zombie-mermaid
@@ -98,7 +98,7 @@ pnpm add zombie-mermaid
 
 > Not sure this is the right package? See [Which package do I install?](docs/guides/choosing-a-package.md).
 
-> **Upgrading from 4.x?** Node.js 24 or newer is now required. `elkjs` is now an
+> **Upgrading from 4.x?** `elkjs` is now an
 > optional peer dependency: browser and bundler apps must call `registerElk(ELK)`
 > once (see the [migration guide](docs/guides/elkjs-optional-peer.md)). The
 > package no longer ships `src/` (see [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538)).

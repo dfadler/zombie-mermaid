@@ -7,7 +7,7 @@ New here? Issues labeled [`good first issue`](https://github.com/dfadler/zombie-
 ## Quick start
 
 ```bash
-pnpm install        # Node 24+ (engine-strict is on)
+pnpm install        # Node 24+ for development (engine-strict is on)
 pnpm run doctor     # check your toolchain; ASCII/Docker tools are optional
 pnpm run verify     # typecheck + lint/format/tests for what you changed
 ```
@@ -31,7 +31,7 @@ cd zombie-mermaid
 pnpm install
 ```
 
-Requires Node 24+ (`engines.node` in `package.json`; CI runs Node 24, the current LTS) and pnpm. The repo pins `packageManager` in `package.json`, and `corepack enable` will pick that up automatically. A `.nvmrc` at the repo root pins the Node major CI and development use (24); run `nvm use` (or `fnm use`) in the checkout to switch to it.
+Development requires Node 24+ (`devEngines.runtime` in `package.json`; CI runs Node 24) and pnpm. The published packages only require Node 22.3+ (`engines.node`; see [the decision](docs/decisions/consumer-node-floor-1567.md)). The repo pins `packageManager` in `package.json`, and `corepack enable` will pick that up automatically. A `.nvmrc` at the repo root pins the Node major CI and development use (24); run `nvm use` (or `fnm use`) in the checkout to switch to it.
 
 Start the dev server with `pnpm run dev`. It serves `/` (the marketing home page) and `/editor` (the live editor) with live reload, on port 3456 by default. Set `PORT` (for example `PORT=3457 pnpm run dev`) if that port is taken or you run several checkouts at once.
 

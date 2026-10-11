@@ -66,7 +66,8 @@ describe('check-docs orchestration', () => {
   })
   const base = {
     '.nvmrc': 'v24.1.0\n',
-    'package.json': '{"engines":{"node":">=24"}}',
+    'package.json':
+      '{"engines":{"node":">=22.3.0"},"devEngines":{"runtime":{"version":">=24"}}}',
   }
   it('passes a consistent tree', () => {
     const r = checkAll(
@@ -78,11 +79,19 @@ describe('check-docs orchestration', () => {
     )
     expect(r).toEqual({ files: 1, errs: [] })
   })
+  it('allows the engines floor major in prose, rejects others', () => {
+    const r = checkAll(
+      fakeFs({ ...base, 'README.md': 'Node 22 or Node 24, not Node 20' }),
+    )
+    expect(r.errs).toEqual([
+      'README.md:1: "Node 20" but .nvmrc/engines are 24/22',
+    ])
+  })
   it('reports engines and workflow node drift, skips frozen/stale docs', () => {
     const r = checkAll(
       fakeFs({
         '.nvmrc': '24',
-        'package.json': '{"engines":{"node":">=20 || >=24"}}',
+        'package.json': '{"devEngines":{"runtime":{"version":">=20 || >=24"}}}',
         '.github/workflows/ci.yml': 'node-version: 22',
         'CHANGELOG.md': '[x](./gone.md)',
         'docs/research/a.md': '[x](./gone.md)',
@@ -91,7 +100,7 @@ describe('check-docs orchestration', () => {
     )
     expect(r.files).toBe(0)
     expect(r.errs).toEqual([
-      'package.json engines.node ">=20 || >=24" vs .nvmrc 24',
+      'package.json devEngines.runtime ">=20 || >=24" vs .nvmrc 24',
       '.github/workflows/ci.yml: node-version 22 vs .nvmrc 24',
     ])
   })

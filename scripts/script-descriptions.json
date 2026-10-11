@@ -19,7 +19,7 @@
   "build:mono-font": "rebuild the subsetted monospace font and the files that embed it (`scripts/build-mono-font-subset.ts`)",
   "build:packages": "build only the internal `@zombie-mermaid/*` packages (part of `build`)",
   "build:site": "build every site page into `site/` (what CI's \"Build site generator check\" job runs, as a generator check only)",
-  "check:docs": "check docs for drift: broken links and anchors, script and path references, and the Node version claim against `.nvmrc` and `engines.node` (see `scripts/check-docs.ts`)",
+  "check:docs": "check docs for drift: broken links and anchors, script and path references, and the Node version claim against `.nvmrc` and `devEngines` (see `scripts/check-docs.ts`)",
   "check:bundle-size": "check `dist/` gzip sizes against `bundle-size-budget.json` (run `pnpm run build` first)",
   "smoke:packed": "pack every public package, install the tarballs into clean temp projects and smoke-test them as a consumer would (run `pnpm run build` first; what CI's \"Packed tarball smoke test\" job and publish.yml run)",
   "coverage:diff": "hold new/changed lines to a 90% coverage bar (what CI's \"Check coverage on new/changed code\" step runs, after `pnpm run test:coverage` has produced `coverage/lcov.info`; see `scripts/check-diff-coverage.ts`)",
