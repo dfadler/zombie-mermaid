@@ -1,0 +1,5 @@
+{
+  "name": "zombie-mermaid-skills",
+  "description": "Project skills for zombie-mermaid, packaged so claude plugin eval can load them.",
+  "version": "0.0.0"
+}

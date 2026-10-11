@@ -112,3 +112,22 @@ describe('ASCII entity decoding', () => {
     expect(decodeMermaidEntities('#X5B;y#X5d;')).toBe('[y]')
   })
 })
+
+describe('Mermaid entity codes in pie and xychart (#1697)', () => {
+  const E = 'a#quot;b#amp;c#35;d'
+  const sources = {
+    pie: `pie title ${E}\n  "${E}" : 3\n  "y" : 2`,
+    xychart: `xychart-beta\n  title "${E}"\n  x-axis "${E}" ["${E}", y]\n  y-axis "${E}" 0 --> 10\n  bar [3, 4]`,
+    'xychart (numeric x-axis, title-only y-axis)': `xychart-beta\n  x-axis "${E}" 0 --> 5\n  y-axis "${E}"\n  bar [3, 4]`,
+  }
+  for (const [name, src] of Object.entries(sources)) {
+    it(`${name}: SVG and ASCII show decoded text, never the raw code`, () => {
+      const svg = renderMermaidSVG(src)
+      const ascii = renderMermaidASCII(src, { colorMode: 'none' })
+      expect(svg).not.toMatch(/#(quot|amp|35);/)
+      expect(ascii).not.toMatch(/#(quot|amp|35);/)
+      expect(svg).toContain('a&quot;b&amp;c#d')
+      expect(ascii).toContain('a"b&c#d')
+    })
+  }
+})

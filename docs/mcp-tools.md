@@ -1,6 +1,6 @@
 # MCP tool reference
 
-The six tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](../README.md#mcp-server); for the trust model see [SECURITY.md](../SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure.
+The six tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](../README.md#mcp-server); for the trust model see [SECURITY.md](../SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure. The first content block is the plain `<tool>: <message>` text; when the parse error names a line, a second text block holds JSON `{"diagnostics":[{"line","sourceLine","message"}]}` so a client can point at the offending line.
 
 | Tool                                                                        | Read-only                          | Returns                                                    |
 | --------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------- |

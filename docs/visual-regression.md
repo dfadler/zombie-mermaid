@@ -74,3 +74,25 @@ directly after that heading and before the before/after image table — not
 just a link to a sample index or a separate issue's reproduction. Without the
 inline source, the screenshots aren't verifiable from the PR/issue body
 alone; see [#402](https://github.com/dfadler/zombie-mermaid/issues/402).
+
+## The `VISUAL_REGRESSION_ATTACH_PAT` secret (maintainers)
+
+Contributors never need this. It matters to whoever administers the repo's secrets.
+
+**What it is used for.** `.github/workflows/visual-regression-post-comment.yml` runs after `CI` and, when the visual-regression job failed, posts a PR comment with the diff screenshots. The "Build and post diff comment" step runs `gh pr comment --attach` with `GH_TOKEN` set to this secret. The asset-upload endpoint behind `--attach` rejects the Actions installation token (`GITHUB_TOKEN`), so it needs a user token (see [cli/cli#14495](https://github.com/cli/cli/issues/14495) and [cli/cli#14309](https://github.com/cli/cli/issues/14309), as cited in the workflow). It is used only in that one step. Every other call in the workflow uses `github.token`.
+
+**If it is missing or fails.** Nothing breaks. The step logs `::warning::VISUAL_REGRESSION_ATTACH_PAT is not set` (or the `--attach` failure) and posts a text-only comment using `github.token`. A missing PAT only costs the inline images.
+
+**Where it is configured.** Repository secret `VISUAL_REGRESSION_ATTACH_PAT` on `dfadler/zombie-mermaid` (Settings > Secrets and variables > Actions). It is deliberately separate from `DASHBOARD_REFRESH_PAT` ([#1140](https://github.com/dfadler/zombie-mermaid/issues/1140)).
+
+**Minimum scope: not determinable from the code.** Nothing in the workflow states which permissions the upload endpoint checks, and the endpoint is undocumented. What the repo does record is the proposal in #1140: a fine-grained PAT restricted to this one repository, with `Contents: write` and `Pull requests: write`. Treat that as the starting point, not a verified minimum. To tighten it, try removing `Contents: write` on a throwaway PR and see whether `--attach` still succeeds. Fine-grained PAT permissions are defined in [Permissions required for fine-grained personal access tokens](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens); creating one is covered in [Managing your personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens). Set a short expiration; GitHub does not renew fine-grained PATs.
+
+**Rotation.**
+
+1. On github.com, create a new fine-grained PAT (resource owner `dfadler`, repository access: only `dfadler/zombie-mermaid`, permissions as above, short expiry).
+2. Update the secret without echoing the value: `gh secret set VISUAL_REGRESSION_ATTACH_PAT --repo dfadler/zombie-mermaid` (it prompts for the value). Never paste it in an issue, PR, log or chat.
+3. Verify on a PR with a deliberately failing visual-regression run: the comment should show inline images and the job log should not contain the "is not set" or "falling back" warning.
+4. Delete the old token on github.com (Settings > Developer settings > Personal access tokens).
+5. If a token may have leaked, do steps 1 to 4 immediately.
+
+Rotate on expiry, whenever the maintainer who created it loses repo access, and on any suspected exposure.
