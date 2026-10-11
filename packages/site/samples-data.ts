@@ -2151,4 +2151,15 @@ pie title Pets adopted by volunteers
   A -->|third| B
   B -->|back| A`,
   },
+  {
+    title: 'Pie: Text Position',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the slice percentage labels from the default 0.75 of the radius to halfway out in the SVG. The ASCII bar chart has no slice labels to move, so it is unchanged.',
+    source: `%%{init: {"pie": {"textPosition": 0.5}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
 ]
