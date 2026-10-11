@@ -46,12 +46,38 @@ const slug = (h: string) =>
     .trim()
     .replace(/\s/g, '-')
 
+// Blank out fenced code (backtick or tilde; the closer must reuse the opener's
+// marker and be at least as long), keeping line numbers intact.
+export function stripFences(md: string): string {
+  let open: { ch: string; len: number } | null = null
+  return md
+    .split('\n')
+    .map((line) => {
+      const m = /^ {0,3}(`{3,}|~{3,})/.exec(line)
+      if (!open) {
+        if (!m) return line
+        open = { ch: m[1]![0]!, len: m[1]!.length }
+        return ''
+      }
+      if (m && m[1]![0] === open.ch && m[1]!.length >= open.len) open = null
+      return ''
+    })
+    .join('\n')
+}
+
+// True when the engines.node range admits only the .nvmrc major or newer.
+export function engineMatches(eng: string, want: string): boolean {
+  const alts = eng.split('||')
+  return (
+    alts.length === 1 &&
+    new RegExp(`^\\s*(>=|\\^|~)?\\s*v?${want}\\b`).test(eng)
+  )
+}
+
 export function anchors(md: string): Set<string> {
   const seen = new Map<string, number>()
   const out = new Set<string>()
-  for (const m of md
-    .replace(/```[\s\S]*?```/g, '')
-    .matchAll(/^#{1,6}\s+(.+?)\s*#*$/gm)) {
+  for (const m of stripFences(md).matchAll(/^#{1,6}\s+(.+?)\s*#*$/gm)) {
     const s = slug(m[1]!)
     const n = seen.get(s) ?? 0
     seen.set(s, n + 1)
@@ -68,14 +94,20 @@ export function checkDoc(
   read: (p: string) => string = (p) => readFileSync(p, 'utf8'),
 ): string[] {
   const errs: string[] = []
-  // Blank out fenced code (keeps line numbers): examples may name hypothetical paths.
-  const prose = md.replace(/```[\s\S]*?```/g, (b) =>
-    '\n'.repeat(b.split('\n').length - 1),
-  )
+  // Fenced code is blanked: examples may name hypothetical paths.
+  const prose = stripFences(md)
   prose.split('\n').forEach((line, i) => {
     const at = `${file}:${i + 1}`
-    for (const m of line.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
-      const href = m[1]!
+    const hrefs = [
+      ...[...line.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)].map(
+        (m) => m[1]!,
+      ),
+      // reference-style definition: `[id]: ./dest.md "title"`
+      ...[...line.matchAll(/^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)>?/g)].map(
+        (m) => m[1]!,
+      ),
+    ]
+    for (const href of hrefs) {
       if (/^([a-z]+:|\/\/)/i.test(href)) continue
       const [p, frag] = href.split('#')
       const target = p ? resolve(dirname(file), p) : resolve(file)
@@ -112,41 +144,54 @@ export function checkDoc(
   return errs
 }
 
-function nodeConsistency(want: string): string[] {
+type Fs = {
+  read: (p: string) => string
+  ls: (glob: string) => string[]
+}
+const realFs: Fs = {
+  read: (p) => readFileSync(p, 'utf8'),
+  ls: (g) =>
+    execFileSync('git', ['ls-files', g], { encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean),
+}
+
+export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
   const errs: string[] = []
-  const eng = JSON.parse(readFileSync('package.json', 'utf8')).engines?.node as
+  const eng = JSON.parse(fs.read('package.json')).engines?.node as
     string | undefined
-  if (eng && !eng.includes(want))
+  if (eng && !engineMatches(eng, want))
     errs.push(`package.json engines.node "${eng}" vs .nvmrc ${want}`)
-  const wf = execFileSync('git', ['ls-files', '.github/workflows'], {
-    encoding: 'utf8',
-  })
-    .split('\n')
-    .filter(Boolean)
-  for (const f of wf)
-    for (const m of readFileSync(f, 'utf8').matchAll(
-      /node-version:\s*['"]?(\d+)/g,
-    ))
+  for (const f of fs.ls('.github/workflows'))
+    for (const m of fs.read(f).matchAll(/node-version:\s*['"]?(\d+)/g))
       if (m[1] !== want)
         errs.push(`${f}: node-version ${m[1]} vs .nvmrc ${want}`)
   return errs
 }
 
-if (process.argv[1]?.endsWith('check-docs.ts')) {
-  const want = readFileSync('.nvmrc', 'utf8')
-    .trim()
-    .replace(/^v/, '')
-    .split('.')[0]!
-  const files = execFileSync('git', ['ls-files', '*.md'], { encoding: 'utf8' })
-    .split('\n')
-    .filter((f) => f && !FROZEN.test(f) && !KNOWN_STALE.has(f))
-  const errs = [
-    ...nodeConsistency(want),
-    ...files.flatMap((f) => checkDoc(f, readFileSync(f, 'utf8'), want)),
-  ]
+export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
+  const want = fs.read('.nvmrc').trim().replace(/^v/, '').split('.')[0]!
+  const files = fs
+    .ls('*.md')
+    .filter((f) => !FROZEN.test(f) && !KNOWN_STALE.has(f))
+  return {
+    files: files.length,
+    errs: [
+      ...nodeConsistency(want, fs),
+      ...files.flatMap((f) => checkDoc(f, fs.read(f), want)),
+    ],
+  }
+}
+
+/** Prints the report and returns the process exit code. */
+export function main(fs: Fs = realFs): number {
+  const { files, errs } = checkAll(fs)
   if (errs.length) {
     console.error(errs.join('\n') + `\n${errs.length} docs drift problem(s)`)
-    process.exit(1)
+    return 1
   }
-  console.log(`docs drift: ${files.length} files ok`)
+  console.log(`docs drift: ${files} files ok`)
+  return 0
 }
+
+if (process.argv[1]?.endsWith('check-docs.ts')) process.exitCode = main()

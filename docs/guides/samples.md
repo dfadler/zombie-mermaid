@@ -16,7 +16,7 @@ SVG, and ASCII — but that gallery was retired by the site redesign; see
 What's there instead:
 
 - **The [Diagrams hub](https://dfadler.github.io/zombie-mermaid/diagrams/)**
-  lists the eight diagram types zombie-mermaid supports — Flowchart, State,
+  lists the eight diagram types zombie-mermaid supports — Flowchart (including State),
   Sequence, Class, ER, XY Chart, Architecture, C4, and Pie. Each type has its own detail page
   (`/diagrams/<type>.html`) showing **one** worked example for that type:
   its Mermaid source (syntax-highlighted) next to the rendered SVG, plus a
