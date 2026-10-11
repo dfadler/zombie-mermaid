@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '@zombie-mermaid/ascii-renderer'
-import { stateStartRenderer, stateEndRenderer } from '../shapes/state.ts'
+import {
+  stateStartRenderer,
+  stateEndRenderer,
+  forkJoinRenderer,
+} from '../shapes/state.ts'
 import { canvasToString } from '../canvas.ts'
 import { Up, Down, Left, Right, Middle, UpperLeft } from '../types.ts'
 import type { ShapeRenderOptions } from '../shapes/types.ts'
@@ -122,6 +126,38 @@ describe('stateEndRenderer (direct unit tests)', () => {
       x: 12,
       y: 21,
     })
+  })
+})
+
+describe('forkJoinRenderer (direct unit tests)', () => {
+  it('is a fixed 9x3 cell when unlabeled, and draws a solid middle row', () => {
+    const dims = forkJoinRenderer.getDimensions('', unicodeOptions)
+    expect([dims.width, dims.height]).toEqual([9, 3])
+    expect(
+      canvasToString(forkJoinRenderer.render('', dims, unicodeOptions)),
+    ).toBe('         \n█████████\n         ')
+    const ascii = forkJoinRenderer.render('', dims, asciiOptions)
+    expect(canvasToString(ascii)).toContain('#########')
+  })
+
+  it('is an ordinary corner-decorated box when labeled', () => {
+    const dims = forkJoinRenderer.getDimensions(
+      'a long fork label',
+      unicodeOptions,
+    )
+    expect(dims.width).toBeGreaterThan(9)
+    const out = canvasToString(
+      forkJoinRenderer.render('a long fork label', dims, unicodeOptions),
+    )
+    expect(out).toContain('a long fork label')
+    expect(out).not.toContain('█')
+  })
+
+  it('attaches edges on the box border', () => {
+    const dims = forkJoinRenderer.getDimensions('', unicodeOptions)
+    expect(
+      forkJoinRenderer.getAttachmentPoint(Up, dims, { x: 10, y: 20 }),
+    ).toEqual({ x: 14, y: 20 })
   })
 })
 

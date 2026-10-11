@@ -6,8 +6,9 @@
 # deferred (#1577).
 #
 # Run: Actions > update-linux-baselines > Run workflow, pick the PR branch.
-# Note: a push made with GITHUB_TOKEN does not trigger CI; push an empty commit
-# or close/reopen the PR afterwards to get checks to run.
+# Pushes with the BASELINES_PUSH_TOKEN secret (a fine-grained PAT or GitHub App
+# token with Contents: write), not GITHUB_TOKEN: a GITHUB_TOKEN push does not
+# trigger CI, and runs attributed to github-actions[bot] wait for manual approval.
 name: update-linux-baselines
 
 on:
@@ -29,6 +30,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+          token: ${{ secrets.BASELINES_PUSH_TOKEN }}
 
       - name: Merge main first
         run: |

@@ -159,7 +159,7 @@ of any single one of them:
 - **Disclosure-widget state** — the theme picker's "more themes" toggle
   (`#theme-more-btn`, `aria-haspopup`/`aria-expanded`, in
   `demo/components/theme-picker.tsx`, wired by
-  `demo/components/theme-bar-client.ts`) sets `aria-expanded` to reflect
+  `demo/theme-bar-client.tsx`) sets `aria-expanded` to reflect
   open/closed state, but only on the **Diagrams per-type pages** — the hub
   page renders no theme picker, and the editor's own theme dropdown
   (`#theme-dropdown-btn` in `demo/components/editor-topbar.tsx`, wired by
