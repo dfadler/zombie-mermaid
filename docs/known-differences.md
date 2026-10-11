@@ -14,8 +14,9 @@ then ignored. Edges to or from the subgraph id (`X --> Sub`, `Sub --> Y`) do not
 it. Outside edges do not cause the flip; it is the default.
 
 zombie-mermaid never applies the default flip. It honors an explicit `direction`
-only when no edge touches the subgraph at all, and otherwise uses the parent's
-direction. SVG and ASCII agree with each other. Given `subgraph S` holding
+only when no edge crosses the subgraph boundary (an edge with exactly one end inside
+the subgraph, where its id counts as inside), and otherwise uses the parent's
+direction. Edges between two inner nodes, like `a --> b`, never cancel it. SVG and ASCII agree with each other. Given `subgraph S` holding
 `a --> b --> c` in a `graph TD`:
 
 | Source                                      | mermaid.js inner | zombie-mermaid |
