@@ -34,6 +34,7 @@ export function ColorField({
         type="button"
         className="color-edit-btn"
         data-cfg={colorKey}
+        aria-label={`${COLOR_LABELS[colorKey]}: ${effective || 'not set'}`}
         title={
           override
             ? 'Override: ' + override
