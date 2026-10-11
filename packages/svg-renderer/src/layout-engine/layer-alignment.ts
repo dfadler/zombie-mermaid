@@ -7,6 +7,7 @@
 import type {
   PositionedNode,
   PositionedEdge,
+  PositionedGroup,
   Direction,
 } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
@@ -122,9 +123,48 @@ export function alignLayerNodes(
     }
   }
 
-  if (deltas.size === 0) return
+  shiftEdgeEnds(edges, deltas, isHorizontal)
+}
 
-  // Adjust edge endpoints to match shifted node positions
+/**
+ * Centre each node on the group it sits beside along the flow axis (#1699).
+ * ELK bottom-aligns a small node (`X`) in a layer next to a taller flipped
+ * group; mermaid.js centres it on the group's row of nodes (`center`).
+ */
+export function centerBesideGroups(
+  nodes: PositionedNode[],
+  edges: PositionedEdge[],
+  groups: Array<{ group: PositionedGroup; center: number }>,
+  direction: Direction,
+): void {
+  const isHorizontal = direction === 'LR' || direction === 'RL'
+  const deltas = new Map<string, number>()
+  for (const node of nodes) {
+    const start = isHorizontal ? node.x : node.y
+    const size = isHorizontal ? node.width : node.height
+    for (const { group: g, center } of groups) {
+      const gStart = isHorizontal ? g.x : g.y
+      const gSize = isHorizontal ? g.width : g.height
+      // Only a node whose whole band lies inside the group's band
+      if (start < gStart - 0.5 || start + size > gStart + gSize + 0.5) continue
+      const delta = center - (start + size / 2)
+      if (Math.abs(delta) <= 0.5) break
+      if (isHorizontal) node.x += delta
+      else node.y += delta
+      deltas.set(node.id, delta)
+      break
+    }
+  }
+  shiftEdgeEnds(edges, deltas, isHorizontal)
+}
+
+/** Move the endpoints of edges attached to nodes shifted by `deltas`. */
+function shiftEdgeEnds(
+  edges: PositionedEdge[],
+  deltas: Map<string, number>,
+  isHorizontal: boolean,
+): void {
+  if (deltas.size === 0) return
   for (const edge of edges) {
     if (edge.points.length < 2) continue
 

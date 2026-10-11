@@ -118,6 +118,10 @@ describe('subgraph inner direction matches mermaid.js (#1699)', () => {
     const y = (id: string) => p.nodes.find((n) => n.id === id)!.y
     expect(new Set(['a', 'b', 'c'].map(y)).size).toBe(1)
     expect(new Set(['d', 'e'].map(y)).size).toBe(1)
+    // mermaid.js: the first subgraph is left of X, and X sits on the row of a, b, c
+    const x = (id: string) => p.nodes.find((n) => n.id === id)!.x
+    expect(x('c')).toBeLessThan(x('X'))
+    expect(y('X')).toBe(y('a'))
   })
 
   it('stacks two unconnected sibling subgraphs perpendicular to the flow', () => {

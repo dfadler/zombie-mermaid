@@ -628,6 +628,11 @@ export function mermaidToElk(
       ),
     )
   }
+  if (hasDirectionOverride && !stateGraph && leafCount > 0) {
+    // Nested (SEPARATE) layout: mermaid.js lists clusters before leaves, so a
+    // flipped subgraph sits before a sibling leaf such as `X` in `X --> T`.
+    rootChildren.push(...rootChildren.splice(0, leafCount))
+  }
   if (stateGraph && graph.subgraphs.length > 0) {
     // ELK's MODEL_ORDER cycle breaking and crossing minimisation follow the
     // child order, so a composite must sit at its first-mention position

@@ -20,7 +20,7 @@ import type {
 import { ARROW_HEAD } from '../styles.ts'
 import { clipEdgeToShape } from '../shape-clipping.ts'
 import { DEFAULTS } from './constants.ts'
-import { alignLayerNodes } from './layer-alignment.ts'
+import { alignLayerNodes, centerBesideGroups } from './layer-alignment.ts'
 import { bundleEdgePaths } from './edge-bundling.ts'
 import { straightenTinyJogs } from './jog-straightening.ts'
 import { edgesReversedForLayout } from './to-elk.ts'
@@ -231,6 +231,46 @@ export function elkToPositioned(
     edges,
     graph.direction,
   )
+  if (flipped.size) {
+    const dirs = subgraphDirections(graph)!
+    const horizontal = graph.direction === 'LR' || graph.direction === 'RL'
+    const byId = new Map(nodes.map((n) => [n.id, n]))
+    const flippedGroups = graph.subgraphs.flatMap((sg) => {
+      const group = groups.find((g) => g.id === sg.id)
+      if (!group || dirs.get(sg.id) === graph.direction) return []
+      // Centre on the member nodes, not the box: the title bar skews the box.
+      const ids = new Set<string>()
+      const collect = (s: MermaidSubgraph): void => {
+        s.nodeIds.forEach((id) => ids.add(id))
+        s.children.forEach(collect)
+      }
+      collect(sg)
+      const spans = [...ids].flatMap((id) => {
+        const n = byId.get(id)
+        return n
+          ? [horizontal ? [n.x, n.x + n.width] : [n.y, n.y + n.height]]
+          : []
+      })
+      if (!spans.length) return []
+      const center =
+        (Math.min(...spans.map((s) => s[0]!)) +
+          Math.max(...spans.map((s) => s[1]!))) /
+        2
+      return [{ group, center }]
+    })
+    const grouped = new Set<string>()
+    const members = (sg: MermaidSubgraph): void => {
+      sg.nodeIds.forEach((id) => grouped.add(id))
+      sg.children.forEach(members)
+    }
+    graph.subgraphs.forEach(members)
+    centerBesideGroups(
+      nodes.filter((n) => !grouped.has(n.id)),
+      edges,
+      flippedGroups,
+      graph.direction,
+    )
+  }
 
   // Synthesize self-loop edges now that node positions are final. These
   // were excluded from the graph handed to ELK (see to-elk.ts) since ELK
