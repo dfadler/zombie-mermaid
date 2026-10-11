@@ -25,6 +25,8 @@ and it is worth doing if you hit any of the cases below. If you don't, there
 is less reason to switch than a comparison post might suggest, and the last
 section says where mermaid-ascii is still the better tool.
 
+> **As of mermaid-ascii 1.5.0.** Upstream has since released 1.6.1, which added CJK alignment, wide-text handling in sequence diagrams, shaped nodes and fan-out label placement. Some differences below may no longer hold; the comparison has not been re-run.
+
 ## How this was checked
 
 Every output block below was produced on 2026-09-05 by running the same

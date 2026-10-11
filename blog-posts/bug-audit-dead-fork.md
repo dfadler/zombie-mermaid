@@ -4,6 +4,8 @@ date: 2026-09-06
 description: On 2026-08-25, one evening of deliberate, format-by-format testing turned "upstream looks stalled" into fifteen numbered, reproducible rendering bugs. That list is the actual case for continuing the fork.
 ---
 
+> **Note (2026-10-10):** this post was written before the monorepo split. File paths it cites under `src/` have since moved into `packages/*` (for example `packages/ascii-renderer/`, `packages/svg-renderer/`, `packages/core/`); the code and line references are as of the post's date.
+
 Adopting an abandoned library is a bet. You are trading the certainty of
 "someone else maintains this" for the uncertainty of "we do, now." The
 usual way people talk themselves into that bet is vibes: the code looks
