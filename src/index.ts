@@ -43,6 +43,7 @@ export type { AsciiRenderOptions } from '@zombie-mermaid/ascii-renderer'
 export {
   createLayoutCache,
   registerElk,
+  validateMermaid,
   ElkNotRegisteredError,
 } from '@zombie-mermaid/svg-renderer'
 export type { LayoutCache } from '@zombie-mermaid/svg-renderer'

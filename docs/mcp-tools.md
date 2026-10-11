@@ -1,6 +1,6 @@
 # MCP tool reference
 
-The six tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](../README.md#mcp-server); for the trust model see [SECURITY.md](../SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure. The first content block is the plain `<tool>: <message>` text; when the parse error names a line, a second text block holds JSON `{"diagnostics":[{"line","sourceLine","message"}]}` so a client can point at the offending line.
+The seven tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zombie-mermaid/mcp` / `@zombie-mermaid/mcp`). For setup and client config see the [README's MCP Server section](../README.md#mcp-server); for the trust model see [SECURITY.md](../SECURITY.md). Tool errors (bad Mermaid syntax, wrong diagram type, unwritable path) come back as a normal result with `isError: true`, not a protocol failure (`validate_mermaid` is the exception: invalid syntax is a normal `{ valid: false, diagnostics }` result). The first content block is the plain `<tool>: <message>` text; when the parse error names a line, a second text block holds JSON `{"diagnostics":[{"line","sourceLine","message"}]}` so a client can point at the offending line.
 
 | Tool                                                                        | Read-only                          | Returns                                                    |
 | --------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------- |
@@ -10,6 +10,7 @@ The six tools exposed by `zombie-mermaid mcp` (and `createMcpServer()` from `zom
 | [`fix_mermaid_sequence_activations`](#fix_mermaid_sequence_activations)     | yes                                | JSON `{ ok, fixedDiagram, fixesApplied, remainingIssues }` |
 | [`list_themes`](#list_themes)                                               | yes                                | JSON `{ themes }`                                          |
 | [`list_diagram_types`](#list_diagram_types)                                 | yes                                | JSON `{ diagramTypes }`                                    |
+| [`validate_mermaid`](#validate_mermaid)                                     | yes                                | JSON `{ valid, diagnostics }`                              |
 
 ## `render_mermaid_svg`
 
@@ -87,3 +88,18 @@ No arguments. Returns `{"themes": [...]}`, the built-in names accepted by `rende
 ## `list_diagram_types`
 
 No arguments. Returns `{"diagramTypes": [...]}`, the diagram types the library detects (flowchart covers state diagrams). Detection and rendering are separate: `render_mermaid_ascii` supports a narrower set than `render_mermaid_svg`.
+
+## `validate_mermaid`
+
+Parse-only check: nothing is laid out or drawn. Input: `diagram`. Always a normal result (not `isError`); branch on `valid`:
+
+```json
+{
+  "valid": false,
+  "diagnostics": [
+    { "line": 4, "sourceLine": "  loop forever", "message": "..." }
+  ]
+}
+```
+
+`line` and `sourceLine` appear when the parser names a line; otherwise the diagnostic is just `{ "message" }`. Diagnostics hold only the parser message and your own source line, never filesystem paths. The CLI equivalent is `zombie-mermaid validate [file]` (prints `valid`, or the error plus source line and exit code 1).
