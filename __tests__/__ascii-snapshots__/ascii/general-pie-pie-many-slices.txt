@@ -1,0 +1,18 @@
+            Commits by weekday and team
+
+[######====******++++#####===*****+++#####===**+##=]
+
+  # Mon core    13%
+  = Mon docs     8%
+  * Tue core    12%
+  + Tue docs     7%
+  # Wed core    11%
+  = Wed docs     6%
+  * Thu core    10%
+  + Thu docs     6%
+  # Fri core     9%
+  = Fri docs     5%
+  * Sat core     5%
+  + Sat docs     3%
+  # Sun core     4%
+  = Sun docs     2%
