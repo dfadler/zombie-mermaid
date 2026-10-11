@@ -8,6 +8,10 @@
     "url": "https://github.com/dfadler/zombie-mermaid",
     "directory": "packages/ascii-renderer"
   },
+  "homepage": "https://github.com/dfadler/zombie-mermaid#readme",
+  "bugs": {
+    "url": "https://github.com/dfadler/zombie-mermaid/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "dist/index.cjs",
@@ -36,5 +40,8 @@
   "dependencies": {
     "@zombie-mermaid/core": "workspace:*",
     "@zombie-mermaid/mermaid-parser": "workspace:*"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
