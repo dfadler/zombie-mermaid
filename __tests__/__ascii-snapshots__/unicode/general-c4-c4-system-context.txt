@@ -1,0 +1,59 @@
+                                          
+   System Context for Internet Banking    
+                                          
+                                          
+     ╭───────────────────────────╮        
+     │             o             │        
+     │            /|\            │        
+     │            / \            │        
+     │ Personal Banking Customer │        
+     │         [Person]          │        
+     │                           │        
+     │  A customer of the bank   │        
+     ╰───────────────────────────╯        
+                    │           ▲───┐     
+                    │               │     
+                    │               │     
+                    │               │     
+                    │ Uses          │     
+                    │ [HTTPS]       │     
+  ╭╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌│╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌│╮    
+  ╎ Bank            │               │╎    
+  ╎ [ENTERPRISE]    │               │╎    
+  ╎                 ▼               │╎    
+  ╎ ┌──────────────────────────────┐│╎    
+  ╎ │   Internet Banking System    ││╎    
+  ╎ │      [Software System]       ││╎    
+  ╎ │                              ││╎    
+  ╎ │ Lets customers view accounts ││╎    
+  ╎ └──────────────────────────────┘│╎    
+  ╎    │            │               │╎    
+  ╎    │            │ Reads from    │╎    
+  ╎    │            │ and writes    │╎    
+  ╎    │            │ to            │╎    
+  ╎    │            ▼               │╎    
+  ╎    │╭─────────────────────╮     │╎    
+  ╎    │├─────────────────────┤     │╎    
+  ╎    ││       Ledger        │     │╎    
+  ╎    ││  [Software System]  │     │╎    
+  ╎    ││                     │     │╎    
+  ╎    ││ Stores transactions │     │╎    
+  ╎    │├─────────────────────┤     │╎    
+  ╎    │╰─────────────────────╯     │╎    
+  ╎    │           Sends e-mails to │╎    
+  ╰╌╌╌╌│╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌│╯    
+       │ Sends e-mail using         │     
+       │                            │     
+       │                            │     
+       │                            │     
+       └──▼                 ┌───────┘     
+         ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐            
+         ┆   E-mail System   ┆            
+         ┆ [Software System] ┆            
+         ┆                   ┆            
+         ┆   Sends e-mails   ┆            
+         └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘            
+                                          
+                                          
+                                          
+                                          
