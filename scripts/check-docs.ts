@@ -65,7 +65,7 @@ export function stripFences(md: string): string {
     .join('\n')
 }
 
-// True when the range admits only the given major or newer.
+// True when the engines.node range admits only the .nvmrc major or newer.
 export function engineMatches(eng: string, want: string): boolean {
   if (eng.includes('||')) return false
   // Fixed regex captures the leading major; compare it as a string (no dynamic RegExp, ReDoS-safe).
@@ -88,12 +88,11 @@ export function anchors(md: string): Set<string> {
 export function checkDoc(
   file: string,
   md: string,
-  nodeMajors: string | string[],
+  nodeMajor: string,
   exists: (p: string) => boolean = existsSync,
   read: (p: string) => string = (p) => readFileSync(p, 'utf8'),
 ): string[] {
   const errs: string[] = []
-  const majors = [nodeMajors].flat()
   // Fenced code is blanked: examples may name hypothetical paths.
   const prose = stripFences(md)
   prose.split('\n').forEach((line, i) => {
@@ -138,8 +137,8 @@ export function checkDoc(
         )
     }
     for (const m of line.matchAll(/\bNode(?:\.js)?\s*(?:v|>=\s*)?(\d{2})\b/g))
-      if (!majors.includes(m[1]!))
-        errs.push(`${at}: "${m[0]}" but .nvmrc/engines are ${majors.join('/')}`)
+      if (m[1] !== nodeMajor)
+        errs.push(`${at}: "${m[0]}" but .nvmrc is ${nodeMajor}`)
   })
   return errs
 }
@@ -158,12 +157,10 @@ const realFs: Fs = {
 
 export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
   const errs: string[] = []
-  // Dev toolchain (#1567): devEngines.runtime must match .nvmrc; the consumer
-  // floor (engines.node) is deliberately lower and is allowed in prose below.
-  const dev = JSON.parse(fs.read('package.json')).devEngines?.runtime
-    ?.version as string | undefined
-  if (dev && !engineMatches(dev, want))
-    errs.push(`package.json devEngines.runtime "${dev}" vs .nvmrc ${want}`)
+  const eng = JSON.parse(fs.read('package.json')).engines?.node as
+    string | undefined
+  if (eng && !engineMatches(eng, want))
+    errs.push(`package.json engines.node "${eng}" vs .nvmrc ${want}`)
   for (const f of fs.ls('.github/workflows'))
     for (const m of fs.read(f).matchAll(/node-version:\s*['"]?(\d+)/g))
       if (m[1] !== want)
@@ -173,10 +170,6 @@ export function nodeConsistency(want: string, fs: Fs = realFs): string[] {
 
 export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
   const want = fs.read('.nvmrc').trim().replace(/^v/, '').split('.')[0]!
-  const floor = /(\d+)/.exec(
-    JSON.parse(fs.read('package.json')).engines?.node ?? '',
-  )?.[1]
-  const majors = floor && floor !== want ? [want, floor] : want
   const files = fs
     .ls('*.md')
     .filter((f) => !FROZEN.test(f) && !KNOWN_STALE.has(f))
@@ -184,7 +177,7 @@ export function checkAll(fs: Fs = realFs): { files: number; errs: string[] } {
     files: files.length,
     errs: [
       ...nodeConsistency(want, fs),
-      ...files.flatMap((f) => checkDoc(f, fs.read(f), majors)),
+      ...files.flatMap((f) => checkDoc(f, fs.read(f), want)),
     ],
   }
 }

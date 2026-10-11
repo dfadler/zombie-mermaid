@@ -8,7 +8,7 @@ This page covers what's safe to assume unchanged, itemizes the fixes most likely
 
 ## Breaking changes since the fork
 
-- **Node `>=22.3`** is required (`engines.node` in `package.json`).
+- **Node `>=24`** is required (`engines.node` in `package.json`).
 - **`registerElk()`**: in browsers and bundlers, flowchart, state, class, ER and architecture diagrams throw `ElkNotRegisteredError` until you `npm install elkjs` and call `registerElk(ELK)` once. Node, Bun, the CLI and MCP load it automatically. See [guides/elkjs-optional-peer.md](guides/elkjs-optional-peer.md).
 - **Packages**: the parser and renderers live under `packages/*` (there is no `src/` library layout to deep-import from).
 
@@ -23,7 +23,7 @@ A full 2.x to 5.x upgrade guide is tracked in [#1538](https://github.com/dfadler
 - Built-in themes, Shiki compatibility, and CSS-variable-driven live theme switching are unchanged.
 - The CLI (`zombie-mermaid` binary) is new to this fork — `beautiful-mermaid` never had one — so there's no prior behavior it needs to preserve.
 
-If your code only calls these functions with diagram source and a `RenderOptions` object, no code changes are required beyond the import/package name, plus `registerElk()` in browsers and Node `>=22.3`.
+If your code only calls these functions with diagram source and a `RenderOptions` object, no code changes are required beyond the import/package name, plus `registerElk()` in browsers and Node `>=24`.
 
 ## Output-affecting fixes
 

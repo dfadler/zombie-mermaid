@@ -43,6 +43,6 @@
     "@zombie-mermaid/mermaid-parser": "workspace:*"
   },
   "engines": {
-    "node": ">=22.3.0"
+    "node": ">=24"
   }
 }

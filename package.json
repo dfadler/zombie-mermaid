@@ -84,15 +84,8 @@
     "README.md"
   ],
   "packageManager": "pnpm@11.13.1",
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": ">=24",
-      "onFail": "error"
-    }
-  },
   "engines": {
-    "node": ">=22.3.0"
+    "node": ">=24"
   },
   "scripts": {
     "test": "vitest run -c config/vitest.config.ts",

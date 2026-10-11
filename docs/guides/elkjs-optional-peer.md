@@ -54,7 +54,7 @@ registerElk(ELK)
 
 Nothing to do. `zombie-mermaid` still depends on `elkjs`, and when nothing is
 registered the library loads `elkjs` on first use under Node and Bun (ESM and
-CJS; verified on Node 22 and 24 and on Bun). If you use `@zombie-mermaid/svg-renderer`
+CJS; verified on Node 24 and Bun). If you use `@zombie-mermaid/svg-renderer`
 directly, install `elkjs` yourself (`npm i elkjs`); it is an optional peer.
 Auto-load is skipped in browsers and other runtimes without
 `process.getBuiltinModule`, where you must call `registerElk()`.
