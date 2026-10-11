@@ -112,6 +112,7 @@
     "metrics:history:append": "tsx scripts/metrics-history-append.ts",
     "bench:trend": "tsx scripts/bench-trend.ts",
     "bench:mcp": "tsx scripts/bench-mcp.ts",
+    "check:docs": "tsx scripts/check-docs.ts",
     "smoke:packed": "node scripts/smoke-test-packed.mjs",
     "check:bundle-size": "tsx scripts/check-bundle-size.ts",
     "generate:hero": "tsx scripts/generate-hero.ts",
@@ -140,7 +141,9 @@
     "audit:responsive": "tsx scripts/audit-responsive.ts",
     "layout:oracle": "tsx scripts/layout-oracle.ts",
     "layout:scorecard": "tsx scripts/layout-oracle.ts --history=layout-fidelity-history.jsonl --scorecard=docs/layout-fidelity-scorecard.md && prettier --write docs/layout-fidelity-scorecard.md",
-    "label:oracle": "tsx scripts/label-position-oracle.ts"
+    "label:oracle": "tsx scripts/label-position-oracle.ts",
+    "verify": "scripts/verify.sh",
+    "doctor": "scripts/doctor.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

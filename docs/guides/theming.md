@@ -69,7 +69,7 @@ const svg = renderMermaidSVG(source, {
 ```
 
 Any enrichment color you leave out falls back to its derivation, so you can
-override one thing without having to specify the other six.
+override one thing without having to specify the other four.
 
 The full set is `line`, `accent`, `muted`, `surface`, and `border` —
 see [Theming](../theming.md#enriched-mode) for what each drives.
@@ -127,4 +127,4 @@ README help nobody.
 
 - [Theming reference](../theming.md) — every derivation, custom theme objects
 - [Browsing and using the samples](samples.md) — see themes applied across all
-  88 samples at once
+  118 samples at once

@@ -1,4 +1,5 @@
 {
+  "worktree": { "autoPrune": true },
   "permissions": {
     "deny": [
       "Bash(gh pr create --repo lukilabs/beautiful-mermaid*)",
