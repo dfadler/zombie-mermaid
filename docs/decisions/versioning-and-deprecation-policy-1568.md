@@ -123,7 +123,7 @@ changeset summaries name the packages with real changes.
 Hold breaking changes on an integration branch or a `breaking` label and
 **ship at most one major per 30 days**, bundling whatever is queued.
 Security fixes and breakage from an upstream dependency may ship immediately.
-Three majors in 13 days is the anti-pattern.
+Three majors in 12 days (2026-09-28 to 2026-10-10) is the anti-pattern.
 
 **Still needs the maintainer: the gap length.** Recommendation: 30 days.
 Reason: the project cut 3.0.0 on 2026-09-28 and 5.0.0 on 2026-10-10; 30
