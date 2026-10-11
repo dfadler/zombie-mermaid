@@ -29,15 +29,15 @@ import { BREAKPOINTS } from './tokens.tsx'
  * `MobileNavPanel`'s own doc comment explains why that panel renders as
  * `Nav`'s sibling rather than nested inside the bar, which is what makes
  * `nextElementSibling` the right (and simplest) way to find it, with no
- * `id`/`aria-controls` pair needed and nothing to collide if a future page
- * ever renders more than one `Nav`.
+ * id lookup needed (the toggle's `aria-controls` still points at the
+ * panel's id, purely for assistive tech).
  *
  * Behavior: click toggles; tapping a link or pressing Escape closes and
  * (for Escape) returns focus to the toggle; opening moves focus to the
  * first link and locks background scroll via the `mobile-nav-open` class
- * nav-css.ts's `navCss()` keys off. What this does *not* do —
- * deliberately, to keep a first version scoped — is trap Tab/Shift+Tab
- * inside the open panel; revisit if that turns out to matter in practice.
+ * nav-css.ts's `navCss()` keys off. While open, Tab/Shift+Tab wrap inside
+ * the panel (#1760); while closed, nav-css.ts hides it with
+ * `visibility: hidden` so its links are not focusable.
  *
  * Also resets the menu when the viewport grows past the tablet breakpoint
  * while it's open (a window resize, or a phone rotated). `navCss()`'s own
@@ -108,9 +108,28 @@ export function initMobileMenu(desktopMinWidthPx: number): void {
     })
 
     panel.addEventListener('keydown', function (event) {
-      if (event instanceof KeyboardEvent && event.key === 'Escape') {
+      if (!(event instanceof KeyboardEvent)) return
+      if (event.key === 'Escape') {
         event.preventDefault()
         closeMenu(toggle, panel, true)
+        return
+      }
+      // Focus trap (#1760): the open panel covers the page, so wrap Tab
+      // and Shift+Tab at its first/last focusable instead of leaking
+      // behind it.
+      if (event.key !== 'Tab') return
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled])',
+      )
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (!first || !last) return
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
       }
     })
 
