@@ -13,6 +13,7 @@ import {
 } from '@zombie-mermaid/svg-renderer'
 import {
   canLayOutFlat,
+  clearBorders,
   layerIndexes,
   orderNodes,
   orderSiblings,
@@ -28,7 +29,9 @@ import {
   FONT_WEIGHTS,
 } from '../../packages/svg-renderer/src/styles.ts'
 import type {
+  Direction,
   MermaidGraph,
+  PositionedEdge,
   PositionedNode,
   MermaidSubgraph,
   PositionedGraph,
@@ -920,5 +923,158 @@ describe('edge trunks beside a box side (#1749)', () => {
       .flatMap((e) => e.points.slice(1, -1).map((pt) => pt.x))
     expect(trunks.length).toBeGreaterThan(0)
     for (const x of trunks) expect(Math.abs(x - side)).toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('clearBorders (#1749)', () => {
+  // Scenes are written for a left-to-right flow (the cross-flow run is a
+  // vertical line at some x) and transposed for a top-down one.
+  const flip = (dir: Direction, x: number, y: number) =>
+    dir === 'TD' ? { x: y, y: x } : { x, y }
+  const box = (dir: Direction, x: number, y: number, w: number, h: number) => {
+    const a = flip(dir, x, y)
+    const b = flip(dir, w, h)
+    return { x: a.x, y: a.y, width: b.x, height: b.y }
+  }
+  const group = (dir: Direction, x: number, y: number, w: number, h: number) =>
+    ({
+      id: 'g',
+      label: 'g',
+      children: [],
+      ...box(dir, x, y, w, h),
+    }) as PositionedGroup
+  const node = (dir: Direction, x: number, y: number, w: number, h: number) =>
+    ({
+      id: 'n',
+      label: 'n',
+      shape: 'rectangle',
+      ...box(dir, x, y, w, h),
+    }) as PositionedNode
+  const edge = (dir: Direction, pts: [number, number][]) =>
+    ({
+      source: 'a',
+      target: 'b',
+      points: pts.map(([x, y]) => flip(dir, x, y)),
+    }) as PositionedEdge
+  /** The run coordinate (along the flow) of every interior point. */
+  const flow = (dir: Direction, e: PositionedEdge) =>
+    e.points.slice(1, -1).map((p) => (dir === 'TD' ? p.y : p.x))
+
+  describe.each(['LR', 'TD'] as const)('%s', (dir) => {
+    // The group spans x 0..100, y 0..100; its right side is at 100.
+    const g = () => group(dir, 0, 0, 100, 100)
+    const run = (at: number, before = 50, after = 150) =>
+      edge(dir, [
+        [before, 50],
+        [at, 50],
+        [at, 80],
+        [after, 80],
+      ])
+    const apply = (e: PositionedEdge[], nodes: PositionedNode[] = []) =>
+      clearBorders(e, nodes, [g()], dir)
+
+    it('moves a run hugging the far side out to 8px', () => {
+      const e = run(102)
+      apply([e])
+      expect(flow(dir, e)).toEqual([108, 108])
+    })
+
+    it('moves a run hugging the near side out to 8px, away from the box', () => {
+      const e = edge(dir, [
+        [-50, 50],
+        [98, 50],
+        [98, 80],
+        [150, 80],
+      ])
+      clearBorders([e], [], [group(dir, 100, 0, 100, 100)], dir)
+      expect(flow(dir, e)).toEqual([92, 92])
+    })
+
+    it('leaves a run already 8px or more from the side', () => {
+      const e = run(110)
+      apply([e])
+      expect(flow(dir, e)).toEqual([110, 110])
+    })
+
+    it('leaves a run beside a side it does not overlap', () => {
+      for (const [y1, y2] of [
+        [150, 180], // past the box
+        [-80, -50], // before the box
+      ] as const) {
+        const e = edge(dir, [
+          [50, y1],
+          [102, y1],
+          [102, y2],
+          [150, y2],
+        ])
+        apply([e])
+        expect(flow(dir, e)).toEqual([102, 102])
+      }
+    })
+
+    it('keeps the run between its neighbouring points', () => {
+      const e = run(102, 50, 105)
+      apply([e])
+      expect(flow(dir, e)).toEqual([102, 102])
+    })
+
+    it('leaves a run whose neighbours sit at the same coordinate', () => {
+      const e = run(102, 150, 150)
+      apply([e])
+      expect(flow(dir, e)).toEqual([102, 102])
+    })
+
+    it('does not move a run into a node', () => {
+      const e = run(102)
+      apply([e], [node(dir, 104, 60, 20, 40)])
+      expect(flow(dir, e)).toEqual([102, 102])
+    })
+
+    it('moves a run past a node that is clear of its span', () => {
+      for (const n of [
+        node(dir, 100, 200, 40, 20), // straddles the target, beyond the run
+        node(dir, 100, -60, 40, 20), // straddles the target, before the run
+        node(dir, 0, 40, 100, 40), // ends before the target
+        node(dir, 108, 40, 40, 40), // starts at the target
+      ]) {
+        const e = run(102)
+        apply([e], [n])
+        expect(flow(dir, e)).toEqual([108, 108])
+      }
+    })
+
+    it('moves every edge of a shared trunk together', () => {
+      const a = run(102)
+      const b = edge(dir, [
+        [50, 50],
+        [102, 50],
+        [102, 30],
+        [150, 30],
+      ])
+      apply([a, b])
+      expect(flow(dir, a)).toEqual([108, 108])
+      expect(flow(dir, b)).toEqual([108, 108])
+    })
+
+    it('never moves an edge endpoint', () => {
+      const e = edge(dir, [
+        [102, 50],
+        [102, 80],
+        [150, 80],
+      ])
+      apply([e])
+      expect(e.points[0]).toEqual(flip(dir, 102, 50))
+    })
+
+    it('clears the side of the nested box it is beside', () => {
+      const e = run(102)
+      clearBorders(
+        [e],
+        [],
+        [group(dir, 0, 0, 300, 100), group(dir, 20, 20, 82, 60)], // inner right side at 102
+        dir,
+      )
+      expect(flow(dir, e)).toEqual([110, 110])
+    })
   })
 })

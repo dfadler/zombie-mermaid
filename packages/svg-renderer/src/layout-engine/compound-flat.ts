@@ -868,7 +868,7 @@ const BORDER_GAP = 8
  * run's neighbouring points and clear of every node. Every edge of a shared
  * trunk gets the same move.
  */
-function clearBorders(
+export function clearBorders(
   edges: PositionedEdge[],
   nodes: PositionedNode[],
   groups: PositionedGroup[],
@@ -898,7 +898,7 @@ function clearBorders(
             hi > g[o] &&
             lo < g[o] + g[osize],
         )
-      if (side && before !== after) {
+      if (side) {
         const to = side.s + (at[k] >= side.s ? BORDER_GAP : -BORDER_GAP)
         const between = (to - before) * (after - to) > 0
         const clear = nodes.every(
