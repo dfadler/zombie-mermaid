@@ -38,18 +38,18 @@ Semver applies to the **published surface**: documented exports and types,
 CLI flags and exit codes, MCP tool names and input/output schemas, and the
 install contract. Specifically, a change is **major** if it does any of:
 
-| Change | Major? | Precedent |
-|---|---|---|
-| Raises `engines.node` floor | Yes | 4.0.0 |
-| Adds or promotes a peer dependency (including optional) that callers must install or call to keep a documented path working | Yes | 5.0.0 `elkjs` |
-| Removes or renames an export, CLI flag, MCP tool or tool parameter | Yes | |
-| Removes a file consumers could import via `exports`/deep path | Yes | |
-| Changes a documented option's default so existing calls render differently by design | Yes | |
-| Drops a documented platform or runtime (Bun, browser bundle shape) | Yes | |
-| Removes non-`exports` tarball contents (e.g. `src/`, [#1446](https://github.com/dfadler/zombie-mermaid/pull/1446)) | No (patch); not public API | 5.0.0 shipped it as a patch |
-| Changes rendered SVG/ASCII output (layout fixes, rounding such as 2dp [#1163](https://github.com/dfadler/zombie-mermaid/issues/1163)) | No; patch for fixes, minor for new visual features | |
-| Raises a dev-only dependency or TypeScript version | No | |
-| New diagram type, new option, new MCP tool | Minor | |
+| Change                                                                                                                                | Major?                                             | Precedent                   |
+| ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
+| Raises `engines.node` floor                                                                                                           | Yes                                                | 4.0.0                       |
+| Adds or promotes a peer dependency (including optional) that callers must install or call to keep a documented path working           | Yes                                                | 5.0.0 `elkjs`               |
+| Removes or renames an export, CLI flag, MCP tool or tool parameter                                                                    | Yes                                                |                             |
+| Removes a file consumers could import via `exports`/deep path                                                                         | Yes                                                |                             |
+| Changes a documented option's default so existing calls render differently by design                                                  | Yes                                                |                             |
+| Drops a documented platform or runtime (Bun, browser bundle shape)                                                                    | Yes                                                |                             |
+| Removes non-`exports` tarball contents (e.g. `src/`, [#1446](https://github.com/dfadler/zombie-mermaid/pull/1446))                    | No (patch); not public API                         | 5.0.0 shipped it as a patch |
+| Changes rendered SVG/ASCII output (layout fixes, rounding such as 2dp [#1163](https://github.com/dfadler/zombie-mermaid/issues/1163)) | No; patch for fixes, minor for new visual features |                             |
+| Raises a dev-only dependency or TypeScript version                                                                                    | No                                                 |                             |
+| New diagram type, new option, new MCP tool                                                                                            | Minor                                              |                             |
 
 Rendered output is deliberately **not** covered by semver: byte-stable
 output would freeze every layout fix. The contract is "valid Mermaid in,
