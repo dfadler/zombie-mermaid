@@ -109,7 +109,7 @@ describe('edgesReversedForLayout', () => {
 
   it('is empty for a graph with a subgraph direction override', () => {
     const g = parseMermaid(
-      'graph TD\n  subgraph s\n    direction LR\n    A --> B\n  end\n  B --> C\n  C --> A',
+      'graph TD\n  subgraph s\n    direction LR\n    A --> B\n  end\n  C --> D\n  D --> C',
     )
     expect(edgesReversedForLayout(g as never).size).toBe(0)
   })

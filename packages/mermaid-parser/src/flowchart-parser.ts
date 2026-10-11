@@ -255,6 +255,7 @@ function parseFlowchart(lines: Statement[]): MermaidGraph {
     nodes: new Map(),
     edges: [],
     subgraphs: [],
+    flipsSubgraphs: true,
     classDefs: new Map(),
     classAssignments: new Map(),
     nodeStyles: new Map(),

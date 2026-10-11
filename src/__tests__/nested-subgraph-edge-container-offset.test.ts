@@ -70,7 +70,10 @@ function expectEdgesMeetNodes(result: PositionedGraph): void {
   }
 }
 
-/** No `direction` override anywhere — exercises ELK's INCLUDE_CHILDREN path. */
+/**
+ * No subgraph flips direction — exercises ELK's INCLUDE_CHILDREN path. `z --> a`
+ * crosses `outer`'s boundary; mermaid.js flips a subgraph none cross (#1699).
+ */
 function nestedDiagram(direction: string): string {
   return `flowchart ${direction}
     subgraph outer["Outer"]
@@ -79,7 +82,8 @@ function nestedDiagram(direction: string): string {
         b["B"]
       end
     end
-    a -->|yes| b`
+    a -->|yes| b
+    z --> a`
 }
 
 describe('nested-subgraph cross-hierarchy edge container offsets', () => {

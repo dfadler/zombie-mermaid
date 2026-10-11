@@ -12,6 +12,7 @@ import type {
   LayoutOptions,
 } from '@zombie-mermaid/core'
 import type {
+  Direction,
   MermaidGraph,
   MermaidSubgraph,
   MermaidEdge,
@@ -19,7 +20,7 @@ import type {
 } from '@zombie-mermaid/core'
 import type { FontSizes } from '../styles.ts'
 import { FONT_WEIGHTS, NODE_PADDING } from '../styles.ts'
-import { measureMultilineText } from '@zombie-mermaid/core'
+import { measureMultilineText, subgraphDirections } from '@zombie-mermaid/core'
 import { DEFAULTS } from './constants.ts'
 import { findBackEdgeIndexes } from './back-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
@@ -122,7 +123,7 @@ export function edgesReversedForLayout(
   let set = reversedCache.get(graph)
   if (!set) {
     set =
-      isStateGraph(graph) || hasAnyDirectionOverride(graph.subgraphs)
+      isStateGraph(graph) || hasAnyDirectionOverride(graph)
         ? new Set()
         : findBackEdgeIndexes(graph, hints?.walkOrder)
     reversedCache.set(graph, set)
@@ -276,12 +277,17 @@ const ROOT_CONTAINER = ' root'
  * compound node's own `elk.direction`) for exactly the diagrams that need
  * `SEPARATE` the most.
  */
-export function hasAnyDirectionOverride(subgraphs: MermaidSubgraph[]): boolean {
-  for (const sg of subgraphs) {
-    if (sg.direction !== undefined) return true
-    if (hasAnyDirectionOverride(sg.children)) return true
-  }
-  return false
+export function hasAnyDirectionOverride(graph: MermaidGraph): boolean {
+  const dirs = subgraphDirections(graph)
+  const walk = (sgs: MermaidSubgraph[], parent: Direction): boolean =>
+    sgs.some((sg) => {
+      const dir = dirs ? dirs.get(sg.id) : sg.direction
+      return (
+        (dir !== undefined && dir !== parent) ||
+        walk(sg.children, dir ?? parent)
+      )
+    })
+  return walk(graph.subgraphs, graph.direction)
 }
 
 /** Recursively collect every node ID that is a member of `sg`, including nested descendants. */
@@ -423,7 +429,7 @@ export function mermaidToElk(
   // We use SEPARATE when any subgraph — at any nesting depth — has a
   // direction override, since ELK's INCLUDE_CHILDREN mode ignores a nested
   // compound node's own `elk.direction`.
-  const hasDirectionOverride = hasAnyDirectionOverride(graph.subgraphs)
+  const hasDirectionOverride = hasAnyDirectionOverride(graph)
 
   // Root ELK graph's children/edges — built up below across several loops,
   // then assembled into the elkGraph object literal at the very end so its
@@ -459,6 +465,11 @@ export function mermaidToElk(
     'elk.hierarchyHandling': hasDirectionOverride
       ? 'SEPARATE'
       : 'INCLUDE_CHILDREN',
+    // ELK packs disconnected components into a near-square block, which puts two
+    // sibling subgraphs side by side under LR; mermaid.js ranks them together.
+    ...(hasDirectionOverride
+      ? { 'elk.separateConnectedComponents': 'false' }
+      : {}),
   }
   // Ports to declare on each subgraph's ELK node, keyed by subgraph ID.
   const portsBySubgraph = new Map<string, Set<string>>()
@@ -731,9 +742,10 @@ function subgraphToElk(
   // fall back to the inherited (parent) direction, per mermaid.js's
   // documented precedence rule.
   const effectiveDirection =
-    sg.direction !== undefined && subgraphDirectionIsHonored(sg, graph)
+    subgraphDirections(graph)?.get(sg.id) ??
+    (sg.direction !== undefined && subgraphDirectionIsHonored(sg, graph)
       ? sg.direction
-      : inheritedDirection
+      : inheritedDirection)
 
   const layoutOptions: LayoutOptions = containerLayoutOptions({
     direction: directionToElk(effectiveDirection),

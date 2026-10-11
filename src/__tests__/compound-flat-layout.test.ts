@@ -875,7 +875,7 @@ describe('layoutFlowchartSync: other shapes of subgraph diagram', () => {
 describe('layoutFlowchartSync: falls back to the nested layout', () => {
   it('for a subgraph with its own direction', () => {
     const g = graphOf(
-      'graph TD\n  subgraph s\n    direction LR\n    A --> B\n  end\n  X --> A',
+      'graph TD\n  subgraph s\n    direction LR\n    A --> B\n  end\n  X --> Y',
     )
     expect(layoutFlowchartSync(g)).toEqual(layoutGraphSync(g))
   })

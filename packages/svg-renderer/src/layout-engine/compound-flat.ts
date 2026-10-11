@@ -137,7 +137,7 @@ function membersOf(sg: MermaidSubgraph): Set<string> {
  */
 export function canLayOutFlat(graph: MermaidGraph): boolean {
   if (graph.subgraphs.length === 0) return false
-  if (isStateGraph(graph) || hasAnyDirectionOverride(graph.subgraphs)) {
+  if (isStateGraph(graph) || hasAnyDirectionOverride(graph)) {
     return false
   }
   for (const id of graph.nodes.keys()) if (isSpine(id)) return false

@@ -56,6 +56,11 @@ export interface MermaidGraph {
   interactions: Map<string, NodeInteraction>
   /** Configuration the diagram set for itself via `%%{init: ...}%%` */
   initConfig?: InitConfig
+  /**
+   * Set by the flowchart parser: subgraphs without a crossing edge lay out
+   * perpendicular to their parent, as in mermaid.js (see `subgraphDirections`).
+   */
+  flipsSubgraphs?: boolean
 }
 
 export type Direction = 'TD' | 'TB' | 'LR' | 'BT' | 'RL'

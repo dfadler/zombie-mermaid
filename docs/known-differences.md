@@ -5,35 +5,42 @@ difference is either intentional or not yet fixed. Each entry was re-checked aga
 the pinned `mermaid` devDependency (11.17.2), rendered headless through
 `scripts/lib/real-mermaid.ts`. Other mermaid versions may differ.
 
-## Subgraph inner direction
+## Subgraph inner direction (ASCII only)
 
-mermaid.js flips a subgraph's inner direction perpendicular to its parent by default
-(`graph TD` parent, row inside; `graph LR` parent, column inside). An edge that
-touches a node _inside_ the subgraph cancels the flip, and an explicit `direction` is
-then ignored. Edges to or from the subgraph id (`X --> Sub`, `Sub --> Y`) do not cancel
-it. Outside edges do not cause the flip; it is the default.
+mermaid.js lays out a flowchart subgraph that no edge crosses as its own graph,
+perpendicular to its parent (`graph TD` parent, row inside; `graph LR` parent, column
+inside), unless the subgraph sets `direction`. A subgraph an edge crosses stays in the
+parent's layout and its `direction` is ignored. An edge crosses when exactly one end is
+inside the subgraph, counting nodes and nested subgraph ids but not the subgraph's own
+id: `X --> Sub` and `Sub --> Y` do not cross. Nesting repeats the rule: in a
+`graph TD`, an outer subgraph lays out as a row and the subgraph inside it as a column.
+A subgraph an edge crosses does not start a new level, so its children flip relative
+to the direction it inherits.
 
-zombie-mermaid never applies the default flip. It honors an explicit `direction`
-only when no edge crosses the subgraph boundary (an edge with exactly one end inside
-the subgraph, where its id counts as inside), and otherwise uses the parent's
-direction. Edges between two inner nodes, like `a --> b`, never cancel it. SVG and ASCII agree with each other. Given `subgraph S` holding
-`a --> b --> c` in a `graph TD`:
+SVG follows this rule (#1699), checked against mermaid 11.17.2 for explicit and
+default directions, `TD`/`LR`/`BT`/`RL` parents, edges to and from the id, edges to a
+member, nested subgraphs and cluster-to-cluster edges
+(`src/__tests__/subgraph-default-flip-1699.test.ts`).
 
-| Source                                      | mermaid.js inner | zombie-mermaid |
-| ------------------------------------------- | ---------------- | -------------- |
-| no `direction`, no edges                    | row              | column         |
-| `direction LR`, no edges                    | row              | row            |
-| `direction TB`, no edges                    | column           | column         |
-| `graph LR` parent, no `direction`, no edges | column           | row            |
-| `X --> S` or `S --> Y` (edge to the id)     | row              | column         |
-| `direction LR` plus `X --> S`               | row              | column         |
-| `X --> a` (edge to an inner node)           | column           | column         |
-| `c --> Y` (edge from an inner node)         | column           | column         |
+ASCII does not flip. It honors an explicit `direction` only when no edge crosses the
+boundary, counting the subgraph's own id as inside, and otherwise uses the parent's
+direction. Flipping by default there is blocked by the ASCII grid: two sibling
+subgraphs with different inner directions share one grid and overlap
+(`graph LR` with two unconnected subgraphs already renders garbled with an explicit
+`direction TB` in each). Given `subgraph S` holding `a --> b --> c` in a `graph TD`:
 
-The rows that differ are an isolated subgraph with no `direction`, and a subgraph
-touched only by edges to or from its id. To get the same result in both, set
-`direction` explicitly and keep edges off the subgraph id, or accept the difference.
-Nested subgraphs and cluster-to-cluster edges were not checked.
+| Source                                      | mermaid.js / SVG | ASCII  |
+| ------------------------------------------- | ---------------- | ------ |
+| no `direction`, no edges                    | row              | column |
+| `graph LR` parent, no `direction`, no edges | column           | row    |
+| `X --> S` or `S --> Y` (edge to the id)     | row              | column |
+| `direction LR` plus `X --> S`               | row              | column |
+
+Other rows agree: `direction LR` or `TB` with no edges, `X --> a` and `c --> Y`.
+
+One SVG gap remains: an edge between a member and its own subgraph (`a --> S`)
+crosses in mermaid.js, but is dropped before layout here (#1310), so the subgraph
+still flips.
 
 ## Layout tie-breaks and placement
 

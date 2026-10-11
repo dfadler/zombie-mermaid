@@ -122,11 +122,12 @@ describe('RenderOptions.direction – flowchart (SVG)', () => {
   })
 
   it('a nested subgraph direction still applies on top of the override', () => {
-    // Top-level LR in the source; S keeps its own LR; T inherits the top level.
+    // Top-level LR in the source, overridden to TB. S keeps its own TB; T has
+    // none, so it flips perpendicular to the (overridden) top level (#1699).
     const source = [
       'graph LR',
       '  subgraph S',
-      '    direction LR',
+      '    direction TB',
       '    A --> B',
       '  end',
       '  subgraph T',
@@ -134,14 +135,11 @@ describe('RenderOptions.direction – flowchart (SVG)', () => {
       '  end',
     ].join('\n')
     const svg = renderMermaidSVG(source, { direction: 'TB' })
-    // S's own `direction LR` wins locally: A → B stays horizontal.
     expect(
-      isRightOf(boxOrigin(svg, 'node', 'A'), boxOrigin(svg, 'node', 'B')),
+      isBelow(boxOrigin(svg, 'node', 'A'), boxOrigin(svg, 'node', 'B')),
     ).toBe(true)
-    // T has no override, so it follows the (overridden) top level: C → D
-    // is now vertical.
     expect(
-      isBelow(boxOrigin(svg, 'node', 'C'), boxOrigin(svg, 'node', 'D')),
+      isRightOf(boxOrigin(svg, 'node', 'C'), boxOrigin(svg, 'node', 'D')),
     ).toBe(true)
     // …and this is exactly what the source with a TB header produces.
     expect(svg).toBe(renderMermaidSVG(source.replace('graph LR', 'graph TB')))
