@@ -21,7 +21,7 @@ Warns about likely PR-process misses, from the diff of HEAD against REF
   - ASCII-renderer paths changed, but the PR body has no image (real-terminal
     screenshot flow: verify-ascii-terminal skill)
   - published code changed with no .changeset/*.md
-  - a changeset on a PR that touches no published code
+  - a releasing changeset (names a package) on a PR that touches no published code
   - docs/decisions/*.md changed (self-review checklist link)
   - rendered-output bug fix without demo/fork-fixes-data.ts
 
@@ -105,7 +105,13 @@ fi
 if [ "$has_code" -eq 1 ] && [ "$has_changeset" -eq 0 ]; then
   warnings+=("Published code changed but no .changeset/*.md is added (see CONTRIBUTING.md Changesets; never bump versions or edit CHANGELOG).")
 fi
-if [ "$has_code" -eq 0 ] && [ "$has_changeset" -eq 1 ]; then
+# An empty changeset (no package in its frontmatter) is the repo's way to
+# silence changeset-bot on non-package PRs; only a releasing one is suspect.
+has_release_changeset=0
+for f in $(printf '%s\n' "$files" | grep -E '^\.changeset/.+\.md$'); do
+  git show "HEAD:$f" 2>/dev/null | grep -Eq "^['\"]" && has_release_changeset=1
+done
+if [ "$has_code" -eq 0 ] && [ "$has_release_changeset" -eq 1 ]; then
   warnings+=("A changeset is included but no published code (src/, packages/*/src/) changed; data/docs-only PRs should not carry one.")
 fi
 if has '^docs/decisions/.+\.md$'; then

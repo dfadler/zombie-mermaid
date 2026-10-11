@@ -16,12 +16,12 @@ CI gates on `-chromium-linux.png`, so those need a separate path.
 
 ## Decision table
 
-| Situation | Do this |
-| --- | --- |
+| Situation                                                 | Do this                                                                                                                                                                            |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CI `visual-regression` failed after an intentional change | Download the failing run's `visual-regression-failures-<shard>` artifacts (4 shards; the failure can be in any) and commit the new `-chromium-linux.png` files. Review each image. |
-| Want to know before pushing whether Linux baselines moved | `scripts/docker-test-visual.sh [--suite ascii\|svg]` (needs Docker). It checks; it refuses to rewrite Linux baselines. |
-| Container result for an SVG baseline is surprising | Trust a real CI run over the container (docs/visual-regression.md, #551). |
-| Need the darwin baselines | `pnpm run test:visual:update` (rewrites only your platform). |
+| Want to know before pushing whether Linux baselines moved | `scripts/docker-test-visual.sh [--suite ascii\|svg]` (needs Docker). It checks; it refuses to rewrite Linux baselines.                                                             |
+| Container result for an SVG baseline is surprising        | Trust a real CI run over the container (docs/visual-regression.md, #551).                                                                                                          |
+| Need the darwin baselines                                 | `pnpm run test:visual:update` (rewrites only your platform).                                                                                                                       |
 
 Never use a stock `mcr.microsoft.com/playwright:*` image: it lacks DejaVu and
 mis-sizes ASCII panels (#326, #614). Use the wrapper.

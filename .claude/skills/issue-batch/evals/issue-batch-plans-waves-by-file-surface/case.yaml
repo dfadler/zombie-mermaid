@@ -1,0 +1,68 @@
+# Should-fire half of the trigger boundary for issue-batch; the near-miss is
+# issue-batch-stays-quiet-on-single-issue. All graders are free, so tagged `quick`.
+# Can fail: without the skill the model does not know the "wave" partitioning or that the
+# default cap is 8; skill_fired fails if the description stops matching the prompt.
+schema_version: '1.1'
+name: issue-batch-plans-waves-by-file-surface
+description: >
+  Given several issues to work in parallel, without naming issue-batch, the model
+  invokes it and prints a wave plan that chains the two issues sharing
+  draw-arrows.ts instead of running them together. expected_outcome: PASS when the
+  skill fires and the plan names waves and the draw-arrows.ts overlap; FAIL otherwise.
+tags: [issue-batch, trigger, quick]
+
+execution:
+  prompt: |
+    I want to sweep these GitHub issues in parallel with worktree subagents. Don't
+    run gh or create anything; just give me the plan. Put each wave on its own line
+    as `Wave N: #a, #b` (issue numbers only, nothing else on that line), with any
+    reasoning below the waves.
+
+    #101 "Arrow heads clip at node corners": body says the fix is in
+    packages/ascii-renderer/draw-arrows.ts; regenerates the ASCII snapshots.
+    #102 "Arrow labels overlap on long edges": body says the fix is in
+    packages/ascii-renderer/draw-arrows.ts; regenerates the ASCII snapshots.
+    #103 "Typo in README install section": only touches README.md.
+  max_turns: 8
+  allowed_tools:
+    - Skill
+    - Read
+    - Glob
+    - Grep
+
+graders:
+  - name: skill_fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?issue-batch"'
+    min: 1
+    arm: both
+
+  - name: names_waves
+    type: regex
+    target: last_message
+    pattern: '\bwave\b'
+    flags: i
+    match: contains
+
+  # Non-vacuous guard: wave lines in the requested format exist.
+  - name: has_wave_lines
+    type: regex
+    target: last_message
+    pattern: '^\W*Wave\s*\d+\W*:[^\n]*#10[123]'
+    flags: im
+    match: contains
+
+  # Core behavior: #101 and #102 (both draw-arrows.ts) never share a wave line.
+  - name: overlap_issues_not_same_wave
+    type: regex
+    target: last_message
+    pattern: '^\W*Wave\s*\d+\W*:[^\n]*(?:#101[^\n]*#102|#102[^\n]*#101)'
+    flags: im
+    match: not_contains
+
+  - name: names_overlap_file
+    type: regex
+    target: last_message
+    pattern: 'draw-arrows'
+    match: contains

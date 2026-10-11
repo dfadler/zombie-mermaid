@@ -73,7 +73,7 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Features
 
-- **6 diagram types** — Flowcharts, State, Sequence, Class, ER, and XY Charts (bar, line, combined)
+- **8 diagram types** — Flowcharts (including State), Sequence, Class, ER, XY Charts (bar, line, combined), Architecture, C4, and Pie
 - **Dual output** — SVG for rich UIs, ASCII/Unicode for terminals
 - **Synchronous rendering** — No async, no flash. Works with React `useMemo()`
 - **15 built-in themes** — And dead simple to add your own
@@ -86,6 +86,8 @@ the SVG renderer at all (see [ASCII Output](#ascii-output)).
 
 ## Installation
 
+Requires Node.js 24 or newer (`engines` in `package.json`).
+
 ```bash
 npm install zombie-mermaid
 # or
@@ -94,9 +96,16 @@ bun add zombie-mermaid
 pnpm add zombie-mermaid
 ```
 
-> **Upgrading from 4.x?** `elkjs` is now an optional peer dependency: browser and
-> bundler apps must call `registerElk(ELK)` once. See the
-> [migration guide](docs/guides/elkjs-optional-peer.md).
+> Not sure this is the right package? See [Which package do I install?](docs/guides/choosing-a-package.md).
+
+> **Upgrading from 4.x?** Node.js 24 or newer is now required. `elkjs` is now an
+> optional peer dependency: browser and bundler apps must call `registerElk(ELK)`
+> once (see the [migration guide](docs/guides/elkjs-optional-peer.md)). The
+> package no longer ships `src/` (see [#1538](https://github.com/dfadler/zombie-mermaid/issues/1538)).
+
+> **`elkjs` in the umbrella package:** the sub-packages (`@zombie-mermaid/svg-renderer`) treat `elkjs` as an
+> optional peer, but `zombie-mermaid` itself lists it as a regular dependency so the CLI and MCP server work
+> out of the box. See [what happens if you remove it](docs/guides/elkjs-optional-peer.md#removing-elkjs-from-zombie-mermaid).
 
 Only need one output format? `@zombie-mermaid/ascii-renderer` and `@zombie-mermaid/svg-renderer` are published standalone — see [Packages](#packages) below.
 
@@ -129,6 +138,7 @@ import { registerElk } from 'zombie-mermaid'
 registerElk(ELK)
 ```
 
+Architecture diagrams (`architecture-beta`, see [Supported Diagrams](docs/diagrams.md#architecture-diagrams)) are laid out by `elkjs` too.
 Sequence, pie, xychart and C4 diagrams, and all ASCII output, need no `elkjs`
 and no registration. Rendering a graph diagram with no `elkjs` available throws an
 `ElkNotRegisteredError` that says how to fix it.
@@ -201,7 +211,7 @@ hyperlinks — off by default, since terminal and pager support varies (see
 
 > 🧪 **Experimental — shipped to gauge interest, not a finished or best-effort implementation.** This is a first cut covering the common case; the tool surface may change based on feedback. Try it and [open an issue](https://github.com/dfadler/zombie-mermaid/issues/new) with what you'd want from it.
 
-`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as six tools: `render_mermaid_svg`, `render_mermaid_ascii`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, and `list_diagram_types`. `render_mermaid_svg` also takes optional `bg`/`fg` hex color overrides (applied on top of `theme`) and an optional `outputPath` that writes the SVG to disk and returns `{ saved, size }` instead of the SVG text. `outputPath` must end in `.svg` and resolve inside the server's working directory (the directory your MCP client launched it from); its parent directory must already exist, symlinks and non-regular files are refused, and an existing `.svg` file at that path is overwritten. Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
+`zombie-mermaid mcp` starts a [Model Context Protocol](https://modelcontextprotocol.io/) server on stdio, exposing the library's rendering as seven tools: `render_mermaid_svg`, `render_mermaid_ascii`, `validate_mermaid`, `check_mermaid_sequence_activations`, `fix_mermaid_sequence_activations`, `list_themes`, and `list_diagram_types`. `render_mermaid_svg` also takes optional `bg`/`fg` hex color overrides (applied on top of `theme`) and an optional `outputPath` that writes the SVG to disk and returns `{ saved, size }` instead of the SVG text. `outputPath` must end in `.svg` and resolve inside the server's working directory (the directory your MCP client launched it from); its parent directory must already exist, symlinks and non-regular files are refused, and an existing `.svg` file at that path is overwritten. Per-tool arguments and return shapes are in the [MCP tool reference](docs/mcp-tools.md). Point an MCP client (Claude Desktop, Claude Code, or anything else that speaks MCP) at it to render Mermaid diagrams directly in a conversation, without shelling out to the CLI or importing the library.
 
 Example Claude Desktop / Claude Code MCP server config:
 
@@ -216,7 +226,7 @@ Example Claude Desktop / Claude Code MCP server config:
 }
 ```
 
-All three tools accept a `diagram` string. The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection.
+The five diagram tools (including `validate_mermaid`, parse-only) accept a `diagram` string (`list_themes` and `list_diagram_types` take no arguments). The two render tools also take a handful of rendering options (`theme`, `transparent`, `font` for SVG; `useAscii`, `paddingX`/`paddingY`/`boxBorderPadding` for ASCII) — see each tool's `inputSchema` for the full, current list. Invalid Mermaid syntax comes back as a normal tool error (`isError: true`) rather than crashing the connection; `validate_mermaid` is the exception and reports it as a normal `{ valid: false, diagnostics }` result.
 
 `check_mermaid_sequence_activations` is a mechanical, deterministic check — no LLM judgment involved — for a specific gap in existing Mermaid validators: every `activate X` (or `+` arrow shorthand) in a `sequenceDiagram` must be closed by a matching `deactivate X` (`-` shorthand) before the diagram ends. It returns a JSON report (`{ ok, issues }`) rather than rendering anything, and errors (`isError: true`) if given a non-sequence diagram.
 
