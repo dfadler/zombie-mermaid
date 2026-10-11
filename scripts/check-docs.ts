@@ -67,11 +67,10 @@ export function stripFences(md: string): string {
 
 // True when the engines.node range admits only the .nvmrc major or newer.
 export function engineMatches(eng: string, want: string): boolean {
-  const alts = eng.split('||')
-  return (
-    alts.length === 1 &&
-    new RegExp(`^\\s*(>=|\\^|~)?\\s*v?${want}\\b`).test(eng)
-  )
+  if (eng.includes('||')) return false
+  // Fixed regex captures the leading major; compare it as a string (no dynamic RegExp, ReDoS-safe).
+  const m = /^\s*(?:>=|\^|~)?\s*v?(\d+)(?!\d)/.exec(eng)
+  return m?.[1] === want
 }
 
 export function anchors(md: string): Set<string> {
