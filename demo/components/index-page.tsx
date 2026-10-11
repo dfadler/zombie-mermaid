@@ -1796,7 +1796,7 @@ export function IndexPage({
   return (
     <Document
       title="Zombie Mermaid — Mermaid Rendering, Made Beautiful"
-      description="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, and XY Chart diagrams."
+      description="Open source diagram rendering library built for the AI era. Ultra-fast, fully themeable, outputs to SVG and ASCII. Supports Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, and Pie diagrams."
       head={
         <>
           {/*
