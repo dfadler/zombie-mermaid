@@ -97,7 +97,15 @@ export function Document({
         <link rel="icon" href={faviconHref} type="image/svg+xml" />
         {head}
       </head>
-      <body style={bodyStyle}>{children}</body>
+      <body style={bodyStyle}>
+        {/* First focusable element on every page (#1761); every page
+            renders exactly one <main id="main"> as its target. Styled by
+            nav-css.ts's .skip-link (hidden until focused). */}
+        <a className="skip-link" href="#main">
+          Skip to content
+        </a>
+        {children}
+      </body>
     </html>
   )
 }

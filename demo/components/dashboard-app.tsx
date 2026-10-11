@@ -633,6 +633,10 @@ export function dashboardFooterColumns() {
       title: 'Resources',
       links: [
         { label: 'Blog', href: ROUTES.blog },
+        {
+          label: 'Upgrade guide',
+          href: ROUTES.blog + 'upgrading-2x-to-5x.html',
+        },
         { label: 'GitHub', href: FORK_URL },
         { label: 'npm package', href: NPM_URL },
       ],

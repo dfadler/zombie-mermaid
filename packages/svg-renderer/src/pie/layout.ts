@@ -87,21 +87,27 @@ function slicePath(
   radius: number,
   start: number,
   end: number,
+  inner = 0,
 ): string {
   if (end - start >= TAU - 1e-9) {
-    return (
-      `M${r(cx)},${r(cy - radius)}` +
-      `A${r(radius)},${r(radius)},0,1,1,${r(cx)},${r(cy + radius)}` +
-      `A${r(radius)},${r(radius)},0,1,1,${r(cx)},${r(cy - radius)}Z`
-    )
+    const ring = (rad: number, sweep: 0 | 1) =>
+      `M${r(cx)},${r(cy - rad)}` +
+      `A${r(rad)},${r(rad)},0,1,${sweep},${r(cx)},${r(cy + rad)}` +
+      `A${r(rad)},${r(rad)},0,1,${sweep},${r(cx)},${r(cy - rad)}`
+    return ring(radius, 1) + (inner > 0 ? ring(inner, 0) : '') + 'Z'
   }
   const p0 = polar(cx, cy, radius, start)
   const p1 = polar(cx, cy, radius, end)
   const large = end - start > Math.PI ? 1 : 0
-  return (
+  const head =
     `M${r(p0.x)},${r(p0.y)}` +
-    `A${r(radius)},${r(radius)},0,${large},1,${r(p1.x)},${r(p1.y)}` +
-    `L${r(cx)},${r(cy)}Z`
+    `A${r(radius)},${r(radius)},0,${large},1,${r(p1.x)},${r(p1.y)}`
+  if (inner <= 0) return `${head}L${r(cx)},${r(cy)}Z`
+  const q0 = polar(cx, cy, inner, end)
+  const q1 = polar(cx, cy, inner, start)
+  return (
+    `${head}L${r(q0.x)},${r(q0.y)}` +
+    `A${r(inner)},${r(inner)},0,${large},0,${r(q1.x)},${r(q1.y)}Z`
   )
 }
 
@@ -182,7 +188,10 @@ export function layoutPieChart(
 
   const slices: PositionedPieSlice[] = []
   let angle = 0
-  const labelRadius = radius * PIE.textPosition
+  // Mermaid: a hole only for 0 < donutHole <= 0.9; labels stay at textPosition.
+  const hole = chart.donutHole ?? 0
+  const innerRadius = hole > 0 && hole <= 0.9 ? hole * radius : 0
+  const labelRadius = radius * (chart.textPosition ?? PIE.textPosition)
   for (const { slice, colorIndex } of drawn) {
     const start = angle
     const end = angle + (slice.value / drawnTotal) * TAU
@@ -194,7 +203,7 @@ export function layoutPieChart(
       colorIndex,
       startAngle: start,
       endAngle: end,
-      path: slicePath(cx, cy, radius, start, end),
+      path: slicePath(cx, cy, radius, start, end, innerRadius),
       percentText: `${((slice.value / total) * 100).toFixed(0)}%`,
       labelX: label.x,
       labelY: label.y,

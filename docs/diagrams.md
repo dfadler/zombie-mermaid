@@ -278,6 +278,8 @@ motion was intended.
 own class (`class A foo` or `A:::foo`) overrides it property by property, and
 an explicit `style A ...` directive overrides both.
 
+<!-- mermaid-audited-version: 11.17.0 (read by .github/workflows/upstream-watch.yml; bump when the coverage audit is redone) -->
+
 ### Known limitations
 
 Three pieces of Mermaid's flowchart syntax are recognized as intentionally
@@ -319,6 +321,57 @@ stateDiagram-v2
   Idle --> Processing: start
   Processing --> Complete: done
   Complete --> [*]
+```
+
+### Choice, fork and join
+
+`state c <<choice>>` draws an unlabeled diamond; `state f <<fork>>` and
+`state j <<join>>` draw an unlabeled bar (`[[choice]]`, `[[fork]]` and
+`[[join]]` are accepted spellings). The id is only a handle for transitions.
+The bar is always horizontal: Mermaid turns it vertical in `direction LR`,
+which is not done here. In ASCII the bar is a solid row of `█` (`#` in
+pure-ASCII mode).
+
+### Concurrency
+
+A bare `--` line inside a composite state starts a new concurrent region.
+Each region is drawn as its own dashed, untitled box, side by side inside the
+composite, as Mermaid draws them (`┄`/`┆` in ASCII, `.`/`:` in pure-ASCII
+mode).
+
+```
+stateDiagram-v2
+  state Work {
+    [*] --> A1
+    A1 --> A2
+    --
+    [*] --> B1
+    B1 --> B2
+  }
+```
+
+### Notes
+
+`note right of S : text` and `note left of S : text` attach a note to a
+state; a block form (`note right of S`, the text on following lines, then
+`end note`) holds several lines. The note is a dog-eared box (square-cornered
+in ASCII, where states are rounded) joined to its state by a dotted,
+arrowless link. Mermaid places the note beside its state; here the dotted link
+decides where it lands, so `left`/`right` is accepted but not honored as a
+side. The note's text is the only thing it carries: `note over` and
+free-floating notes are not recognized.
+
+### Styling
+
+State diagrams accept the same `classDef` / `class` / `:::name` styling as
+flowcharts (see [Styling](#styling)), including `classDef default`:
+
+```
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Busy:::hot
+  classDef hot fill:#f96,stroke:#333
+  class Idle hot
 ```
 
 ## Sequence Diagrams
@@ -467,6 +520,20 @@ classDiagram
   Duck: +String beakColor
   Duck: +swim()
   Duck: +quack()
+```
+
+### Namespaces
+
+`namespace Name { ... }` blocks are drawn as a labeled frame around their
+member classes in both SVG and ASCII.
+
+```
+classDiagram
+  namespace Core {
+    class A
+    class B
+  }
+  A --> B
 ```
 
 ### Interactions
@@ -772,9 +839,15 @@ opacity with a 2px outline in the theme's foreground colour.
 
 Known differences from Mermaid:
 
-- `%%{init: {"pie": …}}%%` settings (`textPosition`, `donutHole`,
-  `legendPosition`, `highlightSlice`) are not supported yet; the defaults
-  are always used.
+- `%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the SVG slice labels
+  (0 is the centre, 1 the outer edge; default 0.75). The ASCII output has no
+  positioned labels, so it ignores it.
+- `%%{init: {"pie": {"donutHole": 0.5}}}%%` cuts a hole in the SVG pie, as a
+  fraction of the radius. Like Mermaid, it only applies for values above 0
+  and up to 0.9 (anything else draws a plain pie), and the slice labels stay
+  at `textPosition`. The ASCII output has no centre to cut, so it ignores it.
+  The other `pie` settings Mermaid 11.16+ supports (`legendPosition`,
+  `highlightSlice`) are not supported yet; their defaults are always used.
 - A legend taller than the 450px frame (more than about 20 slices) makes the
   SVG taller instead of being cut off, and an empty chart keeps its full
   width (Mermaid crops it).
@@ -936,6 +1009,8 @@ XY charts render to ASCII with dedicated chart-drawing characters:
 - **Multi-series** — Each series gets a distinct ANSI color from the theme's accent palette
 - **Legends** — Automatically shown when multiple series are present
 - **Horizontal charts** — Fully supported with categories on the y-axis
+- **Y-axis ticks** — The same ticks as the SVG, and as Mermaid.js: about 10 intervals at a step of 1, 2 or 5 times a power of ten. Without a `y-axis` range the axis spans the data's own minimum and maximum, so bars start at the data minimum; see [xychart-design.md](xychart-design.md#shipped-behavior-y-axis-ticks-and-the-y-axis-title)
+- **Y-axis title** — Written one letter per row down the left edge in vertical charts (no rotation in a terminal), and as a centered line under the axis in horizontal charts
 
 ### ASCII Pie Charts
 

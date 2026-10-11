@@ -5,7 +5,7 @@ Single-topic files, plus three grouped directories: task-oriented walkthroughs i
 [guides/](guides/), settled-decision records in [decisions/](decisions/), and
 investigation and measurement write-ups in [research/](research/).
 
-- [guides/](guides/) — task-oriented walkthroughs: browsing the samples, choosing a theme
+- [guides/](guides/) — task-oriented walkthroughs: choosing a package, browsing the samples, choosing a theme, upgrading from 2.x to 5.x
 - [development-scripts.md](development-scripts.md) — the less common `package.json` scripts: site generators, benchmarks, bundle-size and coverage checks
 - [visual-regression.md](visual-regression.md) — the Playwright screenshot suite: ASCII mockup fidelity probes, the containerized Linux baselines, and darwin font pitfalls
 - [RELEASING.md](RELEASING.md) — the changesets-based release flow and npm trusted-publishing setup
@@ -13,6 +13,8 @@ investigation and measurement write-ups in [research/](research/).
 - [accessibility.md](accessibility.md) — the accessibility conformance statement: what's guaranteed (and CI-enforced), what's implemented but unverified by automation, and what isn't covered
 - [theming.md](theming.md) — the two-color foundation, enriched mode, built-in themes, custom themes, Shiki compatibility
 - [diagrams.md](diagrams.md) — syntax for each supported diagram type, XY chart styling, and ASCII rendering
+- [known-differences.md](known-differences.md) — verified differences from mermaid.js that are intentional or not yet fixed: subgraph inner direction, layout tie-breaks, ER parser leniency
+- [mcp-tools.md](mcp-tools.md) — per-tool reference for the MCP server: arguments, `bg`/`fg`, `outputPath` rules, return shapes
 - [react-integration.md](react-integration.md) — using `renderMermaidSVG` with `useMemo()` for zero-flash rendering
 - [api-reference.md](api-reference.md) — full function and options reference
 - [testing-conventions.md](testing-conventions.md) — the RTL pattern for demo/editor component tests, and when a literal-value or snapshot assertion is still the right call

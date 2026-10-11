@@ -177,7 +177,12 @@ export function parseMermaid(text: string): MermaidGraph {
    */
   const initConfig = extractInitConfig(text.split('\n').map((l) => l.trim()))
 
-  const lines = mergeContinuationLines(splitStatementsByLine(text))
+  const groups = splitStatementsByLine(text)
+  // State diagrams have no multi-line edge chains, and a bare `--` line is
+  // the concurrency separator there: merging it into the previous
+  // transition would swallow the separator and the statement it follows.
+  const isState = /^stateDiagram(-v2)?\s*$/i.test(groups[0]?.[0]?.text ?? '')
+  const lines = isState ? groups.flat() : mergeContinuationLines(groups)
 
   if (lines.length === 0) {
     throw new Error('Empty mermaid diagram')
@@ -399,9 +404,58 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
   let startCount = 0
   let endCount = 0
 
+  // `state x <<choice|fork|join>>` declarations, applied once parsing is done.
+  const pseudoStates = new Map<string, NodeShape>()
+
+  // An open `note right of X` ... `end note` block: its target and the text
+  // lines gathered so far.
+  let noteBlock: { target: string; lines: string[] } | null = null
+  let noteCount = 0
+  const addNote = (target: string, text: string): void => {
+    if (!compositeStateIds.has(target)) {
+      ensureStateNode(graph, compositeStack, target)
+    }
+    noteCount++
+    // Mermaid names the note node `<state>----note-<n>` and joins it to the
+    // state with a dotted, arrowless link.
+    const noteId = `${target}----note-${noteCount}`
+    registerStateNode(graph, compositeStack, {
+      id: noteId,
+      label: normalizeBrTags(text),
+      shape: 'note',
+    })
+    graph.edges.push({
+      source: target,
+      target: noteId,
+      style: 'dotted',
+      hasArrowStart: false,
+      hasArrowEnd: false,
+    })
+  }
+
   for (let i = 1; i < lines.length; i++) {
     const stmt = lines[i]!
     const line = stmt.text
+
+    // --- note: `note right of X : text`, or a block closed by `end note` ---
+    if (noteBlock) {
+      if (/^end\s+note$/i.test(line)) {
+        addNote(noteBlock.target, noteBlock.lines.join('\n'))
+        noteBlock = null
+      } else {
+        noteBlock.lines.push(line)
+      }
+      continue
+    }
+    const noteMatch = line.match(
+      /^note\s+(?:left|right)\s+of\s+([\w\p{L}-]+)\s*(?::\s*(.*))?$/iu,
+    )
+    if (noteMatch) {
+      if (noteMatch[2] !== undefined)
+        addNote(noteMatch[1]!, noteMatch[2].trim())
+      else noteBlock = { target: noteMatch[1]!, lines: [] }
+      continue
+    }
 
     // --- classDef / class assignment / style — shared with the flowchart and
     // class-diagram parsers, see packages/core/src/style-directives.ts.
@@ -470,8 +524,32 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
       continue
     }
 
+    // --- concurrency separator: `--` inside a composite state starts a new
+    // region. The first one wraps what came before it into region 1. ---
+    if (/^-{2,}$/.test(line) && compositeStack.length > 0) {
+      let top = compositeStack[compositeStack.length - 1]!
+      if (top.region) {
+        compositeStack.pop()
+        top = compositeStack[compositeStack.length - 1]!
+      } else {
+        const first = makeRegion(top, 1)
+        first.nodeIds = top.nodeIds
+        first.children = top.children
+        top.nodeIds = []
+        top.children = [first]
+      }
+      const next = makeRegion(top, top.children.length + 1)
+      top.children.push(next)
+      compositeStack.push(next)
+      continue
+    }
+
     // --- composite state end ---
     if (line === '}') {
+      // Closing a composite that has regions also closes its open region.
+      if (compositeStack[compositeStack.length - 1]?.region) {
+        compositeStack.pop()
+      }
       const completed = compositeStack.pop()
       if (completed) {
         if (compositeStack.length > 0) {
@@ -480,6 +558,20 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
           graph.subgraphs.push(completed)
         }
       }
+      continue
+    }
+
+    // --- pseudo-state: `state c <<choice>>`, `<<fork>>`, `<<join>>` (also
+    // spelled `[[choice]]`). Drawn as a diamond / bar with no label. ---
+    const pseudoMatch = line.match(
+      /^state\s+([\w\p{L}]+)\s+(?:<<|\[\[)\s*(choice|fork|join)\s*(?:>>|\]\])$/iu,
+    )
+    if (pseudoMatch) {
+      const id = pseudoMatch[1]!
+      const kind = pseudoMatch[2]!.toLowerCase()
+      // Applied after parsing, not here: registering the node now would
+      // pin it ahead of the states the layout reads in first-mention order.
+      pseudoStates.set(id, kind === 'choice' ? 'diamond' : 'fork-join')
       continue
     }
 
@@ -595,7 +687,34 @@ function parseStateDiagram(lines: Statement[]): MermaidGraph {
     }
   }
 
+  if (noteBlock) {
+    throw new Error(
+      `Unterminated note block for state "${noteBlock.target}": missing "end note"`,
+    )
+  }
+
+  for (const [id, shape] of pseudoStates) {
+    const node = graph.nodes.get(id)
+    if (node) {
+      node.shape = shape
+      node.label = ''
+    } else if (!compositeStateIds.has(id)) {
+      registerStateNode(graph, [], { id, label: '', shape })
+    }
+  }
+
   return graph
+}
+
+/** An empty concurrency region of `composite`, numbered from 1. */
+function makeRegion(composite: MermaidSubgraph, n: number): MermaidSubgraph {
+  return {
+    id: `${composite.id}__region${n}`,
+    label: '',
+    nodeIds: [],
+    children: [],
+    region: true,
+  }
 }
 
 /**

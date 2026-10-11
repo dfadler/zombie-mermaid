@@ -305,7 +305,8 @@ function clusterExitDrop(
 ): EntryDrop | undefined {
   if (!start || edge.path.length < 2) return undefined
   const lr = graph.config.graphDirection === 'LR'
-  const points = edge.path.map((p) => gridToDrawingCoord(graph, p))
+  // Shifted, so a lane's end run (#1331) keeps its own row/column in the drop.
+  const points = pathToDrawing(graph, edge)
   const stub = points[0]!
   if ((lr ? stub.y : stub.x) === (lr ? start.y : start.x)) return undefined
 
@@ -878,7 +879,8 @@ function drawCorners(
     const base = drop
       ? drop.points[idx]!
       : gridToDrawingCoord(graph, path[idx]!)
-    const by = shifts?.[idx]
+    // A drop is drawn as given (its points already carry any shift).
+    const by = drop ? undefined : shifts?.[idx]
     const dc = by ? { x: base.x + by.x, y: base.y + by.y } : base
     const prevDir = determineDirection(points[idx - 1]!, coord)
     const nextDir = determineDirection(coord, points[idx + 1]!)
@@ -1019,11 +1021,21 @@ export function edgeLabelPlacement(
   // (every later edge re-resolves every other edge), so remember them for the
   // call. The layout cannot change mid-call, and the memo is dropped on exit,
   // so a layout change can never see a stale placement.
-  try {
-    return resolveWithClearance(graph, edge)
-  } finally {
-    placementMemo.clear()
+  // #1785: inside a `withPortShifts` scope the layout is fixed (the segment
+  // index already relies on that), so the memo lives as long as the scope and
+  // each edge's final placement is computed once, not once per draw call.
+  const scope = pathScope(graph)
+  if (scope) {
+    placementMemo = scopedMemo.get(scope) ?? new Map()
+    scopedMemo.set(scope, placementMemo)
+    const key = `${graph.edges.indexOf(edge)}:final`
+    if (!placementMemo.has(key)) {
+      placementMemo.set(key, resolveWithClearance(graph, edge))
+    }
+    return placementMemo.get(key)!
   }
+  placementMemo = new Map()
+  return resolveWithClearance(graph, edge)
 }
 
 function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
@@ -1033,7 +1045,8 @@ function resolveWithClearance(graph: AsciiGraph, edge: AsciiEdge) {
 
 type LabelLines = { x: number; y: number; text: string }[] | null
 /** Per-`edgeLabelPlacement`-call memo of `resolveLabelPlacement` (#1466). */
-const placementMemo = new Map<string, LabelLines>()
+let placementMemo = new Map<string, LabelLines>()
+const scopedMemo = new WeakMap<object, Map<string, LabelLines>>()
 
 /**
  * #1433: two edges that share their last vertical leg (a lane's drop into one
@@ -1534,8 +1547,9 @@ function otherLabelPlacements(
     const sibling =
       other.from === edge.from &&
       other.to === edge.to &&
-      shifts.has(edge) &&
-      shifts.has(other)
+      // The middle stroke of an odd group sits on its port (shift 0, so no
+      // entry): one of the pair being shifted marks a spread group (#1716).
+      (shifts.has(edge) || shifts.has(other))
     if (sibling && i > at) continue
     out.push(...(resolveLabelPlacement(graph, other, sibling) ?? []))
   }

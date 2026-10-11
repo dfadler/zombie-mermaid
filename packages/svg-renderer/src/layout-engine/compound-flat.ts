@@ -51,6 +51,7 @@ import { resolveEdgeStyle } from './from-elk.ts'
 import { labelSpot, routeInnerEdge } from './inner-edges.ts'
 import type { LayoutHints } from './layout-hints.ts'
 import {
+  REGION_PADDING,
   SUBGRAPH_PADDING,
   hasAnyDirectionOverride,
   isStateGraph,
@@ -314,9 +315,11 @@ export function orderSiblings(
     if (group.some((a, i) => group.slice(i + 1).some((b) => connected(a, b)))) {
       continue
     }
-    // Declaration order, last to first, is left to right.
+    // Declaration order, last to first, is left to right; concurrency
+    // regions (state `--`) are the exception and run first to last.
+    const sign = group.some((g) => g.region) ? -1 : 1
     const want = [...group].sort(
-      (a, b) => subgraphs.indexOf(b) - subgraphs.indexOf(a),
+      (a, b) => sign * (subgraphs.indexOf(b) - subgraphs.indexOf(a)),
     )
     const slots = group.map(mean).sort((a, b) => a - b)
     const moves = want.map((sg, i) => slots[i]! - mean(sg))
@@ -406,20 +409,21 @@ function buildGroups(
       }),
       ...children,
     ]
-    const x0 = Math.min(...boxes.map((b) => b.x)) - SUBGRAPH_PADDING.left
-    const y0 = Math.min(...boxes.map((b) => b.y)) - SUBGRAPH_PADDING.top
-    const x1 =
-      Math.max(...boxes.map((b) => b.x + b.width)) + SUBGRAPH_PADDING.right
-    const y1 =
-      Math.max(...boxes.map((b) => b.y + b.height)) + SUBGRAPH_PADDING.bottom
+    // A concurrency region has no title bar to leave room for.
+    const pad = sg.region ? REGION_PADDING : SUBGRAPH_PADDING
+    const x0 = Math.min(...boxes.map((b) => b.x)) - pad.left
+    const y0 = Math.min(...boxes.map((b) => b.y)) - pad.top
+    const x1 = Math.max(...boxes.map((b) => b.x + b.width)) + pad.right
+    const y1 = Math.max(...boxes.map((b) => b.y + b.height)) + pad.bottom
     // The title has to fit inside the box.
-    const titleWidth =
-      measureMultilineText(
-        sg.label,
-        fontSizes.groupHeader,
-        FONT_WEIGHTS.groupHeader,
-      ).width +
-      2 * TITLE_INSET
+    const titleWidth = sg.region
+      ? 0
+      : measureMultilineText(
+          sg.label,
+          fontSizes.groupHeader,
+          FONT_WEIGHTS.groupHeader,
+        ).width +
+        2 * TITLE_INSET
     return {
       id: sg.id,
       label: sg.label,
@@ -428,6 +432,7 @@ function buildGroups(
       width: Math.max(x1 - x0, titleWidth),
       height: y1 - y0,
       children,
+      ...(sg.region ? { region: true } : {}),
     }
   }
   return subgraphs.map(build)
@@ -687,7 +692,10 @@ export function layoutCompoundFlat(
           groups,
           clusters,
         )
-        return inner && assemble(laidOut, [...real.values()], groups, inner)
+        return (
+          inner &&
+          assemble(laidOut, [...real.values()], groups, inner, graph.direction)
+        )
       }
       if (round === MAX_WIDENINGS) return undefined
       for (const [id, overlap] of penetration) {
@@ -849,18 +857,78 @@ function openRoom(
   }
 }
 
+/** Least space an edge's cross-flow run keeps from a box's side, in px. */
+const BORDER_GAP = 8
+
+/**
+ * The layout routes edges before the boxes are drawn, so a run of an edge that
+ * travels across the flow (a fan-out trunk in a left-to-right graph) can land
+ * a px or two from a box's side and read as part of the border. Move such a
+ * run out to `BORDER_GAP` from the side it is on, when that stays between the
+ * run's neighbouring points and clear of every node. Every edge of a shared
+ * trunk gets the same move.
+ */
+export function clearBorders(
+  edges: PositionedEdge[],
+  nodes: PositionedNode[],
+  groups: PositionedGroup[],
+  direction: Direction,
+): void {
+  const k = isVertical(direction) ? 'y' : 'x'
+  const o = k === 'x' ? 'y' : 'x'
+  const size = k === 'x' ? 'width' : 'height'
+  const osize = k === 'x' ? 'height' : 'width'
+  for (const { points } of edges) {
+    for (let i = 1; i < points.length - 1;) {
+      let j = i
+      while (j + 1 < points.length - 1 && points[j + 1]![k] === points[i]![k]) {
+        j++
+      }
+      const run = points.slice(i, j + 1)
+      const at = run[0]!
+      const lo = Math.min(...run.map((p) => p[o]))
+      const hi = Math.max(...run.map((p) => p[o]))
+      const before = points[i - 1]![k]
+      const after = points[j + 1]![k]
+      const side = groups
+        .flatMap((g) => [g[k], g[k] + g[size]].map((s) => ({ g, s })))
+        .find(
+          ({ g, s }) =>
+            Math.abs(at[k] - s) < BORDER_GAP &&
+            hi > g[o] &&
+            lo < g[o] + g[osize],
+        )
+      if (side) {
+        const to = side.s + (at[k] >= side.s ? BORDER_GAP : -BORDER_GAP)
+        const between = (to - before) * (after - to) > 0
+        const clear = nodes.every(
+          (n) =>
+            n[k] + n[size] <= to ||
+            n[k] >= to ||
+            n[o] + n[osize] <= lo ||
+            n[o] >= hi,
+        )
+        if (between && clear) for (const p of run) p[k] = to
+      }
+      i = j + 1
+    }
+  }
+}
+
 /** The result of the last layout without the scaffolding, moved and sized to fit what is left. */
 function assemble(
   laidOut: PositionedGraph,
   nodes: PositionedNode[],
   groups: PositionedGroup[],
   extraEdges: PositionedEdge[],
+  direction: Direction,
 ): PositionedGraph {
   const edges: PositionedEdge[] = [
     ...laidOut.edges.filter((e) => !isSpine(e.source) && !isSpine(e.target)),
     ...extraEdges,
   ]
   const all = flattenGroups(groups)
+  clearBorders(edges, nodes, all, direction)
   const xs = [
     ...nodes.map((n) => n.x),
     ...all.map((g) => g.x),

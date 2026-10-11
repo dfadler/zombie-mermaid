@@ -33,14 +33,17 @@ function boxRows(lines: string[]): string[] {
 describe('parallel lanes keep the target border clean (#1230)', () => {
   // Two labeled edges now draw side by side instead (#1455), so the lanes
   // appear from three.
+  // Three lanes: the third has its own row and arrowhead (#1743). Four still
+  // merge at the target.
   for (const count of [3, 4]) {
+    const heads = count === 3 ? 2 : 1
     it(`TD, ${count} lanes: later lanes enter the target's right face with their own arrowhead`, () => {
       const lines = render(lanes('TD', count), false)
       const rows = boxRows(lines)
       // The top border is a plain box edge; the lanes arrive at the right face.
       expect(rows[0]!.trim().slice(0, 9)).toBe('┌───────┐')
-      expect(rows[2]!.trim()).toMatch(/^│ {3}T {3}│◄[─┬┴┤┘┐┼]+$/)
-      expect(lines.join('\n').match(/◄/g)).toHaveLength(1)
+      expect(rows[2]!.trim()).toMatch(/^│ {3}T {3}│◄[─┬┴┤┘┐┼│ ]+$/)
+      expect(lines.join('\n').match(/◄/g)).toHaveLength(heads)
       expect(lines.join('\n').match(/▼/g)).toHaveLength(2)
     })
 
@@ -48,8 +51,8 @@ describe('parallel lanes keep the target border clean (#1230)', () => {
       const lines = render(lanes('TD', count), true)
       const rows = boxRows(lines)
       expect(rows[0]!.trim().slice(0, 9)).toBe('+-------+')
-      expect(rows[2]!.trim()).toMatch(/^\| {3}T {3}\|<[-+]+$/)
-      expect(lines.join('\n').match(/</g)).toHaveLength(1)
+      expect(rows[2]!.trim()).toMatch(/^\| {3}T {3}\|<[-+| ]+$/)
+      expect(lines.join('\n').match(/</g)).toHaveLength(heads)
     })
   }
 

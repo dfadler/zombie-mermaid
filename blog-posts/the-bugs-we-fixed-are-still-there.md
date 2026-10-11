@@ -4,6 +4,10 @@ date: 2026-09-08
 description: A direct source-code check against beautiful-mermaid's current upstream tree, not a rendered-output comparison, confirms eleven fixed parsing and rendering bugs are unchanged four months on.
 ---
 
+> **Snapshot:** the upstream comparison below is a point-in-time check dated 2026-09-08, not a live claim. `beautiful-mermaid` may have changed since.
+
+> **Note (2026-10-10):** this post was written before the monorepo split. File paths it cites under `src/` have since moved into `packages/*` (for example `packages/ascii-renderer/`, `packages/svg-renderer/`, `packages/core/`); the code and line references are as of the post's date.
+
 [#630](https://github.com/dfadler/zombie-mermaid/issues/630) asked whether a
 blog post comparing zombie-mermaid to
 [`beautiful-mermaid`](https://github.com/lukilabs/beautiful-mermaid) — the
@@ -14,7 +18,7 @@ two READMEs making similar claims. This is that check.
 What follows isn't a rendered side-by-side. Building and running
 `beautiful-mermaid`'s own code wasn't something this check did; the `upstream`
 git remote this repo already carries — the same one
-[`.github/workflows/upstream-check.yml`](https://github.com/dfadler/zombie-mermaid/blob/main/.github/workflows/upstream-check.yml)
+[`.github/workflows/upstream-watch.yml`](https://github.com/dfadler/zombie-mermaid/blob/main/.github/workflows/upstream-watch.yml)
 fetches from weekly to watch for new commits — was enough to pull its current
 source and read it directly. For the eleven bugs below, that's actually a
 stronger form of proof than a screenshot: each one is a regex, a missing type

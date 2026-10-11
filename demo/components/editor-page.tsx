@@ -403,6 +403,7 @@ export function EditorPage({
   return (
     <Document
       title="Zombie Mermaid — Live Editor"
+      description="Live Mermaid editor: render Flowchart, State, Sequence, Class, ER, XY Chart, C4, Architecture, and Pie diagrams to SVG or ASCII, switch themes, and share by URL."
       head={
         <>
           {/* Document only emits the SVG favicon (its own shared default,
@@ -447,7 +448,8 @@ export function EditorPage({
         <EditorHero homeHref={homeHref} />
       </div>
 
-      <div
+      <main
+        id="main"
         className="section-px"
         style={{
           padding: `0 ${LAYOUT.gutter.desktop}px ${SECTION_SPACE.snug}px ${LAYOUT.gutter.desktop}px`,
@@ -462,7 +464,7 @@ export function EditorPage({
         <div className="editor-tool-shell">
           <EditorAppIsland themes={themes} />
         </div>
-      </div>
+      </main>
 
       <div className={ZM_SHELL}>
         <EditorFeatureStrip />

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dfadler.github.io/zombie-mermaid/sitemap.xml

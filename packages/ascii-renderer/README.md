@@ -5,7 +5,7 @@
 
 Render [Mermaid](https://mermaid.js.org/) diagrams to ASCII or Unicode box-drawing art — the standalone renderer behind [`zombie-mermaid`](https://www.npmjs.com/package/zombie-mermaid)'s `zombie-mermaid/ascii` entry point. Pure TypeScript, no DOM, no `elkjs`/SVG layout dependency — pull this in on its own when all you need is terminal output.
 
-Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, and XY charts.
+Supports flowcharts, state diagrams, sequence diagrams, class diagrams, ER diagrams, XY charts, pie charts, C4 diagrams, and architecture diagrams.
 
 ## Install
 
@@ -35,11 +35,13 @@ renderMermaidASCII(text, {
 })
 ```
 
-See `AsciiRenderOptions` in [`src/index.ts`](src/index.ts) for the full option set (color mode, theme, hyperlinks, direction override, coordinate overlay).
+See `AsciiRenderOptions` in [`src/index.ts`](https://github.com/dfadler/zombie-mermaid/blob/main/packages/ascii-renderer/src/index.ts) for the full option set (color mode, theme, hyperlinks, direction override, coordinate overlay).
 
 ## Relationship to `zombie-mermaid`
 
 This package is one of the internal pieces `zombie-mermaid` is built from (alongside `@zombie-mermaid/core` and `@zombie-mermaid/mermaid-parser`, which stay internal-only). Installing `zombie-mermaid` and using `zombie-mermaid/ascii` pulls in the exact same renderer — reach for this package directly only when you specifically don't want the SVG-rendering half of the umbrella package.
+
+Not sure which package you need? See [Which package do I install?](../../docs/guides/choosing-a-package.md).
 
 ## License
 

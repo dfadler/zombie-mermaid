@@ -294,6 +294,8 @@ export function exitGutter(plan: ClusterExitPlan, edge: AsciiEdge): GridCoord {
 /** A subgraph container with bounding box for rendering. */
 export interface AsciiSubgraph {
   name: string
+  /** Concurrency region (state diagram `--`): border drawn dashed, no title. */
+  region?: boolean
   nodes: AsciiNode[]
   parent: AsciiSubgraph | null
   children: AsciiSubgraph[]
@@ -393,6 +395,12 @@ export interface AsciiGraph {
    * label; `mirrorLabelRows` uses them to pre-compensate the BT flip.
    */
   labelRects?: LabelRect[]
+  /**
+   * Outer bounding rectangle (canvas coords, inclusive) of every drawn node
+   * box. The RL flip uses them to keep each shape's corner glyphs unmirrored
+   * (#1701).
+   */
+  nodeRects?: LabelRect[]
   /** Grid occupancy map — tracks which "x,y" cells are reserved. */
   grid: Grid
   columnWidth: Map<number, number>

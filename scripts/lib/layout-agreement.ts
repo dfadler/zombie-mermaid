@@ -144,19 +144,76 @@ export interface OracleArgs {
   filter?: string
   /** Write the per-sample figures to this file as JSON. */
   json?: string
+  /** Append a one-line summary of this run to this JSON Lines file. */
+  history?: string
+  /** Write a Markdown scorecard (this run, plus the trend from --history) to this file. */
+  scorecard?: string
   /** Fail (exit 1) if any sample's worst figure is below this percentage. */
   failBelow?: number
   tolerance: number
+  /** Which diagram type to score; flowchart unless `--type=` says otherwise. */
+  type: OracleType
   help: boolean
+}
+
+/** Diagram types the oracle can score. */
+export type OracleType = 'flowchart' | 'state' | 'class' | 'er'
+
+export const ORACLE_TYPES: readonly OracleType[] = [
+  'flowchart',
+  'state',
+  'class',
+  'er',
+]
+
+const TYPE_HEADER: Record<OracleType, RegExp> = {
+  flowchart: /^\s*(graph|flowchart)\b/,
+  state: /^\s*stateDiagram(-v2)?\b/,
+  class: /^\s*classDiagram(-v2)?\b/,
+  er: /^\s*erDiagram\b/,
+}
+
+/** The word real mermaid puts between the render id and our node id. */
+const OFFICIAL_PREFIX: Record<OracleType, string> = {
+  flowchart: 'flowchart',
+  state: 'state',
+  class: 'classId',
+  er: 'entity',
+}
+
+/** Whether `source` is a diagram of `type` (by its header line). */
+export function isOfType(source: string, type: OracleType): boolean {
+  return TYPE_HEADER[type].test(source)
+}
+
+/**
+ * Our node id for an element id real mermaid wrote into its SVG
+ * (`<renderId>-flowchart-<id>-<n>` / `<renderId>-state-<id>-<n>`; the id may
+ * contain hyphens). Mermaid names the top-level pseudostates `root_start` and
+ * `root_end`; we call them `_start` and `_end`.
+ */
+export function officialNodeName(
+  raw: string,
+  renderId: string,
+  type: OracleType,
+): string {
+  const prefix = OFFICIAL_PREFIX[type]
+  let name = raw.replace(`${renderId}-${prefix}-`, '')
+  if (name.startsWith(`${prefix}-`)) name = name.slice(prefix.length + 1)
+  name = name.replace(/-\d+$/, '')
+  return type === 'state' ? name.replace(/^root_(start|end)$/, '_$1') : name
 }
 
 export const USAGE = `Usage: tsx scripts/layout-oracle.ts [options]
 
-Compares our layout of each flowchart sample with the one official mermaid.js
-draws, as the share of node pairs placed in the same relation.
+Compares our layout of each flowchart, state, class or ER sample with the one official
+mermaid.js draws, as the share of node pairs placed in the same relation.
 
+  --type=<kind>        flowchart (default), state, class or er
   --filter=<text>      only samples whose title contains <text>
   --json=<file>        write the per-sample figures to <file>
+  --history=<file>     append a one-line summary of this run to <file> (JSON Lines)
+  --scorecard=<file>   write a Markdown scorecard to <file> (trend read from --history)
   --fail-below=<pct>   exit 1 if any sample's lowest figure is under <pct> (0-100)
   --tolerance=<px>     centres this close count as level (default ${DEFAULT_TOLERANCE})
   -h, --help           show this help
@@ -164,7 +221,11 @@ draws, as the share of node pairs placed in the same relation.
 
 /** Parse `argv` (without the node and script entries). Throws on anything unknown. */
 export function parseOracleArgs(argv: string[]): OracleArgs {
-  const args: OracleArgs = { tolerance: DEFAULT_TOLERANCE, help: false }
+  const args: OracleArgs = {
+    tolerance: DEFAULT_TOLERANCE,
+    type: 'flowchart',
+    help: false,
+  }
   for (const arg of argv) {
     if (arg === '-h' || arg === '--help') {
       args.help = true
@@ -177,7 +238,14 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     if (!match) throw new Error(`Unknown argument: ${arg}`)
     const [, name, value] = match as unknown as [string, string, string]
     if (name === 'filter') args.filter = value
-    else if (name === 'json') args.json = value
+    else if (name === 'type') {
+      if (!(ORACLE_TYPES as readonly string[]).includes(value)) {
+        throw new Error(`--type is ${ORACLE_TYPES.join(', ')}, got "${value}"`)
+      }
+      args.type = value as OracleType
+    } else if (name === 'json') args.json = value
+    else if (name === 'history') args.history = value
+    else if (name === 'scorecard') args.scorecard = value
     else if (name === 'fail-below' || name === 'tolerance') {
       const n = Number(value)
       if (value === '' || !Number.isFinite(n) || n < 0) {
@@ -214,3 +282,92 @@ export function formatRow(
 }
 
 export const TABLE_HEADER = ' vert horiz   in   sg  nodes  sample'
+
+// ---------------------------------------------------------------------------
+// Scorecard
+// ---------------------------------------------------------------------------
+
+export type SampleResult = Agreement & { subgraphs: boolean }
+
+/** One tracked data point: mean agreement over every flowchart sample. */
+export interface HistoryEntry {
+  date: string
+  commit: string
+  tolerance: number
+  /** Samples scored (flowcharts only; other diagram types are not covered yet). */
+  samples: number
+  /** Mean of each figure over the samples that have it, 0..1; null if none do. */
+  vertical: number | null
+  horizontal: number | null
+  containment: number | null
+}
+
+const mean = (xs: (number | null)[]): number | null => {
+  const v = xs.filter((n): n is number => n !== null)
+  return v.length > 0 ? v.reduce((a, b) => a + b, 0) / v.length : null
+}
+
+/** Collapse per-sample results into one history entry. */
+export function summarize(
+  results: Record<string, SampleResult>,
+  meta: { date: string; commit: string; tolerance: number },
+): HistoryEntry {
+  const all = Object.values(results)
+  return {
+    ...meta,
+    samples: all.length,
+    vertical: mean(all.map((r) => r.vertical)),
+    horizontal: mean(all.map((r) => r.horizontal)),
+    containment: mean(all.map((r) => r.containment)),
+  }
+}
+
+const cell = (n: number | null): string =>
+  n === null ? '-' : `${Math.round(n * 100)}%`
+
+/**
+ * Markdown scorecard: the latest run, its per-sample figures (lowest first)
+ * and the recorded trend. Descriptive only; no pass/fail threshold.
+ */
+export function scorecardMarkdown(
+  latest: HistoryEntry,
+  results: Record<string, SampleResult>,
+  history: HistoryEntry[],
+): string {
+  const rows = Object.entries(results)
+    .sort(([, a], [, b]) => (worst(a) ?? 2) - (worst(b) ?? 2))
+    .map(
+      ([t, r]) =>
+        `| ${t.replace(/\|/g, '\\|')} | ${cell(r.vertical)} | ${cell(r.horizontal)} | ${cell(r.containment)} | ${r.nodes} |`,
+    )
+  const trend = history
+    .slice(-20)
+    .map(
+      (h) =>
+        `| ${h.date} | ${h.commit.slice(0, 7)} | ${h.samples} | ${cell(h.vertical)} | ${cell(h.horizontal)} | ${cell(h.containment)} |`,
+    )
+  return `<!-- Generated by \`pnpm run layout:scorecard\`. Do not edit by hand. -->
+# Layout-fidelity scorecard
+
+How closely our flowchart layouts match official mermaid.js: the share of node
+pairs placed in the same above/below/beside relation (\`vertical\`,
+\`horizontal\`) and of node/subgraph pairs that agree on containment. Only
+relative placement is compared. Flowcharts only so far. These are descriptive
+figures, not pass/fail thresholds. Method: \`scripts/layout-oracle.ts\`.
+
+Latest run (${latest.date}, ${latest.commit.slice(0, 7)}, ${latest.samples} samples, tolerance ${latest.tolerance}px):
+vertical **${cell(latest.vertical)}**, horizontal **${cell(latest.horizontal)}**, containment **${cell(latest.containment)}** (means over samples).
+
+## Trend (last 20 recorded runs)
+
+| Date | Commit | Samples | Vertical | Horizontal | Containment |
+| --- | --- | --- | --- | --- | --- |
+${trend.join('\n')}
+
+## Per sample (lowest first)
+
+| Sample | Vertical | Horizontal | Containment | Nodes |
+| --- | --- | --- | --- | --- |
+${rows.join('\n')}
+`
+}

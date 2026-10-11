@@ -3,8 +3,12 @@ import {
   DEFAULT_TOLERANCE,
   agreement,
   formatRow,
+  isOfType,
+  officialNodeName,
   parseOracleArgs,
   worst,
+  scorecardMarkdown,
+  summarize,
   type Box,
   type LayoutBoxes,
 } from '../scripts/lib/layout-agreement.ts'
@@ -147,6 +151,7 @@ describe('parseOracleArgs', () => {
   it('has defaults', () => {
     expect(parseOracleArgs([])).toEqual({
       tolerance: DEFAULT_TOLERANCE,
+      type: 'flowchart',
       help: false,
     })
   })
@@ -164,6 +169,7 @@ describe('parseOracleArgs', () => {
       json: 'out.json',
       failBelow: 75,
       tolerance: 30,
+      type: 'flowchart',
       help: false,
     })
   })
@@ -220,5 +226,82 @@ describe('formatRow', () => {
       false,
     )
     expect(row).not.toContain('sg')
+  })
+})
+
+describe('summarize / scorecardMarkdown (#1572)', () => {
+  const r = (v: number | null, h: number | null, c: number | null) => ({
+    vertical: v,
+    horizontal: h,
+    containment: c,
+    nodes: 3,
+    subgraphs: false,
+  })
+  const meta = { date: '2026-10-10', commit: 'abcdef123', tolerance: 20 }
+
+  it('means ignore null figures', () => {
+    const e = summarize({ a: r(1, null, null), b: r(0.5, null, null) }, meta)
+    expect(e).toMatchObject({ samples: 2, vertical: 0.75, horizontal: null })
+  })
+
+  it('scorecard lists lowest sample first and escapes pipes', () => {
+    const results = { 'hi|gh': r(1, 1, 1), low: r(0.2, 1, 1) }
+    const md = scorecardMarkdown(summarize(results, meta), results, [])
+    expect(md.indexOf('| low |')).toBeLessThan(md.indexOf('hi\\|gh'))
+  })
+})
+
+describe('oracle diagram types (#1707)', () => {
+  it('picks state and flowchart sources apart', () => {
+    expect(isOfType('stateDiagram-v2\n  [*] --> A', 'state')).toBe(true)
+    expect(isOfType('stateDiagram\n  [*] --> A', 'state')).toBe(true)
+    expect(isOfType('graph TD\n  A-->B', 'state')).toBe(false)
+    expect(isOfType('flowchart LR\n  A-->B', 'flowchart')).toBe(true)
+    expect(isOfType('classDiagram\n  class A', 'class')).toBe(true)
+    expect(isOfType('classDiagram-v2\n  class A', 'class')).toBe(true)
+    expect(isOfType('erDiagram\n  A ||--o{ B : x', 'er')).toBe(true)
+    expect(isOfType('erDiagram\n  A ||--o{ B : x', 'class')).toBe(false)
+    expect(isOfType('stateDiagram-v2\n  [*] --> A', 'flowchart')).toBe(false)
+  })
+
+  it('maps mermaid state element ids (fixture from mermaid output) to ours', () => {
+    const ids = [
+      'p1-state-root_start-0',
+      'p1-state-Idle-6',
+      'p1-state-Processing-5',
+      'p1-state-root_end-7',
+      'p1-state-my-state-3',
+    ]
+    expect(ids.map((i) => officialNodeName(i, 'p1', 'state'))).toEqual([
+      '_start',
+      'Idle',
+      'Processing',
+      '_end',
+      'my-state',
+    ])
+  })
+
+  it('keeps the flowchart mapping', () => {
+    expect(officialNodeName('p1-flowchart-A-0', 'p1', 'flowchart')).toBe('A')
+    expect(officialNodeName('flowchart-a-b-12', 'p1', 'flowchart')).toBe('a-b')
+    expect(officialNodeName('p1-classId-Animal-0', 'p1', 'class')).toBe(
+      'Animal',
+    )
+    expect(officialNodeName('p1-entity-LOG_ENTRY-1', 'p1', 'er')).toBe(
+      'LOG_ENTRY',
+    )
+    expect(officialNodeName('classId-a-b-3', 'p1', 'class')).toBe('a-b')
+    // A flowchart-prefixed id is not a class node id.
+    expect(officialNodeName('p1-flowchart-A-0', 'p1', 'class')).toBe(
+      'p1-flowchart-A',
+    )
+  })
+
+  it('parses --type and rejects other values', () => {
+    expect(parseOracleArgs([]).type).toBe('flowchart')
+    expect(parseOracleArgs(['--type=state']).type).toBe('state')
+    expect(parseOracleArgs(['--type=class']).type).toBe('class')
+    expect(parseOracleArgs(['--type=er']).type).toBe('er')
+    expect(() => parseOracleArgs(['--type=pie'])).toThrow(/--type/)
   })
 })

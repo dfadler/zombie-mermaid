@@ -17,7 +17,7 @@
  * `DiagramTypePage` is the reference instance of the shared per-type detail
  * template (#601, part of #599, part of the #590 redesign): breadcrumb,
  * description, syntax-highlighted source + rendered SVG side by side, and
- * cross-links to the other five diagram types. Every
+ * cross-links to the other eight diagram types. Every
  * structural choice, colour, and string not called out below was lifted
  * from the design canvas's `FlowchartDetail` artboard
  * (`https://claude.ai/code/artifact/2f623662-5eaf-42c4-9fd9-c21588e34993`,
@@ -182,6 +182,10 @@ const DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
@@ -217,6 +221,10 @@ const SAMPLE_DETAIL_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: DETAIL_NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: DETAIL_NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: DETAIL_NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
@@ -249,6 +257,10 @@ const TAG_FOOTER_COLUMNS: readonly FooterColumn[] = [
     title: 'Resources',
     links: [
       { label: 'Blog', href: TAG_NAV_HREFS.blog },
+      {
+        label: 'Upgrade guide',
+        href: TAG_NAV_HREFS.blog + 'upgrading-2x-to-5x.html',
+      },
       { label: 'GitHub', href: TAG_NAV_HREFS.github },
       { label: 'npm package', href: NPM_URL },
     ],
@@ -835,21 +847,23 @@ export function DiagramTypePage({
             detailed version of this comment for why renderToString (not
             renderToStaticMarkup) is needed here.
           */}
-          <div
-            id={DIAGRAM_TYPE_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DiagramTypeApp {...appProps} />),
-            }}
-          />
-          <script
-            type="application/json"
-            id={DIAGRAM_TYPE_PROPS_ELEMENT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
-              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-            }}
-          />
+          <main id="main">
+            <div
+              id={DIAGRAM_TYPE_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTypeApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DiagramTypeApp {...appProps} />),
+              }}
+            />
+            <script
+              type="application/json"
+              id={DIAGRAM_TYPE_PROPS_ELEMENT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTypeAppProps, escaped with escapeJsonForScriptTag; never user input
+                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+              }}
+            />
+          </main>
 
           <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>
@@ -1027,21 +1041,23 @@ export function DiagramHubPage({
             Plain, inert hydration container -- see DiagramTypePage's
             identical comment above.
           */}
-          <div
-            id={DIAGRAM_HUB_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DiagramHubApp {...appProps} />),
-            }}
-          />
-          <script
-            type="application/json"
-            id={DIAGRAM_HUB_PROPS_ELEMENT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
-              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-            }}
-          />
+          <main id="main">
+            <div
+              id={DIAGRAM_HUB_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramHubApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DiagramHubApp {...appProps} />),
+              }}
+            />
+            <script
+              type="application/json"
+              id={DIAGRAM_HUB_PROPS_ELEMENT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramHubAppProps, escaped with escapeJsonForScriptTag; never user input
+                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+              }}
+            />
+          </main>
 
           <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>
@@ -1125,21 +1141,23 @@ export function DiagramDetailPage({
         <div style={{ overflow: 'hidden' }}>
           {/* Plain, inert hydration container -- see DiagramTypePage's
               identical comment above. */}
-          <div
-            id={DIAGRAM_DETAIL_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramDetailApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DiagramDetailApp {...appProps} />),
-            }}
-          />
-          <script
-            type="application/json"
-            id={DIAGRAM_DETAIL_PROPS_ELEMENT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramDetailAppProps, escaped with escapeJsonForScriptTag; never user input
-              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-            }}
-          />
+          <main id="main">
+            <div
+              id={DIAGRAM_DETAIL_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramDetailApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DiagramDetailApp {...appProps} />),
+              }}
+            />
+            <script
+              type="application/json"
+              id={DIAGRAM_DETAIL_PROPS_ELEMENT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramDetailAppProps, escaped with escapeJsonForScriptTag; never user input
+                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+              }}
+            />
+          </main>
 
           <Footer columns={SAMPLE_DETAIL_FOOTER_COLUMNS} />
         </div>
@@ -1218,21 +1236,23 @@ export function DiagramTagPage({
           installSlotKind="empty"
         />
         <div style={{ overflow: 'hidden' }}>
-          <div
-            id={DIAGRAM_TAG_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTagApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DiagramTagApp {...appProps} />),
-            }}
-          />
-          <script
-            type="application/json"
-            id={DIAGRAM_TAG_PROPS_ELEMENT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTagAppProps, escaped with escapeJsonForScriptTag; never user input
-              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-            }}
-          />
+          <main id="main">
+            <div
+              id={DIAGRAM_TAG_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramTagApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DiagramTagApp {...appProps} />),
+              }}
+            />
+            <script
+              type="application/json"
+              id={DIAGRAM_TAG_PROPS_ELEMENT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramTagAppProps, escaped with escapeJsonForScriptTag; never user input
+                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+              }}
+            />
+          </main>
 
           <Footer columns={TAG_FOOTER_COLUMNS} />
         </div>
@@ -1302,21 +1322,23 @@ export function DiagramAllPage({
           installSlotKind="empty"
         />
         <div style={{ overflow: 'hidden' }}>
-          <div
-            id={DIAGRAM_ALL_ROOT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramAllApp component tree rendered via renderToString (see the comment above); never user input
-              __html: renderToString(<DiagramAllApp {...appProps} />),
-            }}
-          />
-          <script
-            type="application/json"
-            id={DIAGRAM_ALL_PROPS_ELEMENT_ID}
-            dangerouslySetInnerHTML={{
-              // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramAllAppProps, escaped with escapeJsonForScriptTag; never user input
-              __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
-            }}
-          />
+          <main id="main">
+            <div
+              id={DIAGRAM_ALL_ROOT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- this page's own DiagramAllApp component tree rendered via renderToString (see the comment above); never user input
+                __html: renderToString(<DiagramAllApp {...appProps} />),
+              }}
+            />
+            <script
+              type="application/json"
+              id={DIAGRAM_ALL_PROPS_ELEMENT_ID}
+              dangerouslySetInnerHTML={{
+                // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml -- build-time JSON from this page's own DiagramAllAppProps, escaped with escapeJsonForScriptTag; never user input
+                __html: escapeJsonForScriptTag(JSON.stringify(appProps)),
+              }}
+            />
+          </main>
 
           <Footer columns={DETAIL_FOOTER_COLUMNS} />
         </div>

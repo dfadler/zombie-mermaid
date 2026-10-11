@@ -27,7 +27,7 @@
  *                   freely.
  *
  * Intended to run once a week against main (see .github/workflows/
- * bench-trend.yml), not once per merge or once per PR. This used to run
+ * dashboard-refresh.yml), not once per merge or once per PR. This used to run
  * once per merge to main, but that ties the trend's cadence to how often
  * *anything* gets merged rather than to actual elapsed time — in a repo
  * merging many PRs a day, that produced far more "record benchmark trend
