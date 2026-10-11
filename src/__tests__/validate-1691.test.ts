@@ -1,6 +1,9 @@
 // #1691: `validate` CLI command, CLI line diagnostics on failed render, and
 // the validate_mermaid MCP tool share one parse-only path.
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { parseArgs } from '../cli/parse-args.ts'
 import { runValidate } from '../cli/validate.ts'
 import { runRender } from '../cli/render.ts'
@@ -42,6 +45,19 @@ describe('runValidate', () => {
     await expect(
       runValidate({ command: 'validate', input: undefined }, BAD),
     ).rejects.toThrow(/Line 4:[\s\S]*\n {2}4 \| {3}loop forever/)
+  })
+
+  it('reads the file when an input path is given', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'validate-'))
+    const file = join(dir, 'a.mmd')
+    writeFileSync(file, GOOD)
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    try {
+      await runValidate({ command: 'validate', input: file })
+      expect(log).toHaveBeenCalledWith('valid')
+    } finally {
+      rmSync(dir, { recursive: true })
+    }
   })
 
   it('rejects empty input', async () => {
