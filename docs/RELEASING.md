@@ -64,7 +64,7 @@ same run — one per package, all sharing the same version number.
 
 In short: **merging the Version PR is what triggers the actual npm
 publish.** There's no separate "cut a release" step or GitHub Release to
-create by hand — releases are tracked via `CHANGELOG.md` and git tags,
+create by hand (if one is ever missing, backfill it per the policy's section 5) — releases are tracked via `CHANGELOG.md` and git tags,
 generated automatically as part of this flow.
 
 ## One-time manual setup required (maintainer only)
@@ -140,7 +140,8 @@ the default here before and may again.
 ## After publishing a new major: deprecate the previous major (maintainer, by hand)
 
 Per [section 4 of the versioning and deprecation policy](decisions/versioning-and-deprecation-policy-1568.md),
-only the latest major is supported. Once a new major `N` has published (the
+only the latest major is supported. Ship at most one major per batching gap
+(section 3). Once a new major `N` has published (the
 Version PR is merged and the publish run is green), deprecate the previous
 major's range on npm for **all six packages**. Publish uses OIDC with no token
 in CI, so a maintainer runs this locally while logged in to npm with publish
@@ -166,9 +167,8 @@ guide; the policy's example is
   `npm deprecate "<pkg>@<N" ""` (empty message).
 - The major's changeset summary should already start with `**BREAKING:**` and
   link the guide (policy section 5).
-- Whether to deprecate pre-5 versions now, and the support window for old
-  majors, are open maintainer choices in the policy doc; follow what it
-  records as decided.
+- The 3.x and 4.x deprecate commands are in the policy (section 4). They are
+  a maintainer step and have not been run yet.
 
 ## Publishing `ascii-renderer` and `svg-renderer` standalone
 
