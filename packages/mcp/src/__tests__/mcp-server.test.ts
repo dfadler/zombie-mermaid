@@ -44,6 +44,7 @@ describe('createMcpServer', () => {
       'list_themes',
       'render_mermaid_ascii',
       'render_mermaid_svg',
+      'validate_mermaid',
     ])
   })
 

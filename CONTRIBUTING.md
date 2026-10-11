@@ -186,6 +186,7 @@ The visual tests catch a render _changing_; they don't say whether it is _right_
 ```bash
 pnpm run layout:oracle                         # every flowchart sample
 pnpm run layout:oracle -- --filter=ci/cd       # one sample
+pnpm run layout:oracle -- --type=state         # state diagrams instead (flowcharts by default)
 pnpm run layout:oracle -- --fail-below=90      # exit 1 if any sample's lowest figure is under 90%
 ```
 
