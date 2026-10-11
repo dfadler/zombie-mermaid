@@ -88,6 +88,25 @@ describe('runValidate', () => {
     }
   })
 
+  it('reads piped stdin when no file or content is given', async () => {
+    const orig = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    Object.defineProperty(process.stdin, 'isTTY', {
+      value: false,
+      configurable: true,
+    })
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    try {
+      const run = runValidate({ command: 'validate', input: undefined })
+      process.stdin.emit('data', GOOD)
+      process.stdin.emit('end')
+      await run
+      expect(log).toHaveBeenCalledWith('valid')
+    } finally {
+      if (orig) Object.defineProperty(process.stdin, 'isTTY', orig)
+      else delete (process.stdin as { isTTY?: boolean }).isTTY
+    }
+  })
+
   it('rejects empty input', async () => {
     await expect(
       runValidate({ command: 'validate', input: undefined }, '  \n'),
