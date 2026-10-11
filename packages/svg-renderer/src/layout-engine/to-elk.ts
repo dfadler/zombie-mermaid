@@ -100,7 +100,7 @@ export function isStateGraph(graph: MermaidGraph): boolean {
 export const SUBGRAPH_PADDING = { top: 44, left: 16, bottom: 16, right: 16 }
 
 /** Padding for an untitled concurrency region (no header band). */
-const REGION_PADDING = { top: 16, left: 16, bottom: 16, right: 16 }
+export const REGION_PADDING = { top: 16, left: 16, bottom: 16, right: 16 }
 
 const reversedCache = new WeakMap<MermaidGraph, Set<number>>()
 
