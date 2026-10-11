@@ -2117,6 +2117,52 @@ pie title Pets adopted by volunteers
   "Rats" : 15`,
   },
   {
+    title: 'ER: Word-Form Cardinalities and .- / -. Lines',
+    category: 'ER',
+    description:
+      'Cardinalities written as words (`one to many`, `1 to 0+`, `zero or one to one or more`), the mirrored symbol pairs `o|--||` and `o{--o{`, and the `.-` / `-.` line forms, which draw a dashed (non-identifying) relationship.',
+    source: `erDiagram
+  CUSTOMER one to many ORDER : places
+  ORDER 1 to 0+ LINE_ITEM : contains
+  LINE_ITEM zero or one to one or more PRODUCT : lists
+  PRODUCT o|--|| SUPPLIER : sourced_from
+  SUPPLIER o{--o{ WAREHOUSE : stocks
+  WAREHOUSE ||.-o{ SHELF : holds
+  SHELF ||-.o{ BIN : holds`,
+  },
+  {
+    title: 'Flowchart: Three Parallel Edges (TD)',
+    category: 'Flowchart',
+    description:
+      'Exactly three labeled parallel edges between the same two nodes in a top-down graph. In ASCII each lane enters the target on its own row with its own arrowhead.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B`,
+  },
+  {
+    title: 'Flowchart: Three Parallel Edges Plus Reciprocal (TD)',
+    category: 'Flowchart',
+    description:
+      'Three labeled parallel edges plus a reciprocal edge back, in a top-down graph. In ASCII the third lane keeps its own arrowhead row.',
+    source: `flowchart TD
+  A -->|first| B
+  A -->|second| B
+  A -->|third| B
+  B -->|back| A`,
+  },
+  {
+    title: 'Pie: Text Position',
+    category: 'Pie',
+    description:
+      '`%%{init: {"pie": {"textPosition": 0.5}}}%%` moves the slice percentage labels from the default 0.75 of the radius to halfway out in the SVG. The ASCII bar chart has no slice labels to move, so it is unchanged.',
+    source: `%%{init: {"pie": {"textPosition": 0.5}}}%%
+pie title Pets adopted by volunteers
+  "Dogs" : 386
+  "Cats" : 85
+  "Rats" : 15`,
+  },
+  {
     title: 'Flowchart: Four Parallel Edges (TD)',
     category: 'Flowchart',
     description:
@@ -2145,3 +2191,4 @@ pie title Pets adopted by volunteers
   S -->|other| U`,
   },
 ]
+
