@@ -182,7 +182,7 @@ export function layoutPieChart(
 
   const slices: PositionedPieSlice[] = []
   let angle = 0
-  const labelRadius = radius * PIE.textPosition
+  const labelRadius = radius * (chart.textPosition ?? PIE.textPosition)
   for (const { slice, colorIndex } of drawn) {
     const start = angle
     const end = angle + (slice.value / drawnTotal) * TAU

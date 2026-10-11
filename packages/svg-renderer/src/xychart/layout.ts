@@ -9,6 +9,7 @@ import type {
   PlotArea,
   LegendItem,
 } from '@zombie-mermaid/mermaid-parser'
+import { niceTickValues } from '@zombie-mermaid/core'
 import type { XyChartRenderOptions } from '@zombie-mermaid/core'
 import { estimateTextWidth } from '../styles.ts'
 
@@ -632,28 +633,7 @@ function layoutLines(
   return lines
 }
 
-/** Generate "nice" tick values for a numeric range */
-export function niceTickValues(min: number, max: number): number[] {
-  const range = max - min
-  if (range <= 0) return [min]
-
-  // Find nice interval
-  const rawInterval = range / 6
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawInterval)))
-  const residual = rawInterval / magnitude
-  let niceInterval: number
-  if (residual <= 1.5) niceInterval = magnitude
-  else if (residual <= 3) niceInterval = 2 * magnitude
-  else if (residual <= 7) niceInterval = 5 * magnitude
-  else niceInterval = 10 * magnitude
-
-  const start = Math.ceil(min / niceInterval) * niceInterval
-  const ticks: number[] = []
-  for (let v = start; v <= max + niceInterval * 0.001; v += niceInterval) {
-    ticks.push(Math.round(v * 1e10) / 1e10) // avoid floating-point noise
-  }
-  return ticks
-}
+export { niceTickValues } from '@zombie-mermaid/core'
 
 /**
  * Format a set of evenly-spaced tick values with enough decimal places to
