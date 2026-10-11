@@ -240,9 +240,7 @@ export function parseOracleArgs(argv: string[]): OracleArgs {
     if (name === 'filter') args.filter = value
     else if (name === 'type') {
       if (!(ORACLE_TYPES as readonly string[]).includes(value)) {
-        throw new Error(
-          `--type is ${ORACLE_TYPES.join(', ')}, got "${value}"`,
-        )
+        throw new Error(`--type is ${ORACLE_TYPES.join(', ')}, got "${value}"`)
       }
       args.type = value as OracleType
     } else if (name === 'json') args.json = value
