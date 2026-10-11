@@ -899,3 +899,26 @@ describe('layoutGraphSync', () => {
     expect(e.x + e.width > ci.x && e.x < ci.x + ci.width).toBe(true)
   })
 })
+
+describe('edge trunks beside a box side (#1749)', () => {
+  it('keeps the fan-out trunk at least 8px from the source box', () => {
+    const p = layoutFlowchartSync(
+      graphOf(`graph LR
+  subgraph clients [Client Layer]
+    A([Web App]) --> B[API Gateway]
+  end
+  subgraph services [Service Layer]
+    B --> D[Auth Service]
+    B --> E[User Service]
+    B --> F[Order Service]
+  end`),
+    )
+    const clients = p.groups.find((g) => g.id === 'clients')!
+    const side = clients.x + clients.width
+    const trunks = p.edges
+      .filter((e) => e.source === 'B')
+      .flatMap((e) => e.points.slice(1, -1).map((pt) => pt.x))
+    expect(trunks.length).toBeGreaterThan(0)
+    for (const x of trunks) expect(Math.abs(x - side)).toBeGreaterThanOrEqual(8)
+  })
+})
