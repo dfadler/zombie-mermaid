@@ -2,7 +2,8 @@
  * #1490: `besideGeometryFree` scanned every edge's segments per candidate. It
  * now reads a per-layout row index of drawn segments, so 80 labelled edges on
  * shared legs (the #1433/#1463 shape) render well inside the budget below
- * (~13 s before the label-placement fixes, ~0.5 s now).
+ * (~13 s before the label-placement fixes, ~0.5 s now). The budget is
+ * loose because CI runs under coverage instrumentation, which is ~10x slower.
  */
 import { describe, it, expect } from 'vitest'
 import { renderMermaidASCII } from '../index.ts'
@@ -16,11 +17,18 @@ function labelled(n: number): string {
   return lines.join('\n')
 }
 
+// Vitest's default 5 s test timeout would fire before the budget assertion.
+const BUDGET_MS = 20_000
+
 describe('label placement scaling (#1490)', () => {
-  it('renders 80 labelled edges on shared legs within budget', () => {
-    const t0 = performance.now()
-    const out = renderMermaidASCII(labelled(40), { colorMode: 'none' })
-    expect(performance.now() - t0).toBeLessThan(5000)
-    expect(out).toContain('l79')
-  })
+  it(
+    'renders 80 labelled edges on shared legs within budget',
+    () => {
+      const t0 = performance.now()
+      const out = renderMermaidASCII(labelled(40), { colorMode: 'none' })
+      expect(performance.now() - t0).toBeLessThan(BUDGET_MS)
+      expect(out).toContain('l79')
+    },
+    BUDGET_MS + 5_000,
+  )
 })
