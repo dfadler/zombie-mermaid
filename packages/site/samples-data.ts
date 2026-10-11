@@ -1214,10 +1214,10 @@ flowchart LR
     description:
       "Every crow's-foot cardinality combination side by side — the reference chart for reading any combination at a glance instead of checking each relationship's own page.",
     source: `erDiagram
-  A ||--|| B : one-to-one
-  C ||--o{ D : one-to-many
+  A ||--|| B : "one-to-one"
+  C ||--o{ D : "one-to-many"
   E |o--|{ F : opt-to-many
-  G }|--o{ H : many-to-many`,
+  G }|--o{ H : "many-to-many"`,
   },
 
   // ══════════════════════════════════════════════════════════════════════════
