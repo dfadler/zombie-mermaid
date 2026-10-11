@@ -78,3 +78,21 @@ Nothing to do, and you no longer pay for elk in your bundle.
 - `@zombie-mermaid/core`: no dependencies (the `elkjs` type import is gone).
 - `zombie-mermaid` and `@zombie-mermaid/mcp`: still list `elkjs` under
   `dependencies`, because they ship the CLI and MCP server.
+
+### Removing `elkjs` from `zombie-mermaid`
+
+The umbrella keeps `elkjs` as a regular dependency on purpose, so the CLI and
+MCP server work out of the box; only the sub-packages treat it as an optional
+peer. If you remove it anyway (for example with an overrides or
+`--omit`-style install trick):
+
+- The `zombie-mermaid` CLI fails at startup with `ERR_MODULE_NOT_FOUND`, even
+  for ASCII and sequence diagrams, because `dist/cli.js` imports `elkjs`
+  statically.
+- The library keeps working for diagrams that do not need layout: sequence,
+  pie, xychart, C4 and ASCII still render. Flowchart, state, class, ER and
+  architecture diagrams throw `ElkNotRegisteredError` unless you call
+  `registerElk()`.
+
+Related: [#1685](https://github.com/dfadler/zombie-mermaid/issues/1685)
+(lightweight built-in layout) is still open.

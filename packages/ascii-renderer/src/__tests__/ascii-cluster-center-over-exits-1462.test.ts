@@ -75,10 +75,10 @@ describe('cluster centred over its exit targets (#1462)', () => {
     expect(out.some((l) => l.startsWith('┌'))).toBe(true)
   })
 
-  it('does not centre over parallel lanes: every lane keeps its own arrowhead', () => {
-    // Centred, the third lane's shifted final run (#1331) lost its horizontal
-    // leg and arrowhead, leaving a dangling `┘` under T.
-    const text = render(`flowchart TD
+  it('centres over parallel lanes and every lane keeps its own arrowhead (#1688)', () => {
+    // The exit drop ignored the third lane's shifted final run (#1331), so it
+    // lost its horizontal leg and arrowhead, leaving a dangling `┘` under T.
+    const lines = render(`flowchart TD
   subgraph S [Cluster]
     a
   end
@@ -87,7 +87,15 @@ describe('cluster centred over its exit targets (#1462)', () => {
   S -->|second| T
   S -->|third| T
   S -->|other| U
-`).join('\n')
+`)
+    const text = lines.join('\n')
+    // Between T and U, not hung over T.
+    const c = centerOf(lines, 'Cluster')
+    expect(c).toBeGreaterThan(centerOf(lines, 'T') + 10)
+    expect(c).toBeLessThan(centerOf(lines, 'U') - 10)
+    // Each lane's corner (`┘` past T's border) shares a row with its arrowhead.
+    const arrowRows = lines.filter((l) => l.includes('◄'))
+    for (const row of arrowRows) expect(row.indexOf('┘')).toBeGreaterThan(9)
     expect(text.match(/◄/g)).toHaveLength(2) // second and third lanes
     expect(text.match(/▼/g)).toHaveLength(3) // Start->S, first, other
   })
