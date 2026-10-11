@@ -24,7 +24,7 @@ member, nested subgraphs and cluster-to-cluster edges
 
 ASCII does not flip. It honors an explicit `direction` only when no edge crosses the
 boundary, counting the subgraph's own id as inside, and otherwise uses the parent's
-direction. Flipping by default there is blocked by the ASCII grid: two sibling
+direction. Flipping by default there is blocked by the ASCII grid (#1817): two sibling
 subgraphs with different inner directions share one grid and overlap
 (`graph LR` with two unconnected subgraphs already renders garbled with an explicit
 `direction TB` in each). Given `subgraph S` holding `a --> b --> c` in a `graph TD`:
