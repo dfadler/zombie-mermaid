@@ -184,14 +184,14 @@ the #590 redesign each landed as their own targeted PR (see
 `.changeset/theme-picker-aria-expanded.md` for the change each one made) —
 those changesets describe the pre-redesign gallery this section used to
 cover, not the current per-family scoping above.
-**Not covered:** none of this is exercised by an automated accessibility
-check today — no `axe-core`/`pa11y` (or similar) run in CI against any of
-the six page families, and no automated keyboard-navigation test walks any
-of them. Marking these "implemented" rather than "conformant": where a
-property is present, it's the correct markup for its WCAG criterion, but
-nothing currently re-verifies it on every PR the way the SVG accessible-name
-check does. A demo-site accessibility CI check is a reasonable follow-up,
-not something this statement claims already exists.
+**Partly covered:** `pnpm run test:a11y` (CI: `.github/workflows/a11y.yml`)
+runs axe-core (wcag2a, wcag2aa, wcag22aa; serious/critical) over a sample of
+the built pages of every family. Violations that exist today are listed in
+`KNOWN` in `__tests__/a11y/site.a11y.test.ts` with their tracking issue; the
+test also fails when a listed entry stops reproducing, so the list only
+shrinks. axe cannot judge keyboard flow or screen-reader output, and no
+automated keyboard-navigation test walks any page. Marking these
+"implemented" rather than "conformant".
 
 ## What this statement does not claim
 

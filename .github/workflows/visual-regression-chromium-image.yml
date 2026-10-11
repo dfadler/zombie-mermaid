@@ -31,6 +31,10 @@ name: Visual regression Chromium-only image (build & publish)
 on:
   workflow_dispatch: {}
 
+# Least-privilege default (#1732); build-and-push grants packages: write itself.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false

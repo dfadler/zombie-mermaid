@@ -166,7 +166,9 @@ export function useEditorTheme({
     r.themeMenu
       .querySelectorAll<HTMLElement>('.theme-dropdown-item')
       .forEach((el) => {
-        el.classList.toggle('active', el.dataset.theme === key)
+        const on = el.dataset.theme === key
+        el.classList.toggle('active', on)
+        el.setAttribute('aria-selected', String(on))
       })
   }, [state.theme, refs, themes])
 
@@ -187,10 +189,56 @@ export function useEditorTheme({
   useLayoutEffect(() => {
     const r = refs.current
     if (!r) return
+    const items = () =>
+      Array.from(
+        r.themeMenu.querySelectorAll<HTMLElement>('.theme-dropdown-item'),
+      )
+    const setOpen = (open: boolean, focusBtn = false) => {
+      r.themeMenu.classList.toggle('open', open)
+      r.themeDropdownBtn.classList.toggle('open', open)
+      r.themeDropdownBtn.setAttribute('aria-expanded', String(open))
+      if (open) {
+        const list = items()
+        ;(
+          list.find((el) => el.classList.contains('active')) ?? list[0]
+        )?.focus()
+      } else if (focusBtn) {
+        r.themeDropdownBtn.focus()
+      }
+    }
     const onToggle = (e: Event) => {
       e.stopPropagation()
-      const isOpen = r.themeMenu.classList.toggle('open')
-      r.themeDropdownBtn.classList.toggle('open', isOpen)
+      setOpen(!r.themeMenu.classList.contains('open'))
+    }
+    // WAI-ARIA listbox keys: arrows (wrapping), Home/End, Escape (close and
+    // return focus to the button), Tab (close). Enter/Space on a focused
+    // <button> option fire `click`, handled by onMenuClick.
+    const onMenuKeyDown = (e: KeyboardEvent) => {
+      const list = items()
+      const i = list.indexOf(document.activeElement as HTMLElement)
+      let next = -1
+      if (e.key === 'ArrowDown') next = (i + 1) % list.length
+      else if (e.key === 'ArrowUp') next = (i - 1 + list.length) % list.length
+      else if (e.key === 'Home') next = 0
+      else if (e.key === 'End') next = list.length - 1
+      else if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false, true)
+        return
+      } else if (e.key === 'Tab') {
+        setOpen(false)
+        return
+      }
+      if (next >= 0) {
+        e.preventDefault()
+        list[next]?.focus()
+      }
+    }
+    const onBtnKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        setOpen(true)
+      }
     }
     const onMenuClick = (e: MouseEvent) => {
       const item =
@@ -204,22 +252,24 @@ export function useEditorTheme({
       // between a click and the state update anymore.
       persistTheme(key)
       dispatch({ type: 'SET_THEME', theme: key })
-      r.themeMenu.classList.remove('open')
-      r.themeDropdownBtn.classList.remove('open')
+      setOpen(false, true)
     }
     const onDocClick = (e: MouseEvent) => {
       if (
         !(e.target instanceof Node) ||
         !r.themeDropdownWrap.contains(e.target)
       ) {
-        r.themeMenu.classList.remove('open')
-        r.themeDropdownBtn.classList.remove('open')
+        setOpen(false)
       }
     }
+    r.themeDropdownBtn.addEventListener('keydown', onBtnKeyDown)
+    r.themeMenu.addEventListener('keydown', onMenuKeyDown)
     r.themeDropdownBtn.addEventListener('click', onToggle)
     r.themeMenu.addEventListener('click', onMenuClick)
     document.addEventListener('click', onDocClick)
     return () => {
+      r.themeDropdownBtn.removeEventListener('keydown', onBtnKeyDown)
+      r.themeMenu.removeEventListener('keydown', onMenuKeyDown)
       r.themeDropdownBtn.removeEventListener('click', onToggle)
       r.themeMenu.removeEventListener('click', onMenuClick)
       document.removeEventListener('click', onDocClick)
