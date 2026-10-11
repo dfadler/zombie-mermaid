@@ -31,6 +31,7 @@ import { readFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, relative } from 'node:path'
+import { defaultPort } from './scripts/dev-port'
 import {
   defineConfig,
   normalizePath,
@@ -288,7 +289,7 @@ function samplesRebuildPlugin(): Plugin {
 export default defineConfig({
   root: ROOT,
   server: {
-    port: Number(process.env.PORT) || 3456,
+    port: defaultPort(ROOT),
   },
   plugins: [samplesRebuildPlugin()],
 })

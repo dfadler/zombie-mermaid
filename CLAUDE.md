@@ -9,13 +9,13 @@ instead — this file only holds what's specific to _this_ repo's tooling.
 This repo's dev server (`vite.config.ts`, run via `pnpm run dev` / `vite`) has two
 properties that make worktree cleanup easy to get wrong:
 
-- **Port defaults to 3456, shared unless overridden.** `vite.config.ts` reads `PORT`
-  from the environment (`PORT=3457 pnpm run dev`), falling back to 3456 — so give
-  each simultaneously-running instance (a worktree alongside the main checkout,
-  another worktree, etc.) its own port rather than letting two land on the default
-  together. Two sessions that both fall back to 3456 will collide on bind (Vite picks
-  the next free port and warns), or — worse — one will silently think it owns "the"
-  dev server on that port when it's actually someone else's.
+- **Port: 3456 for the main checkout, hashed per worktree.** `vite.config.ts` reads
+  `PORT` first (`PORT=3457 pnpm run dev`); unset, the main checkout uses 3456 and a
+  worktree under `.claude/worktrees/` gets a stable 3500-3999 port hashed from its
+  path (`defaultPort`), so parallel batches rarely collide. Hash collisions are still
+  possible and killing by port is still unsafe: verify the owner (see below).
+- **Each worktree is ~600 MB** with its own `node_modules`; finished ones aren't swept
+  unless `worktree.autoPrune` is set (dfadler/agent-config#651), so clean up after yourself.
 - **Live reload keeps the connection open.** Vite's HMR client holds a WebSocket open
   (`/@vite/client`) for as long as a tab is connected, so that tab never goes
   network-idle. A headless capture (`chrome --headless --screenshot`) against a
