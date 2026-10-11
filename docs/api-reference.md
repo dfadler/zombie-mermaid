@@ -1,5 +1,7 @@
 # API Reference
 
+This page, together with `package.json` `exports`/`bin` and the MCP schemas, defines the published surface that semver covers; see the [versioning and deprecation policy](decisions/versioning-and-deprecation-policy-1568.md).
+
 ## `renderMermaidSVG(text, options?): string`
 
 Render a Mermaid diagram to SVG. Synchronous. Auto-detects diagram type.
