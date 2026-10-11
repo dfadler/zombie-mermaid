@@ -109,6 +109,17 @@ describe('subgraph inner direction matches mermaid.js (#1699)', () => {
     expect(orientation(source, ids ?? ABC)).toBe(expected)
   })
 
+  it('keeps a flipped row on one line when a sibling node and subgraph share the graph', () => {
+    const p = layoutFlowchartSync(
+      parseMermaid(
+        'graph TD\n  subgraph S\n    a --> b --> c\n  end\n  subgraph T\n    d --> e\n  end\n  X --> T',
+      ),
+    )
+    const y = (id: string) => p.nodes.find((n) => n.id === id)!.y
+    expect(new Set(['a', 'b', 'c'].map(y)).size).toBe(1)
+    expect(new Set(['d', 'e'].map(y)).size).toBe(1)
+  })
+
   it('stacks two unconnected sibling subgraphs perpendicular to the flow', () => {
     const p = layoutFlowchartSync(
       parseMermaid(

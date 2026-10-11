@@ -28,7 +28,7 @@ import {
   extractEdgePoints,
   extractEdgeLabelPosition,
 } from './elk-adapter-utils.ts'
-import { resolveNodeStyle } from '@zombie-mermaid/core'
+import { resolveNodeStyle, subgraphDirections } from '@zombie-mermaid/core'
 
 /** Margin routing info for cross-hierarchy edges */
 interface MarginInfo {
@@ -163,6 +163,24 @@ function flattenGroupBounds(
   return bounds
 }
 
+/** Ids of every node inside a subgraph whose direction differs from its parent's. */
+function nodesInFlippedSubgraphs(graph: MermaidGraph): Set<string> {
+  const out = new Set<string>()
+  const dirs = subgraphDirections(graph)
+  if (!dirs) return out
+  const add = (sg: MermaidSubgraph): void => {
+    for (const id of sg.nodeIds) out.add(id)
+    sg.children.forEach(add)
+  }
+  const walk = (sg: MermaidSubgraph, parent: string): void => {
+    const dir = dirs.get(sg.id)
+    if (dir !== parent) add(sg)
+    else sg.children.forEach((c) => walk(c, dir))
+  }
+  graph.subgraphs.forEach((sg) => walk(sg, graph.direction))
+  return out
+}
+
 /**
  * Convert ELK layout result to our PositionedGraph format.
  */
@@ -204,7 +222,15 @@ export function elkToPositioned(
   // ELK's orthogonal routing staggers nodes within a layer to create room for
   // edge bends, but this looks bad. We fix it by aligning layers, then let
   // edge bundling and clipping recalculate edge paths from corrected positions.
-  alignLayerNodes(nodes, edges, graph.direction)
+  // Nodes inside a subgraph laid out on a different axis than its parent (#1699)
+  // are left alone: snapping them by the root's flow axis would pull one node
+  // of a row into the root's layers (`a -> b -> c` with `c` 8px low).
+  const flipped = nodesInFlippedSubgraphs(graph)
+  alignLayerNodes(
+    flipped.size ? nodes.filter((n) => !flipped.has(n.id)) : nodes,
+    edges,
+    graph.direction,
+  )
 
   // Synthesize self-loop edges now that node positions are final. These
   // were excluded from the graph handed to ELK (see to-elk.ts) since ELK
