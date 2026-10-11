@@ -235,7 +235,9 @@ describe('IndexMainApp hydration (#804)', () => {
         name: /what zombie-mermaid adds on top/i,
       }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/294 prs, 14 days/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /are now standalone packages/i }),
+    ).toBeInTheDocument()
   })
 })
 

@@ -2058,5 +2058,51 @@ ${Array.from({ length: 60 }, (_, i) => `  "S${String(i + 1).padStart(2, '0')}" :
   }
   Canvas --> Circle
   Canvas --> Square`,
+  },  {
+    title: 'State: Choice, Fork and Join',
+    category: 'State',
+    gallery: true,
+    description:
+      'Pseudo-states: a fork and join drawn as bars, a choice drawn as a diamond.',
+    source: `stateDiagram-v2
+  state f <<fork>>
+  state j <<join>>
+  state c <<choice>>
+  [*] --> f
+  f --> A
+  f --> B
+  A --> c
+  c --> j
+  B --> j
+  j --> [*]`,
+  },
+  {
+    title: 'State: Notes',
+    category: 'State',
+    gallery: true,
+    description: 'One-line and block notes attached to a state.',
+    source: `stateDiagram-v2
+  [*] --> Active
+  note right of Active : this is a note
+  Active --> Idle
+  note left of Idle
+    a note
+    over two lines
+  end note
+  Idle --> [*]`,
+  },
+  {
+    title: 'State: Concurrent Regions',
+    category: 'State',
+    gallery: true,
+    description: 'A composite state split into concurrent regions with --.',
+    source: `stateDiagram-v2
+  state Work {
+    [*] --> A1
+    A1 --> A2
+    --
+    [*] --> B1
+    B1 --> B2
+  }`,
   },
 ]
