@@ -125,6 +125,7 @@ jobs:
       # a consumer would, so missing files or broken exports fail here
       # instead of after npm publish. The publish step rebuilds as needed.
       - name: Build and smoke-test packed tarballs
+        if: steps.gate.outputs.run == 'true'
         run: pnpm run build && pnpm run smoke:packed
 
   release:
