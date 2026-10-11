@@ -9,6 +9,7 @@
  *
  * Usage: tsx scripts/layout-oracle.ts [--filter=<text>] [--json=<file>]
  *                                     [--fail-below=<pct>] [--tolerance=<px>]
+ *                                     [--type=flowchart|state]
  *
  * Why it exists: "true to the mermaid source" was a judgment from looking at a
  * screenshot next to mermaid's. This puts a number on it, per sample, so a
@@ -19,21 +20,27 @@
  *
  * Only relative placement is compared (see layout-agreement.ts for why), so
  * font and padding differences between the renderers don't count against us.
- * Flowcharts only for now: the official node ids it reads back
- * (`flowchart-<id>-<n>`) are flowchart-specific.
+ * Flowcharts by default; `--type=state` scores state diagrams (official node
+ * ids `state-<id>-<n>`, composites as clusters). Other types are not covered yet.
  */
 
 import { appendFile, readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@playwright/test'
 import { parseMermaid } from '../src/index.ts'
-import { layoutFlowchartSync } from '@zombie-mermaid/svg-renderer'
+import {
+  layoutFlowchartSync,
+  layoutGraphSync,
+} from '@zombie-mermaid/svg-renderer'
 import { samples } from '../packages/site/samples-data.ts'
 import {
   TABLE_HEADER,
   USAGE,
   agreement,
   formatRow,
+  isOfType,
+  officialNodeName,
+  type OracleType,
   parseOracleArgs,
   worst,
   type Box,
@@ -45,11 +52,6 @@ import {
 } from './lib/layout-agreement.ts'
 import { renderRealMermaidSvg, startRealMermaid } from './lib/real-mermaid.ts'
 
-/** Whether `source` is a flowchart, the only diagram type compared here. */
-function isFlowchart(source: string): boolean {
-  return /^\s*(graph|flowchart)\b/.test(source)
-}
-
 /**
  * Box of every node and subgraph in an SVG real mermaid produced. The SVG is
  * put into the page so the browser can report real positions (nodes are placed
@@ -59,8 +61,9 @@ async function measureOfficial(
   page: Page,
   svg: string,
   renderId: string,
+  type: OracleType,
 ): Promise<LayoutBoxes> {
-  return page.evaluate(
+  const raw = await page.evaluate(
     ([markup, id]) => {
       document.body.innerHTML = markup
       const origin = document.querySelector('svg')!.getBoundingClientRect()
@@ -70,16 +73,13 @@ async function measureOfficial(
       }
       const nodes: Record<string, Box> = {}
       for (const g of document.querySelectorAll('g.node')) {
-        // `<renderId>-flowchart-<nodeId>-<n>`; the node id may itself contain hyphens.
-        const raw = g.getAttribute('id') ?? ''
-        const name = raw
-          .replace(`${id}-flowchart-`, '')
-          .replace(/^flowchart-/, '')
-          .replace(/-\d+$/, '')
-        nodes[name] = boxOf(g)
+        nodes[g.getAttribute('id') ?? ''] = boxOf(g)
       }
       const groups: Record<string, Box> = {}
-      for (const g of document.querySelectorAll('g.cluster')) {
+      // Flowchart subgraphs are `g.cluster`; state composites `g.statediagram-cluster`.
+      for (const g of document.querySelectorAll(
+        'g.cluster, g.statediagram-cluster',
+      )) {
         const rect = g.querySelector('rect')
         if (!rect) continue
         const raw = g.getAttribute('id') ?? ''
@@ -90,11 +90,23 @@ async function measureOfficial(
     },
     [svg, renderId] as [string, string],
   )
+  const nodes: Record<string, Box> = {}
+  for (const [id, box] of Object.entries(raw.nodes)) {
+    nodes[officialNodeName(id, renderId, type)] = box
+  }
+  const groups: Record<string, Box> = {}
+  for (const [id, box] of Object.entries(raw.groups)) {
+    // State composites are `state-<id>-<n>`, so strip it like a node's.
+    groups[type === 'state' ? officialNodeName(id, renderId, type) : id] = box
+  }
+  return { nodes, groups }
 }
 
 /** Box of every node and subgraph in our own layout of `source`. */
-function measureOurs(source: string): LayoutBoxes {
-  const positioned = layoutFlowchartSync(parseMermaid(source))
+function measureOurs(source: string, type: OracleType): LayoutBoxes {
+  const graph = parseMermaid(source)
+  const positioned =
+    type === 'state' ? layoutGraphSync(graph) : layoutFlowchartSync(graph)
   const nodes: Record<string, Box> = {}
   for (const n of positioned.nodes) {
     nodes[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height }
@@ -126,12 +138,12 @@ async function main(): Promise<number> {
 
   const wanted = samples.filter(
     (s) =>
-      isFlowchart(s.source) &&
+      isOfType(s.source, args.type) &&
       (!args.filter ||
         s.title.toLowerCase().includes(args.filter.toLowerCase())),
   )
   if (wanted.length === 0) {
-    console.error(`No flowchart sample matches "${args.filter ?? ''}".`)
+    console.error(`No ${args.type} sample matches "${args.filter ?? ''}".`)
     return 2
   }
 
@@ -153,14 +165,22 @@ async function main(): Promise<number> {
   const failing: string[] = []
   try {
     for (const [i, sample] of wanted.entries()) {
-      const hasSubgraphs = /\bsubgraph\b/.test(sample.source)
+      const hasSubgraphs =
+        args.type === 'state'
+          ? /^\s*state\s+.*\{\s*$/m.test(sample.source)
+          : /\bsubgraph\b/.test(sample.source)
       try {
         const renderId = `oracle_${i}`
         const svg = await renderRealMermaidSvg(session, renderId, sample.source)
-        const official = await measureOfficial(session.page, svg, renderId)
+        const official = await measureOfficial(
+          session.page,
+          svg,
+          renderId,
+          args.type,
+        )
         const a = agreement(
           official,
-          measureOurs(sample.source),
+          measureOurs(sample.source, args.type),
           args.tolerance,
         )
         results[sample.title] = { ...a, subgraphs: hasSubgraphs }
@@ -190,6 +210,11 @@ async function main(): Promise<number> {
   if (args.json) {
     await writeFile(args.json, `${JSON.stringify(results, null, 2)}\n`)
     console.log(`\nWrote ${args.json}`)
+  }
+  if ((args.history || args.scorecard) && args.type !== 'flowchart') {
+    // The history and scorecard track the flowchart means; mixing types would break the trend.
+    console.error('--history and --scorecard are flowchart-only for now.')
+    return 2
   }
   if (args.history || args.scorecard) {
     const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
