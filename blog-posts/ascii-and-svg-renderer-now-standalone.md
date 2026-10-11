@@ -35,9 +35,16 @@ ELK.js-backed layout engine and per-diagram-type SVG emitters behind
 `zombie-mermaid`'s `renderMermaidSVG`. It's aimed at custom integration
 work — reusing the layout adapters, or wiring up a different dispatch layer
 — rather than at "I just want SVG out," which `zombie-mermaid`'s own
-`renderMermaidSVG(text)` already covers more simply. It doesn't yet have its
-own single-function front door for parity with `ascii-renderer`; that's
-tracked separately in [#1111](https://github.com/dfadler/zombie-mermaid/issues/1111).
+`renderMermaidSVG(text)` already covers more simply. It has since gained its own
+front door, `renderMermaidSVG(text)` (tracked in
+[#1111](https://github.com/dfadler/zombie-mermaid/issues/1111), now closed).
+
+One thing to know: `elkjs` is an optional peer dependency of
+`@zombie-mermaid/svg-renderer`, and in a browser or bundler you must call
+`registerElk(ELK)` once before rendering flowcharts, or rendering fails for
+want of a layout engine. See the package README for the exact snippet. The
+packages also have an engine requirement; see
+[#1567](https://github.com/dfadler/zombie-mermaid/issues/1567).
 
 ## What's not changing
 

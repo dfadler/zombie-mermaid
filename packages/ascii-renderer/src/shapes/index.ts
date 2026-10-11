@@ -23,7 +23,11 @@ import {
   getBoxAttachmentPoint,
 } from './rectangle.ts'
 import { getCorners } from './corners.ts'
-import { stateStartRenderer, stateEndRenderer } from './state.ts'
+import {
+  stateStartRenderer,
+  stateEndRenderer,
+  forkJoinRenderer,
+} from './state.ts'
 import { stadiumRenderer } from './stadium.ts'
 import {
   subroutineRenderer,
@@ -115,6 +119,7 @@ export const shapeRegistry: ShapeRegistry = new Map<
   // State diagram pseudo-states
   ['state-start', stateStartRenderer],
   ['state-end', stateEndRenderer],
+  ['fork-join', forkJoinRenderer],
 ])
 
 /**

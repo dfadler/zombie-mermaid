@@ -15,7 +15,7 @@ const FEATURE_TITLES = [
   'Live, debounced rendering',
   'Shareable via URL',
   '15 built-in themes',
-  'One-click SVG export',
+  'SVG and ASCII output',
 ]
 
 describe('EditorFeatureStrip', () => {

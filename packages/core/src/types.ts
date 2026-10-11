@@ -117,6 +117,8 @@ export type NodeShape =
   | 'bolt' // lightning bolt — communication link
   | 'text' // label with no outline
   | 'anchor' // invisible point
+  // State diagram `note left of X` / `note right of X`
+  | 'note' // dog-eared box
 
 export interface MermaidEdge {
   source: string
@@ -192,6 +194,12 @@ export interface MermaidSubgraph {
   children: MermaidSubgraph[]
   /** Optional direction override for this subgraph's internal layout */
   direction?: Direction
+  /**
+   * A concurrency region of a state diagram's composite state (the sections
+   * a `--` line separates). Drawn as an unlabeled dashed box rather than a
+   * titled subgraph, like mermaid.js's `divider` cluster.
+   */
+  region?: boolean
 }
 
 // ============================================================================
@@ -254,6 +262,8 @@ export interface PositionedGroup {
   width: number
   height: number
   children: PositionedGroup[]
+  /** Concurrency region: draw dashed and untitled (see `MermaidSubgraph.region`) */
+  region?: boolean
 }
 
 // ============================================================================

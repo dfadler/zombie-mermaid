@@ -103,6 +103,11 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      # Docs drift guards (#1570): dead links/anchors, stale repo paths,
+      # diagram-type counts, Node-version consistency.
+      - name: Check docs drift
+        run: pnpm run check:docs
+
       # Guards against a new whole-tree snapshot or raw markup string-pin
       # creeping into demo/editor component tests one unreviewed file at a
       # time, now that RTL is the expected pattern for them (#817, part of
